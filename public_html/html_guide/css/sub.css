@@ -1,0 +1,518 @@
+.title_explain {display:flex; align-items:center; gap:13px; margin-top:23px; line-height:35px; font-size:25px; font-weight:400;}
+.title_explain .title_image {width:45px;}
+.title_explain h3 {font-weight:inherit;}
+
+.icon_pass_fail {display:block; width:161px; height:120px; background:url(../images/sub/icon_pass_fail.png) no-repeat center/contain;}
+.icon_recommend {width:105px; height:105px; background:url(../images/sub/recommend.png) no-repeat center/contain;}
+.icon_not_recommend {width:105px; height:105px; background:url(../images/sub/not_recommend.png) no-repeat center/contain;}
+
+/*로그인*/
+.login {display:flex; flex-direction:column; justify-content:center; height:calc(100vh - 150px);}
+.login .logo {padding:0 18px; max-width:500px; margin:0 auto;}
+.login .logo img {max-width:100%; vertical-align:top;}
+.login .form_area{margin-top:58px;}
+.login .form_box + .form_box {margin-top:12px;}
+.login .btn_basic {margin-top:31px; width:100%; height:75px; line-height:75px; letter-spacing:.25em; border-radius:38px;}
+.login .notice_text {margin-top:36px; text-align:center;}
+.login_utils {display:flex; justify-content:center; gap:43px; margin-top:33px;}
+
+/*비밀번호 변경*/
+.change_password {padding-top:97px;}
+.change_password .form_box + .form_box {margin-top:31px;}
+.change_password .btn_basic {margin:91px auto 0; width:40%; min-width:250px; height:60px; line-height:60px; font-weight:600; border-radius:30px;}
+
+/*검색*/
+.search_wrap {padding-top:25px;}
+.search_wrap .input_box {padding:18px 20px; border:2px solid #f5a32d;}
+.search_wrap .title {margin-top:53px;}
+.input_search .icon_search_orange {display:inline-block; width:33px; height:35px;}
+.resent_search_area {margin-top:19px; overflow:hidden;}
+.resent_search_box {display:flex;}
+.resent_search_box .swiper-slide {width:auto;}
+.resent_search_box .search_word {display:flex; align-items:center; gap:8px; margin-right:7px; padding:4px 13px; font-size:18px; line-height:22px; color:#000; border:1px solid #b3b3b3; border-radius:15px;}
+.resent_search_box .search_word:after {content:''; display:inline-block; width:16px; height:16px; background:url(../images/common/icon_delete.png) no-repeat center/contain;}
+/*주제별 책 목록*/
+.book_list_by_topic {display:flex; flex-wrap:wrap; gap:10px; margin-top:19px;}
+.book_list_by_topic .book_topic {width:calc(50% - 7px);}
+.book_topic {position:relative; display:flex; border:1px solid #a0a0a0; border-radius:9px; overflow:hidden;}
+.book_topic a {position:absolute; top:0; left:0; width:100%; height:100%; }
+.book_topic .book_content {flex-grow:1; padding:14px;}
+.book_topic .book_subject {font-size:19px; font-weight:400; line-height:1.316em; color:#000;}
+.book_topic .book_description {margin-top:9px; font-size:16px; line-height:1.375em; color:#000;}
+.book_topic .image_box {width:38.496%; max-width:128px; flex-shrink:0;}
+.book_topic .image_box img {width:100%; height:100%; object-fit:cover;}
+
+/*--내 책장--*/
+.my_bookcase_wrap .title {margin-top:23px;}
+.bookcase_info_area {margin-top:15px; border-top:2px solid #f4a12c; border-bottom:1px solid #f4a12c;}
+.bookcase_info_area .inner {display:flex; width:79.737%; max-width:1212px; padding:0;}
+.bookcase_info {width:33.33%; padding:21px 0 22px;}
+.bookcase_info .info_title {display:flex; flex-direction:column; align-items:center; gap:4px; font-size:17px; color:#000; text-align:center;}
+.bookcase_info .info_title .icon {width:46px; height:57px; background:url(../images/sub/my_bookcase_badge.png) no-repeat center/contain;}
+.bookcase_info:nth-child(2) .info_title .icon {width:52px; background-image:url(../images/sub/my_bookcase_wish.png);} 
+.bookcase_info:nth-child(3) .info_title .icon {width:47px; background-image:url(../images/sub/my_bookcase_question.png);} 
+.bookcase_info .count {display:block; margin-top:13px; font-size:24px; font-weight:bold; color:#000; text-align:center;}
+.bookcase_main .title_explain {font-size:30px; font-weight:600;}
+.bookcase_main .title_explain .title_image {width:44px;}
+.bookcase_main .title_box {margin-top:31px;}
+.bookcase_main .title {margin-top:0;}
+.bookcase_main .menu_link_list + .title_box {margin-top:26px;}
+.bookcase_main .info_box {margin-top:17px; padding-top:15px; padding-bottom:14px;}
+.bookcase_main .menu_link_list {margin-top:27px;}
+.bookcase_main .graph {margin-top:27px;}
+/*관심 주제 수정*/
+.modify_interest_topic .title_explain {margin-top:65px; text-align:center; justify-content:center;}
+.modify_interest_topic .check_area {max-width:1045px; gap:28px 6.9%; margin:79px auto 0;}
+.modify_interest_topic .check_area .check_button {width:28.73%}
+.modify_interest_topic .btn_area {margin-top:85px;}
+.modify_interest_topic .btn_basic {width:350px; height:60px; line-height:60px; border-radius:30px;}
+/*독서 인증 기록*/
+.certified_book .title_explain {margin:37px 0 38px;}
+.certified_book .list_set_up {margin-top:25px;}
+.certified_book .inner + .list_set_up {margin-top:42px;}
+
+/*랭킹*/
+.ranking_wrap .period {margin-top:33px; padding:0 84px;}
+.ranking_wrap .ranking_area .inner {width:71.316%; min-width:500px; padding:0;}
+.ranking_wrap .ranking_area {margin-top:40px; margin-bottom:-45px; padding-top:56px; background:#f4a12c;}
+.ranking_area {position:relative;}
+.ranking_area:before {content:''; position:absolute; top:0; left:42px; width:calc(100% - 84px); height:30px; background:#f4a12c url(../images/sub/bg_ranking.jpg) space center/contain;}
+.ranking_area .bg {position:absolute; bottom:-199px; left:0; width:100%; height:200px; background:#f4a12c;}
+.ranking_area .bg:before {content:''; display:block; width:71.316%; min-width:500px; height:100%; margin:auto; background:#fff;}
+.ranking_area .ranking_top {display:flex; justify-content:flex-end;}
+.ranking_area .checkbox label {font-size:20px; color:#fff;}
+.ranking_area .checkbox label:before {border:2px solid #fff;}
+.ranking_area .checkbox input[type=checkbox]:checked + label:before {background-image:url(../images/common/icon_check_white_on.png);}
+.ranking_list_area {min-height:calc(100vh - 240px); margin-top:16px; padding:0 20px 22px; background:#fff; border-radius:20px 20px 0 0;}
+/* .ranking_list {margin-top:16px; padding:0 20px 22px; background:#fff; border-radius:20px 20px 0 0;} */
+.ranking_list li {display:flex; align-items:center; column-gap:14px; padding-top:20px; padding-bottom:16px; border-bottom:1px solid #a6a6a6;}
+.ranking_list li.on {background:#fff7d4;}
+.ranking_list li .number {width:30px; height:30px; margin-left:8px; line-height:30px; font-size:19px; font-weight:900; text-align:center;}
+.ranking_list li:nth-child(1) .number {color:#ffaf00; background:url(../images/sub/ranking_01.png) no-repeat center/contain;}
+.ranking_list li:nth-child(2) .number {color:#5e5e5e; background:url(../images/sub/ranking_02.png) no-repeat center/contain;}
+.ranking_list li:nth-child(3) .number {color:#b54600; background:url(../images/sub/ranking_03.png) no-repeat center/contain;}
+.ranking_list li .name {font-size:22px; color:#000;}
+.ranking_list li .class {font-size:18px; color:#000;}
+.ranking_list li .point {width:145px; height:30px; margin-left:auto; margin-right:8px; padding-right:18px; line-height:30px; font-size:22px; font-weight:300; text-align:right; color:#000; background:#fff; border:1px solid #c6c6c6; border-radius:11px; box-sizing:border-box;}
+/*상세*/
+.book_detail_wrap {padding-top:36px;}
+.book_info_area {display:flex; gap:24px; width:69.211%; min-width:526px; margin:auto;}
+.book_info_area .image_box {position:relative; flex-shrink:0; width:214px;}
+.book_info_area .image_box img {width:100%; border-radius:16px;}
+.book_info_area .btn_wish {position:absolute; bottom:10px; right:-78.5px; display:inline-block; width:54.5px; height:46.5px; margin-top:auto; font-size:0; text-indent:-9999em; background:url(../images/common/icon_heart_lg.png) no-repeat center/contain;}
+.book_info_area .btn_wish.on {background-image:url(../images/common/icon_heart_lg_on.png)}
+.book_info_area .book_info {padding:10px 0;}
+.book_info_area .book_info .subject {font-size:30px; line-height:40px; color:#000; font-weight:600;}
+.book_info_area .book_info .series {display:block; margin-top:13px; font-size:22px; line-height:1.182em; color:#000;}
+.book_info_area .book_info .author {display:block; margin-top:28px; font-size:22px; line-height:1.182em; color:#000;}
+.book_info_area .info_box {margin-top:37px; background:#fff;}
+.book_info_area .info_item {padding:0;}
+.book_info_area .info_list .info_title {min-width:78px; padding:2px 0 1px; line-height:22px; font-size:18px; color:#00ada9; border:1px solid #00ada9; border-radius:12px}
+.book_info_area .info_item:nth-child(even) .info_title {color:#f5a32d; border-color:#f5a32d;}
+.book_info_area .info_list .info_title + .info_content {margin-top:9px;}
+.book_detail_wrap .title {position:relative; margin-top:46px; margin-bottom:10px; margin-left:60px; line-height:29px; padding-left:29px; color:#f5a32d}
+.book_detail_wrap .title:nth-of-type(1) {margin-top:64px;}
+.book_detail_wrap .title .icon {position:absolute; top:0; left:0; width:22px; height:29px; background:url(../images/sub/icon_detail_title01.png) no-repeat center/contain;}
+.book_detail_wrap .title:nth-of-type(2) .icon {width:19px; height:23px; background-image:url(../images/sub/icon_detail_title02.png)}
+.book_detail_wrap .title:nth-of-type(3) .icon {width:24px; height:23px; background-image:url(../images/sub/icon_detail_title03.png)}
+.book_detail_wrap .text_box {display:flex; align-items:center; justify-content:center; min-height:158px; padding:10px; font-size:22px; line-height:34px; color:#000; text-align:center; background:#fff7d4; box-sizing:border-box;}
+.book_detail_wrap .info_box {max-width:unset; padding-top:21px; padding-bottom:37px;}
+.book_detail_wrap .info_item + .info_item {border-width:2px;}
+.book_detail_wrap .info_list .info_title {color:#000; text-decoration:underline;}
+.book_detail_wrap .info_list .info_content {font-weight:600;}
+.topic_tag_list {display:flex; flex-wrap:wrap; gap:20px 10px; margin-top:34px; padding:0 18px;}
+.topic_tag_list .tag {padding:5px 15px; line-height:26px; font-size:22px; color:#000; background:#fff; border:1px solid #aaa; border-radius:19px;}
+.book_detail_wrap .good_book .title {margin-top:60px; padding-left:0; color:#000;}
+.book_area {margin-top:21px; margin-left:60px; overflow:hidden;}
+.book_area .book {margin-right:20px;}
+.book_area .book .book_subject {font-size:22px; line-height:28px;}
+.book_detail_wrap .book_quiz {position:fixed; bottom:0; left:0; display:block; width:100%; height:100px; line-height:100px; font-size:30px; font-weight:600; color:#fff; text-align:center; background:#00ada9; box-shadow:0 -4px 10px 0.25px rgba(0, 0, 0, 0.15); z-index:2;}
+/*--관리--*/
+.manage_wrap>.title_box {margin-top:41px;}
+.manage_wrap .info_box {margin-top:15px; padding:30px 0 28px;}
+.manage_wrap .info_box .title_box {justify-content:flex-start; gap:5px; padding:0 15px;}
+.manage_wrap .title_image {width:30px;}
+.manage_wrap .user_info {margin-left:5px; line-height:1em; font-size:19px; color:#555;}
+.manage_wrap .info_list {margin-top:27px;}
+.manage_wrap .info_item {justify-content:flex-start; padding-bottom:6px; padding-top:6px;}
+.manage_wrap .menu_link_list:first-of-type {margin-top:38px;}
+.manage_wrap .menu_link .menu_title span {font-size:20px;}
+.manage_wrap .btn_area {margin-top:93px;}
+.manage_wrap .btn_logout {line-height:25px; font-size:22px; font-weight:600; color:#a0a0a0; border-bottom:1px solid #a0a0a0;}
+.manage_wrap .text_box {margin-top:30px; font-size:22px; line-height:30px;}
+/*내 포인트*/
+.manage_wrap .title_explain {margin-top:37px;}
+.manage_wrap .point_area {width:78.158%; min-width:597px; margin:auto;}
+.manage_wrap .period {margin-top:63px; padding-left:2px; padding-right:2px;}
+.manage_wrap .point_list {margin-top:21px;}
+.point_list {border-top:1px solid #a0a0a0;}
+.point_item {padding:9px 0 10px; border-bottom:1px solid #a0a0a0;}
+.point_item .point_inner {display:flex; padding:0 20px;}
+.point_item .point_inner + .point_inner {margin-top:9px;}
+.point_item .point_title {line-height:30px; font-size:22px; color:#000;}
+.point_item .point_amount {margin-left:auto; line-height:30px; font-size:22px; color:#000;}
+.point_item .point_date {line-height:27px; font-size:19px; color:#a0a0a0;}
+.point_item .total_point {margin-left:auto; line-height:27px; font-size:19px; color:#a0a0a0;}
+.manage_wrap .sub_tab_box {margin-top:22px; margin-bottom:22px; }
+.manage_wrap .tab_contents .board_list {border-top:1px solid #a8a8a8;}
+/*문의 입력 폼*/
+.inquiry_input_box {display:flex; align-items:center; height:74px; border:2px solid #ccc;}
+.inquiry_title {width:90px; font-size:22px; color:#000; text-align:center; letter-spacing:0.4em;}
+.inquiry_input {flex-grow:1; padding-left:32px;}
+.inquiry_input input {width:100%; font-size:22px; color:#000; border:none;}
+.inquiry_input input::placeholder {color:#a0a0a0;}
+.inquiry_textarea {padding:20px 22px; border:2px solid #ccc; border-top:none;}
+.inquiry_textarea textarea {width:100%; height:370px; padding:0; line-height:32px; font-size:22px; color:#000; border:none; resize:none;}
+.inquiry_textarea textarea::placeholder {color:#a0a0a0;}
+.inquiry_agree {position:relative; margin-top:22px; padding-left:24px; margin-bottom:10px;}
+.inquiry_agree label {font-size:17px; font-weight:600; color:#000; letter-spacing:-.01em;}
+.inquiry_agree input[type=checkbox] {width:14px; height:14px; margin-right:7px; accent-color:#000;}
+.inquiry_agree .btn_view {position:absolute; top:2px; right:0; padding:3px 0; z-index:1; font-size:17px; color:#000; letter-spacing:-.01em;}
+.inquiry_agree .btn_view .icon_select {display:inline-block; margin-left:5px; vertical-align:top;}
+.inquiry_agree_content {display:none; padding:10px 23px; font-size:17px; line-height:27px; color:#000; background:#ececec;}
+.inquiry_agree_box.on .btn_view {top:2px;}
+.inquiry_agree_box.on .btn_view .icon_select {transform:rotate(180deg);}
+.inquiry_agree_box.on .inquiry_agree_content {display:block;}
+.inquiry_form_area .btn_area {margin-top:40px;}
+.inquiry_form_area .btn_basic {width:250px; height:60px; line-height:60px; font-weight:600; text-align:center; border-radius:30px;}
+/*탭*/
+.sub_tab_box {display:flex;}
+.sub_tab_box .tab {flex-grow:1; line-height:37px; font-size:25px; font-weight:500; color:#a0a0a0; text-align:center; border-bottom:10px solid #a0a0a0;}
+.sub_tab_box .tab.on {color:#f5a32d; border-color:#f5a32d;}
+/*북퀴즈*/
+.bookquiz {min-height:100vh; background:#fff;}
+.bookquiz.bg {background:url(../images/sub/bg_bookquiz.jpg) repeat-y top center; background-size:100%;}
+.bookquiz .popup_header .inner {display:flex; align-items:center; padding-top:29px;}
+.bookquiz .popup_header .btn_back {position:absolute; top:28px; left:42px; font-size:0; text-indent:-9999em;}
+.bookquiz .popup_header {height:95px; background:url(../images/sub/bg_bookquiz_header2.png) no-repeat bottom/cover;}
+.bookquiz .popup_header .inner {justify-content:center;}
+.bookquiz .popup_header .btn_back {top:26px;}
+.bookquiz .popup_contents {padding-top:50px; padding-bottom:150px;}
+.bookquiz .popup_footer {position:fixed; bottom:0; left:0; width:100%; padding:29px 0 35px; background:#00ada9; box-shadow:0 -4px 10px 0.25px rgba(0, 0, 0, 0.15);}
+.bookquiz .popup_footer .btn_area {padding:0 42px;}
+.bookquiz .popup_footer .btn_area button {background:transparent; border:none;}
+.bookquiz .popup_footer .btn_area :is(a,button) span {display:inline-block; margin-left:6px; line-height:36px; font-size:30px; font-weight:600; color:#fff; vertical-align:middle;}
+.bookquiz .popup_footer .btn_area .icon_back {vertical-align:middle;}
+.bookquiz .popup_footer .btn_area .btn_back {margin-right:auto;}
+.bookquiz .popup_footer .btn_area .btn_next {margin-left:auto;}
+.bookquiz .popup_footer .btn_area .btn_next span {margin-left:0; margin-right:8px;}
+.bookquiz .popup_footer .btn_area .btn_next .icon_back {transform:rotate(180deg);}
+.bookquiz .popup_footer .btn_area .btn_full {width:100%; margin-left:0; margin-right:0; text-align:center;}
+.bookquiz .bookquiz_main {padding-top:21px; padding-bottom:100px; width:59.211%; margin:0 auto;}
+.bookquiz .bookquiz_main .image_box {width:47.556%; min-width:214px; margin:0 auto;}
+.bookquiz .bookquiz_main .image_box img {width:100%;}
+.bookquiz .bookquiz_main .subject {margin-top:24px; font-size:40px; line-height:54px; color:#000;}
+.bookquiz .bookquiz_main .btn_area {margin-top:56px;}
+.bookquiz .bookquiz_main .btn_basic {width:350px; height:60px; line-height:60px; font-weight:600; border-radius:30px; box-shadow:0px 2px 10px 5px rgba(0, 0, 0, 0.1);}
+.bookquiz .bookquiz_main .notice_list {margin-top:74px;}
+.bookquiz .bookquiz_main .notice_list li {font-size:25px; line-height:35px; color:#a0a0a0;}
+.bookquiz .bookquiz_main .notice_list li + li {margin-top:8px;}
+/*북퀴즈 문제*/
+.quiz_form .question {line-height:37px; font-size:25px; color:#000;}
+.quiz_form .question .number {display:block;}
+.quiz_form .question_data {margin:55px 38px 0; text-align:center;}
+.quiz_form .question_data img {max-width:100%; vertical-align:top;}
+.quiz_form .multiple_choice {margin:0 38px;}
+.quiz_form .answer_area :where(.multiple_choice,.essay_form) {margin-top:48px;}
+.quiz_form .answer_area .answer_item {position:relative;}
+.quiz_form .answer_area .answer_item + .answer_item {margin-top:22px;}
+.quiz_form .answer_area .answer_item input[type=radio] {position:absolute; top:0; left:0; width:0; height:0;}
+.quiz_form .answer_area .answer_item label {display:block; padding:21px 20px 19px; line-height:32px; font-size:22px; font-weight:300; color:#000; text-align:center; border:2px solid #a0a0a0; border-radius:10px;}
+.quiz_form .answer_area .answer_item input[type=radio]:checked + label {border-color:#00ada9; border-width:3px;}
+.quiz_form .answer_area .question_data + .answer_area .essay_form {margin-top:29px;}
+.quiz_form .essay_form {position:relative;}
+.quiz_form .answer_area .essay_form textarea {width:100%; height:250px; padding:16px 15px; line-height:28px; font-size:22px; font-weight:500; border:2px solid #a0a0a0; border-radius:10px; box-sizing:border-box; resize:none;}
+.quiz_form .answer_area .essay_form textarea::placeholder {color:#a0a0a0}
+.quiz_form .essay_form .btn_mic {position:absolute; bottom:10px; right:10px; display:flex; align-items:center; justify-content:center; width:37px; height:37px; background:#00aca8; border-radius:50%; border:none; box-shadow:0px 2px 10px 5px rgba(0, 0, 0, 0.1)}
+.quiz_form .essay_form .btn_mic:before {content:''; width:15px; height:25px; background:url(../images/sub/icon_mic.png) no-repeat center/contain;}
+.quiz_form .attachment {margin-top:12px; height:252px; border:2px solid #a0a0a0; border-radius:10px; box-sizing:border-box;}
+.quiz_form .attachment_upload {position:relative; display:flex; align-items:center; justify-content:center; flex-direction:column; height:100%;}
+.quiz_form .attachment_upload input[type="file"] {overflow:hidden; position:absolute; width:1px; height:1px; margin:-1px; font-size:initial; clip:rect(0 0 0 0);}
+.quiz_form .attachment_upload .icon {display:block; width:80px; height:82px; background:url(../images/sub/icon_attachment.png) no-repeat center/contain;}
+.quiz_form .attachment_upload .upload_text {display:block; margin-top:31px;  font-size:22px; font-weight:500; color:#a0a0a0; text-align:center;}
+.quiz_form .attachment_upload .upload_text br {display:none;}
+.quiz_form .notice_text {display:block; margin-top:42px; font-size:22px; line-height:28px; text-align:center;}
+.quiz_result_area {position:relative; margin-top:68px;}
+.quiz_result_area .result_title_box {position:absolute; top:-20px; left:0; width:100%;}
+.quiz_result_area .result_title_box:after {content:''; position:absolute; top:15px; left:0; width:100%; height:5px; background:#00ada9;}
+.quiz_result_area .result_title {position:relative; width:250px; margin:auto; padding:6px 10px; line-height:23px; font-size:17px; font-weight:500; text-align:center; color:#fff; background:#00ada9; border-radius:17px; box-sizing:border-box; z-index:1;}
+.quiz_summary {padding:30px 15px; background:#f0f0f0;}
+.quiz_summary dl {display:flex; gap:11px; justify-content:center; align-items:baseline;}
+.quiz_summary dl + dl {margin-top:17px;}
+.quiz_summary dt {margin:0; width:72px; line-height:23px; font-size:19px; font-weight:300; text-align:center; color:#000;}
+.quiz_summary dd {margin:0; line-height:23px; font-size:19px; text-align:center; color:#000;}
+/*퀴즈 문제풀이*/
+.book_quiz_result .book_info_area {align-items:flex-start;}
+.book_quiz_result .book_info_area .book_info {padding-top:5px; padding-bottom:0;}
+.book_quiz_result .book_info_area .book_info .series {margin-top:15px;}
+.book_quiz_result .book_info_area .book_info .author {margin-top:29px;}
+.book_quiz_result .book_info_area .book_badge {position:absolute; bottom:-14px; right:-13px; width:78px; height:93px; font-size:0; text-indent:-9999em; background:url(../images/common/book_badge_xl.png) no-repeat center/contain;}
+.quiz_result {padding:0 77px;}
+.quiz_result .quiz {position:relative; margin-top:31px;}
+.quiz_result .quiz + .quiz {margin-top:10px;}
+.quiz_result .quiz.wrong:before {content:''; position:absolute; top:-8px; left:-18px; width:63px; height:55px; background:url(../images/sub/quiz_wrong.png) no-repeat center/contain;}
+.quiz_result .quiz.correct:before {content:''; position:absolute; top:-6px; left:-13px; width:57px; height:49px; background:url(../images/sub/quiz_correct.png) no-repeat center/contain;}
+.quiz_result .question {font-size:22px; line-height:30px; color:#000;}
+.quiz_result .answer_area {min-height:98px; margin-top:10px;}
+.quiz_result .answer_box {display:flex; gap:8px;}
+.quiz_result .answer_box + .answer_box {margin-top:12px;}
+.quiz_result .answer_title {flex-shrink:0; width:55px; height:25px; margin-top:2px; line-height:25px; font-size:15px; font-weight:600; color:#fff; text-align:center; background:#a0a0a0; border-radius:10px;}
+.quiz_result .answer_content {line-height:28px; font-size:22px;}
+/*통과X*/
+.quiz_pass_fail {padding-top:98px;}
+.quiz_pass_fail .title {margin-top:22px;font-size:25px; line-height:35px; text-align:center;}
+.quiz_pass_fail .icon_pass_fail {margin:auto;}
+.quiz_pass_fail .btn_area {margin-top:45px; flex-direction:column; align-items:center;}
+.quiz_pass_fail .btn_area a {width:350px; height:60px; line-height:60px;  text-align:center; border-radius:30px;}
+.quiz_pass_fail .btn_area a + a {margin-top:21px;}
+/*추천*/
+.book_recommend {padding-top:142px;}
+.book_recommend .title {font-size:25px; line-height:35px; text-align:center;}
+.book_recommend .btn_area {display:flex; gap:68px; margin-top:57px;}
+.btn_recommend {display:flex; gap:15px; color:#000; align-items:center; justify-content:center; flex-direction:column;}
+.btn_recommend .text {display:block; font-size:22px; text-align:center;}
+/*북퀴즈 포트폴리오*/
+.basic_table {border-bottom:1px solid #a0a0a0}
+.basic_table table {width:100%; border-spacing:0;}
+.basic_table th {padding:7px 0 7px 20px; line-height:27px; font-size:20px; font-weight:600; text-align:left; background:#eee; border-top:1px solid #a0a0a0; box-sizing:border-box;}
+.basic_table td {padding:7px 0 7px 12px; line-height:27px; font-size:20px; border-top:1px solid #a0a0a0; box-sizing:border-box;}
+.bookquiz_portfolio {padding-top:23px;}
+.bookquiz_portfolio .title_box {justify-content:flex-start; gap:7px;}
+.bookquiz_portfolio .title_image {width:35px; height:35px;}
+.bookquiz_portfolio .title {line-height:29px; font-size:25px;}
+.bookquiz_portfolio .basic_table {margin-top:18px;}
+.bookquiz_portfolio .sub_title {margin-top:32px; line-height:29px; font-size:23px; color:#00aca8;}
+.bookquiz_portfolio .list_set_up {margin-top:8px; border-bottom:1px solid #a0a0a0;}
+.bookquiz_portfolio .book {flex-wrap:wrap;}
+.bookquiz_portfolio .book:first-child {border-top:none;}
+.book .think_box {width:100%;}
+.book .think_title {display:block; width:100px; height:32px; line-height:32px; font-size:20px; font-weight:600; color:#fff; text-align:center; background:#00aca8; border-radius:16px;}
+.book .think_box .question {margin-top:12px; line-height:28px; font-size:22px; color:#000; word-break:keep-all;}
+.book .think_box .answer {position:relative; left:-42px; width:calc(100% + 84px); margin-top:12px; padding:16px 42px 24px; line-height:28px; font-size:22px; color:#000; word-break:keep-all; background:#eee; box-sizing:border-box;}
+
+@media screen and (max-width:759px){
+	.title_explain {gap:10px; font-size:18px; line-height:24px; text-align:left;}
+
+	.icon_pass_fail {width:94px; height:70px;}
+	.icon_recommend {width:80px; height:80px;}
+	.icon_not_recommend {width:80px; height:80px;}
+
+	/*로그인*/
+	.login {padding:0 25px; height:calc(100vh - 114px);}
+	.login .logo {padding:0 33px;}
+	.login .form_area {margin-top:65px;}
+	.login .btn_basic {margin-top:28px; height:40px; line-height:40px;}
+	.login_utils {margin-top:20px; gap:30px;}
+	.login .notice_text {font-size:16px;}
+
+	/*비밀번호 변경*/
+	.change_password {padding-top:34px;}
+	.change_password .form_box + .form_box {margin-top:25px;}
+	.change_password .btn_basic {margin-top:41px; min-width:150px; height:40px; line-height:40px;}
+
+	/*검색*/
+	.search_wrap {padding-top:20px;}
+	.search_wrap .input_box {padding:7px 12px 8px 14px;}
+	.search_wrap .input_box input {font-size:16px;}
+	.input_search .icon_search_orange {width:25px; height:25px;}
+	.resent_search_area {margin-top:15px;}
+	.resent_search_box .search_word {margin-right:4px; padding:3px 10px; line-height:19px; font-size:15px;}
+	.resent_search_box .search_word:after {width:14px; height:14px; }
+	.search_wrap .title {margin-top:42px;}
+	.book_list_by_topic {flex-direction:column;  margin-top:11px;}
+	.book_list_by_topic .book_topic {width:100%;}
+	.book_topic .book_content {padding:13px;}
+	.book_topic .book_subject {font-size:18px;}
+	.book_topic .book_description {margin-top:6px; font-size:15px;}
+
+	/*--내 책장--*/
+	.bookcase_info_area {margin-top:10px; border-top-width:1px; border-bottom-width:1px;}
+	.bookcase_info_area .inner {width:100%; padding-left:20px; padding-right:20px;} 
+	.bookcase_info {padding:11px 0 16px;}
+	.bookcase_info .info_title {gap:4px; font-size:14px;}
+	.bookcase_info .info_title .icon {width:38px; height:48px;}
+	.bookcase_info:nth-child(2) .info_title .icon {width:43px;} 
+	.bookcase_info:nth-child(3) .info_title .icon {width:39px;} 
+	.bookcase_info .count {margin-top:11px; font-size:20px;}
+	.my_bookcase_wrap .title_explain {line-height:31px; font-size:25px; text-align:left;}
+	.my_bookcase_wrap.certified_book .title_explain {margin-top:20px; margin-bottom:25px; line-height:26px; font-size:20px;}
+	.my_bookcase_wrap.modify_interest_topic .title_explain {line-height:24px; font-size:18px;}
+	.bookcase_main .title_explain .title_image {width:35px;}
+	.bookcase_main .title_box {margin-top:33px;}
+	.bookcase_main .title {margin-top:0;}
+	.bookcase_main .menu_link_list + .title_box {margin-top:11px;}
+	.bookcase_main .info_box {margin-top:13px; padding-top:12px; padding-bottom:12px;}
+	.bookcase_main .menu_link_list {margin-top:22px;}
+	.bookcase_main .graph {margin-top:22px;}
+
+	/*관심 주제 수정*/
+	.modify_interest_topic .title_explain {margin-top:25px; justify-content:flex-start;}
+	.modify_interest_topic .check_area {margin-top:31px; max-width:530px; gap:10px 5.6%;}
+	.modify_interest_topic .check_area .check_button {width:44.4%;}
+	.modify_interest_topic .btn_area {margin-top:44px;}
+	.modify_interest_topic .btn_basic {width:160px; height:45px; line-height:45px;}
+	/*독서 인증 기록*/
+	.my_bookcase_wrap .title_explain .title_image {width:38px;}
+	.certified_book .list_set_up {margin-top:11px;}
+	.certified_book .inner + .list_set_up {margin-top:22px;}
+	
+	/*랭킹*/
+	.ranking_wrap .period {padding:0; margin-top:18px;}
+	.ranking_wrap .ranking_area {margin-top:15px; padding-top:40px;}
+	.ranking_area:before {left:20px; width:calc(100% - 40px); height:23px;}
+	.ranking_wrap .ranking_area .inner {width:auto; min-width:auto; padding-left:20px; padding-right:20px;}
+	.ranking_area .bg {bottom:-99px; height:100px;}
+	.ranking_area .bg:before {width:calc(100% - 40px); min-width:auto;}
+	.ranking_list_area {margin-top:12px; padding:6px 10px 17px;}
+	/* .ranking_list {margin-top:12px; padding:6px 10px 17px;} */
+	.ranking_list li {column-gap:12px; padding-top:9px; padding-bottom:9px;}
+	.ranking_list li .number {width:25px; height:25px; font-size:15px;}
+	.ranking_list li .name {font-size:18px;}
+	.ranking_list li .class {font-size:16px;}
+	.ranking_list li .point {width:90px; height:26px; padding-right:8px; line-height:26px; font-size:18px;}
+	.ranking_area .checkbox label {font-size:18px;}
+
+	/*상세*/
+	.book_detail_wrap {padding-top:36px;}
+	.book_info_area {flex-direction:column; align-items:center; gap:25px; width:100%; min-width:auto; padding:0 20px; box-sizing:border-box;}
+	.book_info_area .image_box {width:64.64%; min-width:170px;}
+	.book_info_area .book_info {padding:0;}
+	.book_info_area .book_info .subject {line-height:31px; font-size:25px;}
+	.book_info_area .book_info .series {margin-top:11px; font-size:18px; text-align:center;}
+	.book_info_area .book_info .author {margin-top:22px; font-size:18px; text-align:center;}
+	.book_info_area .btn_wish {right:-50px; width:43px; height:37px;}
+	.book_detail_wrap .title {margin-top:37px; margin-left:20px; margin-bottom:9px; padding-left:24px; line-height:23px; font-size:18px;}
+	.book_detail_wrap .title:nth-of-type(1) {margin-top:20px;}
+	.book_detail_wrap .title .icon {width:28px; height:23px;}
+	.book_detail_wrap .title:nth-of-type(2) .icon {width:16px; height:23px;}
+	.book_detail_wrap .title:nth-of-type(3) .icon {width:19px; height:23px;}
+	.book_detail_wrap .text_box {min-height:130px; font-size:18px; line-height:25px}
+	.book_detail_wrap .info_box {padding-top:14px; padding-bottom:27px;}
+	.book_detail_wrap .info_list {flex-wrap:wrap; row-gap:21px;}
+	.book_detail_wrap .info_item {width:50%;}
+	.book_detail_wrap .info_item:nth-child(3) {border-left:none;}
+	.book_detail_wrap .info_item + .info_item {border-width:1px;}
+	.topic_tag_list {margin-top:30px; padding:0 8px; gap:8px 15px;}
+	.topic_tag_list .tag {padding:4px 11px; font-size:14px; line-height:20px;}
+	.book_area {margin-left:20px;}
+	.book_detail_wrap .book_quiz {height:65px; line-height:65px; font-size:25px;}
+	.book_area .book .book_subject {line-height:22px; font-size:18px;}
+	/*--관리--*/
+	.manage_wrap>.title_box {margin-top:24px;}
+	.manage_wrap .info_box .title_box {padding-left:7px; gap:4px;}
+	.manage_wrap .title_image {width:25px;}
+	.manage_wrap .user_info {margin-left:2px; font-size:14px;}
+	.manage_wrap .info_box {padding-top:13px; padding-bottom:21px;}
+	.manage_wrap .info_list {margin-top:16px;}
+	.manage_wrap .info_list .info_title {font-size:13px;}
+	.manage_wrap .info_list .info_content {margin-top:4px; font-size:16px;}
+	.manage_wrap .info_item {padding-bottom:2px;}
+	.manage_wrap .menu_link_list:first-of-type {margin-top:23px;}
+	.manage_wrap .menu_link .menu_title span {font-size:16px;}
+	.manage_wrap .btn_area {margin-top:50px;}
+	.manage_wrap .btn_logout {line-height:24px; font-size:20px;}
+	.manage_wrap .text_box {margin-top:20px; font-size:18px; line-height:26px;}
+	/*내 포인트*/
+	.manage_wrap .title_explain {margin-top:28px; font-size:20px;}
+	.manage_wrap .point_area {width:100%; min-width:auto;}
+	.manage_wrap .period {padding:0; margin-top:43px;}
+	.manage_wrap .point_list {margin-top:0; border-top-width:11px;}
+	.point_item {padding-top:7px; padding-bottom:4px;}
+	.point_item .point_inner + .point_inner {margin-top:4px;}
+	.point_item .point_title {font-size:17px; line-height:23px;}
+	.point_item .point_amount {font-size:17px; line-height:23px;}
+	.point_item .point_date {font-size:15px; line-height:21px;}
+	.point_item .total_point {font-size:15px; line-height:21px;}
+	.manage_wrap .sub_tab_box {margin-top:10px; margin-bottom:10px;}
+	/*문의 입력 폼*/
+	.inquiry_form_area.inner {padding-left:0; padding-right:0;}
+	.inquiry_input_box {height:41px; border-width:1px;}
+	.inquiry_title {width:auto; flex-shrink:0; padding-left:20px; font-size:16px;}
+	.inquiry_input {padding-right:17px;}
+	.inquiry_input input {font-size:18px;}
+	.inquiry_textarea {padding:19px 20px; border-width:1px;}
+	.inquiry_textarea textarea {height:255px; font-size:18px; line-height:26px;}
+	.inquiry_agree {margin-top:20px; margin-bottom:8px;}
+	.inquiry_agree label {font-size:15px;}
+	.inquiry_agree input[type=checkbox] {width:13px; height:13px; margin-right:4px; vertical-align:middle;}
+	.inquiry_agree .btn_view {top:0; right:20px; font-size:15px;}
+	.inquiry_agree_box.on .btn_view {top:0;}
+	.inquiry_agree_content {padding:19px 22px; font-size:15px; line-height:23px;}
+	.manage_wrap .btn_area {margin-top:20px;}
+	.inquiry_form_area .btn_basic {width:150px; height:40px; line-height:40px; border-radius:20px;}
+	/*탭*/
+	.sub_tab_box .tab {line-height:28px; font-size:18px; border-bottom-width:7px;}
+	/*북퀴즈*/
+	.bookquiz .popup_header {height:83px; background-image:url(../images/sub/bg_bookquiz_header_mo.png)}
+	.bookquiz .popup_header .btn_back {top:28px; left:20px;}
+	.bookquiz .popup_contents {padding-top:22px; padding-bottom:100px;}
+	.bookquiz .popup_footer {padding:16px 0 21px;}
+	.bookquiz .popup_footer .btn_area {padding:0 25px;}
+	.bookquiz .popup_footer .btn_area :is(a,button) span {margin-left:3px; line-height:28px; font-size:22px;}
+	.bookquiz .bookquiz_main {width:auto; padding:0 20px 50px;}
+	.bookquiz .bookquiz_main .image_box {width:43%; min-width:129px; max-width:258px;}
+	.bookquiz .bookquiz_main .subject {margin-top:24px; padding:0 20px; line-height:33px; font-size:25px;}
+	.bookquiz .bookquiz_main .btn_area {margin-top:37px;}
+	.bookquiz .bookquiz_main .btn_basic {width:250px; height:50px; line-height:50px; font-size:25px;}
+	.bookquiz .bookquiz_main .notice_list {margin-top:35px;}
+	.bookquiz .bookquiz_main .notice_list li {font-size:18px; line-height:26px;}
+	.bookquiz .bookquiz_main .notice_list li + li {margin-top:4px;}
+	/*북퀴즈 문제*/
+	.quiz_form {padding-left:25px; padding-right:25px;}
+	.quiz_form .question {line-height:30px; font-size:20px;}
+	.quiz_form .question_data {margin:27px 0 0;}
+	.quiz_form .multiple_choice {margin:0;}
+	.quiz_form .answer_area .answer_item + .answer_item {margin-top:14px;}
+	.quiz_form .answer_area :where(.multiple_choice,.essay_form) {margin-top:35px;}
+	.quiz_form .answer_area .answer_item label {padding-top:10px; padding-bottom:11px; font-size:18px; line-height:26px;}
+	.quiz_form .answer_area .essay_form textarea {height:180px; padding:8px; line-height:26px; font-size:18px;}
+	.quiz_form .attachment {height:180px; margin-top:13px;}
+	.quiz_form .attachment_upload .icon {width:51px; height:52px;}
+	.quiz_form .attachment_upload .upload_text {margin-top:13px; line-height:24px; font-size:18px;}
+	.quiz_form .attachment_upload .upload_text br {display:block;}
+	.quiz_form .notice_text {margin-top:22px; font-size:18px; line-height:26px;}
+	/*퀴즈 문제 풀이*/
+	.book_quiz_result .book_info_area {align-items:center;}
+	.book_quiz_result .book_info_area .image_box {width:34.414%; min-width:120px;}
+	.book_quiz_result .book_info_area .book_badge {bottom:-15px; right:-25px; width:67px; height:79px;}
+	.book_quiz_result .book_info_area .book_info {padding-top:0;}
+	.book_quiz_result .book_info_area .book_info .series {margin-top:25px;}
+	.book_quiz_result .book_info_area .book_info .author {margin-top:15px;}
+	.book_info_area .info_box {margin-top:27px;}
+	.quiz_result_area {margin-top:65px;}
+	.quiz_result_area .result_title_box {top:-15px;}
+	.quiz_result_area .result_title {width:66%; max-width:320px; padding:0; line-height:25px; font-size:16px;}
+	.quiz_result_area .result_title_box:after {top:10px;}
+	.quiz_summary {padding:27px 0 19px;}
+	.quiz_summary dl {gap:20px;}
+	.quiz_summary dl + dl {margin-top:7px;}
+	.quiz_summary dt {width:61px; font-size:16px; line-height:20px;}
+	.quiz_summary dd {font-size:18px; line-height:22px;}
+	.quiz_result {padding:0 25px;}
+	.quiz_result .quiz {margin-top:23px;}
+	.quiz_result .question {font-size:18px; line-height:26px;}
+	.quiz_result .quiz.wrong:before {top:-5px; left:-16px; width:53px; height:45px;}
+	.quiz_result .quiz.correct:before {top:-5px; left:-8px; width:39px; height:41px;}
+	.quiz_result .answer_area {min-height:77px; margin-top:6px;}
+	.quiz_result .answer_box + .answer_box {margin-top:6px;}
+	.quiz_result .answer_title {width:45px; height:20px; line-height:20px; font-size:13px;}
+	.quiz_result .answer_content {line-height:24px; font-size:18px;}
+	/*통과X*/
+	.quiz_pass_fail {padding-top:68px;}
+	.quiz_pass_fail .title {margin-top:20px; font-size:20px; line-height:27px;}
+	.quiz_pass_fail .btn_area {margin-top:26px;}
+	.quiz_pass_fail .btn_area a {width:250px; height:40px; line-height:40px;}
+	.quiz_pass_fail .btn_area a + a {margin-top:13px;}
+	/*추천*/
+	.book_recommend {padding-top:75px;}
+	.book_recommend .title {font-size:20px; line-height:27px;}
+	.book_recommend .btn_area {gap:38px; margin-top:51px;}
+	.btn_recommend {gap:11px;}
+	.btn_recommend .text {font-size:16px;}
+	/*북퀴즈 포트폴리오*/
+	.bookquiz_portfolio .sub_title {line-height:24px; font-size:20px;}
+	.book .think_title {width:80px; height:25px; line-height:25px; font-size:15px; border-radius:13px;}
+	.book .think_box .question {margin-top:6px; line-height:24px; font-size:18px;}
+	.book .think_box .answer {left:-20px; width:calc(100% + 40px); margin-top:6px; padding:8px 20px 12px; line-height:24px; font-size:18px;}
+
+}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="../../css/normalize.css">
+	<link rel="stylesheet" href="../../css/common.css">
+	<link rel="stylesheet" href="../../css/sub.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+	<script src="../../js/common.js"></script>
+	<title>나노의책장</title>
+</head>
+<body>
+    <div id="wrap">
+        <header></header>
+
+        <div class="contents">
+			<!-- 북퀴즈 문제 -->
+			<div class="full_popup bookquiz">
+				<!-- popup header -->
+				<div class="popup_header">
+					<div class="inner">
+						<a href="#" class="btn_back"><i class="icon_back"></i>이전</a>
+						<h2 class="header_title">북퀴즈</h2>
+					</div>
+				</div>
+				<!-- // popup header -->
+                
+				<!-- popup contents -->
+                <div class="popup_contents">
+                    <div class="quiz_form inner">
+                        <!-- 문제-->
+                        <div class="question">
+                            <span class="number">1.</span>아래는 디즈니 애니메이션 <인어공주>의 한 부분입니다.
+                        </div>
+                        <!-- //문제-->
+                        <div class="question_data"><img src="../../images/sub/quiz_data.jpg" alt=""></div>
+                        <div class="answer_area">
+                            <!-- 주관식 -->
+                            <div class="essay_form">
+                                <textarea name="" placeholder="정답을 입력해 주세요."></textarea>
+                                <button class="btn_mic"></button>
+                            </div>
+                            <!-- // 주관식 -->
+
+                            <!-- 첨부파일 -->
+                            <div class="attachment">
+                                <label class="attachment_upload">
+                                    <input type="file">
+                                    <i class="icon"></i>
+                                    <span class="upload_text">직접 종이에 쓴 생각을 <br>사진으로 찍어 올릴 수 있어요.</span>
+                                </label>
+                            </div>
+                            <!-- // 첨부파일 -->
+                        </div>
+                        <span class="notice_text">※ 생각담기 문제는 채점에 포함되지 않아요.</span>
+                    </div>
+                </div>
+				<!-- // popup contents -->
+                
+				<!-- popup footer -->
+                <div class="popup_footer">
+                    <div class="btn_area">
+                        <a href="#" class="btn_back"><i class="icon_back"></i><span>이전</span></a>
+                        <a href="#" class="btn_next"><span>답변제출</span><i class="icon_back"></i></a>
+                    </div>
+                </div>
+				<!-- // popup footer -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="../../css/normalize.css">
+	<link rel="stylesheet" href="../../css/common.css">
+	<link rel="stylesheet" href="../../css/sub.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+	<script src="../../js/common.js"></script>
+	<title>나노의책장</title>
+</head>
+<body>
+	<div id="wrap">
+		<!-- header -->
+		<header class="sub_header">
+			<div class="inner">
+				<h2 class="header_title">로그인</h2>
+			</div>
+		</header>
+		<!-- // header -->
+
+		<!-- contents -->
+		<div class="contents" id="contents">
+			<div class="login form_wrap">
+				<h1 class="logo"><img src="../../images/common/logo.png" alt=""></h1>
+				<ul class="form_area">
+					<li class="form_box"><div class="input_box"><input type="text" placeholder="아이디를 입력해 주세요."></div></li>
+					<li class="form_box">
+						<div class="input_box"><input type="password" placeholder="비밀번호를 입력해 주세요."><button class="input_view">비밀번호 보기</button><!-- <button class="input_view on">비밀번호 보기</button>--></div>
+					</li>
+				</ul>
+				<div class="login_utils">
+					<div class="checkbox"><input type="checkbox" id="check1"><label for="check1">아이디 저장</label></div>
+					<div class="checkbox"><input type="checkbox" id="check2"><label for="check2">자동 로그인</label></div>
+				</div>
+				<button class="btn_basic open_confirm">로그인</button>
+				<div class="notice_text">※로그인 정보는 담당 선생님께 문의해 주세요.</div>
+			</div>
+
+			<!-- 알림 팝업 -->
+			<div class="layer_popup_wrap confirm">
+				<div class="layer_popup">
+					<div class="popup_contents">
+						<div class="popup_text">비밀번호가 일치하지 않습니다.</div>
+					</div>
+					<div class="popup_btn_area">
+						<a href="#" class="btn popup_close">확 인</a>
+					</div>
+				</div>
+			</div>
+			<!-- // 알림 팝업 -->
+
+		</div>
+		<!-- // contents -->
+
+	</div>
+</body>
+</html>

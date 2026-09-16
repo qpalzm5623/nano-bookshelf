@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="../../css/normalize.css">
+	<link rel="stylesheet" href="../../css/common.css">
+	<link rel="stylesheet" href="../../css/sub.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+	<script src="../../js/common.js"></script>
+	<title>나노의책장</title>
+</head>
+<body>
+	<div id="wrap">
+		<!-- header -->
+		<header class="sub_header">
+			<div class="inner">
+				<a href="#" class="btn_back"><i class="icon_back"></i>이전</a>
+				<h2 class="header_title">검색</h2>
+				<a href="#" class="btn_info"><i class="icon_info"></i>정보</a>
+			</div>
+		</header>
+
+		<!-- contents -->
+		<div id="contents" class="contents">
+			<div class="search_wrap">
+				<div class="inner">
+					<div class="input_box">
+						<input type="text" placeholder="도서명, 지은이, 출판사를 검색하세요.">
+						<button class="input_search"><i class="icon_search_orange"></i>검색</button>
+					</div>
+					<div class="resent_search_area width_full">
+						<div class="resent_search_box swiper-wrapper">
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+							<div class="swiper-slide">
+								<a href="#" class="search_word">최근검색어</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<!-- 결과없음 -->
+				<div class="no_data">
+					<i class="icon_no_data"></i>
+					<span class="no_data_text">검색 결과가 없습니다.</span>
+				</div>
+				<!-- //결과없음 -->
+				
+				<!-- 검색 결과 -->
+				<div class="list_set_up">
+					<div class="inner">
+						<span class="count">총 N권</span>
+						<!-- 정렬 -->
+						<div class="sort_box">
+							<select name="" class="select">
+								<option selected>학년별</option>
+								<option value="">1학년</option>
+								<option value="">2학년</option>
+								<option value="">3학년</option>
+								<option value="">4학년</option>
+							</select>
+							<span class="icon_arrow"></span>
+						</div>
+						<!-- // 정렬  -->
+						<div class="list_view_type" data-list=".book_list">
+							<a href="#" class="btn_list_type list on" data-type="type_list">리스트형</a>
+							<a href="#" class="btn_list_type album" data-type="type_album">앨범형</a>
+						</div>
+					</div>
+				</div>
+
+				<div class="inner">
+					<ul class="book_list basic_list type_album">
+						<li class="book">
+							<div class="image_box">
+								<a href="#"><img src="../../images/common/no_image.png" alt=""></a>
+								<a href="#" class="btn_wish">wish</a>
+							</div>
+							<div class="book_content">
+								<a href="#" class="book_subject ellipsis_multi">제목제제목제목제목제목제목제목목제목제목제제목제제목제목제목제목제목제목목제목제목제목제목목제목</a>
+								<ul class="book_info">
+									<li>지은이</li>
+									<li>출판사</li>
+									<li>출제자</li>
+								</ul>
+							</div>
+						</li>
+						<li class="book">
+							<div class="image_box">
+								<a href="#"><img src="../../images/common/no_image.png" alt=""></a>
+								<a href="#" class="btn_wish">wish</a>
+							</div>
+							<div class="book_content">
+								<a href="#" class="book_subject ellipsis_multi">제목제제목제목제목제목제목제목목제목제목제제목제제목제목제목제목제목제목목제목제목제목제목목제목</a>
+								<ul class="book_info">
+									<li>지은이</li>
+									<li>출판사</li>
+									<li>출제자</li>
+								</ul>
+							</div>
+						</li>
+						<li class="book">
+							<div class="image_box">
+								<a href="#"><img src="../../images/common/no_image.png" alt=""></a>
+								<a href="#" class="btn_wish">wish</a>
+							</div>
+							<div class="book_content">
+								<a href="#" class="book_subject ellipsis_multi">제목제제목제목제목제목제목제목목제목제목제제목제제목제목제목제목제목제목목제목제목제목제목목제목</a>
+								<ul class="book_info">
+									<li>지은이</li>
+									<li>출판사</li>
+									<li>출제자</li>
+								</ul>
+							</div>
+						</li>
+						<li class="book">
+							<div class="image_box">
+								<a href="#"><img src="../../images/common/no_image.png" alt=""></a>
+								<a href="#" class="btn_wish on">wish</a>
+							</div>
+							<div class="book_content">
+								<a href="#" class="book_subject ellipsis_multi">제목제목제목제제목제목제목제목제목제목목제목제목</a>
+								<ul class="book_info">
+									<li>지은이</li>
+									<li>출판사</li>
+									<li>출제자</li>
+								</ul>
+							</div>
+						</li>
+						<li class="book">
+							<div class="image_box">
+								<a href="#"><img src="../../images/common/no_image.png" alt=""></a>
+								<a href="#" class="btn_wish on">wish</a>
+							</div>
+							<div class="book_content">
+								<a href="#" class="book_subject ellipsis_multi">제목제목제목제제목제목제목제목제목제목목제목제목</a>
+								<ul class="book_info">
+									<li>지은이</li>
+									<li>출판사</li>
+									<li>출제자</li>
+								</ul>
+							</div>
+						</li>
+					</ul>
+				</div>
+				<!-- // 검색 결과 -->
+			</div>
+		</div>
+		<!-- //contents -->
+
+		<!-- navigation -->
+		<nav class="nav">
+			<ul class="nav_list">
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">홈</span>
+					</a>
+				</li>
+				<li class="nav_item on">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">검색</span>
+					</a>
+				</li>
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">랭킹</span>
+					</a>
+				</li>
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">책장</span>
+					</a>
+				</li>
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">관리</span>
+					</a>
+				</li>
+			</ul>
+		</nav>
+		<!-- //navigation -->
+	</div>
+
+	<script>
+		$(function() {
+			const certifiedBook = new Swiper('.resent_search_area', {
+				slidesPerView: 'auto',
+      	spaceBetween: 7,
+				loop: false,
+				breakpoints: {
+					340: {
+						// slidesPerView: 2.9,
+						spaceBetween: 4,
+					},
+					759: {
+						// slidesPerView: 3.7,
+						spaceBetween: 7,
+					},
+				}
+			});
+		})
+	</script>
+</body>
+</html>

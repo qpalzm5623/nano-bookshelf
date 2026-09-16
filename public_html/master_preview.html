@@ -1,0 +1,2341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>나노의 책장 - B2B 마스터 관리자 포털</title>
+
+  <!-- Google Fonts: Gowun Dodum (둥근 한글), Nunito (둥근 영문), Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Bootstrap 4.6 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+  <style>
+    :root {
+      /* 심플 & 웜 베이지 테마 토큰 */
+      --bg-base: #f7f4ee;           /* 부드러운 린넨 베이지 배경 */
+      --bg-surface: #ffffff;        /* 깔끔한 화이트 카드 */
+      --bg-subtle: #fbf9f5;         /* 사이드바 및 보조 베이지 */
+      --bg-hover: #f1ede3;          /* 호버 시 연한 베이지 */
+      --border-light: #e8e2d5;      /* 은은한 베이지 경계선 */
+      --border-medium: #d8cebf;     /* 구분선 및 테두리 */
+      
+      --text-main: #2e2620;         /* 편안하고 선명한 다크 모카 */
+      --text-muted: #786d63;        /* 웜 그레이 보조 텍스트 */
+      --text-soft: #a09589;         /* 연한 캡션 텍스트 */
+      
+      --btn-primary: #3d342d;       /* 차분한 딥 모카 메인 버튼 */
+      --btn-primary-hover: #29221d; 
+      --btn-secondary: #eee8dd;     /* 소프트 오트밀 서브 버튼 */
+      --btn-secondary-text: #4a4037;
+      
+      --badge-neutral-bg: #efebe2;  /* 뉴트럴 뱃지 */
+      --badge-neutral-text: #594e44;
+      --badge-success-bg: #eaf0eb;  /* 세이지 그린 뱃지 */
+      --badge-success-text: #2f5436;
+      --badge-warn-bg: #f5ede1;     /* 웜 샌드 뱃지 */
+      --badge-warn-text: #7d5a2b;
+      --badge-danger-bg: #fbeae8;   /* 소프트 로즈 뱃지 */
+      --badge-danger-text: #962a22;
+      --badge-master-bg: #4a3b32;   /* 마스터 전용 딥 브라운 */
+      --badge-master-text: #f9f5f0;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Nunito', 'Gowun Dodum', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      letter-spacing: -0.2px;
+    }
+
+    /* 0. 상단 B2B 역할 전환 바 (Global Role Switcher) */
+    .role-switcher-bar {
+      background: #2b231d;
+      color: #ede4d8;
+      padding: 6px 28px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #3d342d;
+    }
+    .role-badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .role-badge-btn {
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-decoration: none !important;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .role-badge-btn.active {
+      background: #e6b980;
+      color: #2b231d;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .role-badge-btn:not(.active) {
+      background: rgba(255,255,255,0.08);
+      color: #c9bfb5;
+    }
+    .role-badge-btn:not(.active):hover {
+      background: rgba(255,255,255,0.18);
+      color: #ffffff;
+    }
+
+    /* 상단 미니멀 네비게이션 */
+    .top-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-light);
+      padding: 13px 28px;
+      color: var(--text-main);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: #3d342d;
+      color: #f7f4ee;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-right: 12px;
+      box-shadow: 0 2px 6px rgba(40,30,20,0.15);
+    }
+    .brand-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-left: 6px;
+    }
+
+    /* 레이아웃 구조 */
+    .app-container {
+      display: flex;
+      min-height: calc(100vh - 100px);
+    }
+
+    /* 좌측 사이드바 */
+    .simple-sidebar {
+      width: 255px;
+      background: var(--bg-subtle);
+      border-right: 1px solid var(--border-light);
+      padding: 22px 14px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-soft);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin: 16px 10px 8px;
+    }
+    .nav-item-btn {
+      display: flex;
+      align-items: center;
+      padding: 11px 14px;
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-decoration: none !important;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .nav-item-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+    .nav-item-btn.active {
+      background: #ece5d9;
+      color: var(--text-main);
+      font-weight: 700;
+      border: 1px solid var(--border-medium);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+    .nav-item-btn i {
+      width: 22px;
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-right: 10px;
+      text-align: center;
+    }
+    .nav-item-btn.active i {
+      color: var(--text-main);
+    }
+
+    /* 메인 작업 영역 */
+    .main-workspace {
+      flex: 1;
+      padding: 26px 36px;
+      overflow-y: auto;
+    }
+
+    /* 공통 카드 */
+    .simple-card {
+      background: var(--bg-surface);
+      border-radius: 16px;
+      border: 1px solid var(--border-light);
+      box-shadow: 0 3px 12px rgba(60, 50, 40, 0.04);
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: box-shadow 0.2s ease;
+    }
+    .simple-card:hover {
+      box-shadow: 0 6px 18px rgba(60, 50, 40, 0.06);
+    }
+
+    /* 헤더 바 */
+    .workspace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .workspace-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      letter-spacing: -0.5px;
+    }
+    .workspace-title i {
+      color: var(--text-muted);
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    .workspace-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* 버튼 스타일 */
+    .btn-beige-primary {
+      background: var(--btn-primary);
+      color: #ffffff;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 9px 18px;
+      border: none;
+      font-size: 13.5px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-beige-primary:hover {
+      background: var(--btn-primary-hover);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .btn-beige-secondary {
+      background: var(--btn-secondary);
+      color: var(--btn-secondary-text);
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 9px 16px;
+      border: 1px solid var(--border-medium);
+      font-size: 13.5px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-beige-secondary:hover {
+      background: #e4dcce;
+      color: var(--text-main);
+    }
+
+    /* 테이블 스타일 */
+    .simple-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .simple-table th {
+      background: #fbf9f5;
+      color: var(--text-main);
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border-medium);
+      text-align: center;
+    }
+    .simple-table td {
+      padding: 13px 16px;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--border-light);
+      font-size: 13.5px;
+      color: var(--text-main);
+    }
+    .simple-table tr:hover td {
+      background: #faf8f3;
+    }
+
+    /* 뱃지 */
+    .badge-soft {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .badge-soft-neutral { background: var(--badge-neutral-bg); color: var(--badge-neutral-text); }
+    .badge-soft-success { background: var(--badge-success-bg); color: var(--badge-success-text); }
+    .badge-soft-warn    { background: var(--badge-warn-bg);    color: var(--badge-warn-text); }
+    .badge-soft-danger  { background: var(--badge-danger-bg);  color: var(--badge-danger-text); }
+    .badge-soft-master  { background: var(--badge-master-bg);  color: var(--badge-master-text); }
+
+    /* 대시보드 통계 카드 */
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: left;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);
+    }
+    .stat-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stat-num {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text-main);
+    }
+    .stat-sub {
+      font-size: 11.5px;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
+    .stat-icon-bg {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      font-size: 38px;
+      color: rgba(60, 50, 40, 0.05);
+    }
+
+    /* 검색 & 필터 바 */
+    .filter-bar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+    .search-input-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-soft);
+      font-size: 13px;
+    }
+    .form-control-beige {
+      border: 1px solid var(--border-medium);
+      background: #fdfcf9;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-main);
+      padding: 8px 14px 8px 36px;
+      height: 38px;
+    }
+    .form-control-beige:focus {
+      background: #ffffff;
+      border-color: #8c765c;
+      box-shadow: 0 0 0 3px rgba(140, 118, 92, 0.15);
+      color: var(--text-main);
+    }
+    .select-beige {
+      border: 1px solid var(--border-medium);
+      background: #fdfcf9;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-main);
+      padding: 6px 12px;
+      height: 38px;
+    }
+
+    /* 슬롯 프로그레스 바 */
+    .slot-progress-wrap {
+      background: #eee8dd;
+      border-radius: 8px;
+      height: 8px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .slot-progress-fill {
+      height: 100%;
+      background: #5a4b3d;
+      border-radius: 8px;
+      transition: width 0.3s;
+    }
+    .slot-progress-fill.warn {
+      background: #c27d2c;
+    }
+    .slot-progress-fill.danger {
+      background: #b33927;
+    }
+
+    /* 모달 커스텀 */
+    .modal-content-beige {
+      background: #ffffff;
+      border: 1px solid var(--border-medium);
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(40, 30, 20, 0.18);
+      overflow: hidden;
+    }
+    .modal-header-beige {
+      background: #fbf9f5;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 24px;
+    }
+
+    /* 카카오 알림톡 프리뷰 박스 */
+    .kakao-preview-card {
+      background: #fcee53;
+      border-radius: 14px;
+      padding: 16px;
+      max-width: 320px;
+      margin: 0 auto;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      color: #222;
+      font-size: 12.5px;
+    }
+    .kakao-inner-sheet {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.6;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* 롤링 배너 관리 프리뷰 카드 */
+    .banner-preview-box {
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 16px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+    .banner-preview-box:hover {
+      border-color: var(--border-medium);
+      box-shadow: 0 4px 16px rgba(90, 75, 61, 0.06);
+    }
+    .banner-img-thumb {
+      width: 148px;
+      height: 78px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #eee8dd;
+      border: 1px solid var(--border-medium);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .banner-img-thumb:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .banner-thumb-hover-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.38);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+    }
+    .banner-img-thumb:hover .banner-thumb-hover-overlay {
+      opacity: 1;
+    }
+
+    /* 마스터 도서/퀴즈 모달 서브 탭 & 퀴즈 번호 칩 */
+    .modal-tab-btn {
+      padding: 10px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-tab-btn.active {
+      color: var(--theme-brown);
+      border-bottom: 2px solid var(--theme-brown);
+    }
+    .modal-tab-btn:hover:not(.active) {
+      color: var(--text-main);
+    }
+    .quiz-num-pill {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: 1px solid var(--border-medium);
+      background: #fbf9f5;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quiz-num-pill.active {
+      background: #5a4b3d;
+      color: #ffffff;
+      border-color: #5a4b3d;
+    }
+    .quiz-num-pill:hover:not(.active) {
+      background: #f0eae1;
+      color: var(--text-main);
+    }
+    .sym-btn-compact {
+      border: 1px solid var(--border-medium);
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      margin: 2px;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .sym-btn-compact:hover {
+      background: #eee8dd;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 0. B2B 글로벌 역할 전환 바 -->
+<div class="role-switcher-bar">
+  <div class="d-flex align-items-center">
+    <i class="fa-solid fa-layer-group mr-2 text-warning"></i>
+    <span class="font-weight-bold mr-3">나노의 책장 B2B 환경 :</span>
+    <div class="role-badges">
+      <a href="master_preview.html" class="role-badge-btn active">
+        <i class="fa-solid fa-crown"></i> 1. 마스터 관리자 (본사)
+      </a>
+      <a href="admin_preview.html" class="role-badge-btn">
+        <i class="fa-solid fa-school"></i> 2. 학원 관리자 (가맹점)
+      </a>
+      <a href="#" class="role-badge-btn" onclick="previewStudentPortal(); return false;">
+        <i class="fa-solid fa-graduation-cap"></i> 3. 학생 페이지 (체험)
+      </a>
+    </div>
+  </div>
+  <div class="d-none d-md-flex align-items-center" style="font-size: 11.5px; color: #bcaea2;">
+    <span class="mr-3"><i class="fa-solid fa-shield-halved mr-1"></i>최고 권한: Super Admin</span>
+    <span>서버 상태: <strong class="text-success">정상 운영중 (v2.4-b2b)</strong></span>
+  </div>
+</div>
+
+<!-- 1. 심플 탑 헤더 -->
+<header class="top-header d-flex justify-content-between align-items-center">
+  <div class="brand-logo-wrap">
+    <div class="brand-icon">
+      <i class="fa-solid fa-crown"></i>
+    </div>
+    <div>
+      <span class="brand-title">나노의 책장</span>
+      <span class="brand-sub">| &nbsp;B2B 마스터 관리자 시스템 (HQ)</span>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center">
+    <div class="mr-4 text-right d-none d-sm-block">
+      <span class="badge-soft badge-soft-master mr-1" style="font-size: 11px;">
+        <i class="fa-solid fa-building mr-1"></i>본사 총괄
+      </span>
+      <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">마스터 운영자님</span>
+      <small style="color: var(--text-muted); display: block; font-size: 11px;">master@nanobook.co.kr</small>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-sm btn-outline-secondary" onclick="exportPlatformData()" style="border-radius: 10px; font-size: 12.5px; padding: 6px 14px; border-color: var(--border-medium); color: var(--text-muted);">
+        <i class="fa-solid fa-download mr-1"></i>데이터 백업
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="app-container">
+
+  <!-- 2. 좌측 마스터 사이드바 (6대 모듈 네비게이션) -->
+  <aside class="simple-sidebar">
+    <div class="sidebar-section-title">가맹 및 회원 관리</div>
+
+    <a class="nav-item-btn active" id="nav-master-franchise" onclick="switchMasterTab('franchise')">
+      <i class="fa-solid fa-building-columns"></i>
+      <span>가맹점 관리</span>
+    </a>
+
+    <a class="nav-item-btn" id="nav-master-members" onclick="switchMasterTab('members')">
+      <i class="fa-solid fa-users-gear"></i>
+      <span>통합 회원 관리</span>
+    </a>
+
+    <div class="sidebar-section-title" style="margin-top: 20px;">운영 & 랭킹</div>
+
+    <a class="nav-item-btn" id="nav-master-operations" onclick="switchMasterTab('operations')">
+      <i class="fa-solid fa-sliders"></i>
+      <span>서비스 운영 관리</span>
+    </a>
+
+    <a class="nav-item-btn" id="nav-master-ranking" onclick="switchMasterTab('ranking')">
+      <i class="fa-solid fa-trophy"></i>
+      <span>전국 랭킹 시스템</span>
+    </a>
+
+    <div class="sidebar-section-title" style="margin-top: 20px;">콘텐츠 & 알림</div>
+
+    <a class="nav-item-btn" id="nav-master-contents" onclick="switchMasterTab('contents')">
+      <i class="fa-solid fa-book-atlas"></i>
+      <span>마스터 콘텐츠 관리</span>
+    </a>
+
+    <a class="nav-item-btn" id="nav-master-dispatch" onclick="switchMasterTab('dispatch')">
+      <i class="fa-solid fa-comment-dots"></i>
+      <span>카톡 발송 내역 <small class="text-muted">(알리고)</small></span>
+    </a>
+
+    <!-- 하단 라이선스/알리고 잔여 크레딧 요약 -->
+    <div class="mt-auto pt-3 border-top" style="border-color: var(--border-light) !important;">
+      <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">
+        <i class="fa-solid fa-wallet text-warning mr-1"></i>알리고 잔여 캐시
+      </div>
+      <div class="d-flex justify-content-between align-items-center">
+        <span style="font-size: 14px; font-weight: 800; color: var(--text-main);" id="sidebarAligoCash">854,200원</span>
+        <button class="btn btn-xs btn-outline-secondary" onclick="openAligoChargeModal()" style="font-size: 10.5px; padding: 2px 8px; border-radius: 6px;">충전</button>
+      </div>
+      <small style="color: var(--text-soft); font-size: 10.5px; display: block; margin-top: 2px;">약 42,710건 발송 가능</small>
+    </div>
+  </aside>
+
+  <!-- 3. 메인 작업 영역 (6대 탭 컨테이너) -->
+  <main class="main-workspace">
+
+    <!-- ========================================================
+         TAB 1. 가맹점 관리 (Franchise Management)
+         ======================================================== -->
+    <section id="tab-master-franchise" class="master-tab-view">
+      <!-- 헤더 & 액션 -->
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-building-columns"></i>가맹점(학원) 관리
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 독서학원의 계약 기간, 학생 정원(슬롯) 제한, 월별 결제 현황을 총괄 관리합니다.
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-beige-secondary" onclick="exportFranchiseExcel()">
+            <i class="fa-solid fa-file-excel"></i>가맹점 명단 다운로드
+          </button>
+          <button class="btn-beige-primary" onclick="openAcademyRegisterModal()">
+            <i class="fa-solid fa-plus"></i>신규 가맹 학원 등록
+          </button>
+        </div>
+      </div>
+
+      <!-- 상단 요약 통계 카드 (4분할) -->
+      <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">총 가맹 학원 수 <i class="fa-solid fa-school text-muted"></i></div>
+            <div class="stat-num" id="statFranchiseTotal">14<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span></div>
+            <div class="stat-sub"><span class="text-success font-weight-bold">정상 운영 12</span> / 일시정지 2</div>
+            <i class="fa-solid fa-building stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">등록 원생 / 계약 슬롯 <i class="fa-solid fa-users text-muted"></i></div>
+            <div class="stat-num" id="statFranchiseSlots">642 <span style="font-size: 15px; font-weight: 600; color: var(--text-muted);">/ 750명</span></div>
+            <div class="stat-sub">슬롯 사용률 <strong class="text-primary font-weight-bold">85.6%</strong></div>
+            <i class="fa-solid fa-user-check stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">계약 만료 임박(30일내) <i class="fa-solid fa-clock text-warning"></i></div>
+            <div class="stat-num text-warning" id="statFranchiseExpiring">2<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span></div>
+            <div class="stat-sub">갱신 안내 카톡 발송 필요</div>
+            <i class="fa-solid fa-hourglass-half stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">당월 결제 현황 <i class="fa-solid fa-receipt text-muted"></i></div>
+            <div class="stat-num" id="statFranchiseBilling">4,620<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">만원</span></div>
+            <div class="stat-sub"><span class="text-success font-weight-bold">완납 13</span> / <span class="text-danger font-weight-bold">미납 1건</span></div>
+            <i class="fa-solid fa-credit-card stat-icon-bg"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 & 검색 바 (운영상태 및 결제상태 셀렉트를 검색창 좌측으로 배치) -->
+      <div class="filter-bar">
+        <div>
+          <select id="franchiseStatusFilter" class="select-beige" onchange="filterFranchiseList()">
+            <option value="ALL">전체 운영 상태</option>
+            <option value="ACTIVE">정상 운영중</option>
+            <option value="EXPIRING">계약 만료 임박</option>
+            <option value="PAUSED">일시 정지</option>
+            <option value="TERMINATED">해지 완료</option>
+          </select>
+        </div>
+        <div>
+          <select id="franchisePaymentFilter" class="select-beige" onchange="filterFranchiseList()">
+            <option value="ALL">전체 결제 상태</option>
+            <option value="PAID">결제 완료</option>
+            <option value="UNPAID">미납 / 연체</option>
+          </select>
+        </div>
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="franchiseSearchInput" class="form-control form-control-beige" placeholder="학원명, 원장님 성함, 지역, 사업자번호 검색..." onkeyup="filterFranchiseList()">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetFranchiseFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
+          <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+        </button>
+      </div>
+
+      <!-- 가맹점 테이블 카드 -->
+      <div class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+            <i class="fa-solid fa-list-check mr-2 text-muted"></i>가맹 학원 목록 (<span id="franchiseFilteredCount">14</span>개소)
+          </span>
+          <small class="text-muted">* 학생 수가 계약 슬롯에 도달하면 신규 학생 가입이 자동 제한됩니다.</small>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">코드</th>
+                <th style="text-align: left;">가맹 학원명</th>
+                <th>원장명 / 연락처</th>
+                <th>계약 기간</th>
+                <th style="width: 170px;">원생 수 / 계약 슬롯</th>
+                <th>월 결제 금액</th>
+                <th>결제 상태</th>
+                <th>가맹 상태</th>
+                <th style="width: 140px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="franchiseTableBody">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 2. 통합 회원 관리 (Universal Member Management)
+         ======================================================== -->
+    <section id="tab-master-members" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-users-gear"></i>전국 통합 회원 관리
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 학원에서 생성된 원장님, 선생님, 학생 계정을 일괄 모니터링하고 상태를 제어합니다.
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-beige-secondary" onclick="bulkResetPassword()">
+            <i class="fa-solid fa-key"></i>선택 계정 임시비밀번호 발급
+          </button>
+        </div>
+      </div>
+
+      <!-- 상단 요약 카드 -->
+      <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">전체 등록 회원 <i class="fa-solid fa-users text-muted"></i></div>
+            <div class="stat-num" id="statMemberTotal">712<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
+            <div class="stat-sub">원장 14 / 교사 56 / 학생 642</div>
+            <i class="fa-solid fa-address-book stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">주간 활성 학생(WAU) <i class="fa-solid fa-book-reader text-success"></i></div>
+            <div class="stat-num text-success" id="statMemberActive">588<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
+            <div class="stat-sub">전체 학생 대비 <strong class="font-weight-bold">91.5%</strong> 참여</div>
+            <i class="fa-solid fa-user-check stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">누적 누적 완독 도서 <i class="fa-solid fa-book text-muted"></i></div>
+            <div class="stat-num" id="statMemberReadCount">12,480<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
+            <div class="stat-sub">1인당 평균 19.4권 완독</div>
+            <i class="fa-solid fa-bookmark stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">이용 정지 / 휴면 회원 <i class="fa-solid fa-user-slash text-danger"></i></div>
+            <div class="stat-num text-danger" id="statMemberDormant">8<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
+            <div class="stat-sub">퇴원 및 정지 처리 계정</div>
+            <i class="fa-solid fa-user-xmark stat-icon-bg"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 바 (학원, 권한, 상태 드롭다운을 검색창 좌측으로 배치) -->
+      <div class="filter-bar">
+        <div>
+          <select id="memberAcademyFilter" class="select-beige" onchange="filterMemberList()">
+            <option value="ALL">전체 학원</option>
+            <!-- JS로 동적 주입 -->
+          </select>
+        </div>
+        <div>
+          <select id="memberRoleFilter" class="select-beige" onchange="filterMemberList()">
+            <option value="ALL">전체 권한</option>
+            <option value="DIRECTOR">원장님</option>
+            <option value="TEACHER">선생님</option>
+            <option value="STUDENT">학생 (원생)</option>
+          </select>
+        </div>
+        <div>
+          <select id="memberStatusFilter" class="select-beige" onchange="filterMemberList()">
+            <option value="ALL">전체 상태</option>
+            <option value="NORMAL">정상</option>
+            <option value="PAUSED">이용정지</option>
+          </select>
+        </div>
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="memberSearchInput" class="form-control form-control-beige" placeholder="이름, 아이디, 소속 학원명, 연락처 검색..." onkeyup="filterMemberList()">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetMemberFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
+          <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+        </button>
+      </div>
+
+      <!-- 통합 회원 테이블 카드 -->
+      <div class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+            <i class="fa-solid fa-users mr-2 text-muted"></i>회원 계정 리스트 (<span id="memberFilteredCount">0</span>명)
+          </span>
+          <small class="text-muted">* 원장님 및 선생님 계정은 해당 가맹 학원 등록 시 생성됩니다.</small>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">번호</th>
+                <th style="text-align: left;">소속 가맹 학원</th>
+                <th>등급 권한</th>
+                <th style="text-align: left;">이름 (아이디)</th>
+                <th>학년 / 직책</th>
+                <th>연락처</th>
+                <th>누적 포인트</th>
+                <th>최근 접속일</th>
+                <th>계정 상태</th>
+                <th style="width: 130px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="memberTableBody">
+              <!-- JS 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 3. 서비스 운영 관리 (Operation Management)
+         ======================================================== -->
+    <section id="tab-master-operations" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-sliders"></i>서비스 운영 관리
+          </div>
+          <div class="workspace-subtitle">
+            학생 페이지의 메인 롤링 배너, 추천 도서 큐레이션 테마, 공지사항을 중앙에서 통제합니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- 운영 관리 서브 탭 -->
+      <div class="mb-4">
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-beige-primary" id="btn-op-banners" onclick="switchOpSubTab('banners')">
+            <i class="fa-solid fa-images mr-1"></i>학생 메인 배너 관리
+          </button>
+          <button type="button" class="btn btn-beige-secondary" id="btn-op-themes" onclick="switchOpSubTab('themes')">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>도서 큐레이션 테마
+          </button>
+          <button type="button" class="btn btn-beige-secondary" id="btn-op-notices" onclick="switchOpSubTab('notices')">
+            <i class="fa-solid fa-bullhorn mr-1"></i>전체 공지사항
+          </button>
+        </div>
+      </div>
+
+      <!-- 서브탭 1: 학생 메인 배너 관리 -->
+      <div id="op-sub-banners">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="font-weight-bold mb-0 text-muted">
+            <i class="fa-solid fa-tv mr-2"></i>학생 로그인 홈 메인 롤링 배너 (<span id="bannerCount">3</span>개 활성)
+          </h6>
+          <button class="btn-beige-primary" onclick="openBannerModal()">
+            <i class="fa-solid fa-plus"></i>신규 배너 등록
+          </button>
+        </div>
+
+        <div id="bannerListContainer">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 서브탭 2: 도서 큐레이션 테마 -->
+      <div id="op-sub-themes" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="font-weight-bold mb-0 text-muted">
+            <i class="fa-solid fa-bookmark mr-2"></i>학생 탐색용 추천 도서 테마 큐레이션
+          </h6>
+          <button class="btn-beige-primary" onclick="openThemeModal()">
+            <i class="fa-solid fa-plus"></i>신규 테마 생성
+          </button>
+        </div>
+
+        <div class="row" id="themeCardContainer">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 서브탭 3: 전체 공지사항 -->
+      <div id="op-sub-notices" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="font-weight-bold mb-0 text-muted">
+            <i class="fa-solid fa-bullhorn mr-2"></i>플랫폼 시스템 공지 및 점검 팝업 관리
+          </h6>
+          <button class="btn-beige-primary" onclick="openNoticeModal()">
+            <i class="fa-solid fa-plus"></i>신규 공지 작성
+          </button>
+        </div>
+
+        <div class="simple-card">
+          <div class="table-responsive">
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">번호</th>
+                  <th style="text-align: left;">공지 제목</th>
+                  <th>대상</th>
+                  <th>팝업 여부</th>
+                  <th>등록일</th>
+                  <th>상태</th>
+                  <th style="width: 120px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="noticeTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 4. 전국 랭킹 시스템 (Ranking System)
+         ======================================================== -->
+    <section id="tab-master-ranking" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-trophy"></i>전국 랭킹 시스템
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 학원의 원생들이 학습하며 획득한 포인트를 실시간 집계하여 명예의 전당을 구성합니다.
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-beige-secondary" onclick="openPointPolicyModal()">
+            <i class="fa-solid fa-gear"></i>포인트/뱃지 지급 정책
+          </button>
+        </div>
+      </div>
+
+      <!-- 상단 TOP 3 명예의 전당 하이라이트 -->
+      <div class="row mb-4">
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="stat-card text-center" style="border: 2px solid #e6b980; background: linear-gradient(180deg, #fffcf7 0%, #ffffff 100%);">
+            <div style="font-size: 28px; margin-bottom: 4px;">🥇</div>
+            <span class="badge-soft badge-soft-warn mb-2 font-weight-bold">전국 1위 (명예의 전당)</span>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top1Name">김태윤 학생</h5>
+            <small class="text-muted d-block mb-3" id="top1Academy">나노 독서아카데미 목동본원 (초6)</small>
+            <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
+              <span style="font-size: 20px; font-weight: 900; color: #7d5a2b;" id="top1Points">4,850 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">완독 42권 · 퀴즈 정답률 98%</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="stat-card text-center" style="border: 1px solid #d5dbdb; background: #ffffff;">
+            <div style="font-size: 28px; margin-bottom: 4px;">🥈</div>
+            <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold">전국 2위</span>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top2Name">이서현 학생</h5>
+            <small class="text-muted d-block mb-3" id="top2Academy">대치 에듀 독서논술 (초5)</small>
+            <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
+              <span style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="top2Points">4,520 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">완독 39권 · 퀴즈 정답률 96%</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="stat-card text-center" style="border: 1px solid #e0c8b0; background: #ffffff;">
+            <div style="font-size: 28px; margin-bottom: 4px;">🥉</div>
+            <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold">전국 3위</span>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top3Name">박지우 학생</h5>
+            <small class="text-muted d-block mb-3" id="top3Academy">송도 센트럴 리딩랩 (초6)</small>
+            <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
+              <span style="font-size: 20px; font-weight: 900; color: #8c6d48;" id="top3Points">4,210 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">완독 36권 · 퀴즈 정답률 95%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 전국 랭킹 테이블 탭 (학생 랭킹 / 학원 랭킹) -->
+      <div class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary active" id="btn-rank-student" onclick="switchRankingType('student')">
+              <i class="fa-solid fa-user-graduate mr-1"></i>전국 학생 개인 랭킹 (TOP 50)
+            </button>
+            <button class="btn btn-outline-secondary" id="btn-rank-academy" onclick="switchRankingType('academy')">
+              <i class="fa-solid fa-school mr-1"></i>전국 가맹 학원 랭킹
+            </button>
+          </div>
+          <small class="text-muted">* 매일 자정 포인트 기준 자동 갱신됩니다.</small>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table" id="table-ranking-student">
+            <thead>
+              <tr>
+                <th style="width: 80px;">순위</th>
+                <th style="text-align: left;">학생 성명</th>
+                <th style="text-align: left;">소속 학원</th>
+                <th>학년</th>
+                <th>누적 완독 권수</th>
+                <th>퀴즈 정답률</th>
+                <th style="text-align: right; padding-right: 24px;">누적 포인트</th>
+                <th>최근 활동</th>
+              </tr>
+            </thead>
+            <tbody id="studentRankingBody">
+              <!-- JS 렌더링 -->
+            </tbody>
+          </table>
+
+          <table class="simple-table" id="table-ranking-academy" style="display: none;">
+            <thead>
+              <tr>
+                <th style="width: 80px;">순위</th>
+                <th style="text-align: left;">가맹 학원명</th>
+                <th>지역</th>
+                <th>재원생 수</th>
+                <th>1인당 평균 독서량</th>
+                <th>학습 참여율</th>
+                <th style="text-align: right; padding-right: 24px;">총 포인트 합계</th>
+                <th>우수 가맹점 뱃지</th>
+              </tr>
+            </thead>
+            <tbody id="academyRankingBody">
+              <!-- JS 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 5. 마스터 콘텐츠 관리 (Central Content Library)
+         ======================================================== -->
+    <section id="tab-master-contents" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-book-atlas"></i>마스터 도서 및 콘텐츠 관리
+          </div>
+          <div class="workspace-subtitle">
+            플랫폼 전체 가맹 학원에 공용 제공되는 마스터 도서, 5문항 북퀴즈, 나노 시트 PDF를 관리합니다.
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-beige-secondary" onclick="openExcelUploadModal()">
+            <i class="fa-solid fa-file-excel"></i>엑셀 대량 도서 등록
+          </button>
+          <button class="btn-beige-primary" onclick="openMasterBookAddModal()">
+            <i class="fa-solid fa-plus"></i>신규 마스터 도서 등록
+          </button>
+        </div>
+      </div>
+
+      <!-- 통계 카드 -->
+      <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">총 마스터 등록 도서 <i class="fa-solid fa-book text-muted"></i></div>
+            <div class="stat-num" id="statMasterBooks">240<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
+            <div class="stat-sub">초등 180권 / 중등 60권</div>
+            <i class="fa-solid fa-book-bookmark stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">보유 북퀴즈 문항 <i class="fa-solid fa-circle-question text-muted"></i></div>
+            <div class="stat-num" id="statMasterQuizzes">1,200<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">문항</span></div>
+            <div class="stat-sub">전 도서 5문항 세트 100% 완비</div>
+            <i class="fa-solid fa-check-double stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">나노 시트 <i class="fa-solid fa-file-lines text-muted"></i></div>
+            <div class="stat-num">180<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">종</span></div>
+            <div class="stat-sub">선생님 수업용 독서 지도안 포함</div>
+            <i class="fa-solid fa-file-pdf stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">이달의 추천 신간 <i class="fa-solid fa-sparkles text-warning"></i></div>
+            <div class="stat-num text-warning">12<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
+            <div class="stat-sub">9월 신규 업데이트 도서</div>
+            <i class="fa-solid fa-certificate stat-icon-bg"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 검색 및 필터 (등록처, 권장학년, 주제 필터 및 검색창) -->
+      <div class="filter-bar">
+        <div>
+          <select id="contentAcademyFilter" class="select-beige" onchange="filterMasterContentList()">
+            <option value="ALL">전체 등록처 (본사+가맹학원)</option>
+            <option value="HQ">👑 본사 직속 (공용)</option>
+            <option value="ACAD-001">🏫 나노 목동본원</option>
+            <option value="ACAD-002">🏫 대치 에듀센터</option>
+            <option value="ACAD-003">🏫 송도 센트럴랩</option>
+            <option value="ACAD-004">🏫 판교 알파학원</option>
+          </select>
+        </div>
+        <div>
+          <select id="contentGradeFilter" class="select-beige" onchange="filterMasterContentList()">
+            <option value="ALL">전체 권장 학년</option>
+            <option value="E_LOW">초등 1~2학년</option>
+            <option value="E_MID">초등 3~4학년</option>
+            <option value="E_HIGH">초등 5~6학년</option>
+            <option value="MIDDLE">중등 1~3학년</option>
+          </select>
+        </div>
+        <div>
+          <select id="contentCategoryFilter" class="select-beige" onchange="filterMasterContentList()">
+            <option value="ALL">전체 주제</option>
+            <option value="문학">문학</option>
+            <option value="인문">인문/철학</option>
+            <option value="과학">과학/환경</option>
+            <option value="사회">사회</option>
+            <option value="역사">역사</option>
+            <option value="예술">예술/문화</option>
+          </select>
+        </div>
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="contentSearchInput" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 등록학원 검색..." onkeyup="filterMasterContentList()">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetContentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
+          <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+        </button>
+      </div>
+
+      <!-- 콘텐츠 테이블 -->
+      <div class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+            <i class="fa-solid fa-book mr-2 text-muted"></i>마스터 도서 라이브러리 (<span id="contentFilteredCount">0</span>권)
+          </span>
+          <small class="text-muted">* 본사 공용 도서 및 각 가맹 학원에서 직접 업로드한 도서가 함께 관리됩니다.</small>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th style="width: 65px;">표지</th>
+                <th style="text-align: left;">도서명</th>
+                <th style="width: 145px;">등록처 (학원)</th>
+                <th>저자 / 출판사</th>
+                <th>권장 학년</th>
+                <th>주제</th>
+                <th>북퀴즈 현황</th>
+                <th>학습자료</th>
+                <th>등록일</th>
+                <th style="width: 130px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="masterContentTableBody">
+              <!-- JS 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 6. 카톡 발송 내역 (Aligo KakaoTalk Dispatch)
+         ======================================================== -->
+    <section id="tab-master-dispatch" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-comment-dots"></i>카톡(알리고) 발송 내역 추적
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 학원에서 학부모에게 발송한 독서 포트폴리오 리포트, 도서 배정 알림톡, SMS 로그를 실시간 추적합니다.
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-beige-secondary" onclick="testAligoConnection()">
+            <i class="fa-solid fa-signal"></i>알리고 API 연동 상태 점검
+          </button>
+          <button class="btn-beige-primary" onclick="openAligoChargeModal()">
+            <i class="fa-solid fa-credit-card"></i>알리고 캐시 충전
+          </button>
+        </div>
+      </div>
+
+      <!-- 알리고 통계 카드 -->
+      <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">알리고 잔여 캐시 <i class="fa-solid fa-coins text-warning"></i></div>
+            <div class="stat-num text-warning" id="statAligoCash">854,200<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">원</span></div>
+            <div class="stat-sub">건당 약 20원 기준 (42,710건 가능)</div>
+            <i class="fa-solid fa-wallet stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">당월 총 발송 건수 <i class="fa-solid fa-paper-plane text-muted"></i></div>
+            <div class="stat-num" id="statAligoTotalSent">1,842<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span></div>
+            <div class="stat-sub">전월 대비 +18.4% 증가</div>
+            <i class="fa-solid fa-comments stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">전송 성공률 <i class="fa-solid fa-shield-check text-success"></i></div>
+            <div class="stat-num text-success" id="statAligoSuccessRate">99.2<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">%</span></div>
+            <div class="stat-sub">성공 1,827건 / 실패 15건</div>
+            <i class="fa-solid fa-circle-check stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-label">알리고 연동 상태 <i class="fa-solid fa-server text-success"></i></div>
+            <div class="stat-num text-success" style="font-size: 22px; margin-top: 4px;">정상 (LIVE)</div>
+            <div class="stat-sub">API Key: nano_aligo_live_****</div>
+            <i class="fa-solid fa-network-wired stat-icon-bg"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 검색 및 필터 (발송학원, 템플릿, 결과상태 드롭다운을 검색창 좌측으로 배치) -->
+      <div class="filter-bar">
+        <div>
+          <select id="dispatchAcademyFilter" class="select-beige" onchange="filterDispatchList()">
+            <option value="ALL">전체 발송 학원</option>
+            <!-- JS 동적 주입 -->
+          </select>
+        </div>
+        <div>
+          <select id="dispatchTemplateFilter" class="select-beige" onchange="filterDispatchList()">
+            <option value="ALL">전체 템플릿</option>
+            <option value="PORTFOLIO">독서 포트폴리오 리포트</option>
+            <option value="ASSIGN">도서 배정 알림</option>
+            <option value="ENCOURAGE">독서 격려 알림톡</option>
+            <option value="AUTH">인증번호 발송</option>
+          </select>
+        </div>
+        <div>
+          <select id="dispatchStatusFilter" class="select-beige" onchange="filterDispatchList()">
+            <option value="ALL">전체 전송 결과</option>
+            <option value="SUCCESS">전송 성공</option>
+            <option value="FAILED">전송 실패</option>
+          </select>
+        </div>
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="dispatchSearchInput" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeyup="filterDispatchList()">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetDispatchFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
+          <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+        </button>
+      </div>
+
+      <!-- 발송 내역 테이블 -->
+      <div class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+            <i class="fa-solid fa-paper-plane mr-2 text-muted"></i>카카오 알림톡/문자 발송 로그 (<span id="dispatchFilteredCount">0</span>건)
+          </span>
+          <small class="text-muted">* 전송 실패 건은 사유 확인 후 즉시 1회 재발송이 가능합니다.</small>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">번호</th>
+                <th>발송 일시</th>
+                <th style="text-align: left;">발송 학원</th>
+                <th>메시지 유형</th>
+                <th style="text-align: left;">수신자 (학생/학부모)</th>
+                <th>수신 번호</th>
+                <th style="text-align: left;">메시지 내용 요약</th>
+                <th>결과</th>
+                <th style="width: 130px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="dispatchTableBody">
+              <!-- JS 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ========================================================
+     MODALS (마스터 관리자 전용 대화상자)
+     ======================================================== -->
+
+<!-- 1. 신규 가맹 학원 등록 모달 -->
+<div class="modal fade" id="academyRegisterModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px;">
+          <i class="fa-solid fa-school-flag mr-2 text-muted"></i>신규 가맹 학원(B2B) 등록
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="academyRegisterForm" onsubmit="handleRegisterAcademy(event)">
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">가맹 학원명 <span class="text-danger">*</span></label>
+              <input type="text" id="regAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서논술 대치본원" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">사업자 등록번호 <span class="text-danger">*</span></label>
+              <input type="text" id="regBizNumber" class="form-control form-control-beige" placeholder="예: 123-45-67890" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원장님 성함 <span class="text-danger">*</span></label>
+              <input type="text" id="regDirectorName" class="form-control form-control-beige" placeholder="예: 김원장" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원장님 연락처 (휴대폰) <span class="text-danger">*</span></label>
+              <input type="tel" id="regDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원장님 관리자 아이디 <span class="text-danger">*</span></label>
+              <input type="text" id="regDirectorId" class="form-control form-control-beige" placeholder="예: director_daechi" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">초기 비밀번호 <span class="text-danger">*</span></label>
+              <input type="text" id="regDirectorPw" class="form-control form-control-beige" value="nano1234!" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 (주소)</label>
+              <input type="text" id="regAddress" class="form-control form-control-beige" placeholder="예: 서울특별시 강남구 대치동 123-45 3층">
+            </div>
+          </div>
+
+          <hr style="border-color: var(--border-light); margin: 18px 0;">
+          <h6 class="font-weight-bold text-muted mb-3" style="font-size: 13.5px;">
+            <i class="fa-solid fa-file-contract mr-1"></i>B2B 계약 및 라이선스 슬롯 설정
+          </h6>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">계약 시작일 <span class="text-danger">*</span></label>
+              <input type="date" id="regStartDate" class="form-control form-control-beige" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">계약 만료일 <span class="text-danger">*</span></label>
+              <input type="date" id="regEndDate" class="form-control form-control-beige" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원생 등록 허용 슬롯(정원 제한) <span class="text-danger">*</span></label>
+              <select id="regMaxStudents" class="select-beige w-100" required>
+                <option value="30">베이직 (최대 30명)</option>
+                <option value="50" selected>스탠다드 (최대 50명)</option>
+                <option value="100">프로 (최대 100명)</option>
+                <option value="200">엔터프라이즈 (최대 200명)</option>
+                <option value="500">대형 프랜차이즈 (최대 500명)</option>
+              </select>
+              <small class="text-muted">설정된 인원 이상은 학원에서 학생 등록이 차단됩니다.</small>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">월 계약 결제 금액 <span class="text-danger">*</span></label>
+              <input type="text" id="regMonthlyFee" class="form-control form-control-beige" placeholder="예: 330,000원" value="330,000원" required>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn-beige-primary">
+              <i class="fa-solid fa-check mr-1"></i>가맹 학원 등록 완료
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. 가맹점 정보 및 계약/슬롯 수정 모달 -->
+<div class="modal fade" id="academyEditModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-pen-to-square mr-2 text-warning"></i>가맹 학원 정보 및 계약 설정 수정 <span class="badge-soft badge-soft-neutral ml-1" id="editAcademyIdBadge" style="font-size: 11.5px;"></span>
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <form onsubmit="saveAcademyEdit(event)">
+          <input type="hidden" id="editAcademyId">
+          
+          <div style="font-size: 12.5px; font-weight: 700; color: var(--theme-brown); margin-bottom: 10px;">
+            <i class="fa-solid fa-school mr-1"></i>학원 기본 정보
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">학원명 <span class="text-danger">*</span></label>
+              <input type="text" id="editAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서아카데미 목동본원" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">사업자등록번호</label>
+              <input type="text" id="editBizNumber" class="form-control form-control-beige" placeholder="예: 105-86-12345">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원장 성함 <span class="text-danger">*</span></label>
+              <input type="text" id="editDirectorName" class="form-control form-control-beige" placeholder="예: 김도현 원장" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원장 대표 연락처 <span class="text-danger">*</span></label>
+              <input type="text" id="editDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-3342-9981" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 / 상세 주소 <span class="text-danger">*</span></label>
+            <input type="text" id="editRegion" class="form-control form-control-beige" placeholder="예: 서울 양천구 목동중앙로 123 3층" required>
+          </div>
+
+          <hr style="border-top: 1px dashed var(--border-light); margin: 20px 0;">
+
+          <div style="font-size: 12.5px; font-weight: 700; color: var(--theme-brown); margin-bottom: 10px;">
+            <i class="fa-solid fa-file-contract mr-1"></i>B2B 계약 및 정원 슬롯 정책
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">계약 만료일 <span class="text-danger">*</span></label>
+              <input type="date" id="editEndDate" class="form-control form-control-beige" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원생 등록 허용 정원(슬롯) <span class="text-danger">*</span></label>
+              <input type="number" id="editMaxStudents" class="form-control form-control-beige" min="10" step="5" required>
+              <small class="text-muted">설정 정원 도달 시 학원 측의 학생 등록이 자동 제한됩니다.</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">월 계약 결제 금액</label>
+              <input type="text" id="editMonthlyFee" class="form-control form-control-beige" placeholder="예: 330,000원">
+            </div>
+            <div class="col-md-4 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">월 결제 상태</label>
+              <select id="editPaymentStatus" class="select-beige w-100">
+                <option value="PAID">결제 완료 (완납)</option>
+                <option value="UNPAID">미납 / 연체</option>
+              </select>
+            </div>
+            <div class="col-md-4 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">가맹 운영 상태</label>
+              <select id="editStatus" class="select-beige w-100">
+                <option value="ACTIVE">정상 운영</option>
+                <option value="EXPIRING">만료 임박</option>
+                <option value="PAUSED">일시 정지</option>
+                <option value="TERMINATED">계약 해지</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn-beige-primary">
+              <i class="fa-solid fa-save mr-1"></i>수정사항 저장 완료
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 가맹점 삭제/비활성화 확인 모달 -->
+<div class="modal fade" id="academyDeleteConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige" style="border: 2px solid #e2a297;">
+      <div class="modal-body p-4 text-center">
+        <div style="font-size: 40px; color: #b33927; margin-bottom: 12px;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h5 class="font-weight-bold mb-2">가맹 학원을 삭제하시겠습니까?</h5>
+        <p class="text-muted" style="font-size: 13px;">
+          <strong id="deleteAcademyName" class="text-dark"></strong> 학원의 계약 상태를 해지하고 비활성화합니다.<br>
+          소속된 원생 및 선생님 계정의 학습 데이터는 감사용으로 보존됩니다.
+        </p>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-danger font-weight-bold" style="border-radius: 12px; padding: 8px 20px;" onclick="confirmDeleteAcademy()">
+            <i class="fa-solid fa-trash-can mr-1"></i>해지 및 삭제 진행
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 통합 회원 상세 및 상태 모달 -->
+<div class="modal fade" id="memberDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-user-gear mr-2 text-muted"></i>회원 계정 상세 정보
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="detailMemberId">
+        <div class="text-center pb-3 border-bottom mb-3">
+          <div style="width: 56px; height: 56px; border-radius: 50%; background: #eee8dd; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; color: #5a4b3d; margin-bottom: 8px;">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <h5 class="font-weight-bold mb-1" id="detailMemberName">김태윤</h5>
+          <span class="badge-soft badge-soft-neutral" id="detailMemberRole">학생 (원생)</span>
+        </div>
+
+        <div style="font-size: 13px;">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">소속 학원</span>
+            <strong id="detailMemberAcademy">나노 독서아카데미 본원</strong>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">아이디</span>
+            <span id="detailMemberUsername">taeyoon_k</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">연락처</span>
+            <span id="detailMemberPhone">010-3342-9981</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">누적 독서 포인트</span>
+            <strong class="text-warning" id="detailMemberPoints">4,850 P</strong>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">계정 상태</span>
+            <span id="detailMemberStatusBadge"></span>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" onclick="resetSingleMemberPassword()">
+            <i class="fa-solid fa-key mr-1"></i>임시 비밀번호 발급
+          </button>
+          <div>
+            <button class="btn btn-sm btn-outline-danger mr-1" id="btnToggleMemberStatus" onclick="toggleMemberStatus()">
+              이용 정지
+            </button>
+            <button type="button" class="btn-beige-secondary btn-sm" data-dismiss="modal">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. 학생 배너 등록/수정 모달 -->
+<div class="modal fade" id="bannerEditModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-image mr-2 text-warning"></i>학생 홈 메인 롤링 배너 설정
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <form onsubmit="handleSaveBanner(event)">
+          <input type="hidden" id="bannerEditId">
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">배너 제목 <span class="text-danger">*</span></label>
+            <input type="text" id="bannerTitle" class="form-control form-control-beige" placeholder="예: 9월 나노 독서왕 챌린지!" required>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">배너 서브 설명</label>
+            <input type="text" id="bannerSub" class="form-control form-control-beige" placeholder="예: 이번 달 3권 완독하고 골드 뱃지를 획득하세요!">
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">배너 이미지 선택</label>
+            <select id="bannerImageUrl" class="select-beige w-100" onchange="updateBannerModalPreview(this.value)">
+              <option value="upload/banner/banner_reading_king.jpg">🏆 9월 독서왕 챌린지 (모카 골드 브라운 일러스트)</option>
+              <option value="upload/banner/banner_nanosheet.jpg">🌿 나노 시트 개편 (세이지 포레스트 그린 일러스트)</option>
+              <option value="upload/banner/banner_ranking.jpg">🌟 전국 학생 랭킹 실시간 집계 (골드 샌드 일러스트)</option>
+              <option value="">(이미지 없음 - 단색 그라데이션 사용)</option>
+            </select>
+          </div>
+          <!-- 이미지 미리보기 박스 -->
+          <div class="mb-3 p-2 bg-light rounded" style="border: 1px dashed var(--border-medium); text-align: center;">
+            <div id="bannerModalPreviewBox" style="width: 100%; height: 110px; border-radius: 8px; overflow: hidden; background: #efebe4; display: flex; align-items: center; justify-content: center;">
+              <img id="bannerModalPreviewImg" src="upload/banner/banner_reading_king.jpg" alt="미리보기" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <small class="text-muted mt-1 d-block" style="font-size: 11.5px;">* 배너 권장 비율: 16:9 가로형 일러스트</small>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">배경 테마 색상 (폴백 및 테두리)</label>
+            <select id="bannerBgTheme" class="select-beige w-100">
+              <option value="linear-gradient(135deg, #7a6348, #4a3b32)">웜 모카 브라운</option>
+              <option value="linear-gradient(135deg, #4b6b55, #2f5436)">세이지 포레스트 그린</option>
+              <option value="linear-gradient(135deg, #8c6d48, #d4a373)">골드 샌드</option>
+              <option value="linear-gradient(135deg, #3d5a80, #293241)">딥 오션 블루</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">노출 순서</label>
+              <input type="number" id="bannerOrder" class="form-control form-control-beige" value="1" min="1">
+            </div>
+            <div class="col-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">활성 여부</label>
+              <select id="bannerActive" class="select-beige w-100">
+                <option value="Y">노출 (활성)</option>
+                <option value="N">숨김 (비활성)</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn-beige-primary">
+              <i class="fa-solid fa-floppy-disk mr-1"></i>배너 저장하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5-1. 배너 이미지 확대 라이트박스 모달 -->
+<div class="modal fade" id="bannerViewModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;" id="bannerViewModalTitle">
+          <i class="fa-solid fa-image mr-2 text-warning"></i>배너 이미지 미리보기
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-3 text-center">
+        <div style="border-radius: 12px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.12); border: 1px solid var(--border-medium);">
+          <img id="bannerViewModalImg" src="" alt="배너 원본" style="width: 100%; height: auto; display: block;">
+        </div>
+      </div>
+      <div class="modal-footer modal-footer-beige d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          <i class="fa-solid fa-circle-info mr-1 text-primary"></i>학생 홈 상단 롤링 배너 적용 이미지 (해상도: 16:9 와이드 배너)
+        </small>
+        <button type="button" class="btn-beige-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5-2. 큐레이션 테마 생성 및 수정 모달 -->
+<div class="modal fade" id="themeEditModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;" id="themeModalHeaderTitle">
+          <i class="fa-solid fa-wand-magic-sparkles mr-2 text-warning"></i>신규 도서 큐레이션 테마 생성
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <form onsubmit="handleSaveTheme(event)">
+          <input type="hidden" id="themeEditId" value="">
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">테마 명칭 <span class="text-danger">*</span></label>
+            <input type="text" id="themeTitle" class="form-control form-control-beige" placeholder="예: 호기심 팡팡! 신비한 우주 과학 탐험" required>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">대상 학년 태그 <span class="text-danger">*</span></label>
+            <select id="themeTag" class="select-beige w-100">
+              <option value="초등 전학년">초등 전학년</option>
+              <option value="초등 1~2학년">초등 1~2학년 (저학년)</option>
+              <option value="초등 3~4학년">초등 3~4학년 (중학년)</option>
+              <option value="초등 5~6학년">초등 5~6학년 (고학년)</option>
+              <option value="중등 전학년">중등 전학년</option>
+              <option value="전체 연령">전체 연령 공용</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">테마 설명 및 큐레이션 의도</label>
+            <textarea id="themeDesc" class="form-control form-control-beige" rows="3" placeholder="학생들에게 이 테마 도서를 추천하는 이유나 독서 포인트를 입력하세요."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold" style="font-size: 13px;">학생 홈 노출 상태</label>
+            <select id="themeActive" class="select-beige w-100">
+              <option value="Y">노출 활성화 (학생 홈 큐레이션 섹션 노출)</option>
+              <option value="N">숨김 (임시 보관)</option>
+            </select>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn-beige-primary">
+              <i class="fa-solid fa-floppy-disk mr-1"></i>테마 저장하기
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5-3. 테마별 도서 목록 편집 모달 -->
+<div class="modal fade" id="themeBooksModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="modal-title font-weight-bold" style="font-size: 16.5px;" id="tbmHeaderTitle">
+            <i class="fa-solid fa-bookmark mr-2 text-warning"></i>테마 도서 목록 편집
+          </h5>
+          <small class="text-muted" id="tbmHeaderSub">테마에 노출할 추천 도서를 추가하거나 순서를 관리합니다.</small>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <input type="hidden" id="tbmCurrentThemeId" value="">
+
+        <!-- 테마 정보 요약 바 -->
+        <div class="p-3 bg-white rounded-lg shadow-sm border mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge-soft badge-soft-neutral" id="tbmInfoTag">초등 전학년</span>
+              <strong style="font-size: 16px; color: var(--text-main);" id="tbmInfoTitle">이달의 나노 북클럽</strong>
+            </div>
+            <div class="text-muted" style="font-size: 12.5px;" id="tbmInfoDesc">설명 내용</div>
+          </div>
+          <div class="text-right">
+            <span class="badge-soft badge-soft-success" style="font-size: 13.5px; padding: 6px 14px;">
+              <i class="fa-solid fa-book-open-reader mr-1"></i>매핑된 도서 <strong id="tbmMappingCount">0</strong>권
+            </span>
+          </div>
+        </div>
+
+        <!-- 2열 편집 레이아웃 -->
+        <div class="row">
+          <!-- 좌측: 현재 매핑된 도서 목록 -->
+          <div class="col-lg-5 mb-3 mb-lg-0">
+            <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+              <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+                  <i class="fa-solid fa-list-check mr-1 text-primary"></i>현재 매핑 도서 (<span id="tbmLeftCount">0</span>)
+                </span>
+                <small class="text-muted" style="font-size: 11.5px;">학생 홈 노출 순서</small>
+              </div>
+              <div class="card-body p-2" id="tbmMappedListContainer" style="max-height: 480px; overflow-y: auto;">
+                <!-- JS 렌더링 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 우측: 마스터 도서 풀 검색 및 추가 -->
+          <div class="col-lg-7">
+            <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+              <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+                    <i class="fa-solid fa-square-plus mr-1 text-success"></i>마스터 도서 라이브러리에서 추가
+                  </span>
+                  <small class="text-muted" style="font-size: 11.5px;">전국 가맹 공용 도서 풀</small>
+                </div>
+                <!-- 검색창 및 카테고리 필터 -->
+                <div class="d-flex gap-2">
+                  <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text bg-white border-right-0"><i class="fa-solid fa-search text-muted"></i></span>
+                    </div>
+                    <input type="text" id="tbmSearchInput" class="form-control border-left-0" placeholder="도서명, 저자, 출판사 검색..." oninput="renderTbmAvailableBooks()">
+                  </div>
+                  <select id="tbmCategorySelect" class="form-control form-control-sm" style="width: 110px;" onchange="renderTbmAvailableBooks()">
+                    <option value="">전체 분류</option>
+                    <option value="문학">문학</option>
+                    <option value="과학">과학</option>
+                    <option value="사회">사회</option>
+                    <option value="역사">역사</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-body p-2" id="tbmAvailableListContainer" style="max-height: 480px; overflow-y: auto;">
+                <!-- JS 렌더링 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer modal-footer-beige d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          <i class="fa-solid fa-shield-halved text-success mr-1"></i>추가 및 제외 즉시 학생 홈 추천 큐레이션 데이터에 자동 반영됩니다.
+        </small>
+        <button type="button" class="btn-beige-primary" data-dismiss="modal">
+          <i class="fa-solid fa-check mr-1"></i>도서 목록 편집 완료
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. 알리고 알림톡 상세 보기 모달 -->
+<div class="modal fade" id="dispatchDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-comment-sms mr-2 text-warning"></i>카카오 알림톡 발송 전문
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <!-- 카카오 말풍선 뷰어 -->
+        <div class="kakao-preview-card text-left">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="font-weight-bold" style="font-size: 11.5px; color: #3b1e1e;">
+              <i class="fa-solid fa-comment mr-1"></i>알림톡 도착
+            </span>
+            <small style="color: #666;" id="dispatchModalTime">2026-09-08 17:30</small>
+          </div>
+          <div class="font-weight-bold" style="font-size: 13px; color: #111;" id="dispatchModalTitle">
+            [나노의 책장] 독서 포트폴리오 리포트 발송
+          </div>
+          <div class="kakao-inner-sheet" id="dispatchModalBody">
+            <!-- 전문 -->
+          </div>
+          <div class="mt-2 text-center">
+            <button class="btn btn-sm btn-block font-weight-bold" style="background: #ffffff; border: 1px solid #ddd; font-size: 12px; border-radius: 6px;" onclick="previewDispatchLink()">
+              리포트 열람하기 &gt;
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-3 text-muted text-left" style="font-size: 12px;">
+          <div><strong>발송 학원:</strong> <span id="dispatchModalAcademy"></span></div>
+          <div><strong>수신자 정보:</strong> <span id="dispatchModalReceiver"></span></div>
+          <div><strong>알리고 결과 코드:</strong> <span id="dispatchModalCode" class="badge-soft badge-soft-success">성공 (0000)</span></div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-center">
+          <button type="button" class="btn-beige-primary" data-dismiss="modal">확인 완료</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. 알리고 캐시 충전 모달 -->
+<div class="modal fade" id="aligoChargeModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-wallet mr-2 text-warning"></i>알리고(Aligo) SMS/알림톡 캐시 충전
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted" style="font-size: 13px;">
+          충전 즉시 플랫폼 전체 가맹 학원의 알림톡 및 LMS 문자 발송 한도가 증액됩니다.
+        </p>
+        <div class="form-group">
+          <label class="font-weight-bold" style="font-size: 13px;">충전 금액 선택</label>
+          <select id="chargeAmountSelect" class="select-beige w-100">
+            <option value="100000">100,000원 (+5,000건 발송 가능)</option>
+            <option value="300000">300,000원 (+15,000건 발송 가능)</option>
+            <option value="500000" selected>500,000원 (+25,000건 발송 가능)</option>
+            <option value="1000000">1,000,000원 (+50,000건 발송 가능)</option>
+          </select>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+          <button type="button" class="btn-beige-primary" onclick="processAligoCharge()">
+            <i class="fa-solid fa-credit-card mr-1"></i>결제 및 충전 승인
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. 마스터 도서 및 북퀴즈 편집/등록 모달 -->
+<div class="modal fade" id="masterBookEditModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;" id="masterBookModalTitle">
+          <i class="fa-solid fa-pen-to-square mr-2 text-warning"></i>마스터 도서 및 북퀴즈 편집
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- 서브 탭 전환: [도서 기본 정보] / [북퀴즈 문항 세트 (기본 3문항)] -->
+      <div class="px-4 pt-3 border-bottom bg-white d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <button type="button" class="modal-tab-btn active" id="btnTabBookInfo" onclick="switchMasterBookEditTab('info')">
+            <i class="fa-solid fa-book mr-1"></i>도서 기본 정보
+          </button>
+          <button type="button" class="modal-tab-btn" id="btnTabQuizInfo" onclick="switchMasterBookEditTab('quiz')">
+            <i class="fa-solid fa-circle-question mr-1"></i>북퀴즈 문항 세트 (<span id="mbEditQuizCount">3</span>문항)
+          </button>
+        </div>
+        <small class="text-muted d-none d-md-inline">
+          <i class="fa-solid fa-shield-halved text-success mr-1"></i>전국 가맹점 공용 콘텐츠
+        </small>
+      </div>
+
+      <div class="modal-body p-4" style="background: #faf8f5;">
+        <form id="masterBookEditForm" onsubmit="handleSaveMasterBook(event)">
+          
+          <!-- ======================================================= -->
+          <!-- 1) 도서 기본 정보 영역 -->
+          <!-- ======================================================= -->
+          <div id="sectionBookInfo">
+            <!-- 1-1. ISBN 13자리 자동 조회 바 -->
+            <div class="p-3 mb-3 rounded" style="background: #ffffff; border: 1px solid var(--border-medium); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+              <label class="font-weight-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 12.5px; color: var(--theme-brown);">
+                <span><i class="fa-solid fa-barcode mr-1"></i>ISBN 13자리 도서 정보 자동 조회 (국립중앙도서관/알라딘)</span>
+                <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">서지정보 자동완성</span>
+              </label>
+              <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px;">
+                도서의 13자리 ISBN을 입력하고 조회 버튼을 누르면 제목, 저자, 출판사, 표지 이미지가 자동 입력됩니다.
+              </p>
+              <div class="input-group">
+                <input type="text" id="mbEditIsbn" class="form-control form-control-beige font-weight-bold" placeholder="예: 9788932917245 (어린 왕자) 또는 9788936434120 (아몬드)" style="border-radius: 8px 0 0 8px;">
+                <div class="input-group-append">
+                  <button type="button" class="btn btn-beige-primary px-3 font-weight-bold" id="btnIsbnFetch" onclick="fetchMasterBookByIsbn()" style="border-radius: 0 8px 8px 0;">
+                    <i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <!-- 좌측: 도서 코드, 제목, 저자, 출판사, 학년, 주제, 표지, 학습자료 -->
+              <div class="col-md-8">
+                <!-- 도서 관리 코드 (직접 설정 가능) & 도서명 -->
+                <div class="row">
+                  <div class="col-md-5 form-group">
+                    <label class="font-weight-bold" style="font-size: 13px;">도서 관리 코드 (ID) <span class="text-danger">*</span></label>
+                    <input type="text" id="mbEditId" class="form-control form-control-beige font-weight-bold" placeholder="예: MB-001" required>
+                    <small class="text-muted" style="font-size: 11px;">관리자 직접 설정 가능</small>
+                  </div>
+                  <div class="col-md-7 form-group">
+                    <label class="font-weight-bold" style="font-size: 13px;">도서명 <span class="text-danger">*</span></label>
+                    <input type="text" id="mbEditTitle" class="form-control form-control-beige" placeholder="예: 어린 왕자" required>
+                  </div>
+                </div>
+
+                <!-- 저자 / 출판사 -->
+                <div class="row">
+                  <div class="col-6 form-group">
+                    <label class="font-weight-bold" style="font-size: 13px;">저자 <span class="text-danger">*</span></label>
+                    <input type="text" id="mbEditAuthor" class="form-control form-control-beige" placeholder="예: 앙투안 드 생텍쥐페리" required>
+                  </div>
+                  <div class="col-6 form-group">
+                    <label class="font-weight-bold" style="font-size: 13px;">출판사 <span class="text-danger">*</span></label>
+                    <input type="text" id="mbEditPublisher" class="form-control form-control-beige" placeholder="예: 열린책들" required>
+                  </div>
+                </div>
+
+                <!-- 권장 학년 / 주제 분류 -->
+                <div class="row">
+                  <div class="col-6 form-group">
+                    <label class="font-weight-bold" style="font-size: 13px;">권장 학년</label>
+                    <select id="mbEditGrade" class="select-beige w-100">
+                      <option value="초등 1~2학년">초등 1~2학년</option>
+                      <option value="초등 3~4학년">초등 3~4학년</option>
+                      <option value="초등 5~6학년">초등 5~6학년</option>
+                      <option value="중등 1~3학년">중등 1~3학년</option>
+                    </select>
+                  </div>
+                  <div class="col-6 form-group">
+                    <label class="font-weight-bold" style="font-size: 13px;">주제 분류</label>
+                    <select id="mbEditCategory" class="select-beige w-100">
+                      <option value="문학">문학</option>
+                      <option value="인문">인문/철학</option>
+                      <option value="과학">과학/환경</option>
+                      <option value="사회">사회/역사</option>
+                      <option value="예술">예술/문화</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 등록처 (학원/본사) 선택 -->
+                <div class="form-group mb-3">
+                  <label class="font-weight-bold" style="font-size: 13px;">등록처 / 소속 학원 <span class="text-danger">*</span></label>
+                  <select id="mbEditAcademy" class="select-beige w-100">
+                    <option value="HQ">👑 본사 직속 (전국 가맹 공용 마스터 도서)</option>
+                    <option value="ACAD-001">🏫 나노 독서아카데미 목동본원 (학원 등록)</option>
+                    <option value="ACAD-002">🏫 대치 에듀 독서논술센터 (학원 등록)</option>
+                    <option value="ACAD-003">🏫 송도 센트럴 리딩랩 (학원 등록)</option>
+                    <option value="ACAD-004">🏫 판교 알파 독서학원 (학원 등록)</option>
+                  </select>
+                  <small class="text-muted" style="font-size: 11px;">* 가맹 학원에서 직접 업로드한 도서는 목록에서 해당 학원 뱃지가 표기됩니다.</small>
+                </div>
+
+                <!-- 표지 이미지 등록 (URL 직접 입력 OR 이미지 파일 업로드) -->
+                <div class="form-group mb-3">
+                  <label class="font-weight-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 13px;">
+                    <span>표지 이미지 등록</span>
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-xs btn-outline-secondary active" id="btnCoverModeUrl" onclick="switchCoverMode('url')">URL 직접입력</button>
+                      <button type="button" class="btn btn-xs btn-outline-secondary" id="btnCoverModeFile" onclick="switchCoverMode('file')">로컬 파일 업로드</button>
+                    </div>
+                  </label>
+                  
+                  <div id="coverModeUrlWrap">
+                    <input type="text" id="mbEditCover" class="form-control form-control-beige" placeholder="https://..." oninput="updateCoverPreview(this.value)">
+                  </div>
+                  
+                  <div id="coverModeFileWrap" style="display: none;">
+                    <div class="custom-file">
+                      <input type="file" class="custom-file-input" id="mbEditCoverFile" accept="image/*" onchange="handleCoverFileUpload(event)">
+                      <label class="custom-file-label" for="mbEditCoverFile" id="mbCoverFileLabel" style="border-color: var(--border-medium); font-size: 12.5px;">이미지 파일 선택 (JPG, PNG, WEBP)</label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 나노 시트 / 수업지도안 파일 업로드 -->
+                <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light);">
+                  <label class="font-weight-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 12.5px;">
+                    <span><i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트 / 독서 지도안 파일 업로드</span>
+                    <span class="badge-soft badge-soft-success" id="mbSheetStatusBadge">시트 준비됨</span>
+                  </label>
+                  <div class="custom-file mb-1">
+                    <input type="file" class="custom-file-input" id="mbEditSheetFile" accept=".pdf,.hwp,.docx" onchange="handleSheetFileUpload(event)">
+                    <label class="custom-file-label" for="mbEditSheetFile" id="mbSheetFileLabel" style="border-color: var(--border-medium); font-size: 12px;">학습자료 파일 선택 (PDF, HWP, DOCX)</label>
+                  </div>
+                  <div id="mbSheetFileInfo" class="text-muted" style="font-size: 11.5px; margin-top: 4px;">
+                    <i class="fa-solid fa-paperclip mr-1"></i>현재 파일: <strong class="text-dark" id="mbSheetFileName">나노_독서학습시트.pdf</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 우측: 표지 미리보기 및 옵션 -->
+              <div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-start p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light);">
+                <div style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 12px;">
+                  <i class="fa-solid fa-image mr-1"></i>표지 실시간 미리보기
+                </div>
+                <div style="position: relative; width: 130px; height: 180px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); border-radius: 10px; overflow: hidden; border: 1px solid #ddd; background: #f5f0e6;">
+                  <img id="mbEditCoverPreview" src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80" alt="표지" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                
+                <div class="custom-control custom-checkbox mt-3">
+                  <input type="checkbox" class="custom-control-input" id="mbEditSheet" checked>
+                  <label class="custom-control-label" for="mbEditSheet" style="font-size: 12px; font-weight: 600;">가맹점에 학습자료 즉시 공개</label>
+                </div>
+                <small class="text-muted mt-2" style="font-size: 11px;">
+                  * 미체크 시 퀴즈만 가맹점에 배포됩니다.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- ======================================================= -->
+          <!-- 2) 북퀴즈 문항 세트 편집 영역 (기본 3문항 + 특수기호 툴바) -->
+          <!-- ======================================================= -->
+          <div id="sectionQuizInfo" style="display: none;">
+            <!-- 문항 번호 탭 헤더 -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="d-flex gap-2 align-items-center flex-wrap" id="mbQuizTabButtons">
+                <!-- JS로 [1번] [2번] [3번] 칩 동적 생성 (기본 3문항) -->
+              </div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-xs btn-outline-secondary" onclick="addMasterQuizItem()" style="border-radius: 6px; font-size: 11.5px; padding: 4px 10px;">
+                  <i class="fa-solid fa-plus mr-1"></i>문항 추가
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteMasterQuiz" onclick="deleteMasterQuizItem()" style="border-radius: 6px; font-size: 11.5px; padding: 4px 10px;">
+                  <i class="fa-solid fa-trash-can mr-1"></i>현재 문항 삭제
+                </button>
+              </div>
+            </div>
+
+            <!-- 국어 특수문자 원클릭 입력 툴바 (학원관리자와 동일) -->
+            <div class="p-2 mb-3 rounded" style="background: #ffffff; border: 1px solid var(--border-medium);">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span style="font-size: 11.5px; font-weight: 700; color: var(--theme-brown);">
+                  <i class="fa-solid fa-keyboard mr-1"></i>국어 특수기호 원클릭 툴바
+                </span>
+                <span class="text-muted" style="font-size: 10.5px;">
+                  * 질문이나 보기 입력칸을 누르고 기호를 클릭하면 커서 위치에 바로 들어갑니다.
+                </span>
+              </div>
+              <div class="d-flex flex-wrap align-items-center gap-1">
+                <span class="badge-soft badge-soft-neutral mr-1" style="font-size: 10.5px; padding: 2px 6px;">문장/인용</span>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('『')">『</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('』')">』</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('「')">「</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('」')">」</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('“')">“</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('”')">”</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('·')">&middot;</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('…')">…</button>
+
+                <span class="badge-soft badge-soft-neutral ml-2 mr-1" style="font-size: 10.5px; padding: 2px 6px;">지문/채점</span>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('㉠')">㉠</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('㉡')">㉡</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('㉢')">㉢</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('㉣')">㉣</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('[  ]')">[ &nbsp; ]</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('(  )')">( &nbsp; )</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('○')">○</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('×')">×</button>
+                <button type="button" class="sym-btn-compact" onclick="insertMasterQuizSym('△')">△</button>
+              </div>
+            </div>
+
+            <!-- 문항 입력 카드 -->
+            <div class="p-3 bg-white rounded shadow-sm" style="border: 1px solid var(--border-light);">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="font-weight-bold text-dark" style="font-size: 13.5px;" id="mbCurrentQuizTitle">
+                  <i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 1번 문항 편집
+                </span>
+                <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">4지선다 객관식</span>
+              </div>
+
+              <!-- 질문 / 발문 입력 -->
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 12.5px;">질문 / 발문 내용 <span class="text-danger">*</span></label>
+                <textarea id="mbQuizQuestion" class="form-control form-control-beige" rows="2" placeholder="도서 내용을 바탕으로 독해력/이해도를 측정할 질문을 입력하세요." onfocus="setCurMasterQuizInput(this)" required></textarea>
+              </div>
+
+              <!-- 보기 1~4번 입력 및 정답 라디오 선택 -->
+              <div class="form-group mb-2">
+                <label class="font-weight-bold d-flex justify-content-between" style="font-size: 12.5px;">
+                  <span>보기 및 정답 선택</span>
+                  <small class="text-muted">* 정답인 보기 번호의 원형 라디오를 체크하세요.</small>
+                </label>
+
+                <div class="input-group mb-2">
+                  <div class="input-group-prepend">
+                    <div class="input-group-text bg-light border-right-0" style="border-color: var(--border-medium); border-radius: 8px 0 0 8px;">
+                      <input type="radio" name="mbQuizCorrectAns" id="ansRadio1" value="1" checked>
+                      <label for="ansRadio1" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">①번</label>
+                    </div>
+                  </div>
+                  <input type="text" id="mbOpt1" class="form-control form-control-beige" placeholder="1번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurMasterQuizInput(this)">
+                </div>
+
+                <div class="input-group mb-2">
+                  <div class="input-group-prepend">
+                    <div class="input-group-text bg-light border-right-0" style="border-color: var(--border-medium); border-radius: 8px 0 0 8px;">
+                      <input type="radio" name="mbQuizCorrectAns" id="ansRadio2" value="2">
+                      <label for="ansRadio2" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">②번</label>
+                    </div>
+                  </div>
+                  <input type="text" id="mbOpt2" class="form-control form-control-beige" placeholder="2번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurMasterQuizInput(this)">
+                </div>
+
+                <div class="input-group mb-2">
+                  <div class="input-group-prepend">
+                    <div class="input-group-text bg-light border-right-0" style="border-color: var(--border-medium); border-radius: 8px 0 0 8px;">
+                      <input type="radio" name="mbQuizCorrectAns" id="ansRadio3" value="3">
+                      <label for="ansRadio3" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">③번</label>
+                    </div>
+                  </div>
+                  <input type="text" id="mbOpt3" class="form-control form-control-beige" placeholder="3번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurMasterQuizInput(this)">
+                </div>
+
+                <div class="input-group mb-2">
+                  <div class="input-group-prepend">
+                    <div class="input-group-text bg-light border-right-0" style="border-color: var(--border-medium); border-radius: 8px 0 0 8px;">
+                      <input type="radio" name="mbQuizCorrectAns" id="ansRadio4" value="4">
+                      <label for="ansRadio4" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">④번</label>
+                    </div>
+                  </div>
+                  <input type="text" id="mbOpt4" class="form-control form-control-beige" placeholder="4번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurMasterQuizInput(this)">
+                </div>
+              </div>
+
+              <!-- 해설 및 힌트 -->
+              <div class="form-group mb-0">
+                <label class="font-weight-bold" style="font-size: 12.5px;">해설 또는 힌트 <small class="text-muted">(선택)</small></label>
+                <input type="text" id="mbQuizHint" class="form-control form-control-beige" placeholder="학생 오답 시 지도용 힌트나 본문 페이지 등을 입력하세요." onfocus="setCurMasterQuizInput(this)">
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+            <small class="text-muted">
+              <i class="fa-solid fa-shield-halved text-success mr-1"></i>저장 즉시 전국 모든 가맹 학원에 변경사항이 동기화됩니다.
+            </small>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+              <button type="submit" class="btn-beige-primary">
+                <i class="fa-solid fa-floppy-disk mr-1"></i>도서 및 퀴즈 저장 완료
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 알림 토스트 (Non-blocking) -->
+<div id="masterToast" style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;" class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
+  <div class="d-flex align-items-center">
+    <i class="fa-solid fa-circle-check text-warning mr-2" style="font-size: 18px;"></i>
+    <span id="masterToastText" style="font-size: 13.5px; font-weight: 600;">알림 내용</span>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="master_preview.js"></script>
+
+</body>
+</html>

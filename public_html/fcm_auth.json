@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "lowcarbonschool-2a2d2",
+  "private_key_id": "1eab9779347dbf64f7820f06761f9abefad0f9c5",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCn8VArPaAjEQoa\n2cyCAmTrNczNGyW0AkwR8tErtL7Xim37dtjRYcght529Rau3J1lYvRzuVBsTHSAF\n9vW9t4tdCG6aDMf9/cHFADLm4mlWFbHkqtHe0H9kqU8aysbJCwa+am5jLGa9r+It\nPvFoNP2iM5BJw/FRFiYLgjag6VX/4CkNXW/zGB2uqAs9kMQy9B9lNBmpp+itHzrO\n8YqHVap2zbkVFLShqWfTjUStW7O17Us4dLolB4wXiDV5/19OsGXXBtW9uxDHSaI2\n270M4oXty3ecltTdZ7o+SrmiYlLCozZbQ+HaNJWl5f8I9ujvAJDiI4LdAMfmFpE/\nt+dgYzcpAgMBAAECggEADOGgu0xVA9OLAZ+6hK9P082y2XmPVQUHFipYemB48dnb\nkTnerAKywclOZ0XYg6oYO4r31NztHbRycBqu4yAYp6hdqWG5FkV4LxbSkKyFlVWB\nKU+j3NIDr3IgD+dFQ4bdu824jVFKyRpcQAmvpQVJff8z/kBx+jz3apMQgxuanc9R\nJwgXe3/LwMkSsB67F4eYpCaBjAExkL6rL73toNHn51zHmowbVZRXVQEhJmTmN/AI\nWNB2QjCqYuDqsKe2krV796OumdmzWpnXcSihHhtkX8xym5oxwaJEq3Z6CCNa5+Zt\nYz32c5nAdQ3gcm20XF646J/tRxNphPi3Ojp97tFpAQKBgQDZQMcm/H7rdBzX9D+o\nR1CcsE1Jc68x7Juvs7jRFGhlTrOeMNO9QhfZBsuh/wTkGJXksGWsA5YmCmxhoU+D\njz3Qm8knbx3Dx9wHZsdD2eKbHmJo3c53yQDYfIJ58/yXfdbLRmwWfuIQRWsof9gt\nHPZS/0JB9UBnseHkJUOjPHODqQKBgQDF5SWruEmB2YkgW2Mz+G/51syTWhRjsTyE\nBOwVx9jF7Q4Mt5RhABINcGN2bHy/C8cYd6T4LFHiIkd0yVmWl5tKX9ZmfCDZU3LZ\nHCL5RRqarcGgFwMQlSH5Y2fx7zvhK9o+Qa3107rrZQVV3UhnM1h3COSYIZuz/5Xs\nx0C7ZZpHgQKBgA2ZFl4EU9Vc8Sk7KnjX7d3A0zWTvhV738rBjwHXKymcIXX3TGl+\nJ4v39uru0VmNiGRF/jckClPbNyltNVLgtlfGSHLla5GDguwbrME8dAiNgE9cAr5Q\noHLsaCZF9TtuLvGOONm3m2K1VZ21UsyQEYLkYztJpHxZD/B9vJwM/pXxAoGAbe5r\nTMck3mMvj6/0ncwmuA0gu8JQjUjJqzToyPipbNnQ8jOQ04msfZavSfveGGq8gNUF\n6W8FVa9hLnkjsUoq09gFTA0sWk3HAOBmdT50FvTrGLlv1Ghj5RvZhEY3Z1Bq/iaS\nMnsZ3OXTXu176QhW3lksU25oBke2yz+sr+0zFQECgYBByI1W65qSeGBNSySFnlMG\nKCvrp/R6OYdSs6phbydF5OSRQteCnMwtACqG0WXYRDeHfZRhFySq1uVHTaakYC3/\nET5BTk+GY9RvwUb6GyDvyLcTl+HB21SrUrDkzNeNW2YkEFDHjL7KbZ+WWNRqGz9v\nzBJVr6Zjcc/n48QP0DSJsQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-qxqrh@lowcarbonschool-2a2d2.iam.gserviceaccount.com",
+  "client_id": "116891621335478392769",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-qxqrh%40lowcarbonschool-2a2d2.iam.gserviceaccount.com"
+}

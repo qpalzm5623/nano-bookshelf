@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나노의 책장 - 통합 프로토타입 프리뷰 허브</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --leaf: #2e5a44;
+      --wood: #6d5b4b;
+      --border: #e2e8f0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+      --shadow-hover: 0 20px 30px -10px rgba(0,0,0,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #fff;
+      padding: 60px 24px 70px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #93c5fd;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      backdrop-filter: blur(4px);
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .hero p {
+      font-size: 16px;
+      color: #94a3b8;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1100px;
+      margin: -35px auto 60px;
+      padding: 0 20px;
+      width: 100%;
+      flex: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: var(--shadow-md);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+      border-color: #cbd5e1;
+    }
+    .card-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .icon-student { background: #eaf4ed; color: #2e5a44; }
+    .icon-admin { background: #eff6ff; color: #2563eb; }
+    .icon-master { background: #fef3c7; color: #d97706; }
+    .icon-demo { background: #f3e8ff; color: #9333ea; }
+    .tag {
+      position: absolute;
+      top: 28px;
+      right: 28px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tag-green { background: #dcfce7; color: #166534; }
+    .tag-blue { background: #dbeafe; color: #1e40af; }
+    .tag-gold { background: #fef3c7; color: #92400e; }
+    .tag-purple { background: #f3e8ff; color: #6b21a8; }
+    .card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+    .btn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .card:hover .btn-link {
+      color: var(--primary-hover);
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 20px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="badge">
+    <i class="fa-solid fa-cloud-arrow-up"></i> Vercel Deployment Ready
+  </div>
+  <h1>나노의 책장 프로토타입 프리뷰</h1>
+  <p>실제 동작하는 3대 핵심 포털 화면 및 인터랙티브 기능 데모를 바로 체험하실 수 있습니다.</p>
+</header>
+
+<main class="container">
+  <div class="grid">
+    <!-- 1. 학생 포털 -->
+    <a href="student_preview.html" class="card">
+      <span class="tag tag-green">NEW Forest Wood</span>
+      <div class="card-icon icon-student">
+        <i class="fa-solid fa-seedling"></i>
+      </div>
+      <h2>학생 모바일 포털</h2>
+      <p>내추럴 포레스트 우드 & 세이지 그린 테마. 3단 롤링 배너, 실사 도서 표지, 인터랙티브 5문항 북퀴즈 풀이 및 랭킹 조회.</p>
+      <div class="btn-link">
+        체험하기 <i class="fa-solid fa-arrow-right"></i>
+      </div>
+    </a>
+
+    <!-- 2. 학원 관리자 포털 -->
+    <a href="admin_preview.html" class="card">
+      <span class="tag tag-blue">Academy</span>
+      <div class="card-icon icon-admin">
+        <i class="fa-solid fa-school"></i>
+      </div>
+      <h2>학원 관리자 포털</h2>
+      <p>원장/교사용 B2B 대시보드. 도서 배정, 북퀴즈 출제/편집, 학생별 학습 이력 및 카카오 알림톡 발송 모달.</p>
+      <div class="btn-link">
+        체험하기 <i class="fa-solid fa-arrow-right"></i>
+      </div>
+    </a>
+
+    <!-- 3. 본사 마스터 관리자 -->
+    <a href="master_preview.html" class="card">
+      <span class="tag tag-gold">Master</span>
+      <div class="card-icon icon-master">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h2>본사 마스터 관리자</h2>
+      <p>전국 가맹 학원 관리, 학생 메인 롤링 배너 통제, 도서 큐레이션 테마 관리 및 전사 공지사항 중앙 관제.</p>
+      <div class="btn-link">
+        체험하기 <i class="fa-solid fa-arrow-right"></i>
+      </div>
+    </a>
+
+    <!-- 4. 통합 기능 데모 -->
+    <a href="preview_demo.html" class="card">
+      <span class="tag tag-purple">Feature Demo</span>
+      <div class="card-icon icon-demo">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </div>
+      <h2>신규 기능 통합 데모</h2>
+      <p>KaTeX 수식 렌더링 북퀴즈, 수학 기호 팔레트 퀴즈 등록기, 1p 정답 팝업, FTP 대체 대량 업로더 프리뷰.</p>
+      <div class="btn-link">
+        체험하기 <i class="fa-solid fa-arrow-right"></i>
+      </div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  © 2026 나노의 책장 (Nano BookShelf) · Interactive Prototype Preview
+</footer>
+
+</body>
+</html>

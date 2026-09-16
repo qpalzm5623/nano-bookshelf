@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="../../css/normalize.css">
+	<link rel="stylesheet" href="../../css/common.css">
+	<link rel="stylesheet" href="../../css/sub.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+	<script src="../../js/common.js"></script>
+	<title>나노의책장</title>
+</head>
+<body>
+	<div id="wrap">
+		<!-- header -->
+		<header class="sub_header">
+			<div class="inner">
+				<a href="#" class="btn_back"><i class="icon_back"></i>이전</a>
+				<h2 class="header_title">검색</h2>
+				<a href="#" class="btn_info"><i class="icon_info"></i>정보</a>
+			</div>
+		</header>
+
+		<!-- contents -->
+		<div id="contents" class="contents">
+			<div class="search_wrap inner">
+				<div class="input_box">
+					<input type="text" placeholder="도서명, 지은이, 출판사를 검색하세요.">
+					<button class="input_search"><i class="icon_search_orange"></i>검색</button>
+				</div>
+				<div class="resent_search_area width_full">
+					<div class="resent_search_box swiper-wrapper">
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+						<div class="swiper-slide">
+							<a href="#" class="search_word">최근검색어</a>
+						</div>
+					</div>
+				</div>
+				
+				<h3 class="title">책 주제별</h3>
+				
+				<!-- 주제별 책 목록 -->
+				<ul class="book_list_by_topic">
+					<li class="book_topic">
+						<a href="#"></a>
+						<div class="book_content">
+							<h4 class="book_subject">생물</h4>
+							<p class="book_description">주제에 대한 간단한 설명</p>
+						</div>
+						<div class="image_box"><img src="http://placehold.it/128x79" alt=""></div>
+					</li>
+					<li class="book_topic">
+						<a href="#"></a>
+						<div class="book_content">
+							<h4 class="book_subject">생물</h4>
+							<p class="book_description">주제에 대한 간단한 설명</p>
+						</div>
+						<div class="image_box"><img src="http://placehold.it/128x79" alt=""></div>
+					</li>
+					<li class="book_topic">
+						<a href="#"></a>
+						<div class="book_content">
+							<h4 class="book_subject">생물</h4>
+							<p class="book_description">주제에 대한 간단한 설명</p>
+						</div>
+						<div class="image_box"><img src="http://placehold.it/128x79" alt=""></div>
+					</li>
+					<li class="book_topic">
+						<a href="#"></a>
+						<div class="book_content">
+							<h4 class="book_subject">자연</h4>                
+							<p class="book_description">주제에 대한 간단한 설명</p>
+						</div>
+						<div class="image_box"><img src="http://placehold.it/128x79" alt=""></div>
+					</li>
+				</ul>
+				<!-- //책 주제별 목록 -->
+			</div>
+		</div>
+		<!-- //contents -->
+
+		<!-- navigation -->
+		<nav class="nav">
+			<ul class="nav_list">
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">홈</span>
+					</a>
+				</li>
+				<li class="nav_item on">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">검색</span>
+					</a>
+				</li>
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">랭킹</span>
+					</a>
+				</li>
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">책장</span>
+					</a>
+				</li>
+				<li class="nav_item">
+					<a href="#">
+						<i class="item_icon"></i>
+						<span class="item_title">관리</span>
+					</a>
+				</li>
+			</ul>
+		</nav>
+		<!-- //navigation -->
+	</div>
+
+	<script>
+		$(function() {
+			const certifiedBook = new Swiper('.resent_search_area', {
+				slidesPerView: 'auto',
+      	spaceBetween: 7,
+				loop: false,
+				breakpoints: {
+					340: {
+						// slidesPerView: 2.9,
+						spaceBetween: 4,
+					},
+					759: {
+						// slidesPerView: 3.7,
+						spaceBetween: 7,
+					},
+				}
+			});
+		})
+	</script>
+</body>
+</html>

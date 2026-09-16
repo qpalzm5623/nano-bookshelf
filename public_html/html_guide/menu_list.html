@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="/css/normalize.css">
+	<title>나노의 책장 컨벤션</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;700&display=swap');
+
+    body {color:#222; font-size:14px; letter-spacing:-.025em; font-family:'Noto Sans KR', sans-serif;}
+    * {margin:0; padding:0}
+    li {list-style:none}
+    a {color:inherit; text-decoration:none}
+    strong {font-weight:normal}
+    table {width:100%; table-layout:fixed; border-collapse:collapse; border-bottom:1px solid #ccc;}
+    tr {border-top:1px solid #ccc;}
+    th {font-weight:normal; background-color:#efefef}
+    th, td {padding:10px;}
+    th + th, td + td {border-left:1px solid #ccc}
+	tr:hover td {background:#fffbe4}
+
+    .wrap {width:100%; max-width:1300px; margin:auto; padding:30px 0;}
+    .sectionList {padding:0 10px;}
+    .sectionList .subTitList {margin-bottom:10px; font-size:17px}
+    .sectionList .basicTbl + .subTitList {margin-top:30px}
+    .sectionList .basicTbl .url {text-align:right}
+    .sectionList .basicTbl .state {text-align:center;}
+
+    .point {color:red; font-weight:bold}
+    .complete {color:blue; font-weight:bold}
+
+  </style>
+</head>
+<body>
+	<div class="wrap">
+		<div class="sectionList">
+			<h2 class="subTitList">대표 페이지</h2>
+			<table class="basicTbl">
+				<colgroup>
+					<col style="width:22%">
+					<col style="width:25%">
+					<col style="width:25%">
+					<col style="width:28%">
+					<col>
+				</colgroup>
+				<thead>
+					<tr>
+						<th>1depth</th>
+						<th>2depth</th>
+						<th>3depth</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class="depth">로그인</td>
+						<td class="depth"></td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/login/AA-001.html" target="_blank">AA-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">로그인</td>
+						<td class="depth">알림창</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/login/alert.html" target="_blank">alert.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">홈</td>
+						<td class="depth">본인확인 팝업</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/login/EE-001.html" target="_blank">EE-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">홈</td>
+						<td class="depth">메인</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/home/BB-001.html" target="_blank">BB-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">홈</td>
+						<td class="depth">배너</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/home/banner.html" target="_blank">banner.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">검색</td>
+						<td class="depth">메인</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/search/CC-001.html" target="_blank">CC-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">검색</td>
+						<td class="depth">카테고리</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/search/CC-002.html" target="_blank">CC-002.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">검색</td>
+						<td class="depth">결과화면(X)</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/search/CC-003.html" target="_blank">CC-003.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">검색</td>
+						<td class="depth">결과화면</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/search/CC-003.html" target="_blank">CC-003.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">메인</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/book_detail/DD-001.html" target="_blank">DD-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">메인</td>
+						<td class="url">
+							<a href="./html/book_detail/DD-002.html" target="_blank">DD-002.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">문제 객관식</td>
+						<td class="url">
+							<a href="./html/book_detail/DD-003.html" target="_blank">DD-003.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">문제 주관식</td>
+						<td class="url">
+							<a href="./html/book_detail/DD-003-2.html" target="_blank">DD-003-2.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">결과화면</td>
+						<td class="url">
+							<a href="./html/book_detail/DD-006.html" target="_blank">DD-006.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">책추천화면</td>
+						<td class="url">
+							<a href="./html/book_detail/DD-005.html" target="_blank">DD-005.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">정답 제출 팝업</td>
+						<td class="url">
+							<a href="./html/book_detail/alert.html" target="_blank">alert.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">도서상세</td>
+						<td class="depth">북퀴즈</td>
+						<td class="depth">결과하면 통과(X)</td>
+						<td class="url">
+							<a href="./html/book_detail/DD-007.html" target="_blank">DD-007.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">랭킹</td>
+						<td class="depth">전체</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/rank/EE-001.html" target="_blank">EE-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">내책장</td>
+						<td class="depth">메인</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/my_bookcase/FF-001.html" target="_blank">FF-001.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">내책장</td>
+						<td class="depth">관심 주제 수정</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/my_bookcase/FF-002.html" target="_blank">FF-002.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">내책장</td>
+						<td class="depth">독서 인증 기록</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/my_bookcase/FF-003.html" target="_blank">FF-003.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">내책장</td>
+						<td class="depth">찜한책</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/my_bookcase/FF-004.html" target="_blank">FF-004.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">메인</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002.html" target="_blank">FF-002.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">내포인트</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002-2.html" target="_blank">FF-002-2.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">비밀번호 변경</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002-3.html" target="_blank">FF-002-3.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">공지사항</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002-4.html" target="_blank">FF-002-4.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">자주 묻는 질문</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002-5.html" target="_blank">FF-002-5.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">고객센터(문의)</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002-6.html" target="_blank">FF-002-6.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">고객센터(문의내역확인)</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/FF-002-6.html" target="_blank">FF-002-6.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">관리</td>
+						<td class="depth">이용약관</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/manage/terms.html" target="_blank">terms.html</a>
+						</td>
+					</tr>
+					<tr>
+						<td class="depth">포트폴리오</td>
+						<td class="depth">포트폴리오</td>
+						<td class="depth"></td>
+						<td class="url">
+							<a href="./html/portfolio/portfolio.html" target="_blank">portfolio.html</a>
+						</td>
+					</tr>					
+				</tbody>
+			</table>
+		</div>
+	</div>
+</body>
+</html>

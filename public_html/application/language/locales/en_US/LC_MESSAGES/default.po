@@ -1,0 +1,2653 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: en_US\n"
+"POT-Creation-Date: 2020-09-28 16:32+0900\n"
+"PO-Revision-Date: 2020-09-28 16:42+0900\n"
+"Last-Translator: OJH <mulggimpyo@naver.com>\n"
+"Language-Team: \n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"X-Poedit-Basepath: .\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: controllers/About.php:105
+msgid "Unauthorized collection of rejection email address"
+msgstr ""
+
+#: controllers/About.php:174
+msgid "Privacy Policy"
+msgstr ""
+
+#: controllers/Admin.php:5155 controllers/Admin.php:5248
+#: controllers/Admin.php:5329 controllers/Admin.php:6644
+#: controllers/Admin.php:6738 controllers/Admin.php:6826
+#: controllers/BrandAdmin.bak.php:264 controllers/BrandAdmin.bak.php:395
+#: controllers/BrandAdmin.bak.php:627 controllers/BrandAdmin.bak.php:879
+#: controllers/BrandAdmin.bak.php:918 controllers/BrandAdmin.bak.php:1066
+#: controllers/BrandAdmin.bak.php:1162 controllers/BrandAdmin.bak.php:1288
+#: controllers/BrandAdmin.bak.php:1338 controllers/BrandAdmin.bak.php:1419
+#: controllers/BrandAdmin.bak.php:1496 controllers/BrandAdmin.bak.php:1693
+#: controllers/BrandAdmin.bak.php:1788 controllers/BrandAdmin.bak.php:1871
+#: controllers/BrandAdmin.php:285 controllers/BrandAdmin.php:420
+#: controllers/BrandAdmin.php:673 controllers/BrandAdmin.php:962
+#: controllers/BrandAdmin.php:1000 controllers/BrandAdmin.php:1134
+#: controllers/BrandAdmin.php:1309 controllers/BrandAdmin.php:1454
+#: controllers/BrandAdmin.php:1606 controllers/BrandAdmin.php:1732
+#: controllers/BrandAdmin.php:1782 controllers/BrandAdmin.php:1863
+#: controllers/BrandAdmin.php:1940 controllers/BrandAdmin.php:2174
+#: controllers/BrandAdmin.php:2269 controllers/BrandAdmin.php:2352
+#: controllers/BrandAdmin.php:2628
+msgid "권한이 없습니다."
+msgstr ""
+
+#: controllers/Brand.php:38 controllers/Brand.php:97 controllers/Brand.php:138
+msgid "GN_S BRANDS"
+msgstr ""
+
+#: controllers/Brand.php:245 controllers/Product.php:571
+msgid "로그인 후 이용 가능힙니다."
+msgstr ""
+
+#: controllers/Brand.php:281 controllers/Product.php:629
+#: controllers/Product.php:851 views/brandAdmin/include/footer_js.php:59
+#: views/inc/header.php:42
+msgid "오류가 발생했습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:27 controllers/BrandAdmin.php:27
+msgid "로그인 해주시기 바랍니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:33 controllers/BrandAdmin.php:33
+msgid "최초 로그인 시 비밀번호 변경이 필요합니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:90 controllers/BrandAdmin.php:90
+msgid "아이디를 입력 해 주세요"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:95 controllers/BrandAdmin.php:95
+msgid "비밀번호를 입력 해 주세요"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:127 controllers/BrandAdmin.php:148
+msgid "아이디를 확인 해 주세요."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:131 controllers/BrandAdmin.php:152
+msgid "비밀번호를 확인 해 주세요."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:152 controllers/BrandAdmin.php:173
+msgid "최초로그인 정보수정"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:153 controllers/BrandAdmin.php:174
+msgid "최초로그인 수정"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:232 controllers/BrandAdmin.php:253
+msgid "다시 시도 해 주시기 바랍니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:241 controllers/BrandAdmin.php:262
+msgid "기존 비밀번호가 맞지 않습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:258 controllers/BrandAdmin.bak.php:259
+#: controllers/BrandAdmin.bak.php:389 controllers/BrandAdmin.php:279
+#: controllers/BrandAdmin.php:280 controllers/BrandAdmin.php:414
+#: views/brandAdmin/include/left.php:21 views/brandAdmin/include/left.php:29
+msgid "상품 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:334 controllers/BrandAdmin.php:359
+#: views/brandAdmin/product-modify.php:179
+#: views/brandAdmin/product-write.php:141
+msgid "노출"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:337 controllers/BrandAdmin.php:362
+#: views/brandAdmin/product-modify.php:183
+#: views/brandAdmin/product-write.php:145
+msgid "비노출"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:346 controllers/BrandAdmin.php:371
+#: views/brandAdmin/product-modify.php:145
+#: views/brandAdmin/product-modify.php:214
+#: views/brandAdmin/product-write.php:107
+#: views/brandAdmin/product-write.php:169
+msgid "한국어"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:348 controllers/BrandAdmin.php:373
+#: views/brandAdmin/product-modify.php:148
+#: views/brandAdmin/product-modify.php:217
+#: views/brandAdmin/product-write.php:110
+#: views/brandAdmin/product-write.php:172
+msgid "영어"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:350 controllers/BrandAdmin.php:375
+#: views/brandAdmin/product-modify.php:151
+#: views/brandAdmin/product-modify.php:220
+#: views/brandAdmin/product-write.php:113
+#: views/brandAdmin/product-write.php:175
+msgid "중국어"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:390 controllers/BrandAdmin.php:415
+msgid "상품 등록"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:573 controllers/BrandAdmin.bak.php:1471
+#: controllers/BrandAdmin.bak.php:1850 controllers/BrandAdmin.php:619
+#: controllers/BrandAdmin.php:1915 controllers/BrandAdmin.php:2331
+#: controllers/BrandAdmin.php:2696
+msgid "정상적으로 등록 되었습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:577 controllers/BrandAdmin.bak.php:868
+#: controllers/BrandAdmin.bak.php:891 controllers/BrandAdmin.bak.php:1137
+#: controllers/BrandAdmin.bak.php:1403 controllers/BrandAdmin.bak.php:1475
+#: controllers/BrandAdmin.bak.php:1674 controllers/BrandAdmin.bak.php:1854
+#: controllers/BrandAdmin.bak.php:1950 controllers/BrandAdmin.php:623
+#: controllers/BrandAdmin.php:951 controllers/BrandAdmin.php:974
+#: controllers/BrandAdmin.php:1847 controllers/BrandAdmin.php:1919
+#: controllers/BrandAdmin.php:2155 controllers/BrandAdmin.php:2335
+#: controllers/BrandAdmin.php:2431 controllers/BrandAdmin.php:2447
+#: controllers/BrandAdmin.php:2700 controllers/BrandAdmin.php:2801
+#: controllers/BrandAdmin.php:2820 controllers/Product.php:870
+msgid "오류가 발생 했습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:621 controllers/BrandAdmin.bak.php:622
+#: controllers/BrandAdmin.php:667 controllers/BrandAdmin.php:668
+msgid "상품 수정"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:864 controllers/BrandAdmin.bak.php:1133
+#: controllers/BrandAdmin.bak.php:1668 controllers/BrandAdmin.bak.php:1946
+#: controllers/BrandAdmin.php:947 controllers/BrandAdmin.php:2149
+#: controllers/BrandAdmin.php:2427 controllers/BrandAdmin.php:2797
+msgid "정상적으로 수정 되었습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:887 controllers/BrandAdmin.php:970
+#: controllers/BrandAdmin.php:2443 controllers/BrandAdmin.php:2816
+msgid "정상적으로 삭제 했습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:912 controllers/BrandAdmin.bak.php:1060
+#: controllers/BrandAdmin.bak.php:1156 controllers/BrandAdmin.bak.php:1282
+#: controllers/BrandAdmin.bak.php:1332 controllers/BrandAdmin.bak.php:1413
+#: controllers/BrandAdmin.php:1303 controllers/BrandAdmin.php:1448
+#: controllers/BrandAdmin.php:1600 controllers/BrandAdmin.php:1726
+#: controllers/BrandAdmin.php:1776 controllers/BrandAdmin.php:1857
+#: views/brandAdmin/include/left.php:38
+msgid "주문 & 문의 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:913 controllers/BrandAdmin.php:1304
+#: views/brandAdmin/include/left.php:52
+msgid "주문 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1006 controllers/BrandAdmin.php:1394
+#: views/brandAdmin/order-modify.php:101
+msgid "주문완료"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1010 controllers/BrandAdmin.php:1398
+#: views/brandAdmin/order-modify.php:102
+msgid "주문취소"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1014 controllers/BrandAdmin.php:1402
+#: views/brandAdmin/order-modify.php:103
+msgid "배송중"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1018 controllers/BrandAdmin.php:1406
+#: views/brandAdmin/order-modify.php:104
+msgid "배송완료"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1022 controllers/BrandAdmin.php:1410
+#: views/brandAdmin/order-modify.php:105
+msgid "배송취소"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1061 controllers/BrandAdmin.php:1449
+msgid "주문 수정"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1157 controllers/BrandAdmin.bak.php:1283
+#: controllers/BrandAdmin.bak.php:1333 controllers/BrandAdmin.php:1601
+#: controllers/BrandAdmin.php:1727 controllers/BrandAdmin.php:1777
+#: views/brandAdmin/include/left.php:58
+msgid "문의 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1299 controllers/BrandAdmin.php:1743
+msgid "답변대기"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1301 controllers/BrandAdmin.php:1745
+msgid "답변완료"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1399 controllers/BrandAdmin.php:1843
+msgid "정상적으로 수정되었습니다."
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1414 controllers/BrandAdmin.php:1858
+msgid "문의 등록"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1490 controllers/BrandAdmin.php:1934
+msgid "회원 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1491 controllers/BrandAdmin.php:1935
+msgid "회원 정보 수정"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1687 controllers/BrandAdmin.bak.php:1782
+#: controllers/BrandAdmin.bak.php:1865 controllers/BrandAdmin.php:2168
+#: controllers/BrandAdmin.php:2263 controllers/BrandAdmin.php:2346
+msgid "갤러리 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.bak.php:1688 controllers/BrandAdmin.bak.php:1783
+#: controllers/BrandAdmin.bak.php:1866 controllers/BrandAdmin.php:2169
+#: controllers/BrandAdmin.php:2264 controllers/BrandAdmin.php:2347
+#: views/admin/brand-member-view.php:373 views/brandAdmin/info-modify.php:343
+msgid "갤러리 수정"
+msgstr ""
+
+#: controllers/BrandAdmin.php:2534 controllers/BrandAdmin.php:2535
+msgid "포트폴리오 리스트"
+msgstr ""
+
+#: controllers/BrandAdmin.php:2622 controllers/BrandAdmin.php:2712
+msgid "포트폴리오 관리"
+msgstr ""
+
+#: controllers/BrandAdmin.php:2623 views/admin/portfolio-list.php:72
+#: views/brandAdmin/portfolio-list.php:72
+msgid "포트폴리오 등록"
+msgstr ""
+
+#: controllers/BrandAdmin.php:2713 views/admin/brand-member-view.php:385
+#: views/brandAdmin/info-modify.php:355
+msgid "포트폴리오 수정"
+msgstr ""
+
+#: controllers/Etc.php:39 controllers/Login.php:39 controllers/Member.php:39
+#: views/login/join3.php:15 views/login/search_id.php:11
+#: views/login/search_pw.php:12
+msgid "LOGIN"
+msgstr ""
+
+#: controllers/Etc.php:88 controllers/Login.php:101 controllers/Member.php:88
+#: controllers/Mypage.php:83 controllers/Mypage.php:251
+#: controllers/Mypage_bk.php:83 controllers/Mypage_bk.php:251
+msgid "아이디 비밀번호를 확인 해 주세요."
+msgstr ""
+
+#: controllers/Etc.php:113 controllers/Member.php:113
+msgid "FIND ID"
+msgstr ""
+
+#: controllers/Etc.php:148 controllers/Member.php:171
+msgid "FIND PW"
+msgstr ""
+
+#: controllers/Home.php:51
+msgid "MAIN"
+msgstr ""
+
+#: controllers/Join.php:110 controllers/Join.php:155
+msgid "중복된 아이디가 있습니다."
+msgstr ""
+
+#: controllers/Join.php:212
+msgid "저장중에 오류가 생겼습니다."
+msgstr ""
+
+#: controllers/Login.php:81
+msgid "이메일 인증을 해 주세요. \n"
+msgstr ""
+
+#: controllers/Member.php:157 controllers/Member.php:214
+msgid "정보가 일치하지 않습니다."
+msgstr ""
+
+#: controllers/Member.php:231
+msgid "인증이 완료 되었습니다. 로그인 해 주세요."
+msgstr ""
+
+#: controllers/Member.php:236
+msgid "이미 인증 하셨습니다."
+msgstr ""
+
+#: controllers/Member.php:241
+msgid "오류가 발생했습니다. 관리자에게 문의주세요"
+msgstr ""
+
+#: controllers/Mypage.php:41 controllers/Mypage.php:95
+#: controllers/Mypage.php:510 controllers/Mypage.php:604
+#: controllers/Mypage.php:737 controllers/Mypage.php:802
+#: controllers/Mypage_bk.php:41 controllers/Mypage_bk.php:95
+#: controllers/Mypage_bk.php:510 controllers/Mypage_bk.php:602
+#: controllers/Mypage_bk.php:667
+msgid "MYPAGE"
+msgstr ""
+
+#: controllers/Mypage.php:77 controllers/Mypage.php:215
+#: controllers/Mypage.php:246 controllers/Mypage_bk.php:77
+#: controllers/Mypage_bk.php:215 controllers/Mypage_bk.php:246
+msgid "OK."
+msgstr ""
+
+#: controllers/Mypage.php:220 controllers/Mypage_bk.php:220
+msgid "정보를 확인해 주세요."
+msgstr ""
+
+#: controllers/Mypage.php:264 controllers/Mypage.php:409
+#: controllers/Mypage.php:478 controllers/Mypage_bk.php:264
+#: controllers/Mypage_bk.php:409 controllers/Mypage_bk.php:478
+#: views/product/detail.php:159
+msgid "CART"
+msgstr ""
+
+#: controllers/Mypage.php:339 controllers/Mypage_bk.php:339
+#: views/mypage/mypage_request_list.php:20
+#: views/mypage/mypage_request_list.php:38
+#: views/mypage/mypage_request_list.php:68
+msgid "REQUEST"
+msgstr ""
+
+#: controllers/Mypage.php:834 controllers/Mypage_bk.php:699
+msgid "BRAND FAVORITE"
+msgstr ""
+
+#: controllers/Mypage.php:882 controllers/Mypage_bk.php:747
+msgid "PRODUCT FAVORITE"
+msgstr ""
+
+#: controllers/News.php:34
+msgid "EDITOR'S PICK"
+msgstr ""
+
+#: controllers/News.php:145 controllers/News.php:297 controllers/News.php:453
+msgid "게시글이 삭제되었거나 잘못된 경로입니다."
+msgstr ""
+
+#: controllers/News.php:186
+msgid "gn_s News"
+msgstr ""
+
+#: controllers/News.php:341
+msgid "K Trend"
+msgstr ""
+
+#: controllers/Product.php:41 controllers/Product.php:135
+#: controllers/Product.php:247
+msgid "GN_S PRODUCTS"
+msgstr ""
+
+#: controllers/Product.php:59 controllers/Product.php:152
+#: controllers/Product.php:160 controllers/Product.php:415
+#: controllers/Product.php:420
+msgid "BUYER 회원만 이용이 가능합니다."
+msgstr ""
+
+#: controllers/Product.php:603
+msgid "이미 장바구니에 담겨 있습니다."
+msgstr ""
+
+#: views/about/email.php:5 views/about/privacy.php:5 views/about/terms.php:5
+msgid ""
+"Global fashion business event hosted by Seoul-Trade show'Generation Next "
+"Seoul' (Gn_s) ​​is held twice a year in March and\n"
+"                  October in SS/FW season with Seoul Fashion Week (SFW), and "
+"is a competent fashion designer in Korea.\n"
+"                  Through direct matching with their brands and overseas "
+"buyers, we not only provide opportunities for global market development,\n"
+"                  but also discover and support next-generation designer "
+"brands, solidifying our position as the'Asian fashion industry hub city "
+"Seoul'."
+msgstr ""
+
+#: views/about/howto.php:3
+msgid "이렇게 이용해보세요"
+msgstr "How to order"
+
+#: views/about/howto.php:7
+msgid "회원가입"
+msgstr "Sign up"
+
+#: views/about/howto.php:8
+msgid "회원가입하여 혜택을 누려보세요"
+msgstr "Sign up to enjoy various benefits"
+
+#: views/about/howto.php:14
+msgid "승인절차"
+msgstr "Approval procedure"
+
+#: views/about/howto.php:15
+msgid "간단한 승인절차로 쉽게 이용하실 수 있어요"
+msgstr "Oreder it easily with a simple approval process"
+
+#: views/about/howto.php:21
+msgid "브랜드, 상품별 쇼핑"
+msgstr "Shopping by brand and product"
+
+#: views/about/howto.php:22
+msgid "새로운 브랜드와 다양한 아이템들을 소개합니다."
+msgstr "Introducing new brands and various items."
+
+#: views/about/howto.php:28
+msgid "카트담기"
+msgstr "Add to cart"
+
+#: views/about/howto.php:29
+msgid "간편하게 카트에 담고 쇼핑하세요"
+msgstr "Put in your cart simply and order"
+
+#: views/about/howto.php:35
+msgid "브랜드 커뮤니케이션"
+msgstr "Communication with brands"
+
+#: views/about/howto.php:36
+msgid "원하는 브랜드와 다양한 툴로 소통할 수 있습니다."
+msgstr "Communicate with the brand with SNS, video conferencing."
+
+#: views/about/howto.php:42
+msgid "오더완료"
+msgstr "order completed"
+
+#: views/about/howto.php:43
+msgid "주문이 완료되면 신속하게 배송됩니다."
+msgstr "Shipped quickly when the order is placed."
+
+#: views/about/online.php:24
+msgid ""
+"서울시가 주최하는 글로벌 패션 비지니스 이벤트 – 트레이드쇼 ’제너레이션넥스트"
+msgstr ""
+
+#: views/about/online.php:25
+msgid ""
+"서울’(gn_s)은 서울패션위크(SFW)와 함께 SS/FW 시즌 년 2회 3월, 10월에 개회하"
+"며,"
+msgstr ""
+
+#: views/about/online.php:26
+msgid ""
+"국내의 역량 있는 패션디자이너들의 브랜드와 해외 바이어들과의 직접적인 매칭을 "
+"통해"
+msgstr ""
+
+#: views/about/online.php:27
+msgid ""
+"글로벌 판로개척 기회제공뿐 아니라 차세대 디자이너브랜드 발굴 및 지원하며"
+msgstr ""
+
+#: views/about/online.php:28
+msgid "‘아시아 패션산업 허브도시 서울’의 입지를 견고히 해나가고 있습니다. "
+msgstr ""
+
+#: views/about/online.php:30
+msgid ""
+"2020년도 10월 시즌, 전 세계적인 코로나19의 확산으로 오프라인 개최가 불가함에 "
+"따라"
+msgstr ""
+
+#: views/about/online.php:31
+msgid ""
+"gn_s 공식 온라인 B2B 사이트를 기획 및 오픈하여 디지털 트레이드쇼를 진행합니"
+"다."
+msgstr ""
+
+#: views/about/online.php:32
+msgid ""
+"기존과 같이 아시아권 바이어 115명을 온라인으로 초청하고, 참가 브랜드와 함께 "
+msgstr ""
+
+#: views/about/online.php:33
+msgid "1:1 화상시스템을 활용해 비즈니스미팅을 진행할 예정입니다."
+msgstr ""
+
+#: views/about/online.php:35
+msgid "코로나19 뿐만이 아닌 향후 직면할 온택트 시대에 대비하는 방법으로서의 "
+msgstr ""
+
+#: views/about/online.php:36
+msgid "디지털 트레이드쇼에 대해 많은 관심 바랍니다."
+msgstr ""
+
+#: views/about/online.php:38
+msgid "The Trade Show held in Seoul is the Generation Next_ Seoul (gn_s). "
+msgstr ""
+
+#: views/about/online.php:39
+msgid ""
+"It is hosted by Seoul Metropolitan and organized by Seoul Design Foundation "
+msgstr ""
+
+#: views/about/online.php:40
+msgid "twice a year on March and October with Seoul Fashion Week (SFW). "
+msgstr ""
+
+#: views/about/online.php:42
+msgid ""
+"The aim of gn_s is to improve global fashion trade market in Korea by "
+"matching up talented Korean fashion designers with international buyers. "
+msgstr ""
+
+#: views/about/online.php:43
+msgid ""
+"It also has been doing utmost to discover talented young designers and "
+"establishing Seoul as Asian Fashion Hub City. "
+msgstr ""
+
+#: views/about/online.php:45
+msgid ""
+"In Oct 2020, Due to the worldwide spread of COVID 19, We couldn't hold Trade "
+"Show on-site. Thus We're going to run a Digital Trade Show through an "
+"official online gn_s B2B website. "
+msgstr ""
+
+#: views/about/online.php:47
+msgid ""
+"As before, We're planning to invite 115 Asian buyers on-line and run a "
+"business meeting by utilizing one on one video communication with "
+"participating brands.  "
+msgstr ""
+
+#: views/about/online.php:49
+msgid ""
+"We would be grateful for your interest and support in the Digital Trade Show "
+"as a way to prepare for COVID 19 as well as the upcoming non-contact era. "
+msgstr ""
+
+#: views/admin/gallery-list.php:12 views/admin/gallery-modify.php:12
+#: views/admin/gallery-write.php:12 views/admin/portfolio-list.php:12
+#: views/admin/portfolio-modify.php:12 views/admin/portfolio-write.php:12
+#: views/brandAdmin/first-modify.php:12 views/brandAdmin/gallery-list.php:12
+#: views/brandAdmin/gallery-modify.php:12 views/brandAdmin/gallery-write.php:12
+#: views/brandAdmin/info-modify.php:12 views/brandAdmin/portfolio-list.php:12
+#: views/brandAdmin/portfolio-modify.php:12
+#: views/brandAdmin/portfolio-write.php:12 views/brandAdmin/product-list.php:12
+#: views/brandAdmin/product-modify.php:18 views/brandAdmin/product-write.php:18
+#: views/brandAdmin/qna-list.php:12 views/brandAdmin/qna-modify.php:12
+#: views/brandAdmin/qna-view.php:12 views/brandAdmin/qna-write.php:12
+msgid "Home"
+msgstr ""
+
+#: views/admin/gallery-list.php:39 views/admin/portfolio-list.php:38
+#: views/brandAdmin/gallery-list.php:39 views/brandAdmin/portfolio-list.php:38
+#: views/brandAdmin/product-list.php:53 views/brandAdmin/qna-list.php:50
+msgid "번호"
+msgstr ""
+
+#: views/admin/gallery-list.php:40 views/admin/gallery-write.php:45
+#: views/brandAdmin/gallery-list.php:40 views/brandAdmin/gallery-write.php:45
+#: views/brandAdmin/product-list.php:54
+msgid "이미지"
+msgstr ""
+
+#: views/admin/gallery-list.php:41 views/admin/gallery-modify.php:39
+#: views/admin/gallery-write.php:39 views/admin/portfolio-list.php:40
+#: views/admin/portfolio-modify.php:39 views/admin/portfolio-write.php:39
+#: views/brandAdmin/gallery-list.php:41 views/brandAdmin/gallery-modify.php:39
+#: views/brandAdmin/gallery-write.php:39 views/brandAdmin/portfolio-list.php:40
+#: views/brandAdmin/portfolio-modify.php:39
+#: views/brandAdmin/portfolio-write.php:39 views/brandAdmin/qna-list.php:34
+#: views/brandAdmin/qna-list.php:51 views/brandAdmin/qna-modify.php:47
+#: views/brandAdmin/qna-view.php:49 views/brandAdmin/qna-write.php:53
+msgid "제목"
+msgstr ""
+
+#: views/admin/gallery-list.php:42 views/brandAdmin/gallery-list.php:42
+#: views/brandAdmin/qna-list.php:54
+msgid "등록일"
+msgstr ""
+
+#: views/admin/gallery-list.php:43 views/brandAdmin/gallery-list.php:43
+msgid "정렬"
+msgstr ""
+
+#: views/admin/gallery-list.php:59 views/admin/portfolio-list.php:57
+#: views/brandAdmin/gallery-list.php:59 views/brandAdmin/portfolio-list.php:57
+#: views/brandAdmin/product-list.php:83 views/brandAdmin/qna-list.php:74
+msgid "게시글이 없습니다."
+msgstr ""
+
+#: views/admin/gallery-list.php:74 views/brandAdmin/gallery-list.php:74
+msgid "갤러리 등록"
+msgstr ""
+
+#: views/admin/gallery-modify.php:45 views/brandAdmin/gallery-modify.php:45
+msgid "갤러리 이미지"
+msgstr ""
+
+#: views/admin/gallery-modify.php:55 views/admin/gallery-write.php:51
+#: views/brandAdmin/gallery-modify.php:55 views/brandAdmin/gallery-write.php:51
+msgid "노출 순서"
+msgstr ""
+
+#: views/admin/gallery-modify.php:67 views/admin/gallery-write.php:63
+#: views/admin/portfolio-modify.php:74 views/admin/portfolio-write.php:68
+#: views/brandAdmin/gallery-modify.php:67 views/brandAdmin/gallery-write.php:63
+#: views/brandAdmin/order-modify.php:230
+#: views/brandAdmin/portfolio-modify.php:74
+#: views/brandAdmin/portfolio-write.php:68
+#: views/brandAdmin/product-modify.php:363
+#: views/brandAdmin/product-write.php:318 views/brandAdmin/qna-modify.php:105
+#: views/brandAdmin/qna-view.php:113 views/brandAdmin/qna-write.php:67
+msgid "목록"
+msgstr ""
+
+#: views/admin/gallery-modify.php:68 views/admin/portfolio-modify.php:75
+#: views/brandAdmin/gallery-modify.php:68
+#: views/brandAdmin/portfolio-modify.php:75
+#: views/brandAdmin/product-modify.php:364
+msgid "삭제"
+msgstr ""
+
+#: views/admin/gallery-modify.php:69 views/admin/portfolio-modify.php:76
+#: views/brandAdmin/first-modify.php:73 views/brandAdmin/gallery-modify.php:69
+#: views/brandAdmin/info-modify.php:368 views/brandAdmin/order-modify.php:231
+#: views/brandAdmin/portfolio-modify.php:76
+#: views/brandAdmin/product-modify.php:365 views/brandAdmin/qna-modify.php:106
+#: views/brandAdmin/qna-view.php:114
+msgid "수정"
+msgstr ""
+
+#: views/admin/gallery-modify.php:91 views/admin/portfolio-modify.php:98
+#: views/brandAdmin/gallery-modify.php:91
+#: views/brandAdmin/portfolio-modify.php:98
+#: views/brandAdmin/product-modify.php:649 views/mypage/mypage_cart.php:197
+msgid "정말 삭제 하시겠습니까?"
+msgstr ""
+
+#: views/admin/gallery-write.php:64 views/admin/portfolio-write.php:69
+#: views/brandAdmin/gallery-write.php:64
+#: views/brandAdmin/portfolio-write.php:69
+#: views/brandAdmin/product-write.php:319 views/brandAdmin/qna-write.php:68
+msgid "등록"
+msgstr ""
+
+#: views/admin/gallery-write.php:88 views/brandAdmin/gallery-write.php:88
+msgid "이미지를 올려주세요"
+msgstr ""
+
+#: views/admin/portfolio-list.php:39 views/admin/portfolio-modify.php:45
+#: views/admin/portfolio-write.php:45 views/brandAdmin/portfolio-list.php:39
+#: views/brandAdmin/portfolio-modify.php:45
+#: views/brandAdmin/portfolio-write.php:45
+msgid "시즌"
+msgstr ""
+
+#: views/admin/portfolio-list.php:41 views/brandAdmin/portfolio-list.php:41
+msgid "파일명"
+msgstr ""
+
+#: views/admin/portfolio-modify.php:57 views/admin/portfolio-write.php:56
+#: views/brandAdmin/portfolio-modify.php:57
+#: views/brandAdmin/portfolio-write.php:56
+msgid "PDF"
+msgstr ""
+
+#: views/admin/portfolio-write.php:93 views/brandAdmin/portfolio-write.php:93
+msgid "PDF를 올려주세요"
+msgstr ""
+
+#: views/admin/product-modify.php:487 views/admin/product-write.php:387
+#: views/brandAdmin/product-modify.php:498
+#: views/brandAdmin/product-write.php:396
+msgid "브랜드를 선택 해 주세요."
+msgstr ""
+
+#: views/brand/detail.php:24
+msgid "SEE &amp; ORDER"
+msgstr ""
+
+#: views/brand/detail.php:38
+msgid "BRAND"
+msgstr ""
+
+#: views/brand/detail.php:40 views/brand/detail.php:128
+#: views/product/detail.php:171
+msgid "CONTACT"
+msgstr ""
+
+#: views/brand/detail.php:42
+msgid "LOOKBOOK"
+msgstr ""
+
+#: views/brand/detail.php:77
+msgid "Price range"
+msgstr ""
+
+#: views/brand/detail.php:83
+msgid "Incoterms"
+msgstr ""
+
+#: views/brand/detail.php:89
+msgid "End of ordering process"
+msgstr ""
+
+#: views/brand/detail.php:95
+msgid "Delivery period"
+msgstr ""
+
+#: views/brand/detail.php:131 views/product/detail.php:214
+msgid "Subject"
+msgstr ""
+
+#: views/brand/detail.php:137 views/product/detail.php:220
+msgid "Name"
+msgstr ""
+
+#: views/brand/detail.php:143 views/product/detail.php:226
+msgid "Content"
+msgstr ""
+
+#: views/brand/detail.php:149 views/product/detail.php:233
+msgid "Cancel"
+msgstr ""
+
+#: views/brand/detail.php:150 views/product/detail.php:234
+msgid "Accept"
+msgstr ""
+
+#: views/brand/detail.php:153 views/brand/detail.php:164
+#: views/brand/detail.php:175 views/mypage/mypage_orders.php:345
+msgid "닫기"
+msgstr ""
+
+#: views/brand/detail.php:158
+msgid "WhatsApp"
+msgstr ""
+
+#: views/brand/detail.php:169
+msgid "We Chat"
+msgstr ""
+
+#: views/brand/detail.php:257 views/product/detail.php:421
+#: views/product/detail.php:458
+msgid "바이어 회원만 글을 남길 수 있습니다."
+msgstr ""
+
+#: views/brand/detail.php:260 views/product/detail.php:378
+#: views/product/detail.php:424 views/product/detail.php:461
+msgid "로그인 후 이용가능한 메뉴입니다."
+msgstr ""
+
+#: views/brand/detail.php:287 views/product/detail.php:405
+msgid "문의가 접수 되었습니다."
+msgstr ""
+
+#: views/brand/list.php:14 views/brand/main.php:19 views/main/main.php:24
+#: views/main/main.php:46 views/news/trend-list.php:102
+#: views/product/list.php:19 views/product/main.php:63
+#: views/product/main2.php:63
+msgid "more"
+msgstr ""
+
+#: views/brand/list.php:37 views/brand/main.php:42 views/product/list.php:43
+#: views/product/main.php:89 views/product/main2.php:89
+msgid "ALL"
+msgstr ""
+
+#: views/brand/main.php:3 views/main/main.php:19 views/product/main.php:133
+#: views/product/main2.php:133
+msgid "Brand"
+msgstr ""
+
+#: views/brand/main.php:69 views/product/list.php:70 views/product/main.php:116
+#: views/product/main2.php:116
+msgid "ETC"
+msgstr ""
+
+#: views/brand/main.php:115 views/brandAdmin/product-list.php:32
+#: views/brandAdmin/product-list.php:33 views/brandAdmin/qna-list.php:30
+#: views/brandAdmin/qna-list.php:31 views/mypage/mypage_brand_favorite.php:12
+#: views/mypage/mypage_product_favorite.php:12 views/product/list.php:83
+#: views/product/list.php:97 views/product/main.php:129
+#: views/product/main.php:143 views/product/main2.php:129
+#: views/product/main2.php:143
+msgid "검색"
+msgstr ""
+
+#: views/brand/main.php:127
+msgid "BRAND OF THE WEEK"
+msgstr ""
+
+#: views/brand/main.php:140 views/brand/main.php:161
+#: views/mypage/mypage_brand_favorite.php:23
+#: views/mypage/mypage_product_favorite.php:24 views/product/main.php:156
+#: views/product/main2.php:155
+msgid "favorite"
+msgstr ""
+
+#: views/brand/main.php:148
+msgid "HOT BRAND"
+msgstr ""
+
+#: views/brand/main.php:244 views/brand/main.php:279
+msgid "해당 브랜드가 없습니다."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:34
+msgid "아이디"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:38 views/brandAdmin/qna-write.php:49
+msgid "이름"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:42
+msgid "기존비밀번호"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:43
+msgid "기존 비밀번호 입력"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:46
+msgid "변경비밀번호"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:46
+msgid "최소 8자리 이상, 영어대문자/소문자/숫자/특수문자 중 3종류 조합"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:47
+msgid "변경 할 비밀번호 입력"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:50
+msgid "변경비밀번호 확인"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:51
+msgid "변경 할 비밀번호 확인"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:54
+msgid "매니저 이름"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:55
+msgid "매니저 이름 입력"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:58
+msgid "부서"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:59
+msgid "부서 입력"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:62
+msgid "매니저 전화번호"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:63
+msgid "전화번호 입력"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:66
+msgid "매니저 이메일"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:67
+msgid "이메일 입력"
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:97
+msgid "8자리 ~ 20자리 이내로 입력해주세요."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:101 views/login/join2.php:248
+#: views/mypage/change_password.php:46 views/mypage/change_password.php:61
+#: views/mypage/mypage.php:35
+msgid "비밀번호는 공백 없이 입력해주세요."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:104 views/login/join2.php:251
+#: views/mypage/change_password.php:50 views/mypage/change_password.php:65
+#: views/mypage/mypage.php:38
+msgid "영문,숫자,특수문자를 혼합하여 입력해주세요."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:107
+msgid "변경될 비밀번호가 같지 않습니다."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:124
+msgid "이메일을 작성 해 주세요."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:129
+msgid "부서를 작성 해 주세요."
+msgstr ""
+
+#: views/brandAdmin/first-modify.php:145
+msgid "수정 되었습니다."
+msgstr ""
+
+#: views/brandAdmin/include/footer_js.php:47 views/inc/header.php:30
+msgid "정말 로그아웃 하시겠습니까"
+msgstr ""
+
+#: views/brandAdmin/include/footer_js.php:61 views/inc/header.php:44
+msgid "정상적으로 로그아웃 되었습니다."
+msgstr ""
+
+#: views/brandAdmin/include/header.php:6 views/brandAdmin/login.php:6
+#: views/brandAdmin/login.php:26
+msgid "Brand Admin"
+msgstr ""
+
+#: views/brandAdmin/include/left.php:46
+msgid "주문 요청 관리"
+msgstr ""
+
+#: views/brandAdmin/include/left.php:67 views/brandAdmin/include/left.php:85
+msgid "개인정보 수정"
+msgstr ""
+
+#: views/brandAdmin/include/left.php:76
+msgid "브랜드 갤러리"
+msgstr ""
+
+#: views/brandAdmin/include/left.php:80
+msgid "브랜드 포트폴리오"
+msgstr ""
+
+#: views/brandAdmin/include/left.php:89
+msgid "로그아웃"
+msgstr ""
+
+#: views/brandAdmin/include/top.php:28
+msgid "Log Out"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:35
+msgid "기본정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:41 views/brandAdmin/order-modify.php:110
+msgid "회사 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:47
+msgid "브랜드 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:53
+msgid "디자이너 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:59 views/brandAdmin/order-modify.php:122
+msgid "국가"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:65
+msgid "도시"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:71 views/brandAdmin/order-modify.php:146
+#: views/brandAdmin/order-modify.php:169 views/brandAdmin/order-modify.php:179
+#: views/mypage/mypage_orders.php:359 views/mypage/mypage_orders.php:374
+msgid "주소"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:77 views/brandAdmin/info-modify.php:129
+#: views/brandAdmin/order-modify.php:128
+msgid "연락처"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:83
+msgid "홈페이지"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:89
+msgid "설립년도"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:95
+msgid "국내 매출 실적"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:101
+msgid "수출 실적"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:111
+msgid "담당자 정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:117 views/brandAdmin/order-modify.php:116
+msgid "담당자 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:123
+msgid "부서 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:135 views/brandAdmin/order-modify.php:140
+msgid "이메일"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:145
+msgid "SNS 정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:151
+msgid "위챗 QR 코드"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:161
+msgid "왓츠앱 전화번호"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:167
+msgid "카카오톡 채널 주소"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:177
+msgid "브랜드 기본정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:183
+msgid "브랜드 Description 1"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:189
+msgid "브랜드 Description 2"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:195
+msgid "Price range(영어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:201
+msgid "Price range(중국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:207
+msgid "Price range(한국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:213
+msgid "Incoterms(영어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:219
+msgid "Incoterms(중국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:225
+msgid "Incoterms(한국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:231
+msgid "End of Ordering Process(영어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:237
+msgid "End of Ordering Process(중국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:243
+msgid "End of Ordering Process(한국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:249
+msgid "Delivery period(영어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:255
+msgid "Delivery period(중국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:261
+msgid "Delivery period(한국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:267 views/brandAdmin/info-modify.php:274
+msgid "브랜드 소개"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:270 views/brandAdmin/info-modify.php:277
+msgid "(노출되지 않습니다.)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:281
+msgid "브랜드 소개 (영어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:287
+msgid "브랜드 소개(중국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:293
+msgid "브랜드 소개(한국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:300
+msgid "선적 조건 (영어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:306
+msgid "선적 조건(중국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:312
+msgid "선적 조건(한국어)"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:319
+msgid "브랜드 대표 이미지"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:329
+msgid "브랜드 메인배너 이미지"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:343
+msgid "갤러리"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:355
+msgid "포트폴리오"
+msgstr ""
+
+#: views/brandAdmin/login.php:32
+msgid "브랜드 관리자 로그인"
+msgstr ""
+
+#: views/brandAdmin/login.php:56
+msgid "로그인"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:34
+msgid "주문내역"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:47 views/mypage/mypage_cart.php:21
+#: views/mypage/mypage_order_view.php:19 views/mypage/mypage_orders.php:17
+#: views/mypage/mypage_request_list.php:17
+msgid "BRAND NAME"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:48 views/mypage/mypage_cart.php:22
+#: views/mypage/mypage_order.php:16 views/mypage/mypage_order_view.php:20
+#: views/mypage/mypage_request.php:16
+msgid "PRODUCT NAME"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:49 views/mypage/mypage_cart.php:24
+#: views/mypage/mypage_order_view.php:21 views/product/detail.php:95
+msgid "SIZE"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:50 views/mypage/mypage_cart.php:25
+#: views/mypage/mypage_order_view.php:22 views/product/detail.php:43
+msgid "COLOR"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:51 views/mypage/mypage_cart.php:26
+#: views/mypage/mypage_cart.php:157 views/mypage/mypage_order.php:18
+#: views/mypage/mypage_order.php:79 views/mypage/mypage_order_view.php:24
+#: views/mypage/mypage_order_view.php:90 views/mypage/mypage_request.php:18
+#: views/mypage/mypage_request.php:79
+msgid "QUANTITY"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:52 views/mypage/mypage_cart.php:23
+#: views/mypage/mypage_cart.php:142 views/mypage/mypage_order.php:17
+#: views/mypage/mypage_order.php:67 views/mypage/mypage_order_view.php:23
+#: views/mypage/mypage_order_view.php:76 views/mypage/mypage_request.php:17
+#: views/mypage/mypage_request.php:67
+msgid "PRICE"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:53 views/login/mypage_orders1.php:18
+#: views/mypage/mypage_cart.php:27 views/mypage/mypage_cart.php:161
+#: views/mypage/mypage_order.php:19 views/mypage/mypage_order.php:83
+#: views/mypage/mypage_order_view.php:25 views/mypage/mypage_order_view.php:94
+#: views/mypage/mypage_orders.php:63 views/mypage/mypage_request.php:19
+#: views/mypage/mypage_request.php:83 views/mypage/mypage_request_list.php:61
+#: views/product/detail.php:137
+msgid "TOTAL"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:92
+msgid "주문 정보"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:98 views/brandAdmin/product-list.php:60
+#: views/brandAdmin/qna-view.php:43
+msgid "상태"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:134
+msgid "팩스번호"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:152
+msgid "요청내용"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:162
+msgid "INVOICE 정보"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:168 views/mypage/mypage_orders.php:353
+msgid "SHIPPER/SELLER"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:172 views/brandAdmin/order-modify.php:182
+#: views/mypage/mypage_orders.php:363 views/mypage/mypage_orders.php:378
+msgid "전화번호"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:175
+msgid "FAX"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:178 views/mypage/mypage_orders.php:368
+msgid "FOR ACCOUNT & RISK OF MESSERS"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:185
+msgid "ATTN"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:188 views/mypage/mypage_orders.php:383
+msgid "NOTIFY PARTY"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:192 views/mypage/mypage_orders.php:390
+msgid "PORT OF LOADING"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:196 views/mypage/mypage_orders.php:397
+msgid "FINAL DESTINATION"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:200 views/mypage/mypage_orders.php:404
+msgid "VESSEL FLIGHT"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:204 views/mypage/mypage_orders.php:411
+msgid "DEPARTURE DATE"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:208 views/mypage/mypage_orders.php:422
+msgid "NO. & DATE OF INVOICE"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:212 views/mypage/mypage_orders.php:429
+msgid "NO. & DATE OF L/C"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:216 views/mypage/mypage_orders.php:436
+msgid "L/C ISSUING BANK"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:220 views/mypage/mypage_orders.php:443
+msgid "REMARK"
+msgstr ""
+
+#: views/brandAdmin/portfolio-modify.php:48
+#: views/brandAdmin/portfolio-write.php:48
+msgid "선택해주세요."
+msgstr ""
+
+#: views/brandAdmin/product-list.php:30
+msgid "Woman 사용자 미리보기"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:31
+msgid "Man 사용자 미리보기"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:35
+msgid "전체"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:36 views/brandAdmin/product-list.php:55
+#: views/brandAdmin/product-modify.php:45 views/brandAdmin/product-write.php:45
+msgid "상품명"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:56 views/brandAdmin/product-modify.php:51
+#: views/brandAdmin/product-modify.php:54 views/brandAdmin/product-write.php:51
+#: views/brandAdmin/product-write.php:54 views/brandAdmin/qna-list.php:52
+#: views/brandAdmin/qna-modify.php:41 views/brandAdmin/qna-view.php:37
+#: views/brandAdmin/qna-write.php:39
+msgid "브랜드"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:57 views/brandAdmin/product-modify.php:62
+#: views/brandAdmin/product-modify.php:65
+#: views/brandAdmin/product-modify.php:75
+#: views/brandAdmin/product-modify.php:84 views/brandAdmin/product-write.php:62
+#: views/brandAdmin/product-write.php:65 views/brandAdmin/product-write.php:69
+#: views/brandAdmin/product-write.php:72
+msgid "카테고리"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:58 views/brandAdmin/product-modify.php:230
+#: views/brandAdmin/product-modify.php:274
+#: views/brandAdmin/product-modify.php:319
+#: views/brandAdmin/product-write.php:185
+#: views/brandAdmin/product-write.php:229
+#: views/brandAdmin/product-write.php:274
+msgid "가격"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:59 views/brandAdmin/product-modify.php:142
+#: views/brandAdmin/product-write.php:104
+msgid "사용언어"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:61 views/brandAdmin/product-list.php:77
+msgid "미리보기"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:73
+msgid "원"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:98
+msgid "상품등록"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:95 views/brandAdmin/product-write.php:77
+msgid "리스트 이미지"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:100
+#: views/brandAdmin/product-modify.php:110
+#: views/brandAdmin/product-modify.php:119
+#: views/brandAdmin/product-modify.php:128
+#: views/brandAdmin/product-modify.php:137
+#: views/brandAdmin/product-write.php:79 views/brandAdmin/product-write.php:85
+#: views/brandAdmin/product-write.php:90 views/brandAdmin/product-write.php:95
+#: views/brandAdmin/product-write.php:100
+msgid "이미지는 최대용량 10Mb를 넘길 수 없습니다."
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:105
+#: views/brandAdmin/product-write.php:83
+msgid "상세이미지"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:156
+#: views/brandAdmin/product-write.php:118
+msgid "성별"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:160
+#: views/brandAdmin/product-write.php:122
+msgid "Woman"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:164
+#: views/brandAdmin/product-write.php:126
+msgid "Man / Unisex"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:169
+#: views/brandAdmin/product-write.php:131
+msgid "비디오 소스"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:175
+#: views/brandAdmin/product-write.php:137
+msgid "노출여부"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:189
+#: views/brandAdmin/product-write.php:151
+msgid "관련 상품"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:193
+#: views/brandAdmin/product-write.php:155
+msgid "추가"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:211
+#: views/brandAdmin/product-write.php:166
+msgid "상품정보"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:233
+#: views/brandAdmin/product-modify.php:277
+#: views/brandAdmin/product-modify.php:322
+#: views/brandAdmin/product-write.php:188
+#: views/brandAdmin/product-write.php:232
+#: views/brandAdmin/product-write.php:277
+msgid "숫자만 입력해 주세요."
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:237
+#: views/brandAdmin/product-modify.php:281
+#: views/brandAdmin/product-modify.php:326
+#: views/brandAdmin/product-write.php:192
+#: views/brandAdmin/product-write.php:236
+#: views/brandAdmin/product-write.php:281
+msgid "색상"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:240
+#: views/brandAdmin/product-modify.php:284
+#: views/brandAdmin/product-modify.php:329
+#: views/brandAdmin/product-write.php:195
+#: views/brandAdmin/product-write.php:239
+#: views/brandAdmin/product-write.php:284
+msgid "색상 구분은 ,로 해주세요 Ex) Black,Red,White"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:244
+#: views/brandAdmin/product-modify.php:288
+#: views/brandAdmin/product-modify.php:333
+#: views/brandAdmin/product-write.php:199
+#: views/brandAdmin/product-write.php:243
+#: views/brandAdmin/product-write.php:288
+msgid "사이즈"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:247
+#: views/brandAdmin/product-modify.php:291
+#: views/brandAdmin/product-modify.php:336
+#: views/brandAdmin/product-write.php:202
+#: views/brandAdmin/product-write.php:246
+#: views/brandAdmin/product-write.php:291
+msgid "사이즈 구분은 ,로 해주세요 Ex) S,M,L,XL,XXL"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:251
+#: views/brandAdmin/product-modify.php:295
+#: views/brandAdmin/product-modify.php:340
+#: views/brandAdmin/product-write.php:206
+#: views/brandAdmin/product-write.php:250
+#: views/brandAdmin/product-write.php:295
+msgid "SKU#"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:255
+#: views/brandAdmin/product-modify.php:299
+#: views/brandAdmin/product-modify.php:344
+#: views/brandAdmin/product-write.php:210
+#: views/brandAdmin/product-write.php:254
+#: views/brandAdmin/product-write.php:299 views/product/detail.php:119
+msgid "TAG"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:259
+#: views/brandAdmin/product-modify.php:303
+#: views/brandAdmin/product-modify.php:348
+#: views/brandAdmin/product-write.php:214
+#: views/brandAdmin/product-write.php:258
+#: views/brandAdmin/product-write.php:303
+msgid "설명"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:556
+#: views/brandAdmin/product-modify.php:588
+#: views/brandAdmin/product-modify.php:589
+#: views/brandAdmin/product-modify.php:622
+#: views/brandAdmin/product-write.php:502
+#: views/brandAdmin/product-write.php:534
+#: views/brandAdmin/product-write.php:535
+#: views/brandAdmin/product-write.php:568
+msgid "카테고리 선택"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:656
+#: views/brandAdmin/product-write.php:597
+msgid "상품명을 작성 해 주세요"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:661
+#: views/brandAdmin/product-write.php:602
+msgid "브랜드를 선택 해 주세요"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:666
+#: views/brandAdmin/product-write.php:607
+msgid "카테고리를 선택 해 주세요"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:33
+msgid "제목+내용"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:35 views/brandAdmin/qna-modify.php:53
+#: views/brandAdmin/qna-modify.php:94 views/brandAdmin/qna-view.php:55
+#: views/brandAdmin/qna-view.php:101 views/brandAdmin/qna-write.php:57
+msgid "내용"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:53 views/brandAdmin/qna-modify.php:81
+#: views/brandAdmin/qna-view.php:88
+msgid "작성자"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:55
+msgid "답변일"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:56
+msgid "답변여부"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:89
+msgid "글쓰기"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:35 views/brandAdmin/qna-view.php:31
+#: views/brandAdmin/qna-write.php:33
+msgid "문의내용"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:59 views/brandAdmin/qna-view.php:61
+msgid "문의자"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:65 views/brandAdmin/qna-view.php:67
+msgid "문의일"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:75 views/brandAdmin/qna-view.php:77
+msgid "관리자 답변"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:83 views/brandAdmin/qna-view.php:90
+msgid "관리자"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:88 views/brandAdmin/qna-view.php:95
+msgid "작성일시"
+msgstr ""
+
+#: views/brandAdmin/qna-view.php:84
+msgid "답변 미등록 상태 입니다."
+msgstr ""
+
+#: views/inc/brand_footer.php:2 views/inc/footer.php:2
+#: views/inc/sub_footer.php:2 views/main/main_.php:168
+msgid "위로"
+msgstr ""
+
+#: views/inc/brand_footer.php:6 views/inc/footer.php:6
+#: views/inc/sub_footer.php:6 views/main/main_.php:172
+msgid "이메일주소무단수집거부"
+msgstr ""
+
+#: views/inc/brand_footer.php:7 views/inc/footer.php:7
+#: views/inc/sub_footer.php:7 views/main/main_.php:173
+msgid "개인정보처리방침"
+msgstr ""
+
+#: views/inc/brand_footer.php:8 views/inc/footer.php:8
+#: views/inc/sub_footer.php:8 views/main/main_.php:174
+msgid "이용약관"
+msgstr ""
+
+#: views/inc/brand_footer.php:16 views/inc/footer.php:16
+#: views/inc/sub_footer.php:16
+msgid "Family Site"
+msgstr ""
+
+#: views/inc/brand_footer.php:23 views/inc/footer.php:23
+#: views/inc/sub_footer.php:23 views/main/main_.php:186
+msgid "고객센터"
+msgstr ""
+
+#: views/inc/brand_top.php:60 views/inc/main_top.php:65
+#: views/inc/mypage_top.php:64 views/inc/product_top.php:64
+#: views/inc/sub_top.php:60
+msgid "메뉴"
+msgstr ""
+
+#: views/inc/header.php:61
+msgid "본문바로가기"
+msgstr ""
+
+#: views/inc/mypage_top.php:132
+msgid "Change of personal information"
+msgstr ""
+
+#: views/inc/mypage_top.php:133
+msgid "Change Password"
+msgstr ""
+
+#: views/inc/mypage_top.php:135
+msgid "Request"
+msgstr ""
+
+#: views/inc/mypage_top.php:136
+msgid "Orders"
+msgstr ""
+
+#: views/inc/mypage_top.php:137
+msgid "Favorite Brand"
+msgstr ""
+
+#: views/inc/mypage_top.php:138
+msgid "Favorite Product"
+msgstr ""
+
+#: views/login/join1.php:4 views/login/join2.php:4 views/login/join3.php:4
+msgid "ACCEPT THE TERMS OF USE"
+msgstr ""
+
+#: views/login/join1.php:5 views/login/join2.php:5 views/login/join3.php:5
+msgid "PROFILE"
+msgstr ""
+
+#: views/login/join1.php:6 views/login/join2.php:6 views/login/join3.php:6
+msgid "JOIN COMPLETED"
+msgstr ""
+
+#: views/login/join1.php:8
+msgid ""
+"Your information that is entered when you sign up for membership can be used "
+"for service information and marketing."
+msgstr ""
+
+#: views/login/join1.php:11 views/login/join1.php:41
+msgid "REQUIRED"
+msgstr ""
+
+#: views/login/join1.php:12
+msgid "Terms of Service"
+msgstr ""
+
+#: views/login/join1.php:14
+msgid ""
+"제 1장 총칙\n"
+"\n"
+"\n"
+"\n"
+"제 1조 (목정)"
+msgstr ""
+
+#: views/login/join1.php:21 views/login/join1.php:51
+msgid "Would you like to accept the terms of service?"
+msgstr ""
+
+#: views/login/join1.php:27 views/login/join1.php:57
+msgid "Agree"
+msgstr ""
+
+#: views/login/join1.php:34 views/login/join1.php:64
+msgid "I do not agree (Agree to register.)"
+msgstr ""
+
+#: views/login/join1.php:42
+msgid "Collection and use of personal information"
+msgstr ""
+
+#: views/login/join1.php:44
+msgid ""
+"본 [개인정보보호정책]은 홈페이지를 이용하는 인터넷사용자들의 기본권인 사생활 "
+"비밀과 자유 및 통신 비밀을 보장하고 불법적인 도청, 정보유출로 인한 인권침해"
+"가 나타나지 않도록 하고자 명시하는 것입니다.\n"
+"\n"
+"\n"
+"본 방침은 2020년 9월 1일 부터 시행됩니다.\n"
+"\n"
+"                                        "
+msgstr ""
+
+#: views/login/join1.php:72 views/login/join2.php:216
+#: views/login/mypage_info.php:144
+msgid "CANCEL"
+msgstr ""
+
+#: views/login/join1.php:73 views/login/search_id.php:26
+msgid "OK"
+msgstr ""
+
+#: views/login/join1.php:81
+msgid "이용약관에 동의 해 주시기 바랍니다."
+msgstr ""
+
+#: views/login/join1.php:85
+msgid "개인정보보호정책에 동의 해 주시기 바랍니다."
+msgstr ""
+
+#: views/login/join2.php:11 views/login/mypage_info.php:6
+#: views/mypage/mypage_info.php:6
+msgid "Required fields"
+msgstr ""
+
+#: views/login/join2.php:14
+msgid "Member type"
+msgstr ""
+
+#: views/login/join2.php:20
+msgid "brand"
+msgstr ""
+
+#: views/login/join2.php:27
+msgid "buyer"
+msgstr ""
+
+#: views/login/join2.php:35 views/login/login.php:7
+#: views/login/mypage_info.php:11 views/login/mypage_info.php:15
+#: views/mypage/mypage_info.php:9
+msgid "ID"
+msgstr ""
+
+#: views/login/join2.php:37 views/login/search_pw.php:18
+msgid "USER ID"
+msgstr ""
+
+#: views/login/join2.php:38
+msgid "ID CHECK"
+msgstr ""
+
+#: views/login/join2.php:39
+msgid ""
+"The ID can only use 6 to 20 English lowercase letters, numbers, special "
+"characters (_) and (-)."
+msgstr ""
+
+#: views/login/join2.php:43
+msgid "PW"
+msgstr ""
+
+#: views/login/join2.php:45
+msgid "Please enter a password."
+msgstr ""
+
+#: views/login/join2.php:49
+msgid "Confirm Password"
+msgstr ""
+
+#: views/login/join2.php:51
+msgid "Please enter your password again."
+msgstr ""
+
+#: views/login/join2.php:55 views/mypage/change_password.php:20
+msgid ""
+"The password should be a combination of 3 or more of 8 to 16 English "
+"uppercase, lowercase letters, numbers, and special characters."
+msgstr ""
+
+#: views/login/join2.php:56
+msgid "Available special characters:"
+msgstr ""
+
+#: views/login/join2.php:57 views/mypage/change_password.php:22
+msgid ""
+"The password cannot contain an ID, and the same number or character cannot "
+"be used more than 3 times in succession."
+msgstr ""
+
+#: views/login/join2.php:61 views/mypage/mypage_info.php:16
+msgid "Basic Information"
+msgstr ""
+
+#: views/login/join2.php:63 views/mypage/mypage_info.php:18
+#: views/mypage/mypage_order.php:101 views/mypage/mypage_order_view.php:111
+#: views/mypage/mypage_request.php:102
+msgid "Company Name"
+msgstr ""
+
+#: views/login/join2.php:65 views/mypage/mypage_info.php:20
+msgid "Please enter your company name"
+msgstr ""
+
+#: views/login/join2.php:69 views/mypage/mypage_info.php:24
+msgid "Brand name"
+msgstr ""
+
+#: views/login/join2.php:71 views/mypage/mypage_info.php:26
+msgid "Please enter the representative's name"
+msgstr ""
+
+#: views/login/join2.php:75 views/mypage/mypage_info.php:30
+msgid "Designer name"
+msgstr ""
+
+#: views/login/join2.php:77 views/mypage/mypage_info.php:32
+msgid "Please enter designer name"
+msgstr ""
+
+#: views/login/join2.php:81 views/mypage/mypage_info.php:36
+#: views/mypage/mypage_order.php:111 views/mypage/mypage_order_view.php:119
+#: views/mypage/mypage_request.php:112
+msgid "Country"
+msgstr ""
+
+#: views/login/join2.php:84 views/mypage/mypage_info.php:39
+#: views/mypage/mypage_order.php:114 views/mypage/mypage_request.php:115
+msgid "선택하세요."
+msgstr ""
+
+#: views/login/join2.php:97 views/mypage/mypage_info.php:52
+msgid "City"
+msgstr ""
+
+#: views/login/join2.php:99 views/mypage/mypage_info.php:54
+msgid "Please enter your city"
+msgstr ""
+
+#: views/login/join2.php:104 views/mypage/mypage_info.php:59
+msgid "Practitioner information"
+msgstr ""
+
+#: views/login/join2.php:106 views/mypage/mypage_info.php:61
+#: views/mypage/mypage_order.php:107 views/mypage/mypage_order_view.php:115
+#: views/mypage/mypage_request.php:108
+msgid "Contact person"
+msgstr ""
+
+#: views/login/join2.php:108 views/mypage/mypage_info.php:63
+msgid "Please enter the name of the person in charge"
+msgstr ""
+
+#: views/login/join2.php:112 views/mypage/mypage_info.php:67
+msgid "Department"
+msgstr ""
+
+#: views/login/join2.php:114 views/mypage/mypage_info.php:69
+msgid "Please enter department name"
+msgstr ""
+
+#: views/login/join2.php:118 views/login/join2.php:139
+#: views/mypage/mypage_info.php:73 views/mypage/mypage_info.php:94
+#: views/mypage/mypage_order.php:127 views/mypage/mypage_order_view.php:123
+#: views/mypage/mypage_request.php:128 views/mypage/mypage_request_list.php:109
+msgid "Contact"
+msgstr ""
+
+#: views/login/join2.php:120 views/login/join2.php:141
+#: views/mypage/mypage_info.php:75 views/mypage/mypage_info.php:96
+msgid "Please enter your contact information"
+msgstr ""
+
+#: views/login/join2.php:124 views/login/mypage_info.php:58
+#: views/mypage/mypage_info.php:79 views/mypage/mypage_order.php:135
+#: views/mypage/mypage_order_view.php:131 views/mypage/mypage_request.php:136
+#: views/mypage/mypage_request_list.php:111
+msgid "E-mail"
+msgstr ""
+
+#: views/login/join2.php:126 views/login/mypage_info.php:62
+#: views/mypage/mypage_info.php:81
+msgid "Please enter your e-mail"
+msgstr ""
+
+#: views/login/join2.php:131 views/mypage/mypage_info.php:86
+msgid "Headquarters Information"
+msgstr ""
+
+#: views/login/join2.php:133 views/login/mypage_info.php:73
+#: views/mypage/mypage_info.php:88 views/mypage/mypage_request_list.php:105
+msgid "Address"
+msgstr ""
+
+#: views/login/join2.php:135 views/mypage/mypage_info.php:90
+msgid "Please enter your address"
+msgstr ""
+
+#: views/login/join2.php:145 views/mypage/mypage_info.php:100
+msgid "Homepage"
+msgstr ""
+
+#: views/login/join2.php:147 views/mypage/mypage_info.php:102
+msgid "Please enter your homepage address"
+msgstr ""
+
+#: views/login/join2.php:151 views/mypage/mypage_info.php:106
+msgid "Founded"
+msgstr ""
+
+#: views/login/join2.php:153 views/mypage/mypage_info.php:108
+msgid ""
+"Please enter the establishment year based on the business registration "
+"certificate"
+msgstr ""
+
+#: views/login/join2.php:158 views/mypage/mypage_info.php:113
+msgid "Sales Performance Information"
+msgstr ""
+
+#: views/login/join2.php:160 views/mypage/mypage_info.php:115
+msgid "Domestic sales performance"
+msgstr ""
+
+#: views/login/join2.php:162 views/mypage/mypage_info.php:117
+msgid "Please enter the domestic sales results of the previous year"
+msgstr ""
+
+#: views/login/join2.php:166 views/mypage/mypage_info.php:121
+msgid "Export performance"
+msgstr ""
+
+#: views/login/join2.php:168 views/mypage/mypage_info.php:123
+msgid "Please enter the export performance of the previous year"
+msgstr ""
+
+#: views/login/join2.php:171 views/mypage/mypage_info.php:126
+msgid ""
+"Documents proving sales performance (domestic/export) can be requested upon "
+"submission."
+msgstr ""
+
+#: views/login/join2.php:175 views/login/mypage_info.php:104
+#: views/mypage/mypage_info.php:130
+msgid "Allowing e-mail receives"
+msgstr ""
+
+#: views/login/join2.php:181 views/login/join2.php:200
+#: views/login/mypage_info.php:91 views/login/mypage_info.php:110
+#: views/login/mypage_info.php:129 views/mypage/mypage_info.php:136
+#: views/mypage/mypage_info.php:155
+msgid "Yes"
+msgstr ""
+
+#: views/login/join2.php:188 views/login/join2.php:207
+#: views/login/mypage_info.php:98 views/login/mypage_info.php:117
+#: views/login/mypage_info.php:136 views/mypage/mypage_info.php:143
+#: views/mypage/mypage_info.php:162 views/mypage/mypage_request_list.php:127
+msgid "No"
+msgstr ""
+
+#: views/login/join2.php:194 views/mypage/mypage_info.php:149
+msgid "Marketing Utilization Agreement"
+msgstr ""
+
+#: views/login/join2.php:217 views/login/mypage_info.php:145
+msgid "SIGN UP"
+msgstr ""
+
+#: views/login/join2.php:228 views/login/login.php:42
+#: views/login/search_pw.php:42
+msgid "아이디를 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:233
+msgid "아이디를 6자리 ~ 20자리 이내로 입력해주세요."
+msgstr ""
+
+#: views/login/join2.php:244 views/mypage/change_password.php:41
+#: views/mypage/change_password.php:55 views/mypage/mypage.php:31
+msgid "비밀번호를 8자리 ~ 20자리 이내로 입력해주세요."
+msgstr ""
+
+#: views/login/join2.php:254
+msgid "비밀번호가 같지 않습니다."
+msgstr ""
+
+#: views/login/join2.php:260 views/mypage/mypage_info.php:181
+#: views/mypage/mypage_order.php:167 views/mypage/mypage_request.php:168
+msgid "회사명을 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:265 views/mypage/mypage_info.php:186
+msgid "브랜드명을 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:270 views/mypage/mypage_info.php:191
+msgid "국가를 선택 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:275 views/mypage/mypage_info.php:196
+msgid "도시를 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:280 views/mypage/mypage_info.php:201
+msgid "매니저 이름을 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:285 views/mypage/mypage_info.php:206
+msgid "매니저 부서를 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:290 views/mypage/mypage_info.php:211
+msgid "매니저 전화번호를 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:295 views/mypage/mypage_info.php:216
+msgid "매니저 이메일을 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:300 views/mypage/mypage_info.php:221
+#: views/mypage/mypage_order.php:187 views/mypage/mypage_request.php:188
+msgid "주소를 입력 해 주세요."
+msgstr ""
+
+#: views/login/join2.php:305 views/mypage/mypage_info.php:226
+msgid "연락처를 입력 해 주세요."
+msgstr ""
+
+#: views/login/join3.php:9
+msgid "Sign up is complete."
+msgstr ""
+
+#: views/login/join3.php:11
+msgid "You can use it by authenticating through the"
+msgstr ""
+
+#: views/login/join3.php:12
+msgid "link sent by e-mail."
+msgstr ""
+
+#: views/login/login.php:10
+msgid "PASSWORD"
+msgstr ""
+
+#: views/login/login.php:15
+msgid "Keep me signed in"
+msgstr ""
+
+#: views/login/login.php:18
+msgid "Forgot Your ID/Password?"
+msgstr ""
+
+#: views/login/login.php:21
+msgid "SIGN IN"
+msgstr ""
+
+#: views/login/login.php:23
+msgid "Not a member?"
+msgstr ""
+
+#: views/login/login.php:23
+msgid "Join Us"
+msgstr ""
+
+#: views/login/login.php:47
+msgid "비밀번호를 입력 해 주세요."
+msgstr ""
+
+#: views/login/login.php:61
+msgid "로그인 되었습니다."
+msgstr ""
+
+#: views/login/mypage_info.php:20 views/login/mypage_info.php:24
+msgid "NAME"
+msgstr ""
+
+#: views/login/mypage_info.php:29
+msgid "Cell Phone"
+msgstr ""
+
+#: views/login/mypage_info.php:44
+msgid "Telephone"
+msgstr ""
+
+#: views/login/mypage_info.php:66
+msgid "Direct input"
+msgstr ""
+
+#: views/login/mypage_info.php:78
+msgid "Address Search"
+msgstr ""
+
+#: views/login/mypage_info.php:79
+msgid "Please search for an address."
+msgstr ""
+
+#: views/login/mypage_info.php:85
+msgid "Mail consent"
+msgstr ""
+
+#: views/login/mypage_info.php:123
+msgid "Agree to receive SMS"
+msgstr ""
+
+#: views/login/mypage_orders1.php:17 views/mypage/mypage_orders.php:18
+#: views/mypage/mypage_request_list.php:18
+msgid "ORDER INFORMATION"
+msgstr ""
+
+#: views/login/mypage_orders1.php:19 views/mypage/mypage_orders.php:19
+#: views/mypage/mypage_orders.php:67 views/mypage/mypage_request_list.php:19
+#: views/mypage/mypage_request_list.php:65
+msgid "DATE"
+msgstr ""
+
+#: views/login/mypage_orders1.php:20 views/mypage/mypage_orders.php:20
+#: views/mypage/mypage_orders.php:39 views/mypage/mypage_orders.php:70
+msgid "INVOICE"
+msgstr ""
+
+#: views/login/mypage_orders1.php:21 views/mypage/mypage_orders.php:21
+msgid "STATUS"
+msgstr ""
+
+#: views/login/search_id.php:7
+msgid "Your ID is"
+msgstr ""
+
+#: views/login/search_id.php:12 views/login/search_id.php:29
+msgid "Forgot Your Password?"
+msgstr ""
+
+#: views/login/search_id.php:14
+msgid "This is the ID you found with the information you entered."
+msgstr ""
+
+#: views/login/search_id.php:19
+msgid "USER NAME"
+msgstr ""
+
+#: views/login/search_id.php:22
+msgid "USER EMAIL"
+msgstr ""
+
+#: views/login/search_id.php:43
+msgid "이름을 입력 해 주세요."
+msgstr ""
+
+#: views/login/search_id.php:48 views/login/search_pw.php:47
+#: views/mypage/mypage_order.php:183 views/mypage/mypage_request.php:184
+msgid "이메일을 입력 해 주세요."
+msgstr ""
+
+#: views/login/search_pw.php:21
+msgid "USER E-MAIL"
+msgstr ""
+
+#: views/login/search_pw.php:25
+msgid "Get a temporary password"
+msgstr ""
+
+#: views/login/search_pw.php:28
+msgid "Forgot Your Id?"
+msgstr ""
+
+#: views/login/search_pw.php:87
+msgid "로 임시 비밀번호를 전송 했습니다."
+msgstr ""
+
+#: views/main/main.php:3
+msgid "NEW ITEM"
+msgstr ""
+
+#: views/main/main.php:4
+msgid "NEW BRAND"
+msgstr ""
+
+#: views/main/main.php:6
+msgid "Check out the latest trend, identity, and certain brands"
+msgstr ""
+
+#: views/main/main.php:20
+msgid "Designer"
+msgstr ""
+
+#: views/main/main.php:140
+msgid "EDITOR’S PICK"
+msgstr ""
+
+#: views/main/main.php:141 views/main/main.php:155 views/main/main.php:169
+#: views/main/main.php:183 views/main/main.php:197 views/main/main.php:211
+msgid "EDITOR'S RECOMMENDED PRODUCTS"
+msgstr ""
+
+#: views/main/main.php:154
+msgid "ALL BRANDS"
+msgstr ""
+
+#: views/main/main.php:168
+msgid "TODAY'S BRAND"
+msgstr ""
+
+#: views/main/main.php:182
+msgid "BEST OF BEST"
+msgstr ""
+
+#: views/main/main.php:196
+msgid "BRAND GUIDE"
+msgstr ""
+
+#: views/main/main.php:210
+msgid "BUYER GUIDE"
+msgstr ""
+
+#: views/main/main.php:223
+msgid "generation next seoul"
+msgstr ""
+
+#: views/main/main.php:224
+msgid "New news and how to use it"
+msgstr ""
+
+#: views/main/main.php:227
+msgid "HOW TO"
+msgstr ""
+
+#: views/main/main.php:228
+msgid "K TREND"
+msgstr ""
+
+#: views/main/main.php:229
+msgid "gn_s NEWS"
+msgstr ""
+
+#: views/main/main.php:230
+msgid "TRADE gn_s"
+msgstr ""
+
+#: views/main/main.php:248
+msgid "SCROLL DOWN"
+msgstr ""
+
+#: views/mypage/change_password.php:7
+msgid "OLD PASSWORD"
+msgstr ""
+
+#: views/mypage/change_password.php:10
+msgid "NEW PASSWORD"
+msgstr ""
+
+#: views/mypage/change_password.php:13
+msgid "CONFIRM NEW PASSWORD"
+msgstr ""
+
+#: views/mypage/change_password.php:17 views/mypage/mypage.php:17
+#: views/mypage/mypage_info.php:172
+msgid "확인"
+msgstr ""
+
+#: views/mypage/change_password.php:21
+msgid "Available special characters: `~! @ # $% ^ * ()-_ = +"
+msgstr ""
+
+#: views/mypage/change_password.php:69
+msgid "현재 비밀번호와 동일합니다."
+msgstr ""
+
+#: views/mypage/change_password.php:74
+msgid "변경할 비밀번호가 동일하지 않습니다."
+msgstr ""
+
+#: views/mypage/change_password.php:90
+msgid "정보가 변경되었습니다."
+msgstr ""
+
+#: views/mypage/mypage.php:7
+msgid "정보 확인을 위해 비밀번호를 입력해주시기 바랍니다."
+msgstr ""
+
+#: views/mypage/mypage_brand_favorite.php:29
+#: views/mypage/mypage_product_favorite.php:30 views/news/editor-list.php:29
+#: views/news/news-list.php:29 views/news/trend-list.php:19
+msgid "No Data"
+msgstr ""
+
+#: views/mypage/mypage_cart.php:20 views/mypage/mypage_order.php:15
+#: views/mypage/mypage_order_view.php:18 views/mypage/mypage_request.php:15
+msgid "PRODUCT"
+msgstr ""
+
+#: views/mypage/mypage_cart.php:28
+msgid "ACTION"
+msgstr ""
+
+#: views/mypage/mypage_cart.php:29 views/mypage/mypage_cart.php:66
+#: views/mypage/mypage_cart.php:69 views/mypage/mypage_cart.php:176
+msgid "CHECK OUT"
+msgstr ""
+
+#: views/mypage/mypage_cart.php:66 views/mypage/mypage_cart.php:175
+msgid "DELETE"
+msgstr ""
+
+#: views/mypage/mypage_cart.php:80 views/mypage/mypage_cart.php:118
+#: views/mypage/mypage_cart.php:182
+msgid "장바구니가 비어있습니다."
+msgstr ""
+
+#: views/mypage/mypage_cart.php:189
+msgid "CONTINUE SHOPPING"
+msgstr ""
+
+#: views/mypage/mypage_cart.php:210
+msgid "삭제하였습니다."
+msgstr ""
+
+#: views/mypage/mypage_info.php:171
+msgid "취소"
+msgstr ""
+
+#: views/mypage/mypage_info.php:241
+msgid "정보가 수정되었습니다."
+msgstr ""
+
+#: views/mypage/mypage_order.php:131 views/mypage/mypage_order_view.php:127
+#: views/mypage/mypage_request.php:132
+msgid "Fax"
+msgstr ""
+
+#: views/mypage/mypage_order.php:139 views/mypage/mypage_order_view.php:135
+#: views/mypage/mypage_request.php:140
+msgid "Adress"
+msgstr ""
+
+#: views/mypage/mypage_order.php:143 views/mypage/mypage_order_view.php:139
+#: views/mypage/mypage_request.php:144
+msgid "Request contents"
+msgstr ""
+
+#: views/mypage/mypage_order.php:151
+msgid "ORDER CANCELLATION"
+msgstr ""
+
+#: views/mypage/mypage_order.php:152
+msgid "PLACE ORDER"
+msgstr ""
+
+#: views/mypage/mypage_order.php:171 views/mypage/mypage_request.php:172
+msgid "구매자명을 입력 해 주세요."
+msgstr ""
+
+#: views/mypage/mypage_order.php:175 views/mypage/mypage_request.php:176
+msgid "나라를 선택 해 주세요."
+msgstr ""
+
+#: views/mypage/mypage_order.php:179 views/mypage/mypage_request.php:180
+msgid "전화번호를 입력 해 주세요."
+msgstr ""
+
+#: views/mypage/mypage_order.php:200
+msgid "주문이 완료 되었습니다."
+msgstr ""
+
+#: views/mypage/mypage_order_complete.php:3
+msgid "Order is complete."
+msgstr ""
+
+#: views/mypage/mypage_order_complete.php:7
+msgid "ORDER HISTORY"
+msgstr ""
+
+#: views/mypage/mypage_order_view.php:143
+msgid "Order status"
+msgstr ""
+
+#: views/mypage/mypage_order_view.php:148
+msgid "Order Cancellation"
+msgstr ""
+
+#: views/mypage/mypage_order_view.php:149
+msgid "Order List"
+msgstr ""
+
+#: views/mypage/mypage_order_view.php:156
+msgid "정말 취소 하시겠습니까?"
+msgstr ""
+
+#: views/mypage/mypage_order_view.php:169
+msgid "취소 하였습니다."
+msgstr ""
+
+#: views/mypage/mypage_orders.php:16 views/mypage/mypage_request_list.php:16
+msgid "ORDER NUMBER"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:45 views/mypage/mypage_orders.php:77
+#: views/mypage/mypage_request_list.php:43
+#: views/mypage/mypage_request_list.php:74
+msgid "주문 내역이 없습니다."
+msgstr ""
+
+#: views/mypage/mypage_orders.php:52 views/mypage/mypage_request_list.php:50
+msgid "Order Information"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:347
+msgid "COMMERCIAL INVOICE"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:355 views/mypage/mypage_orders.php:370
+msgid "수출자의 회사명"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:385
+msgid "물품 도착 통지처"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:392
+msgid "INCHEON, KOREA"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:399
+msgid "도착항, 국가"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:406
+msgid "선적(항공)정보"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:413
+msgid "선적일자"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:424
+msgid "인보이스 번호 및 발행일"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:431
+msgid "신용장 거래 번호 및 발행일"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:438
+msgid "신용장 발행 은행 정보"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:445
+msgid "COUNTRY OF ORIGIN"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:446
+msgid "REPUBLIC OF KOREA"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:449
+msgid "T/T IN ADVANCE"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:449
+msgid "거래지불 방식 또는 기타 참조 내용"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:459
+msgid "MARKES & ND(S)"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:463
+msgid "DESCRIPTION OF 6000S"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:467
+msgid "QUATITY"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:471
+msgid "UNIT PRICE"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:475
+msgid "AMOUT"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:482
+msgid "포장 상자 외부 표시 또는 번호"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:483
+msgid "선전 물품 세부 내용 ( 제품, 수량, 가격 등)"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:599 views/mypage/mypage_orders.php:601
+msgid "TOTALS"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:610
+msgid "Signed by"
+msgstr ""
+
+#: views/mypage/mypage_orders.php:611
+msgid "발송인(수출자) 서명 또는 날인"
+msgstr ""
+
+#: views/mypage/mypage_product_favorite.php:11
+msgid "Search"
+msgstr ""
+
+#: views/mypage/mypage_request.php:152
+msgid "REQUEST CANCELLATION"
+msgstr ""
+
+#: views/mypage/mypage_request.php:153
+msgid "REQUEST ORDER"
+msgstr ""
+
+#: views/mypage/mypage_request.php:201
+msgid "요청이 완료 되었습니다."
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:99
+msgid "Brand Name"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:101
+msgid "Person in charge"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:128
+msgid "Product Description"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:129 views/product/detail.php:191
+msgid "Color"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:130 views/product/detail.php:197
+msgid "Size"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:131
+msgid "Total Unite"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:132
+msgid "Cost"
+msgstr ""
+
+#: views/mypage/mypage_request_list.php:133
+msgid "Total Cost"
+msgstr ""
+
+#: views/news/editor-list.php:13 views/news/news-list.php:13
+msgid "NO"
+msgstr ""
+
+#: views/news/editor-list.php:14 views/news/news-list.php:14
+msgid "SUBJECT"
+msgstr ""
+
+#: views/news/editor-list.php:15 views/news/news-list.php:15
+msgid "VIEWS"
+msgstr ""
+
+#: views/news/editor-view.php:10 views/news/news-view.php:28
+#: views/news/trend-view.php:28
+msgid "list"
+msgstr ""
+
+#: views/news/news-view.php:7 views/news/trend-view.php:7
+msgid "View"
+msgstr ""
+
+#: views/news/news-view.php:11
+msgid "File Download"
+msgstr ""
+
+#: views/news/trend-view.php:11
+msgid "File"
+msgstr ""
+
+#: views/product/detail.php:111 views/product/detail.php:203
+msgid "SKU"
+msgstr ""
+
+#: views/product/detail.php:115
+msgid "CATEGORY"
+msgstr ""
+
+#: views/product/detail.php:160
+msgid "ORDER"
+msgstr ""
+
+#: views/product/detail.php:169
+msgid "DETAIL"
+msgstr ""
+
+#: views/product/detail.php:170
+msgid "INFO"
+msgstr ""
+
+#: views/product/detail.php:375
+msgid "바이어 회원만 이용 가능합니다."
+msgstr ""
+
+#: views/product/detail.php:440
+msgid "장바구니에 추가했습니다.\\n 장바구니로 이동하시겠습니까?"
+msgstr ""
+
+#: views/product/list.php:3 views/product/main.php:4 views/product/main2.php:4
+msgid "Product"
+msgstr ""
+
+#: views/product/list.php:275 views/product/list.php:323
+#: views/product/list.php:368 views/product/list.php:468
+#: views/product/main.php:402 views/product/main.php:451
+#: views/product/main.php:497 views/product/main.php:601
+#: views/product/main2.php:313 views/product/main2.php:355
+#: views/product/main2.php:395 views/product/main2.php:489
+msgid "해당 제품이 없습니다."
+msgstr ""
+
+#: views/product/main.php:119 views/product/main2.php:119
+msgid "Category"
+msgstr ""
+
+#: views/product/main.php:173 views/product/main2.php:171
+msgid "TOP"
+msgstr ""
+
+#: views/product/main.php:195 views/product/main2.php:191
+msgid "BOTTOM"
+msgstr ""
+
+#: views/product/main.php:217 views/product/main2.php:211
+msgid "ACCESSORY"
+msgstr ""

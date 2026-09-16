@@ -1,0 +1,74 @@
+/*비주얼*/
+.visual_wrap {position:relative; overflow:hidden;}
+.visual_wrap .visual_item img {width:100%; vertical-align:top;}
+.visual_wrap .swiper-pagination-bullets.swiper-pagination-horizontal {top:auto; bottom:30px;}
+.visual_wrap .swiper-pagination-bullet {width:12px; height:12px; margin:0 6px !important; opacity:1; background:#fff;}
+.visual_wrap .swiper-pagination-bullet-active {background-color:#f5a32d;}
+/*인증 도서*/
+.certified_book_wrap {padding-top:42px; padding-bottom:51px;}
+.certified_book_wrap .title_box .inner {align-items:flex-end;}
+.certified_book {display:flex; gap:36px; margin-top:25px;}
+.certified_book_info {flex-shrink:0; display:flex; flex-direction:column; gap:21px; margin-left:42px;}
+.certified_book_info dl {width:150px;}
+.certified_book_info dt {width:100%; height:45px; line-height:45px; font-size:20px; color:#fff; text-align:center; background:#f8bc65; border-radius:23px;}
+.certified_book_info dd {margin-top:10px; line-height:26px; font-size:22px; color:#f8bc65; text-align:center;}
+.book_list_area {width:100%; margin-left:42px; overflow:hidden;}
+
+/*탭 도서*/
+.tab_box {display:flex; margin-bottom:43px; border-top:1px solid #a0a0a0; border-bottom:1px solid #a0a0a0;}
+.tab_box .tab {width:33.33%; padding:12px 5px 13px; font-size:22px; line-height:26px; color:#000; text-align:center;}
+.tab_box .tab.on {color:#fff; background:#f6a32d;}
+.tab_box .tab + .tab {border-left:1px solid #a0a0a0;}
+.main_book_wrap {padding-bottom:72px;}
+.main_book_wrap .main_book_area {margin-top:21px; margin-left:42px; overflow:hidden;}
+.main_book_wrap .main_book_area + .title_box {margin-top:46px;}
+.main_book_area .book {margin-right:20px;}
+.modify_interest {display:flex; align-items:center; justify-content:center; height:65px; margin-top:47px; background:#eee;}
+.modify_interest span {line-height:22px; font-size:20px; color:#a0a0a0; border-bottom:1px solid #a0a0a0;}
+.modify_interest + .title_box {margin-top:37px;}
+/*공지사항*/
+.main_board_wrap .title_box {padding-top:15px; padding-bottom:13px; border-top:1px solid #a0a0a0; border-bottom:1px solid #a0a0a0;} 
+.main_board_list {margin-top:8px;}
+.main_board_item {display:flex; align-items:center; padding-top:17px; padding-bottom:15px; border-bottom:2px solid #ccc;}
+.main_board_item .subject {width:80%; font-size:21px; line-height:29px; color:#000;}
+.main_board_item .date {margin-left:auto; font-size:20px; color:#000;}
+
+/*배너*/
+/* .banner_wrap .book_list {margin-top:33px;} */
+/* .banner_wrap .book_list .book {width:21%;} */
+.banner_wrap .book_list.type_list .book {width:100%;}
+.banner_wrap .type_list.book_list {gap:0;}
+
+@media screen and (max-width:759px){
+	/*비주얼*/
+	.visual_wrap .swiper-pagination-bullets.swiper-pagination-horizontal {bottom:10px;}
+	/*인증도서*/
+	.certified_book_wrap {padding-top:18px; padding-bottom:30px;}
+	.certified_book {flex-direction:column; gap:21px; margin-top:21px;}
+	.certified_book_info {flex-direction:row; justify-content:center; gap:14px; margin-left:0;}
+	.certified_book_info dl {width:125px;}
+	.certified_book_info dt {height:35px; line-height:35px; font-size:18px;}
+	.certified_book_info dd {font-size:20px;}
+	.book_list_area {width:calc(100% - 20px); margin-left:20px;}
+	.book_list_area .book_list .book {margin-right:17px;}
+
+	/*탭 도서*/
+	.tab_box .tab {padding-top:8px; padding-bottom:9px; font-size:1rem;}
+	.main_book_wrap {padding-bottom:55px;}
+	.main_book_wrap .tab_box {margin-bottom:27px;}
+	.main_book_wrap .main_book_area {margin-top:16px; margin-left:20px;}
+	.main_book_wrap .main_book_area + .title_box {margin-top:48px;}
+	.main_book_area .book {margin-right:17px;}
+	.modify_interest {margin-top:33px; height:50px;}
+	.modify_interest span {font-size:15px; line-height:17px;}
+	.modify_interest + .title_box {margin-top:36px;}
+	/*공지사항*/
+	.main_board_wrap .title_box {padding-top:9px; padding-bottom:10px;}
+	.main_board_list {margin-top:0;}
+	.main_board_item {padding-top:13px; padding-bottom:11px;}
+	.main_board_item .subject {font-size:1rem; line-height:24px;}
+	.main_board_item .date {font-size:16px;}
+
+	/*배너*/
+	.banner_wrap .book_list {margin-top:13px;}
+}

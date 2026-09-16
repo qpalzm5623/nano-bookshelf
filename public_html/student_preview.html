@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>나노의 책장 - 학생 포털</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <style>
+    :root {
+      /* 자연스러운 목재 베이지 & 오트밀 크림 배경 */
+      --bg: #f8f6f0;
+      --surface: #ffffff;
+      --surface-warm: #faf7f2;
+      
+      /* 싱그러운 초록초록 잎사귀 그린 */
+      --leaf-dark: #1b4332;
+      --leaf-deep: #245738;
+      --leaf: #2d6a4f;
+      --leaf-mid: #388e5a;
+      --leaf-light: #52b788;
+      --leaf-soft: #eaf5ef;
+      --leaf-pale: #f2f9f5;
+      
+      /* 목재 베이지 & 내추럴 우드 톤 */
+      --wood-dark: #3a2e26;
+      --wood-mid: #5c4a3e;
+      --wood-warm: #7f6452;
+      --wood-light: #f3ede4;
+      --soft: #e5ded2;
+      
+      /* 포인트 컬러 */
+      --amber: #c87941;
+      --amber-lt: #fdf3ea;
+      --green: #2d6a4f;
+      --green-lt: #eaf5ef;
+      --red: #c53030;
+      --text: #2d241e;
+      --muted: #7d7165;
+      
+      /* 호환 변수 */
+      --blue: #2d6a4f;
+      --blue-lt: #eaf5ef;
+      --purple: #5c4a3e;
+      --purple-lt: #f3ede4;
+      --orange: #c87941;
+      --orange-lt: #fdf3ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      margin: 0;
+      letter-spacing: -0.2px;
+    }
+    .role-bar {
+      background: #251d18;
+      color: #cfc4b6;
+      padding: 8px 20px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #3d332b;
+    }
+    .role-bar a {
+      color: #a3d9b5;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      border: 1px solid #3c5443;
+      background: rgba(45, 106, 79, 0.2);
+    }
+    .s-header {
+      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+      padding: 0 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      box-shadow: 0 3px 14px rgba(27, 67, 50, 0.2);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 800;
+    }
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.18);
+      color: #a7e3be;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+    }
+    .user-info {
+      color: rgba(255,255,255,0.92);
+      font-size: 13px;
+      text-align: right;
+    }
+    .main {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 18px 14px 88px;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .bnav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #ffffff;
+      border-top: 1.5px solid var(--soft);
+      display: flex;
+      z-index: 1000;
+      box-shadow: 0 -4px 20px rgba(58, 46, 38, 0.06);
+    }
+    .bnav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 9px 0 7px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: color .2s;
+    }
+    .bnav-btn i { font-size: 19px; }
+    .bnav-btn.active { color: var(--leaf); }
+    
+    .welcome-banner {
+      background: linear-gradient(135deg, #245738 0%, #2d6a4f 60%, #388e5a 100%);
+      border-radius: 18px;
+      padding: 22px 20px;
+      color: #fff;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(45, 106, 79, 0.2);
+    }
+    .welcome-banner::after {
+      content: '🌿';
+      position: absolute;
+      right: 14px;
+      bottom: 6px;
+      font-size: 58px;
+      opacity: .22;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-mini {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1.5px solid var(--soft);
+      padding: 13px 10px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(58, 46, 38, 0.04);
+      transition: transform .15s;
+    }
+    .stat-mini .val {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--leaf);
+    }
+    .stat-mini .lbl {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-weight: 600;
+    }
+    .sec-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      color: var(--wood-dark);
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1.5px solid var(--soft);
+      box-shadow: 0 2px 10px rgba(58, 46, 38, 0.04);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .card-hdr {
+      padding: 12px 16px;
+      border-bottom: 1.5px solid var(--soft);
+      font-weight: 700;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-warm);
+      color: var(--wood-dark);
+    }
+    .card-body { padding: 14px 16px; }
+    
+    .book-row {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 12px 14px;
+      border-radius: 13px;
+      border: 1.5px solid var(--soft);
+      background: #ffffff;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+    }
+    .book-row:hover {
+      border-color: var(--leaf);
+      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.12);
+      transform: translateY(-1px);
+    }
+    .book-row.priority {
+      border-color: #74c69d;
+      background: linear-gradient(to right, #f2f9f5, #ffffff);
+    }
+    .bcover {
+      width: 46px;
+      height: 62px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      border: 1px solid var(--soft);
+    }
+    .binfo { flex: 1; min-width: 0; }
+    .btitle {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 2px;
+      color: var(--wood-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bauthor {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dbadge {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .dbadge.urgent { background: #ffeaea; color: #c53030; }
+    .dbadge.normal { background: var(--wood-light); color: var(--wood-mid); }
+    .dbadge.done { background: var(--green-lt); color: var(--green); }
+    
+    .pflag {
+      position: absolute;
+      top: -1px; left: -1px;
+      background: var(--leaf);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 13px 0 8px 0;
+    }
+    .act-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .act-btn.start {
+      background: var(--leaf);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2);
+    }
+    .act-btn.start:hover {
+      background: var(--leaf-dark);
+    }
+    .act-btn.done-btn {
+      background: var(--green-lt);
+      color: var(--green);
+      border: 1px solid #b7e4c7;
+    }
+    
+    .qbar {
+      background: var(--soft);
+      border-radius: 8px;
+      height: 8px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .qfill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--leaf), var(--leaf-light));
+      border-radius: 8px;
+      transition: width .4s ease;
+    }
+    .qbook-hdr {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: linear-gradient(135deg, #f2f9f5, #faf7f2);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      border: 1.5px solid var(--soft);
+    }
+    .qtext {
+      background: #fff;
+      border-radius: 12px;
+      border: 1.5px solid var(--soft);
+      padding: 16px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: var(--wood-dark);
+    }
+    .qopt {
+      width: 100%;
+      text-align: left;
+      padding: 12px 15px;
+      border-radius: 11px;
+      border: 1.5px solid var(--soft);
+      background: #fff;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 7px;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--wood-dark);
+    }
+    .qopt:hover:not(:disabled) {
+      border-color: var(--leaf);
+      background: var(--leaf-soft);
+      color: var(--leaf-dark);
+    }
+    .qopt.correct {
+      border-color: var(--leaf);
+      background: var(--leaf-soft);
+      color: var(--leaf-dark);
+      font-weight: 700;
+    }
+    .qopt.wrong {
+      border-color: #f87171;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    .qopt.reveal {
+      border-color: var(--leaf);
+      background: var(--leaf-soft);
+      color: var(--leaf-dark);
+    }
+    .onum {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--wood-light);
+      color: var(--wood-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11.5px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .qfb {
+      border-radius: 11px;
+      padding: 11px 15px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .qfb.ok {
+      background: var(--green-lt);
+      color: var(--leaf-dark);
+      border: 1.5px solid #b7e4c7;
+    }
+    .qfb.fail {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1.5px solid #fecaca;
+    }
+    .qnav {
+      padding: 11px 22px;
+      border-radius: 11px;
+      border: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .qnav.prim {
+      background: var(--leaf);
+      color: #fff;
+    }
+    .qnav.sec {
+      background: var(--surface-warm);
+      color: var(--muted);
+      border: 1.5px solid var(--soft);
+    }
+    .result-box { text-align: center; padding: 28px 16px; }
+    .res-emoji { font-size: 60px; margin-bottom: 10px; }
+    .res-score { font-size: 50px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+    .res-score.p { color: var(--leaf); } .res-score.g { color: var(--leaf-mid); } .res-score.f { color: var(--amber); }
+    .res-msg { font-size: 14px; color: var(--muted); margin-bottom: 20px; font-weight: 600; }
+    .pt-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #245738, #388e5a);
+      color: #fff;
+      border-radius: 20px;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+    }
+    .hist-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 13px;
+      border-radius: 11px;
+      border: 1.5px solid var(--soft);
+      background: #fff;
+      margin-bottom: 7px;
+    }
+    .hist-rank {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--leaf-soft);
+      color: var(--leaf);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12.5px;
+      flex-shrink: 0;
+    }
+    .pt-hdr {
+      background: linear-gradient(135deg, #1b4332, #2d6a4f);
+      border-radius: 16px;
+      padding: 22px 18px;
+      color: #fff;
+      margin-bottom: 14px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(27, 67, 50, 0.2);
+    }
+    .rank-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 13px;
+      border-radius: 11px;
+      background: #fff;
+      border: 1.5px solid var(--soft);
+      margin-bottom: 7px;
+    }
+    .rank-row.me {
+      border-color: var(--leaf);
+      background: var(--leaf-pale);
+    }
+    .rnum { width: 28px; font-size: 15px; font-weight: 900; text-align: center; flex-shrink: 0; }
+    .rnum.gold { color: #d97706; } .rnum.silver { color: #8a9ba8; } .rnum.bronze { color: #b45309; }
+    .lib-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 13px;
+      border-radius: 12px;
+      border: 1.5px solid var(--soft);
+      background: #fff;
+      margin-bottom: 9px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .lib-row:hover {
+      border-color: var(--leaf);
+      box-shadow: 0 4px 12px rgba(45, 106, 79, 0.1);
+    }
+    .nbadge {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: var(--leaf-soft);
+      color: var(--leaf);
+      margin-right: 3px;
+    }
+    .sbar { display: flex; gap: 8px; margin-bottom: 12px; }
+    .sbar input {
+      flex: 1;
+      padding: 9px 13px;
+      border-radius: 11px;
+      border: 1.5px solid var(--soft);
+      font-size: 13px;
+      font-family: inherit;
+      background: #fff;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .sbar input:focus { border-color: var(--leaf); }
+    .sbar button {
+      padding: 9px 16px;
+      border-radius: 11px;
+      border: none;
+      background: var(--leaf);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .cnt-badge {
+      font-size: 11px;
+      background: var(--leaf-soft);
+      color: var(--leaf);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .anim { animation: fadeUp .3s ease; }
+    #toast {
+      position: fixed;
+      bottom: 74px; right: 16px;
+      z-index: 9999;
+      background: #241c16;
+      color: #fff;
+      padding: 11px 16px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 6px 22px rgba(0,0,0,.25);
+      display: none;
+      max-width: 290px;
+    }
+    .tab2-btns { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tab2-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .2s;
+    }
+    .tab2-btn.on {
+      background: var(--leaf);
+      color: #fff;
+      border: 1.5px solid var(--leaf);
+    }
+    .tab2-btn.off {
+      background: #fff;
+      color: var(--muted);
+      border: 1.5px solid var(--soft);
+    }
+    
+    /* 학생 홈 롤링 배너 */
+    .rolling-banner-container {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(58, 46, 38, 0.08);
+      aspect-ratio: 16 / 9;
+      background: #241c16;
+      border: 1px solid var(--soft);
+    }
+    .rolling-banner-slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.6s ease-in-out;
+      display: flex;
+    }
+    .rolling-banner-slide.active {
+      opacity: 1;
+      z-index: 1;
+    }
+    .rolling-banner-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .rolling-banner-dots {
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      z-index: 10;
+      display: flex;
+      gap: 5px;
+    }
+    .rolling-banner-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .rolling-banner-dot.active {
+      background: #fff;
+      width: 20px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="role-bar">
+  <span><i class="fa-solid fa-graduation-cap mr-1" style="color:#a7e3be;"></i> 나노의 책장 <strong style="color:#a7e3be;">학생 포털 (체험판)</strong></span>
+  <a href="admin_preview.html"><i class="fa-solid fa-arrow-left mr-1"></i>학원관리자 뷰</a>
+</div>
+<header class="s-header">
+  <div class="logo">
+    <div class="logo-icon"><i class="fa-solid fa-book-open-reader"></i></div>
+    나노의 책장
+  </div>
+  <div class="user-info">
+    <div style="font-weight:800;font-size:14px;">김민준</div>
+    <div style="font-size:11px;opacity:.8;">지혜반 · 초등 5학년</div>
+  </div>
+</header>
+<div class="main">
+
+  <!-- 홈 -->
+  <div id="p-home" class="panel active anim">
+    <div class="welcome-banner">
+      <div style="font-size:12.5px;opacity:.85;">안녕하세요, 오늘도 독서 완료! 🌿</div>
+      <div style="font-size:21px;font-weight:900;margin:3px 0;">김민준 님</div>
+      <div style="font-size:12.5px;opacity:.8;">나노 독서아카데미 · 지혜반</div>
+      <span style="display:inline-block;background:rgba(255,255,255,.22);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:700;margin-top:6px;border:1px solid rgba(255,255,255,0.25);">⭐ 초등 심화 Lv 5</span>
+    </div>
+
+    <!-- 학생 메인 롤링 배너 캐러셀 (숲속 목재 테마 배너 연동) -->
+    <div class="rolling-banner-container" id="studentBannerBox">
+      <div class="rolling-banner-slide active" data-idx="0">
+        <img src="upload/banner/banner_reading_king.jpg" alt="숲속 서재 독서 테마">
+      </div>
+      <div class="rolling-banner-slide" data-idx="1">
+        <img src="upload/banner/banner_nanosheet.jpg" alt="나노시트 서재 테마">
+      </div>
+      <div class="rolling-banner-slide" data-idx="2">
+        <img src="upload/banner/banner_ranking.jpg" alt="창밖 숲속 책장 테마">
+      </div>
+      <div class="rolling-banner-dots" id="bannerDots">
+        <div class="rolling-banner-dot active" onclick="setBannerSlide(0)"></div>
+        <div class="rolling-banner-dot" onclick="setBannerSlide(1)"></div>
+        <div class="rolling-banner-dot" onclick="setBannerSlide(2)"></div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-mini"><div style="font-size:22px;">📖</div><div class="val">24</div><div class="lbl">완독 도서</div></div>
+      <div class="stat-mini"><div style="font-size:22px;">🌿</div><div class="val" style="color:var(--leaf-mid);">94.2</div><div class="lbl">퀴즈 평균</div></div>
+      <div class="stat-mini"><div style="font-size:22px;">🏆</div><div class="val" style="color:var(--wood-dark);">2,480</div><div class="lbl">포인트</div></div>
+    </div>
+    <div class="sec-title"><i class="fa-solid fa-thumbtack" style="color:var(--leaf);"></i> 배정된 도서 <span class="cnt-badge">2권</span> <span style="font-size:11px;color:var(--amber);font-weight:600;"><i class="fa-solid fa-bell"></i> 마감임박</span></div>
+    <div class="book-row priority" onclick="startQuiz('1001')">
+      <span class="pflag">📌 배정</span>
+      <img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자" style="margin-top:4px;">
+      <div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리 · 열린책들</div><span class="dbadge urgent">D-3 마감 (9/22)</span></div>
+      <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1001')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>
+    </div>
+    <div class="book-row priority" onclick="startQuiz('1002')">
+      <span class="pflag">📌 배정</span>
+      <img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드" style="margin-top:4px;">
+      <div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평 · 창비</div><span class="dbadge normal">D-7 마감 (9/26)</span></div>
+      <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1002')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><i class="fa-solid fa-clock-rotate-left" style="color:var(--wood-mid);"></i> 최근 학습 기록</div>
+      <div class="card-body" style="padding:11px 13px;">
+        <div class="hist-row"><div class="hist-rank"><i class="fa-solid fa-check"></i></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">어린 왕자</div><div style="font-size:11.5px;color:var(--muted);">2026.09.08 · 북퀴즈 완료</div></div><div style="font-weight:900;color:var(--leaf);">100점</div></div>
+        <div class="hist-row"><div class="hist-rank"><i class="fa-solid fa-check"></i></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">마당을 나온 암탉</div><div style="font-size:11.5px;color:var(--muted);">2026.09.05 · 북퀴즈 완료</div></div><div style="font-weight:900;color:var(--leaf-mid);">90점</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 도서관 -->
+  <div id="p-books" class="panel anim">
+    <div class="sec-title"><i class="fa-solid fa-books" style="color:var(--leaf);"></i> 도서관</div>
+    <div class="tab2-btns">
+      <button class="tab2-btn on" id="btab-a" onclick="switchBookTab('assigned')"><i class="fa-solid fa-thumbtack mr-1"></i>배정 도서</button>
+      <button class="tab2-btn off" id="btab-b" onclick="switchBookTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
+    </div>
+    <div id="bsub-assigned">
+      <div class="book-row priority" onclick="startQuiz('1001')">
+        <span class="pflag">📌 배정</span>
+        <img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자">
+        <div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리 · 열린책들</div><span class="dbadge urgent">D-3 마감</span></div>
+        <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1001')">퀴즈 풀기</button>
+      </div>
+      <div class="book-row priority" onclick="startQuiz('1002')">
+        <span class="pflag">📌 배정</span>
+        <img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드">
+        <div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평 · 창비</div><span class="dbadge normal">D-7 마감</span></div>
+        <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1002')">퀴즈 풀기</button>
+      </div>
+      <div class="book-row" style="opacity:.85;">
+        <img src="assets/covers/cover_1004.jpg" class="bcover" alt="자전거 도둑">
+        <div class="binfo"><div class="btitle">자전거 도둑</div><div class="bauthor">박완서 · 다림</div><span class="dbadge done">✓ 완료 100점</span></div>
+        <button class="act-btn done-btn" disabled>완료됨</button>
+      </div>
+    </div>
+    <div id="bsub-all" style="display:none;">
+      <div class="sbar"><input type="text" id="libQ" placeholder="도서명, 저자 검색..." oninput="filterLib()"><button onclick="filterLib()"><i class="fa-solid fa-search"></i></button></div>
+      <div id="libList"></div>
+    </div>
+  </div>
+
+  <!-- 북퀴즈 -->
+  <div id="p-quiz" class="panel anim">
+    <div id="qscreen-select">
+      <div class="sec-title"><i class="fa-solid fa-pen-nib" style="color:var(--leaf);"></i> 북퀴즈 풀기</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">퀴즈를 풀 도서를 선택하세요. 완료 시 독서포인트가 지급됩니다!</p>
+      <div class="book-row" onclick="startQuiz('1001')"><img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자"><div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리</div><span class="dbadge urgent">D-3 · 5문항</span></div><button class="act-btn start">퀴즈 시작</button></div>
+      <div class="book-row" onclick="startQuiz('1002')"><img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드"><div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평</div><span class="dbadge normal">D-7 · 5문항</span></div><button class="act-btn start">퀴즈 시작</button></div>
+      <div class="book-row" style="opacity:.85;"><img src="assets/covers/cover_1004.jpg" class="bcover" alt="자전거 도둑"><div class="binfo"><div class="btitle">자전거 도둑</div><div class="bauthor">박완서</div><span class="dbadge done">✓ 완료 · 100점</span></div><button class="act-btn done-btn" disabled>완료됨</button></div>
+    </div>
+    <div id="qscreen-ing" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <button onclick="backToSelect()" style="border:none;background:transparent;font-size:13px;color:var(--muted);cursor:pointer;padding:4px 0;"><i class="fa-solid fa-arrow-left mr-1"></i>목록</button>
+        <span id="qLabel" style="font-size:13px;font-weight:700;color:var(--muted);">1/5</span>
+      </div>
+      <div class="qbar"><div class="qfill" id="qFill" style="width:20%;"></div></div>
+      <div class="qbook-hdr">
+        <div style="font-size:34px;" id="qEmoji">📕</div>
+        <div><div style="font-size:13px;font-weight:800;" id="qTitle">어린 왕자</div><div style="font-size:11.5px;color:var(--muted);">북퀴즈 진행 중</div><span class="nbadge" style="margin-top:4px;">⭐ 문제당 20P</span></div>
+      </div>
+      <div class="qtext" id="qText">문제 로딩 중...</div>
+      <div id="qOpts"></div>
+      <div class="qfb" id="qFb"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="qnav sec" onclick="backToSelect()">그만두기</button>
+        <button class="qnav prim" id="qNext" onclick="goNext()" style="flex:1;display:none;">다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+      </div>
+    </div>
+    <div id="qscreen-result" style="display:none;">
+      <div class="card"><div class="result-box">
+        <div class="res-emoji" id="rEmoji">🎉</div>
+        <div class="res-score" id="rScore">100점</div>
+        <div class="res-msg" id="rMsg">완벽해요!</div>
+        <div class="pt-badge" id="rPt"><i class="fa-solid fa-bolt mr-1"></i>+100 포인트!</div>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button class="qnav sec" onclick="backToSelect()">다른 도서</button>
+          <button class="qnav prim" onclick="switchPanel('home')">홈으로</button>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- 독서기록 -->
+  <div id="p-history" class="panel anim">
+    <div class="sec-title"><i class="fa-solid fa-scroll" style="color:var(--wood-mid);"></i> 내 독서 기록</div>
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-body" style="display:flex;gap:14px;text-align:center;padding:14px;">
+        <div style="flex:1;border-right:1px solid var(--soft);padding-right:14px;"><div style="font-size:22px;font-weight:900;color:var(--leaf);">24</div><div style="font-size:11px;color:var(--muted);">완독 도서</div></div>
+        <div style="flex:1;border-right:1px solid var(--soft);padding-right:14px;"><div style="font-size:22px;font-weight:900;color:var(--leaf-mid);">94.2점</div><div style="font-size:11px;color:var(--muted);">평균 점수</div></div>
+        <div style="flex:1;"><div style="font-size:22px;font-weight:900;color:var(--wood-dark);">2,480P</div><div style="font-size:11px;color:var(--muted);">총 포인트</div></div>
+      </div>
+    </div>
+    <div class="sec-title" style="font-size:13px;">완독 목록 <span class="cnt-badge" id="histCount">6권</span></div>
+    <div id="histList"></div>
+  </div>
+
+  <!-- 랭킹 -->
+  <div id="p-ranking" class="panel anim">
+    <div class="pt-hdr"><div style="font-size:12px;opacity:.85;">🏆 나의 독서 포인트</div><div style="font-size:40px;font-weight:900;">2,480P</div><div style="font-size:12px;opacity:.8;">지혜반 · 2위 🥈</div></div>
+    <div class="sec-title"><i class="fa-solid fa-medal" style="color:#f4b942;"></i> 이번 달 랭킹</div>
+    <div id="rankList"></div>
+  </div>
+
+</div>
+<nav class="bnav">
+  <button class="bnav-btn active" id="nav-home" onclick="switchPanel('home')"><i class="fa-solid fa-house"></i><span>홈</span></button>
+  <button class="bnav-btn" id="nav-books" onclick="switchPanel('books')"><i class="fa-solid fa-book"></i><span>도서관</span></button>
+  <button class="bnav-btn" id="nav-quiz" onclick="switchPanel('quiz')"><i class="fa-solid fa-pen-nib"></i><span>북퀴즈</span></button>
+  <button class="bnav-btn" id="nav-history" onclick="switchPanel('history')"><i class="fa-solid fa-scroll"></i><span>독서기록</span></button>
+  <button class="bnav-btn" id="nav-ranking" onclick="switchPanel('ranking')"><i class="fa-solid fa-trophy"></i><span>랭킹</span></button>
+</nav>
+<div id="toast"></div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+var QB={
+  '1001':{title:'어린 왕자',emoji:'📕',qs:[
+    {q:"『어린 왕자』에서 사막여우가 전해준 비밀 — 오로지 ㉠(으)로 보아야만 분명하게 볼 수 있어. ㉠에 들어갈 알맞은 낱말은?",os:["마음","눈동자","장미꽃","여우"],a:0},
+    {q:"어린 왕자가 살던 고향 별의 명칭은?",os:["A-101 소행성","B-612 소행성","C-303 소행성","별똥별 404호"],a:1},
+    {q:"어린 왕자가 자신의 별을 떠나기로 결심한 가장 결정적인 이유는?",os:["바오바브나무가 별을 뒤덮어서","장미꽃의 투정과 자존심에 상처를 받아서","화산이 모두 폭발해서","비행기 조종사를 만나고 싶어서"],a:1},
+    {q:"여우가 말한 '길들인다'의 참된 의미로 가장 알맞은 것은?",os:["상대방을 내 뜻대로 복종시키는 것","서로에게 특별한 관계를 맺고 끝까지 책임을 지는 것","매일 정해진 시간에 먹이를 주는 것","상대방의 약점을 알아내는 것"],a:1},
+    {q:"어른들이 '모자'로만 착각했던 조종사의 첫 번째 그림은 사실 무엇인가요?",os:["코끼리를 삼킨 보아뱀 그림","상자 속 어린 양 그림","사막에 핀 노란 장미 그림","별빛 아래 잠든 여우 그림"],a:0}
+  ]},
+  '1002':{title:'아몬드',emoji:'📗',qs:[
+    {q:"주인공 '윤재'가 감정을 잘 느끼지 못하는 이유는?",os:["큰 사고를 당해서","뇌의 편도체(아몬드)가 지나치게 작아서","감정 표현을 배운 적 없어서","특별한 약을 복용해서"],a:1},
+    {q:"'곤'이 윤재에게 처음 다가온 방식은?",os:["다정한 말을 건네며","폭력적이고 거친 방식으로","책을 선물하며","공부를 도와주며"],a:1},
+    {q:"윤재의 할머니가 항상 강조한 것은?",os:["공부를 열심히 해야 한다","감정을 숨기면 안 된다","말을 많이 해야 한다","남들과 어울리지 마라"],a:1},
+    {q:"윤재가 처음으로 감정에 가까운 무언가를 느끼게 된 계기는?",os:["곤과의 갈등","할머니의 죽음 후 곤을 걱정하게 되면서","새 학교 전학","선생님의 칭찬"],a:1},
+    {q:"소설 《아몬드》가 전달하는 핵심 메시지로 가장 적절한 것은?",os:["공부가 가장 중요하다","감정 없이도 행복할 수 있다","공감과 관계를 통해 사람은 성장한다","세상은 혼자 살아가야 한다"],a:2}
+  ]}
+};
+var histData=[
+  {title:'어린 왕자',date:'2026.09.08',score:100},{title:'자전거 도둑',date:'2026.09.01',score:100},
+  {title:'마당을 나온 암탉',date:'2026.08.28',score:90},{title:'완득이',date:'2026.08.20',score:80},
+  {title:'아몬드',date:'2026.08.15',score:100},{title:'소년이 온다',date:'2026.08.08',score:90}
+];
+var libData=[
+  {id:'1001',title:'어린 왕자',author:'앙투안 드 생텍쥐페리',pub:'열린책들',cat:'세계문학',cover:'assets/covers/cover_1001.jpg',emoji:'📕',assigned:true},
+  {id:'1002',title:'아몬드',author:'손원평',pub:'창비',cat:'국내소설',cover:'assets/covers/cover_1002.jpg',emoji:'📗',assigned:true},
+  {id:'1003',title:'마당을 나온 암탉',author:'황선미',pub:'사계절',cat:'동화',cover:'assets/covers/cover_1003.jpg',emoji:'📘',assigned:false},
+  {id:'1004',title:'자전거 도둑',author:'박완서',pub:'다림',cat:'단편소설',cover:'assets/covers/cover_1004.jpg',emoji:'📙',assigned:false},
+  {id:'1005',title:'만복이네 떡집',author:'김리리',pub:'비룡소',cat:'동화',emoji:'📒',assigned:false}
+];
+var rankData=[
+  {rank:1,name:'박도윤',cls:'마스터반',pt:3120},
+  {rank:2,name:'김민준',cls:'지혜반',pt:2480,me:true},
+  {rank:3,name:'윤지유',cls:'지혜반',pt:2200},
+  {rank:4,name:'이서윤',cls:'슬기반',pt:1980},
+  {rank:5,name:'강시우',cls:'새싹반',pt:1760}
+];
+var curBook=null,curQ=0,anss=[],curData=null;
+function switchPanel(n){
+  ['home','books','quiz','history','ranking'].forEach(function(p){
+    var el=document.getElementById('p-'+p),nav=document.getElementById('nav-'+p);
+    if(el)el.classList.remove('active');
+    if(nav)nav.classList.remove('active');
+  });
+  var t=document.getElementById('p-'+n),tn=document.getElementById('nav-'+n);
+  if(t)t.classList.add('active');
+  if(tn)tn.classList.add('active');
+  if(n==='history')renderHist();
+  if(n==='ranking')renderRank();
+  if(n==='books')renderLib();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function switchBookTab(t){
+  document.getElementById('bsub-assigned').style.display=t==='assigned'?'block':'none';
+  document.getElementById('bsub-all').style.display=t==='all'?'block':'none';
+  var a=document.getElementById('btab-a'),b=document.getElementById('btab-b');
+  if(t==='assigned'){a.className='tab2-btn on';b.className='tab2-btn off';}
+  else{b.className='tab2-btn on';a.className='tab2-btn off';renderLib();}
+}
+function renderLib(q){
+  var c=document.getElementById('libList');if(!c)return;
+  var query=(q||document.getElementById('libQ').value||'').toLowerCase();
+  var list=libData.filter(function(b){return!query||b.title.toLowerCase().includes(query)||b.author.toLowerCase().includes(query);});
+  c.innerHTML=list.map(function(b){
+    var ab=b.assigned?'<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>':'';
+    var coverHtml=b.cover?'<img src="'+b.cover+'" class="bcover" style="width:48px;height:66px;" alt="'+b.title+'">':'<div style="font-size:38px;width:48px;text-align:center;">'+b.emoji+'</div>';
+    return '<div class="lib-row" onclick="showBook(\''+b.id+'\')">'
+      +coverHtml
+      +'<div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
+      +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
+      +ab+'<span class="nbadge">'+b.cat+'</span></div></div>';
+  }).join('');
+}
+function filterLib(){renderLib();}
+function showBook(id){
+  var b=libData.find(function(x){return x.id===id;});
+  if(!b)return;
+  toast(b.title+' — 도서를 선택했습니다!');
+  if(b.id==='1001'||b.id==='1002'){setTimeout(function(){startQuiz(b.id);},1000);}
+}
+function startQuiz(id){
+  var d=QB[id];
+  if(!d){toast('이 도서의 퀴즈는 준비 중입니다.');return;}
+  switchPanel('quiz');
+  curBook=id;curData=d;curQ=0;anss=[];
+  document.getElementById('qscreen-select').style.display='none';
+  document.getElementById('qscreen-ing').style.display='block';
+  document.getElementById('qscreen-result').style.display='none';
+  document.getElementById('qTitle').innerText=d.title;
+  document.getElementById('qEmoji').innerText=d.emoji;
+  renderQ();
+}
+function renderQ(){
+  var q=curData.qs[curQ],tot=curData.qs.length;
+  document.getElementById('qLabel').innerText=(curQ+1)+'/'+tot;
+  document.getElementById('qFill').style.width=Math.round(((curQ+1)/tot)*100)+'%';
+  document.getElementById('qText').innerText=q.q;
+  var c=document.getElementById('qOpts');c.innerHTML='';
+  q.os.forEach(function(o,i){
+    var b=document.createElement('button');
+    b.className='qopt';
+    b.innerHTML='<span class="onum">'+(i+1)+'</span>'+o;
+    b.onclick=function(){selectAns(i);};
+    c.appendChild(b);
+  });
+  var fb=document.getElementById('qFb');fb.style.display='none';fb.className='qfb';
+  document.getElementById('qNext').style.display='none';
+}
+function selectAns(sel){
+  var q=curData.qs[curQ],ok=(sel===q.a);
+  anss.push({sel:sel,a:q.a,ok:ok});
+  document.querySelectorAll('#qOpts .qopt').forEach(function(b,i){
+    b.disabled=true;
+    if(i===sel&&ok)b.classList.add('correct');
+    if(i===sel&&!ok)b.classList.add('wrong');
+    if(i===q.a&&!ok)b.classList.add('reveal');
+  });
+  var fb=document.getElementById('qFb');fb.style.display='block';
+  if(ok){fb.className='qfb ok';fb.innerHTML='<i class="fa-solid fa-circle-check mr-2"></i><strong>정답!</strong> +20포인트 획득!';}
+  else{fb.className='qfb fail';fb.innerHTML='<i class="fa-solid fa-circle-xmark mr-2"></i><strong>오답!</strong> 정답은 <strong>'+(q.a+1)+'번</strong>';}
+  var nx=document.getElementById('qNext');nx.style.display='block';
+  nx.innerHTML=(curQ>=curData.qs.length-1)?'<i class="fa-solid fa-flag-checkered mr-1"></i>결과 보기':'다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i>';
+}
+function goNext(){
+  if(curQ>=curData.qs.length-1){showResult();}
+  else{curQ++;renderQ();}
+}
+function showResult(){
+  document.getElementById('qscreen-ing').style.display='none';
+  document.getElementById('qscreen-result').style.display='block';
+  var tot=anss.length,ok=anss.filter(function(a){return a.ok;}).length;
+  var score=Math.round((ok/tot)*100);
+  document.getElementById('rScore').innerText=score+'점';
+  document.getElementById('rPt').innerHTML='<i class="fa-solid fa-bolt mr-1"></i>+'+score+' 포인트!';
+  if(score===100){document.getElementById('rEmoji').innerText='🏆';document.getElementById('rMsg').innerText=tot+'문항 전부 정답! 완벽해요!';document.getElementById('rScore').className='res-score p';}
+  else if(score>=60){document.getElementById('rEmoji').innerText='👍';document.getElementById('rMsg').innerText=tot+'문항 중 '+ok+'문항 정답! 잘했어요!';document.getElementById('rScore').className='res-score g';}
+  else{document.getElementById('rEmoji').innerText='📚';document.getElementById('rMsg').innerText='다시 읽고 도전해봐요!';document.getElementById('rScore').className='res-score f';}
+  if(curData){histData.unshift({title:curData.title,date:new Date().toLocaleDateString('ko-KR').replace(/\.\s*/g,'.').replace(/\.$/,''),score:score});}
+  toast('퀴즈 완료! '+score+'점 · +'+score+'P 획득! 🎉');
+}
+function backToSelect(){
+  document.getElementById('qscreen-select').style.display='block';
+  document.getElementById('qscreen-ing').style.display='none';
+  document.getElementById('qscreen-result').style.display='none';
+  curBook=null;curData=null;
+}
+function renderHist(){
+  var c=document.getElementById('histList');if(!c)return;
+  var cnt=document.getElementById('histCount');if(cnt)cnt.innerText=histData.length+'권';
+  c.innerHTML=histData.map(function(h,i){
+    var sc=h.score===100?'var(--blue)':h.score>=80?'var(--green)':'var(--orange)';
+    return '<div class="hist-row">'
+      +'<div class="hist-rank">'+(i+1)+'</div>'
+      +'<div style="flex:1;"><div style="font-weight:800;font-size:13px;">'+h.title+'</div>'
+      +'<div style="font-size:11.5px;color:var(--muted);">'+h.date+' · 북퀴즈 완료</div></div>'
+      +'<div style="font-weight:900;color:'+sc+';">'+h.score+'점</div></div>';
+  }).join('');
+}
+function renderRank(){
+  var c=document.getElementById('rankList');if(!c)return;
+  var em={1:'🥇',2:'🥈',3:'🥉'};
+  var cl={1:'gold',2:'silver',3:'bronze'};
+  c.innerHTML=rankData.map(function(r){
+    return '<div class="rank-row'+(r.me?' me':'')+'"><div class="rnum '+(cl[r.rank]||'')+'">'+(em[r.rank]||r.rank)+'</div>'
+      +'<div style="flex:1;"><div style="font-weight:800;font-size:13.5px;">'+r.name+(r.me?' <span style="font-size:11px;color:var(--blue);">(나)</span>':'')+'</div>'
+      +'<div style="font-size:11.5px;color:var(--muted);">'+r.cls+'</div></div>'
+      +'<div style="font-weight:900;font-size:14.5px;color:var(--blue);">'+r.pt.toLocaleString()+'P</div></div>';
+  }).join('');
+}
+// 학생 홈 배너 롤링 로직
+var curSlide = 0;
+function nextBannerSlide() {
+  var slides = document.querySelectorAll('.rolling-banner-slide');
+  var dots = document.querySelectorAll('.rolling-banner-dot');
+  if (!slides.length) return;
+  slides[curSlide].classList.remove('active');
+  if (dots[curSlide]) dots[curSlide].classList.remove('active');
+  curSlide = (curSlide + 1) % slides.length;
+  slides[curSlide].classList.add('active');
+  if (dots[curSlide]) dots[curSlide].classList.add('active');
+}
+function setBannerSlide(idx) {
+  var slides = document.querySelectorAll('.rolling-banner-slide');
+  var dots = document.querySelectorAll('.rolling-banner-dot');
+  if (!slides.length || idx < 0 || idx >= slides.length) return;
+  slides[curSlide].classList.remove('active');
+  if (dots[curSlide]) dots[curSlide].classList.remove('active');
+  curSlide = idx;
+  slides[curSlide].classList.add('active');
+  if (dots[curSlide]) dots[curSlide].classList.add('active');
+}
+setInterval(nextBannerSlide, 4500);
+
+var toastT;
+function toast(msg){
+  var el=document.getElementById('toast');
+  if(!el) return;
+  el.innerHTML='<i class="fa-solid fa-circle-check mr-2" style="color:#4ade80;"></i>'+msg;
+  el.style.display='block';
+  clearTimeout(toastT);
+  toastT=setTimeout(function(){el.style.display='none';},3000);
+}
+
+document.addEventListener('DOMContentLoaded',function(){renderHist();renderRank();renderLib();});
+</script>
+</body>
+</html>

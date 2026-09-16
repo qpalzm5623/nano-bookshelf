@@ -1,0 +1,817 @@
+﻿<!DOCTYPE html>
+<html>
+<body>
+<div id="res"></div>
+<script>
+try {
+  
+// ==============================================================
+// 1. 다문항 북퀴즈 데이터 관리 (Q1 ~ Q5 기본 탑재 + 추가/삭제)
+// ==============================================================
+var quizDataList = [
+  {
+    question: "『어린 왕자』에서 사막여우가 어린 왕자에게 전해준 가장 소중한 비밀인 ㉠에 들어갈 알맞은 낱말은?\n\n[지문]\n\"내 비밀은 이런 거야. 매우 간단한 거지. 오로지 ㉠(으)로 보아야만 분명하게 볼 수 있어. 가장 중요한 것은 눈에 보이지 않거든.\"",
+    opt1: "마음",
+    opt2: "눈동자",
+    opt3: "장미꽃",
+    opt4: "여우",
+    ans: "1"
+  },
+  {
+    question: "어린 왕자가 살던 고향 별의 명칭으로 알맞은 것은 무엇인가요?",
+    opt1: "A-101 소행성",
+    opt2: "B-612 소행성",
+    opt3: "C-303 소행성",
+    opt4: "별똥별 404호",
+    ans: "2"
+  },
+  {
+    question: "어린 왕자가 자신의 별을 떠나 다른 별들을 여행하기로 결심한 가장 결정적인 이유는 무엇인가요?",
+    opt1: "바오바브나무가 별을 뒤덮어서",
+    opt2: "장미꽃의 투정과 까다로운 자존심에 상처를 받아서",
+    opt3: "화산이 모두 폭발해서",
+    opt4: "비행기 조종사를 만나고 싶어서",
+    ans: "2"
+  },
+  {
+    question: "여우가 어린 왕자에게 알려준 ㉡'길들인다'의 참된 의미로 가장 알맞은 것은?\n\n[지문]\n\"넌 나에게 아직은 수많은 소년들과 다를 바 없는 한 소년에 불과해... 하지만 네가 나를 ㉡길들인다면, 우리는 서로에게 이 세상에서 오직 하나뿐인 존재가 될 거야.\"",
+    opt1: "상대방을 내 뜻대로 복종시키는 것",
+    opt2: "서로에게 특별한 관계를 맺고 끝까지 책임을 지는 것",
+    opt3: "매일 정해진 시간에 먹이를 주는 것",
+    opt4: "상대방의 약점을 모두 알아내는 것",
+    ans: "2"
+  },
+  {
+    question: "비행기 조종사가 어릴 적 어른들에게 보여주었으나, 어른들이 단순한 '모자'로만 착각했던 첫 번째 그림은 무엇인가요?",
+    opt1: "코끼리를 삼킨 보아뱀 그림",
+    opt2: "상자 속에 들어있는 어린 양 그림",
+    opt3: "사막에 핀 노란 장미 그림",
+    opt4: "별빛 아래 잠든 사막여우 그림",
+    ans: "1"
+  }
+];
+
+var currentQuizIndex = 0;
+
+// 문항 탭 렌더링
+function renderQuizTabs() {
+  var container = document.getElementById('quizTabsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  quizDataList.forEach(function(item, idx) {
+    var tabBtn = document.createElement('button');
+    tabBtn.type = 'button';
+    tabBtn.className = 'quiz-tab-item-v' + (idx === currentQuizIndex ? ' active' : '');
+    tabBtn.innerHTML = '<span class="q-num">Q' + (idx + 1) + '</span><span class="font-weight-bold">문제 ' + (idx + 1) + '번</span>' + 
+      (idx === currentQuizIndex ? '<i class="fa-solid fa-chevron-right ml-auto" style="font-size:12px;"></i>' : '');
+    tabBtn.onclick = function() {
+      selectQuizTab(idx);
+    };
+    container.appendChild(tabBtn);
+  });
+
+  // 상단 카운트 갱신
+  var countEl = document.getElementById('quizTotalCount');
+  if (countEl) countEl.innerText = quizDataList.length;
+}
+
+// 특정 문항 선택
+function selectQuizTab(idx) {
+  currentQuizIndex = idx;
+  renderQuizTabs();
+  loadCurrentQuizForm();
+}
+
+// 현재 폼에 데이터 표시
+function loadCurrentQuizForm() {
+  var q = quizDataList[currentQuizIndex];
+  if (!q) return;
+
+  document.getElementById('quizCurrentLabel').innerText = '문제 ' + (currentQuizIndex + 1) + '번 문항 편집';
+  document.getElementById('quiz_target_q').value = q.question || '';
+  document.getElementById('opt_1').value = q.opt1 || '';
+  document.getElementById('opt_2').value = q.opt2 || '';
+  document.getElementById('opt_3').value = q.opt3 || '';
+  document.getElementById('opt_4').value = q.opt4 || '';
+  document.getElementById('quiz_correct_ans').value = q.ans || '1';
+
+  // 삭제 버튼 활성화 여부 (최소 1문항 유지)
+  document.getElementById('btnDeleteQuiz').style.display = quizDataList.length > 1 ? 'inline-block' : 'none';
+}
+
+// 폼 입력 시 실시간 데이터 저장
+function updateCurrentQuizData() {
+  var q = quizDataList[currentQuizIndex];
+  if (!q) return;
+
+  q.question = document.getElementById('quiz_target_q').value;
+  q.opt1 = document.getElementById('opt_1').value;
+  q.opt2 = document.getElementById('opt_2').value;
+  q.opt3 = document.getElementById('opt_3').value;
+  q.opt4 = document.getElementById('opt_4').value;
+  q.ans = document.getElementById('quiz_correct_ans').value;
+}
+
+// 새 문항 추가
+function addNewQuiz() {
+  var newIdx = quizDataList.length + 1;
+  quizDataList.push({
+    question: "문제 " + newIdx + ". 지문 또는 문제 내용을 입력하세요.",
+    opt1: "",
+    opt2: "",
+    opt3: "",
+    opt4: "",
+    ans: "1"
+  });
+  currentQuizIndex = quizDataList.length - 1;
+  renderQuizTabs();
+  loadCurrentQuizForm();
+  document.getElementById('quiz_target_q').focus();
+}
+
+// 문항 삭제
+function deleteCurrentQuiz() {
+  if (quizDataList.length <= 1) {
+    alert('최소 1개 이상의 퀴즈 문항이 유지되어야 합니다.');
+    return;
+  }
+  if (confirm('현재 문제 ' + (currentQuizIndex + 1) + '번 문항을 삭제하시겠습니까?')) {
+    quizDataList.splice(currentQuizIndex, 1);
+    if (currentQuizIndex >= quizDataList.length) {
+      currentQuizIndex = quizDataList.length - 1;
+    }
+    renderQuizTabs();
+    loadCurrentQuizForm();
+  }
+}
+
+// 전체 퀴즈 저장
+function saveAllQuizzes() {
+  updateCurrentQuizData();
+  alert('총 ' + quizDataList.length + '개 문항의 북퀴즈가 성공적으로 저장되었습니다!');
+  switchTab('list');
+}
+
+// 초기화 실행
+document.addEventListener('DOMContentLoaded', function() {
+  renderQuizTabs();
+  loadCurrentQuizForm();
+  if (typeof renderStudentTable === 'function') renderStudentTable(studentDataList);
+  if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
+  if (typeof onPortfolioStudentChange === 'function') onPortfolioStudentChange('S1021');
+});
+
+
+// ==============================================================
+// 2. 바닐라 모달 & 6개 탭 전환 제어
+// ==============================================================
+function showModalVanilla(id) {
+  var modal = document.getElementById(id);
+  if (!modal) return;
+  modal.style.display = 'block';
+  modal.classList.add('show');
+  document.body.classList.add('modal-open');
+  
+  if (!document.getElementById('vanilla-backdrop')) {
+    var backdrop = document.createElement('div');
+    backdrop.id = 'vanilla-backdrop';
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.onclick = function() { hideModalVanilla(id); };
+    document.body.appendChild(backdrop);
+  }
+}
+
+function hideModalVanilla(id) {
+  var modal = document.getElementById(id);
+  if (!modal) return;
+  modal.style.display = 'none';
+  modal.classList.remove('show');
+  document.body.classList.remove('modal-open');
+  var backdrop = document.getElementById('vanilla-backdrop');
+  if (backdrop) backdrop.remove();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('[data-dismiss="modal"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var modal = this.closest('.modal');
+      if (modal) hideModalVanilla(modal.id);
+    });
+  });
+});
+
+function switchTab(tab) {
+  var views = ['list', 'write', 'quiz', 'students', 'portfolio', 'settings'];
+  views.forEach(function(v) {
+    var el = document.getElementById('view-' + v);
+    var nav = document.getElementById('btn-nav-' + v);
+    if (el) el.style.display = 'none';
+    if (nav) nav.classList.remove('active');
+  });
+
+  var targetView = document.getElementById('view-' + tab);
+  var targetNav = document.getElementById('btn-nav-' + tab);
+  if (targetView) {
+    targetView.style.display = 'block';
+  }
+  if (targetNav) targetNav.classList.add('active');
+
+  if (tab === 'quiz') {
+    renderQuizTabs();
+    loadCurrentQuizForm();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ==============================================================
+// 3. 도서 표지 확대 모달 (Cover Lightbox)
+// ==============================================================
+function openCoverModal(imgSrc, title, info) {
+  document.getElementById('zoomCoverImg').src = imgSrc;
+  document.getElementById('zoomBookTitle').innerText = title;
+  document.getElementById('zoomBookInfo').innerHTML = info;
+
+  if (window.jQuery && typeof $('#coverZoomModal').modal === 'function') {
+    $('#coverZoomModal').modal('show');
+  } else {
+    showModalVanilla('coverZoomModal');
+  }
+}
+
+function previewCurrentCover() {
+  var imgEl = document.querySelector('#cover_preview_box img');
+  if (imgEl && imgEl.src) {
+    var title = document.getElementById('reg_book_name').value || '도서 표지 미리보기';
+    var author = document.getElementById('reg_author').value || '';
+    var pub = document.getElementById('reg_publisher').value || '';
+    openCoverModal(imgEl.src, title, author + (pub ? ' · ' + pub : ''));
+  } else {
+    alert('등록된 도서 표지 이미지가 없습니다. [ISBN 조회]를 먼저 진행해주세요.');
+  }
+}
+
+// ==============================================================
+// 4. 1p 정답 모달
+// ==============================================================
+function openScrollAnswer(no, name, content) {
+  document.getElementById('sc_book_no').innerText = 'Book No: ' + no;
+  document.getElementById('sc_book_name').innerText = name;
+  document.getElementById('sc_content').innerText = content;
+  
+  if (window.jQuery && typeof $('#scrollAnswerModal').modal === 'function') {
+    $('#scrollAnswerModal').modal('show');
+  } else {
+    showModalVanilla('scrollAnswerModal');
+  }
+}
+
+function copyScrollText() {
+  var text = document.getElementById('sc_content').innerText;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      alert('나노시트 1page 정답이 클립보드에 복사되었습니다!\n(교사용 지도서나 출력물에 바로 [Ctrl + V]로 붙여넣어 활용하세요)');
+    }).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+  alert('나노시트 1page 정답이 클립보드에 복사되었습니다!\n(교사용 지도서나 출력물에 바로 [Ctrl + V]로 붙여넣어 활용하세요)');
+}
+
+// ==============================================================
+// 5. ISBN 알라딘 자동조회
+// ==============================================================
+function magicFetchIsbn() {
+  var btn = document.getElementById('btn-isbn-fetch');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>조회중...';
+  btn.disabled = true;
+
+  setTimeout(function() {
+    document.getElementById('reg_book_name').value = '어린 왕자 (생텍쥐페리 탄생 120주년 기념판)';
+    document.getElementById('reg_author').value = '앙투안 드 생텍쥐페리';
+    document.getElementById('reg_publisher').value = '열린책들';
+    document.getElementById('cover_preview_box').innerHTML = '<img src="assets/covers/cover_1001.jpg" style="width:100%; height:100%; object-fit:cover; border-radius:6px;">';
+    document.getElementById('reg_memo').value = '【나노시트 1page 핵심 정답】\nQ1. 고향 별: B-612 소행성\nQ2. 마음으로 보아야 분명하게 보인다 (여우의 가르침)\nQ3. 길들임과 책임에 대한 교훈';
+
+    btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
+    btn.disabled = false;
+
+    alert('알라딘에서 서지정보를 자동으로 불러왔습니다!\n- 도서명: 어린 왕자\n- 저자: 생텍쥐페리\n- 출판사: 열린책들\n- 표지 이미지: 자동 다운로드 완료');
+  }, 400);
+}
+
+// ==============================================================
+// 6. 국어 특수문자 삽입 헬퍼
+// ==============================================================
+var targetInput = null;
+function setCurInput(el) {
+  targetInput = el;
+}
+function insertSym(sym) {
+  if (!targetInput) targetInput = document.getElementById('quiz_target_q');
+  var start = targetInput.selectionStart || 0;
+  var end = targetInput.selectionEnd || 0;
+  var val = targetInput.value;
+  targetInput.value = val.substring(0, start) + sym + val.substring(end);
+  targetInput.focus();
+  targetInput.setSelectionRange(start + sym.length, start + sym.length);
+  updateCurrentQuizData();
+}
+
+// ==============================================================
+// 7. FTP 대체 대량 파일 업로드 시뮬레이션
+// ==============================================================
+var portalSamples = [];
+function openBulkModal() {
+  if (window.jQuery && typeof $('#portalUploadModal').modal === 'function') {
+    $('#portalUploadModal').modal('show');
+  } else {
+    showModalVanilla('portalUploadModal');
+  }
+}
+
+function loadPortalSample() {
+  portalSamples = [
+    { name: '1001_cover.jpg', size: '1.2 MB', match: '1001번 (어린 왕자)' },
+    { name: '1002_cover.jpg', size: '850 KB', match: '1002번 (마당을 나온 암탉)' },
+    { name: '1003_worksheet.pdf', size: '3.4 MB', match: '1003번 (자전거 도둑)' },
+    { name: '1004_cover.jpg', size: '920 KB', match: '1004번 (아몬드)' }
+  ];
+  var tbody = document.getElementById('portalQueueBody');
+  tbody.innerHTML = '';
+  portalSamples.forEach(function(item, idx) {
+    var tr = document.createElement('tr');
+    tr.id = 'p_row_' + idx;
+    tr.innerHTML = '<td class="text-center">' + (idx+1) + '</td><td class="font-weight-bold">' + item.name + '</td><td>' + item.size + '</td><td class="text-center p-status"><span class="badge-soft badge-soft-neutral">대기중</span></td><td class="text-muted p-match">' + item.match + '</td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('portalQueueCount').innerText = '4';
+  document.getElementById('btnPortalStart').disabled = false;
+}
+
+function runPortalUpload() {
+  document.getElementById('btnPortalStart').disabled = true;
+  document.getElementById('portalProgressArea').style.display = 'block';
+
+  var cur = 0;
+  var timer = setInterval(function() {
+    if (cur < portalSamples.length) {
+      var row = document.getElementById('p_row_' + cur);
+      if (row) {
+        row.querySelector('.p-status').innerHTML = '<span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>완료</span>';
+        row.querySelector('.p-match').innerHTML = '<span class="text-muted font-weight-bold">[' + portalSamples[cur].match + '] 표지 저장 및 자동 공개(Y) 완료</span>';
+      }
+      cur++;
+      var pct = Math.round((cur / portalSamples.length) * 100);
+      var bar = document.getElementById('portalProgressBar');
+      bar.style.width = pct + '%';
+      bar.innerText = pct + '%';
+      document.getElementById('portalProgressPercent').innerText = pct + '%';
+      document.getElementById('portalProgressText').innerText = cur + ' / 4개 파일 저장 및 도서 매칭 완료';
+    } else {
+      clearInterval(timer);
+      var bar = document.getElementById('portalProgressBar');
+      bar.classList.remove('progress-bar-animated');
+      document.getElementById('portalProgressText').innerHTML = '<span class="font-weight-bold text-success"><i class="fa-solid fa-circle-check mr-1"></i>모든 파일이 정상적으로 저장 및 매칭되었습니다!</span>';
+      alert('대량 파일 업로드가 완료되었습니다!\n도서 표지가 매칭되고 도서 상태가 공개(Y)로 자동 전환되었습니다.');
+    }
+  }, 400);
+}
+
+// ==============================================================
+// 8. 원생 관리 (Student Management) 데이터셋 & 제어
+// ==============================================================
+var studentDataList = [
+  { id: 'S1021', name: '김민준', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', level: 'Lv 5', bookCount: 24, quizAvg: 94.2, phone: '010-3849-1102', lastDate: '2026.09.07', teacher: '박선혜 지도교사', memo: '줄거리 요약과 어휘력 영역이 탁월함. 토론 수업 시 자기 생각을 명확하게 표현함.' },
+  { id: 'S1022', name: '이서연', school: '도약초등학교', grade: '초등 4학년', classGroup: '슬기반', level: 'Lv 4', bookCount: 18, quizAvg: 88.5, phone: '010-4921-9982', lastDate: '2026.09.08', teacher: '이현우 지도교사', memo: '창의적 표현력이 뛰어나며 감상문 작성을 매우 흥미로워함.' },
+  { id: 'S1023', name: '박지훈', school: '한결초등학교', grade: '초등 6학년', classGroup: '마스터반', level: 'Lv 6', bookCount: 31, quizAvg: 98.0, phone: '010-7712-4059', lastDate: '2026.09.06', teacher: '김은영 원장님', memo: '고전문학과 비문학 독해 속도가 매우 빠르고 오답률이 2% 미만임.' },
+  { id: 'S1024', name: '최유진', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', level: 'Lv 5', bookCount: 22, quizAvg: 92.0, phone: '010-5510-3490', lastDate: '2026.09.07', teacher: '박선혜 지도교사', memo: '인물의 갈등 관계를 파악하는 능력이 매우 정교함.' },
+  { id: 'S1025', name: '정하은', school: '미래중학교', grade: '중등 1학년', classGroup: '심화반', level: 'Lv 7', bookCount: 35, quizAvg: 96.5, phone: '010-8823-1178', lastDate: '2026.09.08', teacher: '김은영 원장님', memo: '중등 교과 연계 필독서를 완벽히 소화하며 수준 높은 서술형 논술 작성 가능.' },
+  { id: 'S1026', name: '강도윤', school: '도약초등학교', grade: '초등 4학년', classGroup: '슬기반', level: 'Lv 4', bookCount: 16, quizAvg: 86.0, phone: '010-3342-9901', lastDate: '2026.09.05', teacher: '이현우 지도교사', memo: '독서 흥미 유도 중이며, 모험/동화 장르에서 높은 집중도를 보임.' },
+  { id: 'S1027', name: '윤서아', school: '새빛초등학교', grade: '초등 2학년', classGroup: '새싹반', level: 'Lv 2', bookCount: 14, quizAvg: 90.0, phone: '010-6671-2384', lastDate: '2026.09.08', teacher: '정미래 지도교사', memo: '그림책에서 글밥이 있는 문고판 동화로 성공적으로 진입함.' },
+  { id: 'S1028', name: '한예준', school: '한결초등학교', grade: '초등 6학년', classGroup: '마스터반', level: 'Lv 6', bookCount: 28, quizAvg: 93.5, phone: '010-9981-4432', lastDate: '2026.09.04', teacher: '김은영 원장님', memo: '사회 역사 및 과학 비문학 독서에 강점이 있음.' }
+];
+
+var curSelectedStudentForModal = null;
+
+function renderStudentTable(list) {
+  var tbody = document.getElementById('studentTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  var resCount = document.getElementById('searchResultCount');
+  if (resCount) resCount.innerText = list.length;
+  var totalCount = document.getElementById('statTotalStudents');
+  if (totalCount) totalCount.innerText = studentDataList.length;
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">일치하는 원생 정보가 없습니다.</td></tr>';
+    return;
+  }
+
+  list.forEach(function(std) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = 
+      '<td class="text-center font-weight-bold text-muted">' + std.id + '</td>' +
+      '<td><a class="student-link" onclick="openStudentDetailModal(\'' + std.id + '\')">' + std.name + '</a></td>' +
+      '<td class="text-center">' + std.school + ' ' + std.grade + '</td>' +
+      '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + std.classGroup + '</span></td>' +
+      '<td class="text-center"><span class="badge-soft badge-soft-success">' + std.level + '</span></td>' +
+      '<td class="text-center font-weight-bold">' + std.bookCount + '권</td>' +
+      '<td class="text-center text-success font-weight-bold">' + std.quizAvg + '점</td>' +
+      '<td class="text-center text-muted" style="font-size: 12.5px;">' + std.phone + '</td>' +
+      '<td class="text-center text-muted" style="font-size: 12.5px;">' + std.lastDate + '</td>' +
+      '<td class="text-center">' +
+        '<button type="button" class="btn btn-xs btn-beige-secondary px-2 font-weight-bold mr-1" onclick="viewStudentPortfolio(\'' + std.id + '\')">' +
+          '<i class="fa-solid fa-chart-pie mr-1"></i>포트폴리오' +
+        '</button>' +
+        '<button type="button" class="btn btn-xs btn-outline-secondary px-2" onclick="openStudentDetailModal(\'' + std.id + '\')" title="프로필 상세">' +
+          '<i class="fa-solid fa-user-pen"></i>' +
+        '</button>' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function filterStudents() {
+  var classFilter = document.getElementById('filterStudentClass').value;
+  var searchKw = (document.getElementById('searchStudentInput').value || '').trim().toLowerCase();
+
+  var filtered = studentDataList.filter(function(std) {
+    var matchClass = (classFilter === 'ALL') || (std.classGroup.indexOf(classFilter) !== -1);
+    var matchKw = !searchKw || 
+      (std.name.toLowerCase().indexOf(searchKw) !== -1) ||
+      (std.id.toLowerCase().indexOf(searchKw) !== -1) ||
+      (std.school.toLowerCase().indexOf(searchKw) !== -1);
+    return matchClass && matchKw;
+  });
+
+  renderStudentTable(filtered);
+}
+
+function openStudentAddModal() {
+  document.getElementById('newStudentForm').reset();
+  if (window.jQuery && typeof $('#studentAddModal').modal === 'function') {
+    $('#studentAddModal').modal('show');
+  } else {
+    showModalVanilla('studentAddModal');
+  }
+}
+
+function saveNewStudent() {
+  var name = document.getElementById('new_std_name').value.trim();
+  var school = document.getElementById('new_std_school').value.trim();
+  var grade = document.getElementById('new_std_grade').value;
+  var classGroup = document.getElementById('new_std_class').value;
+  var level = document.getElementById('new_std_level').value;
+  var phone = document.getElementById('new_std_phone').value.trim();
+
+  if (!name || !school) {
+    alert('원생 이름과 소속 학교를 입력해주세요.');
+    return;
+  }
+
+  var newId = 'S' + (1020 + studentDataList.length + 1);
+  var newStd = {
+    id: newId,
+    name: name,
+    school: school,
+    grade: grade,
+    classGroup: classGroup,
+    level: level,
+    bookCount: 0,
+    quizAvg: 0,
+    phone: phone,
+    lastDate: '오늘 등록',
+    teacher: '박선혜 지도교사',
+    memo: '신규 등록 원생'
+  };
+
+  studentDataList.unshift(newStd);
+  initPortfolioOptions();
+  filterStudents();
+  hideModalVanilla('studentAddModal');
+  alert('신규 원생 [' + name + ' (학번: ' + newId + ')] 님이 성공적으로 등록되었습니다!');
+}
+
+// 엑셀 일괄 등록 시뮬레이션
+var sampleExcelParsed = [];
+function openStudentExcelModal() {
+  sampleExcelParsed = [];
+  document.getElementById('excelPreviewSection').style.display = 'none';
+  document.getElementById('btnApplyExcel').disabled = true;
+  if (window.jQuery && typeof $('#studentExcelModal').modal === 'function') {
+    $('#studentExcelModal').modal('show');
+  } else {
+    showModalVanilla('studentExcelModal');
+  }
+}
+
+function loadStudentExcelSample() {
+  sampleExcelParsed = [
+    { name: '신채원', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', phone: '010-2341-8890' },
+    { name: '송시우', school: '한결초등학교', grade: '초등 6학년', classGroup: '마스터반', phone: '010-8871-3321' },
+    { name: '오지민', school: '도약초등학교', grade: '초등 4학년', classGroup: '슬기반', phone: '010-4491-1200' },
+    { name: '문태양', school: '미래중학교', grade: '중등 1학년', classGroup: '심화반', phone: '010-7710-9943' }
+  ];
+
+  var tbody = document.getElementById('excelPreviewBody');
+  tbody.innerHTML = '';
+  sampleExcelParsed.forEach(function(item, idx) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="text-center">' + (idx+1) + '</td><td class="font-weight-bold">' + item.name + '</td><td>' + item.school + ' ' + item.grade + '</td><td><span class="badge-soft badge-soft-neutral">' + item.classGroup + '</span></td><td>' + item.phone + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('excelParsedCount').innerText = sampleExcelParsed.length;
+  document.getElementById('excelPreviewSection').style.display = 'block';
+  document.getElementById('btnApplyExcel').disabled = false;
+}
+
+function applyExcelStudents() {
+  if (sampleExcelParsed.length === 0) return;
+  sampleExcelParsed.forEach(function(item) {
+    var newId = 'S' + (1020 + studentDataList.length + 1);
+    studentDataList.push({
+      id: newId,
+      name: item.name,
+      school: item.school,
+      grade: item.grade,
+      classGroup: item.classGroup,
+      level: 'Lv 4',
+      bookCount: 0,
+      quizAvg: 0,
+      phone: item.phone,
+      lastDate: '엑셀 등록',
+      teacher: '배정 예정',
+      memo: '엑셀 일괄 등록 완료'
+    });
+  });
+
+  initPortfolioOptions();
+  filterStudents();
+  hideModalVanilla('studentExcelModal');
+  alert('엑셀 파일에서 ' + sampleExcelParsed.length + '명의 원생 명단이 성공적으로 일괄 등록되었습니다!');
+}
+
+function openStudentDetailModal(stdId) {
+  var std = studentDataList.find(function(s) { return s.id === stdId; });
+  if (!std) return;
+
+  curSelectedStudentForModal = stdId;
+  document.getElementById('det_name').innerText = std.name;
+  document.getElementById('det_id_sub').innerText = '학번: ' + std.id + ' · ' + std.school + ' ' + std.grade;
+  document.getElementById('det_level').innerText = std.level;
+  document.getElementById('det_class').innerText = std.classGroup;
+  document.getElementById('det_teacher').innerText = std.teacher || '박선혜 지도교사';
+  document.getElementById('det_books').innerText = std.bookCount + '권 완독';
+  document.getElementById('det_score').innerText = std.quizAvg ? (std.quizAvg + '점 (합격)') : '미응시';
+  document.getElementById('det_phone').value = std.phone || '';
+  document.getElementById('det_memo').value = std.memo || '';
+
+  if (window.jQuery && typeof $('#studentDetailModal').modal === 'function') {
+    $('#studentDetailModal').modal('show');
+  } else {
+    showModalVanilla('studentDetailModal');
+  }
+}
+
+function viewStudentPortfolioFromModal() {
+  hideModalVanilla('studentDetailModal');
+  if (curSelectedStudentForModal) {
+    viewStudentPortfolio(curSelectedStudentForModal);
+  }
+}
+
+
+// ==============================================================
+// 9. 독서 포트폴리오 (Reading Portfolio) 데이터셋 & 제어
+// ==============================================================
+var portfolioDataMap = {
+  'S1021': {
+    name: '김민준', school: '나노초등학교 5학년', classGroup: '지혜반 (심화 과정)',
+    teacher: '박선혜 지도교사', level: '초등 심화 Lv 5',
+    bookCount: 24, bookSub: '학년 평균(18권) 대비 +6권 달성',
+    quizAvg: 94.2, quizSub: '전체 24개 도서 중 23개 1차 합격',
+    sheetRate: 100,
+    scores: [98, 94, 92, 96],
+    books: [
+      { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들 · 세계문학', date: '2026.09.07', score: '100점 (만점)', sheet: '제출 완료', comment: '사막여우의 "길들임" 개념을 자신의 교우 관계에 빗대어 매우 성숙하게 서술함.' },
+      { cover: 'assets/covers/cover_1002.jpg', title: '마당을 나온 암탉', pub: '사계절 · 한국창작동화', date: '2026.08.28', score: '95점 (통과)', sheet: '제출 완료', comment: '잎싹이의 숭고한 모성애와 생명의 가치에 깊이 공감하며 독서록 작성 완료.' },
+      { cover: 'assets/covers/cover_1003.jpg', title: '자전거 도둑', pub: '다림 · 한국현대소설', date: '2026.08.15', score: '90점 (통과)', sheet: '제출 완료', comment: '물질만능주의와 도덕적 양심 갈등에 대해 주인공 수남이의 관점을 날카롭게 분석함.' }
+    ],
+    comment: '민준이는 이번 분기 동안 고전 문학과 현대 소설을 넘나들며 깊이 있는 독서 몰입도를 보여주었습니다. 특히 단순 줄거리 파악을 넘어 인물의 심리 갈등과 주제 의식을 자신의 생활 경험과 결합하여 논리적으로 서술하는 능력이 눈에 띄게 성장했습니다. 앞으로는 비문학 인문/사회 영역으로 독서 폭을 한 단계 넓혀가도록 지도하겠습니다.'
+  },
+  'S1022': {
+    name: '이서연', school: '도약초등학교 4학년', classGroup: '슬기반 (성장 과정)',
+    teacher: '이현우 지도교사', level: '초등 중급 Lv 4',
+    bookCount: 18, bookSub: '학년 권장 도서 목표치 100% 완독 달성',
+    quizAvg: 88.5, quizSub: '꾸준한 복습으로 정답률 지속 상승',
+    sheetRate: 95,
+    scores: [90, 88, 92, 85],
+    books: [
+      { cover: 'assets/covers/cover_1002.jpg', title: '마당을 나온 암탉', pub: '사계절 · 한국창작동화', date: '2026.09.08', score: '90점 (통과)', sheet: '제출 완료', comment: '초록머리가 하늘을 날아갈 때의 감동을 감성적인 어휘로 생생하게 독서록에 표현함.' },
+      { cover: 'assets/covers/cover_1004.jpg', title: '아몬드', pub: '창비 · 청소년 문학', date: '2026.08.20', score: '85점 (통과)', sheet: '제출 완료', comment: '감정을 느끼지 못하는 주인공의 시선을 통해 타인의 마음에 공감하는 법을 배움.' }
+    ],
+    comment: '서연이는 독서 후 자신의 감정과 생각을 솔직하고 다채로운 표현으로 풀어내는 감수성이 돋보입니다. 초반에는 긴 문장 읽기에 다소 부담을 느꼈으나, 최근 400페이지 이상의 장편 동화도 끝까지 흥미를 잃지 않고 완독하는 집중력을 키워냈습니다.'
+  },
+  'S1023': {
+    name: '박지훈', school: '한결초등학교 6학년', classGroup: '마스터반 (영재 과정)',
+    teacher: '김은영 원장님', level: '초등 최고 Lv 6',
+    bookCount: 31, bookSub: '원내 최우수 다독 원생 Top 3 선정',
+    quizAvg: 98.0, quizSub: '출제 문항 98% 정답, 독보적 독해력',
+    sheetRate: 100,
+    scores: [99, 98, 96, 98],
+    books: [
+      { cover: 'assets/covers/cover_1004.jpg', title: '아몬드', pub: '창비 · 청소년 문학', date: '2026.09.06', score: '100점 (만점)', sheet: '제출 완료', comment: '괴물이라 불린 두 소년의 우정을 현대 사회의 소통 부재 현상과 연결하여 비평적 독서록 작성.' },
+      { cover: 'assets/covers/cover_1003.jpg', title: '자전거 도둑', pub: '다림 · 한국현대소설', date: '2026.08.25', score: '98점 (만점)', sheet: '제출 완료', comment: '작품의 시대적 배경인 1970년대 도시화의 명암을 정확하게 짚어냄.' },
+      { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들 · 세계문학', date: '2026.08.10', score: '96점 (통과)', sheet: '제출 완료', comment: '어른들의 맹목적인 숫자 집착을 비판한 장면에 대해 깊이 있는 토론 진행.' }
+    ],
+    comment: '지훈이는 단순한 내용 이해를 넘어 텍스트 이면에 숨겨진 작가의 의도와 비유적 상징을 능숙하게 해석해 내는 비판적 사고력이 최고 수준입니다. 중학교 진학 후에도 국어와 논술 영역에서 최상위권의 독해력을 발휘할 것으로 확신합니다.'
+  },
+  'S1024': {
+    name: '최유진', school: '나노초등학교 5학년', classGroup: '지혜반 (심화 과정)',
+    teacher: '박선혜 지도교사', level: '초등 심화 Lv 5',
+    bookCount: 22, bookSub: '월평균 4권 완독 패턴 안정적 유지',
+    quizAvg: 92.0, quizSub: '북퀴즈 1차 통과율 91%',
+    sheetRate: 100,
+    scores: [92, 92, 94, 90],
+    books: [
+      { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들 · 세계문학', date: '2026.09.07', score: '95점 (통과)', sheet: '제출 완료', comment: '어린 왕자가 장미꽃에 느낀 서운함과 그리움을 심리학적 관점에서 해석함.' },
+      { cover: 'assets/covers/cover_1002.jpg', title: '마당을 나온 암탉', pub: '사계절 · 한국창작동화', date: '2026.08.22', score: '90점 (통과)', sheet: '제출 완료', comment: '자유를 찾기 위한 암탉 잎싹의 용기를 자신의 일상 속 도전과 결부함.' }
+    ],
+    comment: '유진이는 매주 꾸준한 독서 루틴을 지키며 과제를 성실하게 완수하는 모범적인 원생입니다. 논리적 어휘 구사력이 월등히 향상되었으며, 지문 속에 숨겨진 인과관계를 찾아내는 능력이 매우 탄탄합니다.'
+  },
+  'S1025': {
+    name: '정하은', school: '미래중학교 1학년', classGroup: '심화반 (마스터 과정)',
+    teacher: '김은영 원장님', level: '중등 최고 Lv 7',
+    bookCount: 35, bookSub: '중등 교과 수록 문학작품 전권 완독',
+    quizAvg: 96.5, quizSub: '서술형 퀴즈 만점 및 독후 논술 최우수',
+    sheetRate: 100,
+    scores: [96, 97, 98, 95],
+    books: [
+      { cover: 'assets/covers/cover_1004.jpg', title: '아몬드', pub: '창비 · 청소년 문학', date: '2026.09.08', score: '100점 (만점)', sheet: '제출 완료', comment: '공감 능력의 결여가 현대 사회에 미치는 영향을 다각도로 분석한 소논문형 독서 보고서 제출.' },
+      { cover: 'assets/covers/cover_1003.jpg', title: '자전거 도둑', pub: '다림 · 한국현대소설', date: '2026.08.29', score: '95점 (통과)', sheet: '제출 완료', comment: '수남이가 겪는 내적 갈등을 도덕주의적 관점과 현실주의적 관점에서 대조 분석함.' }
+    ],
+    comment: '하은이는 중학교 내신 국어 및 고난도 비문학 지문까지 막힘없이 해석해 내는 뛰어난 문해력을 갖추고 있습니다. 독서 토론 시 논리적 근거를 바탕으로 반론을 펼치는 능력이 매우 뛰어나며 학업 성취도 또한 탁월합니다.'
+  }
+};
+
+function initPortfolioOptions() {
+  var sel = document.getElementById('selectPortfolioStudent');
+  if (!sel) return;
+  var curVal = sel.value || 'S1021';
+  sel.innerHTML = '';
+
+  studentDataList.forEach(function(std) {
+    var opt = document.createElement('option');
+    opt.value = std.id;
+    opt.innerText = std.id + ' ' + std.name + ' (' + std.school + ' ' + std.grade + ' · ' + std.bookCount + '권 완독)';
+    if (std.id === curVal) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function onPortfolioStudentChange(stdId) {
+  var pf = portfolioDataMap[stdId];
+  if (!pf) {
+    var std = studentDataList.find(function(s) { return s.id === stdId; });
+    pf = {
+      name: std ? std.name : '원생',
+      school: std ? (std.school + ' ' + std.grade) : '',
+      classGroup: std ? std.classGroup : '',
+      teacher: std ? std.teacher : '박선혜 지도교사',
+      level: std ? std.level : 'Lv 4',
+      bookCount: std ? std.bookCount : 0,
+      bookSub: '독서 이력 등록 중',
+      quizAvg: std ? std.quizAvg : 0,
+      quizSub: '퀴즈 응시 대기 중',
+      sheetRate: 100,
+      scores: [85, 85, 85, 85],
+      books: [
+        { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '90점', sheet: '제출 완료', comment: '독서 과제를 성실하게 완수함.' }
+      ],
+      comment: (std ? std.name : '원생') + ' 학생은 성실하게 독서 학습을 진행하고 있으며, 앞으로 다양한 장르의 책을 완독할 수 있도록 지도하겠습니다.'
+    };
+    portfolioDataMap[stdId] = pf;
+  }
+
+  document.getElementById('pfTeacherName').innerText = '담당 강사: ' + (pf.teacher || '박선혜 지도교사');
+  document.getElementById('pfLevelBadge').innerText = '인증 레벨: ' + (pf.level || '초등 심화 Lv 5');
+
+  document.getElementById('pfBookCount').innerText = pf.bookCount;
+  document.getElementById('pfBookSubText').innerText = pf.bookSub;
+  document.getElementById('pfQuizAvg').innerText = pf.quizAvg;
+  document.getElementById('pfQuizSubText').innerText = pf.quizSub;
+  document.getElementById('pfSheetRate').innerText = pf.sheetRate;
+
+  // 완독 도서 테이블 렌더링
+  var tbody = document.getElementById('pfBookHistoryBody');
+  tbody.innerHTML = '';
+  document.getElementById('pfBookListCount').innerText = '표시 중인 도서 ' + pf.books.length + '권';
+
+  pf.books.forEach(function(b) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = 
+      '<td class="text-center">' +
+        '<div class="book-thumb-wrap" onclick="openCoverModal(\'' + b.cover + '\', \'' + b.title + '\', \'' + b.pub + '\')">' +
+          '<img src="' + b.cover + '" style="width: 44px; height: 60px; border-radius: 6px; object-fit: cover;">' +
+        '</div>' +
+      '</td>' +
+      '<td>' +
+        '<div class="font-weight-bold">' + b.title + '</div>' +
+        '<small class="text-muted">' + b.pub + '</small>' +
+      '</td>' +
+      '<td class="text-center text-muted" style="font-size: 12.5px;">' + b.date + '</td>' +
+      '<td class="text-center"><span class="badge-soft badge-soft-success">' + b.score + '</span></td>' +
+      '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + b.sheet + '</span></td>' +
+      '<td style="font-size: 13px; line-height: 1.6;">' + b.comment + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // 총평 텍스트에어리어
+  document.getElementById('pfTeacherComment').value = pf.comment;
+}
+
+function viewStudentPortfolio(stdId) {
+  switchTab('portfolio');
+  var sel = document.getElementById('selectPortfolioStudent');
+  if (sel) {
+    sel.value = stdId;
+    onPortfolioStudentChange(stdId);
+  }
+}
+
+function savePortfolioComment() {
+  var sel = document.getElementById('selectPortfolioStudent');
+  var stdId = sel ? sel.value : 'S1021';
+  var comment = document.getElementById('pfTeacherComment').value;
+  if (portfolioDataMap[stdId]) {
+    portfolioDataMap[stdId].comment = comment;
+  }
+  alert('[' + (portfolioDataMap[stdId] ? portfolioDataMap[stdId].name : '해당 원생') + '] 학생의 독서 지도 총평이 저장되었습니다!\n학부모 발송용 리포트에 즉시 반영됩니다.');
+}
+
+function openPortfolioReportModal() {
+  var sel = document.getElementById('selectPortfolioStudent');
+  var stdId = sel ? sel.value : 'S1021';
+  var pf = portfolioDataMap[stdId] || portfolioDataMap['S1021'];
+
+  document.getElementById('rep_std_name').innerText = pf.name;
+  document.getElementById('rep_std_info').innerText = '학번: ' + stdId + ' · ' + pf.school + ' · 소속: ' + pf.classGroup;
+
+  var scores = pf.scores || [95, 90, 92, 94];
+  document.getElementById('rep_score_1').innerText = scores[0] + '점 (우수)';
+  document.getElementById('rep_bar_1').style.width = scores[0] + '%';
+  document.getElementById('rep_score_2').innerText = scores[1] + '점 (우수)';
+  document.getElementById('rep_bar_2').style.width = scores[1] + '%';
+  document.getElementById('rep_score_3').innerText = scores[2] + '점 (우수)';
+  document.getElementById('rep_bar_3').style.width = scores[2] + '%';
+  document.getElementById('rep_score_4').innerText = scores[3] + '점 (우수)';
+  document.getElementById('rep_bar_4').style.width = scores[3] + '%';
+
+  // 완독 도서 스탬프 카드
+  var repCards = document.getElementById('rep_book_cards');
+  repCards.innerHTML = '';
+  pf.books.forEach(function(b) {
+    var col = document.createElement('div');
+    col.className = 'col-md-4 mb-2';
+    col.innerHTML = 
+      '<div class="p-2 d-flex align-items-center" style="background:#ffffff; border:1px solid var(--border-light); border-radius:10px;">' +
+        '<img src="' + b.cover + '" style="width:36px; height:50px; border-radius:4px; object-fit:cover; margin-right:10px;">' +
+        '<div style="overflow:hidden;">' +
+          '<div class="font-weight-bold text-truncate" style="font-size:12.5px;">' + b.title + '</div>' +
+          '<small class="text-success font-weight-bold" style="font-size:11px;"><i class="fa-solid fa-check mr-1"></i>완독 & 인증 합격</small>' +
+        '</div>' +
+      '</div>';
+    repCards.appendChild(col);
+  });
+
+  document.getElementById('rep_comment_text').innerText = document.getElementById('pfTeacherComment').value || pf.comment;
+
+  if (window.jQuery && typeof $('#portfolioReportModal').modal === 'function') {
+    $('#portfolioReportModal').modal('show');
+  } else {
+    showModalVanilla('portfolioReportModal');
+  }
+}
+
+  }
+  document.getElementById('res').innerText = 'EXTRA_BRACE_SUCCESS';
+} catch (e) {
+  document.getElementById('res').innerText = 'EXTRA_BRACE_ERROR: ' + e.message;
+}
+</script>
+</body>
+</html>

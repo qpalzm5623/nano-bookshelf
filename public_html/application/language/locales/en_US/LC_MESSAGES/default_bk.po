@@ -1,0 +1,696 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: lang\n"
+"POT-Creation-Date: 2020-08-19 17:22+0900\n"
+"PO-Revision-Date: 2020-08-20 09:24+0900\n"
+"Last-Translator: OJH <mulggimpyo@naver.com>\n"
+"Language-Team: \n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"X-Poedit-Basepath: ../AppData/Local/Temp/52144b3d/114.207.245.195/home/"
+"seouldesign/application\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: controllers/BrandAdmin.php:22
+msgid "로그인 해주시기 바랍니다."
+msgstr "Please log in."
+
+#: controllers/BrandAdmin.php:28
+msgid "최초 로그인 시 비밀번호 변경이 필요합니다."
+msgstr "You will need to change your password at the time of first login."
+
+#: controllers/BrandAdmin.php:65
+msgid "아이디를 입력 해 주세요"
+msgstr "Please enter your ID"
+
+#: controllers/BrandAdmin.php:70
+msgid "비밀번호를 입력 해 주세요"
+msgstr "Please enter your password"
+
+#: controllers/BrandAdmin.php:200
+msgid "다시 시도 해 주시기 바랍니다."
+msgstr "Please try again."
+
+#: controllers/BrandAdmin.php:209
+msgid "기존 비밀번호가 맞지 않습니다."
+msgstr "The existing password does not fit."
+
+#: controllers/BrandAdmin.php:232 controllers/BrandAdmin.php:362
+#: controllers/BrandAdmin.php:594 controllers/BrandAdmin.php:846
+#: controllers/BrandAdmin.php:883 controllers/BrandAdmin.php:1023
+#: controllers/BrandAdmin.php:1119 controllers/BrandAdmin.php:1245
+#: controllers/BrandAdmin.php:1295 controllers/BrandAdmin.php:1376
+#: controllers/BrandAdmin.php:1453
+msgid "권한이 없습니다."
+msgstr "You do not have permission."
+
+#: controllers/BrandAdmin.php:302 views/brandAdmin/product-modify.php:154
+#: views/brandAdmin/product-write.php:116
+msgid "노출"
+msgstr "Exposed"
+
+#: controllers/BrandAdmin.php:305 views/brandAdmin/product-modify.php:158
+#: views/brandAdmin/product-write.php:120
+msgid "비노출"
+msgstr "Non-exposed"
+
+#: controllers/BrandAdmin.php:313 views/brandAdmin/product-modify.php:139
+#: views/brandAdmin/product-modify.php:167
+#: views/brandAdmin/product-write.php:101
+#: views/brandAdmin/product-write.php:129
+msgid "한국어"
+msgstr "Korean"
+
+#: controllers/BrandAdmin.php:315 views/brandAdmin/product-modify.php:142
+#: views/brandAdmin/product-modify.php:170
+#: views/brandAdmin/product-write.php:104
+#: views/brandAdmin/product-write.php:132
+msgid "영어"
+msgstr "English"
+
+#: controllers/BrandAdmin.php:317 views/brandAdmin/product-modify.php:145
+#: views/brandAdmin/product-modify.php:173
+#: views/brandAdmin/product-write.php:107
+#: views/brandAdmin/product-write.php:135
+msgid "중국어"
+msgstr "Chinese"
+
+#: controllers/BrandAdmin.php:540 controllers/BrandAdmin.php:1428
+msgid "정상적으로 등록 되었습니다."
+msgstr "It has been registered normally."
+
+#: controllers/BrandAdmin.php:544 controllers/BrandAdmin.php:835
+#: controllers/BrandAdmin.php:858 controllers/BrandAdmin.php:1094
+#: controllers/BrandAdmin.php:1360 controllers/BrandAdmin.php:1432
+#: controllers/BrandAdmin.php:1584
+msgid "오류가 발생 했습니다."
+msgstr "An error has occurred."
+
+#: controllers/BrandAdmin.php:831 controllers/BrandAdmin.php:1090
+#: controllers/BrandAdmin.php:1578
+msgid "정상적으로 수정 되었습니다."
+msgstr "It has been corrected normally."
+
+#: controllers/BrandAdmin.php:854
+msgid "정상적으로 삭제 했습니다."
+msgstr "I deleted it normally."
+
+#: controllers/BrandAdmin.php:963 views/brandAdmin/order-modify.php:70
+msgid "주문완료"
+msgstr "Order completed"
+
+#: controllers/BrandAdmin.php:967 views/brandAdmin/order-modify.php:71
+msgid "주문취소"
+msgstr "order cancellation"
+
+#: controllers/BrandAdmin.php:971 views/brandAdmin/order-modify.php:72
+msgid "배송중"
+msgstr "Shipping in progress"
+
+#: controllers/BrandAdmin.php:975 views/brandAdmin/order-modify.php:73
+msgid "배송완료"
+msgstr "Delivery completed"
+
+#: controllers/BrandAdmin.php:979 views/brandAdmin/order-modify.php:74
+msgid "배송취소"
+msgstr "Cancellation of delivery"
+
+#: controllers/BrandAdmin.php:1256
+msgid "답변대기"
+msgstr "Waiting for answer"
+
+#: controllers/BrandAdmin.php:1258
+msgid "답변완료"
+msgstr "Answer completed"
+
+#: controllers/BrandAdmin.php:1356
+msgid "정상적으로 수정되었습니다."
+msgstr "It has been corrected normally."
+
+#: views/brandAdmin/first-modify.php:12 views/brandAdmin/info-modify.php:12
+#: views/brandAdmin/order-list.php:12 views/brandAdmin/order-modify.php:12
+#: views/brandAdmin/product-list.php:12 views/brandAdmin/product-modify.php:12
+#: views/brandAdmin/product-write.php:12 views/brandAdmin/qna-list.php:12
+#: views/brandAdmin/qna-modify.php:12 views/brandAdmin/qna-view.php:12
+#: views/brandAdmin/qna-write.php:12
+msgid "Home"
+msgstr "Home"
+
+#: views/brandAdmin/first-modify.php:34
+msgid "아이디"
+msgstr "ID"
+
+#: views/brandAdmin/first-modify.php:38 views/brandAdmin/qna-write.php:49
+msgid "이름"
+msgstr "Name"
+
+#: views/brandAdmin/first-modify.php:42
+msgid "기존비밀번호"
+msgstr "Existing password"
+
+#: views/brandAdmin/first-modify.php:43
+msgid "기존 비밀번호 입력"
+msgstr "Enter existing password"
+
+#: views/brandAdmin/first-modify.php:46
+msgid "변경비밀번호"
+msgstr "Changed password"
+
+#: views/brandAdmin/first-modify.php:46
+msgid "최소 8자리 이상, 영어대문자/소문자/숫자/특수문자 중 3종류 조합"
+msgstr ""
+"a combination of at least eight digits, three of the English capital letters/"
+"case letters/numeric/special characters"
+
+#: views/brandAdmin/first-modify.php:47
+msgid "변경 할 비밀번호 입력"
+msgstr "Enter password to change"
+
+#: views/brandAdmin/first-modify.php:50
+msgid "변경비밀번호 확인"
+msgstr "Confirm changed password"
+
+#: views/brandAdmin/first-modify.php:51
+msgid "변경 할 비밀번호 확인"
+msgstr "Confirm password to change"
+
+#: views/brandAdmin/first-modify.php:54
+msgid "매니저 이름"
+msgstr "Manager Name"
+
+#: views/brandAdmin/first-modify.php:55
+msgid "매니저 이름 입력"
+msgstr "Enter Manager Name"
+
+#: views/brandAdmin/first-modify.php:58
+msgid "부서"
+msgstr "Department"
+
+#: views/brandAdmin/first-modify.php:59
+msgid "부서 입력"
+msgstr "Department Input"
+
+#: views/brandAdmin/first-modify.php:62
+msgid "매니저 전화번호"
+msgstr "manager's phone number"
+
+#: views/brandAdmin/first-modify.php:63
+msgid "전화번호 입력"
+msgstr "Enter Phone Number"
+
+#: views/brandAdmin/first-modify.php:66
+msgid "매니저 이메일"
+msgstr "Manager Email"
+
+#: views/brandAdmin/first-modify.php:67
+msgid "이메일 입력"
+msgstr "Enter Email"
+
+#: views/brandAdmin/first-modify.php:73 views/brandAdmin/info-modify.php:209
+#: views/brandAdmin/order-modify.php:144
+#: views/brandAdmin/product-modify.php:291 views/brandAdmin/qna-modify.php:106
+#: views/brandAdmin/qna-view.php:114
+msgid "수정"
+msgstr "modification"
+
+#: views/brandAdmin/first-modify.php:97
+msgid "8자리 ~ 20자리 이내로 입력해주세요."
+msgstr "Please enter between 8 and 20 digits."
+
+#: views/brandAdmin/first-modify.php:101
+msgid "비밀번호는 공백 없이 입력해주세요."
+msgstr "Please enter the password without spaces."
+
+#: views/brandAdmin/first-modify.php:104
+msgid "영문,숫자,특수문자를 혼합하여 입력해주세요."
+msgstr "Please enter a mixture of English, Numeric, and Special characters."
+
+#: views/brandAdmin/first-modify.php:107
+msgid "변경될 비밀번호가 같지 않습니다."
+msgstr "Passwords that will be changed are not the same."
+
+#: views/brandAdmin/first-modify.php:124
+msgid "이메일을 작성 해 주세요."
+msgstr "Please fill out an email."
+
+#: views/brandAdmin/first-modify.php:129
+msgid "부서를 작성 해 주세요."
+msgstr "Please fill out the department."
+
+#: views/brandAdmin/first-modify.php:145
+msgid "수정 되었습니다."
+msgstr "It's been modified."
+
+#: views/brandAdmin/include/left.php:21 views/brandAdmin/include/left.php:29
+msgid "상품 관리"
+msgstr "commodity management"
+
+#: views/brandAdmin/include/left.php:38
+msgid "주문 & 문의 관리"
+msgstr "Manage Orders & Inquiries"
+
+#: views/brandAdmin/include/left.php:46
+msgid "주문 관리"
+msgstr "Order Management"
+
+#: views/brandAdmin/include/left.php:52
+msgid "문의 관리"
+msgstr "administration of enquiries"
+
+#: views/brandAdmin/include/left.php:61 views/brandAdmin/include/left.php:69
+msgid "개인정보 수정"
+msgstr "Personal Information Modification"
+
+#: views/brandAdmin/info-modify.php:35
+msgid "기본정보"
+msgstr "Basic information"
+
+#: views/brandAdmin/info-modify.php:41 views/brandAdmin/order-modify.php:89
+msgid "회사 명"
+msgstr "Corporate name"
+
+#: views/brandAdmin/info-modify.php:47
+msgid "브랜드 명"
+msgstr "brand name"
+
+#: views/brandAdmin/info-modify.php:53
+msgid "디자이너 명"
+msgstr "Designer name"
+
+#: views/brandAdmin/info-modify.php:59 views/brandAdmin/order-modify.php:101
+msgid "국가"
+msgstr "Country"
+
+#: views/brandAdmin/info-modify.php:65
+msgid "도시"
+msgstr "City"
+
+#: views/brandAdmin/info-modify.php:71 views/brandAdmin/info-modify.php:123
+#: views/brandAdmin/order-modify.php:107
+msgid "연락처"
+msgstr "Contact Us"
+
+#: views/brandAdmin/info-modify.php:77
+msgid "홈페이지"
+msgstr "Homepage"
+
+#: views/brandAdmin/info-modify.php:83
+msgid "설립년도"
+msgstr "Year of establishment"
+
+#: views/brandAdmin/info-modify.php:89
+msgid "국내 매출 실적"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:95
+msgid "수출 실적"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:105
+msgid "담당자 정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:111 views/brandAdmin/order-modify.php:95
+msgid "담당자 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:117
+msgid "부서 명"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:129 views/brandAdmin/order-modify.php:119
+msgid "이메일"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:139
+msgid "SNS 정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:145
+msgid "위챗 QR 코드"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:151
+msgid "왓츠앱 전화번호"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:157
+msgid "카카오톡 채널 주소"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:167
+msgid "브랜드 기본정보"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:173
+msgid "브랜드 소개"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:179
+msgid "브랜드 리스트 이미지"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:189
+msgid "브랜드 상세 이미지"
+msgstr ""
+
+#: views/brandAdmin/info-modify.php:203
+msgid "갤러리"
+msgstr ""
+
+#: views/brandAdmin/login.php:24
+msgid "Brand Admin"
+msgstr ""
+
+#: views/brandAdmin/login.php:29
+msgid "브랜드 관리자 로그인"
+msgstr ""
+
+#: views/brandAdmin/login.php:53
+msgid "로그인"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:30 views/brandAdmin/order-list.php:31
+#: views/brandAdmin/product-list.php:30 views/brandAdmin/product-list.php:31
+#: views/brandAdmin/qna-list.php:30 views/brandAdmin/qna-list.php:31
+msgid "검색"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:33 views/brandAdmin/product-list.php:33
+msgid "전체"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:34 views/brandAdmin/order-list.php:53
+msgid "바이어"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:50 views/brandAdmin/product-list.php:50
+#: views/brandAdmin/qna-list.php:50
+msgid "번호"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:51 views/brandAdmin/order-modify.php:34
+msgid "주문내역"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:52 views/brandAdmin/product-list.php:53
+#: views/brandAdmin/product-modify.php:45
+#: views/brandAdmin/product-modify.php:48 views/brandAdmin/product-write.php:45
+#: views/brandAdmin/qna-list.php:52 views/brandAdmin/qna-modify.php:41
+#: views/brandAdmin/qna-view.php:37 views/brandAdmin/qna-write.php:39
+msgid "브랜드"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:54
+msgid "수량"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:55
+msgid "총액"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:56
+msgid "주문일시"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:57
+msgid "주문상태"
+msgstr ""
+
+#: views/brandAdmin/order-list.php:76 views/brandAdmin/product-list.php:76
+#: views/brandAdmin/qna-list.php:74
+msgid "게시글이 없습니다."
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:44
+msgid "PRODUCT NAME"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:45
+msgid "PRICE"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:46
+msgid "QUANTITY"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:47
+msgid "TOTAL"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:52 views/brandAdmin/order-modify.php:54
+#: views/brandAdmin/product-list.php:69
+msgid "원"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:53
+msgid "개"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:61
+msgid "상태관리"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:67 views/brandAdmin/product-list.php:57
+#: views/brandAdmin/qna-view.php:43
+msgid "상태"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:83
+msgid "주문 정보"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:113
+msgid "팩스번호"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:125
+msgid "주소"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:131
+msgid "요청내용"
+msgstr ""
+
+#: views/brandAdmin/order-modify.php:143
+#: views/brandAdmin/product-modify.php:289
+#: views/brandAdmin/product-write.php:251 views/brandAdmin/qna-modify.php:105
+#: views/brandAdmin/qna-view.php:113 views/brandAdmin/qna-write.php:67
+msgid "목록"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:34 views/brandAdmin/product-list.php:52
+#: views/brandAdmin/product-modify.php:39 views/brandAdmin/product-write.php:39
+msgid "상품명"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:51
+msgid "이미지"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:54 views/brandAdmin/product-modify.php:56
+#: views/brandAdmin/product-modify.php:59
+#: views/brandAdmin/product-modify.php:69
+#: views/brandAdmin/product-modify.php:78 views/brandAdmin/product-write.php:56
+#: views/brandAdmin/product-write.php:59 views/brandAdmin/product-write.php:63
+#: views/brandAdmin/product-write.php:66
+msgid "카테고리"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:55 views/brandAdmin/product-modify.php:183
+#: views/brandAdmin/product-modify.php:218
+#: views/brandAdmin/product-modify.php:254
+#: views/brandAdmin/product-write.php:145
+#: views/brandAdmin/product-write.php:180
+#: views/brandAdmin/product-write.php:216
+msgid "가격"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:56 views/brandAdmin/product-modify.php:136
+msgid "사용언어"
+msgstr ""
+
+#: views/brandAdmin/product-list.php:91
+msgid "상품등록"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:89 views/brandAdmin/product-write.php:71
+msgid "리스트 이미지"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:94
+#: views/brandAdmin/product-modify.php:104
+#: views/brandAdmin/product-modify.php:113
+#: views/brandAdmin/product-modify.php:122
+#: views/brandAdmin/product-modify.php:131
+#: views/brandAdmin/product-write.php:73 views/brandAdmin/product-write.php:79
+#: views/brandAdmin/product-write.php:84 views/brandAdmin/product-write.php:89
+#: views/brandAdmin/product-write.php:94
+msgid "권장사이즈"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:99 views/brandAdmin/product-write.php:77
+msgid "상세이미지"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:150
+msgid "노출여부"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:164
+#: views/brandAdmin/product-write.php:126
+msgid "상품정보"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:187
+#: views/brandAdmin/product-modify.php:222
+#: views/brandAdmin/product-modify.php:258
+#: views/brandAdmin/product-write.php:149
+#: views/brandAdmin/product-write.php:184
+#: views/brandAdmin/product-write.php:220
+msgid "색상"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:191
+#: views/brandAdmin/product-modify.php:226
+#: views/brandAdmin/product-modify.php:262
+#: views/brandAdmin/product-write.php:153
+#: views/brandAdmin/product-write.php:188
+#: views/brandAdmin/product-write.php:224
+msgid "사이즈"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:195
+#: views/brandAdmin/product-modify.php:230
+#: views/brandAdmin/product-modify.php:266
+#: views/brandAdmin/product-write.php:157
+#: views/brandAdmin/product-write.php:192
+#: views/brandAdmin/product-write.php:228
+msgid "SKU"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:199
+#: views/brandAdmin/product-modify.php:234
+#: views/brandAdmin/product-modify.php:270
+#: views/brandAdmin/product-write.php:161
+#: views/brandAdmin/product-write.php:196
+#: views/brandAdmin/product-write.php:232
+msgid "TAG"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:203
+#: views/brandAdmin/product-modify.php:238
+#: views/brandAdmin/product-modify.php:274
+#: views/brandAdmin/product-write.php:165
+#: views/brandAdmin/product-write.php:200
+#: views/brandAdmin/product-write.php:236
+msgid "설명"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:290
+msgid "삭제"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:321
+#: views/brandAdmin/product-modify.php:353
+#: views/brandAdmin/product-modify.php:354
+#: views/brandAdmin/product-modify.php:387
+#: views/brandAdmin/product-write.php:287
+#: views/brandAdmin/product-write.php:319
+#: views/brandAdmin/product-write.php:320
+#: views/brandAdmin/product-write.php:353
+msgid "카테고리 선택"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:414
+msgid "정말 삭제 하시겠습니까?"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:421
+#: views/brandAdmin/product-write.php:380
+msgid "상품명을 작성 해 주세요"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:426
+#: views/brandAdmin/product-write.php:385
+msgid "브랜드를 선택 해 주세요"
+msgstr ""
+
+#: views/brandAdmin/product-modify.php:431
+#: views/brandAdmin/product-write.php:390
+msgid "카테고리를 선택 해 주세요"
+msgstr ""
+
+#: views/brandAdmin/product-write.php:252 views/brandAdmin/qna-write.php:68
+msgid "등록"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:33
+msgid "제목+내용"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:34 views/brandAdmin/qna-list.php:51
+#: views/brandAdmin/qna-modify.php:47 views/brandAdmin/qna-view.php:49
+#: views/brandAdmin/qna-write.php:53
+msgid "제목"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:35 views/brandAdmin/qna-modify.php:53
+#: views/brandAdmin/qna-modify.php:94 views/brandAdmin/qna-view.php:55
+#: views/brandAdmin/qna-view.php:101 views/brandAdmin/qna-write.php:57
+msgid "내용"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:53 views/brandAdmin/qna-modify.php:81
+#: views/brandAdmin/qna-view.php:88
+msgid "작성자"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:54
+msgid "등록일"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:55
+msgid "답변일"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:56
+msgid "답변여부"
+msgstr ""
+
+#: views/brandAdmin/qna-list.php:89
+msgid "글쓰기"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:35 views/brandAdmin/qna-view.php:31
+#: views/brandAdmin/qna-write.php:33
+msgid "문의내용"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:59 views/brandAdmin/qna-view.php:61
+msgid "문의자"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:65 views/brandAdmin/qna-view.php:67
+msgid "문의일"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:75 views/brandAdmin/qna-view.php:77
+msgid "관리자 답변"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:83 views/brandAdmin/qna-view.php:90
+msgid "관리자"
+msgstr ""
+
+#: views/brandAdmin/qna-modify.php:88 views/brandAdmin/qna-view.php:95
+msgid "작성일시"
+msgstr ""
+
+#: views/brandAdmin/qna-view.php:84
+msgid "답변 미등록 상태 입니다."
+msgstr ""
