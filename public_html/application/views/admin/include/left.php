@@ -1,8 +1,8 @@
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
   <!-- Brand Logo -->
-  <a href="/admin" class="brand-link text-center "  >
-    <span class="brand-text font-weight-light">나노의 책장</span>
+  <a href="/admin" class="brand-link text-center" style="background-color: #ffffff; padding: 10px 15px; display: flex; align-items: center; justify-content: center; height: 57px;">
+    <img src="/resources/images/common/logo.png" alt="나노의 책장" class="brand-image" style="max-height: 36px; width: auto; float: none; margin: 0 auto; object-fit: contain;">
   </a>
   <!-- Sidebar -->
   <div class="sidebar">

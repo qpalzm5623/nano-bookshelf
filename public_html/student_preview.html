@@ -83,7 +83,9 @@
       align-items: center;
       justify-content: space-between;
       height: 66px;
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 100;
       overflow: hidden;
       box-shadow: 0 4px 18px rgba(18, 45, 32, 0.25);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -1137,29 +1139,29 @@
     /* ============================================================== */
     .theme-tag-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
       margin-top: 8px;
     }
     .theme-tag-card {
       background: #ffffff;
       border: 1.5px solid var(--soft);
-      border-radius: 16px;
+      border-radius: 14px;
       overflow: hidden;
       cursor: pointer;
       transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 3px 10px rgba(58, 46, 38, 0.05);
+      box-shadow: 0 2px 8px rgba(58, 46, 38, 0.04);
       display: flex;
       flex-direction: column;
     }
     .theme-tag-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 22px rgba(45, 106, 79, 0.16);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(45, 106, 79, 0.14);
       border-color: var(--leaf);
     }
     .theme-tag-img-box {
       width: 100%;
-      height: 120px;
+      height: 90px;
       background: #efebe4;
       position: relative;
       overflow: hidden;
@@ -1174,46 +1176,54 @@
       transform: scale(1.05);
     }
     .theme-tag-card-body {
-      padding: 14px;
+      padding: 10px 10px 12px 10px;
       flex: 1;
       display: flex;
       flex-direction: column;
     }
     .theme-badge-title {
-      font-size: 14.5px;
+      font-size: 13px;
       font-weight: 800;
       color: var(--wood-dark);
       margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .theme-sub-badge {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       color: var(--leaf);
       background: var(--leaf-pale);
-      padding: 2px 7px;
-      border-radius: 6px;
+      padding: 2px 6px;
+      border-radius: 5px;
       display: inline-block;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       width: fit-content;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .theme-desc-text {
-      font-size: 11.5px;
+      font-size: 10.5px;
       color: var(--muted);
-      line-height: 1.45;
-      margin-bottom: 12px;
+      line-height: 1.4;
+      margin-bottom: 10px;
       flex: 1;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      min-height: 29px;
     }
     .theme-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid #f0ece5;
-      padding-top: 10px;
-      font-size: 11.5px;
+      padding-top: 8px;
+      font-size: 10.5px;
       color: var(--wood-mid);
       font-weight: 600;
     }
@@ -1395,6 +1405,56 @@
       color: #3e332a;
       word-break: keep-all;
     }
+    /* 생각 꺼내기 박스 스타일 */
+    .think-extract-box {
+      background: #fdfaf3;
+      border: 1.5px solid #ebdccb;
+      border-radius: 12px;
+      padding: 13px 15px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      box-shadow: 0 1px 4px rgba(90, 75, 61, 0.04);
+    }
+    .think-extract-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: #fef3c7;
+      color: #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .think-extract-content {
+      flex: 1;
+    }
+    .think-extract-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #b45309;
+      background: rgba(245, 158, 11, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+    .think-extract-question {
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.6;
+      color: #292524;
+      word-break: keep-all;
+    }
+    .think-extract-guide {
+      font-size: 12px;
+      color: #78716c;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
     .next-read-container {
       display: flex;
       gap: 12px;
@@ -1472,9 +1532,658 @@
       transform: translateY(-1px);
       box-shadow: 0 6px 18px rgba(45, 106, 79, 0.38);
     }
+    /* 찜 버튼 스타일 (하단 바 및 서지 카드) */
+    .btn-wish-cta {
+      padding: 13px 18px;
+      border: 1.5px solid #fecdd3;
+      border-radius: 13px;
+      background: #fff1f2;
+      color: #e11d48;
+      font-size: 14px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-wish-cta:hover {
+      background: #ffe4e6;
+      transform: translateY(-1px);
+    }
+    .btn-wish-cta.active {
+      background: #e11d48;
+      border-color: #e11d48;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+    }
+    .btn-hero-wish {
+      border: none;
+      background: #fff1f2;
+      color: #e11d48;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all .2s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.15);
+    }
+    .btn-hero-wish:hover {
+      transform: scale(1.1);
+      background: #ffe4e6;
+    }
+    .btn-hero-wish.active {
+      background: #e11d48;
+      color: #ffffff;
+    }
+    /* 내 책장 3대 메인 세분화 탭 및 하위 뷰 스타일 */
+    .bookshelf-main-tabs {
+      display: flex;
+      gap: 6px;
+      background: #f1ede4;
+      padding: 5px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+    }
+    .bookshelf-main-tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .bookshelf-main-tab-btn.active {
+      background: #ffffff;
+      color: var(--leaf);
+      box-shadow: 0 3px 10px rgba(58, 46, 38, 0.08);
+    }
+    /* 1) 독서 기록 탭 스타일 */
+    .bs-stat-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .bs-stat-card {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(58, 46, 38, 0.04);
+    }
+    .bs-stat-num {
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .bs-stat-label {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    .reading-grid-4col {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .reading-book-card {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform .2s;
+    }
+    .reading-book-card:hover {
+      transform: translateY(-3px);
+    }
+    .reading-thumb-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 4.3;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      background: #f4efe9;
+    }
+    .reading-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .reading-score-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(45, 106, 79, 0.92);
+      color: #ffffff;
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 6px;
+      backdrop-filter: blur(2px);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .reading-score-badge.perfect {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+    }
+    .reading-score-badge.high {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+    }
+    .reading-book-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--wood-dark);
+      margin-top: 6px;
+      line-height: 1.35;
+      text-align: center;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 31px;
+    }
+    /* 2) 관심 도서 탭 스타일 */
+    .interest-theme-box {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .interest-tags-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .interest-tag-chip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1.5px solid var(--soft);
+      background: #faf8f5;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--wood-mid);
+      cursor: pointer;
+      transition: all .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+    }
+    .interest-tag-chip:hover {
+      border-color: var(--leaf-mid);
+      background: #ffffff;
+    }
+    .interest-tag-chip.active {
+      background: var(--leaf-soft);
+      border-color: var(--leaf);
+      color: var(--leaf);
+      font-weight: 800;
+    }
+    .interest-rec-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 6px 2px 8px 2px;
+      margin-top: 8px;
+    }
+    .interest-rec-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+    .interest-rec-scroll::-webkit-scrollbar-thumb {
+      background: #dcd4c8;
+      border-radius: 4px;
+    }
+    .interest-rec-item {
+      flex: 0 0 88px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform .2s;
+    }
+    .interest-rec-item:hover {
+      transform: translateY(-2px);
+    }
+    .interest-rec-thumb {
+      width: 88px;
+      height: 122px;
+      border-radius: 7px;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .interest-rec-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--wood-dark);
+      margin-top: 5px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .wish-book-card {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all .2s;
+      cursor: pointer;
+    }
+    .wish-book-card:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(58, 46, 38, 0.08);
+    }
+    .wish-book-thumb {
+      width: 50px;
+      height: 68px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .wish-empty-box {
+      text-align: center;
+      padding: 38px 20px;
+      background: #ffffff;
+      border: 1.5px dashed var(--soft);
+      border-radius: 16px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    /* 3) 포인트 내역 탭 스타일 (이미지 없는 텍스트 리스트 & 월별 구분) */
+    .point-summary-card {
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .point-month-filter {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-bottom: 12px;
+      padding-bottom: 4px;
+    }
+    .point-month-chip {
+      padding: 6px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1.5px solid var(--soft);
+      background: #ffffff;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+    .point-month-chip.active {
+      background: var(--leaf);
+      border-color: var(--leaf);
+      color: #ffffff;
+    }
+    .point-log-item {
+      background: #ffffff;
+      border: 1px solid var(--soft);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: all .2s;
+    }
+    .point-log-item:hover {
+      border-color: var(--leaf-mid);
+      background: #fafcfb;
+    }
+    .point-log-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .point-log-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      background: #f1ede4;
+      color: var(--wood-mid);
+    }
+    .point-log-tag.quiz {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .point-log-tag.think {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .point-log-tag.attend {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .point-log-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--wood-dark);
+      line-height: 1.35;
+    }
+    .point-log-desc {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .point-log-val {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--leaf);
+      white-space: nowrap;
+    }
+    /* 좌측 최상단 햄버거 버튼 및 슬라이딩 드로어 메뉴 스타일 */
+    .btn-drawer-hamburger {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      font-size: 15px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+      flex-shrink: 0;
+    }
+    .btn-drawer-hamburger:hover {
+      background: rgba(255, 255, 255, 0.35);
+      transform: scale(1.05);
+    }
+    .btn-drawer-hamburger:active {
+      transform: scale(0.95);
+    }
+
+    /* 드로어 오버레이 딤 배경 */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 9998;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      backdrop-filter: blur(2px);
+    }
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 좌측에서 우측으로 슬라이딩되어 나오는 사이드 메뉴 (화면의 절반 정도 가림) */
+    .student-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 55%;
+      min-width: 250px;
+      max-width: 320px;
+      background: #ffffff;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 6px 0 24px rgba(0, 0, 0, 0.22);
+      transform: translateX(-100%);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow-y: auto;
+    }
+    .student-drawer.open {
+      transform: translateX(0);
+    }
+
+    /* 드로어 상단 프로필 헤더 */
+    .drawer-header {
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      color: #ffffff;
+      padding: 24px 18px 20px 18px;
+      position: relative;
+    }
+    .btn-drawer-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.18);
+      border: none;
+      color: #ffffff;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s;
+    }
+    .btn-drawer-close:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+    .drawer-profile-info {
+      margin-top: 6px;
+    }
+    .drawer-user-name {
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .drawer-user-class {
+      font-size: 12px;
+      color: #b7e4c7;
+      margin-top: 4px;
+    }
+    .drawer-user-point-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.16);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* 드로어 메뉴 목록 */
+    .drawer-nav-list {
+      padding: 12px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .drawer-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 14px;
+      border-radius: 12px;
+      color: var(--wood-dark);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .drawer-nav-item:hover {
+      background: #f4efe9;
+      color: var(--leaf);
+      transform: translateX(4px);
+    }
+    .drawer-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .drawer-nav-left i {
+      width: 20px;
+      text-align: center;
+      font-size: 15px;
+      color: var(--leaf-mid);
+    }
+    .drawer-nav-right {
+      font-size: 12px;
+      color: #b0a498;
+    }
+    .drawer-nav-divider {
+      height: 1px;
+      background: var(--soft);
+      margin: 8px 10px;
+    }
+    .drawer-nav-item.logout {
+      color: #e11d48;
+    }
+    .drawer-nav-item.logout:hover {
+      background: #ffe4e6;
+      color: #be123c;
+    }
+    .drawer-nav-item.logout .drawer-nav-left i {
+      color: #e11d48;
+    }
   </style>
 </head>
 <body>
+<!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
+<div class="drawer-overlay" id="studentDrawerOverlay" onclick="closeStudentDrawer()"></div>
+<aside class="student-drawer" id="studentDrawer" role="dialog" aria-modal="true" aria-label="학생 전체 메뉴">
+  <!-- 1. 상단 프로필 헤더 -->
+  <div class="drawer-header">
+    <button type="button" class="btn-drawer-close" onclick="closeStudentDrawer()" title="메뉴 닫기">&times;</button>
+    <div class="drawer-profile-info">
+      <div class="drawer-user-name">
+        <i class="fa-solid fa-circle-user" style="font-size:22px;color:#a7e3be;"></i> 김민준 학생
+      </div>
+      <div class="drawer-user-class">
+        <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>지혜반 · 초등 5학년
+      </div>
+      <div class="drawer-user-point-badge">
+        <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>2,480 P 보유
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 메뉴 목록 (요청된 7대 메뉴) -->
+  <div class="drawer-nav-list">
+    <!-- 1) 내 정보 -->
+    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('myinfo')">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-user"></i>
+        <span>내 정보</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
+    <!-- 2) 비밀번호 변경 -->
+    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('password')">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-key"></i>
+        <span>비밀번호 변경</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
+    <!-- 3) 공지사항 -->
+    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('notice')">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>공지사항</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
+    <!-- 4) 자주 묻는 질문 -->
+    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('faq')">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-circle-question"></i>
+        <span>자주 묻는 질문</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
+    <!-- 5) 고객센터 -->
+    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('support')">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-headset"></i>
+        <span>고객센터</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
+    <!-- 6) 이용약관 -->
+    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('terms')">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-file-contract"></i>
+        <span>이용약관</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
+    <div class="drawer-nav-divider"></div>
+
+    <!-- 7) 로그아웃 -->
+    <button type="button" class="drawer-nav-item logout" onclick="closeStudentDrawer(); handleStudentLogout();">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>로그아웃</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+  </div>
+</aside>
+
 <div class="role-bar">
   <span><i class="fa-solid fa-graduation-cap mr-1" style="color:#a7e3be;"></i> 나노의 책장 <strong style="color:#a7e3be;">학생 포털 (체험판)</strong></span>
   <a href="admin_preview.html"><i class="fa-solid fa-arrow-left mr-1"></i>학원관리자 뷰</a>
@@ -1508,9 +2217,16 @@
     </div>
   </div>
 
-  <div class="logo">
-    <div class="logo-icon"><i class="fa-solid fa-book-open-reader"></i></div>
-    나노의 책장
+  <!-- 좌측 최상단: 햄버거 메뉴 버튼 + 로고 -->
+  <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 2;">
+    <button type="button" class="btn-drawer-hamburger" id="btnStudentHamburger" onclick="openStudentDrawer()" aria-label="메뉴 열기" title="전체 메뉴">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="logo" style="display: flex; align-items: center;">
+      <a href="student_preview.html" style="display: inline-flex; align-items: center; background: #ffffff; padding: 4px 10px; border-radius: 9px; box-shadow: 0 2px 8px rgba(0,0,0,0.18); text-decoration: none;">
+        <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 25px; width: auto; object-fit: contain; display: block;">
+      </a>
+    </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:2;">
     <div class="user-info">
@@ -1693,18 +2409,32 @@
       </div>
     </div>
 
-    <!-- 이 도서를 읽은 학생이 다음으로 읽은 책 -->
+    <!-- 생각 꺼내기 카드 (도서 읽기 전 호기심 유발 질문) -->
+    <div class="detail-section-card">
+      <div class="sec-title" style="margin-bottom:8px;font-size:14px;display:flex;align-items:center;justify-content:space-between;">
+        <span><i class="fa-solid fa-lightbulb" style="color:#d97706;"></i> 생각 꺼내기</span>
+        <span style="font-size:11px;font-weight:600;color:var(--muted);"><i class="fa-regular fa-comment-dots mr-1"></i>도서 읽기 전 호기심 유발 질문</span>
+      </div>
+      <div id="detailThinkExtract">
+        <!-- 동적 주입 -->
+      </div>
+    </div>
+
+    <!-- 이 도서를 읽은 학생이 함께 읽은 책 -->
     <div class="detail-section-card">
       <div class="sec-title" style="margin-bottom:10px;font-size:14px;">
-        <i class="fa-solid fa-compass" style="color:var(--wood-mid);"></i> 이 도서를 읽은 학생이 다음으로 읽은 책
+        <i class="fa-solid fa-compass" style="color:var(--wood-mid);"></i> 이 도서를 읽은 학생이 함께 읽은 책
       </div>
       <div class="next-read-container" id="detailNextBooks">
         <!-- 동적 주입 -->
       </div>
     </div>
 
-    <!-- 하단 고정 북퀴즈 풀기 CTA 바 -->
+    <!-- 하단 고정 북퀴즈 풀기 & 찜하기 CTA 바 -->
     <div class="fixed-quiz-bottom-bar">
+      <button type="button" class="btn-wish-cta" id="btnDetailWishCta" onclick="toggleDetailWish()" title="내 책장에 찜하기">
+        <i class="fa-regular fa-heart" id="detailWishIcon"></i> <span id="detailWishText">찜하기</span>
+      </button>
       <button type="button" class="btn-quiz-cta" id="btnDetailQuizCta" onclick="startQuizFromDetail()">
         <i class="fa-solid fa-pen-nib"></i> <span id="detailQuizBtnText">북퀴즈 풀기 (5문항)</span>
       </button>
@@ -1752,18 +2482,119 @@
     </div>
   </div>
 
-  <!-- 독서기록 -->
+  <!-- 3. 내 책장 (독서 기록 / 관심 도서 / 포인트 내역 3대 세분화) -->
   <div id="p-history" class="panel anim">
-    <div class="sec-title"><i class="fa-solid fa-scroll" style="color:var(--wood-mid);"></i> 내 독서 기록</div>
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-body" style="display:flex;gap:14px;text-align:center;padding:14px;">
-        <div style="flex:1;border-right:1px solid var(--soft);padding-right:14px;"><div style="font-size:22px;font-weight:900;color:var(--leaf);">24</div><div style="font-size:11px;color:var(--muted);">완독 도서</div></div>
-        <div style="flex:1;border-right:1px solid var(--soft);padding-right:14px;"><div style="font-size:22px;font-weight:900;color:var(--leaf-mid);">94.2점</div><div style="font-size:11px;color:var(--muted);">평균 점수</div></div>
-        <div style="flex:1;"><div style="font-size:22px;font-weight:900;color:var(--wood-dark);">2,480P</div><div style="font-size:11px;color:var(--muted);">총 포인트</div></div>
+    <div class="sec-title"><i class="fa-solid fa-book-bookmark" style="color:var(--leaf);"></i> 내 책장</div>
+
+    <!-- 상단 3대 세분화 버튼 탭 바 -->
+    <div class="bookshelf-main-tabs">
+      <button type="button" class="bookshelf-main-tab-btn active" id="btnBsMainHistory" onclick="switchMyBookshelfMainTab('history')">
+        <i class="fa-solid fa-book-open"></i> 독서 기록
+      </button>
+      <button type="button" class="bookshelf-main-tab-btn" id="btnBsMainInterest" onclick="switchMyBookshelfMainTab('interest')">
+        <i class="fa-solid fa-heart"></i> 관심 도서
+      </button>
+      <button type="button" class="bookshelf-main-tab-btn" id="btnBsMainPoints" onclick="switchMyBookshelfMainTab('points')">
+        <i class="fa-solid fa-coins"></i> 포인트 내역
+      </button>
+    </div>
+
+    <!-- 1) 독서 기록 서브 뷰 -->
+    <div id="bsViewHistory">
+      <!-- 완독 도서 권수 & 평균 점수 요약 통계 -->
+      <div class="bs-stat-grid-2">
+        <div class="bs-stat-card">
+          <div class="bs-stat-num" id="statBsReadCount" style="color:var(--leaf);">24권</div>
+          <div class="bs-stat-label"><i class="fa-solid fa-circle-check mr-1" style="color:var(--leaf);"></i>완독 도서</div>
+        </div>
+        <div class="bs-stat-card">
+          <div class="bs-stat-num" id="statBsAvgScore" style="color:var(--leaf-mid);">94.2점</div>
+          <div class="bs-stat-label"><i class="fa-solid fa-star mr-1" style="color:#f59e0b;"></i>평균 점수</div>
+        </div>
+      </div>
+
+      <!-- 완독 도서 목록 (한 줄에 4권씩 썸네일 + 하단 제목 정렬) -->
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span style="font-size:13px;font-weight:800;color:var(--wood-dark);"><i class="fa-solid fa-book mr-1" style="color:var(--leaf);"></i>읽은 도서 목록</span>
+        <span style="font-size:11.5px;color:var(--muted);"><span id="readingHistoryCount">8</span>권 완독</span>
+      </div>
+      <div class="reading-grid-4col" id="readingHistoryGrid">
+        <!-- JS 동적 렌더링: 썸네일 + 상단 점수 배지 + 하단 제목 -->
       </div>
     </div>
-    <div class="sec-title" style="font-size:13px;">완독 목록 <span class="cnt-badge" id="histCount">6권</span></div>
-    <div id="histList"></div>
+
+    <!-- 2) 관심 도서 서브 뷰 -->
+    <div id="bsViewInterest" style="display:none;">
+      <!-- 관심 주제 (태그 체크 및 맞춤 도서 추천) -->
+      <div class="interest-theme-box">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
+              <i class="fa-solid fa-tags mr-1" style="color:var(--leaf);"></i>관심 주제
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">
+              관심 있는 주제를 체크하면 딱 맞는 도서를 추천해 드려요!
+            </div>
+          </div>
+          <span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:11px;padding:4px 8px;border-radius:10px;" id="userInterestTagCount">3개 선택</span>
+        </div>
+
+        <!-- 주제 태그 체크 칩 목록 -->
+        <div class="interest-tags-wrap" id="interestTagsContainer">
+          <!-- JS 동적 렌더링 -->
+        </div>
+
+        <!-- 관심 주제 맞춤 추천 도서 큐레이션 -->
+        <div style="margin-top:14px;border-top:1px dashed var(--soft);padding-top:12px;">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span style="font-size:12.5px;font-weight:800;color:var(--wood-dark);"><i class="fa-solid fa-wand-magic-sparkles mr-1" style="color:#f59e0b;"></i>관심 주제 맞춤 추천 도서</span>
+            <span style="font-size:11px;color:var(--muted);" id="interestRecCount">0권</span>
+          </div>
+          <div class="interest-rec-scroll" id="interestRecScroll">
+            <!-- JS 동적 추천 목록 주입 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 내가 찜한 도서 목록 -->
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
+          <i class="fa-solid fa-heart mr-1" style="color:#e11d48;"></i>내가 찜한 도서 목록
+        </span>
+        <span class="cnt-badge" id="wishBadgeCount" style="background:#ffe4e6;color:#e11d48;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">3권</span>
+      </div>
+      <div id="wishList">
+        <!-- 찜 도서 목록 동적 렌더링 -->
+      </div>
+    </div>
+
+    <!-- 3) 포인트 내역 서브 뷰 (이미지 없는 텍스트 리스트 & 월별 구분) -->
+    <div id="bsViewPoints" style="display:none;">
+      <!-- 포인트 요약 카드 -->
+      <div class="point-summary-card">
+        <div>
+          <div style="font-size:12px;opacity:0.85;">총 보유 독서 포인트</div>
+          <div style="font-size:24px;font-weight:900;margin-top:2px;">2,480 P</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;opacity:0.8;">이번 달 획득</div>
+          <div style="font-size:15px;font-weight:800;color:#a7e3be;margin-top:2px;" id="currentMonthEarnedPoints">+270 P</div>
+        </div>
+      </div>
+
+      <!-- 월별 필터 칩 -->
+      <div class="point-month-filter" id="pointMonthFilterChips">
+        <button type="button" class="point-month-chip active" onclick="filterPointHistory('all', this)">전체 내역</button>
+        <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-09', this)">2026년 9월</button>
+        <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-08', this)">2026년 8월</button>
+        <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-07', this)">2026년 7월</button>
+      </div>
+
+      <!-- 이미지 없는 텍스트 리스트 -->
+      <div id="pointLogList">
+        <!-- 동적 텍스트 리스트 렌더링 -->
+      </div>
+    </div>
   </div>
 
   <!-- 랭킹 -->
@@ -1777,9 +2608,10 @@
 <nav class="bnav">
   <button class="bnav-btn active" id="nav-home" onclick="switchPanel('home')"><i class="fa-solid fa-house"></i><span>홈</span></button>
   <button class="bnav-btn" id="nav-books" onclick="switchPanel('books')"><i class="fa-solid fa-book"></i><span>도서관</span></button>
-  <button class="bnav-btn" id="nav-quiz" onclick="switchPanel('quiz')"><i class="fa-solid fa-pen-nib"></i><span>북퀴즈</span></button>
-  <button class="bnav-btn" id="nav-history" onclick="switchPanel('history')"><i class="fa-solid fa-scroll"></i><span>독서기록</span></button>
+  <button class="bnav-btn" id="nav-quiz" onclick="switchPanel('quiz')" style="display:none;"><i class="fa-solid fa-pen-nib"></i><span>북퀴즈</span></button>
+  <button class="bnav-btn" id="nav-history" onclick="switchPanel('history')"><i class="fa-solid fa-book-bookmark"></i><span>내 책장</span></button>
   <button class="bnav-btn" id="nav-ranking" onclick="switchPanel('ranking')"><i class="fa-solid fa-trophy"></i><span>랭킹</span></button>
+</nav>
 <!-- 배너 연계 추천 도서 목록 모달 -->
 <div id="bannerBookListModal" class="student-modal-overlay" style="display:none;" onclick="if(event.target===this)closeBannerBookModal()">
   <div class="student-modal-dialog">
@@ -1795,6 +2627,25 @@
     </div>
     <div class="student-modal-body" id="studentBannerModalBody">
       <!-- 동적 배너 도서 목록 주입 -->
+    </div>
+  </div>
+</div>
+
+<!-- 사이드바 메뉴 상세 모달 (내 정보, 비밀번호 변경, 공지사항, 자주 묻는 질문, 고객센터, 이용약관) -->
+<div id="studentDrawerMenuModal" class="student-modal-overlay" style="display:none;" onclick="if(event.target===this)closeDrawerModal()">
+  <div class="student-modal-dialog">
+    <div class="student-modal-header">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11px; padding: 2px 7px;" id="drawerModalCategory">학생 서비스</span>
+          <h5 class="mb-0 font-weight-bold" style="font-size: 16px; color: var(--wood-dark);" id="drawerModalTitle">메뉴 상세</h5>
+        </div>
+        <small class="text-muted" id="drawerModalSub">안내 정보입니다.</small>
+      </div>
+      <button type="button" class="btn-modal-close" onclick="closeDrawerModal()" title="닫기">&times;</button>
+    </div>
+    <div class="student-modal-body" id="drawerModalBody">
+      <!-- 동적 주입 -->
     </div>
   </div>
 </div>
@@ -1843,6 +2694,7 @@ var libData = [
     isEditorPick: true,
     tags: ['#우정', '#상상력', '#철학', '#교과필독'],
     synopsis: '사막에 불시착한 비행사와 신비로운 소행성 B-612에서 온 어린 왕자의 순수한 만남을 그린 걸작입니다. 장미꽃과의 갈등, 지구에서 만난 여우를 통해 "가장 중요한 것은 눈에 보이지 않는다"는 진정한 관계의 의미를 깨닫게 합니다.',
+    thinkExtract: '만약 내게 소행성 B-612처럼 나만의 작은 별이 생긴다면, 가장 소중하게 가꾸고 지키고 싶은 것은 무엇인가요?',
     nextReadIds: ['1002', '1006', '1015', '1039']
   },
   {
@@ -1862,6 +2714,7 @@ var libData = [
     isEditorPick: true,
     tags: ['#감정표현', '#공감', '#성장', '#우정'],
     synopsis: '감정을 느끼지 못하는 소년 윤재와 분노로 가득 찬 소년 곤이가 만나 서로의 상처를 보듬고 세상과 소통해 나가는 과정을 따뜻하고 감동적으로 그려낸 청소년 성장 문학입니다.',
+    thinkExtract: '다른 사람의 슬픔이나 기쁨을 전혀 느끼지 못한다면, 세상을 바라보는 나의 시선은 어떻게 달라질까요?',
     nextReadIds: ['1001', '1014', '1033', '1034']
   },
   {
@@ -1881,6 +2734,7 @@ var libData = [
     isEditorPick: true,
     tags: ['#자유', '#모성애', '#생명존중', '#초등필독'],
     synopsis: '양계장에 갇혀 알만 낳던 암탉 잎싹이 마당을 나와 야생의 숲속에서 알을 품고, 청둥오리 초록이를 길러내며 겪는 위대한 사랑과 자유의 여정을 다룬 감동 동화입니다.',
+    thinkExtract: '안전하지만 알만 낳아야 하는 닭장과, 위험하지만 꿈을 펼칠 수 있는 야생의 초원 중 나라면 어떤 삶을 선택할까요?',
     nextReadIds: ['1004', '1008', '1010', '1024']
   },
   {
@@ -1900,6 +2754,7 @@ var libData = [
     isEditorPick: false,
     tags: ['#양심', '#도덕', '#사회갈등', '#교과연계'],
     synopsis: '상계동 청계천 세운상가에서 일하는 순박한 소년 수남이가 자전거 도난 사건에 휘말리며 겪는 양심의 가책과 도덕적 갈등을 섬세하게 그린 박완서 작가의 대표 성장 단편입니다.',
+    thinkExtract: '아무도 보지 않는 순간에 잘못된 유혹을 마주했을 때, 우리는 왜 내면의 양심을 지켜야 할까요?',
     nextReadIds: ['1001', '1006', '1013', '1043']
   },
   {
@@ -1919,6 +2774,7 @@ var libData = [
     isEditorPick: true,
     tags: ['#고운말', '#배려', '#판타지동화', '#초등필독'],
     synopsis: '욕쟁이에 심술쟁이 만복이가 신비로운 떡집에서 파는 마법의 떡을 먹으며 따뜻한 말 한마디와 친구를 배려하는 태도의 소중함을 스스로 깨달아가는 이야기입니다.',
+    thinkExtract: '내가 만약 마법의 떡을 직접 빚을 수 있다면, 친구들에게 어떤 신기한 마음을 선물하는 떡을 만들어 주고 싶나요?',
     nextReadIds: ['1009', '1018', '1022', '1044']
   },
   {
@@ -1938,6 +2794,7 @@ var libData = [
     isEditorPick: true,
     tags: ['#우정', '#희망', '#생명', '#초등5학년추천'],
     synopsis: '세상에 마지막 하나 남은 흰바위코뿔소 노든과 버려진 알에서 태어난 어린 펭귄이 푸른 바다를 찾아 함께 걸어가는 수많은 긴긴밤의 숭고한 사랑과 연대를 담았습니다.',
+    thinkExtract: '세상에 단 하나뿐인 친구와 함께 머나먼 바다를 찾아 떠난다면, 서로에게 어떤 힘이 되어 줄 수 있을까요?',
     nextReadIds: ['1001', '1004', '1008', '1015']
   },
   {
@@ -2700,36 +3557,44 @@ var currentGradeFilter = '초5';
 
 // 패널 전환 함수
 function switchPanel(n){
-  ['home','books','quiz','history','ranking','book-detail'].forEach(function(p){
-    var el=document.getElementById('p-'+p),nav=document.getElementById('nav-'+p);
-    if(el)el.classList.remove('active');
-    if(nav)nav.classList.remove('active');
+  // 1. 모든 패널을 완벽하게 비활성화 및 숨김
+  document.querySelectorAll('.panel').forEach(function(el){
+    el.classList.remove('active');
+    el.style.display = 'none';
+  });
+  // 2. 바텀 네비게이션 버튼 활성화 초기화
+  document.querySelectorAll('.bnav-btn').forEach(function(nav){
+    nav.classList.remove('active');
   });
 
-  // 상세화면이 아닐 때만 이전 패널 기록
-  if(n !== 'book-detail') {
+  // 상세화면 및 퀴즈 화면이 아닐 때만 이전 패널로 기록
+  if(n !== 'book-detail' && n !== 'quiz') {
     prevPanel = n;
   }
   curActivePanel = n;
 
-  var t=document.getElementById('p-'+n),tn=document.getElementById('nav-'+n);
+  // 3. 대상 패널 활성화
+  var t = document.getElementById('p-' + n);
+  var tn = document.getElementById('nav-' + n);
   if(t) {
     t.classList.add('active');
     t.style.display = 'block';
   }
-  if(tn)tn.classList.add('active');
+  if(tn) tn.classList.add('active');
 
-  // 상세화면일 때는 바텀네비 숨기거나 뒤로가기 유지
+  // 상세화면이거나 북퀴즈 진행 중일 때는 바텀네비 숨김
   var bnav = document.querySelector('.bnav');
   if(bnav) {
-    bnav.style.display = (n === 'book-detail') ? 'none' : 'flex';
+    bnav.style.display = (n === 'book-detail' || n === 'quiz') ? 'none' : 'flex';
   }
 
-  if(n==='home') renderHomeSliders();
-  if(n==='history')renderHist();
-  if(n==='ranking')renderRank();
-  if(n==='books')renderLib();
-  window.scrollTo({top:0,behavior:'smooth'});
+  if(n === 'home') renderHomeSliders();
+  if(n === 'history') renderMyBookshelf();
+  if(n === 'ranking') renderRank();
+  if(n === 'books') renderLib();
+
+  // 최상단으로 즉시 이동 (이전 화면의 스크롤 위치 잔상 방지)
+  window.scrollTo(0, 0);
 }
 
 // ==============================================================
@@ -2872,10 +3737,16 @@ function openBookDetail(id, from) {
       return '<span class="detail-tag-pill">'+t+'</span>';
     }).join('');
 
+    var isWished = studentWishlist.indexOf(b.id) !== -1;
     heroCard.innerHTML = 
       getBookCoverHtml(b, 'detail-cover-large')
       +'<div class="detail-meta-group">'
-      +  '<div class="detail-title">'+b.title+'</div>'
+      +  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">'
+      +    '<div class="detail-title">'+b.title+'</div>'
+      +    '<button type="button" class="btn-hero-wish '+(isWished?'active':'')+'" id="heroWishBtn_'+b.id+'" onclick="toggleWish(\''+b.id+'\', event)" title="'+(isWished?'찜 해제':'내 책장에 찜하기')+'">'
+      +      '<i class="'+(isWished?'fa-solid':'fa-regular')+' fa-heart"></i>'
+      +    '</button>'
+      +  '</div>'
       +  '<div class="detail-author-pub">'+b.author+' · '+b.pub+'</div>'
       +  '<div class="detail-badges">'
       +    '<span class="detail-badge-grade"><i class="fa-solid fa-graduation-cap mr-1"></i>'+b.grade+' 권장</span>'
@@ -2891,7 +3762,25 @@ function openBookDetail(id, from) {
     synopsisEl.innerText = b.synopsis || '이 도서의 상세 줄거리 및 핵심 독서 포인트가 준비 중입니다.';
   }
 
-  // 3. 이 도서를 읽은 학생이 다음으로 읽은 책 추천
+  // 2-2. 생각 꺼내기 (도서 읽기 전 호기심 유발 질문) 주입
+  var thinkEl = document.getElementById('detailThinkExtract');
+  if(thinkEl) {
+    var thinkText = b.thinkExtract;
+    if(!thinkText) {
+      thinkText = '이 책의 제목과 표지, 줄거리를 보며 어떤 특별한 사건과 흥미로운 이야기가 펼쳐질지 자유롭게 상상해 보세요!';
+    }
+    thinkEl.innerHTML = 
+      '<div class="think-extract-box">'
+      + '<div class="think-extract-icon"><i class="fa-solid fa-lightbulb"></i></div>'
+      + '<div class="think-extract-content">'
+      +   '<span class="think-extract-tag">호기심 생각 질문</span>'
+      +   '<div class="think-extract-question">Q. ' + thinkText + '</div>'
+      +   '<div class="think-extract-guide">💡 책을 본격적으로 읽기 전에, 나만의 생각이나 경험을 떠올려 보며 스스로 답해 보세요!</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  // 3. 이 도서를 읽은 학생이 함께 읽은 책 추천
   var nextContainer = document.getElementById('detailNextBooks');
   if(nextContainer) {
     var nextIds = b.nextReadIds || [];
@@ -2915,6 +3804,7 @@ function openBookDetail(id, from) {
   }
 
   switchPanel('book-detail');
+  updateDetailWishUI(b.id);
 }
 
 // 상세 정보 닫고 이전 화면으로 복귀
@@ -3353,6 +4243,7 @@ function startQuiz(id){
   document.getElementById('qTitle').innerText=d.title;
   document.getElementById('qEmoji').innerText=d.emoji || '📕';
   renderQ();
+  window.scrollTo(0, 0);
 }
 function renderQ(){
   var q=curData.qs[curQ],tot=curData.qs.length;
@@ -3403,22 +4294,445 @@ function showResult(){
   toast('퀴즈 완료! '+score+'점 · +'+score+'P 획득! 🎉');
 }
 function backToSelect(){
-  document.getElementById('qscreen-select').style.display='block';
-  document.getElementById('qscreen-ing').style.display='none';
-  document.getElementById('qscreen-result').style.display='none';
-  curBook=null;curData=null;
+  if(currentDetailBookId) {
+    openBookDetail(currentDetailBookId, prevPanel);
+    return;
+  }
+  switchPanel(prevPanel || 'books');
+  curBook = null;
+  curData = null;
 }
-function renderHist(){
-  var c=document.getElementById('histList');if(!c)return;
-  var cnt=document.getElementById('histCount');if(cnt)cnt.innerText=histData.length+'권';
-  c.innerHTML=histData.map(function(h,i){
-    var sc=h.score===100?'var(--blue)':h.score>=80?'var(--green)':'var(--orange)';
-    return '<div class="hist-row">'
-      +'<div class="hist-rank">'+(i+1)+'</div>'
-      +'<div style="flex:1;"><div style="font-weight:800;font-size:13px;">'+h.title+'</div>'
-      +'<div style="font-size:11.5px;color:var(--muted);">'+h.date+' · 북퀴즈 완료</div></div>'
-      +'<div style="font-weight:900;color:'+sc+';">'+h.score+'점</div></div>';
+// ==============================================================
+// 찜하기(Wishlist) 및 내 책장(Bookshelf) 종합 모듈
+// ==============================================================
+var studentWishlist = ['1001', '1004', '1006']; // 기본 찜한 도서 (어린 왕자, 자전거 도둑, 긴긴밤)
+var curBookshelfMainTab = 'history'; // 'history' | 'interest' | 'points'
+
+// 완독 도서 마스터 데이터 (한 줄에 4권씩 격자 정렬)
+var readBooksMaster = [
+  { id: '1001', score: 100, date: '2026.09.08' }, // 어린 왕자
+  { id: '1004', score: 100, date: '2026.09.01' }, // 자전거 도둑
+  { id: '1003', score: 90,  date: '2026.08.28' }, // 마당을 나온 암탉
+  { id: '1005', score: 85,  date: '2026.08.20' }, // 완득이
+  { id: '1002', score: 100, date: '2026.08.15' }, // 아몬드
+  { id: '1006', score: 95,  date: '2026.08.08' }, // 긴긴밤
+  { id: '1007', score: 90,  date: '2026.07.29' }, // 소년이 온다
+  { id: '1008', score: 95,  date: '2026.07.18' }  // 모모
+];
+
+// 학생 관심 주제 데이터
+var userInterestTags = ['#우정', '#성장', '#상상력'];
+var allInterestTags = [
+  '#우정', '#상상력', '#철학', '#모성애', '#성장', 
+  '#공감', '#감정표현', '#생명존중', '#자유', '#추리', 
+  '#역사', '#가족', '#용기', '#자연', '#모험'
+];
+
+// 포인트 적립 내역 데이터 (이미지 없는 텍스트 리스트, 월별 구분)
+var curPointMonthFilter = 'all';
+var studentPointLogs = [
+  {
+    id: 1,
+    datetime: '2026.09.15 16:40',
+    month: '2026-09',
+    bookTitle: '어린 왕자',
+    activity: '북퀴즈 100점 만점 통과 및 독서 인증',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 100
+  },
+  {
+    id: 2,
+    datetime: '2026.09.12 18:25',
+    month: '2026-09',
+    bookTitle: '어린 왕자',
+    activity: '생각 꺼내기 독후 생각 기록 작성',
+    type: 'think',
+    typeName: '생각 꺼내기',
+    point: 50
+  },
+  {
+    id: 3,
+    datetime: '2026.09.08 17:15',
+    month: '2026-09',
+    bookTitle: '자전거 도둑',
+    activity: '북퀴즈 100점 완독 및 포인트 적립',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 100
+  },
+  {
+    id: 4,
+    datetime: '2026.09.01 09:30',
+    month: '2026-09',
+    bookTitle: '9월 출석 챌린지',
+    activity: '9월 첫날 독서 다짐 출석 체크 완료',
+    type: 'attend',
+    typeName: '출석 체크',
+    point: 20
+  },
+  {
+    id: 5,
+    datetime: '2026.08.28 15:50',
+    month: '2026-08',
+    bookTitle: '마당을 나온 암탉',
+    activity: '북퀴즈 90점 통과 완독 포인트',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 90
+  },
+  {
+    id: 6,
+    datetime: '2026.08.20 14:10',
+    month: '2026-08',
+    bookTitle: '완득이',
+    activity: '북퀴즈 85점 통과 및 나노 서평 작성',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 85
+  },
+  {
+    id: 7,
+    datetime: '2026.08.15 19:05',
+    month: '2026-08',
+    bookTitle: '아몬드',
+    activity: '북퀴즈 100점 만점 및 생각 꺼내기',
+    type: 'think',
+    typeName: '생각 꺼내기',
+    point: 150
+  },
+  {
+    id: 8,
+    datetime: '2026.08.08 11:20',
+    month: '2026-08',
+    bookTitle: '긴긴밤',
+    activity: '북퀴즈 95점 통과 완독',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 95
+  },
+  {
+    id: 9,
+    datetime: '2026.07.29 16:30',
+    month: '2026-07',
+    bookTitle: '소년이 온다',
+    activity: '북퀴즈 90점 통과 완독',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 90
+  },
+  {
+    id: 10,
+    datetime: '2026.07.18 10:15',
+    month: '2026-07',
+    bookTitle: '모모',
+    activity: '여름방학 추천도서 완독 및 북퀴즈 95점',
+    type: 'quiz',
+    typeName: '북퀴즈 완독',
+    point: 95
+  },
+  {
+    id: 11,
+    datetime: '2026.07.01 09:00',
+    month: '2026-07',
+    bookTitle: '여름방학 독서 챌린지',
+    activity: '여름방학 독서 목표 설정 및 출석',
+    type: 'attend',
+    typeName: '출석 체크',
+    point: 50
+  }
+];
+
+// 도서 찜 토글 함수
+function toggleWish(bookId, event) {
+  if(event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  var b = libData.find(function(x){ return x.id === bookId; });
+  var idx = studentWishlist.indexOf(bookId);
+
+  if(idx > -1) {
+    studentWishlist.splice(idx, 1);
+    toast((b ? '『' + b.title + '』' : '도서') + ' 찜을 해제했습니다.');
+  } else {
+    studentWishlist.unshift(bookId);
+    toast('💖 ' + (b ? '『' + b.title + '』' : '도서') + '을(를) 내 책장에 찜했습니다!');
+  }
+
+  updateDetailWishUI(bookId);
+  renderWishList();
+}
+
+// 상세 화면 하단 바 찜 버튼 클릭
+function toggleDetailWish() {
+  if(!currentDetailBookId) return;
+  toggleWish(currentDetailBookId);
+}
+
+// 상세 화면 찜 버튼 UI 동기화
+function updateDetailWishUI(bookId) {
+  var isWished = studentWishlist.indexOf(bookId) !== -1;
+  var ctaBtn = document.getElementById('btnDetailWishCta');
+  var icon = document.getElementById('detailWishIcon');
+  var text = document.getElementById('detailWishText');
+  if(ctaBtn) {
+    if(isWished) ctaBtn.classList.add('active');
+    else ctaBtn.classList.remove('active');
+  }
+  if(icon) {
+    icon.className = isWished ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+  }
+  if(text) {
+    text.innerText = isWished ? '찜 완료' : '찜하기';
+  }
+
+  var heroBtn = document.getElementById('heroWishBtn_' + bookId);
+  if(heroBtn) {
+    if(isWished) {
+      heroBtn.classList.add('active');
+      heroBtn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+      heroBtn.title = '찜 해제';
+    } else {
+      heroBtn.classList.remove('active');
+      heroBtn.innerHTML = '<i class="fa-regular fa-heart"></i>';
+      heroBtn.title = '내 책장에 찜하기';
+    }
+  }
+}
+
+// ==============================================================
+// 1) 내 책장 최상단 메인 세분화 탭 전환 (독서 기록 / 관심 도서 / 포인트 내역)
+// ==============================================================
+function switchMyBookshelfMainTab(tab) {
+  curBookshelfMainTab = tab;
+
+  // 탭 버튼 active 클래스 토글
+  var btnH = document.getElementById('btnBsMainHistory');
+  var btnI = document.getElementById('btnBsMainInterest');
+  var btnP = document.getElementById('btnBsMainPoints');
+
+  if(btnH) btnH.classList.toggle('active', tab === 'history');
+  if(btnI) btnI.classList.toggle('active', tab === 'interest');
+  if(btnP) btnP.classList.toggle('active', tab === 'points');
+
+  // 서브 뷰 표시/숨김
+  var viewH = document.getElementById('bsViewHistory');
+  var viewI = document.getElementById('bsViewInterest');
+  var viewP = document.getElementById('bsViewPoints');
+
+  if(viewH) viewH.style.display = (tab === 'history') ? 'block' : 'none';
+  if(viewI) viewI.style.display = (tab === 'interest') ? 'block' : 'none';
+  if(viewP) viewP.style.display = (tab === 'points') ? 'block' : 'none';
+
+  // 탭별 렌더링 실행
+  if(tab === 'history') {
+    renderReadingHistoryGrid();
+  } else if(tab === 'interest') {
+    renderInterestTags();
+    renderInterestRecommendations();
+    renderWishList();
+  } else if(tab === 'points') {
+    renderPointHistory();
+  }
+}
+
+// ==============================================================
+// 2) 독서 기록 서브 뷰: 완독 도서 권수, 평균 점수, 4열 그리드
+// ==============================================================
+function renderReadingHistoryGrid() {
+  var grid = document.getElementById('readingHistoryGrid');
+  var countEl = document.getElementById('readingHistoryCount');
+  if(!grid) return;
+
+  if(countEl) countEl.innerText = readBooksMaster.length;
+
+  grid.innerHTML = readBooksMaster.map(function(item){
+    var b = libData.find(function(x){ return x.id === item.id; });
+    var title = b ? b.title : ('도서 ' + item.id);
+    var coverHtml = b ? getBookCoverHtml(b, 'reading-thumb-img') : '<div class="reading-thumb-img" style="background:#2d6a4f;"></div>';
+    var scoreClass = item.score === 100 ? 'perfect' : (item.score >= 90 ? 'high' : '');
+
+    return '<div class="reading-book-card" onclick="openBookDetail(\'' + item.id + '\', \'history\')">'
+      + '<div class="reading-thumb-wrap">'
+      +   coverHtml
+      +   '<span class="reading-score-badge ' + scoreClass + '">' + item.score + '점</span>'
+      + '</div>'
+      + '<div class="reading-book-title" title="' + title + '">' + title + '</div>'
+      + '</div>';
   }).join('');
+}
+
+// ==============================================================
+// 3) 관심 도서 서브 뷰: 관심 주제 태그 체크 및 맞춤 추천 & 찜 도서
+// ==============================================================
+function toggleInterestTag(tag) {
+  var idx = userInterestTags.indexOf(tag);
+  if(idx > -1) {
+    if(userInterestTags.length <= 1) {
+      toast('최소 1개 이상의 관심 주제를 선택해주세요.');
+      return;
+    }
+    userInterestTags.splice(idx, 1);
+  } else {
+    userInterestTags.push(tag);
+  }
+  renderInterestTags();
+  renderInterestRecommendations();
+}
+
+function renderInterestTags() {
+  var container = document.getElementById('interestTagsContainer');
+  var countEl = document.getElementById('userInterestTagCount');
+  if(!container) return;
+
+  if(countEl) countEl.innerText = userInterestTags.length + '개 선택';
+
+  container.innerHTML = allInterestTags.map(function(tag){
+    var isChecked = userInterestTags.indexOf(tag) !== -1;
+    var activeCls = isChecked ? 'active' : '';
+    var icon = isChecked ? '<i class="fa-solid fa-check mr-1"></i>' : '<i class="fa-regular fa-circle mr-1" style="font-size:10px;opacity:0.6;"></i>';
+    return '<button type="button" class="interest-tag-chip ' + activeCls + '" onclick="toggleInterestTag(\'' + tag + '\')">'
+      + icon + tag
+      + '</button>';
+  }).join('');
+}
+
+function renderInterestRecommendations() {
+  var scrollContainer = document.getElementById('interestRecScroll');
+  var recCountEl = document.getElementById('interestRecCount');
+  if(!scrollContainer) return;
+
+  // 체크된 관심 주제와 태그가 매칭되는 도서 검색
+  var matchedBooks = libData.filter(function(b){
+    if(!b.tags || !b.tags.length) return false;
+    return b.tags.some(function(t){
+      return userInterestTags.indexOf(t) !== -1;
+    });
+  });
+
+  // 매칭 도서가 부족할 경우 에디터 픽으로 보충
+  if(matchedBooks.length === 0) {
+    matchedBooks = libData.filter(function(b){ return b.isEditorPick; }).slice(0, 6);
+  }
+
+  if(recCountEl) recCountEl.innerText = matchedBooks.length + '권';
+
+  scrollContainer.innerHTML = matchedBooks.map(function(b){
+    return '<div class="interest-rec-item" onclick="openBookDetail(\'' + b.id + '\', \'history\')">'
+      + getBookCoverHtml(b, 'interest-rec-thumb')
+      + '<div class="interest-rec-title" title="' + b.title + '">' + b.title + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// 찜한 도서 목록 렌더링
+function renderWishList() {
+  var c = document.getElementById('wishList');
+  if(!c) return;
+  var wishBooks = libData.filter(function(b){
+    return studentWishlist.indexOf(b.id) !== -1;
+  });
+
+  var badge = document.getElementById('wishBadgeCount');
+  if(badge) badge.innerText = wishBooks.length + '권';
+
+  if(wishBooks.length === 0) {
+    c.innerHTML = 
+      '<div class="wish-empty-box">'
+      + '<div style="font-size:36px;margin-bottom:8px;">🤍</div>'
+      + '<div style="font-weight:800;font-size:14px;color:var(--wood-dark);margin-bottom:4px;">아직 찜한 도서가 없습니다</div>'
+      + '<div style="font-size:12px;color:var(--muted);line-height:1.5;">도서관이나 홈에서 읽고 싶은 책의 <strong>하트(찜)</strong>를 눌러<br>나만의 책장에 쏙 담아보세요!</div>'
+      + '<button type="button" class="btn btn-sm btn-outline-success mt-3" onclick="switchPanel(\'books\')" style="border-radius:20px;font-size:12px;font-weight:700;padding:5px 14px;">도서 둘러보기</button>'
+      + '</div>';
+    return;
+  }
+
+  c.innerHTML = wishBooks.map(function(b){
+    return '<div class="wish-book-card" onclick="openBookDetail(\'' + b.id + '\', \'history\')">'
+      + getBookCoverHtml(b, 'wish-book-thumb')
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-weight:800;font-size:13.5px;color:var(--wood-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + b.title + '</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">' + b.author + ' · ' + b.pub + '</div>'
+      +   '<div style="margin-top:6px;display:flex;gap:4px;align-items:center;">'
+      +     '<span class="detail-badge-grade" style="font-size:10px;padding:1px 6px;">' + b.grade + ' 권장</span>'
+      +     '<span class="detail-badge-cat" style="font-size:10px;padding:1px 6px;">' + b.cat + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">'
+      +   '<button type="button" class="btn btn-xs" onclick="startQuiz(\'' + b.id + '\')" style="background:var(--leaf-soft);color:var(--leaf);border:none;border-radius:8px;font-weight:700;padding:6px 10px;font-size:11.5px;" title="북퀴즈 풀기">'
+      +     '<i class="fa-solid fa-pen-nib mr-1"></i>퀴즈'
+      +   '</button>'
+      +   '<button type="button" class="btn-hero-wish active" onclick="toggleWish(\'' + b.id + '\', event)" title="찜 해제" style="width:32px;height:32px;font-size:14px;">'
+      +     '<i class="fa-solid fa-heart"></i>'
+      +   '</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ==============================================================
+// 4) 포인트 내역 서브 뷰: 이미지 없는 텍스트 리스트 & 월별 필터링
+// ==============================================================
+function filterPointHistory(month, btn) {
+  curPointMonthFilter = month;
+  var container = document.getElementById('pointMonthFilterChips');
+  if(container) {
+    var chips = container.querySelectorAll('.point-month-chip');
+    chips.forEach(function(c){ c.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+  }
+  renderPointHistory();
+}
+
+function renderPointHistory() {
+  var listEl = document.getElementById('pointLogList');
+  var earnedEl = document.getElementById('currentMonthEarnedPoints');
+  if(!listEl) return;
+
+  var filtered = studentPointLogs.slice();
+  if(curPointMonthFilter !== 'all') {
+    filtered = filtered.filter(function(item){
+      return item.month === curPointMonthFilter;
+    });
+  }
+
+  // 이번 달(2026-09) 획득 포인트 합산
+  var curMonthTotal = studentPointLogs.filter(function(x){ return x.month === '2026-09'; })
+    .reduce(function(acc, cur){ return acc + cur.point; }, 0);
+  if(earnedEl) earnedEl.innerText = '+' + curMonthTotal.toLocaleString() + ' P';
+
+  if(filtered.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:32px 14px;color:var(--muted);background:#ffffff;border-radius:14px;border:1px solid var(--soft);">'
+      + '<i class="fa-solid fa-circle-info mr-1"></i>선택하신 기간의 포인트 적립 내역이 없습니다.'
+      + '</div>';
+    return;
+  }
+
+  // 이미지 없는 깔끔한 텍스트 리스트 렌더링
+  listEl.innerHTML = filtered.map(function(log){
+    var tagCls = log.type || 'quiz';
+    return '<div class="point-log-item">'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div class="point-log-meta">'
+      +     '<span><i class="fa-regular fa-clock mr-1"></i>' + log.datetime + '</span>'
+      +     '<span class="point-log-tag ' + tagCls + '">' + log.typeName + '</span>'
+      +   '</div>'
+      +   '<div class="point-log-title">'
+      +     '『' + log.bookTitle + '』'
+      +   '</div>'
+      +   '<div class="point-log-desc">' + log.activity + '</div>'
+      + '</div>'
+      + '<div class="point-log-val">+' + log.point.toLocaleString() + ' P</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ==============================================================
+// 5) 내 책장 종합 렌더링 진입점
+// ==============================================================
+function renderMyBookshelf() {
+  switchMyBookshelfMainTab(curBookshelfMainTab || 'history');
 }
 function renderRank(){
   var c=document.getElementById('rankList');if(!c)return;
@@ -3499,10 +4813,190 @@ function handleStudentLogout() {
   }
 }
 
+// ==============================================================
+// 좌측 상단 햄버거 메뉴 및 슬라이딩 드로어 모듈
+// ==============================================================
+function openStudentDrawer() {
+  var drawer = document.getElementById('studentDrawer');
+  var overlay = document.getElementById('studentDrawerOverlay');
+  if(drawer) drawer.classList.add('open');
+  if(overlay) overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeStudentDrawer() {
+  var drawer = document.getElementById('studentDrawer');
+  var overlay = document.getElementById('studentDrawerOverlay');
+  if(drawer) drawer.classList.remove('open');
+  if(overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeDrawerModal() {
+  var m = document.getElementById('studentDrawerMenuModal');
+  if(m) m.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function openDrawerMenuItem(type) {
+  closeStudentDrawer();
+  var m = document.getElementById('studentDrawerMenuModal');
+  var cat = document.getElementById('drawerModalCategory');
+  var title = document.getElementById('drawerModalTitle');
+  var sub = document.getElementById('drawerModalSub');
+  var body = document.getElementById('drawerModalBody');
+  if(!m || !body) return;
+
+  var contentHtml = '';
+
+  if(type === 'myinfo') {
+    cat.innerText = '회원 정보';
+    title.innerText = '내 정보';
+    sub.innerText = '회원님의 기본 학습 정보입니다.';
+    contentHtml = 
+      '<div style="background:#faf8f5;border-radius:14px;padding:16px;border:1px solid var(--soft);margin-bottom:14px;">'
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--soft);">'
+      +   '<div style="width:48px;height:48px;border-radius:50%;background:var(--leaf-soft);color:var(--leaf);display:flex;align-items:center;justify-content:center;font-size:22px;"><i class="fa-solid fa-user-graduate"></i></div>'
+      +   '<div>'
+      +     '<div style="font-size:16px;font-weight:800;color:var(--wood-dark);">김민준 학생</div>'
+      +     '<div style="font-size:12px;color:var(--muted);">아이디: mj_kim2026</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">소속 학원</span><span style="font-weight:700;">나노독서논술 대치본원</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">소속 학급</span><span style="font-weight:700;">지혜반 (초등 5학년)</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">보유 포인트</span><span style="font-weight:800;color:var(--leaf);">2,480 P</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">등록 일자</span><span style="font-weight:700;">2026.03.02</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">연락처</span><span style="font-weight:700;">010-34**-56** (학부모 연동)</span></div>'
+      + '</div>'
+      + '</div>'
+      + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">확인 완료</button>';
+  } 
+  else if(type === 'password') {
+    cat.innerText = '보안 설정';
+    title.innerText = '비밀번호 변경';
+    sub.innerText = '계정 보호를 위해 주기적으로 비밀번호를 변경해 주세요.';
+    contentHtml = 
+      '<form onsubmit="submitPasswordChange(event)" style="display:flex;flex-direction:column;gap:12px;">'
+      + '<div>'
+      +   '<label style="font-size:12px;font-weight:700;color:var(--wood-dark);margin-bottom:4px;display:block;">현재 비밀번호</label>'
+      +   '<input type="password" id="pwCurrent" required placeholder="현재 비밀번호를 입력하세요" style="width:100%;padding:10px 12px;border:1.5px solid var(--soft);border-radius:10px;font-size:13px;">'
+      + '</div>'
+      + '<div>'
+      +   '<label style="font-size:12px;font-weight:700;color:var(--wood-dark);margin-bottom:4px;display:block;">새 비밀번호</label>'
+      +   '<input type="password" id="pwNew" required placeholder="영문, 숫자 조합 6자리 이상" style="width:100%;padding:10px 12px;border:1.5px solid var(--soft);border-radius:10px;font-size:13px;">'
+      + '</div>'
+      + '<div>'
+      +   '<label style="font-size:12px;font-weight:700;color:var(--wood-dark);margin-bottom:4px;display:block;">새 비밀번호 확인</label>'
+      +   '<input type="password" id="pwConfirm" required placeholder="새 비밀번호를 한 번 더 입력하세요" style="width:100%;padding:10px 12px;border:1.5px solid var(--soft);border-radius:10px;font-size:13px;">'
+      + '</div>'
+      + '<button type="submit" class="btn w-100 mt-2" style="background:var(--leaf);color:#ffffff;border-radius:10px;font-weight:800;padding:10px;">비밀번호 변경하기</button>'
+      + '</form>';
+  } 
+  else if(type === 'notice') {
+    cat.innerText = '새소식';
+    title.innerText = '공지사항';
+    sub.innerText = '나노의 책장 최신 소식 및 안내사항입니다.';
+    contentHtml = 
+      '<div style="display:flex;flex-direction:column;gap:10px;">'
+      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
+      +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+      +     '<span class="badge" style="background:#fef2f2;color:#ef4444;font-size:10px;">중요</span>'
+      +     '<span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">9월 나노 독서왕 챌린지 챌린저 모집</span>'
+      +   '</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">이달 말까지 3권 이상 완독 시 골드 뱃지 및 특별 500P를 지급합니다.</div>'
+      +   '<div style="font-size:10.5px;color:#a89f91;margin-top:6px;">2026.09.01</div>'
+      + '</div>'
+      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
+      +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+      +     '<span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:10px;">안내</span>'
+      +     '<span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">생각 꺼내기 호기심 질문 기능 오픈</span>'
+      +   '</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">책을 읽기 전 스스로 상상해볼 수 있는 생각 꺼내기 질문이 추가되었습니다.</div>'
+      +   '<div style="font-size:10.5px;color:#a89f91;margin-top:6px;">2026.08.28</div>'
+      + '</div>'
+      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
+      +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+      +     '<span class="badge" style="background:#f1ede4;color:var(--wood-mid);font-size:10px;">점검</span>'
+      +     '<span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">서버 안정화를 위한 정기 점검 완료</span>'
+      +   '</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">더욱 쾌적한 퀴즈 응시 환경을 제공해 드립니다.</div>'
+      +   '<div style="font-size:10.5px;color:#a89f91;margin-top:6px;">2026.08.15</div>'
+      + '</div>'
+      + '</div>';
+  } 
+  else if(type === 'faq') {
+    cat.innerText = '도움말';
+    title.innerText = '자주 묻는 질문';
+    sub.innerText = '학생들이 자주 궁금해하는 내용입니다.';
+    contentHtml = 
+      '<div style="display:flex;flex-direction:column;gap:10px;">'
+      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
+      +   '<div style="font-weight:800;font-size:13px;color:var(--leaf);margin-bottom:4px;">Q. 북퀴즈 점수와 포인트는 언제 반영되나요?</div>'
+      +   '<div style="font-size:12px;color:var(--wood-dark);line-height:1.5;">북퀴즈 5문항을 풀고 완료 버튼을 누르는 즉시 나의 포인트와 랭킹에 실시간으로 적립됩니다.</div>'
+      + '</div>'
+      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
+      +   '<div style="font-weight:800;font-size:13px;color:var(--leaf);margin-bottom:4px;">Q. 찜한 도서는 어디서 확인할 수 있나요?</div>'
+      +   '<div style="font-size:12px;color:var(--wood-dark);line-height:1.5;">하단 메뉴 [내 책장]에서 상단의 [관심 도서] 탭을 누르면 내가 찜해둔 도서들을 한눈에 모아보고 바로 북퀴즈를 풀 수 있습니다.</div>'
+      + '</div>'
+      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
+      +   '<div style="font-weight:800;font-size:13px;color:var(--leaf);margin-bottom:4px;">Q. 관심 주제를 바꾸면 추천 책도 바뀌나요?</div>'
+      +   '<div style="font-size:12px;color:var(--wood-dark);line-height:1.5;">네! [관심 도서] 탭에서 원하는 키워드 태그를 체크/해제하면 취향에 맞는 도서가 실시간으로 자동 추천됩니다.</div>'
+      + '</div>'
+      + '</div>';
+  } 
+  else if(type === 'support') {
+    cat.innerText = '고객센터';
+    title.innerText = '고객센터';
+    sub.innerText = '이용 중 문의사항이나 도움이 필요하시면 언제든 연락주세요.';
+    contentHtml = 
+      '<div style="background:#faf8f5;border:1px solid var(--soft);border-radius:14px;padding:16px;text-align:center;margin-bottom:14px;">'
+      + '<div style="font-size:36px;margin-bottom:8px;">🎧</div>'
+      + '<div style="font-weight:800;font-size:15px;color:var(--wood-dark);margin-bottom:4px;">나노의 책장 학생 지원센터</div>'
+      + '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px;">도서 오류 제보, 퀴즈 문제 문의 등 무엇이든 친절하게 도와드립니다.</div>'
+      + '<div style="background:#ffffff;border-radius:10px;padding:12px;font-size:12.5px;text-align:left;border:1px solid var(--soft);">'
+      +   '<div style="margin-bottom:6px;"><strong style="color:var(--leaf);">📞 전화 문의:</strong> 1544-0000 (평일 09:00 ~ 18:00)</div>'
+      +   '<div style="margin-bottom:6px;"><strong style="color:var(--leaf);">💬 카카오톡:</strong> @나노의책장 채널 1:1 상담</div>'
+      +   '<div><strong style="color:var(--leaf);">🏫 학원 데스크:</strong> 담당 선생님께 말씀해 주셔도 해결됩니다.</div>'
+      + '</div>'
+      + '</div>'
+      + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">닫기</button>';
+  } 
+  else if(type === 'terms') {
+    cat.innerText = '약관 및 정책';
+    title.innerText = '이용약관';
+    sub.innerText = '나노의 책장 서비스 이용에 관한 기본 약관입니다.';
+    contentHtml = 
+      '<div style="max-height:260px;overflow-y:auto;background:#faf8f5;border:1px solid var(--soft);border-radius:10px;padding:12px;font-size:11.5px;color:var(--wood-dark);line-height:1.6;margin-bottom:12px;">'
+      + '<strong style="color:var(--leaf);">제1조 (목적)</strong><br>본 약관은 나노의 책장 플랫폼에서 제공하는 독서 교육, 북퀴즈 및 포인트 관리 서비스의 이용조건 및 절차를 규정함을 목적으로 합니다.<br><br>'
+      + '<strong style="color:var(--leaf);">제2조 (회원의 권리와 의무)</strong><br>학생 회원은 학습 목적에 맞게 자유롭게 도서를 탐색하고 북퀴즈에 응시하여 포인트를 획득할 수 있으며, 타인의 명의나 부정한 방법으로 퀴즈에 응시해서는 안 됩니다.<br><br>'
+      + '<strong style="color:var(--leaf);">제3조 (개인정보의 보호)</strong><br>회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하며, 교육 목적으로만 안전하게 관리합니다.<br><br>'
+      + '<strong style="color:var(--leaf);">제4조 (포인트 운영)</strong><br>퀴즈 완료, 출석 등을 통해 적립된 포인트는 학원 정책 및 이벤트에 따라 보상 및 랭킹 산정에 활용됩니다.'
+      + '</div>'
+      + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">확인 완료</button>';
+  }
+
+  body.innerHTML = contentHtml;
+  m.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function submitPasswordChange(e) {
+  if(e) e.preventDefault();
+  var p1 = document.getElementById('pwNew').value;
+  var p2 = document.getElementById('pwConfirm').value;
+  if(p1 !== p2) {
+    alert('새 비밀번호와 확인 입력값이 일치하지 않습니다.');
+    return;
+  }
+  closeDrawerModal();
+  toast('🔒 비밀번호가 성공적으로 변경되었습니다!');
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   renderStudentBanners();
   renderHomeSliders();
-  renderHist();
+  renderMyBookshelf();
   renderRank();
   renderLib();
 });

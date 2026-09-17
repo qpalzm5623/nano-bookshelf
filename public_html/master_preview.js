@@ -1214,36 +1214,36 @@ function renderFranchiseTable(data = franchiseList) {
     return `
       <tr>
         <!-- 1. 번호 -->
-        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px;">${idx + 1}</td>
+        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px; white-space: nowrap;">${idx + 1}</td>
         <!-- 2. 이용 상품명 -->
-        <td class="text-center">${planBadge}</td>
+        <td class="text-center" style="white-space: nowrap;">${planBadge}</td>
         <!-- 3. 가맹 학원명 -->
         <td>
-          <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">${acad.name}</div>
-          <small class="text-muted"><i class="fa-solid fa-location-dot mr-1"></i>${acad.region || '전국'} · 사업자: ${acad.bizNumber || '-'}</small>
+          <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main); white-space: nowrap;">${acad.name}</div>
+          <small class="text-muted" style="white-space: nowrap;"><i class="fa-solid fa-location-dot mr-1"></i>${acad.region || '전국'} · 사업자: ${acad.bizNumber || '-'}</small>
         </td>
         <!-- 4. 관리자 ID -->
-        <td class="text-center">
+        <td class="text-center" style="white-space: nowrap;">
           <span class="badge-soft badge-soft-neutral" style="font-family: monospace; font-size: 11.5px; font-weight: 700; color: #495057;">${adminIdText}</span>
         </td>
         <!-- 5. 원장명 / 연락처 -->
-        <td class="text-center">
-          <div class="font-weight-bold" style="font-size: 13px;">${acad.director}</div>
-          <small class="text-muted d-block">${acad.phone}</small>
-          ${acad.email ? `<small class="text-muted" style="font-size: 11px; opacity: 0.85;"><i class="fa-regular fa-envelope mr-1"></i>${acad.email}</small>` : ''}
+        <td class="text-center" style="white-space: nowrap;">
+          <div class="font-weight-bold" style="font-size: 13px; white-space: nowrap;">${acad.director}</div>
+          <small class="text-muted d-block" style="font-size: 11.5px; white-space: nowrap;">${acad.phone}</small>
+          ${acad.email ? `<small class="text-muted d-block" style="font-size: 10.5px; opacity: 0.85; white-space: nowrap;"><i class="fa-regular fa-envelope mr-1"></i>${acad.email}</small>` : ''}
         </td>
         <!-- 6. 가입일 -->
-        <td class="text-center font-weight-bold" style="font-size: 12.5px; color: #5a4b3d;">
+        <td class="text-center font-weight-bold" style="font-size: 12px; color: #5a4b3d; white-space: nowrap;">
           ${joinDateText}
         </td>
         <!-- 7. 계약 기간 -->
-        <td class="text-center">
-          <div style="font-size: 12px;">${acad.startDate} ~ ${acad.endDate}</div>
-          <small class="text-muted">${getDDayText(acad.endDate)}</small>
+        <td class="text-center" style="white-space: nowrap;">
+          <div style="font-size: 12px; font-weight: 600; white-space: nowrap;">${acad.startDate} ~ ${acad.endDate}</div>
+          <small class="text-muted d-block mt-1" style="white-space: nowrap;">${getDDayText(acad.endDate)}</small>
         </td>
         <!-- 8. 원생 수 / 계약 슬롯 (사용인원) -->
-        <td>
-          <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 12px;">
+        <td style="min-width: 140px;">
+          <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 11.5px; white-space: nowrap;">
             <span class="font-weight-bold">${curStd}명 <small class="text-muted">/ ${maxStd}명</small></span>
             <span class="text-muted font-weight-bold">${slotRate}%</span>
           </div>
@@ -1252,20 +1252,22 @@ function renderFranchiseTable(data = franchiseList) {
           </div>
         </td>
         <!-- 9. 가맹 상태 -->
-        <td class="text-center">${statusBadge}</td>
+        <td class="text-center" style="white-space: nowrap;">${statusBadge}</td>
         <!-- 10. 월 결제 금액 -->
-        <td class="text-center">
-          <div class="font-weight-bold" style="font-size: 13px; color: var(--text-main);">${feeText}</div>
-          <div class="mt-1">${paymentBadge}</div>
+        <td class="text-center" style="white-space: nowrap;">
+          <div class="font-weight-bold" style="font-size: 13px; color: var(--text-main); white-space: nowrap;">${feeText}</div>
+          <div class="mt-1" style="white-space: nowrap;">${paymentBadge}</div>
         </td>
         <!-- 11. 관리 -->
-        <td class="text-center">
-          <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openAcademyEditModal('${acad.id}')" title="학원 정보 및 계약/상품 수정" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button class="btn btn-xs btn-outline-danger" onclick="openAcademyDeleteConfirm('${acad.id}')" title="가맹 해지/삭제" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+        <td class="text-center" style="white-space: nowrap;">
+          <div class="d-inline-flex gap-1" style="gap: 4px;">
+            <button class="btn btn-xs btn-outline-secondary" onclick="openAcademyEditModal('${acad.id}')" title="학원 정보 및 계약/상품 수정" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px; border-color: var(--border-medium);">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button class="btn btn-xs btn-outline-danger" onclick="openAcademyDeleteConfirm('${acad.id}')" title="가맹 해지/삭제" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -1675,35 +1677,35 @@ function renderMemberTable(data = memberList) {
     return `
       <tr>
         <!-- 1. 번호 -->
-        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px;">${idx + 1}</td>
+        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px; white-space: nowrap;">${idx + 1}</td>
         <!-- 2. 소속 학원 -->
-        <td class="font-weight-bold" style="font-size: 13px; color: var(--text-main);">${mem.academyName}</td>
+        <td class="font-weight-bold" style="font-size: 13px; color: var(--text-main); white-space: nowrap;">${mem.academyName}</td>
         <!-- 3. 등급 권한 -->
-        <td class="text-center">${roleBadge}</td>
+        <td class="text-center" style="white-space: nowrap;">${roleBadge}</td>
         <!-- 4. 이름 (아이디) -->
-        <td>
+        <td style="white-space: nowrap;">
           <span class="font-weight-bold text-dark" style="font-size: 13.5px;">${mem.name}</span>
           <small class="text-muted font-weight-bold">(${mem.username})</small>
         </td>
         <!-- 5. 학년 -->
-        <td class="text-center font-weight-bold" style="font-size: 12.5px; color: #374151;">${gradeText}</td>
+        <td class="text-center font-weight-bold" style="font-size: 12.5px; color: #374151; white-space: nowrap;">${gradeText}</td>
         <!-- 6. 학급 -->
-        <td class="text-center">${classBadge}</td>
+        <td class="text-center" style="white-space: nowrap;">${classBadge}</td>
         <!-- 7. 학생 연락처 -->
-        <td class="text-center" style="font-size: 12px; color: #4b5563;">${studentPhone}</td>
+        <td class="text-center" style="font-size: 12px; color: #4b5563; white-space: nowrap;">${studentPhone}</td>
         <!-- 8. 학부모 연락처 -->
-        <td class="text-center" style="font-size: 12px; color: #6b7280;">${parentPhone}</td>
+        <td class="text-center" style="font-size: 12px; color: #6b7280; white-space: nowrap;">${parentPhone}</td>
         <!-- 9. 누적 포인트 -->
-        <td class="text-center font-weight-bold text-warning" style="font-size: 13px;">${mem.points > 0 ? mem.points.toLocaleString() + ' P' : '-'}</td>
+        <td class="text-center font-weight-bold text-warning" style="font-size: 13px; white-space: nowrap;">${mem.points > 0 ? mem.points.toLocaleString() + ' P' : '-'}</td>
         <!-- 10. 최근 접속일 (2줄) -->
-        <td class="text-center">${loginDateHtml}</td>
+        <td class="text-center" style="white-space: nowrap;">${loginDateHtml}</td>
         <!-- 11. 등록일 -->
-        <td class="text-center">${createdAtHtml}</td>
+        <td class="text-center" style="white-space: nowrap;">${createdAtHtml}</td>
         <!-- 12. 계정 상태 -->
-        <td class="text-center">${statusBadge}</td>
+        <td class="text-center" style="white-space: nowrap;">${statusBadge}</td>
         <!-- 13. 관리 (아이콘 버튼) -->
-        <td class="text-center">
-          <button class="btn btn-xs btn-outline-secondary" onclick="openMemberDetailModal(${mem.id})" title="회원 상세 및 상태 관리" style="border-radius: 6px; font-size: 12px; padding: 4px 8px;">
+        <td class="text-center" style="white-space: nowrap;">
+          <button class="btn btn-xs btn-outline-secondary" onclick="openMemberDetailModal(${mem.id})" title="회원 상세 및 상태 관리" style="border-radius: 6px; font-size: 12px; padding: 4px 8px; border-color: var(--border-medium);">
             <i class="fa-solid fa-user-gear"></i>
           </button>
         </td>
@@ -4331,23 +4333,23 @@ function renderMasterPaymentTable(data = masterPaymentList) {
 
     return `
       <tr style="font-size: 13px;">
-        <td class="text-center font-weight-bold text-muted" style="font-size: 11.5px;">${item.id}</td>
-        <td>
+        <td class="text-center font-weight-bold text-muted" style="font-size: 11.5px; white-space: nowrap;">${item.id}</td>
+        <td style="white-space: nowrap;">
           <div class="font-weight-bold" style="color: var(--text-main); font-size: 13.5px;">${item.academyName}</div>
           <small class="text-muted"><i class="fa-solid fa-user-tie mr-1"></i>${item.director} (${item.phone})</small>
         </td>
-        <td>
+        <td class="text-center" style="white-space: nowrap;">
           <span class="badge-soft badge-soft-neutral font-weight-bold">${item.planName}</span>
         </td>
-        <td class="text-right">${item.supply.toLocaleString()}원</td>
-        <td class="text-right text-muted">${item.vat.toLocaleString()}원</td>
-        <td class="text-right font-weight-bold" style="color: #962a22; font-size: 14px;">${item.total.toLocaleString()}원</td>
-        <td class="text-center"><small class="text-muted">${item.method}</small></td>
-        <td class="text-center"><small class="text-muted">${item.date}</small></td>
-        <td class="text-center"><small class="badge badge-light border">${item.startDate} ~ ${item.endDate}</small></td>
-        <td class="text-center">${statusSelect}</td>
-        <td class="text-center">
-          <button class="btn btn-xs btn-outline-secondary" onclick="openMasterPaymentDetailModal('${item.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px;">
+        <td class="text-right" style="white-space: nowrap;">${item.supply.toLocaleString()}원</td>
+        <td class="text-right text-muted" style="white-space: nowrap;">${item.vat.toLocaleString()}원</td>
+        <td class="text-right font-weight-bold" style="color: #962a22; font-size: 14px; white-space: nowrap;">${item.total.toLocaleString()}원</td>
+        <td class="text-center" style="white-space: nowrap;"><small class="text-muted">${item.method}</small></td>
+        <td class="text-center" style="white-space: nowrap;"><small class="text-muted">${item.date}</small></td>
+        <td class="text-center" style="white-space: nowrap;"><small class="badge badge-light border" style="white-space: nowrap;">${item.startDate} ~ ${item.endDate}</small></td>
+        <td class="text-center" style="white-space: nowrap;">${statusSelect}</td>
+        <td class="text-center" style="white-space: nowrap;">
+          <button class="btn btn-xs btn-outline-secondary" onclick="openMasterPaymentDetailModal('${item.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; white-space: nowrap;">
             <i class="fa-solid fa-pen-to-square mr-1"></i>상세/메모
           </button>
         </td>
