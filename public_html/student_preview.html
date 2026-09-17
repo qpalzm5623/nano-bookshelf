@@ -1133,6 +1133,154 @@
     }
 
     /* ============================================================== */
+    /* 주제별 도서 (Theme Tags) 및 배너 도서 모달 스타일 */
+    /* ============================================================== */
+    .theme-tag-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .theme-tag-card {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 3px 10px rgba(58, 46, 38, 0.05);
+      display: flex;
+      flex-direction: column;
+    }
+    .theme-tag-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 22px rgba(45, 106, 79, 0.16);
+      border-color: var(--leaf);
+    }
+    .theme-tag-img-box {
+      width: 100%;
+      height: 120px;
+      background: #efebe4;
+      position: relative;
+      overflow: hidden;
+    }
+    .theme-tag-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .theme-tag-card:hover .theme-tag-img-box img {
+      transform: scale(1.05);
+    }
+    .theme-tag-card-body {
+      padding: 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .theme-badge-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--wood-dark);
+      margin-bottom: 3px;
+    }
+    .theme-sub-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--leaf);
+      background: var(--leaf-pale);
+      padding: 2px 7px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 6px;
+      width: fit-content;
+    }
+    .theme-desc-text {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-bottom: 12px;
+      flex: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .theme-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #f0ece5;
+      padding-top: 10px;
+      font-size: 11.5px;
+      color: var(--wood-mid);
+      font-weight: 600;
+    }
+    .theme-selected-header {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .student-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(26, 20, 16, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .student-modal-dialog {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 540px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+      animation: modalFadeIn 0.25s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .student-modal-header {
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #fdfbf7, #f7f2ea);
+      border-bottom: 1.5px solid var(--soft);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .btn-modal-close {
+      border: none;
+      background: transparent;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0 4px;
+    }
+    .btn-modal-close:hover { color: #ef4444; }
+    .student-modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* ============================================================== */
     /* 신규 도서 상세 정보 화면 (Book Info Detail Panel) */
     /* ============================================================== */
     #p-book-detail {
@@ -1381,13 +1529,13 @@
 
     <!-- 학생 메인 롤링 배너 캐러셀 (숲속 목재 테마 배너 연동) -->
     <div class="rolling-banner-container" id="studentBannerBox">
-      <div class="rolling-banner-slide active" data-idx="0">
+      <div class="rolling-banner-slide active" data-idx="0" onclick="handleStudentBannerClick(0)" style="cursor: pointer;" title="배너 추천 도서 목록 보기">
         <img src="upload/banner/banner_reading_king.jpg" alt="숲속 서재 독서 테마">
       </div>
-      <div class="rolling-banner-slide" data-idx="1">
+      <div class="rolling-banner-slide" data-idx="1" onclick="handleStudentBannerClick(1)" style="cursor: pointer;" title="배너 추천 도서 목록 보기">
         <img src="upload/banner/banner_nanosheet.jpg" alt="나노시트 서재 테마">
       </div>
-      <div class="rolling-banner-slide" data-idx="2">
+      <div class="rolling-banner-slide" data-idx="2" onclick="handleStudentBannerClick(2)" style="cursor: pointer;" title="배너 추천 도서 목록 보기">
         <img src="upload/banner/banner_ranking.jpg" alt="창밖 숲속 책장 테마">
       </div>
       <div class="rolling-banner-dots" id="bannerDots">
@@ -1458,7 +1606,7 @@
       <div id="assignedLibList"></div>
     </div>
     <div id="bsub-all">
-      <!-- 전체 도서관 2차 서브탭: 권장도서 / 인기도서 / 추천도서 -->
+      <!-- 전체 도서관 2차 서브탭: 권장도서 / 인기도서 / 추천도서 / 주제별 도서 -->
       <div class="lib-sub-nav">
         <button type="button" class="lib-sub-pill active" id="libSubPill-recommended" onclick="switchLibSubTab('recommended')">
           <i class="fa-solid fa-seedling"></i> 권장도서
@@ -1468,6 +1616,9 @@
         </button>
         <button type="button" class="lib-sub-pill" id="libSubPill-curated" onclick="switchLibSubTab('curated')">
           <i class="fa-solid fa-star"></i> 추천도서
+        </button>
+        <button type="button" class="lib-sub-pill" id="libSubPill-theme" onclick="switchLibSubTab('theme')">
+          <i class="fa-solid fa-tags"></i> 주제별 도서
         </button>
       </div>
 
@@ -1485,11 +1636,38 @@
         <button type="button" class="grade-chip" data-grade="중3" onclick="selectGradeFilter('중3')">중3</button>
       </div>
 
-      <div class="sbar">
-        <input type="text" id="libQ" placeholder="도서명, 저자, 출판사 검색..." oninput="filterLib()">
-        <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
+      <!-- 1. 기본 도서관 리스트 컨테이너 (권장도서/인기도서/추천도서) -->
+      <div id="normalLibContainer">
+        <div class="sbar">
+          <input type="text" id="libQ" placeholder="도서명, 저자, 출판사 검색..." oninput="filterLib()">
+          <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
+        </div>
+        <div id="libList"></div>
       </div>
-      <div id="libList"></div>
+
+      <!-- 2. 주제별 도서 전용 컨테이너 (태그 박스 그리드 및 태그별 도서 목록) -->
+      <div id="themeLibContainer" style="display: none; margin-top: 4px;">
+        <!-- 태그 박스 그리드 섹션 -->
+        <div id="themeTagBoxesSection">
+          <div style="font-size: 13px; font-weight: 700; color: var(--wood-dark); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="fa-solid fa-wand-magic-sparkles mr-1" style="color:var(--leaf);"></i> 관심 주제별 큐레이션 서가</span>
+            <span style="font-size: 11.5px; color: var(--muted); font-weight: 500;">박스를 터치하면 해당 주제의 도서들이 펼쳐집니다.</span>
+          </div>
+          <div id="themeTagGrid" class="theme-tag-grid">
+            <!-- 동적 태그 박스 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 선택된 태그 도서 목록 섹션 -->
+        <div id="themeSelectedSection" style="display: none;">
+          <div class="theme-selected-header" id="themeSelectedHeader">
+            <!-- 동적 헤더 및 뒤로가기 버튼 -->
+          </div>
+          <div id="themeBookList">
+            <!-- 동적 매핑 도서 목록 렌더링 -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1602,7 +1780,25 @@
   <button class="bnav-btn" id="nav-quiz" onclick="switchPanel('quiz')"><i class="fa-solid fa-pen-nib"></i><span>북퀴즈</span></button>
   <button class="bnav-btn" id="nav-history" onclick="switchPanel('history')"><i class="fa-solid fa-scroll"></i><span>독서기록</span></button>
   <button class="bnav-btn" id="nav-ranking" onclick="switchPanel('ranking')"><i class="fa-solid fa-trophy"></i><span>랭킹</span></button>
-</nav>
+<!-- 배너 연계 추천 도서 목록 모달 -->
+<div id="bannerBookListModal" class="student-modal-overlay" style="display:none;" onclick="if(event.target===this)closeBannerBookModal()">
+  <div class="student-modal-dialog">
+    <div class="student-modal-header">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge-soft badge-soft-warning font-weight-bold" style="font-size: 11px; padding: 2px 7px;">배너 연계 도서</span>
+          <h5 class="mb-0 font-weight-bold" style="font-size: 16px; color: var(--wood-dark);" id="studentBannerModalTitle">배너 추천 도서 목록</h5>
+        </div>
+        <small class="text-muted" id="studentBannerModalSub">배너 이벤트에 추천된 도서 목록입니다.</small>
+      </div>
+      <button type="button" class="btn-modal-close" onclick="closeBannerBookModal()" title="닫기">&times;</button>
+    </div>
+    <div class="student-modal-body" id="studentBannerModalBody">
+      <!-- 동적 배너 도서 목록 주입 -->
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -2750,7 +2946,7 @@ function switchBookTab(t){
 
 function switchLibSubTab(tab) {
   currentLibSubTab = tab;
-  ['recommended','popular','curated'].forEach(function(s){
+  ['recommended','popular','curated','theme'].forEach(function(s){
     var btn = document.getElementById('libSubPill-'+s);
     if(btn) {
       if(s === tab) btn.classList.add('active');
@@ -2758,13 +2954,299 @@ function switchLibSubTab(tab) {
     }
   });
 
-  // 학년 필터 바는 '권장도서' 서브탭일 때 전면에 노출
+  // 학년 필터 바는 '권장도서' 서브탭일 때만 전면에 노출
   var gradeBar = document.getElementById('gradeFilterBar');
   if(gradeBar) {
     gradeBar.style.display = (tab === 'recommended') ? 'flex' : 'none';
   }
 
-  renderLib();
+  var normalContainer = document.getElementById('normalLibContainer');
+  var themeContainer = document.getElementById('themeLibContainer');
+
+  if(tab === 'theme') {
+    if(normalContainer) normalContainer.style.display = 'none';
+    if(themeContainer) {
+      themeContainer.style.display = 'block';
+      backToThemeTagList();
+      renderThemeTagBoxes();
+    }
+  } else {
+    if(normalContainer) normalContainer.style.display = 'block';
+    if(themeContainer) themeContainer.style.display = 'none';
+    renderLib();
+  }
+}
+
+// ==============================================================
+// 마스터 관리자 연동 주제별 태그 관리 및 렌더링
+// ==============================================================
+var defaultStudentThemes = [
+  {
+    id: 1,
+    title: "이달의 나노 북클럽",
+    tag: "#이달의나노북클럽",
+    subTag: "#초등필독 #문해력향상 #창의독서",
+    desc: "생각하는 힘과 문해력을 키워주는 9월 필수 추천 도서 세트",
+    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80",
+    bookIds: ["1001", "1003", "1004", "1007", "1011", "1014"],
+    active: "Y"
+  },
+  {
+    id: 2,
+    title: "초등 교과연계 역사 탐구",
+    tag: "#교과연계한국사",
+    subTag: "#역사탐구 #인물스토리 #초등5~6학년",
+    desc: "한국사 흐름을 재미있는 이야기와 인물로 풀어낸 필독 도서",
+    image: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=400&q=80",
+    bookIds: ["1009", "1010", "1004", "1006"],
+    active: "Y"
+  },
+  {
+    id: 3,
+    title: "미래를 여는 과학 & 환경",
+    tag: "#미래과학환경",
+    subTag: "#창의융합 #AI시대 #기후환경탐구",
+    desc: "기후 변화와 인공지능 시대를 이해하는 흥미진진 과학책",
+    image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&q=80",
+    bookIds: ["1005", "1008", "1012", "1016"],
+    active: "Y"
+  },
+  {
+    id: 4,
+    title: "마음을 키우는 인문 문학 여행",
+    tag: "#인문문학여행",
+    subTag: "#자아성찰 #공감과소통 #중등필독",
+    desc: "자아 정체성과 타인에 대한 공감을 넓히는 명작 문학선",
+    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&q=80",
+    bookIds: ["1001", "1002", "1006", "1015"],
+    active: "Y"
+  }
+];
+
+function getStudentThemes() {
+  try {
+    var raw = localStorage.getItem("NANO_MASTER_THEMES");
+    if(raw) {
+      var parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch(e) {}
+  return defaultStudentThemes;
+}
+
+function renderThemeTagBoxes() {
+  var grid = document.getElementById("themeTagGrid");
+  if(!grid) return;
+  var themes = getStudentThemes().filter(function(t){ return t.active === 'Y'; });
+
+  if(themes.length === 0) {
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--muted);"><i class="fa-solid fa-tags mb-2" style="font-size:28px; opacity:0.35;"></i><p style="font-size:13px; font-weight:600;">등록된 주제별 태그가 없습니다.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = themes.map(function(t){
+    var bookCnt = t.bookIds ? t.bookIds.length : 0;
+    var img = t.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+    return '<div class="theme-tag-card" onclick="selectThemeTag('+t.id+')">'
+      + '<div class="theme-tag-img-box">'
+      +   '<img src="'+img+'" alt="'+t.tag+'" onerror="this.src=\'upload/banner/banner_reading_king.jpg\'">'
+      + '</div>'
+      + '<div class="theme-tag-card-body">'
+      +   '<div class="theme-badge-title">'+t.tag+'</div>'
+      +   (t.subTag ? '<div class="theme-sub-badge">'+t.subTag+'</div>' : '')
+      +   '<div class="theme-desc-text">'+(t.desc || '테마 안내글이 없습니다.')+'</div>'
+      +   '<div class="theme-card-footer">'
+      +     '<span><i class="fa-solid fa-book-open-reader mr-1" style="color:var(--leaf);"></i>'+bookCnt+'권의 도서</span>'
+      +     '<span style="color:var(--leaf); font-weight:700;">도서 보기 <i class="fa-solid fa-chevron-right ml-1"></i></span>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function selectThemeTag(themeId) {
+  var themes = getStudentThemes();
+  var theme = themes.find(function(t){ return t.id === themeId; });
+  if(!theme) return;
+
+  var tagBoxSec = document.getElementById('themeTagBoxesSection');
+  var selSec = document.getElementById('themeSelectedSection');
+  var header = document.getElementById('themeSelectedHeader');
+  var listEl = document.getElementById('themeBookList');
+
+  if(tagBoxSec) tagBoxSec.style.display = 'none';
+  if(selSec) selSec.style.display = 'block';
+
+  var bookCnt = theme.bookIds ? theme.bookIds.length : 0;
+
+  if(header) {
+    header.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">'
+      + '<button type="button" class="btn-detail-back" onclick="backToThemeTagList()" style="background:#f5f2eb; padding:6px 12px; border-radius:10px;"><i class="fa-solid fa-arrow-left"></i> 전체 주제 보기</button>'
+      + '<div>'
+      +   '<div class="d-flex align-items-center gap-2">'
+      +     '<span class="theme-sub-badge" style="margin-bottom:0;">'+(theme.subTag || '주제별 도서')+'</span>'
+      +     '<strong style="font-size:15.5px; color:var(--wood-dark);">'+theme.tag+'</strong>'
+      +   '</div>'
+      +   '<div style="font-size:12px; color:var(--muted); margin-top:2px;">'+(theme.desc || '')+' ('+bookCnt+'권)</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  // 매핑된 도서 찾기 (ID 매칭: MB-001 <-> 1001, 또는 직접 ID 매칭)
+  var mappedBooks = [];
+  if(theme.bookIds && theme.bookIds.length > 0) {
+    theme.bookIds.forEach(function(bid){
+      var cleanNum = bid.toString().replace(/[^0-9]/g, '');
+      var book = libData.find(function(item){
+        var itemNum = item.id.toString().replace(/[^0-9]/g, '');
+        return item.id === bid || itemNum === cleanNum || itemNum.endsWith(cleanNum) || cleanNum.endsWith(itemNum);
+      });
+      if(book && !mappedBooks.includes(book)) mappedBooks.push(book);
+    });
+  }
+
+  if(mappedBooks.length === 0) {
+    mappedBooks = libData.slice(0, 5);
+  }
+
+  if(listEl) {
+    listEl.innerHTML = mappedBooks.map(function(b){
+      var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
+      return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+        + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
+        +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
+        +   ab
+        +   '<span class="nbadge">'+b.grade+' 권장</span>'
+        +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
+        + '</div>'
+        + '<div style="display:flex; align-items:center;">'
+        +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+}
+
+function backToThemeTagList() {
+  var tagBoxSec = document.getElementById('themeTagBoxesSection');
+  var selSec = document.getElementById('themeSelectedSection');
+  if(tagBoxSec) tagBoxSec.style.display = 'block';
+  if(selSec) selSec.style.display = 'none';
+}
+
+// ==============================================================
+// 배너 클릭 시 추천 도서 목록 모달 및 렌더링
+// ==============================================================
+var defaultStudentBanners = [
+  {
+    id: 1,
+    title: "9월 나노 독서왕 챌린지 🏆",
+    sub: "이번 달 3권 이상 완독하고 골드 뱃지를 획득하세요!",
+    imageUrl: "upload/banner/banner_reading_king.jpg",
+    bookIds: ["1001", "1003", "1007"],
+    clicks: 1420
+  },
+  {
+    id: 2,
+    title: "상상력 쑥쑥! 나노 시트 개편 🌿",
+    sub: "새로워진 독서 생각담기 양식으로 내 생각을 표현해보세요.",
+    imageUrl: "upload/banner/banner_nanosheet.jpg",
+    bookIds: ["1004", "1011", "1014"],
+    clicks: 890
+  },
+  {
+    id: 3,
+    title: "전국 학생 랭킹 실시간 집계 오픈 🌟",
+    sub: "내가 속한 학원의 친구들과 전국 친구들의 독서 포인트를 확인해요.",
+    imageUrl: "upload/banner/banner_ranking.jpg",
+    bookIds: ["1002", "1005", "1008", "1016"],
+    clicks: 2150
+  }
+];
+
+function getStudentBanners() {
+  try {
+    var raw = localStorage.getItem("NANO_MASTER_BANNERS");
+    if(raw) {
+      var parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch(e) {}
+  return defaultStudentBanners;
+}
+
+function handleStudentBannerClick(idx) {
+  var banners = getStudentBanners().filter(function(b){ return b.active !== 'N'; });
+  var b = banners[idx] || banners[0];
+  if(!b) return;
+
+  // 배너 클릭수 증가 반영 및 로컬스토리지 저장
+  if(typeof b.clicks === 'number') {
+    b.clicks++;
+    try {
+      localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(banners));
+    } catch(e) {}
+  }
+
+  var titleEl = document.getElementById("studentBannerModalTitle");
+  var subEl = document.getElementById("studentBannerModalSub");
+  var bodyEl = document.getElementById("studentBannerModalBody");
+
+  if(titleEl) titleEl.innerText = b.title;
+  if(subEl) subEl.innerText = b.sub || "배너 이벤트 추천 도서 목록";
+
+  // 매핑된 도서 찾기
+  var mappedBooks = [];
+  if(b.bookIds && b.bookIds.length > 0) {
+    b.bookIds.forEach(function(bid){
+      var cleanNum = bid.toString().replace(/[^0-9]/g, '');
+      var book = libData.find(function(item){
+        var itemNum = item.id.toString().replace(/[^0-9]/g, '');
+        return item.id === bid || itemNum === cleanNum || itemNum.endsWith(cleanNum) || cleanNum.endsWith(itemNum);
+      });
+      if(book && !mappedBooks.includes(book)) mappedBooks.push(book);
+    });
+  }
+
+  if(mappedBooks.length === 0) {
+    mappedBooks = libData.slice(0, 4);
+  }
+
+  if(bodyEl) {
+    bodyEl.innerHTML = '<div style="margin-bottom: 14px; border-radius: 14px; overflow: hidden; height: 120px; background: #eee; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">'
+      + '<img src="' + (b.imageUrl || 'upload/banner/banner_reading_king.jpg') + '" alt="' + b.title + '" style="width:100%; height:100%; object-fit:cover;">'
+      + '</div>'
+      + '<div style="font-size: 13.5px; font-weight: 800; color: var(--wood-dark); margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">'
+      +   '<span><i class="fa-solid fa-book-bookmark mr-1" style="color:var(--leaf);"></i> 이번 이벤트 추천 도서</span>'
+      +   '<span class="badge-soft badge-soft-success">' + mappedBooks.length + '권</span>'
+      + '</div>'
+      + '<div style="display: flex; flex-direction: column; gap: 8px;">'
+      + mappedBooks.map(function(bk){
+          return '<div class="lib-row" style="margin-bottom:0;" onclick="closeBannerBookModal(); openBookDetail(\'' + bk.id + '\', \'home\');">'
+            + getBookCoverHtml(bk, 'bcover', 'width:42px;height:58px;')
+            + '<div style="flex:1;min-width:0;">'
+            +   '<div style="font-size:13px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">' + bk.title + '</div>'
+            +   '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">' + bk.author + ' · ' + bk.pub + '</div>'
+            +   '<span class="nbadge">' + bk.grade + ' 권장</span>'
+            +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">' + bk.cat + '</span>'
+            + '</div>'
+            + '<button class="act-btn start" onclick="event.stopPropagation(); closeBannerBookModal(); startQuiz(\'' + bk.id + '\');" style="font-size:11px; padding:5px 10px;">'
+            +   '<i class="fa-solid fa-pen-nib mr-1"></i>퀴즈'
+            + '</button>'
+            + '</div>';
+        }).join('')
+      + '</div>';
+  }
+
+  var modal = document.getElementById("bannerBookListModal");
+  if(modal) modal.style.display = "flex";
+}
+
+function closeBannerBookModal() {
+  var modal = document.getElementById("bannerBookListModal");
+  if(modal) modal.style.display = "none";
 }
 
 function selectGradeFilter(grade) {
@@ -2973,6 +3455,30 @@ function setBannerSlide(idx) {
 }
 setInterval(nextBannerSlide, 4500);
 
+function renderStudentBanners() {
+  var box = document.getElementById("studentBannerBox");
+  if(!box) return;
+  var banners = getStudentBanners().filter(function(b){ return b.active !== 'N'; });
+  if(banners.length === 0) return;
+
+  var slidesHtml = banners.map(function(b, idx){
+    var activeClass = idx === 0 ? 'active' : '';
+    return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')" style="cursor: pointer;" title="' + b.title + ' (추천 도서 보기)">'
+      + '<img src="' + (b.imageUrl || 'upload/banner/banner_reading_king.jpg') + '" alt="' + b.title + '" onerror="this.src=\'upload/banner/banner_reading_king.jpg\'">'
+      + '</div>';
+  }).join('');
+
+  var dotsHtml = '<div class="rolling-banner-dots" id="bannerDots">'
+    + banners.map(function(b, idx){
+        var activeClass = idx === 0 ? 'active' : '';
+        return '<div class="rolling-banner-dot ' + activeClass + '" onclick="setBannerSlide(' + idx + ')"></div>';
+      }).join('')
+    + '</div>';
+
+  box.innerHTML = slidesHtml + dotsHtml;
+  curSlide = 0;
+}
+
 var toastT;
 function toast(msg){
   var el=document.getElementById('toast');
@@ -2994,6 +3500,7 @@ function handleStudentLogout() {
 }
 
 document.addEventListener('DOMContentLoaded',function(){
+  renderStudentBanners();
   renderHomeSliders();
   renderHist();
   renderRank();
