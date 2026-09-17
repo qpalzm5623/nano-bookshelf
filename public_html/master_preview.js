@@ -332,11 +332,14 @@ document.addEventListener("DOMContentLoaded", () => {
   renderMasterContents();
   renderDispatchTable();
   populateDispatchAcademyFilter();
+  renderMasterPaymentTable();
+  populateMasterPaymentAcademyFilter();
+  updatePaymentKpis();
 });
 
 // 마스터 대메뉴 탭 전환
 function switchMasterTab(tabName) {
-  const tabs = ["franchise", "members", "operations", "ranking", "contents", "dispatch"];
+  const tabs = ["franchise", "members", "operations", "ranking", "contents", "dispatch", "payment"];
   
   tabs.forEach(t => {
     const navBtn = document.getElementById(`nav-master-${t}`);
@@ -349,6 +352,11 @@ function switchMasterTab(tabName) {
   const activeSection = document.getElementById(`tab-master-${tabName}`);
   if (activeBtn) activeBtn.classList.add("active");
   if (activeSection) activeSection.style.display = "block";
+
+  if (tabName === "payment") {
+    renderMasterPaymentTable();
+    updatePaymentKpis();
+  }
 }
 
 // 운영 관리 서브탭 전환
@@ -2075,3 +2083,352 @@ function showMasterToast(msg) {
     toast.style.display = "none";
   }, 3200);
 }
+
+// ==========================================
+// 8. 결제 내역 관리 모듈 (Master Payment Management)
+// ==========================================
+
+let masterPaymentList = [
+  {
+    id: "PAY-20260916-001",
+    academyId: "ACAD-001",
+    academyName: "나노 독서아카데미 목동본원",
+    director: "김은영 원장",
+    phone: "010-3342-9981",
+    bizNumber: "105-86-12345",
+    planType: "6month",
+    planName: "6개월 이용권 (10% 할인)",
+    supply: 540000,
+    vat: 54000,
+    total: 594000,
+    method: "신용카드 (모의신청)",
+    date: "2026-09-16 14:20:00",
+    startDate: "2026-09-16",
+    endDate: "2027-03-16",
+    status: "pending", // pending | paid | cancelled | refunded
+    memo: "원장님 웹페이지 결제 신청 건. 계약 연장 수동 승인 대기 중."
+  },
+  {
+    id: "PAY-20260901-002",
+    academyId: "ACAD-003",
+    academyName: "송도 센트럴 리딩랩",
+    director: "최윤정 원장",
+    phone: "010-5541-0982",
+    bizNumber: "131-87-54321",
+    planType: "12month",
+    planName: "12개월 연간권 (20% 할인)",
+    supply: 960000,
+    vat: 96000,
+    total: 1056000,
+    method: "실시간 계좌이체",
+    date: "2026-09-01 09:12:30",
+    startDate: "2026-09-01",
+    endDate: "2027-08-31",
+    status: "paid",
+    memo: "2026-09-01 연간 VIP 라이선스 승인 완료."
+  },
+  {
+    id: "PAY-20260820-003",
+    academyId: "ACAD-001",
+    academyName: "나노 독서아카데미 목동본원",
+    director: "김은영 원장",
+    phone: "010-3342-9981",
+    bizNumber: "105-86-12345",
+    planType: "monthly",
+    planName: "1개월 정기구독권",
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    method: "신용카드",
+    date: "2026-08-20 10:15:22",
+    startDate: "2026-08-20",
+    endDate: "2026-09-19",
+    status: "paid",
+    memo: "정기구독 8월분 정상 자동 승인. 만료 D-3 알림 발송."
+  },
+  {
+    id: "PAY-20260810-004",
+    academyId: "ACAD-002",
+    academyName: "대치 에듀 독서논술센터",
+    director: "박진수 원장",
+    phone: "010-8871-2311",
+    bizNumber: "214-82-67890",
+    planType: "6month",
+    planName: "6개월 이용권 (10% 할인)",
+    supply: 540000,
+    vat: 54000,
+    total: 594000,
+    method: "신용카드",
+    date: "2026-08-10 11:30:15",
+    startDate: "2026-08-10",
+    endDate: "2027-02-10",
+    status: "paid",
+    memo: "가맹점 1학기 특별 할인 적용 승인."
+  },
+  {
+    id: "PAY-20260715-005",
+    academyId: "ACAD-004",
+    academyName: "판교 알파 독서학원",
+    director: "정성훈 원장",
+    phone: "010-4490-1123",
+    bizNumber: "129-81-43210",
+    planType: "monthly",
+    planName: "1개월 정기구독권",
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    method: "가상계좌",
+    date: "2026-07-15 15:00:22",
+    startDate: "2026-07-15",
+    endDate: "2026-08-14",
+    status: "cancelled",
+    memo: "원장님 요청으로 계좌이체 재신청 건 취소 처리."
+  },
+  {
+    id: "PAY-20260701-006",
+    academyId: "ACAD-005",
+    academyName: "분당 서현 리딩클럽",
+    director: "이지혜 원장",
+    phone: "010-7712-4456",
+    bizNumber: "142-83-99123",
+    planType: "12month",
+    planName: "12개월 연간권 (20% 할인)",
+    supply: 960000,
+    vat: 96000,
+    total: 1056000,
+    method: "신용카드",
+    date: "2026-07-01 13:45:10",
+    startDate: "2026-07-01",
+    endDate: "2027-06-30",
+    status: "paid",
+    memo: "연간 패키지 20% 할인 프로모션 적용."
+  }
+];
+
+// 마스터 결제 테이블 렌더링
+function renderMasterPaymentTable(data = masterPaymentList) {
+  const tbody = document.getElementById("masterPaymentTableBody");
+  if (!tbody) return;
+
+  const countEl = document.getElementById("masterPaymentFilteredCount");
+  if (countEl) countEl.innerText = data.length;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted">일치하는 결제 내역이 없습니다.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(item => {
+    // 인라인 상태 셀렉트
+    const statusSelect = `
+      <select class="select-beige form-control-sm py-0 font-weight-bold text-center" 
+        onchange="updatePaymentStatusInline('${item.id}', this.value)" 
+        style="height: 30px; font-size: 11.5px; border-radius: 8px; ${
+          item.status === 'paid' ? 'color:#2f5436; background:#eaf0eb;' :
+          item.status === 'pending' ? 'color:#8c531b; background:#faf3e8;' :
+          'color:#962a22; background:#fbeae8;'
+        }">
+        <option value="paid" ${item.status === 'paid' ? 'selected' : ''}>완료</option>
+        <option value="pending" ${item.status === 'pending' ? 'selected' : ''}>대기</option>
+        <option value="cancelled" ${item.status === 'cancelled' ? 'selected' : ''}>취소</option>
+        <option value="refunded" ${item.status === 'refunded' ? 'selected' : ''}>환불</option>
+      </select>
+    `;
+
+    return `
+      <tr style="font-size: 13px;">
+        <td class="text-center font-weight-bold text-muted" style="font-size: 11.5px;">${item.id}</td>
+        <td>
+          <div class="font-weight-bold" style="color: var(--text-main); font-size: 13.5px;">${item.academyName}</div>
+          <small class="text-muted"><i class="fa-solid fa-user-tie mr-1"></i>${item.director} (${item.phone})</small>
+        </td>
+        <td>
+          <span class="badge-soft badge-soft-neutral font-weight-bold">${item.planName}</span>
+        </td>
+        <td class="text-right">${item.supply.toLocaleString()}원</td>
+        <td class="text-right text-muted">${item.vat.toLocaleString()}원</td>
+        <td class="text-right font-weight-bold" style="color: #962a22; font-size: 14px;">${item.total.toLocaleString()}원</td>
+        <td class="text-center"><small class="text-muted">${item.method}</small></td>
+        <td class="text-center"><small class="text-muted">${item.date}</small></td>
+        <td class="text-center"><small class="badge badge-light border">${item.startDate} ~ ${item.endDate}</small></td>
+        <td class="text-center">${statusSelect}</td>
+        <td class="text-center">
+          <button class="btn btn-xs btn-outline-secondary" onclick="openMasterPaymentDetailModal('${item.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px;">
+            <i class="fa-solid fa-pen-to-square mr-1"></i>상세/메모
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// 가맹 학원 필터 옵션 채우기
+function populateMasterPaymentAcademyFilter() {
+  const select = document.getElementById("masterPaymentAcademyFilter");
+  if (!select) return;
+
+  const currentVal = select.value;
+  const academies = [...new Set(masterPaymentList.map(p => p.academyName))];
+
+  select.innerHTML = `<option value="ALL">전체 가맹 학원</option>` + 
+    academies.map(name => `<option value="${name}">${name}</option>`).join("");
+
+  select.value = currentVal;
+}
+
+// 필터링 적용
+function filterMasterPaymentList() {
+  const acadFilter = document.getElementById("masterPaymentAcademyFilter") ? document.getElementById("masterPaymentAcademyFilter").value : "ALL";
+  const planFilter = document.getElementById("masterPaymentPlanFilter") ? document.getElementById("masterPaymentPlanFilter").value : "ALL";
+  const statusFilter = document.getElementById("masterPaymentStatusFilter") ? document.getElementById("masterPaymentStatusFilter").value : "ALL";
+  const keyword = document.getElementById("masterPaymentSearchInput") ? document.getElementById("masterPaymentSearchInput").value.trim().toLowerCase() : "";
+
+  let filtered = masterPaymentList.filter(item => {
+    if (acadFilter !== "ALL" && item.academyName !== acadFilter) return false;
+    if (planFilter !== "ALL" && item.planType !== planFilter) return false;
+    if (statusFilter !== "ALL" && item.status !== statusFilter) return false;
+
+    if (keyword) {
+      const matchId = item.id.toLowerCase().includes(keyword);
+      const matchAcad = item.academyName.toLowerCase().includes(keyword);
+      const matchDir = item.director.toLowerCase().includes(keyword);
+      const matchPhone = item.phone.includes(keyword);
+      if (!matchId && !matchAcad && !matchDir && !matchPhone) return false;
+    }
+    return true;
+  });
+
+  renderMasterPaymentTable(filtered);
+}
+
+// 필터 초기화
+function resetMasterPaymentFilters() {
+  if (document.getElementById("masterPaymentAcademyFilter")) document.getElementById("masterPaymentAcademyFilter").value = "ALL";
+  if (document.getElementById("masterPaymentPlanFilter")) document.getElementById("masterPaymentPlanFilter").value = "ALL";
+  if (document.getElementById("masterPaymentStatusFilter")) document.getElementById("masterPaymentStatusFilter").value = "ALL";
+  if (document.getElementById("masterPaymentSearchInput")) document.getElementById("masterPaymentSearchInput").value = "";
+
+  renderMasterPaymentTable(masterPaymentList);
+  showMasterToast("결제 검색 필터가 초기화되었습니다.");
+}
+
+// 통계 KPI 업데이트
+function updatePaymentKpis() {
+  const paidItems = masterPaymentList.filter(p => p.status === 'paid');
+  const pendingItems = masterPaymentList.filter(p => p.status === 'pending');
+
+  const totalRevenue = paidItems.reduce((acc, cur) => acc + cur.total, 0);
+
+  const revEl = document.getElementById("kpiMonthTotalRevenue");
+  if (revEl) revEl.innerHTML = `${totalRevenue.toLocaleString()}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">원</span>`;
+
+  const paidCountEl = document.getElementById("kpiPaidCount");
+  if (paidCountEl) paidCountEl.innerHTML = `${paidItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
+
+  const pendingCountEl = document.getElementById("kpiPendingCount");
+  if (pendingCountEl) pendingCountEl.innerHTML = `${pendingItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
+}
+
+// 인라인 상태 변경 핸들러
+function updatePaymentStatusInline(payId, newStatus) {
+  const item = masterPaymentList.find(p => p.id === payId);
+  if (!item) return;
+
+  const oldStatus = item.status;
+  item.status = newStatus;
+
+  updatePaymentKpis();
+  renderMasterPaymentTable();
+
+  const statusKor = newStatus === 'paid' ? '결제 완료' :
+                    newStatus === 'pending' ? '결제 대기' :
+                    newStatus === 'cancelled' ? '결제 취소' : '환불 완료';
+
+  showMasterToast(`[${item.academyName}] 결제건(${payId}) 상태가 '${statusKor}'(으)로 변경되었습니다.`);
+}
+
+// 결제 상세 모달 열기
+function openMasterPaymentDetailModal(payId) {
+  const item = masterPaymentList.find(p => p.id === payId);
+  if (!item) return;
+
+  document.getElementById("modalDetailPayId").value = item.id;
+  document.getElementById("modalDetailPayIdText").innerText = item.id;
+  document.getElementById("modalDetailAcademyNameBadge").innerText = item.academyName;
+  document.getElementById("modalDetailDirectorText").innerText = `${item.director} (${item.phone})`;
+  document.getElementById("modalDetailPlanName").innerText = item.planName;
+  document.getElementById("modalDetailSupply").innerText = item.supply.toLocaleString() + "원";
+  document.getElementById("modalDetailVat").innerText = item.vat.toLocaleString() + "원";
+  document.getElementById("modalDetailTotal").innerText = item.total.toLocaleString() + "원";
+  document.getElementById("modalDetailMethod").innerText = item.method;
+  document.getElementById("modalDetailDate").innerText = item.date;
+  document.getElementById("modalDetailPeriod").innerText = `${item.startDate} ~ ${item.endDate}`;
+  document.getElementById("modalDetailStatusSelect").value = item.status;
+  document.getElementById("modalDetailAdminMemo").value = item.memo || "";
+
+  $("#masterPaymentDetailModal").modal("show");
+}
+
+// 상세 모달에서 상태 및 관리자 메모 저장
+function saveMasterPaymentDetail() {
+  const payId = document.getElementById("modalDetailPayId").value;
+  const item = masterPaymentList.find(p => p.id === payId);
+  if (!item) return;
+
+  const newStatus = document.getElementById("modalDetailStatusSelect").value;
+  const newMemo = document.getElementById("modalDetailAdminMemo").value;
+
+  item.status = newStatus;
+  item.memo = newMemo;
+
+  updatePaymentKpis();
+  renderMasterPaymentTable();
+
+  $("#masterPaymentDetailModal").modal("hide");
+  showMasterToast(`[${item.academyName}] 결제 정보 및 관리자 메모가 저장되었습니다.`);
+}
+
+// 수동 결제 등록 모의창
+function openSimulateNewPaymentModal() {
+  const acad = franchiseList[0];
+  if (!acad) return;
+
+  const now = new Date();
+  const pad = n => n < 10 ? '0' + n : n;
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const startDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const endObj = new Date(now);
+  endObj.setMonth(endObj.getMonth() + 6);
+  const endDate = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}`;
+
+  const newPayment = {
+    id: `PAY-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${Math.floor(100 + Math.random()*900)}`,
+    academyId: acad.id,
+    academyName: acad.name,
+    director: acad.director,
+    phone: acad.phone,
+    bizNumber: acad.bizNumber,
+    planType: "6month",
+    planName: "6개월 이용권 (10% 할인)",
+    supply: 540000,
+    vat: 54000,
+    total: 594000,
+    method: "가상계좌 (수동 수납)",
+    date: dateStr,
+    startDate: startDate,
+    endDate: endDate,
+    status: "paid",
+    memo: "본사 관리자 수동 수납 등록 건."
+  };
+
+  masterPaymentList.unshift(newPayment);
+  updatePaymentKpis();
+  renderMasterPaymentTable();
+  showMasterToast(`새 수납 결제건(${newPayment.id})이 등록되었습니다.`);
+}
+
+// 엑셀 다운로드 안내
+function exportPaymentData() {
+  showMasterToast("전체 가맹 학원 결제 내역 엑셀 파일(XLSX)이 생성되어 다운로드되었습니다.");
+}
+

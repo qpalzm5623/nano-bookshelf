@@ -1,0 +1,18 @@
+# 1. 포터블 PHP 바이너리 (대용량 실행 파일 제외)
+php/
+*.exe
+*.dll
+
+# 2. Composer 및 의존성
+public_html/vendor/
+composer.phar
+
+# 3. 임시 스크래치 스크립트 및 로그
+scratch_*.ps1
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# 4. Git 추적 필요 없는 임시 업로드 (필요시 조절)
+# public_html/upload/book/

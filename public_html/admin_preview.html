@@ -55,6 +55,32 @@
       letter-spacing: -0.2px;
     }
 
+    /* 모달 및 백드롭 z-index 보장 (화면 까매짐 방지) */
+    .modal {
+      z-index: 1060 !important;
+    }
+    .modal-backdrop {
+      z-index: 1050 !important;
+    }
+    .modal-dialog {
+      z-index: 1061 !important;
+      position: relative;
+    }
+    .modal.show {
+      display: block !important;
+      opacity: 1 !important;
+    }
+
+    /* 등록처 뱃지 스타일 (마스터 포털과 완벽 통일) */
+    .badge-soft-primary {
+      background: #eef2fa;
+      color: #2b4c80;
+    }
+    .badge-soft-warning {
+      background: #fdf3e7;
+      color: #8c531b;
+    }
+
     /* 0. 상단 B2B 역할 전환 바 */
     .role-switcher-bar {
       background: #2b231d;
@@ -763,9 +789,14 @@
       <span class="badge-soft badge-soft-master mr-2" style="font-size: 11px;">
         <i class="fa-solid fa-user-check mr-1"></i>원장님
       </span>
-      <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">김은영 원장님</span>
-      <small style="color: var(--text-muted); display: block; font-size: 11px;">나노 독서아카데미 본원</small>
+      <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);" id="headerDirectorName">김은영 원장님</span>
+      <small style="color: var(--text-muted); display: block; font-size: 11px;" id="headerAcademyName">나노 독서아카데미 본원</small>
     </div>
+    <!-- 내 정보 관리 버튼 -->
+    <button type="button" class="btn btn-sm btn-beige-secondary mr-2" onclick="openMyInfoModal()" style="border-radius: 10px; font-size: 12.5px; padding: 5px 12px; border-color: var(--border-medium); font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" title="원장님 계정 및 학원 정보 관리">
+      <i class="fa-solid fa-user-gear text-muted"></i>
+      <span>내 정보 관리</span>
+    </button>
     <a href="#" class="btn btn-sm btn-outline-secondary" style="border-radius: 10px; font-size: 12.5px; padding: 4px 12px; border-color: var(--border-medium); color: var(--text-muted);">
       로그아웃
     </a>
@@ -815,6 +846,13 @@
     <a class="nav-item-btn" id="btn-nav-ranking" onclick="switchTab('ranking')">
       <i class="fa-solid fa-trophy"></i>
       <span>원내 랭킹 조회</span>
+    </a>
+
+    <div class="sidebar-section-title" style="margin-top: 18px;">구독 & 결제</div>
+
+    <a class="nav-item-btn" id="btn-nav-payment" onclick="switchTab('payment')">
+      <i class="fa-solid fa-credit-card"></i>
+      <span>결제 관리 <span class="badge badge-danger text-white ml-1" style="font-size: 10px;">D-3</span></span>
     </a>
 
     <!-- 하단 도서/학생 요약 미니 카드 -->
@@ -900,30 +938,34 @@
               </div>
             </div>
             <div class="col-md-3 text-right pt-3">
-              <button class="btn btn-sm btn-beige-secondary mr-1" onclick="openStudentExcelModal()">
+              <button class="btn btn-sm btn-outline-secondary mr-1" id="btnOpenClassManageModal" onclick="openClassManageModal()" style="border-radius: 8px; font-weight: 700;">
+                <i class="fa-solid fa-chalkboard-user mr-1 text-primary"></i>학급 관리
+              </button>
+              <button class="btn btn-sm btn-beige-secondary mr-1" id="btnOpenStudentExcelModal" onclick="openStudentExcelModal()">
                 <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 일괄 등록
               </button>
-              <button class="btn btn-sm btn-beige-primary" onclick="openStudentAddModal()">
+              <button class="btn btn-sm btn-beige-primary" id="btnOpenStudentAddModal" onclick="openStudentAddModal()">
                 <i class="fa-solid fa-plus mr-1"></i>원생 등록
               </button>
             </div>
           </div>
         </div>
 
-        <div class="simple-card">
-          <table class="simple-table">
+        <div class="simple-card" style="overflow-x: auto;">
+          <table class="simple-table" style="min-width: 1080px;">
             <thead>
               <tr>
-                <th style="width: 75px;">학번</th>
-                <th>원생 이름</th>
-                <th>학교 / 학년</th>
-                <th>소속 클래스</th>
-                <th>독서 레벨</th>
-                <th>완독 도서</th>
-                <th>퀴즈 평균</th>
-                <th>학부모 연락처</th>
-                <th>최근 학습일</th>
-                <th style="width: 155px;">관리</th>
+                <th style="width: 70px; white-space: nowrap;" class="text-center">학번</th>
+                <th style="width: 95px; white-space: nowrap;">원생 이름</th>
+                <th style="width: 55px; white-space: nowrap;" class="text-center">성별</th>
+                <th style="min-width: 140px; white-space: nowrap;">학교 / 학년</th>
+                <th style="width: 90px; white-space: nowrap;" class="text-center">소속 학급</th>
+                <th style="width: 80px; white-space: nowrap;" class="text-center">상태</th>
+                <th style="min-width: 170px; white-space: nowrap;">학부모 정보</th>
+                <th style="width: 100px; white-space: nowrap;" class="text-center">계정 생성일</th>
+                <th style="width: 105px; white-space: nowrap;" class="text-center">독서 레벨</th>
+                <th style="width: 110px; white-space: nowrap;" class="text-center">완독/평균</th>
+                <th style="width: 145px; white-space: nowrap;" class="text-center">관리</th>
               </tr>
             </thead>
             <tbody id="studentTableBody">
@@ -979,40 +1021,41 @@
             도서 목록 조회, ISBN 직접 등록, 5문항 북퀴즈 출제 및 나노 시트 정답을 단일 작업공간에서 통합 관리합니다.
           </div>
         </div>
-        <!-- 콘텐츠 관리 서브탭 바 -->
-        <div class="btn-group">
-          <button type="button" class="btn btn-beige-primary" id="btn-sub-list" onclick="switchContentSubTab('list')">
-            <i class="fa-solid fa-list mr-1"></i>1. 도서 목록 및 조회
-          </button>
-          <button type="button" class="btn btn-beige-secondary" id="btn-sub-write" onclick="openAcademyBookEditModal()">
-            <i class="fa-solid fa-plus-circle mr-1"></i>2. 도서 및 북퀴즈 등록
-          </button>
-          <button type="button" class="btn btn-beige-secondary" id="btn-sub-quiz" onclick="switchContentSubTab('quiz')">
-            <i class="fa-solid fa-pen-to-square mr-1"></i>3. 북퀴즈 출제 및 관리
-          </button>
+        <div class="text-right d-none d-md-block">
+          <span class="badge-soft badge-soft-neutral" style="font-size: 12px;">
+            <i class="fa-solid fa-layer-group mr-1"></i>보유 도서 <strong id="totalAcadBookCount" class="text-dark font-weight-bold">4</strong>권
+          </span>
         </div>
       </div>
 
-      <!-- 서브 1: 도서 목록 및 조회 -->
+      <!-- 도서 목록 및 통합 관리 -->
       <div id="content-sub-list">
         <div class="simple-card p-3 mb-4">
           <div class="row align-items-center">
             <div class="col-md-3">
-              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">권장 학년 필터</label>
-              <select class="form-control form-control-sm" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                <option>전체 학년 보기</option>
-                <option>초등 1~2학년</option>
-                <option>초등 3~4학년</option>
-                <option selected>초등 5~6학년</option>
-                <option>중등 1~3학년</option>
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">등록처 필터</label>
+              <select class="form-control form-control-sm" id="filterAcadBookOrigin" onchange="filterAcademyBooks()" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <option value="ALL" selected>전체 등록처 (본사 + 학원)</option>
+                <option value="HQ">본사 직속 (HQ)</option>
+                <option value="ACADEMY">우리 학원 자체 등록</option>
               </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-2">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">권장 학년</label>
+              <select class="form-control form-control-sm" id="filterAcadBookGrade" onchange="filterAcademyBooks()" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <option value="ALL" selected>전체 학년 보기</option>
+                <option value="초등 1~2학년">초등 1~2학년</option>
+                <option value="초등 3~4학년">초등 3~4학년</option>
+                <option value="초등 5~6학년">초등 5~6학년</option>
+                <option value="중등 1~3학년">중등 1~3학년</option>
+              </select>
+            </div>
+            <div class="col-md-4">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">도서 검색</label>
               <div class="input-group input-group-sm">
-                <input type="text" class="form-control" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="도서명, 지은이, 출판사 등 검색...">
+                <input type="text" class="form-control" id="searchAcadBookInput" oninput="filterAcademyBooks()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="도서명, 지은이, 출판사, 등록처 검색...">
                 <div class="input-group-append">
-                  <button class="btn btn-beige-primary px-3" style="border-radius: 0 8px 8px 0;"><i class="fa-solid fa-search"></i></button>
+                  <button class="btn btn-beige-primary px-3" style="border-radius: 0 8px 8px 0;" onclick="filterAcademyBooks()"><i class="fa-solid fa-search"></i></button>
                 </div>
               </div>
             </div>
@@ -1020,7 +1063,7 @@
               <button class="btn btn-sm btn-beige-secondary mr-1" onclick="openBulkModal()">
                 <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>대량 파일 업로드
               </button>
-              <button class="btn btn-sm btn-beige-primary" onclick="openAcademyBookEditModal()">
+              <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openAcademyBookEditModal()">
                 <i class="fa-solid fa-plus mr-1"></i>새 도서 등록
               </button>
             </div>
@@ -1031,16 +1074,17 @@
           <table class="simple-table">
             <thead>
               <tr>
-                <th style="width: 70px;">표지</th>
-                <th style="width: 80px;">도서 번호</th>
-                <th>도서명</th>
+                <th style="width: 65px;">표지</th>
+                <th style="width: 75px;">도서 번호</th>
+                <th style="text-align: left;">도서명</th>
+                <th style="width: 145px;">등록처</th>
                 <th>지은이 / 출판사</th>
                 <th>주제 분류</th>
                 <th>권장 학년</th>
-                <th>나노시트 자료</th>
+                <th style="width: 195px;">나노시트 자료</th>
                 <th>북퀴즈 현황</th>
                 <th>누적 완독</th>
-                <th style="width: 125px;">관리</th>
+                <th style="width: 110px;">관리</th>
               </tr>
             </thead>
             <tbody id="academyBookTableBody">
@@ -1928,7 +1972,414 @@
       </div>
     </div>
 
+    <!-- ============================================================== -->
+    <!-- MENU 8: 결제 관리 (학원용 요금제 선택, 구독 만료 안내, 결제 내역) -->
+    <!-- ============================================================== -->
+    <div id="view-payment" style="display: none;">
+      <!-- 헤더 -->
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-credit-card"></i>이용권 및 결제 관리
+          </div>
+          <div class="workspace-subtitle">
+            학원 서비스 이용 요금제 선택, 구독 기간 연장 및 결제 이력을 투명하게 관리합니다.
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <!-- 만료 알림 테스트 토글 버튼 -->
+          <div class="btn-group mr-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 10px; font-size: 12px; padding: 6px 12px;">
+              <i class="fa-solid fa-bell text-warning mr-1"></i>만료 알림 시뮬레이션
+            </button>
+            <div class="dropdown-menu dropdown-menu-right" style="border-radius: 12px; font-size: 12.5px; box-shadow: 0 6px 20px rgba(0,0,0,0.1);">
+              <a class="dropdown-item" href="javascript:void(0)" onclick="setExpireAlert('d3')">
+                <span class="badge badge-danger mr-2">D-3</span> 만료 3일 전 안내 배너 보기
+              </a>
+              <a class="dropdown-item" href="javascript:void(0)" onclick="setExpireAlert('d7')">
+                <span class="badge badge-warning text-dark mr-2">D-7</span> 만료 7일 전 안내 배너 보기
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:void(0)" onclick="setExpireAlert('normal')">
+                <span class="badge badge-success mr-2">정상</span> 정상 이용 상태 (배너 숨김)
+              </a>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-beige-secondary" onclick="scrollToPaymentHistory()" style="border-radius: 10px; font-size: 12.5px; padding: 6px 14px;">
+            <i class="fa-solid fa-receipt mr-1"></i>결제 내역 바로가기
+          </button>
+        </div>
+      </div>
+
+      <!-- 1. 만료 안내 알림 배너 (요구사항: 만료 7일, 3일 전 안내) -->
+      <div id="paymentExpireAlertBanner" class="p-3 mb-4 rounded d-flex justify-content-between align-items-center" style="background: #fff7ed; border: 1.5px solid #fed7aa; color: #9a3412;">
+        <div class="d-flex align-items-center">
+          <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffedd5; color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 14px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <div class="font-weight-bold" style="font-size: 14.5px;" id="paymentAlertTitle">
+              <span class="badge badge-danger mr-2" style="font-size: 11.5px; padding: 4px 8px;">D-3 만료 임박</span>
+              나노의 책장 서비스 이용 기간이 <strong style="color: #c2410c;">3일 후</strong> 만료됩니다! (만료 예정일: 2026-09-19)
+            </div>
+            <div style="font-size: 12.5px; color: #c2410c; margin-top: 2px;" id="paymentAlertDesc">
+              만료 7일 전 및 3일 전에 원장님 휴대폰으로 알림톡이 자동 발송됩니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.
+            </div>
+          </div>
+        </div>
+        <div>
+          <button type="button" class="btn btn-sm btn-danger px-3 py-2 font-weight-bold" onclick="scrollToPlans()" style="border-radius: 10px; white-space: nowrap; box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);">
+            <i class="fa-solid fa-bolt mr-1"></i>지금 바로 연장하기
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 현재 구독 현황 카드 (3열 요약) -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="stat-card" style="position: relative; overflow: hidden;">
+            <div class="text-muted" style="font-size: 12.5px;">현재 이용 중인 요금제</div>
+            <div class="stat-num" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
+              1개월 정기구독
+              <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">이용중</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="font-size: 12px; color: var(--text-muted);">
+              <span>월 결제액: <strong>110,000원</strong> <small>(VAT 포함)</small></span>
+              <span class="text-success font-weight-bold"><i class="fa-solid fa-rotate mr-1"></i>자동갱신 ON</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 12.5px;">서비스 이용 기간 및 만료일</div>
+            <div class="stat-num" style="color: #dc2626; font-size: 22px; margin-top: 4px;">
+              D-3 <small class="text-muted font-weight-normal" style="font-size: 14px;">(2026.09.19 만료)</small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="font-size: 12px; color: var(--text-muted);">
+              <span>시작일: 2026-08-20</span>
+              <span class="text-danger font-weight-bold">다음 결제일: 2026-09-19</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 12.5px;">가맹 계약 정원 (슬롯)</div>
+            <div class="stat-num" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
+              48 <small class="text-muted font-weight-normal" style="font-size: 14px;">/ 50명</small>
+              <span class="badge-soft badge-soft-warn ml-2" style="font-size: 11px; vertical-align: middle;">96% 사용</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="font-size: 12px; color: var(--text-muted);">
+              <span>잔여 슬롯: <strong>2명</strong></span>
+              <span class="text-primary font-weight-bold">원생/교사 무제한 북퀴즈</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 요금제 3종 카드 (한달 10만, 6개월 54만(10%할인), 12개월 96만(20%할인)) -->
+      <div id="sectionPaymentPlans" class="mb-5">
+        <div class="d-flex justify-content-between align-items-end mb-3">
+          <div>
+            <h5 class="font-weight-bold mb-1" style="color: var(--text-main);">
+              <i class="fa-solid fa-cubes mr-2 text-warning"></i>학원 전용 요금제 선택
+            </h5>
+            <small class="text-muted">학원 규모와 운영 계획에 맞는 최적의 플랜을 선택하세요. 모든 요금제는 VAT 별도 금액 기준입니다.</small>
+          </div>
+          <span class="badge badge-light border px-2 py-1" style="font-size: 11.5px; color: var(--text-muted);">
+            <i class="fa-solid fa-shield-halved text-success mr-1"></i>전자세금계산서 및 카드전표 100% 자동 발행
+          </span>
+        </div>
+
+        <div class="row">
+          <!-- PLAN 1: 1개월 정기구독 -->
+          <div class="col-lg-4 mb-4">
+            <div class="simple-card h-100 p-4 d-flex flex-column" style="border: 2px solid var(--border-medium); border-radius: 18px; transition: all 0.2s;">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size: 11.5px;">
+                  <i class="fa-solid fa-rotate mr-1"></i>정기구독 상품
+                </span>
+                <small class="text-muted">매월 자동결제</small>
+              </div>
+
+              <h4 class="font-weight-bold mt-2 mb-1" style="color: var(--text-main);">1개월 구독권</h4>
+              <p class="text-muted" style="font-size: 12.5px; min-height: 36px;">
+                부담 없이 매월 단위로 유연하게 이용하는 표준 정기구독 플랜입니다.
+              </p>
+
+              <!-- 가격 영역 -->
+              <div class="p-3 my-3 rounded" style="background: #fbf9f5; border: 1px solid var(--border-light);">
+                <div class="d-flex align-items-baseline">
+                  <span style="font-size: 28px; font-weight: 900; color: var(--text-main);">100,000</span>
+                  <span style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-left: 2px;">원</span>
+                  <span class="text-muted ml-2" style="font-size: 12px;">/ 월 (VAT 별도)</span>
+                </div>
+                <div class="mt-1" style="font-size: 12px; color: #786d63;">
+                  VAT 10,000원 포함 실결제액: <strong class="text-dark">110,000원</strong>
+                </div>
+              </div>
+
+              <!-- 혜택 리스트 -->
+              <ul class="list-unstyled mb-4" style="font-size: 13px; line-height: 2;">
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>매달 자동 결제</strong>로 서비스 중단 방지</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>만료 7일 전 · 3일 전</strong> 알림톡/SMS 사전 안내</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>가맹 학원 원생 기본 50명 슬롯 제공</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>초·중등 북퀴즈 & 나노 생각담기 전체 열람</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>언제든지 위약금 없이 해지 가능</li>
+              </ul>
+
+              <!-- 신청 버튼 -->
+              <div class="mt-auto">
+                <button type="button" class="btn btn-block btn-beige-secondary font-weight-bold py-2" onclick="openCheckoutModal('monthly')" style="border-radius: 12px; font-size: 14px;">
+                  1개월 정기구독 신청
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PLAN 2: 6개월 이용권 (10% 할인) - 추천 -->
+          <div class="col-lg-4 mb-4">
+            <div class="simple-card h-100 p-4 d-flex flex-column" style="border: 2px solid #5a4b3d; border-radius: 18px; box-shadow: 0 8px 24px rgba(90, 75, 61, 0.12); position: relative;">
+              <!-- 인기 리본 배지 -->
+              <div style="position: absolute; top: -12px; right: 24px; background: #5a4b3d; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px;">
+                ★ 원장님 최다 선택 (10% 할인)
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px;">
+                  <i class="fa-solid fa-tag mr-1"></i>1학기 추천 패키지
+                </span>
+                <span class="text-danger font-weight-bold" style="font-size: 12px;">60,000원 즉시 절약</span>
+              </div>
+
+              <h4 class="font-weight-bold mt-2 mb-1" style="color: var(--text-main);">6개월 이용권</h4>
+              <p class="text-muted" style="font-size: 12.5px; min-height: 36px;">
+                1학기(6개월) 동안 10% 할인을 적용받고 안정적으로 커리큘럼을 운영합니다.
+              </p>
+
+              <!-- 가격 영역 -->
+              <div class="p-3 my-3 rounded" style="background: #faf6f0; border: 1.5px solid #d8cebf;">
+                <div class="text-muted" style="font-size: 12px; text-decoration: line-through;">기존 정가 600,000원</div>
+                <div class="d-flex align-items-baseline">
+                  <span style="font-size: 28px; font-weight: 900; color: #8c531b;">540,000</span>
+                  <span style="font-size: 15px; font-weight: 700; color: #8c531b; margin-left: 2px;">원</span>
+                  <span class="badge badge-warning text-dark ml-2" style="font-size: 11px;">10% OFF</span>
+                </div>
+                <div class="mt-1" style="font-size: 12px; color: #786d63;">
+                  VAT 54,000원 포함 실결제액: <strong class="text-dark">594,000원</strong> (월 90,000원 꼴)
+                </div>
+              </div>
+
+              <!-- 혜택 리스트 -->
+              <ul class="list-unstyled mb-4" style="font-size: 13px; line-height: 2;">
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>10% 할인 혜택</strong> (정가 대비 6만원 절감)</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>만료 7일 전 · 3일 전</strong> 갱신 알림 및 안내 발송</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>독서 포트폴리오 & 학부모 상담용 공식 리포트 발급</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>신규 출제 도서 및 북퀴즈 우선 동기화</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>전체 가맹 학원 독서 랭킹 시스템 풀 지원</li>
+              </ul>
+
+              <!-- 신청 버튼 -->
+              <div class="mt-auto">
+                <button type="button" class="btn btn-block btn-beige-primary font-weight-bold py-2" onclick="openCheckoutModal('6month')" style="border-radius: 12px; font-size: 14px; box-shadow: 0 4px 12px rgba(61, 52, 45, 0.25);">
+                  6개월 이용권 신청 (10% 할인)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PLAN 3: 12개월 이용권 (20% 할인) - 최대 혜택 -->
+          <div class="col-lg-4 mb-4">
+            <div class="simple-card h-100 p-4 d-flex flex-column" style="border: 2px solid var(--border-medium); border-radius: 18px; transition: all 0.2s;">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge-soft badge-soft-danger font-weight-bold" style="font-size: 11.5px;">
+                  <i class="fa-solid fa-crown mr-1"></i>연간 VIP 라이선스
+                </span>
+                <span class="text-danger font-weight-bold" style="font-size: 12px;">240,000원 최대 절약</span>
+              </div>
+
+              <h4 class="font-weight-bold mt-2 mb-1" style="color: var(--text-main);">12개월 연간권</h4>
+              <p class="text-muted" style="font-size: 12.5px; min-height: 36px;">
+                1년 동안 20% 최대 할인을 받으며 학원 독서논술 정규 브랜딩을 완성합니다.
+              </p>
+
+              <!-- 가격 영역 -->
+              <div class="p-3 my-3 rounded" style="background: #fbf9f5; border: 1px solid var(--border-light);">
+                <div class="text-muted" style="font-size: 12px; text-decoration: line-through;">기존 정가 1,200,000원</div>
+                <div class="d-flex align-items-baseline">
+                  <span style="font-size: 28px; font-weight: 900; color: #962a22;">960,000</span>
+                  <span style="font-size: 15px; font-weight: 700; color: #962a22; margin-left: 2px;">원</span>
+                  <span class="badge badge-danger ml-2" style="font-size: 11px;">20% OFF</span>
+                </div>
+                <div class="mt-1" style="font-size: 12px; color: #786d63;">
+                  VAT 96,000원 포함 실결제액: <strong class="text-dark">1,056,000원</strong> (월 80,000원 꼴)
+                </div>
+              </div>
+
+              <!-- 혜택 리스트 -->
+              <ul class="list-unstyled mb-4" style="font-size: 13px; line-height: 2;">
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>20% 최대 할인</strong> (정가 대비 24만원 대폭 절감)</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>만료 7일 전 · 3일 전</strong> 정기 갱신 사전 안내</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>학원 전용 학부모 리포트 원로고 커스텀 적용</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>카카오 알림톡 기본 무료 크레딧 1,000건 제공</li>
+                <li><i class="fa-solid fa-circle-check text-success mr-2"></i>본사 1:1 전담 원격 기술 및 커리큘럼 컨설팅</li>
+              </ul>
+
+              <!-- 신청 버튼 -->
+              <div class="mt-auto">
+                <button type="button" class="btn btn-block btn-beige-secondary font-weight-bold py-2" onclick="openCheckoutModal('12month')" style="border-radius: 12px; font-size: 14px;">
+                  12개월 연간권 신청 (20% 할인)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 결제 내역 조회 테이블 (학원 결제 이력) -->
+      <div id="sectionPaymentHistory" class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center">
+            <h6 class="font-weight-bold mb-0 mr-3" style="color: var(--text-main);">
+              <i class="fa-solid fa-receipt mr-2 text-muted"></i>결제 내역 및 이용 이력
+            </h6>
+            <span class="badge-soft badge-soft-neutral" id="academyPaymentCountBadge">총 3건</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-control form-control-sm" id="filterPaymentStatus" onchange="filterAcademyPaymentTable()" style="width: 130px; border-radius: 8px; font-size: 12.5px;">
+              <option value="ALL">전체 상태</option>
+              <option value="paid">결제 완료</option>
+              <option value="pending">결제 대기</option>
+              <option value="cancelled">취소 / 환불</option>
+            </select>
+          </div>
+        </div>
+
+        <table class="simple-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">결제번호</th>
+              <th>신청 요금제</th>
+              <th>공급가액 (VAT별도)</th>
+              <th>부가세 (10%)</th>
+              <th style="font-weight: 800;">총 결제금액</th>
+              <th>결제 수단</th>
+              <th>결제/신청일시</th>
+              <th>서비스 적용 기간</th>
+              <th style="text-align: center; width: 100px;">상태</th>
+              <th style="text-align: center; width: 100px;">영수증</th>
+            </tr>
+          </thead>
+          <tbody id="academyPaymentTableBody">
+            <!-- JS 동적 렌더링 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- ============================================================== -->
+    <!-- PAYMENT MODALS: 결제 신청 모달 (PG사 계약 전 껍데기 UI) -->
+<!-- ============================================================== -->
+<div class="modal fade" id="paymentCheckoutModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 18px; border: 1px solid var(--border-medium); box-shadow: 0 12px 36px rgba(0,0,0,0.15); overflow: hidden;">
+      
+      <!-- 모달 헤더 -->
+      <div class="modal-header-simple p-4 pb-3" style="background: #fdfbf7; border-bottom: 1px solid var(--border-light);">
+        <div class="d-flex justify-content-between align-items-center w-100">
+          <div class="d-flex align-items-center">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--btn-primary); color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+              <i class="fa-solid fa-credit-card" style="font-size: 16px;"></i>
+            </div>
+            <div>
+              <h5 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 16.5px;">
+                이용권 결제 신청
+              </h5>
+              <small class="text-muted" style="font-size: 12px;">나노 독서아카데미 본원 (원장: 김은영)</small>
+            </div>
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+      </div>
+
+      <!-- 모달 본문 -->
+      <div class="modal-body p-4" style="background: #ffffff;">
+        <!-- PG 계약 준비중 알림 박스 -->
+        <div class="p-3 mb-3 rounded" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-size: 12.5px;">
+          <div class="font-weight-bold mb-1">
+            <i class="fa-solid fa-circle-info mr-1 text-primary"></i>PG사 계약 준비 중 (시뮬레이션 모드)
+          </div>
+          <div>현재 PG사(전자결제대행사) 계약 및 보안 심사 진행 중입니다. 신청 완료 시 <strong>결제 대기(Pending)</strong> 상태로 등록되며, 본사 확인 후 즉시 서비스가 연장됩니다.</div>
+        </div>
+
+        <!-- 선택 상품 요약 카드 -->
+        <div class="p-3 rounded mb-3" style="background: #fbf9f5; border: 1px solid var(--border-light);">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted" style="font-size: 12px;">신청 상품</span>
+            <span class="badge badge-warning text-dark font-weight-bold px-2 py-1" id="checkoutPlanBadge">6개월 이용권 (10% 할인)</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 13px;">
+            <span class="text-muted">공급가액 (VAT 별도)</span>
+            <strong id="checkoutPlanSupply">540,000원</strong>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 13px;">
+            <span class="text-muted">부가가치세 (VAT 10%)</span>
+            <strong id="checkoutPlanVat">54,000원</strong>
+          </div>
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <span class="font-weight-bold" style="color: var(--text-main); font-size: 14px;">최종 결제 금액</span>
+            <span style="font-size: 20px; font-weight: 900; color: #962a22;" id="checkoutPlanTotal">594,000원</span>
+          </div>
+        </div>
+
+        <!-- 결제 수단 선택 -->
+        <div class="form-group mb-3">
+          <label class="font-weight-bold mb-2" style="font-size: 13px; color: var(--text-main);">결제 수단 선택</label>
+          <div class="row">
+            <div class="col-4 pr-1">
+              <label class="btn btn-block btn-outline-secondary py-2 px-1 text-center active" id="labelPayMethodCard" style="border-radius: 10px; font-size: 12px; cursor: pointer; border-color: var(--border-medium);">
+                <input type="radio" name="checkoutPayMethod" value="신용카드" checked style="display:none;" onchange="selectPayMethod('신용카드')">
+                <i class="fa-solid fa-credit-card d-block mb-1" style="font-size: 16px;"></i>신용카드
+              </label>
+            </div>
+            <div class="col-4 px-1">
+              <label class="btn btn-block btn-outline-secondary py-2 px-1 text-center" id="labelPayMethodBank" style="border-radius: 10px; font-size: 12px; cursor: pointer; border-color: var(--border-medium);">
+                <input type="radio" name="checkoutPayMethod" value="실시간 계좌이체" style="display:none;" onchange="selectPayMethod('실시간 계좌이체')">
+                <i class="fa-solid fa-money-bill-transfer d-block mb-1" style="font-size: 16px;"></i>계좌이체
+              </label>
+            </div>
+            <div class="col-4 pl-1">
+              <label class="btn btn-block btn-outline-secondary py-2 px-1 text-center" id="labelPayMethodVBank" style="border-radius: 10px; font-size: 12px; cursor: pointer; border-color: var(--border-medium);">
+                <input type="radio" name="checkoutPayMethod" value="가상계좌 (무통장)" style="display:none;" onchange="selectPayMethod('가상계좌 (무통장)')">
+                <i class="fa-solid fa-building-columns d-block mb-1" style="font-size: 16px;"></i>가상계좌
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 약관 동의 체크박스 -->
+        <div class="p-2 px-3 rounded mb-2" style="background: #fdfbf7; border: 1px dashed var(--border-medium);">
+          <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="checkoutAgreeTerms" checked>
+            <label class="custom-control-label font-weight-bold" for="checkoutAgreeTerms" style="font-size: 12px; cursor: pointer;">
+              [필수] 서비스 정기 이용약관 및 결제 취소/환불 규정에 동의합니다.
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모달 푸터 -->
+      <div class="modal-footer p-3 px-4 bg-light d-flex justify-content-between align-items-center">
+        <button type="button" class="btn btn-sm btn-beige-secondary" data-dismiss="modal">취소</button>
+        <button type="button" class="btn btn-sm btn-beige-primary px-4 font-weight-bold" id="btnSubmitPayment" onclick="submitSimulatedPayment()">
+          <i class="fa-solid fa-check mr-1"></i><span id="btnSubmitPaymentText">594,000원 결제 신청하기</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <!-- ============================================================== -->
@@ -2425,7 +2876,7 @@
             <i class="fa-solid fa-user-plus" style="font-size: 14px;"></i>
           </div>
           <div>
-            <h6 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 15px;">신규 원생 등록 (가맹점)</h6>
+            <h6 class="modal-title font-weight-bold mb-0" id="studentModalHeaderTitle" style="color: var(--text-main); font-size: 15px;">신규 원생 등록 (가맹점)</h6>
             <small class="text-muted" style="font-size: 11.5px;">원생 정보와 담당 지도교사를 등록하면 맞춤형 북퀴즈 및 포트폴리오 관리가 활성화됩니다.</small>
           </div>
         </div>
@@ -2445,16 +2896,26 @@
         </div>
 
         <form id="studentAddForm" onsubmit="event.preventDefault(); saveNewStudent();">
+          <input type="hidden" id="editStudentTargetId" value="">
           <div class="row">
-            <!-- 좌측 컬럼: 원생 기본 인적사항 -->
+            <!-- 좌측 컬럼: 원생 기본 인적사항 및 계정 설정 -->
             <div class="col-md-6 pr-md-3">
               <h6 class="font-weight-bold mb-3 pb-1" style="font-size: 13px; color: var(--btn-primary); border-bottom: 2px solid var(--btn-primary); display: inline-block;">
-                <i class="fa-solid fa-id-card mr-1"></i>원생 기본 정보
+                <i class="fa-solid fa-id-card mr-1"></i>원생 기본 정보 & 계정 설정
               </h6>
 
-              <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">원생 이름 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-sm" id="newStdName" placeholder="예: 김민우" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+              <div class="form-row mb-2">
+                <div class="col-8">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">원생 이름 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="newStdName" placeholder="예: 김민우" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                </div>
+                <div class="col-4">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">성별 <span class="text-danger">*</span></label>
+                  <select class="form-control form-control-sm" id="newStdGender" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="남" selected>남(男)</option>
+                    <option value="여">여(女)</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-group mb-2">
@@ -2467,86 +2928,133 @@
                     </button>
                   </div>
                 </div>
-                <small class="text-muted" style="font-size: 11px;">* 고유 번호 자동 생성 또는 학원 관리용 코드로 직접 입력 가능</small>
+                <small class="text-muted" style="font-size: 11px;">* 학생 로그인 시 사용하는 아이디입니다.</small>
               </div>
 
+              <!-- 패스워드 직접 등록 필드 -->
               <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">학교명 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-sm" id="newStdSchool" placeholder="예: 나노초등학교" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <label class="font-weight-bold" style="font-size: 12.5px;">로그인 비밀번호 <span class="text-danger">*</span></label>
+                <input type="password" class="form-control form-control-sm" id="newStdPw" placeholder="원생 접속용 비밀번호 입력 (예: 1234)" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <small class="text-muted" style="font-size: 11px;">* 원장 및 선생님이 직접 지정할 수 있습니다. (수정 시 미입력 시 기존 비밀번호 유지)</small>
               </div>
 
-              <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">학년 <span class="text-danger">*</span></label>
-                <select class="form-control form-control-sm" id="newStdGrade" onchange="onStudentGradeChange(this.value)" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                  <option value="초등 1학년">초등 1학년 (새싹반 추천)</option>
-                  <option value="초등 2학년">초등 2학년 (새싹반 추천)</option>
-                  <option value="초등 3학년">초등 3학년 (탐구반 추천)</option>
-                  <option value="초등 4학년">초등 4학년 (슬기반 추천)</option>
-                  <option value="초등 5학년" selected>초등 5학년 (지혜반 추천)</option>
-                  <option value="초등 6학년">초등 6학년 (마스터반 추천)</option>
-                  <option value="중등 1학년">중등 1학년 (심화반 추천)</option>
-                  <option value="중등 2학년">중등 2학년 (심화반 추천)</option>
-                  <option value="중등 3학년">중등 3학년 (심화반 추천)</option>
-                </select>
+              <div class="form-row mb-2">
+                <div class="col-7">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">학교명 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="newStdSchool" placeholder="예: 나노초등학교" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                </div>
+                <div class="col-5">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">학년 <span class="text-danger">*</span></label>
+                  <!-- (지혜반 추천) 등의 불필요 문구 완전 제거 -->
+                  <select class="form-control form-control-sm" id="newStdGrade" onchange="onStudentGradeChange(this.value)" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="초등 1학년">초등 1학년</option>
+                    <option value="초등 2학년">초등 2학년</option>
+                    <option value="초등 3학년">초등 3학년</option>
+                    <option value="초등 4학년">초등 4학년</option>
+                    <option value="초등 5학년" selected>초등 5학년</option>
+                    <option value="초등 6학년">초등 6학년</option>
+                    <option value="중등 1학년">중등 1학년</option>
+                    <option value="중등 2학년">중등 2학년</option>
+                    <option value="중등 3학년">중등 3학년</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-group mb-0">
-                <label class="font-weight-bold" style="font-size: 12.5px;">소속 클래스 (반) <span class="text-danger">*</span></label>
-                <select class="form-control form-control-sm" id="newStdClass" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                  <option value="지혜반" selected>지혜반 (초등 5학년 정규)</option>
-                  <option value="슬기반">슬기반 (초등 4학년 정규)</option>
-                  <option value="마스터반">마스터반 (초등 6학년 심화)</option>
-                  <option value="심화반">심화반 (중등 1~3학년 논술)</option>
-                  <option value="새싹반">새싹반 (초등 1~2학년 입문)</option>
-                  <option value="탐구반">탐구반 (초등 3학년 독서토론)</option>
-                </select>
+                <label class="font-weight-bold" style="font-size: 12.5px;">소속 학급 (클래스) <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <select class="form-control form-control-sm" id="newStdClass" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="지혜반" selected>지혜반</option>
+                    <option value="슬기반">슬기반</option>
+                    <option value="마스터반">마스터반</option>
+                    <option value="심화반">심화반</option>
+                    <option value="새싹반">새싹반</option>
+                    <option value="탐구반">탐구반</option>
+                    <option value="미지정">미지정 (학급 없음)</option>
+                  </select>
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" onclick="openClassManageModal()" style="border-radius: 0 8px 8px 0; font-size: 11.5px; border-color: var(--border-medium);">
+                      <i class="fa-solid fa-gear mr-1"></i>학급관리
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- 우측 컬럼: 독서 레벨, 지도교사, 연락처 -->
+            <!-- 우측 컬럼: 원생 상태, 학부모 정보, 리포트 수신 설정 -->
             <div class="col-md-6 pl-md-3">
               <h6 class="font-weight-bold mb-3 pb-1" style="font-size: 13px; color: var(--btn-primary); border-bottom: 2px solid var(--btn-primary); display: inline-block;">
-                <i class="fa-solid fa-graduation-cap mr-1"></i>학습 레벨 및 지도 설정
+                <i class="fa-solid fa-user-shield mr-1"></i>상태 관리 & 학부모 설정
               </h6>
 
-              <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">독서 레벨 <span class="text-danger">*</span></label>
-                <select class="form-control form-control-sm" id="newStdLevel" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                  <option value="초등 입문 Lv 1">초등 입문 Lv 1 (그림책/초급 읽기)</option>
-                  <option value="초등 입문 Lv 2">초등 입문 Lv 2 (단편 동화)</option>
-                  <option value="초등 발전 Lv 3">초등 발전 Lv 3 (중편 창작 동화)</option>
-                  <option value="초등 발전 Lv 4">초등 발전 Lv 4 (장편 동화/기초 논술)</option>
-                  <option value="초등 심화 Lv 5" selected>초등 심화 Lv 5 (한국/세계 명작 동화)</option>
-                  <option value="초등 완성 Lv 6">초등 완성 Lv 6 (인문/사회 교양 도서)</option>
-                  <option value="중등 기본 Lv 7">중등 기본 Lv 7 (청소년 문학/비문학)</option>
-                  <option value="중등 심화 Lv 8">중등 심화 Lv 8 (고전 문학/심층 논술)</option>
-                  <option value="중등 마스터 Lv 9">중등 마스터 Lv 9 (인문 철학/통합 독서)</option>
-                </select>
+              <!-- 상태 변경 (승인, 미승인, 퇴원) -->
+              <div class="form-row mb-2">
+                <div class="col-6">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">원생 상태 <span class="text-danger">*</span></label>
+                  <select class="form-control form-control-sm font-weight-bold" id="newStdStatus" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="승인" selected class="text-success">승인 (정상 이용)</option>
+                    <option value="미승인" class="text-warning">미승인 (승인 대기)</option>
+                    <option value="퇴원" class="text-muted">퇴원 (이용 중단)</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">독서 레벨 <span class="text-danger">*</span></label>
+                  <select class="form-control form-control-sm" id="newStdLevel" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="초등 입문 Lv 1">초등 입문 Lv 1</option>
+                    <option value="초등 입문 Lv 2">초등 입문 Lv 2</option>
+                    <option value="초등 발전 Lv 3">초등 발전 Lv 3</option>
+                    <option value="초등 발전 Lv 4">초등 발전 Lv 4</option>
+                    <option value="초등 심화 Lv 5" selected>초등 심화 Lv 5</option>
+                    <option value="초등 완성 Lv 6">초등 완성 Lv 6</option>
+                    <option value="중등 기본 Lv 7">중등 기본 Lv 7</option>
+                    <option value="중등 심화 Lv 8">중등 심화 Lv 8</option>
+                    <option value="중등 마스터 Lv 9">중등 마스터 Lv 9</option>
+                  </select>
+                </div>
               </div>
 
-              <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">담당 지도교사 <span class="text-danger">*</span></label>
-                <select class="form-control form-control-sm" id="newStdTeacher" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                  <option value="박선혜 지도교사" selected>박선혜 수석교사 (지혜/슬기반 전담)</option>
-                  <option value="최승현 지도교사">최승현 지도교사 (마스터/심화반 전담)</option>
-                  <option value="이지연 지도교사">이지연 지도교사 (새싹/탐구반 전담)</option>
-                  <option value="김은영 지도교사">김은영 학원장 (총괄 관리)</option>
-                </select>
+              <div class="form-row mb-2">
+                <div class="col-6">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">학부모 이름 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="newStdParentName" placeholder="예: 김영희" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                </div>
+                <div class="col-6">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">학부모 연락처 <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control form-control-sm" id="newStdParentPhone" placeholder="예: 010-1234-5678" maxlength="13" oninput="formatPhoneInput(this)" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                </div>
               </div>
 
+              <!-- 학부모 이메일 (선택 항목) -->
               <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">학부모 연락처 (알림톡/리포트 수신) <span class="text-danger">*</span></label>
-                <input type="tel" class="form-control form-control-sm" id="newStdParentPhone" placeholder="예: 010-1234-5678" maxlength="13" oninput="formatPhoneInput(this)" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <label class="font-weight-bold" style="font-size: 12.5px;">학부모 이메일 <small class="text-muted">(선택 항목)</small></label>
+                <input type="email" class="form-control form-control-sm" id="newStdParentEmail" placeholder="예: parent@example.com" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
               </div>
 
-              <div class="form-group mb-2">
-                <label class="font-weight-bold" style="font-size: 12.5px;">학생 본인 연락처 <small class="text-muted">(선택)</small></label>
-                <input type="tel" class="form-control form-control-sm" id="newStdStudentPhone" placeholder="예: 010-9876-5432" maxlength="13" oninput="formatPhoneInput(this)" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+              <!-- 리포트 수신 여부 체크박스 -->
+              <div class="p-2 px-3 mb-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="newStdReportYn" checked>
+                  <label class="custom-control-label font-weight-bold" for="newStdReportYn" style="font-size: 12.5px; color: #1e293b; cursor: pointer;">
+                    <i class="fa-solid fa-paper-plane mr-1 text-primary"></i>주간/월간 독서 리포트 발송 수신
+                  </label>
+                </div>
+                <small class="text-muted d-block mt-1 pl-4" style="font-size: 11px;">* 체크 시 북퀴즈 결과 및 포트폴리오 알림톡/이메일이 자동 발송됩니다.</small>
               </div>
 
-              <div class="form-group mb-0">
-                <label class="font-weight-bold" style="font-size: 12.5px;">원생 등록일</label>
-                <input type="date" class="form-control form-control-sm" id="newStdJoinDate" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+              <div class="form-row mb-0">
+                <div class="col-6">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">담당 지도교사</label>
+                  <select class="form-control form-control-sm" id="newStdTeacher" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="박선혜 지도교사" selected>박선혜 수석교사</option>
+                    <option value="최승현 지도교사">최승현 지도교사</option>
+                    <option value="이지연 지도교사">이지연 지도교사</option>
+                    <option value="김은영 지도교사">김은영 학원장</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">계정 생성일</label>
+                  <input type="date" class="form-control form-control-sm" id="newStdJoinDate" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                </div>
               </div>
             </div>
 
@@ -2554,23 +3062,111 @@
             <div class="col-12 mt-3">
               <div class="form-group mb-0">
                 <label class="font-weight-bold" style="font-size: 12.5px;">원생 지도 메모 및 특이사항 <small class="text-muted">(선택)</small></label>
-                <input type="text" class="form-control form-control-sm" id="newStdMemo" placeholder="예: 독서 흥미가 높으며 추리/역사 장르 선호. 문해력 퀴즈 및 생각담기 시트 첨삭 희망." style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <input type="text" class="form-control form-control-sm" id="newStdMemo" placeholder="예: 독서 흥미가 높으며 문해력 퀴즈 및 생각담기 시트 첨삭 희망." style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
               </div>
             </div>
           </div>
 
           <div class="d-flex justify-content-between align-items-center mt-4 pt-3" style="border-top: 1px solid var(--border-light);">
             <div class="text-muted" style="font-size: 12px;">
-              <i class="fa-solid fa-shield-halved text-success mr-1"></i>등록 즉시 학생 포털 로그인 및 북퀴즈 참여가 가능합니다.
+              <i class="fa-solid fa-shield-halved text-success mr-1"></i>원생 비밀번호 및 상태(승인/미승인/퇴원)는 언제든 수정할 수 있습니다.
             </div>
             <div>
               <button type="button" class="btn btn-sm btn-beige-secondary mr-2" data-dismiss="modal">취소</button>
-              <button type="submit" class="btn btn-sm btn-beige-primary px-3">
-                <i class="fa-solid fa-check mr-1"></i>원생 등록 완료
+              <button type="submit" class="btn btn-sm btn-beige-primary px-3" id="btnSubmitStudentForm">
+                <i class="fa-solid fa-check mr-1"></i>원생 저장 완료
               </button>
             </div>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- 신규: 학급 관리 전용 모달 (Class Manage Modal) -->
+<!-- ============================================================== -->
+<div class="modal fade" id="classManageModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 10px 35px rgba(0,0,0,0.15);">
+      <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4" style="background: #fdfbf7; border-bottom: 1px solid var(--border-light); border-radius: 16px 16px 0 0;">
+        <div class="d-flex align-items-center">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: #2d6a4f; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+            <i class="fa-solid fa-chalkboard-user" style="font-size: 14px;"></i>
+          </div>
+          <div>
+            <h6 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 15px;">학급(클래스) 관리</h6>
+            <small class="text-muted" style="font-size: 11.5px;">학급을 자유롭게 신설·수정·삭제할 수 있으며, 학급 삭제 시 소속 원생은 자동으로 <strong>'미지정'</strong>으로 안전하게 전환됩니다.</small>
+          </div>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+
+      <div class="modal-body p-4" style="background: #ffffff;">
+        <!-- 신규 학급 등록 폼 -->
+        <div class="p-3 mb-4" style="background: #fcfaf6; border: 1.5px dashed var(--border-medium); border-radius: 12px;">
+          <h6 class="font-weight-bold mb-2" style="font-size: 13px; color: var(--wood-dark);">
+            <i class="fa-solid fa-plus-circle text-success mr-1"></i>새 학급 추가하기
+          </h6>
+          <form onsubmit="event.preventDefault(); addClass();" class="form-row align-items-center">
+            <div class="col-md-3 mb-2 mb-md-0">
+              <input type="text" class="form-control form-control-sm" id="newClassNameInput" placeholder="학급명 (예: 지혜반, 푸름반)" required style="border-radius: 8px; font-size: 12.5px;">
+            </div>
+            <div class="col-md-3 mb-2 mb-md-0">
+              <select class="form-control form-control-sm" id="newClassGradeSelect" style="border-radius: 8px; font-size: 12.5px;">
+                <option value="초등 1~2학년">초등 1~2학년</option>
+                <option value="초등 3학년">초등 3학년</option>
+                <option value="초등 4학년">초등 4학년</option>
+                <option value="초등 5학년" selected>초등 5학년</option>
+                <option value="초등 6학년">초등 6학년</option>
+                <option value="중등 전학년">중등 전학년</option>
+                <option value="전체 학년 혼합">전체 학년 혼합</option>
+              </select>
+            </div>
+            <div class="col-md-3 mb-2 mb-md-0">
+              <select class="form-control form-control-sm" id="newClassTeacherSelect" style="border-radius: 8px; font-size: 12.5px;">
+                <option value="박선혜 수석교사" selected>박선혜 수석교사</option>
+                <option value="최승현 지도교사">최승현 지도교사</option>
+                <option value="이지연 지도교사">이지연 지도교사</option>
+                <option value="김은영 학원장">김은영 학원장</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button type="submit" class="btn btn-sm btn-beige-primary btn-block font-weight-bold" style="border-radius: 8px;">
+                <i class="fa-solid fa-plus mr-1"></i>학급 생성
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 현재 개설된 학급 테이블 -->
+        <div class="table-responsive" style="border: 1px solid var(--border-light); border-radius: 10px;">
+          <table class="table table-sm table-hover mb-0" style="font-size: 12.5px;">
+            <thead class="thead-light">
+              <tr>
+                <th style="width: 60px;" class="text-center">번호</th>
+                <th>학급명</th>
+                <th class="text-center">대상 학년</th>
+                <th class="text-center">담당 교사</th>
+                <th class="text-center" style="width: 90px;">소속 원생</th>
+                <th class="text-center" style="width: 140px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="classManageTableBody">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-secondary mt-3 mb-0 py-2 px-3" style="font-size: 11.5px; border-radius: 8px; background: #f8fafc; border-color: #e2e8f0; color: #475569;">
+          <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
+          <strong>학급 삭제 시 안전 정책:</strong> 학급을 삭제하더라도 소속된 원생 데이터는 삭제되지 않으며, 해당 원생들의 소속이 즉시 <strong>'미지정'</strong>으로 자동 안전 변환됩니다.
+        </div>
+      </div>
+
+      <div class="modal-footer py-2 px-4" style="background: #fdfbf7; border-top: 1px solid var(--border-light); border-radius: 0 0 16px 16px;">
+        <button type="button" class="btn btn-sm btn-beige-secondary" data-dismiss="modal">닫기</button>
       </div>
     </div>
   </div>
@@ -3034,6 +3630,8 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
 <!-- ============================================================== -->
 <!-- 6. 학원 도서 및 북퀴즈 등록/수정 모달 (마스터 계정과 100% 동일 규격) -->
 <!-- ============================================================== -->
@@ -3356,6 +3954,221 @@
   </div>
 </div>
 
+<!-- ============================================================== -->
+<!-- 모달: 학원 관리자 내 정보 관리 (My Info Modal) -->
+<!-- ============================================================== -->
+<div class="modal fade" id="myInfoModal" tabindex="-1" role="dialog" aria-labelledby="myInfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border-medium); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+      
+      <!-- 모달 헤더 -->
+      <div class="modal-header px-4 py-3" style="background: #faf8f5; border-bottom: 1px solid var(--border-light);">
+        <div>
+          <h5 class="modal-title font-weight-bold d-flex align-items-center mb-1" id="myInfoModalLabel" style="font-size: 17px; color: var(--text-main);">
+            <i class="fa-solid fa-id-card-clip mr-2 text-primary" style="font-size: 19px;"></i>
+            학원 관리자 내 정보 관리
+          </h5>
+          <div style="font-size: 12px; color: var(--text-muted);">
+            가맹 계약 및 기본 계정 정보를 확인하고, 연락처·주소 및 비밀번호를 안전하게 관리합니다.
+          </div>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="font-size: 24px; color: var(--text-muted); opacity: 0.7;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- 모달 바디 -->
+      <div class="modal-body p-4" style="background: #f7f4ee; max-height: calc(85vh - 120px); overflow-y: auto;">
+        
+        <!-- 상단 원장님 요약 배너 -->
+        <div class="p-3 mb-3 rounded d-flex align-items-center justify-content-between flex-wrap" style="background: #ffffff; border: 1px solid var(--border-light); box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+          <div class="d-flex align-items-center">
+            <div style="width: 46px; height: 46px; border-radius: 12px; background: var(--badge-master-bg); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 12px;">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="font-weight-bold" style="font-size: 15px; color: var(--text-main);" id="bannerDirectorName">김은영 원장님</span>
+                <span class="badge-soft badge-soft-master ml-1" style="font-size: 11px;">최고 관리자</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted);" id="bannerAcademyName">나노 독서아카데미 본원 (가맹 1호점)</div>
+            </div>
+          </div>
+          <div class="text-right mt-2 mt-md-0">
+            <span class="badge-soft badge-soft-success mb-1" style="font-size: 11.5px;">
+              <i class="fa-solid fa-circle-check mr-1"></i>정상 운영중
+            </span>
+            <div style="font-size: 11.5px; color: var(--text-muted);">
+              정원 슬롯: <strong class="text-dark">48 / 50명 (96%)</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. 가맹 라이선스 & 학원 기본 정보 (조회 전용) -->
+        <div class="p-3 mb-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
+              <i class="fa-solid fa-file-contract text-primary mr-1"></i>가맹 라이선스 및 기본 정보
+            </span>
+            <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">
+              <i class="fa-solid fa-lock mr-1"></i>조회 전용 (수정 불가)
+            </span>
+          </div>
+          
+          <div class="row" style="font-size: 13px;">
+            <div class="col-sm-6 mb-2">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">로그인 ID</span>
+              <span class="font-weight-bold text-dark font-monospace p-1 px-2 rounded" style="background: #f1ede3;" id="infoDisplayId">director_ey</span>
+            </div>
+            <div class="col-sm-6 mb-2">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">사업자번호</span>
+              <strong class="text-dark" id="infoDisplayBizNum">107-86-54321</strong>
+            </div>
+            <div class="col-sm-6 mb-2">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">학원명</span>
+              <strong class="text-dark" id="infoDisplayAcademyName">나노 독서아카데미 본원</strong>
+            </div>
+            <div class="col-sm-6 mb-2">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">원장명</span>
+              <strong class="text-dark" id="infoDisplayDirectorName">김은영</strong>
+            </div>
+            <div class="col-sm-6 mb-2">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">이용 상품</span>
+              <span class="badge-soft badge-soft-master" id="infoDisplayPlan">프리미엄 프랜차이즈 50인 슬롯형</span>
+            </div>
+            <div class="col-sm-6 mb-2">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">계약일자</span>
+              <span class="text-dark font-weight-bold" id="infoDisplayContractDate">2025-01-01</span>
+            </div>
+            <div class="col-sm-12">
+              <span class="text-muted mr-2" style="display: inline-block; width: 90px;">계약 만료일</span>
+              <span class="text-dark font-weight-bold" id="infoDisplayExpireDate">2026-12-31</span>
+              <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px;">잔여 106일 (자동 연장 신청 가능)</span>
+            </div>
+          </div>
+          
+          <div class="mt-2 pt-2 border-top text-muted" style="font-size: 11.5px;">
+            <i class="fa-solid fa-circle-info mr-1 text-secondary"></i>
+            학원명, 원장명, 사업자번호, 이용 상품 및 계약 기간 변경은 본사 가맹지원팀(1588-4920)으로 문의해 주세요.
+          </div>
+        </div>
+
+        <!-- 2. 담당자 연락처 & 학원 소재지 주소 (변경 가능) -->
+        <div class="p-3 mb-3 rounded" style="background: #ffffff; border: 1.5px solid var(--border-medium); box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
+              <i class="fa-solid fa-address-book text-success mr-1"></i>원장님 연락처 및 학원 소재지 관리
+            </span>
+            <span class="badge-soft badge-soft-success" style="font-size: 11px;">
+              <i class="fa-solid fa-pen-to-square mr-1"></i>수정 가능
+            </span>
+          </div>
+
+          <div class="row">
+            <!-- 휴대전화번호 -->
+            <div class="col-md-6 form-group mb-3">
+              <label class="font-weight-bold" style="font-size: 12.5px;" for="myInfoPhone">
+                휴대전화번호 <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-light" style="border-color: var(--border-medium); border-radius: 10px 0 0 10px;">
+                    <i class="fa-solid fa-phone text-muted" style="font-size: 13px;"></i>
+                  </span>
+                </div>
+                <input type="tel" id="myInfoPhone" class="form-control form-control-beige font-weight-bold" placeholder="010-3342-9981" maxlength="13" oninput="formatPhoneNumber(this)" style="border-radius: 0 10px 10px 0;" required>
+              </div>
+              <small class="text-muted" style="font-size: 11px;">원내 긴급 알림톡 및 본사 중요 공지 수신용</small>
+            </div>
+
+            <!-- 대표 이메일 -->
+            <div class="col-md-6 form-group mb-3">
+              <label class="font-weight-bold" style="font-size: 12.5px;" for="myInfoEmail">
+                대표 이메일 <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-light" style="border-color: var(--border-medium); border-radius: 10px 0 0 10px;">
+                    <i class="fa-solid fa-envelope text-muted" style="font-size: 13px;"></i>
+                  </span>
+                </div>
+                <input type="email" id="myInfoEmail" class="form-control form-control-beige font-weight-bold" placeholder="director_ey@nanobook.co.kr" style="border-radius: 0 10px 10px 0;" required>
+              </div>
+              <small class="text-muted" style="font-size: 11px;">월간 정산 리포트 및 전자세금계산서 수신용</small>
+            </div>
+          </div>
+
+          <!-- 학원 소재지 주소 -->
+          <div class="form-group mb-1">
+            <label class="font-weight-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 12.5px;">
+              <span>학원 소재지 주소 <span class="text-danger">*</span></span>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="searchPostcode()" style="border-radius: 6px; font-size: 11.5px; padding: 2px 8px;">
+                <i class="fa-solid fa-magnifying-glass mr-1"></i>우편번호 검색
+              </button>
+            </label>
+            <div class="input-group mb-2" style="max-width: 260px;">
+              <input type="text" id="myInfoPostcode" class="form-control form-control-beige font-weight-bold text-center" placeholder="우편번호" readonly style="border-radius: 10px 0 0 10px;">
+              <div class="input-group-append">
+                <button type="button" class="btn btn-beige-secondary px-3 font-weight-bold" onclick="searchPostcode()" style="border-radius: 0 10px 10px 0; font-size: 12px;">
+                  주소 찾기
+                </button>
+              </div>
+            </div>
+            <input type="text" id="myInfoAddress" class="form-control form-control-beige mb-2 font-weight-bold" placeholder="기본 주소 (우편번호 검색 시 자동 입력)" required>
+            <input type="text" id="myInfoAddressDetail" class="form-control form-control-beige" placeholder="상세 주소 (층, 호수, 건물명 등을 입력하세요)">
+          </div>
+        </div>
+
+        <!-- 3. 계정 보안 (비밀번호 변경) -->
+        <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
+              <i class="fa-solid fa-key text-warning mr-1"></i>비밀번호 변경
+            </span>
+            <small class="text-muted" style="font-size: 11.5px;">비밀번호를 유지하려면 빈칸으로 두세요.</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 form-group mb-2">
+              <label class="font-weight-bold" style="font-size: 12px;" for="myInfoCurrentPw">현재 비밀번호</label>
+              <input type="password" id="myInfoCurrentPw" class="form-control form-control-beige" placeholder="현재 비밀번호">
+            </div>
+            <div class="col-md-4 form-group mb-2">
+              <label class="font-weight-bold" style="font-size: 12px;" for="myInfoNewPw">새 비밀번호</label>
+              <input type="password" id="myInfoNewPw" class="form-control form-control-beige" placeholder="8자 이상 영문/숫자" oninput="checkPasswordMatch()">
+            </div>
+            <div class="col-md-4 form-group mb-2">
+              <label class="font-weight-bold" style="font-size: 12px;" for="myInfoNewPwConfirm">새 비밀번호 확인</label>
+              <input type="password" id="myInfoNewPwConfirm" class="form-control form-control-beige" placeholder="새 비밀번호 재입력" oninput="checkPasswordMatch()">
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <span id="pwMatchFeedback" style="font-size: 11.5px; font-weight: 600;"></span>
+            <button type="button" class="btn btn-sm btn-outline-dark" onclick="changeMyPasswordOnly()" style="border-radius: 8px; font-size: 11.5px; padding: 3px 10px;">
+              <i class="fa-solid fa-shield-halved mr-1"></i>비밀번호만 단독 변경
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 모달 푸터 -->
+      <div class="modal-footer justify-content-between px-4 py-3" style="background: #faf8f5; border-top: 1px solid var(--border-light);">
+        <small class="text-muted">
+          <i class="fa-solid fa-circle-check text-success mr-1"></i>수정하신 연락처·이메일·주소는 [저장] 시 즉시 시스템에 반영됩니다.
+        </small>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-beige-secondary px-3 mr-2" data-dismiss="modal">닫기</button>
+          <button type="button" class="btn btn-beige-primary px-4 font-weight-bold" onclick="saveMyInfo()">
+            <i class="fa-solid fa-floppy-disk mr-1"></i>내 정보 저장하기
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- 토스트 알림 -->
 <div id="academyToast" style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;" class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
   <div class="d-flex align-items-center">
@@ -3367,6 +4180,8 @@
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Daum 우편번호 서비스 -->
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script src="admin_preview.js"></script>
 
 </body>

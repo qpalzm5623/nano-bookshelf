@@ -77,37 +77,240 @@
       background: rgba(45, 106, 79, 0.2);
     }
     .s-header {
-      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
-      padding: 0 22px;
+      background: linear-gradient(135deg, #122d20 0%, #1d4d35 45%, #2d6a4f 100%);
+      padding: 0 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 60px;
-      box-shadow: 0 3px 14px rgba(27, 67, 50, 0.2);
+      height: 66px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 18px rgba(18, 45, 32, 0.25);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
     .logo {
       display: flex;
       align-items: center;
       gap: 10px;
       color: #ffffff;
-      font-size: 17px;
+      font-size: 17.5px;
       font-weight: 800;
+      position: relative;
+      z-index: 2;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
     .logo-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.18);
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, rgba(167, 227, 190, 0.3) 0%, rgba(255, 255, 255, 0.12) 100%);
       color: #a7e3be;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 17px;
+      font-size: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     .user-info {
       color: rgba(255,255,255,0.92);
       font-size: 13px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    .student-badge-wrap {
       text-align: right;
+    }
+    .student-name {
+      font-weight: 800;
+      font-size: 14.5px;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .student-sub {
+      font-size: 11px;
+      color: #bfe8cc;
+      margin-top: 1px;
+    }
+    .btn-student-logout {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #eaf5ef;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(4px);
+      margin-left: 12px;
+      text-decoration: none !important;
+    }
+    .btn-student-logout:hover {
+      background: rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ============================================================== */
+    /* 바람에 살랑살랑 흩날리는 나뭇잎 애니메이션 (Leaves Wind Motion) */
+    /* ============================================================== */
+    .leaf-wind-scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .wind-leaf {
+      position: absolute;
+      top: -30px;
+      will-change: transform, opacity;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+      opacity: 0;
+    }
+    .wind-leaf svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
+    }
+
+    /* 서로 다른 궤적과 속도로 바람을 타는 나뭇잎들 */
+    .wind-leaf-1 {
+      left: 8%;
+      width: 20px;
+      height: 20px;
+      animation: windBlow1 6.5s ease-in-out infinite;
+      animation-delay: 0s;
+    }
+    .wind-leaf-2 {
+      left: 22%;
+      width: 24px;
+      height: 24px;
+      animation: windBlow2 8.2s ease-in-out infinite;
+      animation-delay: 1.2s;
+    }
+    .wind-leaf-3 {
+      left: 38%;
+      width: 16px;
+      height: 16px;
+      animation: windBlow3 5.8s ease-in-out infinite;
+      animation-delay: 3s;
+    }
+    .wind-leaf-4 {
+      left: 55%;
+      width: 22px;
+      height: 22px;
+      animation: windBlow1 7.4s ease-in-out infinite;
+      animation-delay: 2.1s;
+    }
+    .wind-leaf-5 {
+      left: 72%;
+      width: 18px;
+      height: 18px;
+      animation: windBlow2 6.8s ease-in-out infinite;
+      animation-delay: 0.7s;
+    }
+    .wind-leaf-6 {
+      left: 86%;
+      width: 22px;
+      height: 22px;
+      animation: windBlow3 7.8s ease-in-out infinite;
+      animation-delay: 3.8s;
+    }
+    .wind-leaf-7 {
+      left: 4%;
+      width: 17px;
+      height: 17px;
+      animation: windBlow2 9s ease-in-out infinite;
+      animation-delay: 4.5s;
+    }
+    .wind-leaf-8 {
+      left: 48%;
+      width: 20px;
+      height: 20px;
+      animation: windBlow1 6.2s ease-in-out infinite;
+      animation-delay: 5s;
+    }
+
+    @keyframes windBlow1 {
+      0% {
+        top: -30px;
+        transform: translate3d(0, 0, 0) rotate(0deg) rotateY(0deg);
+        opacity: 0;
+      }
+      15% {
+        opacity: 0.85;
+      }
+      50% {
+        transform: translate3d(55px, 45px, 0) rotate(140deg) rotateY(180deg);
+        opacity: 0.95;
+      }
+      85% {
+        opacity: 0.8;
+      }
+      100% {
+        top: 95px;
+        transform: translate3d(110px, 90px, 0) rotate(320deg) rotateY(360deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes windBlow2 {
+      0% {
+        top: -30px;
+        transform: translate3d(0, 0, 0) rotate(20deg) rotateY(0deg);
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.9;
+      }
+      55% {
+        transform: translate3d(40px, 50px, 0) rotate(190deg) rotateY(160deg);
+        opacity: 0.85;
+      }
+      85% {
+        opacity: 0.75;
+      }
+      100% {
+        top: 95px;
+        transform: translate3d(90px, 95px, 0) rotate(380deg) rotateY(320deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes windBlow3 {
+      0% {
+        top: -30px;
+        transform: translate3d(0, 0, 0) rotate(-30deg) rotateY(0deg);
+        opacity: 0;
+      }
+      15% {
+        opacity: 0.85;
+      }
+      45% {
+        transform: translate3d(65px, 35px, 0) rotate(120deg) rotateY(200deg);
+        opacity: 0.9;
+      }
+      80% {
+        opacity: 0.8;
+      }
+      100% {
+        top: 95px;
+        transform: translate3d(130px, 85px, 0) rotate(290deg) rotateY(360deg);
+        opacity: 0;
+      }
     }
     .main {
       max-width: 540px;
@@ -640,6 +843,487 @@
       width: 20px;
       border-radius: 4px;
     }
+
+    /* ============================================================== */
+    /* 3대 도서 큐레이션 슬라이더 및 도서 카드 스타일 */
+    /* ============================================================== */
+    .slider-section {
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .sec-header-flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sec-title-main {
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--wood-dark);
+    }
+    .sec-more-link {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--leaf);
+      background: var(--leaf-pale);
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-decoration: none !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .sec-more-link:hover {
+      background: var(--leaf-soft);
+      color: var(--leaf-dark);
+      transform: translateX(2px);
+    }
+    .book-slider-container {
+      position: relative;
+      margin: 0 -4px;
+    }
+    .book-slider-track {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      padding: 6px 4px 14px 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .book-slider-track::-webkit-scrollbar {
+      display: none;
+    }
+    .btn-slider-nav {
+      position: absolute;
+      top: 42%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(36, 28, 22, 0.85);
+      color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: all .2s;
+      font-size: 12px;
+    }
+    .btn-slider-nav:hover {
+      background: var(--leaf);
+      border-color: #ffffff;
+      transform: translateY(-50%) scale(1.08);
+    }
+    .btn-slider-nav.prev { left: -10px; }
+    .btn-slider-nav.next { right: -10px; }
+
+    /* 개별 도서 슬라이드 카드 (한 화면 5권 규격) */
+    .book-slide-card {
+      flex: 0 0 calc(20% - 10px);
+      min-width: 82px;
+      max-width: 110px;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      position: relative;
+      text-align: left;
+    }
+    .book-slide-card:hover {
+      transform: translateY(-3px);
+    }
+    .card-cover-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1.38;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(58, 46, 38, 0.12);
+      margin-bottom: 7px;
+      background: #f0ede6;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    .card-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .3s ease;
+    }
+    .book-slide-card:hover .card-cover-img {
+      transform: scale(1.05);
+    }
+    .book-cover-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 4px;
+      text-align: center;
+      color: #ffffff;
+      border-radius: inherit;
+      box-sizing: border-box;
+      position: relative;
+      background: linear-gradient(145deg, #2d6a4f, #1b4332);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.25);
+    }
+    .bcp-icon {
+      font-size: 17px;
+      margin-bottom: 3px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+    }
+    .bcp-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: #ffffff;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      word-break: keep-all;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .card-rank-badge {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      border-radius: 6px;
+      background: rgba(36, 28, 22, 0.85);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 2;
+    }
+    .card-rank-badge.top-1 {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+    }
+    .card-rank-badge.top-2 {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      color: #fff;
+    }
+    .card-rank-badge.top-3 {
+      background: linear-gradient(135deg, #b45309, #78350f);
+      color: #fff;
+    }
+    .card-new-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 4px;
+      letter-spacing: -0.5px;
+      box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+      z-index: 2;
+    }
+    .card-title-text {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--wood-dark);
+      line-height: 1.35;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      min-height: 32px;
+      margin-bottom: 2px;
+    }
+    .card-author-text {
+      font-size: 10.5px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-quiz-count {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--leaf-pale);
+      color: var(--leaf);
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-top: 3px;
+    }
+
+    /* ============================================================== */
+    /* 도서관 메뉴 3종 서브탭 및 학년 칩 필터 */
+    /* ============================================================== */
+    .lib-sub-nav {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .lib-sub-nav::-webkit-scrollbar { display: none; }
+    .lib-sub-pill {
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid var(--soft);
+      background: #ffffff;
+      color: var(--muted);
+      transition: all .2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .lib-sub-pill.active {
+      background: var(--leaf);
+      color: #ffffff;
+      border-color: var(--leaf);
+      box-shadow: 0 2px 8px rgba(45, 106, 79, 0.2);
+    }
+    .grade-filter-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 2px 10px 2px;
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .grade-filter-scroll::-webkit-scrollbar { display: none; }
+    .grade-chip {
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #f3efe8;
+      color: var(--wood-mid);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+    .grade-chip:hover {
+      background: #e9e4db;
+    }
+    .grade-chip.active {
+      background: var(--wood-dark);
+      color: #ffffff;
+      border-color: var(--wood-dark);
+      box-shadow: 0 2px 6px rgba(58, 46, 38, 0.2);
+    }
+
+    /* ============================================================== */
+    /* 신규 도서 상세 정보 화면 (Book Info Detail Panel) */
+    /* ============================================================== */
+    #p-book-detail {
+      padding-bottom: 95px; /* 하단 고정 바 공간 확보 */
+    }
+    .detail-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .btn-detail-back {
+      border: none;
+      background: transparent;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--wood-dark);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 4px;
+      border-radius: 8px;
+      transition: all .2s;
+    }
+    .btn-detail-back:hover {
+      color: var(--leaf);
+      background: rgba(0,0,0,0.04);
+    }
+    .detail-hero-card {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 18px;
+      padding: 18px 16px;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(58, 46, 38, 0.05);
+    }
+    .detail-cover-large {
+      width: 104px;
+      height: 144px;
+      border-radius: 10px;
+      object-fit: cover;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+      flex-shrink: 0;
+      background: #eae6df;
+    }
+    .detail-meta-group {
+      flex: 1;
+      min-width: 0;
+    }
+    .detail-title {
+      font-size: 17.5px;
+      font-weight: 900;
+      color: var(--wood-dark);
+      line-height: 1.3;
+      margin-bottom: 5px;
+    }
+    .detail-author-pub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .detail-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .detail-badge-grade {
+      background: var(--leaf-soft);
+      color: var(--leaf);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .detail-badge-cat {
+      background: #f4f0eb;
+      color: var(--wood-mid);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .detail-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .detail-tag-pill {
+      font-size: 10.5px;
+      color: #2d6a4f;
+      background: #e8f5ed;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-weight: 600;
+    }
+    .detail-section-card {
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(58, 46, 38, 0.04);
+    }
+    .synopsis-text {
+      font-size: 13px;
+      line-height: 1.75;
+      color: #3e332a;
+      word-break: keep-all;
+    }
+    .next-read-container {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 4px 2px 8px 2px;
+      scrollbar-width: none;
+    }
+    .next-read-container::-webkit-scrollbar { display: none; }
+    .next-read-item {
+      flex: 0 0 88px;
+      cursor: pointer;
+      text-align: center;
+      transition: transform .2s;
+    }
+    .next-read-item:hover {
+      transform: translateY(-2px);
+    }
+    .next-read-thumb {
+      width: 80px;
+      height: 110px;
+      border-radius: 7px;
+      object-fit: cover;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+      margin-bottom: 5px;
+      background: #eae6df;
+    }
+    .next-read-name {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--wood-dark);
+      line-height: 1.3;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      min-height: 30px;
+    }
+
+    /* 하단 고정 북퀴즈 풀기 CTA 바 */
+    .fixed-quiz-bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-top: 1.5px solid var(--soft);
+      z-index: 1050;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+      display: flex;
+      gap: 10px;
+    }
+    .btn-quiz-cta {
+      flex: 1;
+      padding: 14px 18px;
+      border: none;
+      border-radius: 13px;
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.3);
+      transition: all .2s;
+    }
+    .btn-quiz-cta:hover {
+      background: linear-gradient(135deg, #357c5d, #24573f);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(45, 106, 79, 0.38);
+    }
   </style>
 </head>
 <body>
@@ -648,25 +1332,52 @@
   <a href="admin_preview.html"><i class="fa-solid fa-arrow-left mr-1"></i>학원관리자 뷰</a>
 </div>
 <header class="s-header">
+  <!-- 바람에 흩날리는 나뭇잎 애니메이션 씬 (감성적인 숲속 모션) -->
+  <div class="leaf-wind-scene" aria-hidden="true">
+    <div class="wind-leaf wind-leaf-1">
+      <svg viewBox="0 0 24 24" fill="#a7e3be"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-2">
+      <svg viewBox="0 0 24 24" fill="#74c69d"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-3">
+      <svg viewBox="0 0 24 24" fill="#b7e4c7"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-4">
+      <svg viewBox="0 0 24 24" fill="#95d5b2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-5">
+      <svg viewBox="0 0 24 24" fill="#d8f3dc"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-6">
+      <svg viewBox="0 0 24 24" fill="#74c69d"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-7">
+      <svg viewBox="0 0 24 24" fill="#a7e3be"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+    <div class="wind-leaf wind-leaf-8">
+      <svg viewBox="0 0 24 24" fill="#b7e4c7"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    </div>
+  </div>
+
   <div class="logo">
     <div class="logo-icon"><i class="fa-solid fa-book-open-reader"></i></div>
     나노의 책장
   </div>
-  <div class="user-info">
-    <div style="font-weight:800;font-size:14px;">김민준</div>
-    <div style="font-size:11px;opacity:.8;">지혜반 · 초등 5학년</div>
+  <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:2;">
+    <div class="user-info">
+      <div style="font-weight:800;font-size:14px;color:#ffffff;">김민준</div>
+      <div style="font-size:11px;color:#b7e4c7;">지혜반 · 초등 5학년</div>
+    </div>
+    <button type="button" class="btn-student-logout" onclick="handleStudentLogout()" title="학생 포털 로그아웃">
+      <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+    </button>
   </div>
 </header>
 <div class="main">
 
   <!-- 홈 -->
   <div id="p-home" class="panel active anim">
-    <div class="welcome-banner">
-      <div style="font-size:12.5px;opacity:.85;">안녕하세요, 오늘도 독서 완료! 🌿</div>
-      <div style="font-size:21px;font-weight:900;margin:3px 0;">김민준 님</div>
-      <div style="font-size:12.5px;opacity:.8;">나노 독서아카데미 · 지혜반</div>
-      <span style="display:inline-block;background:rgba(255,255,255,.22);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:700;margin-top:6px;border:1px solid rgba(255,255,255,0.25);">⭐ 초등 심화 Lv 5</span>
-    </div>
 
     <!-- 학생 메인 롤링 배너 캐러셀 (숲속 목재 테마 배너 연동) -->
     <div class="rolling-banner-container" id="studentBannerBox">
@@ -691,57 +1402,134 @@
       <div class="stat-mini"><div style="font-size:22px;">🌿</div><div class="val" style="color:var(--leaf-mid);">94.2</div><div class="lbl">퀴즈 평균</div></div>
       <div class="stat-mini"><div style="font-size:22px;">🏆</div><div class="val" style="color:var(--wood-dark);">2,480</div><div class="lbl">포인트</div></div>
     </div>
-    <div class="sec-title"><i class="fa-solid fa-thumbtack" style="color:var(--leaf);"></i> 배정된 도서 <span class="cnt-badge">2권</span> <span style="font-size:11px;color:var(--amber);font-weight:600;"><i class="fa-solid fa-bell"></i> 마감임박</span></div>
-    <div class="book-row priority" onclick="startQuiz('1001')">
-      <span class="pflag">📌 배정</span>
-      <img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자" style="margin-top:4px;">
-      <div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리 · 열린책들</div><span class="dbadge urgent">D-3 마감 (9/22)</span></div>
-      <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1001')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>
-    </div>
-    <div class="book-row priority" onclick="startQuiz('1002')">
-      <span class="pflag">📌 배정</span>
-      <img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드" style="margin-top:4px;">
-      <div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평 · 창비</div><span class="dbadge normal">D-7 마감 (9/26)</span></div>
-      <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1002')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><i class="fa-solid fa-clock-rotate-left" style="color:var(--wood-mid);"></i> 최근 학습 기록</div>
-      <div class="card-body" style="padding:11px 13px;">
-        <div class="hist-row"><div class="hist-rank"><i class="fa-solid fa-check"></i></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">어린 왕자</div><div style="font-size:11.5px;color:var(--muted);">2026.09.08 · 북퀴즈 완료</div></div><div style="font-weight:900;color:var(--leaf);">100점</div></div>
-        <div class="hist-row"><div class="hist-rank"><i class="fa-solid fa-check"></i></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">마당을 나온 암탉</div><div style="font-size:11.5px;color:var(--muted);">2026.09.05 · 북퀴즈 완료</div></div><div style="font-weight:900;color:var(--leaf-mid);">90점</div></div>
+    <!-- 1. 최근에 추가된 도서 (30권 가로 슬라이더) -->
+    <div class="slider-section" id="secRecentBooks">
+      <div class="sec-header-flex">
+        <div class="sec-title-main">
+          <i class="fa-solid fa-sparkles" style="color:#10b981;"></i> 최근에 추가된 도서 <span class="cnt-badge" id="recentBooksCount">30권</span>
+        </div>
+      </div>
+      <div class="book-slider-container">
+        <button type="button" class="btn-slider-nav prev" onclick="slideHorizontal('recentBooksTrack', -1)" title="이전"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-slider-track" id="recentBooksTrack"></div>
+        <button type="button" class="btn-slider-nav next" onclick="slideHorizontal('recentBooksTrack', 1)" title="다음"><i class="fa-solid fa-chevron-right"></i></button>
       </div>
     </div>
+
+    <!-- 2. 주간 인기 도서 (D-1 ~ D-7 퀴즈 기준 30권) -->
+    <div class="slider-section" id="secPopularBooks">
+      <div class="sec-header-flex">
+        <div class="sec-title-main">
+          <i class="fa-solid fa-fire" style="color:#ef4444;"></i> 인기 도서 TOP 30 <span style="font-size:11px;color:var(--muted);font-weight:600;margin-left:4px;">(D-1 ~ D-7 주간 퀴즈순)</span>
+        </div>
+      </div>
+      <div class="book-slider-container">
+        <button type="button" class="btn-slider-nav prev" onclick="slideHorizontal('popularBooksTrack', -1)" title="이전"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-slider-track" id="popularBooksTrack"></div>
+        <button type="button" class="btn-slider-nav next" onclick="slideHorizontal('popularBooksTrack', 1)" title="다음"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+
+    <!-- 3. 회원 학년 맞춤 권장 도서 (초등 5학년 30권 + 더보기) -->
+    <div class="slider-section" id="secGradeBooks">
+      <div class="sec-header-flex">
+        <div class="sec-title-main">
+          <i class="fa-solid fa-seedling" style="color:var(--leaf);"></i> <span id="memberGradeTitle">초등 5학년 권장 도서</span> <span class="cnt-badge" id="gradeBooksCount">30권</span>
+        </div>
+        <a href="javascript:void(0)" class="sec-more-link" onclick="goToGradeLibrary('초5')">더보기 <i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+      <div class="book-slider-container">
+        <button type="button" class="btn-slider-nav prev" onclick="slideHorizontal('gradeBooksTrack', -1)" title="이전"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-slider-track" id="gradeBooksTrack"></div>
+        <button type="button" class="btn-slider-nav next" onclick="slideHorizontal('gradeBooksTrack', 1)" title="다음"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+
   </div>
 
   <!-- 도서관 -->
   <div id="p-books" class="panel anim">
     <div class="sec-title"><i class="fa-solid fa-books" style="color:var(--leaf);"></i> 도서관</div>
     <div class="tab2-btns">
-      <button class="tab2-btn on" id="btab-a" onclick="switchBookTab('assigned')"><i class="fa-solid fa-thumbtack mr-1"></i>배정 도서</button>
-      <button class="tab2-btn off" id="btab-b" onclick="switchBookTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
+      <button class="tab2-btn off" id="btab-a" onclick="switchBookTab('assigned')"><i class="fa-solid fa-thumbtack mr-1"></i>배정 도서</button>
+      <button class="tab2-btn on" id="btab-b" onclick="switchBookTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
     </div>
-    <div id="bsub-assigned">
-      <div class="book-row priority" onclick="startQuiz('1001')">
-        <span class="pflag">📌 배정</span>
-        <img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자">
-        <div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리 · 열린책들</div><span class="dbadge urgent">D-3 마감</span></div>
-        <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1001')">퀴즈 풀기</button>
-      </div>
-      <div class="book-row priority" onclick="startQuiz('1002')">
-        <span class="pflag">📌 배정</span>
-        <img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드">
-        <div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평 · 창비</div><span class="dbadge normal">D-7 마감</span></div>
-        <button class="act-btn start" onclick="event.stopPropagation();startQuiz('1002')">퀴즈 풀기</button>
-      </div>
-      <div class="book-row" style="opacity:.85;">
-        <img src="assets/covers/cover_1004.jpg" class="bcover" alt="자전거 도둑">
-        <div class="binfo"><div class="btitle">자전거 도둑</div><div class="bauthor">박완서 · 다림</div><span class="dbadge done">✓ 완료 100점</span></div>
-        <button class="act-btn done-btn" disabled>완료됨</button>
-      </div>
+    <div id="bsub-assigned" style="display:none;">
+      <div id="assignedLibList"></div>
     </div>
-    <div id="bsub-all" style="display:none;">
-      <div class="sbar"><input type="text" id="libQ" placeholder="도서명, 저자 검색..." oninput="filterLib()"><button onclick="filterLib()"><i class="fa-solid fa-search"></i></button></div>
+    <div id="bsub-all">
+      <!-- 전체 도서관 2차 서브탭: 권장도서 / 인기도서 / 추천도서 -->
+      <div class="lib-sub-nav">
+        <button type="button" class="lib-sub-pill active" id="libSubPill-recommended" onclick="switchLibSubTab('recommended')">
+          <i class="fa-solid fa-seedling"></i> 권장도서
+        </button>
+        <button type="button" class="lib-sub-pill" id="libSubPill-popular" onclick="switchLibSubTab('popular')">
+          <i class="fa-solid fa-fire"></i> 인기도서
+        </button>
+        <button type="button" class="lib-sub-pill" id="libSubPill-curated" onclick="switchLibSubTab('curated')">
+          <i class="fa-solid fa-star"></i> 추천도서
+        </button>
+      </div>
+
+      <!-- 권장도서용 학년 칩 필터 바 -->
+      <div class="grade-filter-scroll" id="gradeFilterBar">
+        <button type="button" class="grade-chip" data-grade="all" onclick="selectGradeFilter('all')">전체</button>
+        <button type="button" class="grade-chip" data-grade="초1" onclick="selectGradeFilter('초1')">초1</button>
+        <button type="button" class="grade-chip" data-grade="초2" onclick="selectGradeFilter('초2')">초2</button>
+        <button type="button" class="grade-chip" data-grade="초3" onclick="selectGradeFilter('초3')">초3</button>
+        <button type="button" class="grade-chip" data-grade="초4" onclick="selectGradeFilter('초4')">초4</button>
+        <button type="button" class="grade-chip active" data-grade="초5" onclick="selectGradeFilter('초5')">초5 (민준)</button>
+        <button type="button" class="grade-chip" data-grade="초6" onclick="selectGradeFilter('초6')">초6</button>
+        <button type="button" class="grade-chip" data-grade="중1" onclick="selectGradeFilter('중1')">중1</button>
+        <button type="button" class="grade-chip" data-grade="중2" onclick="selectGradeFilter('중2')">중2</button>
+        <button type="button" class="grade-chip" data-grade="중3" onclick="selectGradeFilter('중3')">중3</button>
+      </div>
+
+      <div class="sbar">
+        <input type="text" id="libQ" placeholder="도서명, 저자, 출판사 검색..." oninput="filterLib()">
+        <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
+      </div>
       <div id="libList"></div>
+    </div>
+  </div>
+
+  <!-- 신규: 도서 상세 정보 (Book Info) 패널 -->
+  <div id="p-book-detail" class="panel anim" style="display:none;">
+    <div class="detail-nav-bar">
+      <button type="button" class="btn-detail-back" onclick="closeBookDetail()">
+        <i class="fa-solid fa-arrow-left"></i> 이전으로 돌아가기
+      </button>
+      <span style="font-size:12px;font-weight:700;color:var(--muted);"><i class="fa-solid fa-book-open mr-1"></i>도서 상세 정보</span>
+    </div>
+
+    <!-- 메인 도서 서지 카드 -->
+    <div class="detail-hero-card" id="detailHeroCard">
+      <!-- 동적 주입 -->
+    </div>
+
+    <!-- 줄거리 카드 -->
+    <div class="detail-section-card">
+      <div class="sec-title" style="margin-bottom:8px;font-size:14px;"><i class="fa-solid fa-feather-pointed" style="color:var(--leaf);"></i> 도서 줄거리 및 읽기 포인트</div>
+      <div class="synopsis-text" id="detailSynopsis">
+        줄거리를 불러오는 중입니다.
+      </div>
+    </div>
+
+    <!-- 이 도서를 읽은 학생이 다음으로 읽은 책 -->
+    <div class="detail-section-card">
+      <div class="sec-title" style="margin-bottom:10px;font-size:14px;">
+        <i class="fa-solid fa-compass" style="color:var(--wood-mid);"></i> 이 도서를 읽은 학생이 다음으로 읽은 책
+      </div>
+      <div class="next-read-container" id="detailNextBooks">
+        <!-- 동적 주입 -->
+      </div>
+    </div>
+
+    <!-- 하단 고정 북퀴즈 풀기 CTA 바 -->
+    <div class="fixed-quiz-bottom-bar">
+      <button type="button" class="btn-quiz-cta" id="btnDetailQuizCta" onclick="startQuizFromDetail()">
+        <i class="fa-solid fa-pen-nib"></i> <span id="detailQuizBtnText">북퀴즈 풀기 (5문항)</span>
+      </button>
     </div>
   </div>
 
@@ -840,13 +1628,865 @@ var histData=[
   {title:'마당을 나온 암탉',date:'2026.08.28',score:90},{title:'완득이',date:'2026.08.20',score:80},
   {title:'아몬드',date:'2026.08.15',score:100},{title:'소년이 온다',date:'2026.08.08',score:90}
 ];
-var libData=[
-  {id:'1001',title:'어린 왕자',author:'앙투안 드 생텍쥐페리',pub:'열린책들',cat:'세계문학',cover:'assets/covers/cover_1001.jpg',emoji:'📕',assigned:true},
-  {id:'1002',title:'아몬드',author:'손원평',pub:'창비',cat:'국내소설',cover:'assets/covers/cover_1002.jpg',emoji:'📗',assigned:true},
-  {id:'1003',title:'마당을 나온 암탉',author:'황선미',pub:'사계절',cat:'동화',cover:'assets/covers/cover_1003.jpg',emoji:'📘',assigned:false},
-  {id:'1004',title:'자전거 도둑',author:'박완서',pub:'다림',cat:'단편소설',cover:'assets/covers/cover_1004.jpg',emoji:'📙',assigned:false},
-  {id:'1005',title:'만복이네 떡집',author:'김리리',pub:'비룡소',cat:'동화',emoji:'📒',assigned:false}
+// 45권 규모의 정밀 도서 마스터 데이터셋 (교과연계, 베스트셀러, 학년별/카테고리별)
+var libData = [
+  {
+    id: '1001',
+    title: '어린 왕자',
+    subtitle: '세계 명작 · 교과 연계 필독서',
+    author: '앙투안 드 생텍쥐페리',
+    pub: '열린책들',
+    cat: '세계문학 / 우정',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-09-16',
+    quizCount7d: 184,
+    readCount: 1420,
+    cover: 'assets/covers/cover_1001.jpg',
+    assigned: true,
+    isEditorPick: true,
+    tags: ['#우정', '#상상력', '#철학', '#교과필독'],
+    synopsis: '사막에 불시착한 비행사와 신비로운 소행성 B-612에서 온 어린 왕자의 순수한 만남을 그린 걸작입니다. 장미꽃과의 갈등, 지구에서 만난 여우를 통해 "가장 중요한 것은 눈에 보이지 않는다"는 진정한 관계의 의미를 깨닫게 합니다.',
+    nextReadIds: ['1002', '1006', '1015', '1039']
+  },
+  {
+    id: '1002',
+    title: '아몬드',
+    subtitle: '창비 청소년 문학상 수상작',
+    author: '손원평',
+    pub: '창비',
+    cat: '청소년성장 / 공감',
+    grade: '중1',
+    gradeGroup: '중등 1학년',
+    createdAt: '2026-09-15',
+    quizCount7d: 162,
+    readCount: 1280,
+    cover: 'assets/covers/cover_1002.jpg',
+    assigned: true,
+    isEditorPick: true,
+    tags: ['#감정표현', '#공감', '#성장', '#우정'],
+    synopsis: '감정을 느끼지 못하는 소년 윤재와 분노로 가득 찬 소년 곤이가 만나 서로의 상처를 보듬고 세상과 소통해 나가는 과정을 따뜻하고 감동적으로 그려낸 청소년 성장 문학입니다.',
+    nextReadIds: ['1001', '1014', '1033', '1034']
+  },
+  {
+    id: '1003',
+    title: '마당을 나온 암탉',
+    subtitle: '사계절 아동문학 대표작',
+    author: '황선미',
+    pub: '사계절',
+    cat: '한국동화 / 모성애',
+    grade: '초4',
+    gradeGroup: '초등 4학년',
+    createdAt: '2026-09-14',
+    quizCount7d: 145,
+    readCount: 1150,
+    cover: 'assets/covers/cover_1003.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#자유', '#모성애', '#생명존중', '#초등필독'],
+    synopsis: '양계장에 갇혀 알만 낳던 암탉 잎싹이 마당을 나와 야생의 숲속에서 알을 품고, 청둥오리 초록이를 길러내며 겪는 위대한 사랑과 자유의 여정을 다룬 감동 동화입니다.',
+    nextReadIds: ['1004', '1008', '1010', '1024']
+  },
+  {
+    id: '1004',
+    title: '자전거 도둑',
+    subtitle: '한국 단편문학 필독선',
+    author: '박완서',
+    pub: '다림',
+    cat: '단편소설 / 성장',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-09-13',
+    quizCount7d: 138,
+    readCount: 990,
+    cover: 'assets/covers/cover_1004.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#양심', '#도덕', '#사회갈등', '#교과연계'],
+    synopsis: '상계동 청계천 세운상가에서 일하는 순박한 소년 수남이가 자전거 도난 사건에 휘말리며 겪는 양심의 가책과 도덕적 갈등을 섬세하게 그린 박완서 작가의 대표 성장 단편입니다.',
+    nextReadIds: ['1001', '1006', '1013', '1043']
+  },
+  {
+    id: '1005',
+    title: '만복이네 떡집',
+    subtitle: '초등 저학년 최고 베스트셀러',
+    author: '김리리',
+    pub: '비룡소',
+    cat: '아동동화 / 인성',
+    grade: '초3',
+    gradeGroup: '초등 3학년',
+    createdAt: '2026-09-12',
+    quizCount7d: 125,
+    readCount: 920,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#고운말', '#배려', '#판타지동화', '#초등필독'],
+    synopsis: '욕쟁이에 심술쟁이 만복이가 신비로운 떡집에서 파는 마법의 떡을 먹으며 따뜻한 말 한마디와 친구를 배려하는 태도의 소중함을 스스로 깨달아가는 이야기입니다.',
+    nextReadIds: ['1009', '1018', '1022', '1044']
+  },
+  {
+    id: '1006',
+    title: '긴긴밤',
+    subtitle: '제21회 문학동네어린이문학상 대상',
+    author: '루리',
+    pub: '문학동네',
+    cat: '감동동화 / 우정',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-09-11',
+    quizCount7d: 152,
+    readCount: 1100,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#우정', '#희망', '#생명', '#초등5학년추천'],
+    synopsis: '세상에 마지막 하나 남은 흰바위코뿔소 노든과 버려진 알에서 태어난 어린 펭귄이 푸른 바다를 찾아 함께 걸어가는 수많은 긴긴밤의 숭고한 사랑과 연대를 담았습니다.',
+    nextReadIds: ['1001', '1004', '1008', '1015']
+  },
+  {
+    id: '1007',
+    title: '불편한 편의점',
+    subtitle: '전국 서점 종합 베스트셀러 1위',
+    author: '김호연',
+    pub: '나무옆의자',
+    cat: '힐링소설 / 따뜻한위로',
+    grade: '중2',
+    gradeGroup: '중등 2학년',
+    createdAt: '2026-09-10',
+    quizCount7d: 118,
+    readCount: 880,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#힐링', '#이웃사랑', '#위로', '#청소년추천'],
+    synopsis: '청파동 골목길 작은 편의점을 배경으로, 기억을 잃은 야간 알바생 독고와 저마다의 고단한 삶의 무게를 짊어진 손님들이 서로의 온기로 상처를 치유해 나가는 감동 스토리입니다.',
+    nextReadIds: ['1002', '1014', '1034', '1035']
+  },
+  {
+    id: '1008',
+    title: '푸른 사자 와니니',
+    subtitle: '창비 좋은 어린이책 대상 수상작',
+    author: '이현',
+    pub: '창비',
+    cat: '모험동화 / 자연생태',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-09-09',
+    quizCount7d: 130,
+    readCount: 940,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#용기', '#성장모험', '#초등5학년필독', '#리더십'],
+    synopsis: '아프리카 초원에서 무리에서 쫓겨난 작고 약한 암사자 와니니가 스스로 무리를 이끌고 진정한 초원의 우두머리로 당당히 성장해 나가는 벅찬 감동의 자연 모험극입니다.',
+    nextReadIds: ['1006', '1003', '1016', '1043']
+  },
+  {
+    id: '1009',
+    title: '고양이 해결사 깜냥',
+    subtitle: '초등 독서력 강화 필수 도서',
+    author: '홍민정',
+    pub: '창비',
+    cat: '일상동화 / 해결사',
+    grade: '초2',
+    gradeGroup: '초등 2학년',
+    createdAt: '2026-09-08',
+    quizCount7d: 110,
+    readCount: 820,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#고양이깜냥', '#문제해결', '#초등저학년', '#재미'],
+    synopsis: '비 오는 날 아파트 경비실에 불쑥 나타난 떠돌이 고양이 깜냥이 아파트 주민들의 온갖 소소한 민원과 갈등을 재치 있게 해결해 주는 따뜻하고 유쾌한 동화입니다.',
+    nextReadIds: ['1005', '1018', '1026', '1036']
+  },
+  {
+    id: '1010',
+    title: '몽실 언니',
+    subtitle: '한국 아동문학의 영원한 고전',
+    author: '권정생',
+    pub: '창비',
+    cat: '역사동화 / 가족사랑',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-09-07',
+    quizCount7d: 105,
+    readCount: 780,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#가족', '#역사', '#초등5학년필독', '#희생'],
+    synopsis: '전쟁과 가난의 혹독한 시련 속에서도 절망하지 않고 어린 동생 난이를 지극정성으로 품어 키워낸 몽실 언니의 헌신적 사랑과 굳센 생명력을 그린 한국 문학의 걸작입니다.',
+    nextReadIds: ['1004', '1006', '1013', '1020']
+  },
+  {
+    id: '1011',
+    title: '수난이대',
+    subtitle: '일제강점기-6.25 민족 수난사',
+    author: '하근찬',
+    pub: '민음사',
+    cat: '한국문학 / 시대비판',
+    grade: '중3',
+    gradeGroup: '중등 3학년',
+    createdAt: '2026-09-06',
+    quizCount7d: 88,
+    readCount: 650,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#민족수난', '#부자지정', '#중등국어', '#교과연계'],
+    synopsis: '일제강점기에 한 팔을 잃은 아버지 박만도와 한국전쟁에서 한 다리를 잃고 돌아온 아들 진수가 외나무다리를 함께 건너며 민족의 비극을 극복해 내는 눈물겨운 부자의 이야기입니다.',
+    nextReadIds: ['1012', '1040', '1041', '1042']
+  },
+  {
+    id: '1012',
+    title: '원미동 사람들',
+    subtitle: '한국 대표 사실주의 연작소설',
+    author: '양귀자',
+    pub: '살림',
+    cat: '한국소설 / 도시소외',
+    grade: '중3',
+    gradeGroup: '중등 3학년',
+    createdAt: '2026-09-05',
+    quizCount7d: 82,
+    readCount: 610,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#서민의삶', '#연대', '#중3필독', '#소외계층'],
+    synopsis: '1980년대 부천 원미동 소시민들의 삶의 애환과 갈등, 그리고 그 속에서 피어나는 작은 연대와 화해를 생생하고 따뜻한 시선으로 포착한 현대문학 필독선입니다.',
+    nextReadIds: ['1011', '1014', '1040', '1042']
+  },
+  {
+    id: '1013',
+    title: '우리들의 일그러진 영웅',
+    subtitle: '권력과 굴종에 대한 날카로운 통찰',
+    author: '이문열',
+    pub: '다산책방',
+    cat: '성장문학 / 사회비판',
+    grade: '초6',
+    gradeGroup: '초등 6학년',
+    createdAt: '2026-09-04',
+    quizCount7d: 114,
+    readCount: 890,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#권력', '#정의', '#초등고학년', '#집단주의'],
+    synopsis: '시골 초등학교 5학년 학급을 지배하는 절대 권력 엄석대와 그에 맞서다 굴복하는 전학생 한병태의 치열한 심리 대립을 통해 한국 사회의 부조리한 권력 구조를 축소해 보여줍니다.',
+    nextReadIds: ['1004', '1010', '1016', '1038']
+  },
+  {
+    id: '1014',
+    title: '완득이',
+    subtitle: '웃음과 눈물이 함께하는 청소년 소설',
+    author: '이희영',
+    pub: '창비',
+    cat: '청소년소설 / 성장',
+    grade: '중2',
+    gradeGroup: '중등 2학년',
+    createdAt: '2026-09-03',
+    quizCount7d: 98,
+    readCount: 750,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#다문화', '#스승과제자', '#유쾌한성장', '#중등추천'],
+    synopsis: '가난하고 공부도 못하지만 싸움 하나는 기막힌 킥복싱 소년 완득이와 그를 끈질기게 괴롭히며 이끌어주는 담임 똥주 선생의 유쾌하고 뭉클한 성장 스토리입니다.',
+    nextReadIds: ['1002', '1007', '1033', '1035']
+  },
+  {
+    id: '1015',
+    title: '샬롯의 거미줄',
+    subtitle: '뉴베리 아너상 수상 전설의 명작',
+    author: 'E.B. 화이트',
+    pub: '시공주니어',
+    cat: '세계명작 / 생명사랑',
+    grade: '초4',
+    gradeGroup: '초등 4학년',
+    createdAt: '2026-09-02',
+    quizCount7d: 122,
+    readCount: 960,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#우정', '#헌신', '#생명의소중함', '#초등필독'],
+    synopsis: '어린 돼지 윌버를 식탁의 햄이 되지 않게 지키기 위해 자신의 거미줄에 기적의 글자를 짜 넣으며 끝까지 헌신한 회색 거미 샬롯의 가슴 시린 아름다운 우정 이야기입니다.',
+    nextReadIds: ['1001', '1003', '1006', '1017']
+  },
+  {
+    id: '1016',
+    title: '모모',
+    subtitle: '시간을 도둑맞은 현대인을 위한 철학 동화',
+    author: '미하엘 엔데',
+    pub: '비룡소',
+    cat: '판타지 / 시간철학',
+    grade: '초6',
+    gradeGroup: '초등 6학년',
+    createdAt: '2026-09-01',
+    quizCount7d: 112,
+    readCount: 840,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#시간', '#경청', '#철학동화', '#초등고학년'],
+    synopsis: '사람들의 시간을 훔쳐 세상을 삭막하게 만드는 회색 신사들에 맞서, 다른 이의 말을 진심으로 귀 기울여 들어주는 신비한 소녀 모모가 시간의 꽃을 되찾아가는 환상적인 모험극입니다.',
+    nextReadIds: ['1001', '1013', '1031', '1038']
+  },
+  {
+    id: '1017',
+    title: '찰리와 초콜릿 공장',
+    subtitle: '상상력 넘치는 윌리 웡카의 모험',
+    author: '로알드 달',
+    pub: '시공주니어',
+    cat: '판타지모험 / 유머',
+    grade: '초4',
+    gradeGroup: '초등 4학년',
+    createdAt: '2026-08-31',
+    quizCount7d: 135,
+    readCount: 1020,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#상상력', '#모험', '#권선징악', '#초등명작'],
+    synopsis: '가난하지만 착한 소년 찰리가 전설의 황금 티켓을 얻어 비밀에 싸인 윌리 웡카의 거대한 초콜릿 공장에 초대받으면서 펼쳐지는 기상천외하고 기발한 판타지 모험입니다.',
+    nextReadIds: ['1015', '1018', '1027', '1031']
+  },
+  {
+    id: '1018',
+    title: '이상한 과자 가게 전천당',
+    subtitle: '소원을 들어주는 마법의 과자',
+    author: '히로시마 레이코',
+    pub: '길벗어린이',
+    cat: '판타지 / 미스터리',
+    grade: '초3',
+    gradeGroup: '초등 3학년',
+    createdAt: '2026-08-30',
+    quizCount7d: 140,
+    readCount: 1120,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#과자가게', '#선택과책임', '#초등인기', '#판타지'],
+    synopsis: '행운의 동전을 쥔 손님에게만 문을 여는 수상한 과자 가게 전천당에서 벌어지는 기묘하고 신기한 마법의 과자 이야기로, 올바른 선택의 책임감을 흥미진진하게 일깨워줍니다.',
+    nextReadIds: ['1005', '1009', '1017', '1028']
+  },
+  {
+    id: '1019',
+    title: '구운몽',
+    subtitle: '인생무상과 깨달음의 한국 고전',
+    author: '김만중',
+    pub: '민음사',
+    cat: '한국고전 / 환몽소설',
+    grade: '중2',
+    gradeGroup: '중등 2학년',
+    createdAt: '2026-08-29',
+    quizCount7d: 74,
+    readCount: 540,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#고전소설', '#꿈과현실', '#중등필독', '#한국문학'],
+    synopsis: '불제자 성진이 하룻밤 꿈속에서 양소유로 환생해 여덟 선녀와 온갖 부귀영화를 누리다 깨어나 진정한 삶의 본질을 깨닫는 조선 후기 몽유록 계열 고전소설의 백미입니다.',
+    nextReadIds: ['1020', '1029', '1030', '1041']
+  },
+  {
+    id: '1020',
+    title: '홍길동전',
+    subtitle: '최초의 한글 소설이자 영웅 소설',
+    author: '허균',
+    pub: '비룡소',
+    cat: '한국고전 / 영웅서사',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-08-28',
+    quizCount7d: 96,
+    readCount: 760,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#의적', '#신분제타파', '#초등5학년필독', '#역사고전'],
+    synopsis: '서자로 태어나 아버지를 아버지라 부르지 못하던 길동이 활빈당을 이끌고 탐관오리를 응징하며 율도국을 세우는 우리나라 최초의 한글 영웅 소설입니다.',
+    nextReadIds: ['1004', '1010', '1019', '1043']
+  },
+  {
+    id: '1021',
+    title: '별 헤는 밤',
+    subtitle: '영혼을 울리는 윤동주 시선집',
+    author: '윤동주',
+    pub: '소와다리',
+    cat: '현대시 / 저항문학',
+    grade: '중1',
+    gradeGroup: '중등 1학년',
+    createdAt: '2026-08-27',
+    quizCount7d: 85,
+    readCount: 680,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#윤동주', '#순수시', '#시대양심', '#중등필독'],
+    synopsis: '일제강점기의 어두운 시대 속에서도 순수한 부끄러움과 꺾이지 않는 조국 사랑, 영원한 양심을 노래한 시인 윤동주의 맑고 깊은 대표 시들을 모았습니다.',
+    nextReadIds: ['1001', '1002', '1011', '1032']
+  },
+  {
+    id: '1022',
+    title: '알사탕',
+    subtitle: '아스트리드 린드그렌상 수상작',
+    author: '백희나',
+    pub: '책읽는곰',
+    cat: '그림책 / 마음공감',
+    grade: '초1',
+    gradeGroup: '초등 1학년',
+    createdAt: '2026-08-26',
+    quizCount7d: 115,
+    readCount: 910,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#마음의소리', '#가족사랑', '#초1권장', '#그림책'],
+    synopsis: '외로운 소년 동동이가 신비한 알사탕을 먹으며 소파, 강아지 구슬이, 잔소리꾼 아빠, 돌아가신 할머니의 진심 어린 속마음을 듣게 되는 가슴 뭉클한 명작 그림책입니다.',
+    nextReadIds: ['1023', '1024', '1026', '1036']
+  },
+  {
+    id: '1023',
+    title: '장수탕 선녀님',
+    subtitle: '백희나 작가의 유쾌한 판타지 그림책',
+    author: '백희나',
+    pub: '책읽는곰',
+    cat: '그림책 / 판타지',
+    grade: '초1',
+    gradeGroup: '초등 1학년',
+    createdAt: '2026-08-25',
+    quizCount7d: 108,
+    readCount: 840,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#목욕탕', '#선녀님', '#초등저학년', '#상상력'],
+    synopsis: '오래된 동네 목욕탕 장수탕에 숨어 살던 날개옷 잃은 선녀 할머니와 주인공 덕지가 요구르트를 나누어 마시며 나누는 신비롭고 익살스러운 우정을 담았습니다.',
+    nextReadIds: ['1022', '1024', '1026', '1009']
+  },
+  {
+    id: '1024',
+    title: '강아지 똥',
+    subtitle: '세상 모든 생명의 소중함을 일깨우는 명작',
+    author: '권정생',
+    pub: '길벗어린이',
+    cat: '그림책 / 생명존중',
+    grade: '초1',
+    gradeGroup: '초등 1학년',
+    createdAt: '2026-08-24',
+    quizCount7d: 102,
+    readCount: 870,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#생명존중', '#자존감', '#초등1학년', '#감동'],
+    synopsis: '골목길 구석에 버려져 더럽다고 손가락질받던 강아지 똥이 스스로를 녹여 아름다운 민들레 꽃을 피워내며 자신의 소중한 쓸모를 증명하는 감동적인 생명 찬가입니다.',
+    nextReadIds: ['1022', '1023', '1025', '1003']
+  },
+  {
+    id: '1025',
+    title: '꽃들에게 희망을',
+    subtitle: '진정한 자아를 찾아 떠나는 애벌레의 비행',
+    author: '트리나 폴러스',
+    pub: '시공주니어',
+    cat: '우화문학 / 자아성찰',
+    grade: '초3',
+    gradeGroup: '초등 3학년',
+    createdAt: '2026-08-23',
+    quizCount7d: 94,
+    readCount: 790,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#나비', '#자아실현', '#초3추천', '#인생우화'],
+    synopsis: '남들이 오르는 끝없는 애벌레 기둥을 벗어나 고치가 되어 날개를 펴는 호랑나비의 여정을 통해 끝없는 경쟁 대신 진정한 사랑과 변신의 가치를 알려줍니다.',
+    nextReadIds: ['1001', '1005', '1015', '1038']
+  },
+  {
+    id: '1026',
+    title: '지각대장 존',
+    subtitle: '어른들의 편견에 맞서는 아이의 상상력',
+    author: '존 버닝햄',
+    pub: '비룡소',
+    cat: '그림책 / 풍자유머',
+    grade: '초2',
+    gradeGroup: '초등 2학년',
+    createdAt: '2026-08-22',
+    quizCount7d: 91,
+    readCount: 710,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#학교생활', '#믿음과소통', '#초2필독', '#칼데콧상'],
+    synopsis: '등굣길에 악어, 사자, 파도를 만나 지각하는 존 패트릭 노먼 맥헤너시와 아이의 말을 절대 믿지 않는 완고한 선생님의 관계를 날카롭고 유머러스하게 비판합니다.',
+    nextReadIds: ['1009', '1022', '1023', '1036']
+  },
+  {
+    id: '1027',
+    title: '마법천자문: 한자 대모험',
+    subtitle: '놀이와 학습이 결합된 에듀테인먼트',
+    author: '시리얼',
+    pub: '아울북',
+    cat: '학습만화 / 어휘력',
+    grade: '초2',
+    gradeGroup: '초등 2학년',
+    createdAt: '2026-08-21',
+    quizCount7d: 132,
+    readCount: 1180,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#한자어휘', '#모험만화', '#초2인기', '#문해력기초'],
+    synopsis: '손오공과 삼장법사가 한자의 마법 주문을 외치며 악당 혼세마왕을 물리치고 세상을 지키는 흥미진진한 모험 속에서 핵심 한자 어휘를 자연스럽게 익힙니다.',
+    nextReadIds: ['1009', '1028', '1018', '1030']
+  },
+  {
+    id: '1028',
+    title: '수학도둑: 종합 창의 사고력',
+    subtitle: '스토리텔링 창의 수학 만화',
+    author: '서울문화사',
+    pub: '서울문화사',
+    cat: '학습만화 / 수학사고',
+    grade: '초3',
+    gradeGroup: '초등 3학년',
+    createdAt: '2026-08-20',
+    quizCount7d: 120,
+    readCount: 980,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#수학개념', '#창의퍼즐', '#초3권장', '#논리력'],
+    synopsis: '도도와 친구들이 신비한 수수께끼 던전을 탐험하며 기본 수리 연산과 도형, 논리 퍼즐의 원리를 배우는 인기 수학 학습 시리즈입니다.',
+    nextReadIds: ['1005', '1018', '1027', '1029']
+  },
+  {
+    id: '1029',
+    title: '이윤기의 그리스 로마 신화',
+    subtitle: '서양 문화와 인문학의 영원한 원천',
+    author: '이윤기',
+    pub: '웅진지식하우스',
+    cat: '고전신화 / 인문교양',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-08-19',
+    quizCount7d: 104,
+    readCount: 820,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#신화', '#인문교양', '#초등5학년추천', '#서양고전'],
+    synopsis: '제우스, 헤라클레스, 아킬레우스 등 올림포스 신들과 영웅들의 대서사시를 이윤기 선생의 깊이 있는 문장과 현장 답사 사진으로 풀어낸 교양 필독서입니다.',
+    nextReadIds: ['1001', '1008', '1030', '1031']
+  },
+  {
+    id: '1030',
+    title: '이문열의 삼국지',
+    subtitle: '천하를 다툰 영웅들의 대서사시',
+    author: '이문열',
+    pub: '민음사',
+    cat: '동양고전 / 역사소설',
+    grade: '초6',
+    gradeGroup: '초등 6학년',
+    createdAt: '2026-08-18',
+    quizCount7d: 116,
+    readCount: 950,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#영웅호걸', '#지략', '#초등고학년필독', '#역사대하'],
+    synopsis: '유비, 관우, 장비의 도원결의부터 조조와 제갈공명의 치열한 지략 대결까지, 광활한 중국 대륙을 뒤흔든 영웅들의 야망과 의리를 웅장하게 담아냈습니다.',
+    nextReadIds: ['1013', '1019', '1029', '1040']
+  },
+  {
+    id: '1031',
+    title: '해리 포터와 마법사의 돌',
+    subtitle: '전 세계 5억 부를 돌파한 마법의 세계',
+    author: 'J.K. 롤링',
+    pub: '문학수첩',
+    cat: '세계판타지 / 모험성장',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-08-17',
+    quizCount7d: 148,
+    readCount: 1350,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#호그와트', '#마법세계', '#초등5학년필독', '#우정모험'],
+    synopsis: '자신이 마법사임을 알게 된 고아 소년 해리 포터가 호그와트 마법학교에 입학해 론, 헤르미온느와 함께 마법사의 돌을 지키기 위한 모험을 펼칩니다.',
+    nextReadIds: ['1001', '1008', '1016', '1029']
+  },
+  {
+    id: '1032',
+    title: '어린이라는 세계',
+    subtitle: '독서 교육 전문가가 전하는 어린이의 존엄',
+    author: '김소영',
+    pub: '사계절',
+    cat: '인문에세이 / 교육공감',
+    grade: '중1',
+    gradeGroup: '중등 1학년',
+    createdAt: '2026-08-16',
+    quizCount7d: 78,
+    readCount: 620,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#어린이존중', '#따뜻한시선', '#인문에세이', '#중등추천'],
+    synopsis: '독서 교실에서 만난 어린이들의 반짝이는 말과 생각, 그들이 마주하는 세상의 울타리를 통해 한 인간으로서 어린이를 존중하는 사회적 태도를 제안합니다.',
+    nextReadIds: ['1002', '1021', '1034', '1036']
+  },
+  {
+    id: '1033',
+    title: '페인트',
+    subtitle: '아이들이 부모를 직접 면접해 선택하는 세상',
+    author: '이희영',
+    pub: '창비',
+    cat: 'SF청소년 / 가족성찰',
+    grade: '중2',
+    gradeGroup: '중등 2학년',
+    createdAt: '2026-08-15',
+    quizCount7d: 92,
+    readCount: 710,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#부모면접', '#가족의의미', '#청소년SF', '#창비문학상'],
+    synopsis: '국가가 아이를 양육하는 미래 사회, 열일곱 살 소년 제누 301이 부모 면접(페인트)을 통해 진정한 가족의 결합이란 무엇인지를 질문하고 답을 찾아가는 이야기입니다.',
+    nextReadIds: ['1002', '1007', '1014', '1035']
+  },
+  {
+    id: '1034',
+    title: '체리새우: 비밀글입니다',
+    subtitle: '은따가 두려운 중학생들의 진짜 친구 찾기',
+    author: '황영미',
+    pub: '문학동네',
+    cat: '청소년소설 / 교우관계',
+    grade: '중1',
+    gradeGroup: '중등 1학년',
+    createdAt: '2026-08-14',
+    quizCount7d: 106,
+    readCount: 830,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#또래관계', '#자존감', '#비공개블로그', '#중1추천'],
+    synopsis: '무리에서 튕겨 나갈까 봐 진짜 좋아하는 것도 숨기던 다현이가 과제 모둠 활동을 통해 남들의 시선에서 벗어나 온전한 나 자신을 사랑하게 되는 성장기입니다.',
+    nextReadIds: ['1002', '1007', '1014', '1033']
+  },
+  {
+    id: '1035',
+    title: '유원',
+    subtitle: '화재 사고 살아남은 자의 치열한 내면 성장',
+    author: '백온유',
+    pub: '창비',
+    cat: '청소년문학 / 심리치유',
+    grade: '중2',
+    gradeGroup: '중등 2학년',
+    createdAt: '2026-08-13',
+    quizCount7d: 84,
+    readCount: 640,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#죄책감극복', '#치유', '#중2필독', '#창비문학상'],
+    synopsis: '어릴 적 아파트 화재 참사에서 언니의 희생과 이웃의 도움으로 홀로 살아남은 소녀 유원이 삶의 부채감을 털어내고 자신만의 삶의 보폭을 찾아가는 감동 소설입니다.',
+    nextReadIds: ['1002', '1007', '1033', '1034']
+  },
+  {
+    id: '1036',
+    title: '아홉 살 마음 사전',
+    subtitle: '내 감정을 정확하게 표현하는 감정 단어장',
+    author: '박성우',
+    pub: '창비',
+    cat: '감정표현 / 어휘인성',
+    grade: '초2',
+    gradeGroup: '초등 2학년',
+    createdAt: '2026-08-12',
+    quizCount7d: 89,
+    readCount: 720,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#감정단어', '#초등2학년', '#표현력', '#공감능력'],
+    synopsis: '뿌듯하다, 서운하다, 머쓱하다 등 일상에서 느끼는 80가지 섬세한 감정을 알기 쉬운 에피소드와 귀여운 그림으로 설명해 아이들의 정서적 공감 능력을 키워줍니다.',
+    nextReadIds: ['1009', '1022', '1026', '1044']
+  },
+  {
+    id: '1037',
+    title: '나무를 심은 사람',
+    subtitle: '한 인간의 끈기가 일구어낸 기적의 숲',
+    author: '장 지오노',
+    pub: '두레',
+    cat: '생태문학 / 감동실화',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-08-11',
+    quizCount7d: 97,
+    readCount: 780,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#환경생태', '#헌신과인내', '#초등5학년필독', '#희망의숲'],
+    synopsis: '황무지로 변해버린 프로방스 고원에 홀로 도토리를 심어 울창한 생명의 숲으로 탈바꿈시킨 양치기 엘제아르 부피에의 거룩하고 묵묵한 평생의 헌신을 기록했습니다.',
+    nextReadIds: ['1001', '1004', '1008', '1043']
+  },
+  {
+    id: '1038',
+    title: '갈매기의 꿈',
+    subtitle: '가장 높이 나는 새가 가장 멀리 본다',
+    author: '리처드 바크',
+    pub: '현문미디어',
+    cat: '세계명작 / 자아실현',
+    grade: '초6',
+    gradeGroup: '초등 6학년',
+    createdAt: '2026-08-10',
+    quizCount7d: 103,
+    readCount: 860,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#자아실현', '#한계극복', '#초등고학년', '#비행모험'],
+    synopsis: '먹이를 구하는 것보다 더 높고 빠르게 비행하는 꿈을 품은 갈매기 조나단 리빙스턴이 무리의 배척 속에서도 비행의 완성을 향해 끝없이 비상하는 감동 명작입니다.',
+    nextReadIds: ['1001', '1013', '1016', '1039']
+  },
+  {
+    id: '1039',
+    title: '나의 라임오렌지나무',
+    subtitle: '슬픔을 통해 성장하는 악동 제제의 이야기',
+    author: 'J.M. 바스콘셀로스',
+    pub: '동녘',
+    cat: '세계문학 / 성장통',
+    grade: '초6',
+    gradeGroup: '초등 6학년',
+    createdAt: '2026-08-09',
+    quizCount7d: 109,
+    readCount: 920,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#제제', '#뽀르뚜까', '#이별과성장', '#초등필독'],
+    synopsis: '가난 때문에 온갖 매를 맞으면서도 마음속 라임오렌지나무 밍기뉴와 다정한 친구 뽀르뚜까 아저씨를 만나 사랑과 이별의 아픔을 겪으며 어른이 되어가는 제제의 눈물겨운 이야기입니다.',
+    nextReadIds: ['1001', '1002', '1006', '1038']
+  },
+  {
+    id: '1040',
+    title: '동물농장',
+    subtitle: '전체주의 사회에 대한 풍자의 최고봉',
+    author: '조지 오웰',
+    pub: '민음사',
+    cat: '정치풍자 / 세계고전',
+    grade: '중3',
+    gradeGroup: '중등 3학년',
+    createdAt: '2026-08-08',
+    quizCount7d: 87,
+    readCount: 670,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#우화풍자', '#독재비판', '#중3필독', '#사회비판'],
+    synopsis: '농장주를 몰아내고 모든 동물이 평등한 농장을 세운 돼지 나폴레옹이 특권을 누리며 또 다른 독재자로 군림하는 과정을 풍자한 세계 문학의 불후의 고전입니다.',
+    nextReadIds: ['1011', '1012', '1013', '1041']
+  },
+  {
+    id: '1041',
+    title: '데미안',
+    subtitle: '내 안의 나를 찾아가는 영혼의 방황',
+    author: '헤르만 헤세',
+    pub: '민음사',
+    cat: '철학소설 / 자아탐색',
+    grade: '중3',
+    gradeGroup: '중등 3학년',
+    createdAt: '2026-08-07',
+    quizCount7d: 95,
+    readCount: 780,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#알을깨다', '#아브락사스', '#청소년필독', '#자아각성'],
+    synopsis: '밝은 세계에서 온 에밀 싱클레어가 신비로운 소년 막스 데미안을 만나며 어둠의 세계를 통과해 내면의 진정한 자아를 발견해 나가는 불멸의 청춘 소설입니다.',
+    nextReadIds: ['1002', '1011', '1040', '1042']
+  },
+  {
+    id: '1042',
+    title: '호밀밭의 파수꾼',
+    subtitle: '위선적인 세상에 던지는 반항아 홀든의 외침',
+    author: 'J.D. 샐린저',
+    pub: '민음사',
+    cat: '청소년고전 / 방황성장',
+    grade: '중3',
+    gradeGroup: '중등 3학년',
+    createdAt: '2026-08-06',
+    quizCount7d: 79,
+    readCount: 630,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#홀든콜필드', '#순수수호', '#중3추천', '#청춘고전'],
+    synopsis: '퇴학당한 열여섯 소년 홀든이 뉴욕 거리를 헤매며 어른들의 가식과 위선에 환멸을 느끼면서도, 어린아이들이 벼랑으로 떨어지지 않게 지키는 파수꾼이 되고 싶어 하는 이야기입니다.',
+    nextReadIds: ['1002', '1012', '1040', '1041']
+  },
+  {
+    id: '1043',
+    title: '초정리 편지',
+    subtitle: '훈민정음 창제와 백성의 삶을 그린 역사동화',
+    author: '배유안',
+    pub: '창비',
+    cat: '역사동화 / 한글사랑',
+    grade: '초5',
+    gradeGroup: '초등 5학년',
+    createdAt: '2026-08-05',
+    quizCount7d: 111,
+    readCount: 890,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#세종대왕', '#훈민정음', '#초등5학년필독', '#역사감동'],
+    synopsis: '조선 초정 약수터에 눈병을 치료하러 내려온 세종대왕과 우연히 만나 새로운 글자 훈민정음을 배운 석수장이 소년 장운이의 눈부신 성장과 애민 정신을 다룹니다.',
+    nextReadIds: ['1004', '1008', '1010', '1020']
+  },
+  {
+    id: '1044',
+    title: '속 좁은 아빠',
+    subtitle: '서로를 이해해가는 아빠와 딸의 유쾌한 갈등',
+    author: '정재은',
+    pub: '웅진주니어',
+    cat: '가족동화 / 유쾌성장',
+    grade: '초3',
+    gradeGroup: '초등 3학년',
+    createdAt: '2026-08-04',
+    quizCount7d: 83,
+    readCount: 690,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#가족소통', '#아빠와딸', '#초3권장', '#유쾌'],
+    synopsis: '툭하면 삐치는 속 좁은 아빠와 사춘기 초입에 들어선 당찬 딸이 일상 속 소소한 오해를 풀고 진정한 가족의 따뜻한 정을 회복해 나가는 생활 동화입니다.',
+    nextReadIds: ['1005', '1018', '1025', '1036']
+  },
+  {
+    id: '1045',
+    title: '샬럿의 거미줄 2: 윌버의 새로운 모험',
+    subtitle: '이어지는 농장의 사랑과 사계절',
+    author: 'E.B. 화이트',
+    pub: '시공주니어',
+    cat: '세계명작 / 우정',
+    grade: '초4',
+    gradeGroup: '초등 4학년',
+    createdAt: '2026-08-03',
+    quizCount7d: 101,
+    readCount: 810,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: false,
+    tags: ['#우정', '#성장', '#자연생태', '#초4추천'],
+    synopsis: '샬롯의 세 아기 거미들과 함께 헛간을 지키며 사계절을 맞이하는 돼지 윌버의 씩씩하고 다정한 일상을 담아낸 명작 후속편입니다.',
+    nextReadIds: ['1003', '1015', '1017', '1025']
+  }
 ];
+
 var rankData=[
   {rank:1,name:'박도윤',cls:'마스터반',pt:3120},
   {rank:2,name:'김민준',cls:'지혜반',pt:2480,me:true},
@@ -854,59 +2494,382 @@ var rankData=[
   {rank:4,name:'이서윤',cls:'슬기반',pt:1980},
   {rank:5,name:'강시우',cls:'새싹반',pt:1760}
 ];
+
 var curBook=null,curQ=0,anss=[],curData=null;
+var curActivePanel = 'home';
+var prevPanel = 'home';
+var currentDetailBookId = null;
+var currentLibSubTab = 'recommended';
+var currentGradeFilter = '초5';
+
+// 패널 전환 함수
 function switchPanel(n){
-  ['home','books','quiz','history','ranking'].forEach(function(p){
+  ['home','books','quiz','history','ranking','book-detail'].forEach(function(p){
     var el=document.getElementById('p-'+p),nav=document.getElementById('nav-'+p);
     if(el)el.classList.remove('active');
     if(nav)nav.classList.remove('active');
   });
+
+  // 상세화면이 아닐 때만 이전 패널 기록
+  if(n !== 'book-detail') {
+    prevPanel = n;
+  }
+  curActivePanel = n;
+
   var t=document.getElementById('p-'+n),tn=document.getElementById('nav-'+n);
-  if(t)t.classList.add('active');
+  if(t) {
+    t.classList.add('active');
+    t.style.display = 'block';
+  }
   if(tn)tn.classList.add('active');
+
+  // 상세화면일 때는 바텀네비 숨기거나 뒤로가기 유지
+  var bnav = document.querySelector('.bnav');
+  if(bnav) {
+    bnav.style.display = (n === 'book-detail') ? 'none' : 'flex';
+  }
+
+  if(n==='home') renderHomeSliders();
   if(n==='history')renderHist();
   if(n==='ranking')renderRank();
   if(n==='books')renderLib();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function switchBookTab(t){
-  document.getElementById('bsub-assigned').style.display=t==='assigned'?'block':'none';
-  document.getElementById('bsub-all').style.display=t==='all'?'block':'none';
-  var a=document.getElementById('btab-a'),b=document.getElementById('btab-b');
-  if(t==='assigned'){a.className='tab2-btn on';b.className='tab2-btn off';}
-  else{b.className='tab2-btn on';a.className='tab2-btn off';renderLib();}
+
+// ==============================================================
+// 감성 서재 북커버 렌더링 헬퍼 (실제 커버 없는 도서는 예쁜 가상 북커버 생성)
+// ==============================================================
+function getBookCoverHtml(b, customCls, styleStr) {
+  var cls = customCls || 'card-cover-img';
+  var st = styleStr || '';
+  if(b.cover && (b.cover.indexOf('cover_1001') !== -1 || b.cover.indexOf('cover_1002') !== -1 || b.cover.indexOf('cover_1003') !== -1 || b.cover.indexOf('cover_1004') !== -1)) {
+    return '<img src="'+b.cover+'" class="'+cls+'" style="'+st+'" alt="'+b.title+'">';
+  }
+  var bgGradients = [
+    'linear-gradient(145deg, #2d6a4f, #1b4332)',
+    'linear-gradient(145deg, #386641, #1f4225)',
+    'linear-gradient(145deg, #2b4538, #182820)',
+    'linear-gradient(145deg, #3d5a80, #293241)',
+    'linear-gradient(145deg, #7f4f24, #582f0e)',
+    'linear-gradient(145deg, #4f5d75, #2d3142)'
+  ];
+  var icons = ['📖', '🌿', '📕', '📗', '📘', '✨', '🍃', '🌟'];
+  var num = parseInt(b.id || '1000', 10);
+  var bg = bgGradients[num % bgGradients.length];
+  var ic = icons[num % icons.length];
+  return '<div class="book-cover-placeholder '+cls+'" style="background:'+bg+';'+st+'">'
+    + '<div class="bcp-icon">'+ic+'</div>'
+    + '<div class="bcp-title">'+b.title+'</div>'
+    + '</div>';
 }
+
+// ==============================================================
+// 홈 화면 3대 슬라이더 렌더링
+// ==============================================================
+function renderHomeSliders() {
+  // 1. 최근에 추가된 도서 30권 (createdAt 역순)
+  var recentList = libData.slice().sort(function(a,b){
+    return b.createdAt.localeCompare(a.createdAt);
+  }).slice(0, 30);
+  var recCountEl = document.getElementById('recentBooksCount');
+  if(recCountEl) recCountEl.innerText = recentList.length + '권';
+
+  var recentTrack = document.getElementById('recentBooksTrack');
+  if(recentTrack) {
+    recentTrack.innerHTML = recentList.map(function(b, idx){
+      var isNew = idx < 10 ? '<span class="card-new-badge">NEW</span>' : '';
+      return '<div class="book-slide-card" onclick="openBookDetail(\''+b.id+'\', \'home\')">'
+        +'<div class="card-cover-wrap">'
+        +isNew
+        +getBookCoverHtml(b, 'card-cover-img')
+        +'</div>'
+        +'<div class="card-title-text" title="'+b.title+'">'+b.title+'</div>'
+        +'<div class="card-author-text">'+b.author+'</div>'
+        +'<span class="card-quiz-count"><i class="fa-solid fa-clock-rotate-left mr-1"></i>'+b.createdAt.slice(5)+' 등록</span>'
+        +'</div>';
+    }).join('');
+  }
+
+  // 2. 주간 인기 도서 30권 (D-1 ~ D-7 퀴즈 횟수 내림차순)
+  var popularList = libData.slice().sort(function(a,b){
+    return b.quizCount7d - a.quizCount7d;
+  }).slice(0, 30);
+
+  var popTrack = document.getElementById('popularBooksTrack');
+  if(popTrack) {
+    popTrack.innerHTML = popularList.map(function(b, idx){
+      var rank = idx + 1;
+      var rankCls = rank === 1 ? 'top-1' : rank === 2 ? 'top-2' : rank === 3 ? 'top-3' : '';
+      var rankBadge = '<span class="card-rank-badge '+rankCls+'">'+rank+'</span>';
+      return '<div class="book-slide-card" onclick="openBookDetail(\''+b.id+'\', \'home\')">'
+        +'<div class="card-cover-wrap">'
+        +rankBadge
+        +getBookCoverHtml(b, 'card-cover-img')
+        +'</div>'
+        +'<div class="card-title-text" title="'+b.title+'">'+b.title+'</div>'
+        +'<div class="card-author-text">'+b.author+'</div>'
+        +'<span class="card-quiz-count" style="background:#fef2f2;color:#ef4444;"><i class="fa-solid fa-fire mr-1"></i>퀴즈 '+b.quizCount7d+'회</span>'
+        +'</div>';
+    }).join('');
+  }
+
+  // 3. 회원 학년 맞춤 권장 도서 (초등 5학년 30권)
+  var gradeList = libData.filter(function(b){
+    return b.grade === '초5' || b.gradeGroup === '초등 5학년';
+  });
+  if(gradeList.length < 30) {
+    var others = libData.filter(function(b){ return b.grade !== '초5'; });
+    gradeList = gradeList.concat(others).slice(0, 30);
+  } else {
+    gradeList = gradeList.slice(0, 30);
+  }
+
+  var grCountEl = document.getElementById('gradeBooksCount');
+  if(grCountEl) grCountEl.innerText = gradeList.length + '권';
+
+  var grTrack = document.getElementById('gradeBooksTrack');
+  if(grTrack) {
+    grTrack.innerHTML = gradeList.map(function(b){
+      return '<div class="book-slide-card" onclick="openBookDetail(\''+b.id+'\', \'home\')">'
+        +'<div class="card-cover-wrap">'
+        +'<span class="card-rank-badge" style="background:var(--leaf);"><i class="fa-solid fa-seedling"></i></span>'
+        +getBookCoverHtml(b, 'card-cover-img')
+        +'</div>'
+        +'<div class="card-title-text" title="'+b.title+'">'+b.title+'</div>'
+        +'<div class="card-author-text">'+b.author+'</div>'
+        +'<span class="card-quiz-count"><i class="fa-solid fa-graduation-cap mr-1"></i>'+b.grade+' 권장</span>'
+        +'</div>';
+    }).join('');
+  }
+}
+
+// 가로 슬라이더 스크롤 함수
+function slideHorizontal(trackId, direction) {
+  var track = document.getElementById(trackId);
+  if(!track) return;
+  var scrollDist = 320;
+  track.scrollBy({ left: direction * scrollDist, behavior: 'smooth' });
+}
+
+// 홈 화면 '더보기' 클릭 시 도서관 해당 학년으로 원클릭 이동
+function goToGradeLibrary(grade) {
+  switchPanel('books');
+  switchBookTab('all');
+  switchLibSubTab('recommended');
+  selectGradeFilter(grade || '초5');
+}
+
+// ==============================================================
+// 신규 도서 상세 정보 화면 (Book Info Detail) 로직
+// ==============================================================
+function openBookDetail(id, from) {
+  var b = libData.find(function(x){ return x.id === id; });
+  if(!b) return;
+
+  if(from) prevPanel = from;
+  currentDetailBookId = id;
+
+  // 1. 헤더 서지정보 주입
+  var heroCard = document.getElementById('detailHeroCard');
+  if(heroCard) {
+    var tagsHtml = (b.tags || ['#독서', '#교과연계']).map(function(t){
+      return '<span class="detail-tag-pill">'+t+'</span>';
+    }).join('');
+
+    heroCard.innerHTML = 
+      getBookCoverHtml(b, 'detail-cover-large')
+      +'<div class="detail-meta-group">'
+      +  '<div class="detail-title">'+b.title+'</div>'
+      +  '<div class="detail-author-pub">'+b.author+' · '+b.pub+'</div>'
+      +  '<div class="detail-badges">'
+      +    '<span class="detail-badge-grade"><i class="fa-solid fa-graduation-cap mr-1"></i>'+b.grade+' 권장</span>'
+      +    '<span class="detail-badge-cat">'+b.cat+'</span>'
+      +  '</div>'
+      +  '<div class="detail-tags">'+tagsHtml+'</div>'
+      +'</div>';
+  }
+
+  // 2. 줄거리 주입
+  var synopsisEl = document.getElementById('detailSynopsis');
+  if(synopsisEl) {
+    synopsisEl.innerText = b.synopsis || '이 도서의 상세 줄거리 및 핵심 독서 포인트가 준비 중입니다.';
+  }
+
+  // 3. 이 도서를 읽은 학생이 다음으로 읽은 책 추천
+  var nextContainer = document.getElementById('detailNextBooks');
+  if(nextContainer) {
+    var nextIds = b.nextReadIds || [];
+    var nextBooks = libData.filter(function(x){ return nextIds.includes(x.id); });
+    if(nextBooks.length === 0) {
+      nextBooks = libData.filter(function(x){ return x.id !== id; }).slice(0, 4);
+    }
+
+    nextContainer.innerHTML = nextBooks.map(function(nb){
+      return '<div class="next-read-item" onclick="openBookDetail(\''+nb.id+'\', \''+prevPanel+'\')">'
+        +getBookCoverHtml(nb, 'next-read-thumb')
+        +'<div class="next-read-name">'+nb.title+'</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  // 4. 하단 퀴즈 버튼 텍스트 업데이트
+  var quizBtnText = document.getElementById('detailQuizBtnText');
+  if(quizBtnText) {
+    quizBtnText.innerHTML = '<i class="fa-solid fa-pen-nib mr-1"></i> 북퀴즈 풀기 ('+b.title+')';
+  }
+
+  switchPanel('book-detail');
+}
+
+// 상세 정보 닫고 이전 화면으로 복귀
+function closeBookDetail() {
+  switchPanel(prevPanel || 'home');
+}
+
+// 상세 화면 하단 고정 버튼에서 퀴즈 시작
+function startQuizFromDetail() {
+  if(!currentDetailBookId) return;
+  startQuiz(currentDetailBookId);
+}
+
+// ==============================================================
+// 도서관 탭 및 서브탭/학년 필터 로직
+// ==============================================================
+function switchBookTab(t){
+  document.getElementById('bsub-assigned').style.display = (t==='assigned') ? 'block' : 'none';
+  document.getElementById('bsub-all').style.display = (t==='all') ? 'block' : 'none';
+  var a=document.getElementById('btab-a'), b=document.getElementById('btab-b');
+  if(t==='assigned'){
+    a.className='tab2-btn on'; b.className='tab2-btn off';
+    renderAssignedLib();
+  } else {
+    b.className='tab2-btn on'; a.className='tab2-btn off';
+    renderLib();
+  }
+}
+
+function switchLibSubTab(tab) {
+  currentLibSubTab = tab;
+  ['recommended','popular','curated'].forEach(function(s){
+    var btn = document.getElementById('libSubPill-'+s);
+    if(btn) {
+      if(s === tab) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+  });
+
+  // 학년 필터 바는 '권장도서' 서브탭일 때 전면에 노출
+  var gradeBar = document.getElementById('gradeFilterBar');
+  if(gradeBar) {
+    gradeBar.style.display = (tab === 'recommended') ? 'flex' : 'none';
+  }
+
+  renderLib();
+}
+
+function selectGradeFilter(grade) {
+  currentGradeFilter = grade;
+  document.querySelectorAll('.grade-chip').forEach(function(chip){
+    var g = chip.getAttribute('data-grade');
+    if(g === grade) chip.classList.add('active');
+    else chip.classList.remove('active');
+  });
+  renderLib();
+}
+
+function renderAssignedLib() {
+  var c = document.getElementById('assignedLibList');
+  if(!c) return;
+  var assignedList = libData.filter(function(b){ return b.assigned; });
+  if(assignedList.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">현재 배정된 도서가 없습니다.</div>';
+    return;
+  }
+  c.innerHTML = assignedList.map(function(b){
+    return '<div class="book-row priority" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+      +'<span class="pflag">📌 배정</span>'
+      +getBookCoverHtml(b, 'bcover')
+      +'<div class="binfo">'
+      +  '<div class="btitle">'+b.title+'</div>'
+      +  '<div class="bauthor">'+b.author+' · '+b.pub+'</div>'
+      +  '<span class="dbadge urgent">배정 도서 · 북퀴즈 응시 가능</span>'
+      +'</div>'
+      +'<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+      +'</div>';
+  }).join('');
+}
+
 function renderLib(q){
   var c=document.getElementById('libList');if(!c)return;
   var query=(q||document.getElementById('libQ').value||'').toLowerCase();
-  var list=libData.filter(function(b){return!query||b.title.toLowerCase().includes(query)||b.author.toLowerCase().includes(query);});
-  c.innerHTML=list.map(function(b){
+
+  var list = libData.slice();
+
+  // 1. 서브탭별 필터링
+  if(currentLibSubTab === 'recommended') {
+    if(currentGradeFilter !== 'all') {
+      list = list.filter(function(b){ return b.grade === currentGradeFilter; });
+    }
+  } else if(currentLibSubTab === 'popular') {
+    list.sort(function(a,b){ return b.quizCount7d - a.quizCount7d; });
+  } else if(currentLibSubTab === 'curated') {
+    list = list.filter(function(b){ return b.isEditorPick; });
+  }
+
+  // 2. 검색어 필터링
+  if(query) {
+    list = list.filter(function(b){
+      return b.title.toLowerCase().includes(query) || b.author.toLowerCase().includes(query) || b.pub.toLowerCase().includes(query);
+    });
+  }
+
+  if(list.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-book mr-1"></i>조건에 맞는 도서가 없습니다.</div>';
+    return;
+  }
+
+  c.innerHTML=list.map(function(b, idx){
     var ab=b.assigned?'<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>':'';
-    var coverHtml=b.cover?'<img src="'+b.cover+'" class="bcover" style="width:48px;height:66px;" alt="'+b.title+'">':'<div style="font-size:38px;width:48px;text-align:center;">'+b.emoji+'</div>';
-    return '<div class="lib-row" onclick="showBook(\''+b.id+'\')">'
-      +coverHtml
+    var rankBadge = currentLibSubTab === 'popular' ? '<span class="nbadge" style="background:#fee2e2;color:#ef4444;">#'+(idx+1)+'위</span>' : '';
+    return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+      +getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
       +'<div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
       +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
-      +ab+'<span class="nbadge">'+b.cat+'</span></div></div>';
+      +ab+rankBadge+'<span class="nbadge">'+b.grade+' 권장</span><span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span></div></div>';
   }).join('');
 }
 function filterLib(){renderLib();}
+
+// 도서 선택 시 도서 상세 화면 진입
 function showBook(id){
-  var b=libData.find(function(x){return x.id===id;});
-  if(!b)return;
-  toast(b.title+' — 도서를 선택했습니다!');
-  if(b.id==='1001'||b.id==='1002'){setTimeout(function(){startQuiz(b.id);},1000);}
+  openBookDetail(id, 'books');
 }
+
 function startQuiz(id){
   var d=QB[id];
-  if(!d){toast('이 도서의 퀴즈는 준비 중입니다.');return;}
+  if(!d){
+    // 준비된 퀴즈가 없으면 어린왕자 템플릿 기반으로 동적 생성
+    var book = libData.find(function(x){return x.id===id;});
+    var title = book ? book.title : '독서 퀴즈';
+    d = {
+      title: title,
+      emoji: '📘',
+      qs: [
+        {q:"『" + title + "』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?",os:["도전과 용기의 가치","약자에 대한 공감과 배려","자아를 찾아가는 용기","위 세 가지 모두 정답"],a:3},
+        {q:"주인공의 내적 성장 과정에서 가장 큰 전환점이 된 사건은?",os:["친구와의 진심 어린 대화","새로운 환경으로의 용기 있는 도전","어려움을 극복한 협동","위 모두 복합적으로 작용함"],a:3},
+        {q:"작가가 이 도서를 통해 독자에게 전하고자 한 중심 메시지는?",os:["서로를 이해하고 연대하는 삶","혼자만의 승리가 최고라는 생각","물질적 성공의 중요성","경쟁에서 이기는 법"],a:0},
+        {q:"이 책에서 갈등을 평화롭게 해결하는 데 가장 중요했던 가치는?",os:["소통과 배려","침묵과 회피","힘의 우위","운에 맡기기"],a:0},
+        {q:"이 책을 읽은 후 우리 일상생활에서 실천할 수 있는 바른 태도는?",os:["주변 친구들에게 따뜻한 말 한마디 건네기","어려운 이웃을 배려하기","정직하게 나의 책임을 다하기","위의 모든 태도 실천하기"],a:3}
+      ]
+    };
+  }
   switchPanel('quiz');
   curBook=id;curData=d;curQ=0;anss=[];
   document.getElementById('qscreen-select').style.display='none';
   document.getElementById('qscreen-ing').style.display='block';
   document.getElementById('qscreen-result').style.display='none';
   document.getElementById('qTitle').innerText=d.title;
-  document.getElementById('qEmoji').innerText=d.emoji;
+  document.getElementById('qEmoji').innerText=d.emoji || '📕';
   renderQ();
 }
 function renderQ(){
@@ -1020,7 +2983,22 @@ function toast(msg){
   toastT=setTimeout(function(){el.style.display='none';},3000);
 }
 
-document.addEventListener('DOMContentLoaded',function(){renderHist();renderRank();renderLib();});
+// 학생 포털 로그아웃 처리
+function handleStudentLogout() {
+  if (confirm('학생 포털에서 로그아웃 하시겠습니까?')) {
+    toast('로그아웃되었습니다. 관리자 화면으로 이동합니다.');
+    setTimeout(function() {
+      location.href = 'admin_preview.html';
+    }, 800);
+  }
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  renderHomeSliders();
+  renderHist();
+  renderRank();
+  renderLib();
+});
 </script>
 </body>
 </html>

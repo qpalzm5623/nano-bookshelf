@@ -187,7 +187,7 @@ function saveAllQuizzes() {
 // 2. 7대 탭 네비게이션 제어
 // ==============================================================
 function switchTab(tab) {
-  var views = ['members', 'contents', 'learning', 'portfolio', 'assignment', 'dispatch', 'ranking'];
+  var views = ['members', 'contents', 'learning', 'portfolio', 'assignment', 'dispatch', 'ranking', 'payment'];
   views.forEach(function(v) {
     var el = document.getElementById('view-' + v);
     var nav = document.getElementById('btn-nav-' + v);
@@ -208,6 +208,7 @@ function switchTab(tab) {
   if (tab === 'assignment') renderAssignmentTable();
   if (tab === 'dispatch') renderAcademyDispatchTable();
   if (tab === 'ranking') renderAcademyRankingTable();
+  if (tab === 'payment') renderAcademyPaymentTable();
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -258,12 +259,21 @@ function switchMemberSubTab(sub) {
 // 3. 회원 관리 (원생 + 선생님) 데이터 & 로직
 // ==============================================================
 var studentDataList = [
-  { id: 'S1021', name: '김민준', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', level: '초등 심화 Lv 5', bookCount: 24, quizAvg: 94.2, phone: '010-3847-1928', lastDate: '2026.09.08', status: '활동 중', teacher: '박선혜 지도교사' },
-  { id: 'S1022', name: '이서윤', school: '솔빛초등학교', grade: '초등 4학년', classGroup: '슬기반', level: '초등 발전 Lv 4', bookCount: 18, quizAvg: 91.5, phone: '010-5829-3019', lastDate: '2026.09.07', status: '활동 중', teacher: '박선혜 지도교사' },
-  { id: 'S1023', name: '박도윤', school: '나노초등학교', grade: '초등 6학년', classGroup: '마스터반', level: '초등 완성 Lv 6', bookCount: 31, quizAvg: 97.0, phone: '010-9182-4720', lastDate: '2026.09.08', status: '활동 중', teacher: '최승현 지도교사' },
-  { id: 'S1024', name: '정하은', school: '해밀중학교', grade: '중등 1학년', classGroup: '심화반', level: '중등 기본 Lv 7', bookCount: 15, quizAvg: 88.4, phone: '010-7492-8102', lastDate: '2026.09.06', status: '활동 중', teacher: '최승현 지도교사' },
-  { id: 'S1025', name: '강시우', school: '새싹초등학교', grade: '초등 2학년', classGroup: '새싹반', level: '초등 입문 Lv 2', bookCount: 12, quizAvg: 92.0, phone: '010-4820-1948', lastDate: '2026.09.05', status: '활동 중', teacher: '이지연 지도교사' },
-  { id: 'S1026', name: '윤지유', school: '솔빛초등학교', grade: '초등 5학년', classGroup: '지혜반', level: '초등 심화 Lv 5', bookCount: 22, quizAvg: 95.8, phone: '010-6391-7291', lastDate: '2026.09.08', status: '활동 중', teacher: '박선혜 지도교사' }
+  { id: 'S1021', name: '김민준', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '승인', level: '초등 심화 Lv 5', bookCount: 24, quizAvg: 94.2, parentName: '김영희', phone: '010-3847-1928', parentEmail: 'parent_kim@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.03.02', teacher: '박선혜 지도교사', memo: '줄거리 요약과 어휘력 영역이 탁월함. 토론 수업 시 자기 생각을 명확하게 표현함.' },
+  { id: 'S1022', name: '이서윤', gender: '여', password: '1234', school: '솔빛초등학교', grade: '초등 4학년', classGroup: '슬기반', status: '승인', level: '초등 발전 Lv 4', bookCount: 18, quizAvg: 91.5, parentName: '이수진', phone: '010-5829-3019', parentEmail: 'seoyun_mom@example.com', reportYn: true, lastDate: '2026.09.07', createdAt: '2026.04.10', teacher: '박선혜 지도교사', memo: '책 읽는 속도가 빠르고 이해도가 높음.' },
+  { id: 'S1023', name: '박도윤', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 6학년', classGroup: '마스터반', status: '승인', level: '초등 완성 Lv 6', bookCount: 31, quizAvg: 97.0, parentName: '박태훈', phone: '010-9182-4720', parentEmail: 'doyun_dad@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.02.15', teacher: '최승현 지도교사', memo: '인문 고전 및 비문학 독해에 강점.' },
+  { id: 'S1024', name: '정하은', gender: '여', password: '1234', school: '해밀중학교', grade: '중등 1학년', classGroup: '심화반', status: '미승인', level: '중등 기본 Lv 7', bookCount: 15, quizAvg: 88.4, parentName: '정미경', phone: '010-7492-8102', parentEmail: '', reportYn: false, lastDate: '2026.09.06', createdAt: '2026.09.01', teacher: '최승현 지도교사', memo: '신규 입학 상담 후 승인 대기 중.' },
+  { id: 'S1025', name: '강시우', gender: '남', password: '1234', school: '새싹초등학교', grade: '초등 2학년', classGroup: '새싹반', status: '승인', level: '초등 입문 Lv 2', bookCount: 12, quizAvg: 92.0, parentName: '강동원', phone: '010-4820-1948', parentEmail: 'siwoo_home@example.com', reportYn: true, lastDate: '2026.09.05', createdAt: '2026.05.20', teacher: '이지연 지도교사', memo: '그림책에서 문고판으로 단계 전환 중.' },
+  { id: 'S1026', name: '윤지유', gender: '여', password: '1234', school: '솔빛초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '퇴원', level: '초등 심화 Lv 5', bookCount: 22, quizAvg: 95.8, parentName: '윤상철', phone: '010-6391-7291', parentEmail: 'jiyu_mom@example.com', reportYn: false, lastDate: '2026.08.30', createdAt: '2026.03.15', teacher: '박선혜 지도교사', memo: '타 지역 이사로 인한 퇴원 처리 완료.' }
+];
+
+var academyClassList = [
+  { id: 'CLS01', name: '지혜반', grade: '초등 5학년', teacher: '박선혜 수석교사', desc: '초등 5학년 심화 독서 및 문해력 집중 토론' },
+  { id: 'CLS02', name: '슬기반', grade: '초등 4학년', teacher: '박선혜 수석교사', desc: '초등 4학년 교과 연계 독서 및 요약 훈련' },
+  { id: 'CLS03', name: '마스터반', grade: '초등 6학년', teacher: '최승현 지도교사', desc: '초등 6학년 예비중등 문해력 및 인문고전' },
+  { id: 'CLS04', name: '심화반', grade: '중등 전학년', teacher: '최승현 지도교사', desc: '중등 논술 및 서술형 평가 대비반' },
+  { id: 'CLS05', name: '새싹반', grade: '초등 1~2학년', teacher: '이지연 지도교사', desc: '초등 저학년 올바른 독서 습관 형성반' },
+  { id: 'CLS06', name: '탐구반', grade: '초등 3학년', teacher: '이지연 지도교사', desc: '초등 3학년 배경지식 확장 및 과학/역사 탐구' }
 ];
 
 var teacherDataList = [
@@ -406,15 +416,242 @@ function formatPhoneInput(input) {
   }
 }
 
-// 원생 등록 모달 열기
+// ==============================================================
+// 3-1. 학급(클래스) 관리 모달 & CRUD 로직
+// ==============================================================
+function openClassManageModal() {
+  renderClassManageTable();
+  if (window.jQuery && typeof $('#classManageModal').modal === 'function') {
+    $('#classManageModal').modal('show');
+  } else {
+    showModalVanilla('classManageModal');
+  }
+}
+
+function renderClassManageTable() {
+  var tbody = document.getElementById('classManageTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  academyClassList.forEach(function(cls, idx) {
+    var studentCount = studentDataList.filter(function(s) {
+      return s.classGroup === cls.name;
+    }).length;
+
+    var tr = document.createElement('tr');
+    tr.innerHTML = 
+      '<td class="text-center"><small class="text-muted font-weight-bold">' + (idx + 1) + '</small></td>' +
+      '<td><strong style="color: var(--text-main); font-size: 13.5px;">' + cls.name + '</strong></td>' +
+      '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + cls.grade + '</span></td>' +
+      '<td class="text-center">' + cls.teacher + '</td>' +
+      '<td class="text-center"><span class="badge badge-light border font-weight-bold" style="font-size: 12px; color: var(--btn-primary);">' + studentCount + '명</span></td>' +
+      '<td class="text-center">' +
+        '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="editClass(\'' + cls.id + '\')" style="border-radius: 6px; font-size: 11.5px; padding: 2px 7px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+        '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteClass(\'' + cls.id + '\')" style="border-radius: 6px; font-size: 11.5px; padding: 2px 7px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function addClass() {
+  var nameInput = document.getElementById('newClassNameInput');
+  var gradeSelect = document.getElementById('newClassGradeSelect');
+  var teacherSelect = document.getElementById('newClassTeacherSelect');
+
+  var name = (nameInput ? nameInput.value : '').trim();
+  var grade = gradeSelect ? gradeSelect.value : '초등 5학년';
+  var teacher = teacherSelect ? teacherSelect.value : '박선혜 수석교사';
+
+  if (!name) {
+    alert('학급명을 입력해주세요. (예: 지혜반, 창의반)');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  var exists = academyClassList.some(function(c) { return c.name === name; });
+  if (exists || name === '미지정') {
+    alert('이미 존재하거나 등록할 수 없는 학급명입니다.');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  var newCls = {
+    id: 'CLS' + String(Date.now()).slice(-4),
+    name: name,
+    grade: grade,
+    teacher: teacher,
+    desc: grade + ' 맞춤 독서 지도반'
+  };
+
+  academyClassList.push(newCls);
+  if (nameInput) nameInput.value = '';
+
+  updateClassSelectOptions();
+  renderClassManageTable();
+  showAcademyToast(`[${name}] 신규 학급이 개설되었습니다.`);
+}
+
+function editClass(id) {
+  var cls = academyClassList.find(function(c) { return c.id === id; });
+  if (!cls) return;
+
+  var newName = prompt(`[${cls.name}] 학급의 변경할 학급명을 입력하세요:`, cls.name);
+  if (newName === null) return;
+  newName = newName.trim();
+
+  if (!newName) {
+    alert('학급명을 입력해주세요.');
+    return;
+  }
+
+  if (newName !== cls.name) {
+    var exists = academyClassList.some(function(c) { return c.id !== id && c.name === newName; });
+    if (exists || newName === '미지정') {
+      alert('이미 존재하는 학급명입니다.');
+      return;
+    }
+
+    var oldName = cls.name;
+    cls.name = newName;
+
+    studentDataList.forEach(function(s) {
+      if (s.classGroup === oldName) {
+        s.classGroup = newName;
+      }
+    });
+
+    updateClassSelectOptions();
+    renderClassManageTable();
+    filterStudents();
+    showAcademyToast(`학급명이 [${oldName}]에서 [${newName}]으로 수정되었습니다.`);
+  }
+}
+
+function deleteClass(id) {
+  var cls = academyClassList.find(function(c) { return c.id === id; });
+  if (!cls) return;
+
+  var assignedStudents = studentDataList.filter(function(s) { return s.classGroup === cls.name; });
+  var count = assignedStudents.length;
+
+  var confirmMsg = `[${cls.name}] 학급을 삭제하시겠습니까?\n\n` +
+    (count > 0 ? `※ 주의: 현재 이 학급에 소속된 원생 ${count}명의 소속이 자동으로 '미지정'으로 안전하게 전환됩니다.` : `※ 소속 원생이 없는 학급입니다.`);
+
+  if (!confirm(confirmMsg)) return;
+
+  // 요구사항: 학급 삭제 시 소속 원생 학급은 자동으로 '미지정'으로 변환
+  studentDataList.forEach(function(s) {
+    if (s.classGroup === cls.name) {
+      s.classGroup = '미지정';
+    }
+  });
+
+  academyClassList = academyClassList.filter(function(c) { return c.id !== id; });
+
+  updateClassSelectOptions();
+  renderClassManageTable();
+  filterStudents();
+  showAcademyToast(`[${cls.name}] 학급이 삭제되었으며, 소속 원생 ${count}명의 학급이 '미지정'으로 안전하게 전환되었습니다.`);
+}
+
+function updateClassSelectOptions() {
+  var stdClassSelect = document.getElementById('newStdClass');
+  if (stdClassSelect) {
+    var curVal = stdClassSelect.value;
+    stdClassSelect.innerHTML = '';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.name;
+      stdClassSelect.appendChild(opt);
+    });
+    var unassignedOpt = document.createElement('option');
+    unassignedOpt.value = '미지정';
+    unassignedOpt.innerText = '미지정 (학급 없음)';
+    stdClassSelect.appendChild(unassignedOpt);
+
+    if (curVal && (academyClassList.some(function(c) { return c.name === curVal; }) || curVal === '미지정')) {
+      stdClassSelect.value = curVal;
+    }
+  }
+
+  var filterClassSelect = document.getElementById('filterStudentClass');
+  if (filterClassSelect) {
+    var curFilterVal = filterClassSelect.value;
+    filterClassSelect.innerHTML = '<option value="ALL">전체 클래스 보기</option>';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.grade + ' (' + c.name + ')';
+      filterClassSelect.appendChild(opt);
+    });
+    var unassignedFilterOpt = document.createElement('option');
+    unassignedFilterOpt.value = '미지정';
+    unassignedFilterOpt.innerText = '학급 미지정 원생';
+    filterClassSelect.appendChild(unassignedFilterOpt);
+
+    if (curFilterVal) {
+      filterClassSelect.value = curFilterVal;
+    }
+  }
+}
+
+// ==============================================================
+// 3-2. 원생 삭제 로직 (학급 '미지정' 자동 변환 후 삭제)
+// ==============================================================
+function deleteStudent(id) {
+  var std = studentDataList.find(function(s) { return s.id === id; });
+  if (!std) return;
+
+  var confirmMsg = `[${std.name}] 원생 (학번: ${std.id})을 원생 명부에서 삭제하시겠습니까?\n\n` +
+    `※ 삭제 시 소속 학급(${std.classGroup})에서 자동으로 '미지정'으로 변환된 후 삭제 처리됩니다.`;
+
+  if (!confirm(confirmMsg)) return;
+
+  // 요구사항: 삭제할 때는 학급에서 자동으로 미지정으로 변환되면서 삭제
+  var oldClass = std.classGroup;
+  std.classGroup = '미지정';
+
+  studentDataList = studentDataList.filter(function(s) { return s.id !== id; });
+
+  updateAllStudentCounts();
+  if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
+  filterStudents();
+
+  showAcademyToast(`[${std.name}] 원생의 학급이 '미지정'으로 해제된 후 정상적으로 삭제되었습니다.`);
+}
+
+// ==============================================================
+// 3-3. 원생 등록 / 수정 모달 로직
+// ==============================================================
 function openStudentAddModal() {
   updateAllStudentCounts();
+  updateClassSelectOptions();
 
-  // 폼 초기화
+  var editTarget = document.getElementById('editStudentTargetId');
+  if (editTarget) editTarget.value = '';
+
+  var headerTitle = document.getElementById('studentModalHeaderTitle');
+  if (headerTitle) headerTitle.innerText = '신규 원생 등록 (가맹점)';
+
+  var btnSubmit = document.getElementById('btnSubmitStudentForm');
+  if (btnSubmit) btnSubmit.innerHTML = '<i class="fa-solid fa-check mr-1"></i>원생 저장 완료';
+
   var nameEl = document.getElementById('newStdName');
   if (nameEl) nameEl.value = '';
-  
+
+  var genderEl = document.getElementById('newStdGender');
+  if (genderEl) genderEl.value = '남';
+
   autoGenStudentId();
+  var idEl = document.getElementById('newStdId');
+  if (idEl) idEl.readOnly = false;
+
+  var pwEl = document.getElementById('newStdPw');
+  if (pwEl) {
+    pwEl.value = '1234';
+    pwEl.placeholder = '원생 접속용 비밀번호 입력 (예: 1234)';
+  }
 
   var schoolEl = document.getElementById('newStdSchool');
   if (schoolEl) schoolEl.value = '나노초등학교';
@@ -425,11 +662,29 @@ function openStudentAddModal() {
     onStudentGradeChange('초등 5학년');
   }
 
-  var parentPhoneEl = document.getElementById('newStdParentPhone');
-  if (parentPhoneEl) parentPhoneEl.value = '';
+  var classEl = document.getElementById('newStdClass');
+  if (classEl) classEl.value = academyClassList.length > 0 ? academyClassList[0].name : '지혜반';
 
-  var stdPhoneEl = document.getElementById('newStdStudentPhone');
-  if (stdPhoneEl) stdPhoneEl.value = '';
+  var statusEl = document.getElementById('newStdStatus');
+  if (statusEl) statusEl.value = '승인';
+
+  var levelEl = document.getElementById('newStdLevel');
+  if (levelEl) levelEl.value = '초등 심화 Lv 5';
+
+  var pNameEl = document.getElementById('newStdParentName');
+  if (pNameEl) pNameEl.value = '';
+
+  var pPhoneEl = document.getElementById('newStdParentPhone');
+  if (pPhoneEl) pPhoneEl.value = '';
+
+  var pEmailEl = document.getElementById('newStdParentEmail');
+  if (pEmailEl) pEmailEl.value = '';
+
+  var reportYnEl = document.getElementById('newStdReportYn');
+  if (reportYnEl) reportYnEl.checked = true;
+
+  var teacherEl = document.getElementById('newStdTeacher');
+  if (teacherEl) teacherEl.value = '박선혜 지도교사';
 
   var memoEl = document.getElementById('newStdMemo');
   if (memoEl) memoEl.value = '';
@@ -455,7 +710,89 @@ function openStudentAddModal() {
   }, 300);
 }
 
-// 엑셀 일괄 등록 모달 열기
+function openStudentEditModal(id) {
+  var std = studentDataList.find(function(s) { return s.id === id; });
+  if (!std) return;
+
+  updateClassSelectOptions();
+
+  var editTarget = document.getElementById('editStudentTargetId');
+  if (editTarget) editTarget.value = std.id;
+
+  var headerTitle = document.getElementById('studentModalHeaderTitle');
+  if (headerTitle) headerTitle.innerText = `[${std.name}] 원생 정보 수정 및 상태 변경`;
+
+  var btnSubmit = document.getElementById('btnSubmitStudentForm');
+  if (btnSubmit) btnSubmit.innerHTML = '<i class="fa-solid fa-save mr-1"></i>수정 내용 저장';
+
+  var nameEl = document.getElementById('newStdName');
+  if (nameEl) nameEl.value = std.name || '';
+
+  var genderEl = document.getElementById('newStdGender');
+  if (genderEl) genderEl.value = std.gender || '남';
+
+  var idEl = document.getElementById('newStdId');
+  if (idEl) {
+    idEl.value = std.id;
+    idEl.readOnly = true;
+  }
+
+  var pwEl = document.getElementById('newStdPw');
+  if (pwEl) {
+    pwEl.value = std.password || '';
+    pwEl.placeholder = '비밀번호 변경 시 새 비밀번호 입력 (유지 시 그대로 둠)';
+  }
+
+  var schoolEl = document.getElementById('newStdSchool');
+  if (schoolEl) schoolEl.value = std.school || '';
+
+  var gradeEl = document.getElementById('newStdGrade');
+  if (gradeEl) gradeEl.value = std.grade || '초등 5학년';
+
+  var classEl = document.getElementById('newStdClass');
+  if (classEl) classEl.value = std.classGroup || '미지정';
+
+  var statusEl = document.getElementById('newStdStatus');
+  if (statusEl) statusEl.value = std.status || '승인';
+
+  var levelEl = document.getElementById('newStdLevel');
+  if (levelEl) levelEl.value = std.level || '초등 심화 Lv 5';
+
+  var pNameEl = document.getElementById('newStdParentName');
+  if (pNameEl) pNameEl.value = std.parentName || '';
+
+  var pPhoneEl = document.getElementById('newStdParentPhone');
+  if (pPhoneEl) pPhoneEl.value = std.phone || '';
+
+  var pEmailEl = document.getElementById('newStdParentEmail');
+  if (pEmailEl) pEmailEl.value = std.parentEmail || '';
+
+  var reportYnEl = document.getElementById('newStdReportYn');
+  if (reportYnEl) reportYnEl.checked = std.reportYn !== false;
+
+  var teacherEl = document.getElementById('newStdTeacher');
+  if (teacherEl) teacherEl.value = std.teacher || '박선혜 지도교사';
+
+  var memoEl = document.getElementById('newStdMemo');
+  if (memoEl) memoEl.value = std.memo || '';
+
+  var joinDateEl = document.getElementById('newStdJoinDate');
+  if (joinDateEl) {
+    var dt = std.createdAt || std.joinDate || '2026-09-01';
+    joinDateEl.value = dt.replace(/\./g, '-');
+  }
+
+  if (window.jQuery && typeof $('#studentAddModal').modal === 'function') {
+    $('#studentAddModal').modal('show');
+  } else {
+    showModalVanilla('studentAddModal');
+  }
+}
+
+function openStudentDetailModal(id) {
+  openStudentEditModal(id);
+}
+
 function openStudentExcelModal() {
   if (window.jQuery && typeof $('#studentExcelModal').modal === 'function') {
     $('#studentExcelModal').modal('show');
@@ -464,21 +801,26 @@ function openStudentExcelModal() {
   }
 }
 
-// 원생 신규 저장 처리 함수
 function saveNewStudent() {
+  var editId = (document.getElementById('editStudentTargetId') ? document.getElementById('editStudentTargetId').value : '').trim();
+
   var name = (document.getElementById('newStdName') ? document.getElementById('newStdName').value : '').trim();
+  var gender = document.getElementById('newStdGender') ? document.getElementById('newStdGender').value : '남';
   var id = (document.getElementById('newStdId') ? document.getElementById('newStdId').value : '').trim();
+  var pw = (document.getElementById('newStdPw') ? document.getElementById('newStdPw').value : '').trim();
   var school = (document.getElementById('newStdSchool') ? document.getElementById('newStdSchool').value : '').trim();
   var grade = document.getElementById('newStdGrade') ? document.getElementById('newStdGrade').value : '초등 5학년';
   var classGroup = document.getElementById('newStdClass') ? document.getElementById('newStdClass').value : '지혜반';
+  var status = document.getElementById('newStdStatus') ? document.getElementById('newStdStatus').value : '승인';
   var level = document.getElementById('newStdLevel') ? document.getElementById('newStdLevel').value : '초등 심화 Lv 5';
-  var teacher = document.getElementById('newStdTeacher') ? document.getElementById('newStdTeacher').value : '박선혜 지도교사';
+  var parentName = (document.getElementById('newStdParentName') ? document.getElementById('newStdParentName').value : '').trim();
   var parentPhone = (document.getElementById('newStdParentPhone') ? document.getElementById('newStdParentPhone').value : '').trim();
-  var studentPhone = (document.getElementById('newStdStudentPhone') ? document.getElementById('newStdStudentPhone').value : '').trim();
+  var parentEmail = (document.getElementById('newStdParentEmail') ? document.getElementById('newStdParentEmail').value : '').trim();
+  var reportYn = document.getElementById('newStdReportYn') ? document.getElementById('newStdReportYn').checked : true;
+  var teacher = document.getElementById('newStdTeacher') ? document.getElementById('newStdTeacher').value : '박선혜 지도교사';
   var memo = (document.getElementById('newStdMemo') ? document.getElementById('newStdMemo').value : '').trim();
   var joinDate = document.getElementById('newStdJoinDate') ? document.getElementById('newStdJoinDate').value : '2026-09-09';
 
-  // 유효성 검사
   if (!name) {
     alert('원생 이름을 입력해 주세요.');
     document.getElementById('newStdName').focus();
@@ -489,16 +831,14 @@ function saveNewStudent() {
     document.getElementById('newStdId').focus();
     return;
   }
-  // 중복 검사
-  var exists = studentDataList.some(function(s) { return s.id.toLowerCase() === id.toLowerCase(); });
-  if (exists) {
-    alert(`이미 존재하는 학번(ID: ${id})입니다. 다른 학번을 입력하거나 자동채번 버튼을 눌러주세요.`);
-    document.getElementById('newStdId').focus();
-    return;
-  }
   if (!school) {
     alert('학교명을 입력해 주세요.');
     document.getElementById('newStdSchool').focus();
+    return;
+  }
+  if (!parentName) {
+    alert('학부모 이름을 입력해 주세요.');
+    document.getElementById('newStdParentName').focus();
     return;
   }
   if (!parentPhone || parentPhone.length < 11) {
@@ -507,73 +847,106 @@ function saveNewStudent() {
     return;
   }
 
-  // 날짜 포맷 (YYYY.MM.DD)
-  var todayDateStr = joinDate.replace(/-/g, '.');
+  var createdDateStr = joinDate.replace(/-/g, '.');
 
-  // 신규 원생 객체
-  var newStudent = {
-    id: id,
-    name: name,
-    school: school,
-    grade: grade,
-    classGroup: classGroup,
-    level: level,
-    bookCount: 0,
-    quizAvg: '0.0',
-    phone: parentPhone,
-    stdPhone: studentPhone,
-    lastDate: todayDateStr,
-    status: '활동 중',
-    teacher: teacher,
-    memo: memo || '신규 등록 원생 (학습 태도 관찰 및 초기 독서 레벨 진단 중)',
-    joinDate: joinDate
-  };
+  if (editId) {
+    var std = studentDataList.find(function(s) { return s.id === editId; });
+    if (std) {
+      std.name = name;
+      std.gender = gender;
+      if (pw) std.password = pw;
+      std.school = school;
+      std.grade = grade;
+      std.classGroup = classGroup;
+      std.status = status;
+      std.level = level;
+      std.parentName = parentName;
+      std.phone = parentPhone;
+      std.parentEmail = parentEmail;
+      std.reportYn = reportYn;
+      std.teacher = teacher;
+      std.memo = memo;
+      std.createdAt = createdDateStr;
 
-  // 최상단 추가
-  studentDataList.unshift(newStudent);
-  lastAddedStudentId = newStudent.id;
+      showAcademyToast(`[${name}] 원생 정보 및 상태(${status})가 성공적으로 수정되었습니다.`);
+    }
+  } else {
+    var exists = studentDataList.some(function(s) { return s.id.toLowerCase() === id.toLowerCase(); });
+    if (exists) {
+      alert(`이미 존재하는 학번(ID: ${id})입니다. 다른 학번을 입력하거나 자동채번 버튼을 눌러주세요.`);
+      document.getElementById('newStdId').focus();
+      return;
+    }
 
-  // 도서 배정 모달 원생 셀렉트 박스에도 옵션 추가
-  var assignSelect = document.getElementById('assignTargetSelect');
-  if (assignSelect) {
-    var opt = document.createElement('option');
-    opt.value = `${newStudent.name} 원생 (${newStudent.id})`;
-    opt.innerText = `${newStudent.name} 원생 (개별 배정)`;
-    assignSelect.appendChild(opt);
+    var newStudent = {
+      id: id,
+      name: name,
+      gender: gender,
+      password: pw || '1234',
+      school: school,
+      grade: grade,
+      classGroup: classGroup,
+      status: status,
+      level: level,
+      bookCount: 0,
+      quizAvg: '0.0',
+      parentName: parentName,
+      phone: parentPhone,
+      parentEmail: parentEmail,
+      reportYn: reportYn,
+      stdPhone: '',
+      lastDate: createdDateStr,
+      createdAt: createdDateStr,
+      teacher: teacher,
+      memo: memo || '신규 등록 원생',
+      joinDate: joinDate
+    };
+
+    studentDataList.unshift(newStudent);
+    lastAddedStudentId = newStudent.id;
+
+    var assignSelect = document.getElementById('assignTargetSelect');
+    if (assignSelect) {
+      var opt = document.createElement('option');
+      opt.value = `${newStudent.name} 원생 (${newStudent.id})`;
+      opt.innerText = `${newStudent.name} 원생 (개별 배정)`;
+      assignSelect.appendChild(opt);
+    }
+
+    showAcademyToast(`[${newStudent.name}] 원생이 성공적으로 등록되었습니다. (학번: ${newStudent.id}, 상태: ${status})`);
   }
 
-  // 통계 및 슬롯 업데이트
   updateAllStudentCounts();
   if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
 
-  // 모달 닫기
   if (window.jQuery && typeof $('#studentAddModal').modal === 'function') {
     $('#studentAddModal').modal('hide');
   } else {
     hideModalVanilla('studentAddModal');
   }
 
-  // 테이블 재렌더링
-  renderStudentTable(studentDataList);
-
-  // 토스트 안내
-  showAcademyToast(`[${newStudent.name}] 원생이 성공적으로 등록되었습니다. (학번: ${newStudent.id})`);
+  filterStudents();
 }
 
-// 엑셀 일괄 등록 시뮬레이션
 function importSampleExcelStudents() {
   var sample1 = {
     id: 'S1027',
     name: '이하늘',
+    gender: '여',
+    password: '1234',
     school: '솔빛초등학교',
     grade: '초등 5학년',
     classGroup: '지혜반',
+    status: '승인',
     level: '초등 심화 Lv 5',
     bookCount: 0,
     quizAvg: '0.0',
+    parentName: '이진우',
     phone: '010-4421-8890',
+    parentEmail: 'sky_parent@example.com',
+    reportYn: true,
     lastDate: '2026.09.09',
-    status: '활동 중',
+    createdAt: '2026.09.09',
     teacher: '박선혜 지도교사',
     memo: '엑셀 일괄 등록 원생',
     joinDate: '2026-09-09'
@@ -581,15 +954,21 @@ function importSampleExcelStudents() {
   var sample2 = {
     id: 'S1028',
     name: '윤도현',
+    gender: '남',
+    password: '1234',
     school: '나노초등학교',
     grade: '초등 6학년',
     classGroup: '마스터반',
+    status: '승인',
     level: '초등 완성 Lv 6',
     bookCount: 0,
     quizAvg: '0.0',
+    parentName: '윤지훈',
     phone: '010-8910-3345',
+    parentEmail: 'dohyun_home@example.com',
+    reportYn: true,
     lastDate: '2026.09.09',
-    status: '활동 중',
+    createdAt: '2026.09.09',
     teacher: '최승현 지도교사',
     memo: '엑셀 일괄 등록 원생',
     joinDate: '2026-09-09'
@@ -608,10 +987,13 @@ function importSampleExcelStudents() {
     hideModalVanilla('studentExcelModal');
   }
 
-  renderStudentTable(studentDataList);
-  showAcademyToast('엑셀 파일에서 2명의 원생이 성공적으로 일괄 등록되었습니다.');
+  filterStudents();
+  showAcademyToast('엑셀 파일에서 2명의 원생(이하늘, 윤도현)이 성공적으로 일괄 등록되었습니다.');
 }
 
+// ==============================================================
+// 3-4. 원생 테이블 렌더링 & 필터링 (신규 컬럼 완비)
+// ==============================================================
 function renderStudentTable(list) {
   var tbody = document.getElementById('studentTableBody');
   if (!tbody) return;
@@ -621,7 +1003,7 @@ function renderStudentTable(list) {
   if (countEl) countEl.innerText = list.length;
 
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5 text-muted">일치하는 원생이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-5 text-muted">일치하는 원생이 없습니다.</td></tr>';
     return;
   }
 
@@ -631,22 +1013,56 @@ function renderStudentTable(list) {
       tr.className = 'row-highlight-new';
     }
 
-    var quizScoreDisplay = std.quizAvg === '0.0' || std.quizAvg === 0 ? '<span class="text-muted">-</span>' : std.quizAvg + '점';
+    var quizScoreDisplay = (std.quizAvg === '0.0' || std.quizAvg === 0) ? '<span class="text-muted">-</span>' : std.quizAvg + '점';
+
+    // 성별 뱃지
+    var genderBadge = std.gender === '여' ?
+      '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px;">여</span>' :
+      '<span class="badge" style="background:#e0e7ff; color:#3730a3; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px;">남</span>';
+
+    // 소속 학급 뱃지
+    var classBadge = std.classGroup === '미지정' ?
+      '<span class="badge-soft badge-soft-warn text-danger font-weight-bold" style="background:#fff1f2; color:#e11d48; border:1px solid #fecdd3;">미지정</span>' :
+      '<span class="badge-soft badge-soft-neutral">' + std.classGroup + '</span>';
+
+    // 상태 뱃지 (승인, 미승인, 퇴원)
+    var statusBadge = '';
+    if (std.status === '미승인') {
+      statusBadge = '<span class="badge badge-warning text-dark" style="font-size:11px; font-weight:700; padding:3px 7px;"><i class="fa-regular fa-clock mr-1"></i>미승인</span>';
+    } else if (std.status === '퇴원') {
+      statusBadge = '<span class="badge badge-secondary" style="font-size:11px; font-weight:700; padding:3px 7px;"><i class="fa-solid fa-user-slash mr-1"></i>퇴원</span>';
+    } else {
+      statusBadge = '<span class="badge badge-success" style="font-size:11px; font-weight:700; padding:3px 7px;"><i class="fa-solid fa-check mr-1"></i>승인</span>';
+    }
+
+    // 학부모 정보
+    var parentInfo = '<div style="font-size:12.5px; line-height:1.3;">' +
+      '<strong>' + (std.parentName || '학부모') + '</strong> ' +
+      '<small class="text-muted">(' + (std.phone || '-') + ')</small>' +
+      (std.reportYn !== false ? ' <i class="fa-solid fa-paper-plane text-primary ml-1" style="font-size:10px;" title="리포트 수신동의"></i>' : '') +
+      '</div>';
+    if (std.parentEmail) {
+      parentInfo += '<div style="font-size:11px; color:#64748b;">' + std.parentEmail + '</div>';
+    }
+
+    var createDateStr = std.createdAt || std.joinDate || '2026.03.01';
 
     tr.innerHTML = 
       '<td class="text-center"><small class="text-muted font-weight-bold">' + std.id + '</small></td>' +
-      '<td><span class="student-link" onclick="openStudentDetailModal(\'' + std.id + '\')">' + std.name + '</span>' + 
+      '<td><span class="student-link font-weight-bold" onclick="openStudentEditModal(\'' + std.id + '\')">' + std.name + '</span>' + 
       (std.id === lastAddedStudentId ? ' <span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : '') + '</td>' +
-      '<td class="text-center">' + std.school + ' <small class="text-muted">(' + std.grade + ')</small></td>' +
-      '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + std.classGroup + '</span></td>' +
-      '<td class="text-center font-weight-bold" style="color:var(--btn-primary); font-size:12.5px;">' + std.level + '</td>' +
-      '<td class="text-center font-weight-bold">' + std.bookCount + '권</td>' +
-      '<td class="text-center text-success font-weight-bold">' + quizScoreDisplay + '</td>' +
-      '<td class="text-center text-muted" style="font-size:12.5px;">' + std.phone + '</td>' +
-      '<td class="text-center text-muted" style="font-size:12px;">' + std.lastDate + '</td>' +
+      '<td class="text-center">' + genderBadge + '</td>' +
+      '<td>' + std.school + ' <small class="text-muted">(' + std.grade + ')</small></td>' +
+      '<td class="text-center">' + classBadge + '</td>' +
+      '<td class="text-center">' + statusBadge + '</td>' +
+      '<td>' + parentInfo + '</td>' +
+      '<td class="text-center"><small class="text-muted font-weight-bold">' + createDateStr + '</small></td>' +
+      '<td class="text-center font-weight-bold" style="color:var(--btn-primary); font-size:12px;">' + std.level + '</td>' +
+      '<td class="text-center font-weight-bold">' + std.bookCount + '권 <small class="text-success font-weight-bold">(' + quizScoreDisplay + ')</small></td>' +
       '<td class="text-center">' +
-        '<button class="btn btn-xs btn-outline-secondary mr-1" onclick="openStudentDetailModal(\'' + std.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">상세</button>' +
-        '<button class="btn btn-xs btn-beige-primary" onclick="viewStudentPortfolio(\'' + std.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">포트폴리오</button>' +
+        '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="border-radius:6px; font-size:11px; padding:2.5px 6px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+        '<button type="button" class="btn btn-xs btn-outline-danger mr-1" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="border-radius:6px; font-size:11px; padding:2.5px 6px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
+        '<button type="button" class="btn btn-xs btn-beige-primary" onclick="viewStudentPortfolio(\'' + std.id + '\')" title="포트폴리오 리포트" style="border-radius:6px; font-size:11px; padding:2.5px 6px;"><i class="fa-solid fa-chart-pie"></i></button>' +
       '</td>';
     tbody.appendChild(tr);
   });
@@ -661,7 +1077,8 @@ function filterStudents() {
     var matchQuery = !query || 
       std.name.toLowerCase().indexOf(query) !== -1 || 
       std.id.toLowerCase().indexOf(query) !== -1 || 
-      std.school.toLowerCase().indexOf(query) !== -1;
+      (std.parentName && std.parentName.toLowerCase().indexOf(query) !== -1) ||
+      (std.school && std.school.toLowerCase().indexOf(query) !== -1);
     return matchClass && matchQuery;
   });
 
@@ -3179,6 +3596,8 @@ var academyBookList = [
     publisher: '열린책들',
     category: '세계문학 / 우정',
     grade: '초4 ~ 중1',
+    creatorType: 'HQ',
+    academyName: '본사 직속(HQ)',
     cover: 'assets/covers/cover_1001.jpg',
     materialName: '어린왕자_나노시트.pdf',
     materialSize: '1.45 MB',
@@ -3195,6 +3614,8 @@ var academyBookList = [
     publisher: '창비',
     category: '공감 / 청소년 성장',
     grade: '중1 ~ 중3',
+    creatorType: 'HQ',
+    academyName: '본사 직속(HQ)',
     cover: 'assets/covers/cover_1002.jpg',
     materialName: '아몬드_독서토론활동지.pdf',
     materialSize: '1.82 MB',
@@ -3211,6 +3632,8 @@ var academyBookList = [
     publisher: '다림',
     category: '한국문학 / 성장',
     grade: '초5 ~ 초6',
+    creatorType: 'ACADEMY',
+    academyName: '나노 독서아카데미 본원',
     cover: 'assets/covers/cover_1004.jpg',
     materialName: '자전거도둑_나노시트.pdf',
     materialSize: '1.20 MB',
@@ -3227,6 +3650,8 @@ var academyBookList = [
     publisher: '사계절',
     category: '사회 / 인성',
     grade: '초3 ~ 초4',
+    creatorType: 'HQ',
+    academyName: '본사 직속(HQ)',
     cover: 'assets/covers/cover_1003.jpg',
     materialName: '마당을나온암탉_수업지도안.pdf',
     materialSize: '2.15 MB',
@@ -3241,12 +3666,56 @@ var currentUploadedMaterial = null;
 var currentUploadedCover = null;
 var lastAddedBookId = null;
 
-function renderAcademyBookTable() {
+// 도서 필터링 (등록처, 학년, 검색어 종합 필터)
+function filterAcademyBooks() {
+  var originVal = document.getElementById('filterAcadBookOrigin') ? document.getElementById('filterAcadBookOrigin').value : 'ALL';
+  var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
+  var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
+
+  var filtered = academyBookList.filter(function(b) {
+    // 1. 등록처 매칭
+    var matchOrigin = true;
+    if (originVal === 'HQ') {
+      matchOrigin = b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
+    } else if (originVal === 'ACADEMY') {
+      matchOrigin = b.creatorType === 'ACADEMY' || (b.academyName && !b.academyName.includes('본사'));
+    }
+
+    // 2. 학년 매칭
+    var matchGrade = true;
+    if (gradeVal !== 'ALL') {
+      matchGrade = b.grade && (b.grade.includes(gradeVal) || gradeVal.includes(b.grade));
+    }
+
+    // 3. 검색어 매칭
+    var matchQuery = !query ||
+      b.title.toLowerCase().indexOf(query) !== -1 ||
+      b.author.toLowerCase().indexOf(query) !== -1 ||
+      b.publisher.toLowerCase().indexOf(query) !== -1 ||
+      (b.academyName && b.academyName.toLowerCase().indexOf(query) !== -1);
+
+    return matchOrigin && matchGrade && matchQuery;
+  });
+
+  renderAcademyBookTable(filtered);
+}
+
+// 도서 테이블 렌더링 (마스터 페이지와 동일한 등록처 뱃지 탑재)
+function renderAcademyBookTable(data) {
+  var list = data || academyBookList;
   var tbody = document.getElementById('academyBookTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  academyBookList.forEach(function(b) {
+  var totalCountEl = document.getElementById('totalAcadBookCount');
+  if (totalCountEl) totalCountEl.innerText = list.length;
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-5 text-muted">일치하는 도서가 없습니다.</td></tr>';
+    return;
+  }
+
+  list.forEach(function(b) {
     var tr = document.createElement('tr');
     if (b.id === lastAddedBookId) {
       tr.className = 'row-highlight-new';
@@ -3265,6 +3734,12 @@ function renderAcademyBookTable() {
       <i class="fa-solid fa-file-lines mr-1"></i>나노 시트 정답
     </button>`;
 
+    // 마스터 페이지와 완벽히 통일된 등록처 뱃지 로직
+    var isHq = !b.creatorType || b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
+    var originBadge = isHq
+      ? `<span class="badge-soft badge-soft-warning" style="font-weight: 700; white-space: nowrap;"><i class="fa-solid fa-crown mr-1"></i>본사 직속(HQ)</span>`
+      : `<span class="badge-soft badge-soft-primary" style="font-weight: 700; white-space: nowrap;" title="${b.academyName}"><i class="fa-solid fa-school mr-1"></i>${b.academyName || '나노 독서아카데미 본원'}</span>`;
+
     tr.innerHTML = 
       `<td class="text-center">
         <div class="book-thumb-wrap" onclick="openCoverModal('${coverImg}', '${b.title.replace(/'/g, "\\'")}', '${b.publisher} · ${b.author}')">
@@ -3276,6 +3751,9 @@ function renderAcademyBookTable() {
       <td>
         <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">${b.title}</div>
         <small class="text-muted">${b.subtitle || '나노 추천 교과 연계 도서'}</small>
+      </td>
+      <td class="text-center">
+        ${originBadge}
       </td>
       <td class="text-center">
         <div style="font-weight: 600;">${b.author}</div>
@@ -3653,7 +4131,14 @@ function openAcademyBookEditModal(id) {
   renderAcadQuizTabs();
   loadAcadQuizForm();
 
-  $('#academyBookEditModal').modal('show');
+  // 이전 백드롭 잔여물 정리 및 모달 z-index 최상위 보장 (화면 까매짐 방지)
+  $('.modal-backdrop').remove();
+  $('body').removeClass('modal-open');
+  var modalEl = document.getElementById('academyBookEditModal');
+  if (modalEl) {
+    modalEl.style.zIndex = '1060';
+  }
+  $('#academyBookEditModal').modal({ backdrop: true, show: true });
 }
 
 // 탭 전환 (도서 정보 vs 북퀴즈)
@@ -4052,6 +4537,8 @@ function handleSaveAcademyBookModal(e) {
       publisher: publisher,
       grade: grade,
       category: category,
+      creatorType: 'ACADEMY',
+      academyName: '나노 독서아카데미 본원',
       cover: cover,
       materialName: matName,
       materialSize: matSize,
@@ -4063,7 +4550,7 @@ function handleSaveAcademyBookModal(e) {
     };
     academyBookList.unshift(newBook);
     lastAddedBookId = finalId;
-    showAcademyToast(`신규 도서 [${title}] (코드: ${finalId}, 북퀴즈 ${editingAcadQuizzes.length}문항)이 등록되었습니다.`);
+    showAcademyToast(`신규 도서 [${title}] (코드: ${finalId}, 등록처: 나노 독서아카데미 본원, 북퀴즈 ${editingAcadQuizzes.length}문항)이 등록되었습니다.`);
   }
 
   // 동기화 및 렌더링
@@ -4091,8 +4578,320 @@ function deleteAcademyBook(id) {
   showAcademyToast(`[${title}] 도서가 삭제되었습니다.`);
 }
 
+// ==============================================================
+// 8. 학원 관리자 내 정보 관리 (My Info Management)
+// ==============================================================
+
+/**
+ * [상태 객체] 학원 관리자(원장님) 기본 정보 및 계약 데이터
+ * - 조회 전용 항목: ID, 학원명, 원장명, 이용상품, 사업자번호, 계약일, 만료일
+ * - 변경 가능 항목: 휴대전화번호, 이메일, 주소(우편번호/기본/상세)
+ * - 계정 보안: 비밀번호 변경
+ */
+var myAcademyInfo = {
+  id: 'director_ey',
+  academyName: '나노 독서아카데미 본원',
+  directorName: '김은영',
+  phone: '010-3342-9981',
+  email: 'director_ey@nanobook.co.kr',
+  postcode: '07997',
+  address: '서울특별시 양천구 오목로 299',
+  addressDetail: '4층 401호 (목동, 나노빌딩)',
+  plan: '프리미엄 프랜차이즈 50인 슬롯형',
+  bizNumber: '107-86-54321',
+  contractDate: '2025-01-01',
+  expireDate: '2026-12-31'
+};
+
+/**
+ * '내 정보 관리' 모달 열기
+ * - 이유: 최신 상태값을 폼에 바인딩하고, 이전 입력 중이던 비밀번호 등 민감 정보를 안전하게 초기화하기 위함
+ */
+function openMyInfoModal() {
+  // 1) 조회 전용 정보 텍스트 바인딩
+  var elId = document.getElementById('infoDisplayId');
+  var elBiz = document.getElementById('infoDisplayBizNum');
+  var elAcad = document.getElementById('infoDisplayAcademyName');
+  var elDir = document.getElementById('infoDisplayDirectorName');
+  var elPlan = document.getElementById('infoDisplayPlan');
+  var elCDate = document.getElementById('infoDisplayContractDate');
+  var elEDate = document.getElementById('infoDisplayExpireDate');
+
+  if (elId) elId.innerText = myAcademyInfo.id;
+  if (elBiz) elBiz.innerText = myAcademyInfo.bizNumber;
+  if (elAcad) elAcad.innerText = myAcademyInfo.academyName;
+  if (elDir) elDir.innerText = myAcademyInfo.directorName;
+  if (elPlan) elPlan.innerText = myAcademyInfo.plan;
+  if (elCDate) elCDate.innerText = myAcademyInfo.contractDate;
+  if (elEDate) elEDate.innerText = myAcademyInfo.expireDate;
+
+  // 상단 배너 텍스트 동기화
+  var bannerDir = document.getElementById('bannerDirectorName');
+  var bannerAcad = document.getElementById('bannerAcademyName');
+  if (bannerDir) bannerDir.innerText = myAcademyInfo.directorName + ' 원장님';
+  if (bannerAcad) bannerAcad.innerText = myAcademyInfo.academyName + ' (가맹 1호점)';
+
+  // 2) 수정 가능 입력 필드 값 채우기
+  var inputPhone = document.getElementById('myInfoPhone');
+  var inputEmail = document.getElementById('myInfoEmail');
+  var inputPostcode = document.getElementById('myInfoPostcode');
+  var inputAddress = document.getElementById('myInfoAddress');
+  var inputDetail = document.getElementById('myInfoAddressDetail');
+
+  if (inputPhone) inputPhone.value = myAcademyInfo.phone;
+  if (inputEmail) inputEmail.value = myAcademyInfo.email;
+  if (inputPostcode) inputPostcode.value = myAcademyInfo.postcode;
+  if (inputAddress) inputAddress.value = myAcademyInfo.address;
+  if (inputDetail) inputDetail.value = myAcademyInfo.addressDetail;
+
+  // 3) 비밀번호 변경 필드 초기화 (보안상 항상 비워둠)
+  var curPw = document.getElementById('myInfoCurrentPw');
+  var newPw = document.getElementById('myInfoNewPw');
+  var newPwConfirm = document.getElementById('myInfoNewPwConfirm');
+  var pwFeedback = document.getElementById('pwMatchFeedback');
+
+  if (curPw) curPw.value = '';
+  if (newPw) newPw.value = '';
+  if (newPwConfirm) newPwConfirm.value = '';
+  if (pwFeedback) {
+    pwFeedback.innerText = '';
+    pwFeedback.className = '';
+  }
+
+  // 모달 띄우기
+  $('#myInfoModal').modal('show');
+}
+
+/**
+ * 전화번호 입력 시 하이픈 자동 포맷팅 함수
+ * - 이유: 사용자가 숫자만 입력하더라도 010-XXXX-XXXX 표준 규격으로 일관성 있게 표시하기 위함
+ */
+function formatPhoneNumber(input) {
+  var value = input.value.replace(/[^0-9]/g, '');
+  var result = '';
+  if (value.length < 4) {
+    result = value;
+  } else if (value.length < 7) {
+    result = value.substr(0, 3) + '-' + value.substr(3);
+  } else if (value.length < 11) {
+    result = value.substr(0, 3) + '-' + value.substr(3, 3) + '-' + value.substr(6);
+  } else {
+    result = value.substr(0, 3) + '-' + value.substr(3, 4) + '-' + value.substr(7, 4);
+  }
+  input.value = result;
+}
+
+/**
+ * Daum(카카오) 우편번호 검색 팝업 실행
+ * - 이유: 원장님이 주소를 오탈자 없이 신속하고 정확하게 입력할 수 있도록 표준 주소 API 연동
+ */
+function searchPostcode() {
+  if (typeof daum === 'undefined' || !daum.Postcode) {
+    // CDN 로드 실패 또는 오프라인 환경을 위한 안전한 Fallback
+    var manualAddr = prompt('우편번호 검색 서비스에 연결할 수 없습니다. 주소를 직접 입력해 주세요:', document.getElementById('myInfoAddress').value);
+    if (manualAddr) {
+      document.getElementById('myInfoAddress').value = manualAddr;
+    }
+    return;
+  }
+
+  new daum.Postcode({
+    oncomplete: function(data) {
+      // 도로명 주소 또는 지번 주소 선택
+      var fullAddr = data.roadAddress ? data.roadAddress : data.jibunAddress;
+      var extraAddr = '';
+
+      if (data.userSelectedType === 'R') {
+        if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+          extraAddr += data.bname;
+        }
+        if (data.buildingName !== '' && data.apartment === 'Y') {
+          extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+        }
+        if (extraAddr !== '') {
+          fullAddr += ' (' + extraAddr + ')';
+        }
+      }
+
+      // 우편번호와 기본 주소 필드에 삽입
+      document.getElementById('myInfoPostcode').value = data.zonecode;
+      document.getElementById('myInfoAddress').value = fullAddr;
+      
+      // 상세 주소 입력창으로 포커스 이동
+      var detailInput = document.getElementById('myInfoAddressDetail');
+      if (detailInput) {
+        detailInput.focus();
+      }
+    }
+  }).open();
+}
+
+/**
+ * 비밀번호 입력 시 일치 여부 실시간 검증
+ * - 이유: 저장 전에 사용자가 입력한 새 비밀번호와 확인 비밀번호의 일치 여부를 즉각 시각적으로 안내하기 위함
+ */
+function checkPasswordMatch() {
+  var newPw = document.getElementById('myInfoNewPw').value;
+  var confirmPw = document.getElementById('myInfoNewPwConfirm').value;
+  var feedback = document.getElementById('pwMatchFeedback');
+
+  if (!feedback) return;
+
+  if (!newPw && !confirmPw) {
+    feedback.innerText = '';
+    return;
+  }
+
+  if (newPw.length > 0 && newPw.length < 8) {
+    feedback.innerText = '※ 새 비밀번호는 최소 8자 이상이어야 합니다.';
+    feedback.style.color = '#d9534f';
+    return;
+  }
+
+  if (newPw && confirmPw) {
+    if (newPw === confirmPw) {
+      feedback.innerText = '✓ 새 비밀번호가 서로 일치합니다.';
+      feedback.style.color = '#2f5436';
+    } else {
+      feedback.innerText = '✕ 새 비밀번호가 일치하지 않습니다.';
+      feedback.style.color = '#d9534f';
+    }
+  }
+}
+
+/**
+ * 비밀번호만 단독 변경 처리
+ * - 이유: 연락처나 주소 수정 없이 비밀번호만 신속하게 변경하고 싶을 때 명시적인 액션 제공
+ */
+function changeMyPasswordOnly() {
+  var curPw = document.getElementById('myInfoCurrentPw').value.trim();
+  var newPw = document.getElementById('myInfoNewPw').value.trim();
+  var confirmPw = document.getElementById('myInfoNewPwConfirm').value.trim();
+
+  // 1) 필수값 검증
+  if (!curPw) {
+    alert('현재 비밀번호를 입력해 주세요.');
+    document.getElementById('myInfoCurrentPw').focus();
+    return;
+  }
+  if (!newPw) {
+    alert('변경할 새 비밀번호를 입력해 주세요.');
+    document.getElementById('myInfoNewPw').focus();
+    return;
+  }
+  if (newPw.length < 8) {
+    alert('새 비밀번호는 보안을 위해 8자리 이상으로 설정해 주세요.');
+    document.getElementById('myInfoNewPw').focus();
+    return;
+  }
+  if (newPw !== confirmPw) {
+    alert('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+    document.getElementById('myInfoNewPwConfirm').focus();
+    return;
+  }
+
+  // 2) 변경 완료 처리
+  document.getElementById('myInfoCurrentPw').value = '';
+  document.getElementById('myInfoNewPw').value = '';
+  document.getElementById('myInfoNewPwConfirm').value = '';
+  document.getElementById('pwMatchFeedback').innerText = '';
+
+  showAcademyToast('비밀번호가 성공적으로 변경되었습니다. 다음 로그인부터 적용됩니다.');
+}
+
+/**
+ * 내 정보(연락처, 이메일, 주소 및 선택적 비밀번호) 통합 저장
+ * - 이유: 한 번의 클릭으로 수정 가능한 모든 학원 정보와 보안 설정을 일괄 저장하고 헤더와 화면을 동기화하기 위함
+ */
+function saveMyInfo() {
+  var phone = document.getElementById('myInfoPhone').value.trim();
+  var email = document.getElementById('myInfoEmail').value.trim();
+  var postcode = document.getElementById('myInfoPostcode').value.trim();
+  var address = document.getElementById('myInfoAddress').value.trim();
+  var addressDetail = document.getElementById('myInfoAddressDetail').value.trim();
+
+  // 1) 연락처 유효성 검사
+  if (!phone) {
+    alert('휴대전화번호를 입력해 주세요.');
+    document.getElementById('myInfoPhone').focus();
+    return;
+  }
+  if (phone.replace(/[^0-9]/g, '').length < 10) {
+    alert('올바른 휴대전화번호(10~11자리)를 입력해 주세요.');
+    document.getElementById('myInfoPhone').focus();
+    return;
+  }
+
+  // 2) 이메일 유효성 검사
+  var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email) {
+    alert('대표 이메일을 입력해 주세요.');
+    document.getElementById('myInfoEmail').focus();
+    return;
+  }
+  if (!emailPattern.test(email)) {
+    alert('올바른 이메일 형식을 입력해 주세요 (예: director@example.com).');
+    document.getElementById('myInfoEmail').focus();
+    return;
+  }
+
+  // 3) 주소 검사
+  if (!address) {
+    alert('학원 소재지 주소를 입력해 주세요.');
+    document.getElementById('myInfoAddress').focus();
+    return;
+  }
+
+  // 4) 비밀번호 입력 여부 확인 (입력되어 있다면 함께 검증 및 변경)
+  var curPw = document.getElementById('myInfoCurrentPw').value.trim();
+  var newPw = document.getElementById('myInfoNewPw').value.trim();
+  var confirmPw = document.getElementById('myInfoNewPwConfirm').value.trim();
+
+  var pwChanged = false;
+  if (curPw || newPw || confirmPw) {
+    if (!curPw) {
+      alert('비밀번호를 변경하시려면 [현재 비밀번호]를 입력해 주세요.');
+      document.getElementById('myInfoCurrentPw').focus();
+      return;
+    }
+    if (!newPw) {
+      alert('변경할 [새 비밀번호]를 입력해 주세요.');
+      document.getElementById('myInfoNewPw').focus();
+      return;
+    }
+    if (newPw.length < 8) {
+      alert('새 비밀번호는 8자리 이상이어야 합니다.');
+      document.getElementById('myInfoNewPw').focus();
+      return;
+    }
+    if (newPw !== confirmPw) {
+      alert('새 비밀번호와 확인 입력이 일치하지 않습니다.');
+      document.getElementById('myInfoNewPwConfirm').focus();
+      return;
+    }
+    pwChanged = true;
+  }
+
+  // 5) 데이터 모델 업데이트
+  myAcademyInfo.phone = phone;
+  myAcademyInfo.email = email;
+  myAcademyInfo.postcode = postcode;
+  myAcademyInfo.address = address;
+  myAcademyInfo.addressDetail = addressDetail;
+
+  // 6) 모달 닫기 및 알림
+  $('#myInfoModal').modal('hide');
+
+  if (pwChanged) {
+    showAcademyToast('내 정보(연락처·이메일·주소) 및 비밀번호가 성공적으로 저장되었습니다.');
+  } else {
+    showAcademyToast('내 정보(휴대전화·이메일·학원 주소)가 성공적으로 저장되었습니다.');
+  }
+}
+
 // 초기화
 document.addEventListener('DOMContentLoaded', function() {
+  updateClassSelectOptions();
   renderQuizTabs();
   loadCurrentQuizForm();
   renderStudentTable(studentDataList);
@@ -4105,5 +4904,304 @@ document.addEventListener('DOMContentLoaded', function() {
   renderAssignmentTable();
   renderAcademyDispatchTable();
   renderAcademyRankingTable();
+  renderAcademyPaymentTable();
 });
+
+// ==============================================================
+// 8. 결제 및 구독 관리 모듈 (Academy Payment & Subscription)
+// ==============================================================
+
+var currentSelectedPlan = '6month';
+var currentSelectedPayMethod = '신용카드';
+
+var paymentPlanDefinitions = {
+  'monthly': {
+    code: 'monthly',
+    name: '1개월 정기구독권',
+    badge: '1개월 정기구독',
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    periodMonths: 1,
+    desc: '매월 자동결제 상품 (만료 7일/3일 전 알림톡 사전 안내)'
+  },
+  '6month': {
+    code: '6month',
+    name: '6개월 이용권 (10% 특별할인)',
+    badge: '6개월 이용권 (10% OFF)',
+    supply: 540000,
+    vat: 54000,
+    total: 594000,
+    periodMonths: 6,
+    desc: '1학기 6개월 패키지 (60,000원 즉시 절약, 월 90,000원 꼴)'
+  },
+  '12month': {
+    code: '12month',
+    name: '12개월 연간권 (20% 최대할인)',
+    badge: '12개월 연간권 (20% OFF)',
+    supply: 960000,
+    vat: 96000,
+    total: 1056000,
+    periodMonths: 12,
+    desc: '연간 VIP 라이선스 (240,000원 최대 절약, 월 80,000원 꼴)'
+  }
+};
+
+var academyPaymentList = [
+  {
+    id: "PAY-20260820-001",
+    planType: "monthly",
+    planName: "1개월 정기구독권",
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    method: "신용카드 (현대 4210-****)",
+    date: "2026-08-20 10:15:22",
+    startDate: "2026-08-20",
+    endDate: "2026-09-19",
+    status: "paid"
+  },
+  {
+    id: "PAY-20260720-003",
+    planType: "monthly",
+    planName: "1개월 정기구독권",
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    method: "신용카드 (현대 4210-****)",
+    date: "2026-07-20 10:00:11",
+    startDate: "2026-07-20",
+    endDate: "2026-08-19",
+    status: "paid"
+  },
+  {
+    id: "PAY-20260620-002",
+    planType: "monthly",
+    planName: "1개월 정기구독권",
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    method: "신용카드 (현대 4210-****)",
+    date: "2026-06-20 10:00:05",
+    startDate: "2026-06-20",
+    endDate: "2026-07-19",
+    status: "paid"
+  }
+];
+
+// 결제 내역 렌더링
+function renderAcademyPaymentTable(data) {
+  var list = data || academyPaymentList;
+  var tbody = document.getElementById('academyPaymentTableBody');
+  if (!tbody) return;
+
+  var countBadge = document.getElementById('academyPaymentCountBadge');
+  if (countBadge) countBadge.innerText = '총 ' + list.length + '건';
+
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">결제 내역이 존재하지 않습니다.</td></tr>';
+    return;
+  }
+
+  var html = '';
+  list.forEach(function(item) {
+    var statusBadge = '';
+    if (item.status === 'paid') {
+      statusBadge = '<span class="badge-soft badge-soft-success font-weight-bold"><i class="fa-solid fa-circle-check mr-1"></i>결제완료</span>';
+    } else if (item.status === 'pending') {
+      statusBadge = '<span class="badge-soft badge-soft-warn font-weight-bold"><i class="fa-solid fa-clock mr-1"></i>결제대기</span>';
+    } else if (item.status === 'cancelled') {
+      statusBadge = '<span class="badge-soft badge-soft-danger font-weight-bold"><i class="fa-solid fa-xmark mr-1"></i>결제취소</span>';
+    } else {
+      statusBadge = '<span class="badge-soft badge-soft-neutral">' + item.status + '</span>';
+    }
+
+    html += '<tr style="font-size:13px;">' +
+      '<td class="font-weight-bold text-muted" style="font-size:11.5px;">' + item.id + '</td>' +
+      '<td><span class="font-weight-bold" style="color:var(--text-main);">' + item.planName + '</span></td>' +
+      '<td>' + Number(item.supply).toLocaleString() + '원</td>' +
+      '<td>' + Number(item.vat).toLocaleString() + '원</td>' +
+      '<td class="font-weight-bold" style="color:#962a22; font-size:13.5px;">' + Number(item.total).toLocaleString() + '원</td>' +
+      '<td><small class="text-muted"><i class="fa-solid fa-credit-card mr-1"></i>' + item.method + '</small></td>' +
+      '<td><small class="text-muted">' + item.date + '</small></td>' +
+      '<td><span class="badge badge-light border" style="font-size:11.5px;">' + item.startDate + ' ~ ' + item.endDate + '</span></td>' +
+      '<td class="text-center">' + statusBadge + '</td>' +
+      '<td class="text-center">' +
+        (item.status === 'paid' 
+          ? '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="viewPaymentReceipt(\'' + item.id + '\')" style="border-radius:6px; font-size:11px; padding:3px 8px;"><i class="fa-solid fa-file-invoice mr-1"></i>영수증</button>' 
+          : '<small class="text-muted">-</small>') +
+      '</td>' +
+    '</tr>';
+  });
+
+  tbody.innerHTML = html;
+}
+
+// 결제 내역 상태 필터링
+function filterAcademyPaymentTable() {
+  var filterSelect = document.getElementById('filterPaymentStatus');
+  var status = filterSelect ? filterSelect.value : 'ALL';
+
+  if (status === 'ALL') {
+    renderAcademyPaymentTable(academyPaymentList);
+  } else {
+    var filtered = academyPaymentList.filter(function(item) {
+      return item.status === status;
+    });
+    renderAcademyPaymentTable(filtered);
+  }
+}
+
+// 만료 알림 상태 시뮬레이션 (D-3 / D-7 / normal)
+function setExpireAlert(type) {
+  var banner = document.getElementById('paymentExpireAlertBanner');
+  var titleEl = document.getElementById('paymentAlertTitle');
+  var descEl = document.getElementById('paymentAlertDesc');
+  if (!banner || !titleEl || !descEl) return;
+
+  if (type === 'd3') {
+    banner.style.display = 'flex';
+    banner.style.background = '#fff7ed';
+    banner.style.borderColor = '#fed7aa';
+    banner.style.color = '#9a3412';
+    titleEl.innerHTML = '<span class="badge badge-danger mr-2" style="font-size:11.5px; padding:4px 8px;">D-3 만료 임박</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#c2410c;">3일 후</strong> 만료됩니다! (만료 예정일: 2026-09-19)';
+    descEl.innerText = '만료 7일 전 및 3일 전에 원장님 휴대폰으로 알림톡이 자동 발송됩니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.';
+    showAcademyToast('만료 3일 전(D-3) 알림 상태로 시뮬레이션 전환되었습니다.');
+  } else if (type === 'd7') {
+    banner.style.display = 'flex';
+    banner.style.background = '#fefce8';
+    banner.style.borderColor = '#fef08a';
+    banner.style.color = '#854d0e';
+    titleEl.innerHTML = '<span class="badge badge-warning text-dark mr-2" style="font-size:11.5px; padding:4px 8px;">D-7 만료 사전 안내</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#a16207;">7일 후</strong> 만료됩니다. (만료 예정일: 2026-09-19)';
+    descEl.innerText = '학원 정기 구독 갱신 안내 알림톡이 발송되었습니다. 미리 이용권을 연장하시면 기존 커리큘럼 및 원생 포트폴리오가 끊김 없이 보존됩니다.';
+    showAcademyToast('만료 7일 전(D-7) 사전 안내 상태로 시뮬레이션 전환되었습니다.');
+  } else {
+    banner.style.display = 'none';
+    showAcademyToast('정상 이용 상태로 변경되었습니다 (만료 안내 배너 숨김).');
+  }
+}
+
+// 요금제 섹션으로 부드럽게 스크롤
+function scrollToPlans() {
+  var el = document.getElementById('sectionPaymentPlans');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 결제 내역 섹션으로 부드럽게 스크롤
+function scrollToPaymentHistory() {
+  var el = document.getElementById('sectionPaymentHistory');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 결제 신청 모달 열기
+function openCheckoutModal(planType) {
+  var plan = paymentPlanDefinitions[planType] || paymentPlanDefinitions['6month'];
+  currentSelectedPlan = planType;
+
+  document.getElementById('checkoutPlanBadge').innerText = plan.badge;
+  document.getElementById('checkoutPlanSupply').innerText = Number(plan.supply).toLocaleString() + '원';
+  document.getElementById('checkoutPlanVat').innerText = Number(plan.vat).toLocaleString() + '원';
+  document.getElementById('checkoutPlanTotal').innerText = Number(plan.total).toLocaleString() + '원';
+  document.getElementById('btnSubmitPaymentText').innerText = Number(plan.total).toLocaleString() + '원 결제 신청하기';
+
+  selectPayMethod('신용카드');
+
+  $('#paymentCheckoutModal').modal('show');
+}
+
+// 결제 수단 선택
+function selectPayMethod(method) {
+  currentSelectedPayMethod = method;
+  var labels = ['Card', 'Bank', 'VBank'];
+  labels.forEach(function(l) {
+    var el = document.getElementById('labelPayMethod' + l);
+    if (el) el.classList.remove('active');
+  });
+
+  if (method === '신용카드') {
+    var el = document.getElementById('labelPayMethodCard');
+    if (el) el.classList.add('active');
+  } else if (method === '실시간 계좌이체') {
+    var el = document.getElementById('labelPayMethodBank');
+    if (el) el.classList.add('active');
+  } else {
+    var el = document.getElementById('labelPayMethodVBank');
+    if (el) el.classList.add('active');
+  }
+}
+
+// 모의 결제 신청 제출 (PG사 연동 전 껍데기 시뮬레이션)
+function submitSimulatedPayment() {
+  var plan = paymentPlanDefinitions[currentSelectedPlan];
+  if (!plan) return;
+
+  var agree = document.getElementById('checkoutAgreeTerms');
+  if (agree && !agree.checked) {
+    alert('이용약관 및 결제 취소/환불 규정에 동의하셔야 결제 신청이 가능합니다.');
+    return;
+  }
+
+  // 오늘 날짜 및 만료일 계산
+  var now = new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : n; };
+  var dateStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + 
+                pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+
+  var startDate = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+  var endObj = new Date(now);
+  endObj.setMonth(endObj.getMonth() + plan.periodMonths);
+  var endDate = endObj.getFullYear() + '-' + pad(endObj.getMonth() + 1) + '-' + pad(endObj.getDate());
+
+  var newId = 'PAY-' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + Math.floor(100 + Math.random() * 900);
+
+  var newPayment = {
+    id: newId,
+    planType: plan.code,
+    planName: plan.name,
+    supply: plan.supply,
+    vat: plan.vat,
+    total: plan.total,
+    method: currentSelectedPayMethod + ' (테스트 신청)',
+    date: dateStr,
+    startDate: startDate,
+    endDate: endDate,
+    status: 'pending' // PG사 준비 중이므로 결제 대기
+  };
+
+  // 목록 최상단에 추가
+  academyPaymentList.unshift(newPayment);
+
+  // 테이블 재렌더링
+  renderAcademyPaymentTable(academyPaymentList);
+
+  // 모달 닫기
+  $('#paymentCheckoutModal').modal('hide');
+
+  // 토스트 알림 및 축하 메시지
+  showAcademyToast('[' + plan.name + '] 결제 신청이 성공적으로 접수되었습니다. (상태: 결제대기)');
+  alert('✅ 이용권 결제 신청 완료!\n\n- 신청 상품: ' + plan.name + '\n- 결제 금액: ' + Number(plan.total).toLocaleString() + '원 (VAT 포함)\n- 결제 수단: ' + currentSelectedPayMethod + '\n- 상태: 결제 대기 (Pending)\n\n※ 현재 PG사 심사 준비 중으로 [결제 대기]로 안전하게 등록되었습니다. 본사 관리자에서 승인 후 즉시 서비스가 연장됩니다.');
+
+  // 결제 내역으로 스크롤 이동
+  setTimeout(function() {
+    scrollToPaymentHistory();
+  }, 300);
+}
+
+// 영수증 모의 팝업
+function viewPaymentReceipt(payId) {
+  var item = academyPaymentList.find(function(p) { return p.id === payId; });
+  if (!item) return;
+
+  alert('🧾 [전자 결제 영수증 / 매출전표]\n\n' +
+        '· 승인번호: ' + item.id + '\n' +
+        '· 학원명: 나노 독서아카데미 본원 (대표: 김은영)\n' +
+        '· 결제일시: ' + item.date + '\n' +
+        '· 상품명: ' + item.planName + '\n' +
+        '· 공급가액: ' + Number(item.supply).toLocaleString() + '원\n' +
+        '· 부가가치세: ' + Number(item.vat).toLocaleString() + '원\n' +
+        '· 합계금액: ' + Number(item.total).toLocaleString() + '원\n' +
+        '· 결제수단: ' + item.method + '\n' +
+        '· 결제상태: 정상 승인 (VAT 매입세액공제 가능)');
+}
+
 

@@ -667,6 +667,13 @@
       <span>카톡 발송 내역 <small class="text-muted">(알리고)</small></span>
     </a>
 
+    <div class="sidebar-section-title" style="margin-top: 20px;">수납 & 결제 관리</div>
+
+    <a class="nav-item-btn" id="nav-master-payment" onclick="switchMasterTab('payment')">
+      <i class="fa-solid fa-file-invoice-dollar"></i>
+      <span>결제 내역 관리 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
+    </a>
+
     <!-- 하단 라이선스/알리고 잔여 크레딧 요약 -->
     <div class="mt-auto pt-3 border-top" style="border-color: var(--border-light) !important;">
       <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">
@@ -1385,7 +1392,230 @@
       </div>
     </section>
 
+    <!-- ========================================================
+         TAB 7. 결제 내역 관리 (Payment Management)
+         ======================================================== -->
+    <section id="tab-master-payment" class="master-tab-view" style="display: none;">
+      <!-- 헤더 & 액션 -->
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-file-invoice-dollar"></i>가맹 학원 결제 내역 관리
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 독서학원의 요금제 구독 수납 내역, 결제 상태(완료/대기/취소) 및 서비스 이용 만료일을 총괄 관리합니다.
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="exportPaymentData()" style="border-radius: 10px; font-size: 12.5px; padding: 7px 14px; border-color: var(--border-medium); color: var(--text-muted);">
+            <i class="fa-solid fa-file-excel mr-1 text-success"></i>결제 내역 엑셀 다운로드
+          </button>
+          <button class="btn btn-sm btn-beige-primary" onclick="openSimulateNewPaymentModal()" style="font-size: 12.5px; padding: 7px 14px;">
+            <i class="fa-solid fa-plus mr-1"></i>수동 결제 등록
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI 통계 카드 (4열) -->
+      <div class="row mb-4">
+        <div class="col-md-3 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-title">당월 총 결제 수납액</div>
+            <div class="stat-num" style="color: #962a22;" id="kpiMonthTotalRevenue">3,146,000<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">원</span></div>
+            <div class="stat-sub text-success font-weight-bold">
+              <i class="fa-solid fa-arrow-trend-up mr-1"></i>전월 대비 +18.4% 증가
+            </div>
+            <i class="fa-solid fa-won-sign stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-title">정상 결제 완료</div>
+            <div class="stat-num" style="color: #2f5436;" id="kpiPaidCount">4<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <div class="stat-sub text-muted">정기구독 2건 / 장기할인 2건</div>
+            <i class="fa-solid fa-circle-check stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3 mb-3 mb-md-0">
+          <div class="stat-card">
+            <div class="stat-title">결제 대기 (미수납)</div>
+            <div class="stat-num" style="color: #8c531b;" id="kpiPendingCount">1<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <div class="stat-sub text-danger font-weight-bold">594,000원 수동 확인 대기</div>
+            <i class="fa-solid fa-clock stat-icon-bg"></i>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-title">만료 임박 (D-7 이내)</div>
+            <div class="stat-num" style="color: #d97706;" id="kpiExpiringCount">2<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">곳</span></div>
+            <div class="stat-sub text-muted">만료 7일/3일 전 알림 발송 완료</div>
+            <i class="fa-solid fa-bell stat-icon-bg"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 검색 & 필터 바 -->
+      <div class="filter-bar">
+        <div>
+          <select id="masterPaymentAcademyFilter" class="select-beige" onchange="filterMasterPaymentList()">
+            <option value="ALL">전체 가맹 학원</option>
+            <!-- JS 동적 옵션 -->
+          </select>
+        </div>
+        <div>
+          <select id="masterPaymentPlanFilter" class="select-beige" onchange="filterMasterPaymentList()">
+            <option value="ALL">전체 요금제 구분</option>
+            <option value="monthly">1개월 정기구독권 (10만)</option>
+            <option value="6month">6개월 이용권 (54만, 10%할인)</option>
+            <option value="12month">12개월 연간권 (96만, 20%할인)</option>
+          </select>
+        </div>
+        <div>
+          <select id="masterPaymentStatusFilter" class="select-beige" onchange="filterMasterPaymentList()">
+            <option value="ALL">전체 결제 상태</option>
+            <option value="paid">결제 완료</option>
+            <option value="pending">결제 대기</option>
+            <option value="cancelled">취소 / 환불</option>
+          </select>
+        </div>
+        <div class="search-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="masterPaymentSearchInput" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeyup="filterMasterPaymentList()">
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetMasterPaymentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
+          <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+        </button>
+      </div>
+
+      <!-- 결제 목록 테이블 -->
+      <div class="simple-card">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+            <i class="fa-solid fa-receipt mr-2 text-muted"></i>가맹 학원 결제 내역 (<span id="masterPaymentFilteredCount">0</span>건)
+          </span>
+          <small class="text-muted">* 상태 컬럼의 드롭다운을 통해 [결제완료/대기/취소]를 실시간 즉시 변경할 수 있습니다.</small>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">결제번호</th>
+                <th style="text-align: left;">가맹 학원명 (원장)</th>
+                <th>신청 요금제</th>
+                <th>공급가액</th>
+                <th>부가세</th>
+                <th style="font-weight: 800;">총 결제금액</th>
+                <th>결제 수단</th>
+                <th>결제일시</th>
+                <th>서비스 이용 기간</th>
+                <th style="text-align: center; width: 120px;">결제 상태</th>
+                <th style="width: 100px; text-align: center;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="masterPaymentTableBody">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
+</div>
+
+<!-- ========================================================
+     PAYMENT DETAIL MODAL (마스터 결제 상세 및 상태 변경 모달)
+     ======================================================== -->
+<div class="modal fade" id="masterPaymentDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 580px;">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16.5px;">
+          <i class="fa-solid fa-file-invoice-dollar mr-2 text-warning"></i>가맹 학원 결제 상세 관리
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body p-4">
+        <input type="hidden" id="modalDetailPayId">
+
+        <!-- 기본 결제 번호 & 학원 헤더 -->
+        <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded" style="background: #fdfbf7; border: 1px solid var(--border-light);">
+          <div>
+            <div class="text-muted" style="font-size: 11px;">결제 일련번호</div>
+            <div class="font-weight-bold" style="font-size: 15px; color: var(--text-main);" id="modalDetailPayIdText">PAY-20260916-001</div>
+          </div>
+          <div class="text-right">
+            <span class="badge-soft badge-soft-master" style="font-size: 11px;" id="modalDetailAcademyNameBadge">나노 독서아카데미 목동본원</span>
+            <div class="text-muted mt-1" style="font-size: 11.5px;" id="modalDetailDirectorText">김은영 원장 (010-3342-9981)</div>
+          </div>
+        </div>
+
+        <!-- 결제 상세 내역 그리드 -->
+        <div class="p-3 mb-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 13px;">
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">신청 요금제</span>
+            <strong id="modalDetailPlanName" style="color: var(--text-main);">6개월 이용권 (10% 할인)</strong>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">공급가액 (VAT 별도)</span>
+            <span id="modalDetailSupply">540,000원</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">부가가치세 (10%)</span>
+            <span id="modalDetailVat">54,000원</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted font-weight-bold">총 결제 금액</span>
+            <strong style="color: #962a22; font-size: 15px;" id="modalDetailTotal">594,000원</strong>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">결제 수단</span>
+            <span id="modalDetailMethod">신용카드</span>
+          </div>
+          <div class="d-flex justify-content-between py-1 border-bottom">
+            <span class="text-muted">결제 접수 일시</span>
+            <span id="modalDetailDate" class="text-muted">2026-09-16 14:20:00</span>
+          </div>
+          <div class="d-flex justify-content-between py-1">
+            <span class="text-muted">서비스 적용 기간</span>
+            <strong id="modalDetailPeriod" class="text-dark">2026-09-16 ~ 2027-03-16</strong>
+          </div>
+        </div>
+
+        <!-- 결제 상태 수동 변경 -->
+        <div class="form-group mb-3">
+          <label class="font-weight-bold mb-1" style="font-size: 13px; color: var(--text-main);">
+            <i class="fa-solid fa-arrows-rotate mr-1 text-primary"></i>결제 상태 변경 (본사 수동 승인)
+          </label>
+          <select id="modalDetailStatusSelect" class="select-beige w-100 font-weight-bold">
+            <option value="paid">✅ 결제 완료 (서비스 정상 활성화)</option>
+            <option value="pending">⏳ 결제 대기 (입금/심사 대기중)</option>
+            <option value="cancelled">❌ 결제 취소 (신청 취소)</option>
+            <option value="refunded">↩ 환불 완료 (서비스 회수)</option>
+          </select>
+          <small class="text-muted">* [결제 완료]로 변경 시 가맹 학원의 서비스 만료일이 자동으로 연장 처리됩니다.</small>
+        </div>
+
+        <!-- 본사 관리자 처리 메모 -->
+        <div class="form-group mb-2">
+          <label class="font-weight-bold mb-1" style="font-size: 13px; color: var(--text-main);">
+            <i class="fa-solid fa-comment-pen mr-1 text-muted"></i>본사 관리자 메모
+          </label>
+          <textarea id="modalDetailAdminMemo" class="form-control form-control-beige" rows="3" placeholder="예: 2026-09-16 무통장 입금 확인 완료 후 승인 처리. 원장님 유선 요청으로 6개월 연장 적용."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer modal-footer-beige d-flex justify-content-between align-items-center">
+        <button type="button" class="btn-beige-secondary" data-dismiss="modal">닫기</button>
+        <button type="button" class="btn-beige-primary" onclick="saveMasterPaymentDetail()">
+          <i class="fa-solid fa-floppy-disk mr-1"></i>상태 및 메모 저장
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ========================================================
