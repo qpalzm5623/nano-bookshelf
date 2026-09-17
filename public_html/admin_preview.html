@@ -3959,13 +3959,44 @@
 
           <!-- 2) 북퀴즈 문항 세트 편집 영역 -->
           <div id="sectionAcadQuizInfo" style="display: none;">
+            <!-- 출제 기관(본사 / 타 가맹점 / 우리 학원) 탭 및 새 북퀴즈 추가 바 -->
+            <div class="p-2.5 mb-3 rounded bg-white border d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-color: var(--border-medium); box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="font-weight-bold text-dark d-flex align-items-center" style="font-size: 12px;">
+                  <i class="fa-solid fa-layer-group text-primary mr-1.5"></i>출제 기관 선택:
+                </span>
+                <div id="abQuizSetTabs" class="d-flex align-items-center gap-1.5 flex-wrap">
+                  <!-- JS 동적 생성: [본사] [A 학원] [우리 학원] 등 -->
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteAcadQuizSet" onclick="deleteCurAcadQuizSet()" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; display: none;">
+                  <i class="fa-solid fa-trash mr-1"></i>선택 퀴즈 세트 삭제
+                </button>
+                <button type="button" class="btn btn-xs btn-beige-primary font-weight-bold" onclick="addNewAcadQuizSet()" style="border-radius: 6px; font-size: 11.5px; padding: 4.5px 11px;">
+                  <i class="fa-solid fa-circle-plus mr-1"></i>새 북퀴즈 추가
+                </button>
+              </div>
+            </div>
+
+            <!-- 타 기관(본사/타 가맹점) 출제 퀴즈 열람 시 읽기 전용 안내 바 -->
+            <div id="abQuizReadOnlyNotice" class="alert alert-warning py-2 px-3 mb-3" style="display: none; font-size: 12px; border-radius: 8px; border: 1px solid #f5c065; background: #fff8e6;">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div class="d-flex align-items-center gap-2 text-dark">
+                  <i class="fa-solid fa-lock text-warning mr-1"></i>
+                  <span id="abQuizReadOnlyText"><strong>[읽기 전용 모드]</strong> 본사 또는 타 가맹점에서 출제한 북퀴즈입니다. 열람은 가능하지만 수정/삭제는 불가합니다. 우리 학원만의 퀴즈를 만드시려면 우측 상단 <strong>[+ 새 북퀴즈 추가]</strong>를 이용해주세요.</span>
+                </div>
+                <span class="badge badge-warning text-dark font-weight-bold px-2 py-0.5" style="font-size: 11px;">수정 권한 없음</span>
+              </div>
+            </div>
+
             <!-- 문항 번호 탭 헤더 -->
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div class="d-flex gap-2 align-items-center flex-wrap" id="abQuizTabButtons">
                 <!-- JS로 [1번] [2번] [3번] [4번] [5번] 칩 동적 생성 -->
               </div>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-xs btn-outline-secondary" onclick="addAcadQuizItem()" style="border-radius: 6px; font-size: 11.5px; padding: 4px 10px;">
+              <div class="d-flex gap-2" id="abQuizControlButtons">
+                <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAddAcadQuizItem" onclick="addAcadQuizItem()" style="border-radius: 6px; font-size: 11.5px; padding: 4px 10px;">
                   <i class="fa-solid fa-plus mr-1"></i>문항 추가
                 </button>
                 <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteAcadQuiz" onclick="deleteAcadQuizItem()" style="border-radius: 6px; font-size: 11.5px; padding: 4px 10px;">

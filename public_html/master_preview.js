@@ -1156,7 +1156,7 @@ function formatPhoneInput(input) {
   }
 }
 
-// 가맹점 테이블 렌더링 (최근 가맹일/가입일 기준 최신순 정렬 + 11개 컬럼)
+// 가맹점 테이블 렌더링 (최근 가맹일/가입일 기준 최신순 정렬 + 10개 컬럼)
 function renderFranchiseTable(data = franchiseList) {
   const tbody = document.getElementById("franchiseTableBody");
   if (!tbody) return;
@@ -1171,7 +1171,7 @@ function renderFranchiseTable(data = franchiseList) {
   document.getElementById("franchiseFilteredCount").innerText = sortedData.length;
 
   if (sortedData.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted">일치하는 가맹 학원 정보가 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted">일치하는 가맹 학원 정보가 없습니다.</td></tr>`;
     return;
   }
 
@@ -1194,11 +1194,6 @@ function renderFranchiseTable(data = franchiseList) {
       statusBadge = `<span class="badge-soft badge-soft-neutral"><i class="fa-solid fa-xmark"></i> 계약 해지</span>`;
     }
 
-    // 결제 완납/미납 표시
-    const paymentBadge = acad.paymentStatus === "PAID" 
-      ? `<span class="badge-soft badge-soft-success" style="font-size: 10px; padding: 2px 6px;">완납</span>`
-      : `<span class="badge-soft badge-soft-danger" style="font-size: 10px; padding: 2px 6px;">미납</span>`;
-
     // 가입일 표시
     const joinDateText = acad.joinDate || acad.startDate || "-";
 
@@ -1207,9 +1202,6 @@ function renderFranchiseTable(data = franchiseList) {
 
     // 관리자 ID
     const adminIdText = acad.adminId || `admin_${acad.id.toLowerCase().replace('-', '_')}`;
-
-    // 월 결제 금액
-    const feeText = acad.monthlyFee || PLAN_MONTHLY_FEES[acad.plan] || "330,000원";
 
     return `
       <tr>
@@ -1253,11 +1245,6 @@ function renderFranchiseTable(data = franchiseList) {
         </td>
         <!-- 9. 가맹 상태 -->
         <td class="text-center" style="white-space: nowrap;">${statusBadge}</td>
-        <!-- 10. 월 결제 금액 -->
-        <td class="text-center" style="white-space: nowrap;">
-          <div class="font-weight-bold" style="font-size: 13px; color: var(--text-main); white-space: nowrap;">${feeText}</div>
-          <div class="mt-1" style="white-space: nowrap;">${paymentBadge}</div>
-        </td>
         <!-- 11. 관리 -->
         <td class="text-center" style="white-space: nowrap;">
           <div class="d-inline-flex gap-1" style="gap: 4px;">
@@ -1352,7 +1339,39 @@ function openAcademyRegisterModal() {
   $('#academyRegisterModal').modal('show');
 }
 
-// 신규 학원 등록 제출 처리 (이메일, 이용상품, 사용인원 반영 및 요율 자동 매핑)
+// 요금제 변경 시 월 결제 금액 자동 설정 핸들러
+function handleEditPlanChange(plan) {
+  const feeInput = document.getElementById("editMonthlyFee");
+  if (feeInput) {
+    feeInput.value = PLAN_MONTHLY_FEES[plan] || "330,000원";
+  }
+}
+
+function handleRegPlanChange(plan) {
+  const feeInput = document.getElementById("regMonthlyFee");
+  if (feeInput) {
+    feeInput.value = PLAN_MONTHLY_FEES[plan] || "330,000원";
+  }
+}
+
+// 신규 가맹 학원 등록 모달 열기
+function openAcademyRegisterModal() {
+  const today = new Date().toISOString().split('T')[0];
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  const nextYearStr = nextYear.toISOString().split('T')[0];
+
+  if (document.getElementById("regJoinDate")) document.getElementById("regJoinDate").value = today;
+  if (document.getElementById("regStartDate")) document.getElementById("regStartDate").value = today;
+  if (document.getElementById("regEndDate")) document.getElementById("regEndDate").value = nextYearStr;
+  if (document.getElementById("regPlan")) document.getElementById("regPlan").value = "Standard";
+  if (document.getElementById("regMonthlyFee")) document.getElementById("regMonthlyFee").value = PLAN_MONTHLY_FEES["Standard"];
+  if (document.getElementById("regMaxStudents")) document.getElementById("regMaxStudents").value = 50;
+
+  $('#academyRegisterModal').modal('show');
+}
+
+// 신규 학원 등록 제출 처리 (등록일, 계약시작일, 계약만료일, 월결제금액 등 반영)
 function handleRegisterAcademy(e) {
   e.preventDefault();
   const name = document.getElementById("regAcademyName").value.trim();
@@ -1360,14 +1379,15 @@ function handleRegisterAcademy(e) {
   const director = document.getElementById("regDirectorName").value.trim();
   const email = document.getElementById("regDirectorEmail")?.value.trim() || "";
   const phone = document.getElementById("regDirectorPhone").value.trim();
-  const region = document.getElementById("regRegion")?.value.trim() || "신규 등록 지역";
   const address = document.getElementById("regAddress")?.value.trim() || "";
+  const region = address ? address.split(" ")[0] + " " + (address.split(" ")[1] || "") : "서울";
   const adminId = document.getElementById("regDirectorId")?.value.trim() || `director_${Date.now()}`;
+  const joinDate = document.getElementById("regJoinDate")?.value || document.getElementById("regStartDate")?.value;
   const startDate = document.getElementById("regStartDate").value;
   const endDate = document.getElementById("regEndDate").value;
   const plan = document.getElementById("regPlan")?.value || "Standard";
   const maxStudents = parseInt(document.getElementById("regMaxStudents")?.value, 10) || 50;
-  const monthlyFee = PLAN_MONTHLY_FEES[plan] || "330,000원";
+  const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "330,000원";
 
   const newId = `ACAD-0${String(franchiseList.length + 1).padStart(2, '0')}`;
   const newAcad = {
@@ -1380,7 +1400,7 @@ function handleRegisterAcademy(e) {
     region: region + (address ? ` (${address})` : ""),
     adminId: adminId,
     plan: plan,
-    joinDate: startDate,
+    joinDate: joinDate,
     startDate: startDate,
     endDate: endDate,
     currentStudents: 0,
@@ -1401,7 +1421,7 @@ function handleRegisterAcademy(e) {
   showMasterToast(`[${name}] 신규 가맹 학원(${plan} 플랜, 사용인원 ${maxStudents}명)이 성공적으로 등록되었습니다.`);
 }
 
-// 학원 수정 모달 열기 (이메일, 이용상품, 사용인원 등 바인딩)
+// 학원 수정 모달 열기 (등록일, 계약 시작일, 계약 만료일, 이용상품, 사용인원, 월 결제금액 바인딩)
 function openAcademyEditModal(id) {
   const acad = franchiseList.find(a => a.id === id);
   if (!acad) return;
@@ -1418,19 +1438,37 @@ function openAcademyEditModal(id) {
   }
   document.getElementById("editDirectorPhone").value = acad.phone || "";
   document.getElementById("editRegion").value = acad.region || "";
-  document.getElementById("editEndDate").value = acad.endDate || "";
+
+  // 등록일, 계약 시작일, 계약 만료일 바인딩
+  if (document.getElementById("editJoinDate")) {
+    document.getElementById("editJoinDate").value = acad.joinDate || acad.startDate || "";
+  }
+  if (document.getElementById("editStartDate")) {
+    document.getElementById("editStartDate").value = acad.startDate || acad.joinDate || "";
+  }
+  if (document.getElementById("editEndDate")) {
+    document.getElementById("editEndDate").value = acad.endDate || "";
+  }
+
+  // 이용 상품 및 사용인원
   if (document.getElementById("editPlan")) {
     document.getElementById("editPlan").value = acad.plan || "Standard";
   }
   if (document.getElementById("editMaxStudents")) {
     document.getElementById("editMaxStudents").value = acad.maxStudents || 50;
   }
+
+  // 월 결제 금액 바인딩
+  if (document.getElementById("editMonthlyFee")) {
+    document.getElementById("editMonthlyFee").value = acad.monthlyFee || PLAN_MONTHLY_FEES[acad.plan] || "330,000원";
+  }
+
   document.getElementById("editStatus").value = acad.status || "ACTIVE";
 
   $('#academyEditModal').modal('show');
 }
 
-// 학원 수정 내용 저장 (이메일, 이용상품, 사용인원 저장 및 월 결제금액 자동 동기화)
+// 학원 수정 내용 저장 (등록일, 계약시작일, 계약만료일, 이용상품, 사용인원, 월결제금액 저장)
 function saveAcademyEdit(e) {
   if (e) e.preventDefault();
   const id = document.getElementById("editAcademyId").value;
@@ -1448,14 +1486,31 @@ function saveAcademyEdit(e) {
   }
   acad.phone = document.getElementById("editDirectorPhone").value.trim();
   acad.region = document.getElementById("editRegion").value.trim();
-  acad.endDate = document.getElementById("editEndDate").value;
+
+  // 등록일, 계약 시작일, 계약 만료일 저장
+  if (document.getElementById("editJoinDate")) {
+    acad.joinDate = document.getElementById("editJoinDate").value || acad.joinDate;
+  }
+  if (document.getElementById("editStartDate")) {
+    acad.startDate = document.getElementById("editStartDate").value || acad.startDate;
+  }
+  if (document.getElementById("editEndDate")) {
+    acad.endDate = document.getElementById("editEndDate").value || acad.endDate;
+  }
+
+  // 이용 상품 및 사용인원
   if (document.getElementById("editPlan")) {
     acad.plan = document.getElementById("editPlan").value;
-    acad.monthlyFee = PLAN_MONTHLY_FEES[acad.plan] || acad.monthlyFee;
   }
   if (document.getElementById("editMaxStudents")) {
     acad.maxStudents = parseInt(document.getElementById("editMaxStudents").value, 10) || acad.maxStudents;
   }
+
+  // 월 결제 금액 저장
+  if (document.getElementById("editMonthlyFee")) {
+    acad.monthlyFee = document.getElementById("editMonthlyFee").value.trim() || PLAN_MONTHLY_FEES[acad.plan] || acad.monthlyFee;
+  }
+
   acad.status = document.getElementById("editStatus").value;
 
   // 학원명이 변경된 경우, 연계된 회원 및 발송 내역의 학원명도 자동 동기화
@@ -3767,9 +3822,10 @@ function deleteMasterBook(id) {
 }
 
 // ==========================================
-// 독립 북퀴즈 모달 제어 로직 (문항별 객관식 / 주관식 지원)
+// 독립 북퀴즈 모달 제어 로직 (출제처별 퀴즈 세트 & 문항별 객관식 / 주관식 지원)
 // ==========================================
 let curQuizTargetBookId = null;
+let curQuizSetIdx = 0;
 let currentQuizQuestions = [];
 let curQuizQuestionIdx = 0;
 let curQuizTargetInput = null;
@@ -3793,6 +3849,94 @@ function insertQuizSymbol(sym) {
   saveCurrentQuizDraft();
 }
 
+// 도서별 다중 퀴즈 세트 무결성 보장 함수 (본사 출제 + 가맹점 출제 세트 구성)
+function ensureMasterQuizSets(book) {
+  if (!book.quizSets || !Array.isArray(book.quizSets) || book.quizSets.length === 0) {
+    const defaultHQQuestions = (book.quizList && Array.isArray(book.quizList) && book.quizList.length > 0)
+      ? JSON.parse(JSON.stringify(book.quizList))
+      : [
+          {
+            type: "CHOICE",
+            question: `[${book.title}] 1. 도서의 중심 인물과 배경에 대한 올바른 설명은 무엇인가요?`,
+            opt1: "주인공이 겪는 핵심 갈등의 배경과 정확히 일치한다",
+            opt2: "전혀 다른 시대적 배경에서 펼쳐진다",
+            opt3: "주인공이 등장하지 않는 허구의 서술이다",
+            opt4: "결말과 정반대되는 인물 관계이다",
+            ans: "1",
+            hint: "도서 전반부 1장의 배경을 참고하세요."
+          },
+          {
+            type: "SUBJECTIVE",
+            question: `[${book.title}] 2. 주인공이 마주한 가장 중요한 핵심 갈등이나 사건의 핵심 키워드를 적어주세요.`,
+            subjectiveAns: "성장",
+            similarAns: "마음의 성장, 자아 성장",
+            hint: "주인공의 내면 변화를 나타내는 두 글자 단어입니다."
+          },
+          {
+            type: "CHOICE",
+            question: `[${book.title}] 3. 작가가 이 책을 통해 독자에게 전달하고자 한 가장 중요한 교훈이나 가치는 무엇인가요?`,
+            opt1: "진정한 배려와 공감, 따뜻한 마음의 가치",
+            opt2: "물질적 성공과 이기적인 태도",
+            opt3: "규칙을 무조건 어기는 용기",
+            opt4: "혼자만의 이익을 추구하는 삶",
+            ans: "1",
+            hint: "작가의 말 또는 책의 결말 후기를 참고하세요."
+          }
+        ];
+
+    book.quizSets = [
+      {
+        id: `qs_hq_${book.id}`,
+        authorType: "HQ",
+        authorName: "본사",
+        academyName: "본사 직속 (공용)",
+        createdAt: "2025-01-10",
+        questions: defaultHQQuestions
+      }
+    ];
+
+    // '어린 왕자' 등 주요 도서에 가맹점(A 학원) 출제 퀴즈 세트 기본 탑재
+    if (book.title && book.title.includes("어린 왕자")) {
+      book.quizSets.push({
+        id: `qs_acad_014_${book.id}`,
+        authorType: "ACADEMY",
+        authorName: "A 학원",
+        academyName: "울산 삼산 인재리딩캠퍼스",
+        createdAt: "2025-02-15",
+        questions: [
+          {
+            type: "CHOICE",
+            question: "[A 학원 특화 1번] 어린 왕자가 살던 고향 별의 명칭으로 알맞은 것은 무엇인가요?",
+            opt1: "A-101 소행성",
+            opt2: "B-612 소행성",
+            opt3: "C-303 소행성",
+            opt4: "B-128 소행성",
+            ans: "2",
+            hint: "소행성 B-612호입니다."
+          },
+          {
+            type: "CHOICE",
+            question: "[A 학원 특화 2번] 여우가 어린 왕자에게 알려준 '길들인다'의 참된 의미로 가장 알맞은 것은?",
+            opt1: "상대방을 내 뜻대로 복종시키는 것",
+            opt2: "서로에게 특별한 관계를 맺고 끝까지 책임을 지는 것",
+            opt3: "매일 정해진 시간에 먹이를 주는 것",
+            opt4: "필요할 때만 연락을 주고받는 사이가 되는 것",
+            ans: "2",
+            hint: "세상에서 오직 하나뿐인 특별한 존재가 되는 과정입니다."
+          },
+          {
+            type: "SUBJECTIVE",
+            question: "[A 학원 특화 3번] 어린 왕자가 지구 사막에 도착하여 비행사에게 처음으로 그려달라고 부탁한 동물은 무엇인가요?",
+            subjectiveAns: "양",
+            similarAns: "어린 양, 작은 양",
+            hint: "상자에 구멍을 뚫어 넣어주었던 순하고 작은 동물입니다."
+          }
+        ]
+      });
+    }
+  }
+}
+
 // 북퀴즈 모달 열기
 function openMasterQuizModal(bookId) {
   const book = masterBooks.find(b => b.id === bookId);
@@ -3806,46 +3950,150 @@ function openMasterQuizModal(bookId) {
   document.getElementById("mqTargetBookGrade").innerText = book.grade || "권장 학년";
   document.getElementById("mqTargetBookAuthor").innerHTML = `저자: ${book.author} | 출판사: ${book.publisher} | 관리코드: <span id="mqTargetBookId">${book.id}</span>`;
 
-  // 기존 퀴즈 문항 로드 (없으면 기본 세트 생성)
-  if (book.quizList && Array.isArray(book.quizList) && book.quizList.length > 0) {
-    currentQuizQuestions = JSON.parse(JSON.stringify(book.quizList));
-  } else {
-    currentQuizQuestions = [
-      {
-        type: "CHOICE",
-        question: `[${book.title}] 1. 도서의 중심 인물과 배경에 대한 올바른 설명은 무엇인가요?`,
-        opt1: "주인공이 겪는 핵심 갈등의 배경과 정확히 일치한다",
-        opt2: "전혀 다른 시대적 배경에서 펼쳐진다",
-        opt3: "주인공이 등장하지 않는 허구의 서술이다",
-        opt4: "결말과 정반대되는 인물 관계이다",
-        ans: "1",
-        hint: "도서 전반부 1장의 배경을 참고하세요."
-      },
-      {
-        type: "SUBJECTIVE",
-        question: `[${book.title}] 2. 주인공이 마주한 가장 중요한 핵심 갈등이나 사건의 핵심 키워드를 적어주세요.`,
-        subjectiveAns: "성장",
-        similarAns: "마음의 성장, 자아 성장",
-        hint: "주인공의 내면 변화를 나타내는 두 글자 단어입니다."
-      },
-      {
-        type: "CHOICE",
-        question: `[${book.title}] 3. 작가가 이 책을 통해 독자에게 전달하고자 한 가장 중요한 교훈이나 가치는 무엇인가요?`,
-        opt1: "진정한 배려와 공감, 따뜻한 마음의 가치",
-        opt2: "물질적 성공과 이기적인 태도",
-        opt3: "규칙을 무조건 어기는 용기",
-        opt4: "혼자만의 이익을 추구하는 삶",
-        ans: "1",
-        hint: "작가의 말 또는 책의 결말 후기를 참고하세요."
-      }
-    ];
-  }
-
+  // 퀴즈 세트 다중 관리 초기화
+  ensureMasterQuizSets(book);
+  curQuizSetIdx = 0;
   curQuizQuestionIdx = 0;
-  renderQuizTabButtons();
-  loadCurrentQuizQuestionForm();
+
+  renderQuizSetTabs();
+  loadCurrentQuizSet();
 
   $('#masterQuizModal').modal('show');
+}
+
+// 출제 기관별(본사, A 학원 등) 탭 렌더링
+function renderQuizSetTabs() {
+  const book = masterBooks.find(b => b.id === curQuizTargetBookId);
+  if (!book || !book.quizSets) return;
+
+  const container = document.getElementById("mqQuizSetTabs");
+  if (!container) return;
+
+  container.innerHTML = book.quizSets.map((set, idx) => {
+    const isActive = idx === curQuizSetIdx;
+    const isHQ = set.authorType === "HQ";
+    const icon = isHQ ? "fa-solid fa-building" : "fa-solid fa-school";
+    const activeClass = isActive
+      ? "btn-primary text-white shadow-sm font-weight-bold"
+      : "btn-outline-secondary bg-white text-slate-700";
+
+    return `
+      <button type="button" class="btn btn-xs ${activeClass}" onclick="switchMasterQuizSet(${idx})" style="border-radius: 20px; padding: 4px 12px; font-size: 11.5px; transition: all 0.15s ease;">
+        <i class="${icon} mr-1"></i>${set.authorName}
+        <span class="badge ${isActive ? 'badge-light text-primary' : 'badge-secondary'} ml-1" style="font-size: 10px;">${set.questions.length}</span>
+      </button>
+    `;
+  }).join("");
+
+  const curSet = book.quizSets[curQuizSetIdx] || book.quizSets[0];
+  const authorText = document.getElementById("mqCurAuthorText");
+  if (authorText) {
+    authorText.innerHTML = `<strong>선택된 출제 기관:</strong> ${curSet.authorName} <span class="text-slate-500 font-normal">(${curSet.academyName || '기관'})</span>`;
+  }
+
+  const badgeEl = document.getElementById("mqAuthorTypeBadge");
+  if (badgeEl) {
+    if (curSet.authorType === "HQ") {
+      badgeEl.className = "badge badge-indigo text-white px-2 py-0.5";
+      badgeEl.style.background = "#4f46e5";
+      badgeEl.innerText = "본사 공용";
+    } else {
+      badgeEl.className = "badge badge-success text-white px-2 py-0.5";
+      badgeEl.style.background = "#10b981";
+      badgeEl.innerText = "가맹점 자체 출제";
+    }
+  }
+
+  const btnDelSet = document.getElementById("btnDeleteQuizSet");
+  if (btnDelSet) {
+    btnDelSet.style.display = book.quizSets.length > 1 ? "inline-block" : "none";
+  }
+}
+
+// 출제 기관 탭 전환
+function switchMasterQuizSet(idx) {
+  const book = masterBooks.find(b => b.id === curQuizTargetBookId);
+  if (!book || !book.quizSets[idx]) return;
+
+  saveCurrentQuizDraft();
+  curQuizSetIdx = idx;
+  curQuizQuestionIdx = 0;
+
+  renderQuizSetTabs();
+  loadCurrentQuizSet();
+}
+
+// 현재 선택된 퀴즈 세트 데이터 로드
+function loadCurrentQuizSet() {
+  const book = masterBooks.find(b => b.id === curQuizTargetBookId);
+  if (!book || !book.quizSets[curQuizSetIdx]) return;
+
+  const set = book.quizSets[curQuizSetIdx];
+  currentQuizQuestions = set.questions;
+
+  renderQuizTabButtons();
+  loadCurrentQuizQuestionForm();
+}
+
+// 마스터 관리자 새 북퀴즈 세트 추가
+function promptAddNewQuizSet() {
+  const book = masterBooks.find(b => b.id === curQuizTargetBookId);
+  if (!book) return;
+
+  saveCurrentQuizDraft();
+
+  const name = prompt("새 북퀴즈를 추가할 출제 기관명을 입력하세요 (예: B 학원, 목동 센트럴 등):", "B 학원");
+  if (!name || name.trim() === "") return;
+
+  const trimmedName = name.trim();
+  const isHQ = trimmedName.includes("본사");
+
+  const newSet = {
+    id: `qs_custom_${Date.now()}`,
+    authorType: isHQ ? "HQ" : "ACADEMY",
+    authorName: trimmedName,
+    academyName: trimmedName.includes("학원") ? trimmedName : `${trimmedName} 캠퍼스`,
+    createdAt: new Date().toISOString().slice(0, 10),
+    questions: [
+      {
+        type: "CHOICE",
+        question: `[${trimmedName} 출제] 1. 도서 내용과 관련된 핵심 질문을 입력하세요.`,
+        opt1: "1번 보기 항목",
+        opt2: "2번 보기 항목",
+        opt3: "3번 보기 항목",
+        opt4: "4번 보기 항목",
+        ans: "1",
+        hint: "지문 또는 도서 페이지를 참고하세요."
+      }
+    ]
+  };
+
+  book.quizSets.push(newSet);
+  switchMasterQuizSet(book.quizSets.length - 1);
+  showMasterToast(`'${trimmedName}' 명의의 새 북퀴즈 세트가 추가되었습니다. 문항을 편집해보세요.`);
+}
+
+// 현재 선택된 퀴즈 세트 삭제 (마스터 관리자 전용 권한)
+function deleteCurQuizSet() {
+  const book = masterBooks.find(b => b.id === curQuizTargetBookId);
+  if (!book || !book.quizSets) return;
+
+  if (book.quizSets.length <= 1) {
+    showMasterToast("최소 1개 이상의 북퀴즈 세트가 유지되어야 합니다.");
+    return;
+  }
+
+  const curSet = book.quizSets[curQuizSetIdx];
+  if (!confirm(`'${curSet.authorName}'에서 출제한 북퀴즈 세트 전체를 삭제하시겠습니까?`)) {
+    return;
+  }
+
+  book.quizSets.splice(curQuizSetIdx, 1);
+  curQuizSetIdx = 0;
+  curQuizQuestionIdx = 0;
+  renderQuizSetTabs();
+  loadCurrentQuizSet();
+  showMasterToast("선택한 북퀴즈 세트가 삭제되었습니다.");
 }
 
 function renderQuizTabButtons() {
@@ -3993,13 +4241,17 @@ function handleSaveMasterQuizOnly() {
   saveCurrentQuizDraft();
 
   const book = masterBooks.find(b => b.id === curQuizTargetBookId);
-  if (!book) return;
+  if (!book || !book.quizSets[curQuizSetIdx]) return;
 
-  book.quizList = JSON.parse(JSON.stringify(currentQuizQuestions));
+  const curSet = book.quizSets[curQuizSetIdx];
+  curSet.questions = JSON.parse(JSON.stringify(currentQuizQuestions));
+
+  // 기본 목록 표시용 하위 호환
+  book.quizList = JSON.parse(JSON.stringify(book.quizSets[0].questions));
   book.quizzes = currentQuizQuestions.length;
   book.hasQuiz = currentQuizQuestions.length > 0;
 
-  showMasterToast(`'${book.title}' 도서의 북퀴즈(${currentQuizQuestions.length}문항) 구성이 완료되었습니다!`);
+  showMasterToast(`'${book.title}' [${curSet.authorName}] 북퀴즈(${currentQuizQuestions.length}문항) 구성 저장이 완료되었습니다!`);
   $('#masterQuizModal').modal('hide');
   renderMasterContents();
 }
@@ -4184,26 +4436,34 @@ function showMasterToast(msg) {
 // 8. 결제 내역 관리 모듈 (Master Payment Management)
 // ==========================================
 
+// 카드 결제(PG 자동 연동) 여부 판별 함수
+function isCardPayment(method) {
+  if (!method) return false;
+  return method.includes("카드") || method.includes("간편결제") || method.includes("카카오페이") || method.includes("토스");
+}
+
 let masterPaymentList = [
+  // 1. [나노 독서아카데미 목동본원] - 6개월 만료 후 1개월 갱신 결제 (카드 자동 승인)
   {
-    id: "PAY-20260916-001",
+    id: "PAY-20260915-001",
     academyId: "ACAD-001",
     academyName: "나노 독서아카데미 목동본원",
     director: "김은영 원장",
     phone: "010-3342-9981",
     bizNumber: "105-86-12345",
-    planType: "6month",
-    planName: "6개월 이용권 (10% 할인)",
-    supply: 540000,
-    vat: 54000,
-    total: 594000,
-    method: "신용카드 (모의신청)",
-    date: "2026-09-16 14:20:00",
-    startDate: "2026-09-16",
-    endDate: "2027-03-16",
-    status: "pending", // pending | paid | cancelled | refunded
-    memo: "원장님 웹페이지 결제 신청 건. 계약 연장 수동 승인 대기 중."
+    planType: "monthly",
+    planName: "1개월 정기구독권",
+    supply: 100000,
+    vat: 10000,
+    total: 110000,
+    method: "신용카드",
+    date: "2026-09-15 14:20:00",
+    startDate: "2026-09-15",
+    endDate: "2026-10-14",
+    status: "paid", // 카드 결제는 PG 자동 승인 (관리자 임의 변경 불가)
+    memo: "이전 6개월 패키지 만료 후 1개월 정기구독 카드 자동 결제 갱신 완료."
   },
+  // 2. [송도 센트럴 리딩랩] - 수동 결제 (무통장 입금 확인 대기중 - 관리자 조정 가능)
   {
     id: "PAY-20260901-002",
     academyId: "ACAD-003",
@@ -4216,34 +4476,16 @@ let masterPaymentList = [
     supply: 960000,
     vat: 96000,
     total: 1056000,
-    method: "실시간 계좌이체",
+    method: "무통장 입금 (현금)",
     date: "2026-09-01 09:12:30",
     startDate: "2026-09-01",
     endDate: "2027-08-31",
-    status: "paid",
-    memo: "2026-09-01 연간 VIP 라이선스 승인 완료."
+    status: "pending", // 수동 결제이므로 관리자가 입금 확인 후 '완료'로 변경 가능!
+    memo: "원장님 기업은행 무통장 입금 신청 건. 입금 확인 대기 중."
   },
+  // 3. [대치 에듀 독서논술센터] - 6개월 이용권 (신용카드 자동 결제완료)
   {
-    id: "PAY-20260820-003",
-    academyId: "ACAD-001",
-    academyName: "나노 독서아카데미 목동본원",
-    director: "김은영 원장",
-    phone: "010-3342-9981",
-    bizNumber: "105-86-12345",
-    planType: "monthly",
-    planName: "1개월 정기구독권",
-    supply: 100000,
-    vat: 10000,
-    total: 110000,
-    method: "신용카드",
-    date: "2026-08-20 10:15:22",
-    startDate: "2026-08-20",
-    endDate: "2026-09-19",
-    status: "paid",
-    memo: "정기구독 8월분 정상 자동 승인. 만료 D-3 알림 발송."
-  },
-  {
-    id: "PAY-20260810-004",
+    id: "PAY-20260810-003",
     academyId: "ACAD-002",
     academyName: "대치 에듀 독서논술센터",
     director: "박진수 원장",
@@ -4259,8 +4501,29 @@ let masterPaymentList = [
     startDate: "2026-08-10",
     endDate: "2027-02-10",
     status: "paid",
-    memo: "가맹점 1학기 특별 할인 적용 승인."
+    memo: "가맹점 2학기 프로모션 카드 정상 결제 완료."
   },
+  // 4. [나노 독서아카데미 목동본원] - 과거 6개월 결제 완료 이력 보존 (동일 가맹점 히스토리 누적)
+  {
+    id: "PAY-20260315-004",
+    academyId: "ACAD-001",
+    academyName: "나노 독서아카데미 목동본원",
+    director: "김은영 원장",
+    phone: "010-3342-9981",
+    bizNumber: "105-86-12345",
+    planType: "6month",
+    planName: "6개월 이용권 (10% 할인)",
+    supply: 540000,
+    vat: 54000,
+    total: 594000,
+    method: "신용카드",
+    date: "2026-03-15 10:15:22",
+    startDate: "2026-03-15",
+    endDate: "2026-09-14",
+    status: "paid", // 기간이 지난 과거 결제 내역도 그대로 영구 보존됨
+    memo: "1학기 6개월 패키지 카드 결제 이용 완료 건. (만료 후 9/15 1개월 추가 갱신됨)"
+  },
+  // 5. [판교 알파 독서학원] - 가상계좌 (수동 취소)
   {
     id: "PAY-20260715-005",
     academyId: "ACAD-004",
@@ -4273,13 +4536,14 @@ let masterPaymentList = [
     supply: 100000,
     vat: 10000,
     total: 110000,
-    method: "가상계좌",
+    method: "실시간 계좌이체 (수동)",
     date: "2026-07-15 15:00:22",
     startDate: "2026-07-15",
     endDate: "2026-08-14",
     status: "cancelled",
-    memo: "원장님 요청으로 계좌이체 재신청 건 취소 처리."
+    memo: "원장님 요청으로 계좌이체 미입금 건 취소 처리."
   },
+  // 6. [분당 서현 리딩클럽] - 12개월 연간권 (신용카드 자동 결제완료)
   {
     id: "PAY-20260701-006",
     academyId: "ACAD-005",
@@ -4297,7 +4561,27 @@ let masterPaymentList = [
     startDate: "2026-07-01",
     endDate: "2027-06-30",
     status: "paid",
-    memo: "연간 패키지 20% 할인 프로모션 적용."
+    memo: "연간 패키지 20% 할인 프로모션 카드 결제 승인."
+  },
+  // 7. [나노 독서아카데미 목동본원] - 최초 가맹 등록 시점의 수동 결제 내역 (누적 히스토리)
+  {
+    id: "PAY-20250915-007",
+    academyId: "ACAD-001",
+    academyName: "나노 독서아카데미 목동본원",
+    director: "김은영 원장",
+    phone: "010-3342-9981",
+    bizNumber: "105-86-12345",
+    planType: "6month",
+    planName: "6개월 이용권 (10% 할인)",
+    supply: 540000,
+    vat: 54000,
+    total: 594000,
+    method: "무통장 입금 (현금)",
+    date: "2025-09-15 11:30:00",
+    startDate: "2025-09-15",
+    endDate: "2026-03-14",
+    status: "paid",
+    memo: "최초 가맹 계약 시 무통장 입금 수납 완료 건."
   }
 ];
 
@@ -4315,21 +4599,68 @@ function renderMasterPaymentTable(data = masterPaymentList) {
   }
 
   tbody.innerHTML = data.map(item => {
-    // 인라인 상태 셀렉트
-    const statusSelect = `
-      <select class="select-beige form-control-sm py-0 font-weight-bold text-center" 
-        onchange="updatePaymentStatusInline('${item.id}', this.value)" 
-        style="height: 30px; font-size: 11.5px; border-radius: 8px; ${
-          item.status === 'paid' ? 'color:#2f5436; background:#eaf0eb;' :
-          item.status === 'pending' ? 'color:#8c531b; background:#faf3e8;' :
-          'color:#962a22; background:#fbeae8;'
-        }">
-        <option value="paid" ${item.status === 'paid' ? 'selected' : ''}>완료</option>
-        <option value="pending" ${item.status === 'pending' ? 'selected' : ''}>대기</option>
-        <option value="cancelled" ${item.status === 'cancelled' ? 'selected' : ''}>취소</option>
-        <option value="refunded" ${item.status === 'refunded' ? 'selected' : ''}>환불</option>
-      </select>
-    `;
+    const isCard = isCardPayment(item.method);
+    let statusHtml = "";
+
+    // 1) 신용카드 결제: PG 자동 승인 (관리자가 선택하지 않고 자동 표기)
+    if (isCard) {
+      if (item.status === 'paid') {
+        statusHtml = `
+          <div class="d-flex flex-column align-items-center">
+            <span class="badge px-2.5 py-1.5 font-weight-bold" style="background:#eaf5ec; color:#1e6b35; border:1px solid #b7dfbe; font-size:11.5px;">
+              <i class="fa-solid fa-credit-card mr-1"></i>결제완료
+            </span>
+            <span class="text-muted" style="font-size:10px; margin-top:2px;">(PG 자동승인)</span>
+          </div>
+        `;
+      } else if (item.status === 'cancelled' || item.status === 'refunded') {
+        statusHtml = `
+          <div class="d-flex flex-column align-items-center">
+            <span class="badge px-2.5 py-1.5 font-weight-bold" style="background:#fdeeee; color:#b71c1c; border:1px solid #f8c1c1; font-size:11.5px;">
+              <i class="fa-solid fa-ban mr-1"></i>승인취소
+            </span>
+            <span class="text-muted" style="font-size:10px; margin-top:2px;">(PG 취소)</span>
+          </div>
+        `;
+      } else {
+        statusHtml = `
+          <div class="d-flex flex-column align-items-center">
+            <span class="badge px-2.5 py-1.5 font-weight-bold" style="background:#fff8e6; color:#b45309; border:1px solid #fcd34d; font-size:11.5px;">
+              <i class="fa-solid fa-clock mr-1"></i>승인대기
+            </span>
+            <span class="text-muted" style="font-size:10px; margin-top:2px;">(PG 전산)</span>
+          </div>
+        `;
+      }
+    } 
+    // 2) 수동 결제 (현금, 무통장입금 등): 관리자가 직접 상태 조정 가능
+    else {
+      statusHtml = `
+        <div class="d-flex flex-column align-items-center">
+          <select class="select-beige form-control-sm py-0 font-weight-bold text-center" 
+            onchange="updatePaymentStatusInline('${item.id}', this.value)" 
+            title="수동 결제 건은 관리자가 직접 완료/대기 상태를 조정할 수 있습니다"
+            style="height: 28px; font-size: 11.5px; border-radius: 8px; width: 100px; ${
+              item.status === 'paid' ? 'color:#2f5436; background:#eaf0eb; border-color:#b7dfbe;' :
+              item.status === 'pending' ? 'color:#8c531b; background:#faf3e8; border-color:#fcd34d;' :
+              'color:#962a22; background:#fbeae8; border-color:#f8c1c1;'
+            }">
+            <option value="paid" ${item.status === 'paid' ? 'selected' : ''}>결제완료</option>
+            <option value="pending" ${item.status === 'pending' ? 'selected' : ''}>입금대기</option>
+            <option value="cancelled" ${item.status === 'cancelled' ? 'selected' : ''}>결제취소</option>
+            <option value="refunded" ${item.status === 'refunded' ? 'selected' : ''}>환불완료</option>
+          </select>
+          <span style="font-size: 10px; color: #d97706; font-weight: 600; margin-top: 2px;">
+            <i class="fa-solid fa-hand-holding-dollar mr-0.5"></i>수동 조정 가능
+          </span>
+        </div>
+      `;
+    }
+
+    // 결제 수단 아이콘 및 뱃지
+    const methodBadge = isCard
+      ? `<span class="badge badge-light border text-primary" style="font-size: 11px;"><i class="fa-solid fa-credit-card mr-1"></i>${item.method}</span>`
+      : `<span class="badge badge-light border text-dark" style="font-size: 11px;"><i class="fa-solid fa-money-bill-wave text-success mr-1"></i>${item.method}</span>`;
 
     return `
       <tr style="font-size: 13px;">
@@ -4344,10 +4675,10 @@ function renderMasterPaymentTable(data = masterPaymentList) {
         <td class="text-right" style="white-space: nowrap;">${item.supply.toLocaleString()}원</td>
         <td class="text-right text-muted" style="white-space: nowrap;">${item.vat.toLocaleString()}원</td>
         <td class="text-right font-weight-bold" style="color: #962a22; font-size: 14px; white-space: nowrap;">${item.total.toLocaleString()}원</td>
-        <td class="text-center" style="white-space: nowrap;"><small class="text-muted">${item.method}</small></td>
+        <td class="text-center" style="white-space: nowrap;">${methodBadge}</td>
         <td class="text-center" style="white-space: nowrap;"><small class="text-muted">${item.date}</small></td>
         <td class="text-center" style="white-space: nowrap;"><small class="badge badge-light border" style="white-space: nowrap;">${item.startDate} ~ ${item.endDate}</small></td>
-        <td class="text-center" style="white-space: nowrap;">${statusSelect}</td>
+        <td class="text-center" style="white-space: nowrap;">${statusHtml}</td>
         <td class="text-center" style="white-space: nowrap;">
           <button class="btn btn-xs btn-outline-secondary" onclick="openMasterPaymentDetailModal('${item.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; white-space: nowrap;">
             <i class="fa-solid fa-pen-to-square mr-1"></i>상세/메모
@@ -4358,7 +4689,7 @@ function renderMasterPaymentTable(data = masterPaymentList) {
   }).join("");
 }
 
-// 가맹 학원 필터 옵션 채우기
+// 가맹 학원 필터 옵션 채우기 (동일 학원 선택 시 누적 내역 확인 가능)
 function populateMasterPaymentAcademyFilter() {
   const select = document.getElementById("masterPaymentAcademyFilter");
   if (!select) return;
@@ -4366,8 +4697,11 @@ function populateMasterPaymentAcademyFilter() {
   const currentVal = select.value;
   const academies = [...new Set(masterPaymentList.map(p => p.academyName))];
 
-  select.innerHTML = `<option value="ALL">전체 가맹 학원</option>` + 
-    academies.map(name => `<option value="${name}">${name}</option>`).join("");
+  select.innerHTML = `<option value="ALL">전체 가맹 학원 (${academies.length}곳)</option>` + 
+    academies.map(name => {
+      const count = masterPaymentList.filter(p => p.academyName === name).length;
+      return `<option value="${name}">${name} (누적 ${count}건)</option>`;
+    }).join("");
 
   select.value = currentVal;
 }
@@ -4425,22 +4759,26 @@ function updatePaymentKpis() {
   if (pendingCountEl) pendingCountEl.innerHTML = `${pendingItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
 }
 
-// 인라인 상태 변경 핸들러
+// 인라인 상태 변경 핸들러 (수동 결제 건만 변경 가능)
 function updatePaymentStatusInline(payId, newStatus) {
   const item = masterPaymentList.find(p => p.id === payId);
   if (!item) return;
 
-  const oldStatus = item.status;
-  item.status = newStatus;
+  if (isCardPayment(item.method)) {
+    showMasterToast("신용카드 결제 건은 PG사 전산 자동 승인 데이터이므로 수동 변경이 불가합니다.");
+    renderMasterPaymentTable();
+    return;
+  }
 
+  item.status = newStatus;
   updatePaymentKpis();
   renderMasterPaymentTable();
 
   const statusKor = newStatus === 'paid' ? '결제 완료' :
-                    newStatus === 'pending' ? '결제 대기' :
+                    newStatus === 'pending' ? '입금 대기' :
                     newStatus === 'cancelled' ? '결제 취소' : '환불 완료';
 
-  showMasterToast(`[${item.academyName}] 결제건(${payId}) 상태가 '${statusKor}'(으)로 변경되었습니다.`);
+  showMasterToast(`[${item.academyName}] 수동 수납건(${payId}) 상태가 '${statusKor}'(으)로 조정되었습니다.`);
 }
 
 // 결제 상세 모달 열기
@@ -4462,6 +4800,30 @@ function openMasterPaymentDetailModal(payId) {
   document.getElementById("modalDetailStatusSelect").value = item.status;
   document.getElementById("modalDetailAdminMemo").value = item.memo || "";
 
+  const isCard = isCardPayment(item.method);
+  const cardNotice = document.getElementById("modalDetailCardAutoNotice");
+  const statusSelect = document.getElementById("modalDetailStatusSelect");
+  const statusBadge = document.getElementById("modalDetailStatusBadge");
+  const statusHelp = document.getElementById("modalDetailStatusHelp");
+
+  if (isCard) {
+    if (cardNotice) cardNotice.style.display = "block";
+    if (statusSelect) statusSelect.disabled = true;
+    if (statusBadge) {
+      statusBadge.innerText = "카드 자동승인 (고정)";
+      statusBadge.className = "badge badge-success text-white";
+    }
+    if (statusHelp) statusHelp.innerText = "* 신용카드 결제는 PG 자동 승인 건으로 상태 임의 조작이 제한됩니다.";
+  } else {
+    if (cardNotice) cardNotice.style.display = "none";
+    if (statusSelect) statusSelect.disabled = false;
+    if (statusBadge) {
+      statusBadge.innerText = "수동 조정 가능";
+      statusBadge.className = "badge badge-warning text-white";
+    }
+    if (statusHelp) statusHelp.innerText = "* 관리자가 무통장/현금 입금 확인 여부에 따라 실시간 상태를 변경할 수 있습니다.";
+  }
+
   $("#masterPaymentDetailModal").modal("show");
 }
 
@@ -4471,10 +4833,13 @@ function saveMasterPaymentDetail() {
   const item = masterPaymentList.find(p => p.id === payId);
   if (!item) return;
 
-  const newStatus = document.getElementById("modalDetailStatusSelect").value;
+  const isCard = isCardPayment(item.method);
+  if (!isCard) {
+    const newStatus = document.getElementById("modalDetailStatusSelect").value;
+    item.status = newStatus;
+  }
+  
   const newMemo = document.getElementById("modalDetailAdminMemo").value;
-
-  item.status = newStatus;
   item.memo = newMemo;
 
   updatePaymentKpis();
@@ -4484,47 +4849,150 @@ function saveMasterPaymentDetail() {
   showMasterToast(`[${item.academyName}] 결제 정보 및 관리자 메모가 저장되었습니다.`);
 }
 
-// 수동 결제 등록 모의창
+// ========================================================
+// 수동 결제 등록 모달 (현금/무통장입금 등 수동 수납 건 영구 누적 등록)
+// ========================================================
+
+const PLAN_PRICE_TABLE = {
+  "1month": { name: "1개월 정기구독권", supply: 100000, vat: 10000, total: 110000, months: 1 },
+  "6month": { name: "6개월 이용권 (10% 할인)", supply: 540000, vat: 54000, total: 594000, months: 6 },
+  "12month": { name: "12개월 연간권 (20% 할인)", supply: 960000, vat: 96000, total: 1056000, months: 12 }
+};
+
+// 수동 결제 등록 모달 열기
 function openSimulateNewPaymentModal() {
-  const acad = franchiseList[0];
-  if (!acad) return;
+  const select = document.getElementById("manualPayAcademy");
+  if (select && Array.isArray(franchiseList)) {
+    select.innerHTML = franchiseList.map(f => {
+      return `<option value="${f.id}" data-name="${f.name}" data-director="${f.director}" data-phone="${f.phone}" data-biz="${f.bizNumber}" data-end="${f.endDate}">
+        ${f.name} (${f.director}) - 기존 만료일: ${f.endDate || '미정'}
+      </option>`;
+    }).join("");
+  }
+
+  // 초기 날짜 및 금액 설정
+  onManualPayAcademyChanged(select ? select.value : "");
+  onManualPayPlanChanged(document.getElementById("manualPayPlan") ? document.getElementById("manualPayPlan").value : "6month");
+
+  $("#manualPaymentRegisterModal").modal("show");
+}
+
+// 가맹 학원 변경 시 시작일 설정 (기존 만료일이 있으면 만료일 다음날, 없으면 오늘)
+function onManualPayAcademyChanged(acadId) {
+  const acad = franchiseList.find(f => f.id === acadId) || franchiseList[0];
+  const startInput = document.getElementById("manualPayStartDate");
+  if (!startInput) return;
+
+  const now = new Date();
+  const pad = n => n < 10 ? '0' + n : n;
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+  if (acad && acad.endDate && acad.endDate >= todayStr) {
+    // 기존 계약 만료일 다음 날로 자동 설정
+    const prevEnd = new Date(acad.endDate);
+    prevEnd.setDate(prevEnd.getDate() + 1);
+    startInput.value = `${prevEnd.getFullYear()}-${pad(prevEnd.getMonth()+1)}-${pad(prevEnd.getDate())}`;
+  } else {
+    startInput.value = todayStr;
+  }
+
+  calcManualPayEndDate();
+}
+
+// 요금제 변경 시 금액 및 만료일 계산
+function onManualPayPlanChanged(planKey) {
+  const info = PLAN_PRICE_TABLE[planKey] || PLAN_PRICE_TABLE["6month"];
+  const supplyEl = document.getElementById("manualPaySupplyText");
+  const vatEl = document.getElementById("manualPayVatText");
+  const totalEl = document.getElementById("manualPayTotalText");
+
+  if (supplyEl) supplyEl.innerText = `${info.supply.toLocaleString()}원`;
+  if (vatEl) vatEl.innerText = `${info.vat.toLocaleString()}원`;
+  if (totalEl) totalEl.innerText = `${info.total.toLocaleString()}원`;
+
+  calcManualPayEndDate();
+}
+
+// 시작일 + 요금제 기간 -> 만료일 자동 계산
+function calcManualPayEndDate() {
+  const startVal = document.getElementById("manualPayStartDate") ? document.getElementById("manualPayStartDate").value : "";
+  const planKey = document.getElementById("manualPayPlan") ? document.getElementById("manualPayPlan").value : "6month";
+  const endInput = document.getElementById("manualPayEndDate");
+  if (!startVal || !endInput) return;
+
+  const info = PLAN_PRICE_TABLE[planKey] || PLAN_PRICE_TABLE["6month"];
+  const startDate = new Date(startVal);
+  startDate.setMonth(startDate.getMonth() + info.months);
+  startDate.setDate(startDate.getDate() - 1); // 1일 전까지
+
+  const pad = n => n < 10 ? '0' + n : n;
+  endInput.value = `${startDate.getFullYear()}-${pad(startDate.getMonth()+1)}-${pad(startDate.getDate())}`;
+}
+
+// 수동 결제 폼 제출 처리 (기존 결제 히스토리 위에 영구 누적 저장)
+function handleManualPaymentSubmit(e) {
+  if (e) e.preventDefault();
+
+  const acadSelect = document.getElementById("manualPayAcademy");
+  const acadId = acadSelect.value;
+  const selectedOption = acadSelect.options[acadSelect.selectedIndex];
+  const acadName = selectedOption.getAttribute("data-name") || "가맹 학원";
+  const director = selectedOption.getAttribute("data-director") || "원장";
+  const phone = selectedOption.getAttribute("data-phone") || "";
+  const bizNumber = selectedOption.getAttribute("data-biz") || "";
+
+  const planKey = document.getElementById("manualPayPlan").value;
+  const planInfo = PLAN_PRICE_TABLE[planKey] || PLAN_PRICE_TABLE["6month"];
+  const method = document.getElementById("manualPayMethod").value;
+  const startDate = document.getElementById("manualPayStartDate").value;
+  const endDate = document.getElementById("manualPayEndDate").value;
+  const status = document.getElementById("manualPayStatus").value;
+  const memo = document.getElementById("manualPayMemo").value;
 
   const now = new Date();
   const pad = n => n < 10 ? '0' + n : n;
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  const startDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  const endObj = new Date(now);
-  endObj.setMonth(endObj.getMonth() + 6);
-  const endDate = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}`;
+  const payId = `PAY-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${Math.floor(100 + Math.random()*900)}`;
 
   const newPayment = {
-    id: `PAY-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${Math.floor(100 + Math.random()*900)}`,
-    academyId: acad.id,
-    academyName: acad.name,
-    director: acad.director,
-    phone: acad.phone,
-    bizNumber: acad.bizNumber,
-    planType: "6month",
-    planName: "6개월 이용권 (10% 할인)",
-    supply: 540000,
-    vat: 54000,
-    total: 594000,
-    method: "가상계좌 (수동 수납)",
+    id: payId,
+    academyId: acadId,
+    academyName: acadName,
+    director: director,
+    phone: phone,
+    bizNumber: bizNumber,
+    planType: planKey,
+    planName: planInfo.name,
+    supply: planInfo.supply,
+    vat: planInfo.vat,
+    total: planInfo.total,
+    method: method,
     date: dateStr,
     startDate: startDate,
     endDate: endDate,
-    status: "paid",
-    memo: "본사 관리자 수동 수납 등록 건."
+    status: status, // 관리자가 지정한 상태 (대기 또는 완료)
+    memo: memo || "관리자 수동 결제 등록 건."
   };
 
+  // 기존 결제 내역 상단에 누적 추가 (기존 히스토리는 절대 사라지지 않음)
   masterPaymentList.unshift(newPayment);
+
+  // 만약 결제 완료 상태라면 가맹점 만료일도 갱신
+  if (status === "paid") {
+    const acad = franchiseList.find(f => f.id === acadId);
+    if (acad) acad.endDate = endDate;
+  }
+
+  populateMasterPaymentAcademyFilter();
+  filterMasterPaymentList();
   updatePaymentKpis();
-  renderMasterPaymentTable();
-  showMasterToast(`새 수납 결제건(${newPayment.id})이 등록되었습니다.`);
+
+  $("#manualPaymentRegisterModal").modal("hide");
+  showMasterToast(`[${acadName}] 수동 결제건(${payId})이 등록되었습니다. 수동 결제 건은 관리자가 언제든 상태를 [완료/대기]로 조정할 수 있습니다.`);
 }
 
 // 엑셀 다운로드 안내
 function exportPaymentData() {
-  showMasterToast("전체 가맹 학원 결제 내역 엑셀 파일(XLSX)이 생성되어 다운로드되었습니다.");
+  showMasterToast("전체 가맹 학원 누적 결제 내역 엑셀 파일(XLSX)이 생성되어 다운로드되었습니다.");
 }
 

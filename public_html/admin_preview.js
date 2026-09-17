@@ -4009,6 +4009,8 @@ function previewStudentPortal() {
 // 10. 마스터 계정과 100% 동일한 학원 도서 및 북퀴즈 등록/편집 모달 로직
 // ==============================================================
 var editingAcadBookId = null;
+var editingAcadQuizSets = [];
+var currentAcadQuizSetIdx = 0;
 var editingAcadQuizzes = [];
 var currentAcadQuizIdx = 0;
 var editingAcadSheetFile = null;
@@ -4051,6 +4053,77 @@ function getInitialAcadQuizList(book) {
       hint: "서로에게 세상에서 유일한 존재가 되는 것"
     }
   ];
+}
+
+// 도서별 퀴즈 세트 다중 관리 (본사, 타 가맹점, 우리 학원 세트)
+function ensureAcadBookQuizSets(book) {
+  if (book && Array.isArray(book.quizSets) && book.quizSets.length > 0) {
+    return JSON.parse(JSON.stringify(book.quizSets));
+  }
+
+  var defaultHQQuizzes = getInitialAcadQuizList(book);
+  var sets = [
+    {
+      id: 'qs_hq_' + (book ? book.id : 'new'),
+      authorType: 'HQ',
+      authorName: '본사',
+      academyName: '본사 직속(HQ)',
+      isMine: false,
+      questions: defaultHQQuizzes
+    }
+  ];
+
+  // '어린 왕자' 등 주요 도서에 타 가맹점(A 학원) 및 우리 학원 샘플 퀴즈 세트 구성
+  if (book && book.title && book.title.includes('어린 왕자')) {
+    sets.push({
+      id: 'qs_acad_a_' + book.id,
+      authorType: 'ACADEMY',
+      authorName: 'A 학원',
+      academyName: '울산 삼산 인재리딩캠퍼스',
+      isMine: false,
+      questions: [
+        {
+          question: '[A 학원 출제] 어린 왕자가 살던 고향 별의 명칭으로 알맞은 것은 무엇인가요?',
+          opt1: 'A-101 소행성',
+          opt2: 'B-612 소행성',
+          opt3: 'C-303 소행성',
+          opt4: 'D-909 소행성',
+          ans: '2',
+          hint: 'B-612 소행성입니다.'
+        },
+        {
+          question: '[A 학원 출제] 여우가 어린 왕자에게 알려준 ㉠길들임의 참된 의미는 무엇인가요?',
+          opt1: '상대를 내 마음대로 통제하는 것',
+          opt2: '서로에게 특별한 관계를 맺고 책임을 다하는 것',
+          opt3: '정해진 시간에 먹이를 주는 것',
+          opt4: '상대의 약점을 모두 알아내는 것',
+          ans: '2',
+          hint: '세상에서 오직 하나뿐인 소중한 존재가 되는 과정'
+        }
+      ]
+    });
+
+    sets.push({
+      id: 'qs_my_' + book.id,
+      authorType: 'ACADEMY',
+      authorName: '우리 학원',
+      academyName: '나노 독서아카데미 본원',
+      isMine: true,
+      questions: [
+        {
+          question: '[우리 학원 자체 출제 1번] 어린 왕자가 지구 사막에서 만난 비행사에게 처음으로 그려달라고 부탁한 동물은 무엇인가요?',
+          opt1: '양 한 마리',
+          opt2: '비행기 프로펠러',
+          opt3: '사막의 여우',
+          opt4: '소행성의 장미꽃',
+          ans: '1',
+          hint: '상자에 구멍을 뚫어 넣어주었던 작은 동물입니다.'
+        }
+      ]
+    });
+  }
+
+  return sets;
 }
 
 // 모달 열기 (신규 등록 및 기존 수정 겸용)
@@ -4125,12 +4198,15 @@ function openAcademyBookEditModal(id) {
     document.getElementById('abEditMemo').value = (book && book.answerGuide) ? book.answerGuide : '';
   }
 
-  // 5. 북퀴즈 데이터 초기화
-  editingAcadQuizzes = getInitialAcadQuizList(book);
+  // 5. 북퀴즈 데이터 다중 세트 초기화
+  editingAcadQuizSets = ensureAcadBookQuizSets(book);
+  currentAcadQuizSetIdx = 0;
+  editingAcadQuizzes = editingAcadQuizSets[0].questions;
   currentAcadQuizIdx = 0;
 
   // 도서 기본 정보 탭 활성화
   switchAcadBookEditTab('info');
+  renderAcadQuizSetTabs();
   renderAcadQuizTabs();
   loadAcadQuizForm();
 
@@ -4260,6 +4336,164 @@ function attachSampleAcadPdf() {
   showAcademyToast(`표준 나노 시트(${fileName})가 자동 첨부되었습니다.`);
 }
 
+// ==============================================================
+// 출제 기관별 퀴즈 세트 탭 & 권한 제어 (학원 관리자는 타 기관 퀴즈 수정 불가)
+// ==============================================================
+
+// 출제 기관 탭 렌더링
+function renderAcadQuizSetTabs() {
+  var container = document.getElementById('abQuizSetTabs');
+  if (!container || !editingAcadQuizSets || editingAcadQuizSets.length === 0) return;
+
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx] || editingAcadQuizSets[0];
+  var isReadOnly = !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
+
+  container.innerHTML = editingAcadQuizSets.map(function(set, idx) {
+    var isActive = idx === currentAcadQuizSetIdx;
+    var isHQ = set.authorType === 'HQ' || set.authorName === '본사';
+    var icon = isHQ ? 'fa-solid fa-building' : 'fa-solid fa-school';
+    var activeClass = isActive
+      ? 'btn-beige-primary text-white font-weight-bold shadow-xs'
+      : 'btn-outline-secondary bg-white text-dark';
+
+    return `<button type="button" class="btn btn-xs ${activeClass}" onclick="switchAcadQuizSet(${idx})" style="border-radius: 20px; padding: 4px 12px; font-size: 11.5px; transition: all 0.15s ease;">
+      <i class="${icon} mr-1"></i>${set.authorName}
+      <span class="badge ${isActive ? 'badge-light text-dark' : 'badge-secondary'} ml-1" style="font-size: 10px;">${set.questions.length}</span>
+    </button>`;
+  }).join('');
+
+  // 읽기 전용 상태에 따른 UI 제어
+  var noticeEl = document.getElementById('abQuizReadOnlyNotice');
+  var noticeTextEl = document.getElementById('abQuizReadOnlyText');
+  var ctrlBtns = document.getElementById('abQuizControlButtons');
+  var btnDelSet = document.getElementById('btnDeleteAcadQuizSet');
+
+  if (isReadOnly) {
+    if (noticeEl) noticeEl.style.display = 'block';
+    if (noticeTextEl) {
+      noticeTextEl.innerHTML = `<strong>[읽기 전용 모드]</strong> <strong>'${curSet.authorName}'</strong>에서 출제한 북퀴즈입니다. 열람은 가능하지만 타 기관/본사의 퀴즈는 수정하거나 삭제할 수 없습니다. 우리 학원만의 퀴즈를 등록하시려면 우측 상단 <strong>[+ 새 북퀴즈 추가]</strong>를 눌러주세요.`;
+    }
+    if (ctrlBtns) ctrlBtns.style.display = 'none';
+    if (btnDelSet) btnDelSet.style.display = 'none';
+    setAcadQuizFormReadOnly(true);
+  } else {
+    if (noticeEl) noticeEl.style.display = 'none';
+    if (ctrlBtns) ctrlBtns.style.display = 'flex';
+    if (btnDelSet) btnDelSet.style.display = editingAcadQuizSets.length > 1 ? 'inline-block' : 'none';
+    setAcadQuizFormReadOnly(false);
+  }
+}
+
+// 퀴즈 폼 입력 필드 활성/비활성 제어 (읽기 전용 모드 적용)
+function setAcadQuizFormReadOnly(ro) {
+  var fields = ['abQuizQuestion', 'abOpt1', 'abOpt2', 'abOpt3', 'abOpt4', 'abQuizHint'];
+  fields.forEach(function(fId) {
+    var el = document.getElementById(fId);
+    if (el) {
+      el.readOnly = ro;
+      el.style.background = ro ? '#f8f9fa' : '#ffffff';
+      el.style.cursor = ro ? 'not-allowed' : 'text';
+    }
+  });
+
+  // 정답 라디오 비활성화
+  var radios = document.querySelectorAll('input[name="abQuizCorrectAns"]');
+  radios.forEach(function(r) {
+    r.disabled = ro;
+    r.style.cursor = ro ? 'not-allowed' : 'pointer';
+  });
+
+  // 특수문자 버튼 비활성화
+  var symBtns = document.querySelectorAll('.sym-btn-compact');
+  symBtns.forEach(function(b) {
+    b.disabled = ro;
+    b.style.opacity = ro ? '0.4' : '1';
+    b.style.cursor = ro ? 'not-allowed' : 'pointer';
+  });
+}
+
+// 출제 기관 탭 전환
+function switchAcadQuizSet(idx) {
+  var prevSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var wasReadOnly = prevSet && !prevSet.isMine && (prevSet.authorType === 'HQ' || prevSet.authorName === '본사' || prevSet.authorName === 'A 학원');
+
+  if (!wasReadOnly) {
+    saveCurrentAcadQuizInput();
+  }
+
+  currentAcadQuizSetIdx = idx;
+  currentAcadQuizIdx = 0;
+  editingAcadQuizzes = editingAcadQuizSets[currentAcadQuizSetIdx].questions;
+
+  renderAcadQuizSetTabs();
+  renderAcadQuizTabs();
+  loadAcadQuizForm();
+}
+
+// 새 북퀴즈 세트 추가 (학원 관리자는 우리 학원 명의로 생성)
+function addNewAcadQuizSet() {
+  var prevSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var wasReadOnly = prevSet && !prevSet.isMine && (prevSet.authorType === 'HQ' || prevSet.authorName === '본사' || prevSet.authorName === 'A 학원');
+  if (!wasReadOnly) {
+    saveCurrentAcadQuizInput();
+  }
+
+  var newSet = {
+    id: 'qs_my_' + Date.now(),
+    authorType: 'ACADEMY',
+    authorName: '우리 학원',
+    academyName: '나노 독서아카데미 본원',
+    isMine: true,
+    createdAt: new Date().toISOString().slice(0, 10),
+    questions: [
+      {
+        question: '우리 학원 자체 출제 1. 질문 및 지문 내용을 입력하세요.',
+        opt1: '1번 보기',
+        opt2: '2번 보기',
+        opt3: '3번 보기',
+        opt4: '4번 보기',
+        ans: '1',
+        hint: '힌트를 입력하세요.'
+      }
+    ]
+  };
+
+  editingAcadQuizSets.push(newSet);
+  switchAcadQuizSet(editingAcadQuizSets.length - 1);
+  showAcademyToast('우리 학원 전용 북퀴즈 세트가 추가되었습니다! 질문과 보기를 자유롭게 작성하세요.');
+}
+
+// 선택된 퀴즈 세트 삭제 (우리 학원 것만 삭제 가능)
+function deleteCurAcadQuizSet() {
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  if (!curSet) return;
+
+  var isReadOnly = !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
+  if (isReadOnly) {
+    showAcademyToast('타 가맹점이나 본사에서 출제한 북퀴즈 세트는 삭제할 수 없습니다.');
+    return;
+  }
+
+  if (editingAcadQuizSets.length <= 1) {
+    showAcademyToast('최소 1개 이상의 퀴즈 세트가 유지되어야 합니다.');
+    return;
+  }
+
+  if (!confirm(`'${curSet.authorName}' 북퀴즈 세트 전체를 삭제하시겠습니까?`)) {
+    return;
+  }
+
+  editingAcadQuizSets.splice(currentAcadQuizSetIdx, 1);
+  currentAcadQuizSetIdx = 0;
+  currentAcadQuizIdx = 0;
+  editingAcadQuizzes = editingAcadQuizSets[0].questions;
+
+  renderAcadQuizSetTabs();
+  renderAcadQuizTabs();
+  loadAcadQuizForm();
+  showAcademyToast('북퀴즈 세트가 삭제되었습니다.');
+}
+
 // 북퀴즈 문항 탭 렌더링
 function renderAcadQuizTabs() {
   var container = document.getElementById('abQuizTabButtons');
@@ -4267,6 +4501,9 @@ function renderAcadQuizTabs() {
 
   var countBadge = document.getElementById('abEditQuizCount');
   if (countBadge) countBadge.innerText = editingAcadQuizzes.length;
+
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var isReadOnly = curSet && !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
 
   container.innerHTML = editingAcadQuizzes.map(function(q, idx) {
     return `<button type="button" class="quiz-num-pill ${idx === currentAcadQuizIdx ? 'active' : ''}" onclick="switchAcadQuizItem(${idx})">
@@ -4276,7 +4513,7 @@ function renderAcadQuizTabs() {
 
   var btnDel = document.getElementById('btnDeleteAcadQuiz');
   if (btnDel) {
-    btnDel.style.display = editingAcadQuizzes.length > 1 ? 'inline-block' : 'none';
+    btnDel.style.display = (!isReadOnly && editingAcadQuizzes.length > 1) ? 'inline-block' : 'none';
   }
 }
 
@@ -4285,9 +4522,15 @@ function loadAcadQuizForm() {
   var q = editingAcadQuizzes[currentAcadQuizIdx];
   if (!q) return;
 
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var isReadOnly = curSet && !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
+
   var titleEl = document.getElementById('abCurrentQuizTitle');
   if (titleEl) {
-    titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 ${currentAcadQuizIdx + 1}번 문항 편집`;
+    var modeBadge = isReadOnly
+      ? '<span class="badge badge-warning text-dark ml-2" style="font-size: 11px;">읽기 전용</span>'
+      : '<span class="badge badge-success text-white ml-2" style="font-size: 11px;">수정 가능</span>';
+    titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 ${currentAcadQuizIdx + 1}번 문항 (${curSet ? curSet.authorName : '퀴즈'}) ${modeBadge}`;
   }
   if (document.getElementById('abQuizQuestion')) document.getElementById('abQuizQuestion').value = q.question || '';
   if (document.getElementById('abOpt1')) document.getElementById('abOpt1').value = q.opt1 || '';
@@ -4299,10 +4542,16 @@ function loadAcadQuizForm() {
   var ansVal = q.ans || '1';
   var targetRadio = document.querySelector(`input[name="abQuizCorrectAns"][value="${ansVal}"]`);
   if (targetRadio) targetRadio.checked = true;
+
+  setAcadQuizFormReadOnly(isReadOnly);
 }
 
 // 현재 퀴즈 입력 임시 저장
 function saveCurrentAcadQuizInput() {
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var isReadOnly = curSet && !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
+  if (isReadOnly) return; // 읽기 전용 세트는 변조 방지
+
   var q = editingAcadQuizzes[currentAcadQuizIdx];
   if (!q) return;
 
@@ -4327,6 +4576,13 @@ function switchAcadQuizItem(idx) {
 
 // 문항 추가
 function addAcadQuizItem() {
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var isReadOnly = curSet && !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
+  if (isReadOnly) {
+    showAcademyToast('타 기관 북퀴즈에는 문항을 추가할 수 없습니다.');
+    return;
+  }
+
   saveCurrentAcadQuizInput();
   var nextNum = editingAcadQuizzes.length + 1;
   editingAcadQuizzes.push({
@@ -4346,6 +4602,13 @@ function addAcadQuizItem() {
 
 // 문항 삭제
 function deleteAcadQuizItem() {
+  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  var isReadOnly = curSet && !curSet.isMine && (curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
+  if (isReadOnly) {
+    showAcademyToast('타 기관 북퀴즈 문항은 삭제할 수 없습니다.');
+    return;
+  }
+
   if (editingAcadQuizzes.length <= 1) {
     showAcademyToast('도서에는 최소 1개 이상의 북퀴즈 문항이 유지되어야 합니다.');
     return;
@@ -4507,6 +4770,11 @@ function handleSaveAcademyBookModal(e) {
   var matSize = editingAcadSheetFile ? editingAcadSheetFile.size : '1.45 MB';
   var matType = editingAcadSheetFile ? editingAcadSheetFile.type : '나노 시트 (PDF)';
 
+  // 만약 현재 세트가 우리 학원 세트라면 문항 동기화
+  if (editingAcadQuizSets[currentAcadQuizSetIdx] && editingAcadQuizSets[currentAcadQuizSetIdx].isMine) {
+    editingAcadQuizSets[currentAcadQuizSetIdx].questions = JSON.parse(JSON.stringify(editingAcadQuizzes));
+  }
+
   if (editingAcadBookId) {
     // 기존 도서 수정
     var book = academyBookList.find(function(b) { return b.id === editingAcadBookId; });
@@ -4523,6 +4791,7 @@ function handleSaveAcademyBookModal(e) {
       book.materialSize = matSize;
       book.materialType = matType;
       book.answerGuide = memo;
+      book.quizSets = JSON.parse(JSON.stringify(editingAcadQuizSets));
       book.quizList = JSON.parse(JSON.stringify(editingAcadQuizzes));
       book.quizStatus = `${editingAcadQuizzes.length}문항 완비`;
     }
@@ -4549,6 +4818,7 @@ function handleSaveAcademyBookModal(e) {
       quizStatus: `${editingAcadQuizzes.length}문항 완비`,
       readCount: '0회',
       answerGuide: memo || '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.',
+      quizSets: JSON.parse(JSON.stringify(editingAcadQuizSets)),
       quizList: JSON.parse(JSON.stringify(editingAcadQuizzes))
     };
     academyBookList.unshift(newBook);
