@@ -16,8 +16,8 @@ class Master extends MY_Controller {
 		$this->load->model("adm_model");
 		$this->load->model("quiz_model");
 		$this->load->model("payment_model"); // 결제 모델
-		
 		$this->load->helper('load_controller');
+		$this->load->helper('label'); // 레이블 변환 공통 헬퍼
 		$this->load->library('excel');
 
 		//$this->CONFIG_DATA['academy_list'] = $this->academi_model->getAcademiList(array("where"=>"","limit"=>""));
@@ -100,79 +100,12 @@ class Master extends MY_Controller {
         //$list = array();
 		$list = $this->user_model->getUserList($whereData);		
 		$list = $this->add_counting($list,$list_total,0);
-		$term_where ="";
-		
-		$data['class_user_cnt'] = $list_total;
-		
-		for($i = 0; $i < count($list); $i++)
-		{
-			switch($list[$i]['grade']) {
-			    case "0":
-			        $list[$i]['grade'] = "미취학";
-			    break;
-			    case "1":
-			        $list[$i]['grade'] = "초1";
-			    break;
-			    case "2":
-			        $list[$i]['grade'] = "초2";
-			    break;
-			    case "3":
-			        $list[$i]['grade'] = "초3";
-			    break;
-			    case "4":
-			        $list[$i]['grade'] = "초4";
-			    break;
-			    case "5":
-			        $list[$i]['grade'] = "초5";
-			    break;
-			    case "6":
-			        $list[$i]['grade'] = "초6";
-			    break;
-			    case "7":
-			        $list[$i]['grade'] = "중1";
-			    break;			    
-			    case "8":
-			        $list[$i]['grade'] = "중2";
-			    break;			    
-			    case "9":
-			        $list[$i]['grade'] = "중3";
-			    break;			    
-			    case "10":
-			        $list[$i]['grade'] = "고1";
-			    break;			    
-			    case "11":
-			        $list[$i]['grade'] = "고2";
-			    break;			    
-			    case "12":
-			        $list[$i]['grade'] = "고3";
-			    break;			    			    
-			}
-            switch($list[$i]['user_status']){
-                case "Y":
-                    $list[$i]['user_status'] = "정상";
-                break;
-                case "N":
-                    $list[$i]['user_status'] = "정지";
-                break;
-            }
-            switch($list[$i]['user_type']){
-                case "director":
-                    $list[$i]['user_type'] = "원장";
-                break;
-                case "teacher":
-                    $list[$i]['user_type'] = "선생님";
-                break;
-                case "master":
-                    $list[$i]['user_type'] = "마스터";
-                break;
-                case "user":
-                    $list[$i]['user_type'] = "원생";
-                break;
-            }  			
 
-		}		
-		 
-		
+		$data['class_user_cnt'] = $list_total;
+
+		// grade / user_type / user_status 레이블 변환 (label_helper 사용)
+		$list = apply_user_labels($list, true);
+
 		$content_data = array(
 			"depth1"		=>	$depth1,
 			"title"			=>	$title,
@@ -225,10 +158,6 @@ class Master extends MY_Controller {
 
 		$where = "";
 		$where .= "AND user_type = 'master'";
-		if(!empty($this->session->userdata("academy_seq"))){
-			$academy_seq = $this->session->userdata("user_type");
-			
-		}
 		
 		if($searchTermType == 'term') {
 		    $where .= " AND reg_date>='$startDate' AND reg_date<='$endDate 23:59:59' ";   
@@ -292,33 +221,12 @@ class Master extends MY_Controller {
 
 		$paging = $this->make_paging2("list",$start_page,$end_page,$page_size,$num,$srcN,$total_page,$params);
 
-		//customSetting
+		// 날짜 포맷 + user_type/user_status 레이블 변환 (label_helper 사용)
 		for($i = 0; $i < count($list); $i++)
 		{
-			$list[$i]['reg_date'] = date("Y-m-d",strtotime($list[$i]['reg_date']));
-            switch($list[$i]['user_status']){
-                case "Y":
-                    $list[$i]['user_status'] = "정상";
-                break;
-                case "N":
-                    $list[$i]['user_status'] = "정지";
-                break;
-            }
-            switch($list[$i]['user_type']){
-                case "director":
-                    $list[$i]['user_type'] = "원장";
-                break;
-                case "teacher":
-                    $list[$i]['user_type'] = "선생님";
-                break;
-                case "master":
-                    $list[$i]['user_type'] = "마스터";
-                break;
-                case "user":
-                    $list[$i]['user_type'] = "원생";
-                break;
-            }  
+			$list[$i]['reg_date'] = date("Y-m-d", strtotime($list[$i]['reg_date']));
 		}
+		$list = apply_user_labels($list);
 
 		$content_data = array(
 			"depth1"		=>	$depth1,
@@ -491,8 +399,7 @@ class Master extends MY_Controller {
     		$duplicateId = $this->user_model->getDuplicateUserId($user_id);
 
     		if($duplicateId>0){
-    			echo '{"result":"failed","msg":"중복된 아이디가 있습니다."}';
-    			exit;
+    			$this->jsonFail('중복된 아이디가 있습니다.');
     		}
     		$data = array(
     			"user_name"	=>	$user_name,
@@ -517,8 +424,7 @@ class Master extends MY_Controller {
 		    $result = $this->user_model->insertUser($data);
 		} 
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}		
 
 	public function quiz_confirm_list()
@@ -657,8 +563,7 @@ class Master extends MY_Controller {
 		$duplicateId = $this->academi_model->getDuplicateUserId($user_id);
 
 		if($duplicateId>0){
-			echo '{"result":"failed","msg":"중복된 아이디가 있습니다."}';
-			exit;
+			$this->jsonFail('중복된 아이디가 있습니다.');
 		}
 
 		//승인인원체크
@@ -666,8 +571,7 @@ class Master extends MY_Controller {
 			$student_total = $this->academi_model->getStudentTotal($academy_seq);
 			$current_total = $this->academi_model->getCurrentStudent($academy_seq);
 			if($student_total<=$current_total){
-				echo '{"result":"failed","msg":"student over"}';
-				exit;
+				$this->jsonFail('student over');
 			}
 		}
 
@@ -691,8 +595,7 @@ class Master extends MY_Controller {
 
 		$result = $this->academi_model->insertUser($data);
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}
 	
     public function master_user_popup($userid="")
@@ -786,10 +689,9 @@ class Master extends MY_Controller {
         $duplicateId = $this->academi_model->getDuplicateUserId($user_id);
 
 		if($duplicateId>0){
-			echo '{"result":"failed","msg":"중복된 아이디가 있습니다."}';
-			exit;
+			$this->jsonFail('중복된 아이디가 있습니다.');
 		} else{ 
-		    echo '{"result":"success", "msg":"사용이 가능한 아이디 입니다."}';
+		    $this->jsonSuccess(['msg' => '사용이 가능한 아이디 입니다.']);
 	    }
 		exit;	    
 	}
@@ -884,8 +786,7 @@ class Master extends MY_Controller {
 			$student_total = $this->academi_model->getStudentTotal($academy_seq);
 			$current_total = $this->academi_model->getCurrentStudent($academy_seq);
 			if($student_total <= $current_total){
-				echo '{"result":"failed","msg":"student over"}';
-				exit;
+				$this->jsonFail('student over');
 			}
 		}
 
@@ -910,8 +811,7 @@ class Master extends MY_Controller {
 
 		$result = $this->academi_model->updateUser($user_seq,$data);
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}
 
 	public function studentDelete($user_seq)
@@ -944,8 +844,7 @@ class Master extends MY_Controller {
     		$result = $this->quiz_model->updateQuiz($data,$quiz_seq);
     	}
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}
 
 	public function academiClassDeleteProc()
@@ -960,11 +859,9 @@ class Master extends MY_Controller {
 		$result = $this->academi_model->deleteAcademyClass($academy_class_seq,$data);
 
 		if($result['result']=="success"){
-			echo '{"result":"success"}';
-			exit;
+			$this->jsonSuccess();
 		}else{
-			echo '{"result":"failed"}';
-			exit;
+			$this->jsonFail();
 		}
 	}
 	
@@ -1302,16 +1199,14 @@ class Master extends MY_Controller {
 				$student_total = $this->academi_model->getStudentTotal($student_arr[$i]['academy_seq']);
 				$current_total = $this->academi_model->getCurrentStudent($student_arr[$i]['academy_seq']);
 				if($student_total <= $current_total){
-					echo '{"result":"failed","msg":"student over"}';
-					exit;
+					$this->jsonFail('student over');
 				}
 			}
 
 			$this->academi_model->updateUserStatus($user_seq,$user_status);
 		}
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 
 
 	}
@@ -1749,7 +1644,7 @@ class Master extends MY_Controller {
 	public function payment_status_update()
 	{
 		if ($this->input->method() !== 'post') {
-			echo json_encode(array('result' => 'fail', 'msg' => '잘못된 요청입니다.'));
+			$this->jsonFail('잘못된 요청입니다.');
 			return;
 		}
 
@@ -1760,7 +1655,7 @@ class Master extends MY_Controller {
 		// 허용된 상태값 검증
 		$allowed_status = array('pending', 'paid', 'failed', 'cancelled', 'refunded');
 		if (!in_array($payment_status, $allowed_status)) {
-			echo json_encode(array('result' => 'fail', 'msg' => '잘못된 상태값입니다.'));
+			$this->jsonFail('잘못된 상태값입니다.');
 			return;
 		}
 
@@ -1776,9 +1671,9 @@ class Master extends MY_Controller {
 		$result = $this->payment_model->updatePayment($payment_seq, $update_data);
 
 		if ($result !== false) {
-			echo json_encode(array('result' => 'ok', 'msg' => '상태가 변경되었습니다.'));
+			$this->jsonSuccess(['msg' => '상태가 변경되었습니다.']);
 		} else {
-			echo json_encode(array('result' => 'fail', 'msg' => '상태 변경 중 오류가 발생했습니다.'));
+			$this->jsonFail('상태 변경 중 오류가 발생했습니다.');
 		}
 	}
 

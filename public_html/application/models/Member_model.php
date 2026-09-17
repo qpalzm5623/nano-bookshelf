@@ -81,7 +81,8 @@
                 $sql = "UPDATE tb_point_hist SET school_seq = '0',school_class_seq = '0' WHERE user_seq = '{$user_seq}'";
                 $this->db->query($sql);
 
-                $sql = "UPDATE tb_point_hist_static SET school_seq = '0',school_class_seq = '0'";
+                // [수정] WHERE 절 누락 버그 수정 — 기존 코드는 tb_point_hist_static 전체가 업데이트됨
+                $sql = "UPDATE tb_point_hist_static SET school_seq = '0',school_class_seq = '0' WHERE user_seq = '{$user_seq}'";
                 $this->db->query($sql);
             }
 

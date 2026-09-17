@@ -82,15 +82,10 @@ class Partner extends MY_Controller {
 	        $planNewList[$planList[$i]['code_type']] = $planList[$i]['code_name'];
 	    }				
 
-		$where = "";
-		
-		$where .= "AND user_type = 'director'";
-		
+		$this->load->helper('label'); // 레이블 변환 공통 헬퍼
 
-		if(!empty($this->session->userdata("academy_seq"))){
-			$academy_seq = $this->session->userdata("user_type");
-			
-		}
+		$where = "";
+		$where .= "AND user_type = 'director'";
 		
 		if($searchTermType == 'term') {
 		    $where .= " AND reg_date>='$startDate' AND reg_date<='$endDate 23:59:59' ";   
@@ -153,34 +148,13 @@ class Partner extends MY_Controller {
 
 		$paging = $this->make_paging2("list",$start_page,$end_page,$page_size,$num,$srcN,$total_page,$params);
 
-		//customSetting
+		// 날짜 포맷 + 요금제명 변환 + user_type/user_status 레이블 변환 (label_helper 사용)
 		for($i = 0; $i < count($list); $i++)
 		{
-			$list[$i]['reg_date'] = date("Y-m-d",strtotime($list[$i]['reg_date']));
-			$list[$i]['pricing_plan'] = $planNewList[$list[$i]['pricing_plan']];
-            switch($list[$i]['user_status']){
-                case "Y":
-                    $list[$i]['user_status'] = "정상";
-                break;
-                case "N":
-                    $list[$i]['user_status'] = "정지";
-                break;
-            }
-            switch($list[$i]['user_type']){
-                case "director":
-                    $list[$i]['user_type'] = "원장";
-                break;
-                case "teacher":
-                    $list[$i]['user_type'] = "선생님";
-                break;
-                case "master":
-                    $list[$i]['user_type'] = "마스터";
-                break;
-                case "user":
-                    $list[$i]['user_type'] = "원생";
-                break;
-            }            
+			$list[$i]['reg_date']     = date("Y-m-d", strtotime($list[$i]['reg_date']));
+			$list[$i]['pricing_plan'] = $planNewList[$list[$i]['pricing_plan']] ?? $list[$i]['pricing_plan'];
 		}
+		$list = apply_user_labels($list);
 		
 
 
@@ -239,12 +213,6 @@ class Partner extends MY_Controller {
 
 		$where = "";
 		$where .= "AND user_type = 'teacher' and group_name='".$this->session->userdata("group_name")."'";
-		
-
-		if(!empty($this->session->userdata("academy_seq"))){
-			$academy_seq = $this->session->userdata("user_type");
-			
-		}
 		
 		if($searchTermType == 'term') {
 		    $where .= " AND reg_date>='$startDate' AND reg_date<='$endDate 23:59:59' ";   
@@ -397,9 +365,6 @@ class Partner extends MY_Controller {
 	    
 		$where = "";
 		$where .= "AND user_type = 'director'";
-		if(!empty($this->session->userdata("academy_seq"))){
-			$academy_seq = $this->session->userdata("user_type");
-		}
 		
 		if($srcN != "")  {
 		    // 아이디, 이름, 휴대폰번호, 소속명
@@ -791,8 +756,7 @@ class Partner extends MY_Controller {
         		$duplicateId = $this->user_model->getDuplicateUserId($user_id);
 
         		if($duplicateId>0){
-        			echo '{"result":"failed","msg":"중복된 아이디가 있습니다."}';
-        			exit;
+        			$this->jsonFail('중복된 아이디가 있습니다.');
         		}   
         		if($user_type=='director') {
             		// 학원 원장 계정 정보
@@ -801,8 +765,7 @@ class Partner extends MY_Controller {
             		);        		    
             		$directorData = $this->user_model->getDirectorData($whereData);
             		if($directorData['user_seq'] != "") {
-            			echo '{"result":"failed","msg":"중복된 학원명이 있습니다."}';
-            			exit;            		    
+            			$this->jsonFail('중복된 학원명이 있습니다.');            		    
             		}
             		
         		}
@@ -820,8 +783,7 @@ class Partner extends MY_Controller {
             		// 인원수 체크
             		$directorData = $this->user_model->getDirectorData($whereData);    		
             		if($userCnt >= $directorData['user_count']) {
-            			echo '{"result":"failed","msg":"인원이 초과하였습니다."}';
-            			exit;    		    
+            			$this->jsonFail('인원이 초과하였습니다.');    		    
             		}        		
             	}
     		    if($user_type=='teacher') {
@@ -833,8 +795,7 @@ class Partner extends MY_Controller {
             		
 
             		if($userCnt >= 10) {
-            			echo '{"result":"failed","msg":"인원이 초과하였습니다."}';
-            			exit;    		    
+            			$this->jsonFail('인원이 초과하였습니다.');    		    
             		}        		
             	}            	
         		
@@ -875,8 +836,7 @@ class Partner extends MY_Controller {
 		    		$result = $this->userHistory_model->insertUserHistory($data);    		    
     		} 
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}
 	
 	public function logo_upload_file() 
@@ -900,47 +860,41 @@ class Partner extends MY_Controller {
 			$file = $file_name;
 		}
 		
-		echo '{"result":"success","url":"'.$file.'"}';
-		exit;		
+		$this->jsonResponse(['result' => 'success', 'url' => $file]);
 	}	
 	
 	public function typeWriteProc()
 	{
-	    $user_seq= @$this->input->post("user_seq");
-	    $user_type=@$this->input->post("user_type");
-	    $user_id=@$this->input->post("user_id");
-	    $user_password=@$this->input->post("user_password");
-	    $group_name=@$this->input->post("group_name");
-	    $user_name=@$this->input->post("user_name");
-	    $cell_no=@$this->input->post("cell_no");
-	    $email=@$this->input->post("email");
-	    $address=@$this->input->post("address");
-	    $product=@$this->input->post("product");
-	    $pricing_plan=@$this->input->post("pricing_plan");
-	    $pricing_price=@$this->input->post("pricing_price");
-	    $business_no=@$this->input->post("business_no");
-	    $start_date=@$this->input->post("start_date");
-	    $end_date=@$this->input->post("end_date");
-	    $logo=@$this->input->post("logo");
-	    
-	    $service_start_date=@$this->input->post("service_start_date");
-	    $service_end_date=@$this->input->post("service_end_date");
-	    	    
-	    $use_count=@$this->input->post("use_count");
-	    $sms_yn=@$this->input->post("sms_yn");
-	    $marketing_yn=@$this->input->post("marketing_yn");
-	    $privacy_term=@$this->input->post("privacy_term");
-	    
-	    $user_status=@$this->input->post("user_status");
-	    $stop_term=@$this->input->post("stop_term");
-	    $stop_reason=@$this->input->post("stop_reason");
-	    $memo=@$this->input->post("memo");
-		$reg_date = date("Y-m-d H:i:s");
-		
-		$class_name=@$this->input->post("class_name");
-		
-		
-		$mode=@$this->input->post("mode");
+		// [수정] @ 오류 억제자 제거 — input->post()는 값 없으면 false 반환하므로 ?? '' 처리로 대체
+	    $user_seq       = $this->input->post("user_seq")       ?? '';
+	    $user_type      = $this->input->post("user_type")      ?? '';
+	    $user_id        = $this->input->post("user_id")        ?? '';
+	    $user_password  = $this->input->post("user_password")  ?? '';
+	    $group_name     = $this->input->post("group_name")     ?? '';
+	    $user_name      = $this->input->post("user_name")      ?? '';
+	    $cell_no        = $this->input->post("cell_no")        ?? '';
+	    $email          = $this->input->post("email")          ?? '';
+	    $address        = $this->input->post("address")        ?? '';
+	    $product        = $this->input->post("product")        ?? '';
+	    $pricing_plan   = $this->input->post("pricing_plan")   ?? '';
+	    $pricing_price  = $this->input->post("pricing_price")  ?? '';
+	    $business_no    = $this->input->post("business_no")    ?? '';
+	    $start_date     = $this->input->post("start_date")     ?? '';
+	    $end_date       = $this->input->post("end_date")       ?? '';
+	    $logo           = $this->input->post("logo")           ?? '';
+	    $service_start_date = $this->input->post("service_start_date") ?? '';
+	    $service_end_date   = $this->input->post("service_end_date")   ?? '';
+	    $use_count      = $this->input->post("use_count")      ?? '';
+	    $sms_yn         = $this->input->post("sms_yn")         ?? '';
+	    $marketing_yn   = $this->input->post("marketing_yn")   ?? '';
+	    $privacy_term   = $this->input->post("privacy_term")   ?? '';
+	    $user_status    = $this->input->post("user_status")    ?? '';
+	    $stop_term      = $this->input->post("stop_term")      ?? '';
+	    $stop_reason    = $this->input->post("stop_reason")    ?? '';
+	    $memo           = $this->input->post("memo")           ?? '';
+		$reg_date       = date("Y-m-d H:i:s");
+		$class_name     = $this->input->post("class_name")      ?? '';
+		$mode           = $this->input->post("mode")            ?? '';
 
 		$user_id = strtolower($user_id);
 		
@@ -1027,8 +981,7 @@ class Partner extends MY_Controller {
         		$duplicateId = $this->user_model->getDuplicateUserId($user_id);
 
         		if($duplicateId>0){
-        			echo '{"result":"failed","msg":"중복된 아이디가 있습니다."}';
-        			exit;
+        			$this->jsonFail('중복된 아이디가 있습니다.');
         		}
         		$data = array(
         			"user_name"	=>	$user_name,
@@ -1068,8 +1021,7 @@ class Partner extends MY_Controller {
     		} 
     	}
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}	
  
 	public function deleteProc()
@@ -1078,8 +1030,7 @@ class Partner extends MY_Controller {
 		$this->user_model->deleteUserClear($user_seq);
 		//$this->msg("삭제되었습니다.");
 		//$this->goURL("/admin/partner/list");
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}
 	
 	public function deleteUser()
@@ -1087,8 +1038,7 @@ class Partner extends MY_Controller {
 	    $user_seq = $this->input->post("user_seq");
 		//$this->user_model->deleteUser($user_seq);
 		$this->user_model->deleteUserClear($user_seq);
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}	
 
 
@@ -1113,20 +1063,22 @@ class Partner extends MY_Controller {
 			$this->user_model->updateUserStatus($user_seq,$user_status);
 		}
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}
 	
 	public function passwordChange()
 	{
-		//$user_status = $this->input->post("user_status");
 		$password = $this->input->post("password");
 		$user_seq = $this->input->post("user_seq");
- 
-		$this->user_model->changePasswordSeq($user_seq,$user_status);
 
-		echo '{"result":"success"}';
-		exit;
+		// [수정] $user_status(미정의 변수) → 실제 입력받은 $password를 암호화하여 전달
+		if(empty($password) || empty($user_seq)){
+			$this->jsonFail('필수값이 누락되었습니다.');
+		}
+
+		$this->user_model->changePasswordSeq($user_seq, $this->encrypt("password", $password));
+
+		$this->jsonSuccess();
 	}	
 	
 	public function cellNoChange()
@@ -1137,8 +1089,7 @@ class Partner extends MY_Controller {
  
 		$this->user_model->updateUserCellNo($user_seq,$cell_no);
 
-		echo '{"result":"success"}';
-		exit;
+		$this->jsonSuccess();
 	}		
 	
 
@@ -2502,8 +2453,7 @@ class Partner extends MY_Controller {
 		);
 
 		if (!array_key_exists($plan_type, $plan_info)) {
-			echo json_encode(array('result' => 'fail', 'msg' => '잘못된 요금제입니다.'));
-			return;
+			$this->jsonFail('잘못된 요금제입니다.');
 		}
 
 		$plan_amount  = $plan_info[$plan_type]['amount'];
@@ -2533,13 +2483,12 @@ class Partner extends MY_Controller {
 		$payment_seq = $this->payment_model->insertPayment($insert_data);
 
 		if ($payment_seq) {
-			echo json_encode(array(
-				'result'      => 'ok',
+			$this->jsonSuccess([
 				'msg'         => '결제 신청이 접수되었습니다. PG사 연동 후 자동 처리됩니다.',
 				'payment_seq' => $payment_seq,
-			));
+			]);
 		} else {
-			echo json_encode(array('result' => 'fail', 'msg' => '결제 신청 중 오류가 발생했습니다.'));
+			$this->jsonFail('결제 신청 중 오류가 발생했습니다.');
 		}
 	}
 

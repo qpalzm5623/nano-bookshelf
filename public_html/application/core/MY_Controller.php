@@ -255,6 +255,51 @@ class MY_Controller extends CI_Controller
     echo "<script>location.href=\"".$url."\"</script>";
   }
 
+  // ─────────────────────────────────────
+  // JSON 응답 공통 메서드
+  // 기존에 컨트롤러마다 하드코딩하던 echo '{"result":"success"}'; exit; 패턴을 통일
+  // ─────────────────────────────────────
+
+  /**
+   * 성공 응답 반환
+   * 사용법: $this->jsonSuccess();
+   *         $this->jsonSuccess(['data' => $list]);
+   */
+  public function jsonSuccess(array $extra = [])
+  {
+      $payload = array_merge(['result' => 'success'], $extra);
+      $this->output
+           ->set_content_type('application/json')
+           ->set_output(json_encode($payload, JSON_UNESCAPED_UNICODE));
+      exit;
+  }
+
+  /**
+   * 실패 응답 반환
+   * 사용법: $this->jsonFail('중복된 아이디가 있습니다.');
+   *         $this->jsonFail('오류', ['code' => 400]);
+   */
+  public function jsonFail(string $msg = '', array $extra = [])
+  {
+      $payload = array_merge(['result' => 'failed', 'msg' => $msg], $extra);
+      $this->output
+           ->set_content_type('application/json')
+           ->set_output(json_encode($payload, JSON_UNESCAPED_UNICODE));
+      exit;
+  }
+
+  /**
+   * 커스텀 JSON 응답 반환 (result 직접 지정)
+   * 사용법: $this->jsonResponse(['result' => 'success', 'url' => $url]);
+   */
+  public function jsonResponse(array $data)
+  {
+      $this->output
+           ->set_content_type('application/json')
+           ->set_output(json_encode($data, JSON_UNESCAPED_UNICODE));
+      exit;
+  }
+
   //check auth controll / 메뉴접근 권한 체크
   public function authChk($checkStr)
   {

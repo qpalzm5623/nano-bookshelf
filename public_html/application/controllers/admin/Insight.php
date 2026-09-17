@@ -842,11 +842,8 @@ class Insight extends MY_Controller {
 
 		$where = "";
 		$where .= "AND user_type = 'user'";
-		if(!empty($this->session->userdata("academy_seq"))){
-			$academy_seq = $this->session->userdata("user_type");
-			
-		}
-		
+
+
 		if($searchTermType == 'term') {
 		    $where .= " AND reg_date>='$startDate' AND reg_date<='$endDate' ";   
 		}

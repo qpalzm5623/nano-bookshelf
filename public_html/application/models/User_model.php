@@ -88,7 +88,8 @@
                 $sql = "UPDATE tb_point_hist SET school_seq = '0',school_class_seq = '0' WHERE user_seq = '{$user_seq}'";
                 $this->db->query($sql);
 
-                $sql = "UPDATE tb_point_hist_static SET school_seq = '0',school_class_seq = '0'";
+                // [수정] WHERE 절 누락 버그 수정 — 기존 코드는 tb_point_hist_static 전체가 업데이트됨
+                $sql = "UPDATE tb_point_hist_static SET school_seq = '0',school_class_seq = '0' WHERE user_seq = '{$user_seq}'";
                 $this->db->query($sql);
             }
 
@@ -209,6 +210,7 @@
             $sql = "DELETE FROM tb_quiz_hist WHERE user_seq = '{$user_seq}'";
             $this->db->query($sql);
 
+            // [수정] tb_qna DELETE가 3번 중복 실행되던 버그 수정 → 1번만 실행
             $sql = "DELETE FROM tb_qna WHERE user_seq = '{$user_seq}'";
             $this->db->query($sql);
 
@@ -218,16 +220,10 @@
             $sql = "DELETE FROM tb_point_hist_static WHERE user_id = '{$user_id}'";
             $this->db->query($sql);
 
-            $sql = "DELETE FROM tb_qna WHERE user_seq = '{$user_seq}'";
-            $this->db->query($sql);
-
             $sql = "DELETE FROM tb_oauth WHERE user_seq = '{$user_seq}'";
             $this->db->query($sql);
 
             $sql = "DELETE FROM tb_login_hist WHERE user_seq = '{$user_seq}'";
-            $this->db->query($sql);
-
-            $sql = "DELETE FROM tb_qna WHERE user_seq = '{$user_seq}'";
             $this->db->query($sql);
 
             $sql = "DELETE FROM tb_feed_report WHERE user_seq = '{$user_seq}'";
@@ -256,8 +252,6 @@
 
             $sql = "DELETE FROM tb_user_push WHERE user_seq = '{$user_seq}'";
             $this->db->query($sql);
-
-
 
             $this->db->insert("tb_user_leave_hist",$userData);
 
