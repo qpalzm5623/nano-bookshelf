@@ -4099,16 +4099,18 @@ function renderAcademyBookTable(data) {
         <span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>${b.quizStatus || '5문항 완비'}</span>
       </td>
       <td class="text-center font-weight-bold">${b.readCount || '0회'}</td>
-      <td class="text-center">
-        <button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="openAcademyBookOnlyAddModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 7px;" title="도서 서지 정보 수정">
-          <i class="fa-solid fa-pen-to-square mr-1"></i>도서 수정
-        </button>
-        <button type="button" class="btn btn-xs btn-outline-warning mr-1" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 7px; color: #855304; border-color: #f1c40f;" title="북퀴즈 문항 세트 관리 및 출제">
-          <i class="fa-solid fa-clipboard-question mr-1"></i>퀴즈 관리
-        </button>
-        <button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteAcademyBook('${b.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 7px;">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
+      <td class="text-center" style="white-space: nowrap;">
+        <div class="d-inline-flex align-items-center justify-content-center" style="gap: 4px;">
+          <button type="button" class="btn btn-xs btn-outline-secondary" onclick="openAcademyBookOnlyAddModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; font-weight: 600;" title="도서 서지 정보 수정">
+            <i class="fa-solid fa-pen-to-square mr-1 text-secondary"></i>도서 수정
+          </button>
+          <button type="button" class="btn btn-xs" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; transition: all 0.15s ease;" title="북퀴즈 문항 세트 관리 및 출제">
+            <i class="fa-solid fa-clipboard-question mr-1 text-warning"></i>퀴즈 관리
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteAcademyBook('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 7px;" title="도서 삭제">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
       </td>`;
 
     tbody.appendChild(tr);

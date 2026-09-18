@@ -1311,11 +1311,11 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4 text-right pt-3 d-flex justify-content-end align-items-center gap-1.5 flex-wrap">
-              <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()">
+            <div class="col-md-4 text-right d-flex justify-content-end align-items-end" style="gap: 8px; padding-bottom: 2px;">
+              <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()" style="font-weight: 600; padding: 6px 14px; border-radius: 8px;">
                 <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>대량 엑셀 업로드
               </button>
-              <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openAcademyBookOnlyAddModal()">
+              <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openAcademyBookOnlyAddModal()" style="padding: 6px 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2);">
                 <i class="fa-solid fa-plus mr-1"></i>새 도서 등록
               </button>
             </div>
@@ -4108,7 +4108,7 @@
         </button>
       </div>
 
-      <div class="modal-body p-4" style="background: #faf8f5;">
+      <div class="modal-body p-4" style="background: #faf8f5; max-height: calc(86vh - 120px); overflow-y: auto;">
         <form id="academyBookOnlyForm" onsubmit="handleSaveAcademyBookOnly(event)">
           <!-- 도서 기본 정보 입력 폼 -->
           <div class="p-3 bg-white rounded shadow-sm mb-3" style="border: 1px solid var(--border-light);">
@@ -4303,7 +4303,7 @@
         </button>
       </div>
 
-      <div class="modal-body p-4" style="background: #faf8f5;">
+      <div class="modal-body p-4" style="background: #faf8f5; max-height: calc(86vh - 120px); overflow-y: auto;">
         <form id="academyQuizOnlyForm" onsubmit="handleSaveAcademyQuizOnly(event)">
           
           <!-- 1) 대상 도서 선택 및 정보 요약 바 -->

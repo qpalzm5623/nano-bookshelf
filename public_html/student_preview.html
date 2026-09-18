@@ -83,18 +83,17 @@
       border-color: #5eead4;
     }
     .s-header {
-      background: rgba(255, 255, 255, 0.96);
+      background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 0 20px;
+      padding: 0 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 66px;
+      height: 72px;
       position: sticky;
       top: 0;
       z-index: 100;
-      overflow: hidden;
       box-shadow: 0 2px 14px rgba(0, 168, 150, 0.08);
       border-bottom: 1px solid #e2ece9;
     }
@@ -2598,16 +2597,16 @@
       </a>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:2;">
-    <div class="user-info" style="display:flex;align-items:center;gap:9px;cursor:pointer;" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경">
-      <div id="headerCharAvatar" class="char-avatar-box" style="width:34px;height:34px;flex-shrink:0;"></div>
-      <div>
-        <div style="font-weight:800;font-size:14px;color:#1e293b;letter-spacing:-0.3px;display:flex;align-items:center;gap:4px;">
+  <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:2;">
+    <div class="user-info-pill" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경" style="display:flex;align-items:center;gap:9px;padding:4px 12px 4px 6px;background:rgba(240,253,250,0.85);border:1px solid #ccfbf1;border-radius:24px;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);box-shadow:0 1px 4px rgba(0,168,150,0.06);">
+      <div id="headerCharAvatar" class="char-avatar-box" style="width:36px;height:36px;flex-shrink:0;"></div>
+      <div style="text-align:left;">
+        <div style="font-weight:800;font-size:13.5px;color:#1e293b;line-height:1.2;display:flex;align-items:center;gap:4px;">
           <span>김민준</span>
-          <span id="headerCharTag" style="font-size:10px;font-weight:700;color:#0d9488;background:#ccfbf1;padding:1px 5px;border-radius:6px;">부키</span>
+          <span id="headerCharTag" style="font-size:10px;font-weight:800;color:#0d9488;background:#ccfbf1;padding:1px 5px;border-radius:6px;">부키</span>
         </div>
-        <div style="font-size:11px;color:#0d9488;font-weight:700;display:flex;align-items:center;gap:4px;">
-          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00a896;"></span>
+        <div style="font-size:11px;color:#0f766e;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:4px;">
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#00a896;"></span>
           지혜반 · 초등 5학년
         </div>
       </div>
