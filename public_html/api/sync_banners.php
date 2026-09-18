@@ -116,6 +116,9 @@ if ($method === 'POST') {
 
     $saved = file_put_contents($bannerFile, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     if ($saved !== false) {
+        $bannerJsFile = dirname(__DIR__) . '/upload/banner/banners_data.js';
+        $jsContent = "// 나노의 책장 - 중앙 배너 실시간 데이터\nwindow.NANO_SERVER_BANNERS = " . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . ";\n";
+        @file_put_contents($bannerJsFile, $jsContent);
         echo json_encode(["status" => "success", "message" => "배너가 서버에 성공적으로 동기화되었습니다.", "banners" => $data], JSON_UNESCAPED_UNICODE);
     } else {
         http_response_code(500);

@@ -442,6 +442,8 @@ function loadOperationsFromStorage() {
     if (b) {
       const parsed = JSON.parse(b);
       if (Array.isArray(parsed) && parsed.length > 0) bannerList = parsed;
+    } else if (window.NANO_SERVER_BANNERS && Array.isArray(window.NANO_SERVER_BANNERS) && window.NANO_SERVER_BANNERS.length > 0) {
+      bannerList = window.NANO_SERVER_BANNERS;
     }
     const t = localStorage.getItem("NANO_MASTER_THEMES");
     if (t) {

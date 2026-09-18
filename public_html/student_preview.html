@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <!-- 배너 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
+  <script src="upload/banner/banners_data.js"></script>
   <style>
     :root {
       /* 자연스러운 목재 베이지 & 오트밀 크림 배경 */
@@ -1194,54 +1196,187 @@
       border: 1.5px solid var(--soft);
     }
     
-    /* 학생 홈 롤링 배너 */
+    /* 학생 홈 롤링 배너 (슬림 와이드 비율 및 프리미엄 오버레이) */
     .rolling-banner-container {
       position: relative;
-      border-radius: 16px;
+      height: 220px;
+      border-radius: 20px;
       overflow: hidden;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 16px rgba(58, 46, 38, 0.08);
-      aspect-ratio: 16 / 9;
-      background: #241c16;
-      border: 1px solid var(--soft);
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(58, 46, 38, 0.12);
+      background: #1e1b18;
+      border: 1.5px solid rgba(220, 208, 195, 0.6);
+      user-select: none;
+    }
+    @media (max-width: 576px) {
+      .rolling-banner-container {
+        height: 175px;
+        border-radius: 16px;
+      }
     }
     .rolling-banner-slide {
       position: absolute;
       inset: 0;
       opacity: 0;
-      transition: opacity 0.6s ease-in-out;
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
+      align-items: stretch;
+      cursor: pointer;
     }
     .rolling-banner-slide.active {
       opacity: 1;
-      z-index: 1;
+      z-index: 2;
     }
     .rolling-banner-slide img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center 25%;
       display: block;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
-    .rolling-banner-dots {
+    .rolling-banner-container:hover .rolling-banner-slide.active img {
+      transform: scale(1.025);
+    }
+    /* 배너 하단 텍스트 및 그라데이션 오버레이 */
+    .banner-overlay {
       position: absolute;
-      bottom: 10px;
+      inset: 0;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.35) 45%, rgba(0, 0, 0, 0) 100%);
+      pointer-events: none;
+      z-index: 3;
+    }
+    .banner-caption {
+      position: absolute;
+      left: 20px;
+      bottom: 16px;
+      right: 140px;
+      z-index: 4;
+      pointer-events: none;
+    }
+    @media (max-width: 576px) {
+      .banner-caption {
+        left: 14px;
+        bottom: 12px;
+        right: 90px;
+      }
+    }
+    .banner-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      color: #ffffff;
+      background: rgba(45, 106, 79, 0.85);
+      backdrop-filter: blur(4px);
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-bottom: 5px;
+      letter-spacing: -0.2px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .banner-title {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 3px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    @media (max-width: 576px) {
+      .banner-title { font-size: 14.5px; }
+    }
+    .banner-sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.3;
+    }
+    @media (max-width: 576px) {
+      .banner-sub { display: none; }
+    }
+    /* 배너 우측 상단 카운터 뱃지 */
+    .banner-counter-badge {
+      position: absolute;
+      top: 12px;
       right: 14px;
       z-index: 10;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    /* 배너 좌우 넘김 버튼 */
+    .banner-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(4px);
+      border: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
       display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #2d3748;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0.75;
+    }
+    .banner-nav-btn:hover {
+      opacity: 1;
+      background: #ffffff;
+      color: var(--leaf);
+      transform: translateY(-50%) scale(1.08);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .banner-nav-btn.prev { left: 10px; }
+    .banner-nav-btn.next { right: 10px; }
+    @media (hover: none) {
+      .banner-nav-btn { opacity: 0.85; }
+    }
+    /* 배너 닷 인디케이터 */
+    .rolling-banner-dots {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
       gap: 5px;
     }
     .rolling-banner-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.45);
       cursor: pointer;
       transition: all 0.25s ease;
     }
     .rolling-banner-dot.active {
-      background: #fff;
-      width: 20px;
+      background: #ffffff;
+      width: 18px;
       border-radius: 4px;
+      box-shadow: 0 0 8px rgba(255,255,255,0.8);
     }
 
     /* ============================================================== */
@@ -2686,21 +2821,49 @@
       <div style="font-size: 11px; color: #94a3b8; padding-right: 4px;"><i class="fa-solid fa-chevron-right"></i></div>
     </div>
 
-    <!-- 학생 메인 롤링 배너 캐러셀 (숲속 목재 테마 배너 연동) -->
+    <!-- 학생 메인 롤링 배너 캐러셀 (슬림 와이드 프리미엄 배너) -->
     <div class="rolling-banner-container" id="studentBannerBox">
-      <div class="rolling-banner-slide active" data-idx="0" onclick="handleStudentBannerClick(0)" style="cursor: pointer;" title="배너 추천 도서 목록 보기">
-        <img src="upload/banner/banner_reading_king.jpg" alt="숲속 서재 독서 테마">
+      <div class="rolling-banner-slide active" data-idx="0" onclick="handleStudentBannerClick(0)">
+        <img src="upload/banner/banner_reading_king.jpg" alt="9월 나노 독서왕 챌린지 🏆">
+        <div class="banner-overlay"></div>
+        <div class="banner-caption">
+          <span class="banner-badge">챌린지</span>
+          <div class="banner-title">9월 나노 독서왕 챌린지 🏆</div>
+          <div class="banner-sub">이번 달 3권 이상 완독하고 골드 뱃지를 획득하세요!</div>
+        </div>
       </div>
-      <div class="rolling-banner-slide" data-idx="1" onclick="handleStudentBannerClick(1)" style="cursor: pointer;" title="배너 추천 도서 목록 보기">
-        <img src="upload/banner/banner_nanosheet.jpg" alt="나노시트 서재 테마">
+      <div class="rolling-banner-slide" data-idx="1" onclick="handleStudentBannerClick(1)">
+        <img src="upload/banner/banner_nanosheet.jpg" alt="상상력 쑥쑥! 나노 시트 개편 🌿">
+        <div class="banner-overlay"></div>
+        <div class="banner-caption">
+          <span class="banner-badge">나노시트</span>
+          <div class="banner-title">상상력 쑥쑥! 나노 시트 개편 🌿</div>
+          <div class="banner-sub">새로워진 독서 생각담기 양식으로 내 생각을 표현해보세요.</div>
+        </div>
       </div>
-      <div class="rolling-banner-slide" data-idx="2" onclick="handleStudentBannerClick(2)" style="cursor: pointer;" title="배너 추천 도서 목록 보기">
-        <img src="upload/banner/banner_ranking.jpg" alt="창밖 숲속 책장 테마">
+      <div class="rolling-banner-slide" data-idx="2" onclick="handleStudentBannerClick(2)">
+        <img src="upload/banner/banner_ranking.jpg" alt="전국 학생 랭킹 실시간 집계 오픈 🌟">
+        <div class="banner-overlay"></div>
+        <div class="banner-caption">
+          <span class="banner-badge">랭킹</span>
+          <div class="banner-title">전국 학생 랭킹 실시간 집계 오픈 🌟</div>
+          <div class="banner-sub">내가 속한 학원의 친구들과 전국 친구들의 독서 포인트를 확인해요.</div>
+        </div>
       </div>
+      <!-- 좌우 넘김 버튼 -->
+      <button type="button" class="banner-nav-btn prev" onclick="event.stopPropagation(); prevBannerSlide();" aria-label="이전 배너">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <button type="button" class="banner-nav-btn next" onclick="event.stopPropagation(); nextBannerSlide();" aria-label="다음 배너">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <!-- 상단 카운터 뱃지 -->
+      <div class="banner-counter-badge" id="bannerCounterBadge">1 / 3</div>
+      <!-- 하단 인디케이터 닷 -->
       <div class="rolling-banner-dots" id="bannerDots">
-        <div class="rolling-banner-dot active" onclick="setBannerSlide(0)"></div>
-        <div class="rolling-banner-dot" onclick="setBannerSlide(1)"></div>
-        <div class="rolling-banner-dot" onclick="setBannerSlide(2)"></div>
+        <div class="rolling-banner-dot active" onclick="event.stopPropagation(); setBannerSlide(0)"></div>
+        <div class="rolling-banner-dot" onclick="event.stopPropagation(); setBannerSlide(1)"></div>
+        <div class="rolling-banner-dot" onclick="event.stopPropagation(); setBannerSlide(2)"></div>
       </div>
     </div>
 
@@ -2765,8 +2928,11 @@
       <div id="assignedLibList"></div>
     </div>
     <div id="bsub-all">
-      <!-- 전체 도서관 2차 서브탭: 권장도서 / 인기도서 / 추천도서 / 주제별 도서 -->
+      <!-- 전체 도서관 2차 서브탭: 전체 / 권장도서 / 인기도서 / 추천도서 / 관심주제 맞춤 -->
       <div class="lib-sub-nav">
+        <button type="button" class="lib-sub-pill" id="libSubPill-all" onclick="switchLibSubTab('all')">
+          <i class="fa-solid fa-list-ul"></i> 전체
+        </button>
         <button type="button" class="lib-sub-pill active" id="libSubPill-recommended" onclick="switchLibSubTab('recommended')">
           <i class="fa-solid fa-seedling"></i> 권장도서
         </button>
@@ -2776,14 +2942,15 @@
         <button type="button" class="lib-sub-pill" id="libSubPill-curated" onclick="switchLibSubTab('curated')">
           <i class="fa-solid fa-star"></i> 추천도서
         </button>
-        <button type="button" class="lib-sub-pill" id="libSubPill-theme" onclick="switchLibSubTab('theme')">
-          <i class="fa-solid fa-tags"></i> 주제별 도서
+        <button type="button" class="lib-sub-pill" id="libSubPill-interest" onclick="switchLibSubTab('interest')">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> 관심주제 맞춤
         </button>
       </div>
 
-      <!-- 권장도서용 학년 칩 필터 바 -->
+      <!-- 학년 칩 필터 바: 전체 / 미취학 / 초1 / 초2 / ... -->
       <div class="grade-filter-scroll" id="gradeFilterBar">
         <button type="button" class="grade-chip" data-grade="all" onclick="selectGradeFilter('all')">전체</button>
+        <button type="button" class="grade-chip" data-grade="미취학" onclick="selectGradeFilter('미취학')">미취학</button>
         <button type="button" class="grade-chip" data-grade="초1" onclick="selectGradeFilter('초1')">초1</button>
         <button type="button" class="grade-chip" data-grade="초2" onclick="selectGradeFilter('초2')">초2</button>
         <button type="button" class="grade-chip" data-grade="초3" onclick="selectGradeFilter('초3')">초3</button>
@@ -2804,27 +2971,55 @@
         <div id="libList"></div>
       </div>
 
-      <!-- 2. 주제별 도서 전용 컨테이너 (태그 박스 그리드 및 태그별 도서 목록) -->
-      <div id="themeLibContainer" style="display: none; margin-top: 4px;">
-        <!-- 태그 박스 그리드 섹션 -->
-        <div id="themeTagBoxesSection">
-          <div style="font-size: 13px; font-weight: 700; color: var(--wood-dark); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-            <span><i class="fa-solid fa-wand-magic-sparkles mr-1" style="color:var(--leaf);"></i> 관심 주제별 큐레이션 서가</span>
-            <span style="font-size: 11.5px; color: var(--muted); font-weight: 500;">박스를 터치하면 해당 주제의 도서들이 펼쳐집니다.</span>
+      <!-- 2. 관심주제 맞춤 추천 도서 전용 컨테이너 (도서관 전체 도서관 하위) -->
+      <div id="interestLibContainer" style="display: none; margin-top: 6px;">
+        <!-- 관심 주제 (태그 체크 및 맞춤 도서 추천) -->
+        <div class="interest-theme-box" style="margin-bottom: 16px;">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
+                <i class="fa-solid fa-tags mr-1" style="color:var(--leaf);"></i>관심 주제
+              </div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">
+                관심 있는 주제를 체크하면 딱 맞는 도서를 추천해 드려요! (최대 3개)
+              </div>
+            </div>
+            <div class="d-flex align-items-center" style="gap: 6px;">
+              <span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:11px;padding:4px 8px;border-radius:10px;" id="libUserInterestTagCount">3개 선택</span>
+              <button type="button" id="libInterestTagsToggleBtn" onclick="toggleInterestTagsExpand()" style="background:#f1ede3;border:none;border-radius:12px;font-size:11px;font-weight:700;color:var(--wood-dark);padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+                <span>더보기</span> <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>
+              </button>
+            </div>
           </div>
-          <div id="themeTagGrid" class="theme-tag-grid">
-            <!-- 동적 태그 박스 렌더링 -->
+
+          <!-- 주제 태그 체크 칩 목록 (선택된 3개 기본 노출 / 더보기 클릭 시 전체 15개 슬라이드) -->
+          <div class="interest-tags-wrap mt-2" id="libInterestTagsContainer">
+            <!-- JS 동적 렌더링 -->
+          </div>
+
+          <!-- 관심 주제 맞춤 추천 도서 큐레이션 가로 슬라이더 -->
+          <div style="margin-top:14px;border-top:1px dashed var(--soft);padding-top:12px;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span style="font-size:12.5px;font-weight:800;color:var(--wood-dark);">
+                <i class="fa-solid fa-wand-magic-sparkles mr-1" style="color:#f59e0b;"></i>관심 주제 맞춤 추천 도서
+              </span>
+              <span style="font-size:11px;color:var(--muted);" id="libInterestRecCount">0권</span>
+            </div>
+            <div class="interest-rec-scroll" id="libInterestRecScroll">
+              <!-- JS 동적 추천 슬라이더 주입 -->
+            </div>
           </div>
         </div>
 
-        <!-- 선택된 태그 도서 목록 섹션 -->
-        <div id="themeSelectedSection" style="display: none;">
-          <div class="theme-selected-header" id="themeSelectedHeader">
-            <!-- 동적 헤더 및 뒤로가기 버튼 -->
-          </div>
-          <div id="themeBookList">
-            <!-- 동적 매핑 도서 목록 렌더링 -->
-          </div>
+        <!-- 매칭된 추천 도서 전체 목록 리스트 -->
+        <div class="d-flex align-items-center justify-content-between mb-2 mt-3">
+          <span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
+            <i class="fa-solid fa-book-bookmark mr-1" style="color:var(--leaf);"></i>관심 주제 추천 도서 전체 목록
+          </span>
+          <span class="badge-soft badge-soft-success" id="libInterestMatchedCountBadge">0권</span>
+        </div>
+        <div id="libInterestMatchedList">
+          <!-- JS 동적 목록 렌더링 -->
         </div>
       </div>
     </div>
@@ -2978,11 +3173,16 @@
               관심 있는 주제를 체크하면 딱 맞는 도서를 추천해 드려요!
             </div>
           </div>
-          <span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:11px;padding:4px 8px;border-radius:10px;" id="userInterestTagCount">3개 선택</span>
+          <div class="d-flex align-items-center" style="gap: 6px;">
+            <span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:11px;padding:4px 8px;border-radius:10px;" id="userInterestTagCount">3개 선택</span>
+            <button type="button" id="userInterestTagsToggleBtn" onclick="toggleInterestTagsExpand()" style="background:#f1ede3;border:none;border-radius:12px;font-size:11px;font-weight:700;color:var(--wood-dark);padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+              <span>더보기</span> <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>
+            </button>
+          </div>
         </div>
 
-        <!-- 주제 태그 체크 칩 목록 -->
-        <div class="interest-tags-wrap" id="interestTagsContainer">
+        <!-- 주제 태그 체크 칩 목록 (선택된 3개 기본 노출 / 더보기 클릭 시 전체 15개 슬라이드) -->
+        <div class="interest-tags-wrap mt-2" id="interestTagsContainer">
           <!-- JS 동적 렌더링 -->
         </div>
 
@@ -4155,6 +4355,66 @@ var libData = [
     tags: ['#우정', '#성장', '#자연생태', '#초4추천'],
     synopsis: '샬롯의 세 아기 거미들과 함께 헛간을 지키며 사계절을 맞이하는 돼지 윌버의 씩씩하고 다정한 일상을 담아낸 명작 후속편입니다.',
     nextReadIds: ['1003', '1015', '1017', '1025']
+  },
+  {
+    id: '1046',
+    title: '구름빵',
+    subtitle: '볼로냐 라가치상 수상 · 따뜻한 가족 그림책',
+    author: '백희나',
+    pub: '한솔수북',
+    cat: '유아그림책 / 상상력',
+    grade: '미취학',
+    gradeGroup: '미취학/유아',
+    createdAt: '2026-09-17',
+    quizCount7d: 142,
+    readCount: 960,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#상상력', '#가족', '#모험'],
+    synopsis: '비 오는 날 아침, 나뭇가지에 걸린 작고 폭신한 구름을 가져와 엄마가 구워 준 구름빵을 먹고 두둥실 하늘로 날아오르는 고양이 남매의 사랑스러운 이야기입니다.',
+    thinkExtract: '내가 하늘을 둥둥 날 수 있는 빵을 만든다면, 어떤 재료를 넣고 누구에게 선물하고 싶나요?',
+    nextReadIds: ['1047', '1048', '1001']
+  },
+  {
+    id: '1047',
+    title: '알사탕',
+    subtitle: '아스트리드 린드그렌상 수상 작가 그림책',
+    author: '백희나',
+    pub: '책읽는곰',
+    cat: '유아그림책 / 공감',
+    grade: '미취학',
+    gradeGroup: '미취학/유아',
+    createdAt: '2026-09-16',
+    quizCount7d: 128,
+    readCount: 880,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#공감', '#마음', '#상상력', '#우정'],
+    synopsis: '문방구에서 산 신비한 알사탕을 먹자 소파와 반려견 동동이, 아빠의 진심 어린 속마음이 소리로 들려오기 시작합니다.',
+    thinkExtract: '말하지 않아도 상대방의 속마음을 들을 수 있는 알사탕이 있다면, 가장 먼저 누구의 마음을 듣고 싶나요?',
+    nextReadIds: ['1046', '1048', '1002']
+  },
+  {
+    id: '1048',
+    title: '달 샤베트',
+    subtitle: '환경과 이웃의 소중함을 담은 그림책',
+    author: '백희나',
+    pub: '책읽는곰',
+    cat: '유아그림책 / 환경·자연',
+    grade: '미취학',
+    gradeGroup: '미취학/유아',
+    createdAt: '2026-09-14',
+    quizCount7d: 110,
+    readCount: 750,
+    cover: 'upload/book/book_default.jpg',
+    assigned: false,
+    isEditorPick: true,
+    tags: ['#자연', '#생명존중', '#공감', '#가족'],
+    synopsis: '무더운 여름밤 달이 뚝뚝 녹아내리자 반장 할머니가 큰 대야에 녹아내린 달물을 받아 시원하고 달콤한 샤베트를 만듭니다.',
+    thinkExtract: '더운 여름밤 이웃들과 나누어 먹을 수 있는 나만의 시원한 마법 음식이 있다면 무엇일까요?',
+    nextReadIds: ['1046', '1047', '1006']
   }
 ];
 
@@ -4454,7 +4714,7 @@ function switchBookTab(t){
 
 function switchLibSubTab(tab) {
   currentLibSubTab = tab;
-  ['recommended','popular','curated','theme'].forEach(function(s){
+  ['all', 'recommended', 'popular', 'curated', 'interest'].forEach(function(s){
     var btn = document.getElementById('libSubPill-'+s);
     if(btn) {
       if(s === tab) btn.classList.add('active');
@@ -4462,25 +4722,25 @@ function switchLibSubTab(tab) {
     }
   });
 
-  // 학년 필터 바는 '권장도서' 서브탭일 때만 전면에 노출
+  // 학년 필터 바는 '전체' 또는 '권장도서' 서브탭일 때 노출
   var gradeBar = document.getElementById('gradeFilterBar');
   if(gradeBar) {
-    gradeBar.style.display = (tab === 'recommended') ? 'flex' : 'none';
+    gradeBar.style.display = (tab === 'all' || tab === 'recommended') ? 'flex' : 'none';
   }
 
   var normalContainer = document.getElementById('normalLibContainer');
-  var themeContainer = document.getElementById('themeLibContainer');
+  var interestContainer = document.getElementById('interestLibContainer');
 
-  if(tab === 'theme') {
+  if(tab === 'interest') {
     if(normalContainer) normalContainer.style.display = 'none';
-    if(themeContainer) {
-      themeContainer.style.display = 'block';
-      backToThemeTagList();
-      renderThemeTagBoxes();
+    if(interestContainer) {
+      interestContainer.style.display = 'block';
+      renderInterestTags();
+      renderInterestRecommendations();
     }
   } else {
     if(normalContainer) normalContainer.style.display = 'block';
-    if(themeContainer) themeContainer.style.display = 'none';
+    if(interestContainer) interestContainer.style.display = 'none';
     renderLib();
   }
 }
@@ -4675,6 +4935,7 @@ var defaultStudentBanners = [
 ];
 
 function getStudentBanners() {
+  // 1순위: 로컬스토리지에 저장된 배너 목록
   try {
     var raw = localStorage.getItem("NANO_MASTER_BANNERS");
     if(raw) {
@@ -4682,6 +4943,15 @@ function getStudentBanners() {
       if(Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch(e) {}
+
+  // 2순위: window.NANO_SERVER_BANNERS (file:// 및 웹 환경 공통 최신 배너 데이터)
+  if (window.NANO_SERVER_BANNERS && Array.isArray(window.NANO_SERVER_BANNERS) && window.NANO_SERVER_BANNERS.length > 0) {
+    try {
+      localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(window.NANO_SERVER_BANNERS));
+    } catch(e) {}
+    return window.NANO_SERVER_BANNERS;
+  }
+
   return defaultStudentBanners;
 }
 
@@ -4798,7 +5068,11 @@ function renderLib(q){
   var list = libData.slice();
 
   // 1. 서브탭별 필터링
-  if(currentLibSubTab === 'recommended') {
+  if(currentLibSubTab === 'all') {
+    if(currentGradeFilter !== 'all') {
+      list = list.filter(function(b){ return b.grade === currentGradeFilter; });
+    }
+  } else if(currentLibSubTab === 'recommended') {
     if(currentGradeFilter !== 'all') {
       list = list.filter(function(b){ return b.grade === currentGradeFilter; });
     }
@@ -5391,8 +5665,16 @@ var readBooksMaster = [
   { id: '1008', score: 95,  date: '2026.07.18' }  // 모모
 ];
 
-// 학생 관심 주제 데이터
+// 학생 관심 주제 데이터 (선택 3개 기본 노출 & FIFO 최대 3개 선택)
+var isInterestTagsExpanded = false;
 var userInterestTags = ['#우정', '#성장', '#상상력'];
+try {
+  var savedTags = localStorage.getItem("NANO_USER_INTEREST_TAGS");
+  if(savedTags) {
+    var parsedTags = JSON.parse(savedTags);
+    if(Array.isArray(parsedTags) && parsedTags.length > 0) userInterestTags = parsedTags.slice(0, 3);
+  }
+} catch(e) {}
 var allInterestTags = [
   '#우정', '#상상력', '#철학', '#모성애', '#성장', 
   '#공감', '#감정표현', '#생명존중', '#자유', '#추리', 
@@ -5635,45 +5917,78 @@ function renderReadingHistoryGrid() {
 }
 
 // ==============================================================
-// 3) 관심 도서 서브 뷰: 관심 주제 태그 체크 및 맞춤 추천 & 찜 도서
+// 3) 관심 도서 및 도서관 관심주제 맞춤: 관심 주제 태그 체크 및 맞춤 추천
 // ==============================================================
+function toggleInterestTagsExpand() {
+  isInterestTagsExpanded = !isInterestTagsExpanded;
+  renderInterestTags();
+}
+
 function toggleInterestTag(tag) {
   var idx = userInterestTags.indexOf(tag);
   if(idx > -1) {
     if(userInterestTags.length <= 1) {
-      toast('최소 1개 이상의 관심 주제를 선택해주세요.');
+      toast('최소 1개 이상의 관심 주제는 유지해주세요.');
       return;
     }
     userInterestTags.splice(idx, 1);
   } else {
-    userInterestTags.push(tag);
+    // 3개 초과 시 가장 오래전에 선택한 1개를 자동으로 해제 (FIFO 큐)
+    if(userInterestTags.length >= 3) {
+      var removed = userInterestTags.shift();
+      userInterestTags.push(tag);
+      toast('💡 최대 3개 선택: 가장 먼저 선택한 ' + removed + ' 해제 ➔ ' + tag + ' 추가');
+    } else {
+      userInterestTags.push(tag);
+    }
   }
+
+  try {
+    localStorage.setItem("NANO_USER_INTEREST_TAGS", JSON.stringify(userInterestTags));
+  } catch(e) {}
+
   renderInterestTags();
   renderInterestRecommendations();
 }
 
 function renderInterestTags() {
-  var container = document.getElementById('interestTagsContainer');
-  var countEl = document.getElementById('userInterestTagCount');
-  if(!container) return;
+  // 접힘 상태: 선택된 태그(최대 3개)만 노출, 펼침 상태: 15개 전체 주제 노출
+  var displayTags = isInterestTagsExpanded ? allInterestTags : userInterestTags;
 
-  if(countEl) countEl.innerText = userInterestTags.length + '개 선택';
+  var targetConfigs = [
+    {
+      box: document.getElementById('libInterestTagsContainer'),
+      count: document.getElementById('libUserInterestTagCount'),
+      btn: document.getElementById('libInterestTagsToggleBtn')
+    },
+    {
+      box: document.getElementById('interestTagsContainer'),
+      count: document.getElementById('userInterestTagCount'),
+      btn: document.getElementById('userInterestTagsToggleBtn')
+    }
+  ];
 
-  container.innerHTML = allInterestTags.map(function(tag){
-    var isChecked = userInterestTags.indexOf(tag) !== -1;
-    var activeCls = isChecked ? 'active' : '';
-    var icon = isChecked ? '<i class="fa-solid fa-check mr-1"></i>' : '<i class="fa-regular fa-circle mr-1" style="font-size:10px;opacity:0.6;"></i>';
-    return '<button type="button" class="interest-tag-chip ' + activeCls + '" onclick="toggleInterestTag(\'' + tag + '\')">'
-      + icon + tag
-      + '</button>';
-  }).join('');
+  targetConfigs.forEach(function(cfg){
+    if(cfg.count) cfg.count.innerText = userInterestTags.length + '개 선택';
+    if(cfg.btn) {
+      cfg.btn.innerHTML = isInterestTagsExpanded 
+        ? '<span>접기</span> <i class="fa-solid fa-chevron-up" style="font-size:9px;"></i>'
+        : '<span>더보기</span> <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>';
+    }
+    if(cfg.box) {
+      cfg.box.innerHTML = displayTags.map(function(tag){
+        var isChecked = userInterestTags.indexOf(tag) !== -1;
+        var activeCls = isChecked ? 'active' : '';
+        var icon = isChecked ? '<i class="fa-solid fa-check mr-1"></i>' : '<i class="fa-regular fa-circle mr-1" style="font-size:10px;opacity:0.6;"></i>';
+        return '<button type="button" class="interest-tag-chip ' + activeCls + '" onclick="toggleInterestTag(\'' + tag + '\')">'
+          + icon + tag
+          + '</button>';
+      }).join('');
+    }
+  });
 }
 
 function renderInterestRecommendations() {
-  var scrollContainer = document.getElementById('interestRecScroll');
-  var recCountEl = document.getElementById('interestRecCount');
-  if(!scrollContainer) return;
-
   // 체크된 관심 주제와 태그가 매칭되는 도서 검색
   var matchedBooks = libData.filter(function(b){
     if(!b.tags || !b.tags.length) return false;
@@ -5684,17 +5999,57 @@ function renderInterestRecommendations() {
 
   // 매칭 도서가 부족할 경우 에디터 픽으로 보충
   if(matchedBooks.length === 0) {
-    matchedBooks = libData.filter(function(b){ return b.isEditorPick; }).slice(0, 6);
+    matchedBooks = libData.filter(function(b){ return b.isEditorPick; }).slice(0, 8);
   }
 
-  if(recCountEl) recCountEl.innerText = matchedBooks.length + '권';
+  // 1. 내 책장 가로 슬라이더 업데이트
+  var myScroll = document.getElementById('interestRecScroll');
+  var myCount = document.getElementById('interestRecCount');
+  if(myCount) myCount.innerText = matchedBooks.length + '권';
+  if(myScroll) {
+    myScroll.innerHTML = matchedBooks.map(function(b){
+      return '<div class="interest-rec-item" onclick="openBookDetail(\'' + b.id + '\', \'history\')">'
+        + getBookCoverHtml(b, 'interest-rec-thumb')
+        + '<div class="interest-rec-title" title="' + b.title + '">' + b.title + '</div>'
+        + '</div>';
+    }).join('');
+  }
 
-  scrollContainer.innerHTML = matchedBooks.map(function(b){
-    return '<div class="interest-rec-item" onclick="openBookDetail(\'' + b.id + '\', \'history\')">'
-      + getBookCoverHtml(b, 'interest-rec-thumb')
-      + '<div class="interest-rec-title" title="' + b.title + '">' + b.title + '</div>'
-      + '</div>';
-  }).join('');
+  // 2. 도서관 전체 도서관 하위 가로 슬라이더 업데이트
+  var libScroll = document.getElementById('libInterestRecScroll');
+  var libCount = document.getElementById('libInterestRecCount');
+  if(libCount) libCount.innerText = matchedBooks.length + '권';
+  if(libScroll) {
+    libScroll.innerHTML = matchedBooks.map(function(b){
+      return '<div class="interest-rec-item" onclick="openBookDetail(\'' + b.id + '\', \'books\')">'
+        + getBookCoverHtml(b, 'interest-rec-thumb')
+        + '<div class="interest-rec-title" title="' + b.title + '">' + b.title + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // 3. 도서관 관심주제 맞춤 전체 리스트 렌더링
+  var libMatchedList = document.getElementById('libInterestMatchedList');
+  var libMatchedBadge = document.getElementById('libInterestMatchedCountBadge');
+  if(libMatchedBadge) libMatchedBadge.innerText = matchedBooks.length + '권';
+  if(libMatchedList) {
+    libMatchedList.innerHTML = matchedBooks.map(function(b){
+      var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
+      return '<div class="lib-row" onclick="openBookDetail(\'' + b.id + '\', \'books\')">'
+        + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">' + b.title + '</div>'
+        +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">' + b.author + ' · ' + b.pub + '</div>'
+        +   ab
+        +   '<span class="nbadge">' + b.grade + ' 권장</span>'
+        +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">' + b.cat + '</span>'
+        + '</div>'
+        + '<button class="act-btn start" onclick="event.stopPropagation(); startQuiz(\'' + b.id + '\');" style="font-size:11.5px; padding:6px 12px;">'
+        +   '<i class="fa-solid fa-pen-nib mr-1"></i>퀴즈'
+        + '</button>'
+        + '</div>';
+    }).join('');
+  }
 }
 
 // 찜한 도서 목록 렌더링
@@ -6600,8 +6955,15 @@ function renderRank() {
   }).join('');
 }
 
-// 학생 홈 배너 롤링 로직
+// 학생 홈 배너 롤링 로직 및 네비게이션 컨트롤러
 var curSlide = 0;
+var bannerRollTimer = null;
+
+function updateBannerCounterBadge(cur, total) {
+  var badge = document.getElementById('bannerCounterBadge');
+  if (badge) badge.innerText = (cur + 1) + ' / ' + total;
+}
+
 function nextBannerSlide() {
   var slides = document.querySelectorAll('.rolling-banner-slide');
   var dots = document.querySelectorAll('.rolling-banner-dot');
@@ -6611,7 +6973,21 @@ function nextBannerSlide() {
   curSlide = (curSlide + 1) % slides.length;
   slides[curSlide].classList.add('active');
   if (dots[curSlide]) dots[curSlide].classList.add('active');
+  updateBannerCounterBadge(curSlide, slides.length);
 }
+
+function prevBannerSlide() {
+  var slides = document.querySelectorAll('.rolling-banner-slide');
+  var dots = document.querySelectorAll('.rolling-banner-dot');
+  if (!slides.length) return;
+  slides[curSlide].classList.remove('active');
+  if (dots[curSlide]) dots[curSlide].classList.remove('active');
+  curSlide = (curSlide - 1 + slides.length) % slides.length;
+  slides[curSlide].classList.add('active');
+  if (dots[curSlide]) dots[curSlide].classList.add('active');
+  updateBannerCounterBadge(curSlide, slides.length);
+}
+
 function setBannerSlide(idx) {
   var slides = document.querySelectorAll('.rolling-banner-slide');
   var dots = document.querySelectorAll('.rolling-banner-dot');
@@ -6621,8 +6997,22 @@ function setBannerSlide(idx) {
   curSlide = idx;
   slides[curSlide].classList.add('active');
   if (dots[curSlide]) dots[curSlide].classList.add('active');
+  updateBannerCounterBadge(curSlide, slides.length);
 }
-setInterval(nextBannerSlide, 4500);
+
+function startBannerTimer() {
+  stopBannerTimer();
+  bannerRollTimer = setInterval(nextBannerSlide, 4500);
+}
+
+function stopBannerTimer() {
+  if (bannerRollTimer) {
+    clearInterval(bannerRollTimer);
+    bannerRollTimer = null;
+  }
+}
+
+startBannerTimer();
 
 function renderStudentBanners() {
   var box = document.getElementById("studentBannerBox");
@@ -6633,24 +7023,46 @@ function renderStudentBanners() {
   var slidesHtml = banners.map(function(b, idx){
     var activeClass = idx === 0 ? 'active' : '';
     var rawImgSrc = b.imageUrl || 'upload/banner/banner_reading_king.jpg';
-    // 태블릿/모바일 브라우저의 강력한 이미지 캐시 방지 (타임스탬프 쿼리)
     var cacheBust = b.updatedAt ? ('?t=' + b.updatedAt) : ('?v=' + encodeURIComponent(b.title || '1'));
     var imgSrc = rawImgSrc.startsWith('data:') ? rawImgSrc : (rawImgSrc + (rawImgSrc.includes('?') ? '&' : '') + cacheBust);
+    var tag = b.tag || (idx === 0 ? '챌린지' : (idx === 1 ? '나노시트' : '랭킹'));
 
-    return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')" style="cursor: pointer;" title="' + (b.title || '') + ' (추천 도서 보기)">'
+    return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')">'
       + '<img src="' + imgSrc + '" alt="' + (b.title || '') + '" onerror="this.onerror=null; this.src=\'upload/banner/banner_reading_king.jpg\';">'
+      + '<div class="banner-overlay"></div>'
+      + '<div class="banner-caption">'
+      +   '<span class="banner-badge">' + tag + '</span>'
+      +   '<div class="banner-title">' + (b.title || '') + '</div>'
+      +   '<div class="banner-sub">' + (b.sub || '') + '</div>'
+      + '</div>'
       + '</div>';
   }).join('');
 
+  // 좌우 넘김 버튼
+  var navBtnsHtml = '<button type="button" class="banner-nav-btn prev" onclick="event.stopPropagation(); prevBannerSlide();" aria-label="이전 배너">'
+    + '<i class="fa-solid fa-chevron-left"></i>'
+    + '</button>'
+    + '<button type="button" class="banner-nav-btn next" onclick="event.stopPropagation(); nextBannerSlide();" aria-label="다음 배너">'
+    + '<i class="fa-solid fa-chevron-right"></i>'
+    + '</button>';
+
+  // 우측 상단 카운터 뱃지
+  var counterHtml = '<div class="banner-counter-badge" id="bannerCounterBadge">1 / ' + banners.length + '</div>';
+
+  // 하단 인디케이터 닷
   var dotsHtml = '<div class="rolling-banner-dots" id="bannerDots">'
     + banners.map(function(b, idx){
         var activeClass = idx === 0 ? 'active' : '';
-        return '<div class="rolling-banner-dot ' + activeClass + '" onclick="setBannerSlide(' + idx + ')"></div>';
+        return '<div class="rolling-banner-dot ' + activeClass + '" onclick="event.stopPropagation(); setBannerSlide(' + idx + ')"></div>';
       }).join('')
     + '</div>';
 
-  box.innerHTML = slidesHtml + dotsHtml;
+  box.innerHTML = slidesHtml + navBtnsHtml + counterHtml + dotsHtml;
   curSlide = 0;
+
+  // 호버 시 타이머 일시 정지, 벗어날 때 재개
+  box.onmouseenter = stopBannerTimer;
+  box.onmouseleave = startBannerTimer;
 }
 
 // [태블릿/외부기기 실시간 배너 동기화] 서버 중앙 저장소(api/sync_banners.php)에서 최신 배너 즉각 로드
@@ -6672,12 +7084,13 @@ function syncStudentBannersFromServer() {
         if(currentJson !== newJson) {
           localStorage.setItem("NANO_MASTER_BANNERS", newJson);
           renderStudentBanners();
-          console.log("[배너 동기화] 태블릿 화면에 서버의 최신 배너 " + serverBanners.length + "개가 즉시 동기화되었습니다.");
+          console.log("[배너 동기화] 서버의 최신 배너 " + serverBanners.length + "개가 즉시 동기화되었습니다.");
         }
       }
     })
     .catch(function(err){
-      console.warn("[배너 동기화] 서버 배너 로드 실패 (기본값 또는 캐시 유지):", err);
+      // file:// 환경 등에서는 fetch가 차단되더라도 banners_data.js로 안전하게 fallback됨
+      console.log("[배너 동기화] 서버 배너 로드 안내 (banners_data.js 사용 중):", err.message || err);
     });
 }
 
@@ -6907,6 +7320,8 @@ document.addEventListener('DOMContentLoaded',function(){
   renderMyBookshelf();
   renderRank();
   renderLib();
+  renderInterestTags();
+  renderInterestRecommendations();
 });
 </script>
 <!-- 같은 도서의 다중 북퀴즈 출제처 선택 모달 (1순위 본사, 2순위 소속학원, 3순위 등록 오래된순) -->

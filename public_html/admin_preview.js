@@ -374,7 +374,10 @@ function onStudentGradeChange(grade) {
   var classSelect = document.getElementById('newStdClass');
   if (!grade) return;
 
-  if (grade === '초등 1학년') {
+  if (grade === '미취학') {
+    if (levelSelect) levelSelect.value = '초등 입문 Lv 1';
+    if (classSelect) classSelect.value = '새싹반';
+  } else if (grade === '초등 1학년') {
     if (levelSelect) levelSelect.value = '초등 입문 Lv 1';
     if (classSelect) classSelect.value = '새싹반';
   } else if (grade === '초등 2학년') {
@@ -820,7 +823,8 @@ function saveNewStudent() {
   var parentPhone = (document.getElementById('newStdParentPhone') ? document.getElementById('newStdParentPhone').value : '').trim();
   var parentEmail = (document.getElementById('newStdParentEmail') ? document.getElementById('newStdParentEmail').value : '').trim();
   var reportYn = document.getElementById('newStdReportYn') ? document.getElementById('newStdReportYn').checked : true;
-  var teacher = document.getElementById('newStdTeacher') ? document.getElementById('newStdTeacher').value : '박선혜 지도교사';
+  var existingStd = editId ? studentsData.find(function(s){ return s.id === editId; }) : null;
+  var teacher = document.getElementById('newStdTeacher') ? document.getElementById('newStdTeacher').value : (existingStd && existingStd.teacher ? existingStd.teacher : '원장/지도교사');
   var memo = (document.getElementById('newStdMemo') ? document.getElementById('newStdMemo').value : '').trim();
   var joinDate = document.getElementById('newStdJoinDate') ? document.getElementById('newStdJoinDate').value : '2026-09-09';
 
@@ -1234,9 +1238,9 @@ var learningLogs = [
     score: 100,
     pass: true,
     sheet: '작성 완료',
-    reviewed: '첨삭 완료',
+    reviewed: '첨삭 전',
     sheetAnswer: '사막여우와의 만남에서 여우가 "네 장미꽃이 그토록 소중한 것은 그 꽃을 위해 네가 들인 시간 때문이야"라고 말한 구절이 가장 마음에 와닿았습니다. 길들인다는 것은 서로에게 세상에서 유일한 존재가 되고 끝까지 책임을 지는 관계를 뜻한다고 생각합니다. 저도 친구들과의 우정을 위해 더 진심을 다하고 정성을 쏟아야겠다고 다짐했습니다.',
-    comment: '사막여우와의 길들임에 대한 철학적 성찰이 매우 깊이 있게 작성되었습니다. 본문 속 핵심 문장을 인용하여 자신의 일상 속 친구 관계의 소중함으로 연결 지은 점이 매우 훌륭합니다.',
+    comment: '',
     quizResults: [
       {
         qNum: 1,
@@ -1302,9 +1306,9 @@ var learningLogs = [
     score: 90,
     pass: true,
     sheet: '작성 완료',
-    reviewed: '첨삭 완료',
+    reviewed: '첨삭 전',
     sheetAnswer: '잎싹이 알을 낳지 못해 양계장에 갇혀 살다가 스스로 마당 밖으로 뛰쳐나오는 용기가 대단했습니다. 초록머리를 자식처럼 돌보며 모성애를 발휘하는 장면에서 가슴이 뭉클했습니다.',
-    comment: '잎싹의 주체적인 삶과 진정한 가족의 의미를 어린 학생의 순수한 시선에서 감동적으로 짚어내었습니다.',
+    comment: '',
     quizResults: [
       {
         qNum: 1,
@@ -1370,9 +1374,9 @@ var learningLogs = [
     score: 100,
     pass: true,
     sheet: '작성 완료',
-    reviewed: '첨삭 대기',
+    reviewed: '첨삭 전',
     sheetAnswer: '수남이가 신사에게 모욕을 당하고 얼떨결에 자전거를 들고 도망쳤을 때, 주위 사람들이 "잘했다"고 칭찬하자 양심의 가책을 느끼는 모습이 인상 깊었습니다. 부끄러움을 잃어버리는 것이 진짜 도둑이라는 생각이 들었습니다.',
-    comment: '수남이의 도덕적 갈등에 대한 핵심 쟁점을 잘 포착하였습니다. 현대 사회의 도덕성 상실 문제를 학생의 눈높이에서 날카롭게 짚었습니다.',
+    comment: '',
     quizResults: [
       {
         qNum: 1,
@@ -1438,9 +1442,9 @@ var learningLogs = [
     score: 80,
     pass: true,
     sheet: '작성 완료',
-    reviewed: '첨삭 완료',
+    reviewed: '첨삭 전',
     sheetAnswer: '편도체가 작아 감정을 느끼지 못하는 윤재가 곤이를 만나며 분노와 슬픔, 그리고 타인의 고통을 이해해 나가는 과정이 인상적이었습니다. 공감이란 타고나는 것이 아니라 서로를 이해하려는 노력이라는 점을 배웠습니다.',
-    comment: '알렉시티미아(감정표현불능증)와 공감의 가치를 논리적으로 서술하였습니다. 타인의 마음에 가닿기 위한 연대의 중요성을 심도 있게 고찰했습니다.',
+    comment: '',
     quizResults: [
       {
         qNum: 1,
@@ -1506,9 +1510,9 @@ var learningLogs = [
     score: 100,
     pass: true,
     sheet: '작성 완료',
-    reviewed: '첨삭 완료',
+    reviewed: '첨삭 전',
     sheetAnswer: '어른들이 숫자로만 사람을 판단한다는 구절을 읽고 공감이 갔습니다. 진정한 가치는 겉모습이나 숫자가 아니라 마음의 눈으로 서로를 바라보는 데 있다는 것을 항상 기억하겠습니다.',
-    comment: '어른들의 획일화된 시선에 대한 비판적 시각이 돋보입니다. 작품의 핵심 메시지를 자기 삶의 주관과 잘 결합하였습니다.',
+    comment: '',
     quizResults: [
       {
         qNum: 1,
@@ -1574,9 +1578,9 @@ var learningLogs = [
     score: 90,
     pass: true,
     sheet: '작성 완료',
-    reviewed: '첨삭 완료',
+    reviewed: '첨삭 전',
     sheetAnswer: '만복이가 나쁜 말을 할 때마다 입이 굳어지는 떡을 먹고 착한 말과 칭찬을 배우는 과정이 재미있었습니다. 저도 앞으로 친구들에게 예쁜 말만 쓰겠습니다.',
-    comment: '따뜻한 말을 쓸 때 생기는 마음의 긍정적인 변화를 순수하고 솔직하게 잘 표현하였습니다.',
+    comment: '',
     quizResults: [
       {
         qNum: 1,
@@ -1644,10 +1648,25 @@ function getLoadedLearningLogs() {
     }
   } catch(e) {}
 
+  // 기존 localStorage에 저장되어 있던 구형 더미 텍스트 코멘트 정리 (사용자 직접 입력이 아닌 하드코딩 문구 제거)
+  logs.forEach(function(l) {
+    if (l.comment && (
+      l.comment.indexOf('사막여우와의 길들임에 대한') !== -1 ||
+      l.comment.indexOf('잎싹의 주체적인 삶과') !== -1 ||
+      l.comment.indexOf('알렉시티미아') !== -1 ||
+      l.comment.indexOf('따뜻한 말을 쓸 때') !== -1 ||
+      l.comment.indexOf('수남이의 도덕적 갈등') !== -1 ||
+      l.comment.indexOf('어른들의 획일화된') !== -1
+    )) {
+      l.comment = '';
+      l.reviewed = '첨삭 전';
+    }
+  });
+
   // 기본 learningLogs와 병합 (ID 중복 제거)
   learningLogs.forEach(function(baseLog) {
     if (!logs.some(function(l) { return l.id === baseLog.id; })) {
-      logs.push(baseLog);
+      logs.push(JSON.parse(JSON.stringify(baseLog)));
     }
   });
 
@@ -1844,15 +1863,42 @@ function sendLearningReportKakao(logId, event) {
   var studentName = log ? log.studentName : '원생';
   var bookTitle = log ? log.bookTitle : '도서';
   var hasSent = !!getKakaoReportLog(logId);
+  var isThoughtHidden = log && (log.thoughtHidden === true);
+
+  var thoughtStatusNote = isThoughtHidden
+    ? '\n\n※ [안내] 생각 담기는 [숨기기] 설정되어 카톡 알림톡 리포트 본문에서 완전히 제외됩니다.'
+    : (log && log.comment ? '\n\n※ [안내] 원생의 생각 담기 답안과 지도교사 첨삭 코멘트가 함께 포함되어 발송됩니다.' : '\n\n※ [안내] 원생의 생각 담기 주관식 답안이 포함되어 발송됩니다.');
 
   var confirmMsg = hasSent
-    ? '[' + studentName + '] 원생의 [' + bookTitle + '] 학습리포트 알림톡을 재발송하시겠습니까?'
-    : '[' + studentName + '] 원생 학부모님께 카카오톡 알림톡으로 학습리포트를 발송하시겠습니까?';
+    ? '[' + studentName + '] 원생의 [' + bookTitle + '] 학습리포트 알림톡을 재발송하시겠습니까?' + thoughtStatusNote
+    : '[' + studentName + '] 원생 학부모님께 카카오톡 알림톡으로 학습리포트를 발송하시겠습니까?' + thoughtStatusNote;
 
   if (!confirm(confirmMsg)) return;
 
   var sentTime = formatCurrentDateTimeShort();
   saveKakaoReportLog(logId, sentTime);
+
+  // 카톡 발송 이력(academyDispatchLogs)에 알림톡 기록 추가
+  var summaryText = isThoughtHidden
+    ? `[나노의 책장] ${studentName} 학생의 ${bookTitle} 완독 및 북퀴즈(${log ? log.score : 100}점) 리포트가 발송되었습니다. (생각담기 제외)`
+    : `[나노의 책장] ${studentName} 학생의 ${bookTitle} 완독 및 북퀴즈(${log ? log.score : 100}점) 리포트가 발송되었습니다. (생각담기 포함)`;
+
+  academyDispatchLogs.unshift({
+    id: 'AL-M' + String(academyDispatchLogs.length + 1).padStart(2, '0'),
+    date: '2026-09-18 ' + (sentTime.split(' ')[1] || '15:30'),
+    type: '독서 리포트 알림톡',
+    receiver: `${studentName} 학부모 (${log && log.studentId ? log.studentId : '학부모'})`,
+    summary: summaryText,
+    status: 'SUCCESS',
+    logId: logId,
+    studentName: studentName,
+    bookTitle: bookTitle,
+    score: log ? log.score : 100,
+    thoughtHidden: isThoughtHidden,
+    hasComment: !!(log && log.comment),
+    comment: log ? log.comment : ''
+  });
+  renderAcademyDispatchTable();
 
   // 테이블 즉시 갱신
   renderLearningTable();
@@ -1865,16 +1911,32 @@ function sendLearningReportKakao(logId, event) {
     }
   }
 
-  showAcademyToast('[' + studentName + '] 학부모님께 카톡 알림톡이 성공적으로 발송되었습니다.');
+  showAcademyToast('[' + studentName + '] 학부모님께 카톡 알림톡이 성공적으로 발송되었습니다.' + (isThoughtHidden ? ' (생각 담기 제외)' : ''));
 }
 
-// A4 리포트 인쇄 실행 함수 (백지 방지 및 전체 A4 규격 출력)
+// A4 리포트 인쇄 실행 함수 (백지 방지 및 생각담기 숨김 반영)
 function printLearningReport() {
+  var isHidden = false;
+  if (currentOpenLearningLogId) {
+    var allLogs = getLoadedLearningLogs();
+    var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
+    if (log && log.thoughtHidden === true) {
+      isHidden = true;
+    }
+  }
+
+  if (isHidden) {
+    document.body.classList.add('thought-hidden-print');
+  } else {
+    document.body.classList.remove('thought-hidden-print');
+  }
+
   document.body.classList.add('is-printing-report');
   setTimeout(function() {
     window.print();
     setTimeout(function() {
       document.body.classList.remove('is-printing-report');
+      document.body.classList.remove('thought-hidden-print');
     }, 500);
   }, 100);
 }
@@ -1986,7 +2048,7 @@ function openLearningDetailModal(id) {
     }).join('');
   }
 
-  // 3. 생각 담기 영역 (질문, 학생 답안, 교사 코멘트 토글)
+  // 3. 생각 담기 영역 (질문, 학생 답안, 숨기기/보이기 토글, 교사 코멘트 직접 타이핑)
   var thoughtSec = document.getElementById('learnModalThoughtSection');
   var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer));
   
@@ -2004,63 +2066,257 @@ function openLearningDetailModal(id) {
       var aEl = document.getElementById('learnModalSheetAnswer');
       if (aEl) aEl.innerText = aText;
 
-      // 교사 코멘트 상태 처리
-      var commentContainer = document.getElementById('learnModalCommentContainer');
-      var commentInput = document.getElementById('learnModalCommentInput');
-      var commentDisplay = document.getElementById('learnModalCommentDisplay');
-      var btnToggle = document.getElementById('btnToggleTeacherComment');
+      // 1) 생각 담기 숨기기 / 보이기 상태 반영
+      updateThoughtSectionUI(log);
 
-      if (log.comment) {
-        if (commentContainer) commentContainer.style.display = 'block';
-        if (commentInput) commentInput.value = log.comment;
-        if (commentDisplay) commentDisplay.innerText = log.comment;
-        if (btnToggle) btnToggle.innerHTML = '<i class="fa-solid fa-pen mr-1"></i>교사 코멘트 수정';
-      } else {
-        if (commentContainer) commentContainer.style.display = 'none';
-        if (commentInput) commentInput.value = '';
-        if (commentDisplay) commentDisplay.innerText = '';
-        if (btnToggle) btnToggle.innerHTML = '<i class="fa-solid fa-plus mr-1"></i>교사 코멘트 달기';
-      }
+      // 2) 교사 코멘트 상태 반영 (기본값: 없음)
+      updateTeacherCommentUI(log);
     }
   }
 
   $('#learningDetailModal').modal('show');
 }
 
-function removeThoughtSection() {
+// 생각 담기 UI 동기화 함수
+function updateThoughtSectionUI(log) {
+  var isHidden = (log.thoughtHidden === true);
   var sec = document.getElementById('learnModalThoughtSection');
-  if (sec) {
-    sec.style.display = 'none';
-    showAcademyToast('이번 리포트에서 [생각 담기] 영역이 제외되었습니다.');
-  }
-}
+  var badge = document.getElementById('thoughtStatusBadge');
+  var btn = document.getElementById('btnToggleThoughtVisibility');
+  var notice = document.getElementById('thoughtHiddenNotice');
+  var body = document.getElementById('learnModalThoughtBody');
 
-function toggleTeacherCommentInput() {
-  var container = document.getElementById('learnModalCommentContainer');
-  if (!container) return;
-  if (container.style.display === 'none' || !container.style.display) {
-    container.style.display = 'block';
-    var input = document.getElementById('learnModalCommentInput');
-    if (input) input.focus();
+  if (isHidden) {
+    if (sec) sec.classList.add('thought-hidden-mode');
+    if (badge) {
+      badge.className = 'badge-soft badge-soft-warn';
+      badge.innerHTML = '<i class="fa-solid fa-eye-slash mr-1"></i>숨김 처리됨 (인쇄·카톡 제외)';
+    }
+    if (btn) {
+      btn.className = 'btn btn-xs btn-outline-primary d-print-none font-weight-bold';
+      btn.innerHTML = '<i class="fa-solid fa-eye mr-1"></i>보이기';
+      btn.title = '리포트 인쇄 및 카톡 발송에 생각 담기 포함하기';
+    }
+    if (notice) notice.style.display = 'block';
+    if (body) body.style.display = 'none';
   } else {
-    container.style.display = 'none';
+    if (sec) sec.classList.remove('thought-hidden-mode');
+    if (badge) {
+      badge.className = 'badge-soft badge-soft-success';
+      badge.innerHTML = '<i class="fa-solid fa-eye mr-1"></i>리포트 포함 (보이기)';
+    }
+    if (btn) {
+      btn.className = 'btn btn-xs btn-outline-secondary d-print-none font-weight-bold';
+      btn.innerHTML = '<i class="fa-solid fa-eye-slash mr-1"></i>숨기기';
+      btn.title = '리포트 인쇄 및 카톡 발송에서 생각 담기 제외하기';
+    }
+    if (notice) notice.style.display = 'none';
+    if (body) body.style.display = 'block';
   }
 }
 
-function syncTeacherCommentPrint(val) {
-  var display = document.getElementById('learnModalCommentDisplay');
-  if (display) {
-    display.innerText = val.trim() || '지도교사 코멘트가 작성되었습니다.';
+// 생각 담기 숨기기 / 보이기 토글 실행
+function toggleThoughtSectionVisibility() {
+  if (!currentOpenLearningLogId) return;
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
+  if (!log) return;
+
+  log.thoughtHidden = !log.thoughtHidden;
+  saveCustomLearningLogs(allLogs);
+  updateThoughtSectionUI(log);
+
+  if (log.thoughtHidden) {
+    showAcademyToast('생각 담기가 [숨기기] 처리되었습니다. 리포트 인쇄 및 학부모 카톡 발송 시 제외됩니다.');
+  } else {
+    showAcademyToast('생각 담기가 [보이기] 처리되었습니다. 리포트 인쇄 및 학부모 카톡 발송에 포함됩니다.');
   }
+}
+
+// 지도교사 코멘트 UI 상태 반영 (기본 디폴트값: 없음)
+function updateTeacherCommentUI(log) {
+  var commentWrapper = document.getElementById('learnModalCommentWrapper');
+  var commentBtn = document.getElementById('btnToggleTeacherComment');
+  var commentEditor = document.getElementById('learnModalCommentEditor');
+  var commentCard = document.getElementById('learnModalCommentCard');
+  var commentDisplay = document.getElementById('learnModalCommentDisplay');
+  var commentInput = document.getElementById('learnModalCommentInput');
+  var commentEmptyGuide = document.getElementById('learnModalCommentEmptyGuide');
+  var charCount = document.getElementById('commentCharCount');
+
+  if (commentEditor) commentEditor.style.display = 'none';
+
+  if (log && log.comment && log.comment.trim() !== '') {
+    // 코멘트가 직접 작성되어 존재할 때
+    if (commentWrapper) commentWrapper.classList.remove('no-comment');
+    if (commentBtn) {
+      commentBtn.className = 'btn btn-xs btn-outline-secondary';
+      commentBtn.innerHTML = '<i class="fa-solid fa-pen mr-1"></i>교사 코멘트 수정';
+    }
+    if (commentCard) commentCard.style.display = 'block';
+    if (commentDisplay) commentDisplay.innerText = log.comment;
+    if (commentInput) commentInput.value = log.comment;
+    if (commentEmptyGuide) commentEmptyGuide.style.display = 'none';
+    if (charCount) charCount.innerText = log.comment.length + '자 작성됨';
+  } else {
+    // 코멘트가 없을 때 (디폴트값: 없음)
+    if (commentWrapper) commentWrapper.classList.add('no-comment');
+    if (commentBtn) {
+      commentBtn.className = 'btn btn-xs btn-outline-primary';
+      commentBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기';
+    }
+    if (commentCard) commentCard.style.display = 'none';
+    if (commentDisplay) commentDisplay.innerText = '';
+    if (commentInput) commentInput.value = '';
+    if (commentEmptyGuide) commentEmptyGuide.style.display = 'block';
+    if (charCount) charCount.innerText = '0자 작성됨';
+  }
+}
+
+// 교사 코멘트 넣기 / 수정 에디터 열기
+function openTeacherCommentEditor() {
+  var editor = document.getElementById('learnModalCommentEditor');
+  var emptyGuide = document.getElementById('learnModalCommentEmptyGuide');
+  var input = document.getElementById('learnModalCommentInput');
+  if (editor) {
+    editor.style.display = 'block';
+    if (emptyGuide) emptyGuide.style.display = 'none';
+    if (input) {
+      input.focus();
+    }
+  }
+}
+
+// 교사 코멘트 에디터 닫기
+function closeTeacherCommentEditor() {
+  var editor = document.getElementById('learnModalCommentEditor');
+  if (editor) editor.style.display = 'none';
+
   if (currentOpenLearningLogId) {
     var allLogs = getLoadedLearningLogs();
     var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
     if (log) {
-      log.comment = val;
-      log.reviewed = val.trim() ? '첨삭 완료' : '첨삭 전';
-      saveCustomLearningLogs(allLogs);
-      renderLearningTable();
+      updateTeacherCommentUI(log);
+      if (log.comment && log.comment.trim()) {
+        showAcademyToast('지도교사 첨삭 코멘트가 저장되었습니다.');
+      }
     }
+  }
+}
+
+// 교사 코멘트 직접 타이핑 입력 처리
+function onTeacherCommentInput(val) {
+  var charCount = document.getElementById('commentCharCount');
+  if (charCount) charCount.innerText = val.length + '자 작성됨';
+
+  if (!currentOpenLearningLogId) return;
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
+  if (!log) return;
+
+  log.comment = val;
+  log.reviewed = val.trim() ? '첨삭 완료' : '첨삭 전';
+  saveCustomLearningLogs(allLogs);
+
+  var display = document.getElementById('learnModalCommentDisplay');
+  var card = document.getElementById('learnModalCommentCard');
+  var wrapper = document.getElementById('learnModalCommentWrapper');
+  var btn = document.getElementById('btnToggleTeacherComment');
+
+  if (val.trim()) {
+    if (display) display.innerText = val;
+    if (card) card.style.display = 'block';
+    if (wrapper) wrapper.classList.remove('no-comment');
+    if (btn) {
+      btn.className = 'btn btn-xs btn-outline-secondary';
+      btn.innerHTML = '<i class="fa-solid fa-pen mr-1"></i>교사 코멘트 수정';
+    }
+  } else {
+    if (display) display.innerText = '';
+    if (card) card.style.display = 'none';
+    if (wrapper) wrapper.classList.add('no-comment');
+    if (btn) {
+      btn.className = 'btn btn-xs btn-outline-primary';
+      btn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기';
+    }
+  }
+
+  // 테이블 내 첨삭 상태 배지 실시간 갱신
+  renderLearningTable();
+}
+
+// 교사 코멘트 비우기 (삭제하여 디폴트값으로 원복)
+function clearTeacherComment() {
+  var input = document.getElementById('learnModalCommentInput');
+  if (input) input.value = '';
+  onTeacherCommentInput('');
+  closeTeacherCommentEditor();
+  showAcademyToast('교사 코멘트가 삭제되어 기본값(없음)으로 변경되었습니다.');
+}
+
+// 카카오 알림톡 발송 전문 보기 모달 열기
+function openAcademyDispatchDetailModal(dispatchId) {
+  var l = academyDispatchLogs.find(function(item) { return item.id === dispatchId; });
+  if (!l) {
+    showAcademyToast('알림톡 발송 전문 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  var timeEl = document.getElementById('acadDispatchModalTime');
+  if (timeEl) timeEl.innerText = l.date;
+
+  var receiverEl = document.getElementById('acadDispatchModalReceiver');
+  if (receiverEl) receiverEl.innerText = l.receiver;
+
+  var statusEl = document.getElementById('acadDispatchModalStatus');
+  if (statusEl) {
+    statusEl.className = 'badge-soft ' + (l.status === 'SUCCESS' ? 'badge-soft-success' : 'badge-soft-danger');
+    statusEl.innerText = l.status === 'SUCCESS' ? '발송 성공 (알리고 0000)' : '발송 실패';
+  }
+
+  var thoughtStatusEl = document.getElementById('acadDispatchModalThoughtIncluded');
+  if (thoughtStatusEl) {
+    if (l.thoughtHidden) {
+      thoughtStatusEl.className = 'badge-soft badge-soft-warn';
+      thoughtStatusEl.innerText = '숨김 제외 (카톡 본문에 미포함)';
+    } else {
+      thoughtStatusEl.className = 'badge-soft badge-soft-success';
+      thoughtStatusEl.innerText = l.hasComment ? '포함 (학생답안 + 교사코멘트)' : '포함 (학생답안)';
+    }
+  }
+
+  var bodyEl = document.getElementById('acadDispatchModalBody');
+  if (bodyEl) {
+    var sName = l.studentName || (l.receiver ? l.receiver.split(' ')[0] : '원생');
+    var bTitle = l.bookTitle || '도서';
+    var score = l.score || 100;
+
+    var content = `[나노의 책장] ${sName} 학생 학습 리포트 안내
+
+학부모님, 안녕하십니까.
+나노 독서아카데미 본원에서 ${sName} 학생의 독서 및 북퀴즈 완독 리포트를 안내해 드립니다.
+
+■ 완독 도서: ${bTitle}
+■ 북퀴즈 결과: ${score}점 (완독 인증 완료)
+■ 응시 일시: ${l.date}`;
+
+    if (l.thoughtHidden) {
+      content += `\n\n※ 본 학습 리포트는 학원 지도 방침에 따라 '생각 담기' 영역이 제외되어 발송되었습니다.`;
+    } else {
+      content += `\n\n■ 생각 담기: 학생 서술 답안 제출 완료`;
+      if (l.comment && l.comment.trim()) {
+        content += `\n■ 지도교사 첨삭:\n"${l.comment.trim()}"`;
+      }
+    }
+
+    content += `\n\n상세한 북퀴즈 문항별 채점 결과는 아래 링크에서 확인하실 수 있습니다.`;
+    bodyEl.innerText = content;
+  }
+
+  if (window.jQuery && typeof $('#academyDispatchDetailModal').modal === 'function') {
+    $('#academyDispatchDetailModal').modal('show');
+  } else {
+    showModalVanilla('academyDispatchDetailModal');
   }
 }
 
@@ -3159,7 +3415,7 @@ function renderAcademyDispatchTable() {
         </span>
       </td>
       <td class="text-center">
-        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="showAcademyToast('알림톡 발송 전문을 확인합니다.')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">전문</button>
+        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openAcademyDispatchDetailModal('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">전문</button>
         ${l.status === 'FAILED' ? `<button class="btn btn-xs btn-outline-danger" onclick="retryAcademyDispatch('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">재발송</button>` : ''}
       </td>
     `;

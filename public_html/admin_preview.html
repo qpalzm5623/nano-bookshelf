@@ -277,6 +277,26 @@
         margin-bottom: 12px !important;
         border: 1px solid #d1d5db !important;
       }
+      /* 생각 담기 숨기기 상태 시 인쇄물에서 완전 제외 */
+      #learnModalThoughtSection.thought-hidden-mode,
+      #learnModalThoughtSection.thought-hidden-mode *,
+      body.thought-hidden-print #learnModalThoughtSection,
+      body.thought-hidden-print #learnModalThoughtSection * {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      /* 교사 코멘트가 없을 때 인쇄물에서 코멘트 박스 완전 제외 */
+      #learnModalCommentWrapper.no-comment,
+      #learnModalCommentWrapper.no-comment * {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
     }
     body.is-printing-report {
       overflow: visible !important;
@@ -3146,56 +3166,111 @@
           </div>
         </div>
 
-        <!-- 3) 생각 담기 (도서 질문 + 학생 주관식 작성 답안 + 교사 코멘트) -->
-        <div id="learnModalThoughtSection" class="p-3 bg-white rounded shadow-sm mb-3" style="border: 1px solid var(--border-light);">
+        <!-- 3) 생각 담기 (도서 질문 + 학생 주관식 작성 답안 + 교사 코멘트 직접 입력) -->
+        <div id="learnModalThoughtSection" class="p-3 bg-white rounded shadow-sm mb-3" style="border: 1px solid var(--border-light); transition: all 0.2s ease;">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="font-weight-bold mb-0" style="font-size: 14px; color: #3d342d;">
-              <i class="fa-solid fa-lightbulb mr-2 text-warning"></i>생각 담기
-            </h6>
-            <button type="button" class="btn btn-xs btn-outline-danger d-print-none" onclick="removeThoughtSection()" title="리포트에서 생각 담기 영역 제외">
-              <i class="fa-solid fa-trash mr-1"></i>삭제
+            <div class="d-flex align-items-center" style="gap: 8px;">
+              <h6 class="font-weight-bold mb-0" style="font-size: 14px; color: #3d342d;">
+                <i class="fa-solid fa-lightbulb mr-2 text-warning"></i>생각 담기
+              </h6>
+              <span id="thoughtStatusBadge" class="badge-soft badge-soft-success" style="font-size: 11px;">
+                <i class="fa-solid fa-eye mr-1"></i>리포트 포함 (보이기)
+              </span>
+            </div>
+            <!-- 삭제 대신 숨기기 / 보이기 토글 버튼 -->
+            <button type="button" class="btn btn-xs btn-outline-secondary d-print-none" id="btnToggleThoughtVisibility" onclick="toggleThoughtSectionVisibility()" title="카톡 발송 및 인쇄 리포트 포함 여부 설정" style="border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600;">
+              <i class="fa-solid fa-eye-slash mr-1"></i>숨기기
             </button>
           </div>
 
-          <!-- 도서의 생각담기 논제/질문 -->
-          <div class="mb-2 p-2 rounded" style="background: #fdfaf3; border: 1px dashed #dcd3c4; font-size: 12px;">
-            <strong class="text-primary"><i class="fa-solid fa-circle-question mr-1"></i>논제/생각 질문:</strong>
-            <span id="learnModalThoughtQuestion" class="ml-1 text-dark font-weight-600">이 책을 읽고 난 후 주인공의 태도나 선택에 대해 나의 생각을 서술해 보세요.</span>
-          </div>
-
-          <!-- 학생 작성 주관식 답안 -->
-          <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="font-weight-bold text-muted" style="font-size: 12px;">
-                <i class="fa-solid fa-user-pen mr-1"></i>학생 작성 답안:
-              </span>
-              <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">주관식 작성</span>
-            </div>
-            <div class="p-3 rounded" style="background: #fdfcf9; border: 1px solid var(--border-medium); font-size: 12.5px; line-height: 1.8; color: #2d2621;" id="learnModalSheetAnswer">
-              어린 왕자와 사막여우의 대화를 읽고, 관계란 서로 시간을 들이고 길들여질 때 비로소 진정한 의미를 가진다는 것을 깨달았습니다...
-            </div>
-          </div>
-
-          <!-- 지도교사 코멘트 영역 (토글 기능) -->
-          <div id="learnModalCommentWrapper">
-            <div id="learnModalCommentToggleBtnArea" class="d-print-none mb-2">
-              <button type="button" class="btn btn-xs btn-outline-primary" id="btnToggleTeacherComment" onclick="toggleTeacherCommentInput()">
-                <i class="fa-solid fa-plus mr-1"></i>교사 코멘트 달기
+          <!-- 숨기기 상태 시 안내 배너 -->
+          <div id="thoughtHiddenNotice" class="p-3 rounded mb-2 d-print-none" style="background: #fff8f0; border: 1px dashed #f59e0b; color: #92400e; font-size: 12.5px; display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <i class="fa-solid fa-circle-exclamation mr-1 text-warning"></i>
+                <strong>현재 '생각 담기'가 숨김 상태입니다.</strong> 리포트 인쇄 및 학부모 카톡 발송 시 생각 담기(학생 답안 및 교사 코멘트)가 완전히 제외됩니다.
+              </div>
+              <button type="button" class="btn btn-xs btn-warning ml-2 font-weight-bold" onclick="toggleThoughtSectionVisibility()" style="border-radius: 5px; font-size: 11.5px; padding: 2px 8px;">
+                <i class="fa-solid fa-eye mr-1"></i>다시 보이기
               </button>
             </div>
+          </div>
 
-            <div id="learnModalCommentContainer" style="display: none;">
+          <!-- 생각 담기 본문 (숨기기 시 접힘/숨김) -->
+          <div id="learnModalThoughtBody">
+            <!-- 도서의 생각담기 논제/질문 -->
+            <div class="mb-2 p-2 rounded" style="background: #fdfaf3; border: 1px dashed #dcd3c4; font-size: 12px;">
+              <strong class="text-primary"><i class="fa-solid fa-circle-question mr-1"></i>논제/생각 질문:</strong>
+              <span id="learnModalThoughtQuestion" class="ml-1 text-dark font-weight-600">이 책을 읽고 난 후 주인공의 태도나 선택에 대해 나의 생각을 서술해 보세요.</span>
+            </div>
+
+            <!-- 학생 작성 주관식 답안 -->
+            <div class="mb-3">
               <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="font-weight-bold text-muted" style="font-size: 12px;">
+                  <i class="fa-solid fa-user-pen mr-1"></i>학생 작성 답안:
+                </span>
+                <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">주관식 작성</span>
+              </div>
+              <div class="p-3 rounded" style="background: #fdfcf9; border: 1px solid var(--border-medium); font-size: 12.5px; line-height: 1.8; color: #2d2621;" id="learnModalSheetAnswer">
+                어린 왕자와 사막여우의 대화를 읽고, 관계란 서로 시간을 들이고 길들여질 때 비로소 진정한 의미를 가진다는 것을 깨달았습니다...
+              </div>
+            </div>
+
+            <!-- 지도교사 코멘트 영역 (디폴트: 없음, 교사 코멘트 넣기 옵션으로 직접 타이핑) -->
+            <div id="learnModalCommentWrapper" class="pt-2 border-top">
+              <!-- 상단 버튼/헤더 영역 -->
+              <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="font-weight-bold text-muted" style="font-size: 12px;">
                   <i class="fa-solid fa-comment-dots mr-1 text-primary"></i>지도교사 첨삭 코멘트:
                 </span>
-                <span class="badge-soft badge-soft-success" style="font-size: 11px;">작성 완료</span>
+                <div class="d-print-none">
+                  <!-- 코멘트가 없을 때: 코멘트 넣기 버튼 -->
+                  <button type="button" class="btn btn-xs btn-outline-primary" id="btnToggleTeacherComment" onclick="openTeacherCommentEditor()" style="border-radius: 6px; padding: 3px 9px; font-size: 11.5px; font-weight: 600;">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기
+                  </button>
+                </div>
               </div>
-              <textarea id="learnModalCommentInput" class="form-control form-control-sm mb-2 d-print-none" rows="2" placeholder="지도교사 첨삭 및 칭찬 피드백을 입력하세요..." oninput="syncTeacherCommentPrint(this.value)"></textarea>
-              <div class="p-3 rounded" style="background: #fbf9f4; border: 1px solid #dcd3c4; font-size: 13px; line-height: 1.8; color: #3d342d; font-weight: 600;" id="learnModalCommentDisplay">
-                사막여우와의 길들임에 대한 성찰이 매우 깊이 있게 작성됨.
+
+              <!-- 1) 코멘트 타이핑 입력 에디터 (교사 코멘트 넣기 클릭 시 오픈) -->
+              <div id="learnModalCommentEditor" class="p-3 rounded mb-2 d-print-none" style="background: #fdfcf9; border: 1px solid #dcd3c4; display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="font-weight-bold" style="font-size: 12px; color: #3d342d;">
+                    <i class="fa-solid fa-keyboard mr-1 text-primary"></i>선생님 코멘트 직접 입력
+                  </span>
+                  <small class="text-muted">입력 시 즉시 저장되며 리포트에 실시간 반영됩니다.</small>
+                </div>
+                <textarea id="learnModalCommentInput" class="form-control form-control-sm mb-2" rows="3" placeholder="원생의 생각 담기 답안에 대한 지도교사 칭찬 및 첨삭 코멘트를 직접 입력하세요..." oninput="onTeacherCommentInput(this.value)" style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;"></textarea>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="text-muted" style="font-size: 11px;" id="commentCharCount">0자 작성됨</span>
+                  <div>
+                    <button type="button" class="btn btn-xs btn-outline-danger mr-1" onclick="clearTeacherComment()" style="border-radius: 5px; font-size: 11.5px; padding: 3px 8px;">
+                      <i class="fa-solid fa-trash mr-1"></i>코멘트 비우기
+                    </button>
+                    <button type="button" class="btn btn-xs btn-beige-primary px-3" onclick="closeTeacherCommentEditor()" style="border-radius: 5px; font-size: 11.5px; padding: 3px 10px;">
+                      <i class="fa-solid fa-check mr-1"></i>입력 완료
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2) 작성된 코멘트 표시 카드 (코멘트가 있을 때만 노출) -->
+              <div id="learnModalCommentCard" style="display: none;">
+                <div class="p-3 rounded" style="background: #fbf9f4; border: 1px solid #dcd3c4; font-size: 12.5px; line-height: 1.8; color: #3d342d; font-weight: 500;">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong style="color: var(--text-main); font-size: 12px;"><i class="fa-solid fa-quote-left mr-1 text-muted"></i>선생님 첨삭 피드백</strong>
+                    <span class="badge-soft badge-soft-success" style="font-size: 10.5px;">첨삭 완료</span>
+                  </div>
+                  <div id="learnModalCommentDisplay" style="white-space: pre-wrap;"></div>
+                </div>
+              </div>
+
+              <!-- 3) 코멘트가 없을 때 디폴트 안내 (출력/인쇄 시에는 안 보임) -->
+              <div id="learnModalCommentEmptyGuide" class="p-2 rounded text-muted text-center d-print-none" style="background: #f9f9f9; border: 1px dashed #e2e8f0; font-size: 11.5px;">
+                <i class="fa-solid fa-info-circle mr-1"></i>작성된 지도교사 코멘트가 없습니다. 상단의 <strong>[교사 코멘트 넣기]</strong>를 눌러 직접 타이핑할 수 있습니다.
               </div>
             </div>
+
           </div>
         </div>
 
@@ -3310,6 +3385,50 @@
   </div>
 </div>
 
+<!-- 카카오 알림톡 발송 전문 보기 모달 (학원 관리자용) -->
+<div class="modal fade" id="academyDispatchDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+    <div class="modal-content" style="border-radius: 18px; border: 1px solid var(--border-medium); box-shadow: 0 15px 40px rgba(40, 30, 20, 0.18);">
+      <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4" style="background: #fbf9f5; border-bottom: 1px solid var(--border-light);">
+        <h6 class="modal-title font-weight-bold mb-0" style="font-size: 15px; color: var(--text-main);">
+          <i class="fa-solid fa-comment mr-2 text-warning"></i>카카오 알림톡 발송 전문
+        </h6>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4 text-center" style="background: #fdfbf7;">
+        <!-- 카카오 말풍선 뷰어 -->
+        <div style="background: #ffffff; border-radius: 14px; border: 1px solid #e5dfd5; padding: 18px; text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #f0ece1;">
+            <span class="font-weight-bold" style="font-size: 12px; color: #fee500; background: #3c1e1e; padding: 2px 8px; border-radius: 4px;">
+              <i class="fa-solid fa-comment mr-1"></i>알림톡 도착
+            </span>
+            <small class="text-muted" id="acadDispatchModalTime">2026-09-18 15:30</small>
+          </div>
+          <div class="font-weight-bold mb-2" style="font-size: 14px; color: #111;" id="acadDispatchModalTitle">
+            [나노의 책장] 독서 학습 리포트 도착
+          </div>
+          <div class="p-3 rounded" style="background: #faf8f5; border: 1px solid #eee7db; font-size: 12.5px; line-height: 1.8; color: #333; white-space: pre-wrap;" id="acadDispatchModalBody">
+          </div>
+          <div class="mt-3 text-center">
+            <button type="button" class="btn btn-sm btn-block font-weight-bold" style="background: #fee500; color: #3c1e1e; border: none; border-radius: 8px; font-size: 13px; padding: 8px;" onclick="showAcademyToast('학부모 리포트 열람 웹뷰 링크가 호출됩니다.')">
+              학습 리포트 열람하기 &gt;
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-3 text-left" style="font-size: 12px; color: #666;">
+          <div><strong>수신 대상:</strong> <span id="acadDispatchModalReceiver" class="text-dark font-weight-bold"></span></div>
+          <div><strong>발송 상태:</strong> <span id="acadDispatchModalStatus" class="badge-soft badge-soft-success">발송 성공 (알리고 0000)</span></div>
+          <div class="mt-1"><strong>생각 담기 포함 여부:</strong> <span id="acadDispatchModalThoughtIncluded" class="font-weight-bold"></span></div>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-4 bg-light d-flex justify-content-end">
+        <button type="button" class="btn btn-sm btn-beige-secondary px-3" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 포트폴리오 리포트 모달 (인쇄용) -->
 <div class="modal fade" id="portfolioReportModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -3369,7 +3488,7 @@
           </div>
           <div>
             <h6 class="modal-title font-weight-bold mb-0" id="studentModalHeaderTitle" style="color: var(--text-main); font-size: 15px;">신규 원생 등록 (가맹점)</h6>
-            <small class="text-muted" style="font-size: 11.5px;">원생 정보와 담당 지도교사를 등록하면 맞춤형 북퀴즈 및 포트폴리오 관리가 활성화됩니다.</small>
+            <small class="text-muted" style="font-size: 11.5px;">원생 정보를 등록·수정하면 맞춤형 북퀴즈 및 포트폴리오 관리가 활성화됩니다.</small>
           </div>
         </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -3439,6 +3558,7 @@
                   <label class="font-weight-bold" style="font-size: 12.5px;">학년 <span class="text-danger">*</span></label>
                   <!-- (지혜반 추천) 등의 불필요 문구 완전 제거 -->
                   <select class="form-control form-control-sm" id="newStdGrade" onchange="onStudentGradeChange(this.value)" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                    <option value="미취학">미취학</option>
                     <option value="초등 1학년">초등 1학년</option>
                     <option value="초등 2학년">초등 2학년</option>
                     <option value="초등 3학년">초등 3학년</option>
@@ -3522,31 +3642,10 @@
                 <input type="email" class="form-control form-control-sm" id="newStdParentEmail" placeholder="예: parent@example.com" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
               </div>
 
-              <!-- 리포트 수신 여부 체크박스 -->
-              <div class="p-2 px-3 mb-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <div class="custom-control custom-checkbox">
-                  <input type="checkbox" class="custom-control-input" id="newStdReportYn" checked>
-                  <label class="custom-control-label font-weight-bold" for="newStdReportYn" style="font-size: 12.5px; color: #1e293b; cursor: pointer;">
-                    <i class="fa-solid fa-paper-plane mr-1 text-primary"></i>주간/월간 독서 리포트 발송 수신
-                  </label>
-                </div>
-                <small class="text-muted d-block mt-1 pl-4" style="font-size: 11px;">* 체크 시 북퀴즈 결과 및 포트폴리오 알림톡/이메일이 자동 발송됩니다.</small>
-              </div>
-
-              <div class="form-row mb-0">
-                <div class="col-6">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">담당 지도교사</label>
-                  <select class="form-control form-control-sm" id="newStdTeacher" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                    <option value="박선혜 지도교사" selected>박선혜 수석교사</option>
-                    <option value="최승현 지도교사">최승현 지도교사</option>
-                    <option value="이지연 지도교사">이지연 지도교사</option>
-                    <option value="김은영 지도교사">김은영 학원장</option>
-                  </select>
-                </div>
-                <div class="col-6">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">계정 생성일</label>
-                  <input type="date" class="form-control form-control-sm" id="newStdJoinDate" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                </div>
+              <!-- 계정 생성일 -->
+              <div class="form-group mb-0">
+                <label class="font-weight-bold" style="font-size: 12.5px;">계정 생성일</label>
+                <input type="date" class="form-control form-control-sm" id="newStdJoinDate" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
               </div>
             </div>
 
@@ -3607,6 +3706,7 @@
             </div>
             <div class="col-md-3 mb-2 mb-md-0">
               <select class="form-control form-control-sm" id="newClassGradeSelect" style="border-radius: 8px; font-size: 12.5px;">
+                <option value="미취학 / 유아">미취학 / 유아</option>
                 <option value="초등 1~2학년">초등 1~2학년</option>
                 <option value="초등 3학년">초등 3학년</option>
                 <option value="초등 4학년">초등 4학년</option>
