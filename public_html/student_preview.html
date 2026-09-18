@@ -58,26 +58,34 @@
       letter-spacing: -0.2px;
     }
     .role-bar {
-      background: #251d18;
-      color: #cfc4b6;
-      padding: 8px 20px;
+      background: #0f372e;
+      color: #bfe3da;
+      padding: 7px 20px;
       font-size: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #3d332b;
+      border-bottom: 1px solid rgba(0, 168, 150, 0.25);
     }
     .role-bar a {
-      color: #a3d9b5;
+      color: #5eead4;
       text-decoration: none;
       font-weight: 700;
       padding: 3px 12px;
       border-radius: 20px;
-      border: 1px solid #3c5443;
-      background: rgba(45, 106, 79, 0.2);
+      border: 1px solid rgba(94, 234, 212, 0.35);
+      background: rgba(20, 184, 166, 0.18);
+      transition: all 0.2s ease;
+    }
+    .role-bar a:hover {
+      background: rgba(20, 184, 166, 0.35);
+      color: #ffffff;
+      border-color: #5eead4;
     }
     .s-header {
-      background: linear-gradient(135deg, #122d20 0%, #1d4d35 45%, #2d6a4f 100%);
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       padding: 0 20px;
       display: flex;
       align-items: center;
@@ -87,38 +95,32 @@
       top: 0;
       z-index: 100;
       overflow: hidden;
-      box-shadow: 0 4px 18px rgba(18, 45, 32, 0.25);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 2px 14px rgba(0, 168, 150, 0.08);
+      border-bottom: 1px solid #e2ece9;
+    }
+    .s-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #00a896 0%, #02c39a 35%, #f59e0b 80%, #f39c12 100%);
+      z-index: 10;
     }
     .logo {
       display: flex;
       align-items: center;
       gap: 10px;
-      color: #ffffff;
-      font-size: 17.5px;
-      font-weight: 800;
       position: relative;
       z-index: 2;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 11px;
-      background: linear-gradient(135deg, rgba(167, 227, 190, 0.3) 0%, rgba(255, 255, 255, 0.12) 100%);
-      color: #a7e3be;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     .user-info {
-      color: rgba(255,255,255,0.92);
+      color: #334155;
       font-size: 13px;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-end;
       position: relative;
       z-index: 2;
     }
@@ -128,37 +130,38 @@
     .student-name {
       font-weight: 800;
       font-size: 14.5px;
-      color: #ffffff;
+      color: #1e293b;
       line-height: 1.2;
     }
     .student-sub {
-      font-size: 11px;
-      color: #bfe8cc;
-      margin-top: 1px;
+      font-size: 11.5px;
+      color: #0d9488;
+      font-weight: 700;
+      margin-top: 2px;
     }
     .btn-student-logout {
-      background: rgba(255, 255, 255, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      color: #eaf5ef;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #475569;
       font-size: 11.5px;
       font-weight: 700;
-      padding: 5px 11px;
+      padding: 6px 12px;
       border-radius: 18px;
       display: inline-flex;
       align-items: center;
       gap: 5px;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      backdrop-filter: blur(4px);
-      margin-left: 12px;
+      margin-left: 10px;
       text-decoration: none !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
     .btn-student-logout:hover {
-      background: rgba(255, 255, 255, 0.28);
-      color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.5);
+      background: #fff1f2;
+      color: #e11d48;
+      border-color: #fecdd3;
       transform: translateY(-1px);
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 8px rgba(225, 29, 72, 0.12);
     }
 
     /* ============================================================== */
@@ -1915,23 +1918,27 @@
     }
     /* 좌측 최상단 햄버거 버튼 및 슬라이딩 드로어 메뉴 스타일 */
     .btn-drawer-hamburger {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      color: #ffffff;
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
+      background: #f0fdf9;
+      border: 1px solid #bbf7d0;
+      color: #0f766e;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       font-size: 15px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all .2s;
+      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
       flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0, 168, 150, 0.08);
     }
     .btn-drawer-hamburger:hover {
-      background: rgba(255, 255, 255, 0.35);
+      background: #ccfbf1;
+      color: #115e59;
+      border-color: #5eead4;
       transform: scale(1.05);
+      box-shadow: 0 3px 8px rgba(0, 168, 150, 0.16);
     }
     .btn-drawer-hamburger:active {
       transform: scale(0.95);
@@ -1978,9 +1985,9 @@
       transform: translateX(0);
     }
 
-    /* 드로어 상단 프로필 헤더 */
+    /* 드로어 상단 프로필 헤더 (로고 청록 그라데이션) */
     .drawer-header {
-      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      background: linear-gradient(135deg, #0f766e 0%, #00a896 55%, #02b8a2 100%);
       color: #ffffff;
       padding: 24px 18px 20px 18px;
       position: relative;
@@ -1989,7 +1996,7 @@
       position: absolute;
       top: 14px;
       right: 14px;
-      background: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.2);
       border: none;
       color: #ffffff;
       width: 30px;
@@ -2018,7 +2025,7 @@
     }
     .drawer-user-class {
       font-size: 12px;
-      color: #b7e4c7;
+      color: #ccfbf1;
       margin-top: 4px;
     }
     .drawer-user-point-badge {
@@ -2185,53 +2192,56 @@
 </aside>
 
 <div class="role-bar">
-  <span><i class="fa-solid fa-graduation-cap mr-1" style="color:#a7e3be;"></i> 나노의 책장 <strong style="color:#a7e3be;">학생 포털 (체험판)</strong></span>
+  <span><i class="fa-solid fa-graduation-cap mr-1" style="color:#5eead4;"></i> 나노의 책장 <strong style="color:#5eead4;">학생 포털 (체험판)</strong></span>
   <a href="admin_preview.html"><i class="fa-solid fa-arrow-left mr-1"></i>학원관리자 뷰</a>
 </div>
 <header class="s-header">
-  <!-- 바람에 흩날리는 나뭇잎 애니메이션 씬 (감성적인 숲속 모션) -->
+  <!-- 바람에 흩날리는 나뭇잎 애니메이션 씬 (로고 틸 & 웜 오렌지 모션) -->
   <div class="leaf-wind-scene" aria-hidden="true">
-    <div class="wind-leaf wind-leaf-1">
-      <svg viewBox="0 0 24 24" fill="#a7e3be"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-1" style="opacity: 0.45;">
+      <svg viewBox="0 0 24 24" fill="#00a896"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-2">
-      <svg viewBox="0 0 24 24" fill="#74c69d"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-2" style="opacity: 0.35;">
+      <svg viewBox="0 0 24 24" fill="#f39c12"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-3">
-      <svg viewBox="0 0 24 24" fill="#b7e4c7"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-3" style="opacity: 0.4;">
+      <svg viewBox="0 0 24 24" fill="#02c39a"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-4">
-      <svg viewBox="0 0 24 24" fill="#95d5b2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-4" style="opacity: 0.35;">
+      <svg viewBox="0 0 24 24" fill="#fbbf24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-5">
-      <svg viewBox="0 0 24 24" fill="#d8f3dc"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-5" style="opacity: 0.4;">
+      <svg viewBox="0 0 24 24" fill="#2ec4b6"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-6">
-      <svg viewBox="0 0 24 24" fill="#74c69d"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-6" style="opacity: 0.35;">
+      <svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-7">
-      <svg viewBox="0 0 24 24" fill="#a7e3be"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-7" style="opacity: 0.45;">
+      <svg viewBox="0 0 24 24" fill="#00a896"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
-    <div class="wind-leaf wind-leaf-8">
-      <svg viewBox="0 0 24 24" fill="#b7e4c7"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+    <div class="wind-leaf wind-leaf-8" style="opacity: 0.35;">
+      <svg viewBox="0 0 24 24" fill="#02c39a"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
     </div>
   </div>
 
-  <!-- 좌측 최상단: 햄버거 메뉴 버튼 + 로고 -->
-  <div style="display: flex; align-items: center; gap: 8px; position: relative; z-index: 2;">
+  <!-- 좌측 최상단: 햄버거 메뉴 버튼 + 로고 (흰색 사각 박스 제거 및 자연스러운 투명 렌더링) -->
+  <div style="display: flex; align-items: center; gap: 10px; position: relative; z-index: 2;">
     <button type="button" class="btn-drawer-hamburger" id="btnStudentHamburger" onclick="openStudentDrawer()" aria-label="메뉴 열기" title="전체 메뉴">
       <i class="fa-solid fa-bars"></i>
     </button>
     <div class="logo" style="display: flex; align-items: center;">
-      <a href="student_preview.html" style="display: inline-flex; align-items: center; background: #ffffff; padding: 4px 10px; border-radius: 9px; box-shadow: 0 2px 8px rgba(0,0,0,0.18); text-decoration: none;">
-        <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 25px; width: auto; object-fit: contain; display: block;">
+      <a href="student_preview.html" style="display: inline-flex; align-items: center; text-decoration: none; padding: 2px 0;">
+        <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 31px; width: auto; object-fit: contain; display: block;">
       </a>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:2;">
     <div class="user-info">
-      <div style="font-weight:800;font-size:14px;color:#ffffff;">김민준</div>
-      <div style="font-size:11px;color:#b7e4c7;">지혜반 · 초등 5학년</div>
+      <div style="font-weight:800;font-size:14.5px;color:#1e293b;letter-spacing:-0.3px;">김민준</div>
+      <div style="font-size:11.5px;color:#0d9488;font-weight:700;display:flex;align-items:center;gap:4px;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00a896;"></span>
+        지혜반 · 초등 5학년
+      </div>
     </div>
     <button type="button" class="btn-student-logout" onclick="handleStudentLogout()" title="학생 포털 로그아웃">
       <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
@@ -2461,6 +2471,8 @@
         <div><div style="font-size:13px;font-weight:800;" id="qTitle">어린 왕자</div><div style="font-size:11.5px;color:var(--muted);">북퀴즈 진행 중</div><span class="nbadge" style="margin-top:4px;">⭐ 문제당 20P</span></div>
       </div>
       <div class="qtext" id="qText">문제 로딩 중...</div>
+      <!-- 문항 첨부 미디어 (WebP 이미지 또는 영상 임베드 플레이어) -->
+      <div id="qMediaBox" style="display:none; margin: 12px 0 16px 0;"></div>
       <div id="qOpts"></div>
       <div class="qfb" id="qFb"></div>
       <div style="display:flex;gap:8px;">
@@ -2656,18 +2668,53 @@
 <script>
 var QB={
   '1001':{title:'어린 왕자',emoji:'📕',qs:[
-    {q:"『어린 왕자』에서 사막여우가 전해준 비밀 — 오로지 ㉠(으)로 보아야만 분명하게 볼 수 있어. ㉠에 들어갈 알맞은 낱말은?",os:["마음","눈동자","장미꽃","여우"],a:0},
-    {q:"어린 왕자가 살던 고향 별의 명칭은?",os:["A-101 소행성","B-612 소행성","C-303 소행성","별똥별 404호"],a:1},
-    {q:"어린 왕자가 자신의 별을 떠나기로 결심한 가장 결정적인 이유는?",os:["바오바브나무가 별을 뒤덮어서","장미꽃의 투정과 자존심에 상처를 받아서","화산이 모두 폭발해서","비행기 조종사를 만나고 싶어서"],a:1},
-    {q:"여우가 말한 '길들인다'의 참된 의미로 가장 알맞은 것은?",os:["상대방을 내 뜻대로 복종시키는 것","서로에게 특별한 관계를 맺고 끝까지 책임을 지는 것","매일 정해진 시간에 먹이를 주는 것","상대방의 약점을 알아내는 것"],a:1},
-    {q:"어른들이 '모자'로만 착각했던 조종사의 첫 번째 그림은 사실 무엇인가요?",os:["코끼리를 삼킨 보아뱀 그림","상자 속 어린 양 그림","사막에 핀 노란 장미 그림","별빛 아래 잠든 여우 그림"],a:0}
+    {
+      q:"어린 왕자가 자신의 별을 떠나 여행을 시작하게 된 결정적인 이유는 무엇인가요?",
+      mediaType:"image",
+      mediaUrl:"assets/covers/cover_1001.jpg",
+      mediaCaption:"[도서 삽화] 소행성 B-612를 떠나는 어린 왕자와 장미꽃",
+      os:["오만하고 변덕스러운 장미와의 갈등 때문에","더 넓은 우주를 정복하고 싶어서","별에 화산이 폭발한 위험이 있어서","비행사 아저씨를 만나기 위해"],
+      a:0
+    },
+    {
+      q:"영상 자료를 참고할 때, 어린 왕자가 살던 고향 별 소행성 B-612에 대한 설명으로 올바른 것은?",
+      mediaType:"video",
+      mediaUrl:"https://www.youtube.com/watch?v=kYJ5bK_j09g",
+      mediaCaption:"[영상 자료] 생텍쥐페리의 『어린 왕자』 소개 북트레일러 (YouTube)",
+      os:["집채보다 커다란 바오바브나무가 울창하게 자라있는 별","의자를 조금만 뒤로 물리면 하루에 마흔네 번도 해지는 것을 볼 수 있는 아주 작은 별","수많은 사람들이 모여 사는 시끌벅적한 대도시 별","단 한 송이의 꽃도 피지 않는 메마른 얼음 행성"],
+      a:1
+    },
+    {
+      q:"『어린 왕자』에서 사막여우가 전해준 비밀 — 오로지 ㉠(으)로 보아야만 분명하게 볼 수 있어. ㉠에 들어갈 알맞은 낱말은?",
+      mediaType:"none",
+      mediaUrl:"",
+      mediaCaption:"",
+      os:["마음","눈동자","장미꽃","여우"],
+      a:0
+    },
+    {
+      q:"여우가 말한 '길들인다'의 참된 의미로 가장 알맞은 것은?",
+      mediaType:"none",
+      mediaUrl:"",
+      mediaCaption:"",
+      os:["상대방을 내 뜻대로 복종시키는 것","서로에게 특별한 관계를 맺고 끝까지 책임을 지는 것","매일 정해진 시간에 먹이를 주는 것","상대방의 약점을 알아내는 것"],
+      a:1
+    },
+    {
+      q:"어른들이 '모자'로만 착각했던 조종사의 첫 번째 그림은 사실 무엇인가요?",
+      mediaType:"none",
+      mediaUrl:"",
+      mediaCaption:"",
+      os:["코끼리를 삼킨 보아뱀 그림","상자 속 어린 양 그림","사막에 핀 노란 장미 그림","별빛 아래 잠든 여우 그림"],
+      a:0
+    }
   ]},
   '1002':{title:'아몬드',emoji:'📗',qs:[
-    {q:"주인공 '윤재'가 감정을 잘 느끼지 못하는 이유는?",os:["큰 사고를 당해서","뇌의 편도체(아몬드)가 지나치게 작아서","감정 표현을 배운 적 없어서","특별한 약을 복용해서"],a:1},
-    {q:"'곤'이 윤재에게 처음 다가온 방식은?",os:["다정한 말을 건네며","폭력적이고 거친 방식으로","책을 선물하며","공부를 도와주며"],a:1},
-    {q:"윤재의 할머니가 항상 강조한 것은?",os:["공부를 열심히 해야 한다","감정을 숨기면 안 된다","말을 많이 해야 한다","남들과 어울리지 마라"],a:1},
-    {q:"윤재가 처음으로 감정에 가까운 무언가를 느끼게 된 계기는?",os:["곤과의 갈등","할머니의 죽음 후 곤을 걱정하게 되면서","새 학교 전학","선생님의 칭찬"],a:1},
-    {q:"소설 《아몬드》가 전달하는 핵심 메시지로 가장 적절한 것은?",os:["공부가 가장 중요하다","감정 없이도 행복할 수 있다","공감과 관계를 통해 사람은 성장한다","세상은 혼자 살아가야 한다"],a:2}
+    {q:"주인공 '윤재'가 감정을 잘 느끼지 못하는 이유는?",mediaType:"none",os:["큰 사고를 당해서","뇌의 편도체(아몬드)가 지나치게 작아서","감정 표현을 배운 적 없어서","특별한 약을 복용해서"],a:1},
+    {q:"'곤'이 윤재에게 처음 다가온 방식은?",mediaType:"none",os:["다정한 말을 건네며","폭력적이고 거친 방식으로","책을 선물하며","공부를 도와주며"],a:1},
+    {q:"윤재의 할머니가 항상 강조한 것은?",mediaType:"none",os:["공부를 열심히 해야 한다","감정을 숨기면 안 된다","말을 많이 해야 한다","남들과 어울리지 마라"],a:1},
+    {q:"윤재가 처음으로 감정에 가까운 무언가를 느끼게 된 계기는?",mediaType:"none",os:["곤과의 갈등","할머니의 죽음 후 곤을 걱정하게 되면서","새 학교 전학","선생님의 칭찬"],a:1},
+    {q:"소설 《아몬드》가 전달하는 핵심 메시지로 가장 적절한 것은?",mediaType:"none",os:["공부가 가장 중요하다","감정 없이도 행복할 수 있다","공감과 관계를 통해 사람은 성장한다","세상은 혼자 살아가야 한다"],a:2}
   ]}
 };
 var histData=[
@@ -4068,15 +4115,17 @@ function getStudentBanners() {
 }
 
 function handleStudentBannerClick(idx) {
-  var banners = getStudentBanners().filter(function(b){ return b.active !== 'N'; });
-  var b = banners[idx] || banners[0];
+  var allBanners = getStudentBanners();
+  var activeBanners = allBanners.filter(function(b){ return b.active !== 'N'; }).sort(function(a, b){ return (a.order || 0) - (b.order || 0); });
+  var b = activeBanners[idx] || activeBanners[0];
   if(!b) return;
 
-  // 배너 클릭수 증가 반영 및 로컬스토리지 저장
-  if(typeof b.clicks === 'number') {
-    b.clicks++;
+  // 배너 클릭수 증가 반영 및 로컬스토리지 저장 (전체 배너 상태 안전 보존)
+  var targetInAll = allBanners.find(function(item){ return item.id === b.id; });
+  if(targetInAll && typeof targetInAll.clicks === 'number') {
+    targetInAll.clicks++;
     try {
-      localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(banners));
+      localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(allBanners));
     } catch(e) {}
   }
 
@@ -4218,20 +4267,46 @@ function showBook(id){
 }
 
 function startQuiz(id){
-  var d=QB[id];
+  // 1. 마스터 관리자에서 저장한 최신 퀴즈 세트가 있는지 우선 탐색
+  var d = null;
+  try {
+    var rawMaster = localStorage.getItem("NANO_MASTER_BOOKS");
+    if(rawMaster) {
+      var mBooks = JSON.parse(rawMaster);
+      var mb = mBooks.find(function(b){ return b.id === id || b.id === 'MB-' + id || id.endsWith(b.id.replace(/[^0-9]/g, '')); });
+      if(mb && mb.quizSets && mb.quizSets[0] && mb.quizSets[0].questions && mb.quizSets[0].questions.length > 0) {
+        var mappedQs = mb.quizSets[0].questions.map(function(mq){
+          var isSubj = mq.type === 'SUBJECTIVE';
+          var os = isSubj ? [mq.subjectiveAns || '정답'] : [mq.opt1, mq.opt2, mq.opt3, mq.opt4].filter(Boolean);
+          var ansIdx = isSubj ? 0 : (parseInt(mq.ans || '1', 10) - 1);
+          return {
+            q: mq.question,
+            mediaType: mq.mediaType || 'none',
+            mediaUrl: mq.mediaUrl || '',
+            mediaCaption: mq.mediaCaption || '',
+            os: os.length > 0 ? os : ['1번 보기', '2번 보기', '3번 보기', '4번 보기'],
+            a: Math.max(0, ansIdx)
+          };
+        });
+        d = { title: mb.title, emoji: '📕', qs: mappedQs };
+      }
+    }
+  } catch(e) {}
+
+  if(!d) d = QB[id];
+
   if(!d){
-    // 준비된 퀴즈가 없으면 어린왕자 템플릿 기반으로 동적 생성
     var book = libData.find(function(x){return x.id===id;});
     var title = book ? book.title : '독서 퀴즈';
     d = {
       title: title,
       emoji: '📘',
       qs: [
-        {q:"『" + title + "』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?",os:["도전과 용기의 가치","약자에 대한 공감과 배려","자아를 찾아가는 용기","위 세 가지 모두 정답"],a:3},
-        {q:"주인공의 내적 성장 과정에서 가장 큰 전환점이 된 사건은?",os:["친구와의 진심 어린 대화","새로운 환경으로의 용기 있는 도전","어려움을 극복한 협동","위 모두 복합적으로 작용함"],a:3},
-        {q:"작가가 이 도서를 통해 독자에게 전하고자 한 중심 메시지는?",os:["서로를 이해하고 연대하는 삶","혼자만의 승리가 최고라는 생각","물질적 성공의 중요성","경쟁에서 이기는 법"],a:0},
-        {q:"이 책에서 갈등을 평화롭게 해결하는 데 가장 중요했던 가치는?",os:["소통과 배려","침묵과 회피","힘의 우위","운에 맡기기"],a:0},
-        {q:"이 책을 읽은 후 우리 일상생활에서 실천할 수 있는 바른 태도는?",os:["주변 친구들에게 따뜻한 말 한마디 건네기","어려운 이웃을 배려하기","정직하게 나의 책임을 다하기","위의 모든 태도 실천하기"],a:3}
+        {q:"『" + title + "』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?",mediaType:"none",os:["도전과 용기의 가치","약자에 대한 공감과 배려","자아를 찾아가는 용기","위 세 가지 모두 정답"],a:3},
+        {q:"주인공의 내적 성장 과정에서 가장 큰 전환점이 된 사건은?",mediaType:"none",os:["친구와의 진심 어린 대화","새로운 환경으로의 용기 있는 도전","어려움을 극복한 협동","위 모두 복합적으로 작용함"],a:3},
+        {q:"작가가 이 도서를 통해 독자에게 전하고자 한 중심 메시지는?",mediaType:"none",os:["서로를 이해하고 연대하는 삶","혼자만의 승리가 최고라는 생각","물질적 성공의 중요성","경쟁에서 이기는 법"],a:0},
+        {q:"이 책에서 갈등을 평화롭게 해결하는 데 가장 중요했던 가치는?",mediaType:"none",os:["소통과 배려","침묵과 회피","힘의 우위","운에 맡기기"],a:0},
+        {q:"이 책을 읽은 후 우리 일상생활에서 실천할 수 있는 바른 태도는?",mediaType:"none",os:["주변 친구들에게 따뜻한 말 한마디 건네기","어려운 이웃을 배려하기","정직하게 나의 책임을 다하기","위의 모든 태도 실천하기"],a:3}
       ]
     };
   }
@@ -4245,11 +4320,113 @@ function startQuiz(id){
   renderQ();
   window.scrollTo(0, 0);
 }
+
+// 학생 퀴즈용 비디오 URL 스마트 파서
+function parseStudentQuizVideoUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  var trimmed = url.trim();
+  if (!trimmed) return null;
+
+  var ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: 'youtube',
+      embedUrl: 'https://www.youtube.com/embed/' + ytMatch[1] + '?autoplay=0&rel=0'
+    };
+  }
+
+  var vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: 'vimeo',
+      embedUrl: 'https://player.vimeo.com/video/' + vimeoMatch[1]
+    };
+  }
+
+  if (/\.(mp4|webm|ogg)($|\?)/i.test(trimmed)) {
+    return {
+      type: 'direct',
+      embedUrl: trimmed
+    };
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return {
+      type: 'iframe',
+      embedUrl: trimmed
+    };
+  }
+  return null;
+}
+
+// 퀴즈 문항 이미지 확대 라이트박스 팝업
+function showQuizImageModal(url) {
+  var modal = document.getElementById('quizImgLightboxModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'quizImgLightboxModal';
+    modal.className = 'student-modal-overlay';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.padding = '20px';
+    modal.style.zIndex = '10000';
+    modal.onclick = function(e){ if(e.target === this) this.style.display = 'none'; };
+    modal.innerHTML = '<div style="position:relative;max-width:92%;max-height:90vh;background:#ffffff;padding:12px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);text-align:center;">'
+      + '<button type="button" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;background:#f1f5f9;border:none;font-size:18px;cursor:pointer;" onclick="document.getElementById(\'quizImgLightboxModal\').style.display=\'none\'">&times;</button>'
+      + '<img id="lightboxTargetImg" src="" style="max-width:100%;max-height:78vh;border-radius:8px;object-fit:contain;display:block;margin:18px auto 6px auto;">'
+      + '<small class="text-muted"><i class="fa-solid fa-magnifying-glass mr-1"></i>문제 참고 이미지 자료 (원본 크기)</small>'
+      + '</div>';
+    document.body.appendChild(modal);
+  }
+  var targetImg = document.getElementById('lightboxTargetImg');
+  if(targetImg) targetImg.src = url;
+  modal.style.display = 'flex';
+}
+
 function renderQ(){
   var q=curData.qs[curQ],tot=curData.qs.length;
   document.getElementById('qLabel').innerText=(curQ+1)+'/'+tot;
   document.getElementById('qFill').style.width=Math.round(((curQ+1)/tot)*100)+'%';
   document.getElementById('qText').innerText=q.q;
+
+  // 문항 미디어 렌더링 (WebP 이미지 또는 영상 URL 플레이어)
+  var mediaBox = document.getElementById('qMediaBox');
+  if(mediaBox) {
+    if(q.mediaType === 'image' && q.mediaUrl) {
+      var cap = q.mediaCaption ? '<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center;"><i class="fa-regular fa-image mr-1" style="color:var(--leaf);"></i>'+q.mediaCaption+'</div>' : '';
+      mediaBox.innerHTML = '<div style="background:#ffffff;padding:10px;border-radius:14px;border:1px solid var(--soft);box-shadow:0 2px 8px rgba(0,0,0,0.04);text-align:center;">'
+        + '<div style="position:relative;display:inline-block;max-width:100%;">'
+        +   '<img src="'+q.mediaUrl+'" alt="문제 자료 이미지" style="max-width:100%;max-height:240px;border-radius:10px;object-fit:contain;cursor:zoom-in;" onclick="showQuizImageModal(\''+q.mediaUrl+'\')">'
+        +   '<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.65);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;backdrop-filter:blur(4px);pointer-events:none;"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>확대보기</span>'
+        + '</div>'
+        + cap
+        + '</div>';
+      mediaBox.style.display = 'block';
+    } else if(q.mediaType === 'video' && q.mediaUrl) {
+      var parsed = parseStudentQuizVideoUrl(q.mediaUrl);
+      var cap = q.mediaCaption ? '<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center;"><i class="fa-brands fa-youtube text-danger mr-1"></i>'+q.mediaCaption+'</div>' : '';
+      if(parsed) {
+        var playerHtml = (parsed.type === 'direct')
+          ? '<video src="'+parsed.embedUrl+'" controls style="width:100%;height:100%;object-fit:contain;background:#000;border-radius:10px;"></video>'
+          : '<iframe src="'+parsed.embedUrl+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:10px;border:none;"></iframe>';
+        mediaBox.innerHTML = '<div style="background:#ffffff;padding:10px;border-radius:14px;border:1px solid var(--soft);box-shadow:0 2px 8px rgba(0,0,0,0.04);">'
+          + '<div style="position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:10px;background:#000;">'
+          + playerHtml
+          + '</div>'
+          + cap
+          + '</div>';
+        mediaBox.style.display = 'block';
+      } else {
+        mediaBox.style.display = 'none';
+        mediaBox.innerHTML = '';
+      }
+    } else {
+      mediaBox.style.display = 'none';
+      mediaBox.innerHTML = '';
+    }
+  }
+
   var c=document.getElementById('qOpts');c.innerHTML='';
   q.os.forEach(function(o,i){
     var b=document.createElement('button');
@@ -4772,13 +4949,14 @@ setInterval(nextBannerSlide, 4500);
 function renderStudentBanners() {
   var box = document.getElementById("studentBannerBox");
   if(!box) return;
-  var banners = getStudentBanners().filter(function(b){ return b.active !== 'N'; });
+  var banners = getStudentBanners().filter(function(b){ return b.active !== 'N'; }).sort(function(a, b){ return (a.order || 0) - (b.order || 0); });
   if(banners.length === 0) return;
 
   var slidesHtml = banners.map(function(b, idx){
     var activeClass = idx === 0 ? 'active' : '';
+    var imgSrc = b.imageUrl || 'upload/banner/banner_reading_king.jpg';
     return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')" style="cursor: pointer;" title="' + b.title + ' (추천 도서 보기)">'
-      + '<img src="' + (b.imageUrl || 'upload/banner/banner_reading_king.jpg') + '" alt="' + b.title + '" onerror="this.src=\'upload/banner/banner_reading_king.jpg\'">'
+      + '<img src="' + imgSrc + '" alt="' + b.title + '" onerror="this.onerror=null; this.src=\'upload/banner/banner_reading_king.jpg\';">'
       + '</div>';
   }).join('');
 
@@ -4792,6 +4970,18 @@ function renderStudentBanners() {
   box.innerHTML = slidesHtml + dotsHtml;
   curSlide = 0;
 }
+
+// 마스터 관리자에서 배너 변경 시 학생 화면에 즉시 실시간 반영
+window.addEventListener('storage', function(e) {
+  if (e.key === 'NANO_MASTER_BANNERS') {
+    renderStudentBanners();
+  }
+});
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    renderStudentBanners();
+  }
+});
 
 var toastT;
 function toast(msg){

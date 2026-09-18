@@ -397,6 +397,13 @@ function saveOperationsToStorage() {
     localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
   } catch (e) {
     console.warn("로컬스토리지 저장 중 오류:", e);
+    try {
+      localStorage.removeItem("NANO_MASTER_BANNERS");
+      localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
+    } catch(err2) {
+      console.error("로컬스토리지 재시도 실패:", err2);
+      showMasterToast("저장소 용량 한도로 일부 변경사항이 브라우저에 영구 저장되지 못했습니다.");
+    }
   }
 }
 
@@ -2045,6 +2052,7 @@ function handleMasterMemberRegister(e) {
 // --- [5-A] 메인 배너 관리 (Banners) ---
 let curBannerBooks = [];
 let curBannerUploadedImgData = "";
+let curBannerExistingImgUrl = "";
 
 function renderBannerList() {
   const container = document.getElementById("bannerListContainer");
@@ -2064,18 +2072,18 @@ function renderBannerList() {
       <div style="font-size: 18px; font-weight: 900; color: var(--text-soft); width: 32px; text-align: center;">
         #${b.order}
       </div>
-      <div class="banner-img-thumb" onclick="previewBannerImage('${b.imageUrl || ''}', '${b.title}')" title="배너 이미지 크게 보기 (클릭)" style="background: ${b.bgTheme || 'linear-gradient(135deg, #7a6348, #4a3b32)'}; cursor: pointer;">
+      <div class="banner-img-thumb" onclick="previewBannerImage('${b.imageUrl || ''}', '${b.title}')" title="배너 이미지 크게 보기 (클릭)" style="background: #ece7e1; cursor: pointer;">
         ${b.imageUrl ? `
           <img src="${b.imageUrl}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="banner-thumb-hover-overlay">
             <i class="fa-solid fa-magnifying-glass-plus text-white" style="font-size: 20px;"></i>
           </div>
-          <div class="d-none w-100 h-100 align-items-center justify-content-center text-white" style="background: ${b.bgTheme};">
-            <i class="fa-solid fa-image" style="font-size: 24px; opacity: 0.8;"></i>
+          <div class="d-none w-100 h-100 align-items-center justify-content-center text-muted" style="background: #ece7e1;">
+            <i class="fa-solid fa-image" style="font-size: 24px; opacity: 0.6;"></i>
           </div>
         ` : `
-          <div class="d-flex w-100 h-100 align-items-center justify-content-center text-white">
-            <i class="fa-solid fa-image" style="font-size: 24px; opacity: 0.8;"></i>
+          <div class="d-flex w-100 h-100 align-items-center justify-content-center text-muted">
+            <i class="fa-solid fa-image" style="font-size: 24px; opacity: 0.6;"></i>
           </div>
         `}
       </div>
@@ -2111,7 +2119,7 @@ function renderBannerList() {
 
 function previewBannerImage(url, title) {
   if (!url) {
-    showMasterToast("등록된 배너 이미지가 없습니다. (단색 테마 그라데이션 적용)");
+    showMasterToast("등록된 배너 이미지가 없습니다.");
     return;
   }
   const imgEl = document.getElementById("bannerViewModalImg");
@@ -2126,14 +2134,17 @@ function previewBannerImage(url, title) {
 function updateBannerModalPreview(val) {
   const box = document.getElementById("bannerModalPreviewBox");
   const img = document.getElementById("bannerModalPreviewImg");
+  const notice = document.getElementById("bannerModalEmptyNotice");
   if (!box || !img) return;
 
   if (val) {
     img.style.display = "block";
     img.src = val;
+    if (notice) notice.style.display = "none";
   } else {
     img.style.display = "none";
-    box.innerHTML = '<span class="text-muted" style="font-size:12px;"><i class="fa-solid fa-palette mr-1"></i>단색/그라데이션 테마가 적용됩니다.</span>';
+    img.src = "";
+    if (notice) notice.style.display = "flex";
   }
 }
 
@@ -2141,30 +2152,77 @@ function handleBannerFileUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  if (file.size > 5 * 1024 * 1024) {
-    alert("배너 이미지 크기는 최대 5MB를 초과할 수 없습니다.");
+  if (file.size > 10 * 1024 * 1024) {
+    alert("배너 이미지 원본 크기는 최대 10MB를 초과할 수 없습니다.");
     e.target.value = "";
     return;
   }
 
   const reader = new FileReader();
   reader.onload = function(evt) {
-    curBannerUploadedImgData = evt.target.result;
-    updateBannerModalPreview(curBannerUploadedImgData);
-    showMasterToast("배너 이미지가 성공적으로 업로드되었습니다.");
+    const rawDataUrl = evt.target.result;
+    // 이미지 최적화 (Canvas를 이용해 최대 1280px 와이드, JPEG 0.85로 경량 압축하여 용량 문제 원천 방지)
+    const tempImg = new Image();
+    tempImg.onload = function() {
+      try {
+        const maxWidth = 1280;
+        const maxHeight = 720;
+        let w = tempImg.width;
+        let h = tempImg.height;
+
+        if (w > maxWidth || h > maxHeight) {
+          const ratio = Math.min(maxWidth / w, maxHeight / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(tempImg, 0, 0, w, h);
+
+        // 85% 품질 JPEG로 압축 (용량 수십 KB 수준으로 초경량화되어 LocalStorage에 안전하게 저장)
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        curBannerUploadedImgData = compressedDataUrl;
+        curBannerExistingImgUrl = ""; // 새 파일이 등록되었으므로 기존 이미지 대체
+        updateBannerModalPreview(curBannerUploadedImgData);
+        showMasterToast("배너 이미지가 최적화되어 등록되었습니다.");
+      } catch(err) {
+        console.warn("이미지 압축 실패, 원본 사용:", err);
+        curBannerUploadedImgData = rawDataUrl;
+        curBannerExistingImgUrl = "";
+        updateBannerModalPreview(curBannerUploadedImgData);
+        showMasterToast("배너 이미지가 등록되었습니다.");
+      }
+    };
+    tempImg.onerror = function() {
+      alert("유효한 이미지 파일이 아닙니다.");
+      e.target.value = "";
+    };
+    tempImg.src = rawDataUrl;
   };
   reader.readAsDataURL(file);
 }
 
-function handleBannerPresetChange(val) {
+function handleBannerImageRemove() {
   curBannerUploadedImgData = "";
+  curBannerExistingImgUrl = "";
   const fileInput = document.getElementById("bannerImageFile");
   if (fileInput) fileInput.value = "";
-  updateBannerModalPreview(val);
+  updateBannerModalPreview("");
+  showMasterToast("배너 이미지가 제거되었습니다.");
+}
+
+function handleBannerPresetChange(val) {
+  // 프리셋 미사용으로 빈 함수 유지
 }
 
 function openBannerModal(bannerId) {
   curBannerUploadedImgData = "";
+  curBannerExistingImgUrl = "";
   const fileInput = document.getElementById("bannerImageFile");
   if (fileInput) fileInput.value = "";
 
@@ -2172,8 +2230,6 @@ function openBannerModal(bannerId) {
   const editIdInput = document.getElementById("bannerEditId");
   const titleInput = document.getElementById("bannerTitle");
   const subInput = document.getElementById("bannerSub");
-  const imgSelect = document.getElementById("bannerImageUrl");
-  const bgSelect = document.getElementById("bannerBgTheme");
   const orderInput = document.getElementById("bannerOrder");
   const activeSelect = document.getElementById("bannerActive");
 
@@ -2185,14 +2241,11 @@ function openBannerModal(bannerId) {
     if (editIdInput) editIdInput.value = target.id;
     if (titleInput) titleInput.value = target.title;
     if (subInput) subInput.value = target.sub || "";
-    if (bgSelect) bgSelect.value = target.bgTheme || "linear-gradient(135deg, #7a6348, #4a3b32)";
     if (orderInput) orderInput.value = target.order || 1;
     if (activeSelect) activeSelect.value = target.active || "Y";
 
-    if (imgSelect) {
-      imgSelect.value = target.imageUrl || "";
-    }
-    updateBannerModalPreview(target.imageUrl);
+    curBannerExistingImgUrl = target.imageUrl || "";
+    updateBannerModalPreview(curBannerExistingImgUrl);
 
     curBannerBooks = target.bookIds ? [...target.bookIds] : [];
   } else {
@@ -2202,12 +2255,9 @@ function openBannerModal(bannerId) {
     if (subInput) subInput.value = "";
     if (orderInput) orderInput.value = bannerList.length + 1;
     if (activeSelect) activeSelect.value = "Y";
-    if (bgSelect) bgSelect.value = "linear-gradient(135deg, #7a6348, #4a3b32)";
 
-    if (imgSelect) {
-      imgSelect.value = "upload/banner/banner_reading_king.jpg";
-    }
-    updateBannerModalPreview(imgSelect ? imgSelect.value : "");
+    curBannerExistingImgUrl = "";
+    updateBannerModalPreview("");
 
     curBannerBooks = [];
   }
@@ -2340,9 +2390,7 @@ function handleSaveBanner(e) {
   const editId = document.getElementById("bannerEditId").value;
   const title = document.getElementById("bannerTitle").value.trim();
   const sub = document.getElementById("bannerSub").value.trim();
-  const presetUrl = document.getElementById("bannerImageUrl") ? document.getElementById("bannerImageUrl").value : "";
-  const imageUrl = curBannerUploadedImgData || presetUrl;
-  const bgTheme = document.getElementById("bannerBgTheme").value;
+  const imageUrl = curBannerUploadedImgData || curBannerExistingImgUrl || "";
   const order = parseInt(document.getElementById("bannerOrder").value, 10) || 1;
   const active = document.getElementById("bannerActive").value;
 
@@ -2352,7 +2400,6 @@ function handleSaveBanner(e) {
       target.title = title;
       target.sub = sub;
       target.imageUrl = imageUrl;
-      target.bgTheme = bgTheme;
       target.order = order;
       target.active = active;
       target.bookIds = [...curBannerBooks];
@@ -2365,7 +2412,6 @@ function handleSaveBanner(e) {
       title: title,
       sub: sub,
       imageUrl: imageUrl,
-      bgTheme: bgTheme,
       order: order,
       active: active,
       clicks: 0,
@@ -3852,37 +3898,117 @@ function insertQuizSymbol(sym) {
 // 도서별 다중 퀴즈 세트 무결성 보장 함수 (본사 출제 + 가맹점 출제 세트 구성)
 function ensureMasterQuizSets(book) {
   if (!book.quizSets || !Array.isArray(book.quizSets) || book.quizSets.length === 0) {
-    const defaultHQQuestions = (book.quizList && Array.isArray(book.quizList) && book.quizList.length > 0)
-      ? JSON.parse(JSON.stringify(book.quizList))
-      : [
-          {
-            type: "CHOICE",
-            question: `[${book.title}] 1. 도서의 중심 인물과 배경에 대한 올바른 설명은 무엇인가요?`,
-            opt1: "주인공이 겪는 핵심 갈등의 배경과 정확히 일치한다",
-            opt2: "전혀 다른 시대적 배경에서 펼쳐진다",
-            opt3: "주인공이 등장하지 않는 허구의 서술이다",
-            opt4: "결말과 정반대되는 인물 관계이다",
-            ans: "1",
-            hint: "도서 전반부 1장의 배경을 참고하세요."
-          },
-          {
-            type: "SUBJECTIVE",
-            question: `[${book.title}] 2. 주인공이 마주한 가장 중요한 핵심 갈등이나 사건의 핵심 키워드를 적어주세요.`,
-            subjectiveAns: "성장",
-            similarAns: "마음의 성장, 자아 성장",
-            hint: "주인공의 내면 변화를 나타내는 두 글자 단어입니다."
-          },
-          {
-            type: "CHOICE",
-            question: `[${book.title}] 3. 작가가 이 책을 통해 독자에게 전달하고자 한 가장 중요한 교훈이나 가치는 무엇인가요?`,
-            opt1: "진정한 배려와 공감, 따뜻한 마음의 가치",
-            opt2: "물질적 성공과 이기적인 태도",
-            opt3: "규칙을 무조건 어기는 용기",
-            opt4: "혼자만의 이익을 추구하는 삶",
-            ans: "1",
-            hint: "작가의 말 또는 책의 결말 후기를 참고하세요."
-          }
-        ];
+    let defaultHQQuestions = [];
+    if (book.title && book.title.includes("어린 왕자")) {
+      // 어린 왕자: 스크린샷과 100% 일치하는 질문 및 이미지·영상 미디어 탑재 샘플
+      defaultHQQuestions = [
+        {
+          type: "CHOICE",
+          question: "어린 왕자가 자신의 별을 떠나 여행을 시작하게 된 결정적인 이유는 무엇인가요?",
+          mediaType: "image",
+          mediaUrl: "assets/covers/cover_1001.jpg",
+          mediaCaption: "[도서 삽화] 소행성 B-612를 떠나는 어린 왕자와 장미꽃",
+          mediaName: "little_prince_b612.webp",
+          mediaSizeInfo: "520KB ➔ 45KB (91% WebP 압축)",
+          opt1: "오만하고 변덕스러운 장미와의 갈등 때문에",
+          opt2: "더 넓은 우주를 정복하고 싶어서",
+          opt3: "별에 화산이 폭발한 위험이 있어서",
+          opt4: "비행사 아저씨를 만나기 위해",
+          ans: "1",
+          hint: "장미의 투정과 거짓말에 실망한 어린 왕자의 심정을 생각해보세요."
+        },
+        {
+          type: "CHOICE",
+          question: "영상 자료를 참고할 때, 어린 왕자가 살던 고향 별 소행성 B-612에 대한 설명으로 올바른 것은?",
+          mediaType: "video",
+          mediaUrl: "https://www.youtube.com/watch?v=kYJ5bK_j09g",
+          mediaCaption: "[영상 자료] 생텍쥐페리의 『어린 왕자』 북트레일러 클립 (YouTube URL 연동)",
+          opt1: "집채보다 커다란 바오바브나무가 울창하게 자라있는 별",
+          opt2: "의자를 조금만 뒤로 물리면 하루에 마흔네 번도 해지는 것을 볼 수 있는 아주 작은 별",
+          opt3: "수많은 사람들이 모여 사는 시끌벅적한 대도시 별",
+          opt4: "단 한 송이의 꽃도 피지 않는 메마른 얼음 행성",
+          ans: "2",
+          hint: "어린 왕자는 슬플 때 해지는 모습을 바라보는 것을 좋아했습니다."
+        },
+        {
+          type: "SUBJECTIVE",
+          question: "어린 왕자가 사막여우를 만나 깨달은 가치 — '서로에게 특별한 존재가 되어 책임을 지는 것'을 뜻하는 세 글자 낱말은?",
+          mediaType: "none",
+          mediaUrl: "",
+          mediaCaption: "",
+          subjectiveAns: "길들임",
+          similarAns: "길들인다, 길들이기, 길들임의 의미",
+          hint: "여우가 어린 왕자에게 가르쳐 준 관계의 비밀입니다."
+        },
+        {
+          type: "CHOICE",
+          question: "어른들이 그저 '평범한 모자'로만 오해했던 비행사의 그림 1호는 실제 무엇을 그린 것이었나요?",
+          mediaType: "none",
+          mediaUrl: "",
+          mediaCaption: "",
+          opt1: "코끼리를 삼켜 소화시키고 있는 보아뱀",
+          opt2: "사막 한가운데 불시착한 경비행기",
+          opt3: "상자 속에 얌전히 누워 잠든 어린 양",
+          opt4: "유리 덮개 속에 핀 붉은 장미꽃",
+          ans: "1",
+          hint: "어른들은 겉모습만 보고 모자라고 생각했습니다."
+        },
+        {
+          type: "CHOICE",
+          question: "사막여우가 어린 왕자에게 전별 선물로 건넨 마지막 비밀로 가장 알맞은 교훈은 무엇인가요?",
+          mediaType: "none",
+          mediaUrl: "",
+          mediaCaption: "",
+          opt1: "가장 중요한 것은 눈에 보이지 않고 오로지 마음으로만 볼 수 있다",
+          opt2: "친구는 많을수록 좋으니 세상 모든 사람과 사귀어라",
+          opt3: "자신의 별을 떠난 것은 돌이킬 수 없는 잘못이다",
+          opt4: "지구의 장미 오천 송이가 내 별의 장미 한 송이보다 훨씬 값지다",
+          ans: "1",
+          hint: "마음의 눈으로 볼 때에만 진정한 가치를 발견할 수 있습니다."
+        }
+      ];
+    } else {
+      defaultHQQuestions = (book.quizList && Array.isArray(book.quizList) && book.quizList.length > 0)
+        ? JSON.parse(JSON.stringify(book.quizList))
+        : [
+            {
+              type: "CHOICE",
+              question: `[${book.title}] 1. 도서의 중심 인물과 배경에 대한 올바른 설명은 무엇인가요?`,
+              mediaType: "none",
+              mediaUrl: "",
+              mediaCaption: "",
+              opt1: "주인공이 겪는 핵심 갈등의 배경과 정확히 일치한다",
+              opt2: "전혀 다른 시대적 배경에서 펼쳐진다",
+              opt3: "주인공이 등장하지 않는 허구의 서술이다",
+              opt4: "결말과 정반대되는 인물 관계이다",
+              ans: "1",
+              hint: "도서 전반부 1장의 배경을 참고하세요."
+            },
+            {
+              type: "SUBJECTIVE",
+              question: `[${book.title}] 2. 주인공이 마주한 가장 중요한 핵심 갈등이나 사건의 핵심 키워드를 적어주세요.`,
+              mediaType: "none",
+              mediaUrl: "",
+              mediaCaption: "",
+              subjectiveAns: "성장",
+              similarAns: "마음의 성장, 자아 성장",
+              hint: "주인공의 내면 변화를 나타내는 두 글자 단어입니다."
+            },
+            {
+              type: "CHOICE",
+              question: `[${book.title}] 3. 작가가 이 책을 통해 독자에게 전달하고자 한 가장 중요한 교훈이나 가치는 무엇인가요?`,
+              mediaType: "none",
+              mediaUrl: "",
+              mediaCaption: "",
+              opt1: "진정한 배려와 공감, 따뜻한 마음의 가치",
+              opt2: "물질적 성공과 이기적인 태도",
+              opt3: "규칙을 무조건 어기는 용기",
+              opt4: "혼자만의 이익을 추구하는 삶",
+              ans: "1",
+              hint: "작가의 말 또는 책의 결말 후기를 참고하세요."
+            }
+          ];
+    }
 
     book.quizSets = [
       {
@@ -4106,9 +4232,18 @@ function renderQuizTabButtons() {
   container.innerHTML = currentQuizQuestions.map((q, idx) => {
     const isChoice = (q.type || "CHOICE") === "CHOICE";
     const typeIcon = isChoice ? "🎯" : "✍️";
+    
+    // 미디어 첨부 여부 시각적 뱃지 (이미지: 🖼️, 영상: 🎬)
+    let mediaBadge = "";
+    if (q.mediaType === "image" && q.mediaUrl) {
+      mediaBadge = `<span title="이미지(WebP) 첨부됨" style="margin-left: 3px; font-size: 11px;">🖼️</span>`;
+    } else if (q.mediaType === "video" && q.mediaUrl) {
+      mediaBadge = `<span title="영상(URL) 첨부됨" style="margin-left: 3px; font-size: 11px;">🎬</span>`;
+    }
+
     return `
       <button type="button" class="quiz-num-pill ${idx === curQuizQuestionIdx ? 'active' : ''}" onclick="switchQuizQuestionItem(${idx})">
-        ${typeIcon} ${idx + 1}번 문항
+        ${typeIcon} ${idx + 1}번 문항${mediaBadge}
       </button>
     `;
   }).join("");
@@ -4117,6 +4252,243 @@ function renderQuizTabButtons() {
   if (btnDel) {
     btnDel.style.display = currentQuizQuestions.length > 1 ? "inline-block" : "none";
   }
+}
+
+// ==============================================================
+// 북퀴즈 문항 멀티미디어 제어 로직 (WebP 자동 변환 이미지 & 영상 URL)
+// ==============================================================
+
+// 미디어 유형 변경 (none | image | video)
+function setQuizMediaType(type) {
+  const btnNone = document.getElementById("mqMediaBtnNone");
+  const btnImg = document.getElementById("mqMediaBtnImage");
+  const btnVid = document.getElementById("mqMediaBtnVideo");
+  const areaImg = document.getElementById("mqMediaImageArea");
+  const areaVid = document.getElementById("mqMediaVideoArea");
+  const captionWrap = document.getElementById("mqMediaCaptionWrap");
+
+  if (!btnNone || !btnImg || !btnVid) return;
+
+  btnNone.classList.toggle("active", type === "none");
+  btnImg.classList.toggle("active", type === "image");
+  btnVid.classList.toggle("active", type === "video");
+
+  if (areaImg) areaImg.style.display = (type === "image") ? "block" : "none";
+  if (areaVid) areaVid.style.display = (type === "video") ? "block" : "none";
+  if (captionWrap) captionWrap.style.display = (type !== "none") ? "block" : "none";
+
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  if (q) {
+    q.mediaType = type;
+    if (type === "none") {
+      q.mediaUrl = "";
+      q.mediaName = "";
+    }
+  }
+  renderQuizTabButtons();
+}
+
+// 이미지 파일 선택 시 브라우저 Canvas를 활용하여 즉시 WebP 포맷으로 자동 변환 (서버 용량 절감 최우선)
+function handleQuizImageUpload(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    alert("이미지 파일(JPG, PNG, GIF 등)만 업로드할 수 있습니다.");
+    input.value = "";
+    return;
+  }
+
+  const statusEl = document.getElementById("mqImageStatusText");
+  if (statusEl) {
+    statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-info mr-1"></i>WebP 고화질 압축 변환 중...`;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // 1. 메모리 절감 및 반응형 렌더링을 위해 최대 너비 1280px로 비례 축소
+      const maxW = 1280;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxW) {
+        h = Math.round((h * maxW) / w);
+        w = maxW;
+      }
+
+      // 2. 오프스크린 캔버스에 이미지 렌더링
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // 3. 브라우저 내장 toDataURL로 초경량 WebP 포맷 인코딩 (화질 0.82)
+      let webpDataUrl = "";
+      try {
+        webpDataUrl = canvas.toDataURL("image/webp", 0.82);
+        if (!webpDataUrl.startsWith("data:image/webp")) {
+          webpDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        }
+      } catch (err) {
+        webpDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      }
+
+      // 4. 원본 대비 용량 절감 통계 계산
+      const origKb = Math.round(file.size / 1024);
+      const webpKb = Math.round((webpDataUrl.length * 0.75) / 1024);
+      const savePercent = origKb > 0 ? Math.max(0, Math.round(((origKb - webpKb) / origKb) * 100)) : 0;
+
+      // 5. 현재 문항 데이터에 WebP 미디어 반영
+      const q = currentQuizQuestions[curQuizQuestionIdx];
+      if (q) {
+        q.mediaType = "image";
+        q.mediaUrl = webpDataUrl;
+        q.mediaName = file.name;
+        q.mediaSizeInfo = `${origKb}KB ➔ ${webpKb}KB (${savePercent}% 용량 절감)`;
+      }
+
+      // 6. UI 미리보기 노출
+      displayQuizImagePreview(webpDataUrl, file.name, q.mediaSizeInfo);
+
+      if (statusEl) {
+        statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-success mr-1"></i>WebP 변환 완료 (${origKb}KB ➔ <strong>${webpKb}KB</strong>, ${savePercent}% 압축)`;
+      }
+
+      renderQuizTabButtons();
+      input.value = "";
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// 이미지 미리보기 화면 반영
+function displayQuizImagePreview(url, name, sizeInfo) {
+  const box = document.getElementById("mqImagePreviewBox");
+  const img = document.getElementById("mqImagePreviewImg");
+  const meta = document.getElementById("mqImageMetaText");
+  if (!box || !img) return;
+
+  if (url) {
+    img.src = url;
+    if (meta) meta.innerText = `${name || '문항 이미지'} · ${sizeInfo || 'WebP 최적화 완료'}`;
+    box.style.display = "block";
+  } else {
+    box.style.display = "none";
+  }
+}
+
+// 비디오 URL 스마트 파싱: YouTube (일반, 단축, shorts), Vimeo, 일반 MP4 등
+function parseVideoEmbedUrl(url) {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // 1) YouTube
+  let ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: "youtube",
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`,
+      originalUrl: trimmed
+    };
+  }
+
+  // 2) Vimeo
+  let vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: "vimeo",
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      originalUrl: trimmed
+    };
+  }
+
+  // 3) 직접 재생 가능한 MP4 / WebM / Ogg 비디오
+  if (/\.(mp4|webm|ogg)($|\?)/i.test(trimmed)) {
+    return {
+      type: "direct",
+      embedUrl: trimmed,
+      originalUrl: trimmed
+    };
+  }
+
+  // 4) 기타 URL
+  if (/^https?:\/\//i.test(trimmed)) {
+    return {
+      type: "iframe",
+      embedUrl: trimmed,
+      originalUrl: trimmed
+    };
+  }
+
+  return null;
+}
+
+// 영상 URL 입력 이벤트
+function handleQuizVideoUrlInput(val) {
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  if (q) {
+    q.mediaType = "video";
+    q.mediaUrl = val.trim();
+  }
+  renderQuizVideoPlayer(val.trim());
+}
+
+// 영상 URL 미리보기 수동 클릭
+function previewQuizVideoUrl() {
+  const input = document.getElementById("mqVideoUrlInput");
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) {
+    alert("미리보기할 영상 URL(YouTube, Vimeo, MP4 등)을 입력하세요.");
+    input.focus();
+    return;
+  }
+  renderQuizVideoPlayer(val);
+}
+
+// 비디오 플레이어 렌더링
+function renderQuizVideoPlayer(url) {
+  const box = document.getElementById("mqVideoPreviewBox");
+  const wrap = document.getElementById("mqVideoPlayerWrap");
+  if (!box || !wrap) return;
+
+  const parsed = parseVideoEmbedUrl(url);
+  if (!parsed) {
+    box.style.display = "none";
+    wrap.innerHTML = "";
+    return;
+  }
+
+  if (parsed.type === "direct") {
+    wrap.innerHTML = `<video src="${parsed.embedUrl}" controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #000;"></video>`;
+  } else {
+    wrap.innerHTML = `<iframe src="${parsed.embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"></iframe>`;
+  }
+  box.style.display = "block";
+}
+
+// 미디어 삭제
+function removeQuizMedia() {
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  if (q) {
+    q.mediaType = "none";
+    q.mediaUrl = "";
+    q.mediaName = "";
+    q.mediaCaption = "";
+    q.mediaSizeInfo = "";
+  }
+  setQuizMediaType("none");
+  displayQuizImagePreview("", "", "");
+  renderQuizVideoPlayer("");
+  const urlInput = document.getElementById("mqVideoUrlInput");
+  if (urlInput) urlInput.value = "";
+  const capInput = document.getElementById("mqMediaCaption");
+  if (capInput) capInput.value = "";
+  renderQuizTabButtons();
 }
 
 function loadCurrentQuizQuestionForm() {
@@ -4141,6 +4513,29 @@ function loadCurrentQuizQuestionForm() {
 
   document.getElementById("mqQuestionText").value = q.question || "";
   document.getElementById("mqQuizHint").value = q.hint || "";
+
+  // 미디어 데이터 바인딩 (none / image / video)
+  const mediaType = q.mediaType || "none";
+  setQuizMediaType(mediaType);
+
+  const capInput = document.getElementById("mqMediaCaption");
+  if (capInput) capInput.value = q.mediaCaption || "";
+
+  if (mediaType === "image" && q.mediaUrl) {
+    displayQuizImagePreview(q.mediaUrl, q.mediaName || "문제 첨부 이미지", q.mediaSizeInfo || "WebP 포맷");
+  } else {
+    displayQuizImagePreview("", "", "");
+  }
+
+  if (mediaType === "video" && q.mediaUrl) {
+    const urlInput = document.getElementById("mqVideoUrlInput");
+    if (urlInput) urlInput.value = q.mediaUrl;
+    renderQuizVideoPlayer(q.mediaUrl);
+  } else {
+    const urlInput = document.getElementById("mqVideoUrlInput");
+    if (urlInput) urlInput.value = "";
+    renderQuizVideoPlayer("");
+  }
 
   if (isChoice) {
     document.getElementById("mqOpt1").value = q.opt1 || "";
@@ -4185,6 +4580,10 @@ function saveCurrentQuizDraft() {
   q.question = document.getElementById("mqQuestionText")?.value || "";
   q.hint = document.getElementById("mqQuizHint")?.value || "";
 
+  // 미디어 캡션 저장
+  const capInput = document.getElementById("mqMediaCaption");
+  if (capInput) q.mediaCaption = capInput.value;
+
   if (qType === "CHOICE") {
     q.opt1 = document.getElementById("mqOpt1")?.value || "";
     q.opt2 = document.getElementById("mqOpt2")?.value || "";
@@ -4210,6 +4609,10 @@ function addNewQuizQuestion() {
   currentQuizQuestions.push({
     type: "CHOICE",
     question: `새 문제 ${nextNum}. 지문 및 질문 내용을 입력하세요.`,
+    mediaType: "none",
+    mediaUrl: "",
+    mediaCaption: "",
+    mediaName: "",
     opt1: "1번 선택지",
     opt2: "2번 선택지",
     opt3: "3번 선택지",

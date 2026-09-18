@@ -644,17 +644,12 @@
     </div>
 
     <div class="d-flex align-items-center">
-      <div class="mr-4 text-right d-none d-sm-block">
+      <div class="text-right d-none d-sm-block">
         <span class="badge-soft badge-soft-master mr-1" style="font-size: 11px;">
           <i class="fa-solid fa-building mr-1"></i>본사 총괄
         </span>
         <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">마스터 운영자님</span>
         <small style="color: var(--text-muted); display: block; font-size: 11px;">master@nanobook.co.kr</small>
-      </div>
-      <div class="btn-group flex-shrink-0">
-        <button class="btn btn-sm btn-outline-secondary" onclick="exportPlatformData()" style="border-radius: 10px; font-size: 12.5px; padding: 7px 14px; border-color: var(--border-medium); color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-download"></i>데이터 백업
-        </button>
       </div>
     </div>
   </header>
@@ -747,9 +742,9 @@
         </div>
       </div>
 
-      <!-- 상단 요약 통계 카드 (4분할) -->
+      <!-- 상단 요약 통계 카드 (3분할) -->
       <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="col-md-4 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">총 가맹 학원 수 <i class="fa-solid fa-school text-muted"></i></div>
             <div class="stat-num" id="statFranchiseTotal">14<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span></div>
@@ -757,7 +752,7 @@
             <i class="fa-solid fa-building stat-icon-bg"></i>
           </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="col-md-4 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">등록 원생 / 계약 슬롯 <i class="fa-solid fa-users text-muted"></i></div>
             <div class="stat-num" id="statFranchiseSlots">642 <span style="font-size: 15px; font-weight: 600; color: var(--text-muted);">/ 750명</span></div>
@@ -765,20 +760,12 @@
             <i class="fa-solid fa-user-check stat-icon-bg"></i>
           </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+        <div class="col-md-4 col-sm-12">
           <div class="stat-card">
             <div class="stat-label">계약 만료 임박(30일내) <i class="fa-solid fa-clock text-warning"></i></div>
             <div class="stat-num text-warning" id="statFranchiseExpiring">2<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span></div>
             <div class="stat-sub">갱신 안내 카톡 발송 필요</div>
             <i class="fa-solid fa-hourglass-half stat-icon-bg"></i>
-          </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
-          <div class="stat-card">
-            <div class="stat-label">당월 결제 현황 <i class="fa-solid fa-receipt text-muted"></i></div>
-            <div class="stat-num" id="statFranchiseBilling">4,620<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">만원</span></div>
-            <div class="stat-sub"><span class="text-success font-weight-bold">완납 13</span> / <span class="text-danger font-weight-bold">미납 1건</span></div>
-            <i class="fa-solid fa-credit-card stat-icon-bg"></i>
           </div>
         </div>
       </div>
@@ -876,9 +863,6 @@
           </button>
           <button class="btn-beige-primary" onclick="openMasterMemberAddModal()">
             <i class="fa-solid fa-user-plus"></i>회원 등록
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="bulkResetPassword()" style="border-radius: 12px; font-size: 13px; font-weight: 600; padding: 0 14px; height: 38px; border-color: var(--border-medium); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-key"></i>임시비밀번호 발급
           </button>
         </div>
       </div>
@@ -2249,26 +2233,19 @@
           <div class="row">
             <!-- 좌측: 텍스트 정보 -->
             <div class="col-lg-6 mb-3">
-              <div class="bg-white p-3 rounded-lg border shadow-sm h-100">
-                <h6 class="font-weight-bold text-dark mb-3" style="font-size: 14px;">
-                  <i class="fa-solid fa-pen-to-square mr-1 text-primary"></i>배너 기본 정보
-                </h6>
-                <div class="form-group mb-2">
-                  <label class="font-weight-bold" style="font-size: 13px;">배너 제목 <span class="text-danger">*</span></label>
-                  <input type="text" id="bannerTitle" class="form-control form-control-beige" placeholder="예: 9월 나노 독서왕 챌린지!" required>
-                </div>
-                <div class="form-group mb-2">
-                  <label class="font-weight-bold" style="font-size: 13px;">배너 서브 설명</label>
-                  <input type="text" id="bannerSub" class="form-control form-control-beige" placeholder="예: 이번 달 3권 완독하고 골드 뱃지를 획득하세요!">
-                </div>
-                <div class="form-group mb-2">
-                  <label class="font-weight-bold" style="font-size: 13px;">배경 테마 색상 (폴백/테두리)</label>
-                  <select id="bannerBgTheme" class="select-beige w-100">
-                    <option value="linear-gradient(135deg, #7a6348, #4a3b32)">웜 모카 브라운</option>
-                    <option value="linear-gradient(135deg, #4b6b55, #2f5436)">세이지 포레스트 그린</option>
-                    <option value="linear-gradient(135deg, #8c6d48, #d4a373)">골드 샌드</option>
-                    <option value="linear-gradient(135deg, #3d5a80, #293241)">딥 오션 블루</option>
-                  </select>
+              <div class="bg-white p-3 rounded-lg border shadow-sm h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <h6 class="font-weight-bold text-dark mb-3" style="font-size: 14px;">
+                    <i class="fa-solid fa-pen-to-square mr-1 text-primary"></i>배너 기본 정보
+                  </h6>
+                  <div class="form-group mb-2">
+                    <label class="font-weight-bold" style="font-size: 13px;">배너 제목 <span class="text-danger">*</span></label>
+                    <input type="text" id="bannerTitle" class="form-control form-control-beige" placeholder="예: 9월 나노 독서왕 챌린지!" required>
+                  </div>
+                  <div class="form-group mb-3">
+                    <label class="font-weight-bold" style="font-size: 13px;">배너 서브 설명</label>
+                    <input type="text" id="bannerSub" class="form-control form-control-beige" placeholder="예: 이번 달 3권 완독하고 골드 뱃지를 획득하세요!">
+                  </div>
                 </div>
                 <div class="row">
                   <div class="col-6 form-group mb-0">
@@ -2288,39 +2265,37 @@
 
             <!-- 우측: 배너 이미지 업로드 & 미리보기 -->
             <div class="col-lg-6 mb-3">
-              <div class="bg-white p-3 rounded-lg border shadow-sm h-100">
-                <h6 class="font-weight-bold text-dark mb-2" style="font-size: 14px;">
-                  <i class="fa-solid fa-cloud-arrow-up mr-1 text-primary"></i>배너 이미지 선택 & 직접 업로드
-                </h6>
-                <div class="alert alert-secondary py-2 px-3 mb-2" style="font-size: 11.5px; border-radius: 8px; line-height: 1.5;">
-                  <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
-                  <strong>권장 규격:</strong> 16:9 와이드 비율 (1280×720px 권장) / 
-                  <strong>지원 포맷:</strong> JPG, PNG, WebP (최대 5MB)
-                </div>
+              <div class="bg-white p-3 rounded-lg border shadow-sm h-100 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
+                      <i class="fa-solid fa-cloud-arrow-up mr-1 text-primary"></i>배너 이미지 직접 업로드
+                    </h6>
+                    <button type="button" class="btn btn-xs btn-outline-danger" id="bannerImgResetBtn" onclick="handleBannerImageRemove()" style="font-size: 11px; padding: 2px 8px; border-radius: 6px;">
+                      <i class="fa-solid fa-trash-can mr-1"></i>이미지 삭제
+                    </button>
+                  </div>
+                  <div class="alert alert-secondary py-2 px-3 mb-2" style="font-size: 11.5px; border-radius: 8px; line-height: 1.5;">
+                    <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
+                    <strong>권장 규격:</strong> 16:9 와이드 비율 (1280×720px 권장) / 학생 페이지와 즉시 연동됩니다.
+                  </div>
 
-                <!-- 직접 파일 업로드 -->
-                <div class="form-group mb-2">
-                  <label class="font-weight-bold mb-1" style="font-size: 12.5px;">이미지 파일 직접 업로드</label>
-                  <input type="file" id="bannerImageFile" class="form-control form-control-beige p-1" accept="image/png, image/jpeg, image/webp" onchange="handleBannerFileUpload(event)" style="height: auto; font-size: 12px;">
-                </div>
-
-                <!-- 또는 기본 프리셋/URL 선택 -->
-                <div class="form-group mb-2">
-                  <label class="font-weight-bold mb-1" style="font-size: 12.5px;">또는 기본 프리셋 이미지 선택</label>
-                  <select id="bannerImageUrl" class="select-beige w-100" onchange="handleBannerPresetChange(this.value)">
-                    <option value="upload/banner/banner_reading_king.jpg">🏆 9월 독서왕 챌린지 (모카 골드 브라운 일러스트)</option>
-                    <option value="upload/banner/banner_nanosheet.jpg">🌿 나노 시트 개편 (세이지 포레스트 그린 일러스트)</option>
-                    <option value="upload/banner/banner_ranking.jpg">🌟 전국 학생 랭킹 실시간 집계 (골드 샌드 일러스트)</option>
-                    <option value="">(이미지 없음 - 단색 그라데이션 사용)</option>
-                  </select>
+                  <!-- 직접 파일 업로드 -->
+                  <div class="form-group mb-2">
+                    <input type="file" id="bannerImageFile" class="form-control form-control-beige p-1" accept="image/png, image/jpeg, image/webp" onchange="handleBannerFileUpload(event)" style="height: auto; font-size: 12px;">
+                  </div>
                 </div>
 
                 <!-- 미리보기 박스 -->
                 <div class="p-2 bg-light rounded" style="border: 1px dashed var(--border-medium); text-align: center;">
-                  <div id="bannerModalPreviewBox" style="width: 100%; height: 110px; border-radius: 8px; overflow: hidden; background: #efebe4; display: flex; align-items: center; justify-content: center;">
-                    <img id="bannerModalPreviewImg" src="upload/banner/banner_reading_king.jpg" alt="미리보기" style="width: 100%; height: 100%; object-fit: cover;">
+                  <div id="bannerModalPreviewBox" style="width: 100%; height: 115px; border-radius: 8px; overflow: hidden; background: #efebe4; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <img id="bannerModalPreviewImg" src="" alt="미리보기" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                    <div id="bannerModalEmptyNotice" class="text-muted" style="font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <i class="fa-regular fa-image" style="font-size: 18px; opacity: 0.6;"></i>
+                      <span>등록된 배너 이미지가 없습니다.</span>
+                    </div>
                   </div>
-                  <small class="text-muted mt-1 d-block" style="font-size: 11px;">* 홈 상단 롤링 배너 슬라이드에 적용될 비율입니다.</small>
+                  <small class="text-muted mt-1 d-block" style="font-size: 11px;">* 홈 화면 상단 롤링 슬라이드에 적용될 실제 배너입니다.</small>
                 </div>
               </div>
             </div>
@@ -3380,9 +3355,103 @@
           </div>
 
           <!-- 질문 내용 -->
-          <div class="form-group">
+          <div class="form-group mb-2">
             <label class="font-weight-bold" style="font-size: 12.5px;">질문 / 발문 내용 <span class="text-danger">*</span></label>
             <textarea id="mqQuestionText" class="form-control form-control-beige" rows="2" placeholder="도서 내용을 바탕으로 독해력/이해도를 측정할 질문을 입력하세요." onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
+          </div>
+
+          <!-- 문항 멀티미디어 자료 첨부 (이미지 자동 WebP 변환 / 영상 URL) -->
+          <div class="p-2.5 mb-3 rounded border" style="background: #f8fafc; border-color: #e2e8f0;">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+              <label class="font-weight-bold mb-0" style="font-size: 12px; color: #334155;">
+                <i class="fa-solid fa-photo-film text-info mr-1"></i>문항 멀티미디어 자료 <small class="text-muted font-weight-normal">(선택: 문제 이해를 돕는 시각/영상 자료)</small>
+              </label>
+              <!-- 미디어 유형 선택 버튼 그룹 -->
+              <div class="btn-group btn-group-toggle" id="mqMediaTypeGroup" style="transform: scale(0.92); transform-origin: right center;">
+                <button type="button" class="btn btn-xs btn-outline-secondary active" id="mqMediaBtnNone" onclick="setQuizMediaType('none')">
+                  <i class="fa-solid fa-ban mr-1"></i>미디어 없음
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-info" id="mqMediaBtnImage" onclick="setQuizMediaType('image')">
+                  <i class="fa-solid fa-image mr-1"></i>이미지 (WebP 자동변환)
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-danger" id="mqMediaBtnVideo" onclick="setQuizMediaType('video')">
+                  <i class="fa-solid fa-video mr-1"></i>영상 (URL 링크)
+                </button>
+              </div>
+            </div>
+
+            <!-- 1) 이미지 업로드 영역 (WebP 자동 변환) -->
+            <div id="mqMediaImageArea" style="display: none;">
+              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <input type="file" id="mqImageFileInput" accept="image/*" class="d-none" onchange="handleQuizImageUpload(this)">
+                <button type="button" class="btn btn-xs btn-primary font-weight-bold" onclick="document.getElementById('mqImageFileInput').click()" style="background: #0284c7; border-color: #0284c7; padding: 4px 10px;">
+                  <i class="fa-solid fa-cloud-arrow-up mr-1"></i>이미지 파일 선택
+                </button>
+                <small class="text-muted" id="mqImageStatusText" style="font-size: 11px;">
+                  <i class="fa-solid fa-wand-magic-sparkles text-warning mr-1"></i>업로드 시 고화질 WebP 파일로 자동 변환·경량화되어 초고속 로딩됩니다.
+                </small>
+              </div>
+
+              <!-- 이미지 미리보기 & 삭제 -->
+              <div id="mqImagePreviewBox" style="display: none; margin-top: 6px;">
+                <div class="d-flex align-items-start gap-3 p-2 bg-white rounded border" style="border-color: #cbd5e1;">
+                  <div style="position: relative; width: 130px; height: 90px; border-radius: 6px; overflow: hidden; background: #f1f5f9; border: 1px solid #cbd5e1; flex-shrink: 0;">
+                    <img id="mqImagePreviewImg" src="" alt="문항 이미지 미리보기" style="width: 100%; height: 100%; object-fit: contain; background: #fff;">
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div class="d-flex align-items-center gap-1.5 mb-1">
+                      <span class="badge badge-success px-1.5 py-0.5" style="font-size: 10px;">WebP 자동 변환 완료</span>
+                      <small class="font-weight-bold text-dark" id="mqImageMetaText" style="font-size: 11px;"></small>
+                    </div>
+                    <div class="text-muted" style="font-size: 11px; margin-bottom: 6px;">
+                      서버 용량과 네트워크 속도를 고려하여 WebP 최적화 포맷으로 압축 저장됩니다.
+                    </div>
+                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="removeQuizMedia()" style="padding: 2px 7px; font-size: 10.5px;">
+                      <i class="fa-solid fa-trash-can mr-1"></i>이미지 삭제
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2) 영상 URL 등록 영역 -->
+            <div id="mqMediaVideoArea" style="display: none;">
+              <div class="input-group input-group-sm mb-1.5">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-white" style="font-size: 11px; color: #475569;">
+                    <i class="fa-brands fa-youtube text-danger mr-1"></i>영상 URL
+                  </span>
+                </div>
+                <input type="url" id="mqVideoUrlInput" class="form-control form-control-beige" placeholder="예: https://www.youtube.com/watch?v=... 또는 https://youtu.be/... (MP4 직접 링크 가능)" oninput="handleQuizVideoUrlInput(this.value)" style="font-size: 11.5px;">
+                <div class="input-group-append">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="previewQuizVideoUrl()">미리보기</button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuizMedia()">삭제</button>
+                </div>
+              </div>
+              <small class="text-muted d-block mb-2" style="font-size: 10.5px;">
+                <i class="fa-solid fa-circle-info text-info mr-1"></i>용량 절감을 위해 영상은 YouTube, Vimeo 또는 외부 스트리밍 URL 링크로 등록됩니다.
+              </small>
+
+              <!-- 비디오 미리보기 플레이어 -->
+              <div id="mqVideoPreviewBox" style="display: none; margin-top: 6px;">
+                <div class="p-2 bg-white rounded border">
+                  <div style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                    <i class="fa-solid fa-circle-play text-danger mr-1"></i>영상 미리보기
+                  </div>
+                  <div style="position: relative; width: 100%; max-width: 440px; aspect-ratio: 16/9; overflow: hidden; border-radius: 6px; background: #000;" id="mqVideoPlayerWrap">
+                    <!-- iframe 또는 video 태그 동적 주입 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3) 공통 미디어 캡션 (선택) -->
+            <div id="mqMediaCaptionWrap" class="mt-2 pt-2 border-top" style="display: none; border-color: #e2e8f0;">
+              <div class="d-flex align-items-center gap-2">
+                <span style="font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap;">자료 설명 / 캡션:</span>
+                <input type="text" id="mqMediaCaption" class="form-control form-control-sm form-control-beige" placeholder="예: [참고자료] 어린 왕자가 만난 사막여우 삽화" oninput="saveCurrentQuizDraft()" style="font-size: 11.5px; height: 28px;">
+              </div>
+            </div>
           </div>
 
           <!-- A. 객관식 입력 폼 (4지선다) -->
