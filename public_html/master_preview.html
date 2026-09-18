@@ -1019,6 +1019,9 @@
           <button type="button" class="btn btn-beige-secondary" id="btn-op-notices" onclick="switchOpSubTab('notices')">
             <i class="fa-solid fa-bullhorn mr-1"></i>전체 공지사항
           </button>
+          <button type="button" class="btn btn-beige-secondary" id="btn-op-recommended" onclick="switchOpSubTab('recommended')">
+            <i class="fa-solid fa-star mr-1"></i>권장도서 관리
+          </button>
         </div>
       </div>
 
@@ -1099,6 +1102,55 @@
                 </tr>
               </thead>
               <tbody id="noticeTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 서브탭 4: 권장도서 관리 -->
+      <div id="op-sub-recommended" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h6 class="font-weight-bold mb-0 text-muted">
+              <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 관리 (<span id="recBookCount">0</span>권 등록)
+            </h6>
+            <small class="text-muted">학생 도서관에 노출될 학년별(초1~초6, 중등) 권장/추천 도서 목록을 관리합니다.</small>
+          </div>
+          <div class="d-flex align-items-center" style="gap: 10px;">
+            <select id="recGradeFilter" class="form-control form-control-beige form-control-sm" style="width: 150px;" onchange="renderRecommendedBooksTable()">
+              <option value="ALL">전체 학년</option>
+              <option value="초등 1학년">초등 1학년</option>
+              <option value="초등 2학년">초등 2학년</option>
+              <option value="초등 3학년">초등 3학년</option>
+              <option value="초등 4학년">초등 4학년</option>
+              <option value="초등 5학년">초등 5학년</option>
+              <option value="초등 6학년">초등 6학년</option>
+              <option value="중학교">중학교</option>
+            </select>
+            <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
+              <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+            </button>
+          </div>
+        </div>
+
+        <div class="simple-card">
+          <div class="table-responsive">
+            <table class="simple-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">순번</th>
+                  <th style="width: 70px;">표지</th>
+                  <th style="text-align: left;">도서명</th>
+                  <th style="width: 150px;">저자 / 출판사</th>
+                  <th style="width: 120px;">권장 학년</th>
+                  <th style="width: 120px;">카테고리</th>
+                  <th style="width: 110px;">등록일자</th>
+                  <th style="width: 100px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="recommendedBooksTableBody">
                 <!-- JS 렌더링 -->
               </tbody>
             </table>
@@ -2580,6 +2632,58 @@
         <button type="button" class="btn-beige-primary" data-dismiss="modal">
           <i class="fa-solid fa-check mr-1"></i>도서 목록 편집 완료
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5-1. 학년별 권장도서 등록 모달 -->
+<div class="modal fade" id="recommendedBookModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16.5px;">
+          <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 등록
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label font-weight-bold" style="font-size: 13px;">지정 대상 학년</label>
+            <select id="modalRecGrade" class="form-control form-control-beige">
+              <option value="초등 1학년">초등 1학년</option>
+              <option value="초등 2학년">초등 2학년</option>
+              <option value="초등 3학년">초등 3학년</option>
+              <option value="초등 4학년">초등 4학년</option>
+              <option value="초등 5학년">초등 5학년</option>
+              <option value="초등 6학년">초등 6학년</option>
+              <option value="중학교">중학교</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label font-weight-bold" style="font-size: 13px;">도서 검색</label>
+            <div class="input-group">
+              <input type="text" id="modalRecBookSearch" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="filterRecModalBooks()">
+              <div class="input-group-append">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="font-weight-bold mb-2" style="font-size: 13px; color: var(--text-main);">
+          마스터 도서 라이브러리 목록에서 선택 (<span id="modalRecBookCandidateCount">0</span>권 검색됨)
+        </div>
+        <div class="border rounded p-2" style="max-height: 380px; overflow-y: auto; background: #fff;" id="modalRecBookCandidateList">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+      <div class="modal-footer modal-footer-beige d-flex justify-content-between">
+        <small class="text-muted">도서의 [권장도서 추가] 버튼을 누르면 해당 학년의 권장도서로 즉시 지정됩니다.</small>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
       </div>
     </div>
   </div>

@@ -1632,6 +1632,66 @@ var learningLogs = [
   }
 ];
 
+// ==============================================================
+// 3. 학습 관리 및 리포트 연동 모듈
+// ==============================================================
+function getLoadedLearningLogs() {
+  var logs = [];
+  try {
+    var raw = localStorage.getItem('NANO_LEARNING_LOGS');
+    if (raw) {
+      logs = JSON.parse(raw);
+    }
+  } catch(e) {}
+
+  // 기본 learningLogs와 병합 (ID 중복 제거)
+  learningLogs.forEach(function(baseLog) {
+    if (!logs.some(function(l) { return l.id === baseLog.id; })) {
+      logs.push(baseLog);
+    }
+  });
+
+  // 최신순 정렬
+  logs.sort(function(a, b) {
+    return (b.date || '').localeCompare(a.date || '');
+  });
+  return logs;
+}
+
+function saveCustomLearningLogs(logs) {
+  try {
+    localStorage.setItem('NANO_LEARNING_LOGS', JSON.stringify(logs));
+  } catch(e) {}
+}
+
+function toggleNanoSheetStatus(logId) {
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === logId; });
+  if (!log) {
+    log = learningLogs.find(function(l) { return l.id === logId; });
+  }
+  if (log) {
+    log.sheet = (log.sheet === '작성 완료') ? '작성 전' : '작성 완료';
+    saveCustomLearningLogs(allLogs);
+    renderLearningTable();
+    showAcademyToast(`[${log.studentName}] 나노 시트 상태가 [${log.sheet}]로 변경되었습니다.`);
+  }
+}
+
+function uploadCorrectionSheet(logId) {
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === logId; });
+  if (!log) {
+    log = learningLogs.find(function(l) { return l.id === logId; });
+  }
+  if (log) {
+    log.reviewed = '첨삭 완료';
+    saveCustomLearningLogs(allLogs);
+    renderLearningTable();
+    showAcademyToast(`[${log.studentName}] 원생의 지도교사 첨삭 파일이 업로드되어 [첨삭 완료] 처리되었습니다.`);
+  }
+}
+
 function renderLearningTable() {
   var tbody = document.getElementById('learningTableBody');
   if (!tbody) return;
@@ -1640,7 +1700,8 @@ function renderLearningTable() {
   var classFilter = document.getElementById('learningClassFilter') ? document.getElementById('learningClassFilter').value : 'ALL';
   var query = (document.getElementById('learningSearchInput') ? document.getElementById('learningSearchInput').value : '').toLowerCase().trim();
 
-  var filtered = learningLogs.filter(function(l) {
+  var allLogs = getLoadedLearningLogs();
+  var filtered = allLogs.filter(function(l) {
     var matchClass = classFilter === 'ALL' || l.classGroup === classFilter;
     var matchQuery = !query || l.studentName.toLowerCase().includes(query) || l.bookTitle.toLowerCase().includes(query);
     return matchClass && matchQuery;
@@ -1656,6 +1717,26 @@ function renderLearningTable() {
 
   filtered.forEach(function(l, idx) {
     var tr = document.createElement('tr');
+    var isSheetDone = (l.sheet === '작성 완료');
+    var sheetBtnHtml = isSheetDone
+      ? `<button type="button" class="btn btn-xs btn-success" onclick="toggleNanoSheetStatus('${l.id}')" title="클릭 시 '작성 전'으로 변경" style="font-size:11px; padding:3px 8px; border-radius:5px;">
+           <i class="fa-solid fa-check mr-1"></i>작성 완료
+         </button>`
+      : `<button type="button" class="btn btn-xs btn-outline-secondary" onclick="toggleNanoSheetStatus('${l.id}')" title="클릭 시 '작성 완료'로 변경" style="font-size:11px; padding:3px 8px; border-radius:5px; background: #fff;">
+           작성 전
+         </button>`;
+
+    var isReviewDone = (l.reviewed && l.reviewed.includes('완료'));
+    var reviewBadge = `<span class="badge-soft ${isReviewDone ? 'badge-soft-success' : 'badge-soft-warn'}" style="font-size:11px;">${l.reviewed || '첨삭 전'}</span>`;
+    var reviewColHtml = `
+      <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
+        ${reviewBadge}
+        <button type="button" class="btn btn-xs btn-outline-primary" onclick="uploadCorrectionSheet('${l.id}')" title="첨삭 파일 업로드" style="font-size:10.5px; padding:2px 5px; border-radius:4px;">
+          <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>업로드
+        </button>
+      </div>
+    `;
+
     tr.innerHTML = `
       <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
       <td class="text-center"><small class="text-muted">${l.date}</small></td>
@@ -1665,18 +1746,15 @@ function renderLearningTable() {
       </td>
       <td class="font-weight-bold">${l.bookTitle}</td>
       <td class="text-center">
-        <span class="badge-soft ${l.score === 100 ? 'badge-soft-success' : 'badge-soft-warn'} font-weight-bold">${l.score}점</span>
+        <span class="badge-soft ${l.score >= 90 ? 'badge-soft-success' : 'badge-soft-warn'} font-weight-bold">${l.score}점</span>
       </td>
-      <td class="text-center"><span class="badge-soft badge-soft-neutral">${l.sheet}</span></td>
+      <td class="text-center">${sheetBtnHtml}</td>
+      <td class="text-center">${reviewColHtml}</td>
       <td class="text-center">
-        <span class="badge-soft ${l.reviewed.includes('완료') ? 'badge-soft-success' : 'badge-soft-warn'}">${l.reviewed}</span>
-      </td>
-      <td class="text-center">
-        <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
-          <button class="btn btn-xs btn-outline-secondary" onclick="openLearningDetailModal('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 7px; white-space:nowrap;">
+        <div class="d-inline-flex align-items-center justify-content-center">
+          <button class="btn btn-xs btn-beige-secondary" onclick="openLearningDetailModal('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:4px 10px; font-weight:600; white-space:nowrap;">
             학습리포트
           </button>
-          ${getKakaoReportBtnHtml(l.id, false)}
         </div>
       </td>
     `;
@@ -1758,7 +1836,11 @@ function sendLearningReportKakao(logId, event) {
   if (event) {
     event.stopPropagation();
   }
-  var log = learningLogs.find(function(l) { return l.id === logId; });
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === logId; });
+  if (!log) {
+    log = learningLogs.find(function(l) { return l.id === logId; });
+  }
   var studentName = log ? log.studentName : '원생';
   var bookTitle = log ? log.bookTitle : '도서';
   var hasSent = !!getKakaoReportLog(logId);
@@ -1799,10 +1881,13 @@ function printLearningReport() {
 
 // 상세 학습리포트 모달 열기 및 문항별 채점 결과 상세 렌더링
 function openLearningDetailModal(id) {
-  var log = learningLogs.find(function(l) { return l.id === id; });
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === id; });
+  if (!log) {
+    log = learningLogs.find(function(l) { return l.id === id; });
+  }
   if (!log) return;
 
-  // 현재 열린 학습로그 ID 저장 및 모달 내 카톡 발송 버튼 동기화
   currentOpenLearningLogId = id;
   var modalKakaoContainer = document.getElementById('modalKakaoSendBtnContainer');
   if (modalKakaoContainer) {
@@ -1832,7 +1917,7 @@ function openLearningDetailModal(id) {
     }
   }
 
-  // 2. 북퀴즈 문항별 상세 내역 (어떤 문제, 정답, 내가 고른 보기, 맞았는지 틀렸는지)
+  // 2. 북퀴즈 문항별 상세 내역
   var container = document.getElementById('learnModalQuizDetailContainer');
   if (container) {
     var quizzes = log.quizResults || [];
@@ -1855,16 +1940,14 @@ function openLearningDetailModal(id) {
            </span>`;
 
       var choiceBox = q.isCorrect
-        ? `<!-- 정답 맞춘 경우 -->
-           <div class="p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; font-size: 12.5px;">
+        ? `<div class="p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; font-size: 12.5px;">
              <div>
                <strong class="text-success mr-2"><i class="fa-solid fa-check mr-1"></i>내가 고른 보기 (내 답안):</strong>
                <span class="font-weight-bold text-dark">${q.userChoiceText}</span>
              </div>
              <span class="badge badge-success px-2 py-1" style="font-size: 11px;">정답 일치</span>
            </div>`
-        : `<!-- 오답 틀린 경우: 내가 고른 오답 vs 실제 정답 나란히 표출 -->
-           <div class="mb-1 p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #fef2f2; border: 1.5px solid #fecaca; font-size: 12.5px;">
+        : `<div class="mb-1 p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #fef2f2; border: 1.5px solid #fecaca; font-size: 12.5px;">
              <div>
                <strong class="text-danger mr-2"><i class="fa-solid fa-xmark mr-1"></i>내가 고른 보기 (내 오답):</strong>
                <span class="font-weight-bold" style="color: #b91c1c; text-decoration: line-through;">${q.userChoiceText}</span>
@@ -1893,11 +1976,9 @@ function openLearningDetailModal(id) {
             </span>
             ${statusBadge}
           </div>
-
           <div class="mb-3 font-weight-bold" style="font-size: 13px; color: #1e293b; line-height: 1.6; white-space: pre-line;">
             ${q.question}
           </div>
-
           ${choiceBox}
           ${hintBox}
         </div>
@@ -1905,15 +1986,82 @@ function openLearningDetailModal(id) {
     }).join('');
   }
 
-  // 3. 나노 시트 학생 서술형 답안 및 지도교사 첨삭 코멘트
-  if (document.getElementById('learnModalSheetAnswer')) {
-    document.getElementById('learnModalSheetAnswer').innerText = log.sheetAnswer || '학생이 제출한 나노 시트 생각담기 과제 원문입니다.';
-  }
-  if (document.getElementById('learnModalComment')) {
-    document.getElementById('learnModalComment').innerText = log.comment || '지도교사 첨삭이 완료되었습니다.';
+  // 3. 생각 담기 영역 (질문, 학생 답안, 교사 코멘트 토글)
+  var thoughtSec = document.getElementById('learnModalThoughtSection');
+  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer));
+  
+  if (thoughtSec) {
+    if (!hasThought) {
+      thoughtSec.style.display = 'none';
+    } else {
+      thoughtSec.style.display = 'block';
+      var qText = log.thoughtQuestion || '이 책을 읽고 난 후 주인공의 태도나 선택에 대해 나의 생각을 서술해 보세요.';
+      var aText = log.studentThoughtAnswer || log.sheetAnswer || '학생이 작성한 생각 담기 주관식 답안입니다.';
+      
+      var qEl = document.getElementById('learnModalThoughtQuestion');
+      if (qEl) qEl.innerText = qText;
+
+      var aEl = document.getElementById('learnModalSheetAnswer');
+      if (aEl) aEl.innerText = aText;
+
+      // 교사 코멘트 상태 처리
+      var commentContainer = document.getElementById('learnModalCommentContainer');
+      var commentInput = document.getElementById('learnModalCommentInput');
+      var commentDisplay = document.getElementById('learnModalCommentDisplay');
+      var btnToggle = document.getElementById('btnToggleTeacherComment');
+
+      if (log.comment) {
+        if (commentContainer) commentContainer.style.display = 'block';
+        if (commentInput) commentInput.value = log.comment;
+        if (commentDisplay) commentDisplay.innerText = log.comment;
+        if (btnToggle) btnToggle.innerHTML = '<i class="fa-solid fa-pen mr-1"></i>교사 코멘트 수정';
+      } else {
+        if (commentContainer) commentContainer.style.display = 'none';
+        if (commentInput) commentInput.value = '';
+        if (commentDisplay) commentDisplay.innerText = '';
+        if (btnToggle) btnToggle.innerHTML = '<i class="fa-solid fa-plus mr-1"></i>교사 코멘트 달기';
+      }
+    }
   }
 
   $('#learningDetailModal').modal('show');
+}
+
+function removeThoughtSection() {
+  var sec = document.getElementById('learnModalThoughtSection');
+  if (sec) {
+    sec.style.display = 'none';
+    showAcademyToast('이번 리포트에서 [생각 담기] 영역이 제외되었습니다.');
+  }
+}
+
+function toggleTeacherCommentInput() {
+  var container = document.getElementById('learnModalCommentContainer');
+  if (!container) return;
+  if (container.style.display === 'none' || !container.style.display) {
+    container.style.display = 'block';
+    var input = document.getElementById('learnModalCommentInput');
+    if (input) input.focus();
+  } else {
+    container.style.display = 'none';
+  }
+}
+
+function syncTeacherCommentPrint(val) {
+  var display = document.getElementById('learnModalCommentDisplay');
+  if (display) {
+    display.innerText = val.trim() || '지도교사 코멘트가 작성되었습니다.';
+  }
+  if (currentOpenLearningLogId) {
+    var allLogs = getLoadedLearningLogs();
+    var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
+    if (log) {
+      log.comment = val;
+      log.reviewed = val.trim() ? '첨삭 완료' : '첨삭 전';
+      saveCustomLearningLogs(allLogs);
+      renderLearningTable();
+    }
+  }
 }
 
 // ==============================================================
@@ -3994,14 +4142,26 @@ var currentUploadedMaterial = null;
 var currentUploadedCover = null;
 var lastAddedBookId = null;
 
-// 도서 필터링 (등록처, 학년, 검색어 종합 필터)
+// 도서 필터링 (등록처, 학년, 검색어, 내가 올린(북퀴즈 생성한) 도서 종합 필터)
 function filterAcademyBooks() {
   var originVal = document.getElementById('filterAcadBookOrigin') ? document.getElementById('filterAcadBookOrigin').value : 'ALL';
   var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
+  var onlyMyQuiz = document.getElementById('chkOnlyMyQuizBooks') ? document.getElementById('chkOnlyMyQuizBooks').checked : false;
 
   var filtered = academyBookList.filter(function(b) {
-    // 1. 등록처 매칭
+    // 1. 내가 올린 (북퀴즈 생성한) 도서 모아보기 필터
+    if (onlyMyQuiz) {
+      var isMyCreation = (b.creatorType === 'ACADEMY' || b.hasMyQuizSet === true || (b.academyName && !b.academyName.includes('본사')));
+      var hasQuiz = (b.quizCount && b.quizCount > 0);
+      if (!isMyCreation && !hasQuiz) return false;
+      // 마스터/본사 도서이지만 우리 학원이 퀴즈를 출제한 경우 포함
+      if (!isMyCreation && b.creatorType === 'HQ') {
+        if (!b.hasMyQuizSet) return false;
+      }
+    }
+
+    // 2. 등록처 매칭
     var matchOrigin = true;
     if (originVal === 'HQ') {
       matchOrigin = b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
@@ -4009,13 +4169,13 @@ function filterAcademyBooks() {
       matchOrigin = b.creatorType === 'ACADEMY' || (b.academyName && !b.academyName.includes('본사'));
     }
 
-    // 2. 학년 매칭
+    // 3. 학년 매칭
     var matchGrade = true;
     if (gradeVal !== 'ALL') {
       matchGrade = b.grade && (b.grade.includes(gradeVal) || gradeVal.includes(b.grade));
     }
 
-    // 3. 검색어 매칭
+    // 4. 검색어 매칭
     var matchQuery = !query ||
       b.title.toLowerCase().indexOf(query) !== -1 ||
       b.author.toLowerCase().indexOf(query) !== -1 ||
@@ -4186,6 +4346,22 @@ function handleAcademyCoverUpload(input) {
   reader.readAsDataURL(file);
 }
 
+// 워터마크 정보 갱신 (1행: 학원명, 2행: 출력일시, 3행: IP주소)
+function updateWatermarkInfo() {
+  var acadElem = document.getElementById('wmAcademyName');
+  var timeElem = document.getElementById('wmPrintTime');
+  var ipElem = document.getElementById('wmIpAddress');
+  if (acadElem) acadElem.innerText = '나노 독서아카데미 목동본원';
+  if (timeElem) {
+    var now = new Date();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    timeElem.innerText = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+  if (ipElem) {
+    ipElem.innerText = '118.235.12.89';
+  }
+}
+
 // PDF 학습자료 미리보기 모달 열기
 function openContentPdfModal(bookId) {
   var b = academyBookList.find(item => item.id === bookId);
@@ -4193,10 +4369,12 @@ function openContentPdfModal(bookId) {
   var fileName = b && b.materialName ? b.materialName : `${title}_나노시트.pdf`;
   var fileSize = b && b.materialSize ? b.materialSize : '1.45 MB';
 
-  document.getElementById('pdfModalTitle').innerText = `[${title}] 나노 시트 (PDF)`;
+  document.getElementById('pdfModalTitle').innerText = `[${title}] 나노 시트 (PDF 웹뷰어)`;
   document.getElementById('pdfFileNameDisplay').innerText = fileName;
   document.getElementById('pdfFileSizeDisplay').innerText = `(${fileSize} · 표준 규격)`;
   document.getElementById('pdfSheetBookTitle').innerText = title;
+
+  updateWatermarkInfo();
 
   if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
     $('#contentPdfPreviewModal').modal('show');
@@ -4211,22 +4389,18 @@ function previewCurrentUploadedPdf() {
   var fileName = currentUploadedMaterial ? currentUploadedMaterial.name : `${bookName}_학습시트.pdf`;
   var fileSize = currentUploadedMaterial ? currentUploadedMaterial.size : '1.45 MB';
 
-  document.getElementById('pdfModalTitle').innerText = `[${bookName}] 콘텐츠 학습시트 (PDF 미리보기)`;
+  document.getElementById('pdfModalTitle').innerText = `[${bookName}] 콘텐츠 학습시트 (PDF 웹뷰어)`;
   document.getElementById('pdfFileNameDisplay').innerText = fileName;
   document.getElementById('pdfFileSizeDisplay').innerText = `(${fileSize} · 첨부 파일 검수)`;
   document.getElementById('pdfSheetBookTitle').innerText = bookName;
+
+  updateWatermarkInfo();
 
   if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
     $('#contentPdfPreviewModal').modal('show');
   } else {
     showModalVanilla('contentPdfPreviewModal');
   }
-}
-
-// PDF 다운로드 시뮬레이션
-function downloadContentPdf() {
-  var fileName = document.getElementById('pdfFileNameDisplay').innerText;
-  showAcademyToast(`[${fileName}] 다운로드가 시작되었습니다.`);
 }
 
 // 도서 및 콘텐츠 학습자료 최종 저장

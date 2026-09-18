@@ -571,6 +571,31 @@
       gap: 10px;
       color: var(--wood-dark);
     }
+        .qopt.selected {
+      border-color: #00a896 !important;
+      background: #f0fdfa !important;
+      color: #0f766e !important;
+      font-weight: 700 !important;
+      box-shadow: 0 2px 8px rgba(0, 168, 150, 0.18) !important;
+    }
+    .qopt.selected .onum {
+      background: #00a896 !important;
+      color: #ffffff !important;
+    }
+    .quiz-res-item {
+      background: #fff;
+      border: 1px solid #e2ece9;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    .quiz-res-item.is-correct {
+      border-left: 4px solid #10b981;
+    }
+    .quiz-res-item.is-wrong {
+      border-left: 4px solid #ef4444;
+    }
     .qopt:hover:not(:disabled) {
       border-color: var(--leaf);
       background: var(--leaf-soft);
@@ -1048,6 +1073,33 @@
     }
     .char-select-card.selected .char-select-badge {
       display: flex;
+    }
+    .char-select-card.locked {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      opacity: 0.78;
+    }
+    .char-select-card.locked:hover {
+      border-color: #94a3b8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+    .char-select-card.locked .char-avatar-img {
+      filter: grayscale(0.55);
+    }
+    .char-lock-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #64748b;
+      color: #fff;
+      font-size: 9px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
     .lib-row {
       display: flex;
@@ -2653,8 +2705,8 @@
     </div>
 
     <div class="stat-grid">
-      <div class="stat-mini"><div style="font-size:22px;">📖</div><div class="val">24</div><div class="lbl">완독 도서</div></div>
-      <div class="stat-mini"><div style="font-size:22px;">🌿</div><div class="val" style="color:var(--leaf-mid);">94.2</div><div class="lbl">퀴즈 평균</div></div>
+      <div class="stat-mini"><div style="font-size:22px;">📖</div><div class="val" id="mainCertifiedBooksCount">24</div><div class="lbl">인증 도서</div></div>
+      <div class="stat-mini" onclick="goToAssignedBooksTab()" style="cursor: pointer; transition: all 0.2s ease;" title="배정 도서 목록으로 바로가기"><div style="font-size:22px;">⏳</div><div class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">2</div><div class="lbl">인증 대기 도서 <i class="fa-solid fa-chevron-right" style="font-size:9px;margin-left:2px;opacity:0.7;"></i></div></div>
       <div class="stat-mini"><div style="font-size:22px;">🏆</div><div class="val" style="color:var(--wood-dark);">2,480</div><div class="lbl">포인트</div></div>
     </div>
     <!-- 1. 최근에 추가된 도서 (30권 가로 슬라이더) -->
@@ -2847,10 +2899,7 @@
         <span id="qLabel" style="font-size:13px;font-weight:700;color:var(--muted);">1/5</span>
       </div>
       <div class="qbar"><div class="qfill" id="qFill" style="width:20%;"></div></div>
-      <div class="qbook-hdr">
-        <div style="font-size:34px;" id="qEmoji">📕</div>
-        <div><div style="font-size:13px;font-weight:800;" id="qTitle">어린 왕자</div><div style="font-size:11.5px;color:var(--muted);">북퀴즈 진행 중</div><span class="nbadge" style="margin-top:4px;">⭐ 문제당 20P</span></div>
-      </div>
+
       <div class="qtext" id="qText">문제 로딩 중...</div>
       <!-- 문항 첨부 미디어 (WebP 이미지 또는 영상 임베드 플레이어) -->
       <div id="qMediaBox" style="display:none; margin: 12px 0 16px 0;"></div>
@@ -3002,13 +3051,16 @@
             <div class="char-edit-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:8px;"></i></div>
           </div>
           <div>
-            <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;">내 실시간 독서 랭킹</div>
-            <div style="font-size: 22px; font-weight: 900; line-height: 1.2;">우리 반 2등 <span style="font-size: 14px; font-weight: 700; opacity: 0.95;">(상위 3%)</span></div>
+            <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;" id="myRankScopeTitle">내 실시간 우리 반 랭킹</div>
+            <div style="font-size: 22px; font-weight: 900; line-height: 1.2;">
+              <span id="myRankHighlightText">우리 반 2등</span> 
+              <span id="myRankHighlightPercent" style="font-size: 14px; font-weight: 700; opacity: 0.95;">(상위 3%)</span>
+            </div>
           </div>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 24px; font-weight: 900; color: #fde047; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">2,480 P</div>
-          <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 6px; font-weight: 700;">이번 달 완독 24권</span>
+          <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 6px; font-weight: 700;" id="myRankReadCountBadge">이번 달 완독 24권</span>
         </div>
       </div>
       <div class="my-rank-speech" id="rankMyCharSpeech">
@@ -3018,7 +3070,7 @@
     </div>
 
     <!-- 2. 랭킹 범위 탭 (우리 반 / 학원 전체 / 전국) -->
-    <div class="rank-tab-group">
+    <div class="rank-tab-group" id="rankTabGroup">
       <button type="button" class="rank-tab-btn active" id="rankTabClass" onclick="switchRankScope('class')">
         <i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반 (지혜반)
       </button>
@@ -3030,7 +3082,7 @@
       </button>
     </div>
 
-    <!-- 기간 서브 필터 (이번 주 / 이번 달) -->
+    <!-- 기간 서브 필터 (이번 달 / 지난 달) -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
       <div style="font-size: 14px; font-weight: 800; color: var(--wood-dark); display: flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
@@ -3038,7 +3090,7 @@
       </div>
       <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
         <button type="button" class="btn btn-xs" id="rankPeriodMonth" onclick="switchRankPeriod('month')" style="font-size: 11px; font-weight: 800; border-radius: 6px; padding: 3px 8px; border: none; background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">이번 달</button>
-        <button type="button" class="btn btn-xs" id="rankPeriodWeek" onclick="switchRankPeriod('week')" style="font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 8px; border: none; background: transparent; color: #64748b;">이번 주</button>
+        <button type="button" class="btn btn-xs" id="rankPeriodLastMonth" onclick="switchRankPeriod('lastMonth')" style="font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 8px; border: none; background: transparent; color: #64748b;">지난 달</button>
       </div>
     </div>
 
@@ -3136,7 +3188,7 @@
     </div>
     <div style="padding: 12px 18px 16px; display: flex; gap: 8px; background: #faf8f5; border-top: 1px solid #f0ebe4; border-radius: 0 0 20px 20px;">
       <button type="button" class="btn btn-secondary w-50" onclick="closeCharacterSelectModal()" style="border-radius: 12px; font-weight: 700; padding: 10px;">취소</button>
-      <button type="button" class="btn btn-primary w-50" onclick="applySelectedCharacter()" style="border-radius: 12px; font-weight: 800; padding: 10px; background: #00a896; border-color: #00a896; box-shadow: 0 4px 12px rgba(0,168,150,0.3);">
+      <button type="button" class="btn btn-primary w-50" id="btnApplyCharacter" onclick="applySelectedCharacter()" style="border-radius: 12px; font-weight: 800; padding: 10px; background: #00a896; border-color: #00a896; box-shadow: 0 4px 12px rgba(0,168,150,0.3);">
         <i class="fa-solid fa-check mr-1"></i> 이 캐릭터로 설정
       </button>
     </div>
@@ -4785,57 +4837,237 @@ function showBook(id){
   openBookDetail(id, 'books');
 }
 
-function startQuiz(id){
-  // 1. 마스터 관리자에서 저장한 최신 퀴즈 세트가 있는지 우선 탐색
-  var d = null;
+// ==============================================================
+// 1. 북퀴즈 풀이 및 다중 출제처 선택, 생각담기 연동 모듈
+// ==============================================================
+var curSelectedQuizSet = null;
+var studentSelectedAnsMap = {}; // 문항별 학생 선택 보기 index
+var currentStudentThoughtAnswer = ''; // 생각담기 주관식 답안
+
+// 메인 '인증 대기 도서' 클릭 시 배정도서 탭으로 바로 이동
+function goToAssignedBooksTab() {
+  switchPanel('lib');
+  switchBookTab('assigned');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 퀴즈 시작 메인 엔트리: 여러 북퀴즈 세트가 있으면 선택 모달, 1개면 바로 시작
+function startQuiz(id) {
+  var book = null;
+  // 도서 정보 탐색
+  if (typeof libData !== 'undefined') {
+    book = libData.find(function(x) { return x.id === id || x.id === 'MB-' + id || id.endsWith(x.id.replace(/[^0-9]/g, '')); });
+  }
+
+  // 마스터 도서 풀 탐색
+  var mBook = null;
   try {
     var rawMaster = localStorage.getItem("NANO_MASTER_BOOKS");
-    if(rawMaster) {
+    if (rawMaster) {
       var mBooks = JSON.parse(rawMaster);
-      var mb = mBooks.find(function(b){ return b.id === id || b.id === 'MB-' + id || id.endsWith(b.id.replace(/[^0-9]/g, '')); });
-      if(mb && mb.quizSets && mb.quizSets[0] && mb.quizSets[0].questions && mb.quizSets[0].questions.length > 0) {
-        var mappedQs = mb.quizSets[0].questions.map(function(mq){
-          var isSubj = mq.type === 'SUBJECTIVE';
-          var os = isSubj ? [mq.subjectiveAns || '정답'] : [mq.opt1, mq.opt2, mq.opt3, mq.opt4].filter(Boolean);
-          var ansIdx = isSubj ? 0 : (parseInt(mq.ans || '1', 10) - 1);
-          return {
-            q: mq.question,
-            mediaType: mq.mediaType || 'none',
-            mediaUrl: mq.mediaUrl || '',
-            mediaCaption: mq.mediaCaption || '',
-            os: os.length > 0 ? os : ['1번 보기', '2번 보기', '3번 보기', '4번 보기'],
-            a: Math.max(0, ansIdx)
-          };
-        });
-        d = { title: mb.title, emoji: '📕', qs: mappedQs };
-      }
+      mBook = mBooks.find(function(b) { return b.id === id || b.id === 'MB-' + id || id.endsWith(b.id.replace(/[^0-9]/g, '')); });
     }
   } catch(e) {}
 
-  if(!d) d = QB[id];
+  var activeBook = mBook || book || { id: id, title: '추천 도서' };
 
-  if(!d){
-    var book = libData.find(function(x){return x.id===id;});
-    var title = book ? book.title : '독서 퀴즈';
-    d = {
-      title: title,
-      emoji: '📘',
-      qs: [
-        {q:"『" + title + "』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?",mediaType:"none",os:["도전과 용기의 가치","약자에 대한 공감과 배려","자아를 찾아가는 용기","위 세 가지 모두 정답"],a:3},
-        {q:"주인공의 내적 성장 과정에서 가장 큰 전환점이 된 사건은?",mediaType:"none",os:["친구와의 진심 어린 대화","새로운 환경으로의 용기 있는 도전","어려움을 극복한 협동","위 모두 복합적으로 작용함"],a:3},
-        {q:"작가가 이 도서를 통해 독자에게 전하고자 한 중심 메시지는?",mediaType:"none",os:["서로를 이해하고 연대하는 삶","혼자만의 승리가 최고라는 생각","물질적 성공의 중요성","경쟁에서 이기는 법"],a:0},
-        {q:"이 책에서 갈등을 평화롭게 해결하는 데 가장 중요했던 가치는?",mediaType:"none",os:["소통과 배려","침묵과 회피","힘의 우위","운에 맡기기"],a:0},
-        {q:"이 책을 읽은 후 우리 일상생활에서 실천할 수 있는 바른 태도는?",mediaType:"none",os:["주변 친구들에게 따뜻한 말 한마디 건네기","어려운 이웃을 배려하기","정직하게 나의 책임을 다하기","위의 모든 태도 실천하기"],a:3}
+  // 북퀴즈 세트 목록 수집
+  var quizSets = [];
+  if (activeBook && activeBook.quizSets && activeBook.quizSets.length > 0) {
+    quizSets = JSON.parse(JSON.stringify(activeBook.quizSets));
+  } else {
+    // 기본 QB 세트 생성
+    var defaultQB = QB[id];
+    quizSets.push({
+      id: 'qs_default_' + id,
+      authorType: 'HQ',
+      authorName: '본사',
+      academyName: '나노 본사',
+      createdAt: '2025-01-01',
+      questions: defaultQB ? defaultQB.qs.map(function(q) {
+        return {
+          question: q.q,
+          type: 'CHOICE',
+          opt1: q.os[0] || '',
+          opt2: q.os[1] || '',
+          opt3: q.os[2] || '',
+          opt4: q.os[3] || '',
+          ans: String(q.a + 1),
+          mediaType: q.mediaType || 'none',
+          mediaUrl: q.mediaUrl || '',
+          mediaCaption: q.mediaCaption || ''
+        };
+      }) : [
+        { question: `『${activeBook.title}』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?`, type: 'CHOICE', opt1: '도전과 용기의 가치', opt2: '약자에 대한 공감과 배려', opt3: '자아를 찾아가는 용기', opt4: '위 세 가지 모두 정답', ans: '4' },
+        { question: '주인공의 내적 성장 과정에서 가장 큰 전환점이 된 사건은?', type: 'CHOICE', opt1: '친구와의 진심 어린 대화', opt2: '새로운 환경으로의 용기 있는 도전', opt3: '어려움을 극복한 협동', opt4: '위 모두 복합적으로 작용함', ans: '4' },
+        { question: '작가가 이 도서를 통해 독자에게 전하고자 한 중심 메시지는?', type: 'CHOICE', opt1: '서로를 이해하고 연대하는 삶', opt2: '혼자만의 승리가 최고라는 생각', opt3: '물질적 성공의 중요성', opt4: '경쟁에서 이기는 법', ans: '1' }
       ]
-    };
+    });
   }
+
+  // 예시: 다중 퀴즈 세트 체험을 위해 도서 1001번에 학원 출제 세트가 없으면 샘플 보강
+  if (id === '1001' && quizSets.length === 1) {
+    quizSets.push({
+      id: 'qs_sample_my',
+      authorType: 'ACADEMY',
+      authorName: '우리 학원',
+      academyName: '나노 독서아카데미 본원',
+      createdAt: '2026-09-15',
+      questions: [
+        { question: '어린 왕자가 살던 소행성 B-612에서 매일 청소해야 했던 위험한 식물은?', type: 'CHOICE', opt1: '장미꽃', opt2: '바오밥 나무', opt3: '선인장', opt4: '덩굴식물', ans: '2' },
+        { question: '사막여우가 어린 왕자에게 전해준 가장 소중한 비밀은 무엇인가요?', type: 'CHOICE', opt1: '마음으로 보아야만 분명하게 볼 수 있어', opt2: '비밀은 아무에게도 말하면 안 돼', opt3: '보물은 모래 속에 숨겨져 있어', opt4: '장미꽃은 거짓말쟁이야', ans: '1' },
+        { question: '어린 왕자가 지구를 떠나며 남긴 교훈으로 가장 적절한 것은?', type: 'CHOICE', opt1: '내가 길들인 것에 대해서는 책임을 져야 한다', opt2: '먼 여행은 위험하다', opt3: '어른들의 말을 무조건 따라야 한다', opt4: '혼자 있는 것이 가장 편하다', ans: '1' }
+      ]
+    });
+  }
+
+  // ★ 3. 같은 도서에 북퀴즈가 여러 개 등록된 경우 (내부 정렬 기준: 본사 -> 우리 학원 -> 등록일 순)
+  quizSets.sort(function(a, b) {
+    var scoreA = 0;
+    var scoreB = 0;
+    if (a.authorType === 'HQ' || a.authorName === '본사') scoreA = 3;
+    else if (a.academyName === '나노 독서아카데미 본원' || a.authorName === '우리 학원' || a.isMine) scoreA = 2;
+    else scoreA = 1;
+
+    if (b.authorType === 'HQ' || b.authorName === '본사') scoreB = 3;
+    else if (b.academyName === '나노 독서아카데미 본원' || b.authorName === '우리 학원' || b.isMine) scoreB = 2;
+    else scoreB = 1;
+
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA;
+    }
+
+    var dateA = new Date(a.createdAt || '2025-01-01').getTime();
+    var dateB = new Date(b.createdAt || '2025-01-01').getTime();
+    return dateA - dateB;
+  });
+
+  if (quizSets.length > 1) {
+    // 다중 북퀴즈 선택 팝업 오픈
+    openQuizSetSelectModal(activeBook, quizSets);
+  } else {
+    // 1개뿐이면 바로 시작
+    startQuizWithSet(activeBook, quizSets[0]);
+  }
+}
+
+// 다중 북퀴즈 선택 모달 열기
+function openQuizSetSelectModal(book, quizSets) {
+  var modal = document.getElementById('quizSetSelectModal');
+  var titleEl = document.getElementById('qsModalBookTitle');
+  var listEl = document.getElementById('qsModalListContainer');
+  if (!modal || !listEl) return;
+
+  if (titleEl) titleEl.innerText = book.title || '선택 도서';
+
+  listEl.innerHTML = quizSets.map(function(set, idx) {
+    var isHq = set.authorType === 'HQ' || set.authorName === '본사';
+    var isMy = set.academyName === '나노 독서아카데미 본원' || set.authorName === '우리 학원' || set.isMine;
+
+    var badgeClass = isHq ? 'badge-warning text-dark' : (isMy ? 'badge-success text-white' : 'badge-secondary text-white');
+    var badgeLabel = isHq ? '본사 공식' : (isMy ? '우리 학원 맞춤' : '가맹 학원');
+    var icon = isHq ? 'fa-solid fa-building text-warning' : (isMy ? 'fa-solid fa-school text-success' : 'fa-solid fa-graduation-cap text-muted');
+
+    return `
+      <div style="background:#f8fafc;border:1.5px solid ${isHq ? '#fde68a' : (isMy ? '#a7f3d0' : '#e2e8f0')};border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all 0.2s ease;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+            <span class="badge ${badgeClass}" style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;">${badgeLabel}</span>
+            <strong style="font-size:13px;color:#1e293b;"><i class="${icon} mr-1"></i>${set.authorName}</strong>
+          </div>
+          <div style="font-size:11px;color:#64748b;">
+            <span>${set.academyName || '교육기관'}</span> · 
+            <span>${set.questions ? set.questions.length : 0}문항 구성</span>
+            <small class="text-muted ml-1">(${set.createdAt || '최근 등록'})</small>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-beige-primary" onclick="selectQuizSetAndStart(${idx})" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:8px;white-space:nowrap;">
+          <i class="fa-solid fa-play mr-1"></i>이 퀴즈 풀기
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  // 전역에 임시 보관
+  window._tempQuizTargetBook = book;
+  window._tempQuizSets = quizSets;
+
+  modal.style.display = 'flex';
+}
+
+function closeQuizSetSelectModal() {
+  var modal = document.getElementById('quizSetSelectModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function selectQuizSetAndStart(idx) {
+  closeQuizSetSelectModal();
+  var book = window._tempQuizTargetBook;
+  var sets = window._tempQuizSets;
+  if (book && sets && sets[idx]) {
+    startQuizWithSet(book, sets[idx]);
+  }
+}
+
+// 선택된 퀴즈 세트로 실제 퀴즈 풀이 시작
+function startQuizWithSet(book, quizSet) {
+  curSelectedQuizSet = quizSet;
+  studentSelectedAnsMap = {};
+  currentStudentThoughtAnswer = '';
+  anss = [];
+  curQ = 0;
+
+  // 1. 객관식 문항들 매핑
+  var mappedQs = (quizSet.questions || []).map(function(mq) {
+    var isSubj = mq.type === 'SUBJECTIVE';
+    var os = [];
+    if (mq.options && Array.isArray(mq.options)) {
+      os = mq.options;
+    } else {
+      os = [mq.opt1, mq.opt2, mq.opt3, mq.opt4, mq.opt5].filter(Boolean);
+    }
+    if (os.length === 0) os = ['1번 보기', '2번 보기', '3번 보기'];
+    var ansIdx = parseInt(mq.ans || '1', 10) - 1;
+
+    // 질문 텍스트에서 출제 관련 말머리(예: 【우리 학원 출제】 등) 제거
+    var cleanQ = (mq.question || '').replace(/^【[^】]*출제[^】]*】\s*|^\[[^\]]*출제[^\]]*\]\s*/g, '').trim();
+
+    return {
+      q: cleanQ,
+      mediaType: mq.mediaType || 'none',
+      mediaUrl: mq.mediaUrl || '',
+      mediaCaption: mq.mediaCaption || '',
+      os: os,
+      a: Math.max(0, ansIdx),
+      isThoughtQuestion: false
+    };
+  });
+
+  // ★ 2. 생각 담기 연동: 책에 생각담기 질문이 등록되어 있다면 북퀴즈 마지막에 추가!
+  var thoughtTopic = book.thoughtQuestion || book.thoughtTopic || book.answerGuide || (book.summary ? `『${book.title}』의 내용을 바탕으로 삶에서 가장 소중한 가치에 대해 나의 생각을 적어보세요.` : null);
+  if (thoughtTopic) {
+    mappedQs.push({
+      q: typeof thoughtTopic === 'string' && thoughtTopic.includes('논제') ? thoughtTopic : `『${book.title}』을 읽고 난 후, 가장 기억에 남는 장면이나 교훈에 대해 나의 생각을 자유롭게 서술해보세요.`,
+      isThoughtQuestion: true,
+      os: [],
+      a: 0
+    });
+  }
+
+  curBook = book.id;
+  curData = {
+    title: book.title,
+    emoji: '📕',
+    author: book.author || '',
+    authorName: quizSet.authorName || '본사',
+    qs: mappedQs
+  };
+
   switchPanel('quiz');
-  curBook=id;curData=d;curQ=0;anss=[];
-  document.getElementById('qscreen-select').style.display='none';
-  document.getElementById('qscreen-ing').style.display='block';
-  document.getElementById('qscreen-result').style.display='none';
-  document.getElementById('qTitle').innerText=d.title;
-  document.getElementById('qEmoji').innerText=d.emoji || '📕';
+  document.getElementById('qscreen-select').style.display = 'none';
+  document.getElementById('qscreen-ing').style.display = 'block';
+  document.getElementById('qscreen-result').style.display = 'none';
+
   renderQ();
   window.scrollTo(0, 0);
 }
@@ -4878,57 +5110,66 @@ function parseStudentQuizVideoUrl(url) {
   return null;
 }
 
-// 퀴즈 문항 이미지 확대 라이트박스 팝업
-function showQuizImageModal(url) {
-  var modal = document.getElementById('quizImgLightboxModal');
-  if(!modal) {
-    modal = document.createElement('div');
-    modal.id = 'quizImgLightboxModal';
-    modal.className = 'student-modal-overlay';
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '20px';
-    modal.style.zIndex = '10000';
-    modal.onclick = function(e){ if(e.target === this) this.style.display = 'none'; };
-    modal.innerHTML = '<div style="position:relative;max-width:92%;max-height:90vh;background:#ffffff;padding:12px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);text-align:center;">'
-      + '<button type="button" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;background:#f1f5f9;border:none;font-size:18px;cursor:pointer;" onclick="document.getElementById(\'quizImgLightboxModal\').style.display=\'none\'">&times;</button>'
-      + '<img id="lightboxTargetImg" src="" style="max-width:100%;max-height:78vh;border-radius:8px;object-fit:contain;display:block;margin:18px auto 6px auto;">'
-      + '<small class="text-muted"><i class="fa-solid fa-magnifying-glass mr-1"></i>문제 참고 이미지 자료 (원본 크기)</small>'
-      + '</div>';
-    document.body.appendChild(modal);
-  }
-  var targetImg = document.getElementById('lightboxTargetImg');
-  if(targetImg) targetImg.src = url;
-  modal.style.display = 'flex';
-}
+// 문항 렌더링: 정답 즉시 노출 X, 보기 선택 후 다음 진행
+function renderQ() {
+  var q = curData.qs[curQ];
+  var tot = curData.qs.length;
 
-function renderQ(){
-  var q=curData.qs[curQ],tot=curData.qs.length;
-  document.getElementById('qLabel').innerText=(curQ+1)+'/'+tot;
-  document.getElementById('qFill').style.width=Math.round(((curQ+1)/tot)*100)+'%';
-  document.getElementById('qText').innerText=q.q;
+  document.getElementById('qLabel').innerText = (curQ + 1) + '/' + tot;
+  document.getElementById('qFill').style.width = Math.round(((curQ + 1) / tot) * 100) + '%';
 
-  // 문항 미디어 렌더링 (WebP 이미지 또는 영상 URL 플레이어)
+  var qTextEl = document.getElementById('qText');
   var mediaBox = document.getElementById('qMediaBox');
-  if(mediaBox) {
-    if(q.mediaType === 'image' && q.mediaUrl) {
-      var cap = q.mediaCaption ? '<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center;"><i class="fa-regular fa-image mr-1" style="color:var(--leaf);"></i>'+q.mediaCaption+'</div>' : '';
+  var c = document.getElementById('qOpts');
+  var fb = document.getElementById('qFb');
+  var nx = document.getElementById('qNext');
+
+  fb.style.display = 'none';
+  fb.className = 'qfb';
+  nx.style.display = 'none';
+
+  // ★ 생각 담기 주관식 문항 처리
+  if (q.isThoughtQuestion) {
+    if (mediaBox) mediaBox.style.display = 'none';
+    qTextEl.innerHTML = `<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-2" style="font-size:11.5px;"><i class="fa-solid fa-lightbulb mr-1"></i>나노 시트 생각 담기 (마지막 주관식 과제)</span><div style="margin-top:6px;font-size:15px;line-height:1.6;">${q.q}</div>`;
+
+    c.innerHTML = `
+      <div style="background:#fff;border:1.5px solid #00a896;border-radius:14px;padding:14px;box-shadow:0 3px 12px rgba(0,168,150,0.08);">
+        <label style="font-size:12px;font-weight:700;color:#0f766e;margin-bottom:6px;display:block;">
+          <i class="fa-solid fa-pen mr-1"></i>나의 생각 타이핑하기 <span class="text-danger">*</span>
+        </label>
+        <textarea id="qThoughtTextarea" class="form-control" rows="4" placeholder="책을 읽고 떠오른 생각이나 질문에 대한 나만의 생각을 자유롭게 작성해 보세요. (선생님께 제출됩니다)" oninput="onThoughtTextareaInput(this.value)" style="width:100%;border-radius:10px;border:1px solid #cbd5e1;padding:10px;font-size:13.5px;line-height:1.6;">${currentStudentThoughtAnswer}</textarea>
+        <small class="text-muted mt-2 d-block" style="font-size:11px;">* 작성하신 생각은 나노 독서 포트폴리오와 학습 리포트에 기록됩니다.</small>
+      </div>
+    `;
+
+    nx.style.display = 'block';
+    nx.innerHTML = '<i class="fa-solid fa-flag-checkered mr-1"></i>북퀴즈 최종 제출 및 채점하기';
+    nx.disabled = !currentStudentThoughtAnswer || currentStudentThoughtAnswer.trim().length === 0;
+    return;
+  }
+
+  // 일반 객관식 문항 처리
+  qTextEl.innerText = q.q;
+
+  // 문항 미디어 렌더링
+  if (mediaBox) {
+    if (q.mediaType === 'image' && q.mediaUrl) {
+      var cap = q.mediaCaption ? '<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center;"><i class="fa-regular fa-image mr-1" style="color:var(--leaf);"></i>' + q.mediaCaption + '</div>' : '';
       mediaBox.innerHTML = '<div style="background:#ffffff;padding:10px;border-radius:14px;border:1px solid var(--soft);box-shadow:0 2px 8px rgba(0,0,0,0.04);text-align:center;">'
         + '<div style="position:relative;display:inline-block;max-width:100%;">'
-        +   '<img src="'+q.mediaUrl+'" alt="문제 자료 이미지" style="max-width:100%;max-height:240px;border-radius:10px;object-fit:contain;cursor:zoom-in;" onclick="showQuizImageModal(\''+q.mediaUrl+'\')">'
-        +   '<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.65);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;backdrop-filter:blur(4px);pointer-events:none;"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>확대보기</span>'
+        +   '<img src="' + q.mediaUrl + '" alt="문제 자료 이미지" style="max-width:100%;max-height:240px;border-radius:10px;object-fit:contain;cursor:zoom-in;" onclick="showQuizImageModal(\'' + q.mediaUrl + '\')">'
         + '</div>'
         + cap
         + '</div>';
       mediaBox.style.display = 'block';
-    } else if(q.mediaType === 'video' && q.mediaUrl) {
+    } else if (q.mediaType === 'video' && q.mediaUrl) {
       var parsed = parseStudentQuizVideoUrl(q.mediaUrl);
-      var cap = q.mediaCaption ? '<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center;"><i class="fa-brands fa-youtube text-danger mr-1"></i>'+q.mediaCaption+'</div>' : '';
-      if(parsed) {
+      var cap = q.mediaCaption ? '<div style="font-size:11.5px;color:var(--muted);margin-top:6px;text-align:center;"><i class="fa-brands fa-youtube text-danger mr-1"></i>' + q.mediaCaption + '</div>' : '';
+      if (parsed) {
         var playerHtml = (parsed.type === 'direct')
-          ? '<video src="'+parsed.embedUrl+'" controls style="width:100%;height:100%;object-fit:contain;background:#000;border-radius:10px;"></video>'
-          : '<iframe src="'+parsed.embedUrl+'" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:10px;border:none;"></iframe>';
+          ? '<video src="' + parsed.embedUrl + '" controls style="width:100%;height:100%;object-fit:contain;background:#000;border-radius:10px;"></video>'
+          : '<iframe src="' + parsed.embedUrl + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:10px;border:none;"></iframe>';
         mediaBox.innerHTML = '<div style="background:#ffffff;padding:10px;border-radius:14px;border:1px solid var(--soft);box-shadow:0 2px 8px rgba(0,0,0,0.04);">'
           + '<div style="position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;border-radius:10px;background:#000;">'
           + playerHtml
@@ -4946,49 +5187,183 @@ function renderQ(){
     }
   }
 
-  var c=document.getElementById('qOpts');c.innerHTML='';
-  q.os.forEach(function(o,i){
-    var b=document.createElement('button');
-    b.className='qopt';
-    b.innerHTML='<span class="onum">'+(i+1)+'</span>'+o;
-    b.onclick=function(){selectAns(i);};
+  // 보기 버튼 목록 생성
+  c.innerHTML = '';
+  var prevSelected = studentSelectedAnsMap[curQ];
+  q.os.forEach(function(o, i) {
+    var b = document.createElement('button');
+    b.className = 'qopt' + (prevSelected === i ? ' selected' : '');
+    b.innerHTML = '<span class="onum">' + (i + 1) + '</span>' + o;
+    b.onclick = function() { selectAns(i); };
     c.appendChild(b);
   });
-  var fb=document.getElementById('qFb');fb.style.display='none';fb.className='qfb';
-  document.getElementById('qNext').style.display='none';
+
+  if (prevSelected !== undefined) {
+    nx.style.display = 'block';
+    nx.innerHTML = (curQ >= curData.qs.length - 1) ? '<i class="fa-solid fa-flag-checkered mr-1"></i>최종 제출 및 채점하기' : '다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i>';
+  }
 }
-function selectAns(sel){
-  var q=curData.qs[curQ],ok=(sel===q.a);
-  anss.push({sel:sel,a:q.a,ok:ok});
-  document.querySelectorAll('#qOpts .qopt').forEach(function(b,i){
-    b.disabled=true;
-    if(i===sel&&ok)b.classList.add('correct');
-    if(i===sel&&!ok)b.classList.add('wrong');
-    if(i===q.a&&!ok)b.classList.add('reveal');
+
+// 생각담기 textarea 입력 이벤트
+function onThoughtTextareaInput(val) {
+  currentStudentThoughtAnswer = val;
+  var nx = document.getElementById('qNext');
+  if (nx) {
+    nx.disabled = !val || val.trim().length === 0;
+  }
+}
+
+// 보기 선택: ★ 바로 정답을 알려주지 않고 선택 상태만 표시한 후 다음으로 넘어가게 함
+function selectAns(sel) {
+  studentSelectedAnsMap[curQ] = sel;
+
+  // UI상에서 선택된 보기만 강조 (.selected)
+  document.querySelectorAll('#qOpts .qopt').forEach(function(b, i) {
+    if (i === sel) {
+      b.classList.add('selected');
+    } else {
+      b.classList.remove('selected');
+    }
   });
-  var fb=document.getElementById('qFb');fb.style.display='block';
-  if(ok){fb.className='qfb ok';fb.innerHTML='<i class="fa-solid fa-circle-check mr-2"></i><strong>정답!</strong> +20포인트 획득!';}
-  else{fb.className='qfb fail';fb.innerHTML='<i class="fa-solid fa-circle-xmark mr-2"></i><strong>오답!</strong> 정답은 <strong>'+(q.a+1)+'번</strong>';}
-  var nx=document.getElementById('qNext');nx.style.display='block';
-  nx.innerHTML=(curQ>=curData.qs.length-1)?'<i class="fa-solid fa-flag-checkered mr-1"></i>결과 보기':'다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i>';
+
+  var nx = document.getElementById('qNext');
+  nx.style.display = 'block';
+  nx.disabled = false;
+  nx.innerHTML = (curQ >= curData.qs.length - 1)
+    ? '<i class="fa-solid fa-flag-checkered mr-1"></i>최종 제출 및 채점하기'
+    : '다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i>';
 }
-function goNext(){
-  if(curQ>=curData.qs.length-1){showResult();}
-  else{curQ++;renderQ();}
+
+function goNext() {
+  if (curQ >= curData.qs.length - 1) {
+    showResult();
+  } else {
+    curQ++;
+    renderQ();
+    window.scrollTo(0, 0);
+  }
 }
-function showResult(){
-  document.getElementById('qscreen-ing').style.display='none';
-  document.getElementById('qscreen-result').style.display='block';
-  var tot=anss.length,ok=anss.filter(function(a){return a.ok;}).length;
-  var score=Math.round((ok/tot)*100);
-  document.getElementById('rScore').innerText=score+'점';
-  document.getElementById('rPt').innerHTML='<i class="fa-solid fa-bolt mr-1"></i>+'+score+' 포인트!';
-  if(score===100){document.getElementById('rEmoji').innerText='🏆';document.getElementById('rMsg').innerText=tot+'문항 전부 정답! 완벽해요!';document.getElementById('rScore').className='res-score p';}
-  else if(score>=60){document.getElementById('rEmoji').innerText='👍';document.getElementById('rMsg').innerText=tot+'문항 중 '+ok+'문항 정답! 잘했어요!';document.getElementById('rScore').className='res-score g';}
-  else{document.getElementById('rEmoji').innerText='📚';document.getElementById('rMsg').innerText='다시 읽고 도전해봐요!';document.getElementById('rScore').className='res-score f';}
-  if(curData){histData.unshift({title:curData.title,date:new Date().toLocaleDateString('ko-KR').replace(/\.\s*/g,'.').replace(/\.$/,''),score:score});}
-  toast('퀴즈 완료! '+score+'점 · +'+score+'P 획득! 🎉');
+
+// 북퀴즈 제출 및 최종 채점 결과 화면 렌더링
+function showResult() {
+  document.getElementById('qscreen-ing').style.display = 'none';
+  document.getElementById('qscreen-result').style.display = 'block';
+
+  // 객관식 문항들만 채점
+  var choiceQs = curData.qs.filter(function(q) { return !q.isThoughtQuestion; });
+  var tot = choiceQs.length;
+  var ok = 0;
+  var reviewItemsHtml = '';
+
+  choiceQs.forEach(function(q, idx) {
+    var studentAns = studentSelectedAnsMap[idx];
+    var isCorrect = (studentAns === q.a);
+    if (isCorrect) ok++;
+
+    var studentAnsText = (studentAns !== undefined && q.os[studentAns]) ? q.os[studentAns] : '미선택';
+    var correctAnsText = q.os[q.a] || '';
+
+    reviewItemsHtml += `
+      <div class="quiz-res-item ${isCorrect ? 'is-correct' : 'is-wrong'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <strong style="font-size:12.5px;color:#1e293b;">${idx + 1}번. ${q.q}</strong>
+          <span class="badge ${isCorrect ? 'badge-success text-white' : 'badge-danger text-white'}" style="font-size:10px;padding:2px 6px;">
+            ${isCorrect ? '정답 ✓' : '오답 ✗'}
+          </span>
+        </div>
+        <div style="font-size:11.5px;color:${isCorrect ? '#15803d' : '#b91c1c'};margin-top:2px;">
+          내가 선택한 답: <strong>${studentAns !== undefined ? (studentAns + 1) + '번 (' + studentAnsText + ')' : '미선택'}</strong>
+        </div>
+        ${!isCorrect ? `<div style="font-size:11.5px;color:#0d9488;margin-top:2px;">정답: <strong>${q.a + 1}번 (${correctAnsText})</strong></div>` : ''}
+      </div>
+    `;
+  });
+
+  var score = tot > 0 ? Math.round((ok / tot) * 100) : 100;
+  document.getElementById('rScore').innerText = score + '점';
+  document.getElementById('rPt').innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>+' + score + ' 포인트 지급 완료!';
+
+  if (score === 100) {
+    document.getElementById('rEmoji').innerText = '🏆';
+    document.getElementById('rMsg').innerText = tot + '문항 전부 정답! 완벽해요!';
+    document.getElementById('rScore').className = 'res-score p';
+  } else if (score >= 60) {
+    document.getElementById('rEmoji').innerText = '👍';
+    document.getElementById('rMsg').innerText = tot + '문항 중 ' + ok + '문항 정답! 잘했어요!';
+    document.getElementById('rScore').className = 'res-score g';
+  } else {
+    document.getElementById('rEmoji').innerText = '📚';
+    document.getElementById('rMsg').innerText = '수고했어요! 오답을 다시 복습해봐요.';
+    document.getElementById('rScore').className = 'res-score f';
+  }
+
+  // 생각 담기 작성 결과 영역
+  var thoughtSectionHtml = '';
+  if (currentStudentThoughtAnswer && currentStudentThoughtAnswer.trim()) {
+    thoughtSectionHtml = `
+      <div style="background:#f0fdfa;border:1px solid #ccfbf1;border-radius:12px;padding:12px 14px;margin-top:14px;text-align:left;">
+        <div style="font-size:12px;font-weight:800;color:#0f766e;margin-bottom:4px;">
+          <i class="fa-solid fa-file-pen mr-1"></i>내가 작성한 나노 시트 생각 담기 답안
+        </div>
+        <div style="font-size:12.5px;color:#1e293b;line-height:1.6;white-space:pre-wrap;background:#fff;padding:8px 10px;border-radius:8px;border:1px solid #e2ece9;">
+          ${currentStudentThoughtAnswer}
+        </div>
+      </div>
+    `;
+  }
+
+  // 결과 화면에 상세 리스트 삽입 (기존 박스 내부에 확장)
+  var resultBox = document.querySelector('.result-box');
+  if (resultBox) {
+    var detailWrap = document.getElementById('quizResultDetailWrap');
+    if (!detailWrap) {
+      detailWrap = document.createElement('div');
+      detailWrap.id = 'quizResultDetailWrap';
+      detailWrap.style.marginTop = '16px';
+      detailWrap.style.paddingTop = '14px';
+      detailWrap.style.borderTop = '1px dashed #cbd5e1';
+      resultBox.insertBefore(detailWrap, resultBox.lastElementChild);
+    }
+    detailWrap.innerHTML = `
+      <div style="text-align:left;font-size:13px;font-weight:800;color:#1e293b;margin-bottom:8px;">
+        <i class="fa-solid fa-clipboard-check text-primary mr-1"></i>문항별 채점 결과
+      </div>
+      ${reviewItemsHtml}
+      ${thoughtSectionHtml}
+    `;
+  }
+
+  // 학습 관리 동기화 (학원 관리자의 학습 관리 리스트에 반영)
+  syncQuizResultToAdminLearning(curData.title, score, currentStudentThoughtAnswer);
+
+  toast('북퀴즈 제출 완료! ' + score + '점 · +' + score + 'P 획득! 🎉');
+  window.scrollTo(0, 0);
 }
+
+// 학원 관리자 학습 관리와 실시간 동기화
+function syncQuizResultToAdminLearning(bookTitle, score, thoughtAnswer) {
+  try {
+    var todayStr = new Date().toLocaleDateString('ko-KR').replace(/\.\s*/g, '.').replace(/\.$/, '');
+    var newLog = {
+      id: 'L_' + Date.now(),
+      studentName: '김민준',
+      classGroup: '지혜반',
+      bookTitle: bookTitle,
+      date: todayStr,
+      score: score,
+      sheet: '작성 전', // 기본적으로 '작성 전'
+      reviewed: '대기',
+      thoughtAnswer: thoughtAnswer || '원생 생각담기 제출 완료'
+    };
+
+    var rawLogs = localStorage.getItem('NANO_LEARNING_LOGS');
+    var logs = rawLogs ? JSON.parse(rawLogs) : [];
+    logs.unshift(newLog);
+    localStorage.setItem('NANO_LEARNING_LOGS', JSON.stringify(logs));
+  } catch(e) {}
+}
+
+
 function backToSelect(){
   if(currentDetailBookId) {
     openBookDetail(currentDetailBookId, prevPanel);
@@ -5441,18 +5816,8 @@ var NANO_CHARACTERS = [
     themeColor: "#f97316",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fed7aa)",
     story: "궁금한 건 못 참아! 돋보기 안경을 쓰고 책 속의 비밀과 복선을 척척 풀어내는 영리한 아기 여우 탐정이에요. 추리소설과 과학 모험책을 가장 좋아해요.",
-    favoriteGenre: "추리 / 과학 탐정",
-    level: "Lv.5 명탐정"
-  },
-  {
-    id: "booki",
-    name: "부키 (Booki)",
-    tag: "지혜의 독서 박사 부엉이 🦉",
-    themeColor: "#0d9488",
-    bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
-    story: "머리 위에 항상 책을 얹고 다니는 숲속 도서관의 학장님! 책을 읽고 나면 친구들에게 재미있는 상식과 깊은 지혜를 이야기해 주는 따뜻한 멘토예요.",
-    favoriteGenre: "인문 / 백과사전",
-    level: "Lv.6 대학자"
+    isDefault: true,
+    unlockDesc: "나노의 책장 시작 기념 기본 제공 캐릭터 (언제든 사용 가능)"
   },
   {
     id: "toto",
@@ -5461,28 +5826,10 @@ var NANO_CHARACTERS = [
     themeColor: "#ec4899",
     bgGradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
     story: "당근 모양 책갈피를 들고 바람처럼 책장을 펄럭이는 독서 스피드스타! 재미있는 책을 발견하면 밤새도록 멈추지 않고 완독하는 열정파 토끼랍니다.",
-    favoriteGenre: "모험 판타지 / 동화",
-    level: "Lv.4 완독 레이서"
-  },
-  {
-    id: "lumi",
-    name: "루미 (Lumi)",
-    tag: "별빛 판타지 요정 🧚",
-    themeColor: "#8b5cf6",
-    bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-    story: "별가루를 흩뿌리며 책 속 상상력의 세계로 날아가는 마법 요정! 아름다운 문장을 마주할 때마다 온몸에서 은은한 무지갯빛 오로라가 반짝여요.",
-    favoriteGenre: "세계명작 / 시와 동화",
-    level: "Lv.5 상상 마법사"
-  },
-  {
-    id: "popo",
-    name: "포포 (Popo)",
-    tag: "끈기 만점 백과사전 곰 🐻",
-    themeColor: "#b45309",
-    bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
-    story: "꿀단지보다 두꺼운 책이 더 좋은 포근한 아기 곰! 어려운 역사책도 우직하게 한 글자씩 끝까지 읽어내어 친구들에게 듬직한 길잡이가 되어줍니다.",
-    favoriteGenre: "역사 / 문화 탐구",
-    level: "Lv.5 끈기 대장"
+    reqType: "genre_lit",
+    reqCount: 15,
+    reqUnit: "권",
+    unlockDesc: "동화·창작문학 도서 15권 완독 달성"
   },
   {
     id: "pico",
@@ -5491,8 +5838,22 @@ var NANO_CHARACTERS = [
     themeColor: "#0284c7",
     bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
     story: "반짝이는 우주복 헬멧을 쓰고 저 너머 은하계와 미래 세계를 꿈꾸는 탐험가 펭귄! AI, 로봇, 우주선이 나오는 SF 소설에 푹 빠져 살아요.",
-    favoriteGenre: "SF 과학 / 미래 문명",
-    level: "Lv.4 우주 비행사"
+    reqType: "genre_sci",
+    reqCount: 20,
+    reqUnit: "권",
+    unlockDesc: "과학·SF 탐구 도서 20권 완독 달성"
+  },
+  {
+    id: "popo",
+    name: "포포 (Popo)",
+    tag: "끈기 만점 백과사전 곰 🐻",
+    themeColor: "#b45309",
+    bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
+    story: "꿀단지보다 두꺼운 책이 더 좋은 포근한 아기 곰! 어려운 역사책도 우직하게 한 글자씩 끝까지 읽어내어 친구들에게 듬직한 길잡이가 되어줍니다.",
+    reqType: "genre_hist",
+    reqCount: 30,
+    reqUnit: "권",
+    unlockDesc: "역사·사회 도서 30권 완독 달성 (1단계)"
   },
   {
     id: "chichi",
@@ -5501,18 +5862,10 @@ var NANO_CHARACTERS = [
     themeColor: "#ea580c",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
     story: "도토리 돋보기로 책 구석구석 핵심 단어를 쏙쏙 찾아내는 다람쥐! 북퀴즈만 시작하면 만점을 놓치지 않는 눈썰미 천재예요.",
-    favoriteGenre: "어휘력 / 퀴즈 퍼즐",
-    level: "Lv.5 퀴즈 마스터"
-  },
-  {
-    id: "mir",
-    name: "미르 (Mir)",
-    tag: "신화 속 아기 청룡 🐲",
-    themeColor: "#059669",
-    bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    story: "뭉게구름을 타고 다니며 한국사 설화와 영웅 전설을 속삭여 주는 푸른 아기 용! 큰 꿈과 용기를 주는 위인전을 가장 아껴요.",
-    favoriteGenre: "한국사 / 신화 전설",
-    level: "Lv.6 전설의 용"
+    reqType: "quiz_100",
+    reqCount: 30,
+    reqUnit: "회",
+    unlockDesc: "북퀴즈 30회 만점(100점) 달성"
   },
   {
     id: "choco",
@@ -5521,8 +5874,46 @@ var NANO_CHARACTERS = [
     themeColor: "#854d0e",
     bgGradient: "linear-gradient(135deg, #fef9c3, #fef08a)",
     story: "예술가 빵모자를 비스듬히 쓰고 책에서 감동받은 장면을 스케치북에 그림으로 남기는 감성파 강아지! 나노시트(독서생각담기) 그리기 1등이에요.",
-    favoriteGenre: "그림책 / 문학 예술",
-    level: "Lv.4 아트 마스터"
+    reqType: "genre_bio",
+    reqCount: 30,
+    reqUnit: "권",
+    unlockDesc: "위인·인물 이야기 도서 30권 완독 달성"
+  },
+  {
+    id: "lumi",
+    name: "루미 (Lumi)",
+    tag: "별빛 판타지 요정 🧚",
+    themeColor: "#8b5cf6",
+    bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+    story: "별가루를 흩뿌리며 책 속 상상력의 세계로 날아가는 마법 요정! 아름다운 문장을 마주할 때마다 온몸에서 은은한 무지갯빛 오로라가 반짝여요.",
+    reqType: "points",
+    reqCount: 2000,
+    reqUnit: "P",
+    unlockDesc: "누적 독서 포인트 2,000P 돌파 달성"
+  },
+  {
+    id: "booki",
+    name: "부키 (Booki)",
+    tag: "지혜의 독서 박사 부엉이 🦉",
+    themeColor: "#0d9488",
+    bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
+    story: "머리 위에 항상 책을 얹고 다니는 숲속 도서관의 학장님! 책을 읽고 나면 친구들에게 재미있는 상식과 깊은 지혜를 이야기해 주는 따뜻한 멘토예요.",
+    reqType: "rank_100",
+    reqCount: 100,
+    reqUnit: "위",
+    unlockDesc: "전국 랭킹 명예의 전당 TOP 100 진입 달성"
+  },
+  {
+    id: "mir",
+    name: "미르 (Mir)",
+    tag: "신화 속 아기 청룡 🐲",
+    themeColor: "#059669",
+    bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
+    story: "뭉게구름을 타고 다니며 한국사 설화와 영웅 전설을 속삭여 주는 푸른 아기 용! 큰 꿈과 용기를 주는 위인전을 가장 아껴요.",
+    reqType: "genre_hist",
+    reqCount: 100,
+    reqUnit: "권",
+    unlockDesc: "역사·고전 마스터 도서 100권 완독 달성 (2단계)"
   },
   {
     id: "jelly",
@@ -5531,10 +5922,85 @@ var NANO_CHARACTERS = [
     themeColor: "#06b6d4",
     bgGradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
     story: "책장을 스스로 넘겨주고 책먼지를 청소해 주는 귀여운 말랑 젤리! 지치고 졸릴 때 상쾌한 독서 에너지를 불어넣어 주는 비타민 요정이에요.",
-    favoriteGenre: "유머 / 힐링 코믹스",
-    level: "Lv.5 에너지 요정"
+    reqType: "total_read",
+    reqCount: 100,
+    reqUnit: "권",
+    unlockDesc: "전설의 대독서가 전체 완독 100권 돌파"
   }
 ];
+
+// 학생 독서 활동 통계 헬퍼 (게이미피케이션 해금 판정용)
+function getStudentActivityStats() {
+  return {
+    totalRead: 42,      // 전체 완독 42권
+    litRead: 18,        // 문학/동화 18권 (토토 해금 달성: 18 >= 15)
+    sciRead: 12,        // 과학/SF 12권 (피코: 12 / 20권)
+    histRead: 14,       // 역사 14권 (포포: 14 / 30권, 미르: 14 / 100권)
+    bioRead: 8,         // 위인전 8권 (초코: 8 / 30권)
+    quiz100Count: 28,   // 북퀴즈 100점 만점 28회 (치치: 28 / 30회)
+    points: 2480,       // 누적 포인트 2,480P (루미 해금 달성: 2480 >= 2000)
+    nationalRank: 87    // 전국 랭킹 87위 (부키 해금 달성: 87 <= 100)
+  };
+}
+
+// 캐릭터별 실시간 해금 상태 및 진행률 계산
+function getCharacterUnlockStatus(char) {
+  if (char.isDefault) {
+    return { unlocked: true, current: 1, target: 1, unit: "", percent: 100, statusText: "기본 지급 완료" };
+  }
+  var stats = getStudentActivityStats();
+  var current = 0;
+  var target = char.reqCount || 1;
+  var unit = char.reqUnit || "권";
+
+  switch (char.reqType) {
+    case 'genre_lit':
+      current = stats.litRead;
+      break;
+    case 'genre_sci':
+      current = stats.sciRead;
+      break;
+    case 'genre_hist':
+      current = stats.histRead;
+      break;
+    case 'genre_bio':
+      current = stats.bioRead;
+      break;
+    case 'quiz_100':
+      current = stats.quiz100Count;
+      break;
+    case 'points':
+      current = stats.points;
+      break;
+    case 'rank_100':
+      current = stats.nationalRank;
+      var isRankUnlocked = current <= target;
+      return {
+        unlocked: isRankUnlocked,
+        current: current,
+        target: target,
+        unit: "위",
+        percent: isRankUnlocked ? 100 : Math.round((target / current) * 100),
+        statusText: "현재 전국 " + current + "위 (목표 " + target + "위 이내)"
+      };
+    case 'total_read':
+      current = stats.totalRead;
+      break;
+    default:
+      current = 0;
+  }
+
+  var percent = Math.min(100, Math.round((current / target) * 100));
+  var isUnlocked = current >= target;
+  return {
+    unlocked: isUnlocked,
+    current: current,
+    target: target,
+    unit: unit,
+    percent: percent,
+    statusText: "현재 " + current.toLocaleString() + unit + " / 목표 " + target.toLocaleString() + unit + " (" + percent + "%)"
+  };
+}
 
 function getCharacterSvg(charId, size) {
   size = size || 60;
@@ -5545,211 +6011,164 @@ function getCharacterSvg(charId, size) {
       + '<polygon points="28,34 22,17 38,25" fill="#fbcfe8"/>'
       + '<polygon points="74,38 82,12 60,24" fill="#f97316"/>'
       + '<polygon points="72,34 78,17 62,25" fill="#fbcfe8"/>'
-      + '<circle cx="50" cy="54" r="32" fill="#ea580c"/>'
-      + '<polygon points="24,52 50,86 76,52" fill="#ea580c"/>'
-      + '<polygon points="32,54 50,82 68,54" fill="#ffffff"/>'
-      + '<circle cx="33" cy="62" r="5" fill="#fda4af" opacity="0.8"/>'
-      + '<circle cx="67" cy="62" r="5" fill="#fda4af" opacity="0.8"/>'
-      + '<circle cx="41" cy="52" r="4" fill="#1e293b"/>'
-      + '<circle cx="42.5" cy="50.5" r="1.5" fill="#ffffff"/>'
-      + '<circle cx="59" cy="52" r="4" fill="#1e293b"/>'
-      + '<circle cx="60.5" cy="50.5" r="1.5" fill="#ffffff"/>'
-      + '<polygon points="47,66 53,66 50,69" fill="#0f172a"/>'
-      + '<path d="M47 70 Q50 73 53 70" stroke="#0f172a" stroke-width="1.5" fill="none"/>'
-      + '<circle cx="40" cy="52" r="9" fill="none" stroke="#eab308" stroke-width="2.5"/>'
-      + '<line x1="49" y1="52" x2="51" y2="52" stroke="#eab308" stroke-width="2.5"/>'
-      + '<circle cx="60" cy="52" r="9" fill="none" stroke="#eab308" stroke-width="2.5"/>'
-      + '<line x1="67" y1="57" x2="74" y2="65" stroke="#b45309" stroke-width="3" stroke-linecap="round"/>'
+      + '<circle cx="50" cy="56" r="34" fill="#f97316"/>'
+      + '<path d="M26,56 Q50,78 74,56 Q50,90 26,56" fill="#fff"/>'
+      + '<ellipse cx="38" cy="48" rx="8" ry="7" fill="none" stroke="#78350f" stroke-width="2.5"/>'
+      + '<ellipse cx="62" cy="48" rx="8" ry="7" fill="none" stroke="#78350f" stroke-width="2.5"/>'
+      + '<line x1="46" y1="48" x2="54" y2="48" stroke="#78350f" stroke-width="2.5"/>'
+      + '<circle cx="38" cy="48" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="39.5" cy="46.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="62" cy="48" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="63.5" cy="46.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="62" rx="3.5" ry="2.5" fill="#1e293b"/>'
+      + '<circle cx="30" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
+      + '<circle cx="70" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
       + '</svg>',
     booki: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ccfbf1" stroke="#0d9488" stroke-width="2.5"/>'
-      + '<polygon points="25,32 18,18 36,25" fill="#0f766e"/>'
-      + '<polygon points="75,32 82,18 64,25" fill="#0f766e"/>'
-      + '<circle cx="50" cy="56" r="32" fill="#0d9488"/>'
-      + '<ellipse cx="50" cy="62" rx="20" ry="22" fill="#f0fdfa"/>'
-      + '<path d="M44 58 Q50 63 56 58" stroke="#14b8a6" stroke-width="2" fill="none"/>'
-      + '<path d="M42 66 Q50 71 58 66" stroke="#14b8a6" stroke-width="2" fill="none"/>'
-      + '<circle cx="38" cy="48" r="10" fill="#ffffff" stroke="#0f766e" stroke-width="1.5"/>'
-      + '<circle cx="39" cy="48" r="5" fill="#0f172a"/>'
-      + '<circle cx="41" cy="46" r="2" fill="#ffffff"/>'
-      + '<circle cx="62" cy="48" r="10" fill="#ffffff" stroke="#0f766e" stroke-width="1.5"/>'
-      + '<circle cx="61" cy="48" r="5" fill="#0f172a"/>'
-      + '<circle cx="63" cy="46" r="2" fill="#ffffff"/>'
-      + '<polygon points="46,55 54,55 50,63" fill="#f59e0b"/>'
-      + '<rect x="36" y="16" width="28" height="7" rx="2" fill="#2563eb"/>'
-      + '<rect x="38" y="14" width="24" height="4" rx="1.5" fill="#60a5fa"/>'
-      + '<path d="M50 14 L50 21" stroke="#ffffff" stroke-width="1"/>'
-      + '<circle cx="50" cy="13" r="2" fill="#fbbf24"/>'
+      + '<circle cx="50" cy="55" r="33" fill="#0d9488"/>'
+      + '<ellipse cx="50" cy="63" rx="20" ry="22" fill="#f0fdfa"/>'
+      + '<polygon points="28,34 20,20 38,28" fill="#0f766e"/>'
+      + '<polygon points="72,34 80,20 62,28" fill="#0f766e"/>'
+      + '<circle cx="38" cy="50" r="11" fill="#fff" stroke="#042f2e" stroke-width="2"/>'
+      + '<circle cx="62" cy="50" r="11" fill="#fff" stroke="#042f2e" stroke-width="2"/>'
+      + '<circle cx="38" cy="50" r="4.5" fill="#134e4a"/>'
+      + '<circle cx="40" cy="48" r="1.5" fill="#fff"/>'
+      + '<circle cx="62" cy="50" r="4.5" fill="#134e4a"/>'
+      + '<circle cx="64" cy="48" r="1.5" fill="#fff"/>'
+      + '<polygon points="46,57 54,57 50,64" fill="#f59e0b"/>'
+      + '<rect x="36" y="16" width="28" height="12" rx="2.5" fill="#b45309" stroke="#78350f" stroke-width="1.5"/>'
+      + '<rect x="38" y="18" width="24" height="2" fill="#fde68a"/>'
       + '</svg>',
     toto: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#fce7f3" stroke="#ec4899" stroke-width="2.5"/>'
-      + '<ellipse cx="34" cy="22" rx="7" ry="18" fill="#f472b6" transform="rotate(-10 34 22)"/>'
-      + '<ellipse cx="34" cy="22" rx="3.5" ry="12" fill="#fdf2f8" transform="rotate(-10 34 22)"/>'
-      + '<ellipse cx="66" cy="22" rx="7" ry="18" fill="#f472b6" transform="rotate(10 66 22)"/>'
-      + '<ellipse cx="66" cy="22" rx="3.5" ry="12" fill="#fdf2f8" transform="rotate(10 66 22)"/>'
-      + '<circle cx="50" cy="58" r="30" fill="#f472b6"/>'
-      + '<ellipse cx="50" cy="64" rx="18" ry="16" fill="#ffffff"/>'
-      + '<circle cx="32" cy="62" r="5" fill="#fb7185" opacity="0.8"/>'
-      + '<circle cx="68" cy="62" r="5" fill="#fb7185" opacity="0.8"/>'
-      + '<ellipse cx="40" cy="53" rx="3.5" ry="5" fill="#1e293b"/>'
-      + '<circle cx="41.5" cy="51" r="1.5" fill="#ffffff"/>'
-      + '<ellipse cx="60" cy="53" rx="3.5" ry="5" fill="#1e293b"/>'
-      + '<circle cx="61.5" cy="51" r="1.5" fill="#ffffff"/>'
-      + '<polygon points="47,62 53,62 50,65" fill="#f43f5e"/>'
-      + '<rect x="48.5" y="66" width="3" height="4" rx="1" fill="#ffffff" stroke="#f43f5e" stroke-width="0.5"/>'
-      + '<polygon points="74,68 84,54 78,50" fill="#f97316"/>'
-      + '<polygon points="80,50 85,44 86,52" fill="#22c55e"/>'
+      + '<ellipse cx="37" cy="24" rx="8" ry="20" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
+      + '<ellipse cx="37" cy="24" rx="4.5" ry="15" fill="#f472b6"/>'
+      + '<ellipse cx="63" cy="24" rx="8" ry="20" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
+      + '<ellipse cx="63" cy="24" rx="4.5" ry="15" fill="#f472b6"/>'
+      + '<circle cx="50" cy="60" r="31" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
+      + '<circle cx="40" cy="56" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="41.5" cy="54.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="60" cy="56" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="61.5" cy="54.5" r="1.2" fill="#fff"/>'
+      + '<polygon points="47,64 53,64 50,68" fill="#ec4899"/>'
+      + '<circle cx="32" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
+      + '<circle cx="68" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
       + '</svg>',
     lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2.5"/>'
-      + '<ellipse cx="26" cy="46" rx="14" ry="9" fill="#c4b5fd" opacity="0.75" transform="rotate(-25 26 46)"/>'
-      + '<ellipse cx="74" cy="46" rx="14" ry="9" fill="#c4b5fd" opacity="0.75" transform="rotate(25 74 46)"/>'
-      + '<circle cx="50" cy="55" r="28" fill="#a78bfa"/>'
-      + '<path d="M28 44 Q50 34 72 44 Q70 60 50 62 Q30 60 28 44 Z" fill="#7c3aed"/>'
-      + '<circle cx="40" cy="44" r="8" fill="#6d28d9"/>'
-      + '<circle cx="60" cy="44" r="8" fill="#6d28d9"/>'
-      + '<ellipse cx="50" cy="62" rx="18" ry="15" fill="#fdf4ff"/>'
-      + '<circle cx="41" cy="58" r="4.5" fill="#4c1d95"/>'
-      + '<polygon points="42,56 43,58 41,58" fill="#ffffff"/>'
-      + '<circle cx="59" cy="58" r="4.5" fill="#4c1d95"/>'
-      + '<polygon points="60,56 61,58 59,58" fill="#ffffff"/>'
-      + '<circle cx="34" cy="65" r="4" fill="#f472b6" opacity="0.7"/>'
-      + '<circle cx="66" cy="65" r="4" fill="#f472b6" opacity="0.7"/>'
-      + '<path d="M47 67 Q50 70 53 67" stroke="#6d28d9" stroke-width="1.5" fill="none"/>'
-      + '<polygon points="50,15 54,24 63,24 56,30 59,39 50,33 41,39 44,30 37,24 46,24" fill="#fbbf24"/>'
-      + '<circle cx="50" cy="27" r="2" fill="#ffffff"/>'
+      + '<circle cx="50" cy="54" r="30" fill="#fff" stroke="#8b5cf6" stroke-width="2"/>'
+      + '<path d="M30,34 Q50,18 70,34 Q65,48 50,44 Q35,48 30,34" fill="#a78bfa"/>'
+      + '<circle cx="41" cy="52" r="3.5" fill="#4c1d95"/>'
+      + '<circle cx="42.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="59" cy="52" r="3.5" fill="#4c1d95"/>'
+      + '<circle cx="60.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<path d="M47,60 Q50,63 53,60" stroke="#a78bfa" stroke-width="1.8" fill="none"/>'
+      + '<circle cx="34" cy="58" r="4" fill="#ddd6fe"/>'
+      + '<circle cx="66" cy="58" r="4" fill="#ddd6fe"/>'
+      + '<polygon points="50,12 52,18 58,20 52,22 50,28 48,22 42,20 48,18" fill="#facc15"/>'
       + '</svg>',
     popo: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#fef3c7" stroke="#b45309" stroke-width="2.5"/>'
-      + '<circle cx="28" cy="30" r="12" fill="#92400e"/>'
-      + '<circle cx="28" cy="30" r="6" fill="#fcd34d"/>'
-      + '<circle cx="72" cy="30" r="12" fill="#92400e"/>'
-      + '<circle cx="72" cy="30" r="6" fill="#fcd34d"/>'
-      + '<circle cx="50" cy="56" r="32" fill="#92400e"/>'
-      + '<ellipse cx="50" cy="64" rx="16" ry="13" fill="#fef3c7"/>'
-      + '<circle cx="39" cy="52" r="3.5" fill="#0f172a"/>'
-      + '<circle cx="40.5" cy="50.5" r="1.2" fill="#ffffff"/>'
-      + '<circle cx="61" cy="52" r="3.5" fill="#0f172a"/>'
-      + '<circle cx="62.5" cy="50.5" r="1.2" fill="#ffffff"/>'
-      + '<circle cx="32" cy="60" r="4.5" fill="#f87171" opacity="0.7"/>'
-      + '<circle cx="68" cy="60" r="4.5" fill="#f87171" opacity="0.7"/>'
-      + '<ellipse cx="50" cy="62" rx="4.5" ry="3.5" fill="#451a03"/>'
-      + '<path d="M47 66 Q50 69 53 66" stroke="#451a03" stroke-width="1.5" fill="none"/>'
-      + '<rect x="32" y="74" width="36" height="15" rx="3" fill="#15803d"/>'
-      + '<rect x="35" y="72" width="30" height="4" rx="1" fill="#f8fafc"/>'
-      + '<line x1="50" y1="74" x2="50" y2="89" stroke="#14532d" stroke-width="1.5"/>'
+      + '<circle cx="28" cy="30" r="11" fill="#b45309"/>'
+      + '<circle cx="28" cy="30" r="6" fill="#fef3c7"/>'
+      + '<circle cx="72" cy="30" r="11" fill="#b45309"/>'
+      + '<circle cx="72" cy="30" r="6" fill="#fef3c7"/>'
+      + '<circle cx="50" cy="58" r="33" fill="#b45309"/>'
+      + '<ellipse cx="50" cy="67" rx="18" ry="14" fill="#fde68a"/>'
+      + '<circle cx="39" cy="53" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="40.5" cy="51.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="61" cy="53" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="62.5" cy="51.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="64" rx="5" ry="3.5" fill="#1e293b"/>'
       + '</svg>',
     pico: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>'
-      + '<ellipse cx="50" cy="56" rx="30" ry="32" fill="#0f172a"/>'
-      + '<ellipse cx="50" cy="62" rx="20" ry="24" fill="#ffffff"/>'
-      + '<ellipse cx="20" cy="58" rx="6" ry="14" fill="#1e293b" transform="rotate(-15 20 58)"/>'
-      + '<ellipse cx="80" cy="58" rx="6" ry="14" fill="#1e293b" transform="rotate(15 80 58)"/>'
-      + '<circle cx="40" cy="48" r="7" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>'
-      + '<circle cx="41" cy="48" r="3.8" fill="#0284c7"/>'
-      + '<circle cx="42" cy="46" r="1.5" fill="#ffffff"/>'
-      + '<circle cx="60" cy="48" r="7" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>'
-      + '<circle cx="59" cy="48" r="3.8" fill="#0284c7"/>'
-      + '<circle cx="60" cy="46" r="1.5" fill="#ffffff"/>'
-      + '<polygon points="46,55 54,55 50,62" fill="#ea580c"/>'
-      + '<circle cx="33" cy="56" r="4" fill="#fb923c" opacity="0.6"/>'
-      + '<circle cx="67" cy="56" r="4" fill="#fb923c" opacity="0.6"/>'
-      + '<path d="M26 38 A 30 30 0 0 1 74 38" stroke="#38bdf8" stroke-width="3" fill="none" opacity="0.7" stroke-linecap="round"/>'
-      + '<circle cx="72" cy="36" r="3" fill="#38bdf8"/>'
-      + '<line x1="50" y1="24" x2="50" y2="15" stroke="#0284c7" stroke-width="2"/>'
-      + '<circle cx="50" cy="14" r="3.5" fill="#ef4444"/>'
+      + '<circle cx="50" cy="54" r="33" fill="#0f172a"/>'
+      + '<ellipse cx="50" cy="59" rx="20" ry="25" fill="#fff"/>'
+      + '<circle cx="40" cy="49" r="4" fill="#0284c7"/>'
+      + '<circle cx="41.5" cy="47.5" r="1.3" fill="#fff"/>'
+      + '<circle cx="60" cy="49" r="4" fill="#0284c7"/>'
+      + '<circle cx="61.5" cy="47.5" r="1.3" fill="#fff"/>'
+      + '<polygon points="46,55 54,55 50,63" fill="#f59e0b"/>'
+      + '<ellipse cx="50" cy="54" rx="35" ry="35" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.75"/>'
       + '</svg>',
     chichi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#ea580c" stroke-width="2.5"/>'
-      + '<path d="M70 65 Q88 45 84 25 Q78 12 68 20 Q62 26 66 38 Z" fill="#c2410c"/>'
-      + '<path d="M72 60 Q84 45 80 30" stroke="#fed7aa" stroke-width="2.5" fill="none"/>'
-      + '<ellipse cx="32" cy="30" rx="7" ry="10" fill="#c2410c" transform="rotate(-15 32 30)"/>'
-      + '<ellipse cx="32" cy="30" rx="4" ry="6" fill="#ffedd5" transform="rotate(-15 32 30)"/>'
-      + '<ellipse cx="68" cy="30" rx="7" ry="10" fill="#c2410c" transform="rotate(15 68 30)"/>'
-      + '<ellipse cx="68" cy="30" rx="4" ry="6" fill="#ffedd5" transform="rotate(15 68 30)"/>'
-      + '<circle cx="50" cy="57" r="30" fill="#ea580c"/>'
-      + '<ellipse cx="50" cy="65" rx="18" ry="16" fill="#fff7ed"/>'
-      + '<line x1="50" y1="36" x2="50" y2="48" stroke="#7c2d12" stroke-width="3" stroke-linecap="round"/>'
-      + '<line x1="43" y1="38" x2="44" y2="46" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/>'
-      + '<line x1="57" y1="38" x2="56" y2="46" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/>'
-      + '<circle cx="31" cy="64" r="6" fill="#fdba74"/>'
-      + '<circle cx="69" cy="64" r="6" fill="#fdba74"/>'
-      + '<circle cx="39" cy="54" r="4.5" fill="#1e293b"/>'
-      + '<circle cx="41" cy="52" r="1.5" fill="#ffffff"/>'
-      + '<circle cx="61" cy="54" r="4.5" fill="#1e293b"/>'
-      + '<circle cx="63" cy="52" r="1.5" fill="#ffffff"/>'
-      + '<circle cx="50" cy="61" r="2.5" fill="#7c2d12"/>'
-      + '<path d="M47 64 Q50 67 53 64" stroke="#7c2d12" stroke-width="1.5" fill="none"/>'
-      + '<ellipse cx="50" cy="28" rx="12" ry="7" fill="#78350f"/>'
-      + '<line x1="50" y1="21" x2="52" y2="15" stroke="#78350f" stroke-width="2" stroke-linecap="round"/>'
+      + '<polygon points="32,32 20,18 36,24" fill="#ea580c"/>'
+      + '<polygon points="68,32 80,18 64,24" fill="#ea580c"/>'
+      + '<circle cx="50" cy="56" r="31" fill="#ea580c"/>'
+      + '<ellipse cx="50" cy="64" rx="16" ry="18" fill="#fff"/>'
+      + '<circle cx="39" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="40.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="61" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="62.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="60" rx="4" ry="3" fill="#1e293b"/>'
+      + '<rect x="47" y="63" width="6" height="5" fill="#fff" stroke="#1e293b" stroke-width="1"/>'
+      + '<circle cx="28" cy="60" r="6" fill="#fdba74"/>'
+      + '<circle cx="72" cy="60" r="6" fill="#fdba74"/>'
       + '</svg>',
     mir: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#d1fae5" stroke="#059669" stroke-width="2.5"/>'
-      + '<polygon points="32,32 20,15 36,22" fill="#fbbf24"/>'
-      + '<polygon points="68,32 80,15 64,22" fill="#fbbf24"/>'
-      + '<circle cx="50" cy="55" r="30" fill="#10b981"/>'
-      + '<ellipse cx="50" cy="64" rx="20" ry="16" fill="#a7f3d0"/>'
-      + '<circle cx="50" cy="38" r="3" fill="#047857"/>'
-      + '<circle cx="43" cy="40" r="2" fill="#047857"/>'
-      + '<circle cx="57" cy="40" r="2" fill="#047857"/>'
-      + '<circle cx="38" cy="50" r="5" fill="#064e3b"/>'
-      + '<circle cx="39.5" cy="48.5" r="1.8" fill="#ffffff"/>'
-      + '<circle cx="62" cy="50" r="5" fill="#064e3b"/>'
-      + '<circle cx="63.5" cy="48.5" r="1.8" fill="#ffffff"/>'
-      + '<circle cx="47" cy="61" r="1.5" fill="#065f46"/>'
-      + '<circle cx="53" cy="61" r="1.5" fill="#065f46"/>'
-      + '<path d="M34 62 Q24 64 26 72" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linecap="round"/>'
-      + '<path d="M66 62 Q76 64 74 72" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linecap="round"/>'
-      + '<path d="M30 84 Q40 76 50 84 Q60 76 70 84 Q74 90 60 92 Q40 92 30 84 Z" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>'
-      + '<circle cx="50" cy="78" r="6" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5"/>'
+      + '<path d="M30,28 Q24,12 36,18 Q40,24 38,32" fill="#059669"/>'
+      + '<path d="M70,28 Q76,12 64,18 Q60,24 62,32" fill="#059669"/>'
+      + '<circle cx="50" cy="56" r="31" fill="#10b981"/>'
+      + '<ellipse cx="50" cy="66" rx="18" ry="16" fill="#a7f3d0"/>'
+      + '<circle cx="40" cy="50" r="4" fill="#064e3b"/>'
+      + '<circle cx="41.5" cy="48.5" r="1.3" fill="#fff"/>'
+      + '<circle cx="60" cy="50" r="4" fill="#064e3b"/>'
+      + '<circle cx="61.5" cy="48.5" r="1.3" fill="#fff"/>'
+      + '<circle cx="46" cy="60" r="1.5" fill="#064e3b"/>'
+      + '<circle cx="54" cy="60" r="1.5" fill="#064e3b"/>'
+      + '<polygon points="50,16 53,24 61,24 54,29 57,37 50,32 43,37 46,29 39,24 47,24" fill="#facc15"/>'
       + '</svg>',
     choco: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#fef9c3" stroke="#ca8a04" stroke-width="2.5"/>'
-      + '<ellipse cx="24" cy="52" rx="9" ry="18" fill="#713f12" transform="rotate(15 24 52)"/>'
-      + '<ellipse cx="76" cy="52" rx="9" ry="18" fill="#713f12" transform="rotate(-15 76 52)"/>'
-      + '<circle cx="50" cy="56" r="30" fill="#fef08a"/>'
-      + '<ellipse cx="40" cy="50" rx="9" ry="11" fill="#ca8a04" opacity="0.3"/>'
-      + '<ellipse cx="50" cy="65" rx="16" ry="14" fill="#ffffff"/>'
-      + '<circle cx="40" cy="51" r="4" fill="#1e293b"/>'
-      + '<circle cx="41.5" cy="49.5" r="1.5" fill="#ffffff"/>'
-      + '<circle cx="60" cy="51" r="4" fill="#1e293b"/>'
-      + '<circle cx="61.5" cy="49.5" r="1.5" fill="#ffffff"/>'
-      + '<ellipse cx="50" cy="61" rx="5" ry="4" fill="#451a03"/>'
-      + '<path d="M47 66 Q50 69 53 66" stroke="#451a03" stroke-width="1.5" fill="none"/>'
-      + '<path d="M48 68 Q50 75 52 68 Z" fill="#f43f5e"/>'
-      + '<circle cx="32" cy="62" r="4.5" fill="#fca5a5" opacity="0.8"/>'
-      + '<circle cx="68" cy="62" r="4.5" fill="#fca5a5" opacity="0.8"/>'
-      + '<ellipse cx="46" cy="27" rx="18" ry="10" fill="#dc2626" transform="rotate(-12 46 27)"/>'
-      + '<circle cx="42" cy="18" r="2.5" fill="#dc2626"/>'
+      + '<circle cx="50" cy="50" r="48" fill="#fef9c3" stroke="#854d0e" stroke-width="2.5"/>'
+      + '<ellipse cx="24" cy="46" rx="8" ry="17" fill="#854d0e"/>'
+      + '<ellipse cx="76" cy="46" rx="8" ry="17" fill="#854d0e"/>'
+      + '<circle cx="50" cy="56" r="31" fill="#ca8a04"/>'
+      + '<ellipse cx="50" cy="65" rx="15" ry="14" fill="#fef08a"/>'
+      + '<circle cx="41" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="42.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="59" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="60.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#1e293b"/>'
+      + '<path d="M47,65 Q50,68 53,65" stroke="#1e293b" stroke-width="1.5" fill="none"/>'
       + '</svg>',
     jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#cffafe" stroke="#06b6d4" stroke-width="2.5"/>'
-      + '<path d="M50 18 C30 18 20 40 22 65 C24 82 38 88 50 88 C62 88 76 82 78 65 C80 40 70 18 50 18 Z" fill="#22d3ee"/>'
-      + '<ellipse cx="36" cy="38" rx="5" ry="10" fill="#ffffff" opacity="0.6" transform="rotate(-25 36 38)"/>'
-      + '<circle cx="42" cy="28" r="3" fill="#ffffff" opacity="0.7"/>'
-      + '<path d="M36 54 Q41 49 46 54" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
-      + '<circle cx="59" cy="53" r="4.5" fill="#0f172a"/>'
-      + '<circle cx="60.5" cy="51" r="1.8" fill="#ffffff"/>'
-      + '<circle cx="32" cy="62" r="5" fill="#f472b6" opacity="0.8"/>'
-      + '<circle cx="68" cy="62" r="5" fill="#f472b6" opacity="0.8"/>'
-      + '<path d="M47 62 Q50 67 53 62" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round"/>'
-      + '<polygon points="50,10 52,14 56,14 53,17 54,21 50,18 46,21 47,17 44,14 48,14" fill="#fbbf24"/>'
+      + '<path d="M25,58 Q22,34 50,30 Q78,34 75,58 Q72,78 50,78 Q28,78 25,58" fill="#22d3ee"/>'
+      + '<ellipse cx="50" cy="40" rx="16" ry="6" fill="#a5f3fc" opacity="0.6"/>'
+      + '<circle cx="40" cy="52" r="3.5" fill="#083344"/>'
+      + '<circle cx="41.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="60" cy="52" r="3.5" fill="#083344"/>'
+      + '<circle cx="61.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<path d="M46,60 Q50,65 54,60" stroke="#083344" stroke-width="2" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="32" cy="58" r="4" fill="#fed7aa"/>'
+      + '<circle cx="68" cy="58" r="4" fill="#fed7aa"/>'
       + '</svg>'
   };
-  return svgs[charId] || svgs.booki;
+  return svgs[charId] || svgs.nano;
 }
 
+var STORAGE_KEY_CHAR = 'NANO_STUDENT_AVATAR_ID';
 function getUserCharacterId() {
-  return localStorage.getItem("NANO_USER_CHAR_ID") || "booki";
+  try {
+    return localStorage.getItem(STORAGE_KEY_CHAR) || 'nano';
+  } catch(e) {
+    return 'nano';
+  }
 }
 
-function setUserCharacterId(charId) {
-  localStorage.setItem("NANO_USER_CHAR_ID", charId);
+function setUserCharacterId(id) {
+  try {
+    localStorage.setItem(STORAGE_KEY_CHAR, id);
+  } catch(e) {}
   updateAllCharacterAvatars();
 }
 
 function getCharacterById(id) {
-  return NANO_CHARACTERS.find(function(c){ return c.id === id; }) || NANO_CHARACTERS[1];
+  return NANO_CHARACTERS.find(function(c){ return c.id === id; }) || NANO_CHARACTERS[0];
 }
 
 var tempSelectedCharId = null;
@@ -5772,20 +6191,52 @@ function selectCharacterInModal(id) {
 }
 
 function applySelectedCharacter() {
-  if(!tempSelectedCharId) tempSelectedCharId = 'booki';
+  if(!tempSelectedCharId) tempSelectedCharId = 'nano';
+  var char = getCharacterById(tempSelectedCharId);
+  var unlockInfo = getCharacterUnlockStatus(char);
+
+  if (!unlockInfo.unlocked) {
+    toast('🔒 아직 해금되지 않은 캐릭터입니다. ' + char.unlockDesc + ' 미션을 먼저 완수해주세요!');
+    return;
+  }
+
   setUserCharacterId(tempSelectedCharId);
   closeCharacterSelectModal();
-  var char = getCharacterById(tempSelectedCharId);
-  toast('🎉 내 대표 캐릭터가 [' + char.name + '](으)로 설정되었습니다!');
+  toast('🎉 내 대표 캐릭터가 [' + char.name.split(' ')[0] + '](으)로 변경되었습니다!');
   renderRank();
 }
 
 function renderCharacterSelectModal() {
   var previewEl = document.getElementById("charDetailPreview");
   var gridEl = document.getElementById("charSelectGrid");
+  var applyBtn = document.getElementById("btnApplyCharacter");
   if(!previewEl || !gridEl) return;
 
   var cur = getCharacterById(tempSelectedCharId || getUserCharacterId());
+  var curUnlock = getCharacterUnlockStatus(cur);
+
+  // 상단 상세 카드: Lv 및 추천장르 제거, 해금 조건 및 진행률 게이지 바 표시
+  var unlockBannerHtml = '';
+  if (cur.isDefault) {
+    unlockBannerHtml = '<div style="font-size:11px;color:#0d9488;background:#f0fdfa;padding:5px 9px;border-radius:8px;border:1px solid #ccfbf1;font-weight:700;"><i class="fa-solid fa-gift mr-1"></i>기본 제공 캐릭터 (언제든 사용 가능)</div>';
+  } else if (curUnlock.unlocked) {
+    unlockBannerHtml = '<div style="font-size:11px;color:#059669;background:#ecfdf5;padding:5px 9px;border-radius:8px;border:1px solid #a7f3d0;font-weight:700;"><i class="fa-solid fa-circle-check mr-1 text-success"></i>해금 완료! ' + cur.unlockDesc + ' (' + curUnlock.statusText + ')</div>';
+  } else {
+    unlockBannerHtml = '<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:6px 10px;font-size:11px;">'
+      + '<div style="color:#be123c;font-weight:800;margin-bottom:4px;"><i class="fa-solid fa-lock mr-1"></i>해금 조건: ' + cur.unlockDesc + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      +   '<div style="flex:1;height:7px;background:#fecdd3;border-radius:4px;overflow:hidden;">'
+      +     '<div style="width:' + curUnlock.percent + '%;height:100%;background:#e11d48;border-radius:4px;transition:width 0.3s;"></div>'
+      +   '</div>'
+      +   '<span style="font-size:10.5px;font-weight:800;color:#9f1239;">' + curUnlock.percent + '%</span>'
+      + '</div>'
+      + '<div style="color:#881337;font-size:10px;margin-top:2px;font-weight:600;">' + curUnlock.statusText + '</div>'
+      + '</div>';
+  }
+
+  var badgeHtml = curUnlock.unlocked
+    ? '<span style="font-size:10px;font-weight:800;background:#00a896;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock-open mr-1"></i>해금 완료</span>'
+    : '<span style="font-size:10px;font-weight:800;background:#e11d48;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock mr-1"></i>잠금</span>';
 
   previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;background:' + cur.bgGradient + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);">'
     + getCharacterSvg(cur.id, 64)
@@ -5793,22 +6244,51 @@ function renderCharacterSelectModal() {
     + '<div style="flex:1;min-width:0;">'
     +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
     +     '<span style="font-size:15px;font-weight:900;color:#1e293b;">' + cur.name + '</span>'
-    +     '<span style="font-size:10px;font-weight:800;background:' + cur.themeColor + ';color:#fff;padding:2px 6px;border-radius:6px;">' + cur.level + '</span>'
+    +     badgeHtml
     +   '</div>'
     +   '<div style="font-size:11.5px;font-weight:700;color:' + cur.themeColor + ';margin-bottom:4px;">' + cur.tag + '</div>'
-    +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:4px;">' + cur.story + '</div>'
-    +   '<div style="font-size:10.5px;font-weight:700;color:#0d9488;"><i class="fa-solid fa-bookmark mr-1"></i>추천 장르: ' + cur.favoriteGenre + '</div>'
+    +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">' + cur.story + '</div>'
+    +   unlockBannerHtml
     + '</div>';
 
+  // 하단 [이 캐릭터로 설정] 버튼 활성/비활성 제어
+  if (applyBtn) {
+    if (curUnlock.unlocked) {
+      applyBtn.disabled = false;
+      applyBtn.style.opacity = '1';
+      applyBtn.style.cursor = 'pointer';
+      applyBtn.style.background = '#00a896';
+      applyBtn.style.borderColor = '#00a896';
+      applyBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> 이 캐릭터로 설정';
+    } else {
+      applyBtn.disabled = true;
+      applyBtn.style.opacity = '0.55';
+      applyBtn.style.cursor = 'not-allowed';
+      applyBtn.style.background = '#64748b';
+      applyBtn.style.borderColor = '#64748b';
+      applyBtn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 아직 획득하지 못한 캐릭터입니다';
+    }
+  }
+
+  // 10종 그리드 렌더링
   gridEl.innerHTML = NANO_CHARACTERS.map(function(c){
     var isSel = (c.id === (tempSelectedCharId || getUserCharacterId()));
-    return '<div class="char-select-card ' + (isSel ? 'selected' : '') + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
-      + '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>'
-      + '<div style="margin:0 auto 6px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">'
+    var st = getCharacterUnlockStatus(c);
+    var cardClass = 'char-select-card ' + (isSel ? 'selected' : '') + (st.unlocked ? '' : ' locked');
+
+    var badgeIcon = st.unlocked
+      ? '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>'
+      : '<div class="char-lock-badge" title="잠금: ' + c.unlockDesc + '"><i class="fa-solid fa-lock"></i></div>';
+
+    return '<div class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
+      + badgeIcon
+      + '<div class="char-avatar-img" style="margin:0 auto 6px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">'
       +   getCharacterSvg(c.id, 50)
       + '</div>'
-      + '<div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:2px;">' + c.name.split(' ')[0] + '</div>'
-      + '<div style="font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + c.tag.split(' ')[0] + '</div>'
+      + '<div style="font-size:12px;font-weight:800;color:' + (st.unlocked ? '#1e293b' : '#64748b') + ';margin-bottom:2px;">' + c.name.split(' ')[0] + '</div>'
+      + '<div style="font-size:10px;color:' + (st.unlocked ? '#64748b' : '#94a3b8') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' 
+      +   (st.unlocked ? c.tag.split(' ')[0] : '🔒 ' + st.percent + '%') 
+      + '</div>'
       + '</div>';
   }).join('');
 }
@@ -5836,14 +6316,9 @@ function updateAllCharacterAvatars() {
     dBadge.style.color = char.themeColor;
   }
 
-  // 3. 랭킹 상단 내 캐릭터 아바타 & 말풍선
+  // 3. 랭킹 상단 내 캐릭터 아바타
   var rAvatar = document.getElementById("rankMyCharAvatar");
-  var rSpeech = document.getElementById("rankMyCharSpeech");
   if(rAvatar) rAvatar.innerHTML = getCharacterSvg(charId, 50);
-  if(rSpeech) {
-    rSpeech.innerHTML = '<i class="fa-solid fa-sparkles" style="color:#f59e0b;"></i>'
-      + '<span><strong>' + char.name.split(' ')[0] + '</strong>의 응원: "1위 유지유 친구까지 140P 남았어! 오늘 북퀴즈 2권이면 역전이야! 🔥"</span>';
-  }
 
   // 4. 포디움 2위 단상 아바타 (나)
   var p2Avatar = document.getElementById("podiumAvatar2");
@@ -5876,44 +6351,91 @@ function updateAllCharacterAvatars() {
 }
 
 // ==============================================================
-// 화려한 랭킹 시스템 로직 (포디움 단상 + 4위 이하 카드 목록)
+// 랭킹 시스템 로직 (동적 스코프 연동 + 학급 미운영 지원 + 이번달/지난달)
 // ==============================================================
 var currentRankScope = 'class';
-var currentRankPeriod = 'month';
+var currentRankPeriod = 'month'; // 'month' 또는 'lastMonth'
+
+// 학급 운영 여부 (학급이 없으면 학원/전국 랭킹만 표출)
+var ACADEMY_HAS_CLASS = true; 
 
 var fullRankDatabase = {
-  class: [
-    { rank: 1, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 1, books: 26, titleTag: "🐿️ 퀴즈 달인" },
-    { rank: 2, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "same", changeNum: 0, books: 24, me: true, titleTag: "🦉 지혜의 박사" },
-    { rank: 3, name: "박서준", charId: "nano", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🦊 명탐정" },
-    { rank: 4, name: "정하은", charId: "toto", cls: "지혜반", pt: 1980, change: "up", changeNum: 2, books: 19, titleTag: "🐰 번개 다독왕" },
-    { rank: 5, name: "이준우", charId: "pico", cls: "지혜반", pt: 1840, change: "same", changeNum: 0, books: 18, titleTag: "🐧 우주 탐험가" },
-    { rank: 6, name: "윤아인", charId: "lumi", cls: "지혜반", pt: 1720, change: "up", changeNum: 1, books: 16, titleTag: "🧚 별빛 요정" },
-    { rank: 7, name: "최서율", charId: "popo", cls: "지혜반", pt: 1590, change: "down", changeNum: 2, books: 15, titleTag: "🐻 끈기 대장" },
-    { rank: 8, name: "강도현", charId: "mir", cls: "지혜반", pt: 1450, change: "up", changeNum: 3, books: 14, titleTag: "🐲 전설의 용" },
-    { rank: 9, name: "송예은", charId: "choco", cls: "지혜반", pt: 1380, change: "same", changeNum: 0, books: 13, titleTag: "🐶 낭만 예술가" },
-    { rank: 10, name: "임지후", charId: "jelly", cls: "지혜반", pt: 1210, change: "down", changeNum: 1, books: 11, titleTag: "🫧 에너지 요정" }
-  ],
-  academy: [
-    { rank: 1, name: "장민서", charId: "nano", cls: "마스터반", pt: 3450, change: "up", changeNum: 1, books: 35, titleTag: "🦊 독서 챔피언" },
-    { rank: 2, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 퀴즈 달인" },
-    { rank: 3, name: "오세훈", charId: "mir", cls: "탐구반", pt: 2510, change: "down", changeNum: 1, books: 25, titleTag: "🐲 역사 마니아" },
-    { rank: 4, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "up", changeNum: 1, books: 24, me: true, titleTag: "🦉 학원 4위" },
-    { rank: 5, name: "박서준", charId: "toto", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🐰 스피드러너" },
-    { rank: 6, name: "배수아", charId: "lumi", cls: "열매반", pt: 2100, change: "up", changeNum: 2, books: 20, titleTag: "🧚 문학 탐험가" },
-    { rank: 7, name: "정하은", charId: "popo", cls: "지혜반", pt: 1980, change: "same", changeNum: 0, books: 19, titleTag: "🐻 끈기 독서" }
-  ],
-  national: [
-    { rank: 1, name: "전국 1위 (목동)", charId: "mir", cls: "목동 명문학원", pt: 5420, change: "same", changeNum: 0, books: 52, titleTag: "👑 전국 독서왕" },
-    { rank: 2, name: "전국 2위 (대치)", charId: "booki", cls: "대치 나노독서", pt: 5180, change: "up", changeNum: 1, books: 49, titleTag: "🦉 지혜의 거장" },
-    { rank: 3, name: "전국 3위 (해운대)", charId: "toto", cls: "센텀 영재학원", pt: 4890, change: "down", changeNum: 1, books: 46, titleTag: "🐰 전국 다독왕" },
-    { rank: 12, name: "김민준(나)", charId: "custom", cls: "판교 알파 독서학원", pt: 2480, change: "up", changeNum: 4, books: 24, me: true, titleTag: "🌟 전국 12위" },
-    { rank: 13, name: "유지유", charId: "chichi", cls: "판교 알파 독서학원", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 판교의 자랑" }
-  ]
+  class: {
+    month: [
+      { rank: 1, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 1, books: 26, titleTag: "🐿️ 퀴즈 달인" },
+      { rank: 2, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "same", changeNum: 0, books: 24, me: true, titleTag: "🦊 명탐정" },
+      { rank: 3, name: "박서준", charId: "nano", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🐰 완독왕" },
+      { rank: 4, name: "정하은", charId: "toto", cls: "지혜반", pt: 1980, change: "up", changeNum: 2, books: 19, titleTag: "🐰 번개 다독왕" },
+      { rank: 5, name: "이준우", charId: "pico", cls: "지혜반", pt: 1840, change: "same", changeNum: 0, books: 18, titleTag: "🐧 우주 탐험가" },
+      { rank: 6, name: "윤아인", charId: "lumi", cls: "지혜반", pt: 1720, change: "up", changeNum: 1, books: 16, titleTag: "🧚 별빛 요정" },
+      { rank: 7, name: "최서율", charId: "popo", cls: "지혜반", pt: 1590, change: "down", changeNum: 2, books: 15, titleTag: "🐻 끈기 대장" }
+    ],
+    lastMonth: [
+      { rank: 1, name: "유지유", charId: "chichi", cls: "지혜반", pt: 3120, change: "same", changeNum: 0, books: 32, titleTag: "🏆 8월 MVP" },
+      { rank: 2, name: "박서준", charId: "nano", cls: "지혜반", pt: 2890, change: "up", changeNum: 1, books: 29, titleTag: "🥈 8월 2등" },
+      { rank: 3, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2650, change: "same", changeNum: 0, books: 27, me: true, titleTag: "🥉 8월 포디움" },
+      { rank: 4, name: "정하은", charId: "toto", cls: "지혜반", pt: 2410, change: "same", changeNum: 0, books: 24, titleTag: "🐰 번개 다독왕" },
+      { rank: 5, name: "이준우", charId: "pico", cls: "지혜반", pt: 2180, change: "down", changeNum: 1, books: 22, titleTag: "🐧 우주 탐험가" }
+    ]
+  },
+  academy: {
+    month: [
+      { rank: 1, name: "장민서", charId: "nano", cls: "마스터반", pt: 3450, change: "up", changeNum: 1, books: 35, titleTag: "🦊 독서 챔피언" },
+      { rank: 2, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 퀴즈 달인" },
+      { rank: 3, name: "오세훈", charId: "mir", cls: "탐구반", pt: 2510, change: "down", changeNum: 1, books: 25, titleTag: "🐲 역사 마니아" },
+      { rank: 4, name: "배수아", charId: "lumi", cls: "열매반", pt: 2490, change: "up", changeNum: 1, books: 24, titleTag: "🧚 문학 탐험가" },
+      { rank: 5, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "same", changeNum: 0, books: 24, me: true, titleTag: "🌟 학원 5위" },
+      { rank: 6, name: "박서준", charId: "toto", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🐰 스피드러너" },
+      { rank: 7, name: "정하은", charId: "popo", cls: "지혜반", pt: 1980, change: "same", changeNum: 0, books: 19, titleTag: "🐻 끈기 독서" }
+    ],
+    lastMonth: [
+      { rank: 1, name: "장민서", charId: "nano", cls: "마스터반", pt: 4200, change: "same", changeNum: 0, books: 42, titleTag: "👑 8월 학원 MVP" },
+      { rank: 2, name: "오세훈", charId: "mir", cls: "탐구반", pt: 3620, change: "up", changeNum: 1, books: 36, titleTag: "🥈 8월 2위" },
+      { rank: 3, name: "유지유", charId: "chichi", cls: "지혜반", pt: 3120, change: "down", changeNum: 1, books: 32, titleTag: "🥉 8월 3위" },
+      { rank: 4, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2650, change: "up", changeNum: 2, books: 27, me: true, titleTag: "🎖️ 학원 4위" },
+      { rank: 5, name: "배수아", charId: "lumi", cls: "열매반", pt: 2540, change: "same", changeNum: 0, books: 25, titleTag: "🧚 문학 탐험가" }
+    ]
+  },
+  national: {
+    month: [
+      { rank: 1, name: "전국 1위 (목동)", charId: "mir", cls: "목동 명문학원", pt: 5420, change: "same", changeNum: 0, books: 52, titleTag: "👑 전국 독서왕" },
+      { rank: 2, name: "전국 2위 (대치)", charId: "booki", cls: "대치 나노독서", pt: 5180, change: "up", changeNum: 1, books: 49, titleTag: "🦉 지혜의 거장" },
+      { rank: 3, name: "전국 3위 (해운대)", charId: "toto", cls: "센텀 영재학원", pt: 4890, change: "down", changeNum: 1, books: 46, titleTag: "🐰 전국 다독왕" },
+      { rank: 87, name: "김민준(나)", charId: "custom", cls: "판교 알파 독서학원", pt: 2480, change: "up", changeNum: 5, books: 24, me: true, titleTag: "🌟 전국 87위" },
+      { rank: 88, name: "유지유", charId: "chichi", cls: "판교 알파 독서학원", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 판교의 자랑" }
+    ],
+    lastMonth: [
+      { rank: 1, name: "전국 1위 (목동)", charId: "mir", cls: "목동 명문학원", pt: 6850, change: "same", changeNum: 0, books: 65, titleTag: "👑 8월 전국 1위" },
+      { rank: 2, name: "전국 2위 (대치)", charId: "booki", cls: "대치 나노독서", pt: 6420, change: "same", changeNum: 0, books: 62, titleTag: "🥈 8월 전국 2위" },
+      { rank: 3, name: "전국 3위 (해운대)", charId: "toto", cls: "센텀 영재학원", pt: 5980, change: "up", changeNum: 1, books: 58, titleTag: "🥉 8월 전국 3위" },
+      { rank: 94, name: "김민준(나)", charId: "custom", cls: "판교 알파 독서학원", pt: 2650, change: "up", changeNum: 8, books: 27, me: true, titleTag: "🌟 전국 94위" }
+    ]
+  }
 };
 
+// 학급 미운영 학원 대응 초기화
+function checkAcademyClassMode() {
+  var classBtn = document.getElementById("rankTabClass");
+  if (!classBtn) return;
+  // 소속 학급 정보 검사
+  if (!ACADEMY_HAS_CLASS) {
+    classBtn.style.display = "none";
+    if (currentRankScope === 'class') {
+      currentRankScope = 'academy';
+    }
+  } else {
+    classBtn.style.display = "inline-flex";
+  }
+}
+
+// 랭킹 범위 탭 전환 (우리 반 / 학원 전체 / 전국)
 function switchRankScope(scope) {
+  checkAcademyClassMode();
+  if (!ACADEMY_HAS_CLASS && scope === 'class') {
+    scope = 'academy';
+  }
   currentRankScope = scope;
+
   ['class', 'academy', 'national'].forEach(function(s){
     var btn = document.getElementById('rankTab' + s.charAt(0).toUpperCase() + s.slice(1));
     if(btn) {
@@ -5922,34 +6444,83 @@ function switchRankScope(scope) {
     }
   });
 
-  var titleLabel = document.getElementById('rankTitleLabel');
-  if(titleLabel) {
-    if(scope === 'class') titleLabel.innerText = "9월 우리 반 명예의 전당 🏫";
-    else if(scope === 'academy') titleLabel.innerText = "9월 판교 알파 독서학원 전체 랭킹 🏢";
-    else titleLabel.innerText = "9월 대한민국 나노 전국 랭킹 TOP 🌟";
-  }
-
+  updateRankingHeaderTexts();
   renderRank();
 }
 
+// 상단 하이라이트 배너 및 명예의 전당 타이틀 동적 연동
+function updateRankingHeaderTexts() {
+  var scopeTitleEl = document.getElementById("myRankScopeTitle");
+  var rankTextEl = document.getElementById("myRankHighlightText");
+  var rankPercentEl = document.getElementById("myRankHighlightPercent");
+  var titleLabel = document.getElementById("rankTitleLabel");
+  var speechEl = document.getElementById("rankMyCharSpeech");
+  var readBadgeEl = document.getElementById("myRankReadCountBadge");
+
+  var char = getCharacterById(getUserCharacterId());
+  var charName = char ? char.name.split(' ')[0] : "나노";
+  var isLastMonth = (currentRankPeriod === 'lastMonth');
+  var periodStr = isLastMonth ? "8월 (지난달 결산)" : "9월";
+
+  if (readBadgeEl) {
+    readBadgeEl.innerText = isLastMonth ? "지난 달 완독 27권" : "이번 달 완독 24권";
+  }
+
+  if (currentRankScope === 'class') {
+    if (scopeTitleEl) scopeTitleEl.innerText = isLastMonth ? "지난달 우리 반 최종 순위" : "내 실시간 우리 반 랭킹";
+    if (rankTextEl) rankTextEl.innerText = isLastMonth ? "우리 반 3등" : "우리 반 2등";
+    if (rankPercentEl) rankPercentEl.innerText = isLastMonth ? "(상위 4%)" : "(상위 3%)";
+    if (titleLabel) titleLabel.innerText = periodStr + " 우리 반 명예의 전당 🏫";
+    if (speechEl) {
+      speechEl.innerHTML = '<i class="fa-solid fa-sparkles" style="color:#f59e0b;"></i>'
+        + '<span><strong>' + charName + '</strong>의 응원: "1위 유지유 친구까지 140P! 오늘 북퀴즈 2권이면 역전이야! 🔥"</span>';
+    }
+  } else if (currentRankScope === 'academy') {
+    if (scopeTitleEl) scopeTitleEl.innerText = isLastMonth ? "지난달 학원 최종 순위" : "내 실시간 학원 랭킹";
+    if (rankTextEl) rankTextEl.innerText = isLastMonth ? "학원 4등" : "학원 5등";
+    if (rankPercentEl) rankPercentEl.innerText = isLastMonth ? "(상위 4%)" : "(상위 5%)";
+    if (titleLabel) titleLabel.innerText = periodStr + " 판교 알파 독서학원 전체 랭킹 🏢";
+    if (speechEl) {
+      speechEl.innerHTML = '<i class="fa-solid fa-sparkles" style="color:#f59e0b;"></i>'
+        + '<span><strong>' + charName + '</strong>의 응원: "학원 TOP 3 입성까지 210P! 이번 달 포디움 노려보자! 🏢"</span>';
+    }
+  } else { // national
+    if (scopeTitleEl) scopeTitleEl.innerText = isLastMonth ? "지난달 전국 최종 순위" : "내 실시간 전국 랭킹";
+    if (rankTextEl) rankTextEl.innerText = isLastMonth ? "전국 94위" : "전국 87위";
+    if (rankPercentEl) rankPercentEl.innerText = isLastMonth ? "(상위 2.5%)" : "(상위 2%)";
+    if (titleLabel) titleLabel.innerText = periodStr + " 대한민국 나노 전국 랭킹 TOP 🌟";
+    if (speechEl) {
+      speechEl.innerHTML = '<i class="fa-solid fa-sparkles" style="color:#f59e0b;"></i>'
+        + '<span><strong>' + charName + '</strong>의 응원: "전국 명예의 전당 TOP 100 유지 중! 나노 챔피언을 향해! 🌟"</span>';
+    }
+  }
+}
+
+// 랭킹 기간 필터 전환 (이번 달 vs 지난 달)
 function switchRankPeriod(period) {
   currentRankPeriod = period;
   var bMonth = document.getElementById('rankPeriodMonth');
-  var bWeek = document.getElementById('rankPeriodWeek');
-  if(period === 'month') {
-    if(bMonth) { bMonth.style.background = '#fff'; bMonth.style.color = '#0f172a'; bMonth.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }
-    if(bWeek) { bWeek.style.background = 'transparent'; bWeek.style.color = '#64748b'; bWeek.style.boxShadow = 'none'; }
+  var bLast = document.getElementById('rankPeriodLastMonth');
+
+  if (period === 'month') {
+    if(bMonth) { bMonth.style.background = '#fff'; bMonth.style.color = '#0f172a'; bMonth.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; bMonth.style.fontWeight = '800'; }
+    if(bLast) { bLast.style.background = 'transparent'; bLast.style.color = '#64748b'; bLast.style.boxShadow = 'none'; bLast.style.fontWeight = '700'; }
   } else {
-    if(bWeek) { bWeek.style.background = '#fff'; bWeek.style.color = '#0f172a'; bWeek.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }
-    if(bMonth) { bMonth.style.background = 'transparent'; bMonth.style.color = '#64748b'; bMonth.style.boxShadow = 'none'; }
+    if(bLast) { bLast.style.background = '#fff'; bLast.style.color = '#0f172a'; bLast.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; bLast.style.fontWeight = '800'; }
+    if(bMonth) { bMonth.style.background = 'transparent'; bMonth.style.color = '#64748b'; bMonth.style.boxShadow = 'none'; bMonth.style.fontWeight = '700'; }
   }
+
+  updateRankingHeaderTexts();
   renderRank();
 }
 
 function renderRank() {
+  checkAcademyClassMode();
   updateAllCharacterAvatars();
+  updateRankingHeaderTexts();
 
-  var data = fullRankDatabase[currentRankScope] || fullRankDatabase.class;
+  var scopeData = fullRankDatabase[currentRankScope] || fullRankDatabase.academy;
+  var data = scopeData[currentRankPeriod] || scopeData.month || [];
   var userChar = getUserCharacterId();
 
   // 1. TOP 3 포디움 렌더링
@@ -5970,22 +6541,22 @@ function renderRank() {
   var p3Points = document.getElementById("podiumPoints3");
 
   if(top1 && p1Avatar) {
-    var cId = top1.charId === 'custom' ? userChar : top1.charId;
-    p1Avatar.innerHTML = getCharacterSvg(cId, 64);
+    var cId1 = top1.charId === 'custom' ? userChar : top1.charId;
+    p1Avatar.innerHTML = getCharacterSvg(cId1, 64);
     if(p1Name) p1Name.innerText = top1.name;
     if(p1Points) p1Points.innerText = top1.pt.toLocaleString() + 'P';
   }
 
   if(top2 && p2Avatar) {
-    var cId = top2.charId === 'custom' ? userChar : top2.charId;
-    p2Avatar.innerHTML = getCharacterSvg(cId, 56);
+    var cId2 = top2.charId === 'custom' ? userChar : top2.charId;
+    p2Avatar.innerHTML = getCharacterSvg(cId2, 56);
     if(p2Name) p2Name.innerText = top2.name;
     if(p2Points) p2Points.innerText = top2.pt.toLocaleString() + 'P';
   }
 
   if(top3 && p3Avatar) {
-    var cId = top3.charId === 'custom' ? userChar : top3.charId;
-    p3Avatar.innerHTML = getCharacterSvg(cId, 52);
+    var cId3 = top3.charId === 'custom' ? userChar : top3.charId;
+    p3Avatar.innerHTML = getCharacterSvg(cId3, 52);
     if(p3Name) p3Name.innerText = top3.name;
     if(p3Points) p3Points.innerText = top3.pt.toLocaleString() + 'P';
   }
@@ -5996,7 +6567,7 @@ function renderRank() {
 
   var restData = data.filter(function(d){ return d.rank > 3; });
   if(restData.length === 0) {
-    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:12.5px;">순위 집계 중입니다.</div>';
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:12.5px;">해당 순위 데이터가 집계 중입니다.</div>';
     return;
   }
 
@@ -6028,6 +6599,7 @@ function renderRank() {
       + '</div>';
   }).join('');
 }
+
 // 학생 홈 배너 롤링 로직
 var curSlide = 0;
 function nextBannerSlide() {
@@ -6337,5 +6909,25 @@ document.addEventListener('DOMContentLoaded',function(){
   renderLib();
 });
 </script>
+<!-- 같은 도서의 다중 북퀴즈 출제처 선택 모달 (1순위 본사, 2순위 소속학원, 3순위 등록 오래된순) -->
+<div id="quizSetSelectModal" class="student-modal-overlay" style="display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10000;" onclick="if(event.target===this)closeQuizSetSelectModal()">
+  <div style="background: #ffffff; width: 100%; max-width: 480px; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.22); border: 1.5px solid #e2ece9;">
+    <div style="background: linear-gradient(135deg, #f0fdfa 0%, #e6fffa 100%); padding: 18px 20px; border-bottom: 1px solid #ccfbf1; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <span style="font-size: 11px; font-weight: 800; color: #0d9488; background: #ccfbf1; padding: 2px 8px; border-radius: 12px;">북퀴즈 출제처 선택</span>
+        <h5 style="margin: 4px 0 0 0; font-weight: 800; font-size: 16px; color: #134e4a;" id="qsModalBookTitle">어린 왕자</h5>
+      </div>
+      <button type="button" onclick="closeQuizSetSelectModal()" style="border: none; background: #f1f5f9; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer;">&times;</button>
+    </div>
+    <div style="padding: 18px 20px; max-height: 65vh; overflow-y: auto;">
+      <p style="font-size: 12.5px; color: #64748b; margin-bottom: 14px; line-height: 1.5;">
+        <i class="fa-solid fa-circle-info text-info mr-1"></i>이 도서에는 여러 교육기관에서 출제한 북퀴즈가 등록되어 있습니다. 풀고 싶은 북퀴즈를 선택해 주세요.
+      </p>
+      <div id="qsModalListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- JS 동적 생성 -->
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

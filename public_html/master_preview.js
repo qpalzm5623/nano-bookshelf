@@ -1143,7 +1143,7 @@ function switchMasterTab(tabName) {
 
 // 운영 관리 서브탭 전환
 function switchOpSubTab(subName) {
-  const subs = ["banners", "themes", "notices"];
+  const subs = ["banners", "themes", "notices", "recommended"];
   subs.forEach(s => {
     const btn = document.getElementById(`btn-op-${s}`);
     const box = document.getElementById(`op-sub-${s}`);
@@ -1161,6 +1161,203 @@ function switchOpSubTab(subName) {
   if (subName === "banners") renderBannerList();
   if (subName === "themes") renderThemeTable();
   if (subName === "notices" && typeof renderNoticeTable === "function") renderNoticeTable();
+  if (subName === "recommended") renderRecommendedBooksTable();
+}
+
+// ==========================================
+// 2-4. 학년별 권장도서 관리 모듈 (Recommended Books)
+// ==========================================
+function getRecommendedBooks() {
+  try {
+    const stored = localStorage.getItem("NANO_RECOMMENDED_BOOKS");
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  // 기본 샘플 데이터 초기화
+  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0) ? masterBooks : (typeof mockBooks !== 'undefined' ? mockBooks : []);
+  const initial = [];
+  const grades = ["초등 1학년", "초등 2학년", "초등 3학년", "초등 4학년", "초등 5학년", "초등 6학년", "중학교"];
+  allMasterBooks.slice(0, 14).forEach((b, idx) => {
+    const g = grades[idx % grades.length];
+    initial.push({
+      id: 'REC-' + (idx + 1),
+      bookId: b.id,
+      title: b.title,
+      author: b.author || b.publisher || '작자 미상',
+      publisher: b.publisher || '출판사',
+      category: b.category || '문학',
+      cover: b.cover || b.image || '',
+      grade: g,
+      createdAt: '2026-09-' + String(10 + (idx % 8)).padStart(2, '0')
+    });
+  });
+  localStorage.setItem("NANO_RECOMMENDED_BOOKS", JSON.stringify(initial));
+  return initial;
+}
+
+function saveRecommendedBooks(list) {
+  try {
+    localStorage.setItem("NANO_RECOMMENDED_BOOKS", JSON.stringify(list));
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderRecommendedBooksTable() {
+  const tbody = document.getElementById("recommendedBooksTableBody");
+  const countSpan = document.getElementById("recBookCount");
+  const gradeFilter = document.getElementById("recGradeFilter");
+  if (!tbody) return;
+
+  const currentGrade = gradeFilter ? gradeFilter.value : "ALL";
+  const allList = getRecommendedBooks();
+  
+  const filtered = (currentGrade === "ALL")
+    ? allList
+    : allList.filter(b => b.grade === currentGrade || (b.grade && b.grade.includes(currentGrade)));
+
+  if (countSpan) countSpan.textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-5 text-muted">
+          <i class="fa-solid fa-book-open mb-2" style="font-size: 28px; opacity: 0.5;"></i>
+          <div>등록된 권장 도서가 없습니다. [권장도서 추가] 버튼으로 등록해보세요.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((b, index) => {
+    const coverHtml = b.cover ? `<img src="${b.cover}" alt="${b.title}" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">` : `<div style="width: 44px; height: 58px; background: #e8e2d5; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888;">No Img</div>`;
+    return `
+      <tr>
+        <td class="text-center font-weight-bold text-muted">${index + 1}</td>
+        <td class="text-center">${coverHtml}</td>
+        <td class="text-left font-weight-bold" style="color: var(--text-main); font-size: 13.5px;">
+          ${b.title}
+        </td>
+        <td class="text-center text-muted" style="font-size: 12.5px;">
+          ${b.author || '-'} / ${b.publisher || '-'}
+        </td>
+        <td class="text-center">
+          <span class="badge-soft badge-soft-master font-weight-bold" style="font-size: 11.5px; padding: 4px 8px;">
+            ${b.grade}
+          </span>
+        </td>
+        <td class="text-center">
+          <span class="badge-soft badge-soft-info" style="font-size: 11.5px;">${b.category || '일반'}</span>
+        </td>
+        <td class="text-center text-muted" style="font-size: 12px;">${b.createdAt || '2026-09-18'}</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-danger" style="font-size: 11.5px; padding: 3px 8px;" onclick="deleteRecommendedBook('${b.id}')">
+            <i class="fa-solid fa-trash mr-1"></i>해제
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openAddRecommendedBookModal() {
+  const modal = $('#recommendedBookModal');
+  const searchInput = document.getElementById("modalRecBookSearch");
+  if (searchInput) searchInput.value = "";
+  filterRecModalBooks();
+  if (modal.length) modal.modal('show');
+}
+
+function filterRecModalBooks() {
+  const container = document.getElementById("modalRecBookCandidateList");
+  const countSpan = document.getElementById("modalRecBookCandidateCount");
+  const searchInput = document.getElementById("modalRecBookSearch");
+  const query = (searchInput ? searchInput.value.trim().toLowerCase() : "");
+
+  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0) ? masterBooks : (typeof mockBooks !== 'undefined' ? mockBooks : []);
+  const recList = getRecommendedBooks();
+  const selectedGrade = document.getElementById("modalRecGrade") ? document.getElementById("modalRecGrade").value : "초등 1학년";
+
+  const candidates = allMasterBooks.filter(b => {
+    if (!query) return true;
+    return (b.title && b.title.toLowerCase().includes(query)) ||
+           (b.author && b.author.toLowerCase().includes(query)) ||
+           (b.publisher && b.publisher.toLowerCase().includes(query));
+  });
+
+  if (countSpan) countSpan.textContent = candidates.length;
+
+  if (candidates.length === 0) {
+    container.innerHTML = `<div class="p-4 text-center text-muted">검색된 도서가 없습니다.</div>`;
+    return;
+  }
+
+  container.innerHTML = candidates.map(b => {
+    const isAlreadyRec = recList.some(r => (r.bookId === b.id || r.title === b.title) && r.grade === selectedGrade);
+    const coverSrc = b.cover || b.image || '';
+    const coverHtml = coverSrc ? `<img src="${coverSrc}" style="width: 40px; height: 52px; object-fit: cover; border-radius: 4px;" class="mr-2">` : `<div style="width: 40px; height: 52px; background: #eee; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;" class="mr-2">도서</div>`;
+    return `
+      <div class="d-flex align-items-center justify-content-between p-2 border-bottom hover-bg">
+        <div class="d-flex align-items-center">
+          ${coverHtml}
+          <div>
+            <div class="font-weight-bold" style="font-size: 13px;">${b.title}</div>
+            <small class="text-muted">${b.author || '-'} | ${b.publisher || '-'}</small>
+          </div>
+        </div>
+        <div>
+          ${isAlreadyRec
+            ? `<button class="btn btn-sm btn-secondary disabled" style="font-size: 11px;" disabled>이미 지정됨</button>`
+            : `<button class="btn btn-sm btn-beige-primary" style="font-size: 11px; padding: 4px 10px;" onclick="addBookToRecommended('${b.id}')">
+                <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+               </button>`
+          }
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function addBookToRecommended(bookId) {
+  const grade = document.getElementById("modalRecGrade") ? document.getElementById("modalRecGrade").value : "초등 1학년";
+  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0) ? masterBooks : (typeof mockBooks !== 'undefined' ? mockBooks : []);
+  const book = allMasterBooks.find(b => b.id === bookId);
+  if (!book) return;
+
+  const list = getRecommendedBooks();
+  const exists = list.some(r => (r.bookId === bookId || r.title === book.title) && r.grade === grade);
+  if (exists) {
+    alert("이미 해당 학년의 권장도서로 등록되어 있습니다.");
+    return;
+  }
+
+  list.unshift({
+    id: 'REC-' + Date.now(),
+    bookId: book.id,
+    title: book.title,
+    author: book.author || book.publisher || '작자 미상',
+    publisher: book.publisher || '출판사',
+    category: book.category || '문학',
+    cover: book.cover || book.image || '',
+    grade: grade,
+    createdAt: new Date().toISOString().slice(0, 10)
+  });
+
+  saveRecommendedBooks(list);
+  filterRecModalBooks();
+  renderRecommendedBooksTable();
+}
+
+function deleteRecommendedBook(recId) {
+  if (!confirm("해당 도서를 권장도서 목록에서 해제하시겠습니까?")) return;
+  let list = getRecommendedBooks();
+  list = list.filter(b => b.id !== recId);
+  saveRecommendedBooks(list);
+  renderRecommendedBooksTable();
 }
 
 // ==========================================
