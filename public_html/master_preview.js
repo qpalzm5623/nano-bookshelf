@@ -390,7 +390,7 @@ let themeList = [
   }
 ];
 
-// 로컬스토리지 동기화 헬퍼 함수
+// 로컬스토리지 및 중앙 서버 동기화 헬퍼 함수
 function saveOperationsToStorage() {
   try {
     localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
@@ -404,6 +404,35 @@ function saveOperationsToStorage() {
       console.error("로컬스토리지 재시도 실패:", err2);
       showMasterToast("저장소 용량 한도로 일부 변경사항이 브라우저에 영구 저장되지 못했습니다.");
     }
+  }
+
+  // [태블릿/모바일 기기간 실시간 배너 동기화] 서버 중앙 저장소(api/sync_banners.php)로 비동기 전송
+  try {
+    fetch('api/sync_banners.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bannerList)
+    }).then(res => res.json()).then(data => {
+      if (data && data.banners) {
+        let updated = false;
+        data.banners.forEach(sb => {
+          const target = bannerList.find(b => b.id === sb.id);
+          if (target && target.imageUrl !== sb.imageUrl) {
+            target.imageUrl = sb.imageUrl;
+            updated = true;
+          }
+        });
+        if (updated) {
+          localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
+          if (typeof renderBannerList === 'function') renderBannerList();
+        }
+      }
+      console.log("중앙 배너 서버 동기화 완료: 태블릿 및 모바일 기기에 즉시 반영됩니다.");
+    }).catch(err => {
+      console.warn("중앙 배너 서버 동기화 실패 (오프라인 상태 또는 네트워크 오류):", err);
+    });
+  } catch(netErr) {
+    console.warn("중앙 서버 동기화 요청 실패:", netErr);
   }
 }
 
@@ -422,6 +451,22 @@ function loadOperationsFromStorage() {
   } catch (e) {
     console.warn("로컬스토리지 불러오기 중 오류:", e);
   }
+
+  // 서버의 최신 중앙 배너 가져와서 동기화
+  try {
+    fetch('api/sync_banners.php?t=' + Date.now())
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          bannerList = data;
+          localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
+          if (typeof renderBannerList === 'function') renderBannerList();
+          console.log("서버 중앙 배너 목록 동기화 성공:", bannerList.length + "개 배너");
+        }
+      }).catch(e => {
+        console.log("서버 배너 로드 건너뜀 (로컬스토리지 기본값 유지):", e);
+      });
+  } catch(e) {}
 }
 loadOperationsFromStorage();
 

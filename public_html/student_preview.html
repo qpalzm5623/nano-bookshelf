@@ -690,22 +690,366 @@
       text-align: center;
       box-shadow: 0 4px 16px rgba(27, 67, 50, 0.2);
     }
-    .rank-row {
+    /* ==============================================================
+       [NEW] 아이들이 좋아하는 화려한 랭킹 시스템 & 나노 프렌즈 캐릭터 스타일
+       ============================================================== */
+    .char-avatar-box {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .char-avatar-box:hover {
+      transform: scale(1.08);
+    }
+    .char-avatar-box.bounce {
+      animation: charBounce 2.5s infinite ease-in-out;
+    }
+    @keyframes charBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .char-edit-badge {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      background: #00a896;
+      color: #fff;
+      font-size: 10px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      border: 2px solid #fff;
+    }
+
+    /* 랭킹 탭 & 필터 */
+    .rank-tab-group {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 12px;
+      gap: 4px;
+    }
+    .rank-tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 9px 4px;
+      border-radius: 11px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .rank-tab-btn.active {
+      background: #fff;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* 내 순위 하이라이트 배너 */
+    .my-rank-banner {
+      background: linear-gradient(135deg, #00a896, #028090);
+      border-radius: 18px;
+      padding: 16px 18px;
+      color: #fff;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0, 168, 150, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .my-rank-banner::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .my-rank-speech {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 7px 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0f766e;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      margin-top: 8px;
+    }
+
+    /* TOP 3 명예의 전당 포디움 단상 */
+    .podium-stage {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 6px 4px;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .podium-col {
+      flex: 1;
+      max-width: 108px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+    .podium-avatar-wrap {
+      position: relative;
+      margin-bottom: 6px;
+      transition: transform 0.3s;
+    }
+    .podium-col:hover .podium-avatar-wrap {
+      transform: translateY(-6px);
+    }
+    .podium-crown {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+      animation: crownShine 2s infinite ease-in-out;
+    }
+    @keyframes crownShine {
+      0%, 100% { transform: translateX(-50%) rotate(0deg) scale(1); }
+      50% { transform: translateX(-50%) rotate(-6deg) scale(1.1); }
+    }
+    .podium-rank-badge {
+      position: absolute;
+      bottom: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .podium-rank-badge.rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .podium-rank-badge.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); }
+    .podium-rank-badge.rank-3 { background: linear-gradient(135deg, #d97706, #b45309); }
+
+    .podium-name {
+      font-size: 12px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+    }
+    .podium-points {
+      font-size: 12px;
+      font-weight: 900;
+      color: #0284c7;
+      margin-bottom: 6px;
+    }
+
+    /* 단상 블록 */
+    .podium-box {
+      width: 100%;
+      border-radius: 12px 12px 6px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      position: relative;
+    }
+    .podium-col.rank-1 .podium-box {
+      height: 104px;
+      background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      color: #b45309;
+    }
+    .podium-col.rank-2 .podium-box {
+      height: 78px;
+      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+      border: 2px solid #94a3b8;
+      color: #475569;
+    }
+    .podium-col.rank-3 .podium-box {
+      height: 60px;
+      background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
+      border: 2px solid #ea580c;
+      color: #9a3412;
+    }
+    .podium-box-num {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .podium-box-label {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      opacity: 0.9;
+    }
+
+    /* 4위 이하 랭킹 카드 */
+    .rank-card {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 11px 13px;
-      border-radius: 11px;
+      padding: 12px 14px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      margin-bottom: 9px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .rank-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      border-color: #00a896;
+    }
+    .rank-card.me {
+      border: 2px solid #00a896;
+      background: linear-gradient(90deg, #f0fdf4 0%, #f0fdfa 100%);
+      box-shadow: 0 4px 14px rgba(0, 168, 150, 0.12);
+    }
+    .rank-card-num-box {
+      width: 32px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .rank-card-num {
+      font-size: 16px;
+      font-weight: 900;
+      color: #334155;
+      line-height: 1;
+    }
+    .rank-card-change {
+      font-size: 9.5px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .rank-card-change.up { color: #ef4444; }
+    .rank-card-change.down { color: #3b82f6; }
+    .rank-card-change.same { color: #94a3b8; }
+
+    .rank-card-avatar {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .rank-card-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .rank-char-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .rank-card-sub {
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .rank-card-pt {
+      font-size: 15px;
+      font-weight: 900;
+      color: #0284c7;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* 캐릭터 선택 모달 */
+    .char-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    @media (min-width: 480px) {
+      .char-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .char-select-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 10px;
+      text-align: center;
+      cursor: pointer;
       background: #fff;
-      border: 1.5px solid var(--soft);
-      margin-bottom: 7px;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
     }
-    .rank-row.me {
-      border-color: var(--leaf);
-      background: var(--leaf-pale);
+    .char-select-card:hover {
+      transform: translateY(-3px);
+      border-color: #00a896;
+      box-shadow: 0 6px 14px rgba(0, 168, 150, 0.15);
     }
-    .rnum { width: 28px; font-size: 15px; font-weight: 900; text-align: center; flex-shrink: 0; }
-    .rnum.gold { color: #d97706; } .rnum.silver { color: #8a9ba8; } .rnum.bronze { color: #b45309; }
+    .char-select-card.selected {
+      border-color: #00a896;
+      background: #f0fdfa;
+      box-shadow: 0 0 0 3px rgba(0, 168, 150, 0.2);
+    }
+    .char-select-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #00a896;
+      color: #fff;
+      font-size: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .char-select-card.selected .char-select-badge {
+      display: flex;
+    }
     .lib-row {
       display: flex;
       align-items: flex-start;
@@ -2106,24 +2450,43 @@
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
 <div class="drawer-overlay" id="studentDrawerOverlay" onclick="closeStudentDrawer()"></div>
 <aside class="student-drawer" id="studentDrawer" role="dialog" aria-modal="true" aria-label="학생 전체 메뉴">
-  <!-- 1. 상단 프로필 헤더 -->
-  <div class="drawer-header">
+  <!-- 1. 상단 프로필 헤더 (선택한 나노 프렌즈 캐릭터 연동) -->
+  <div class="drawer-header" style="padding: 20px 18px 16px;">
     <button type="button" class="btn-drawer-close" onclick="closeStudentDrawer()" title="메뉴 닫기">&times;</button>
-    <div class="drawer-profile-info">
-      <div class="drawer-user-name">
-        <i class="fa-solid fa-circle-user" style="font-size:22px;color:#a7e3be;"></i> 김민준 학생
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div class="char-avatar-box bounce" onclick="openCharacterSelectModal()" title="캐릭터 프로필 변경하기" style="width: 58px; height: 58px; flex-shrink: 0;">
+        <div id="drawerCharAvatar" style="width: 100%; height: 100%;"></div>
+        <div class="char-edit-badge" title="프로필 변경"><i class="fa-solid fa-pen"></i></div>
       </div>
-      <div class="drawer-user-class">
-        <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>지혜반 · 초등 5학년
-      </div>
-      <div class="drawer-user-point-badge">
-        <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>2,480 P 보유
+      <div class="drawer-profile-info" style="flex: 1; min-width: 0;">
+        <div class="drawer-user-name" style="display: flex; align-items: center; gap: 6px;">
+          <span>김민준</span>
+          <span id="drawerCharBadge" style="font-size: 10.5px; font-weight: 800; background: #ccfbf1; color: #0d9488; padding: 2px 7px; border-radius: 8px;">부키</span>
+        </div>
+        <div class="drawer-user-class">
+          <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>지혜반 · 초등 5학년
+        </div>
+        <div class="drawer-user-point-badge" style="margin-top: 5px;">
+          <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>2,480 P 보유
+        </div>
       </div>
     </div>
+    <button type="button" onclick="openCharacterSelectModal()" style="width: 100%; margin-top: 14px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 7px 10px; color: #fff; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: background 0.2s;">
+      <i class="fa-solid fa-wand-magic-sparkles" style="color: #fde047;"></i> 나노 프렌즈 캐릭터 변경하기
+    </button>
   </div>
 
-  <!-- 2. 메뉴 목록 (요청된 7대 메뉴) -->
+  <!-- 2. 메뉴 목록 -->
   <div class="drawer-nav-list">
+    <!-- [NEW 1순위] 내 캐릭터 프로필 설정 -->
+    <button type="button" class="drawer-nav-item" onclick="openCharacterSelectModal()" style="background: #f0fdfa; border-color: #99f6e4;">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-icons" style="color: #0d9488;"></i>
+        <span style="color: #0f766e; font-weight: 800;">내 캐릭터 프로필 설정</span>
+      </div>
+      <div class="drawer-nav-right"><span style="font-size: 10px; font-weight: 700; background: #00a896; color: #fff; padding: 2px 6px; border-radius: 6px;">10종</span> <i class="fa-solid fa-chevron-right ml-1"></i></div>
+    </button>
+
     <!-- 1) 내 정보 -->
     <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('myinfo')">
       <div class="drawer-nav-left">
@@ -2236,11 +2599,17 @@
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:2;">
-    <div class="user-info">
-      <div style="font-weight:800;font-size:14.5px;color:#1e293b;letter-spacing:-0.3px;">김민준</div>
-      <div style="font-size:11.5px;color:#0d9488;font-weight:700;display:flex;align-items:center;gap:4px;">
-        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00a896;"></span>
-        지혜반 · 초등 5학년
+    <div class="user-info" style="display:flex;align-items:center;gap:9px;cursor:pointer;" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경">
+      <div id="headerCharAvatar" class="char-avatar-box" style="width:34px;height:34px;flex-shrink:0;"></div>
+      <div>
+        <div style="font-weight:800;font-size:14px;color:#1e293b;letter-spacing:-0.3px;display:flex;align-items:center;gap:4px;">
+          <span>김민준</span>
+          <span id="headerCharTag" style="font-size:10px;font-weight:700;color:#0d9488;background:#ccfbf1;padding:1px 5px;border-radius:6px;">부키</span>
+        </div>
+        <div style="font-size:11px;color:#0d9488;font-weight:700;display:flex;align-items:center;gap:4px;">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00a896;"></span>
+          지혜반 · 초등 5학년
+        </div>
       </div>
     </div>
     <button type="button" class="btn-student-logout" onclick="handleStudentLogout()" title="학생 포털 로그아웃">
@@ -2252,6 +2621,19 @@
 
   <!-- 홈 -->
   <div id="p-home" class="panel active anim">
+
+    <!-- [NEW] 나노 프렌즈 캐릭터 환영 & 데일리 응원 배너 -->
+    <div id="homeCharWelcomeBanner" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%); border: 1.5px solid #ccfbf1; border-radius: 16px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 14px rgba(0, 168, 150, 0.08); cursor: pointer;" onclick="openCharacterSelectModal()" title="내 캐릭터 변경하기">
+      <div id="homeCharAvatar" class="char-avatar-box bounce" style="width: 46px; height: 46px; flex-shrink: 0;"></div>
+      <div style="flex: 1; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+          <span id="homeCharNameTag" style="font-size: 11px; font-weight: 800; background: #00a896; color: #fff; padding: 1px 6px; border-radius: 6px;">부키</span>
+          <span style="font-size: 12.5px; font-weight: 800; color: #1e293b;">민준 학생, 반가워요!</span>
+        </div>
+        <div id="homeCharQuote" style="font-size: 11.5px; color: #0f766e; font-weight: 600; line-height: 1.4;">"오늘도 책 속의 신비한 모험을 떠나볼까요? 🦉"</div>
+      </div>
+      <div style="font-size: 11px; color: #94a3b8; padding-right: 4px;"><i class="fa-solid fa-chevron-right"></i></div>
+    </div>
 
     <!-- 학생 메인 롤링 배너 캐러셀 (숲속 목재 테마 배너 연동) -->
     <div class="rolling-banner-container" id="studentBannerBox">
@@ -2609,10 +2991,109 @@
     </div>
   </div>
 
-  <!-- 랭킹 -->
+  <!-- [NEW] 아이들이 열광하는 랭킹 시스템 & 명예의 전당 포디움 -->
   <div id="p-ranking" class="panel anim">
-    <div class="pt-hdr"><div style="font-size:12px;opacity:.85;">🏆 나의 독서 포인트</div><div style="font-size:40px;font-weight:900;">2,480P</div><div style="font-size:12px;opacity:.8;">지혜반 · 2위 🥈</div></div>
-    <div class="sec-title"><i class="fa-solid fa-medal" style="color:#f4b942;"></i> 이번 달 랭킹</div>
+    
+    <!-- 1. 내 순위 하이라이트 & 응원 배너 -->
+    <div class="my-rank-banner">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="char-avatar-box" onclick="openCharacterSelectModal()" title="캐릭터 변경하기" style="width: 52px; height: 52px; background: rgba(255,255,255,0.2); border-radius: 50%;">
+            <div id="rankMyCharAvatar" style="width: 100%; height: 100%;"></div>
+            <div class="char-edit-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:8px;"></i></div>
+          </div>
+          <div>
+            <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;">내 실시간 독서 랭킹</div>
+            <div style="font-size: 22px; font-weight: 900; line-height: 1.2;">우리 반 2등 <span style="font-size: 14px; font-weight: 700; opacity: 0.95;">(상위 3%)</span></div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 24px; font-weight: 900; color: #fde047; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">2,480 P</div>
+          <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 6px; font-weight: 700;">이번 달 완독 24권</span>
+        </div>
+      </div>
+      <div class="my-rank-speech" id="rankMyCharSpeech">
+        <i class="fa-solid fa-sparkles" style="color: #f59e0b;"></i>
+        <span><strong>부키</strong>의 응원: "1위 유지유 친구까지 140P! 북퀴즈 2권이면 오늘 1등 가능해! 🦉"</span>
+      </div>
+    </div>
+
+    <!-- 2. 랭킹 범위 탭 (우리 반 / 학원 전체 / 전국) -->
+    <div class="rank-tab-group">
+      <button type="button" class="rank-tab-btn active" id="rankTabClass" onclick="switchRankScope('class')">
+        <i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반 (지혜반)
+      </button>
+      <button type="button" class="rank-tab-btn" id="rankTabAcademy" onclick="switchRankScope('academy')">
+        <i class="fa-solid fa-school mr-1"></i> 판교 알파 독서학원
+      </button>
+      <button type="button" class="rank-tab-btn" id="rankTabNational" onclick="switchRankScope('national')">
+        <i class="fa-solid fa-earth-asia mr-1"></i> 전국 랭킹
+      </button>
+    </div>
+
+    <!-- 기간 서브 필터 (이번 주 / 이번 달) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+      <div style="font-size: 14px; font-weight: 800; color: var(--wood-dark); display: flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
+        <span id="rankTitleLabel">9월 우리 반 명예의 전당</span>
+      </div>
+      <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
+        <button type="button" class="btn btn-xs" id="rankPeriodMonth" onclick="switchRankPeriod('month')" style="font-size: 11px; font-weight: 800; border-radius: 6px; padding: 3px 8px; border: none; background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">이번 달</button>
+        <button type="button" class="btn btn-xs" id="rankPeriodWeek" onclick="switchRankPeriod('week')" style="font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 8px; border: none; background: transparent; color: #64748b;">이번 주</button>
+      </div>
+    </div>
+
+    <!-- 3. TOP 3 포디움 (1위, 2위, 3위 단상) -->
+    <div class="podium-stage" id="rankPodiumStage">
+      <!-- 2위 (은빛 단상) -->
+      <div class="podium-col rank-2">
+        <div class="podium-avatar-wrap">
+          <div id="podiumAvatar2" class="char-avatar-box bounce" style="width: 58px; height: 58px;"></div>
+          <div class="podium-rank-badge rank-2">2</div>
+        </div>
+        <div class="podium-name" id="podiumName2">김민준(나)</div>
+        <div class="podium-points" id="podiumPoints2">2,480P</div>
+        <div class="podium-box">
+          <div class="podium-box-num">2</div>
+          <div class="podium-box-label">🥈 2위</div>
+        </div>
+      </div>
+
+      <!-- 1위 (황금 단상, 가운데) -->
+      <div class="podium-col rank-1">
+        <div class="podium-avatar-wrap">
+          <div class="podium-crown">👑</div>
+          <div id="podiumAvatar1" class="char-avatar-box bounce" style="width: 68px; height: 68px;"></div>
+          <div class="podium-rank-badge rank-1">1</div>
+        </div>
+        <div class="podium-name" id="podiumName1">유지유</div>
+        <div class="podium-points" id="podiumPoints1" style="color: #b45309; font-size: 13px;">2,620P</div>
+        <div class="podium-box">
+          <div class="podium-box-num">1</div>
+          <div class="podium-box-label">🏆 독서왕</div>
+        </div>
+      </div>
+
+      <!-- 3위 (동빛 단상) -->
+      <div class="podium-col rank-3">
+        <div class="podium-avatar-wrap">
+          <div id="podiumAvatar3" class="char-avatar-box bounce" style="width: 54px; height: 54px;"></div>
+          <div class="podium-rank-badge rank-3">3</div>
+        </div>
+        <div class="podium-name" id="podiumName3">박서준</div>
+        <div class="podium-points" id="podiumPoints3">2,190P</div>
+        <div class="podium-box">
+          <div class="podium-box-num">3</div>
+          <div class="podium-box-label">🥉 3위</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 4위 이하 랭킹 리스트 (캐릭터 아바타 & 칭호 포함) -->
+    <div style="font-size: 12.5px; font-weight: 800; color: #64748b; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+      <span><i class="fa-solid fa-list-ol mr-1"></i> 전체 순위 목록</span>
+      <span style="font-size: 11px; color: #94a3b8;">10분마다 실시간 갱신</span>
+    </div>
     <div id="rankList"></div>
   </div>
 
@@ -2624,6 +3105,45 @@
   <button class="bnav-btn" id="nav-history" onclick="switchPanel('history')"><i class="fa-solid fa-book-bookmark"></i><span>내 책장</span></button>
   <button class="bnav-btn" id="nav-ranking" onclick="switchPanel('ranking')"><i class="fa-solid fa-trophy"></i><span>랭킹</span></button>
 </nav>
+<!-- [NEW] 나노 프렌즈 캐릭터 프로필 설정 모달 -->
+<div id="characterSelectModal" class="student-modal-overlay" style="display:none;" onclick="if(event.target===this)closeCharacterSelectModal()">
+  <div class="student-modal-dialog" style="max-width: 490px;">
+    <div class="student-modal-header" style="background: linear-gradient(135deg, #f0fdfa, #ccfbf1); border-bottom: 1px solid #99f6e4;">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11px; padding: 2px 8px; background: #00a896; color: #fff;">나노 프렌즈 10종</span>
+          <h5 class="mb-0 font-weight-bold" style="font-size: 16px; color: #0f766e;"><i class="fa-solid fa-icons mr-1"></i>내 캐릭터 프로필 설정</h5>
+        </div>
+        <small class="text-muted">원하는 일러스트 캐릭터를 골라 나의 프로필로 설정해보세요!</small>
+      </div>
+      <button type="button" class="btn-modal-close" onclick="closeCharacterSelectModal()" title="닫기">&times;</button>
+    </div>
+    <div class="student-modal-body" style="padding: 16px 18px;">
+      <!-- 상단: 선택된 캐릭터 상세 카드 미리보기 -->
+      <div id="charDetailPreview" style="background: #fafaf9; border: 2px solid #e7e5e4; border-radius: 16px; padding: 14px; margin-bottom: 14px; display: flex; gap: 14px; align-items: center;">
+        <!-- JS 동적 렌더링 -->
+      </div>
+
+      <!-- 안내 레이블 -->
+      <div style="font-size: 12.5px; font-weight: 800; color: #475569; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="fa-solid fa-shapes mr-1" style="color:#00a896;"></i> 캐릭터를 터치하여 선택하세요</span>
+        <span style="font-size: 11px; color: #94a3b8;">언제든 자유롭게 변경 가능</span>
+      </div>
+
+      <!-- 10종 캐릭터 카드 그리드 -->
+      <div class="char-grid" id="charSelectGrid">
+        <!-- JS 동적 렌더링 -->
+      </div>
+    </div>
+    <div style="padding: 12px 18px 16px; display: flex; gap: 8px; background: #faf8f5; border-top: 1px solid #f0ebe4; border-radius: 0 0 20px 20px;">
+      <button type="button" class="btn btn-secondary w-50" onclick="closeCharacterSelectModal()" style="border-radius: 12px; font-weight: 700; padding: 10px;">취소</button>
+      <button type="button" class="btn btn-primary w-50" onclick="applySelectedCharacter()" style="border-radius: 12px; font-weight: 800; padding: 10px; background: #00a896; border-color: #00a896; box-shadow: 0 4px 12px rgba(0,168,150,0.3);">
+        <i class="fa-solid fa-check mr-1"></i> 이 캐릭터로 설정
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- 배너 연계 추천 도서 목록 모달 -->
 <div id="bannerBookListModal" class="student-modal-overlay" style="display:none;" onclick="if(event.target===this)closeBannerBookModal()">
   <div class="student-modal-dialog">
@@ -4911,15 +5431,602 @@ function renderPointHistory() {
 function renderMyBookshelf() {
   switchMyBookshelfMainTab(curBookshelfMainTab || 'history');
 }
-function renderRank(){
-  var c=document.getElementById('rankList');if(!c)return;
-  var em={1:'🥇',2:'🥈',3:'🥉'};
-  var cl={1:'gold',2:'silver',3:'bronze'};
-  c.innerHTML=rankData.map(function(r){
-    return '<div class="rank-row'+(r.me?' me':'')+'"><div class="rnum '+(cl[r.rank]||'')+'">'+(em[r.rank]||r.rank)+'</div>'
-      +'<div style="flex:1;"><div style="font-weight:800;font-size:13.5px;">'+r.name+(r.me?' <span style="font-size:11px;color:var(--blue);">(나)</span>':'')+'</div>'
-      +'<div style="font-size:11.5px;color:var(--muted);">'+r.cls+'</div></div>'
-      +'<div style="font-weight:900;font-size:14.5px;color:var(--blue);">'+r.pt.toLocaleString()+'P</div></div>';
+// ==============================================================
+// [NEW] 나노 프렌즈 10종 캐릭터 일러스트 & 프로필 설정 시스템
+// ==============================================================
+var NANO_CHARACTERS = [
+  {
+    id: "nano",
+    name: "나노 (Nano)",
+    tag: "호기심 탐정 여우 🦊",
+    themeColor: "#f97316",
+    bgGradient: "linear-gradient(135deg, #ffedd5, #fed7aa)",
+    story: "궁금한 건 못 참아! 돋보기 안경을 쓰고 책 속의 비밀과 복선을 척척 풀어내는 영리한 아기 여우 탐정이에요. 추리소설과 과학 모험책을 가장 좋아해요.",
+    favoriteGenre: "추리 / 과학 탐정",
+    level: "Lv.5 명탐정"
+  },
+  {
+    id: "booki",
+    name: "부키 (Booki)",
+    tag: "지혜의 독서 박사 부엉이 🦉",
+    themeColor: "#0d9488",
+    bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
+    story: "머리 위에 항상 책을 얹고 다니는 숲속 도서관의 학장님! 책을 읽고 나면 친구들에게 재미있는 상식과 깊은 지혜를 이야기해 주는 따뜻한 멘토예요.",
+    favoriteGenre: "인문 / 백과사전",
+    level: "Lv.6 대학자"
+  },
+  {
+    id: "toto",
+    name: "토토 (Toto)",
+    tag: "번개 스피드 다독왕 토끼 🐰",
+    themeColor: "#ec4899",
+    bgGradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
+    story: "당근 모양 책갈피를 들고 바람처럼 책장을 펄럭이는 독서 스피드스타! 재미있는 책을 발견하면 밤새도록 멈추지 않고 완독하는 열정파 토끼랍니다.",
+    favoriteGenre: "모험 판타지 / 동화",
+    level: "Lv.4 완독 레이서"
+  },
+  {
+    id: "lumi",
+    name: "루미 (Lumi)",
+    tag: "별빛 판타지 요정 🧚",
+    themeColor: "#8b5cf6",
+    bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+    story: "별가루를 흩뿌리며 책 속 상상력의 세계로 날아가는 마법 요정! 아름다운 문장을 마주할 때마다 온몸에서 은은한 무지갯빛 오로라가 반짝여요.",
+    favoriteGenre: "세계명작 / 시와 동화",
+    level: "Lv.5 상상 마법사"
+  },
+  {
+    id: "popo",
+    name: "포포 (Popo)",
+    tag: "끈기 만점 백과사전 곰 🐻",
+    themeColor: "#b45309",
+    bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
+    story: "꿀단지보다 두꺼운 책이 더 좋은 포근한 아기 곰! 어려운 역사책도 우직하게 한 글자씩 끝까지 읽어내어 친구들에게 듬직한 길잡이가 되어줍니다.",
+    favoriteGenre: "역사 / 문화 탐구",
+    level: "Lv.5 끈기 대장"
+  },
+  {
+    id: "pico",
+    name: "피코 (Pico)",
+    tag: "우주 모험 펭귄 🐧",
+    themeColor: "#0284c7",
+    bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
+    story: "반짝이는 우주복 헬멧을 쓰고 저 너머 은하계와 미래 세계를 꿈꾸는 탐험가 펭귄! AI, 로봇, 우주선이 나오는 SF 소설에 푹 빠져 살아요.",
+    favoriteGenre: "SF 과학 / 미래 문명",
+    level: "Lv.4 우주 비행사"
+  },
+  {
+    id: "chichi",
+    name: "치치 (Chichi)",
+    tag: "북퀴즈 달인 다람쥐 🐿️",
+    themeColor: "#ea580c",
+    bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
+    story: "도토리 돋보기로 책 구석구석 핵심 단어를 쏙쏙 찾아내는 다람쥐! 북퀴즈만 시작하면 만점을 놓치지 않는 눈썰미 천재예요.",
+    favoriteGenre: "어휘력 / 퀴즈 퍼즐",
+    level: "Lv.5 퀴즈 마스터"
+  },
+  {
+    id: "mir",
+    name: "미르 (Mir)",
+    tag: "신화 속 아기 청룡 🐲",
+    themeColor: "#059669",
+    bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
+    story: "뭉게구름을 타고 다니며 한국사 설화와 영웅 전설을 속삭여 주는 푸른 아기 용! 큰 꿈과 용기를 주는 위인전을 가장 아껴요.",
+    favoriteGenre: "한국사 / 신화 전설",
+    level: "Lv.6 전설의 용"
+  },
+  {
+    id: "choco",
+    name: "초코 (Choco)",
+    tag: "낭만 예술가 강아지 🐶",
+    themeColor: "#854d0e",
+    bgGradient: "linear-gradient(135deg, #fef9c3, #fef08a)",
+    story: "예술가 빵모자를 비스듬히 쓰고 책에서 감동받은 장면을 스케치북에 그림으로 남기는 감성파 강아지! 나노시트(독서생각담기) 그리기 1등이에요.",
+    favoriteGenre: "그림책 / 문학 예술",
+    level: "Lv.4 아트 마스터"
+  },
+  {
+    id: "jelly",
+    name: "젤리 (Jelly)",
+    tag: "마법 책장 젤리 요정 🫧",
+    themeColor: "#06b6d4",
+    bgGradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
+    story: "책장을 스스로 넘겨주고 책먼지를 청소해 주는 귀여운 말랑 젤리! 지치고 졸릴 때 상쾌한 독서 에너지를 불어넣어 주는 비타민 요정이에요.",
+    favoriteGenre: "유머 / 힐링 코믹스",
+    level: "Lv.5 에너지 요정"
+  }
+];
+
+function getCharacterSvg(charId, size) {
+  size = size || 60;
+  var svgs = {
+    nano: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#f97316" stroke-width="2.5"/>'
+      + '<polygon points="26,38 18,12 40,24" fill="#f97316"/>'
+      + '<polygon points="28,34 22,17 38,25" fill="#fbcfe8"/>'
+      + '<polygon points="74,38 82,12 60,24" fill="#f97316"/>'
+      + '<polygon points="72,34 78,17 62,25" fill="#fbcfe8"/>'
+      + '<circle cx="50" cy="54" r="32" fill="#ea580c"/>'
+      + '<polygon points="24,52 50,86 76,52" fill="#ea580c"/>'
+      + '<polygon points="32,54 50,82 68,54" fill="#ffffff"/>'
+      + '<circle cx="33" cy="62" r="5" fill="#fda4af" opacity="0.8"/>'
+      + '<circle cx="67" cy="62" r="5" fill="#fda4af" opacity="0.8"/>'
+      + '<circle cx="41" cy="52" r="4" fill="#1e293b"/>'
+      + '<circle cx="42.5" cy="50.5" r="1.5" fill="#ffffff"/>'
+      + '<circle cx="59" cy="52" r="4" fill="#1e293b"/>'
+      + '<circle cx="60.5" cy="50.5" r="1.5" fill="#ffffff"/>'
+      + '<polygon points="47,66 53,66 50,69" fill="#0f172a"/>'
+      + '<path d="M47 70 Q50 73 53 70" stroke="#0f172a" stroke-width="1.5" fill="none"/>'
+      + '<circle cx="40" cy="52" r="9" fill="none" stroke="#eab308" stroke-width="2.5"/>'
+      + '<line x1="49" y1="52" x2="51" y2="52" stroke="#eab308" stroke-width="2.5"/>'
+      + '<circle cx="60" cy="52" r="9" fill="none" stroke="#eab308" stroke-width="2.5"/>'
+      + '<line x1="67" y1="57" x2="74" y2="65" stroke="#b45309" stroke-width="3" stroke-linecap="round"/>'
+      + '</svg>',
+    booki: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ccfbf1" stroke="#0d9488" stroke-width="2.5"/>'
+      + '<polygon points="25,32 18,18 36,25" fill="#0f766e"/>'
+      + '<polygon points="75,32 82,18 64,25" fill="#0f766e"/>'
+      + '<circle cx="50" cy="56" r="32" fill="#0d9488"/>'
+      + '<ellipse cx="50" cy="62" rx="20" ry="22" fill="#f0fdfa"/>'
+      + '<path d="M44 58 Q50 63 56 58" stroke="#14b8a6" stroke-width="2" fill="none"/>'
+      + '<path d="M42 66 Q50 71 58 66" stroke="#14b8a6" stroke-width="2" fill="none"/>'
+      + '<circle cx="38" cy="48" r="10" fill="#ffffff" stroke="#0f766e" stroke-width="1.5"/>'
+      + '<circle cx="39" cy="48" r="5" fill="#0f172a"/>'
+      + '<circle cx="41" cy="46" r="2" fill="#ffffff"/>'
+      + '<circle cx="62" cy="48" r="10" fill="#ffffff" stroke="#0f766e" stroke-width="1.5"/>'
+      + '<circle cx="61" cy="48" r="5" fill="#0f172a"/>'
+      + '<circle cx="63" cy="46" r="2" fill="#ffffff"/>'
+      + '<polygon points="46,55 54,55 50,63" fill="#f59e0b"/>'
+      + '<rect x="36" y="16" width="28" height="7" rx="2" fill="#2563eb"/>'
+      + '<rect x="38" y="14" width="24" height="4" rx="1.5" fill="#60a5fa"/>'
+      + '<path d="M50 14 L50 21" stroke="#ffffff" stroke-width="1"/>'
+      + '<circle cx="50" cy="13" r="2" fill="#fbbf24"/>'
+      + '</svg>',
+    toto: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#fce7f3" stroke="#ec4899" stroke-width="2.5"/>'
+      + '<ellipse cx="34" cy="22" rx="7" ry="18" fill="#f472b6" transform="rotate(-10 34 22)"/>'
+      + '<ellipse cx="34" cy="22" rx="3.5" ry="12" fill="#fdf2f8" transform="rotate(-10 34 22)"/>'
+      + '<ellipse cx="66" cy="22" rx="7" ry="18" fill="#f472b6" transform="rotate(10 66 22)"/>'
+      + '<ellipse cx="66" cy="22" rx="3.5" ry="12" fill="#fdf2f8" transform="rotate(10 66 22)"/>'
+      + '<circle cx="50" cy="58" r="30" fill="#f472b6"/>'
+      + '<ellipse cx="50" cy="64" rx="18" ry="16" fill="#ffffff"/>'
+      + '<circle cx="32" cy="62" r="5" fill="#fb7185" opacity="0.8"/>'
+      + '<circle cx="68" cy="62" r="5" fill="#fb7185" opacity="0.8"/>'
+      + '<ellipse cx="40" cy="53" rx="3.5" ry="5" fill="#1e293b"/>'
+      + '<circle cx="41.5" cy="51" r="1.5" fill="#ffffff"/>'
+      + '<ellipse cx="60" cy="53" rx="3.5" ry="5" fill="#1e293b"/>'
+      + '<circle cx="61.5" cy="51" r="1.5" fill="#ffffff"/>'
+      + '<polygon points="47,62 53,62 50,65" fill="#f43f5e"/>'
+      + '<rect x="48.5" y="66" width="3" height="4" rx="1" fill="#ffffff" stroke="#f43f5e" stroke-width="0.5"/>'
+      + '<polygon points="74,68 84,54 78,50" fill="#f97316"/>'
+      + '<polygon points="80,50 85,44 86,52" fill="#22c55e"/>'
+      + '</svg>',
+    lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2.5"/>'
+      + '<ellipse cx="26" cy="46" rx="14" ry="9" fill="#c4b5fd" opacity="0.75" transform="rotate(-25 26 46)"/>'
+      + '<ellipse cx="74" cy="46" rx="14" ry="9" fill="#c4b5fd" opacity="0.75" transform="rotate(25 74 46)"/>'
+      + '<circle cx="50" cy="55" r="28" fill="#a78bfa"/>'
+      + '<path d="M28 44 Q50 34 72 44 Q70 60 50 62 Q30 60 28 44 Z" fill="#7c3aed"/>'
+      + '<circle cx="40" cy="44" r="8" fill="#6d28d9"/>'
+      + '<circle cx="60" cy="44" r="8" fill="#6d28d9"/>'
+      + '<ellipse cx="50" cy="62" rx="18" ry="15" fill="#fdf4ff"/>'
+      + '<circle cx="41" cy="58" r="4.5" fill="#4c1d95"/>'
+      + '<polygon points="42,56 43,58 41,58" fill="#ffffff"/>'
+      + '<circle cx="59" cy="58" r="4.5" fill="#4c1d95"/>'
+      + '<polygon points="60,56 61,58 59,58" fill="#ffffff"/>'
+      + '<circle cx="34" cy="65" r="4" fill="#f472b6" opacity="0.7"/>'
+      + '<circle cx="66" cy="65" r="4" fill="#f472b6" opacity="0.7"/>'
+      + '<path d="M47 67 Q50 70 53 67" stroke="#6d28d9" stroke-width="1.5" fill="none"/>'
+      + '<polygon points="50,15 54,24 63,24 56,30 59,39 50,33 41,39 44,30 37,24 46,24" fill="#fbbf24"/>'
+      + '<circle cx="50" cy="27" r="2" fill="#ffffff"/>'
+      + '</svg>',
+    popo: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#fef3c7" stroke="#b45309" stroke-width="2.5"/>'
+      + '<circle cx="28" cy="30" r="12" fill="#92400e"/>'
+      + '<circle cx="28" cy="30" r="6" fill="#fcd34d"/>'
+      + '<circle cx="72" cy="30" r="12" fill="#92400e"/>'
+      + '<circle cx="72" cy="30" r="6" fill="#fcd34d"/>'
+      + '<circle cx="50" cy="56" r="32" fill="#92400e"/>'
+      + '<ellipse cx="50" cy="64" rx="16" ry="13" fill="#fef3c7"/>'
+      + '<circle cx="39" cy="52" r="3.5" fill="#0f172a"/>'
+      + '<circle cx="40.5" cy="50.5" r="1.2" fill="#ffffff"/>'
+      + '<circle cx="61" cy="52" r="3.5" fill="#0f172a"/>'
+      + '<circle cx="62.5" cy="50.5" r="1.2" fill="#ffffff"/>'
+      + '<circle cx="32" cy="60" r="4.5" fill="#f87171" opacity="0.7"/>'
+      + '<circle cx="68" cy="60" r="4.5" fill="#f87171" opacity="0.7"/>'
+      + '<ellipse cx="50" cy="62" rx="4.5" ry="3.5" fill="#451a03"/>'
+      + '<path d="M47 66 Q50 69 53 66" stroke="#451a03" stroke-width="1.5" fill="none"/>'
+      + '<rect x="32" y="74" width="36" height="15" rx="3" fill="#15803d"/>'
+      + '<rect x="35" y="72" width="30" height="4" rx="1" fill="#f8fafc"/>'
+      + '<line x1="50" y1="74" x2="50" y2="89" stroke="#14532d" stroke-width="1.5"/>'
+      + '</svg>',
+    pico: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>'
+      + '<ellipse cx="50" cy="56" rx="30" ry="32" fill="#0f172a"/>'
+      + '<ellipse cx="50" cy="62" rx="20" ry="24" fill="#ffffff"/>'
+      + '<ellipse cx="20" cy="58" rx="6" ry="14" fill="#1e293b" transform="rotate(-15 20 58)"/>'
+      + '<ellipse cx="80" cy="58" rx="6" ry="14" fill="#1e293b" transform="rotate(15 80 58)"/>'
+      + '<circle cx="40" cy="48" r="7" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>'
+      + '<circle cx="41" cy="48" r="3.8" fill="#0284c7"/>'
+      + '<circle cx="42" cy="46" r="1.5" fill="#ffffff"/>'
+      + '<circle cx="60" cy="48" r="7" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>'
+      + '<circle cx="59" cy="48" r="3.8" fill="#0284c7"/>'
+      + '<circle cx="60" cy="46" r="1.5" fill="#ffffff"/>'
+      + '<polygon points="46,55 54,55 50,62" fill="#ea580c"/>'
+      + '<circle cx="33" cy="56" r="4" fill="#fb923c" opacity="0.6"/>'
+      + '<circle cx="67" cy="56" r="4" fill="#fb923c" opacity="0.6"/>'
+      + '<path d="M26 38 A 30 30 0 0 1 74 38" stroke="#38bdf8" stroke-width="3" fill="none" opacity="0.7" stroke-linecap="round"/>'
+      + '<circle cx="72" cy="36" r="3" fill="#38bdf8"/>'
+      + '<line x1="50" y1="24" x2="50" y2="15" stroke="#0284c7" stroke-width="2"/>'
+      + '<circle cx="50" cy="14" r="3.5" fill="#ef4444"/>'
+      + '</svg>',
+    chichi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#ea580c" stroke-width="2.5"/>'
+      + '<path d="M70 65 Q88 45 84 25 Q78 12 68 20 Q62 26 66 38 Z" fill="#c2410c"/>'
+      + '<path d="M72 60 Q84 45 80 30" stroke="#fed7aa" stroke-width="2.5" fill="none"/>'
+      + '<ellipse cx="32" cy="30" rx="7" ry="10" fill="#c2410c" transform="rotate(-15 32 30)"/>'
+      + '<ellipse cx="32" cy="30" rx="4" ry="6" fill="#ffedd5" transform="rotate(-15 32 30)"/>'
+      + '<ellipse cx="68" cy="30" rx="7" ry="10" fill="#c2410c" transform="rotate(15 68 30)"/>'
+      + '<ellipse cx="68" cy="30" rx="4" ry="6" fill="#ffedd5" transform="rotate(15 68 30)"/>'
+      + '<circle cx="50" cy="57" r="30" fill="#ea580c"/>'
+      + '<ellipse cx="50" cy="65" rx="18" ry="16" fill="#fff7ed"/>'
+      + '<line x1="50" y1="36" x2="50" y2="48" stroke="#7c2d12" stroke-width="3" stroke-linecap="round"/>'
+      + '<line x1="43" y1="38" x2="44" y2="46" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/>'
+      + '<line x1="57" y1="38" x2="56" y2="46" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/>'
+      + '<circle cx="31" cy="64" r="6" fill="#fdba74"/>'
+      + '<circle cx="69" cy="64" r="6" fill="#fdba74"/>'
+      + '<circle cx="39" cy="54" r="4.5" fill="#1e293b"/>'
+      + '<circle cx="41" cy="52" r="1.5" fill="#ffffff"/>'
+      + '<circle cx="61" cy="54" r="4.5" fill="#1e293b"/>'
+      + '<circle cx="63" cy="52" r="1.5" fill="#ffffff"/>'
+      + '<circle cx="50" cy="61" r="2.5" fill="#7c2d12"/>'
+      + '<path d="M47 64 Q50 67 53 64" stroke="#7c2d12" stroke-width="1.5" fill="none"/>'
+      + '<ellipse cx="50" cy="28" rx="12" ry="7" fill="#78350f"/>'
+      + '<line x1="50" y1="21" x2="52" y2="15" stroke="#78350f" stroke-width="2" stroke-linecap="round"/>'
+      + '</svg>',
+    mir: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#d1fae5" stroke="#059669" stroke-width="2.5"/>'
+      + '<polygon points="32,32 20,15 36,22" fill="#fbbf24"/>'
+      + '<polygon points="68,32 80,15 64,22" fill="#fbbf24"/>'
+      + '<circle cx="50" cy="55" r="30" fill="#10b981"/>'
+      + '<ellipse cx="50" cy="64" rx="20" ry="16" fill="#a7f3d0"/>'
+      + '<circle cx="50" cy="38" r="3" fill="#047857"/>'
+      + '<circle cx="43" cy="40" r="2" fill="#047857"/>'
+      + '<circle cx="57" cy="40" r="2" fill="#047857"/>'
+      + '<circle cx="38" cy="50" r="5" fill="#064e3b"/>'
+      + '<circle cx="39.5" cy="48.5" r="1.8" fill="#ffffff"/>'
+      + '<circle cx="62" cy="50" r="5" fill="#064e3b"/>'
+      + '<circle cx="63.5" cy="48.5" r="1.8" fill="#ffffff"/>'
+      + '<circle cx="47" cy="61" r="1.5" fill="#065f46"/>'
+      + '<circle cx="53" cy="61" r="1.5" fill="#065f46"/>'
+      + '<path d="M34 62 Q24 64 26 72" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linecap="round"/>'
+      + '<path d="M66 62 Q76 64 74 72" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linecap="round"/>'
+      + '<path d="M30 84 Q40 76 50 84 Q60 76 70 84 Q74 90 60 92 Q40 92 30 84 Z" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>'
+      + '<circle cx="50" cy="78" r="6" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5"/>'
+      + '</svg>',
+    choco: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#fef9c3" stroke="#ca8a04" stroke-width="2.5"/>'
+      + '<ellipse cx="24" cy="52" rx="9" ry="18" fill="#713f12" transform="rotate(15 24 52)"/>'
+      + '<ellipse cx="76" cy="52" rx="9" ry="18" fill="#713f12" transform="rotate(-15 76 52)"/>'
+      + '<circle cx="50" cy="56" r="30" fill="#fef08a"/>'
+      + '<ellipse cx="40" cy="50" rx="9" ry="11" fill="#ca8a04" opacity="0.3"/>'
+      + '<ellipse cx="50" cy="65" rx="16" ry="14" fill="#ffffff"/>'
+      + '<circle cx="40" cy="51" r="4" fill="#1e293b"/>'
+      + '<circle cx="41.5" cy="49.5" r="1.5" fill="#ffffff"/>'
+      + '<circle cx="60" cy="51" r="4" fill="#1e293b"/>'
+      + '<circle cx="61.5" cy="49.5" r="1.5" fill="#ffffff"/>'
+      + '<ellipse cx="50" cy="61" rx="5" ry="4" fill="#451a03"/>'
+      + '<path d="M47 66 Q50 69 53 66" stroke="#451a03" stroke-width="1.5" fill="none"/>'
+      + '<path d="M48 68 Q50 75 52 68 Z" fill="#f43f5e"/>'
+      + '<circle cx="32" cy="62" r="4.5" fill="#fca5a5" opacity="0.8"/>'
+      + '<circle cx="68" cy="62" r="4.5" fill="#fca5a5" opacity="0.8"/>'
+      + '<ellipse cx="46" cy="27" rx="18" ry="10" fill="#dc2626" transform="rotate(-12 46 27)"/>'
+      + '<circle cx="42" cy="18" r="2.5" fill="#dc2626"/>'
+      + '</svg>',
+    jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#cffafe" stroke="#06b6d4" stroke-width="2.5"/>'
+      + '<path d="M50 18 C30 18 20 40 22 65 C24 82 38 88 50 88 C62 88 76 82 78 65 C80 40 70 18 50 18 Z" fill="#22d3ee"/>'
+      + '<ellipse cx="36" cy="38" rx="5" ry="10" fill="#ffffff" opacity="0.6" transform="rotate(-25 36 38)"/>'
+      + '<circle cx="42" cy="28" r="3" fill="#ffffff" opacity="0.7"/>'
+      + '<path d="M36 54 Q41 49 46 54" stroke="#0f172a" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="59" cy="53" r="4.5" fill="#0f172a"/>'
+      + '<circle cx="60.5" cy="51" r="1.8" fill="#ffffff"/>'
+      + '<circle cx="32" cy="62" r="5" fill="#f472b6" opacity="0.8"/>'
+      + '<circle cx="68" cy="62" r="5" fill="#f472b6" opacity="0.8"/>'
+      + '<path d="M47 62 Q50 67 53 62" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round"/>'
+      + '<polygon points="50,10 52,14 56,14 53,17 54,21 50,18 46,21 47,17 44,14 48,14" fill="#fbbf24"/>'
+      + '</svg>'
+  };
+  return svgs[charId] || svgs.booki;
+}
+
+function getUserCharacterId() {
+  return localStorage.getItem("NANO_USER_CHAR_ID") || "booki";
+}
+
+function setUserCharacterId(charId) {
+  localStorage.setItem("NANO_USER_CHAR_ID", charId);
+  updateAllCharacterAvatars();
+}
+
+function getCharacterById(id) {
+  return NANO_CHARACTERS.find(function(c){ return c.id === id; }) || NANO_CHARACTERS[1];
+}
+
+var tempSelectedCharId = null;
+
+function openCharacterSelectModal() {
+  tempSelectedCharId = getUserCharacterId();
+  renderCharacterSelectModal();
+  var m = document.getElementById("characterSelectModal");
+  if(m) m.style.display = "flex";
+}
+
+function closeCharacterSelectModal() {
+  var m = document.getElementById("characterSelectModal");
+  if(m) m.style.display = "none";
+}
+
+function selectCharacterInModal(id) {
+  tempSelectedCharId = id;
+  renderCharacterSelectModal();
+}
+
+function applySelectedCharacter() {
+  if(!tempSelectedCharId) tempSelectedCharId = 'booki';
+  setUserCharacterId(tempSelectedCharId);
+  closeCharacterSelectModal();
+  var char = getCharacterById(tempSelectedCharId);
+  toast('🎉 내 대표 캐릭터가 [' + char.name + '](으)로 설정되었습니다!');
+  renderRank();
+}
+
+function renderCharacterSelectModal() {
+  var previewEl = document.getElementById("charDetailPreview");
+  var gridEl = document.getElementById("charSelectGrid");
+  if(!previewEl || !gridEl) return;
+
+  var cur = getCharacterById(tempSelectedCharId || getUserCharacterId());
+
+  previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;background:' + cur.bgGradient + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);">'
+    + getCharacterSvg(cur.id, 64)
+    + '</div>'
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+    +     '<span style="font-size:15px;font-weight:900;color:#1e293b;">' + cur.name + '</span>'
+    +     '<span style="font-size:10px;font-weight:800;background:' + cur.themeColor + ';color:#fff;padding:2px 6px;border-radius:6px;">' + cur.level + '</span>'
+    +   '</div>'
+    +   '<div style="font-size:11.5px;font-weight:700;color:' + cur.themeColor + ';margin-bottom:4px;">' + cur.tag + '</div>'
+    +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:4px;">' + cur.story + '</div>'
+    +   '<div style="font-size:10.5px;font-weight:700;color:#0d9488;"><i class="fa-solid fa-bookmark mr-1"></i>추천 장르: ' + cur.favoriteGenre + '</div>'
+    + '</div>';
+
+  gridEl.innerHTML = NANO_CHARACTERS.map(function(c){
+    var isSel = (c.id === (tempSelectedCharId || getUserCharacterId()));
+    return '<div class="char-select-card ' + (isSel ? 'selected' : '') + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
+      + '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>'
+      + '<div style="margin:0 auto 6px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">'
+      +   getCharacterSvg(c.id, 50)
+      + '</div>'
+      + '<div style="font-size:12px;font-weight:800;color:#1e293b;margin-bottom:2px;">' + c.name.split(' ')[0] + '</div>'
+      + '<div style="font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + c.tag.split(' ')[0] + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function updateAllCharacterAvatars() {
+  var charId = getUserCharacterId();
+  var char = getCharacterById(charId);
+
+  // 1. 상단 헤더 아바타
+  var hAvatar = document.getElementById("headerCharAvatar");
+  var hTag = document.getElementById("headerCharTag");
+  if(hAvatar) hAvatar.innerHTML = getCharacterSvg(charId, 34);
+  if(hTag) {
+    hTag.innerText = char.name.split(' ')[0];
+    hTag.style.color = char.themeColor;
+  }
+
+  // 2. 사이드 드로어 아바타
+  var dAvatar = document.getElementById("drawerCharAvatar");
+  var dBadge = document.getElementById("drawerCharBadge");
+  if(dAvatar) dAvatar.innerHTML = getCharacterSvg(charId, 58);
+  if(dBadge) {
+    dBadge.innerText = char.name.split(' ')[0];
+    dBadge.style.background = char.bgGradient;
+    dBadge.style.color = char.themeColor;
+  }
+
+  // 3. 랭킹 상단 내 캐릭터 아바타 & 말풍선
+  var rAvatar = document.getElementById("rankMyCharAvatar");
+  var rSpeech = document.getElementById("rankMyCharSpeech");
+  if(rAvatar) rAvatar.innerHTML = getCharacterSvg(charId, 50);
+  if(rSpeech) {
+    rSpeech.innerHTML = '<i class="fa-solid fa-sparkles" style="color:#f59e0b;"></i>'
+      + '<span><strong>' + char.name.split(' ')[0] + '</strong>의 응원: "1위 유지유 친구까지 140P 남았어! 오늘 북퀴즈 2권이면 역전이야! 🔥"</span>';
+  }
+
+  // 4. 포디움 2위 단상 아바타 (나)
+  var p2Avatar = document.getElementById("podiumAvatar2");
+  if(p2Avatar) p2Avatar.innerHTML = getCharacterSvg(charId, 56);
+
+  // 5. 홈 화면 상단 캐릭터 환영 배너
+  var hmAvatar = document.getElementById("homeCharAvatar");
+  var hmTag = document.getElementById("homeCharNameTag");
+  var hmQuote = document.getElementById("homeCharQuote");
+  if(hmAvatar) hmAvatar.innerHTML = getCharacterSvg(charId, 44);
+  if(hmTag) {
+    hmTag.innerText = char.name.split(' ')[0];
+    hmTag.style.background = char.themeColor;
+  }
+  if(hmQuote) {
+    var quotes = {
+      nano: '"돋보기 안경 준비 완료! 오늘도 숨겨진 복선을 찾아볼까? 🔍"',
+      booki: '"책 속에 길이 있단다. 오늘도 깊은 지혜를 쌓아보자! 🦉"',
+      toto: '"번개처럼 빠르게 완독하고 골드 뱃지를 향해 점프! 🐰"',
+      lumi: '"별빛 가루를 뿌려줄게! 상상력의 동화 나라로 출발! 🧚"',
+      popo: '"한 장 한 장 꾸준히 읽는 네가 정말 대견해! 🐻"',
+      pico: '"우주선 탑승 준비! 미래 과학 SF 소설을 탐험하자! 🐧"',
+      chichi: '"오늘 북퀴즈도 백점 만점 노려보는 거야, 준비됐지? 🐿️"',
+      mir: '"영웅들의 용기 있는 이야기를 듣고 큰 꿈을 펼쳐봐! 🐲"',
+      choco: '"마음에 남는 멋진 문장을 찾으면 그림으로 그려보자! 🐶"',
+      jelly: '"말랑말랑 비타민 에너지 뿜뿜! 힘내서 즐겁게 읽자! 🫧"'
+    };
+    hmQuote.innerText = quotes[charId] || '"오늘도 책 속의 신비한 모험을 떠나볼까요? 📖"';
+  }
+}
+
+// ==============================================================
+// 화려한 랭킹 시스템 로직 (포디움 단상 + 4위 이하 카드 목록)
+// ==============================================================
+var currentRankScope = 'class';
+var currentRankPeriod = 'month';
+
+var fullRankDatabase = {
+  class: [
+    { rank: 1, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 1, books: 26, titleTag: "🐿️ 퀴즈 달인" },
+    { rank: 2, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "same", changeNum: 0, books: 24, me: true, titleTag: "🦉 지혜의 박사" },
+    { rank: 3, name: "박서준", charId: "nano", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🦊 명탐정" },
+    { rank: 4, name: "정하은", charId: "toto", cls: "지혜반", pt: 1980, change: "up", changeNum: 2, books: 19, titleTag: "🐰 번개 다독왕" },
+    { rank: 5, name: "이준우", charId: "pico", cls: "지혜반", pt: 1840, change: "same", changeNum: 0, books: 18, titleTag: "🐧 우주 탐험가" },
+    { rank: 6, name: "윤아인", charId: "lumi", cls: "지혜반", pt: 1720, change: "up", changeNum: 1, books: 16, titleTag: "🧚 별빛 요정" },
+    { rank: 7, name: "최서율", charId: "popo", cls: "지혜반", pt: 1590, change: "down", changeNum: 2, books: 15, titleTag: "🐻 끈기 대장" },
+    { rank: 8, name: "강도현", charId: "mir", cls: "지혜반", pt: 1450, change: "up", changeNum: 3, books: 14, titleTag: "🐲 전설의 용" },
+    { rank: 9, name: "송예은", charId: "choco", cls: "지혜반", pt: 1380, change: "same", changeNum: 0, books: 13, titleTag: "🐶 낭만 예술가" },
+    { rank: 10, name: "임지후", charId: "jelly", cls: "지혜반", pt: 1210, change: "down", changeNum: 1, books: 11, titleTag: "🫧 에너지 요정" }
+  ],
+  academy: [
+    { rank: 1, name: "장민서", charId: "nano", cls: "마스터반", pt: 3450, change: "up", changeNum: 1, books: 35, titleTag: "🦊 독서 챔피언" },
+    { rank: 2, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 퀴즈 달인" },
+    { rank: 3, name: "오세훈", charId: "mir", cls: "탐구반", pt: 2510, change: "down", changeNum: 1, books: 25, titleTag: "🐲 역사 마니아" },
+    { rank: 4, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "up", changeNum: 1, books: 24, me: true, titleTag: "🦉 학원 4위" },
+    { rank: 5, name: "박서준", charId: "toto", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🐰 스피드러너" },
+    { rank: 6, name: "배수아", charId: "lumi", cls: "열매반", pt: 2100, change: "up", changeNum: 2, books: 20, titleTag: "🧚 문학 탐험가" },
+    { rank: 7, name: "정하은", charId: "popo", cls: "지혜반", pt: 1980, change: "same", changeNum: 0, books: 19, titleTag: "🐻 끈기 독서" }
+  ],
+  national: [
+    { rank: 1, name: "전국 1위 (목동)", charId: "mir", cls: "목동 명문학원", pt: 5420, change: "same", changeNum: 0, books: 52, titleTag: "👑 전국 독서왕" },
+    { rank: 2, name: "전국 2위 (대치)", charId: "booki", cls: "대치 나노독서", pt: 5180, change: "up", changeNum: 1, books: 49, titleTag: "🦉 지혜의 거장" },
+    { rank: 3, name: "전국 3위 (해운대)", charId: "toto", cls: "센텀 영재학원", pt: 4890, change: "down", changeNum: 1, books: 46, titleTag: "🐰 전국 다독왕" },
+    { rank: 12, name: "김민준(나)", charId: "custom", cls: "판교 알파 독서학원", pt: 2480, change: "up", changeNum: 4, books: 24, me: true, titleTag: "🌟 전국 12위" },
+    { rank: 13, name: "유지유", charId: "chichi", cls: "판교 알파 독서학원", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 판교의 자랑" }
+  ]
+};
+
+function switchRankScope(scope) {
+  currentRankScope = scope;
+  ['class', 'academy', 'national'].forEach(function(s){
+    var btn = document.getElementById('rankTab' + s.charAt(0).toUpperCase() + s.slice(1));
+    if(btn) {
+      if(s === scope) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+  });
+
+  var titleLabel = document.getElementById('rankTitleLabel');
+  if(titleLabel) {
+    if(scope === 'class') titleLabel.innerText = "9월 우리 반 명예의 전당 🏫";
+    else if(scope === 'academy') titleLabel.innerText = "9월 판교 알파 독서학원 전체 랭킹 🏢";
+    else titleLabel.innerText = "9월 대한민국 나노 전국 랭킹 TOP 🌟";
+  }
+
+  renderRank();
+}
+
+function switchRankPeriod(period) {
+  currentRankPeriod = period;
+  var bMonth = document.getElementById('rankPeriodMonth');
+  var bWeek = document.getElementById('rankPeriodWeek');
+  if(period === 'month') {
+    if(bMonth) { bMonth.style.background = '#fff'; bMonth.style.color = '#0f172a'; bMonth.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }
+    if(bWeek) { bWeek.style.background = 'transparent'; bWeek.style.color = '#64748b'; bWeek.style.boxShadow = 'none'; }
+  } else {
+    if(bWeek) { bWeek.style.background = '#fff'; bWeek.style.color = '#0f172a'; bWeek.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }
+    if(bMonth) { bMonth.style.background = 'transparent'; bMonth.style.color = '#64748b'; bMonth.style.boxShadow = 'none'; }
+  }
+  renderRank();
+}
+
+function renderRank() {
+  updateAllCharacterAvatars();
+
+  var data = fullRankDatabase[currentRankScope] || fullRankDatabase.class;
+  var userChar = getUserCharacterId();
+
+  // 1. TOP 3 포디움 렌더링
+  var top1 = data.find(function(d){ return d.rank === 1; });
+  var top2 = data.find(function(d){ return d.rank === 2; });
+  var top3 = data.find(function(d){ return d.rank === 3; });
+
+  var p1Avatar = document.getElementById("podiumAvatar1");
+  var p1Name = document.getElementById("podiumName1");
+  var p1Points = document.getElementById("podiumPoints1");
+
+  var p2Avatar = document.getElementById("podiumAvatar2");
+  var p2Name = document.getElementById("podiumName2");
+  var p2Points = document.getElementById("podiumPoints2");
+
+  var p3Avatar = document.getElementById("podiumAvatar3");
+  var p3Name = document.getElementById("podiumName3");
+  var p3Points = document.getElementById("podiumPoints3");
+
+  if(top1 && p1Avatar) {
+    var cId = top1.charId === 'custom' ? userChar : top1.charId;
+    p1Avatar.innerHTML = getCharacterSvg(cId, 64);
+    if(p1Name) p1Name.innerText = top1.name;
+    if(p1Points) p1Points.innerText = top1.pt.toLocaleString() + 'P';
+  }
+
+  if(top2 && p2Avatar) {
+    var cId = top2.charId === 'custom' ? userChar : top2.charId;
+    p2Avatar.innerHTML = getCharacterSvg(cId, 56);
+    if(p2Name) p2Name.innerText = top2.name;
+    if(p2Points) p2Points.innerText = top2.pt.toLocaleString() + 'P';
+  }
+
+  if(top3 && p3Avatar) {
+    var cId = top3.charId === 'custom' ? userChar : top3.charId;
+    p3Avatar.innerHTML = getCharacterSvg(cId, 52);
+    if(p3Name) p3Name.innerText = top3.name;
+    if(p3Points) p3Points.innerText = top3.pt.toLocaleString() + 'P';
+  }
+
+  // 2. 4위 이하 카드 목록 렌더링
+  var listEl = document.getElementById("rankList");
+  if(!listEl) return;
+
+  var restData = data.filter(function(d){ return d.rank > 3; });
+  if(restData.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:12.5px;">순위 집계 중입니다.</div>';
+    return;
+  }
+
+  listEl.innerHTML = restData.map(function(r){
+    var cId = r.charId === 'custom' ? userChar : r.charId;
+    var changeHtml = '<span class="rank-card-change same">-</span>';
+    if(r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
+    else if(r.change === 'down') changeHtml = '<span class="rank-card-change down"><i class="fa-solid fa-caret-down"></i>' + (r.changeNum || 1) + '</span>';
+
+    return '<div class="rank-card ' + (r.me ? 'me' : '') + '">'
+      + '<div class="rank-card-num-box">'
+      +   '<div class="rank-card-num">' + r.rank + '</div>'
+      +   changeHtml
+      + '</div>'
+      + '<div class="rank-card-avatar">'
+      +   getCharacterSvg(cId, 42)
+      + '</div>'
+      + '<div style="flex: 1; min-width: 0;">'
+      +   '<div class="rank-card-title">'
+      +     '<span>' + r.name + '</span>'
+      +     (r.me ? '<span style="font-size: 10.5px; font-weight: 800; color: #00a896; background: #ccfbf1; padding: 1px 6px; border-radius: 6px;">나</span>' : '')
+      +     '<span class="rank-char-tag">' + (r.titleTag || '독서왕') + '</span>'
+      +   '</div>'
+      +   '<div class="rank-card-sub">' + r.cls + ' · 완독 ' + (r.books || 15) + '권</div>'
+      + '</div>'
+      + '<div class="rank-card-pt">'
+      +   r.pt.toLocaleString() + '<span style="font-size:11px;font-weight:700;color:#64748b;margin-left:2px;">P</span>'
+      + '</div>'
+      + '</div>';
   }).join('');
 }
 // 학생 홈 배너 롤링 로직
@@ -4954,9 +6061,13 @@ function renderStudentBanners() {
 
   var slidesHtml = banners.map(function(b, idx){
     var activeClass = idx === 0 ? 'active' : '';
-    var imgSrc = b.imageUrl || 'upload/banner/banner_reading_king.jpg';
-    return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')" style="cursor: pointer;" title="' + b.title + ' (추천 도서 보기)">'
-      + '<img src="' + imgSrc + '" alt="' + b.title + '" onerror="this.onerror=null; this.src=\'upload/banner/banner_reading_king.jpg\';">'
+    var rawImgSrc = b.imageUrl || 'upload/banner/banner_reading_king.jpg';
+    // 태블릿/모바일 브라우저의 강력한 이미지 캐시 방지 (타임스탬프 쿼리)
+    var cacheBust = b.updatedAt ? ('?t=' + b.updatedAt) : ('?v=' + encodeURIComponent(b.title || '1'));
+    var imgSrc = rawImgSrc.startsWith('data:') ? rawImgSrc : (rawImgSrc + (rawImgSrc.includes('?') ? '&' : '') + cacheBust);
+
+    return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')" style="cursor: pointer;" title="' + (b.title || '') + ' (추천 도서 보기)">'
+      + '<img src="' + imgSrc + '" alt="' + (b.title || '') + '" onerror="this.onerror=null; this.src=\'upload/banner/banner_reading_king.jpg\';">'
       + '</div>';
   }).join('');
 
@@ -4971,17 +6082,51 @@ function renderStudentBanners() {
   curSlide = 0;
 }
 
-// 마스터 관리자에서 배너 변경 시 학생 화면에 즉시 실시간 반영
+// [태블릿/외부기기 실시간 배너 동기화] 서버 중앙 저장소(api/sync_banners.php)에서 최신 배너 즉각 로드
+function syncStudentBannersFromServer() {
+  var apiUrl = 'api/sync_banners.php?t=' + Date.now();
+  fetch(apiUrl)
+    .then(function(res){
+      if(!res.ok) throw new Error('API failed');
+      return res.json();
+    })
+    .catch(function(){
+      // API 실패 시 정적 banners.json 직접 fetch 시도
+      return fetch('upload/banner/banners.json?t=' + Date.now()).then(function(r){ return r.json(); });
+    })
+    .then(function(serverBanners){
+      if(Array.isArray(serverBanners) && serverBanners.length > 0) {
+        var currentJson = localStorage.getItem("NANO_MASTER_BANNERS");
+        var newJson = JSON.stringify(serverBanners);
+        if(currentJson !== newJson) {
+          localStorage.setItem("NANO_MASTER_BANNERS", newJson);
+          renderStudentBanners();
+          console.log("[배너 동기화] 태블릿 화면에 서버의 최신 배너 " + serverBanners.length + "개가 즉시 동기화되었습니다.");
+        }
+      }
+    })
+    .catch(function(err){
+      console.warn("[배너 동기화] 서버 배너 로드 실패 (기본값 또는 캐시 유지):", err);
+    });
+}
+
+// 마스터 관리자에서 배너 변경 시 학생 화면에 즉각 실시간 반영 (동일 기기 storage 이벤트)
 window.addEventListener('storage', function(e) {
   if (e.key === 'NANO_MASTER_BANNERS') {
     renderStudentBanners();
   }
 });
+
+// 태블릿 화면을 다시 켜거나 다른 탭에서 돌아왔을 때 서버 최신 배너 즉각 재동기화
 document.addEventListener('visibilitychange', function() {
   if (!document.hidden) {
+    syncStudentBannersFromServer();
     renderStudentBanners();
   }
 });
+
+// 주기적 서버 배너 동기화 (30초마다 최신 배너 확인)
+setInterval(syncStudentBannersFromServer, 30000);
 
 var toastT;
 function toast(msg){
@@ -5184,7 +6329,9 @@ function submitPasswordChange(e) {
 }
 
 document.addEventListener('DOMContentLoaded',function(){
+  updateAllCharacterAvatars();
   renderStudentBanners();
+  syncStudentBannersFromServer();
   renderHomeSliders();
   renderMyBookshelf();
   renderRank();
