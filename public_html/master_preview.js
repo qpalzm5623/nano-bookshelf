@@ -392,13 +392,21 @@ let themeList = [
 
 // 로컬스토리지 및 중앙 서버 동기화 헬퍼 함수
 function saveOperationsToStorage() {
+  const saveTime = Date.now();
+  // 각 배너에 updatedAt 부여 (동기화 정합성 보장)
+  bannerList.forEach(b => {
+    if (!b.updatedAt) b.updatedAt = saveTime;
+  });
+
   try {
+    localStorage.setItem("NANO_MASTER_BANNERS_TIME", saveTime.toString());
     localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
     localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
   } catch (e) {
-    console.warn("로컬스토리지 저장 중 오류:", e);
+    console.warn("로컬스토리지 저장 중 용량 주의:", e);
     try {
       localStorage.removeItem("NANO_MASTER_BANNERS");
+      localStorage.setItem("NANO_MASTER_BANNERS_TIME", saveTime.toString());
       localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
     } catch(err2) {
       console.error("로컬스토리지 재시도 실패:", err2);
@@ -406,30 +414,45 @@ function saveOperationsToStorage() {
     }
   }
 
+  // 동일 기기 다른 탭(학생 화면 등)에 즉각 반영되도록 커스텀 스토리지 이벤트 발송
+  try {
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'NANO_MASTER_BANNERS',
+      newValue: JSON.stringify(bannerList)
+    }));
+  } catch(evErr) {}
+
   // [태블릿/모바일 기기간 실시간 배너 동기화] 서버 중앙 저장소(api/sync_banners.php)로 비동기 전송
   try {
     fetch('api/sync_banners.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bannerList)
-    }).then(res => res.json()).then(data => {
-      if (data && data.banners) {
-        let updated = false;
+    }).then(res => {
+      if (!res.ok) throw new Error('서버 응답 오류: ' + res.status);
+      return res.json();
+    }).then(data => {
+      if (data && data.banners && Array.isArray(data.banners)) {
+        // 서버에서 Base64 이미지를 실제 upload/banner/ 파일로 추출 완료한 경우
+        // 로컬 객체도 파일 URL로 깔끔하게 치환하여 용량 초경량화 (수십KB -> 수백Byte)
+        let hasImageConverted = false;
         data.banners.forEach(sb => {
-          const target = bannerList.find(b => b.id === sb.id);
+          const target = bannerList.find(b => String(b.id) === String(sb.id));
           if (target && target.imageUrl !== sb.imageUrl) {
             target.imageUrl = sb.imageUrl;
-            updated = true;
+            target.updatedAt = sb.updatedAt || Date.now();
+            hasImageConverted = true;
           }
         });
-        if (updated) {
+        if (hasImageConverted) {
+          localStorage.setItem("NANO_MASTER_BANNERS_TIME", Date.now().toString());
           localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
           if (typeof renderBannerList === 'function') renderBannerList();
         }
       }
       console.log("중앙 배너 서버 동기화 완료: 태블릿 및 모바일 기기에 즉시 반영됩니다.");
     }).catch(err => {
-      console.warn("중앙 배너 서버 동기화 실패 (오프라인 상태 또는 네트워크 오류):", err);
+      console.warn("중앙 배너 서버 동기화 안내 (오프라인 상태 또는 네트워크 환경, 로컬스토리지에는 안전 보존됨):", err);
     });
   } catch(netErr) {
     console.warn("중앙 서버 동기화 요청 실패:", netErr);
@@ -437,11 +460,17 @@ function saveOperationsToStorage() {
 }
 
 function loadOperationsFromStorage() {
+  const localTime = parseInt(localStorage.getItem("NANO_MASTER_BANNERS_TIME") || "0", 10);
+  let hasLocalData = false;
+
   try {
     const b = localStorage.getItem("NANO_MASTER_BANNERS");
     if (b) {
       const parsed = JSON.parse(b);
-      if (Array.isArray(parsed) && parsed.length > 0) bannerList = parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        bannerList = parsed;
+        hasLocalData = true;
+      }
     } else if (window.NANO_SERVER_BANNERS && Array.isArray(window.NANO_SERVER_BANNERS) && window.NANO_SERVER_BANNERS.length > 0) {
       bannerList = window.NANO_SERVER_BANNERS;
     }
@@ -454,19 +483,34 @@ function loadOperationsFromStorage() {
     console.warn("로컬스토리지 불러오기 중 오류:", e);
   }
 
-  // 서버의 최신 중앙 배너 가져와서 동기화
+  // 서버의 최신 중앙 배너 가져와서 동기화 (지능형 타임스탬프 검증으로 로컬 수정본 덮어쓰기 방지)
   try {
     fetch('api/sync_banners.php?t=' + Date.now())
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('API 응답 불가: ' + res.status);
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
+          // 서버 데이터의 최신 updatedAt 산출
+          const serverLatestTime = data.reduce((max, item) => Math.max(max, item.updatedAt || 0), 0);
+
+          // [핵심] 사용자가 로컬에서 수정한 내역이 더 최신이면, 옛날 서버 데이터로 덮어쓰지 않고 로컬 수정본을 서버로 업로드(자가 복구 동기화)!
+          if (hasLocalData && localTime > (serverLatestTime + 1000)) {
+            console.log("[동기화 보호] 로컬 배너 데이터가 서버보다 최신입니다. 서버로 최신 데이터를 푸시합니다.");
+            saveOperationsToStorage();
+            return;
+          }
+
+          // 서버 데이터가 실제로 더 최신일 때만 로컬 동기화
           bannerList = data;
+          localStorage.setItem("NANO_MASTER_BANNERS_TIME", (serverLatestTime || Date.now()).toString());
           localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
           if (typeof renderBannerList === 'function') renderBannerList();
-          console.log("서버 중앙 배너 목록 동기화 성공:", bannerList.length + "개 배너");
+          console.log("서버 중앙 배너 목록 동기화 완료:", bannerList.length + "개 배너");
         }
       }).catch(e => {
-        console.log("서버 배너 로드 건너뜀 (로컬스토리지 기본값 유지):", e);
+        console.log("서버 배너 로드 건너뜀 (로컬스토리지 최신값 안전 유지):", e);
       });
   } catch(e) {}
 }
@@ -2405,12 +2449,12 @@ function handleBannerFileUpload(e) {
   const reader = new FileReader();
   reader.onload = function(evt) {
     const rawDataUrl = evt.target.result;
-    // 이미지 최적화 (Canvas를 이용해 최대 1280px 와이드, JPEG 0.85로 경량 압축하여 용량 문제 원천 방지)
+    // 이미지 최적화 (Canvas를 이용해 배너 최적 비율 최대 960px x 320px, JPEG 0.75로 초경량 압축하여 용량 문제 원천 방지)
     const tempImg = new Image();
     tempImg.onload = function() {
       try {
-        const maxWidth = 1280;
-        const maxHeight = 720;
+        const maxWidth = 960;
+        const maxHeight = 320;
         let w = tempImg.width;
         let h = tempImg.height;
 
@@ -2428,8 +2472,8 @@ function handleBannerFileUpload(e) {
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(tempImg, 0, 0, w, h);
 
-        // 85% 품질 JPEG로 압축 (용량 수십 KB 수준으로 초경량화되어 LocalStorage에 안전하게 저장)
-        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        // 75% 품질 JPEG로 압축 (용량 30~50KB 수준으로 초경량화되어 LocalStorage에 영구 안전 보존)
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.75);
         curBannerUploadedImgData = compressedDataUrl;
         curBannerExistingImgUrl = ""; // 새 파일이 등록되었으므로 기존 이미지 대체
         updateBannerModalPreview(curBannerUploadedImgData);
@@ -2638,8 +2682,9 @@ function handleSaveBanner(e) {
   const order = parseInt(document.getElementById("bannerOrder").value, 10) || 1;
   const active = document.getElementById("bannerActive").value;
 
+  const nowTime = Date.now();
   if (editId) {
-    const target = bannerList.find(b => b.id === parseInt(editId, 10));
+    const target = bannerList.find(b => String(b.id) === String(editId));
     if (target) {
       target.title = title;
       target.sub = sub;
@@ -2647,12 +2692,13 @@ function handleSaveBanner(e) {
       target.order = order;
       target.active = active;
       target.bookIds = [...curBannerBooks];
+      target.updatedAt = nowTime;
       showMasterToast(`'${title}' 배너 정보가 수정되었습니다.`);
     }
   } else {
     const todayStr = new Date().toISOString().split("T")[0];
     const newBanner = {
-      id: Date.now(),
+      id: nowTime,
       title: title,
       sub: sub,
       imageUrl: imageUrl,
@@ -2660,6 +2706,7 @@ function handleSaveBanner(e) {
       active: active,
       clicks: 0,
       createdAt: todayStr,
+      updatedAt: nowTime,
       bookIds: [...curBannerBooks]
     };
     bannerList.push(newBanner);
@@ -2672,19 +2719,20 @@ function handleSaveBanner(e) {
 }
 
 function toggleBannerActive(id) {
-  const b = bannerList.find(item => item.id === id);
+  const b = bannerList.find(item => String(item.id) === String(id));
   if (!b) return;
   b.active = b.active === "Y" ? "N" : "Y";
+  b.updatedAt = Date.now();
   saveOperationsToStorage();
   renderBannerList();
   showMasterToast(`배너 노출 상태가 [${b.active === "Y" ? "노출" : "숨김"}]으로 변경되었습니다.`);
 }
 
 function deleteBanner(id) {
-  const b = bannerList.find(item => item.id === id);
+  const b = bannerList.find(item => String(item.id) === String(id));
   const name = b ? b.title : "선택 배너";
   if (confirm(`'${name}' 배너를 정말 삭제하시겠습니까?`)) {
-    bannerList = bannerList.filter(item => item.id !== id);
+    bannerList = bannerList.filter(item => String(item.id) !== String(id));
     saveOperationsToStorage();
     renderBannerList();
     showMasterToast("배너가 삭제되었습니다.");

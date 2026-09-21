@@ -2,6 +2,10 @@
 // ==============================================================
 // 중앙 배너 동기화 API (PC - 태블릿/모바일 기기간 실시간 동기화)
 // ==============================================================
+@ini_set('memory_limit', '256M');
+@ini_set('post_max_size', '64M');
+@ini_set('upload_max_filesize', '64M');
+
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -22,7 +26,7 @@ $bannerFile = dirname(__DIR__) . '/upload/banner/banners.json';
 $bannerDir  = dirname(__DIR__) . '/upload/banner';
 
 if (!is_dir($bannerDir)) {
-    mkdir($bannerDir, 0777, true);
+    @mkdir($bannerDir, 0777, true);
 }
 
 // 1. GET 요청: 최신 배너 목록 반환

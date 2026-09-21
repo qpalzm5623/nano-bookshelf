@@ -7079,9 +7079,19 @@ function syncStudentBannersFromServer() {
     })
     .then(function(serverBanners){
       if(Array.isArray(serverBanners) && serverBanners.length > 0) {
+        var localTime = parseInt(localStorage.getItem("NANO_MASTER_BANNERS_TIME") || "0", 10);
+        var serverLatestTime = serverBanners.reduce(function(max, item) { return Math.max(max, item.updatedAt || 0); }, 0);
+        
+        // 로컬 데이터가 서버보다 최신인 경우 서버 데이터로 덮어쓰지 않고 보호
+        if (localTime > (serverLatestTime + 1000)) {
+          console.log("[배너 동기화 보호] 로컬 배너 데이터가 더 최신이므로 서버 덮어쓰기를 건너뜁니다.");
+          return;
+        }
+
         var currentJson = localStorage.getItem("NANO_MASTER_BANNERS");
         var newJson = JSON.stringify(serverBanners);
         if(currentJson !== newJson) {
+          localStorage.setItem("NANO_MASTER_BANNERS_TIME", (serverLatestTime || Date.now()).toString());
           localStorage.setItem("NANO_MASTER_BANNERS", newJson);
           renderStudentBanners();
           console.log("[배너 동기화] 서버의 최신 배너 " + serverBanners.length + "개가 즉시 동기화되었습니다.");
