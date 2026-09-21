@@ -1238,21 +1238,10 @@
     .rolling-banner-container:hover .rolling-banner-slide.active img {
       transform: scale(1.025);
     }
-    /* 배너 하단 텍스트 및 그라데이션 오버레이 */
-    .banner-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.35) 45%, rgba(0, 0, 0, 0) 100%);
-      pointer-events: none;
-      z-index: 3;
-    }
+    /* 배너 하단 텍스트 및 그라데이션 오버레이 (이미지 자체 디자인 보존을 위해 비노출 처리) */
+    .banner-overlay,
     .banner-caption {
-      position: absolute;
-      left: 20px;
-      bottom: 16px;
-      right: 140px;
-      z-index: 4;
-      pointer-events: none;
+      display: none !important;
     }
     @media (max-width: 576px) {
       .banner-caption {
@@ -2825,30 +2814,12 @@
     <div class="rolling-banner-container" id="studentBannerBox">
       <div class="rolling-banner-slide active" data-idx="0" onclick="handleStudentBannerClick(0)">
         <img src="upload/banner/banner_reading_king.jpg" alt="9월 나노 독서왕 챌린지 🏆">
-        <div class="banner-overlay"></div>
-        <div class="banner-caption">
-          <span class="banner-badge">챌린지</span>
-          <div class="banner-title">9월 나노 독서왕 챌린지 🏆</div>
-          <div class="banner-sub">이번 달 3권 이상 완독하고 골드 뱃지를 획득하세요!</div>
-        </div>
       </div>
       <div class="rolling-banner-slide" data-idx="1" onclick="handleStudentBannerClick(1)">
         <img src="upload/banner/banner_nanosheet.jpg" alt="상상력 쑥쑥! 나노 시트 개편 🌿">
-        <div class="banner-overlay"></div>
-        <div class="banner-caption">
-          <span class="banner-badge">나노시트</span>
-          <div class="banner-title">상상력 쑥쑥! 나노 시트 개편 🌿</div>
-          <div class="banner-sub">새로워진 독서 생각담기 양식으로 내 생각을 표현해보세요.</div>
-        </div>
       </div>
       <div class="rolling-banner-slide" data-idx="2" onclick="handleStudentBannerClick(2)">
         <img src="upload/banner/banner_ranking.jpg" alt="전국 학생 랭킹 실시간 집계 오픈 🌟">
-        <div class="banner-overlay"></div>
-        <div class="banner-caption">
-          <span class="banner-badge">랭킹</span>
-          <div class="banner-title">전국 학생 랭킹 실시간 집계 오픈 🌟</div>
-          <div class="banner-sub">내가 속한 학원의 친구들과 전국 친구들의 독서 포인트를 확인해요.</div>
-        </div>
       </div>
       <!-- 좌우 넘김 버튼 -->
       <button type="button" class="banner-nav-btn prev" onclick="event.stopPropagation(); prevBannerSlide();" aria-label="이전 배너">
@@ -7029,12 +7000,6 @@ function renderStudentBanners() {
 
     return '<div class="rolling-banner-slide ' + activeClass + '" data-idx="' + idx + '" onclick="handleStudentBannerClick(' + idx + ')">'
       + '<img src="' + imgSrc + '" alt="' + (b.title || '') + '" onerror="this.onerror=null; this.src=\'upload/banner/banner_reading_king.jpg\';">'
-      + '<div class="banner-overlay"></div>'
-      + '<div class="banner-caption">'
-      +   '<span class="banner-badge">' + tag + '</span>'
-      +   '<div class="banner-title">' + (b.title || '') + '</div>'
-      +   '<div class="banner-sub">' + (b.sub || '') + '</div>'
-      + '</div>'
       + '</div>';
   }).join('');
 

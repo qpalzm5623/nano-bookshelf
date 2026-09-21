@@ -2289,15 +2289,22 @@
             <div class="col-lg-6 mb-3">
               <div class="bg-white p-3 rounded-lg border shadow-sm h-100 d-flex flex-column justify-content-between">
                 <div>
-                  <h6 class="font-weight-bold text-dark mb-3" style="font-size: 14px;">
-                    <i class="fa-solid fa-pen-to-square mr-1 text-primary"></i>배너 기본 정보
-                  </h6>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
+                      <i class="fa-solid fa-pen-to-square mr-1 text-primary"></i>배너 기본 정보 (관리자 식별용)
+                    </h6>
+                    <span class="badge badge-light border text-muted" style="font-size: 11px;">관리자 전용</span>
+                  </div>
+                  <div class="alert alert-light border py-2 px-3 mb-2" style="font-size: 11.5px; border-radius: 8px; line-height: 1.5; color: var(--text-muted); background: #fdfbf7;">
+                    <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
+                    <strong>안내:</strong> 입력하신 배너 제목과 설명 문구는 <strong>관리자 목록 확인용</strong>입니다. 학생 화면에는 텍스트가 겹치지 않고 배너 이미지만 원본 그대로 표출됩니다.
+                  </div>
                   <div class="form-group mb-2">
-                    <label class="font-weight-bold" style="font-size: 13px;">배너 제목 <span class="text-danger">*</span></label>
+                    <label class="font-weight-bold" style="font-size: 13px;">배너 제목 (관리 식별용) <span class="text-danger">*</span></label>
                     <input type="text" id="bannerTitle" class="form-control form-control-beige" placeholder="예: 9월 나노 독서왕 챌린지!" required>
                   </div>
                   <div class="form-group mb-3">
-                    <label class="font-weight-bold" style="font-size: 13px;">배너 서브 설명</label>
+                    <label class="font-weight-bold" style="font-size: 13px;">배너 서브 설명 (관리 메모용)</label>
                     <input type="text" id="bannerSub" class="form-control form-control-beige" placeholder="예: 이번 달 3권 완독하고 골드 뱃지를 획득하세요!">
                   </div>
                 </div>
