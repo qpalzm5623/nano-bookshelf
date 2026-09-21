@@ -207,7 +207,7 @@ function switchTab(tab) {
   }
   if (tab === 'assignment') renderAssignmentTable();
   if (tab === 'dispatch') renderAcademyDispatchTable();
-  if (tab === 'ranking') renderAcademyRankingTable();
+  if (tab === 'ranking') renderAdminRankingView();
   if (tab === 'payment') {
     renderAcademyPaymentTable();
     selectPlanTier(currentSelectedTier || 'standard');
@@ -3433,37 +3433,621 @@ function retryAcademyDispatch(id) {
 }
 
 // ==============================================================
-// 7. 원내 랭킹 조회 모듈 (Internal Student Ranking)
+// 7. 원내 랭킹 조회 모듈 (Internal Student Ranking & Hall of Fame)
 // ==============================================================
-var academyRankingList = [
-  { rank: 1, name: '박도윤', grade: '초등 6학년 (마스터반)', books: 31, quizRate: '97.0%', points: 3410, badge: '골드 독서왕 🥇' },
-  { rank: 2, name: '김민준', grade: '초등 5학년 (지혜반)', books: 24, quizRate: '94.2%', points: 2850, badge: '실버 리더 🥈' },
-  { rank: 3, name: '윤지유', grade: '초등 5학년 (지혜반)', books: 22, quizRate: '95.8%', points: 2640, badge: '브론즈 리더 🥉' },
-  { rank: 4, name: '이서윤', grade: '초등 4학년 (슬기반)', books: 18, quizRate: '91.5%', points: 2190, badge: '열정 독서가' },
-  { rank: 5, name: '정하은', grade: '중등 1학년 (심화반)', books: 15, quizRate: '88.4%', points: 1980, badge: '탐구 독서가' },
-  { rank: 6, name: '강시우', grade: '초등 2학년 (새싹반)', books: 12, quizRate: '92.0%', points: 1650, badge: '새싹 독서가' }
-];
 
-function renderAcademyRankingTable() {
-  var tbody = document.getElementById('academyRankingTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
+// 나노 프렌즈 10종 캐릭터 SVG 벡터 생성기
+function getCharacterSvg(charId, size) {
+  size = size || 60;
+  var svgs = {
+    nano: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#f97316" stroke-width="2.5"/>'
+      + '<polygon points="26,38 18,12 40,24" fill="#f97316"/>'
+      + '<polygon points="28,34 22,17 38,25" fill="#fbcfe8"/>'
+      + '<polygon points="74,38 82,12 60,24" fill="#f97316"/>'
+      + '<polygon points="72,34 78,17 62,25" fill="#fbcfe8"/>'
+      + '<circle cx="50" cy="56" r="34" fill="#f97316"/>'
+      + '<path d="M26,56 Q50,78 74,56 Q50,90 26,56" fill="#fff"/>'
+      + '<ellipse cx="38" cy="48" rx="8" ry="7" fill="none" stroke="#78350f" stroke-width="2.5"/>'
+      + '<ellipse cx="62" cy="48" rx="8" ry="7" fill="none" stroke="#78350f" stroke-width="2.5"/>'
+      + '<line x1="46" y1="48" x2="54" y2="48" stroke="#78350f" stroke-width="2.5"/>'
+      + '<circle cx="38" cy="48" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="39.5" cy="46.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="62" cy="48" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="63.5" cy="46.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="62" rx="3.5" ry="2.5" fill="#1e293b"/>'
+      + '<circle cx="30" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
+      + '<circle cx="70" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
+      + '</svg>',
+    booki: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ccfbf1" stroke="#0d9488" stroke-width="2.5"/>'
+      + '<circle cx="50" cy="55" r="33" fill="#0d9488"/>'
+      + '<ellipse cx="50" cy="63" rx="20" ry="22" fill="#f0fdfa"/>'
+      + '<polygon points="28,34 20,20 38,28" fill="#0f766e"/>'
+      + '<polygon points="72,34 80,20 62,28" fill="#0f766e"/>'
+      + '<circle cx="38" cy="50" r="11" fill="#fff" stroke="#042f2e" stroke-width="2"/>'
+      + '<circle cx="62" cy="50" r="11" fill="#fff" stroke="#042f2e" stroke-width="2"/>'
+      + '<circle cx="38" cy="50" r="4.5" fill="#134e4a"/>'
+      + '<circle cx="40" cy="48" r="1.5" fill="#fff"/>'
+      + '<circle cx="62" cy="50" r="4.5" fill="#134e4a"/>'
+      + '<circle cx="64" cy="48" r="1.5" fill="#fff"/>'
+      + '<polygon points="46,57 54,57 50,64" fill="#f59e0b"/>'
+      + '<rect x="36" y="16" width="28" height="12" rx="2.5" fill="#b45309" stroke="#78350f" stroke-width="1.5"/>'
+      + '<rect x="38" y="18" width="24" height="2" fill="#fde68a"/>'
+      + '</svg>',
+    toto: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#fce7f3" stroke="#ec4899" stroke-width="2.5"/>'
+      + '<ellipse cx="37" cy="24" rx="8" ry="20" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
+      + '<ellipse cx="37" cy="24" rx="4.5" ry="15" fill="#f472b6"/>'
+      + '<ellipse cx="63" cy="24" rx="8" ry="20" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
+      + '<ellipse cx="63" cy="24" rx="4.5" ry="15" fill="#f472b6"/>'
+      + '<circle cx="50" cy="60" r="31" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
+      + '<circle cx="40" cy="56" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="41.5" cy="54.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="60" cy="56" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="61.5" cy="54.5" r="1.2" fill="#fff"/>'
+      + '<polygon points="47,64 53,64 50,68" fill="#ec4899"/>'
+      + '<circle cx="32" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
+      + '<circle cx="68" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
+      + '</svg>',
+    lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2.5"/>'
+      + '<circle cx="50" cy="54" r="30" fill="#fff" stroke="#8b5cf6" stroke-width="2"/>'
+      + '<path d="M30,34 Q50,18 70,34 Q65,48 50,44 Q35,48 30,34" fill="#a78bfa"/>'
+      + '<circle cx="41" cy="52" r="3.5" fill="#4c1d95"/>'
+      + '<circle cx="42.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="59" cy="52" r="3.5" fill="#4c1d95"/>'
+      + '<circle cx="60.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<path d="M47,60 Q50,63 53,60" stroke="#a78bfa" stroke-width="1.8" fill="none"/>'
+      + '<circle cx="34" cy="58" r="4" fill="#ddd6fe"/>'
+      + '<circle cx="66" cy="58" r="4" fill="#ddd6fe"/>'
+      + '<polygon points="50,12 52,18 58,20 52,22 50,28 48,22 42,20 48,18" fill="#facc15"/>'
+      + '</svg>',
+    popo: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#fef3c7" stroke="#b45309" stroke-width="2.5"/>'
+      + '<circle cx="28" cy="30" r="11" fill="#b45309"/>'
+      + '<circle cx="28" cy="30" r="6" fill="#fef3c7"/>'
+      + '<circle cx="72" cy="30" r="11" fill="#b45309"/>'
+      + '<circle cx="72" cy="30" r="6" fill="#fef3c7"/>'
+      + '<circle cx="50" cy="58" r="33" fill="#b45309"/>'
+      + '<ellipse cx="50" cy="67" rx="18" ry="14" fill="#fde68a"/>'
+      + '<circle cx="39" cy="53" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="40.5" cy="51.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="61" cy="53" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="62.5" cy="51.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="64" rx="5" ry="3.5" fill="#1e293b"/>'
+      + '</svg>',
+    pico: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>'
+      + '<circle cx="50" cy="54" r="33" fill="#0f172a"/>'
+      + '<ellipse cx="50" cy="59" rx="20" ry="25" fill="#fff"/>'
+      + '<circle cx="40" cy="49" r="4" fill="#0284c7"/>'
+      + '<circle cx="41.5" cy="47.5" r="1.3" fill="#fff"/>'
+      + '<circle cx="60" cy="49" r="4" fill="#0284c7"/>'
+      + '<circle cx="61.5" cy="47.5" r="1.3" fill="#fff"/>'
+      + '<polygon points="46,55 54,55 50,63" fill="#f59e0b"/>'
+      + '<ellipse cx="50" cy="54" rx="35" ry="35" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.75"/>'
+      + '</svg>',
+    chichi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#ea580c" stroke-width="2.5"/>'
+      + '<polygon points="32,32 20,18 36,24" fill="#ea580c"/>'
+      + '<polygon points="68,32 80,18 64,24" fill="#ea580c"/>'
+      + '<circle cx="50" cy="56" r="31" fill="#ea580c"/>'
+      + '<ellipse cx="50" cy="64" rx="16" ry="18" fill="#fff"/>'
+      + '<circle cx="39" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="40.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="61" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="62.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="60" rx="4" ry="3" fill="#1e293b"/>'
+      + '<rect x="47" y="63" width="6" height="5" fill="#fff" stroke="#1e293b" stroke-width="1"/>'
+      + '<circle cx="28" cy="60" r="6" fill="#fdba74"/>'
+      + '<circle cx="72" cy="60" r="6" fill="#fdba74"/>'
+      + '</svg>',
+    mir: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#d1fae5" stroke="#059669" stroke-width="2.5"/>'
+      + '<path d="M30,28 Q24,12 36,18 Q40,24 38,32" fill="#059669"/>'
+      + '<path d="M70,28 Q76,12 64,18 Q60,24 62,32" fill="#059669"/>'
+      + '<circle cx="50" cy="56" r="31" fill="#10b981"/>'
+      + '<ellipse cx="50" cy="66" rx="18" ry="16" fill="#a7f3d0"/>'
+      + '<circle cx="40" cy="50" r="4" fill="#064e3b"/>'
+      + '<circle cx="41.5" cy="48.5" r="1.3" fill="#fff"/>'
+      + '<circle cx="60" cy="50" r="4" fill="#064e3b"/>'
+      + '<circle cx="61.5" cy="48.5" r="1.3" fill="#fff"/>'
+      + '<circle cx="46" cy="60" r="1.5" fill="#064e3b"/>'
+      + '<circle cx="54" cy="60" r="1.5" fill="#064e3b"/>'
+      + '<polygon points="50,16 53,24 61,24 54,29 57,37 50,32 43,37 46,29 39,24 47,24" fill="#facc15"/>'
+      + '</svg>',
+    choco: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#fef9c3" stroke="#854d0e" stroke-width="2.5"/>'
+      + '<ellipse cx="24" cy="46" rx="8" ry="17" fill="#854d0e"/>'
+      + '<ellipse cx="76" cy="46" rx="8" ry="17" fill="#854d0e"/>'
+      + '<circle cx="50" cy="56" r="31" fill="#ca8a04"/>'
+      + '<ellipse cx="50" cy="65" rx="15" ry="14" fill="#fef08a"/>'
+      + '<circle cx="41" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="42.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="59" cy="52" r="3.5" fill="#1e293b"/>'
+      + '<circle cx="60.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#1e293b"/>'
+      + '<path d="M47,65 Q50,68 53,65" stroke="#1e293b" stroke-width="1.5" fill="none"/>'
+      + '</svg>',
+    jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
+      + '<circle cx="50" cy="50" r="48" fill="#cffafe" stroke="#06b6d4" stroke-width="2.5"/>'
+      + '<path d="M25,58 Q22,34 50,30 Q78,34 75,58 Q72,78 50,78 Q28,78 25,58" fill="#22d3ee"/>'
+      + '<ellipse cx="50" cy="40" rx="16" ry="6" fill="#a5f3fc" opacity="0.6"/>'
+      + '<circle cx="40" cy="52" r="3.5" fill="#083344"/>'
+      + '<circle cx="41.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<circle cx="60" cy="52" r="3.5" fill="#083344"/>'
+      + '<circle cx="61.5" cy="50.5" r="1.2" fill="#fff"/>'
+      + '<path d="M46,60 Q50,65 54,60" stroke="#083344" stroke-width="2" fill="none" stroke-linecap="round"/>'
+      + '<circle cx="32" cy="58" r="4" fill="#fed7aa"/>'
+      + '<circle cx="68" cy="58" r="4" fill="#fed7aa"/>'
+      + '</svg>'
+  };
+  return svgs[charId] || svgs.nano;
+}
 
-  academyRankingList.forEach(function(r) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="text-center font-weight-bold" style="font-size:15px;">
-        ${r.rank === 1 ? '🥇 1' : r.rank === 2 ? '🥈 2' : r.rank === 3 ? '🥉 3' : r.rank}
-      </td>
-      <td><strong style="color: var(--text-main); font-size:14px;">${r.name}</strong></td>
-      <td class="text-center">${r.grade}</td>
-      <td class="text-center font-weight-bold">${r.books}권</td>
-      <td class="text-center text-success font-weight-bold">${r.quizRate}</td>
-      <td class="text-right font-weight-bold text-warning" style="font-size:14.5px; padding-right:24px;">${r.points.toLocaleString()} P</td>
-      <td class="text-center"><span class="badge-soft badge-soft-warn font-weight-bold">${r.badge}</span></td>
-    `;
-    tbody.appendChild(tr);
+// 랭킹 필터 상태
+var adminRankPeriod = 'month'; // 'month' (9월) | 'lastMonth' (8월)
+var adminRankClass = 'all';    // 'all' | 'master' | 'wisdom' | 'wise' | 'sprout'
+
+// 랭킹 종합 데이터베이스
+var adminRankingDatabase = {
+  month: [
+    { rank: 1, change: 'same', name: '박도윤', charId: 'booki', grade: '초등 6학년 (마스터반)', classKey: 'master', books: 31, quizRate: '97.0%', points: 3410, badge: '골드 독서왕 🥇' },
+    { rank: 2, change: 'up',   diff: 1, name: '김민준', charId: 'nano',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 24, quizRate: '94.2%', points: 2850, badge: '실버 리더 🥈' },
+    { rank: 3, change: 'up',   diff: 2, name: '윤지유', charId: 'lumi',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 22, quizRate: '95.8%', points: 2640, badge: '브론즈 리더 🥉' },
+    { rank: 4, change: 'down', diff: 2, name: '이서윤', charId: 'toto',  grade: '초등 4학년 (슬기반)',   classKey: 'wise',   books: 18, quizRate: '91.5%', points: 2190, badge: '열정 독서가 🌟' },
+    { rank: 5, change: 'same', name: '정하은', charId: 'mir',   grade: '중등 1학년 (심화반)',   classKey: 'master', books: 15, quizRate: '88.4%', points: 1980, badge: '탐구 독서가 🚀' },
+    { rank: 6, change: 'up',   diff: 1, name: '강시우', charId: 'pico',  grade: '초등 2학년 (새싹반)',   classKey: 'sprout', books: 12, quizRate: '92.0%', points: 1650, badge: '새싹 독서가 🌱' },
+    { rank: 7, change: 'same', name: '최준우', charId: 'popo',  grade: '초등 6학년 (마스터반)', classKey: 'master', books: 11, quizRate: '89.5%', points: 1520, badge: '성실 리더 📘' },
+    { rank: 8, change: 'up',   diff: 3, name: '송예은', charId: 'choco', grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 10, quizRate: '93.0%', points: 1410, badge: '지혜의 별 ⭐' }
+  ],
+  lastMonth: [
+    { rank: 1, change: 'same', name: '김민준', charId: 'nano',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 28, quizRate: '96.5%', points: 3200, badge: '골드 독서왕 🥇' },
+    { rank: 2, change: 'down', diff: 1, name: '박도윤', charId: 'booki', grade: '초등 6학년 (마스터반)', classKey: 'master', books: 27, quizRate: '95.0%', points: 3050, badge: '실버 리더 🥈' },
+    { rank: 3, change: 'same', name: '이서윤', charId: 'toto',  grade: '초등 4학년 (슬기반)',   classKey: 'wise',   books: 21, quizRate: '93.0%', points: 2510, badge: '브론즈 리더 🥉' },
+    { rank: 4, change: 'down', diff: 1, name: '윤지유', charId: 'lumi',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 19, quizRate: '92.4%', points: 2320, badge: '열정 독서가 🌟' },
+    { rank: 5, change: 'same', name: '정하은', charId: 'mir',   grade: '중등 1학년 (심화반)',   classKey: 'master', books: 16, quizRate: '90.1%', points: 1990, badge: '탐구 독서가 🚀' },
+    { rank: 6, change: 'same', name: '강시우', charId: 'pico',  grade: '초등 2학년 (새싹반)',   classKey: 'sprout', books: 13, quizRate: '91.0%', points: 1680, badge: '새싹 독서가 🌱' },
+    { rank: 7, change: 'up',   diff: 2, name: '한지민', charId: 'jelly', grade: '초등 4학년 (슬기반)',   classKey: 'wise',   books: 12, quizRate: '88.5%', points: 1490, badge: '독서 수호자 🛡️' },
+    { rank: 8, change: 'same', name: '백승우', charId: 'chichi',grade: '초등 2학년 (새싹반)',   classKey: 'sprout', books: 10, quizRate: '90.5%', points: 1380, badge: '꿈나무 독서가 🌿' }
+  ]
+};
+
+// 현재 필터된 랭킹 리스트 가져오기
+function getFilteredAdminRankingList() {
+  var list = adminRankingDatabase[adminRankPeriod] || adminRankingDatabase.month;
+  if (adminRankClass !== 'all') {
+    list = list.filter(function(item) {
+      return item.classKey === adminRankClass;
+    });
+  }
+  // 순위 재부여
+  return list.map(function(item, idx) {
+    var copy = Object.assign({}, item);
+    copy.displayRank = idx + 1;
+    return copy;
   });
+}
+
+// 화면 랭킹 뷰 메인 렌더링
+function renderAdminRankingView() {
+  var list = getFilteredAdminRankingList();
+  
+  // 1. 상단 요약 통계 갱신
+  var topStudentEl = document.getElementById('adminRankTopStudent');
+  var totalBooksEl = document.getElementById('adminRankTotalBooks');
+  var avgQuizEl = document.getElementById('adminRankAvgQuiz');
+  var countLabel = document.getElementById('adminRankCountLabel');
+  var podiumTitle = document.getElementById('adminPodiumTitle');
+
+  var periodText = (adminRankPeriod === 'month') ? '2026년 9월' : '2026년 8월 결산';
+  var classLabelMap = { all: '원내 전체', master: '마스터반', wisdom: '지혜반', wise: '슬기반', sprout: '새싹반' };
+  var currentClassText = classLabelMap[adminRankClass] || '원내 전체';
+
+  if (podiumTitle) {
+    podiumTitle.textContent = periodText + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
+  }
+
+  if (list.length > 0) {
+    var top1 = list[0];
+    if (topStudentEl) topStudentEl.textContent = top1.name + ' (' + top1.grade.split('(')[0].trim() + ' · ' + top1.books + '권)';
+    
+    var totalBooks = list.reduce(function(acc, cur) { return acc + cur.books; }, 0);
+    if (totalBooksEl) totalBooksEl.textContent = '총 ' + totalBooks + '권 완독';
+
+    var totalRate = list.reduce(function(acc, cur) { return acc + parseFloat(cur.quizRate); }, 0);
+    var avgRate = (totalRate / list.length).toFixed(1);
+    if (avgQuizEl) avgQuizEl.textContent = avgRate + '% (우수)';
+  } else {
+    if (topStudentEl) topStudentEl.textContent = '-';
+    if (totalBooksEl) totalBooksEl.textContent = '0권';
+    if (avgQuizEl) avgQuizEl.textContent = '-';
+  }
+
+  if (countLabel) {
+    countLabel.textContent = '총 ' + list.length + '명 등재 (' + currentClassText + ')';
+  }
+
+  // 2. TOP 3 포디움 렌더링
+  var podiumStage = document.getElementById('adminPodiumStage');
+  if (podiumStage) {
+    if (list.length < 3) {
+      podiumStage.innerHTML = '<div class="text-center text-muted py-5" style="width:100%;"><i class="fa-solid fa-circle-info mr-1"></i>선택된 학급의 등재 인원이 3명 미만입니다. 전체 학급을 선택해주세요.</div>';
+    } else {
+      var top1 = list[0];
+      var top2 = list[1];
+      var top3 = list[2];
+
+      podiumStage.innerHTML = `
+        <!-- 2위 (은빛 단상, 좌측) -->
+        <div class="admin-podium-col rank-2">
+          <div class="podium-avatar-box">
+            <div class="podium-char-avatar" style="width: 58px; height: 58px; background: #f1f5f9; border: 2.5px solid #94a3b8;">
+              ${getCharacterSvg(top2.charId, 50)}
+            </div>
+            <div class="podium-rank-pill rank-2">2</div>
+          </div>
+          <div class="podium-student-name">${top2.name}</div>
+          <div class="podium-student-class">${top2.grade}</div>
+          <div class="podium-score-badge">
+            <i class="fa-solid fa-book-open mr-1"></i>${top2.books}권 · ${top2.points.toLocaleString()}P
+          </div>
+          <div class="podium-pedestal">
+            <div class="pedestal-num">2</div>
+            <div class="pedestal-label">🥈 2위</div>
+          </div>
+        </div>
+
+        <!-- 1위 (황금 단상, 가운데) -->
+        <div class="admin-podium-col rank-1">
+          <div class="podium-avatar-box">
+            <div class="podium-crown-icon">👑</div>
+            <div class="podium-char-avatar" style="width: 72px; height: 72px; background: #fffbeb; border: 3px solid #f59e0b;">
+              ${getCharacterSvg(top1.charId, 64)}
+            </div>
+            <div class="podium-rank-pill rank-1">1</div>
+          </div>
+          <div class="podium-student-name" style="font-size: 18px; color: #78350f;">${top1.name}</div>
+          <div class="podium-student-class" style="font-weight: 700;">${top1.grade}</div>
+          <div class="podium-score-badge">
+            <i class="fa-solid fa-crown mr-1" style="color:#d97706;"></i>${top1.books}권 · ${top1.points.toLocaleString()}P
+          </div>
+          <div class="podium-pedestal">
+            <div class="pedestal-num">1</div>
+            <div class="pedestal-label">🏆 이달의 독서왕</div>
+          </div>
+        </div>
+
+        <!-- 3위 (동빛 단상, 우측) -->
+        <div class="admin-podium-col rank-3">
+          <div class="podium-avatar-box">
+            <div class="podium-char-avatar" style="width: 54px; height: 54px; background: #fff7ed; border: 2.5px solid #ea580c;">
+              ${getCharacterSvg(top3.charId, 46)}
+            </div>
+            <div class="podium-rank-pill rank-3">3</div>
+          </div>
+          <div class="podium-student-name">${top3.name}</div>
+          <div class="podium-student-class">${top3.grade}</div>
+          <div class="podium-score-badge">
+            <i class="fa-solid fa-book-open mr-1"></i>${top3.books}권 · ${top3.points.toLocaleString()}P
+          </div>
+          <div class="podium-pedestal">
+            <div class="pedestal-num">3</div>
+            <div class="pedestal-label">🥉 3위</div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // 3. 전체 랭킹 테이블 렌더링
+  var tbody = document.getElementById('academyRankingTableBody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">등록된 랭킹 데이터가 없습니다.</td></tr>';
+    } else {
+      list.forEach(function(r) {
+        var tr = document.createElement('tr');
+        
+        // 순위 표시
+        var rankBadge = '';
+        if (r.displayRank === 1) rankBadge = '<span class="badge badge-warning font-weight-bold" style="font-size:13.5px; padding:4px 9px;">🥇 1위</span>';
+        else if (r.displayRank === 2) rankBadge = '<span class="badge badge-secondary font-weight-bold" style="font-size:13.5px; padding:4px 9px;">🥈 2위</span>';
+        else if (r.displayRank === 3) rankBadge = '<span class="badge font-weight-bold" style="background:#ea580c; color:#fff; font-size:13.5px; padding:4px 9px;">🥉 3위</span>';
+        else rankBadge = '<span class="font-weight-bold" style="font-size:14.5px; color:#475569;">' + r.displayRank + '위</span>';
+
+        // 순위 변동 표시
+        var changeHtml = '<span class="text-muted font-weight-bold" style="font-size:12px;">―</span>';
+        if (r.change === 'up') {
+          changeHtml = '<span class="text-danger font-weight-bold" style="font-size:12px;"><i class="fa-solid fa-arrow-up mr-1"></i>' + (r.diff || 1) + '</span>';
+        } else if (r.change === 'down') {
+          changeHtml = '<span class="text-primary font-weight-bold" style="font-size:12px;"><i class="fa-solid fa-arrow-down mr-1"></i>' + (r.diff || 1) + '</span>';
+        }
+
+        tr.innerHTML = `
+          <td class="text-center">${rankBadge}</td>
+          <td class="text-center">${changeHtml}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: #f8fafc; border: 1.5px solid #e2e8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                ${getCharacterSvg(r.charId, 32)}
+              </div>
+              <div>
+                <strong style="color: var(--text-main); font-size: 14.5px;">${r.name}</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">파트너 나노 프렌즈</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-center font-weight-bold text-secondary" style="font-size: 13px;">${r.grade}</td>
+          <td class="text-center font-weight-bold" style="font-size: 14px; color: #1e293b;">
+            <i class="fa-solid fa-book-bookmark text-warning mr-1"></i>${r.books}권
+          </td>
+          <td class="text-center font-weight-bold text-success" style="font-size: 14px;">
+            ${r.quizRate}
+          </td>
+          <td class="text-right font-weight-bold" style="font-size: 15px; color: #b45309; padding-right: 24px;">
+            ${r.points.toLocaleString()} P
+          </td>
+          <td class="text-center">
+            <span class="badge-soft badge-soft-warn font-weight-bold px-3 py-1" style="font-size: 12px; border-radius: 12px;">
+              ${r.badge}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+}
+
+// 기간 필터 전환 핸들러
+function switchAdminRankPeriod(period) {
+  adminRankPeriod = period;
+  var btnThis = document.getElementById('adminRankBtnThisMonth');
+  var btnLast = document.getElementById('adminRankBtnLastMonth');
+  if (period === 'month') {
+    if (btnThis) { btnThis.className = 'btn btn-dark font-weight-bold'; }
+    if (btnLast) { btnLast.className = 'btn btn-outline-secondary font-weight-bold'; }
+  } else {
+    if (btnThis) { btnThis.className = 'btn btn-outline-secondary font-weight-bold'; }
+    if (btnLast) { btnLast.className = 'btn btn-dark font-weight-bold'; }
+  }
+  renderAdminRankingView();
+}
+
+// 학급 필터 전환 핸들러
+function switchAdminRankClass(cls) {
+  adminRankClass = cls;
+  var container = document.getElementById('adminRankClassGroup');
+  if (container) {
+    var buttons = container.querySelectorAll('button');
+    buttons.forEach(function(b) {
+      if (b.getAttribute('data-class') === cls) {
+        b.className = 'btn btn-primary font-weight-bold active';
+      } else {
+        b.className = 'btn btn-outline-secondary font-weight-bold';
+      }
+    });
+  }
+  renderAdminRankingView();
+}
+
+// A4 포스터용 HTML 생성 렌더러
+function renderAdminRankingPoster(container) {
+  if (!container) return;
+  var list = getFilteredAdminRankingList();
+  
+  var periodLabel = (adminRankPeriod === 'month') ? '2026년 9월' : '2026년 8월 결산';
+  var classLabelMap = { all: '원내 전체 명예의 전당', master: '초등 마스터반', wisdom: '초등 지혜반', wise: '초등 슬기반', sprout: '초등 새싹반' };
+  var classLabel = classLabelMap[adminRankClass] || '원내 전체 명예의 전당';
+
+  var top1 = list[0] || { name: '박도윤', grade: '초등 6학년 (마스터반)', books: 31, points: 3410, charId: 'booki' };
+  var top2 = list[1] || { name: '김민준', grade: '초등 5학년 (지혜반)', books: 24, points: 2850, charId: 'nano' };
+  var top3 = list[2] || { name: '윤지유', grade: '초등 5학년 (지혜반)', books: 22, points: 2640, charId: 'lumi' };
+
+  // 4~8위 리더 목록
+  var leaders = list.slice(3, 8);
+  var leadersHtml = '';
+  leaders.forEach(function(r) {
+    leadersHtml += `
+      <tr>
+        <td class="text-center font-weight-bold" style="color: #475569; width: 48px;">${r.displayRank}위</td>
+        <td style="width: 44px; text-align: center;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #f8fafc; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center;">
+            ${getCharacterSvg(r.charId, 24)}
+          </div>
+        </td>
+        <td><strong style="color: #0f172a; font-size: 12px;">${r.name}</strong></td>
+        <td class="text-center" style="color: #64748b; font-size: 11px;">${r.grade}</td>
+        <td class="text-center font-weight-bold" style="color: #1e293b; font-size: 11px;">${r.books}권</td>
+        <td class="text-center font-weight-bold text-success" style="font-size: 11px;">${r.quizRate}</td>
+        <td class="text-right font-weight-bold" style="color: #b45309; font-size: 12px; padding-right: 12px;">${r.points.toLocaleString()} P</td>
+        <td class="text-center" style="font-size: 10.5px; font-weight: 700; color: #b45309;">${r.badge}</td>
+      </tr>
+    `;
+  });
+
+  var html = `
+    <div class="a4-poster-sheet">
+      <!-- 4 모서리 골드 코너 장식 -->
+      <div class="poster-corner-deco poster-corner-tl"></div>
+      <div class="poster-corner-deco poster-corner-tr"></div>
+      <div class="poster-corner-deco poster-corner-bl"></div>
+      <div class="poster-corner-deco poster-corner-br"></div>
+
+      <!-- 포스터 상단 헤더 -->
+      <div>
+        <div class="text-center">
+          <div class="poster-header-badge">
+            <i class="fa-solid fa-award"></i> 판교 알파 나노 독서 아카데미 공식 인증
+          </div>
+          <div class="poster-main-title">
+            🏆 ${periodLabel} 독서 명예의 전당 🏆
+          </div>
+          <div class="poster-sub-title">
+            NANO READING HALL OF FAME · ${classLabel}<br>
+            <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">"책 속에서 더 큰 세상을 만나고 스스로 꿈을 키워가는 자랑스러운 나노 리더"</span>
+          </div>
+        </div>
+
+        <!-- TOP 3 포디움 (A4 규격 최적화) -->
+        <div class="poster-podium-stage">
+          <!-- 2위 (은빛) -->
+          <div class="poster-podium-col rank-2">
+            <div class="podium-avatar-box mb-1">
+              <div class="podium-char-avatar" style="width: 56px; height: 56px; background: #f1f5f9; border: 2px solid #94a3b8;">
+                ${getCharacterSvg(top2.charId, 48)}
+              </div>
+              <div class="podium-rank-pill rank-2" style="width: 22px; height: 22px; font-size: 11px; bottom: -4px;">2</div>
+            </div>
+            <div style="font-size: 14px; font-weight: 900; color: #1e293b;">${top2.name}</div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600;">${top2.grade}</div>
+            <div style="font-size: 11px; font-weight: 800; color: #0284c7; margin-bottom: 4px;">완독 ${top2.books}권 · ${top2.points.toLocaleString()}P</div>
+            <div class="podium-pedestal" style="height: 70px; background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%); border: 1.5px solid #94a3b8; color: #475569;">
+              <div style="font-size: 24px; font-weight: 900; line-height: 1;">2</div>
+              <div style="font-size: 10px; font-weight: 800;">🥈 2위 리더</div>
+            </div>
+          </div>
+
+          <!-- 1위 (황금 챔피언) -->
+          <div class="poster-podium-col rank-1">
+            <div class="podium-avatar-box mb-1">
+              <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 20px;">👑</div>
+              <div class="podium-char-avatar" style="width: 68px; height: 68px; background: #fffbeb; border: 2.5px solid #f59e0b;">
+                ${getCharacterSvg(top1.charId, 60)}
+              </div>
+              <div class="podium-rank-pill rank-1" style="width: 24px; height: 24px; font-size: 12px; bottom: -4px;">1</div>
+            </div>
+            <div style="font-size: 16px; font-weight: 900; color: #78350f;">${top1.name}</div>
+            <div style="font-size: 11.5px; color: #92400e; font-weight: 700;">${top1.grade}</div>
+            <div style="font-size: 11.5px; font-weight: 900; color: #b45309; margin-bottom: 4px;">완독 ${top1.books}권 · ${top1.points.toLocaleString()}P</div>
+            <div class="podium-pedestal" style="height: 94px; background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; color: #b45309;">
+              <div style="font-size: 28px; font-weight: 900; line-height: 1;">1</div>
+              <div style="font-size: 11px; font-weight: 900;">🏆 이달의 독서왕</div>
+            </div>
+          </div>
+
+          <!-- 3위 (동빛) -->
+          <div class="poster-podium-col rank-3">
+            <div class="podium-avatar-box mb-1">
+              <div class="podium-char-avatar" style="width: 52px; height: 52px; background: #fff7ed; border: 2px solid #ea580c;">
+                ${getCharacterSvg(top3.charId, 44)}
+              </div>
+              <div class="podium-rank-pill rank-3" style="width: 22px; height: 22px; font-size: 11px; bottom: -4px;">3</div>
+            </div>
+            <div style="font-size: 13.5px; font-weight: 900; color: #1e293b;">${top3.name}</div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600;">${top3.grade}</div>
+            <div style="font-size: 11px; font-weight: 800; color: #c2410c; margin-bottom: 4px;">완독 ${top3.books}권 · ${top3.points.toLocaleString()}P</div>
+            <div class="podium-pedestal" style="height: 56px; background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%); border: 1.5px solid #ea580c; color: #9a3412;">
+              <div style="font-size: 22px; font-weight: 900; line-height: 1;">3</div>
+              <div style="font-size: 10px; font-weight: 800;">🥉 3위 리더</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4~8위 우수 독서 리더 명단 -->
+        <div style="font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+          <span><i class="fa-solid fa-star text-warning mr-1"></i>우수 독서 리더 (HONOR LEADERS)</span>
+          <span style="font-size: 10.5px; color: #94a3b8;">원내 상위 우수 원생 선발</span>
+        </div>
+        <table class="poster-leaders-table">
+          <thead>
+            <tr>
+              <th style="width: 48px;">순위</th>
+              <th style="width: 44px;">파트너</th>
+              <th>성명</th>
+              <th>학년 / 소속반</th>
+              <th>완독 권수</th>
+              <th>북퀴즈 정답률</th>
+              <th style="text-align: right; padding-right: 12px;">누적 포인트</th>
+              <th>수여 칭호</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${leadersHtml || '<tr><td colspan="8" class="text-center py-2 text-muted">우수 리더 데이터가 없습니다.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 포스터 하단 축하문 & 공식 원장 직인 -->
+      <div class="poster-footer">
+        <div style="max-width: 440px;">
+          <div style="font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 3px;">
+            [ 축하 및 격려의 글 ]
+          </div>
+          <div style="font-size: 10.5px; color: #475569; line-height: 1.45;">
+            스스로 책을 펼치고 지혜로운 독서 습관을 실천하여 명예의 전당에 오른 원생 여러분께 진심 어린 축하와 격려를 보냅니다. 앞으로도 더 넓은 세상을 향해 즐겁게 책과 동행하길 응원합니다.
+          </div>
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 6px;">
+            발행일자: 2026년 09월 21일
+          </div>
+        </div>
+
+        <!-- 원장 직인 낙관 도장 -->
+        <div class="d-flex align-items-center gap-2">
+          <div style="text-align: right;">
+            <div style="font-size: 10px; color: #64748b; font-weight: 700;">판교 알파 나노 독서 아카데미</div>
+            <div style="font-size: 15px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">원 장 &nbsp; 나 &nbsp; 노 &nbsp; 쌤</div>
+          </div>
+          <div class="poster-official-seal">
+            <span>나노독서</span>
+            <span>원장직인</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+// A4 포스터 미리보기 모달 열기
+function openPosterPreviewModal() {
+  var target = document.getElementById('posterPreviewTarget');
+  if (target) {
+    renderAdminRankingPoster(target);
+  }
+  $('#rankingPosterPreviewModal').modal('show');
+}
+
+// A4 포스터 브라우저 인쇄 실행
+function printRankingPoster() {
+  var printArea = document.getElementById('rankingPosterPrintArea');
+  if (!printArea) return;
+  
+  // 인쇄 전용 영역에 최신 포스터 렌더링
+  renderAdminRankingPoster(printArea);
+
+  // 인쇄 클래스 활성화
+  document.body.classList.add('is-printing-poster');
+
+  var cleanup = function() {
+    document.body.classList.remove('is-printing-poster');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+
+  // 브라우저 인쇄 다이얼로그 호출
+  setTimeout(function() {
+    window.print();
+    // 안전 fallback
+    setTimeout(cleanup, 2000);
+  }, 150);
+}
+
+// 모달 내에서 바로 인쇄 실행
+function printRankingPosterFromModal() {
+  $('#rankingPosterPreviewModal').modal('hide');
+  setTimeout(function() {
+    printRankingPoster();
+  }, 400);
+}
+
+// 기존 함수와의 하위 호환성 유지
+function renderAcademyRankingTable() {
+  renderAdminRankingView();
 }
 
 // ==============================================================
@@ -6188,7 +6772,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderLearningTable();
   renderAssignmentTable();
   renderAcademyDispatchTable();
-  renderAcademyRankingTable();
+  renderAdminRankingView();
   renderAcademyPaymentTable();
   selectPlanTier('standard');
 });
