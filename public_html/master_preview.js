@@ -3723,12 +3723,12 @@ function openBookStatsModal(bookId, statType) {
 // ==========================================
 // 도서 등록 및 중복 감지 로직 (신규 서지 스펙)
 // ==========================================
-let editingBookSheetAddFile = { name: "나노_독서학습시트.pdf", size: "1.2 MB" };
-let originalEditingBookIdForAdd = null;
-let pendingDuplicateSaveBook = null;
+var editingBookSheetAddFile = { name: "나노_독서학습시트.pdf", size: "1.2 MB" };
+var originalEditingBookIdForAdd = null;
+var pendingDuplicateSaveBook = null;
 
 // 생각담기 제시문 세트
-const THINK_PROMPTS_NOVEL = [
+var THINK_PROMPTS_NOVEL = [
   "주인공이 옆에 있다면 하고 싶은 이야기를 적어주세요.",
   "이 책을 읽고 가장 많이 떠오른 내 주변의 사람은 누구이며 그 이유는 무엇인가요?",
   "이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는 지 상상해서 이야기를 만들어주세요.",
@@ -3738,33 +3738,93 @@ const THINK_PROMPTS_NOVEL = [
   "이 책을 친구에게 추천한다면, 뭐라고 소개하고 싶은가요?"
 ];
 
-const THINK_PROMPTS_NONFICTION = [
+var THINK_PROMPTS_NONFICTION = [
   "이 책을 읽고 생각난 사람은 누구이며 이유는 무엇인가요?",
   "이 책에서 가장 기억에 남은 내용은 무엇인가요?",
   "책을 읽고 새롭게 알게된 내용은 무엇인가요?",
   "이 책을 추천한다면 어떻게 설명하고 싶나요?"
 ];
 
-function updateThinkPresets(cat2) {
+// 카테고리 1(소설/인물이야기 vs 비문학/정보글)에 따라 생각담기 제시문 동적 갱신
+function updateThinkPresets(cat1) {
   const select = document.getElementById("mbAddThinkPresetSelect");
   if (!select) return;
 
-  const isNonfiction = cat2 === "비문학";
+  const isNonfiction = (cat1 === "비문학/정보글" || cat1 === "비문학" || cat1 === "C");
   const prompts = isNonfiction ? THINK_PROMPTS_NONFICTION : THINK_PROMPTS_NOVEL;
 
   select.innerHTML = prompts.map((p, i) => `
     <option value="${p}">${i + 1}. ${p}</option>
   `).join("");
 
-  // 기본적으로 첫 번째 제시문을 textarea에 채움
   const textarea = document.getElementById("mbAddThinkInsert");
   if (textarea && prompts.length > 0) {
     textarea.value = prompts[0];
   }
 }
 
+// 생각 담기 모드 전환 (제시문 / 직접입력 / 없음)
+function switchThinkMode(mode) {
+  var presetWrap = document.getElementById("thinkModePresetWrap");
+  var customWrap = document.getElementById("thinkModeCustomWrap");
+  var noneNotice = document.getElementById("thinkModeNoneNotice");
+  var btnPreset = document.getElementById("btnThinkPromptPreset");
+  var btnCustom = document.getElementById("btnThinkPromptCustom");
+  var btnNone = document.getElementById("btnThinkPromptNone");
+
+  [btnPreset, btnCustom, btnNone].forEach(function(b) {
+    if (b) b.classList.remove("active");
+  });
+
+  if (mode === "preset") {
+    if (btnPreset) btnPreset.classList.add("active");
+    if (presetWrap) presetWrap.style.display = "block";
+    if (customWrap) customWrap.style.display = "block";
+    if (noneNotice) noneNotice.style.display = "none";
+    var sel = document.getElementById("mbAddThinkPresetSelect");
+    if (sel && sel.value) {
+      applyThinkPresetToInput(sel.value);
+    }
+  } else if (mode === "custom") {
+    if (btnCustom) btnCustom.classList.add("active");
+    if (presetWrap) presetWrap.style.display = "none";
+    if (customWrap) customWrap.style.display = "block";
+    if (noneNotice) noneNotice.style.display = "none";
+  } else if (mode === "none") {
+    if (btnNone) btnNone.classList.add("active");
+    if (presetWrap) presetWrap.style.display = "none";
+    if (customWrap) customWrap.style.display = "none";
+    if (noneNotice) noneNotice.style.display = "block";
+    var textarea = document.getElementById("mbAddThinkInsert");
+    if (textarea) textarea.value = "";
+  }
+}
+
+// 제시문 선택 시 textarea에 반영
+function applyThinkPresetToInput(val) {
+  var textarea = document.getElementById("mbAddThinkInsert");
+  if (textarea) {
+    textarea.value = val;
+  }
+}
+
+function onCategory1Changed(cat1) {
+  updateThinkPresets(cat1);
+  if (!originalEditingBookIdForAdd) {
+    generateNewBookId();
+  }
+}
+
 function onCategory2Changed(cat2) {
-  updateThinkPresets(cat2);
+  if (!originalEditingBookIdForAdd) {
+    generateNewBookId();
+  }
+}
+
+function onGradeChanged(grade) {
+  if (!originalEditingBookIdForAdd) {
+    generateNewBookId();
+  }
 }
 
 function applyThinkPresetToInput(val) {
@@ -3772,66 +3832,187 @@ function applyThinkPresetToInput(val) {
   if (textarea) textarea.value = val;
 }
 
-function switchThinkMode(mode) {
-  const btnPreset = document.getElementById("btnThinkPromptPreset");
-  const btnCustom = document.getElementById("btnThinkPromptCustom");
-  const btnNone = document.getElementById("btnThinkPromptNone");
-  const presetWrap = document.getElementById("thinkModePresetWrap");
-  const customWrap = document.getElementById("thinkModeCustomWrap");
-  const noneNotice = document.getElementById("thinkModeNoneNotice");
+// -------------------------------------------------------------
+// 도서 관리 코드(ID) 자동 생성 알고리즘 (규칙: [Cat2][Cat1][Grade][5자리순번])
+// 예: 외서(F) + 소설(A) + 1학년(1) + 첫번째 => FA100001
+// 예: 국내서(K) + 인물이야기(B) + 2학년(2) + 두번째 => KB200002
+// -------------------------------------------------------------
+function getBookCodeComponents(isAcademy = false) {
+  const cat1El = document.getElementById(isAcademy ? "abEditCat1" : "mbAddCat1");
+  const cat2El = document.getElementById(isAcademy ? "abEditCat2" : "mbAddCat2");
+  const gradeEl = document.getElementById(isAcademy ? "abEditGrade" : "mbAddGrade");
 
-  btnPreset.classList.remove("active");
-  btnCustom.classList.remove("active");
-  btnNone.classList.remove("active");
+  const cat1Val = cat1El ? cat1El.value : "소설";
+  const cat2Val = cat2El ? cat2El.value : "국내서";
+  const gradeVal = gradeEl ? gradeEl.value : "초등 1학년";
 
-  if (mode === "preset") {
-    btnPreset.classList.add("active");
-    presetWrap.style.display = "block";
-    customWrap.style.display = "block";
-    noneNotice.style.display = "none";
-    const select = document.getElementById("mbAddThinkPresetSelect");
-    if (select) applyThinkPresetToInput(select.value);
-  } else if (mode === "custom") {
-    btnCustom.classList.add("active");
-    presetWrap.style.display = "none";
-    customWrap.style.display = "block";
-    noneNotice.style.display = "none";
-  } else {
-    btnNone.classList.add("active");
-    presetWrap.style.display = "none";
-    customWrap.style.display = "none";
-    noneNotice.style.display = "block";
-    const textarea = document.getElementById("mbAddThinkInsert");
-    if (textarea) textarea.value = "";
+  // 1. 카테고리 2 코드 (K: 국내서, F: 외서, N: 구분 없음)
+  let c2Code = "K";
+  if (cat2Val.includes("외서") || cat2Val === "F") c2Code = "F";
+  else if (cat2Val.includes("구분") || cat2Val === "N") c2Code = "N";
+
+  // 2. 카테고리 1 코드 (A: 소설, B: 인물 이야기, C: 비문학/정보글)
+  let c1Code = "A";
+  if (cat1Val.includes("인물") || cat1Val.includes("위인") || cat1Val === "B") c1Code = "B";
+  else if (cat1Val.includes("비문학") || cat1Val.includes("정보") || cat1Val === "C") c1Code = "C";
+
+  // 3. 학년 코드 1자리 (초1~초6: 1~6, 중1~중3: 7~9)
+  let gCode = "1";
+  if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
+  else if (gradeVal.includes("2학년") && !gradeVal.includes("중등")) gCode = "2";
+  else if (gradeVal.includes("3학년") && !gradeVal.includes("중등")) gCode = "3";
+  else if (gradeVal.includes("4학년")) gCode = "4";
+  else if (gradeVal.includes("5학년")) gCode = "5";
+  else if (gradeVal.includes("6학년")) gCode = "6";
+  else if (gradeVal.includes("중등 1학년") || gradeVal.includes("중1")) gCode = "7";
+  else if (gradeVal.includes("중등 2학년") || gradeVal.includes("중2")) gCode = "8";
+  else if (gradeVal.includes("중등 3학년") || gradeVal.includes("중3")) gCode = "9";
+  else {
+    const m = gradeVal.match(/\d/);
+    if (m) gCode = m[0];
   }
-}
 
-function toggleSingleBookCheckbox(isSingle) {
-  const seriesInput = document.getElementById("mbAddSeries");
-  if (seriesInput) {
-    seriesInput.disabled = isSingle;
-    if (isSingle) {
-      seriesInput.value = "";
-      seriesInput.placeholder = "단권으로 지정되었습니다.";
-    } else {
-      seriesInput.placeholder = "예: 해리포터 시리즈, 한국사 편지";
-    }
-  }
+  return { c2Code, c1Code, gCode, prefix: `${c2Code}${c1Code}${gCode}` };
 }
 
 function generateNewBookId() {
-  let maxNum = 0;
+  const { prefix } = getBookCodeComponents(false);
+  let maxSeq = 0;
+
+  // masterBooks 목록에서 동일 prefix로 시작하는 8자리 ID 순번 계산
   masterBooks.forEach(b => {
-    if (b.id && b.id.startsWith("MB-")) {
-      const num = parseInt(b.id.replace("MB-", ""), 10);
-      if (!isNaN(num) && num > maxNum) maxNum = num;
+    if (b.id && b.id.startsWith(prefix)) {
+      const numPart = b.id.slice(prefix.length);
+      const num = parseInt(numPart, 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
     }
   });
-  const newNum = String(maxNum + 1).padStart(3, "0");
-  const newId = `MB-${newNum}`;
+
+  const nextSeq = String(maxSeq + 1).padStart(5, "0");
+  const newId = `${prefix}${nextSeq}`;
   const idInput = document.getElementById("mbAddId");
   if (idInput) idInput.value = newId;
   showMasterToast(`신규 도서 관리 코드 [${newId}]가 자동 발급되었습니다.`);
+  return newId;
+}
+
+// -------------------------------------------------------------
+// [서비스 운영 관리 - 테마 관리]와 100% 일치하는 도서 주제 분류 태그 드롭박스 동적 렌더링
+// -------------------------------------------------------------
+function renderThemeSelectForMasterBook(selectedTag = "") {
+  const select = document.getElementById("mbAddThemeTagSelect");
+  if (!select) return;
+
+  const currentThemes = (typeof themeList !== "undefined" && themeList.length > 0)
+    ? themeList
+    : [
+        { tag: "#이달의나노북클럽", title: "이달의 나노 북클럽" },
+        { tag: "#교과연계한국사", title: "초등 교과연계 역사 탐구" },
+        { tag: "#미래과학환경", title: "미래를 여는 과학 & 환경" },
+        { tag: "#인문문학여행", title: "마음을 키우는 인문 문학 여행" }
+      ];
+
+  const targetVal = Array.isArray(selectedTag) ? (selectedTag[0] || "") : selectedTag;
+
+  select.innerHTML = currentThemes.map(t => {
+    const tagVal = t.tag || `#${t.title.replace(/\s+/g, '')}`;
+    const isSelected = (targetVal && targetVal === tagVal) || (!targetVal && tagVal === "#이달의나노북클럽");
+    const label = t.title ? `${tagVal} (${t.title})` : tagVal;
+    return `<option value="${tagVal}" ${isSelected ? 'selected' : ''}>${label}</option>`;
+  }).join("");
+}
+
+// -------------------------------------------------------------
+// 세부 태그 동적 입력칸 로직 (기본 2칸, 최대 5칸, +버튼 추가 및 삭제)
+// -------------------------------------------------------------
+let masterDetailTagsState = ["", ""];
+
+function initMasterDetailTags(tagStringOrArray) {
+  if (Array.isArray(tagStringOrArray)) {
+    masterDetailTagsState = tagStringOrArray.filter(t => t && t.trim() !== "");
+  } else if (typeof tagStringOrArray === "string" && tagStringOrArray.trim() !== "") {
+    const raw = tagStringOrArray.split(/[\s,#]+/).map(t => t.trim()).filter(Boolean);
+    masterDetailTagsState = raw;
+  } else {
+    masterDetailTagsState = ["", ""];
+  }
+
+  while (masterDetailTagsState.length < 2) {
+    masterDetailTagsState.push("");
+  }
+  if (masterDetailTagsState.length > 5) {
+    masterDetailTagsState = masterDetailTagsState.slice(0, 5);
+  }
+  renderMasterDetailTagSlots();
+}
+
+function renderMasterDetailTagSlots() {
+  const container = document.getElementById("mbDetailTagsContainer");
+  const countEl = document.getElementById("mbDetailTagCount");
+  const addBtn = document.getElementById("btnAddDetailTagSlot");
+  if (!container) return;
+
+  if (countEl) countEl.innerText = masterDetailTagsState.length;
+  if (addBtn) addBtn.disabled = masterDetailTagsState.length >= 5;
+
+  const placeholders = ["예: 문해력향상", "예: 세계명작", "예: 창의융합", "예: 감정표현", "예: 성장스토리"];
+
+  container.innerHTML = masterDetailTagsState.map((val, idx) => {
+    const canRemove = masterDetailTagsState.length > 2;
+    return `
+      <div class="input-group input-group-sm mb-1.5" style="border-radius: 6px; overflow: hidden;">
+        <div class="input-group-prepend">
+          <span class="input-group-text bg-white font-weight-bold text-muted" style="font-size: 12px; border-color: var(--border-medium); min-width: 82px;">
+            <i class="fa-solid fa-hashtag text-warning mr-1"></i>태그 ${idx + 1}
+          </span>
+        </div>
+        <input type="text" class="form-control form-control-beige master-detail-tag-input" 
+               value="${val.replace(/^#/, '')}" 
+               placeholder="${placeholders[idx] || '태그 직접 입력'}" 
+               oninput="masterDetailTagsState[${idx}] = this.value"
+               style="font-size: 12.5px;">
+        ${canRemove ? `
+          <div class="input-group-append">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeMasterDetailTagSlot(${idx})" title="이 태그 칸 삭제" style="border-color: var(--border-medium); font-size: 11px; padding: 0 10px;">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("");
+}
+
+function addMasterDetailTagSlot() {
+  if (masterDetailTagsState.length >= 5) {
+    showMasterToast("세부 태그는 최대 5개까지 등록할 수 있습니다.");
+    return;
+  }
+  const inputs = document.querySelectorAll(".master-detail-tag-input");
+  inputs.forEach((inp, i) => { if (masterDetailTagsState[i] !== undefined) masterDetailTagsState[i] = inp.value; });
+  masterDetailTagsState.push("");
+  renderMasterDetailTagSlots();
+}
+
+function removeMasterDetailTagSlot(idx) {
+  if (masterDetailTagsState.length <= 2) {
+    showMasterToast("세부 태그 칸은 최소 2개 이상 유지되어야 합니다.");
+    return;
+  }
+  const inputs = document.querySelectorAll(".master-detail-tag-input");
+  inputs.forEach((inp, i) => { if (masterDetailTagsState[i] !== undefined) masterDetailTagsState[i] = inp.value; });
+  masterDetailTagsState.splice(idx, 1);
+  renderMasterDetailTagSlots();
+}
+
+function getMasterDetailTagsValue() {
+  const inputs = document.querySelectorAll(".master-detail-tag-input");
+  const tags = [];
+  inputs.forEach(inp => {
+    const v = inp.value.trim().replace(/^#/, "");
+    if (v) tags.push(`#${v}`);
+  });
+  return tags.join(" ");
 }
 
 function switchAddCoverMode(mode) {
@@ -3914,8 +4095,8 @@ function fetchMasterBookByIsbnForAdd() {
         author: "앙투안 드 생텍쥐페리",
         publisher: "열린책들",
         grade: "초등 5학년",
-        cat1: "외서",
-        cat2: "소설",
+        cat1: "소설",
+        cat2: "외서",
         cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80"
       },
       "9788936434120": {
@@ -3923,8 +4104,8 @@ function fetchMasterBookByIsbnForAdd() {
         author: "손원평",
         publisher: "창비",
         grade: "중등 2학년",
-        cat1: "국내서",
-        cat2: "소설",
+        cat1: "소설",
+        cat2: "국내서",
         cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=150&q=80"
       }
     };
@@ -3934,8 +4115,8 @@ function fetchMasterBookByIsbnForAdd() {
       author: "국립중앙도서관 수록 작가",
       publisher: "나노교육출판",
       grade: "초등 5학년",
-      cat1: "국내서",
-      cat2: "소설",
+      cat1: "소설",
+      cat2: "국내서",
       cover: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=150&q=80"
     };
 
@@ -3945,6 +4126,7 @@ function fetchMasterBookByIsbnForAdd() {
     document.getElementById("mbAddGrade").value = data.grade;
     document.getElementById("mbAddCat1").value = data.cat1;
     document.getElementById("mbAddCat2").value = data.cat2;
+    onCategory1Changed(data.cat1);
     onCategory2Changed(data.cat2);
     document.getElementById("mbAddCover").value = data.cover;
     updateAddCoverPreview(data.cover);
@@ -3972,6 +4154,21 @@ function checkDuplicateBook(title, excludeId = null) {
   }) || null;
 }
 
+// 단권 체크박스 토글 함수
+function toggleSingleBookCheckbox(isSingle) {
+  var seriesInput = document.getElementById("mbAddSeries");
+  if (!seriesInput) return;
+  if (isSingle) {
+    seriesInput.value = "단권";
+    seriesInput.disabled = true;
+    seriesInput.style.backgroundColor = "#f0ece4";
+  } else {
+    if (seriesInput.value === "단권") seriesInput.value = "";
+    seriesInput.disabled = false;
+    seriesInput.style.backgroundColor = "";
+  }
+}
+
 // 신규 마스터 도서 등록 / 편집 모달 열기
 function openMasterBookAddModal(id = null) {
   const isNew = !id;
@@ -3984,6 +4181,15 @@ function openMasterBookAddModal(id = null) {
       ? '<i class="fa-solid fa-book-medical mr-2 text-warning"></i>신규 마스터 도서 등록'
       : `<i class="fa-solid fa-pen-to-square mr-2 text-warning"></i>마스터 도서 서지 정보 편집 <span class="badge-soft badge-soft-neutral ml-1" style="font-size: 11px;">${book.id}</span>`;
   }
+
+  // 카테고리 1, 카테고리 2 세팅
+  const cat1 = (book && book.cat1) ? book.cat1 : "소설";
+  const cat2 = (book && book.cat2) ? book.cat2 : "국내서";
+  const grade = (book && book.grade) ? book.grade : "초등 5학년";
+
+  document.getElementById("mbAddCat1").value = cat1;
+  document.getElementById("mbAddCat2").value = cat2;
+  document.getElementById("mbAddGrade").value = grade;
 
   // ID 세팅
   if (isNew) {
@@ -4014,22 +4220,19 @@ function openMasterBookAddModal(id = null) {
   toggleSingleBookCheckbox(isSingle);
   document.getElementById("mbAddSeries").value = (book && book.series && book.series !== "단권") ? book.series : "";
 
-  // 카테고리 1, 카테고리 2
-  const cat1 = (book && book.cat1) ? book.cat1 : "국내서";
-  const cat2 = (book && book.cat2) ? book.cat2 : "소설";
-  document.getElementById("mbAddCat1").value = cat1;
-  document.getElementById("mbAddCat2").value = cat2;
+  // 주제 분류 태그 (드롭박스 - 테마 관리 연동) 렌더링
+  const selectedThemeTag = (book && book.themeTag) ? book.themeTag : ((book && Array.isArray(book.tags) && book.tags[0]) ? book.tags[0] : "#이달의나노북클럽");
+  renderThemeSelectForMasterBook(selectedThemeTag);
 
-  // 권장 학년 (초1~중3)
-  document.getElementById("mbAddGrade").value = (book && book.grade) ? book.grade : "초등 5학년";
+  // 세부 태그 동적 입력 슬롯 초기화
+  initMasterDetailTags((book && book.detailTag) ? book.detailTag : "");
 
-  // 세부 태그, 어워드, 생각꺼내기
-  document.getElementById("mbAddDetailTag").value = (book && book.detailTag) ? book.detailTag : "";
+  // 어워드, 생각꺼내기
   document.getElementById("mbAddAwards").value = (book && book.awards) ? book.awards : "";
   document.getElementById("mbAddThinkExtract").value = (book && book.thinkExtract) ? book.thinkExtract : "";
 
   // 생각 담기
-  updateThinkPresets(cat2);
+  updateThinkPresets(cat1);
   if (book && book.thinkInsert) {
     document.getElementById("mbAddThinkInsert").value = book.thinkInsert;
     switchThinkMode("custom");
@@ -4061,22 +4264,24 @@ function handleSaveMasterBookOnly(e) {
   const cat1 = document.getElementById("mbAddCat1").value;
   const cat2 = document.getElementById("mbAddCat2").value;
   const grade = document.getElementById("mbAddGrade").value;
-  const detailTag = document.getElementById("mbAddDetailTag").value.trim();
+  const detailTag = getMasterDetailTagsValue();
   const awards = document.getElementById("mbAddAwards").value.trim();
   const thinkExtract = document.getElementById("mbAddThinkExtract").value.trim();
   const thinkInsert = document.getElementById("mbAddThinkInsert").value.trim();
   let cover = document.getElementById("mbAddCover").value.trim();
 
-  // 선택된 주제 태그들 수집
-  const tagCheckboxes = document.querySelectorAll('input[name="mbAddTags"]:checked');
-  const tags = Array.from(tagCheckboxes).map(cb => cb.value);
+  // 선택된 주제 분류 태그 수집 (드롭박스)
+  const themeTagEl = document.getElementById("mbAddThemeTagSelect");
+  const themeTag = themeTagEl ? themeTagEl.value : "#이달의나노북클럽";
+  const tags = [themeTag];
 
   if (!cover) {
     cover = "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80";
   }
 
+  const isNonfiction = (cat1 === "비문학/정보글" || cat1 === "비문학" || cat1 === "C");
   const bookData = {
-    id: id || `MB-00${masterBooks.length + 1}`,
+    id: id || generateNewBookId(),
     isbn: isbn,
     isPublic: isPublic,
     title: title,
@@ -4086,9 +4291,10 @@ function handleSaveMasterBookOnly(e) {
     publisher: publisher,
     cat1: cat1,
     cat2: cat2,
-    category: cat2 === "비문학" ? "과학" : "문학",
+    category: isNonfiction ? "비문학" : "문학",
     grade: grade,
-    tags: tags.length > 0 ? tags : ["문학"],
+    themeTag: themeTag,
+    tags: tags,
     detailTag: detailTag,
     awards: awards,
     thinkExtract: thinkExtract,

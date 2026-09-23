@@ -6,8 +6,15 @@
  * [표시 정보]
  * - 현재 구독 상태 카드
  * - 만료 D-7, D-3 경고 배너 (조건부)
- * - 3가지 요금제 선택 카드
+ * - 이용 명수 기반 4가지 요금제 카드 (베이직/스탠다드/로얄/VIP)
+ * - 각 요금제별 월/6개월/12개월 결제 옵션 선택
  * - PG사 연동 준비 중 안내 모달
+ *
+ * [요금 정책]
+ * - 베이직  : ~25명   / 월 88,000원 / 6개월 10% 할인 / 12개월 15% 할인
+ * - 스탠다드 : 26~50명 / 월 132,000원 / 6개월 10% 할인 / 12개월 15% 할인
+ * - 로얄    : 51~100명 / 월 198,000원 / 6개월 10% 할인 / 12개월 15% 할인
+ * - VIP     : 100명 이상 / 별도 협의
  */
 ?>
 <!-- Content Wrapper. Contains page content -->
@@ -128,111 +135,247 @@
         </div>
       </div>
 
-      <!-- ─── 요금제 선택 카드 ─── -->
-      <div class="row mb-4">
+      <!-- ─── 요금제 안내 헤더 ─── -->
+      <div class="row mb-3">
         <div class="col-12">
-          <h4 class="mb-3"><i class="fas fa-list-alt mr-1"></i> 요금제 선택</h4>
-          <p class="text-muted mb-3">
+          <h4 class="mb-2"><i class="fas fa-list-alt mr-1"></i> 요금제 선택</h4>
+          <p class="text-muted mb-1">
             <i class="fas fa-info-circle"></i>
             아래 금액은 모두 <strong>VAT(부가세 10%) 별도</strong> 금액입니다.
           </p>
+          <p class="text-muted small">
+            <i class="fas fa-users mr-1"></i>
+            이용 인원에 맞는 구독 상품을 선택한 후, 결제 기간(월/6개월/12개월)을 선택해 주세요.
+          </p>
         </div>
+      </div>
 
-        <!-- 월 구독 -->
-        <div class="col-md-4">
-          <div class="card card-outline card-primary h-100 payment-plan-card" data-plan="monthly" style="cursor:pointer;">
+      <!-- ─── 요금제 카드 (베이직 / 스탠다드 / 로얄) ─── -->
+      <div class="row mb-3">
+
+        <!-- ★ 베이직 (25명 이하) -->
+        <div class="col-md-4 mb-3">
+          <div class="card card-outline card-primary h-100">
             <div class="card-header text-center bg-primary text-white">
-              <h4 class="mb-0"><i class="fas fa-sync-alt mr-1"></i> 월 구독</h4>
-              <small>정기 결제</small>
+              <h4 class="mb-0"><i class="fas fa-seedling mr-1"></i> 베이직</h4>
+              <small><i class="fas fa-users mr-1"></i> 이용 인원 25명 이하</small>
             </div>
-            <div class="card-body text-center">
-              <div class="my-3">
-                <span style="font-size:2.2rem; font-weight:bold; color:#007bff;">100,000원</span>
+            <div class="card-body">
+              <!-- 기준 월 구독료 -->
+              <div class="text-center mb-3">
+                <span style="font-size:2rem; font-weight:bold; color:#007bff;">88,000원</span>
                 <span class="text-muted"> / 월</span>
               </div>
               <hr>
-              <ul class="list-unstyled text-left">
-                <li><i class="fas fa-check text-success mr-1"></i> 매달 자동 결제</li>
-                <li><i class="fas fa-check text-success mr-1"></i> 언제든지 해지 가능</li>
-                <li><i class="fas fa-check text-success mr-1"></i> 만료 7일·3일 전 안내 발송</li>
-                <li class="text-muted small mt-2">
-                  VAT 포함: <strong>110,000원</strong>
-                </li>
-              </ul>
-            </div>
-            <div class="card-footer text-center">
-              <button type="button" class="btn btn-primary btn-block btn-select-plan"
-                      data-plan="monthly" data-amount="100000" data-label="월 구독">
-                선택하기
-              </button>
+              <!-- 결제 기간 선택 버튼 그룹 -->
+              <div class="list-group">
+                <!-- 월 구독 -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="basic" data-plan="monthly"
+                        data-amount="88000" data-label="베이직 - 월 구독">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-sync-alt text-primary mr-1"></i> 월 구독</span>
+                    <span class="font-weight-bold">88,000원</span>
+                  </div>
+                  <small class="text-muted">VAT 포함 96,800원</small>
+                </button>
+                <!-- 6개월 구독 (10% 할인) -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="basic" data-plan="6month"
+                        data-amount="475200" data-label="베이직 - 6개월 (10% 할인)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      <i class="fas fa-star text-warning mr-1"></i> 6개월
+                      <span class="badge badge-warning text-dark ml-1">10% 할인</span>
+                    </span>
+                    <span class="font-weight-bold">475,200원</span>
+                  </div>
+                  <small class="text-muted">월 79,200원 · VAT 포함 522,720원</small>
+                </button>
+                <!-- 12개월 구독 (15% 할인) -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="basic" data-plan="12month"
+                        data-amount="897600" data-label="베이직 - 12개월 (15% 할인)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      <i class="fas fa-gem text-danger mr-1"></i> 12개월
+                      <span class="badge badge-danger ml-1">15% 할인</span>
+                    </span>
+                    <span class="font-weight-bold">897,600원</span>
+                  </div>
+                  <small class="text-muted">월 74,800원 · VAT 포함 987,360원</small>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 6개월 -->
-        <div class="col-md-4">
-          <div class="card card-outline card-warning h-100 payment-plan-card" data-plan="6month" style="cursor:pointer;">
+        <!-- ★ 스탠다드 (26~50명) -->
+        <div class="col-md-4 mb-3">
+          <div class="card card-outline card-warning h-100">
             <div class="card-header text-center bg-warning">
-              <h4 class="mb-0"><i class="fas fa-star mr-1"></i> 6개월</h4>
-              <small class="badge badge-danger">10% 할인</small>
+              <h4 class="mb-0"><i class="fas fa-rocket mr-1"></i> 스탠다드</h4>
+              <small><i class="fas fa-users mr-1"></i> 이용 인원 26~50명</small>
             </div>
-            <div class="card-body text-center">
-              <div class="my-3">
-                <del class="text-muted small">600,000원</del><br>
-                <span style="font-size:2.2rem; font-weight:bold; color:#d39e00;">540,000원</span>
-                <span class="text-muted"> / 6개월</span>
+            <div class="card-body">
+              <!-- 기준 월 구독료 -->
+              <div class="text-center mb-3">
+                <span style="font-size:2rem; font-weight:bold; color:#d39e00;">132,000원</span>
+                <span class="text-muted"> / 월</span>
               </div>
               <hr>
-              <ul class="list-unstyled text-left">
-                <li><i class="fas fa-check text-success mr-1"></i> 6개월 일시납</li>
-                <li><i class="fas fa-check text-success mr-1"></i> 월 90,000원 (10% 절약)</li>
-                <li><i class="fas fa-check text-success mr-1"></i> 만료 7일·3일 전 안내 발송</li>
-                <li class="text-muted small mt-2">
-                  VAT 포함: <strong>594,000원</strong>
-                </li>
-              </ul>
-            </div>
-            <div class="card-footer text-center">
-              <button type="button" class="btn btn-warning btn-block btn-select-plan"
-                      data-plan="6month" data-amount="540000" data-label="6개월">
-                선택하기
-              </button>
+              <!-- 결제 기간 선택 버튼 그룹 -->
+              <div class="list-group">
+                <!-- 월 구독 -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="standard" data-plan="monthly"
+                        data-amount="132000" data-label="스탠다드 - 월 구독">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-sync-alt text-primary mr-1"></i> 월 구독</span>
+                    <span class="font-weight-bold">132,000원</span>
+                  </div>
+                  <small class="text-muted">VAT 포함 145,200원</small>
+                </button>
+                <!-- 6개월 구독 (10% 할인) -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="standard" data-plan="6month"
+                        data-amount="712800" data-label="스탠다드 - 6개월 (10% 할인)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      <i class="fas fa-star text-warning mr-1"></i> 6개월
+                      <span class="badge badge-warning text-dark ml-1">10% 할인</span>
+                    </span>
+                    <span class="font-weight-bold">712,800원</span>
+                  </div>
+                  <small class="text-muted">월 118,800원 · VAT 포함 784,080원</small>
+                </button>
+                <!-- 12개월 구독 (15% 할인) -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="standard" data-plan="12month"
+                        data-amount="1346400" data-label="스탠다드 - 12개월 (15% 할인)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      <i class="fas fa-gem text-danger mr-1"></i> 12개월
+                      <span class="badge badge-danger ml-1">15% 할인</span>
+                    </span>
+                    <span class="font-weight-bold">1,346,400원</span>
+                  </div>
+                  <small class="text-muted">월 112,200원 · VAT 포함 1,481,040원</small>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 12개월 -->
-        <div class="col-md-4">
-          <div class="card card-outline card-danger h-100 payment-plan-card" data-plan="12month" style="cursor:pointer;">
+        <!-- ★ 로얄 (51~100명) -->
+        <div class="col-md-4 mb-3">
+          <div class="card card-outline card-danger h-100">
             <div class="card-header text-center bg-danger text-white">
-              <h4 class="mb-0"><i class="fas fa-gem mr-1"></i> 12개월</h4>
-              <small class="badge badge-warning text-dark">20% 할인 (최대 혜택)</small>
+              <h4 class="mb-0"><i class="fas fa-crown mr-1"></i> 로얄</h4>
+              <small><i class="fas fa-users mr-1"></i> 이용 인원 51~100명</small>
             </div>
-            <div class="card-body text-center">
-              <div class="my-3">
-                <del class="text-muted small">1,200,000원</del><br>
-                <span style="font-size:2.2rem; font-weight:bold; color:#c82333;">960,000원</span>
-                <span class="text-muted"> / 12개월</span>
+            <div class="card-body">
+              <!-- 기준 월 구독료 -->
+              <div class="text-center mb-3">
+                <span style="font-size:2rem; font-weight:bold; color:#c82333;">198,000원</span>
+                <span class="text-muted"> / 월</span>
               </div>
               <hr>
-              <ul class="list-unstyled text-left">
-                <li><i class="fas fa-check text-success mr-1"></i> 12개월 일시납</li>
-                <li><i class="fas fa-check text-success mr-1"></i> 월 80,000원 (20% 절약)</li>
-                <li><i class="fas fa-check text-success mr-1"></i> 만료 7일·3일 전 안내 발송</li>
-                <li class="text-muted small mt-2">
-                  VAT 포함: <strong>1,056,000원</strong>
-                </li>
-              </ul>
-            </div>
-            <div class="card-footer text-center">
-              <button type="button" class="btn btn-danger btn-block btn-select-plan"
-                      data-plan="12month" data-amount="960000" data-label="12개월">
-                선택하기
-              </button>
+              <!-- 결제 기간 선택 버튼 그룹 -->
+              <div class="list-group">
+                <!-- 월 구독 -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="royal" data-plan="monthly"
+                        data-amount="198000" data-label="로얄 - 월 구독">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-sync-alt text-primary mr-1"></i> 월 구독</span>
+                    <span class="font-weight-bold">198,000원</span>
+                  </div>
+                  <small class="text-muted">VAT 포함 217,800원</small>
+                </button>
+                <!-- 6개월 구독 (10% 할인) -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="royal" data-plan="6month"
+                        data-amount="1069200" data-label="로얄 - 6개월 (10% 할인)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      <i class="fas fa-star text-warning mr-1"></i> 6개월
+                      <span class="badge badge-warning text-dark ml-1">10% 할인</span>
+                    </span>
+                    <span class="font-weight-bold">1,069,200원</span>
+                  </div>
+                  <small class="text-muted">월 178,200원 · VAT 포함 1,176,120원</small>
+                </button>
+                <!-- 12개월 구독 (15% 할인) -->
+                <button type="button"
+                        class="list-group-item list-group-item-action btn-select-plan"
+                        data-tier="royal" data-plan="12month"
+                        data-amount="2019600" data-label="로얄 - 12개월 (15% 할인)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                      <i class="fas fa-gem text-danger mr-1"></i> 12개월
+                      <span class="badge badge-danger ml-1">15% 할인</span>
+                    </span>
+                    <span class="font-weight-bold">2,019,600원</span>
+                  </div>
+                  <small class="text-muted">월 168,300원 · VAT 포함 2,221,560원</small>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div><!-- /.row -->
+
+      </div><!-- /.row 베이직/스탠다드/로얄 -->
+
+      <!-- ─── VIP 요금제 (100명 이상 / 별도 협의) ─── -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card card-outline" style="border-color:#6f42c1;">
+            <div class="card-header text-white" style="background-color:#6f42c1;">
+              <h4 class="mb-0 d-flex align-items-center">
+                <i class="fas fa-star-of-life mr-2"></i>
+                VIP
+                <span class="badge badge-light text-dark ml-2" style="font-size:0.8rem;">100명 이상</span>
+              </h4>
+            </div>
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <h5 class="font-weight-bold mb-1" style="color:#6f42c1;">
+                    <i class="fas fa-handshake mr-1"></i> 별도 협의 요금제
+                  </h5>
+                  <p class="text-muted mb-2">
+                    이용 인원이 <strong>100명 이상</strong>인 기관을 위한 맞춤형 요금제입니다.<br>
+                    규모에 따른 최적의 가격을 제안해 드립니다. 아래 문의하기를 통해 연락해 주세요.
+                  </p>
+                  <ul class="list-unstyled text-muted small mb-0">
+                    <li><i class="fas fa-check text-success mr-1"></i> 기관 규모별 맞춤 가격 협의</li>
+                    <li><i class="fas fa-check text-success mr-1"></i> 전담 담당자 배정</li>
+                    <li><i class="fas fa-check text-success mr-1"></i> 도입 지원 및 온보딩 서비스</li>
+                  </ul>
+                </div>
+                <div class="col-md-4 text-center mt-3 mt-md-0">
+                  <p class="font-weight-bold mb-2" style="font-size:1.3rem; color:#6f42c1;">
+                    <i class="fas fa-comments mr-1"></i> 요금 별도 협의
+                  </p>
+                  <a href="mailto:help@nanobookshelf.com"
+                     class="btn btn-outline-secondary">
+                    <i class="fas fa-envelope mr-1"></i> 이메일 문의하기
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /.row VIP -->
 
       <!-- 결제 내역 바로가기 -->
       <div class="row mb-3">
@@ -247,7 +390,7 @@
   </section>
 </div><!-- /.content-wrapper -->
 
-<!-- ─── PG사 연동 준비 중 모달 ─── -->
+<!-- ─── 결제 신청 확인 모달 ─── -->
 <div class="modal fade" id="pgPendingModal" tabindex="-1" role="dialog" aria-labelledby="pgPendingModalLabel">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
@@ -288,13 +431,20 @@
 
 <script>
 (function() {
-  var selectedPlan   = '';
+  var selectedPlan   = '';  // 결제 기간 (monthly / 6month / 12month)
+  var selectedTier   = '';  // 구독 상품 (basic / standard / royal)
   var selectedAmount = 0;
   var selectedLabel  = '';
 
   // 요금제 선택 버튼 클릭
   $(document).on('click', '.btn-select-plan', function(e) {
     e.stopPropagation();
+
+    // 이전 선택 초기화 후 현재 항목 활성화
+    $('.btn-select-plan').removeClass('active list-group-item-primary');
+    $(this).addClass('active list-group-item-primary');
+
+    selectedTier   = $(this).data('tier');
     selectedPlan   = $(this).data('plan');
     selectedAmount = $(this).data('amount');
     selectedLabel  = $(this).data('label');
@@ -305,14 +455,9 @@
     $('#pgPendingModal').modal('show');
   });
 
-  // 카드 클릭 시에도 해당 카드의 버튼 클릭과 동일하게 처리
-  $(document).on('click', '.payment-plan-card', function() {
-    $(this).find('.btn-select-plan').trigger('click');
-  });
-
   // "신청 접수하기" 버튼 클릭
   $('#btnConfirmPayment').on('click', function() {
-    if (!selectedPlan) {
+    if (!selectedPlan || !selectedTier) {
       alert('요금제를 선택해 주세요.');
       return;
     }
@@ -324,7 +469,8 @@
       url: '/admin/partner/payment_proc',
       method: 'POST',
       data: {
-        plan_type: selectedPlan,
+        plan_type  : selectedPlan,   // 결제 기간
+        plan_tier  : selectedTier,   // 구독 상품 (basic/standard/royal)
         '<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>'
       },
       dataType: 'json',

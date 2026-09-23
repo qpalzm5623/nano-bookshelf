@@ -790,6 +790,16 @@ class Book extends MY_Controller {
 	    
 	    $info = $this->quizHistory_model->getQuizHistorySuccessCount($data);
 
+	    // ─── 당일 재도전 불가 체크 ───
+	    // 정책: 동일 도서·퀴즈에 대해 당일 60점 미만 실패가 3회 이상이면 당일 재도전 불가
+	    //       단, 이미 인증 성공한(cnt >= 1) 경우는 이 제한을 적용하지 않음
+	    if($info['cnt'] == 0) {
+	        $failInfo = $this->quizHistory_model->getQuizHistoryTodayFailCount($data);
+	        if($failInfo['cnt'] >= 3) {
+	            echo '{"result":"fail", "msg":"오늘 3회 인증에 실패했습니다. 내일(자정 이후) 다시 도전해 주세요."}';
+	            exit;
+	        }
+	    }
 
 	    	    
 	    //echo $quizData[0]['quiz_cnt']."====".$scoreCnt;
@@ -821,36 +831,51 @@ class Book extends MY_Controller {
 		
 		
 		
-		//포인트 저장
+		// ─── 포인트 저장 ───
+		// 정책: 60% 이상 정답 시 인증 완료, 1권당 최대 2회까지 포인트 지급
 	    if($info['cnt'] < 2) {
 	        if($score >= 60) {
-    	        // 포인트 히스토리 저장
-    	        // 문제 풀이
-    	        $point = $scoreCnt *3;
-    	        $content = "{$scoreCnt}개 ({$point})";
-    	        // 생각담기
+
+    	        // ① 기본 포인트: 정답수 × 3p
+    	        $point = $scoreCnt * 3;
+    	        $content = "{$scoreCnt}개 정답 ({$point}p)";
+
+    	        // ② 생각담기(주관식) 작성 시 +5p
+    	        //    (생각담기 문제가 없는 퀴즈도 있으므로, 작성한 경우에만 적용)
     	        if($think_reply != "" || $think_reply_file != "") {
-    	            $content .= " + 생각담기 (5)";
-    	            $point = $point+5;
+    	            $content .= " + 생각담기 (5p)";
+    	            $point = $point + 5;
     	        }
-    	        $data = array("point_type"=>"QUIZ",
-    	                      "content"=>$content,
-    	                      "qh_seq"=>$result,
-    	                      "point"=>$point,
-    	                      "book_no"=>$book_no,
-    	                      "quiz_seq"=>$quiz_seq,
-    	                      "user_id"=>$userData['user_id'],
-    	                      "user_name"=>$userData['user_name'],
-    	                      "read_yn"=>"N",
-    	                      "reg_date"=>date("Y-m-d H:i:s")
-    	                      );
-    	        
-    	        $quizData = $this->pointHistory_model->insertPointHistory($data);		
-    	        
-    	        //개인포인트 추가
+
+    	        // ③ 가중 포인트: 초4 이상 권장도서(recommend_class >= 4)는 전체 포인트 × 20% 추가
+    	        //    고학년 책은 읽기 분량이 많아 20% 가중치 적용
+    	        $book_recommend_class = (int)($quizData[0]['recommend_class'] ?? 0);
+    	        $weight_point = 0;
+    	        if($book_recommend_class >= 4) {
+    	            $weight_point = (int)round($point * 0.2);
+    	            $content .= " + 권장도서 가중 ({$weight_point}p, 20%)";
+    	            $point = $point + $weight_point;
+    	        }
+
+    	        // 포인트 히스토리 저장
+    	        $data = array(
+    	            "point_type" => "QUIZ",
+    	            "content"    => $content,
+    	            "qh_seq"     => $result,
+    	            "point"      => $point,
+    	            "book_no"    => $book_no,
+    	            "quiz_seq"   => $quiz_seq,
+    	            "user_id"    => $userData['user_id'],
+    	            "user_name"  => $userData['user_name'],
+    	            "read_yn"    => "N",
+    	            "reg_date"   => date("Y-m-d H:i:s")
+    	        );
+
+    	        $this->pointHistory_model->insertPointHistory($data);
+
+    	        // 개인 누적 포인트 업데이트
     	        $this->member_model->updatePoint($userData['user_id'], $point);
     	    }
-	        
 	    }
 	    
 	    if($info['cnt'] == 0 && $score >= 60) {

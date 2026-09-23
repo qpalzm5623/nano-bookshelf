@@ -3143,85 +3143,71 @@
                 </div>
               </div>
 
-              <!-- 카테고리 1 (국내서 / 외서) & 카테고리 2 (소설 / 위인전 / 비문학) -->
+              <!-- 카테고리 1 (A: 소설, B: 인물 이야기, C: 비문학) & 카테고리 2 (K: 국내서, F: 외서, N: 구분 없음) -->
               <div class="row">
                 <div class="col-6 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">카테고리 1 <span class="text-danger">*</span></label>
-                  <select id="mbAddCat1" class="select-beige w-100">
-                    <option value="국내서" selected>국내서</option>
-                    <option value="외서">외서</option>
+                  <select id="mbAddCat1" class="select-beige w-100" onchange="onCategory1Changed(this.value)">
+                    <option value="소설" data-code="A" selected>A : 소설</option>
+                    <option value="인물 이야기 (위인)" data-code="B">B : 인물 이야기 (위인)</option>
+                    <option value="비문학/정보글" data-code="C">C : 비문학/정보글</option>
                   </select>
                 </div>
                 <div class="col-6 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">카테고리 2 <span class="text-danger">*</span></label>
                   <select id="mbAddCat2" class="select-beige w-100" onchange="onCategory2Changed(this.value)">
-                    <option value="소설" selected>소설</option>
-                    <option value="위인전(전기)">위인전 (전기)</option>
-                    <option value="비문학">비문학</option>
+                    <option value="국내서" data-code="K" selected>K : 국내서</option>
+                    <option value="외서" data-code="F">F : 외서</option>
+                    <option value="구분 없음" data-code="N">N : 구분 없음</option>
                   </select>
                 </div>
               </div>
 
-              <!-- 권장 학년 (초1~중3 개별 선택) & 주제 태그 다중선택 -->
+              <!-- 권장 학년 (초1~중3 개별 선택) -->
               <div class="row">
-                <div class="col-6 form-group">
+                <div class="col-12 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
-                  <select id="mbAddGrade" class="select-beige w-100">
-                    <option value="초등 1학년">초등 1학년</option>
-                    <option value="초등 2학년">초등 2학년</option>
-                    <option value="초등 3학년">초등 3학년</option>
-                    <option value="초등 4학년">초등 4학년</option>
-                    <option value="초등 5학년" selected>초등 5학년</option>
-                    <option value="초등 6학년">초등 6학년</option>
-                    <option value="중등 1학년">중등 1학년</option>
-                    <option value="중등 2학년">중등 2학년</option>
-                    <option value="중등 3학년">중등 3학년</option>
+                  <select id="mbAddGrade" class="select-beige w-100" onchange="onGradeChanged(this.value)">
+                    <option value="초등 1학년" data-code="1">초등 1학년</option>
+                    <option value="초등 2학년" data-code="2">초등 2학년</option>
+                    <option value="초등 3학년" data-code="3">초등 3학년</option>
+                    <option value="초등 4학년" data-code="4">초등 4학년</option>
+                    <option value="초등 5학년" data-code="5" selected>초등 5학년</option>
+                    <option value="초등 6학년" data-code="6">초등 6학년</option>
+                    <option value="중등 1학년" data-code="7">중등 1학년</option>
+                    <option value="중등 2학년" data-code="8">중등 2학년</option>
+                    <option value="중등 3학년" data-code="9">중등 3학년</option>
                   </select>
-                </div>
-                <div class="col-6 form-group">
-                  <label class="font-weight-bold" style="font-size: 13px;">세부 태그 (직접 입력)</label>
-                  <input type="text" id="mbAddDetailTag" class="form-control form-control-beige" placeholder="예: #문해력, #세계명작, #모험">
                 </div>
               </div>
 
-              <!-- 주제 분류 태그 다중 선택 (중복 가능) -->
+              <!-- 주제 분류 태그 (드롭박스) - [위 배치] -->
               <div class="form-group">
-                <label class="font-weight-bold d-flex justify-content-between" style="font-size: 13px;">
-                  <span>주제 분류 태그 선택 (중복 선택 가능) <span class="text-danger">*</span></span>
-                  <small class="text-muted">도서에 해당하는 모든 태그를 체크하세요</small>
+                <label class="font-weight-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 13px;">
+                  <span><i class="fa-solid fa-tags text-primary mr-1"></i>주제 분류 태그 선택 <span class="text-danger">*</span></span>
+                  <small class="text-muted">'서비스 운영 관리 - 테마 관리' 연동</small>
                 </label>
-                <div class="p-2 rounded bg-white border d-flex flex-wrap gap-2" id="mbAddThemeTagsWrap">
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="#이달의나노북클럽" checked> #이달의나노북클럽
+                <select id="mbAddThemeTagSelect" class="select-beige w-100 font-weight-bold" style="font-size: 13px;">
+                  <!-- JS로 themeList 기준 동적 렌더링 -->
+                </select>
+              </div>
+
+              <!-- 세부 태그 (직접 입력) - [아래 배치] (디폴트 2칸, 최대 5칸, +버튼 추가) -->
+              <div class="form-group p-3 rounded bg-white border">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="font-weight-bold mb-0" style="font-size: 13px;">
+                    <i class="fa-solid fa-hashtag text-warning mr-1"></i>세부 태그 <small class="text-muted">(직접 입력, 최대 5개)</small>
                   </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="#교과연계한국사"> #교과연계한국사
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="#미래과학환경"> #미래과학환경
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="#인문문학여행"> #인문문학여행
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="문학" checked> 문학
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="인문"> 인문/철학
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="과학"> 과학/환경
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="사회"> 사회
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="역사"> 역사
-                  </label>
-                  <label class="badge badge-light p-2 border font-weight-normal mb-0" style="cursor: pointer;">
-                    <input type="checkbox" name="mbAddTags" value="예술"> 예술/문화
-                  </label>
+                  <button type="button" class="btn btn-xs btn-outline-primary font-weight-bold" id="btnAddDetailTagSlot" onclick="addMasterDetailTagSlot()" style="border-radius: 6px; font-size: 11.5px; padding: 2px 8px;">
+                    <i class="fa-solid fa-plus mr-1"></i>태그 칸 추가 (<span id="mbDetailTagCount">2</span>/5)
+                  </button>
                 </div>
+                <div id="mbDetailTagsContainer" class="d-flex flex-column gap-2">
+                  <!-- 동적 태그 인풋 슬롯들 -->
+                </div>
+                <small class="text-muted mt-1.5 d-block" style="font-size: 11px;">
+                  * 각 칸에 태그를 하나씩 입력하세요. (예: 문해력, 세계명작, 모험)
+                </small>
               </div>
 
               <!-- 어워드 및 추천 (직접 타이핑) -->
@@ -3820,7 +3806,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="upload/banner/banners_data.js"></script>
-<script src="master_preview.js?v=20260921_01"></script>
+<script src="master_preview.js?v=20260923_think_fix"></script>
 
 </body>
 </html>

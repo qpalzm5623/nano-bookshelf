@@ -4761,168 +4761,258 @@
 
       <div class="modal-body p-4" style="background: #faf8f5; max-height: calc(86vh - 120px); overflow-y: auto;">
         <form id="academyBookOnlyForm" onsubmit="handleSaveAcademyBookOnly(event)">
-          <!-- 도서 기본 정보 입력 폼 -->
-          <div class="p-3 bg-white rounded shadow-sm mb-3" style="border: 1px solid var(--border-light);">
-            <div class="row">
-              <!-- 좌측 폼 컨트롤 영역 -->
-              <div class="col-md-8">
-                <!-- 도서 ID 및 ISBN 자동 조회 -->
-                <div class="row">
-                  <div class="col-md-5">
-                    <div class="form-group mb-2.5">
-                      <label class="font-weight-bold" style="font-size: 12.5px;">도서 관리 코드 (ID) <span class="text-danger">*</span></label>
-                      <input type="text" id="abEditId" class="form-control form-control-beige font-weight-bold text-muted" placeholder="자동 부여" readonly>
-                    </div>
-                  </div>
-                  <div class="col-md-7">
-                    <div class="form-group mb-2.5">
-                      <label class="font-weight-bold" style="font-size: 12.5px;">ISBN 13자리 <small class="text-muted">(도서 자동 조회)</small></label>
-                      <div class="input-group">
-                        <input type="text" id="abEditIsbn" class="form-control form-control-beige" placeholder="97911..." maxlength="17">
-                        <div class="input-group-append">
-                          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="lookupAcademyIsbn()" style="border-color: var(--border-medium); font-size: 11.5px; padding: 4px 10px;">
-                            <i class="fa-solid fa-barcode mr-1"></i>정보 조회
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 도서명 -->
-                <div class="form-group mb-2.5">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">도서명 (제목) <span class="text-danger">*</span></label>
-                  <input type="text" id="abEditTitle" class="form-control form-control-beige font-weight-bold" placeholder="예: 어린 왕자" required>
-                </div>
-
-                <!-- 저자 및 출판사 -->
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group mb-2.5">
-                      <label class="font-weight-bold" style="font-size: 12.5px;">저자 (글/그림) <span class="text-danger">*</span></label>
-                      <input type="text" id="abEditAuthor" class="form-control form-control-beige" placeholder="예: 앙투안 드 생텍쥐페리" required>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group mb-2.5">
-                      <label class="font-weight-bold" style="font-size: 12.5px;">출판사</label>
-                      <input type="text" id="abEditPublisher" class="form-control form-control-beige" placeholder="예: 열린책들">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 권장 학년 및 분류 -->
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group mb-2.5">
-                      <label class="font-weight-bold" style="font-size: 12.5px;">권장 학년 <span class="text-danger">*</span></label>
-                      <select id="abEditGrade" class="form-control form-control-beige font-weight-bold" required>
-                        <option value="초등 1~2학년">초등 1~2학년</option>
-                        <option value="초등 3~4학년">초등 3~4학년</option>
-                        <option value="초등 5~6학년" selected>초등 5~6학년</option>
-                        <option value="중등 1학년">중등 1학년</option>
-                        <option value="중등 2학년">중등 2학년</option>
-                        <option value="중등 3학년">중등 3학년</option>
-                        <option value="고등 1~3학년">고등 1~3학년</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group mb-2.5">
-                      <label class="font-weight-bold" style="font-size: 12.5px;">도서 분야 (카테고리) <span class="text-danger">*</span></label>
-                      <select id="abEditCategory" class="form-control form-control-beige" required>
-                        <option value="한국문학 / 성장">한국문학 / 성장</option>
-                        <option value="세계문학 / 우정" selected>세계문학 / 우정</option>
-                        <option value="과학 / 환경탐구">과학 / 환경탐구</option>
-                        <option value="역사 / 인물탐구">역사 / 인물탐구</option>
-                        <option value="사회 / 법·정치">사회 / 법·정치</option>
-                        <option value="철학 / 고전인문">철학 / 고전인문</option>
-                        <option value="예술 / 문화체육">예술 / 문화체육</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 줄거리 / 핵심 소개 -->
-                <div class="form-group mb-2.5">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">도서 줄거리 및 추천 이유</label>
-                  <textarea id="abEditSummary" class="form-control form-control-beige" rows="2" placeholder="도서의 주요 줄거리 및 독서 지도 시 추천 포인트를 간략히 입력하세요."></textarea>
-                </div>
-
-                <!-- 나노 시트(PDF) 및 지도서 업로드 -->
-                <div class="form-group mb-2.5">
-                  <label class="font-weight-bold d-flex justify-content-between" style="font-size: 12.5px;">
-                    <span><i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트(PDF) 학습지 첨부</span>
-                    <small class="text-muted">* PDF, HWP 문서 지원</small>
-                  </label>
-                  <div class="p-2 rounded d-flex align-items-center justify-content-between" style="background: #fdfaf3; border: 1px dashed var(--border-medium);">
-                    <div class="d-flex align-items-center">
-                      <i class="fa-solid fa-file-arrow-up text-primary mr-2" style="font-size: 20px;"></i>
-                      <div>
-                        <div class="font-weight-bold" style="font-size: 12px;" id="abSheetFileName">나노시트_학습용.pdf</div>
-                        <small class="text-muted">학원 원생 전용 워크북 자료</small>
-                      </div>
-                    </div>
-                    <div>
-                      <input type="file" id="abSheetFileInput" accept=".pdf,.hwp,.hwpx,.doc,.docx" class="d-none" onchange="handleAcadSheetFileUpload(event)">
-                      <button type="button" class="btn btn-xs btn-outline-secondary font-weight-bold" onclick="document.getElementById('abSheetFileInput').click()" style="padding: 4px 10px; font-size: 11px;">
-                        <i class="fa-solid fa-upload mr-1"></i>파일 교체
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 나노 시트 핵심 정답 요약 -->
-                <div class="form-group mb-0">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">나노 시트 핵심 정답 <small class="text-muted">(교사용 지도 가이드)</small></label>
-                  <textarea id="abEditMemo" class="form-control form-control-beige" rows="3" style="line-height: 1.5; font-size: 12px;" placeholder="선생님 지도용 핵심 정답 요약을 입력하세요."></textarea>
-                </div>
-              </div>
-
-              <!-- 우측: 표지 실시간 미리보기 및 배포 옵션 -->
-              <div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-start p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light);">
-                <div style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 10px;">
-                  <i class="fa-solid fa-image mr-1"></i>표지 실시간 미리보기
-                </div>
-                <div style="position: relative; width: 135px; height: 185px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); border-radius: 10px; overflow: hidden; border: 1px solid #ddd; background: #f5f0e6;">
-                  <img id="abEditCoverPreview" src="assets/covers/cover_1001.jpg" alt="표지" style="width: 100%; height: 100%; object-fit: cover;">
-                </div>
-
-                <!-- 표지 입력 방식 선택 -->
-                <div class="w-100 mt-3 text-left">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="font-weight-bold mb-0" style="font-size: 11.5px;">표지 이미지 설정</label>
-                    <div class="btn-group btn-group-toggle" style="transform: scale(0.85); transform-origin: right center;">
-                      <button type="button" class="btn btn-xs btn-outline-secondary active" id="btnAcadCoverModeUrl" onclick="switchAcadCoverMode('url')">URL</button>
-                      <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAcadCoverModeFile" onclick="switchAcadCoverMode('file')">파일</button>
-                    </div>
-                  </div>
-
-                  <div id="acadCoverModeUrlWrap">
-                    <input type="text" id="abEditCover" class="form-control form-control-sm form-control-beige" placeholder="표지 이미지 URL (https://...)" oninput="updateAcadCoverPreview(this.value)" style="font-size: 11.5px;">
-                  </div>
-
-                  <div id="acadCoverModeFileWrap" style="display: none;">
-                    <input type="file" id="abCoverFileInput" accept="image/*" class="d-none" onchange="handleAcadCoverFileUpload(event)">
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-block" onclick="document.getElementById('abCoverFileInput').click()" style="font-size: 11px; padding: 4px;">
-                      <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>표지 사진 파일 업로드
-                    </button>
-                    <small id="abCoverFileLabel" class="text-muted d-block text-truncate mt-1" style="font-size: 10.5px;">선택된 파일 없음</small>
-                  </div>
-                </div>
-
-                <div class="custom-control custom-checkbox mt-3 text-left w-100">
-                  <input type="checkbox" class="custom-control-input" id="abEditSheet" checked>
-                  <label class="custom-control-label font-weight-bold" for="abEditSheet" style="font-size: 12px;">원생들에게 학습자료 즉시 공개</label>
-                </div>
-                <small class="text-muted mt-2 text-left" style="font-size: 11px; line-height: 1.5;">
-                  * 체크 시 원생 화면에서 나노 시트(PDF) 열람 및 인쇄가 즉시 활성화됩니다.
-                </small>
+          
+          <!-- 1-1. ISBN 자동 조회 바 -->
+          <div class="p-3 mb-3 rounded bg-white" style="border: 1px solid var(--border-medium);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="font-weight-bold text-dark" style="font-size: 12.5px;">
+                <i class="fa-solid fa-barcode mr-1 text-primary"></i>ISBN 13자리 도서 정보 자동 조회
+              </span>
+              <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">서지정보 자동완성</span>
+            </div>
+            <div class="input-group">
+              <input type="text" id="abEditIsbn" class="form-control form-control-beige font-weight-bold" placeholder="13자리 ISBN 번호 입력 (예: 9788932917245)" style="border-radius: 8px 0 0 8px;">
+              <div class="input-group-append">
+                <button type="button" class="btn btn-beige-primary px-3 font-weight-bold" id="btnAcadIsbnFetch" onclick="lookupAcademyIsbn()" style="border-radius: 0 8px 8px 0;">
+                  <i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회
+                </button>
               </div>
             </div>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+          <div class="row">
+            <!-- 좌측 서지 입력 컬럼 (8열) -->
+            <div class="col-md-8">
+              <!-- 도서 관리 코드 (직접 입력 + 자동생성 버튼) & 공개 여부 -->
+              <div class="row">
+                <div class="col-md-6 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">
+                    도서 관리 코드 (ID) <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <input type="text" id="abEditId" class="form-control form-control-beige font-weight-bold" placeholder="예: FA100001" required style="border-radius: 8px 0 0 8px;">
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="generateAcademyBookId()" style="border-radius: 0 8px 8px 0; font-size: 11.5px;">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>자동생성
+                      </button>
+                    </div>
+                  </div>
+                  <small class="text-muted" style="font-size: 11px;">직접 입력 또는 분류 기반 자동 생성</small>
+                </div>
+                <div class="col-md-6 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">
+                    공개 여부 설정 <span class="text-danger">*</span>
+                  </label>
+                  <div class="d-flex align-items-center gap-3 mt-2">
+                    <div class="custom-control custom-radio">
+                      <input type="radio" id="abEditPublicY" name="abEditIsPublic" class="custom-control-input" value="Y" checked>
+                      <label class="custom-control-label font-weight-bold text-success" for="abEditPublicY" style="font-size: 13px; cursor: pointer;">
+                        공개 <small class="text-muted">(학원생 전체)</small>
+                      </label>
+                    </div>
+                    <div class="custom-control custom-radio">
+                      <input type="radio" id="abEditPublicN" name="abEditIsPublic" class="custom-control-input" value="N">
+                      <label class="custom-control-label font-weight-bold text-secondary" for="abEditPublicN" style="font-size: 13px; cursor: pointer;">
+                        비공개 <small class="text-muted">(준비중)</small>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 도서명 -->
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">도서명 <span class="text-danger">*</span></label>
+                <input type="text" id="abEditTitle" class="form-control form-control-beige font-weight-bold" placeholder="예: 어린 왕자" required>
+              </div>
+
+              <!-- 시리즈명 + 단권 체크박스 -->
+              <div class="row">
+                <div class="col-12 form-group">
+                  <label class="font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 13px;">
+                    <span>시리즈명</span>
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="abEditIsSingle" onchange="toggleAcadSingleBookCheckbox(this.checked)">
+                      <label class="custom-control-label font-weight-bold text-primary" for="abEditIsSingle" style="font-size: 12px; cursor: pointer;">
+                        단권 (시리즈 아님)
+                      </label>
+                    </div>
+                  </label>
+                  <input type="text" id="abEditSeries" class="form-control form-control-beige" placeholder="예: 해리포터 시리즈, 한국사 편지">
+                </div>
+              </div>
+
+              <!-- 저자 / 출판사 -->
+              <div class="row">
+                <div class="col-6 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">저자 <span class="text-danger">*</span></label>
+                  <input type="text" id="abEditAuthor" class="form-control form-control-beige" placeholder="예: 앙투안 드 생텍쥐페리" required>
+                </div>
+                <div class="col-6 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">출판사 <span class="text-danger">*</span></label>
+                  <input type="text" id="abEditPublisher" class="form-control form-control-beige" placeholder="예: 열린책들" required>
+                </div>
+              </div>
+
+              <!-- 카테고리 1 (A: 소설, B: 인물 이야기, C: 비문학) & 카테고리 2 (K: 국내서, F: 외서, N: 구분 없음) -->
+              <div class="row">
+                <div class="col-6 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">카테고리 1 <span class="text-danger">*</span></label>
+                  <select id="abEditCat1" class="select-beige w-100" onchange="onAcadCategory1Changed(this.value)">
+                    <option value="소설" data-code="A" selected>A : 소설</option>
+                    <option value="인물 이야기 (위인)" data-code="B">B : 인물 이야기 (위인)</option>
+                    <option value="비문학/정보글" data-code="C">C : 비문학/정보글</option>
+                  </select>
+                </div>
+                <div class="col-6 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">카테고리 2 <span class="text-danger">*</span></label>
+                  <select id="abEditCat2" class="select-beige w-100" onchange="onAcadCategory2Changed(this.value)">
+                    <option value="국내서" data-code="K" selected>K : 국내서</option>
+                    <option value="외서" data-code="F">F : 외서</option>
+                    <option value="구분 없음" data-code="N">N : 구분 없음</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 권장 학년 (초1~중3 개별 선택) -->
+              <div class="row">
+                <div class="col-12 form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
+                  <select id="abEditGrade" class="select-beige w-100" onchange="onAcadGradeChanged(this.value)">
+                    <option value="초등 1학년" data-code="1">초등 1학년</option>
+                    <option value="초등 2학년" data-code="2">초등 2학년</option>
+                    <option value="초등 3학년" data-code="3">초등 3학년</option>
+                    <option value="초등 4학년" data-code="4">초등 4학년</option>
+                    <option value="초등 5학년" data-code="5" selected>초등 5학년</option>
+                    <option value="초등 6학년" data-code="6">초등 6학년</option>
+                    <option value="중등 1학년" data-code="7">중등 1학년</option>
+                    <option value="중등 2학년" data-code="8">중등 2학년</option>
+                    <option value="중등 3학년" data-code="9">중등 3학년</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 주제 분류 태그 (드롭박스) - [위 배치] -->
+              <div class="form-group">
+                <label class="font-weight-bold d-flex justify-content-between align-items-center mb-1" style="font-size: 13px;">
+                  <span><i class="fa-solid fa-tags text-primary mr-1"></i>주제 분류 태그 선택 <span class="text-danger">*</span></span>
+                  <small class="text-muted">'서비스 운영 관리 - 테마 관리' 연동</small>
+                </label>
+                <select id="abEditThemeTagSelect" class="select-beige w-100 font-weight-bold" style="font-size: 13px;">
+                  <!-- JS로 themeList 기준 동적 렌더링 -->
+                </select>
+              </div>
+
+              <!-- 세부 태그 (직접 입력) - [아래 배치] (디폴트 2칸, 최대 5칸, +버튼 추가) -->
+              <div class="form-group p-3 rounded bg-white border">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="font-weight-bold mb-0" style="font-size: 13px;">
+                    <i class="fa-solid fa-hashtag text-warning mr-1"></i>세부 태그 <small class="text-muted">(직접 입력, 최대 5개)</small>
+                  </label>
+                  <button type="button" class="btn btn-xs btn-outline-primary font-weight-bold" id="btnAddAcadDetailTagSlot" onclick="addAcadDetailTagSlot()" style="border-radius: 6px; font-size: 11.5px; padding: 2px 8px;">
+                    <i class="fa-solid fa-plus mr-1"></i>태그 칸 추가 (<span id="abDetailTagCount">2</span>/5)
+                  </button>
+                </div>
+                <div id="abDetailTagsContainer" class="d-flex flex-column gap-2">
+                  <!-- 동적 태그 인풋 슬롯들 -->
+                </div>
+                <small class="text-muted mt-1.5 d-block" style="font-size: 11px;">
+                  * 각 칸에 태그를 하나씩 입력하세요. (예: 문해력, 세계명작, 모험)
+                </small>
+              </div>
+
+              <!-- 어워드 및 추천 (직접 타이핑) -->
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">어워드 및 추천</label>
+                <input type="text" id="abEditAwards" class="form-control form-control-beige" placeholder="예: 칼데콧 아너상 수상작, 한국어린이출판협의회 추천도서">
+              </div>
+
+              <!-- 생각 꺼내기 (직접 타이핑) -->
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">생각 꺼내기 (도서 읽기 전 호기심 유발 질문)</label>
+                <textarea id="abEditThinkExtract" class="form-control form-control-beige" rows="2" placeholder="예: 만약 내게 작은 소행성이 생긴다면 가장 소중히 가꾸고 싶은 것은 무엇인가요?"></textarea>
+              </div>
+
+              <!-- 생각 담기 메뉴 (직접 타이핑 / 제시된 텍스트 선택 / 생각 담기 없음) -->
+              <div class="form-group p-3 rounded bg-white border">
+                <label class="font-weight-bold d-flex justify-content-between align-items-center mb-2" style="font-size: 13px;">
+                  <span><i class="fa-solid fa-lightbulb text-warning mr-1"></i>생각 담기 메뉴 설정</span>
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-xs btn-outline-secondary active" id="btnAcadThinkPreset" onclick="switchAcadThinkMode('preset')">제시문 선택</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAcadThinkCustom" onclick="switchAcadThinkMode('custom')">직접 입력</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAcadThinkNone" onclick="switchAcadThinkMode('none')">생각 담기 없음</button>
+                  </div>
+                </label>
+
+                <!-- 1) 제시문 드롭박스 -->
+                <div id="acadThinkPresetWrap">
+                  <label class="text-muted" style="font-size: 12px;">카테고리 1에 적합한 추천 제시문 중 하나를 선택하세요:</label>
+                  <select id="abEditThinkPresetSelect" class="select-beige w-100 font-weight-bold" onchange="applyAcadThinkPresetToInput(this.value)">
+                    <!-- JS로 카테고리1(소설/인물이야기 vs 비문학)에 따라 동적 주입 -->
+                  </select>
+                </div>
+
+                <!-- 2) 직접 입력 textarea -->
+                <div id="acadThinkCustomWrap" class="mt-2">
+                  <textarea id="abEditThinkInsert" class="form-control form-control-beige" rows="2" placeholder="독서 후 학생이 깊이 생각하고 글을 쓸 수 있는 발문을 입력하세요."></textarea>
+                </div>
+                
+                <!-- 3) 생각 담기 없음 안내 -->
+                <div id="acadThinkNoneNotice" class="text-muted mt-2" style="display: none; font-size: 12px;">
+                  * 본 도서는 독서 후 생각 담기 과제 없이 퀴즈 및 완독만으로 진행됩니다.
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 우측 표지 등록 및 미리보기 (4열) -->
+            <div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-start p-3 rounded bg-white border">
+              <div style="font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 12px;">
+                <i class="fa-solid fa-image mr-1"></i>도서 표지 실시간 미리보기
+              </div>
+              <div style="position: relative; width: 140px; height: 195px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); border-radius: 10px; overflow: hidden; border: 1px solid #ddd; background: #f5f0e6;">
+                <img id="abEditCoverPreview" src="assets/covers/cover_1001.jpg" alt="표지" style="width: 100%; height: 100%; object-fit: cover;">
+              </div>
+
+              <!-- 표지 등록 모드 (URL vs 로컬 파일) -->
+              <div class="w-100 text-left mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="font-weight-bold mb-0" style="font-size: 12px;">표지 이미지 등록</label>
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-xs btn-outline-secondary active" id="btnAcadCoverModeUrl" onclick="switchAcadCoverMode('url')">URL</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAcadCoverModeFile" onclick="switchAcadCoverMode('file')">파일</button>
+                  </div>
+                </div>
+                <div id="acadCoverModeUrlWrap">
+                  <input type="text" id="abEditCover" class="form-control form-control-beige" placeholder="https://..." oninput="updateAcadCoverPreview(this.value)">
+                </div>
+                <div id="acadCoverModeFileWrap" style="display: none;">
+                  <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="abCoverFileInput" accept="image/*" onchange="handleAcadCoverFileUpload(event)">
+                    <label class="custom-file-label" for="abCoverFileInput" id="abCoverFileLabel" style="font-size: 11.5px;">이미지 선택</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 나노 시트 / 지도안 첨부 -->
+              <div class="w-100 text-left mt-3 pt-3 border-top">
+                <label class="font-weight-bold mb-1" style="font-size: 12px;">
+                  <i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트 / 지도안 파일
+                </label>
+                <div class="custom-file mb-1">
+                  <input type="file" class="custom-file-input" id="abSheetFileInput" accept=".pdf,.hwp,.docx" onchange="handleAcadSheetFileUpload(event)">
+                  <label class="custom-file-label" for="abSheetFileInput" id="abSheetFileLabel" style="font-size: 11.5px;">파일 선택 (.pdf)</label>
+                </div>
+                <small class="text-muted d-block" id="abSheetFileName">나노_독서학습시트.pdf</small>
+              </div>
+
+              <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px;">
+                <i class="fa-solid fa-circle-info mr-1"></i><strong>안내:</strong> 도서를 등록한 후, 목록의 <strong>[퀴즈 관리]</strong> 버튼을 통해 문항을 구성할 수 있습니다.
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
             <small class="text-muted">
               <i class="fa-solid fa-shield-halved text-success mr-1"></i>도서 정보 저장 시 우리 학원의 도서 목록 및 배정 풀에 즉시 반영됩니다.
             </small>

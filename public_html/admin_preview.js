@@ -5473,30 +5473,373 @@ function ensureAcadBookQuizSets(book) {
 }
 
 // ==============================================================
-// 6-A. 학원 신규 도서 등록 및 서지 정보 수정 모달 로직
+// 6-A. 학원 신규 도서 등록 및 서지 정보 수정 모달 로직 (본사와 100% 동일 규격)
 // ==============================================================
 var originalEditingAcadBookId = null;
 
+// 카테고리 1별 학원 생각담기 제시문 세트
+var ACAD_THINK_PROMPTS_NOVEL = [
+  "주인공이 옆에 있다면 하고 싶은 이야기를 적어주세요.",
+  "이 책을 읽고 가장 많이 떠오른 내 주변의 사람은 누구이며 그 이유는 무엇인가요?",
+  "이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는 지 상상해서 이야기를 만들어주세요.",
+  "기억나는 장면이나 문장을 적어보세요.",
+  "이 책에서 얻은 교훈이 있다면?",
+  "가장 기억에 남는 등장인물은 누구이며 그 이유는 무엇인가요?",
+  "이 책을 친구에게 추천한다면, 뭐라고 소개하고 싶은가요?"
+];
+
+var ACAD_THINK_PROMPTS_NONFICTION = [
+  "이 책을 읽고 생각난 사람은 누구이며 이유는 무엇인가요?",
+  "이 책에서 가장 기억에 남은 내용은 무엇인가요?",
+  "책을 읽고 새롭게 알게된 내용은 무엇인가요?",
+  "이 책을 추천한다면 어떻게 설명하고 싶나요?"
+];
+
+function updateAcadThinkPresets(cat1) {
+  var select = document.getElementById("abEditThinkPresetSelect");
+  if (!select) return;
+
+  var isNonfiction = (cat1 === "비문학/정보글" || cat1 === "비문학" || cat1 === "C");
+  var prompts = isNonfiction ? ACAD_THINK_PROMPTS_NONFICTION : ACAD_THINK_PROMPTS_NOVEL;
+
+  select.innerHTML = prompts.map(function(p, i) {
+    return `<option value="${p}">${i + 1}. ${p}</option>`;
+  }).join("");
+
+  var textarea = document.getElementById("abEditThinkInsert");
+  if (textarea && prompts.length > 0) {
+    textarea.value = prompts[0];
+  }
+}
+
+function onAcadCategory1Changed(cat1) {
+  updateAcadThinkPresets(cat1);
+  if (!originalEditingAcadBookId) {
+    generateAcademyBookId();
+  }
+}
+
+function onAcadCategory2Changed(cat2) {
+  if (!originalEditingAcadBookId) {
+    generateAcademyBookId();
+  }
+}
+
+function onAcadGradeChanged(grade) {
+  if (!originalEditingAcadBookId) {
+    generateAcademyBookId();
+  }
+}
+
+function applyAcadThinkPresetToInput(val) {
+  var textarea = document.getElementById("abEditThinkInsert");
+  if (textarea) textarea.value = val;
+}
+
+function switchAcadThinkMode(mode) {
+  var btnPreset = document.getElementById("btnAcadThinkPreset");
+  var btnCustom = document.getElementById("btnAcadThinkCustom");
+  var btnNone = document.getElementById("btnAcadThinkNone");
+  var presetWrap = document.getElementById("acadThinkPresetWrap");
+  var customWrap = document.getElementById("acadThinkCustomWrap");
+  var noneNotice = document.getElementById("acadThinkNoneNotice");
+
+  if (!btnPreset || !btnCustom || !btnNone) return;
+
+  btnPreset.classList.remove("active");
+  btnCustom.classList.remove("active");
+  btnNone.classList.remove("active");
+
+  if (mode === "preset") {
+    btnPreset.classList.add("active");
+    if (presetWrap) presetWrap.style.display = "block";
+    if (customWrap) customWrap.style.display = "block";
+    if (noneNotice) noneNotice.style.display = "none";
+    var select = document.getElementById("abEditThinkPresetSelect");
+    if (select) applyAcadThinkPresetToInput(select.value);
+  } else if (mode === "custom") {
+    btnCustom.classList.add("active");
+    if (presetWrap) presetWrap.style.display = "none";
+    if (customWrap) customWrap.style.display = "block";
+    if (noneNotice) noneNotice.style.display = "none";
+  } else {
+    btnNone.classList.add("active");
+    if (presetWrap) presetWrap.style.display = "none";
+    if (customWrap) customWrap.style.display = "none";
+    if (noneNotice) noneNotice.style.display = "block";
+    var textarea = document.getElementById("abEditThinkInsert");
+    if (textarea) textarea.value = "";
+  }
+}
+
+function toggleAcadSingleBookCheckbox(isSingle) {
+  var seriesInput = document.getElementById("abEditSeries");
+  if (seriesInput) {
+    seriesInput.disabled = isSingle;
+    if (isSingle) {
+      seriesInput.value = "";
+      seriesInput.placeholder = "단권으로 지정되었습니다.";
+    } else {
+      seriesInput.placeholder = "예: 해리포터 시리즈, 한국사 편지";
+    }
+  }
+}
+
+// -------------------------------------------------------------
+// 학원 도서 관리 코드 자동 채번 (규칙: [Cat2][Cat1][Grade][5자리순번])
+// 예: 외서(F) + 소설(A) + 1학년(1) + 첫번째 => FA100001
+// 예: 국내서(K) + 인물이야기(B) + 2학년(2) + 두번째 => KB200002
+// -------------------------------------------------------------
+function generateAcademyBookId() {
+  var cat1El = document.getElementById("abEditCat1");
+  var cat2El = document.getElementById("abEditCat2");
+  var gradeEl = document.getElementById("abEditGrade");
+
+  var cat1Val = cat1El ? cat1El.value : "소설";
+  var cat2Val = cat2El ? cat2El.value : "국내서";
+  var gradeVal = gradeEl ? gradeEl.value : "초등 1학년";
+
+  var c2Code = "K";
+  if (cat2Val.includes("외서") || cat2Val === "F") c2Code = "F";
+  else if (cat2Val.includes("구분") || cat2Val === "N") c2Code = "N";
+
+  var c1Code = "A";
+  if (cat1Val.includes("인물") || cat1Val.includes("위인") || cat1Val === "B") c1Code = "B";
+  else if (cat1Val.includes("비문학") || cat1Val.includes("정보") || cat1Val === "C") c1Code = "C";
+
+  var gCode = "1";
+  if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
+  else if (gradeVal.includes("2학년") && !gradeVal.includes("중등")) gCode = "2";
+  else if (gradeVal.includes("3학년") && !gradeVal.includes("중등")) gCode = "3";
+  else if (gradeVal.includes("4학년")) gCode = "4";
+  else if (gradeVal.includes("5학년")) gCode = "5";
+  else if (gradeVal.includes("6학년")) gCode = "6";
+  else if (gradeVal.includes("중등 1학년") || gradeVal.includes("중1")) gCode = "7";
+  else if (gradeVal.includes("중등 2학년") || gradeVal.includes("중2")) gCode = "8";
+  else if (gradeVal.includes("중등 3학년") || gradeVal.includes("중3")) gCode = "9";
+  else {
+    var m = gradeVal.match(/\d/);
+    if (m) gCode = m[0];
+  }
+
+  var prefix = `${c2Code}${c1Code}${gCode}`;
+  var maxSeq = 0;
+
+  academyBookList.forEach(function(b) {
+    if (b.id && b.id.startsWith(prefix)) {
+      var numPart = b.id.slice(prefix.length);
+      var num = parseInt(numPart, 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
+    }
+  });
+
+  var nextSeq = String(maxSeq + 1).padStart(5, "0");
+  var newId = `${prefix}${nextSeq}`;
+  var idInput = document.getElementById("abEditId");
+  if (idInput) idInput.value = newId;
+  showAcademyToast(`신규 도서 관리 코드 [${newId}]가 자동 발급되었습니다.`);
+  return newId;
+}
+
+// -------------------------------------------------------------
+// [서비스 운영 관리 - 테마 관리] 주제 태그 드롭박스 렌더링 (학원 모달용)
+// -------------------------------------------------------------
+function renderThemeSelectForAcademyBook(selectedTag = "") {
+  var select = document.getElementById("abEditThemeTagSelect");
+  if (!select) return;
+
+  var currentThemes = (typeof themeList !== "undefined" && themeList.length > 0)
+    ? themeList
+    : [
+        { tag: "#이달의나노북클럽", title: "이달의 나노 북클럽" },
+        { tag: "#교과연계한국사", title: "초등 교과연계 역사 탐구" },
+        { tag: "#미래과학환경", title: "미래를 여는 과학 & 환경" },
+        { tag: "#인문문학여행", title: "마음을 키우는 인문 문학 여행" }
+      ];
+
+  var targetVal = Array.isArray(selectedTag) ? (selectedTag[0] || "") : selectedTag;
+
+  select.innerHTML = currentThemes.map(function(t) {
+    var tagVal = t.tag || `#${t.title.replace(/\s+/g, '')}`;
+    var isSelected = (targetVal && targetVal === tagVal) || (!targetVal && tagVal === "#이달의나노북클럽");
+    var label = t.title ? `${tagVal} (${t.title})` : tagVal;
+    return `<option value="${tagVal}" ${isSelected ? 'selected' : ''}>${label}</option>`;
+  }).join("");
+}
+
+// -------------------------------------------------------------
+// 학원 세부 태그 동적 입력 슬롯 관리 (디폴트 2칸, 최대 5칸, +추가 및 삭제)
+// -------------------------------------------------------------
+var acadDetailTagsState = ["", ""];
+
+function initAcadDetailTags(tagStringOrArray) {
+  if (Array.isArray(tagStringOrArray)) {
+    acadDetailTagsState = tagStringOrArray.filter(function(t) { return t && t.trim() !== ""; });
+  } else if (typeof tagStringOrArray === "string" && tagStringOrArray.trim() !== "") {
+    var raw = tagStringOrArray.split(/[\s,#]+/).map(function(t) { return t.trim(); }).filter(Boolean);
+    acadDetailTagsState = raw;
+  } else {
+    acadDetailTagsState = ["", ""];
+  }
+
+  while (acadDetailTagsState.length < 2) {
+    acadDetailTagsState.push("");
+  }
+  if (acadDetailTagsState.length > 5) {
+    acadDetailTagsState = acadDetailTagsState.slice(0, 5);
+  }
+  renderAcadDetailTagSlots();
+}
+
+function renderAcadDetailTagSlots() {
+  var container = document.getElementById("abDetailTagsContainer");
+  var countEl = document.getElementById("abDetailTagCount");
+  var addBtn = document.getElementById("btnAddAcadDetailTagSlot");
+  if (!container) return;
+
+  if (countEl) countEl.innerText = acadDetailTagsState.length;
+  if (addBtn) addBtn.disabled = acadDetailTagsState.length >= 5;
+
+  var placeholders = ["예: 문해력향상", "예: 세계명작", "예: 창의융합", "예: 감정표현", "예: 성장스토리"];
+
+  container.innerHTML = acadDetailTagsState.map(function(val, idx) {
+    var canRemove = acadDetailTagsState.length > 2;
+    return `
+      <div class="input-group input-group-sm mb-1.5" style="border-radius: 6px; overflow: hidden;">
+        <div class="input-group-prepend">
+          <span class="input-group-text bg-white font-weight-bold text-muted" style="font-size: 12px; border-color: var(--border-medium); min-width: 82px;">
+            <i class="fa-solid fa-hashtag text-warning mr-1"></i>태그 ${idx + 1}
+          </span>
+        </div>
+        <input type="text" class="form-control form-control-beige acad-detail-tag-input" 
+               value="${val.replace(/^#/, '')}" 
+               placeholder="${placeholders[idx] || '태그 직접 입력'}" 
+               oninput="acadDetailTagsState[${idx}] = this.value"
+               style="font-size: 12.5px;">
+        ${canRemove ? `
+          <div class="input-group-append">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAcadDetailTagSlot(${idx})" title="이 태그 칸 삭제" style="border-color: var(--border-medium); font-size: 11px; padding: 0 10px;">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("");
+}
+
+function addAcadDetailTagSlot() {
+  if (acadDetailTagsState.length >= 5) {
+    showAcademyToast("세부 태그는 최대 5개까지 등록할 수 있습니다.");
+    return;
+  }
+  var inputs = document.querySelectorAll(".acad-detail-tag-input");
+  inputs.forEach(function(inp, i) { if (acadDetailTagsState[i] !== undefined) acadDetailTagsState[i] = inp.value; });
+  acadDetailTagsState.push("");
+  renderAcadDetailTagSlots();
+}
+
+function removeAcadDetailTagSlot(idx) {
+  if (acadDetailTagsState.length <= 2) {
+    showAcademyToast("세부 태그 칸은 최소 2개 이상 유지되어야 합니다.");
+    return;
+  }
+  var inputs = document.querySelectorAll(".acad-detail-tag-input");
+  inputs.forEach(function(inp, i) { if (acadDetailTagsState[i] !== undefined) acadDetailTagsState[i] = inp.value; });
+  acadDetailTagsState.splice(idx, 1);
+  renderAcadDetailTagSlots();
+}
+
+function getAcadDetailTagsValue() {
+  var inputs = document.querySelectorAll(".acad-detail-tag-input");
+  var tags = [];
+  inputs.forEach(function(inp) {
+    var v = inp.value.trim().replace(/^#/, "");
+    if (v) tags.push(`#${v}`);
+  });
+  return tags.join(" ");
+}
+
+// -------------------------------------------------------------
+// ISBN 도서 정보 자동 조회 (학원 모달용)
+// -------------------------------------------------------------
+function lookupAcademyIsbn() {
+  var isbnInput = document.getElementById("abEditIsbn");
+  var isbn = isbnInput ? isbnInput.value.trim().replace(/[^0-9]/g, "") : "";
+  if (!isbn) {
+    alert("13자리 ISBN 번호를 입력해주세요.");
+    return;
+  }
+
+  var btn = document.getElementById("btnAcadIsbnFetch");
+  if (btn) {
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>조회중...';
+    btn.disabled = true;
+  }
+
+  setTimeout(function() {
+    var isbnMap = {
+      "9788932917245": {
+        title: "어린 왕자",
+        author: "앙투안 드 생텍쥐페리",
+        publisher: "열린책들",
+        grade: "초등 5학년",
+        cat1: "소설",
+        cat2: "외서",
+        cover: "assets/covers/cover_1001.jpg"
+      },
+      "9788936434120": {
+        title: "아몬드",
+        author: "손원평",
+        publisher: "창비",
+        grade: "중등 2학년",
+        cat1: "소설",
+        cat2: "국내서",
+        cover: "assets/covers/cover_1002.jpg"
+      }
+    };
+
+    var data = isbnMap[isbn] || {
+      title: `[ISBN-${isbn.slice(-4)}] 신규 맞춤 도서`,
+      author: "국립중앙도서관 수록 작가",
+      publisher: "나노교육출판",
+      grade: "초등 5학년",
+      cat1: "소설",
+      cat2: "국내서",
+      cover: "assets/covers/cover_1001.jpg"
+    };
+
+    if (document.getElementById("abEditTitle")) document.getElementById("abEditTitle").value = data.title;
+    if (document.getElementById("abEditAuthor")) document.getElementById("abEditAuthor").value = data.author;
+    if (document.getElementById("abEditPublisher")) document.getElementById("abEditPublisher").value = data.publisher;
+    if (document.getElementById("abEditGrade")) document.getElementById("abEditGrade").value = data.grade;
+    if (document.getElementById("abEditCat1")) document.getElementById("abEditCat1").value = data.cat1;
+    if (document.getElementById("abEditCat2")) document.getElementById("abEditCat2").value = data.cat2;
+    onAcadCategory1Changed(data.cat1);
+    onAcadCategory2Changed(data.cat2);
+    if (document.getElementById("abEditCover")) document.getElementById("abEditCover").value = data.cover;
+    updateAcadCoverPreview(data.cover);
+
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
+      btn.disabled = false;
+      setTimeout(function() {
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+      }, 2000);
+    }
+    showAcademyToast(`[ISBN: ${isbn}] 서지정보가 자동 입력되었습니다.`);
+  }, 400);
+}
+
+// -------------------------------------------------------------
+// 학원 신규 도서 등록 / 편집 모달 열기
+// -------------------------------------------------------------
 function openAcademyBookOnlyAddModal(id = null) {
   var isNew = !id;
   originalEditingAcadBookId = isNew ? null : id;
   var book = isNew ? null : academyBookList.find(function(b) { return b.id === id; });
 
-  // 1. 도서 관리 코드 채번
-  var defaultId = '1005';
-  if (isNew) {
-    var maxId = 1000;
-    academyBookList.forEach(function(b) {
-      var num = parseInt(b.id, 10);
-      if (!isNaN(num) && num > maxId) maxId = num;
-    });
-    defaultId = String(maxId + 1);
-  } else {
-    defaultId = book.id;
-  }
-  if (document.getElementById('abEditId')) document.getElementById('abEditId').value = defaultId;
-
-  // 2. 모달 타이틀 설정
+  // 1. 모달 타이틀 설정
   var titleEl = document.getElementById('acadBookModalTitle');
   if (titleEl) {
     titleEl.innerHTML = isNew
@@ -5504,21 +5847,68 @@ function openAcademyBookOnlyAddModal(id = null) {
       : `<i class="fa-solid fa-pen-to-square mr-2 text-warning"></i>학원 도서 서지 정보 편집 <span class="badge-soft badge-soft-neutral ml-1" style="font-size: 11px;">${book.id}</span>`;
   }
 
-  // 3. ISBN 바인딩
+  // 2. 카테고리 1, 카테고리 2, 학년 바인딩
+  var cat1 = (book && book.cat1) ? book.cat1 : "소설";
+  var cat2 = (book && book.cat2) ? book.cat2 : "국내서";
+  var grade = (book && book.grade) ? book.grade : "초등 5학년";
+
+  if (document.getElementById('abEditCat1')) document.getElementById('abEditCat1').value = cat1;
+  if (document.getElementById('abEditCat2')) document.getElementById('abEditCat2').value = cat2;
+  if (document.getElementById('abEditGrade')) document.getElementById('abEditGrade').value = grade;
+
+  // 3. 도서 관리 코드 채번/세팅
+  if (isNew) {
+    generateAcademyBookId();
+  } else {
+    if (document.getElementById('abEditId')) document.getElementById('abEditId').value = book.id;
+  }
+
+  // 4. 공개 여부
+  var isPub = (book && book.isPublic === "N") ? "N" : "Y";
+  if (isPub === "Y") {
+    if (document.getElementById('abEditPublicY')) document.getElementById('abEditPublicY').checked = true;
+  } else {
+    if (document.getElementById('abEditPublicN')) document.getElementById('abEditPublicN').checked = true;
+  }
+
+  // 5. ISBN 바인딩
   var isbnInput = document.getElementById('abEditIsbn');
   if (isbnInput) {
     isbnInput.value = (book && book.isbn) ? book.isbn : (isNew ? '9791190000010' : '');
   }
 
-  // 4. 서지 정보 바인딩
+  // 6. 기본 서지 정보 바인딩
   if (document.getElementById('abEditTitle')) document.getElementById('abEditTitle').value = isNew ? '' : book.title;
   if (document.getElementById('abEditAuthor')) document.getElementById('abEditAuthor').value = isNew ? '' : book.author;
   if (document.getElementById('abEditPublisher')) document.getElementById('abEditPublisher').value = isNew ? '' : (book.publisher || '열린책들');
-  if (document.getElementById('abEditGrade')) document.getElementById('abEditGrade').value = isNew ? '초등 5~6학년' : (book.grade || '초등 5~6학년');
-  if (document.getElementById('abEditCategory')) document.getElementById('abEditCategory').value = isNew ? '세계문학 / 우정' : (book.category || '세계문학 / 우정');
-  if (document.getElementById('abEditSummary')) document.getElementById('abEditSummary').value = isNew ? '' : (book.summary || book.subtitle || '');
 
-  // 표지 처리
+  // 7. 시리즈명 & 단권
+  var isSingle = isNew ? false : (book.isSingle || book.series === '단권');
+  if (document.getElementById('abEditIsSingle')) document.getElementById('abEditIsSingle').checked = isSingle;
+  toggleAcadSingleBookCheckbox(isSingle);
+  if (document.getElementById('abEditSeries')) document.getElementById('abEditSeries').value = (book && book.series && book.series !== '단권') ? book.series : '';
+
+  // 8. 주제 분류 태그 (드롭박스 - 테마 관리 연동)
+  var selectedThemeTag = (book && book.themeTag) ? book.themeTag : ((book && Array.isArray(book.tags) && book.tags[0]) ? book.tags[0] : "#이달의나노북클럽");
+  renderThemeSelectForAcademyBook(selectedThemeTag);
+
+  // 9. 세부 태그 동적 입력 슬롯 초기화
+  initAcadDetailTags((book && book.detailTag) ? book.detailTag : "");
+
+  // 10. 어워드, 생각꺼내기
+  if (document.getElementById('abEditAwards')) document.getElementById('abEditAwards').value = (book && book.awards) ? book.awards : '';
+  if (document.getElementById('abEditThinkExtract')) document.getElementById('abEditThinkExtract').value = (book && book.thinkExtract) ? book.thinkExtract : '';
+
+  // 11. 생각 담기
+  updateAcadThinkPresets(cat1);
+  if (book && book.thinkInsert) {
+    if (document.getElementById('abEditThinkInsert')) document.getElementById('abEditThinkInsert').value = book.thinkInsert;
+    switchAcadThinkMode('custom');
+  } else {
+    switchAcadThinkMode('preset');
+  }
+
+  // 12. 표지 처리
   var coverUrl = isNew
     ? 'assets/covers/cover_1001.jpg'
     : (book.cover || 'assets/covers/cover_1001.jpg');
@@ -5526,7 +5916,7 @@ function openAcademyBookOnlyAddModal(id = null) {
   updateAcadCoverPreview(coverUrl);
   switchAcadCoverMode('url');
 
-  // 학습자료 파일 정보 설정
+  // 13. 학습자료 파일 정보 설정
   editingAcadSheetFile = (book && book.materialName) ? {
     name: book.materialName,
     size: book.materialSize || '1.45 MB',
@@ -5539,15 +5929,6 @@ function openAcademyBookOnlyAddModal(id = null) {
 
   var sheetNameEl = document.getElementById('abSheetFileName');
   if (sheetNameEl) sheetNameEl.innerText = editingAcadSheetFile.name;
-
-  if (document.getElementById('abEditSheet')) {
-    document.getElementById('abEditSheet').checked = true;
-  }
-
-  // 핵심 정답 가이드
-  if (document.getElementById('abEditMemo')) {
-    document.getElementById('abEditMemo').value = (book && book.answerGuide) ? book.answerGuide : '';
-  }
 
   // 백드롭 정리 및 모달 오픈
   $('.modal-backdrop').remove();
@@ -5636,14 +6017,29 @@ function handleSaveAcademyBookOnly(event) {
 
   var finalId = document.getElementById('abEditId').value.trim();
   var isbn = document.getElementById('abEditIsbn').value.trim();
+  var isPublicEl = document.querySelector('input[name="abEditIsPublic"]:checked');
+  var isPublic = isPublicEl ? isPublicEl.value : 'Y';
   var title = document.getElementById('abEditTitle').value.trim();
+  var isSingle = document.getElementById('abEditIsSingle') ? document.getElementById('abEditIsSingle').checked : true;
+  var series = isSingle ? '단권' : ((document.getElementById('abEditSeries') ? document.getElementById('abEditSeries').value.trim() : '') || '단권');
   var author = document.getElementById('abEditAuthor').value.trim();
   var publisher = document.getElementById('abEditPublisher').value.trim();
+  var cat1 = document.getElementById('abEditCat1') ? document.getElementById('abEditCat1').value : '소설';
+  var cat2 = document.getElementById('abEditCat2') ? document.getElementById('abEditCat2').value : '국내서';
   var grade = document.getElementById('abEditGrade').value;
-  var category = document.getElementById('abEditCategory').value;
-  var summary = document.getElementById('abEditSummary') ? document.getElementById('abEditSummary').value.trim() : '';
-  var memo = document.getElementById('abEditMemo').value.trim();
-  var cover = document.getElementById('abEditCover').value.trim() || 'assets/covers/cover_1001.jpg';
+  var detailTag = getAcadDetailTagsValue();
+  var awards = document.getElementById('abEditAwards') ? document.getElementById('abEditAwards').value.trim() : '';
+  var thinkExtract = document.getElementById('abEditThinkExtract') ? document.getElementById('abEditThinkExtract').value.trim() : '';
+  var thinkInsert = document.getElementById('abEditThinkInsert') ? document.getElementById('abEditThinkInsert').value.trim() : '';
+  var cover = (document.getElementById('abEditCover') ? document.getElementById('abEditCover').value.trim() : '') || 'assets/covers/cover_1001.jpg';
+
+  // 선택된 주제 분류 태그 수집 (드롭박스)
+  var themeTagEl = document.getElementById('abEditThemeTagSelect');
+  var themeTag = themeTagEl ? themeTagEl.value : '#이달의나노북클럽';
+  var tags = [themeTag];
+
+  var isNonfiction = (cat1 === '비문학/정보글' || cat1 === '비문학' || cat1 === 'C');
+  var category = isNonfiction ? '비문학' : '문학';
 
   var matName = editingAcadSheetFile ? editingAcadSheetFile.name : `${title}_나노시트_학습용.pdf`;
   var matSize = editingAcadSheetFile ? editingAcadSheetFile.size : '1.45 MB';
@@ -5662,30 +6058,49 @@ function handleSaveAcademyBookOnly(event) {
   if (existingIdx >= 0) {
     var b = academyBookList[existingIdx];
     b.isbn = isbn;
+    b.isPublic = isPublic;
     b.title = title;
+    b.isSingle = isSingle;
+    b.series = series;
     b.author = author;
     b.publisher = publisher;
-    b.grade = grade;
+    b.cat1 = cat1;
+    b.cat2 = cat2;
     b.category = category;
-    b.summary = summary;
+    b.grade = grade;
+    b.themeTag = themeTag;
+    b.tags = tags;
+    b.detailTag = detailTag;
+    b.awards = awards;
+    b.thinkExtract = thinkExtract;
+    b.thinkInsert = thinkInsert;
     b.cover = cover;
     b.materialName = matName;
     b.materialSize = matSize;
     b.materialType = matType;
-    b.answerGuide = memo;
     lastAddedBookId = b.id;
     showAcademyToast(`도서 [${title}] 서지 정보가 성공적으로 수정되었습니다.`);
   } else {
     var newBook = {
-      id: finalId,
+      id: finalId || generateAcademyBookId(),
       isbn: isbn,
+      isPublic: isPublic,
       title: title,
-      subtitle: summary ? summary.slice(0, 30) : '학원 자체 등록 맞춤 도서',
+      subtitle: series && series !== '단권' ? series : '학원 자체 등록 맞춤 도서',
+      isSingle: isSingle,
+      series: series,
       author: author,
       publisher: publisher,
-      grade: grade,
+      cat1: cat1,
+      cat2: cat2,
       category: category,
-      summary: summary,
+      grade: grade,
+      themeTag: themeTag,
+      tags: tags,
+      detailTag: detailTag,
+      awards: awards,
+      thinkExtract: thinkExtract,
+      thinkInsert: thinkInsert,
       creatorType: 'ACADEMY',
       academyName: '나노 독서아카데미 본원',
       cover: cover,
@@ -5694,7 +6109,7 @@ function handleSaveAcademyBookOnly(event) {
       materialType: matType,
       quizStatus: '3문항 완비',
       readCount: '0회',
-      answerGuide: memo || '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
+      answerGuide: '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
     };
     academyBookList.unshift(newBook);
     lastAddedBookId = finalId;

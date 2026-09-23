@@ -1469,7 +1469,56 @@ class Manage extends MY_Controller {
 	}		
 
 
-	//Banner 작성
+    // ─── 특별 포인트 수동 적립 처리 (관리자 전용) ───
+    // 정책: -100 ~ +100pt 범위에서 관리자가 사유와 함께 수동 적립/차감
+    public function special_point_proc()
+    {
+        $user_seq = (int)$this->input->post('user_seq');
+        $point    = (int)$this->input->post('point');
+        $reason   = trim($this->input->post('reason'));
+
+        // 입력 검증
+        if($user_seq <= 0) {
+            echo json_encode(['result' => 'fail', 'msg' => '유효하지 않은 회원입니다.']);
+            exit;
+        }
+        if($point === 0 || $point < -100 || $point > 100) {
+            echo json_encode(['result' => 'fail', 'msg' => '포인트는 -100 ~ +100 범위에서 입력해 주세요. (0 제외)']);
+            exit;
+        }
+        if($reason === '') {
+            echo json_encode(['result' => 'fail', 'msg' => '적립/차감 사유를 입력해 주세요.']);
+            exit;
+        }
+
+        // 회원 정보 조회
+        $userData = $this->user_model->getUserSeq($user_seq);
+        if(empty($userData)) {
+            echo json_encode(['result' => 'fail', 'msg' => '회원 정보를 찾을 수 없습니다.']);
+            exit;
+        }
+
+        // 포인트 히스토리 저장 (point_type = 'SPECIAL')
+        $label = $point > 0 ? "[특별적립] " : "[특별차감] ";
+        $data = [
+            'point_type' => 'SPECIAL',
+            'content'    => $label . $reason,
+            'point'      => $point,
+            'user_id'    => $userData['user_id'],
+            'user_name'  => $userData['user_name'],
+            'read_yn'    => 'N',
+            'reg_date'   => date('Y-m-d H:i:s'),
+        ];
+        $this->pointHistory_model->insertPointHistory($data);
+
+        // 개인 누적 포인트 업데이트
+        $this->member_model->updatePoint($userData['user_id'], $point);
+
+        echo json_encode(['result' => 'success']);
+        exit;
+    }
+
+
 	public function bannerWriteProc()
 	{
 	    

@@ -177,7 +177,30 @@ class QuizHistory_model extends MY_Model {
         
         return $query;
     }    
+
+    // ─── 당일 인증 실패 횟수 조회 ───
+    // 정책: 1권에 대해 하루 3번 인상 인증 실패(60점 미만) 시, 동일한 날 재도전 불가
+    //       다음 날(자정 기준)부터 재도전 가능
+    public function getQuizHistoryTodayFailCount($data)
+    {
+        $book_no = $data['book_no'];
+        $quiz_seq = $data['quiz_seq'];
+        $user_id  = $data['user_id'];
+
+        // CURDATE() 기준 당일, 60점 미만 시도 횟수
+        $sql = "SELECT count(*) cnt
+                  FROM tb_quiz_history
+                 WHERE book_no  = '{$book_no}'
+                   AND quiz_seq = '{$quiz_seq}'
+                   AND user_id  = '{$user_id}'
+                   AND score    < 60
+                   AND DATE(reg_date) = CURDATE()";
+        $query = $this->db->query($sql)->row_array();
+
+        return $query;
+    }    
     
+
 
     //정보 입력
     public function insertQuizHistory($data)
