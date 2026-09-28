@@ -110,11 +110,14 @@
 	<script>
 
 	    $(function() {
-
-			$('.show_data').on("click", function(){
+			$('.show_data').on("click", function(e){
+			    e.preventDefault();
 			    $('#infoLayer').show();
 			});	    
-
+			$('#infoLayer .popup_close').on("click", function(e){
+			    e.preventDefault();
+			    $('#infoLayer').hide();
+			});
 		});
 		    
 		$(function() {
@@ -136,14 +139,16 @@
 			});
 		});
     	$(function(){
-    	    $('.btn_wish').on("click",function(){
-    	        $(this).addClass("on");
+    	    $('.btn_wish').on("click",function(e){
+    	        e.preventDefault();
+    	        var $btn = $(this);
+    	        var bookNo = $btn.data("book_no");
+    	        var quizSeq = $btn.data("quiz_seq");
     	        
         		var data = {
-        			"quiz_seq"	:	$(this).data("quiz_seq"),
-        			"book_no"	:	$(this).data("book_no"),
+        			"quiz_seq"	:	quizSeq,
+        			"book_no"	:	bookNo,
         		};
-        		
 
         		var csrf_name = $('#csrf').attr("name");
                 var csrf_val = $('#csrf').val();
@@ -156,19 +161,10 @@
                     dataType:"json",
                     success : function(data, status, xhr) {
                         if(data.result=="success"){
-                            
-                            location.reload();
-                            /*
-        					swal("저장되었습니다.", {
-        						icon: "success",
-        					}).then((value)=>{
-        						//location.href = "/member/setting";
-        						location.reload();
-        					});
-        					*/
-
+                            // 해당 도서 번호를 가진 모든 위시 버튼 동기화 토글
+                            $('.btn_wish[data-book_no="'+bookNo+'"]').toggleClass("on");
         				}else{
-        					cswal(data.msg);
+        					cswal(data.msg || "처리 중 오류가 발생했습니다.");
         				}
                     },
                     error: function(jqXHR, textStatus, errorThrown) {

@@ -288,11 +288,7 @@ class Home extends MY_Controller {
 	//login
 	public function login()
 	{
-		$content_data = array(
-			"base_url"	=>	$this->BASE_URL
-		);
-
-		$this->parser->parse("admin/login",$content_data);
+		redirect("/login");
 	}
 
 	//login ajax

@@ -535,68 +535,17 @@
       
     }
  
-  var select_feed_seq = 0;
-  var select_comment_seq = 0;
-  var select_adv_seq = 0;
-
-  function moreView(is_me,feed_seq)
-  {
-    select_feed_seq = feed_seq;
-    if(is_me == "Y"){
-      uiLayer.open('#mainContentMore_me');
-    }else{
-      uiLayer.open('#mainContentMore_other');
-    }
-
-  }
-
-  function moreAdView(is_me,adv_seq)
-  {
-    select_adv_seq = adv_seq;
-    uiLayer.open('#mainContentMore_ad');
-
-
-  }
-
-     
-    var scrollBool = true;
-    var loadBool = true;
-
     $(function(){
-      //feedLoad();
-
-      window.onscroll = function(e) {
-    	    //추가되는 임시 콘텐츠
-    			//if($(window).scrollTop() == $(document).height() - $(window).height()){
-
-			var scrollHeight = $(document).height();
-			var scrollPosition = $(window).height() + $(window).scrollTop();
-
-			if (scrollPosition >= scrollHeight - 150) {
-
-
-				if(scrollBool == true){
-					scrollBool = false;
-                    if(loadBool == true){
-                    
-                      num++;
-                      //scrollLoad();
-                    }
-				}
-			}
-    	};
-    	
-	    $('.btn_wish').on("click",function(){
-	        if($(this).hasClass("on"))
-    	        $(this).removeClass("on");
-	        else
-	            $(this).addClass("on");
+	    $('.btn_wish').on("click",function(e){
+	        e.preventDefault();
+	        var $btn = $(this);
+	        var wasOn = $btn.hasClass("on");
+	        $btn.toggleClass("on");
 	        
     		var data = {
-    			"quiz_seq"	:	$(this).data("quiz_seq"),
-    			"book_no"	:	$(this).data("book_no"),
+    			"quiz_seq"	:	$btn.data("quiz_seq"),
+    			"book_no"	:	$btn.data("book_no"),
     		};
-    		
 
     		var csrf_name = $('#csrf').attr("name");
             var csrf_val = $('#csrf').val();
@@ -608,21 +557,18 @@
                 data: data,
                 dataType:"json",
                 success : function(data, status, xhr) {
-                    //cswal(data.msg);
-                    //if(data.result=="success"){
-    				//	swal("저장되었습니다.", {
-    				//		icon: "success",
-    				//	}).then((value)=>{
-    				//		//location.href = "/member/setting";
-    				//		location.reload();
-    				//	});
-                    //
-    				//}else{
-    				//	cswal(data.msg);
-    				//}
+                    if(data.result != "success"){
+                        // 실패 시 원복
+                        $btn.toggleClass("on", wasOn);
+                        if(typeof cswal === "function") {
+                            cswal(data.msg || "처리 중 오류가 발생했습니다.");
+                        }
+                    }
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
+                    // 통신 에러 시 원복
+                    $btn.toggleClass("on", wasOn);
+                    console.log(jqXHR.responseText);
                 }
             });			        
 	    });    	

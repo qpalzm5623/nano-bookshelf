@@ -230,6 +230,9 @@
 							<a href="#" class="btn_recommend" id="recommendYBtn"><i class="icon_recommend"></i><span class="text">추천해요!</span></a>
 							<a href="#" class="btn_recommend" id="recommendNBtn"><i class="icon_not_recommend"></i><span class="text">추천하지 않아요!</span></a>
 						</div>
+						<p class="recommend_hint" style="text-align:center; font-size:14px; color:#777; margin-top:16px;">
+							💡 추천 여부를 선택해 주시면 퀴즈 결과를 바로 확인할 수 있어요!
+						</p>
 					</div>
 					<!-- // 책 추천화면 -->
 				</div>
@@ -375,6 +378,7 @@
             $('#recommendYBtn').addClass('on');
             $('#recommendNBtn').removeClass('on');
             hasRecommended = true;
+            $('.recommend_hint').html('✨ 선택되었습니다! 아래 <b>[퀴즈 결과 보러 가기]</b>를 눌러주세요.').css('color', '#007aff');
             let vdata = {};
     		var csrf_name = $('#csrf').attr("name");
             var csrf_val = $('#csrf').val();
@@ -416,6 +420,7 @@
             $('#recommendNBtn').addClass('on');
             $('#recommendYBtn').removeClass('on');
             hasRecommended = true;
+            $('.recommend_hint').html('✨ 선택되었습니다! 아래 <b>[퀴즈 결과 보러 가기]</b>를 눌러주세요.').css('color', '#007aff');
             let vdata = {};
     		var csrf_name = $('#csrf').attr("name");
             var csrf_val = $('#csrf').val();

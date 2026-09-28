@@ -92,7 +92,7 @@ class Book extends MY_Controller {
 		    $where .= " AND (a.recommend_yn ='Y')";
 		}				
 		
-		$where .= " AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+		$where .= " AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
 		
         $whereData = array("where"=>$where,
         "limit"=>"", "user_id" => $userData['user_id']);
@@ -154,7 +154,7 @@ class Book extends MY_Controller {
 		    $where = " AND a.book_no in (".implode(",", $book_no).")";
 		    
 		//$where .= " AND (c.status='Y' OR s.quiz_seq != NULL)";
-		$where .= " AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+		$where .= " AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
 		if($grade != "") {
 		    //$where .= " AND (a.recommend_class ='{$grade}') and recommend_yn = 'Y'";
 		    $where .= " AND (a.recommend_class ='{$grade}')";
@@ -726,32 +726,13 @@ class Book extends MY_Controller {
 	{
 	    $book_no=@$this->input->post("book_no");
 	    $quiz_seq=@$this->input->post("quiz_seq");	    
-	    $quiz_answer_result=@$this->input->post("quiz_answer_result");
-	    $quiz_result=@$this->input->post("quiz_result");	    
 	    $think_reply=@$this->input->post("think_reply");	    
 	    $think_reply_file=@$this->input->post("think_reply_file");	    
 	    
 	    $c=@$this->input->post("c");
-
 	    
 	    $userData = $this->CONFIG_DATA['userData'];
 	    $think_answer_reply = serialize($c);
-	    
-	    $score= 0;
-		$data = array(
-			"book_no" => $book_no,
-			"quiz_seq" => $quiz_seq,
-			"quiz_result" => serialize($quiz_result),
-			"think_reply" => $think_reply,
-			"think_answer_reply" => $think_answer_reply,
-			"think_reply_file" => $think_reply_file,
-			"score" => $score,
-			"reg_date"	=> date("Y-m-d H:i:s"),
-			"user_name" => $userData['user_name'],
-			"grade" => $userData['grade_org'],
-			"gender" => $userData['gender'],
-			"user_id"	=>	$userData['user_id'],
-		);
 	    
 	    // 갯수 확인
 	    
@@ -762,7 +743,13 @@ class Book extends MY_Controller {
         "limit"=>"", "user_id" => $userData['user_id']);
         $quizData = $this->book_model->getBookUserQuizDetail($whereData);		
         
-        $quiz_result = unserialize($quiz_result);
+        if(empty($quizData) || empty($quizData[0]['quiz_contents'])) {
+            echo json_encode(array("result"=>"failed", "msg"=>"퀴즈 정보를 찾을 수 없습니다."));
+            exit;
+        }
+
+        $realQuiz = @unserialize($quizData[0]['quiz_contents']);
+        $quiz_result = is_array($realQuiz) ? $realQuiz : array('a' => array());
         
         
 	    $scoreCnt = 0;
@@ -784,9 +771,24 @@ class Book extends MY_Controller {
     	    }
 	    }
 	    //exit;
-	    $score = round(($scoreCnt / $quizData[0]['quiz_cnt']) * 100);
-	    //echo ($scoreCnt / $quizData[0]['quiz_cnt']);
+	    $score = $quizData[0]['quiz_cnt'] > 0 ? round(($scoreCnt / $quizData[0]['quiz_cnt']) * 100) : 0;
 	    
+		$data = array(
+			"book_no" => $book_no,
+			"quiz_seq" => $quiz_seq,
+			"quiz_result" => $quizData[0]['quiz_contents'],
+			"think_reply" => $think_reply,
+			"quiz_answer_result" => $think_answer_reply,
+			"think_reply_file" => $think_reply_file,
+			"reg_date"	=> date("Y-m-d H:i:s"),
+			"quiz_cnt" => $quizData[0]['quiz_cnt'],
+			"correct_cnt" => $scoreCnt,
+			"score" => $score,
+			"user_name" => $userData['user_name'],
+			"grade" => $userData['grade_org'],
+			"gender" => $userData['gender'],
+			"user_id"	=>	$userData['user_id'],
+		);
 	    
 	    $info = $this->quizHistory_model->getQuizHistorySuccessCount($data);
 
@@ -801,32 +803,6 @@ class Book extends MY_Controller {
 	        }
 	    }
 
-	    	    
-	    //echo $quizData[0]['quiz_cnt']."====".$scoreCnt;
-	    //print_r(unserialize($quiz_result));
-	    
-	    
-
-	    //print_r($_POST);
-        // 저장	    
-		$data = array(
-			"book_no" => $book_no,
-			"quiz_seq" => $quiz_seq,
-			"quiz_result" => serialize($quiz_result),
-			"think_reply" => $think_reply,
-			"quiz_answer_result" => $think_answer_reply,
-			"think_reply_file" => $think_reply_file,
-			"reg_date"	=> date("Y-m-d H:i:s"),
-			"quiz_cnt" => $quizData[0]['quiz_cnt'],
-			"correct_cnt" => $scoreCnt,
-			"score" => $score,
-			"user_name" => $userData['user_name'],
-			"grade" => $userData['grade_org'],
-			"gender" => $userData['gender'],
-			"user_id"	=>	$userData['user_id'],
-		);
-		//$info = $this->quizHistory_model->getQuizHistoryHistory($data);
-		
 		$result = $this->quizHistory_model->insertQuizHistory($data);	    
 		
 		

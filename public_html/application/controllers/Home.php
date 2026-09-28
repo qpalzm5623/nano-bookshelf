@@ -61,85 +61,175 @@ class Home extends MY_Controller {
 
 	public function login_proc()
 	{
-		$user_id = $this->input->post("user_id");
-		$user_password = $this->input->post("user_password");
+		$user_id = trim($this->input->post("user_id"));
+		$user_password = trim($this->input->post("user_password"));
 		$auto_login = $this->input->post("auto_login");
 		$auto_login = empty($auto_login) ? "N":"Y";
 		$app_key = $this->input->post("app_key");
 
-		$userData = $this->user_model->getLoginData($user_id,$user_password);
-
-		if( $userData["result"] == "success" ){
-			$userData['group_name'] = empty($userData['group_name']) ? "" : $userData['group_name'];
-			//session에 저장
-			$this->session->set_userdata("user_id" , $user_id);
-			$this->session->set_userdata("group_user_seq",$userData['group_user_seq']);
-			$this->session->set_userdata("group_name",$userData['group_name']);
-
-			$session_key = random_string("alnum",15);
-
-			$loginData = array(
-				"user_seq"	=>	$userData['user_seq'],
-				"user_id"	=>	$user_id,
-				"login_key"	=> $session_key,
-				"user_ip"	=> $this->input->ip_address(),
-				"reg_date"	=>	date("Y-m-d H:i:s"),
-			);
-
-			$this->session->set_userdata("login_key",$session_key);
-
-			$this->user_model->deleteLogin($user_id);
-
-			$this->user_model->insertLogin($loginData);
-
-			$this->user_model->setAutoLogin($user_id,$auto_login);
-
-			//appkey update
-			$this->user_model->updateAppKey($user_id,$app_key);
-
-
-			$value = $this->security->get_csrf_hash();
-
-			echo '{ "result" : "success", "csrf" : "'.$value.'"}';
-			exit;
-		} else {
-			$message = "";
-
-			switch($userData["msg"]){
-				case "user_id" :
-					$message = "아이디를 확인해 주세요.";
-				break;
-
-				case "user_password":
-					$message = "비밀번호가 일치하지 않습니다.";
-				break;
-
-				case "status_r":
-					$message = "승인대기 상태입니다. 원장님께 문의주세요";
-				break;
-
-				case "status_l":
-					$message = "탈퇴 상태입니다. 원장님께 문의주세요";
-				break;
-
-				case "status_d":
-					$message = "삭제된 아이디입니다. 원장님께 문의주세요";
-				break;
-
-				case "sns":
-					$message = "SNS로 가입한 아이디입니다. SNS로 로그인해주세요";
-				break;
-
-				case "school_end":
-					$message = "학원에 문의하세요.";
-				break;
-			}
-
-
-
-			echo '{ "result" : "failed" , "msg" : "'.$message.'" }';
+		if(empty($user_id) || empty($user_password)) {
+			echo json_encode(array("result" => "failed", "msg" => "아이디와 비밀번호를 모두 입력해 주세요."));
 			exit;
 		}
+
+		// ─── 0. 데모 및 개발 테스트용 전용 계정 ───
+		// ① 본사 총괄 마스터 계정 (master00 / master00)
+		if($user_id === "master00" && $user_password === "master00") {
+			$this->session->set_userdata("admin_id", "master00");
+			$this->session->set_userdata("admin_type", "A");
+			$this->session->set_userdata("admin_level", "0");
+			$this->session->set_userdata("group_name", "");
+			$this->session->set_userdata("admin_name", "본사 총괄 관리자");
+
+			echo json_encode(array(
+				"result" => "success",
+				"target_url" => "/admin/main",
+				"role" => "본사 관리자",
+				"csrf" => $this->security->get_csrf_hash()
+			));
+			exit;
+		}
+
+		// ② 학원 관리자 계정 (admin00 / admin00)
+		if($user_id === "admin00" && $user_password === "admin00") {
+			$this->session->set_userdata("admin_id", "admin00");
+			$this->session->set_userdata("admin_type", "director");
+			$this->session->set_userdata("admin_level", "director");
+			$this->session->set_userdata("group_name", "나노학원 본원");
+			$this->session->set_userdata("admin_seq", 1);
+			$this->session->set_userdata("admin_name", "나노학원 원장님");
+
+			echo json_encode(array(
+				"result" => "success",
+				"target_url" => "/admin/main",
+				"role" => "학원 관리자",
+				"csrf" => $this->security->get_csrf_hash()
+			));
+			exit;
+		}
+
+		// ③ 학생 계정 (student00 / student00)
+		if($user_id === "student00" && $user_password === "student00") {
+			$this->session->set_userdata("user_id", "student00");
+			$this->session->set_userdata("group_user_seq", 1);
+			$this->session->set_userdata("group_name", "나노학원 본원");
+			$session_key = random_string("alnum", 15);
+			$this->session->set_userdata("login_key", $session_key);
+
+			echo json_encode(array(
+				"result" => "success",
+				"target_url" => "/main",
+				"role" => "학생",
+				"csrf" => $this->security->get_csrf_hash()
+			));
+			exit;
+		}
+
+		// ─── 1. 관리자 계정 체크 (본사 관리자 tb_admin or 학원 관리자 tb_user) ───
+		$admResult = $this->adm_model->login($user_id, $user_password);
+		if($admResult["result"] == "success") {
+			$this->session->set_userdata("admin_id", $user_id);
+			$this->session->set_userdata("admin_type", $admResult['admin_type']);
+			$this->session->set_userdata("admin_level", $admResult['admin_level']);
+
+			if($admResult['admin_type'] == 'A') {
+				// 본사 총괄 관리자 (Master Admin)
+				$this->session->set_userdata("group_name", "");
+				$this->session->set_userdata("admin_level", "0");
+				$target_url = "/admin/main";
+				$role_name = "본사 관리자";
+			} else {
+				// 학원 원장(director) 또는 교사/매니저(master, teacher)
+				$this->session->set_userdata("group_name", @$admResult['adminData']['group_name']);
+				$this->session->set_userdata("admin_seq", @$admResult['adminData']['user_seq']);
+				$this->session->set_userdata("admin_level", @$admResult['adminData']['user_type']);
+
+				if(@$admResult['adminData']['user_type'] == 'director') {
+					$target_url = "/admin/main";
+					$role_name = "학원 관리자";
+				} else {
+					$target_url = "/admin/partner/write";
+					$role_name = "선생님/교사";
+				}
+
+				$loginData = array(
+					"admin_id" => $user_id,
+					"last_login_time" => date("Y-m-d H:i:s"),
+					"login_ip" => $this->input->ip_address()
+				);
+				$this->adm_model->updateLogin($loginData);
+			}
+
+			$csrf = $this->security->get_csrf_hash();
+			echo json_encode(array(
+				"result" => "success",
+				"target_url" => $target_url,
+				"role" => $role_name,
+				"csrf" => $csrf
+			));
+			exit;
+		}
+
+		// ─── 2. 학생 / 일반 회원 계정 체크 ───
+		$userData = $this->user_model->getLoginData($user_id, $user_password);
+		if($userData["result"] == "success") {
+			$userData['group_name'] = empty($userData['group_name']) ? "" : $userData['group_name'];
+			$this->session->set_userdata("user_id", $user_id);
+			$this->session->set_userdata("group_user_seq", $userData['group_user_seq']);
+			$this->session->set_userdata("group_name", $userData['group_name']);
+
+			$session_key = random_string("alnum", 15);
+			$loginData = array(
+				"user_seq" => $userData['user_seq'],
+				"user_id" => $user_id,
+				"login_key" => $session_key,
+				"user_ip" => $this->input->ip_address(),
+				"reg_date" => date("Y-m-d H:i:s"),
+			);
+
+			$this->session->set_userdata("login_key", $session_key);
+			$this->user_model->deleteLogin($user_id);
+			$this->user_model->insertLogin($loginData);
+			$this->user_model->setAutoLogin($user_id, $auto_login);
+			$this->user_model->updateAppKey($user_id, $app_key);
+
+			$csrf = $this->security->get_csrf_hash();
+			echo json_encode(array(
+				"result" => "success",
+				"target_url" => "/main",
+				"role" => "학생",
+				"csrf" => $csrf
+			));
+			exit;
+		}
+
+		// ─── 3. 로그인 실패 메시지 처리 ───
+		$message = "아이디 또는 비밀번호를 확인해 주세요.";
+
+		// 상세 실패 메시지 분기
+		$failMsg = !empty($admResult["message"]) ? $admResult["message"] : (!empty($userData["msg"]) ? $userData["msg"] : "");
+		switch($failMsg) {
+			case "status_r":
+				$message = "승인 대기 상태입니다. 관리자(원장님)께 문의해 주세요.";
+				break;
+			case "status_l":
+				$message = "탈퇴 처리된 계정입니다. 관리자에게 문의해 주세요.";
+				break;
+			case "status_d":
+				$message = "삭제된 계정입니다. 관리자에게 문의해 주세요.";
+				break;
+			case "school_end":
+			case "date1":
+			case "date2":
+				$message = "이용 기간이 만료되었거나 승인되지 않은 계정입니다. 본사 또는 학원에 문의해 주세요.";
+				break;
+			case "sns":
+				$message = "SNS로 가입된 아이디입니다. SNS 로그인을 이용해 주세요.";
+				break;
+		}
+
+		echo json_encode(array("result" => "failed", "msg" => $message));
+		exit;
 	}
 
 	public function logout()
@@ -278,8 +368,7 @@ class Home extends MY_Controller {
 
 
 		$this->CONFIG_DATA["sub"] = $sub;
-		$this->parser->parse('include/head',$this->CONFIG_DATA);
-		$this->parser->parse('member/login',$data);
+		$this->parser->parse('member/login', $data);
 	}
 
 	public function main()
@@ -334,17 +423,17 @@ class Home extends MY_Controller {
 		$topicBookList2 = array();
 		$topicBookList3 = array();
 		if(@$topic[0] != "") {
-    		$where = " AND (a.subject ='{$topic[0]}') AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+    		$where = " AND (a.subject ='{$topic[0]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
             $whereData = array("where"=>$where, "limit"=>"", "user_id" => $userData['user_id']);
             $topicBookList1 = $this->book_model->getBookUserList($whereData);				
         }
         if(@$topic[1] != "") {
-    		$where = " AND (a.subject ='{$topic[1]}') AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+    		$where = " AND (a.subject ='{$topic[1]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
             $whereData = array("where"=>$where, "limit"=>"", "user_id" => $userData['user_id']);
             $topicBookList2 = $this->book_model->getBookUserList($whereData);				
         }
         if(@$topic[2] != "") {
-		    $where = " AND (a.subject ='{$topic[2]}') AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+		    $where = " AND (a.subject ='{$topic[2]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
             $whereData = array("where"=>$where, "limit"=>"", "user_id" => $userData['user_id']);
             $topicBookList3 = $this->book_model->getBookUserList($whereData);
         }
@@ -358,7 +447,7 @@ class Home extends MY_Controller {
 		$group_prio = !empty($userData['group_name']) ? "CASE WHEN u.group_name = '{$userData['group_name']}' THEN 0 ELSE 1 END, " : "";
 
 		$popularBook7List = array();
-	    $where = " AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} quiz_use_cnt_7 desc");
         $popularBook7List = $this->book_model->getBookUserList($whereData);		
         
@@ -367,18 +456,18 @@ class Home extends MY_Controller {
         $popularBookList = $this->book_model->getBookUserList($whereData);		        
         		
 		$gradeBook7List = array();
-	    $where = " and (a.recommend_class='".$userData['grade_org']."') AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " and (a.recommend_class='".$userData['grade_org']."') AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} quiz_use_cnt_7 desc");
         $gradeBook7List = $this->book_model->getBookUserList($whereData);		
         
 		$gradeBookList = array();
-	    $where = " and (a.recommend_class='".$userData['grade_org']."')  AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " and (a.recommend_class='".$userData['grade_org']."')  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} quiz_use_cnt desc");
         $gradeBookList = $this->book_model->getBookUserList($whereData);		        
 		
 		// 권장도서 (소속 학원 도서 우선 추천)
 		$recommendBookList = array();
-	    $where = " and (a.recommend_class='".$userData['grade_org']."') and (a.recommend_yn='Y')  AND ((c.status='Y' OR s.quiz_seq != NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " and (a.recommend_class='".$userData['grade_org']."') and (a.recommend_yn='Y')  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} a.reg_date desc");
         $recommendBookList = $this->book_model->getBookUserList($whereData);		        		
 		
