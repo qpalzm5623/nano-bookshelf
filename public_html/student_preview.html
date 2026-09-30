@@ -7195,10 +7195,10 @@ function toast(msg){
 // 학생 포털 로그아웃 처리
 function handleStudentLogout() {
   if (confirm('학생 포털에서 로그아웃 하시겠습니까?')) {
-    toast('로그아웃되었습니다. 관리자 화면으로 이동합니다.');
+    toast('로그아웃되었습니다. 로그인 화면으로 이동합니다.');
     setTimeout(function() {
-      location.href = 'admin_preview.html';
-    }, 800);
+      location.href = 'index.html';
+    }, 600);
   }
 }
 

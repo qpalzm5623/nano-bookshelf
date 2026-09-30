@@ -3,241 +3,717 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>나노의 책장 - 통합 프로토타입 프리뷰 허브</title>
+  <title>나노의 책장 - 통합 관리자 로그인</title>
+  
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="resources/images/common/logo.png" type="image/png">
+
+  <!-- Google Fonts: Pretendard, Nunito, Gowun Dodum -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <style>
     :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --leaf: #2e5a44;
-      --wood: #6d5b4b;
-      --border: #e2e8f0;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-      --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
-      --shadow-hover: 0 20px 30px -10px rgba(0,0,0,0.12);
+      --bg-gradient: linear-gradient(145deg, #f7f4ee 0%, #ebe5d8 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary-brown: #3d342d;
+      --primary-brown-hover: #27211c;
+      --accent-teal: #00a896;
+      --accent-orange: #f59e0b;
+      --border-color: #e5ded3;
+      --text-main: #2b231d;
+      --text-muted: #786d63;
+      --text-subtle: #a09589;
+      --error-color: #ef4444;
+      --shadow-card: 0 20px 45px -10px rgba(61, 52, 45, 0.12), 0 10px 20px -8px rgba(61, 52, 45, 0.08);
+      --shadow-input: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
+      font-family: 'Noto Sans KR', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-gradient);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-    }
-    .hero {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      color: #fff;
-      padding: 60px 24px 70px;
-      text-align: center;
+      justify-content: space-between;
+      align-items: center;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
+      padding: 24px 16px;
     }
-    .hero::before {
-      content: '';
+
+    /* 배경 장식 원형 블러 */
+    .bg-shape-1 {
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
+      top: -120px;
+      right: -80px;
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, rgba(0, 168, 150, 0.12) 0%, transparent 70%);
+      border-radius: 50%;
       pointer-events: none;
+      z-index: 0;
     }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #93c5fd;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 16px;
-      backdrop-filter: blur(4px);
-    }
-    .hero h1 {
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 12px;
-    }
-    .hero p {
-      font-size: 16px;
-      color: #94a3b8;
-      max-width: 620px;
-      margin: 0 auto;
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 1100px;
-      margin: -35px auto 60px;
-      padding: 0 20px;
-      width: 100%;
-      flex: 1;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-    }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: var(--shadow-md);
-      transition: all 0.25s ease;
-      display: flex;
-      flex-direction: column;
-      text-decoration: none;
-      color: inherit;
-      position: relative;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-hover);
-      border-color: #cbd5e1;
-    }
-    .card-icon {
-      width: 54px;
-      height: 54px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-    .icon-student { background: #eaf4ed; color: #2e5a44; }
-    .icon-admin { background: #eff6ff; color: #2563eb; }
-    .icon-master { background: #fef3c7; color: #d97706; }
-    .icon-demo { background: #f3e8ff; color: #9333ea; }
-    .tag {
+    .bg-shape-2 {
       position: absolute;
-      top: 28px;
-      right: 28px;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      bottom: -100px;
+      left: -80px;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
     }
-    .tag-green { background: #dcfce7; color: #166534; }
-    .tag-blue { background: #dbeafe; color: #1e40af; }
-    .tag-gold { background: #fef3c7; color: #92400e; }
-    .tag-purple { background: #f3e8ff; color: #6b21a8; }
-    .card h2 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .card p {
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.55;
-      margin-bottom: 24px;
-      flex: 1;
-    }
-    .btn-link {
+
+    /* 상단 간이 바 */
+    .top-system-notice {
+      position: relative;
+      z-index: 1;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--primary);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(216, 206, 191, 0.6);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      backdrop-filter: blur(8px);
+      margin-bottom: 24px;
     }
-    .card:hover .btn-link {
-      color: var(--primary-hover);
+    .top-system-notice .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent-teal);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(0, 168, 150, 0.2);
     }
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 24px 20px;
+
+    /* 메인 래퍼 */
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      margin: auto 0;
+    }
+
+    /* 카드 */
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 40px 34px;
+      box-shadow: var(--shadow-card);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* 로고 & 타이틀 헤더 */
+    .brand-section {
       text-align: center;
+      margin-bottom: 32px;
+    }
+    .brand-logo-img {
+      height: 44px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 14px;
+      transition: transform 0.2s ease;
+    }
+    .brand-logo-img:hover {
+      transform: scale(1.02);
+    }
+    .brand-title {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .brand-desc {
       font-size: 13px;
       color: var(--text-muted);
-      background: #fff;
+      line-height: 1.5;
+    }
+
+    /* 폼 요소 */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon-left {
+      position: absolute;
+      left: 16px;
+      color: var(--text-subtle);
+      font-size: 15px;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .form-control {
+      width: 100%;
+      padding: 13px 44px 13px 44px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-main);
+      background: #fdfcf9;
+      border: 1.5px solid var(--border-color);
+      border-radius: 12px;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-input);
+    }
+    .form-control:focus {
+      background: #ffffff;
+      border-color: var(--primary-brown);
+      box-shadow: 0 0 0 3px rgba(61, 52, 45, 0.12);
+    }
+    .input-wrapper:focus-within .input-icon-left {
+      color: var(--primary-brown);
+    }
+    .input-toggle-pw {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--text-subtle);
+      font-size: 15px;
+      cursor: pointer;
+      padding: 6px;
+      transition: color 0.2s;
+    }
+    .input-toggle-pw:hover {
+      color: var(--text-main);
+    }
+
+    /* 옵션 체크박스 & 링크 */
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      color: var(--text-muted);
+      user-select: none;
+      font-weight: 500;
+    }
+    .remember-me input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-brown);
+      cursor: pointer;
+    }
+    .forgot-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 12.5px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .forgot-link:hover {
+      color: var(--primary-brown);
+      text-decoration: underline;
+    }
+
+    /* 에러 메시지 */
+    .error-alert {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      animation: fadeIn 0.2s ease;
+    }
+    .error-alert.shake {
+      animation: shake 0.4s ease;
+    }
+
+    /* 로그인 버튼 */
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffffff;
+      background: var(--primary-brown);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(61, 52, 45, 0.25);
+    }
+    .btn-login:hover {
+      background: var(--primary-brown-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(61, 52, 45, 0.3);
+    }
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    /* 빠른 테스트 계정 칩 바 */
+    .quick-test-box {
+      margin-top: 28px;
+      padding-top: 22px;
+      border-top: 1px dashed var(--border-color);
+      text-align: center;
+    }
+    .quick-test-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-subtle);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .quick-test-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chip-btn {
+      background: #f8f6f0;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-decoration: none;
+    }
+    .chip-btn:hover {
+      background: #efebe2;
+      border-color: #d1c6b5;
+      transform: translateY(-1px);
+    }
+    .chip-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .chip-master {
+      background: #fbf6ec;
+      border-color: #f0deb8;
+    }
+    .chip-master:hover {
+      background: #f4ecda;
+    }
+    .chip-master .chip-badge {
+      background: #3d342d;
+      color: #f7f4ee;
+    }
+    .chip-admin .chip-badge {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .chip-student .chip-badge {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    /* 하단 푸터 */
+    .login-footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 24px;
+      line-height: 1.6;
+    }
+    .login-footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .login-footer a:hover {
+      color: var(--primary-brown);
+      text-decoration: underline;
+    }
+
+    /* 성공 토스트 */
+    .toast-overlay {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 13.5px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+    }
+    .toast-overlay.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-<header class="hero">
-  <div class="badge">
-    <i class="fa-solid fa-cloud-arrow-up"></i> Vercel Deployment Ready
+  <!-- 배경 디자인 블러 효과 -->
+  <div class="bg-shape-1"></div>
+  <div class="bg-shape-2"></div>
+
+  <!-- 상단 시스템 상태 바 -->
+  <div class="top-system-notice">
+    <span class="status-dot"></span>
+    <span>나노의 책장 통합 인증 센터 · Vercel Production</span>
   </div>
-  <h1>나노의 책장 프로토타입 프리뷰</h1>
-  <p>실제 동작하는 3대 핵심 포털 화면 및 인터랙티브 기능 데모를 바로 체험하실 수 있습니다.</p>
-</header>
 
-<main class="container">
-  <div class="grid">
-    <!-- 1. 학생 포털 -->
-    <a href="student_preview.html" class="card">
-      <span class="tag tag-green">NEW Forest Wood</span>
-      <div class="card-icon icon-student">
-        <i class="fa-solid fa-seedling"></i>
+  <!-- 메인 로그인 카드 영역 -->
+  <main class="login-container">
+    <div class="login-card" id="loginCard">
+      
+      <!-- 브랜드 로고 및 타이틀 -->
+      <div class="brand-section">
+        <img src="resources/images/common/logo.png" alt="나노의 책장" class="brand-logo-img">
+        <h1 class="brand-title">본사 통합 관리자 로그인</h1>
+        <p class="brand-desc">전국 가맹 학원 관제 및 통합 서비스 플랫폼</p>
       </div>
-      <h2>학생 모바일 포털</h2>
-      <p>내추럴 포레스트 우드 & 세이지 그린 테마. 3단 롤링 배너, 실사 도서 표지, 인터랙티브 5문항 북퀴즈 풀이 및 랭킹 조회.</p>
-      <div class="btn-link">
-        체험하기 <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
 
-    <!-- 2. 학원 관리자 포털 -->
-    <a href="admin_preview.html" class="card">
-      <span class="tag tag-blue">Academy</span>
-      <div class="card-icon icon-admin">
-        <i class="fa-solid fa-school"></i>
+      <!-- 에러 알림창 -->
+      <div class="error-alert" id="errorAlert">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="errorMessage">아이디 또는 비밀번호가 올바르지 않습니다.</span>
       </div>
-      <h2>학원 관리자 포털</h2>
-      <p>원장/교사용 B2B 대시보드. 도서 배정, 북퀴즈 출제/편집, 학생별 학습 이력 및 카카오 알림톡 발송 모달.</p>
-      <div class="btn-link">
-        체험하기 <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
 
-    <!-- 3. 본사 마스터 관리자 -->
-    <a href="master_preview.html" class="card">
-      <span class="tag tag-gold">Master</span>
-      <div class="card-icon icon-master">
-        <i class="fa-solid fa-shield-halved"></i>
-      </div>
-      <h2>본사 마스터 관리자</h2>
-      <p>전국 가맹 학원 관리, 학생 메인 롤링 배너 통제, 도서 큐레이션 테마 관리 및 전사 공지사항 중앙 관제.</p>
-      <div class="btn-link">
-        체험하기 <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+      <!-- 로그인 폼 -->
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+        <!-- 아이디 입력 -->
+        <div class="form-group">
+          <label class="form-label" for="userId">아이디</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-user input-icon-left"></i>
+            <input 
+              type="text" 
+              id="userId" 
+              class="form-control" 
+              placeholder="아이디 (예: master00)" 
+              value="master00" 
+              autocomplete="username"
+              required
+            >
+          </div>
+        </div>
 
-    <!-- 4. 통합 기능 데모 -->
-    <a href="preview_demo.html" class="card">
-      <span class="tag tag-purple">Feature Demo</span>
-      <div class="card-icon icon-demo">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <!-- 비밀번호 입력 -->
+        <div class="form-group">
+          <label class="form-label" for="userPw">비밀번호</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-lock input-icon-left"></i>
+            <input 
+              type="password" 
+              id="userPw" 
+              class="form-control" 
+              placeholder="비밀번호 입력" 
+              value="master00" 
+              autocomplete="current-password"
+              required
+            >
+            <button type="button" class="input-toggle-pw" id="togglePwBtn" onclick="togglePasswordVisibility()" title="비밀번호 보기/숨기기">
+              <i class="fa-solid fa-eye-slash" id="togglePwIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 옵션: 아이디 저장 & 안내 -->
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" id="rememberMe" checked>
+            <span>아이디 저장</span>
+          </label>
+          <a href="javascript:void(0)" class="forgot-link" onclick="handleForgotHelp()">계정 문의/안내</a>
+        </div>
+
+        <!-- 로그인 실행 버튼 -->
+        <button type="submit" class="btn-login" id="btnLogin">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>로그인</span>
+        </button>
+      </form>
+
+      <!-- 퀵 데모 테스트 계정 선택 바 -->
+      <div class="quick-test-box">
+        <div class="quick-test-title">
+          <i class="fa-solid fa-bolt-lightning text-warning"></i> 원클릭 빠른 로그인 테스트
+        </div>
+        <div class="quick-test-chips">
+          <!-- 1. 본사 마스터 계정 (권장) -->
+          <div class="chip-btn chip-master" onclick="quickFillAndLogin('master00', 'master00')" title="본사 마스터 관리자로 즉시 로그인">
+            <div style="text-align: left;">
+              <span class="chip-badge mr-1">본사 마스터</span>
+              <strong style="margin-left: 4px;">master00</strong>
+              <small style="color: var(--text-muted); margin-left: 6px;">(HQ 총괄 관리자)</small>
+            </div>
+            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
+          </div>
+
+          <!-- 2. 가맹 학원 관리자 계정 -->
+          <div class="chip-btn chip-admin" onclick="quickFillAndLogin('admin01', 'admin01')" title="학원 원장/교사 포털로 즉시 로그인">
+            <div style="text-align: left;">
+              <span class="chip-badge mr-1">가맹 학원</span>
+              <strong style="margin-left: 4px;">admin01</strong>
+              <small style="color: var(--text-muted); margin-left: 6px;">(원장 대시보드)</small>
+            </div>
+            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
+          </div>
+
+          <!-- 3. 학생 모바일 포털 계정 -->
+          <div class="chip-btn chip-student" onclick="quickFillAndLogin('student01', 'student01')" title="학생 모바일 포털로 즉시 로그인">
+            <div style="text-align: left;">
+              <span class="chip-badge mr-1">원생 포털</span>
+              <strong style="margin-left: 4px;">student01</strong>
+              <small style="color: var(--text-muted); margin-left: 6px;">(모바일 북퀴즈)</small>
+            </div>
+            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
+          </div>
+        </div>
       </div>
-      <h2>신규 기능 통합 데모</h2>
-      <p>KaTeX 수식 렌더링 북퀴즈, 수학 기호 팔레트 퀴즈 등록기, 1p 정답 팝업, FTP 대체 대량 업로더 프리뷰.</p>
-      <div class="btn-link">
-        체험하기 <i class="fa-solid fa-arrow-right"></i>
-      </div>
-    </a>
+
+    </div>
+  </main>
+
+  <!-- 하단 카피라이트 및 보조 메뉴 -->
+  <footer class="login-footer">
+    <p>© 2026 나노의 책장 (Nano BookShelf) · All Rights Reserved.</p>
+    <p style="margin-top: 4px; font-size: 11px;">
+      <a href="prototype_hub.html">이전 프로토타입 프리뷰 카드 허브 보기</a>
+    </p>
+  </footer>
+
+  <!-- 토스트 안내 -->
+  <div class="toast-overlay" id="toastOverlay">
+    <i class="fa-solid fa-circle-check text-success"></i>
+    <span id="toastMessage">로그인 성공</span>
   </div>
-</main>
 
-<footer>
-  © 2026 나노의 책장 (Nano BookShelf) · Interactive Prototype Preview
-</footer>
+  <script>
+    // 1. 등록된 시스템 계정 정보 매핑
+    const ACCOUNTS = {
+      'master00': {
+        pw: 'master00',
+        role: 'master',
+        name: '본사 마스터 운영자 (HQ)',
+        redirectUrl: 'master_preview.html'
+      },
+      'admin01': {
+        pw: 'admin01',
+        role: 'admin',
+        name: '김은영 원장님 (나노 독서아카데미 본원)',
+        redirectUrl: 'admin_preview.html'
+      },
+      'admin': {
+        pw: 'admin123',
+        role: 'admin',
+        name: '김은영 원장님 (나노 독서아카데미 본원)',
+        redirectUrl: 'admin_preview.html'
+      },
+      'student01': {
+        pw: 'student01',
+        role: 'student',
+        name: '김나노 학생 (초등 4학년)',
+        redirectUrl: 'student_preview.html'
+      }
+    };
+
+    // 로드 시 초기화
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedId = localStorage.getItem('nano_saved_id');
+      if (savedId) {
+        document.getElementById('userId').value = savedId;
+        if (savedId === 'master00') {
+          document.getElementById('userPw').value = 'master00';
+        }
+      }
+      document.getElementById('userId').focus();
+    });
+
+    // 비밀번호 보이기/숨기기 토글
+    function togglePasswordVisibility() {
+      const pwInput = document.getElementById('userPw');
+      const icon = document.getElementById('togglePwIcon');
+      if (pwInput.type === 'password') {
+        pwInput.type = 'text';
+        icon.className = 'fa-solid fa-eye';
+      } else {
+        pwInput.type = 'password';
+        icon.className = 'fa-solid fa-eye-slash';
+      }
+    }
+
+    // 로그인 제출 처리
+    function handleLoginSubmit(event) {
+      if (event) event.preventDefault();
+      
+      const idInput = document.getElementById('userId');
+      const pwInput = document.getElementById('userPw');
+      const rememberMe = document.getElementById('rememberMe').checked;
+      const errorAlert = document.getElementById('errorAlert');
+      const errorMessage = document.getElementById('errorMessage');
+      const loginCard = document.getElementById('loginCard');
+      const btnLogin = document.getElementById('btnLogin');
+
+      const inputId = idInput.value.trim();
+      const inputPw = pwInput.value.trim();
+
+      // 유효성 체크
+      if (!inputId) {
+        showError('아이디를 입력해주세요.');
+        idInput.focus();
+        return;
+      }
+      if (!inputPw) {
+        showError('비밀번호를 입력해주세요.');
+        pwInput.focus();
+        return;
+      }
+
+      // 계정 검증
+      const user = ACCOUNTS[inputId];
+      if (user && user.pw === inputPw) {
+        // 성공 처리
+        errorAlert.style.display = 'none';
+
+        if (rememberMe) {
+          localStorage.setItem('nano_saved_id', inputId);
+        } else {
+          localStorage.removeItem('nano_saved_id');
+        }
+
+        // 세션 정보 저장
+        const sessionData = {
+          id: inputId,
+          role: user.role,
+          name: user.name,
+          loginTime: new Date().toISOString()
+        };
+        sessionStorage.setItem('nano_auth_user', JSON.stringify(sessionData));
+
+        // 버튼 로딩 상태
+        btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>인증 완료, 포털로 이동 중...</span>';
+        btnLogin.style.opacity = '0.85';
+        btnLogin.disabled = true;
+
+        showToast(`${user.name}으로 로그인되었습니다.`);
+
+        // 해당 포털 화면으로 리다이렉트
+        setTimeout(() => {
+          window.location.href = user.redirectUrl;
+        }, 500);
+
+      } else {
+        // 실패 처리
+        showError('아이디 또는 비밀번호가 올바르지 않습니다.<br><span style="font-size:11.5px; opacity:0.85;">(본사 기본 계정: master00 / master00)</span>');
+        loginCard.classList.remove('shake');
+        void loginCard.offsetWidth; // 트리거 리플로우
+        loginCard.classList.add('shake');
+        pwInput.focus();
+        pwInput.select();
+      }
+    }
+
+    // 원클릭 빠른 입력 후 즉시 로그인
+    function quickFillAndLogin(id, pw) {
+      document.getElementById('userId').value = id;
+      document.getElementById('userPw').value = pw;
+      handleLoginSubmit();
+    }
+
+    // 에러 표시
+    function showError(msg) {
+      const errorAlert = document.getElementById('errorAlert');
+      const errorMessage = document.getElementById('errorMessage');
+      errorMessage.innerHTML = msg;
+      errorAlert.style.display = 'flex';
+      errorAlert.classList.remove('shake');
+      void errorAlert.offsetWidth;
+      errorAlert.classList.add('shake');
+    }
+
+    // 토스트 안내 팝업
+    function showToast(msg) {
+      const toast = document.getElementById('toastOverlay');
+      const toastMsg = document.getElementById('toastMessage');
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // 계정 문의 안내
+    function handleForgotHelp() {
+      alert('나노의 책장 본사 시스템 안내:\n\n- 본사 마스터 계정: master00 / master00\n- 가맹 학원 계정: admin01 / admin01\n- 원생 포털 계정: student01 / student01\n\n문의사항은 본사 고객지원센터(1588-0000)로 연락 바랍니다.');
+    }
+  </script>
 
 </body>
 </html>
