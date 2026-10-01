@@ -261,9 +261,13 @@ function switchMemberSubTab(sub) {
 }
 
 // ==============================================================
-// 3. 회원 관리 (원생 + 선생님) 데이터 & 로직
+// 3. 회원 관리 (원생 + 선생님) 데이터 & 로직 (LocalStorage 영구 연동)
 // ==============================================================
-var studentDataList = [
+var STORAGE_KEY_CLASSES = 'NANO_ACADEMY_CLASSES';
+var STORAGE_KEY_STUDENTS = 'NANO_ACADEMY_STUDENTS';
+var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS';
+
+var defaultStudentDataList = [
   { id: 'S1021', name: '김민준', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '승인', level: '초등 심화 Lv 5', bookCount: 24, quizAvg: 94.2, parentName: '김영희', phone: '010-3847-1928', parentEmail: 'parent_kim@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.03.02', teacher: '박선혜 지도교사', memo: '줄거리 요약과 어휘력 영역이 탁월함. 토론 수업 시 자기 생각을 명확하게 표현함.' },
   { id: 'S1022', name: '이서윤', gender: '여', password: '1234', school: '솔빛초등학교', grade: '초등 4학년', classGroup: '슬기반', status: '승인', level: '초등 발전 Lv 4', bookCount: 18, quizAvg: 91.5, parentName: '이수진', phone: '010-5829-3019', parentEmail: 'seoyun_mom@example.com', reportYn: true, lastDate: '2026.09.07', createdAt: '2026.04.10', teacher: '박선혜 지도교사', memo: '책 읽는 속도가 빠르고 이해도가 높음.' },
   { id: 'S1023', name: '박도윤', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 6학년', classGroup: '마스터반', status: '승인', level: '초등 완성 Lv 6', bookCount: 31, quizAvg: 97.0, parentName: '박태훈', phone: '010-9182-4720', parentEmail: 'doyun_dad@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.02.15', teacher: '최승현 지도교사', memo: '인문 고전 및 비문학 독해에 강점.' },
@@ -272,7 +276,7 @@ var studentDataList = [
   { id: 'S1026', name: '윤지유', gender: '여', password: '1234', school: '솔빛초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '퇴원', level: '초등 심화 Lv 5', bookCount: 22, quizAvg: 95.8, parentName: '윤상철', phone: '010-6391-7291', parentEmail: 'jiyu_mom@example.com', reportYn: false, lastDate: '2026.08.30', createdAt: '2026.03.15', teacher: '박선혜 지도교사', memo: '타 지역 이사로 인한 퇴원 처리 완료.' }
 ];
 
-var academyClassList = [
+var defaultAcademyClassList = [
   { id: 'CLS01', name: '지혜반', grade: '초등 5학년', teacher: '박선혜 수석교사', desc: '초등 5학년 심화 독서 및 문해력 집중 토론' },
   { id: 'CLS02', name: '슬기반', grade: '초등 4학년', teacher: '박선혜 수석교사', desc: '초등 4학년 교과 연계 독서 및 요약 훈련' },
   { id: 'CLS03', name: '마스터반', grade: '초등 6학년', teacher: '최승현 지도교사', desc: '초등 6학년 예비중등 문해력 및 인문고전' },
@@ -281,12 +285,87 @@ var academyClassList = [
   { id: 'CLS06', name: '탐구반', grade: '초등 3학년', teacher: '이지연 지도교사', desc: '초등 3학년 배경지식 확장 및 과학/역사 탐구' }
 ];
 
-var teacherDataList = [
-  { id: 'T001', name: '박선혜', username: 'teacher_park', role: '수석 지도교사', classes: '지혜반(초5), 슬기반(초4)', studentCount: 18, phone: '010-5512-8871', joinDate: '2025-03-01' },
-  { id: 'T002', name: '최승현', username: 'teacher_choi', role: '중등 논술전담', classes: '마스터반(초6), 심화반(중1)', studentCount: 16, phone: '010-6622-1134', joinDate: '2025-04-15' },
-  { id: 'T003', name: '이지연', username: 'teacher_lee', role: '초등 저학년전담', classes: '새싹반(초1~2), 탐구반(초3)', studentCount: 14, phone: '010-4499-5511', joinDate: '2025-06-01' },
-  { id: 'T004', name: '김은영', username: 'director_kim', role: '학원 원장', classes: '전체 클래스 총괄', studentCount: 48, phone: '010-3342-9981', joinDate: '2025-01-01' }
+var defaultTeacherDataList = [
+  { id: 'T001', name: '박선혜', username: 'teacher_park', password: '1234', role: '지도교사', classes: '지혜반(초5), 슬기반(초4)', studentCount: 18, phone: '010-5512-8871', joinDate: '2025-03-01' },
+  { id: 'T002', name: '최승현', username: 'teacher_choi', password: '1234', role: '지도교사', classes: '마스터반(초6), 심화반(중1)', studentCount: 16, phone: '010-6622-1134', joinDate: '2025-04-15' },
+  { id: 'T003', name: '이지연', username: 'teacher_lee', password: '1234', role: '지도교사', classes: '새싹반(초1~2), 탐구반(초3)', studentCount: 14, phone: '010-4499-5511', joinDate: '2025-06-01' },
+  { id: 'T004', name: '김은영', username: 'director_kim', password: '1234', role: '학원 원장', classes: '전체 클래스 총괄', studentCount: 48, phone: '010-3342-9981', joinDate: '2025-01-01' }
 ];
+
+// LocalStorage 로드 / 저장 헬퍼 함수
+function loadAcademyClassesFromStorage() {
+  try {
+    var stored = localStorage.getItem(STORAGE_KEY_CLASSES);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('학급 데이터 로드 실패, 기본값 사용:', e);
+  }
+  return JSON.parse(JSON.stringify(defaultAcademyClassList));
+}
+
+function saveAcademyClassesToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(academyClassList));
+  } catch (e) {
+    console.error('학급 데이터 저장 실패:', e);
+  }
+}
+
+function loadStudentsFromStorage() {
+  try {
+    var stored = localStorage.getItem(STORAGE_KEY_STUDENTS);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('원생 데이터 로드 실패, 기본값 사용:', e);
+  }
+  return JSON.parse(JSON.stringify(defaultStudentDataList));
+}
+
+function saveStudentsToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentDataList));
+  } catch (e) {
+    console.error('원생 데이터 저장 실패:', e);
+  }
+}
+
+function loadTeachersFromStorage() {
+  try {
+    var stored = localStorage.getItem(STORAGE_KEY_TEACHERS);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        parsed.forEach(function(t) {
+          if (!t.password) t.password = '1234';
+          if (!t.role) t.role = '지도교사';
+        });
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('교사 데이터 로드 실패, 기본값 사용:', e);
+  }
+  return JSON.parse(JSON.stringify(defaultTeacherDataList));
+}
+
+function saveTeachersToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_TEACHERS, JSON.stringify(teacherDataList));
+  } catch (e) {
+    console.error('교사 데이터 저장 실패:', e);
+  }
+}
+
+// 런타임 활성 데이터 (스토리지 데이터 우선)
+var studentDataList = loadStudentsFromStorage();
+var academyClassList = loadAcademyClassesFromStorage();
+var teacherDataList = loadTeachersFromStorage();
 
 // 신규 등록된 원생 하이라이트 트래킹 변수
 var lastAddedStudentId = null;
@@ -427,7 +506,57 @@ function formatPhoneInput(input) {
 // ==============================================================
 // 3-1. 학급(클래스) 관리 모달 & CRUD 로직
 // ==============================================================
+// ==============================================================
+// 3-1. 학급(클래스) 관리 모달 & CRUD 로직 (담당교사 복수 지정 및 수정 모달 완비)
+// ==============================================================
+function renderNewClassTeacherDropdown() {
+  var menu = document.getElementById('newClassTeacherDropdownMenu');
+  if (!menu) return;
+  menu.innerHTML = '';
+
+  if (teacherDataList.length === 0) {
+    menu.innerHTML = '<div class="p-2 text-muted" style="font-size:11.5px;">등록된 선생님이 없습니다.</div>';
+    return;
+  }
+
+  teacherDataList.forEach(function(t, idx) {
+    var item = document.createElement('div');
+    item.className = 'form-check py-1 px-3 d-flex align-items-center';
+    item.style.cursor = 'pointer';
+    item.onclick = function(e) { e.stopPropagation(); };
+    var isDefaultChecked = idx === 0; // 첫 번째 교사 기본 선택
+    item.innerHTML = `
+      <input class="form-check-input new-cls-teacher-cb" type="checkbox" value="${t.name} 지도교사" id="cb_new_t_${t.id}" ${isDefaultChecked ? 'checked' : ''} onchange="updateNewClassTeacherLabel()">
+      <label class="form-check-label ml-2 mb-0" for="cb_new_t_${t.id}" style="cursor: pointer; font-size: 12px; color: var(--text-main);">
+        <strong>${t.name}</strong> <small class="text-muted">(${t.role || '지도교사'})</small>
+      </label>
+    `;
+    menu.appendChild(item);
+  });
+  updateNewClassTeacherLabel();
+}
+
+function updateNewClassTeacherLabel() {
+  var checked = Array.from(document.querySelectorAll('.new-cls-teacher-cb:checked')).map(function(cb) {
+    return cb.value.replace(' 지도교사', '').trim();
+  });
+  var labelEl = document.getElementById('newClassTeacherSelectLabel');
+  if (!labelEl) return;
+
+  if (checked.length === 0) {
+    labelEl.innerText = '담당 교사 선택 (복수 가능)';
+    labelEl.className = 'text-truncate text-muted';
+  } else if (checked.length === 1) {
+    labelEl.innerText = checked[0] + ' 지도교사';
+    labelEl.className = 'text-truncate font-weight-bold text-dark';
+  } else {
+    labelEl.innerText = checked.join(', ') + ' (' + checked.length + '명)';
+    labelEl.className = 'text-truncate font-weight-bold text-primary';
+  }
+}
+
 function openClassManageModal() {
+  renderNewClassTeacherDropdown();
   renderClassManageTable();
   if (window.jQuery && typeof $('#classManageModal').modal === 'function') {
     $('#classManageModal').modal('show');
@@ -446,12 +575,23 @@ function renderClassManageTable() {
       return s.classGroup === cls.name;
     }).length;
 
+    // 담당 교사 뱃지형 표기 (복수 교사 지원)
+    var teachersDisplay = '';
+    if (cls.teacher) {
+      var tList = cls.teacher.split(',').map(function(t) { return t.trim(); });
+      teachersDisplay = tList.map(function(t) {
+        return '<span class="badge badge-light border text-dark mr-1" style="font-size:11px; padding:2px 5px;">' + t + '</span>';
+      }).join(' ');
+    } else {
+      teachersDisplay = '<span class="text-muted">-</span>';
+    }
+
     var tr = document.createElement('tr');
     tr.innerHTML = 
       '<td class="text-center"><small class="text-muted font-weight-bold">' + (idx + 1) + '</small></td>' +
       '<td><strong style="color: var(--text-main); font-size: 13.5px;">' + cls.name + '</strong></td>' +
       '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + cls.grade + '</span></td>' +
-      '<td class="text-center">' + cls.teacher + '</td>' +
+      '<td class="text-center">' + teachersDisplay + '</td>' +
       '<td class="text-center"><span class="badge badge-light border font-weight-bold" style="font-size: 12px; color: var(--btn-primary);">' + studentCount + '명</span></td>' +
       '<td class="text-center">' +
         '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="editClass(\'' + cls.id + '\')" style="border-radius: 6px; font-size: 11.5px; padding: 2px 7px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
@@ -464,11 +604,14 @@ function renderClassManageTable() {
 function addClass() {
   var nameInput = document.getElementById('newClassNameInput');
   var gradeSelect = document.getElementById('newClassGradeSelect');
-  var teacherSelect = document.getElementById('newClassTeacherSelect');
 
   var name = (nameInput ? nameInput.value : '').trim();
   var grade = gradeSelect ? gradeSelect.value : '초등 5학년';
-  var teacher = teacherSelect ? teacherSelect.value : '박선혜 수석교사';
+
+  var checkedTeachers = Array.from(document.querySelectorAll('.new-cls-teacher-cb:checked')).map(function(cb) {
+    return cb.value;
+  });
+  var teacher = checkedTeachers.length > 0 ? checkedTeachers.join(', ') : '원장/지도교사';
 
   if (!name) {
     alert('학급명을 입력해주세요. (예: 지혜반, 창의반)');
@@ -492,47 +635,145 @@ function addClass() {
   };
 
   academyClassList.push(newCls);
+  saveAcademyClassesToStorage();
   if (nameInput) nameInput.value = '';
 
+  renderNewClassTeacherDropdown();
   updateClassSelectOptions();
   renderClassManageTable();
-  showAcademyToast(`[${name}] 신규 학급이 개설되었습니다.`);
+  renderTeacherTable();
+  showAcademyToast(`[${name}] 신규 학급이 개설되었습니다. (담당 교사: ${teacher})`);
 }
 
 function editClass(id) {
   var cls = academyClassList.find(function(c) { return c.id === id; });
   if (!cls) return;
 
-  var newName = prompt(`[${cls.name}] 학급의 변경할 학급명을 입력하세요:`, cls.name);
-  if (newName === null) return;
-  newName = newName.trim();
+  var targetIdEl = document.getElementById('editClassTargetId');
+  if (targetIdEl) targetIdEl.value = cls.id;
 
-  if (!newName) {
-    alert('학급명을 입력해주세요.');
+  var titleEl = document.getElementById('classEditModalTitle');
+  if (titleEl) titleEl.innerText = `[${cls.name}] 학급 정보 및 담당교사 수정`;
+
+  var nameInput = document.getElementById('editClassNameInput');
+  if (nameInput) nameInput.value = cls.name;
+
+  var gradeSelect = document.getElementById('editClassGradeSelect');
+  if (gradeSelect) gradeSelect.value = cls.grade;
+
+  renderEditClassTeacherList(cls.teacher || '');
+
+  if (window.jQuery && typeof $('#classEditModal').modal === 'function') {
+    $('#classEditModal').modal('show');
+  } else {
+    showModalVanilla('classEditModal');
+  }
+}
+
+function renderEditClassTeacherList(currentTeachersStr) {
+  var container = document.getElementById('editClassTeacherListContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (teacherDataList.length === 0) {
+    container.innerHTML = '<div class="text-muted p-2" style="font-size:12px;">등록된 선생님이 없습니다.</div>';
     return;
   }
 
-  if (newName !== cls.name) {
-    var exists = academyClassList.some(function(c) { return c.id !== id && c.name === newName; });
-    if (exists || newName === '미지정') {
-      alert('이미 존재하는 학급명입니다.');
-      return;
+  teacherDataList.forEach(function(t) {
+    var isAssigned = currentTeachersStr && currentTeachersStr.indexOf(t.name) !== -1;
+    var div = document.createElement('div');
+    div.className = 'form-check py-1 px-2 mb-1 d-flex align-items-center';
+    div.style.background = isAssigned ? '#f0fdf4' : 'transparent';
+    div.style.borderRadius = '6px';
+    div.innerHTML = `
+      <input class="form-check-input edit-cls-teacher-cb" type="checkbox" value="${t.name} 지도교사" id="cb_edit_t_${t.id}" ${isAssigned ? 'checked' : ''} onchange="updateEditClassTeacherCount(this)">
+      <label class="form-check-label ml-2 mb-0 d-flex justify-content-between align-items-center w-100" for="cb_edit_t_${t.id}" style="cursor: pointer; font-size: 12.5px;">
+        <span><strong>${t.name}</strong> <small class="text-muted">(${t.role || '지도교사'})</small></span>
+        <small class="text-muted">${t.phone || ''}</small>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+
+  updateEditClassTeacherCount();
+}
+
+function updateEditClassTeacherCount(changedCheckbox) {
+  if (changedCheckbox) {
+    var parentDiv = changedCheckbox.closest('.form-check');
+    if (parentDiv) {
+      parentDiv.style.background = changedCheckbox.checked ? '#f0fdf4' : 'transparent';
     }
+  }
+  var count = document.querySelectorAll('.edit-cls-teacher-cb:checked').length;
+  var badge = document.getElementById('editClassTeacherSelectedCount');
+  if (badge) {
+    badge.innerText = `선택: ${count}명`;
+    badge.className = count > 0 ? 'text-primary font-weight-bold' : 'text-danger font-weight-bold';
+  }
+}
 
-    var oldName = cls.name;
-    cls.name = newName;
+function saveEditedClass() {
+  var id = (document.getElementById('editClassTargetId') ? document.getElementById('editClassTargetId').value : '').trim();
+  var cls = academyClassList.find(function(c) { return c.id === id; });
+  if (!cls) return;
 
+  var nameInput = document.getElementById('editClassNameInput');
+  var gradeSelect = document.getElementById('editClassGradeSelect');
+  var newName = (nameInput ? nameInput.value : '').trim();
+  var newGrade = gradeSelect ? gradeSelect.value : cls.grade;
+
+  if (!newName) {
+    alert('학급명을 입력해주세요.');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  var checkedTeachers = Array.from(document.querySelectorAll('.edit-cls-teacher-cb:checked')).map(function(cb) {
+    return cb.value;
+  });
+  if (checkedTeachers.length === 0) {
+    alert('담당 교사를 최소 1명 이상 선택해주세요.');
+    return;
+  }
+  var newTeachersStr = checkedTeachers.join(', ');
+
+  var exists = academyClassList.some(function(c) { return c.id !== id && c.name === newName; });
+  if (exists || newName === '미지정') {
+    alert('이미 존재하는 학급명입니다.');
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  var oldName = cls.name;
+  cls.name = newName;
+  cls.grade = newGrade;
+  cls.teacher = newTeachersStr;
+
+  if (newName !== oldName) {
     studentDataList.forEach(function(s) {
       if (s.classGroup === oldName) {
         s.classGroup = newName;
       }
     });
-
-    updateClassSelectOptions();
-    renderClassManageTable();
-    filterStudents();
-    showAcademyToast(`학급명이 [${oldName}]에서 [${newName}]으로 수정되었습니다.`);
   }
+
+  saveAcademyClassesToStorage();
+  saveStudentsToStorage();
+
+  updateClassSelectOptions();
+  renderClassManageTable();
+  filterStudents();
+  renderTeacherTable();
+
+  if (window.jQuery && typeof $('#classEditModal').modal === 'function') {
+    $('#classEditModal').modal('hide');
+  } else {
+    hideModalVanilla('classEditModal');
+  }
+
+  showAcademyToast(`[${newName}] 학급 정보 및 담당교사(${checkedTeachers.length}명)가 성공적으로 수정되었습니다.`);
 }
 
 function deleteClass(id) {
@@ -556,9 +797,13 @@ function deleteClass(id) {
 
   academyClassList = academyClassList.filter(function(c) { return c.id !== id; });
 
+  saveAcademyClassesToStorage();
+  saveStudentsToStorage();
+
   updateClassSelectOptions();
   renderClassManageTable();
   filterStudents();
+  renderTeacherTable();
   showAcademyToast(`[${cls.name}] 학급이 삭제되었으며, 소속 원생 ${count}명의 학급이 '미지정'으로 안전하게 전환되었습니다.`);
 }
 
@@ -621,6 +866,7 @@ function deleteStudent(id) {
   std.classGroup = '미지정';
 
   studentDataList = studentDataList.filter(function(s) { return s.id !== id; });
+  saveStudentsToStorage();
 
   updateAllStudentCounts();
   if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
@@ -651,9 +897,12 @@ function openStudentAddModal() {
   var genderEl = document.getElementById('newStdGender');
   if (genderEl) genderEl.value = '남';
 
-  autoGenStudentId();
   var idEl = document.getElementById('newStdId');
-  if (idEl) idEl.readOnly = false;
+  if (idEl) {
+    idEl.value = '';
+    idEl.placeholder = '예: S1027 (원생 접속 아이디 입력)';
+    idEl.readOnly = false;
+  }
 
   var pwEl = document.getElementById('newStdPw');
   if (pwEl) {
@@ -809,6 +1058,20 @@ function openStudentExcelModal() {
   }
 }
 
+function getDefaultLevelByGrade(grade) {
+  if (!grade) return '초등 심화 Lv 5';
+  if (grade.indexOf('미취학') !== -1 || grade.indexOf('초등 1') !== -1) return '초등 입문 Lv 1';
+  if (grade.indexOf('초등 2') !== -1) return '초등 입문 Lv 2';
+  if (grade.indexOf('초등 3') !== -1) return '초등 발전 Lv 3';
+  if (grade.indexOf('초등 4') !== -1) return '초등 발전 Lv 4';
+  if (grade.indexOf('초등 5') !== -1) return '초등 심화 Lv 5';
+  if (grade.indexOf('초등 6') !== -1) return '초등 완성 Lv 6';
+  if (grade.indexOf('중등 1') !== -1) return '중등 기본 Lv 7';
+  if (grade.indexOf('중등 2') !== -1) return '중등 심화 Lv 8';
+  if (grade.indexOf('중등 3') !== -1) return '중등 마스터 Lv 9';
+  return '초등 심화 Lv 5';
+}
+
 function saveNewStudent() {
   var editId = (document.getElementById('editStudentTargetId') ? document.getElementById('editStudentTargetId').value : '').trim();
 
@@ -820,18 +1083,26 @@ function saveNewStudent() {
   var grade = document.getElementById('newStdGrade') ? document.getElementById('newStdGrade').value : '초등 5학년';
   var classGroup = document.getElementById('newStdClass') ? document.getElementById('newStdClass').value : '지혜반';
   var status = document.getElementById('newStdStatus') ? document.getElementById('newStdStatus').value : '승인';
-  var level = document.getElementById('newStdLevel') ? document.getElementById('newStdLevel').value : '초등 심화 Lv 5';
+  var existingStd = editId ? studentDataList.find(function(s){ return s.id === editId; }) : null;
+  var levelEl = document.getElementById('newStdLevel');
+  var level = levelEl ? levelEl.value : (existingStd && existingStd.level ? existingStd.level : getDefaultLevelByGrade(grade));
   var parentName = (document.getElementById('newStdParentName') ? document.getElementById('newStdParentName').value : '').trim();
   var parentPhone = (document.getElementById('newStdParentPhone') ? document.getElementById('newStdParentPhone').value : '').trim();
   var parentEmail = (document.getElementById('newStdParentEmail') ? document.getElementById('newStdParentEmail').value : '').trim();
   var reportYn = document.getElementById('newStdReportYn') ? document.getElementById('newStdReportYn').checked : true;
-  var existingStd = editId ? studentsData.find(function(s){ return s.id === editId; }) : null;
   var teacher = document.getElementById('newStdTeacher') ? document.getElementById('newStdTeacher').value : (existingStd && existingStd.teacher ? existingStd.teacher : '원장/지도교사');
   var memo = (document.getElementById('newStdMemo') ? document.getElementById('newStdMemo').value : '').trim();
   var joinDate = document.getElementById('newStdJoinDate') ? document.getElementById('newStdJoinDate').value : '2026-09-09';
 
+  var korEngRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
+
   if (!name) {
     alert('원생 이름을 입력해 주세요.');
+    document.getElementById('newStdName').focus();
+    return;
+  }
+  if (!korEngRegex.test(name)) {
+    alert('원생 이름은 한글 및 영문만 입력할 수 있습니다.');
     document.getElementById('newStdName').focus();
     return;
   }
@@ -847,6 +1118,11 @@ function saveNewStudent() {
   }
   if (!parentName) {
     alert('학부모 이름을 입력해 주세요.');
+    document.getElementById('newStdParentName').focus();
+    return;
+  }
+  if (!korEngRegex.test(parentName)) {
+    alert('학부모 이름은 한글 및 영문만 입력할 수 있습니다.');
     document.getElementById('newStdParentName').focus();
     return;
   }
@@ -925,6 +1201,7 @@ function saveNewStudent() {
     showAcademyToast(`[${newStudent.name}] 원생이 성공적으로 등록되었습니다. (학번: ${newStudent.id}, 상태: ${status})`);
   }
 
+  saveStudentsToStorage();
   updateAllStudentCounts();
   if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
 
@@ -987,6 +1264,7 @@ function importSampleExcelStudents() {
   studentDataList.unshift(sample1);
   lastAddedStudentId = 'S1027';
 
+  saveStudentsToStorage();
   updateAllStudentCounts();
   if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
 
@@ -1058,20 +1336,19 @@ function renderStudentTable(list) {
 
     tr.innerHTML = 
       '<td class="text-center"><small class="text-muted font-weight-bold">' + std.id + '</small></td>' +
-      '<td><span class="student-link font-weight-bold" onclick="openStudentEditModal(\'' + std.id + '\')">' + std.name + '</span>' + 
+      '<td class="text-center"><span class="student-link font-weight-bold" onclick="openStudentEditModal(\'' + std.id + '\')">' + std.name + '</span>' + 
       (std.id === lastAddedStudentId ? ' <span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : '') + '</td>' +
       '<td class="text-center">' + genderBadge + '</td>' +
-      '<td>' + std.school + ' <small class="text-muted">(' + std.grade + ')</small></td>' +
+      '<td class="text-center">' + std.school + ' <small class="text-muted">(' + std.grade + ')</small></td>' +
       '<td class="text-center">' + classBadge + '</td>' +
       '<td class="text-center">' + statusBadge + '</td>' +
-      '<td>' + parentInfo + '</td>' +
+      '<td class="text-center">' + parentInfo + '</td>' +
       '<td class="text-center"><small class="text-muted font-weight-bold">' + createDateStr + '</small></td>' +
       '<td class="text-center font-weight-bold" style="color:var(--btn-primary); font-size:12px;">' + std.level + '</td>' +
       '<td class="text-center font-weight-bold">' + std.bookCount + '권 <small class="text-success font-weight-bold">(' + quizScoreDisplay + ')</small></td>' +
       '<td class="text-center">' +
-        '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="border-radius:6px; font-size:11px; padding:2.5px 6px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
-        '<button type="button" class="btn btn-xs btn-outline-danger mr-1" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="border-radius:6px; font-size:11px; padding:2.5px 6px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
-        '<button type="button" class="btn btn-xs btn-beige-primary" onclick="viewStudentPortfolio(\'' + std.id + '\')" title="포트폴리오 리포트" style="border-radius:6px; font-size:11px; padding:2.5px 6px;"><i class="fa-solid fa-chart-pie"></i></button>' +
+        '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="border-radius:6px; font-size:11px; padding:2.5px 7px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+        '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="border-radius:6px; font-size:11px; padding:2.5px 7px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
       '</td>';
     tbody.appendChild(tr);
   });
@@ -1102,21 +1379,34 @@ function renderTeacherTable() {
   document.getElementById('teacherTotalCount').innerText = teacherDataList.length;
 
   teacherDataList.forEach(function(t, idx) {
+    // 학급관리에서 해당 교사가 배정된 학급들 실시간 추출
+    var assignedClasses = academyClassList.filter(function(c) {
+      return c.teacher && c.teacher.indexOf(t.name) !== -1;
+    });
+    var classNamesStr = assignedClasses.length > 0 
+      ? assignedClasses.map(function(c) { return c.name + '(' + c.grade.replace(/학년|전학년/g, '').trim() + ')'; }).join(', ')
+      : '<span class="text-muted">배정 학급 없음 (학급관리에서 배정)</span>';
+
+    // 해당 교사 담당 학급들의 원생 수 실시간 합산
+    var totalStudentCount = studentDataList.filter(function(s) {
+      return assignedClasses.some(function(c) { return c.name === s.classGroup; });
+    }).length;
+
     var tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
-      <td>
+      <td class="text-center">
         <strong style="font-size: 14px; color: var(--text-main);">${t.name}</strong>
         <small class="text-muted">(${t.username})</small>
       </td>
-      <td class="text-center"><span class="badge-soft ${t.role.includes('원장') ? 'badge-soft-master' : 'badge-soft-warn'}">${t.role}</span></td>
-      <td>${t.classes}</td>
-      <td class="text-center font-weight-bold">${t.studentCount}명</td>
-      <td class="text-center">${t.phone}</td>
+      <td class="text-center"><span class="badge-soft badge-soft-neutral">지도교사</span></td>
+      <td class="text-center">${classNamesStr}</td>
+      <td class="text-center font-weight-bold" style="color:var(--btn-primary);">${totalStudentCount}명</td>
+      <td class="text-center">${t.phone || '-'}</td>
       <td class="text-center"><small class="text-muted">${t.joinDate}</small></td>
       <td class="text-center">
-        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openTeacherEditModal('${t.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">수정</button>
-        <button class="btn btn-xs btn-outline-danger" onclick="deleteTeacher('${t.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">삭제</button>
+        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openTeacherEditModal('${t.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>
+        <button class="btn btn-xs btn-outline-danger" onclick="deleteTeacher('${t.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1128,8 +1418,11 @@ function openTeacherAddModal() {
   document.getElementById('teacherFormId').value = '';
   document.getElementById('teacherNameInput').value = '';
   document.getElementById('teacherUsernameInput').value = '';
-  document.getElementById('teacherRoleSelect').value = '지도교사';
-  document.getElementById('teacherClassInput').value = '';
+  var pwEl = document.getElementById('teacherPasswordInput');
+  if (pwEl) {
+    pwEl.value = '1234';
+    pwEl.placeholder = '접속 비밀번호 입력 (예: 1234)';
+  }
   document.getElementById('teacherPhoneInput').value = '';
   $('#teacherModal').modal('show');
 }
@@ -1142,9 +1435,12 @@ function openTeacherEditModal(id) {
   document.getElementById('teacherFormId').value = t.id;
   document.getElementById('teacherNameInput').value = t.name;
   document.getElementById('teacherUsernameInput').value = t.username;
-  document.getElementById('teacherRoleSelect').value = t.role.includes('원장') ? '원장' : t.role.includes('수석') ? '수석 지도교사' : '지도교사';
-  document.getElementById('teacherClassInput').value = t.classes;
-  document.getElementById('teacherPhoneInput').value = t.phone;
+  var pwEl = document.getElementById('teacherPasswordInput');
+  if (pwEl) {
+    pwEl.value = '';
+    pwEl.placeholder = '비밀번호 변경 시에만 새 비밀번호 입력 (유지 시 빈칸)';
+  }
+  document.getElementById('teacherPhoneInput').value = t.phone || '';
   $('#teacherModal').modal('show');
 }
 
@@ -1153,35 +1449,59 @@ function handleSaveTeacher(e) {
   var id = document.getElementById('teacherFormId').value;
   var name = document.getElementById('teacherNameInput').value.trim();
   var username = document.getElementById('teacherUsernameInput').value.trim();
-  var role = document.getElementById('teacherRoleSelect').value;
-  var classes = document.getElementById('teacherClassInput').value.trim();
+  var pwEl = document.getElementById('teacherPasswordInput');
+  var password = pwEl ? pwEl.value.trim() : '';
   var phone = document.getElementById('teacherPhoneInput').value.trim();
+
+  var korEngRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
+  if (!name) {
+    alert('선생님 성함을 입력해주세요.');
+    document.getElementById('teacherNameInput').focus();
+    return;
+  }
+  if (!korEngRegex.test(name)) {
+    alert('선생님 성함은 한글 및 영문만 입력할 수 있습니다.');
+    document.getElementById('teacherNameInput').focus();
+    return;
+  }
+  if (!username) {
+    alert('아이디를 입력해주세요.');
+    document.getElementById('teacherUsernameInput').focus();
+    return;
+  }
 
   if (id) {
     var t = teacherDataList.find(item => item.id === id);
     if (t) {
       t.name = name;
       t.username = username;
-      t.role = role;
-      t.classes = classes;
+      if (password) t.password = password;
       t.phone = phone;
       showAcademyToast(`[${name}] 선생님의 정보가 수정되었습니다.`);
     }
   } else {
+    var exists = teacherDataList.some(item => item.username.toLowerCase() === username.toLowerCase());
+    if (exists) {
+      alert(`이미 존재하는 아이디(${username})입니다. 다른 아이디를 입력해주세요.`);
+      document.getElementById('teacherUsernameInput').focus();
+      return;
+    }
     var newT = {
       id: 'T00' + (teacherDataList.length + 1),
       name: name,
       username: username,
-      role: role,
-      classes: classes,
+      password: password || '1234',
+      role: '지도교사',
+      classes: '',
       studentCount: 0,
       phone: phone,
       joinDate: new Date().toISOString().split('T')[0]
     };
     teacherDataList.push(newT);
-    showAcademyToast(`[${name}] 신규 선생님이 성공적으로 등록되었습니다.`);
+    showAcademyToast(`[${name}] 신규 선생님이 성공적으로 등록되었습니다. (아이디: ${username})`);
   }
 
+  saveTeachersToStorage();
   $('#teacherModal').modal('hide');
   renderTeacherTable();
 }
@@ -1191,6 +1511,7 @@ function deleteTeacher(id) {
   if (!t) return;
   if (confirm(`[${t.name}] 선생님 계정을 삭제하시겠습니까?`)) {
     teacherDataList = teacherDataList.filter(item => item.id !== id);
+    saveTeachersToStorage();
     renderTeacherTable();
     showAcademyToast(`[${t.name}] 선생님 계정이 삭제되었습니다.`);
   }
@@ -7177,6 +7498,21 @@ function saveMyInfo() {
 
 // 초기화
 document.addEventListener('DOMContentLoaded', function() {
+  // 로그인 세션 확인 (선생님 계정 로그인 시 헤더 명칭 동기화)
+  try {
+    var rawAuth = sessionStorage.getItem('nano_auth_user');
+    if (rawAuth) {
+      var authUser = JSON.parse(rawAuth);
+      if (authUser.role === 'teacher' && authUser.name) {
+        var dirNameEl = document.getElementById('headerDirectorName');
+        if (dirNameEl) dirNameEl.innerText = authUser.name.split(' (')[0];
+      }
+    }
+  } catch (e) {
+    console.warn('세션 확인 실패:', e);
+  }
+
+  updateAllStudentCounts();
   updateClassSelectOptions();
   renderQuizTabs();
   loadCurrentQuizForm();

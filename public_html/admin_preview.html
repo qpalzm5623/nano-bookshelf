@@ -46,6 +46,10 @@
     }
 
     * { box-sizing: border-box; }
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
+    }
     body {
       font-family: 'Nunito', 'Gowun Dodum', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg-base);
@@ -53,6 +57,22 @@
       min-height: 100vh;
       overflow-x: hidden;
       letter-spacing: -0.2px;
+    }
+
+    /* 전역 슬림 스크롤바 (스크롤바 유무에 따른 화면 덜컹거림 원천 차단) */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #dfd7cc;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #c8bcad;
     }
 
     /* 모달 및 백드롭 z-index 보장 (화면 까매짐 방지) */
@@ -1666,16 +1686,16 @@
             <thead>
               <tr>
                 <th style="width: 70px; white-space: nowrap;" class="text-center">학번</th>
-                <th style="width: 95px; white-space: nowrap;">원생 이름</th>
+                <th style="width: 95px; white-space: nowrap;" class="text-center">원생 이름</th>
                 <th style="width: 55px; white-space: nowrap;" class="text-center">성별</th>
-                <th style="min-width: 140px; white-space: nowrap;">학교 / 학년</th>
+                <th style="min-width: 140px; white-space: nowrap;" class="text-center">학교 / 학년</th>
                 <th style="width: 90px; white-space: nowrap;" class="text-center">소속 학급</th>
                 <th style="width: 80px; white-space: nowrap;" class="text-center">상태</th>
-                <th style="min-width: 170px; white-space: nowrap;">학부모 정보</th>
+                <th style="min-width: 170px; white-space: nowrap;" class="text-center">학부모 정보</th>
                 <th style="width: 100px; white-space: nowrap;" class="text-center">계정 생성일</th>
                 <th style="width: 105px; white-space: nowrap;" class="text-center">독서 레벨</th>
                 <th style="width: 110px; white-space: nowrap;" class="text-center">완독/평균</th>
-                <th style="width: 145px; white-space: nowrap;" class="text-center">관리</th>
+                <th style="width: 120px; white-space: nowrap;" class="text-center">관리</th>
               </tr>
             </thead>
             <tbody id="studentTableBody">
@@ -1700,14 +1720,14 @@
           <table class="simple-table">
             <thead>
               <tr>
-                <th style="width: 60px;">번호</th>
-                <th style="text-align: left;">성명 (아이디)</th>
-                <th>직책 / 권한</th>
-                <th style="text-align: left;">담당 배정 클래스</th>
-                <th>배정 원생 수</th>
-                <th>연락처</th>
-                <th>등록일자</th>
-                <th style="width: 130px;">관리</th>
+                <th style="width: 60px;" class="text-center">번호</th>
+                <th class="text-center">성명 (아이디)</th>
+                <th class="text-center">직책</th>
+                <th class="text-center">담당 배정 클래스</th>
+                <th class="text-center">배정 원생 수</th>
+                <th class="text-center">연락처</th>
+                <th class="text-center">등록일자</th>
+                <th style="width: 130px;" class="text-center">관리</th>
               </tr>
             </thead>
             <tbody id="teacherTableBody">
@@ -3304,34 +3324,26 @@
       <div class="modal-body p-4">
         <form onsubmit="handleSaveTeacher(event)">
           <input type="hidden" id="teacherFormId">
-          <div class="form-group">
+          <div class="form-group mb-3">
             <label class="font-weight-bold" style="font-size: 13px;">선생님 성함 <span class="text-danger">*</span></label>
-            <input type="text" id="teacherNameInput" class="form-control" style="border-radius: 8px;" required>
+            <input type="text" id="teacherNameInput" class="form-control" placeholder="예: 박선혜 (한글, 영문만 가능)" oninput="this.value = this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]/g, '')" style="border-radius: 8px;" required>
           </div>
-          <div class="form-group">
+          <div class="form-group mb-3">
             <label class="font-weight-bold" style="font-size: 13px;">아이디 <span class="text-danger">*</span></label>
-            <input type="text" id="teacherUsernameInput" class="form-control" style="border-radius: 8px;" required>
+            <input type="text" id="teacherUsernameInput" class="form-control" placeholder="예: teacher_park" style="border-radius: 8px;" required>
           </div>
-          <div class="form-group">
-            <label class="font-weight-bold" style="font-size: 13px;">직책 / 권한</label>
-            <select id="teacherRoleSelect" class="form-control" style="border-radius: 8px;">
-              <option value="지도교사">일반 지도교사</option>
-              <option value="수석 지도교사">수석 지도교사</option>
-              <option value="초등 전담">초등 전담 교사</option>
-              <option value="중등 전담">중등 논술 전담 교사</option>
-            </select>
+          <div class="form-group mb-3">
+            <label class="font-weight-bold" style="font-size: 13px;">비밀번호 <span class="text-danger">*</span></label>
+            <input type="password" id="teacherPasswordInput" class="form-control" placeholder="접속 비밀번호 입력 (예: 1234)" style="border-radius: 8px;">
+            <small class="text-muted" style="font-size: 11.5px;">* 선생님 계정으로 로그인 시 사용하는 비밀번호입니다. (수정 시 미입력 시 기존 비밀번호 유지)</small>
           </div>
-          <div class="form-group">
-            <label class="font-weight-bold" style="font-size: 13px;">담당 클래스</label>
-            <input type="text" id="teacherClassInput" class="form-control" placeholder="예: 지혜반(초5), 슬기반(초4)" style="border-radius: 8px;">
-          </div>
-          <div class="form-group">
+          <div class="form-group mb-3">
             <label class="font-weight-bold" style="font-size: 13px;">연락처 (휴대폰)</label>
-            <input type="tel" id="teacherPhoneInput" class="form-control" placeholder="예: 010-1234-5678" style="border-radius: 8px;">
+            <input type="tel" id="teacherPhoneInput" class="form-control" placeholder="예: 010-1234-5678" maxlength="13" oninput="formatPhoneInput(this)" style="border-radius: 8px;">
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-beige-secondary" data-dismiss="modal">취소</button>
-            <button type="submit" class="btn btn-beige-primary">저장하기</button>
+            <button type="button" class="btn btn-beige-secondary mr-2" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn btn-beige-primary font-weight-bold px-3">저장하기</button>
           </div>
         </form>
       </div>
@@ -4025,7 +4037,7 @@
               <div class="form-row mb-2">
                 <div class="col-8">
                   <label class="font-weight-bold" style="font-size: 12.5px;">원생 이름 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control form-control-sm" id="newStdName" placeholder="예: 김민우" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                  <input type="text" class="form-control form-control-sm" id="newStdName" placeholder="예: 김민우 (한글, 영문만 가능)" oninput="this.value = this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]/g, '')" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                 </div>
                 <div class="col-4">
                   <label class="font-weight-bold" style="font-size: 12.5px;">성별 <span class="text-danger">*</span></label>
@@ -4038,14 +4050,7 @@
 
               <div class="form-group mb-2">
                 <label class="font-weight-bold" style="font-size: 12.5px;">학번 / 원생 ID <span class="text-danger">*</span></label>
-                <div class="input-group input-group-sm">
-                  <input type="text" class="form-control font-weight-bold" id="newStdId" placeholder="예: S1027" required style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px; color: var(--btn-primary); background: #fdfcf9;">
-                  <div class="input-group-append">
-                    <button type="button" class="btn btn-outline-secondary" onclick="autoGenStudentId()" style="border-radius: 0 8px 8px 0; font-size: 11.5px; border-color: var(--border-medium);" title="다음 학번 자동 추천">
-                      <i class="fa-solid fa-rotate-right mr-1"></i>자동채번
-                    </button>
-                  </div>
-                </div>
+                <input type="text" class="form-control form-control-sm font-weight-bold" id="newStdId" placeholder="예: S1027 (원생 접속 아이디 입력)" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px; color: var(--btn-primary); background: #ffffff;">
                 <small class="text-muted" style="font-size: 11px;">* 학생 로그인 시 사용하는 아이디입니다.</small>
               </div>
 
@@ -4106,36 +4111,20 @@
                 <i class="fa-solid fa-user-shield mr-1"></i>상태 관리 & 학부모 설정
               </h6>
 
-              <!-- 상태 변경 (승인, 미승인, 퇴원) -->
-              <div class="form-row mb-2">
-                <div class="col-6">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">원생 상태 <span class="text-danger">*</span></label>
-                  <select class="form-control form-control-sm font-weight-bold" id="newStdStatus" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                    <option value="승인" selected class="text-success">승인 (정상 이용)</option>
-                    <option value="미승인" class="text-warning">미승인 (승인 대기)</option>
-                    <option value="퇴원" class="text-muted">퇴원 (이용 중단)</option>
-                  </select>
-                </div>
-                <div class="col-6">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">독서 레벨 <span class="text-danger">*</span></label>
-                  <select class="form-control form-control-sm" id="newStdLevel" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
-                    <option value="초등 입문 Lv 1">초등 입문 Lv 1</option>
-                    <option value="초등 입문 Lv 2">초등 입문 Lv 2</option>
-                    <option value="초등 발전 Lv 3">초등 발전 Lv 3</option>
-                    <option value="초등 발전 Lv 4">초등 발전 Lv 4</option>
-                    <option value="초등 심화 Lv 5" selected>초등 심화 Lv 5</option>
-                    <option value="초등 완성 Lv 6">초등 완성 Lv 6</option>
-                    <option value="중등 기본 Lv 7">중등 기본 Lv 7</option>
-                    <option value="중등 심화 Lv 8">중등 심화 Lv 8</option>
-                    <option value="중등 마스터 Lv 9">중등 마스터 Lv 9</option>
-                  </select>
-                </div>
+              <!-- 상태 변경 (승인, 미승인, 퇴원) : 독서 레벨 삭제 후 단독 전폭 배치 -->
+              <div class="form-group mb-2">
+                <label class="font-weight-bold" style="font-size: 12.5px;">원생 상태 <span class="text-danger">*</span></label>
+                <select class="form-control form-control-sm font-weight-bold" id="newStdStatus" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                  <option value="승인" selected class="text-success">승인 (정상 이용)</option>
+                  <option value="미승인" class="text-warning">미승인 (승인 대기)</option>
+                  <option value="퇴원" class="text-muted">퇴원 (이용 중단)</option>
+                </select>
               </div>
 
               <div class="form-row mb-2">
                 <div class="col-6">
                   <label class="font-weight-bold" style="font-size: 12.5px;">학부모 이름 <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control form-control-sm" id="newStdParentName" placeholder="예: 김영희" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                  <input type="text" class="form-control form-control-sm" id="newStdParentName" placeholder="예: 김영희 (한글, 영문만 가능)" oninput="this.value = this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]/g, '')" required style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                 </div>
                 <div class="col-6">
                   <label class="font-weight-bold" style="font-size: 12.5px;">학부모 연락처 <span class="text-danger">*</span></label>
@@ -4156,11 +4145,11 @@
               </div>
             </div>
 
-            <!-- 하단 전체 폭: 지도 메모 -->
+            <!-- 하단 전체 폭: 지도 메모 (기존 32px -> 96px 약 3배 확대) -->
             <div class="col-12 mt-3">
               <div class="form-group mb-0">
                 <label class="font-weight-bold" style="font-size: 12.5px;">원생 지도 메모 및 특이사항 <small class="text-muted">(선택)</small></label>
-                <input type="text" class="form-control form-control-sm" id="newStdMemo" placeholder="예: 독서 흥미가 높으며 문해력 퀴즈 및 생각담기 시트 첨삭 희망." style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                <textarea class="form-control" id="newStdMemo" rows="3" placeholder="예: 독서 흥미가 높으며 문해력 퀴즈 및 생각담기 시트 첨삭 희망. 학생의 독서 성향 및 지도 시 유의사항을 입력하세요." style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px; height: 96px; min-height: 96px; resize: vertical; line-height: 1.5;"></textarea>
               </div>
             </div>
           </div>
@@ -4224,12 +4213,14 @@
               </select>
             </div>
             <div class="col-md-3 mb-2 mb-md-0">
-              <select class="form-control form-control-sm" id="newClassTeacherSelect" style="border-radius: 8px; font-size: 12.5px;">
-                <option value="박선혜 수석교사" selected>박선혜 수석교사</option>
-                <option value="최승현 지도교사">최승현 지도교사</option>
-                <option value="이지연 지도교사">이지연 지도교사</option>
-                <option value="김은영 학원장">김은영 학원장</option>
-              </select>
+              <div class="dropdown" style="width: 100%;">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle text-left text-truncate w-100 d-flex justify-content-between align-items-center" type="button" id="dropdownNewClassTeachers" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 8px; font-size: 12px; background: #ffffff; height: 31px;">
+                  <span id="newClassTeacherSelectLabel" class="text-truncate">담당 교사 선택 (복수 가능)</span>
+                </button>
+                <div class="dropdown-menu p-2 shadow-sm" aria-labelledby="dropdownNewClassTeachers" id="newClassTeacherDropdownMenu" style="min-width: 220px; font-size: 12.5px; max-height: 240px; overflow-y: auto;">
+                  <!-- JS 동적 생성: 교사 체크박스 목록 -->
+                </div>
+              </div>
             </div>
             <div class="col-md-3">
               <button type="submit" class="btn btn-sm btn-beige-primary btn-block font-weight-bold" style="border-radius: 8px;">
@@ -4266,6 +4257,70 @@
 
       <div class="modal-footer py-2 px-4" style="background: #fdfbf7; border-top: 1px solid var(--border-light); border-radius: 0 0 16px 16px;">
         <button type="button" class="btn btn-sm btn-beige-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- 신규: 학급 정보 수정 전용 모달 (Class Edit Modal - 교사 다중 지정 가능) -->
+<!-- ============================================================== -->
+<div class="modal fade" id="classEditModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 10px 35px rgba(0,0,0,0.15);">
+      <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4" style="background: #fdfbf7; border-bottom: 1px solid var(--border-light); border-radius: 16px 16px 0 0;">
+        <div class="d-flex align-items-center">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: #2d6a4f; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+            <i class="fa-solid fa-pen-to-square" style="font-size: 14px;"></i>
+          </div>
+          <div>
+            <h6 class="modal-title font-weight-bold mb-0" id="classEditModalTitle" style="color: var(--text-main); font-size: 15px;">학급 정보 수정</h6>
+            <small class="text-muted" style="font-size: 11.5px;">학급명 변경 시 소속 원생의 학급 정보도 안전하게 함께 동기화됩니다.</small>
+          </div>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+
+      <div class="modal-body p-4" style="background: #ffffff;">
+        <form onsubmit="event.preventDefault(); saveEditedClass();">
+          <input type="hidden" id="editClassTargetId">
+          
+          <div class="form-group mb-3">
+            <label class="font-weight-bold" style="font-size: 13px;">학급명 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editClassNameInput" placeholder="학급명 입력 (예: 지혜반)" required style="border-radius: 8px; font-size: 13px;">
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-bold" style="font-size: 13px;">대상 학년 <span class="text-danger">*</span></label>
+            <select class="form-control" id="editClassGradeSelect" style="border-radius: 8px; font-size: 13px;">
+              <option value="미취학 / 유아">미취학 / 유아</option>
+              <option value="초등 1~2학년">초등 1~2학년</option>
+              <option value="초등 3학년">초등 3학년</option>
+              <option value="초등 4학년">초등 4학년</option>
+              <option value="초등 5학년">초등 5학년</option>
+              <option value="초등 6학년">초등 6학년</option>
+              <option value="중등 전학년">중등 전학년</option>
+              <option value="전체 학년 혼합">전체 학년 혼합</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 13px;">
+              <span>담당 교사 지정 <small class="text-primary font-weight-bold">(한 학급에 여러 명 교사 복수 지정 가능)</small></span>
+              <small class="text-muted" id="editClassTeacherSelectedCount">선택: 0명</small>
+            </label>
+            <div id="editClassTeacherListContainer" class="p-3 rounded border" style="background: #fdfcf9; max-height: 160px; overflow-y: auto;">
+              <!-- JS 동적 생성: 교사 체크박스 목록 -->
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid var(--border-light);">
+            <button type="button" class="btn btn-sm btn-beige-secondary mr-2" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn btn-sm btn-beige-primary px-3 font-weight-bold">
+              <i class="fa-solid fa-check mr-1"></i>수정 내용 저장
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

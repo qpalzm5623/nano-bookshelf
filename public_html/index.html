@@ -517,11 +517,21 @@
           </div>
 
           <!-- 2. 가맹 학원 관리자 계정 -->
-          <div class="chip-btn chip-admin" onclick="quickFillAndLogin('admin01', 'admin01')" title="학원 원장/교사 포털로 즉시 로그인">
+          <div class="chip-btn chip-admin" onclick="quickFillAndLogin('admin01', 'admin01')" title="학원 원장 포털로 즉시 로그인">
             <div style="text-align: left;">
               <span class="chip-badge mr-1">가맹 학원</span>
               <strong style="margin-left: 4px;">admin01</strong>
               <small style="color: var(--text-muted); margin-left: 6px;">(원장 대시보드)</small>
+            </div>
+            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
+          </div>
+
+          <!-- 2-1. 지도교사 계정 (신규 추가) -->
+          <div class="chip-btn chip-admin" onclick="quickFillAndLogin('teacher_park', '1234')" title="지도교사 계정으로 즉시 로그인">
+            <div style="text-align: left;">
+              <span class="chip-badge mr-1" style="background:#2d6a4f;">지도 교사</span>
+              <strong style="margin-left: 4px;">teacher_park</strong>
+              <small style="color: var(--text-muted); margin-left: 6px;">(박선혜 교사)</small>
             </div>
             <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
           </div>
@@ -637,7 +647,44 @@
       }
 
       // 계정 검증
-      const user = ACCOUNTS[inputId];
+      let user = ACCOUNTS[inputId];
+
+      // LocalStorage 및 등록된 교사 계정 확인
+      if (!user) {
+        try {
+          const stored = localStorage.getItem('NANO_ACADEMY_TEACHERS');
+          if (stored) {
+            const list = JSON.parse(stored);
+            const found = list.find(t => (t.username && t.username.toLowerCase() === inputId.toLowerCase()) || (t.id && t.id.toLowerCase() === inputId.toLowerCase()));
+            if (found) {
+              user = {
+                pw: found.password || '1234',
+                role: 'teacher',
+                name: `${found.name} 지도교사 (나노 독서아카데미 본원)`,
+                redirectUrl: 'admin_preview.html'
+              };
+            }
+          }
+        } catch (e) {
+          console.warn('교사 계정 조회 실패:', e);
+        }
+      }
+
+      // 기본 더미 교사 계정 fallback
+      if (!user && (inputId === 'teacher_park' || inputId === 'teacher_choi' || inputId === 'teacher_lee')) {
+        const fallbackNames = {
+          'teacher_park': '박선혜 지도교사 (나노 독서아카데미 본원)',
+          'teacher_choi': '최승현 지도교사 (나노 독서아카데미 본원)',
+          'teacher_lee': '이지연 지도교사 (나노 독서아카데미 본원)'
+        };
+        user = {
+          pw: '1234',
+          role: 'teacher',
+          name: fallbackNames[inputId] || '지도교사',
+          redirectUrl: 'admin_preview.html'
+        };
+      }
+
       if (user && user.pw === inputPw) {
         // 성공 처리
         errorAlert.style.display = 'none';

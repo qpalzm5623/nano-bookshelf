@@ -48,6 +48,10 @@
     }
 
     * { box-sizing: border-box; }
+    html {
+      overflow-y: scroll;
+      scrollbar-gutter: stable;
+    }
     body {
       font-family: 'Nunito', 'Gowun Dodum', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg-base);
@@ -55,6 +59,22 @@
       min-height: 100vh;
       overflow-x: hidden;
       letter-spacing: -0.2px;
+    }
+
+    /* 전역 슬림 스크롤바 (스크롤바 유무에 따른 화면 덜컹거림 원천 차단) */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #dfd7cc;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #c8bcad;
     }
 
     /* 0. 상단 B2B 역할 전환 바 (Global Role Switcher) */
