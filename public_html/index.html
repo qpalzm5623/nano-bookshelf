@@ -8,10 +8,11 @@
   <!-- Favicon -->
   <link rel="shortcut icon" href="resources/images/common/logo.png" type="image/png">
 
-  <!-- Google Fonts: Pretendard, Nunito, Gowun Dodum -->
+  <!-- Modern Clean Korean Typography: Pretendard Variable + Noto Sans KR -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -40,7 +41,7 @@
     }
 
     body {
-      font-family: 'Noto Sans KR', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
       background: var(--bg-gradient);
       color: var(--text-main);
       min-height: 100vh;
@@ -51,6 +52,9 @@
       position: relative;
       overflow-x: hidden;
       padding: 24px 16px;
+      letter-spacing: -0.35px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* 배경 장식 원형 블러 */

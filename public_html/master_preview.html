@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>나노의 책장 - B2B 마스터 관리자 포털</title>
 
-  <!-- Google Fonts: Gowun Dodum (둥근 한글), Nunito (둥근 영문), Noto Sans KR -->
+  <!-- Modern Clean Korean Typography: Pretendard Variable + Noto Sans KR -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Bootstrap 4.6 -->
@@ -53,12 +54,19 @@
       scrollbar-gutter: stable;
     }
     body {
-      font-family: 'Nunito', 'Gowun Dodum', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
       background-color: var(--bg-base);
       color: var(--text-main);
       min-height: 100vh;
       overflow-x: hidden;
-      letter-spacing: -0.2px;
+      letter-spacing: -0.35px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* 폼 요소 및 테이블 폰트 상속 및 가독성 최적화 */
+    button, input, select, textarea, .table, table {
+      font-family: inherit;
     }
 
     /* 전역 슬림 스크롤바 (스크롤바 유무에 따른 화면 덜컹거림 원천 차단) */
@@ -845,7 +853,7 @@
                 <th style="width: 100px; white-space: nowrap;" class="text-center">이용 상품명</th>
                 <th style="min-width: 180px; white-space: nowrap; text-align: left;">가맹 학원명</th>
                 <th style="width: 125px; white-space: nowrap;" class="text-center">관리자 ID</th>
-                <th style="min-width: 145px; white-space: nowrap;" class="text-center">원장명 / 연락처</th>
+                <th style="min-width: 175px; white-space: nowrap;" class="text-center">원장명 / 연락처</th>
                 <th style="width: 110px; white-space: nowrap;" class="text-center">가입일</th>
                 <th style="width: 185px; white-space: nowrap;" class="text-center">계약 기간</th>
                 <th style="width: 160px; white-space: nowrap;" class="text-center">원생 수 / 계약 슬롯</th>

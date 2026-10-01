@@ -1517,9 +1517,11 @@ function renderFranchiseTable(data = franchiseList) {
         </td>
         <!-- 5. 원장명 / 연락처 -->
         <td class="text-center" style="white-space: nowrap;">
-          <div class="font-weight-bold" style="font-size: 13px; white-space: nowrap;">${acad.director}</div>
-          <small class="text-muted d-block" style="font-size: 11.5px; white-space: nowrap;">${acad.phone}</small>
-          ${acad.email ? `<small class="text-muted d-block" style="font-size: 10.5px; opacity: 0.85; white-space: nowrap;"><i class="fa-regular fa-envelope mr-1"></i>${acad.email}</small>` : ''}
+          <div style="font-size: 13px; white-space: nowrap; line-height: 1.35;">
+            <strong style="color: var(--text-main); font-weight: 700;">${acad.director}</strong>
+            <span class="text-muted ml-1" style="font-size: 11.5px; font-weight: 500;">(${acad.phone || '-'})</span>
+          </div>
+          ${acad.email ? `<div class="text-muted" style="font-size: 11px; opacity: 0.85; white-space: nowrap; margin-top: 3px; line-height: 1.2;"><i class="fa-regular fa-envelope mr-1" style="font-size: 10px;"></i>${acad.email}</div>` : ''}
         </td>
         <!-- 6. 가입일 -->
         <td class="text-center font-weight-bold" style="font-size: 12px; color: #5a4b3d; white-space: nowrap;">
