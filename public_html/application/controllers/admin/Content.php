@@ -1938,6 +1938,8 @@ class Content extends MY_Controller {
 		$keyword = $this->input->get('keyword');
 		$subject = $this->input->get('subject');
 		$recommendClass = $this->input->get('recommendClass');
+		$view_type = $this->input->get('view_type');
+		$confirm_yn = $this->input->get('confirm_yn');
 		
 		$where = "";
 		$num = empty($num) ? 0 : $num;

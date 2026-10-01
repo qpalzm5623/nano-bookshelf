@@ -17,7 +17,17 @@ class Sms extends MY_Controller {
 		$this->load->model("sms_model");
 		$uri = explode("/",uri_string());
 		// login Check
-        if( !$this->session->userdata("admin_id") ){	public function studentListPop()
+        if( !$this->session->userdata("admin_id") ){
+          if( $uri[count($uri)-1] != "login" && $uri[count($uri)-1] != "login_proc" ){
+            //$this->msg("로그인 해주시기 바랍니다.");
+            $this->goURL(base_url("admin/login"));
+            exit;
+          }
+		}
+
+	}
+
+	public function studentListPop()
     	{
     		$depth1 = "admin";
     		$depth2 = "homeworkList";

@@ -47,12 +47,12 @@ $hook['post_controller_constructor'] = function()
     );
 
     $CI = &get_instance();
-    $lang = $this->uri->segment(1);
+    $lang = $CI->uri->segment(1);
     if(isset($locale[$lang])){
         $getTextConfig = Array(
             'gettext_catalog_codeset' => 'UTF8',
             'gettext_text_domain' => 'example',
-            'gettext_locale_dir' => './language/locales/';
+            'gettext_locale_dir' => './language/locales/',
             'gettext_locale' => $locale[$lang]
         );
         $CI->load->library('gettext', $getTextConfig);
