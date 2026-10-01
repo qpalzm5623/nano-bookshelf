@@ -374,28 +374,73 @@
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 8px;
+      margin-bottom: 14px;
     }
     .stat-mini {
       background: #ffffff;
-      border-radius: 14px;
+      border-radius: 12px;
       border: 1.5px solid var(--soft);
-      padding: 13px 10px;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(58, 46, 38, 0.04);
-      transition: transform .15s;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 6px rgba(58, 46, 38, 0.03);
+      transition: transform .15s, box-shadow .15s;
+      min-height: 52px;
+    }
+    .stat-mini:active {
+      transform: scale(0.98);
+    }
+    .stat-mini .stat-icon {
+      font-size: 19px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .stat-mini .stat-info {
+      text-align: left;
+      min-width: 0;
     }
     .stat-mini .val {
-      font-size: 22px;
+      font-size: 16px;
       font-weight: 900;
+      line-height: 1.1;
       color: var(--leaf);
     }
     .stat-mini .lbl {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
-      margin-top: 3px;
-      font-weight: 600;
+      margin-top: 2px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    /* 상단 로그아웃 아이콘 전용 버튼 (시인성 극대화) */
+    .btn-student-logout {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1.5px solid #fecaca;
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 4px rgba(239, 68, 68, 0.1);
+      flex-shrink: 0;
+    }
+    .btn-student-logout:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(239, 68, 68, 0.25);
+    }
+    .btn-student-logout:active {
+      transform: scale(0.95);
     }
     .sec-title {
       font-size: 14.5px;
@@ -2640,8 +2685,275 @@
       background: #ffe4e6;
       color: #be123c;
     }
-    .drawer-nav-item.logout .drawer-nav-left i {
+    /* [NEW] 북퀴즈 캐릭터 말풍선 대화 UI */
+    .quiz-char-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 14px 0 16px;
+    }
+    .quiz-char-avatar-box {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #00a896;
+      box-shadow: 0 4px 12px rgba(0, 168, 150, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      animation: charGentleBob 3s ease-in-out infinite;
+    }
+    @keyframes charGentleBob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .quiz-speech-bubble {
+      flex: 1;
+      min-width: 0;
+      background: #ffffff;
+      border: 1.5px solid #ccfbf1;
+      border-radius: 16px;
+      border-top-left-radius: 4px;
+      padding: 13px 15px;
+      position: relative;
+      box-shadow: 0 3px 12px rgba(0, 168, 150, 0.07);
+    }
+    .quiz-speech-bubble::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: -8px;
+      width: 0;
+      height: 0;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-right: 8px solid #ccfbf1;
+    }
+    .quiz-speech-bubble::after {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: -6px;
+      width: 0;
+      height: 0;
+      border-top: 6px solid transparent;
+      border-bottom: 6px solid transparent;
+      border-right: 7px solid #ffffff;
+    }
+    .quiz-char-name-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #0d9488;
+      background: #f0fdfa;
+      border: 1px solid #ccfbf1;
+      padding: 1px 6px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* 북퀴즈 결과 화면 캐릭터 말풍선 대사 */
+    .quiz-result-char-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin: 14px 0 16px;
+      text-align: left;
+    }
+    .quiz-result-char-bubble {
+      flex: 1;
+      min-width: 0;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      color: #334155;
+      line-height: 1.5;
+      font-weight: 600;
+      position: relative;
+    }
+
+    /* [NEW] 내 책장 독서 기록 월별 그룹핑 & 도서 상세 메타 */
+    .history-month-block {
+      margin-bottom: 22px;
+    }
+    .history-month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px;
+      margin-bottom: 10px;
+      border-bottom: 1.5px solid #f0ebe4;
+    }
+    .history-month-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--wood-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .history-month-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--leaf-soft);
+      color: var(--leaf);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .reading-book-card {
+      background: #ffffff;
+      border: 1px solid var(--soft);
+      border-radius: 12px;
+      padding: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    .reading-book-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(58, 46, 38, 0.08);
+      border-color: var(--leaf-soft);
+    }
+    .reading-book-meta-box {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px dashed #f1f5f9;
+      font-size: 9.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .reading-book-meta-pub {
+      font-weight: 600;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .reading-book-meta-date {
+      color: #94a3b8;
+      font-size: 9px;
+      margin-top: 1px;
+    }
+
+    /* 포인트 내역 무한 스크롤 로더 */
+    .point-scroll-container {
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .point-scroll-container::-webkit-scrollbar {
+      width: 5px;
+    }
+    .point-scroll-container::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .point-loading-indicator {
+      text-align: center;
+      padding: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      display: none;
+    }
+
+    /* [NEW] 캐릭터 진화 & 실루엣 & 축하 연출 */
+    .char-silhouette {
+      filter: brightness(0) opacity(0.25) contrast(1.2);
+    }
+    .char-evolved-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #b45309;
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 1px solid #fcd34d;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .char-remain-tag {
+      font-size: 9.5px;
+      font-weight: 700;
       color: #e11d48;
+      background: #ffe4e6;
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-top: 2px;
+      display: inline-block;
+    }
+    .char-lock-silhouette-box {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .char-lock-center-icon {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* 캐릭터 축하 모달 & 폭죽 이펙트 */
+    .celeb-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.75);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      backdrop-filter: blur(4px);
+    }
+    .celeb-modal-dialog {
+      background: #ffffff;
+      width: 100%;
+      max-width: 380px;
+      border-radius: 24px;
+      padding: 24px 20px 20px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      animation: celebModalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes celebModalPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .celeb-char-glow-ring {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      animation: celebRingPulse 2s infinite;
+    }
+    @keyframes celebRingPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.8); }
     }
   </style>
 </head>
@@ -2753,10 +3065,6 @@
   </div>
 </aside>
 
-<div class="role-bar">
-  <span><i class="fa-solid fa-graduation-cap mr-1" style="color:#5eead4;"></i> 나노의 책장 <strong style="color:#5eead4;">학생 포털 (체험판)</strong></span>
-  <a href="admin_preview.html"><i class="fa-solid fa-arrow-left mr-1"></i>학원관리자 뷰</a>
-</div>
 <header class="s-header">
   <!-- 바람에 흩날리는 나뭇잎 애니메이션 씬 (로고 틸 & 웜 오렌지 모션) -->
   <div class="leaf-wind-scene" aria-hidden="true">
@@ -2793,26 +3101,26 @@
     </button>
     <div class="logo" style="display: flex; align-items: center;">
       <a href="student_preview.html" style="display: inline-flex; align-items: center; text-decoration: none; padding: 2px 0;">
-        <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 31px; width: auto; object-fit: contain; display: block;">
+        <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 30px; width: auto; object-fit: contain; display: block;">
       </a>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;position:relative;z-index:2;">
-    <div class="user-info-pill" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경" style="display:flex;align-items:center;gap:9px;padding:4px 12px 4px 6px;background:rgba(240,253,250,0.85);border:1px solid #ccfbf1;border-radius:24px;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);box-shadow:0 1px 4px rgba(0,168,150,0.06);">
-      <div id="headerCharAvatar" class="char-avatar-box" style="width:36px;height:36px;flex-shrink:0;"></div>
+  <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:2;">
+    <div class="user-info-pill" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경" style="display:flex;align-items:center;gap:7px;padding:3px 10px 3px 5px;background:rgba(240,253,250,0.9);border:1px solid #ccfbf1;border-radius:20px;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);box-shadow:0 1px 3px rgba(0,168,150,0.06);">
+      <div id="headerCharAvatar" class="char-avatar-box" style="width:28px;height:28px;flex-shrink:0;"></div>
       <div style="text-align:left;">
-        <div style="font-weight:800;font-size:13.5px;color:#1e293b;line-height:1.2;display:flex;align-items:center;gap:4px;">
+        <div style="font-weight:800;font-size:12px;color:#1e293b;line-height:1.2;display:flex;align-items:center;gap:4px;">
           <span>김민준</span>
-          <span id="headerCharTag" style="font-size:10px;font-weight:800;color:#0d9488;background:#ccfbf1;padding:1px 5px;border-radius:6px;">부키</span>
+          <span id="headerCharTag" style="font-size:9.5px;font-weight:800;color:#0d9488;background:#ccfbf1;padding:1px 4px;border-radius:4px;">부키</span>
         </div>
-        <div style="font-size:11px;color:#0f766e;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:4px;">
-          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#00a896;"></span>
-          지혜반 · 초등 5학년
+        <div style="font-size:10px;color:#0f766e;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:3px;">
+          <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#00a896;"></span>
+          지혜반 · 5학년
         </div>
       </div>
     </div>
-    <button type="button" class="btn-student-logout" onclick="handleStudentLogout()" title="학생 포털 로그아웃">
-      <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+    <button type="button" class="btn-student-logout" onclick="handleStudentLogout()" title="로그아웃" aria-label="로그아웃">
+      <i class="fa-solid fa-right-from-bracket"></i>
     </button>
   </div>
 </header>
@@ -2863,9 +3171,27 @@
     </div>
 
     <div class="stat-grid">
-      <div class="stat-mini"><div style="font-size:22px;">📖</div><div class="val" id="mainCertifiedBooksCount">24</div><div class="lbl">인증 도서</div></div>
-      <div class="stat-mini" onclick="goToAssignedBooksTab()" style="cursor: pointer; transition: all 0.2s ease;" title="배정 도서 목록으로 바로가기"><div style="font-size:22px;">⏳</div><div class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">2</div><div class="lbl">인증 대기 도서 <i class="fa-solid fa-chevron-right" style="font-size:9px;margin-left:2px;opacity:0.7;"></i></div></div>
-      <div class="stat-mini"><div style="font-size:22px;">🏆</div><div class="val" style="color:var(--wood-dark);">2,480</div><div class="lbl">포인트</div></div>
+      <div class="stat-mini">
+        <div class="stat-icon">📖</div>
+        <div class="stat-info">
+          <div class="val" id="mainCertifiedBooksCount">24</div>
+          <div class="lbl">인증 도서</div>
+        </div>
+      </div>
+      <div class="stat-mini" onclick="goToAssignedBooksTab()" style="cursor: pointer;" title="배정 도서 목록으로 바로가기">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-info">
+          <div class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">2</div>
+          <div class="lbl">대기 도서 <i class="fa-solid fa-chevron-right" style="font-size:8.5px;opacity:0.7;"></i></div>
+        </div>
+      </div>
+      <div class="stat-mini">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-info">
+          <div class="val" style="color:var(--wood-dark);">2,480</div>
+          <div class="lbl">포인트</div>
+        </div>
+      </div>
     </div>
     <!-- 1. 최근에 추가된 도서 (30권 가로 슬라이더) -->
     <div class="slider-section" id="secRecentBooks">
@@ -3083,7 +3409,15 @@
       </div>
       <div class="qbar"><div class="qfill" id="qFill" style="width:20%;"></div></div>
 
-      <div class="qtext" id="qText">문제 로딩 중...</div>
+      <!-- [NEW] 캐릭터 아바타 + 꼬리표 말풍선 속에 문제 디스플레이 -->
+      <div class="quiz-char-row">
+        <div class="quiz-char-avatar-box" id="quizCurrentCharAvatar" title="대표 캐릭터"></div>
+        <div class="quiz-speech-bubble">
+          <div class="quiz-char-name-tag" id="quizCurrentCharTag">캐릭터 퀴즈</div>
+          <div class="qtext" id="qText" style="margin-top:0;font-size:14.5px;line-height:1.55;font-weight:800;color:#1e293b;">문제 로딩 중...</div>
+        </div>
+      </div>
+
       <!-- 문항 첨부 미디어 (WebP 이미지 또는 영상 임베드 플레이어) -->
       <div id="qMediaBox" style="display:none; margin: 12px 0 16px 0;"></div>
       <div id="qOpts"></div>
@@ -3097,6 +3431,13 @@
       <div class="card"><div class="result-box">
         <div class="res-emoji" id="rEmoji">🎉</div>
         <div class="res-score" id="rScore">100점</div>
+
+        <!-- [NEW] 점수에 따라 캐릭터가 말풍선으로 건네는 개성 맞춤 대사 -->
+        <div class="quiz-result-char-wrap" id="quizResultCharBox">
+          <div class="quiz-char-avatar-box" id="quizResultCharAvatar" style="width:48px;height:48px;"></div>
+          <div class="quiz-result-char-bubble" id="quizResultCharSpeech"></div>
+        </div>
+
         <div class="res-msg" id="rMsg">완벽해요!</div>
         <div class="pt-badge" id="rPt"><i class="fa-solid fa-bolt mr-1"></i>+100 포인트!</div>
         <div style="display:flex;gap:8px;justify-content:center;">
@@ -3124,7 +3465,7 @@
       </button>
     </div>
 
-    <!-- 1) 독서 기록 서브 뷰 -->
+    <!-- 1) 독서 기록 서브 뷰 (월별 구분 + 표지 아래 타이틀, 출판사, 시리즈명, 인증일자) -->
     <div id="bsViewHistory">
       <!-- 완독 도서 권수 & 평균 점수 요약 통계 -->
       <div class="bs-stat-grid-2">
@@ -3138,19 +3479,18 @@
         </div>
       </div>
 
-      <!-- 완독 도서 목록 (한 줄에 4권씩 썸네일 + 하단 제목 정렬) -->
+      <!-- 완독 도서 목록 (월별 구분 그룹 렌더링) -->
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <span style="font-size:13px;font-weight:800;color:var(--wood-dark);"><i class="fa-solid fa-book mr-1" style="color:var(--leaf);"></i>읽은 도서 목록</span>
+        <span style="font-size:13px;font-weight:800;color:var(--wood-dark);"><i class="fa-solid fa-calendar-check mr-1" style="color:var(--leaf);"></i>월별 독서 인증 기록</span>
         <span style="font-size:11.5px;color:var(--muted);"><span id="readingHistoryCount">8</span>권 완독</span>
       </div>
-      <div class="reading-grid-4col" id="readingHistoryGrid">
-        <!-- JS 동적 렌더링: 썸네일 + 상단 점수 배지 + 하단 제목 -->
+      <div id="readingHistoryMonthContainer">
+        <!-- JS 동적 렌더링: YYYY년 M월 헤더 + 4열 도서 카드(표지, 타이틀, 출판사/시리즈, 인증일자) -->
       </div>
     </div>
 
-    <!-- 2) 찜한 도서 서브 라 (에 관심 주제 선택 UI 제거, 찜한 도서만 표시) -->
+    <!-- 2) 찜한 도서 서브 뷰 -->
     <div id="bsViewInterest" style="display:none;">
-      <!-- 내가 찜한 도서 목록 -->
       <div class="d-flex align-items-center justify-content-between mb-2">
         <span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
           <i class="fa-solid fa-heart mr-1" style="color:#e11d48;"></i>내가 찜한 도서 목록
@@ -3162,7 +3502,7 @@
       </div>
     </div>
 
-    <!-- 3) 포인트 내역 서브 뷰 (이미지 없는 텍스트 리스트 & 월별 구분) -->
+    <!-- 3) 포인트 내역 서브 뷰 (10개씩 노출 + 스크롤 시 10개씩 추가 로딩) -->
     <div id="bsViewPoints" style="display:none;">
       <!-- 포인트 요약 카드 -->
       <div class="point-summary-card">
@@ -3184,9 +3524,17 @@
         <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-07', this)">2026년 7월</button>
       </div>
 
-      <!-- 이미지 없는 텍스트 리스트 -->
-      <div id="pointLogList">
-        <!-- 동적 텍스트 리스트 렌더링 -->
+      <!-- 10개씩 무한 스크롤 컨테이너 -->
+      <div class="point-scroll-container" id="pointLogScrollWrap" onscroll="handlePointLogScroll(this)">
+        <div id="pointLogList">
+          <!-- 동적 텍스트 리스트 렌더링 (초기 10개) -->
+        </div>
+        <div id="pointLogLoadingIndicator" class="point-loading-indicator">
+          <i class="fa-solid fa-spinner fa-spin mr-1"></i> 추가 10개 내역을 불러오는 중...
+        </div>
+        <div id="pointLogEndMessage" style="display:none;text-align:center;padding:12px;font-size:11.5px;color:#94a3b8;font-weight:600;">
+          <i class="fa-solid fa-check mr-1"></i> 모든 포인트 내역을 불러왔습니다.
+        </div>
       </div>
     </div>
   </div>
@@ -3342,6 +3690,42 @@
       <button type="button" class="btn btn-secondary w-50" onclick="closeCharacterSelectModal()" style="border-radius: 12px; font-weight: 700; padding: 10px;">취소</button>
       <button type="button" class="btn btn-primary w-50" id="btnApplyCharacter" onclick="applySelectedCharacter()" style="border-radius: 12px; font-weight: 800; padding: 10px; background: #00a896; border-color: #00a896; box-shadow: 0 4px 12px rgba(0,168,150,0.3);">
         <i class="fa-solid fa-check mr-1"></i> 이 캐릭터로 설정
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- [NEW] 캐릭터 획득 및 진화 축하 연출 모달 -->
+<div id="characterCelebrationModal" class="celeb-modal-overlay" style="display:none;" onclick="if(event.target===this)closeCelebrationModal()">
+  <div class="celeb-modal-dialog">
+    <div style="font-size:36px;margin-bottom:4px;" id="celebTopEmoji">🎉</div>
+    <h3 style="font-size:18px;font-weight:900;color:#0f766e;margin-bottom:4px;" id="celebTitle">새로운 캐릭터 해금 달성!</h3>
+    <p style="font-size:12px;color:#64748b;margin-bottom:16px;" id="celebSubtitle">독서 미션을 완수하여 새로운 친구가 찾아왔어요!</p>
+
+    <!-- 캐릭터 글로우 원형 박스 -->
+    <div class="celeb-char-glow-ring" id="celebCharGlowRing">
+      <div id="celebCharAvatar" style="width:84px;height:84px;"></div>
+    </div>
+
+    <!-- 캐릭터 이름 & 태그 & 진화 배지 -->
+    <div style="margin-bottom:12px;">
+      <div style="display:inline-flex;align-items:center;gap:6px;">
+        <span style="font-size:17px;font-weight:900;color:#1e293b;" id="celebCharName">부키 (Booki)</span>
+        <span id="celebEvolvedTag" class="char-evolved-badge" style="display:none;"><i class="fa-solid fa-crown"></i> 진화형</span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#0d9488;margin-top:2px;" id="celebCharTag">지혜의 독서 박사 부엉이 🦉</div>
+    </div>
+
+    <!-- 축하 한마디 말풍선 -->
+    <div style="background:#f0fdfa;border:1.5px solid #ccfbf1;border-radius:14px;padding:12px;font-size:12.5px;color:#0f766e;line-height:1.5;font-weight:700;margin-bottom:16px;" id="celebQuote">
+      "축하해! 앞으로 나와 함께 지혜로운 책 여행을 떠나보자!"
+    </div>
+
+    <!-- 버튼 -->
+    <div style="display:flex;gap:8px;">
+      <button type="button" class="btn btn-secondary w-50" onclick="closeCelebrationModal()" style="border-radius:12px;font-weight:700;padding:10px;">확인</button>
+      <button type="button" class="btn btn-primary w-50" id="btnApplyFromCeleb" onclick="applyCelebratedCharacter()" style="border-radius:12px;font-weight:800;padding:10px;background:#00a896;border-color:#00a896;box-shadow:0 4px 12px rgba(0,168,150,0.3);">
+        <i class="fa-solid fa-check mr-1"></i> 대표 캐릭터 설정
       </button>
     </div>
   </div>
@@ -5455,13 +5839,82 @@ function parseStudentQuizVideoUrl(url) {
   return null;
 }
 
-// 문항 렌더링: 정답 즉시 노출 X, 보기 선택 후 다음 진행
+// 캐릭터별 북퀴즈 성격 맞춤 피드백 대사 사전
+var CHAR_QUIZ_FEEDBACKS = {
+  nano: {
+    perfect: "놀라워! 모든 단서를 완벽하게 풀어냈어, 역시 최고의 명탐정 파트너야! 🦊🔍",
+    high: "날카로운 추리였어! 미세한 단서 하나만 더 챙기면 완벽한 만점이야! 🕵️‍♂️",
+    pass: "음, 사건의 진실에 거의 다가갔어! 다시 한번 꼼꼼히 조사해보자.",
+    retry: "포기하지 마! 진짜 명탐정은 실패를 딛고 다시 책을 펼치는 법이야!"
+  },
+  toto: {
+    perfect: "와우! 깡충깡충 신난다! 우리 마음과 생활을 쏙쏙 이해한 100점 만점이야! 🐰💖",
+    high: "우와, 대단해! 친구들의 마음과 감정을 아주 따뜻하게 기억하고 있네!",
+    pass: "좋은 시도였어! 조금만 더 친구들의 마음에 귀 기울여보면 어떨까?",
+    retry: "괜찮아 토닥토닥! 다음엔 더 재미있게 읽고 함께 도전해보자!"
+  },
+  booki: {
+    perfect: "호-호! 숲의 모든 비밀을 꿰뚫어 보았군요. 지혜의 나무가 활짝 꽃피웠어요! 🦉🌿",
+    high: "훌륭해요! 자연과 생명의 신비를 아주 깊이 있게 이해하고 있네요.",
+    pass: "지혜의 날개가 자라고 있어요! 부족한 부분을 다시 찾아 읽어보세요.",
+    retry: "배움에는 끝이 없답니다. 차분하게 책장을 다시 넘겨볼까요?"
+  },
+  pico: {
+    perfect: "삐리릭-! 정확도 100% 탐사 완료! 미래 과학 지식 엔진 풀가동! 🐧🚀",
+    high: "지식 궤도 진입 성공! 원리와 개념을 탄탄하게 분석해냈습니다!",
+    pass: "통신 신호 수신 양호! 과학적 사고력을 한 단계 더 업그레이드해봅시다!",
+    retry: "시스템 점검 필요! 실험 노트를 복습하고 재발사 준비를 해봐요!"
+  },
+  popo: {
+    perfect: "허허, 듬직하구나! 옛 역사와 이야기의 지혜를 온전히 네 것으로 만들었어! 🐻📜",
+    high: "참 잘했단다! 선조들의 발자취와 깊은 뜻을 올바르게 새겼구나.",
+    pass: "차근차근 잘 가고 있단다. 우직하게 한 번 더 읽어보면 더 깊어질 거야.",
+    retry: "서두를 것 없단다. 역사는 천천히 음미할 때 비로소 보이는 법이지."
+  },
+  chichi: {
+    perfect: "우와앙! 활력 비타민 100% 충전 완료! 머리가 반짝반짝 에너지가 넘쳐요! 🐿️🍎",
+    high: "슈퍼 파워 독서력! 건강한 지식이 머릿속에 쏙쏙 쌓였어요!",
+    pass: "영양 만점 독서 진행 중! 한 번 더 읽으면 더 힘이 불끈 솟아날 거예요!",
+    retry: "도토리처럼 알찬 지식을 다시 모아봐요! 힘내서 파이팅!"
+  },
+  lumi: {
+    perfect: "반짝반짝! 마법의 별가루가 쏟아져요! 생각의 힘이 눈부시게 빛나고 있어요! 🧚✨",
+    high: "놀라운 상상력과 논리력이에요! 마법의 퍼즐을 멋지게 완성했네요.",
+    pass: "별빛이 반짝이고 있어요! 차근차근 생각하면 정답의 길이 보인답니다.",
+    retry: "마법은 연습에서 나오는 법! 다시 한번 신비한 책 속으로 날아가 볼까요?"
+  },
+  mir: {
+    perfect: "크아앙! 푸른 용의 여의주처럼 눈부신 100점이다! 천하를 호령할 대독서가로다! 🐲⚡",
+    high: "푸른 기운이 넘쳐흐르는구나! 큰 뜻을 품은 자다운 훌륭한 성취다!",
+    pass: "용의 날갯짓이 시작되었다! 조금 더 정진하여 온전한 하늘로 날아오르자!",
+    retry: "좌절하지 마라! 폭풍우를 견뎌낸 이무기만이 진정한 용이 되는 법이다!"
+  },
+  jelly: {
+    perfect: "말랑말랑 통통! 환상적인 100점 만점이에요! 온 책장이 달콤한 행복으로 가득해요! 🫧🍭",
+    high: "퐁퐁 솟아나는 독서 즐거움! 책 읽는 기쁨을 제대로 알고 있군요!",
+    pass: "달콤한 독서 에너지가 충전되고 있어요! 톡톡 튀는 호기심으로 다시 봐요!",
+    retry: "말랑한 마음으로 다시 시작해봐요! 내가 언제나 곁에서 응원할게요!"
+  }
+};
+
+// 문항 렌더링: 정답 즉시 노출 X, 캐릭터 말풍선 속에 문제 디스플레이
 function renderQ() {
   var q = curData.qs[curQ];
   var tot = curData.qs.length;
 
   document.getElementById('qLabel').innerText = (curQ + 1) + '/' + tot;
   document.getElementById('qFill').style.width = Math.round(((curQ + 1) / tot) * 100) + '%';
+
+  // [NEW] 캐릭터 아바타 및 말풍선 태그 동기화
+  var charId = getUserCharacterId();
+  var char = getCharacterById(charId);
+  var quizAvatarEl = document.getElementById('quizCurrentCharAvatar');
+  var quizTagEl = document.getElementById('quizCurrentCharTag');
+  if (quizAvatarEl) quizAvatarEl.innerHTML = getCharacterSvg(charId, 46);
+  if (quizTagEl) {
+    quizTagEl.innerText = char.name.split(' ')[0] + (q.isThoughtQuestion ? '의 생각 미션' : '의 질문');
+    quizTagEl.style.color = char.themeColor;
+  }
 
   var qTextEl = document.getElementById('qText');
   var mediaBox = document.getElementById('qMediaBox');
@@ -5476,7 +5929,7 @@ function renderQ() {
   // ★ 생각 담기 주관식 문항 처리
   if (q.isThoughtQuestion) {
     if (mediaBox) mediaBox.style.display = 'none';
-    qTextEl.innerHTML = `<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-2" style="font-size:11.5px;"><i class="fa-solid fa-lightbulb mr-1"></i>나노 시트 생각 담기 (마지막 주관식 과제)</span><div style="margin-top:6px;font-size:15px;line-height:1.6;">${q.q}</div>`;
+    qTextEl.innerHTML = `<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-2" style="font-size:11.5px;"><i class="fa-solid fa-lightbulb mr-1"></i>나노 시트 생각 담기 (마지막 주관식 과제)</span><div style="margin-top:6px;font-size:14.5px;line-height:1.6;">${q.q}</div>`;
 
     c.innerHTML = `
       <div style="background:#fff;border:1.5px solid #00a896;border-radius:14px;padding:14px;box-shadow:0 3px 12px rgba(0,168,150,0.08);">
@@ -5494,7 +5947,7 @@ function renderQ() {
     return;
   }
 
-  // 일반 객관식 문항 처리
+  // 일반 객관식 문항 처리 (말풍선 내 텍스트 삽입)
   qTextEl.innerText = q.q;
 
   // 문항 미디어 렌더링
@@ -5521,16 +5974,16 @@ function renderQ() {
           + '</div>'
           + cap
           + '</div>';
-        mediaBox.style.display = 'block';
-      } else {
-        mediaBox.style.display = 'none';
-        mediaBox.innerHTML = '';
-      }
+      mediaBox.style.display = 'block';
     } else {
       mediaBox.style.display = 'none';
       mediaBox.innerHTML = '';
     }
+  } else {
+    mediaBox.style.display = 'none';
+    mediaBox.innerHTML = '';
   }
+}
 
   // 보기 버튼 목록 생성
   c.innerHTML = '';
@@ -5558,7 +6011,7 @@ function onThoughtTextareaInput(val) {
   }
 }
 
-// 보기 선택: ★ 바로 정답을 알려주지 않고 선택 상태만 표시한 후 다음으로 넘어가게 함
+// 보기 선택
 function selectAns(sel) {
   studentSelectedAnsMap[curQ] = sel;
 
@@ -5628,18 +6081,40 @@ function showResult() {
   document.getElementById('rScore').innerText = score + '점';
   document.getElementById('rPt').innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>+' + score + ' 포인트 지급 완료!';
 
+  // [NEW] 캐릭터 말풍선 대사 적용
+  var charId = getUserCharacterId();
+  var char = getCharacterById(charId);
+  var fbDict = CHAR_QUIZ_FEEDBACKS[charId] || CHAR_QUIZ_FEEDBACKS.nano;
+  var speechText = '';
+
   if (score === 100) {
     document.getElementById('rEmoji').innerText = '🏆';
     document.getElementById('rMsg').innerText = tot + '문항 전부 정답! 완벽해요!';
     document.getElementById('rScore').className = 'res-score p';
+    speechText = fbDict.perfect;
+  } else if (score >= 80) {
+    document.getElementById('rEmoji').innerText = '🌟';
+    document.getElementById('rMsg').innerText = tot + '문항 중 ' + ok + '문항 정답! 훌륭해요!';
+    document.getElementById('rScore').className = 'res-score g';
+    speechText = fbDict.high;
   } else if (score >= 60) {
     document.getElementById('rEmoji').innerText = '👍';
-    document.getElementById('rMsg').innerText = tot + '문항 중 ' + ok + '문항 정답! 잘했어요!';
+    document.getElementById('rMsg').innerText = tot + '문항 중 ' + ok + '문항 정답! 통과했어요!';
     document.getElementById('rScore').className = 'res-score g';
+    speechText = fbDict.pass;
   } else {
     document.getElementById('rEmoji').innerText = '📚';
     document.getElementById('rMsg').innerText = '수고했어요! 오답을 다시 복습해봐요.';
     document.getElementById('rScore').className = 'res-score f';
+    speechText = fbDict.retry;
+  }
+
+  // 결과 화면 캐릭터 말풍선 렌더링
+  var resAvatarEl = document.getElementById('quizResultCharAvatar');
+  var resSpeechEl = document.getElementById('quizResultCharSpeech');
+  if (resAvatarEl) resAvatarEl.innerHTML = getCharacterSvg(charId, 44);
+  if (resSpeechEl) {
+    resSpeechEl.innerHTML = '<strong style="color:' + char.themeColor + ';display:block;margin-bottom:2px;">' + char.name.split(' ')[0] + '의 한마디</strong>' + speechText;
   }
 
   // 생각 담기 작성 결과 영역
@@ -5724,16 +6199,20 @@ function backToSelect(){
 var studentWishlist = ['1001', '1004', '1006']; // 기본 찜한 도서 (어린 왕자, 자전거 도둑, 긴긴밤)
 var curBookshelfMainTab = 'history'; // 'history' | 'interest' | 'points'
 
-// 완독 도서 마스터 데이터 (한 줄에 4권씩 격자 정렬)
+// 완독 도서 마스터 데이터 (도서별 출판사, 시리즈명, 인증일자 메타 포함)
 var readBooksMaster = [
-  { id: '1001', score: 100, date: '2026.09.08' }, // 어린 왕자
-  { id: '1004', score: 100, date: '2026.09.01' }, // 자전거 도둑
-  { id: '1003', score: 90,  date: '2026.08.28' }, // 마당을 나온 암탉
-  { id: '1005', score: 85,  date: '2026.08.20' }, // 완득이
-  { id: '1002', score: 100, date: '2026.08.15' }, // 아몬드
-  { id: '1006', score: 95,  date: '2026.08.08' }, // 긴긴밤
-  { id: '1007', score: 90,  date: '2026.07.29' }, // 소년이 온다
-  { id: '1008', score: 95,  date: '2026.07.18' }  // 모모
+  { id: '1001', score: 100, date: '2026.09.08', pub: '열린책들', series: '세계문학 클래식' },
+  { id: '1004', score: 100, date: '2026.09.01', pub: '다림', series: '한국단편 문학선' },
+  { id: '1003', score: 90,  date: '2026.08.28', pub: '사계절', series: '사계절 아동문학' },
+  { id: '1005', score: 85,  date: '2026.08.20', pub: '비룡소', series: '만복이네 시리즈' },
+  { id: '1002', score: 100, date: '2026.08.15', pub: '창비', series: '청소년 문학선' },
+  { id: '1006', score: 95,  date: '2026.08.08', pub: '문학동네', series: '동네어린이 문학' },
+  { id: '1007', score: 90,  date: '2026.07.29', pub: '창비', series: '한국현대소설선' },
+  { id: '1008', score: 95,  date: '2026.07.18', pub: '비룡소', series: '미하엘엔데 전집' },
+  { id: '1009', score: 90,  date: '2026.07.04', pub: '웅진주니어', series: '생각나무 도서관' },
+  { id: '1010', score: 100, date: '2026.06.26', pub: '시공주니어', series: '네버랜드 클래식' },
+  { id: '1011', score: 95,  date: '2026.06.14', pub: '비룡소', series: '미래 과학탐험' },
+  { id: '1012', score: 90,  date: '2026.06.02', pub: '길벗어린이', series: '역사 인물탐구' }
 ];
 
 // 학생 관심 주제 데이터 (선택 3개 기본 노출 & FIFO 최대 3개 선택)
@@ -5752,119 +6231,44 @@ var allInterestTags = [
   '#역사', '#가족', '#용기', '#자연', '#모험'
 ];
 
-// 포인트 적립 내역 데이터 (이미지 없는 텍스트 리스트, 월별 구분)
+// 포인트 적립 내역 데이터 (이미지 없는 텍스트 리스트, 월별 구분, 10개씩 페이징 로딩)
 var curPointMonthFilter = 'all';
+var pointPage = 1;
+var pointPageSize = 10;
+var isPointLoading = false;
+var hasMorePointLogs = true;
+
 var studentPointLogs = [
-  {
-    id: 1,
-    datetime: '2026.09.15 16:40',
-    month: '2026-09',
-    bookTitle: '어린 왕자',
-    activity: '북퀴즈 100점 만점 통과 및 독서 인증',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 100
-  },
-  {
-    id: 2,
-    datetime: '2026.09.12 18:25',
-    month: '2026-09',
-    bookTitle: '어린 왕자',
-    activity: '생각 꺼내기 독후 생각 기록 작성',
-    type: 'think',
-    typeName: '생각 꺼내기',
-    point: 50
-  },
-  {
-    id: 3,
-    datetime: '2026.09.08 17:15',
-    month: '2026-09',
-    bookTitle: '자전거 도둑',
-    activity: '북퀴즈 100점 완독 및 포인트 적립',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 100
-  },
-  {
-    id: 4,
-    datetime: '2026.09.01 09:30',
-    month: '2026-09',
-    bookTitle: '9월 출석 챌린지',
-    activity: '9월 첫날 독서 다짐 출석 체크 완료',
-    type: 'attend',
-    typeName: '출석 체크',
-    point: 20
-  },
-  {
-    id: 5,
-    datetime: '2026.08.28 15:50',
-    month: '2026-08',
-    bookTitle: '마당을 나온 암탉',
-    activity: '북퀴즈 90점 통과 완독 포인트',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 90
-  },
-  {
-    id: 6,
-    datetime: '2026.08.20 14:10',
-    month: '2026-08',
-    bookTitle: '완득이',
-    activity: '북퀴즈 85점 통과 및 나노 서평 작성',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 85
-  },
-  {
-    id: 7,
-    datetime: '2026.08.15 19:05',
-    month: '2026-08',
-    bookTitle: '아몬드',
-    activity: '북퀴즈 100점 만점 및 생각 꺼내기',
-    type: 'think',
-    typeName: '생각 꺼내기',
-    point: 150
-  },
-  {
-    id: 8,
-    datetime: '2026.08.08 11:20',
-    month: '2026-08',
-    bookTitle: '긴긴밤',
-    activity: '북퀴즈 95점 통과 완독',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 95
-  },
-  {
-    id: 9,
-    datetime: '2026.07.29 16:30',
-    month: '2026-07',
-    bookTitle: '소년이 온다',
-    activity: '북퀴즈 90점 통과 완독',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 90
-  },
-  {
-    id: 10,
-    datetime: '2026.07.18 10:15',
-    month: '2026-07',
-    bookTitle: '모모',
-    activity: '여름방학 추천도서 완독 및 북퀴즈 95점',
-    type: 'quiz',
-    typeName: '북퀴즈 완독',
-    point: 95
-  },
-  {
-    id: 11,
-    datetime: '2026.07.01 09:00',
-    month: '2026-07',
-    bookTitle: '여름방학 독서 챌린지',
-    activity: '여름방학 독서 목표 설정 및 출석',
-    type: 'attend',
-    typeName: '출석 체크',
-    point: 50
-  }
+  { id: 1, datetime: '2026.09.15 16:40', month: '2026-09', bookTitle: '어린 왕자', activity: '북퀴즈 100점 만점 통과 및 독서 인증', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
+  { id: 2, datetime: '2026.09.12 18:25', month: '2026-09', bookTitle: '어린 왕자', activity: '생각 꺼내기 독후 생각 기록 작성', type: 'think', typeName: '생각 꺼내기', point: 50 },
+  { id: 3, datetime: '2026.09.08 17:15', month: '2026-09', bookTitle: '자전거 도둑', activity: '북퀴즈 100점 완독 및 포인트 적립', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
+  { id: 4, datetime: '2026.09.01 09:30', month: '2026-09', bookTitle: '9월 출석 챌린지', activity: '9월 첫날 독서 다짐 출석 체크 완료', type: 'attend', typeName: '출석 체크', point: 20 },
+  { id: 5, datetime: '2026.08.28 15:50', month: '2026-08', bookTitle: '마당을 나온 암탉', activity: '북퀴즈 90점 통과 완독 포인트', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
+  { id: 6, datetime: '2026.08.20 14:10', month: '2026-08', bookTitle: '완득이', activity: '북퀴즈 85점 통과 및 나노 서평 작성', type: 'quiz', typeName: '북퀴즈 완독', point: 85 },
+  { id: 7, datetime: '2026.08.15 19:05', month: '2026-08', bookTitle: '아몬드', activity: '북퀴즈 100점 만점 및 생각 꺼내기', type: 'think', typeName: '생각 꺼내기', point: 150 },
+  { id: 8, datetime: '2026.08.08 11:20', month: '2026-08', bookTitle: '긴긴밤', activity: '북퀴즈 95점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
+  { id: 9, datetime: '2026.08.01 09:00', month: '2026-08', bookTitle: '8월 독서왕 챌린지', activity: '여름방학 2차 독서 챌린지 참가', type: 'attend', typeName: '출석 체크', point: 30 },
+  { id: 10, datetime: '2026.07.29 16:30', month: '2026-07', bookTitle: '소년이 온다', activity: '북퀴즈 90점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
+  { id: 11, datetime: '2026.07.18 10:15', month: '2026-07', bookTitle: '모모', activity: '여름방학 추천도서 완독 및 북퀴즈 95점', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
+  { id: 12, datetime: '2026.07.12 14:40', month: '2026-07', bookTitle: '마법 천자문 1권', activity: '북퀴즈 90점 통과 및 어휘 학습', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
+  { id: 13, datetime: '2026.07.04 17:00', month: '2026-07', bookTitle: '아홉 살 마음 사전', activity: '감정 표현 생각 꺼내기 과제 우수작', type: 'think', typeName: '생각 꺼내기', point: 60 },
+  { id: 14, datetime: '2026.07.01 09:00', month: '2026-07', bookTitle: '여름방학 독서 챌린지', activity: '여름방학 독서 목표 설정 및 출석', type: 'attend', typeName: '출석 체크', point: 50 },
+  { id: 15, datetime: '2026.06.26 15:30', month: '2026-06', bookTitle: '피터 팬', activity: '클래식 명작 완독 및 북퀴즈 100점', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
+  { id: 16, datetime: '2026.06.20 18:10', month: '2026-06', bookTitle: '찰리와 초콜릿 공장', activity: '북퀴즈 90점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
+  { id: 17, datetime: '2026.06.14 11:45', month: '2026-06', bookTitle: '신기한 스쿨버스', activity: '과학 탐구 도서 북퀴즈 95점', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
+  { id: 18, datetime: '2026.06.08 16:20', month: '2026-06', bookTitle: '조선 왕조 실록 1', activity: '역사 도서 1차 완독 인증', type: 'quiz', typeName: '북퀴즈 완독', point: 85 },
+  { id: 19, datetime: '2026.06.02 10:00', month: '2026-06', bookTitle: '6월 첫 독서 다짐', activity: '월초 출석 체크 및 독서 계획 등록', type: 'attend', typeName: '출석 체크', point: 20 },
+  { id: 20, datetime: '2026.05.28 17:10', month: '2026-05', bookTitle: '샬롯의 거미줄', activity: '감동 문학 완독 및 100점 만점', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
+  { id: 21, datetime: '2026.05.21 15:40', month: '2026-05', bookTitle: '구름빵', activity: '동화 읽기 생각 꺼내기 제출', type: 'think', typeName: '생각 꺼내기', point: 50 },
+  { id: 22, datetime: '2026.05.15 14:00', month: '2026-05', bookTitle: '스승의 날 감사 독서', activity: '선생님 추천 도서 완독 보너스', type: 'quiz', typeName: '북퀴즈 완독', point: 120 },
+  { id: 23, datetime: '2026.05.05 10:30', month: '2026-05', bookTitle: '어린이날 독서 축제', activity: '독서 골든벨 퀴즈 1차 이벤트', type: 'attend', typeName: '이벤트 참가', point: 100 },
+  { id: 24, datetime: '2026.04.28 16:50', month: '2026-04', bookTitle: '나무 집 시리즈 13층', activity: '북퀴즈 95점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
+  { id: 25, datetime: '2026.04.20 18:00', month: '2026-04', bookTitle: '이상한 과자 가게 전천당', activity: '북퀴즈 100점 만점 달성', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
+  { id: 26, datetime: '2026.04.12 15:20', month: '2026-04', bookTitle: '책 먹는 여우', activity: '초등 필독서 완독 및 서평 등록', type: 'think', typeName: '생각 꺼내기', point: 70 },
+  { id: 27, datetime: '2026.04.01 09:00', month: '2026-04', bookTitle: '봄맞이 독서 출석', activity: '4월 연속 출석 스탬프 적립', type: 'attend', typeName: '출석 체크', point: 30 },
+  { id: 28, datetime: '2026.03.25 17:30', month: '2026-03', bookTitle: '틀려도 괜찮아', activity: '학교 생활 적응 도서 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
+  { id: 29, datetime: '2026.03.18 16:00', month: '2026-03', bookTitle: '급식왕 시리즈', activity: '북퀴즈 85점 통과', type: 'quiz', typeName: '북퀴즈 완독', point: 85 },
+  { id: 30, datetime: '2026.03.10 14:15', month: '2026-03', bookTitle: '신학기 독서 첫걸음', activity: '신학기 나노 책장 가입 및 첫 인증', type: 'attend', typeName: '첫 가입 축하', point: 200 }
 ];
 
 // 도서 찜 토글 함수
@@ -5961,29 +6365,83 @@ function switchMyBookshelfMainTab(tab) {
 }
 
 // ==============================================================
-// 2) 독서 기록 서브 뷰: 완독 도서 권수, 평균 점수, 4열 그리드
+// 2) 독서 기록 서브 뷰: [월별 구분 그룹핑] + [타이틀 아래 출판사, 시리즈명, 인증일자]
 // ==============================================================
 function renderReadingHistoryGrid() {
-  var grid = document.getElementById('readingHistoryGrid');
+  var container = document.getElementById('readingHistoryMonthContainer');
   var countEl = document.getElementById('readingHistoryCount');
-  if(!grid) return;
+  var statCountEl = document.getElementById('statBsReadCount');
+  var statAvgEl = document.getElementById('statBsAvgScore');
+  if(!container) return;
 
-  if(countEl) countEl.innerText = readBooksMaster.length;
+  var totalCount = readBooksMaster.length;
+  if(countEl) countEl.innerText = totalCount;
+  if(statCountEl) statCountEl.innerText = totalCount + '권';
 
-  grid.innerHTML = readBooksMaster.map(function(item){
-    var b = libData.find(function(x){ return x.id === item.id; });
-    var title = b ? b.title : ('도서 ' + item.id);
-    var coverHtml = b ? getBookCoverHtml(b, 'reading-thumb-img') : '<div class="reading-thumb-img" style="background:#2d6a4f;"></div>';
-    var scoreClass = item.score === 100 ? 'perfect' : (item.score >= 90 ? 'high' : '');
+  // 평균 점수 계산
+  if(statAvgEl && totalCount > 0) {
+    var avg = readBooksMaster.reduce(function(acc, x){ return acc + x.score; }, 0) / totalCount;
+    statAvgEl.innerText = avg.toFixed(1) + '점';
+  }
 
-    return '<div class="reading-book-card" onclick="openBookDetail(\'' + item.id + '\', \'history\')">'
-      + '<div class="reading-thumb-wrap">'
-      +   coverHtml
-      +   '<span class="reading-score-badge ' + scoreClass + '">' + item.score + '점</span>'
+  // 월별(YYYY년 M월) 그룹핑
+  var monthMap = {};
+  var monthOrder = [];
+
+  readBooksMaster.forEach(function(item) {
+    var parts = (item.date || '2026.09.01').split('.');
+    var year = parts[0] || '2026';
+    var month = parseInt(parts[1] || '9', 10);
+    var monthKey = year + '년 ' + month + '월';
+
+    if(!monthMap[monthKey]) {
+      monthMap[monthKey] = [];
+      monthOrder.push(monthKey);
+    }
+    monthMap[monthKey].push(item);
+  });
+
+  if(monthOrder.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:36px;color:var(--muted);background:#fff;border-radius:14px;border:1px solid var(--soft);"><i class="fa-solid fa-book-open mr-1"></i>아직 완독한 도서가 없습니다.</div>';
+    return;
+  }
+
+  // 월별 그룹별 렌더링
+  var html = monthOrder.map(function(mKey) {
+    var books = monthMap[mKey];
+    var cardsHtml = books.map(function(item) {
+      var b = libData.find(function(x){ return x.id === item.id; });
+      var title = b ? b.title : ('도서 ' + item.id);
+      var pub = item.pub || (b ? b.pub : '나노출판');
+      var series = item.series || (b ? (b.subtitle || b.cat.split('/')[0].trim()) : '나노 추천선');
+      var coverHtml = b ? getBookCoverHtml(b, 'reading-thumb-img') : '<div class="reading-thumb-img" style="background:#2d6a4f;"></div>';
+      var scoreClass = item.score === 100 ? 'perfect' : (item.score >= 90 ? 'high' : '');
+
+      return '<div class="reading-book-card" onclick="openBookDetail(\'' + item.id + '\', \'history\')">'
+        + '<div class="reading-thumb-wrap">'
+        +   coverHtml
+        +   '<span class="reading-score-badge ' + scoreClass + '">' + item.score + '점</span>'
+        + '</div>'
+        + '<div class="reading-book-title" title="' + title + '">' + title + '</div>'
+        + '<div class="reading-book-meta-box">'
+        +   '<div class="reading-book-meta-pub" title="' + pub + ' · ' + series + '">' + pub + ' · ' + series + '</div>'
+        +   '<div class="reading-book-meta-date"><i class="fa-regular fa-clock mr-1"></i>' + item.date + ' 인증</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    return '<div class="history-month-block">'
+      + '<div class="history-month-header">'
+      +   '<div class="history-month-title"><i class="fa-solid fa-calendar-days mr-1" style="color:#00a896;"></i>' + mKey + '</div>'
+      +   '<span class="history-month-badge">' + books.length + '권 완독</span>'
       + '</div>'
-      + '<div class="reading-book-title" title="' + title + '">' + title + '</div>'
+      + '<div class="reading-grid-4col">'
+      +   cardsHtml
+      + '</div>'
       + '</div>';
   }).join('');
+
+  container.innerHTML = html;
 }
 
 // ==============================================================
@@ -6164,7 +6622,7 @@ function renderWishList() {
 }
 
 // ==============================================================
-// 4) 포인트 내역 서브 뷰: 이미지 없는 텍스트 리스트 & 월별 필터링
+// 4) 포인트 내역 서브 뷰: 10개씩 노출 + 스크롤 시 10개씩 추가 로딩
 // ==============================================================
 function filterPointHistory(month, btn) {
   curPointMonthFilter = month;
@@ -6174,20 +6632,30 @@ function filterPointHistory(month, btn) {
     chips.forEach(function(c){ c.classList.remove('active'); });
     if(btn) btn.classList.add('active');
   }
-  renderPointHistory();
+  renderPointHistory(true);
 }
 
-function renderPointHistory() {
+function getFilteredPointLogs() {
+  if(curPointMonthFilter === 'all') return studentPointLogs.slice();
+  return studentPointLogs.filter(function(item){ return item.month === curPointMonthFilter; });
+}
+
+function renderPointHistory(reset) {
   var listEl = document.getElementById('pointLogList');
   var earnedEl = document.getElementById('currentMonthEarnedPoints');
+  var loader = document.getElementById('pointLogLoadingIndicator');
+  var endMsg = document.getElementById('pointLogEndMessage');
   if(!listEl) return;
 
-  var filtered = studentPointLogs.slice();
-  if(curPointMonthFilter !== 'all') {
-    filtered = filtered.filter(function(item){
-      return item.month === curPointMonthFilter;
-    });
+  if(reset) {
+    pointPage = 1;
+    isPointLoading = false;
+    hasMorePointLogs = true;
+    if(loader) loader.style.display = 'none';
+    if(endMsg) endMsg.style.display = 'none';
   }
+
+  var filtered = getFilteredPointLogs();
 
   // 이번 달(2026-09) 획득 포인트 합산
   var curMonthTotal = studentPointLogs.filter(function(x){ return x.month === '2026-09'; })
@@ -6198,26 +6666,75 @@ function renderPointHistory() {
     listEl.innerHTML = '<div style="text-align:center;padding:32px 14px;color:var(--muted);background:#ffffff;border-radius:14px;border:1px solid var(--soft);">'
       + '<i class="fa-solid fa-circle-info mr-1"></i>선택하신 기간의 포인트 적립 내역이 없습니다.'
       + '</div>';
+    hasMorePointLogs = false;
     return;
   }
 
-  // 이미지 없는 깔끔한 텍스트 리스트 렌더링
-  listEl.innerHTML = filtered.map(function(log){
-    var tagCls = log.type || 'quiz';
-    return '<div class="point-log-item">'
-      + '<div style="flex:1;min-width:0;">'
-      +   '<div class="point-log-meta">'
-      +     '<span><i class="fa-regular fa-clock mr-1"></i>' + log.datetime + '</span>'
-      +     '<span class="point-log-tag ' + tagCls + '">' + log.typeName + '</span>'
-      +   '</div>'
-      +   '<div class="point-log-title">'
-      +     '『' + log.bookTitle + '』'
-      +   '</div>'
-      +   '<div class="point-log-desc">' + log.activity + '</div>'
-      + '</div>'
-      + '<div class="point-log-val">+' + log.point.toLocaleString() + ' P</div>'
-      + '</div>';
-  }).join('');
+  // 첫 10개 레코드 슬라이스
+  var chunk = filtered.slice(0, pointPageSize);
+  hasMorePointLogs = filtered.length > pointPageSize;
+
+  listEl.innerHTML = chunk.map(createPointLogItemHtml).join('');
+
+  if(!hasMorePointLogs && endMsg) {
+    endMsg.style.display = 'block';
+  }
+}
+
+function createPointLogItemHtml(log) {
+  var tagCls = log.type || 'quiz';
+  return '<div class="point-log-item">'
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div class="point-log-meta">'
+    +     '<span><i class="fa-regular fa-clock mr-1"></i>' + log.datetime + '</span>'
+    +     '<span class="point-log-tag ' + tagCls + '">' + log.typeName + '</span>'
+    +   '</div>'
+    +   '<div class="point-log-title">'
+    +     '『' + log.bookTitle + '』'
+    +   '</div>'
+    +   '<div class="point-log-desc">' + log.activity + '</div>'
+    + '</div>'
+    + '<div class="point-log-val">+' + log.point.toLocaleString() + ' P</div>'
+    + '</div>';
+}
+
+// 스크롤 시 10개씩 추가 로딩 핸들러
+function handlePointLogScroll(container) {
+  if(!container || isPointLoading || !hasMorePointLogs) return;
+  // 스크롤이 하단 30px 이내에 도달하면 추가 로딩 트리거
+  if(container.scrollTop + container.clientHeight >= container.scrollHeight - 30) {
+    loadMorePointLogs();
+  }
+}
+
+function loadMorePointLogs() {
+  if(isPointLoading || !hasMorePointLogs) return;
+  isPointLoading = true;
+
+  var loader = document.getElementById('pointLogLoadingIndicator');
+  var endMsg = document.getElementById('pointLogEndMessage');
+  var listEl = document.getElementById('pointLogList');
+  if(loader) loader.style.display = 'block';
+
+  setTimeout(function() {
+    pointPage++;
+    var filtered = getFilteredPointLogs();
+    var start = (pointPage - 1) * pointPageSize;
+    var nextChunk = filtered.slice(start, start + pointPageSize);
+
+    if(nextChunk.length > 0 && listEl) {
+      var newHtml = nextChunk.map(createPointLogItemHtml).join('');
+      listEl.insertAdjacentHTML('beforeend', newHtml);
+    }
+
+    if(start + nextChunk.length >= filtered.length) {
+      hasMorePointLogs = false;
+      if(endMsg) endMsg.style.display = 'block';
+    }
+
+    isPointLoading = false;
+    if(loader) loader.style.display = 'none';
+  }, 350);
 }
 
 // ==============================================================
@@ -6229,181 +6746,217 @@ function renderMyBookshelf() {
 // ==============================================================
 // [NEW] 나노 프렌즈 10종 캐릭터 일러스트 & 프로필 설정 시스템
 // ==============================================================
+// [NEW] 나노 프렌즈 9종 분야별 캐릭터 & 진화 시스템
+// ==============================================================
 var NANO_CHARACTERS = [
   {
     id: "nano",
     name: "나노 (Nano)",
-    tag: "호기심 탐정 여우 🦊",
+    tag: "기본 스타터 탐정 여우 🦊",
+    themeName: "기본 스타터",
     themeColor: "#f97316",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fed7aa)",
-    story: "궁금한 건 못 참아! 돋보기 안경을 쓰고 책 속의 비밀과 복선을 척척 풀어내는 영리한 아기 여우 탐정이에요. 추리소설과 과학 모험책을 가장 좋아해요.",
+    story: "궁금한 건 못 참아! 돋보기 안경을 쓰고 책 속의 숨은 단서와 복선을 척척 풀어내는 영리한 아기 여우 탐정이에요. 모든 학생에게 가입 즉시 지급됩니다.",
     isDefault: true,
-    unlockDesc: "나노의 책장 시작 기념 기본 제공 캐릭터 (언제든 사용 가능)"
+    isStarter: true,
+    reqType: "starter",
+    unlockCount: 0,
+    evolveCount: 30,
+    unlockDesc: "가입 즉시 기본 지급",
+    evolveDesc: "전체 도서 30권 완독 시 외형 진화"
   },
   {
     id: "toto",
     name: "토토 (Toto)",
-    tag: "번개 스피드 다독왕 토끼 🐰",
+    tag: "인간·생활 공감 토끼 🐰",
+    themeName: "인간, 생활",
     themeColor: "#ec4899",
     bgGradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
-    story: "당근 모양 책갈피를 들고 바람처럼 책장을 펄럭이는 독서 스피드스타! 재미있는 책을 발견하면 밤새도록 멈추지 않고 완독하는 열정파 토끼랍니다.",
-    reqType: "genre_lit",
-    reqCount: 15,
-    reqUnit: "권",
-    unlockDesc: "동화·창작문학 도서 15권 완독 달성"
-  },
-  {
-    id: "pico",
-    name: "피코 (Pico)",
-    tag: "우주 모험 펭귄 🐧",
-    themeColor: "#0284c7",
-    bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
-    story: "반짝이는 우주복 헬멧을 쓰고 저 너머 은하계와 미래 세계를 꿈꾸는 탐험가 펭귄! AI, 로봇, 우주선이 나오는 SF 소설에 푹 빠져 살아요.",
-    reqType: "genre_sci",
-    reqCount: 20,
-    reqUnit: "권",
-    unlockDesc: "과학·SF 탐구 도서 20권 완독 달성"
-  },
-  {
-    id: "popo",
-    name: "포포 (Popo)",
-    tag: "끈기 만점 백과사전 곰 🐻",
-    themeColor: "#b45309",
-    bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
-    story: "꿀단지보다 두꺼운 책이 더 좋은 포근한 아기 곰! 어려운 역사책도 우직하게 한 글자씩 끝까지 읽어내어 친구들에게 듬직한 길잡이가 되어줍니다.",
-    reqType: "genre_hist",
-    reqCount: 30,
-    reqUnit: "권",
-    unlockDesc: "역사·사회 도서 30권 완독 달성 (1단계)"
-  },
-  {
-    id: "chichi",
-    name: "치치 (Chichi)",
-    tag: "북퀴즈 달인 다람쥐 🐿️",
-    themeColor: "#ea580c",
-    bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
-    story: "도토리 돋보기로 책 구석구석 핵심 단어를 쏙쏙 찾아내는 다람쥐! 북퀴즈만 시작하면 만점을 놓치지 않는 눈썰미 천재예요.",
-    reqType: "quiz_100",
-    reqCount: 30,
-    reqUnit: "회",
-    unlockDesc: "북퀴즈 30회 만점(100점) 달성"
-  },
-  {
-    id: "choco",
-    name: "초코 (Choco)",
-    tag: "낭만 예술가 강아지 🐶",
-    themeColor: "#854d0e",
-    bgGradient: "linear-gradient(135deg, #fef9c3, #fef08a)",
-    story: "예술가 빵모자를 비스듬히 쓰고 책에서 감동받은 장면을 스케치북에 그림으로 남기는 감성파 강아지! 나노시트(독서생각담기) 그리기 1등이에요.",
-    reqType: "genre_bio",
-    reqCount: 30,
-    reqUnit: "권",
-    unlockDesc: "위인·인물 이야기 도서 30권 완독 달성"
-  },
-  {
-    id: "lumi",
-    name: "루미 (Lumi)",
-    tag: "별빛 판타지 요정 🧚",
-    themeColor: "#8b5cf6",
-    bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-    story: "별가루를 흩뿌리며 책 속 상상력의 세계로 날아가는 마법 요정! 아름다운 문장을 마주할 때마다 온몸에서 은은한 무지갯빛 오로라가 반짝여요.",
-    reqType: "points",
-    reqCount: 2000,
-    reqUnit: "P",
-    unlockDesc: "누적 독서 포인트 2,000P 돌파 달성"
+    story: "친구들의 따뜻한 마음과 일상 생활의 소중함을 누구보다 깊이 이해하는 다정파 토끼! 재미있는 이야기와 생활 동화를 품에 안고 다녀요.",
+    reqType: "theme_human",
+    unlockCount: 50,
+    evolveCount: 150,
+    unlockDesc: "인간·생활 분야 도서 50권 완독 달성",
+    evolveDesc: "인간·생활 분야 도서 150권 완독 시 외형 진화"
   },
   {
     id: "booki",
     name: "부키 (Booki)",
-    tag: "지혜의 독서 박사 부엉이 🦉",
+    tag: "자연·생물 지혜 부엉이 🦉",
+    themeName: "자연, 생물",
     themeColor: "#0d9488",
     bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
-    story: "머리 위에 항상 책을 얹고 다니는 숲속 도서관의 학장님! 책을 읽고 나면 친구들에게 재미있는 상식과 깊은 지혜를 이야기해 주는 따뜻한 멘토예요.",
-    reqType: "rank_100",
-    reqCount: 100,
-    reqUnit: "위",
-    unlockDesc: "전국 랭킹 명예의 전당 TOP 100 진입 달성"
+    story: "숲속 도서관을 지키며 풀잎과 동물들의 생명 이야기를 탐구하는 숲의 현자! 친구들에게 재미있는 상식과 깊은 자연의 지혜를 가르쳐줘요.",
+    reqType: "theme_nature",
+    unlockCount: 50,
+    evolveCount: 150,
+    unlockDesc: "자연·생물 분야 도서 50권 완독 달성",
+    evolveDesc: "자연·생물 분야 도서 150권 완독 시 외형 진화"
+  },
+  {
+    id: "pico",
+    name: "피코 (Pico)",
+    tag: "기술·과학 미래 펭귄 🐧",
+    themeName: "기술, 과학",
+    themeColor: "#0284c7",
+    bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
+    story: "우주복 헬멧을 쓰고 AI, 로봇, 우주선과 미래 과학의 비밀을 분석하는 호기심 천재 펭귄! 미지의 과학 지식을 향해 로켓처럼 돌진해요.",
+    reqType: "theme_tech",
+    unlockCount: 50,
+    evolveCount: 150,
+    unlockDesc: "기술·과학 분야 도서 50권 완독 달성",
+    evolveDesc: "기술·과학 분야 도서 150권 완독 시 외형 진화"
+  },
+  {
+    id: "popo",
+    name: "포포 (Popo)",
+    tag: "역사·이야기 듬직 곰 🐻",
+    themeName: "역사, 이야기",
+    themeColor: "#b45309",
+    bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
+    story: "천 년의 역사와 옛 조상들의 발자취를 듬직하게 들려주는 이야기꾼 아기 곰! 우직한 끈기로 두꺼운 역사책도 끝까지 읽어냅니다.",
+    reqType: "theme_hist",
+    unlockCount: 50,
+    evolveCount: 150,
+    unlockDesc: "역사·이야기 분야 도서 50권 완독 달성",
+    evolveDesc: "역사·이야기 분야 도서 150권 완독 시 외형 진화"
+  },
+  {
+    id: "chichi",
+    name: "치치 (Chichi)",
+    tag: "건강·음식 활력 다람쥐 🐿️",
+    themeName: "건강, 음식",
+    themeColor: "#ea580c",
+    bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
+    story: "튼튼한 신체와 맛있는 음식, 건강한 영양 비결을 쏙쏙 모으는 에너지 대장! 책을 읽고 나면 비타민처럼 온몸에 생기가 퐁퐁 솟아나요.",
+    reqType: "theme_health",
+    unlockCount: 50,
+    evolveCount: 150,
+    unlockDesc: "건강·음식 분야 도서 50권 완독 달성",
+    evolveDesc: "건강·음식 분야 도서 150권 완독 시 외형 진화"
+  },
+  {
+    id: "lumi",
+    name: "루미 (Lumi)",
+    tag: "학습·수학 생각 요정 🧚",
+    themeName: "학습, 수학, 기타",
+    themeColor: "#8b5cf6",
+    bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+    story: "마법 같은 수학 퍼즐과 생각의 날개를 활짝 펴주는 별빛 요정! 논리적 사고와 문제 해결의 힘을 눈부시게 밝혀줍니다.",
+    reqType: "theme_study",
+    unlockCount: 50,
+    evolveCount: 150,
+    unlockDesc: "학습·수학 분야 도서 50권 완독 달성",
+    evolveDesc: "학습·수학 분야 도서 150권 완독 시 외형 진화"
   },
   {
     id: "mir",
     name: "미르 (Mir)",
-    tag: "신화 속 아기 청룡 🐲",
+    tag: "전 분야 마스터 청룡 🐲",
+    themeName: "모든 분야 마스터",
     themeColor: "#059669",
     bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    story: "뭉게구름을 타고 다니며 한국사 설화와 영웅 전설을 속삭여 주는 푸른 아기 용! 큰 꿈과 용기를 주는 위인전을 가장 아껴요.",
-    reqType: "genre_hist",
-    reqCount: 100,
-    reqUnit: "권",
-    unlockDesc: "역사·고전 마스터 도서 100권 완독 달성 (2단계)"
+    story: "6개 모든 학문의 영역을 골고루 섭렵한 자만이 깨울 수 있는 전설의 푸른 영물! 편식 없는 균형 독서의 수호신이에요.",
+    reqType: "all_genres",
+    unlockCount: 20, // 전 분야 각 20권
+    evolveCount: 40, // 전 분야 각 40권
+    unlockDesc: "모든 6개 분야 각 20권 이상 완독 달성",
+    evolveDesc: "모든 6개 분야 각 40권 이상 완독 시 외형 진화"
   },
   {
     id: "jelly",
     name: "젤리 (Jelly)",
-    tag: "마법 책장 젤리 요정 🫧",
+    tag: "100권 완독 레전드 요정 🫧",
+    themeName: "대독서가 레전드",
     themeColor: "#06b6d4",
     bgGradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
-    story: "책장을 스스로 넘겨주고 책먼지를 청소해 주는 귀여운 말랑 젤리! 지치고 졸릴 때 상쾌한 독서 에너지를 불어넣어 주는 비타민 요정이에요.",
+    story: "누적 100권의 책을 정복한 진정한 대독서가의 책장에서 탄생한 무지개 마법 정령! 책 읽는 모든 순간을 꿀처럼 달콤하게 만들어줘요.",
     reqType: "total_read",
-    reqCount: 100,
-    reqUnit: "권",
-    unlockDesc: "전설의 대독서가 전체 완독 100권 돌파"
+    unlockCount: 100, // 전체 100권
+    evolveCount: 200, // 전체 200권
+    unlockDesc: "전체 완독 100권 돌파 (고유 도서 기준)",
+    evolveDesc: "전체 완독 200권 돌파 시 외형 진화"
   }
 ];
 
-// 학생 독서 활동 통계 헬퍼 (게이미피케이션 해금 판정용)
+// 학생 독서 활동 통계 헬퍼 (규칙 1: 같은 책을 2번 인증해도 1번만 카운트 - 고유 도서 집계)
 function getStudentActivityStats() {
+  // 실제 readBooksMaster의 고유 도서 ID 추출
+  var uniqueReadIds = {};
+  if (typeof readBooksMaster !== 'undefined' && Array.isArray(readBooksMaster)) {
+    readBooksMaster.forEach(function(item) {
+      uniqueReadIds[item.id] = true;
+    });
+  }
+
+  // 데모 학생(김민준)의 풍부한 분야별 고유 완독 실적 집계
+  // 인간·생활: 54권 (토토 해금 달성)
+  // 자연·생물: 52권 (부키 해금 달성)
+  // 기술·과학: 28권 (피코: 28/50권, 해금까지 22권 남음)
+  // 역사·이야기: 35권 (포포: 35/50권, 해금까지 15권 남음)
+  // 건강·음식: 24권 (치치: 24/50권, 해금까지 26권 남음)
+  // 학습·수학: 26권 (루미: 26/50권, 해금까지 24권 남음)
+  // 6개 전 분야 각 최소치: 24권 (모든 분야 각 20권 이상 -> 미르 해금 달성!)
+  // 전체 고유 완독: 112권 (전체 100권 돌파 -> 젤리 해금 달성!)
+  // 스타터 나노: 112/30권 달성으로 진화 완료!
   return {
-    totalRead: 42,      // 전체 완독 42권
-    litRead: 18,        // 문학/동화 18권 (토토 해금 달성: 18 >= 15)
-    sciRead: 12,        // 과학/SF 12권 (피코: 12 / 20권)
-    histRead: 14,       // 역사 14권 (포포: 14 / 30권, 미르: 14 / 100권)
-    bioRead: 8,         // 위인전 8권 (초코: 8 / 30권)
-    quiz100Count: 28,   // 북퀴즈 100점 만점 28회 (치치: 28 / 30회)
-    points: 2480,       // 누적 포인트 2,480P (루미 해금 달성: 2480 >= 2000)
-    nationalRank: 87    // 전국 랭킹 87위 (부키 해금 달성: 87 <= 100)
+    totalRead: 112,
+    humanRead: 54,
+    natureRead: 52,
+    techRead: 28,
+    histRead: 35,
+    healthRead: 24,
+    studyRead: 26,
+    allGenreMin: 24 // 6개 분야 중 최소 권수
   };
 }
 
-// 캐릭터별 실시간 해금 상태 및 진행률 계산
+// 캐릭터별 실시간 해금 및 진화 상태, 남은 권수 계산
 function getCharacterUnlockStatus(char) {
-  if (char.isDefault) {
-    return { unlocked: true, current: 1, target: 1, unit: "", percent: 100, statusText: "기본 지급 완료" };
-  }
   var stats = getStudentActivityStats();
   var current = 0;
-  var target = char.reqCount || 1;
-  var unit = char.reqUnit || "권";
+  var unlockTarget = char.unlockCount || 0;
+  var evolveTarget = char.evolveCount || 100;
+
+  if (char.isStarter) {
+    current = stats.totalRead;
+    var isEvolved = current >= evolveTarget;
+    var remainToEvolve = Math.max(0, evolveTarget - current);
+    return {
+      unlocked: true,
+      isEvolved: isEvolved,
+      current: current,
+      unlockTarget: 0,
+      evolveTarget: evolveTarget,
+      remainCount: isEvolved ? 0 : remainToEvolve,
+      percent: isEvolved ? 100 : Math.min(100, Math.round((current / evolveTarget) * 100)),
+      statusText: isEvolved ? "🌟 진화 완료 (누적 " + current + "권)" : "진화까지 " + remainToEvolve + "권 남음 (" + current + "/" + evolveTarget + "권)",
+      badgeText: isEvolved ? "진화 완료" : "기본 지급"
+    };
+  }
 
   switch (char.reqType) {
-    case 'genre_lit':
-      current = stats.litRead;
+    case 'theme_human':
+      current = stats.humanRead;
       break;
-    case 'genre_sci':
-      current = stats.sciRead;
+    case 'theme_nature':
+      current = stats.natureRead;
       break;
-    case 'genre_hist':
+    case 'theme_tech':
+      current = stats.techRead;
+      break;
+    case 'theme_hist':
       current = stats.histRead;
       break;
-    case 'genre_bio':
-      current = stats.bioRead;
+    case 'theme_health':
+      current = stats.healthRead;
       break;
-    case 'quiz_100':
-      current = stats.quiz100Count;
+    case 'theme_study':
+      current = stats.studyRead;
       break;
-    case 'points':
-      current = stats.points;
+    case 'all_genres':
+      current = stats.allGenreMin;
       break;
-    case 'rank_100':
-      current = stats.nationalRank;
-      var isRankUnlocked = current <= target;
-      return {
-        unlocked: isRankUnlocked,
-        current: current,
-        target: target,
-        unit: "위",
-        percent: isRankUnlocked ? 100 : Math.round((target / current) * 100),
-        statusText: "현재 전국 " + current + "위 (목표 " + target + "위 이내)"
-      };
     case 'total_read':
       current = stats.totalRead;
       break;
@@ -6411,19 +6964,47 @@ function getCharacterUnlockStatus(char) {
       current = 0;
   }
 
-  var percent = Math.min(100, Math.round((current / target) * 100));
-  var isUnlocked = current >= target;
+  var isUnlocked = current >= unlockTarget;
+  var isEvolved = current >= evolveTarget;
+  var remainToUnlock = Math.max(0, unlockTarget - current);
+  var remainToEvolve = Math.max(0, evolveTarget - current);
+
+  var percent = !isUnlocked
+    ? Math.min(99, Math.round((current / unlockTarget) * 100))
+    : (isEvolved ? 100 : Math.min(99, Math.round((current / evolveTarget) * 100)));
+
+  var statusText = "";
+  var badgeText = "";
+  var remainCount = 0;
+
+  if (!isUnlocked) {
+    statusText = "해금까지 " + remainToUnlock + "권 남음 (" + current + "/" + unlockTarget + "권)";
+    badgeText = "잠금 (해금까지 " + remainToUnlock + "권)";
+    remainCount = remainToUnlock;
+  } else if (!isEvolved) {
+    statusText = "진화까지 " + remainToEvolve + "권 남음 (" + current + "/" + evolveTarget + "권)";
+    badgeText = "해금 완료 (진화 도전)";
+    remainCount = remainToEvolve;
+  } else {
+    statusText = "🌟 최종 진화 달성 (" + current + "/" + evolveTarget + "권)";
+    badgeText = "진화 완료";
+    remainCount = 0;
+  }
+
   return {
     unlocked: isUnlocked,
+    isEvolved: isEvolved,
     current: current,
-    target: target,
-    unit: unit,
+    unlockTarget: unlockTarget,
+    evolveTarget: evolveTarget,
+    remainCount: remainCount,
     percent: percent,
-    statusText: "현재 " + current.toLocaleString() + unit + " / 목표 " + target.toLocaleString() + unit + " (" + percent + "%)"
+    statusText: statusText,
+    badgeText: badgeText
   };
 }
 
-function getCharacterSvg(charId, size) {
+function getCharacterSvg(charId, size, isEvolved, isSilhouette) {
   size = size || 60;
   var svgs = {
     nano: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
@@ -6444,6 +7025,7 @@ function getCharacterSvg(charId, size) {
       + '<ellipse cx="50" cy="62" rx="3.5" ry="2.5" fill="#1e293b"/>'
       + '<circle cx="30" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
       + '<circle cx="70" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
+      + (isEvolved ? '<polygon points="34,16 42,25 50,13 58,25 66,16 64,28 36,28" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="13" r="2.5" fill="#fef08a"/><circle cx="34" cy="16" r="2" fill="#ef4444"/><circle cx="66" cy="16" r="2" fill="#3b82f6"/>' : '')
       + '</svg>',
     booki: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ccfbf1" stroke="#0d9488" stroke-width="2.5"/>'
@@ -6460,6 +7042,7 @@ function getCharacterSvg(charId, size) {
       + '<polygon points="46,57 54,57 50,64" fill="#f59e0b"/>'
       + '<rect x="36" y="16" width="28" height="12" rx="2.5" fill="#b45309" stroke="#78350f" stroke-width="1.5"/>'
       + '<rect x="38" y="18" width="24" height="2" fill="#fde68a"/>'
+      + (isEvolved ? '<polygon points="34,10 42,18 50,7 58,18 66,10 64,21 36,21" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="7" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     toto: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#fce7f3" stroke="#ec4899" stroke-width="2.5"/>'
@@ -6475,6 +7058,7 @@ function getCharacterSvg(charId, size) {
       + '<polygon points="47,64 53,64 50,68" fill="#ec4899"/>'
       + '<circle cx="32" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
       + '<circle cx="68" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
+      + (isEvolved ? '<polygon points="34,16 42,25 50,13 58,25 66,16 64,28 36,28" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="13" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2.5"/>'
@@ -6488,6 +7072,7 @@ function getCharacterSvg(charId, size) {
       + '<circle cx="34" cy="58" r="4" fill="#ddd6fe"/>'
       + '<circle cx="66" cy="58" r="4" fill="#ddd6fe"/>'
       + '<polygon points="50,12 52,18 58,20 52,22 50,28 48,22 42,20 48,18" fill="#facc15"/>'
+      + (isEvolved ? '<polygon points="34,8 42,16 50,5 58,16 66,8 64,19 36,19" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="5" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     popo: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#fef3c7" stroke="#b45309" stroke-width="2.5"/>'
@@ -6502,6 +7087,7 @@ function getCharacterSvg(charId, size) {
       + '<circle cx="61" cy="53" r="3.5" fill="#1e293b"/>'
       + '<circle cx="62.5" cy="51.5" r="1.2" fill="#fff"/>'
       + '<ellipse cx="50" cy="64" rx="5" ry="3.5" fill="#1e293b"/>'
+      + (isEvolved ? '<polygon points="34,14 42,23 50,11 58,23 66,14 64,26 36,26" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="11" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     pico: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>'
@@ -6513,6 +7099,7 @@ function getCharacterSvg(charId, size) {
       + '<circle cx="61.5" cy="47.5" r="1.3" fill="#fff"/>'
       + '<polygon points="46,55 54,55 50,63" fill="#f59e0b"/>'
       + '<ellipse cx="50" cy="54" rx="35" ry="35" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.75"/>'
+      + (isEvolved ? '<polygon points="34,14 42,23 50,11 58,23 66,14 64,26 36,26" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="11" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     chichi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#ea580c" stroke-width="2.5"/>'
@@ -6528,6 +7115,7 @@ function getCharacterSvg(charId, size) {
       + '<rect x="47" y="63" width="6" height="5" fill="#fff" stroke="#1e293b" stroke-width="1"/>'
       + '<circle cx="28" cy="60" r="6" fill="#fdba74"/>'
       + '<circle cx="72" cy="60" r="6" fill="#fdba74"/>'
+      + (isEvolved ? '<polygon points="34,14 42,23 50,11 58,23 66,14 64,26 36,26" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="11" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     mir: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#d1fae5" stroke="#059669" stroke-width="2.5"/>'
@@ -6542,19 +7130,7 @@ function getCharacterSvg(charId, size) {
       + '<circle cx="46" cy="60" r="1.5" fill="#064e3b"/>'
       + '<circle cx="54" cy="60" r="1.5" fill="#064e3b"/>'
       + '<polygon points="50,16 53,24 61,24 54,29 57,37 50,32 43,37 46,29 39,24 47,24" fill="#facc15"/>'
-      + '</svg>',
-    choco: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#fef9c3" stroke="#854d0e" stroke-width="2.5"/>'
-      + '<ellipse cx="24" cy="46" rx="8" ry="17" fill="#854d0e"/>'
-      + '<ellipse cx="76" cy="46" rx="8" ry="17" fill="#854d0e"/>'
-      + '<circle cx="50" cy="56" r="31" fill="#ca8a04"/>'
-      + '<ellipse cx="50" cy="65" rx="15" ry="14" fill="#fef08a"/>'
-      + '<circle cx="41" cy="52" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="42.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="59" cy="52" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="60.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#1e293b"/>'
-      + '<path d="M47,65 Q50,68 53,65" stroke="#1e293b" stroke-width="1.5" fill="none"/>'
+      + (isEvolved ? '<polygon points="34,6 42,15 50,4 58,15 66,6 64,18 36,18" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="4" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>',
     jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#cffafe" stroke="#06b6d4" stroke-width="2.5"/>'
@@ -6567,9 +7143,20 @@ function getCharacterSvg(charId, size) {
       + '<path d="M46,60 Q50,65 54,60" stroke="#083344" stroke-width="2" fill="none" stroke-linecap="round"/>'
       + '<circle cx="32" cy="58" r="4" fill="#fed7aa"/>'
       + '<circle cx="68" cy="58" r="4" fill="#fed7aa"/>'
+      + (isEvolved ? '<polygon points="34,16 42,25 50,13 58,25 66,16 64,28 36,28" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="13" r="2.5" fill="#fef08a"/>' : '')
       + '</svg>'
   };
-  return svgs[charId] || svgs.nano;
+
+  var baseSvg = svgs[charId] || svgs.nano;
+  if (isSilhouette) {
+    return '<div class="char-lock-silhouette-box" style="width:' + size + 'px;height:' + size + 'px;">'
+      + '<div class="char-silhouette" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'
+      +   baseSvg
+      + '</div>'
+      + '<div class="char-lock-center-icon"><i class="fa-solid fa-lock"></i></div>'
+      + '</div>';
+  }
+  return baseSvg;
 }
 
 var STORAGE_KEY_CHAR = 'NANO_STUDENT_AVATAR_ID';
@@ -6617,14 +7204,75 @@ function applySelectedCharacter() {
   var unlockInfo = getCharacterUnlockStatus(char);
 
   if (!unlockInfo.unlocked) {
-    toast('🔒 아직 해금되지 않은 캐릭터입니다. ' + char.unlockDesc + ' 미션을 먼저 완수해주세요!');
+    toast('🔒 아직 획득하지 못한 캐릭터입니다. ' + char.unlockDesc + ' 달성 시 해금됩니다! (남은 권수: ' + unlockInfo.remainCount + '권)');
     return;
   }
 
   setUserCharacterId(tempSelectedCharId);
   closeCharacterSelectModal();
-  toast('🎉 내 대표 캐릭터가 [' + char.name.split(' ')[0] + '](으)로 변경되었습니다!');
+  toast('🎉 내 대표 캐릭터가 [' + char.name.split(' ')[0] + '](으)로 설정되었습니다!');
   renderRank();
+}
+
+// [NEW] 캐릭터 획득 및 진화 축하 연출 모달 제어
+var currentCelebratedCharId = null;
+function openCelebrationModal(charId, forceEvolved) {
+  charId = charId || tempSelectedCharId || getUserCharacterId();
+  currentCelebratedCharId = charId;
+  var char = getCharacterById(charId);
+  var st = getCharacterUnlockStatus(char);
+  var evolved = forceEvolved !== undefined ? forceEvolved : st.isEvolved;
+
+  var modal = document.getElementById('characterCelebrationModal');
+  var topEmoji = document.getElementById('celebTopEmoji');
+  var title = document.getElementById('celebTitle');
+  var subtitle = document.getElementById('celebSubtitle');
+  var avatarBox = document.getElementById('celebCharAvatar');
+  var nameEl = document.getElementById('celebCharName');
+  var tagEl = document.getElementById('celebCharTag');
+  var evolvedTag = document.getElementById('celebEvolvedTag');
+  var quoteEl = document.getElementById('celebQuote');
+
+  if(topEmoji) topEmoji.innerText = evolved ? '🌟' : '🎉';
+  if(title) title.innerText = evolved ? '캐릭터 외형 진화 달성!' : '새로운 캐릭터 해금 달성!';
+  if(subtitle) subtitle.innerText = evolved ? char.themeName + ' 분야의 최고 마스터로 성장했어요!' : char.unlockDesc + ' 미션을 완수했습니다!';
+  if(avatarBox) avatarBox.innerHTML = getCharacterSvg(charId, 84, evolved, false);
+  if(nameEl) nameEl.innerText = char.name;
+  if(tagEl) {
+    tagEl.innerText = char.tag;
+    tagEl.style.color = char.themeColor;
+  }
+  if(evolvedTag) evolvedTag.style.display = evolved ? 'inline-flex' : 'none';
+  if(quoteEl) {
+    var quoteMap = {
+      nano: '"탐정 돋보기가 황금빛으로 진화했어! 더 깊은 비밀도 이제 다 풀어낼 수 있어!"',
+      toto: '"와아! 하트 날개가 생겼어! 친구들의 마음에 더 따뜻하게 다가갈게! 🐰"',
+      booki: '"호-호! 현자의 학사모가 빛나는구나. 숲속 지혜를 아낌없이 나눠주마! 🦉"',
+      pico: '"삐리릭-! 미래형 사이버 슈트로 업그레이드 완료! 우주 끝까지 탐험하자! 🐧"',
+      popo: '"허허! 역사 속 왕관을 쓰게 되었구나. 듬직하게 길을 밝혀주마! 🐻"',
+      chichi: '"황금 도토리 에너지 폭발! 비타민 파워로 온 세상을 건강하게 만들자! 🐿️"',
+      lumi: '"은하수 마법 완드가 완성되었어요! 생각의 별빛을 환하게 비춰드릴게요! 🧚"',
+      mir: '"크아앙! 푸른 용의 여의주가 황금빛으로 타오른다! 천하제일 독서왕의 탄생이다! 🐲"',
+      jelly: '"말랑 젤리가 크리스탈 크라운을 썼어요! 온 책장에 무지개 행복이 가득해요! 🫧"'
+    };
+    quoteEl.innerText = quoteMap[charId] || '"' + char.name.split(' ')[0] + '와(과) 함께 더 큰 독서 모험을 떠나요!"';
+  }
+
+  if(modal) modal.style.display = 'flex';
+}
+
+function closeCelebrationModal() {
+  var modal = document.getElementById('characterCelebrationModal');
+  if(modal) modal.style.display = 'none';
+}
+
+function applyCelebratedCharacter() {
+  if(currentCelebratedCharId) {
+    setUserCharacterId(currentCelebratedCharId);
+    toast('🎉 대표 캐릭터가 [' + getCharacterById(currentCelebratedCharId).name.split(' ')[0] + '](으)로 설정되었습니다!');
+  }
+  closeCelebrationModal();
+  closeCharacterSelectModal();
 }
 
 function renderCharacterSelectModal() {
@@ -6636,14 +7284,18 @@ function renderCharacterSelectModal() {
   var cur = getCharacterById(tempSelectedCharId || getUserCharacterId());
   var curUnlock = getCharacterUnlockStatus(cur);
 
-  // 상단 상세 카드: Lv 및 추천장르 제거, 해금 조건 및 진행률 게이지 바 표시
-  var unlockBannerHtml = '';
-  if (cur.isDefault) {
-    unlockBannerHtml = '<div style="font-size:11px;color:#0d9488;background:#f0fdfa;padding:5px 9px;border-radius:8px;border:1px solid #ccfbf1;font-weight:700;"><i class="fa-solid fa-gift mr-1"></i>기본 제공 캐릭터 (언제든 사용 가능)</div>';
-  } else if (curUnlock.unlocked) {
-    unlockBannerHtml = '<div style="font-size:11px;color:#059669;background:#ecfdf5;padding:5px 9px;border-radius:8px;border:1px solid #a7f3d0;font-weight:700;"><i class="fa-solid fa-circle-check mr-1 text-success"></i>해금 완료! ' + cur.unlockDesc + ' (' + curUnlock.statusText + ')</div>';
-  } else {
-    unlockBannerHtml = '<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:6px 10px;font-size:11px;">'
+  // 상단 상세 카드: 분야 안내, 해금/진화 상태, 남은 권수 게이지 바 및 축하 연출 체험 버튼
+  var statusBannerHtml = '';
+  if (cur.isStarter) {
+    statusBannerHtml = '<div style="background:#f0fdfa;border:1px solid #ccfbf1;border-radius:10px;padding:8px 10px;font-size:11px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      +   '<span style="color:#0f766e;font-weight:800;"><i class="fa-solid fa-gift mr-1 text-teal"></i>' + cur.unlockDesc + '</span>'
+      +   '<span class="char-evolved-badge"><i class="fa-solid fa-crown mr-1"></i>' + (curUnlock.isEvolved ? '진화 완료' : '진화 조건: 30권') + '</span>'
+      + '</div>'
+      + '<div style="font-size:10.5px;color:#0d9488;font-weight:700;">' + curUnlock.statusText + '</div>'
+      + '</div>';
+  } else if (!curUnlock.unlocked) {
+    statusBannerHtml = '<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:8px 10px;font-size:11px;">'
       + '<div style="color:#be123c;font-weight:800;margin-bottom:4px;"><i class="fa-solid fa-lock mr-1"></i>해금 조건: ' + cur.unlockDesc + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
       +   '<div style="flex:1;height:7px;background:#fecdd3;border-radius:4px;overflow:hidden;">'
@@ -6651,25 +7303,39 @@ function renderCharacterSelectModal() {
       +   '</div>'
       +   '<span style="font-size:10.5px;font-weight:800;color:#9f1239;">' + curUnlock.percent + '%</span>'
       + '</div>'
-      + '<div style="color:#881337;font-size:10px;margin-top:2px;font-weight:600;">' + curUnlock.statusText + '</div>'
+      + '<div style="color:#881337;font-size:10.5px;margin-top:3px;font-weight:700;">' + curUnlock.statusText + '</div>'
+      + '</div>';
+  } else {
+    statusBannerHtml = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:8px 10px;font-size:11px;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      +   '<span style="color:#059669;font-weight:800;"><i class="fa-solid fa-circle-check mr-1 text-success"></i>해금 완료! (' + cur.unlockDesc + ')</span>'
+      +   (curUnlock.isEvolved ? '<span class="char-evolved-badge"><i class="fa-solid fa-crown mr-1"></i>최종 진화</span>' : '<span style="font-size:10px;font-weight:700;color:#0d9488;">진화 도전 중</span>')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      +   '<div style="flex:1;height:7px;background:#bbf7d0;border-radius:4px;overflow:hidden;">'
+      +     '<div style="width:' + curUnlock.percent + '%;height:100%;background:#10b981;border-radius:4px;transition:width 0.3s;"></div>'
+      +   '</div>'
+      +   '<span style="font-size:10.5px;font-weight:800;color:#065f46;">' + curUnlock.percent + '%</span>'
+      + '</div>'
+      + '<div style="color:#065f46;font-size:10.5px;margin-top:3px;font-weight:700;">' + curUnlock.statusText + '</div>'
       + '</div>';
   }
 
   var badgeHtml = curUnlock.unlocked
-    ? '<span style="font-size:10px;font-weight:800;background:#00a896;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock-open mr-1"></i>해금 완료</span>'
-    : '<span style="font-size:10px;font-weight:800;background:#e11d48;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock mr-1"></i>잠금</span>';
+    ? (curUnlock.isEvolved ? '<span class="char-evolved-badge"><i class="fa-solid fa-crown"></i> 진화형</span>' : '<span style="font-size:10px;font-weight:800;background:#00a896;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock-open mr-1"></i>해금 완료</span>')
+    : '<span style="font-size:10px;font-weight:800;background:#e11d48;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock mr-1"></i>실루엣 잠금</span>';
 
   previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;background:' + cur.bgGradient + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);">'
-    + getCharacterSvg(cur.id, 64)
+    + getCharacterSvg(cur.id, 64, curUnlock.isEvolved, !curUnlock.unlocked)
     + '</div>'
     + '<div style="flex:1;min-width:0;">'
-    +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
-    +     '<span style="font-size:15px;font-weight:900;color:#1e293b;">' + cur.name + '</span>'
-    +     badgeHtml
+    +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;">'
+    +     '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;font-weight:900;color:#1e293b;">' + cur.name + '</span>' + badgeHtml + '</div>'
+    +     (curUnlock.unlocked ? '<button type="button" class="btn btn-xs btn-outline-warning" onclick="openCelebrationModal(\'' + cur.id + '\')" style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;" title="축하 연출 다시보기">🎉 축하 연출</button>' : '')
     +   '</div>'
-    +   '<div style="font-size:11.5px;font-weight:700;color:' + cur.themeColor + ';margin-bottom:4px;">' + cur.tag + '</div>'
+    +   '<div style="font-size:11.5px;font-weight:700;color:' + cur.themeColor + ';margin-bottom:4px;">[' + cur.themeName + '] ' + cur.tag + '</div>'
     +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">' + cur.story + '</div>'
-    +   unlockBannerHtml
+    +   statusBannerHtml
     + '</div>';
 
   // 하단 [이 캐릭터로 설정] 버튼 활성/비활성 제어
@@ -6687,31 +7353,52 @@ function renderCharacterSelectModal() {
       applyBtn.style.cursor = 'not-allowed';
       applyBtn.style.background = '#64748b';
       applyBtn.style.borderColor = '#64748b';
-      applyBtn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 아직 획득하지 못한 캐릭터입니다';
+      applyBtn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 해금까지 ' + curUnlock.remainCount + '권 남음';
     }
   }
 
-  // 10종 그리드 렌더링
+  // 9종 그리드 렌더링 (미획득 시 실루엣으로 보여줌 + 남은 권수 노출)
   gridEl.innerHTML = NANO_CHARACTERS.map(function(c){
     var isSel = (c.id === (tempSelectedCharId || getUserCharacterId()));
     var st = getCharacterUnlockStatus(c);
     var cardClass = 'char-select-card ' + (isSel ? 'selected' : '') + (st.unlocked ? '' : ' locked');
 
     var badgeIcon = st.unlocked
-      ? '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>'
+      ? (st.isEvolved ? '<div class="char-select-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:9px;"></i></div>' : '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>')
       : '<div class="char-lock-badge" title="잠금: ' + c.unlockDesc + '"><i class="fa-solid fa-lock"></i></div>';
+
+    // 미획득 캐릭터는 실루엣으로 렌더링
+    var svgContent = getCharacterSvg(c.id, 50, st.isEvolved, !st.unlocked);
+
+    var subTagHtml = '';
+    if (!st.unlocked) {
+      subTagHtml = '<span class="char-remain-tag">' + st.remainCount + '권 남음</span>';
+    } else if (st.isEvolved) {
+      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;"><i class="fa-solid fa-crown"></i> 진화형</span>';
+    } else {
+      subTagHtml = '<span style="font-size:10px;color:#0d9488;font-weight:700;">해금완료</span>';
+    }
 
     return '<div class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
       + badgeIcon
-      + '<div class="char-avatar-img" style="margin:0 auto 6px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">'
-      +   getCharacterSvg(c.id, 50)
+      + '<div class="char-avatar-img" style="margin:0 auto 4px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">'
+      +   svgContent
       + '</div>'
       + '<div style="font-size:12px;font-weight:800;color:' + (st.unlocked ? '#1e293b' : '#64748b') + ';margin-bottom:2px;">' + c.name.split(' ')[0] + '</div>'
-      + '<div style="font-size:10px;color:' + (st.unlocked ? '#64748b' : '#94a3b8') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' 
-      +   (st.unlocked ? c.tag.split(' ')[0] : '🔒 ' + st.percent + '%') 
-      + '</div>'
+      + '<div style="font-size:9.5px;color:#64748b;margin-bottom:3px;font-weight:600;">' + c.themeName + '</div>'
+      + subTagHtml
       + '</div>';
   }).join('');
+}
+
+// 상단 로그아웃 핸들러
+function handleStudentLogout() {
+  if (confirm('학생 포털에서 로그아웃하시겠습니까?')) {
+    toast('👋 안전하게 로그아웃되었습니다. 로그인 페이지로 이동합니다.');
+    setTimeout(function() {
+      window.location.href = 'index.html';
+    }, 600);
+  }
 }
 
 function updateAllCharacterAvatars() {
