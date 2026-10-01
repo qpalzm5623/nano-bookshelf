@@ -1185,6 +1185,7 @@ function switchMasterTab(tabName) {
   } else if (tabName === "contents") {
     renderMasterContents();
   }
+  window.scrollTo(0, 0);
 }
 
 // 운영 관리 서브탭 전환
@@ -1208,6 +1209,7 @@ function switchOpSubTab(subName) {
   if (subName === "themes") renderThemeTable();
   if (subName === "notices" && typeof renderNoticeTable === "function") renderNoticeTable();
   if (subName === "recommended") renderRecommendedBooksTable();
+  window.scrollTo(0, 0);
 }
 
 // ==========================================
@@ -2458,8 +2460,8 @@ function handleBannerFileUpload(e) {
     const tempImg = new Image();
     tempImg.onload = function() {
       try {
-        const maxWidth = 960;
-        const maxHeight = 320;
+        const maxWidth = 1000;
+        const maxHeight = 500;
         let w = tempImg.width;
         let h = tempImg.height;
 
@@ -2747,6 +2749,33 @@ function deleteBanner(id) {
 // --- [5-B] 테마 관리 (도서 큐레이션 테마 및 태그 관리) ---
 let curThemeUploadedImgData = "";
 
+// 테마별 자동 매핑 도서 계산 헬퍼 함수
+function getThemeAutoMappedBooks(theme) {
+  if (!theme) return [];
+  const targetTag = (theme.tag || '').trim();
+  const cleanTarget = targetTag.replace(/^#/, '');
+
+  return masterBooks.filter(b => {
+    // 1. 도서 tags 배열에 일치하는 태그가 있는지 확인
+    if (b.tags && Array.isArray(b.tags)) {
+      const hasTag = b.tags.some(t => {
+        const cleanT = (t || '').trim().replace(/^#/, '');
+        return cleanT === cleanTarget || (t || '').trim() === targetTag;
+      });
+      if (hasTag) return true;
+    }
+    // 2. detailTag에 태그가 포함되어 있는지 확인
+    if (b.detailTag && typeof b.detailTag === 'string') {
+      if (b.detailTag.includes(cleanTarget) || b.detailTag.includes(targetTag)) return true;
+    }
+    // 3. 기존 수동 bookIds가 등록되어 있는 경우 하위 호환
+    if (theme.bookIds && Array.isArray(theme.bookIds) && theme.bookIds.includes(b.id)) {
+      return true;
+    }
+    return false;
+  });
+}
+
 function renderThemeTable() {
   const tbody = document.getElementById("themeTableBody");
   if (!tbody) return;
@@ -2764,12 +2793,18 @@ function renderThemeTable() {
   }
 
   tbody.innerHTML = themeList.map((t, idx) => {
-    const bookCount = t.bookIds ? t.bookIds.length : 0;
+    const autoMappedBooks = getThemeAutoMappedBooks(t);
+    const bookCount = autoMappedBooks.length;
     const imgUrl = t.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
 
     return `
       <tr>
-        <td style="font-weight: 700; color: var(--text-soft);">${idx + 1}</td>
+        <td style="font-weight: 700; color: var(--text-soft); text-align: center;">${idx + 1}</td>
+        <td style="text-align: center;">
+          <div style="width: 60px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); cursor: pointer; margin: 0 auto; background: #f0ece5;" onclick="previewBannerImage('${imgUrl}', '${t.tag} 대표 이미지')" title="이미지 크게 보기 (클릭)">
+            <img src="${imgUrl}" alt="${t.tag}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='upload/banner/banner_reading_king.jpg'">
+          </div>
+        </td>
         <td style="text-align: left;">
           <div class="d-flex align-items-center gap-2 mb-1">
             <span class="badge-soft badge-soft-warning font-weight-bold" style="font-size: 12.5px;">${t.tag}</span>
@@ -2780,28 +2815,23 @@ function renderThemeTable() {
             ${t.desc || '테마 설명이 없습니다.'}
           </div>
         </td>
-        <td>
-          <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 12px; font-size: 12px; padding: 4px 10px;" title="매핑된 도서 목록 보기 및 추가/제외">
-            <i class="fa-solid fa-book-open mr-1"></i>${bookCount}권
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 12px; font-size: 12px; padding: 4px 10px;" title="자동 매핑된 도서 목록 확인">
+            <i class="fa-solid fa-bolt mr-1"></i>${bookCount}권
           </button>
         </td>
-        <td>
-          <div style="width: 60px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); cursor: pointer; margin: 0 auto; background: #f0ece5;" onclick="previewBannerImage('${imgUrl}', '${t.tag} 대표 이미지')" title="이미지 크게 보기 (클릭)">
-            <img src="${imgUrl}" alt="${t.tag}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='upload/banner/banner_reading_king.jpg'">
-          </div>
-        </td>
-        <td>
+        <td style="text-align: center;">
           <button type="button" class="btn btn-xs ${t.active === 'Y' ? 'btn-success' : 'btn-secondary'}" onclick="toggleThemeActive(${t.id})" style="border-radius: 14px; font-size: 11.5px; padding: 3px 10px;">
             ${t.active === 'Y' ? '노출 (Y)' : '숨김 (N)'}
           </button>
         </td>
-        <td>
+        <td style="text-align: center;">
           <div class="d-flex align-items-center justify-content-center gap-1">
             <button class="btn btn-xs btn-outline-secondary" onclick="openThemeModal(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;" title="태그 정보 수정">
               <i class="fa-solid fa-pen mr-1"></i>편집
             </button>
-            <button class="btn btn-xs btn-outline-primary font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 9px;" title="도서 목록 편집">
-              <i class="fa-solid fa-book mr-1"></i>도서 매핑
+            <button class="btn btn-xs btn-outline-primary font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 9px;" title="자동 매핑된 도서 목록 보기">
+              <i class="fa-solid fa-list-check mr-1"></i>도서 목록
             </button>
             <button class="btn btn-xs btn-outline-danger" onclick="deleteTheme(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 7px;" title="태그 삭제">
               <i class="fa-solid fa-trash-can"></i>
@@ -2978,159 +3008,131 @@ function deleteTheme(themeId) {
   }
 }
 
-// 4. 테마별 도서 목록 편집 모달 열기
+// 4. 테마별 자동 매핑 도서 목록 모달 열기 (수동 매핑 불필요, 자동 매핑 리스트 뷰)
 function openThemeBooksModal(themeId) {
   const theme = themeList.find(t => t.id === themeId);
   if (!theme) return;
   curThemeBooksThemeId = themeId;
 
-  if (!theme.bookIds) theme.bookIds = [];
+  const headerTitle = document.getElementById("tbmHeaderTitle");
+  if (headerTitle) {
+    headerTitle.innerHTML = `<i class="fa-solid fa-tags mr-2 text-warning"></i>${theme.tag} 자동 매핑 도서 목록`;
+  }
+  const headerSub = document.getElementById("tbmHeaderSub");
+  if (headerSub) {
+    headerSub.innerText = `도서 등록 시 지정된 주제 태그(${theme.tag})로 자동 연동된 도서 목록입니다. (별도 수동 매핑 불필요)`;
+  }
+  const infoTitle = document.getElementById("tbmInfoTitle");
+  if (infoTitle) infoTitle.innerText = theme.title;
+  const infoTag = document.getElementById("tbmInfoTag");
+  if (infoTag) infoTag.innerText = theme.tag;
+  const infoDesc = document.getElementById("tbmInfoDesc");
+  if (infoDesc) infoDesc.innerText = theme.desc || "테마 안내글";
 
-  document.getElementById("tbmCurrentThemeId").value = theme.id;
-  document.getElementById("tbmHeaderTitle").innerHTML = `<i class="fa-solid fa-bookmark mr-2 text-warning"></i>${theme.title} - 도서 매핑 관리`;
-  document.getElementById("tbmInfoTitle").innerText = theme.title;
-  document.getElementById("tbmInfoTag").innerText = theme.tag;
-  document.getElementById("tbmInfoDesc").innerText = theme.desc || "테마 안내글";
-  document.getElementById("tbmMappingCount").innerText = theme.bookIds.length;
-  document.getElementById("tbmLeftCount").innerText = theme.bookIds.length;
-  document.getElementById("tbmSearchInput").value = "";
-  document.getElementById("tbmCategorySelect").value = "";
+  const searchInp = document.getElementById("tbmAutoSearchInput");
+  if (searchInp) searchInp.value = "";
 
-  renderTbmMappedBooks();
-  renderTbmAvailableBooks();
-
+  renderTbmAutoMappedBooks();
   $('#themeBooksModal').modal('show');
 }
 
-// 5. 현재 테마 매핑 도서 목록 렌더링 (좌측)
-function renderTbmMappedBooks() {
-  const container = document.getElementById("tbmMappedListContainer");
+// 5. 테마 자동 매핑 도서 리스트 렌더링 (단일 테이블 형태)
+function renderTbmAutoMappedBooks() {
+  const tbody = document.getElementById("tbmAutoTableBody");
   const theme = themeList.find(t => t.id === curThemeBooksThemeId);
-  if (!container || !theme) return;
+  if (!tbody || !theme) return;
 
-  const count = theme.bookIds ? theme.bookIds.length : 0;
-  document.getElementById("tbmMappingCount").innerText = count;
-  document.getElementById("tbmLeftCount").innerText = count;
+  const allAutoMapped = getThemeAutoMappedBooks(theme);
+  const searchInput = document.getElementById("tbmAutoSearchInput");
+  const keyword = (searchInput ? searchInput.value : "").trim().toLowerCase();
 
-  if (!theme.bookIds || theme.bookIds.length === 0) {
-    container.innerHTML = `
-      <div class="text-center py-5 text-muted">
-        <i class="fa-solid fa-book-open mb-2" style="font-size: 32px; opacity: 0.4;"></i>
-        <p class="mb-1" style="font-size: 13.5px; font-weight: 600;">매핑된 도서가 없습니다.</p>
-        <small style="font-size: 11.5px;">우측 라이브러리에서 추천할 도서의 [+ 추가] 버튼을 눌러주세요.</small>
-      </div>
-    `;
-    return;
+  const countEl = document.getElementById("tbmMappingCount");
+  if (countEl) countEl.innerText = allAutoMapped.length;
+
+  // 검색어 필터링 (도서명, 저자, 출판사, 분야)
+  let filtered = allAutoMapped;
+  if (keyword) {
+    filtered = allAutoMapped.filter(b => 
+      (b.title && b.title.toLowerCase().includes(keyword)) ||
+      (b.author && b.author.toLowerCase().includes(keyword)) ||
+      (b.publisher && b.publisher.toLowerCase().includes(keyword)) ||
+      (b.category && b.category.toLowerCase().includes(keyword))
+    );
   }
 
-  const mappedBooks = theme.bookIds.map(id => masterBooks.find(b => b.id === id)).filter(Boolean);
-
-  container.innerHTML = mappedBooks.map((b, idx) => `
-    <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded border" style="transition: all 0.15s;">
-      <div class="d-flex align-items-center gap-2" style="min-width: 0; flex: 1;">
-        <span class="badge-soft badge-soft-neutral" style="font-size: 11px; width: 22px; text-align: center; padding: 2px 0;">${idx + 1}</span>
-        <div style="width: 34px; height: 46px; border-radius: 4px; overflow: hidden; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          ${b.cover ? `<img src="${b.cover}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-book text-muted"></i>`}
-        </div>
-        <div style="min-width: 0; flex: 1;">
-          <div class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main);" title="${b.title}">${b.title}</div>
-          <div class="text-truncate text-muted" style="font-size: 11px;">${b.author} · ${b.publisher}</div>
-          <span class="badge-soft badge-soft-neutral" style="font-size: 10px; padding: 1px 6px;">${b.grade}</span>
-        </div>
-      </div>
-      <button class="btn btn-xs btn-outline-danger ml-2" onclick="removeBookFromCurTheme('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; flex-shrink: 0;" title="테마에서 제외">
-        <i class="fa-solid fa-xmark mr-1"></i>제외
-      </button>
-    </div>
-  `).join("");
-}
-
-// 6. 마스터 도서 풀 검색/필터 및 추가 목록 렌더링 (우측)
-function renderTbmAvailableBooks() {
-  const container = document.getElementById("tbmAvailableListContainer");
-  const theme = themeList.find(t => t.id === curThemeBooksThemeId);
-  if (!container || !theme) return;
-
-  const keyword = (document.getElementById("tbmSearchInput").value || "").trim().toLowerCase();
-  const category = (document.getElementById("tbmCategorySelect").value || "").trim();
-
-  let filtered = masterBooks.filter(b => {
-    const matchKw = !keyword || b.title.toLowerCase().includes(keyword) || b.author.toLowerCase().includes(keyword) || b.publisher.toLowerCase().includes(keyword);
-    const matchCat = !category || b.category === category;
-    return matchKw && matchCat;
-  });
+  const leftCountEl = document.getElementById("tbmLeftCount");
+  if (leftCountEl) leftCountEl.innerText = filtered.length;
 
   if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="text-center py-5 text-muted">
-        <i class="fa-solid fa-magnifying-glass mb-2" style="font-size: 28px; opacity: 0.4;"></i>
-        <p class="mb-0" style="font-size: 13px;">일치하는 마스터 도서가 없습니다.</p>
-      </div>
-    `;
+    if (allAutoMapped.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted" style="background: #faf9f6;">
+            <i class="fa-solid fa-book-open mb-2" style="font-size: 36px; opacity: 0.35;"></i>
+            <p class="mb-1 font-weight-bold" style="font-size: 14.5px; color: var(--text-main);">현재 이 테마에 자동 매핑된 도서가 없습니다.</p>
+            <small style="font-size: 12px; color: var(--text-muted);">
+              [마스터 도서 등록/수정]에서 주제 분류 태그를 <strong>${theme.tag}</strong>(으)로 선택하시면 이곳에 자동으로 실시간 연동됩니다.
+            </small>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <i class="fa-solid fa-magnifying-glass mb-2" style="font-size: 24px; opacity: 0.4;"></i>
+            <p class="mb-0" style="font-size: 13px;">'${keyword}' 검색어와 일치하는 도서가 없습니다.</p>
+          </td>
+        </tr>
+      `;
+    }
     return;
   }
 
-  container.innerHTML = filtered.map(b => {
-    const isMapped = theme.bookIds && theme.bookIds.includes(b.id);
+  tbody.innerHTML = filtered.map((b, idx) => {
+    const coverUrl = b.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80";
+    const seriesText = b.series && b.series !== "단권" ? `<span class="badge-soft badge-soft-warning ml-1" style="font-size: 10px;">${b.series}</span>` : "";
+    const acadName = b.academy || "본사 (공용)";
+    const isPublic = b.isPublic !== "N";
+
     return `
-      <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded border" style="transition: all 0.15s;">
-        <div class="d-flex align-items-center gap-2" style="min-width: 0; flex: 1;">
-          <div style="width: 34px; height: 46px; border-radius: 4px; overflow: hidden; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-            ${b.cover ? `<img src="${b.cover}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-book text-muted"></i>`}
+      <tr>
+        <td style="font-weight: 700; color: var(--text-soft); font-size: 12px;">${idx + 1}</td>
+        <td>
+          <div style="width: 42px; height: 56px; border-radius: 4px; overflow: hidden; background: #ece7e1; margin: 0 auto; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid var(--border-medium);">
+            <img src="${coverUrl}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80'">
           </div>
-          <div style="min-width: 0; flex: 1;">
-            <div class="d-flex align-items-center gap-1">
-              <span class="badge-soft badge-soft-neutral" style="font-size: 10px; padding: 1px 5px;">${b.category}</span>
-              <span class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main);" title="${b.title}">${b.title}</span>
-            </div>
-            <div class="text-truncate text-muted" style="font-size: 11px;">${b.author} · ${b.publisher} (${b.grade})</div>
+        </td>
+        <td style="text-align: left;">
+          <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main); margin-bottom: 2px;">
+            ${b.title} ${seriesText}
           </div>
-        </div>
-        <div class="ml-2 flex-shrink-0">
-          ${isMapped ? `
-            <span class="badge badge-light text-success border px-2 py-1 font-weight-bold" style="font-size: 11px;">
-              <i class="fa-solid fa-check mr-1"></i>매핑됨
-            </span>
-          ` : `
-            <button class="btn btn-sm btn-outline-primary" onclick="addBookToCurTheme('${b.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 3px 10px; font-weight: 700;">
-              <i class="fa-solid fa-plus mr-1"></i>추가
-            </button>
-          `}
-        </div>
-      </div>
+          <div class="text-muted" style="font-size: 11.5px;">
+            <i class="fa-solid fa-barcode mr-1 opacity-50"></i>${b.id}
+            ${b.tags && b.tags.length > 0 ? `<span class="text-secondary ml-1">· ${b.tags.join(" ")}</span>` : ""}
+          </div>
+        </td>
+        <td style="text-align: left;">
+          <div class="font-weight-bold" style="font-size: 12.5px; color: #475569;">${b.author || '-'}</div>
+          <div class="text-muted" style="font-size: 11.5px;">${b.publisher || '-'}</div>
+        </td>
+        <td>
+          <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">${b.category || '기타'}</span>
+        </td>
+        <td>
+          <span class="badge-soft badge-soft-warning font-weight-bold" style="font-size: 11px;">${b.grade || '전체'}</span>
+        </td>
+        <td>
+          <span class="badge badge-light border text-muted" style="font-size: 11px;">${acadName}</span>
+        </td>
+        <td>
+          <span class="badge ${isPublic ? 'badge-success' : 'badge-secondary'}" style="font-size: 11px; padding: 4px 8px; border-radius: 10px;">
+            ${isPublic ? '노출' : '숨김'}
+          </span>
+        </td>
+      </tr>
     `;
   }).join("");
-}
-
-// 7. 현재 테마에 도서 추가
-function addBookToCurTheme(bookId) {
-  const theme = themeList.find(t => t.id === curThemeBooksThemeId);
-  const book = masterBooks.find(b => b.id === bookId);
-  if (!theme || !book) return;
-
-  if (!theme.bookIds) theme.bookIds = [];
-  if (theme.bookIds.includes(bookId)) return;
-
-  theme.bookIds.push(bookId);
-  renderTbmMappedBooks();
-  renderTbmAvailableBooks();
-  renderThemeTable();
-  saveOperationsToStorage();
-  showMasterToast(`'${book.title}' 도서가 테마에 추가되었습니다.`);
-}
-
-// 8. 현재 테마에서 도서 제외
-function removeBookFromCurTheme(bookId) {
-  const theme = themeList.find(t => t.id === curThemeBooksThemeId);
-  const book = masterBooks.find(b => b.id === bookId);
-  if (!theme) return;
-
-  theme.bookIds = (theme.bookIds || []).filter(id => id !== bookId);
-  renderTbmMappedBooks();
-  renderTbmAvailableBooks();
-  renderThemeTable();
-  saveOperationsToStorage();
-  showMasterToast(`'${book ? book.title : bookId}' 도서가 테마에서 제외되었습니다.`);
 }
 
 function openNoticeModal() {

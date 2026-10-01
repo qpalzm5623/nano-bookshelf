@@ -105,14 +105,20 @@
       z-index: 1020;
       background: var(--bg-surface);
       box-shadow: 0 2px 12px rgba(43, 35, 29, 0.05);
+      height: 64px;
     }
 
     /* 상단 미니멀 네비게이션 */
     .top-header {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-light);
-      padding: 13px 28px;
+      padding: 0 28px;
       color: var(--text-main);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-sizing: border-box;
     }
     .brand-logo-wrap {
       display: flex;
@@ -147,24 +153,26 @@
     /* 레이아웃 구조 */
     .app-container {
       display: flex;
-      min-height: calc(100vh - 96px);
+      min-height: calc(100vh - 64px);
+      align-items: flex-start;
     }
 
-    /* 좌측 사이드바 (화면 스크롤 시 고정) */
+    /* 좌측 사이드바 (상단 헤더에 항상 완벽히 밀착 고정) */
     .simple-sidebar {
       width: 255px;
       background: var(--bg-subtle);
       border-right: 1px solid var(--border-light);
-      padding: 22px 14px;
+      padding: 16px 14px 22px;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
       position: sticky;
-      top: 96px;
-      height: calc(100vh - 96px);
+      top: 64px;
+      height: calc(100vh - 64px);
       overflow-y: auto;
       overflow-x: hidden;
       z-index: 1000;
+      margin-top: 0;
     }
     .simple-sidebar::-webkit-scrollbar {
       width: 5px;
@@ -316,14 +324,19 @@
       border-collapse: separate;
       border-spacing: 0;
     }
-    .simple-table th {
+    .simple-table th,
+    .simple-table thead th,
+    .table thead th,
+    table thead th,
+    table th {
       background: #fbf9f5;
       color: var(--text-main);
       font-size: 12.5px;
       font-weight: 700;
       padding: 12px 10px;
       border-bottom: 1px solid var(--border-medium);
-      text-align: center;
+      text-align: center !important;
+      vertical-align: middle;
       white-space: nowrap;
     }
     .simple-table td {
@@ -1048,9 +1061,9 @@
               <thead>
                 <tr>
                   <th style="width: 70px;">번호</th>
-                  <th style="text-align: left;">태그</th>
+                  <th style="width: 120px;">이미지</th>
+                  <th>태그</th>
                   <th style="width: 140px;">등록된 도서 수</th>
-                  <th style="width: 130px;">이미지</th>
                   <th style="width: 100px;">노출여부</th>
                   <th style="width: 180px;">관리</th>
                 </tr>
@@ -2403,7 +2416,7 @@
                   </div>
                   <div class="alert alert-secondary py-2 px-3 mb-2" style="font-size: 11.5px; border-radius: 8px; line-height: 1.5;">
                     <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
-                    <strong>권장 규격:</strong> 16:9 와이드 비율 (1280×720px 권장) / 학생 페이지와 즉시 연동됩니다.
+                    <strong>권장 규격:</strong> 학생 화면 실측 (500×220px) 또는 16:9 와이드 (1280×720px) / 학생 홈 화면과 <strong>1:1 실측 동일 사이즈</strong>로 미리보기가 제공됩니다.
                   </div>
 
                   <!-- 직접 파일 업로드 -->
@@ -2412,16 +2425,25 @@
                   </div>
                 </div>
 
-                <!-- 미리보기 박스 -->
+                <!-- 미리보기 박스 (학생 화면 실제 1:1 노출 사이즈 & 비율 적용) -->
                 <div class="p-2 bg-light rounded" style="border: 1px dashed var(--border-medium); text-align: center;">
-                  <div id="bannerModalPreviewBox" style="width: 100%; height: 115px; border-radius: 8px; overflow: hidden; background: #efebe4; display: flex; align-items: center; justify-content: center; position: relative;">
-                    <img id="bannerModalPreviewImg" src="" alt="미리보기" style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                    <div id="bannerModalEmptyNotice" class="text-muted" style="font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                      <i class="fa-regular fa-image" style="font-size: 18px; opacity: 0.6;"></i>
+                  <div class="d-flex justify-content-between align-items-center mb-1 px-1">
+                    <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 11px;">
+                      <i class="fa-solid fa-mobile-screen mr-1"></i>학생 홈 노출 실측 규격 (500×220px)
+                    </span>
+                    <small class="text-muted font-weight-bold" style="font-size: 11px;" id="bannerPreviewFitNote">실제 노출 1:1 뷰</small>
+                  </div>
+                  <div id="bannerModalPreviewBox" style="width: 100%; max-width: 500px; height: 220px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #1e1b18; display: flex; align-items: center; justify-content: center; position: relative; border: 1.5px solid rgba(220, 208, 195, 0.6); box-shadow: 0 4px 14px rgba(0,0,0,0.1);">
+                    <img id="bannerModalPreviewImg" src="" alt="미리보기" style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: none;">
+                    <div id="bannerModalEmptyNotice" class="text-muted" style="font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #a39c94 !important;">
+                      <i class="fa-regular fa-image" style="font-size: 28px; opacity: 0.5;"></i>
                       <span>등록된 배너 이미지가 없습니다.</span>
+                      <small style="font-size: 11px; opacity: 0.7;">권장 규격: 500×220px 또는 16:9 와이드</small>
                     </div>
                   </div>
-                  <small class="text-muted mt-1 d-block" style="font-size: 11px;">* 홈 화면 상단 롤링 슬라이드에 적용될 실제 배너입니다.</small>
+                  <small class="text-muted mt-2 d-block" style="font-size: 11px;">
+                    * 학생 스마트폰/태블릿 화면 상단에 <strong>실제 렌더링되는 정확한 크기와 비율</strong> 그대로 노출됩니다.
+                  </small>
                 </div>
               </div>
             </div>
@@ -2614,16 +2636,16 @@
   </div>
 </div>
 
-<!-- 5-3. 테마별 도서 목록 편집 모달 -->
+<!-- 5-3. 테마별 도서 자동 매핑 목록 모달 (수동 매핑 불필요, 자동 매핑 리스트 뷰) -->
 <div class="modal fade" id="themeBooksModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
     <div class="modal-content modal-content-beige" style="border-radius: 16px; overflow: hidden;">
       <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
         <div>
           <h5 class="modal-title font-weight-bold" style="font-size: 16.5px;" id="tbmHeaderTitle">
-            <i class="fa-solid fa-bookmark mr-2 text-warning"></i>테마 도서 목록 편집
+            <i class="fa-solid fa-tags mr-2 text-warning"></i>테마 자동 매핑 도서 목록
           </h5>
-          <small class="text-muted" id="tbmHeaderSub">테마에 노출할 추천 도서를 추가하거나 순서를 관리합니다.</small>
+          <small class="text-muted" id="tbmHeaderSub">도서 등록 시 지정된 주제 태그를 기준으로 자동 분류된 도서 목록입니다. (별도 수동 매핑 불필요)</small>
         </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
@@ -2636,75 +2658,62 @@
         <div class="p-3 bg-white rounded-lg shadow-sm border mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge-soft badge-soft-neutral" id="tbmInfoTag">초등 전학년</span>
+              <span class="badge-soft badge-soft-warning font-weight-bold" id="tbmInfoTag" style="font-size: 13px;">#이달의나노북클럽</span>
               <strong style="font-size: 16px; color: var(--text-main);" id="tbmInfoTitle">이달의 나노 북클럽</strong>
             </div>
             <div class="text-muted" style="font-size: 12.5px;" id="tbmInfoDesc">설명 내용</div>
           </div>
           <div class="text-right">
             <span class="badge-soft badge-soft-success" style="font-size: 13.5px; padding: 6px 14px;">
-              <i class="fa-solid fa-book-open-reader mr-1"></i>매핑된 도서 <strong id="tbmMappingCount">0</strong>권
+              <i class="fa-solid fa-bolt mr-1"></i>자동 매핑 도서 <strong id="tbmMappingCount">0</strong>권
             </span>
           </div>
         </div>
 
-        <!-- 2열 편집 레이아웃 -->
-        <div class="row">
-          <!-- 좌측: 현재 매핑된 도서 목록 -->
-          <div class="col-lg-5 mb-3 mb-lg-0">
-            <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
-              <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
-                  <i class="fa-solid fa-list-check mr-1 text-primary"></i>현재 매핑 도서 (<span id="tbmLeftCount">0</span>)
-                </span>
-                <small class="text-muted" style="font-size: 11.5px;">학생 홈 노출 순서</small>
+        <!-- 상단 컨트롤: 목록 개수 및 검색창 -->
+        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+          <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
+            <i class="fa-solid fa-book-open-reader mr-1 text-primary"></i>자동 매핑 도서 리스트 (<span id="tbmLeftCount">0</span>)
+          </div>
+          <div style="width: 280px;">
+            <div class="input-group input-group-sm">
+              <div class="input-group-prepend">
+                <span class="input-group-text bg-white border-right-0"><i class="fa-solid fa-search text-muted"></i></span>
               </div>
-              <div class="card-body p-2" id="tbmMappedListContainer" style="max-height: 480px; overflow-y: auto;">
-                <!-- JS 렌더링 -->
-              </div>
+              <input type="text" id="tbmAutoSearchInput" class="form-control border-left-0" placeholder="도서명, 저자, 출판사 검색..." oninput="renderTbmAutoMappedBooks()">
             </div>
           </div>
+        </div>
 
-          <!-- 우측: 마스터 도서 풀 검색 및 추가 -->
-          <div class="col-lg-7">
-            <div class="card h-100 shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
-              <div class="card-header bg-white border-bottom py-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
-                    <i class="fa-solid fa-square-plus mr-1 text-success"></i>마스터 도서 라이브러리에서 추가
-                  </span>
-                  <small class="text-muted" style="font-size: 11.5px;">전국 가맹 공용 도서 풀</small>
-                </div>
-                <!-- 검색창 및 카테고리 필터 -->
-                <div class="d-flex gap-2">
-                  <div class="input-group input-group-sm">
-                    <div class="input-group-prepend">
-                      <span class="input-group-text bg-white border-right-0"><i class="fa-solid fa-search text-muted"></i></span>
-                    </div>
-                    <input type="text" id="tbmSearchInput" class="form-control border-left-0" placeholder="도서명, 저자, 출판사 검색..." oninput="renderTbmAvailableBooks()">
-                  </div>
-                  <select id="tbmCategorySelect" class="form-control form-control-sm" style="width: 110px;" onchange="renderTbmAvailableBooks()">
-                    <option value="">전체 분류</option>
-                    <option value="문학">문학</option>
-                    <option value="과학">과학</option>
-                    <option value="사회">사회</option>
-                    <option value="역사">역사</option>
-                  </select>
-                </div>
-              </div>
-              <div class="card-body p-2" id="tbmAvailableListContainer" style="max-height: 480px; overflow-y: auto;">
-                <!-- JS 렌더링 -->
-              </div>
-            </div>
+        <!-- 자동 매핑 도서 단일 리스트 테이블 -->
+        <div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+          <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+            <table class="simple-table mb-0" style="background: #fff;">
+              <thead style="position: sticky; top: 0; background: #faf7f2; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <tr>
+                  <th style="width: 60px;">번호</th>
+                  <th style="width: 70px;">표지</th>
+                  <th style="text-align: left;">도서명</th>
+                  <th style="width: 160px; text-align: left;">저자 / 출판사</th>
+                  <th style="width: 100px;">분야</th>
+                  <th style="width: 110px;">권장 학년</th>
+                  <th style="width: 110px;">등록 기관</th>
+                  <th style="width: 90px;">상태</th>
+                </tr>
+              </thead>
+              <tbody id="tbmAutoTableBody">
+                <!-- JS 자동 렌더링 -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
       <div class="modal-footer modal-footer-beige d-flex justify-content-between align-items-center">
         <small class="text-muted">
-          <i class="fa-solid fa-shield-halved text-success mr-1"></i>추가 및 제외 즉시 학생 홈 추천 큐레이션 데이터에 자동 반영됩니다.
+          <i class="fa-solid fa-circle-check text-success mr-1"></i>[마스터 도서 관리]에서 도서 등록/수정 시 해당 주제 분류 태그를 선택하면 이 테마에 실시간 자동 매핑됩니다.
         </small>
         <button type="button" class="btn-beige-primary" data-dismiss="modal">
-          <i class="fa-solid fa-check mr-1"></i>도서 목록 편집 완료
+          <i class="fa-solid fa-check mr-1"></i>확인 (닫기)
         </button>
       </div>
     </div>

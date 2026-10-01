@@ -814,14 +814,20 @@
       z-index: 1020;
       background: var(--bg-surface);
       box-shadow: 0 2px 12px rgba(43, 35, 29, 0.05);
+      height: 64px;
     }
 
     /* 상단 미니멀 네비게이션 */
     .top-header {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-light);
-      padding: 13px 28px;
+      padding: 0 28px;
       color: var(--text-main);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-sizing: border-box;
     }
     .brand-logo-wrap {
       display: flex;
@@ -856,24 +862,26 @@
     /* 레이아웃 구조 */
     .app-container {
       display: flex;
-      min-height: calc(100vh - 96px);
+      min-height: calc(100vh - 64px);
+      align-items: flex-start;
     }
 
-    /* 좌측 사이드바 (화면 스크롤 시 고정) */
+    /* 좌측 사이드바 (상단 헤더에 항상 완벽히 밀착 고정) */
     .simple-sidebar {
       width: 255px;
       background: var(--bg-subtle);
       border-right: 1px solid var(--border-light);
-      padding: 22px 14px;
+      padding: 16px 14px 22px;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
       position: sticky;
-      top: 96px;
-      height: calc(100vh - 96px);
+      top: 64px;
+      height: calc(100vh - 64px);
       overflow-y: auto;
       overflow-x: hidden;
       z-index: 1000;
+      margin-top: 0;
     }
     .simple-sidebar::-webkit-scrollbar {
       width: 5px;
@@ -1025,14 +1033,19 @@
       border-collapse: separate;
       border-spacing: 0;
     }
-    .simple-table th {
+    .simple-table th,
+    .simple-table thead th,
+    .table thead th,
+    table thead th,
+    table th {
       background: #fbf9f5;
       color: var(--text-main);
       font-size: 12.5px;
       font-weight: 700;
       padding: 12px 10px;
       border-bottom: 1px solid var(--border-medium);
-      text-align: center;
+      text-align: center !important;
+      vertical-align: middle;
       white-space: nowrap;
     }
     .simple-table td {

@@ -213,7 +213,7 @@ function switchTab(tab) {
     selectPlanTier(currentSelectedTier || 'standard');
   }
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo(0, 0);
 }
 
 // 콘텐츠 관리 내부 서브탭 전환 (도서 목록 / 도서 직접 등록 / 북퀴즈 출제)
@@ -237,6 +237,7 @@ function switchContentSubTab(sub) {
     renderQuizTabs();
     loadCurrentQuizForm();
   }
+  window.scrollTo(0, 0);
 }
 
 // 회원 관리 내부 서브탭 전환 (원생 관리 / 선생님 관리)
@@ -256,6 +257,7 @@ function switchMemberSubTab(sub) {
 
   if (sub === 'teachers') renderTeacherTable();
   if (sub === 'students') renderStudentTable(studentDataList);
+  window.scrollTo(0, 0);
 }
 
 // ==============================================================
