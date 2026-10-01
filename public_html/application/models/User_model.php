@@ -832,6 +832,11 @@
 
             return $result;
         }        
+
+        public function getUser($user_id)
+        {
+            return $this->getUserData($user_id);
+        }
         
         public function getTeacherData($data)
         {
@@ -1002,7 +1007,7 @@
         }        
         
         
-        public function getUserGradeList()
+        public function getUserGradeList($whereData = array())
         {
             $sql = "SELECT DISTINCT(group_name) group_name
                        FROM tb_user 

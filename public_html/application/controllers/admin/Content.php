@@ -48,6 +48,11 @@ class Content extends MY_Controller {
 		}
 
 	}
+
+	public function eduList()
+	{
+		$this->book_list();
+	}
 	
 	public function upload_file() 
 	{
@@ -4082,6 +4087,7 @@ class Content extends MY_Controller {
 			} else {
 				$objReader = PHPExcel_IOFactory::createReader('Excel5');
 			}
+			/** @var PHPExcel_Reader_Abstract $objReader */
 			$objReader->setReadDataOnly(true);
 			$objPHPExcel = $objReader->load($excel_file);
 		} catch(Exception $e) {
@@ -4323,6 +4329,7 @@ class Content extends MY_Controller {
 			} else {
 				$objReader = PHPExcel_IOFactory::createReader('Excel5');
 			}
+			/** @var PHPExcel_Reader_Abstract $objReader */
 			$objReader->setReadDataOnly(true);
 			$objPHPExcel = $objReader->load($excel_file);
 		} catch(Exception $e) {
@@ -4793,7 +4800,7 @@ class Content extends MY_Controller {
             $info = $this->quizHistory_model->getQuizHistoryAdmin($qh_seq);
             $book_name = $info['book_name'];
             
-            $msg = "{$name} 학생이, ${book_name} 를 읽고, 인증을 완료하였어요~ 책읽기 마무리 활동은 나노의 책장에서!";
+            $msg = "{$name} 학생이, {$book_name} 를 읽고, 인증을 완료하였어요~ 책읽기 마무리 활동은 나노의 책장에서!";
             $btn = '{"button":[{"name":"북퀴즈결과 확인","linkType":"WL","linkP":"http://app.nanosbookshelf.com/report/quiz_result_pop/'.$qh_seq.'", "linkM": "http://app.nanosbookshelf.com/report/quiz_result_pop/'.$qh_seq.'"}]}';
             $_variables =	array(
                 'apikey'      => 'ypjr7m6tjjjhri2dsz3fz9sdancwcsro', 

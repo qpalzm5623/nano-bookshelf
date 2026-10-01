@@ -519,6 +519,11 @@
             return $result;
         }
 
+        public function getStudent($user_seq)
+        {
+            return $this->getMember($user_seq);
+        }
+
         public function updateMember($data,$user_seq)
         {
             $this->db->where("user_seq",$user_seq);

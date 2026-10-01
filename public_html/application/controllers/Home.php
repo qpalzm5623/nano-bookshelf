@@ -13,6 +13,7 @@ class Home extends MY_Controller {
 		$this->load->config('gettext');
 		$this->load->helper('gettext');
 		$this->load->model("user_model");
+		$this->load->model("member_model");
 		$this->load->model("board_model");
 		$this->load->model("content_model");
 		$this->load->model("code_model");
@@ -519,7 +520,7 @@ class Home extends MY_Controller {
 		$title = $this->input->post("title");
 		$content = $this->input->post("content");
 		$user_id = $this->session->userdata("user_id");
-		$userData = $this->user_model->getUser($user_id);
+		$userData = $this->user_model->getUserData($user_id);
 		$user_name = $userData['user_name'];
 
 		//$academyData = $this->academi_model->getAcademy($this->session->userdata("academy_seq"));
@@ -594,7 +595,7 @@ class Home extends MY_Controller {
 		$img = str_replace('data:image/png;base64,', '', $img);
 		$img = str_replace(' ', '+', $img);
 		$data = base64_decode($img);
-		$filename = mktime() . ".png";
+		$filename = time() . ".png";
 		$file = $upload_dir . $filename;
 		$success = file_put_contents($file, $data);
 
@@ -640,7 +641,7 @@ class Home extends MY_Controller {
 			"reg_date"	=>	$reg_date,
 		);
 
-		$this->user_model->insertOauth($data);
+		$this->member_model->insertOauth($data);
 
 		echo '{"result":"success"}';
 		exit;

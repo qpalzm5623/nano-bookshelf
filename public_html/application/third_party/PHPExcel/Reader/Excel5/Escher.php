@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * PHPExcel_Reader_Excel5_Escher
@@ -331,7 +331,7 @@ class PHPExcel_Reader_Excel5_Escher
         }
 
         // offset: var; size: 1; tag
-        $tag = ord($recordData{$pos});
+        $tag = ord($recordData[$pos]);
         $pos += 1;
 
         // offset: var; size: var; the raw image data
@@ -372,7 +372,7 @@ class PHPExcel_Reader_Excel5_Escher
         }
 
         // offset: var; size: 1; tag
-        $tag = ord($recordData{$pos});
+        $tag = ord($recordData[$pos]);
         $pos += 1;
 
         // offset: var; size: var; the raw image data

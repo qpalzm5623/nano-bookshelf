@@ -194,7 +194,7 @@ class Book extends MY_Controller {
         $userData = $this->CONFIG_DATA['userData'];
         $keyword = $this->input->get("keyword");
         $topic = $this->input->get("topic");
-        $where = " AND a.book_no='${book_no}' AND c.quiz_seq='${quiz_seq}'";
+        $where = " AND a.book_no='{$book_no}' AND c.quiz_seq='{$quiz_seq}'";
         $whereData = array("where"=>$where,
                            "limit"=>" limit 1", 
                            "user_id" => $userData['user_id']);
@@ -243,7 +243,7 @@ class Book extends MY_Controller {
         $userData = $this->CONFIG_DATA['userData'];
         $keyword = $this->input->get("keyword");
         $topic = $this->input->get("topic");
-        $where = " AND a.book_no='${book_no}' AND c.quiz_seq='${quiz_seq}'";
+        $where = " AND a.book_no='{$book_no}' AND c.quiz_seq='{$quiz_seq}'";
         $whereData = array("where"=>$where,
         "limit"=>"", "user_id" => $userData['user_id']);
         $data = $this->book_model->getBookUserDetail($whereData);		
@@ -276,7 +276,7 @@ class Book extends MY_Controller {
         $userData = $this->CONFIG_DATA['userData'];
         $keyword = $this->input->get("keyword");
         $topic = $this->input->get("topic");
-        $where = " AND a.book_no='${book_no}' AND c.quiz_seq='${quiz_seq}'";
+        $where = " AND a.book_no='{$book_no}' AND c.quiz_seq='{$quiz_seq}'";
         $whereData = array("where"=>$where,
         "limit"=>"", "user_id" => $userData['user_id']);
         $data = $this->book_model->getBookUserQuizDetail($whereData);		
@@ -716,7 +716,7 @@ class Book extends MY_Controller {
 			"keyword" => $keyword,
 			"user_id"	=>	$userData['user_id'],
 		);
-		$info = $this->keyword_model->deleteKeyword($data);
+		$this->keyword_model->deleteKeyword($data);
 		    
 		echo '{"result":"success"}';
 		exit;
@@ -738,7 +738,7 @@ class Book extends MY_Controller {
 	    
 
 	    
-        $where = " AND a.book_no='${book_no}' AND c.quiz_seq='${quiz_seq}'";
+        $where = " AND a.book_no='{$book_no}' AND c.quiz_seq='{$quiz_seq}'";
         $whereData = array("where"=>$where,
         "limit"=>"", "user_id" => $userData['user_id']);
         $quizData = $this->book_model->getBookUserQuizDetail($whereData);		

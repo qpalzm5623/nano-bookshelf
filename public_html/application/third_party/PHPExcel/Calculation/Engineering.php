@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /** PHPExcel root directory */
 if (!defined('PHPEXCEL_ROOT')) {
@@ -809,16 +809,16 @@ class PHPExcel_Calculation_Engineering
      */
     private static function cleanComplex($complexNumber)
     {
-        if ($complexNumber{0} == '+') {
+        if ($complexNumber[0] == '+') {
             $complexNumber = substr($complexNumber, 1);
         }
-        if ($complexNumber{0} == '0') {
+        if ($complexNumber[0] == '0') {
             $complexNumber = substr($complexNumber, 1);
         }
-        if ($complexNumber{0} == '.') {
+        if ($complexNumber[0] == '.') {
             $complexNumber = '0'.$complexNumber;
         }
-        if ($complexNumber{0} == '+') {
+        if ($complexNumber[0] == '+') {
             $complexNumber = substr($complexNumber, 1);
         }
         return $complexNumber;

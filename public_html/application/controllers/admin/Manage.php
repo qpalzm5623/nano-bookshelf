@@ -43,6 +43,11 @@ class Manage extends MY_Controller {
 		}
 
 	}
+
+	public function academiInfo()
+	{
+		$this->banner_list();
+	}
 	
   //숙재배정 리스트
 	public function banner_list()

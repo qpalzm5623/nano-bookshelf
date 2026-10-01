@@ -90,6 +90,7 @@ class Home extends MY_Controller {
 		$term_where = "";
 		$all_term_where = "";
 		if($year != "" && $month != "all") {
+		    $last_day = date("t", strtotime("$year-$month-01"));
 		    $term_where = " AND reg_date >='$year-$month-01' AND reg_date <= '$year-$month-$last_day'";
 		    $all_term_where = " AND reg_date <= '$year-$month-$last_day'";
 		} else {
@@ -184,6 +185,14 @@ class Home extends MY_Controller {
 		
 
 
+		$member_total = 0;
+		$search_member_total = 0;
+		$search_leave_member_total = 0;
+		$board_view_count_total = 0;
+		$challenge_total = 0;
+		$carbon_total = 0;
+		$oauth_total = 0;
+
 		$content_data = array(
 			"depth1"		=>	$depth1,
 			"title"			=>	$title,
@@ -198,13 +207,13 @@ class Home extends MY_Controller {
 			"book_list" => $bookList,
 			"user_list" => $userList,
 			
-			"member_total"	=>	@$member_total,
-			"search_member_total"	=>	@$search_member_total,
-			"search_leave_member_total"	=>	@$search_leave_member_total,
-			"board_view_count_total"	=>	@$board_view_count_total,
-			"challenge_total"	=>	@$challenge_total,
-			"carbon_total"	=>	@$carbon_total,
-			"oauth_total"	=>	@$oauth_total,
+			"member_total"	=>	$member_total,
+			"search_member_total"	=>	$search_member_total,
+			"search_leave_member_total"	=>	$search_leave_member_total,
+			"board_view_count_total"	=>	$board_view_count_total,
+			"challenge_total"	=>	$challenge_total,
+			"carbon_total"	=>	$carbon_total,
+			"oauth_total"	=>	$oauth_total,
 			"year"	=>	@$year,
 			"month"	=>	@$month
 		);

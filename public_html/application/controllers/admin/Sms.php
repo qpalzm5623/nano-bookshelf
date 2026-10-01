@@ -41,6 +41,7 @@ class Sms extends MY_Controller {
     		$srcN = $this->input->get('srcN');
     		$srcType = $this->input->get('srcType');
 
+    		$where = "";
     		if(!empty($this->session->userdata("academy_seq"))){
     			$academy_seq = $this->session->userdata("academy_seq");
     			$where .= "AND academy_seq = '{$academy_seq}'";
@@ -81,15 +82,6 @@ class Sms extends MY_Controller {
 
 
     	}
-            if( $uri[count($uri)-1] != "login" && $uri[count($uri)-1] != "login_proc" ){
-                $this->msg("로그인 해주시기 바랍니다.");
-                $this->goURL(base_url("admin/login"));
-                exit;
-            }
-		}
-
-
-	}
 
 	public function index()
 	{

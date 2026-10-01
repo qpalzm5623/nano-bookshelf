@@ -46,6 +46,11 @@ class Partner extends MY_Controller {
 		}
 
 	}
+
+	public function academiInfo()
+	{
+		$this->list();
+	}
 	
     //리스트
 	public function list()
@@ -2257,7 +2262,7 @@ class Partner extends MY_Controller {
 		    		$data = array(
 		    			"user_name"	=>	$user_name,
 		    			"user_id"	=>	$user_id,		    
-		    			"user_type"	=>	$user_type,
+		    			"user_type"	=>	"director",
 		    			"reg_date"	=>	$reg_date);
 		    		$result = $this->userHistory_model->insertUserHistory($data);    		    
 		    							

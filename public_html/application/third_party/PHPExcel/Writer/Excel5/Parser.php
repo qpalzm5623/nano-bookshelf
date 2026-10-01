@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * PHPExcel_Writer_Excel5_Parser
@@ -1063,7 +1063,7 @@ class PHPExcel_Writer_Excel5_Parser
 
             if ($this->match($token) != '') {
                 //if ($i < strlen($this->formula) - 1) {
-                //    $this->lookAhead = $this->formula{$i+1};
+                //    $this->lookAhead = $this->formula[$i+1];
                 //}
                 $this->currentCharacter = $i + 1;
                 $this->currentToken = $token;
@@ -1172,7 +1172,7 @@ class PHPExcel_Writer_Excel5_Parser
     {
         $this->currentCharacter = 0;
         $this->formula      = $formula;
-        $this->lookAhead    = isset($formula{1}) ? $formula{1} : '';
+        $this->lookAhead    = isset($formula[1]) ? $formula[1] : '';
         $this->advance();
         $this->parseTree   = $this->condition();
         return true;

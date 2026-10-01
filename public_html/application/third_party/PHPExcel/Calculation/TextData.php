@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /** PHPExcel root directory */
 if (!defined('PHPEXCEL_ROOT')) {
@@ -48,7 +48,7 @@ class PHPExcel_Calculation_TextData
             return (ord($c[0])-224)*4096 + (ord($c[1])-128)*64 + (ord($c[2])-128);
         } elseif (ord($c[0]) >= 240 && ord($c[0]) <= 247) {
             return (ord($c[0])-240)*262144 + (ord($c[1])-128)*4096 + (ord($c[2])-128)*64 + (ord($c[3])-128);
-        } elseif (ord($c[0]) >= 248 && ord($c{0}) <= 251) {
+        } elseif (ord($c[0]) >= 248 && ord($c[0]) <= 251) {
             return (ord($c[0])-248)*16777216 + (ord($c[1])-128)*262144 + (ord($c[2])-128)*4096 + (ord($c[3])-128)*64 + (ord($c[4])-128);
         } elseif (ord($c[0]) >= 252 && ord($c[0]) <= 253) {
             return (ord($c[0])-252)*1073741824 + (ord($c[1])-128)*16777216 + (ord($c[2])-128)*262144 + (ord($c[3])-128)*4096 + (ord($c[4])-128)*64 + (ord($c[5])-128);

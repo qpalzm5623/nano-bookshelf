@@ -2,8 +2,47 @@
 ini_set('display_errors','1');
 date_default_timezone_set('Asia/Seoul');
 
+/**
+ * @property CI_Loader $load
+ * @property CI_Input $input
+ * @property CI_Session $session
+ * @property CI_Config $config
+ * @property CI_Parser $parser
+ * @property CI_User_agent $agent
+ * @property CI_DB_query_builder $db
+ * @property CI_URI $uri
+ * @property adm_model $adm_model
+ * @property user_model $user_model
+ * @property category_model $category_model
+ * @property academi_model $academi_model
+ * @property sms_model $sms_model
+ * @property course_model $course_model
+ * @property exam_model $exam_model
+ * @property book_model $book_model
+ * @property member_model $member_model
+ * @property quiz_model $quiz_model
+ * @property quizHistory_model $quizHistory_model
+ * @property userHistory_model $userHistory_model
+ * @property keyword_model $keyword_model
+ * @property order_model $order_model
+ * @property config_model $config_model
+ * @property banner_model $banner_model
+ * @property school_model $school_model
+ * @property code_model $code_model
+ * @property content_model $content_model
+ * @property board_model $board_model
+ */
 class MY_Controller extends CI_Controller
 {
+  public $BASE_URL;
+  public $boardSkin;
+  public $device;
+  public $CONFIG_DATA;
+  public $skin;
+  public $theme_url;
+  public $course_model;
+  public $exam_model;
+  public $BOARDS;
 
   function __construct()
   {
@@ -524,7 +563,7 @@ class MY_Controller extends CI_Controller
 
 			foreach ($grouped as $key => $value) {
 				$params = array_merge([ $value ], array_slice($args, 2, func_num_args()));
-				$grouped[$key] = call_user_func_array('array_group_by', $params);
+				$grouped[$key] = call_user_func_array([$this, 'array_group_by'], $params);
 			}
 		}
 
