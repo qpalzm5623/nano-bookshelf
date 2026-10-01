@@ -2390,6 +2390,11 @@ function renderBannerList() {
         </div>
       </div>
       <div class="d-flex align-items-center gap-2 flex-shrink-0">
+        <!-- 순서 조정 버튼 (위/아래) -->
+        <div class="d-flex flex-column" style="gap: 2px;">
+          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder(${b.id}, 'up')" title="위로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▲</button>
+          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder(${b.id}, 'down')" title="아래로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▼</button>
+        </div>
         <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openBannerModal(${b.id})" style="border-radius: 8px;">
           <i class="fa-solid fa-pen mr-1"></i>편집
         </button>
@@ -3211,18 +3216,21 @@ function switchRankingType(type) {
   const filterBar = document.getElementById("rankingFilterBar");
   const paginationWrap = document.getElementById("rankingPaginationWrap");
 
+  const activeStyle = "background: linear-gradient(135deg, #7d5a2b, #b38850); color: #fff; border: none; box-shadow: 0 2px 8px rgba(125,90,43,0.25); border-radius: 10px; padding: 8px 18px; font-size: 13px; font-weight: 700;";
+  const inactiveStyle = "background: #fff; color: #5a4b3d; border: 2px solid #d4c4b0; border-radius: 10px; padding: 8px 18px; font-size: 13px; font-weight: 700;";
+
   if (type === "student") {
-    btnStudent.classList.add("active");
-    btnAcademy.classList.remove("active");
-    tableStudent.style.display = "";
-    tableAcademy.style.display = "none";
+    if (btnStudent) { btnStudent.style.cssText = activeStyle; btnStudent.classList.add("active"); }
+    if (btnAcademy) { btnAcademy.style.cssText = inactiveStyle; btnAcademy.classList.remove("active"); }
+    if (tableStudent) tableStudent.style.display = "";
+    if (tableAcademy) tableAcademy.style.display = "none";
     if (filterBar) filterBar.style.display = "flex";
     if (paginationWrap) paginationWrap.style.display = "flex";
   } else {
-    btnStudent.classList.remove("active");
-    btnAcademy.classList.add("active");
-    tableStudent.style.display = "none";
-    tableAcademy.style.display = "";
+    if (btnStudent) { btnStudent.style.cssText = inactiveStyle; btnStudent.classList.remove("active"); }
+    if (btnAcademy) { btnAcademy.style.cssText = activeStyle; btnAcademy.classList.add("active"); }
+    if (tableStudent) tableStudent.style.display = "none";
+    if (tableAcademy) tableAcademy.style.display = "";
     if (filterBar) filterBar.style.display = "none";
     if (paginationWrap) paginationWrap.style.display = "none";
   }
@@ -3279,17 +3287,38 @@ function renderRankings() {
   const studentTbody = document.getElementById("studentRankingBody");
   if (studentTbody) {
     if (pageData.length === 0) {
-      studentTbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 학생 랭킹 내역이 없습니다.</td></tr>`;
+      studentTbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">일치하는 학생 랭킹 내역이 없습니다.</td></tr>`;
     } else {
+      // 학원 내 순위 계산 (전체 데이터 기준)
+      const academyRankMap = {};
+      const academyCounters = {};
+      // 전체 allStudentRankings을 학원별로 포인트 순 정렬 후 학원 내 순위 부여
+      const groupedByAcademy = {};
+      allStudentRankings.forEach(s => {
+        if (!groupedByAcademy[s.academy]) groupedByAcademy[s.academy] = [];
+        groupedByAcademy[s.academy].push(s);
+      });
+      Object.entries(groupedByAcademy).forEach(([acad, members]) => {
+        members.sort((a, b) => b.points - a.points);
+        members.forEach((m, i) => { academyRankMap[m.id] = i + 1; });
+      });
+
       studentTbody.innerHTML = pageData.map(s => {
         let rankBadge = `<strong class="text-muted font-weight-bold" style="font-size: 15px;">${s.rank}</strong>`;
         if (s.rank === 1) rankBadge = `<span style="font-size: 18px;" title="1위 금메달">🥇</span>`;
         else if (s.rank === 2) rankBadge = `<span style="font-size: 18px;" title="2위 은메달">🥈</span>`;
         else if (s.rank === 3) rankBadge = `<span style="font-size: 18px;" title="3위 동메달">🥉</span>`;
 
+        const acRank = academyRankMap[s.id] || "-";
+        let acRankStyle = "color: #374151; font-weight: 700;";
+        if (acRank === 1) acRankStyle = "color: #b38a00; font-weight: 700;";
+        else if (acRank === 2) acRankStyle = "color: #6b7280; font-weight: 700;";
+        else if (acRank === 3) acRankStyle = "color: #8c6d48; font-weight: 700;";
+
         return `
-          <tr>
+          <tr data-academy="${s.academy}">
             <td class="text-center">${rankBadge}</td>
+            <td class="text-center" style="${acRankStyle}">${acRank}위</td>
             <td class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
               ${s.name} <small class="text-muted">(${s.id})</small>
             </td>
@@ -4659,33 +4688,50 @@ function loadCurrentQuizSet() {
   loadCurrentQuizQuestionForm();
 }
 
-// 마스터 관리자 새 북퀴즈 세트 추가
-function promptAddNewQuizSet() {
+// 마스터 관리자 새 북퀴즈 세트 추가 (기관명 자동 선택 모달 열기)
+function openNewQuizSetModal() {
+  const select = document.getElementById("newQuizAuthorSelect");
+  if (select) {
+    let options = `<option value="HQ" data-name="본사" data-academy="본사 직속 (공용)">👑 본사 직속 (공용 북퀴즈 세트)</option>`;
+    if (typeof franchiseList !== "undefined" && Array.isArray(franchiseList)) {
+      franchiseList.forEach(a => {
+        options += `<option value="${a.code || a.id || a.name}" data-name="${a.name}" data-academy="${a.name}">🏫 ${a.name}</option>`;
+      });
+    }
+    select.innerHTML = options;
+  }
+  $('#newQuizSetModal').modal('show');
+}
+
+// 새 북퀴즈 세트 생성 확정
+function confirmAddNewQuizSet() {
   const book = masterBooks.find(b => b.id === curQuizTargetBookId);
   if (!book) return;
 
   saveCurrentQuizDraft();
 
-  const name = prompt("새 북퀴즈를 추가할 출제 기관명을 입력하세요 (예: B 학원, 목동 센트럴 등):", "B 학원");
-  if (!name || name.trim() === "") return;
+  const select = document.getElementById("newQuizAuthorSelect");
+  if (!select) return;
 
-  const trimmedName = name.trim();
-  const isHQ = trimmedName.includes("본사");
+  const selectedOpt = select.options[select.selectedIndex];
+  const authorName = selectedOpt.getAttribute("data-name") || "본사";
+  const academyName = selectedOpt.getAttribute("data-academy") || authorName;
+  const isHQ = selectedOpt.value === "HQ" || authorName.includes("본사");
 
   const newSet = {
     id: `qs_custom_${Date.now()}`,
     authorType: isHQ ? "HQ" : "ACADEMY",
-    authorName: trimmedName,
-    academyName: trimmedName.includes("학원") ? trimmedName : `${trimmedName} 캠퍼스`,
+    authorName: authorName,
+    academyName: academyName,
     createdAt: new Date().toISOString().slice(0, 10),
     questions: [
       {
         type: "CHOICE",
-        question: `[${trimmedName} 출제] 1. 도서 내용과 관련된 핵심 질문을 입력하세요.`,
-        opt1: "1번 보기 항목",
-        opt2: "2번 보기 항목",
-        opt3: "3번 보기 항목",
-        opt4: "4번 보기 항목",
+        question: `[${authorName} 출제] 1. 도서 내용과 관련된 핵심 질문을 입력하세요.`,
+        choices: ["1번 선택지", "2번 선택지", "3번 선택지"],
+        opt1: "1번 선택지",
+        opt2: "2번 선택지",
+        opt3: "3번 선택지",
         ans: "1",
         hint: "지문 또는 도서 페이지를 참고하세요."
       }
@@ -4693,8 +4739,13 @@ function promptAddNewQuizSet() {
   };
 
   book.quizSets.push(newSet);
+  $('#newQuizSetModal').modal('hide');
   switchMasterQuizSet(book.quizSets.length - 1);
-  showMasterToast(`'${trimmedName}' 명의의 새 북퀴즈 세트가 추가되었습니다. 문항을 편집해보세요.`);
+  showMasterToast(`'${authorName}' 명의의 새 북퀴즈 세트가 추가되었습니다. 문항을 편집해보세요.`);
+}
+
+function promptAddNewQuizSet() {
+  openNewQuizSetModal();
 }
 
 // 현재 선택된 퀴즈 세트 삭제 (마스터 관리자 전용 권한)
@@ -4753,41 +4804,88 @@ function renderQuizTabButtons() {
 }
 
 // ==============================================================
-// 북퀴즈 문항 멀티미디어 제어 로직 (WebP 자동 변환 이미지 & 영상 URL)
+// 북퀴즈 문항 멀티미디어 제어 로직 (모달 기반 첨부: WebP 이미지 & 영상 URL)
 // ==============================================================
 
-// 미디어 유형 변경 (none | image | video)
-function setQuizMediaType(type) {
-  const btnNone = document.getElementById("mqMediaBtnNone");
-  const btnImg = document.getElementById("mqMediaBtnImage");
-  const btnVid = document.getElementById("mqMediaBtnVideo");
-  const areaImg = document.getElementById("mqMediaImageArea");
-  const areaVid = document.getElementById("mqMediaVideoArea");
-  const captionWrap = document.getElementById("mqMediaCaptionWrap");
+let curModalMediaType = "image"; // 'image' | 'video'
+let curModalMediaData = {
+  type: "none",
+  url: "",
+  name: "",
+  caption: "",
+  sizeInfo: ""
+};
 
-  if (!btnNone || !btnImg || !btnVid) return;
-
-  btnNone.classList.toggle("active", type === "none");
-  btnImg.classList.toggle("active", type === "image");
-  btnVid.classList.toggle("active", type === "video");
-
-  if (areaImg) areaImg.style.display = (type === "image") ? "block" : "none";
-  if (areaVid) areaVid.style.display = (type === "video") ? "block" : "none";
-  if (captionWrap) captionWrap.style.display = (type !== "none") ? "block" : "none";
-
+// 미디어 모달 열기
+function openQuizMediaModal() {
   const q = currentQuizQuestions[curQuizQuestionIdx];
-  if (q) {
-    q.mediaType = type;
-    if (type === "none") {
-      q.mediaUrl = "";
-      q.mediaName = "";
-    }
+  if (!q) return;
+
+  // 현재 문항의 미디어 정보 복사
+  curModalMediaData = {
+    type: q.mediaType || "none",
+    url: q.mediaUrl || "",
+    name: q.mediaName || "",
+    caption: q.mediaCaption || "",
+    sizeInfo: q.mediaSizeInfo || ""
+  };
+
+  curModalMediaType = (curModalMediaData.type === "video") ? "video" : "image";
+  switchMediaModalTab(curModalMediaType);
+
+  // 캡션 바인딩
+  const cap = document.getElementById("mqModalCaption");
+  if (cap) cap.value = curModalMediaData.caption || "";
+
+  // 미리보기 초기화
+  if (curModalMediaData.type === "image" && curModalMediaData.url) {
+    displayModalImagePreview(curModalMediaData.url, curModalMediaData.name, curModalMediaData.sizeInfo);
+  } else {
+    displayModalImagePreview("", "", "");
   }
-  renderQuizTabButtons();
+
+  if (curModalMediaData.type === "video" && curModalMediaData.url) {
+    const vInput = document.getElementById("mqModalVideoUrl");
+    if (vInput) vInput.value = curModalMediaData.url;
+    renderModalVideoPlayer(curModalMediaData.url);
+  } else {
+    const vInput = document.getElementById("mqModalVideoUrl");
+    if (vInput) vInput.value = "";
+    renderModalVideoPlayer("");
+  }
+
+  $('#quizMediaModal').modal('show');
 }
 
-// 이미지 파일 선택 시 브라우저 Canvas를 활용하여 즉시 WebP 포맷으로 자동 변환 (서버 용량 절감 최우선)
-function handleQuizImageUpload(input) {
+// 모달 내 탭 전환 (이미지 vs 영상)
+function switchMediaModalTab(type) {
+  curModalMediaType = type;
+  const btnImg = document.getElementById("btnMediaTabImage");
+  const btnVid = document.getElementById("btnMediaTabVideo");
+  const tabImg = document.getElementById("mediaModalImageTab");
+  const tabVid = document.getElementById("mediaModalVideoTab");
+
+  if (btnImg && btnVid) {
+    btnImg.classList.toggle("active", type === "image");
+    btnVid.classList.toggle("active", type === "video");
+    if (type === "image") {
+      btnImg.style.background = "#e0f2fe";
+      btnImg.style.borderColor = "#38bdf8";
+      btnVid.style.background = "#fff";
+      btnVid.style.borderColor = "var(--border-medium)";
+    } else {
+      btnVid.style.background = "#fee2e2";
+      btnVid.style.borderColor = "#f87171";
+      btnImg.style.background = "#fff";
+      btnImg.style.borderColor = "var(--border-medium)";
+    }
+  }
+  if (tabImg) tabImg.style.display = (type === "image") ? "block" : "none";
+  if (tabVid) tabVid.style.display = (type === "video") ? "block" : "none";
+}
+
+// 모달 내 이미지 파일 선택 시 WebP 포맷 자동 변환 압축
+function handleModalImageUpload(input) {
   const file = input.files && input.files[0];
   if (!file) return;
 
@@ -4797,16 +4895,10 @@ function handleQuizImageUpload(input) {
     return;
   }
 
-  const statusEl = document.getElementById("mqImageStatusText");
-  if (statusEl) {
-    statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-info mr-1"></i>WebP 고화질 압축 변환 중...`;
-  }
-
   const reader = new FileReader();
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
-      // 1. 메모리 절감 및 반응형 렌더링을 위해 최대 너비 1280px로 비례 축소
       const maxW = 1280;
       let w = img.width;
       let h = img.height;
@@ -4815,14 +4907,12 @@ function handleQuizImageUpload(input) {
         w = maxW;
       }
 
-      // 2. 오프스크린 캔버스에 이미지 렌더링
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, w, h);
 
-      // 3. 브라우저 내장 toDataURL로 초경량 WebP 포맷 인코딩 (화질 0.82)
       let webpDataUrl = "";
       try {
         webpDataUrl = canvas.toDataURL("image/webp", 0.82);
@@ -4833,28 +4923,18 @@ function handleQuizImageUpload(input) {
         webpDataUrl = canvas.toDataURL("image/jpeg", 0.82);
       }
 
-      // 4. 원본 대비 용량 절감 통계 계산
       const origKb = Math.round(file.size / 1024);
       const webpKb = Math.round((webpDataUrl.length * 0.75) / 1024);
       const savePercent = origKb > 0 ? Math.max(0, Math.round(((origKb - webpKb) / origKb) * 100)) : 0;
 
-      // 5. 현재 문항 데이터에 WebP 미디어 반영
-      const q = currentQuizQuestions[curQuizQuestionIdx];
-      if (q) {
-        q.mediaType = "image";
-        q.mediaUrl = webpDataUrl;
-        q.mediaName = file.name;
-        q.mediaSizeInfo = `${origKb}KB ➔ ${webpKb}KB (${savePercent}% 용량 절감)`;
-      }
+      curModalMediaData = {
+        type: "image",
+        url: webpDataUrl,
+        name: file.name,
+        sizeInfo: `${origKb}KB ➔ ${webpKb}KB (${savePercent}% 절감)`
+      };
 
-      // 6. UI 미리보기 노출
-      displayQuizImagePreview(webpDataUrl, file.name, q.mediaSizeInfo);
-
-      if (statusEl) {
-        statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-success mr-1"></i>WebP 변환 완료 (${origKb}KB ➔ <strong>${webpKb}KB</strong>, ${savePercent}% 압축)`;
-      }
-
-      renderQuizTabButtons();
+      displayModalImagePreview(webpDataUrl, file.name, curModalMediaData.sizeInfo);
       input.value = "";
     };
     img.src = e.target.result;
@@ -4862,82 +4942,32 @@ function handleQuizImageUpload(input) {
   reader.readAsDataURL(file);
 }
 
-// 이미지 미리보기 화면 반영
-function displayQuizImagePreview(url, name, sizeInfo) {
-  const box = document.getElementById("mqImagePreviewBox");
-  const img = document.getElementById("mqImagePreviewImg");
-  const meta = document.getElementById("mqImageMetaText");
+function displayModalImagePreview(url, name, sizeInfo) {
+  const box = document.getElementById("mqModalImagePreview");
+  const img = document.getElementById("mqModalImageImg");
+  const info = document.getElementById("mqModalImageInfo");
+  const saving = document.getElementById("mqModalImageSaving");
   if (!box || !img) return;
 
   if (url) {
     img.src = url;
-    if (meta) meta.innerText = `${name || '문항 이미지'} · ${sizeInfo || 'WebP 최적화 완료'}`;
+    if (info) info.innerText = name || "문항 이미지";
+    if (saving) saving.innerText = sizeInfo || "WebP 압축 완료";
     box.style.display = "block";
   } else {
     box.style.display = "none";
   }
 }
 
-// 비디오 URL 스마트 파싱: YouTube (일반, 단축, shorts), Vimeo, 일반 MP4 등
-function parseVideoEmbedUrl(url) {
-  if (!url || typeof url !== "string") return null;
-  const trimmed = url.trim();
-  if (!trimmed) return null;
-
-  // 1) YouTube
-  let ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-  if (ytMatch && ytMatch[1]) {
-    return {
-      type: "youtube",
-      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`,
-      originalUrl: trimmed
-    };
-  }
-
-  // 2) Vimeo
-  let vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
-  if (vimeoMatch && vimeoMatch[1]) {
-    return {
-      type: "vimeo",
-      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
-      originalUrl: trimmed
-    };
-  }
-
-  // 3) 직접 재생 가능한 MP4 / WebM / Ogg 비디오
-  if (/\.(mp4|webm|ogg)($|\?)/i.test(trimmed)) {
-    return {
-      type: "direct",
-      embedUrl: trimmed,
-      originalUrl: trimmed
-    };
-  }
-
-  // 4) 기타 URL
-  if (/^https?:\/\//i.test(trimmed)) {
-    return {
-      type: "iframe",
-      embedUrl: trimmed,
-      originalUrl: trimmed
-    };
-  }
-
-  return null;
+function handleModalVideoInput(val) {
+  curModalMediaData.type = "video";
+  curModalMediaData.url = (val || "").trim();
+  curModalMediaData.name = "동영상 자료";
+  renderModalVideoPlayer((val || "").trim());
 }
 
-// 영상 URL 입력 이벤트
-function handleQuizVideoUrlInput(val) {
-  const q = currentQuizQuestions[curQuizQuestionIdx];
-  if (q) {
-    q.mediaType = "video";
-    q.mediaUrl = val.trim();
-  }
-  renderQuizVideoPlayer(val.trim());
-}
-
-// 영상 URL 미리보기 수동 클릭
-function previewQuizVideoUrl() {
-  const input = document.getElementById("mqVideoUrlInput");
+function previewModalVideoUrl() {
+  const input = document.getElementById("mqModalVideoUrl");
   if (!input) return;
   const val = input.value.trim();
   if (!val) {
@@ -4945,13 +4975,12 @@ function previewQuizVideoUrl() {
     input.focus();
     return;
   }
-  renderQuizVideoPlayer(val);
+  handleModalVideoInput(val);
 }
 
-// 비디오 플레이어 렌더링
-function renderQuizVideoPlayer(url) {
-  const box = document.getElementById("mqVideoPreviewBox");
-  const wrap = document.getElementById("mqVideoPlayerWrap");
+function renderModalVideoPlayer(url) {
+  const box = document.getElementById("mqModalVideoPreview");
+  const wrap = document.getElementById("mqModalVideoPlayerWrap");
   if (!box || !wrap) return;
 
   const parsed = parseVideoEmbedUrl(url);
@@ -4969,8 +4998,83 @@ function renderQuizVideoPlayer(url) {
   box.style.display = "block";
 }
 
-// 미디어 삭제
-function removeQuizMedia() {
+// 비디오 URL 스마트 파싱
+function parseVideoEmbedUrl(url) {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  let ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: "youtube",
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`,
+      originalUrl: trimmed
+    };
+  }
+
+  let vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?([0-9]+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: "vimeo",
+      embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
+      originalUrl: trimmed
+    };
+  }
+
+  if (/\.(mp4|webm|ogg)($|\?)/i.test(trimmed)) {
+    return {
+      type: "direct",
+      embedUrl: trimmed,
+      originalUrl: trimmed
+    };
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return {
+      type: "iframe",
+      embedUrl: trimmed,
+      originalUrl: trimmed
+    };
+  }
+
+  return null;
+}
+
+// 모달에서 작성한 미디어 적용
+function applyModalMedia() {
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  if (!q) return;
+
+  const caption = document.getElementById("mqModalCaption")?.value || "";
+
+  if (curModalMediaType === "image") {
+    if (curModalMediaData.url && curModalMediaData.type === "image") {
+      q.mediaType = "image";
+      q.mediaUrl = curModalMediaData.url;
+      q.mediaName = curModalMediaData.name;
+      q.mediaSizeInfo = curModalMediaData.sizeInfo;
+      q.mediaCaption = caption;
+    }
+  } else if (curModalMediaType === "video") {
+    const url = document.getElementById("mqModalVideoUrl")?.value.trim() || curModalMediaData.url;
+    if (url) {
+      q.mediaType = "video";
+      q.mediaUrl = url;
+      q.mediaName = "동영상 자료";
+      q.mediaSizeInfo = "URL 스트리밍";
+      q.mediaCaption = caption;
+    }
+  }
+
+  updateQuizMediaUI();
+  renderQuizTabButtons();
+  $('#quizMediaModal').modal('hide');
+  showMasterToast("문항 멀티미디어 자료가 적용되었습니다.");
+}
+
+// 미디어 삭제 (모달 또는 폼에서 호출)
+function clearModalMedia() {
   const q = currentQuizQuestions[curQuizQuestionIdx];
   if (q) {
     q.mediaType = "none";
@@ -4979,16 +5083,188 @@ function removeQuizMedia() {
     q.mediaCaption = "";
     q.mediaSizeInfo = "";
   }
-  setQuizMediaType("none");
-  displayQuizImagePreview("", "", "");
-  renderQuizVideoPlayer("");
-  const urlInput = document.getElementById("mqVideoUrlInput");
-  if (urlInput) urlInput.value = "";
-  const capInput = document.getElementById("mqMediaCaption");
-  if (capInput) capInput.value = "";
+  curModalMediaData = { type: "none", url: "", name: "", caption: "", sizeInfo: "" };
+  displayModalImagePreview("", "", "");
+  renderModalVideoPlayer("");
+  const vInput = document.getElementById("mqModalVideoUrl");
+  if (vInput) vInput.value = "";
+  const cap = document.getElementById("mqModalCaption");
+  if (cap) cap.value = "";
+
+  updateQuizMediaUI();
   renderQuizTabButtons();
+  $('#quizMediaModal').modal('hide');
+  showMasterToast("멀티미디어 자료가 삭제되었습니다.");
 }
 
+function removeQuizMedia() {
+  clearModalMedia();
+}
+
+// 퀴즈 폼 내 미디어 뱃지 및 요약 칩 동기화
+function updateQuizMediaUI() {
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  const badge = document.getElementById("mqMediaBadgeIndicator");
+  const badgeText = document.getElementById("mqMediaBadgeIndicatorText");
+  const summaryBox = document.getElementById("mqMediaSummaryBox");
+  const summaryIcon = document.getElementById("mqMediaSummaryIcon");
+  const summaryTitle = document.getElementById("mqMediaSummaryTitle");
+  const summaryDesc = document.getElementById("mqMediaSummaryDesc");
+
+  if (!q || !q.mediaType || q.mediaType === "none" || !q.mediaUrl) {
+    if (badge) badge.style.display = "none";
+    if (summaryBox) summaryBox.style.display = "none";
+    return;
+  }
+
+  const isImg = q.mediaType === "image";
+  if (badge) {
+    badge.style.display = "inline-block";
+    if (badgeText) badgeText.innerText = isImg ? "이미지 첨부됨" : "영상 첨부됨";
+  }
+  if (summaryBox) {
+    summaryBox.style.display = "flex";
+    if (summaryIcon) summaryIcon.innerText = isImg ? "🖼️" : "🎬";
+    if (summaryTitle) summaryTitle.innerText = isImg ? (q.mediaName || "WebP 이미지 첨부 완료") : "동영상 첨부 완료";
+    if (summaryDesc) summaryDesc.innerText = q.mediaCaption ? `(${q.mediaCaption})` : (q.mediaSizeInfo || "");
+  }
+}
+
+// ==============================================================
+// 객관식 보기 동적 제어 (3~5개, 기본 3개, 하단 추가, 우측 삭제)
+// ==============================================================
+
+function getChoicesFromQuestion(q) {
+  if (Array.isArray(q.choices) && q.choices.length >= 3) {
+    return q.choices;
+  }
+  const list = [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(x => x !== undefined && x !== "");
+  if (list.length < 3) {
+    return [q.opt1 || "1번 선택지", q.opt2 || "2번 선택지", q.opt3 || "3번 선택지"];
+  }
+  return list.slice(0, 5);
+}
+
+function syncQuestionChoicesProps(q) {
+  const list = q.choices || [];
+  q.opt1 = list[0] || "";
+  q.opt2 = list[1] || "";
+  q.opt3 = list[2] || "";
+  q.opt4 = list[3] || "";
+  q.opt5 = list[4] || "";
+}
+
+function renderDynamicChoices(choices, ans) {
+  const container = document.getElementById("mqDynamicChoicesContainer");
+  if (!container) return;
+
+  if (!Array.isArray(choices) || choices.length < 3) {
+    choices = ["1번 선택지", "2번 선택지", "3번 선택지"];
+  }
+  if (choices.length > 5) {
+    choices = choices.slice(0, 5);
+  }
+
+  const circleNums = ["①", "②", "③", "④", "⑤"];
+  const currentAns = parseInt(ans || "1", 10);
+
+  container.innerHTML = choices.map((optText, idx) => {
+    const num = idx + 1;
+    const circle = circleNums[idx] || `${num}`;
+    const isChecked = currentAns === num;
+    const canDelete = choices.length > 3;
+
+    return `
+      <div class="input-group choice-option-row">
+        <div class="input-group-prepend">
+          <div class="input-group-text bg-light border-right-0" style="border-radius: 8px 0 0 8px; cursor: pointer;" onclick="onQuizChoiceRadioChanged(${num})">
+            <input type="radio" name="mqChoiceCorrect" id="mqRadio${num}" value="${num}" ${isChecked ? 'checked' : ''} onchange="onQuizChoiceRadioChanged(${num})" style="cursor: pointer;">
+            <label for="mqRadio${num}" class="mb-0 ml-1 font-weight-bold text-dark" style="font-size: 12.5px; cursor: pointer;">${circle}번</label>
+          </div>
+        </div>
+        <input type="text" class="form-control form-control-beige choice-opt-input" id="mqOpt${num}" data-opt-idx="${idx}" value="${String(optText || '').replace(/"/g, '&quot;')}" placeholder="${num}번 보기 내용을 입력하세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()" style="${canDelete ? 'border-radius: 0;' : 'border-radius: 0 8px 8px 0;'}">
+        ${canDelete ? `
+        <div class="input-group-append">
+          <button type="button" class="btn btn-outline-danger" onclick="deleteQuizChoiceOption(${idx})" title="보기 삭제" style="border-radius: 0 8px 8px 0; font-size: 12px; padding: 0 10px;">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }).join("");
+
+  // 하단 보기 추가 버튼 표시 및 카운트
+  const countBadge = document.getElementById("mqChoiceCountBadge");
+  if (countBadge) countBadge.innerText = choices.length;
+
+  const addBtn = document.getElementById("btnAddChoiceOption");
+  if (addBtn) {
+    if (choices.length >= 5) {
+      addBtn.disabled = true;
+      addBtn.classList.add("disabled");
+      addBtn.innerHTML = `<i class="fa-solid fa-check mr-1 text-muted"></i>보기 최대치 도달 (5/5)`;
+    } else {
+      addBtn.disabled = false;
+      addBtn.classList.remove("disabled");
+      addBtn.innerHTML = `<i class="fa-solid fa-plus mr-1 text-primary"></i>보기 추가하기 (${choices.length}/5)`;
+    }
+  }
+}
+
+function addQuizChoiceOption() {
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  if (!q) return;
+
+  saveCurrentQuizDraft();
+  let choices = getChoicesFromQuestion(q);
+  if (choices.length >= 5) {
+    showMasterToast("객관식 보기는 최대 5개까지 지정할 수 있습니다.");
+    return;
+  }
+
+  choices.push(`${choices.length + 1}번 선택지`);
+  q.choices = choices;
+  syncQuestionChoicesProps(q);
+
+  renderDynamicChoices(choices, q.ans || "1");
+  saveCurrentQuizDraft();
+  showMasterToast(`보기 ${choices.length}번이 추가되었습니다.`);
+}
+
+function deleteQuizChoiceOption(idx) {
+  const q = currentQuizQuestions[curQuizQuestionIdx];
+  if (!q) return;
+
+  saveCurrentQuizDraft();
+  let choices = getChoicesFromQuestion(q);
+  if (choices.length <= 3) {
+    showMasterToast("객관식 보기는 최소 3개 이상이어야 합니다.");
+    return;
+  }
+
+  choices.splice(idx, 1);
+  q.choices = choices;
+
+  let curAns = parseInt(q.ans || "1", 10);
+  if (curAns > choices.length) {
+    curAns = choices.length;
+    q.ans = String(curAns);
+  }
+  syncQuestionChoicesProps(q);
+
+  renderDynamicChoices(choices, q.ans);
+  saveCurrentQuizDraft();
+  showMasterToast("보기가 삭제되었습니다.");
+}
+
+function onQuizChoiceRadioChanged(ansNum) {
+  const radio = document.getElementById(`mqRadio${ansNum}`);
+  if (radio) radio.checked = true;
+  saveCurrentQuizDraft();
+}
+
+// 문항 폼 로드
 function loadCurrentQuizQuestionForm() {
   const q = currentQuizQuestions[curQuizQuestionIdx];
   if (!q) return;
@@ -5006,44 +5282,19 @@ function loadCurrentQuizQuestionForm() {
 
   const titleEl = document.getElementById("mqCurrentQuestionTitle");
   if (titleEl) {
-    titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 ${curQuizQuestionIdx + 1}번 문항 설정 (${isChoice ? '4지선다 객관식' : '주관식 단답/서술'})`;
+    titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 ${curQuizQuestionIdx + 1}번 문항 설정 (${isChoice ? '객관식' : '주관식 단답/서술'})`;
   }
 
   document.getElementById("mqQuestionText").value = q.question || "";
   document.getElementById("mqQuizHint").value = q.hint || "";
 
-  // 미디어 데이터 바인딩 (none / image / video)
-  const mediaType = q.mediaType || "none";
-  setQuizMediaType(mediaType);
-
-  const capInput = document.getElementById("mqMediaCaption");
-  if (capInput) capInput.value = q.mediaCaption || "";
-
-  if (mediaType === "image" && q.mediaUrl) {
-    displayQuizImagePreview(q.mediaUrl, q.mediaName || "문제 첨부 이미지", q.mediaSizeInfo || "WebP 포맷");
-  } else {
-    displayQuizImagePreview("", "", "");
-  }
-
-  if (mediaType === "video" && q.mediaUrl) {
-    const urlInput = document.getElementById("mqVideoUrlInput");
-    if (urlInput) urlInput.value = q.mediaUrl;
-    renderQuizVideoPlayer(q.mediaUrl);
-  } else {
-    const urlInput = document.getElementById("mqVideoUrlInput");
-    if (urlInput) urlInput.value = "";
-    renderQuizVideoPlayer("");
-  }
+  // 미디어 UI 동기화
+  updateQuizMediaUI();
 
   if (isChoice) {
-    document.getElementById("mqOpt1").value = q.opt1 || "";
-    document.getElementById("mqOpt2").value = q.opt2 || "";
-    document.getElementById("mqOpt3").value = q.opt3 || "";
-    document.getElementById("mqOpt4").value = q.opt4 || "";
-
-    const ansVal = q.ans || "1";
-    const radio = document.querySelector(`input[name="mqChoiceCorrect"][value="${ansVal}"]`);
-    if (radio) radio.checked = true;
+    const choices = getChoicesFromQuestion(q);
+    q.choices = choices;
+    renderDynamicChoices(choices, q.ans || "1");
   } else {
     document.getElementById("mqSubjectiveAns").value = q.subjectiveAns || "";
     document.getElementById("mqSubjectiveSimilar").value = q.similarAns || "";
@@ -5078,16 +5329,16 @@ function saveCurrentQuizDraft() {
   q.question = document.getElementById("mqQuestionText")?.value || "";
   q.hint = document.getElementById("mqQuizHint")?.value || "";
 
-  // 미디어 캡션 저장
-  const capInput = document.getElementById("mqMediaCaption");
-  if (capInput) q.mediaCaption = capInput.value;
-
   if (qType === "CHOICE") {
-    q.opt1 = document.getElementById("mqOpt1")?.value || "";
-    q.opt2 = document.getElementById("mqOpt2")?.value || "";
-    q.opt3 = document.getElementById("mqOpt3")?.value || "";
-    q.opt4 = document.getElementById("mqOpt4")?.value || "";
-    q.ans = document.querySelector('input[name="mqChoiceCorrect"]:checked')?.value || "1";
+    const choiceInputs = document.querySelectorAll(".choice-opt-input");
+    if (choiceInputs.length > 0) {
+      const choices = [];
+      choiceInputs.forEach(input => choices.push(input.value));
+      q.choices = choices;
+      syncQuestionChoicesProps(q);
+    }
+    const checkedRadio = document.querySelector('input[name="mqChoiceCorrect"]:checked');
+    q.ans = checkedRadio ? checkedRadio.value : "1";
   } else {
     q.subjectiveAns = document.getElementById("mqSubjectiveAns")?.value || "";
     q.similarAns = document.getElementById("mqSubjectiveSimilar")?.value || "";
@@ -5111,10 +5362,11 @@ function addNewQuizQuestion() {
     mediaUrl: "",
     mediaCaption: "",
     mediaName: "",
+    mediaSizeInfo: "",
+    choices: ["1번 선택지", "2번 선택지", "3번 선택지"],
     opt1: "1번 선택지",
     opt2: "2번 선택지",
     opt3: "3번 선택지",
-    opt4: "4번 선택지",
     ans: "1",
     hint: ""
   });
@@ -5157,8 +5409,219 @@ function handleSaveMasterQuizOnly() {
   renderMasterContents();
 }
 
+// ==============================================================
+// 시리즈명 자동완성 추천 (타이핑 시 등록 권수 표시 드롭박스)
+// ==============================================================
+function handleSeriesInput(val) {
+  const container = document.getElementById("mbSeriesSuggestions");
+  if (!container) return;
+
+  const isSingle = document.getElementById("mbAddIsSingle")?.checked;
+  if (isSingle) {
+    container.style.display = "none";
+    return;
+  }
+
+  // 등록되어 있는 시리즈 통계 집계
+  const seriesMap = {};
+  if (typeof masterBooks !== "undefined" && Array.isArray(masterBooks)) {
+    masterBooks.forEach(b => {
+      if (b.series && b.series.trim() && b.series !== "단권") {
+        const s = b.series.trim();
+        seriesMap[s] = (seriesMap[s] || 0) + 1;
+      }
+    });
+  }
+
+  const query = (val || "").trim().toLowerCase();
+  const matched = Object.keys(seriesMap).filter(s => {
+    if (!query) return true; // 포커스 시 전체 등록 시리즈 추천
+    return s.toLowerCase().includes(query);
+  });
+
+  if (matched.length === 0) {
+    if (query) {
+      container.innerHTML = `
+        <div class="p-2.5 text-muted text-center" style="font-size: 12px;">
+          <i class="fa-solid fa-circle-info mr-1"></i>'<strong>${val}</strong>' 신규 시리즈로 자동 등록됩니다.
+        </div>
+      `;
+      container.style.display = "block";
+    } else {
+      container.style.display = "none";
+    }
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="p-1.5 px-2 bg-light border-bottom text-muted font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 11px;">
+      <span><i class="fa-solid fa-bookmark text-warning mr-1"></i>등록된 시리즈 추천 (${matched.length}개)</span>
+      <span style="cursor: pointer;" onclick="document.getElementById('mbSeriesSuggestions').style.display='none'"><i class="fa-solid fa-xmark"></i></span>
+    </div>
+  ` + matched.map(s => `
+    <div class="series-suggestion-item p-2 px-3 border-bottom d-flex justify-content-between align-items-center" style="cursor: pointer; transition: background 0.15s ease;" onmouseover="this.style.background='#f8f5f0'" onmouseout="this.style.background='#fff'" onclick="selectSeriesSuggestion('${s.replace(/'/g, "\\'")}')">
+      <span class="font-weight-bold text-dark" style="font-size: 12.5px;"><i class="fa-solid fa-book-bookmark text-primary mr-1.5"></i>${s}</span>
+      <span class="badge badge-pill badge-primary font-weight-bold" style="font-size: 11px;">${seriesMap[s]}권 등록됨</span>
+    </div>
+  `).join("");
+
+  container.style.display = "block";
+}
+
+function selectSeriesSuggestion(seriesName) {
+  const input = document.getElementById("mbAddSeries");
+  if (input) {
+    input.value = seriesName;
+  }
+  const singleChk = document.getElementById("mbAddIsSingle");
+  if (singleChk) {
+    singleChk.checked = false;
+  }
+  const container = document.getElementById("mbSeriesSuggestions");
+  if (container) {
+    container.style.display = "none";
+  }
+}
+
+// 윈도우 클릭 시 자동완성 닫기
+document.addEventListener("click", (e) => {
+  const container = document.getElementById("mbSeriesSuggestions");
+  const input = document.getElementById("mbAddSeries");
+  if (container && input && !container.contains(e.target) && e.target !== input) {
+    container.style.display = "none";
+  }
+});
+
+// ==============================================================
+// 엑셀 대량 도서 등록 모달 & 샘플 다운로드 & 업로드
+// ==============================================================
 function openExcelUploadModal() {
-  showMasterToast("엑셀 대량 도서 등록 템플릿(CI3 quiz-excel-pop 규격) 모달이 호출되었습니다.");
+  const nameEl = document.getElementById("masterBookExcelFileName");
+  if (nameEl) nameEl.innerHTML = "클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭";
+  const fileInp = document.getElementById("masterBookExcelFileInput");
+  if (fileInp) fileInp.value = "";
+  $("#masterBookExcelModal").modal("show");
+}
+
+function downloadBookExcelTemplate() {
+  const headers = ["도서명", "저자", "출판사", "권장학년(예:초등 4학년)", "카테고리1(소설/인물/비문학)", "카테고리2(국내서/외서)", "시리즈명", "ISBN", "등록처(HQ 또는 학원코드)"];
+  const sampleRows = [
+    ["어린 왕자", "앙투안 드 생텍쥐페리", "열린책들", "초등 5학년", "소설", "외서", "단권", "9788932902708", "HQ"],
+    ["해리포터와 마법사의 돌", "J.K.롤링", "문학수첩", "초등 5학년", "소설", "외서", "해리포터 시리즈", "9788983920683", "HQ"],
+    ["한국사 편지 1", "박은봉", "책과함께어린이", "초등 4학년", "비문학/정보글", "국내서", "한국사 편지", "9788991221468", "HQ"]
+  ];
+  downloadAsCSV("나노책장_도서대량등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
+  showMasterToast("샘플 도서 등록 엑셀 양식(CSV)이 다운로드되었습니다.");
+}
+
+function handleMasterBookExcelFileSelect(input) {
+  if (input.files && input.files[0]) {
+    const el = document.getElementById("masterBookExcelFileName");
+    if (el) el.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-excel mr-1"></i>${input.files[0].name} (${Math.round(input.files[0].size / 1024)}KB)</span>`;
+  }
+}
+
+function handleMasterBookExcelUpload() {
+  const fileInput = document.getElementById("masterBookExcelFileInput");
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    showMasterToast("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
+    return;
+  }
+
+  const fileName = fileInput.files[0].name;
+
+  // 샘플 대량 도서 3권 자동 추가
+  const nextIdNum = masterBooks.length + 1;
+  const newBooks = [
+    {
+      id: `MB-${String(nextIdNum).padStart(3, '0')}`,
+      title: "마법천자문 1권",
+      author: "시리얼",
+      publisher: "아울북",
+      grade: "초등 3학년",
+      category: "문학",
+      cat1: "소설",
+      cat2: "국내서",
+      series: "마법천자문",
+      isSingle: false,
+      tags: ["#교과연계한국사", "한자"],
+      detailTag: "#한자학습 #모험",
+      awards: "어린이 베스트셀러",
+      thinkExtract: "한자의 뜻과 소리를 알면 우리말 단어가 어떻게 쉽게 이해될까요?",
+      thinkInsert: "책에 나온 한자 중 가장 기억에 남는 글자와 그 이유를 써보세요.",
+      isPublic: "Y",
+      hasQuiz: true,
+      quizzes: 5,
+      likes: 12,
+      recommends: 15,
+      quizCompletions: 34,
+      academyId: "HQ",
+      academyName: "본사 직속 (공용)",
+      creatorType: "HQ",
+      sheet: true,
+      date: new Date().toISOString().split("T")[0],
+      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80",
+      quizSets: [
+        {
+          id: `qs_mb_${Date.now()}`,
+          authorType: "HQ",
+          authorName: "본사",
+          academyName: "본사 직속",
+          createdAt: new Date().toISOString().split("T")[0],
+          questions: [
+            { type: "CHOICE", question: "손오공이 처음으로 배운 마법 한자는 무엇인가요?", choices: ["불 화(火)", "물 수(水)", "바람 풍(風)"], opt1: "불 화(火)", opt2: "물 수(水)", opt3: "바람 풍(風)", ans: "1", hint: "도서 1권 1화" }
+          ]
+        }
+      ]
+    },
+    {
+      id: `MB-${String(nextIdNum + 1).padStart(3, '0')}`,
+      title: "만복이네 떡집",
+      author: "김리리",
+      publisher: "비룡소",
+      grade: "초등 3학년",
+      category: "문학",
+      cat1: "소설",
+      cat2: "국내서",
+      series: "만복이네 떡집 시리즈",
+      isSingle: false,
+      tags: ["#이달의나노북클럽", "성장"],
+      detailTag: "#마음성장 #친구관계",
+      awards: "초등 3학년 국어 교과서 수록",
+      thinkExtract: "만약 내 말과 행동을 바꿔주는 마법의 떡이 있다면 어떤 떡을 먹고 싶나요?",
+      thinkInsert: "만복이가 착한 말을 하게 되면서 친구들과의 관계가 어떻게 변했는지 적어보세요.",
+      isPublic: "Y",
+      hasQuiz: true,
+      quizzes: 5,
+      likes: 24,
+      recommends: 30,
+      quizCompletions: 68,
+      academyId: "HQ",
+      academyName: "본사 직속 (공용)",
+      creatorType: "HQ",
+      sheet: true,
+      date: new Date().toISOString().split("T")[0],
+      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80",
+      quizSets: [
+        {
+          id: `qs_mb_${Date.now() + 1}`,
+          authorType: "HQ",
+          authorName: "본사",
+          academyName: "본사 직속",
+          createdAt: new Date().toISOString().split("T")[0],
+          questions: [
+            { type: "CHOICE", question: "만복이가 가장 먼저 먹은 떡의 이름은 무엇인가요?", choices: ["찹쌀떡", "바람떡", "무지개떡"], opt1: "찹쌀떡", opt2: "바람떡", opt3: "무지개떡", ans: "1", hint: "도서 초반부" }
+          ]
+        }
+      ]
+    }
+  ];
+
+  newBooks.forEach(b => masterBooks.unshift(b));
+
+  $("#masterBookExcelModal").modal("hide");
+  renderMasterContents();
+  showMasterToast(`[${fileName}] 엑셀 대량 도서 등록이 완료되었습니다! 신규 도서가 마스터 라이브러리에 반영되었습니다.`);
 }
 
 // ==========================================
@@ -5896,4 +6359,817 @@ function handleManualPaymentSubmit(e) {
 function exportPaymentData() {
   showMasterToast("전체 가맹 학원 누적 결제 내역 엑셀 파일(XLSX)이 생성되어 다운로드되었습니다.");
 }
+
+// ============================================================
+// ★ 신규 기능 모음 (2026-10 업데이트)
+// ============================================================
+
+// -----------------------------------------------------------
+// [1] 사업자 등록번호 자동 하이픈 포맷 (숫자만 입력, 하이픈 자동)
+// 형식: 000-00-00000
+// -----------------------------------------------------------
+function formatBizNumber(input) {
+  let val = input.value.replace(/\D/g, ""); // 숫자만
+  if (val.length > 10) val = val.substring(0, 10);
+  let formatted = val;
+  if (val.length > 5) {
+    formatted = val.substring(0, 3) + "-" + val.substring(3, 5) + "-" + val.substring(5);
+  } else if (val.length > 3) {
+    formatted = val.substring(0, 3) + "-" + val.substring(3);
+  }
+  input.value = formatted;
+
+  // 메모 글자수 카운터도 업데이트
+  const memoEl = document.getElementById("regMemo");
+  const memoCount = document.getElementById("regMemoCount");
+  if (memoEl && memoCount) {
+    memoEl.addEventListener("input", () => {
+      memoCount.textContent = `${memoEl.value.length} / 100자`;
+    });
+  }
+}
+
+// -----------------------------------------------------------
+// [2] 이메일 형식 검증 (@포함 필수)
+// -----------------------------------------------------------
+function validateEmailField(input) {
+  const val = input.value.trim();
+  const errEl = document.getElementById(input.id === "regDirectorEmail" ? "regEmailError" : null);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (val && !emailRegex.test(val)) {
+    if (errEl) errEl.classList.remove("d-none");
+    input.classList.add("is-invalid");
+    if (!errEl) alert("올바른 이메일 형식(@포함)을 입력해주세요.");
+  } else {
+    if (errEl) errEl.classList.add("d-none");
+    input.classList.remove("is-invalid");
+  }
+}
+
+// -----------------------------------------------------------
+// [3] 카카오 우편번호 검색 API 연동
+// prefix: 'reg' (신규등록), 'edit' (수정)
+// -----------------------------------------------------------
+function openKakaoAddressSearch(prefix) {
+  // Daum 우편번호 서비스 스크립트 동적 로드
+  if (typeof daum === "undefined" || !daum.Postcode) {
+    const script = document.createElement("script");
+    script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    script.onload = () => _execKakaoSearch(prefix);
+    document.head.appendChild(script);
+  } else {
+    _execKakaoSearch(prefix);
+  }
+}
+
+function _execKakaoSearch(prefix) {
+  new daum.Postcode({
+    oncomplete: function(data) {
+      const postcodeEl = document.getElementById(prefix + "Postcode");
+      const addressEl = document.getElementById(prefix + "Address");
+      const detailEl = document.getElementById(prefix + "AddressDetail");
+
+      let fullAddr = data.address;
+      if (data.buildingName) fullAddr += ` (${data.buildingName})`;
+
+      if (postcodeEl) postcodeEl.value = data.zonecode;
+      if (addressEl) addressEl.value = fullAddr;
+      if (detailEl) {
+        detailEl.value = "";
+        detailEl.focus();
+      }
+    }
+  }).open();
+}
+
+// -----------------------------------------------------------
+// [4] 관리자 아이디 중복 체크 (학원 등록 시)
+// -----------------------------------------------------------
+function checkAdminIdDuplicate(val, statusElId) {
+  const statusEl = document.getElementById(statusElId);
+  if (!statusEl || !val.trim()) return;
+
+  const isDuplicate = franchiseList.some(f => f.adminId === val.trim()) ||
+    memberList.some(m => m.username === val.trim());
+
+  if (isDuplicate) {
+    statusEl.innerHTML = '<span class="text-danger"><i class="fa-solid fa-xmark mr-1"></i>이미 사용 중인 아이디입니다.</span>';
+  } else {
+    statusEl.innerHTML = '<span class="text-success"><i class="fa-solid fa-check mr-1"></i>사용 가능한 아이디입니다.</span>';
+  }
+}
+
+// -----------------------------------------------------------
+// [5] 회원 아이디 중복 체크 (회원 등록 시)
+// -----------------------------------------------------------
+function checkMemberIdDuplicate(val, statusElId) {
+  const statusEl = document.getElementById(statusElId);
+  if (!statusEl || !val.trim()) return;
+
+  const isDuplicate = memberList.some(m => m.username === val.trim().toLowerCase());
+
+  if (isDuplicate) {
+    statusEl.innerHTML = '<span class="text-danger"><i class="fa-solid fa-xmark mr-1"></i>이미 사용 중인 아이디입니다.</span>';
+  } else if (val.trim().length > 0) {
+    statusEl.innerHTML = '<span class="text-success"><i class="fa-solid fa-check mr-1"></i>사용 가능한 아이디입니다.</span>';
+  }
+}
+
+// -----------------------------------------------------------
+// [6] 회원 성함 유효성 검사 (한글, 영문, 띄어쓰기만 허용)
+// -----------------------------------------------------------
+function validateKoreanEngName(input) {
+  const val = input.value;
+  const regex = /^[가-힣a-zA-Z\s]*$/;
+  const errEl = document.getElementById("newMemNameError");
+  if (!regex.test(val)) {
+    // 유효하지 않은 문자 제거
+    input.value = val.replace(/[^가-힣a-zA-Z\s]/g, "");
+    if (errEl) errEl.classList.remove("d-none");
+  } else {
+    if (errEl) errEl.classList.add("d-none");
+  }
+}
+
+// -----------------------------------------------------------
+// [7] 아이디 형식 강제 (영문 소문자, 숫자, 특수문자 허용 - 공백X)
+// 단, DB 안전 특수문자만 (_, -, .)
+// -----------------------------------------------------------
+function formatUsernameInput(input) {
+  // 공백 제거, 소문자 변환, 허용되지 않는 특수문자 제거
+  input.value = input.value
+    .toLowerCase()
+    .replace(/\s/g, "")
+    .replace(/[^a-z0-9_\-.]/g, "");
+}
+
+// -----------------------------------------------------------
+// [8] 소속 학원 변경 시 - 본사 선택 시 역할 고정
+// -----------------------------------------------------------
+function onMasterMemberAcademyChange(val) {
+  const roleSelect = document.getElementById("newMemRole");
+  const roleNote = document.getElementById("newMemRoleNote");
+  const hqOpt = document.getElementById("newMemRoleHqOption");
+  const gradeRow = document.getElementById("newMemGradeClassRow");
+  const parentWrap = document.getElementById("newMemParentPhoneWrap");
+
+  if (val === "본사") {
+    // 본사 선택 시 역할을 HQ_ADMIN으로 고정
+    if (hqOpt) hqOpt.style.display = "";
+    if (roleSelect) {
+      roleSelect.value = "HQ_ADMIN";
+      roleSelect.disabled = true;
+    }
+    if (roleNote) roleNote.classList.remove("d-none");
+    if (gradeRow) gradeRow.style.display = "none";
+    if (parentWrap) parentWrap.style.display = "none";
+  } else {
+    // 학원 선택 시 선생님/학생 선택 가능, HQ_ADMIN 옵션 숨김
+    if (hqOpt) hqOpt.style.display = "none";
+    if (roleSelect) {
+      if (roleSelect.value === "HQ_ADMIN") roleSelect.value = "STUDENT";
+      roleSelect.disabled = false;
+    }
+    if (roleNote) roleNote.classList.add("d-none");
+    onMasterMemberRoleChange(roleSelect ? roleSelect.value : "STUDENT");
+  }
+}
+
+// -----------------------------------------------------------
+// [9] 회원 클래스(학급) 드롭박스 업데이트
+// -----------------------------------------------------------
+function updateClassDropdown(academyName) {
+  const classSelect = document.getElementById("newMemClass");
+  if (!classSelect) return;
+
+  // 학원 데이터에서 실제 클래스 목록을 가져오거나 기본값 사용
+  const defaultClasses = ["소나무반", "매화반", "난초반", "심화반", "창의반", "기초반", "논술A", "논술B", "미지정"];
+  classSelect.innerHTML = defaultClasses.map(c => `<option value="${c}">${c}</option>`).join("") +
+    `<option value="미지정">미지정</option>`;
+}
+
+// -----------------------------------------------------------
+// [10] 회원 상세 모달 열기 (수정 가능 버전)
+// -----------------------------------------------------------
+function openMemberDetailModal(id) {
+  const mem = memberList.find(m => m.id === id);
+  if (!mem) return;
+
+  document.getElementById("detailMemberId").value = mem.id;
+  document.getElementById("detailMemberName").innerText = mem.name;
+  document.getElementById("detailMemberRole").innerText = mem.role === "DIRECTOR" ? "원장님" : mem.role === "TEACHER" ? "선생님" : "학생 (원생)";
+
+  // 수정 가능 필드 채우기
+  const acadEl = document.getElementById("detailMemberAcademy");
+  if (acadEl) acadEl.value = mem.academyName || "";
+
+  const usernameEl = document.getElementById("detailMemberUsername");
+  if (usernameEl) usernameEl.value = mem.username || "";
+
+  const phoneEl = document.getElementById("detailMemberPhone");
+  if (phoneEl) phoneEl.value = mem.phone || "";
+
+  const parentPhoneEl = document.getElementById("detailMemberParentPhone");
+  if (parentPhoneEl) parentPhoneEl.value = mem.parentPhone || "-";
+
+  const gradeEl = document.getElementById("detailMemberGrade");
+  if (gradeEl) gradeEl.value = mem.grade || "";
+
+  const classEl = document.getElementById("detailMemberClass");
+  if (classEl) classEl.value = mem.className || "";
+
+  const pointsEl = document.getElementById("detailMemberPoints");
+  if (pointsEl) pointsEl.value = mem.points ? mem.points.toLocaleString() + " P" : "0 P";
+
+  let statusBadge = `<span class="badge-soft badge-soft-success">정상 승인</span>`;
+  if (mem.status === "PENDING") {
+    statusBadge = `<span class="badge-soft badge-soft-warn">미승인 계정</span>`;
+  } else if (mem.status === "WITHDRAWN" || mem.status === "PAUSED") {
+    statusBadge = `<span class="badge-soft badge-soft-danger">탈퇴 / 정지</span>`;
+  }
+  const statusEl = document.getElementById("detailMemberStatusBadge");
+  if (statusEl) statusEl.innerHTML = statusBadge;
+
+  const btnToggle = document.getElementById("btnToggleMemberStatus");
+  if (btnToggle) {
+    if (mem.status === "APPROVED" || mem.status === "NORMAL") {
+      btnToggle.className = "btn btn-sm btn-outline-danger";
+      btnToggle.innerText = "탈퇴/정지 처리";
+    } else {
+      btnToggle.className = "btn btn-sm btn-outline-success";
+      btnToggle.innerText = "승인 전환 (정상화)";
+    }
+  }
+
+  // 탈퇴/정지 확인 박스 초기화
+  const confirmBox = document.getElementById("memberStatusChangeConfirmBox");
+  if (confirmBox) confirmBox.classList.add("d-none");
+  const confirmInput = document.getElementById("memberStatusAcademyConfirm");
+  if (confirmInput) confirmInput.value = "";
+
+  $('#memberDetailModal').modal('show');
+}
+
+// -----------------------------------------------------------
+// [11] 회원 상세 저장 (수정사항 저장)
+// -----------------------------------------------------------
+function saveMemberDetailEdit() {
+  const id = parseInt(document.getElementById("detailMemberId").value, 10);
+  const mem = memberList.find(m => m.id === id);
+  if (!mem) return;
+
+  const phoneEl = document.getElementById("detailMemberPhone");
+  const parentPhoneEl = document.getElementById("detailMemberParentPhone");
+  const gradeEl = document.getElementById("detailMemberGrade");
+  const classEl = document.getElementById("detailMemberClass");
+
+  if (phoneEl) mem.phone = phoneEl.value.trim();
+  if (parentPhoneEl) mem.parentPhone = parentPhoneEl.value.trim();
+  if (gradeEl) mem.grade = gradeEl.value;
+  if (classEl) mem.className = classEl.value.trim();
+
+  $('#memberDetailModal').modal('hide');
+  renderMemberTable();
+  showMasterToast(`[${mem.name}] 회원 정보가 수정되었습니다.`);
+}
+
+// -----------------------------------------------------------
+// [12] 탈퇴/정지 처리 - 학원명 입력 확인 depth 추가
+// -----------------------------------------------------------
+function handleToggleMemberStatusClick() {
+  const id = parseInt(document.getElementById("detailMemberId").value, 10);
+  const mem = memberList.find(m => m.id === id);
+  if (!mem) return;
+
+  // 이미 탈퇴/정지 상태면 바로 승인 전환
+  if (mem.status === "WITHDRAWN" || mem.status === "PAUSED") {
+    mem.status = "APPROVED";
+    $('#memberDetailModal').modal('hide');
+    renderMemberTable();
+    showMasterToast(`[${mem.name}] 계정이 정상 승인 상태로 전환되었습니다.`);
+    return;
+  }
+
+  // 탈퇴/정지 처리 시 - 학원명 확인 depth 추가
+  const confirmBox = document.getElementById("memberStatusChangeConfirmBox");
+  if (confirmBox && confirmBox.classList.contains("d-none")) {
+    confirmBox.classList.remove("d-none");
+    showMasterToast("소속 학원명을 입력하고 다시 버튼을 눌러주세요.");
+    return;
+  }
+
+  // 학원명 확인 검증
+  const confirmInput = document.getElementById("memberStatusAcademyConfirm");
+  const entered = confirmInput ? confirmInput.value.trim() : "";
+
+  if (entered !== mem.academyName) {
+    alert(`입력한 학원명이 일치하지 않습니다.\n정확한 학원명을 입력해주세요: "${mem.academyName}"`);
+    return;
+  }
+
+  mem.status = "WITHDRAWN";
+  $('#memberDetailModal').modal('hide');
+  renderMemberTable();
+  showMasterToast(`[${mem.name}] 회원이 탈퇴/정지 처리되었습니다.`);
+}
+
+// 레거시 toggleMemberStatus 유지 (다른 곳에서 호출될 수 있어서)
+function toggleMemberStatus() {
+  handleToggleMemberStatusClick();
+}
+
+// -----------------------------------------------------------
+// [13] 가맹점 삭제 - 비밀번호 검증 + 7일 임시보존
+// -----------------------------------------------------------
+let deletedAcademyList = []; // 임시 보존 삭제 목록
+
+function confirmDeleteAcademy() {
+  if (!pendingDeleteAcademyId) return;
+
+  // 비밀번호 검증 (데모: "master1234!")
+  const pwInput = document.getElementById("deleteConfirmPassword");
+  const pwErrEl = document.getElementById("deletePasswordError");
+  const MASTER_PASSWORD = "master1234!"; // 실제로는 서버 검증
+
+  if (!pwInput || !pwInput.value.trim()) {
+    if (pwErrEl) pwErrEl.classList.remove("d-none");
+    return;
+  }
+  if (pwInput.value !== MASTER_PASSWORD) {
+    if (pwErrEl) pwErrEl.classList.remove("d-none");
+    return;
+  }
+  if (pwErrEl) pwErrEl.classList.add("d-none");
+
+  const idx = franchiseList.findIndex(a => a.id === pendingDeleteAcademyId);
+  if (idx !== -1) {
+    const deleted = franchiseList.splice(idx, 1)[0];
+
+    // 7일 임시 보존
+    const deletedAt = new Date();
+    const expireAt = new Date(deletedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    deletedAcademyList.unshift({
+      ...deleted,
+      deletedAt: deletedAt.toISOString().split("T")[0],
+      expireAt: expireAt.toISOString().split("T")[0]
+    });
+
+    // 비밀번호 초기화
+    if (pwInput) pwInput.value = "";
+
+    $('#academyDeleteConfirmModal').modal('hide');
+    renderFranchiseTable();
+    updateFranchiseStats();
+    populateMemberAcademyFilter();
+    populateDispatchAcademyFilter();
+    showMasterToast(`[${deleted.name}] 가맹 학원이 삭제되어 7일간 임시 보존됩니다. 복구는 '삭제 내역' 버튼에서 확인하세요.`);
+  }
+  pendingDeleteAcademyId = null;
+}
+
+// 삭제된 학원 임시 보존 목록 모달 열기
+function openDeletedAcademyListModal() {
+  renderDeletedAcademyList();
+  $('#deletedAcademyListModal').modal('show');
+}
+
+function renderDeletedAcademyList() {
+  const container = document.getElementById("deletedAcademyListContainer");
+  if (!container) return;
+
+  if (deletedAcademyList.length === 0) {
+    container.innerHTML = `<div class="text-center py-4 text-muted"><i class="fa-solid fa-inbox mr-2"></i>임시 보존된 학원이 없습니다.</div>`;
+    return;
+  }
+
+  const today = new Date();
+  container.innerHTML = deletedAcademyList.map((acad, idx) => {
+    const expireDate = new Date(acad.expireAt);
+    const daysLeft = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
+    const isExpired = daysLeft <= 0;
+    return `
+      <div class="p-3 mb-2 rounded d-flex justify-content-between align-items-center" style="background: ${isExpired ? '#fff3f3' : '#fdfbf7'}; border: 1px solid ${isExpired ? '#f5c6cb' : '#ebd9c8'};">
+        <div>
+          <div class="font-weight-bold text-dark">${acad.name}</div>
+          <small class="text-muted">삭제일: ${acad.deletedAt} / 만료일: ${acad.expireAt}</small>
+          <span class="ml-2 ${isExpired ? 'badge-soft badge-soft-danger' : 'badge-soft badge-soft-warn'}" style="font-size: 11px;">
+            ${isExpired ? '완전삭제 예정' : `${daysLeft}일 남음`}
+          </span>
+        </div>
+        ${!isExpired ? `
+        <button class="btn btn-sm btn-outline-success" onclick="restoreDeletedAcademy(${idx})" style="border-radius: 8px;">
+          <i class="fa-solid fa-rotate-left mr-1"></i>복구
+        </button>` : ''}
+      </div>
+    `;
+  }).join("");
+}
+
+function restoreDeletedAcademy(idx) {
+  const restored = deletedAcademyList.splice(idx, 1)[0];
+  delete restored.deletedAt;
+  delete restored.expireAt;
+  franchiseList.unshift(restored);
+  renderDeletedAcademyList();
+  renderFranchiseTable();
+  updateFranchiseStats();
+  populateMemberAcademyFilter();
+  showMasterToast(`[${restored.name}] 가맹 학원이 성공적으로 복구되었습니다.`);
+}
+
+// -----------------------------------------------------------
+// [14] 가맹점 명단 엑셀 실제 다운로드 (SheetJS 없을 시 CSV)
+// -----------------------------------------------------------
+function exportFranchiseExcel() {
+  const headers = ["학원ID", "학원명", "사업자번호", "원장명", "이메일", "연락처", "지역", "관리자ID", "이용상품", "가맹일", "계약시작", "계약만료", "현재원생", "최대원생", "월결제금액", "상태"];
+  const rows = franchiseList.map(a => [
+    a.id, a.name, a.bizNumber || "", a.director, a.email || "", a.phone,
+    a.region, a.adminId, a.plan, a.joinDate, a.startDate, a.endDate,
+    a.currentStudents, a.maxStudents, a.monthlyFee, a.status
+  ]);
+
+  downloadAsCSV("가맹학원명단_" + new Date().toISOString().split("T")[0] + ".csv", headers, rows);
+  showMasterToast("가맹 학원 명단이 CSV 파일로 다운로드되었습니다.");
+}
+
+// -----------------------------------------------------------
+// [15] 회원 엑셀 실제 다운로드
+// -----------------------------------------------------------
+function exportMemberExcel() {
+  const headers = ["ID", "소속학원", "등급권한", "이름", "아이디", "학년", "학급", "학생연락처", "학부모연락처", "누적포인트", "최근접속일", "등록일", "상태"];
+  const rows = memberList.map(m => [
+    m.id, m.academyName,
+    m.role === "DIRECTOR" ? "원장님" : m.role === "TEACHER" ? "선생님" : "학생",
+    m.name, m.username, m.grade || "", m.className || "",
+    m.phone || "", m.parentPhone || "", m.points || 0,
+    m.lastLogin || "", m.createdAt || "", m.status
+  ]);
+
+  downloadAsCSV("통합회원명부_" + new Date().toISOString().split("T")[0] + ".csv", headers, rows);
+  showMasterToast(`통합 회원 명부(총 ${memberList.length}명)가 CSV 파일로 다운로드되었습니다.`);
+}
+
+// CSV 다운로드 공통 헬퍼
+function downloadAsCSV(filename, headers, rows) {
+  const BOM = "\uFEFF"; // UTF-8 BOM (한글 깨짐 방지)
+  const csvContent = BOM + [headers, ...rows].map(row =>
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+  ).join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// -----------------------------------------------------------
+// [16] 엑셀 서식 다운로드 (회원 등록 표준 서식)
+// -----------------------------------------------------------
+function downloadMemberExcelTemplate() {
+  const headers = ["이름", "아이디", "비밀번호", "학년", "학급", "학생연락처", "학부모연락처", "등록학원코드(예:ACAD-001)"];
+  const sampleRows = [
+    ["홍길동", "hong_gildong", "nano1234!", "초4", "소나무반", "010-1234-5678", "010-9876-5432", "ACAD-001"],
+    ["김영희", "younghee_k", "nano1234!", "초5", "매화반", "010-2345-6789", "010-8765-4321", "ACAD-002"]
+  ];
+
+  downloadAsCSV("나노책장_회원등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
+  showMasterToast("표준 회원 등록 양식 서식(CSV)이 다운로드되었습니다. 학원 코드를 확인 후 입력해주세요.");
+}
+
+// -----------------------------------------------------------
+// [17] 권장도서 학년 버튼 선택 기능
+// -----------------------------------------------------------
+function selectRecGrade(grade) {
+  // 버튼 스타일 업데이트
+  document.querySelectorAll(".rec-grade-btn").forEach(btn => {
+    if (btn.dataset.grade === grade) {
+      btn.style.background = "#7d5a2b";
+      btn.style.color = "#fff";
+      btn.style.border = "none";
+      btn.classList.add("active");
+    } else {
+      btn.style.background = "#fff";
+      btn.style.color = "#5a4b3d";
+      btn.style.border = "1.5px solid #d4c4b0";
+      btn.classList.remove("active");
+    }
+  });
+
+  // recGradeFilter 드롭박스 동기화 (renderRecommendedBooksTable 호출)
+  const filterEl = document.getElementById("recGradeFilter");
+  if (filterEl) {
+    filterEl.value = grade;
+    renderRecommendedBooksTable();
+  }
+}
+
+// 권장도서 추가 모달 - 현재 선택된 학년 자동 설정
+const _origOpenAddRecommendedBookModal = typeof openAddRecommendedBookModal === "function" ? openAddRecommendedBookModal : null;
+
+function openAddRecommendedBookModal() {
+  const filterEl = document.getElementById("recGradeFilter");
+  const curGrade = filterEl ? filterEl.value : "ALL";
+
+  const modalGrade = document.getElementById("modalRecGrade");
+  if (modalGrade && curGrade !== "ALL") {
+    modalGrade.value = curGrade;
+  }
+
+  if (_origOpenAddRecommendedBookModal) {
+    _origOpenAddRecommendedBookModal();
+  } else {
+    // 기본 모달 열기
+    const searchEl = document.getElementById("modalRecBookSearch");
+    if (searchEl) searchEl.value = "";
+    filterRecModalBooks();
+    $("#recommendedBookModal").modal("show");
+  }
+}
+
+// -----------------------------------------------------------
+// [18] 배너 순서 조정 (리스트에서 위/아래 버튼)
+// -----------------------------------------------------------
+function moveBannerOrder(id, direction) {
+  const idx = bannerList.findIndex(b => b.id === id);
+  if (idx === -1) return;
+
+  if (direction === "up" && idx > 0) {
+    // 순서 교환
+    const temp = bannerList[idx].order;
+    bannerList[idx].order = bannerList[idx - 1].order;
+    bannerList[idx - 1].order = temp;
+    const tempBanner = bannerList[idx];
+    bannerList[idx] = bannerList[idx - 1];
+    bannerList[idx - 1] = tempBanner;
+  } else if (direction === "down" && idx < bannerList.length - 1) {
+    const temp = bannerList[idx].order;
+    bannerList[idx].order = bannerList[idx + 1].order;
+    bannerList[idx + 1].order = temp;
+    const tempBanner = bannerList[idx];
+    bannerList[idx] = bannerList[idx + 1];
+    bannerList[idx + 1] = tempBanner;
+  }
+
+  renderBannerList();
+}
+
+// -----------------------------------------------------------
+// [19] 랭킹 - 전국순위 + 학원순위 렌더링
+// -----------------------------------------------------------
+// renderRankings 함수 오버라이드 (기존 함수 후에 실행)
+const _origRenderRankings = typeof renderRankings === "function" ? renderRankings : null;
+
+// renderRankings 호출 후 학원 순위 컬럼 추가
+function addAcademyRankColumn(data) {
+  // 각 학원 내에서 순위 계산
+  const academyGroups = {};
+  data.forEach(s => {
+    const acad = s.academyName || s.academy || "";
+    if (!academyGroups[acad]) academyGroups[acad] = [];
+    academyGroups[acad].push(s);
+  });
+
+  // 각 그룹을 포인트 기준 정렬하여 학원 내 순위 부여
+  const rankMap = {};
+  Object.values(academyGroups).forEach(group => {
+    group.sort((a, b) => (b.points || 0) - (a.points || 0));
+    group.forEach((s, i) => {
+      rankMap[s.id] = i + 1;
+    });
+  });
+  return rankMap;
+}
+
+
+
+// -----------------------------------------------------------
+// [21] 메모 카운터 초기화 (모달 열릴 때)
+// -----------------------------------------------------------
+document.addEventListener("DOMContentLoaded", () => {
+  // 메모 카운터
+  const memoEl = document.getElementById("regMemo");
+  const memoCount = document.getElementById("regMemoCount");
+  if (memoEl && memoCount) {
+    memoEl.addEventListener("input", () => {
+      memoCount.textContent = `${memoEl.value.length} / 100자`;
+    });
+  }
+
+  // 권장도서 학년 버튼 초기화 (드롭박스 대신 버튼 사용 시)
+  const recGradeFilter = document.getElementById("recGradeFilter");
+  if (recGradeFilter) {
+    recGradeFilter.addEventListener("change", () => {
+      // 드롭박스 변경 시 버튼도 동기화
+      const selectedGrade = recGradeFilter.value;
+      document.querySelectorAll(".rec-grade-btn").forEach(btn => {
+        if (btn.dataset.grade === selectedGrade) {
+          btn.style.background = "#7d5a2b";
+          btn.style.color = "#fff";
+          btn.style.border = "none";
+        } else {
+          btn.style.background = "#fff";
+          btn.style.color = "#5a4b3d";
+          btn.style.border = "1.5px solid #d4c4b0";
+        }
+      });
+    });
+  }
+
+  // 회원 등록 모달 학원 초기화 시 본사 옵션 추가
+  const newMemAcademy = document.getElementById("newMemAcademy");
+  if (newMemAcademy) {
+    newMemAcademy.addEventListener("change", function() {
+      onMasterMemberAcademyChange(this.value);
+      updateClassDropdown(this.value);
+    });
+  }
+});
+
+// -----------------------------------------------------------
+// [22] openMasterMemberAddModal 오버라이드 - 본사 옵션 추가
+// -----------------------------------------------------------
+const _origOpenMasterMemberAddModal = typeof openMasterMemberAddModal === "function" ? openMasterMemberAddModal.bind({}) : null;
+function openMasterMemberAddModal() {
+  const form = document.getElementById("masterMemberAddForm");
+  if (form) form.reset();
+
+  const acadSelect = document.getElementById("newMemAcademy");
+  if (acadSelect && typeof franchiseList !== "undefined") {
+    // 본사 옵션 추가
+    acadSelect.innerHTML =
+      `<option value="본사">🏢 본사 (나노의 책장 본사)</option>` +
+      franchiseList.map(a => `<option value="${a.name}">${a.name}</option>`).join("");
+
+    if (currentSelectedAcademy !== "ALL") {
+      acadSelect.value = currentSelectedAcademy;
+    }
+  }
+
+  // 클래스 드롭박스 초기화
+  updateClassDropdown("");
+
+  // 역할 관련 초기화
+  const hqOpt = document.getElementById("newMemRoleHqOption");
+  if (hqOpt) hqOpt.style.display = "none";
+  const roleSelect = document.getElementById("newMemRole");
+  if (roleSelect) {
+    roleSelect.disabled = false;
+    roleSelect.value = "STUDENT";
+  }
+  const roleNote = document.getElementById("newMemRoleNote");
+  if (roleNote) roleNote.classList.add("d-none");
+
+  onMasterMemberRoleChange("STUDENT");
+  $("#masterMemberAddModal").modal("show");
+}
+
+// -----------------------------------------------------------
+// [23] 가맹점 테이블 렌더링에 삭제 내역 버튼 추가
+// -----------------------------------------------------------
+// renderFranchiseTable 함수에서 삭제 확인 모달 열기 방식 개선 (openAcademyDeleteConfirm)
+// openAcademyDeleteConfirm - 기존 함수 오버라이드
+const _origOpenAcademyDeleteConfirm = typeof openAcademyDeleteConfirm === "function" ? openAcademyDeleteConfirm : null;
+function openAcademyDeleteConfirm(id) {
+  const acad = franchiseList.find(a => a.id === id);
+  if (!acad) return;
+
+  pendingDeleteAcademyId = id;
+  document.getElementById("deleteAcademyName").innerText = acad.name;
+
+  // 비밀번호 초기화
+  const pwInput = document.getElementById("deleteConfirmPassword");
+  if (pwInput) pwInput.value = "";
+  const pwErr = document.getElementById("deletePasswordError");
+  if (pwErr) pwErr.classList.add("d-none");
+
+  $('#academyDeleteConfirmModal').modal('show');
+}
+
+// -----------------------------------------------------------
+// [24] handleRegisterAcademy 오버라이드 - 주소 및 메모 포함
+// -----------------------------------------------------------
+const _origHandleRegisterAcademy = typeof handleRegisterAcademy === "function" ? handleRegisterAcademy : null;
+function handleRegisterAcademy(e) {
+  e.preventDefault();
+
+  // 이메일 형식 검증
+  const emailEl = document.getElementById("regDirectorEmail");
+  if (emailEl) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailEl.value.trim())) {
+      const errEl = document.getElementById("regEmailError");
+      if (errEl) errEl.classList.remove("d-none");
+      emailEl.focus();
+      return;
+    }
+  }
+
+  const name = document.getElementById("regAcademyName").value.trim();
+  const bizNumber = document.getElementById("regBizNumber")?.value.trim() || "";
+  const director = document.getElementById("regDirectorName").value.trim();
+  const email = emailEl?.value.trim() || "";
+  const phone = document.getElementById("regDirectorPhone").value.trim();
+
+  // 주소 처리 (카카오 API 사용)
+  const postcode = document.getElementById("regPostcode")?.value.trim() || "";
+  const baseAddr = document.getElementById("regAddress")?.value.trim() || "";
+  const detailAddr = document.getElementById("regAddressDetail")?.value.trim() || "";
+  const fullAddress = [baseAddr, detailAddr].filter(Boolean).join(" ");
+  const region = fullAddress ? fullAddress.split(" ")[0] + " " + (fullAddress.split(" ")[1] || "") : "서울";
+
+  const adminId = document.getElementById("regDirectorId")?.value.trim() || `director_${Date.now()}`;
+  const joinDate = document.getElementById("regJoinDate")?.value || new Date().toISOString().split("T")[0];
+  const startDate = document.getElementById("regStartDate").value;
+  const endDate = document.getElementById("regEndDate").value;
+  const plan = document.getElementById("regPlan")?.value || "Standard";
+  const maxStudents = parseInt(document.getElementById("regMaxStudents")?.value, 10) || 50;
+  const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "330,000원";
+  const memo = document.getElementById("regMemo")?.value.trim() || "";
+
+  const newId = `ACAD-0${String(franchiseList.length + 1).padStart(2, '0')}`;
+  const newAcad = {
+    id: newId,
+    name: name,
+    bizNumber: bizNumber,
+    director: director.includes("원장") ? director : director + " 원장",
+    email: email,
+    phone: phone,
+    postcode: postcode,
+    region: region,
+    address: fullAddress,
+    adminId: adminId,
+    plan: plan,
+    joinDate: joinDate,
+    startDate: startDate,
+    endDate: endDate,
+    currentStudents: 0,
+    maxStudents: maxStudents,
+    monthlyFee: monthlyFee,
+    paymentStatus: "PAID",
+    status: "ACTIVE",
+    memo: memo
+  };
+
+  franchiseList.unshift(newAcad);
+  $('#academyRegisterModal').modal('hide');
+  document.getElementById("academyRegisterForm").reset();
+
+  renderFranchiseTable();
+  updateFranchiseStats();
+  populateMemberAcademyFilter();
+  populateDispatchAcademyFilter();
+  showMasterToast(`[${name}] 신규 가맹 학원(${plan} 플랜, 사용인원 ${maxStudents}명)이 성공적으로 등록되었습니다.`);
+}
+
+// -----------------------------------------------------------
+// [25] 랭킹 테이블 - 전국순위 + 학원순위 컬럼 렌더링
+// -----------------------------------------------------------
+// renderRankings의 studentRankingBody 렌더링 후처리로 학원 순위 추가
+const _origRenderStudentRankings = null; // renderRankings 내부에서 처리
+
+// MutationObserver로 studentRankingBody가 업데이트될 때 학원 순위 컬럼 추가
+(function() {
+  const observer = new MutationObserver(() => {
+    const tbody = document.getElementById("studentRankingBody");
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll("tr");
+    if (rows.length === 0) return;
+
+    // 이미 학원순위 컬럼이 있으면 스킵
+    const firstRow = rows[0];
+    if (firstRow && firstRow.cells.length > 0 && firstRow.dataset.academyRankAdded) return;
+
+    // 각 행에서 소속학원을 기준으로 학원 내 순위 계산
+    const academyCountMap = {};
+    rows.forEach(row => {
+      if (row.dataset.academy) {
+        const acad = row.dataset.academy;
+        if (!academyCountMap[acad]) academyCountMap[acad] = 0;
+        academyCountMap[acad]++;
+        const acRank = academyCountMap[acad];
+        // 두 번째 셀(학원순위)에 데이터 추가 (이미 삽입되어 있으면 업데이트)
+        const acRankCell = row.cells[1];
+        if (acRankCell && row.cells.length >= 2) {
+          acRankCell.innerText = `${acRank}위`;
+          acRankCell.style.fontWeight = "700";
+          acRankCell.style.color = acRank === 1 ? "#b38a00" : acRank === 2 ? "#6b7280" : acRank === 3 ? "#8c6d48" : "#374151";
+        }
+        row.dataset.academyRankAdded = "1";
+      }
+    });
+  });
+
+  // DOM 준비 후 옵저버 시작
+  document.addEventListener("DOMContentLoaded", () => {
+    const tbody = document.getElementById("studentRankingBody");
+    if (tbody) {
+      observer.observe(tbody, { childList: true, subtree: true });
+    }
+  });
+})();
 

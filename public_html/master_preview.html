@@ -717,8 +717,11 @@
           </div>
         </div>
         <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="openDeletedAcademyListModal()" style="border-radius: 10px; font-size: 13px; padding: 7px 14px;">
+            <i class="fa-solid fa-trash-clock mr-1"></i>삭제 내역
+          </button>
           <button class="btn-beige-secondary" onclick="exportFranchiseExcel()">
-            <i class="fa-solid fa-file-excel"></i>가맹점 명단 다운로드
+            <i class="fa-solid fa-file-excel"></i>명단 다운로드 (CSV)
           </button>
           <button class="btn-beige-primary" onclick="openAcademyRegisterModal()">
             <i class="fa-solid fa-plus"></i>신규 가맹 학원 등록
@@ -865,7 +868,7 @@
           <div class="stat-card">
             <div class="stat-label">주간 활성 학생(WAU) <i class="fa-solid fa-book-reader text-success"></i></div>
             <div class="stat-num text-success" id="statMemberActive">588<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
-            <div class="stat-sub">전체 학생 대비 <strong class="font-weight-bold">91.5%</strong> 참여</div>
+            <div class="stat-sub">매주 월~일 1회 이상 로그인 학생 수</div>
             <i class="fa-solid fa-user-check stat-icon-bg"></i>
           </div>
         </div>
@@ -873,7 +876,7 @@
           <div class="stat-card">
             <div class="stat-label">누적 완독 도서 <i class="fa-solid fa-book text-muted"></i></div>
             <div class="stat-num" id="statMemberReadCount">12,480<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
-            <div class="stat-sub">1인당 평균 19.4권 완독</div>
+            <div class="stat-sub">퇴원생 이력 포함 / 1인당 평균 19.4권</div>
             <i class="fa-solid fa-bookmark stat-icon-bg"></i>
           </div>
         </div>
@@ -1100,23 +1103,23 @@
             <h6 class="font-weight-bold mb-0 text-muted">
               <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 관리 (<span id="recBookCount">0</span>권 등록)
             </h6>
-            <small class="text-muted">학생 도서관에 노출될 학년별(초1~초6, 중등) 권장/추천 도서 목록을 관리합니다.</small>
+            <small class="text-muted">학생 도서관에 노출될 학년별(미취학~중등) 권장/추천 도서 목록을 관리합니다.</small>
           </div>
-          <div class="d-flex align-items-center" style="gap: 10px;">
-            <select id="recGradeFilter" class="form-control form-control-beige form-control-sm" style="width: 150px;" onchange="renderRecommendedBooksTable()">
-              <option value="ALL">전체 학년</option>
-              <option value="초등 1학년">초등 1학년</option>
-              <option value="초등 2학년">초등 2학년</option>
-              <option value="초등 3학년">초등 3학년</option>
-              <option value="초등 4학년">초등 4학년</option>
-              <option value="초등 5학년">초등 5학년</option>
-              <option value="초등 6학년">초등 6학년</option>
-              <option value="중학교">중학교</option>
-            </select>
-            <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
-              <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
-            </button>
-          </div>
+          <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
+            <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+          </button>
+        </div>
+        <!-- 학년별 버튼 탭 -->
+        <div class="mb-3 d-flex flex-wrap gap-2" id="recGradeBtnGroup">
+          <button class="btn font-weight-bold rec-grade-btn active" data-grade="ALL" onclick="selectRecGrade('ALL')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #7d5a2b; color: #fff; border: none;">전체</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="미취학" onclick="selectRecGrade('미취학')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">미취학</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 1학년" onclick="selectRecGrade('초등 1학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초1</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 2학년" onclick="selectRecGrade('초등 2학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초2</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 3학년" onclick="selectRecGrade('초등 3학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초3</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 4학년" onclick="selectRecGrade('초등 4학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초4</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 5학년" onclick="selectRecGrade('초등 5학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초5</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 6학년" onclick="selectRecGrade('초등 6학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초6</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="중학교" onclick="selectRecGrade('중학교')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">중등</button>
         </div>
 
         <div class="simple-card">
@@ -1158,7 +1161,7 @@
         </div>
         <div class="d-flex gap-2">
           <button class="btn-beige-secondary" onclick="openPointPolicyModal()">
-            <i class="fa-solid fa-gear"></i>포인트/뱃지 지급 정책
+            <i class="fa-solid fa-gear"></i>포인트 지급 정책
           </button>
         </div>
       </div>
@@ -1206,18 +1209,15 @@
       <!-- 전국 랭킹 테이블 탭 (학생 랭킹 / 학원 랭킹) -->
       <div class="simple-card">
         <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7;">
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-secondary active" id="btn-rank-student" onclick="switchRankingType('student')">
-              <i class="fa-solid fa-user-graduate mr-1"></i>전국 학생 개인 랭킹 (전체)
+          <div class="d-flex gap-2">
+            <button class="btn font-weight-bold" id="btn-rank-student" onclick="switchRankingType('student')" style="border-radius: 10px; padding: 8px 18px; font-size: 13px; background: linear-gradient(135deg, #7d5a2b, #b38850); color: #fff; border: none; box-shadow: 0 2px 8px rgba(125,90,43,0.25); transition: all 0.2s;">
+              <i class="fa-solid fa-user-graduate mr-2"></i>전국 학생 개인 랭킹
             </button>
-            <button class="btn btn-outline-secondary" id="btn-rank-academy" onclick="switchRankingType('academy')">
-              <i class="fa-solid fa-school mr-1"></i>전국 가맹 학원 랭킹
+            <button class="btn font-weight-bold" id="btn-rank-academy" onclick="switchRankingType('academy')" style="border-radius: 10px; padding: 8px 18px; font-size: 13px; background: #fff; color: #5a4b3d; border: 2px solid #d4c4b0; transition: all 0.2s;">
+              <i class="fa-solid fa-school mr-2"></i>전국 가맹 학원 랭킹
             </button>
           </div>
           <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-warning" onclick="openPointPolicyModal()" style="font-weight: 700; border-radius: 8px; font-size: 12px; color: #855304; border-color: #f1c40f;">
-              <i class="fa-solid fa-circle-info mr-1"></i>포인트 / 뱃지 지급 정책
-            </button>
             <small class="text-muted">* 매일 자정 포인트 기준 자동 갱신됩니다.</small>
           </div>
         </div>
@@ -1250,7 +1250,8 @@
           <table class="simple-table" id="table-ranking-student">
             <thead>
               <tr>
-                <th style="width: 80px;">순위</th>
+                <th style="width: 80px;">전국 순위</th>
+                <th style="width: 80px;">학원 순위</th>
                 <th style="text-align: left;">학생 성명 (아이디)</th>
                 <th style="text-align: left;">소속 학원</th>
                 <th>학년</th>
@@ -1368,6 +1369,7 @@
         <div>
           <select id="contentGradeFilter" class="select-beige" onchange="filterMasterContentList()">
             <option value="ALL">전체 권장 학년</option>
+            <option value="미취학">미취학</option>
             <option value="초등 1학년">초등 1학년</option>
             <option value="초등 2학년">초등 2학년</option>
             <option value="초등 3학년">초등 3학년</option>
@@ -1939,8 +1941,8 @@
               <input type="text" id="regAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서논술 대치본원" required>
             </div>
             <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">사업자 등록번호 <span class="text-danger">*</span></label>
-              <input type="text" id="regBizNumber" class="form-control form-control-beige" placeholder="예: 123-45-67890" required>
+              <label class="font-weight-bold" style="font-size: 13px;">사업자 등록번호 <span class="text-muted" style="font-size: 11px;">(선택)</span></label>
+              <input type="text" id="regBizNumber" class="form-control form-control-beige" placeholder="예: 123-45-67890 (숫자만 입력)" maxlength="12" oninput="formatBizNumber(this)">
             </div>
           </div>
           <div class="row">
@@ -1950,7 +1952,8 @@
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장님 이메일 <span class="text-danger">*</span></label>
-              <input type="email" id="regDirectorEmail" class="form-control form-control-beige" placeholder="예: director@nano.kr" required>
+              <input type="text" id="regDirectorEmail" class="form-control form-control-beige" placeholder="예: director@nano.kr" required onblur="validateEmailField(this)">
+              <small class="text-danger d-none" id="regEmailError">올바른 이메일 형식(@포함)을 입력해주세요.</small>
             </div>
           </div>
           <div class="row">
@@ -1959,18 +1962,31 @@
               <input type="tel" id="regDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" oninput="formatPhoneInput(this)" maxlength="13" required>
             </div>
             <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 (주소)</label>
-              <input type="text" id="regAddress" class="form-control form-control-beige" placeholder="예: 서울특별시 강남구 대치동 123-45 3층">
+              <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 (주소) <span class="text-danger">*</span></label>
+              <div class="d-flex gap-2 mb-1">
+                <input type="text" id="regPostcode" class="form-control form-control-beige" placeholder="우편번호" style="width: 110px; flex-shrink: 0;" readonly>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openKakaoAddressSearch('reg')" style="white-space: nowrap; border-radius: 8px;"><i class="fa-solid fa-search mr-1"></i>우편번호 검색</button>
+              </div>
+              <input type="text" id="regAddress" class="form-control form-control-beige mb-1" placeholder="기본 주소" readonly>
+              <input type="text" id="regAddressDetail" class="form-control form-control-beige" placeholder="상세 주소 입력 (예: 3층 나노학원)">
             </div>
           </div>
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장님 관리자 아이디 <span class="text-danger">*</span></label>
-              <input type="text" id="regDirectorId" class="form-control form-control-beige" placeholder="예: director_daechi" required>
+              <input type="text" id="regDirectorId" class="form-control form-control-beige" placeholder="예: director_daechi" required onblur="checkAdminIdDuplicate(this.value, 'regDirectorIdStatus')">
+              <small id="regDirectorIdStatus" class="text-muted" style="font-size: 11.5px;"></small>
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">초기 비밀번호 <span class="text-danger">*</span></label>
               <input type="text" id="regDirectorPw" class="form-control form-control-beige" value="nano1234!" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">메모 <span class="text-muted" style="font-size: 11px;">(선택, 100자 이내)</span></label>
+              <textarea id="regMemo" class="form-control form-control-beige" rows="2" maxlength="100" placeholder="학원 관련 특이사항이나 담당자 메모를 입력합니다."></textarea>
+              <small class="text-muted d-flex justify-content-end" id="regMemoCount">0 / 100자</small>
             </div>
           </div>
 
@@ -2164,23 +2180,36 @@
   </div>
 </div>
 
-<!-- 3. 가맹점 삭제/비활성화 확인 모달 -->
-<div class="modal fade" id="academyDeleteConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- 3. 가맹점 삭제 확인 모달 (2단계 보안 강화) -->
+<div class="modal fade" id="academyDeleteConfirmModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content modal-content-beige" style="border: 2px solid #e2a297;">
-      <div class="modal-body p-4 text-center">
-        <div style="font-size: 40px; color: #b33927; margin-bottom: 12px;">
-          <i class="fa-solid fa-triangle-exclamation"></i>
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold text-danger" style="font-size: 15px;">
+          <i class="fa-solid fa-triangle-exclamation mr-2"></i>가맹 학원 삭제 (2단계 보안 확인)
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-danger" style="font-size: 13px; border-radius: 10px;">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i>
+          <strong>⚠️ 주의: 이 작업은 복구가 매우 어렵습니다.</strong><br>
+          삭제 시 해당 학원의 <strong>하위 계정(교사/학생), 학습 이력, 모든 DB</strong>가 삭제 대상이 됩니다.<br>
+          <strong>단, 7일간 임시 보존</strong>되며 그 이후 완전 삭제됩니다.
         </div>
-        <h5 class="font-weight-bold mb-2">가맹 학원을 삭제하시겠습니까?</h5>
-        <p class="text-muted" style="font-size: 13px;">
-          <strong id="deleteAcademyName" class="text-dark"></strong> 학원의 계약 상태를 해지하고 비활성화합니다.<br>
-          소속된 원생 및 선생님 계정의 학습 데이터는 감사용으로 보존됩니다.
-        </p>
-        <div class="d-flex justify-content-center gap-2 mt-4">
+        <div class="p-3 rounded mb-3" style="background: #fdfbf7; border: 1px solid #ebd9c8; font-size: 13px;">
+          <div class="font-weight-bold text-dark mb-1">삭제 대상 학원</div>
+          <span class="badge-soft badge-soft-danger font-weight-bold" style="font-size: 13px;" id="deleteAcademyName"></span>
+        </div>
+        <div class="form-group">
+          <label class="font-weight-bold" style="font-size: 13px;">마스터 관리자 비밀번호 입력 <span class="text-danger">*</span></label>
+          <input type="password" id="deleteConfirmPassword" class="form-control form-control-beige" placeholder="마스터 관리자 비밀번호를 입력하세요">
+          <small class="text-danger d-none" id="deletePasswordError">비밀번호가 일치하지 않습니다.</small>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4">
           <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
           <button type="button" class="btn btn-danger font-weight-bold" style="border-radius: 12px; padding: 8px 20px;" onclick="confirmDeleteAcademy()">
-            <i class="fa-solid fa-trash-can mr-1"></i>해지 및 삭제 진행
+            <i class="fa-solid fa-trash-can mr-1"></i>삭제 진행 (7일 임시 보존)
           </button>
         </div>
       </div>
@@ -2188,13 +2217,38 @@
   </div>
 </div>
 
-<!-- 4. 통합 회원 상세 및 상태 모달 -->
-<div class="modal fade" id="memberDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
+<!-- 3-1. 삭제된 학원 임시 보존 목록 모달 -->
+<div class="modal fade" id="deletedAcademyListModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content modal-content-beige">
       <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
         <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
-          <i class="fa-solid fa-user-gear mr-2 text-muted"></i>회원 계정 상세 정보
+          <i class="fa-solid fa-trash-clock mr-2 text-warning"></i>삭제된 학원 임시 보존 목록 (7일 이내 복구 가능)
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-warning" style="font-size: 12.5px;">
+          <i class="fa-solid fa-circle-info mr-1"></i>삭제 처리된 학원은 <strong>7일 이내에 복구</strong>할 수 있습니다. 7일 경과 후에는 완전 삭제됩니다.
+        </div>
+        <div id="deletedAcademyListContainer">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+      <div class="modal-footer modal-footer-beige">
+        <button type="button" class="btn-beige-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 통합 회원 상세 및 수정 모달 -->
+<div class="modal fade" id="memberDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-user-gear mr-2 text-warning"></i>회원 계정 상세 정보 및 수정
         </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
@@ -2210,36 +2264,65 @@
           <span class="badge-soft badge-soft-neutral" id="detailMemberRole">학생 (원생)</span>
         </div>
 
-        <div style="font-size: 13px;">
-          <div class="d-flex justify-content-between py-1 border-bottom">
-            <span class="text-muted">소속 학원</span>
-            <strong id="detailMemberAcademy">나노 독서아카데미 본원</strong>
+        <div class="row">
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">소속 학원</label>
+            <input type="text" id="detailMemberAcademy" class="form-control form-control-beige" readonly style="background: #f8f6f3;">
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom">
-            <span class="text-muted">아이디</span>
-            <span id="detailMemberUsername">taeyoon_k</span>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">아이디</label>
+            <input type="text" id="detailMemberUsername" class="form-control form-control-beige" readonly style="background: #f8f6f3;">
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom">
-            <span class="text-muted">연락처</span>
-            <span id="detailMemberPhone">010-3342-9981</span>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">연락처</label>
+            <input type="text" id="detailMemberPhone" class="form-control form-control-beige" oninput="formatPhoneInput(this)" maxlength="13">
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom">
-            <span class="text-muted">누적 독서 포인트</span>
-            <strong class="text-warning" id="detailMemberPoints">4,850 P</strong>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">학부모 연락처</label>
+            <input type="text" id="detailMemberParentPhone" class="form-control form-control-beige" oninput="formatPhoneInput(this)" maxlength="13">
           </div>
-          <div class="d-flex justify-content-between py-1 border-bottom">
-            <span class="text-muted">계정 상태</span>
-            <span id="detailMemberStatusBadge"></span>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">학년</label>
+            <select id="detailMemberGrade" class="select-beige w-100">
+              <option value="미취학">미취학</option>
+              <option value="초1">초1</option><option value="초2">초2</option>
+              <option value="초3">초3</option><option value="초4">초4</option>
+              <option value="초5">초5</option><option value="초6">초6</option>
+              <option value="중1">중1</option><option value="중2">중2</option><option value="중3">중3</option>
+            </select>
           </div>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">배정 학급</label>
+            <input type="text" id="detailMemberClass" class="form-control form-control-beige" placeholder="예: 소나무반">
+          </div>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">누적 포인트</label>
+            <input type="text" id="detailMemberPoints" class="form-control form-control-beige" readonly style="background: #f8f6f3; color: #b47a00; font-weight: 700;">
+          </div>
+          <div class="col-md-6 form-group">
+            <label class="font-weight-bold" style="font-size: 12.5px;">계정 상태</label>
+            <div id="detailMemberStatusBadge" class="mt-1"></div>
+          </div>
+        </div>
+
+        <!-- 탈퇴/정지 처리 시 학원명 확인 -->
+        <div id="memberStatusChangeConfirmBox" class="d-none p-3 rounded mt-2" style="background: #fff3f3; border: 1px solid #f5c6cb;">
+          <label class="font-weight-bold text-danger" style="font-size: 13px;">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i>탈퇴/정지 처리 확인: 소속 학원명을 정확히 입력하세요.
+          </label>
+          <input type="text" id="memberStatusAcademyConfirm" class="form-control form-control-beige" placeholder="학원명 타이핑 후 버튼 클릭">
         </div>
 
         <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
           <button class="btn btn-sm btn-outline-secondary" onclick="resetSingleMemberPassword()">
             <i class="fa-solid fa-key mr-1"></i>임시 비밀번호 발급
           </button>
-          <div>
-            <button class="btn btn-sm btn-outline-danger mr-1" id="btnToggleMemberStatus" onclick="toggleMemberStatus()">
-              이용 정지
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-danger" id="btnToggleMemberStatus" onclick="handleToggleMemberStatusClick()">
+              탈퇴/정지 처리
+            </button>
+            <button class="btn btn-sm btn-beige-primary" onclick="saveMemberDetailEdit()">
+              <i class="fa-solid fa-save mr-1"></i>수정 저장
             </button>
             <button type="button" class="btn-beige-secondary btn-sm" data-dismiss="modal">닫기</button>
           </div>
@@ -2291,7 +2374,7 @@
                   </div>
                 </div>
                 <div class="row">
-                  <div class="col-6 form-group mb-0">
+                  <div class="col-6 form-group mb-0" style="display:none;"><!-- 노출 순서는 리스트에서 버튼으로 조정 -->
                     <label class="font-weight-bold" style="font-size: 13px;">노출 순서</label>
                     <input type="number" id="bannerOrder" class="form-control form-control-beige" value="1" min="1">
                   </div>
@@ -2458,9 +2541,12 @@
               <div class="bg-white p-3 rounded-lg border shadow-sm">
                 <!-- Tag -->
                 <div class="form-group mb-3">
-                  <label class="font-weight-bold" style="font-size: 13px;">Tag (메인 태그명) <span class="text-danger">*</span></label>
-                  <input type="text" id="themeTagTitle" class="form-control form-control-beige" placeholder="예: #모험과성장 또는 #이달의나노북클럽" required oninput="updateThemeModalPreview()">
-                  <small class="text-muted" style="font-size: 11px;">* 학생 도서관 '주제별 도서' 박스의 대표 태그명으로 노출됩니다.</small>
+                  <label class="font-weight-bold" style="font-size: 13px;">메인 태그명 <span class="text-danger">*</span> <span class="text-muted" style="font-size: 11px;">(# 제외하고 입력)</span></label>
+                  <div class="input-group">
+                    <div class="input-group-prepend"><span class="input-group-text bg-white font-weight-bold">#</span></div>
+                    <input type="text" id="themeTagTitle" class="form-control form-control-beige" placeholder="예: 모험과성장" required oninput="updateThemeModalPreview()">
+                  </div>
+                  <small class="text-muted" style="font-size: 11px;">* 도서 등록 시 이 메인 태그를 선택하면 해당 도서가 이 테마에 자동 매핑됩니다.</small>
                 </div>
 
                 <!-- Sub Tag -->
@@ -2481,13 +2567,10 @@
                   <div class="alert alert-secondary py-1 px-2 mb-2" style="font-size: 11px; border-radius: 6px;">
                     <i class="fa-solid fa-circle-info mr-1 text-primary"></i>권장: 4:3 또는 16:9 비율 (600×450px 이상), JPG/PNG/WebP
                   </div>
-                  <input type="file" id="themeImageFile" class="form-control form-control-beige p-1 mb-2" accept="image/png, image/jpeg, image/webp" onchange="handleThemeFileUpload(event)" style="height: auto; font-size: 12px;">
-                  <select id="themeImageUrl" class="select-beige w-100" onchange="handleThemePresetChange(this.value)">
-                    <option value="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80">📚 북클럽 서재 일러스트 (모던 브라운)</option>
-                    <option value="https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=400&q=80">🏛️ 역사 탐구 & 고전 서책 (앤틱 골드)</option>
-                    <option value="https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&q=80">🚀 미래 과학 & 우주 (사이언스 블루)</option>
-                    <option value="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&q=80">🌱 마음 성장 & 인문 문학 (포레스트 그린)</option>
-                  </select>
+                  <input type="file" id="themeImageFile" class="form-control form-control-beige p-1" accept="image/png, image/jpeg, image/webp" onchange="handleThemeFileUpload(event)" style="height: auto; font-size: 12px;">
+                  <small class="text-muted" style="font-size: 11px;">이미지 파일을 직접 업로드해 주세요 (JPG/PNG/WebP)</small>
+                  <!-- 기본 이미지 드롭박스 제거됨 - 직접 업로드만 사용 -->
+                  <input type="hidden" id="themeImageUrl" value="">
                 </div>
 
                 <!-- 노출 여부 -->
@@ -2774,7 +2857,7 @@
     <div class="modal-content modal-content-beige">
       <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
         <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
-          <i class="fa-solid fa-coins mr-2 text-warning"></i>전국 포인트 & 뱃지 지급 정책
+          <i class="fa-solid fa-coins mr-2 text-warning"></i>전국 포인트 지급 정책
         </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
@@ -2824,9 +2907,9 @@
         </div>
 
         <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 12px; color: var(--text-muted);">
-          <div class="font-weight-bold text-dark mb-1"><i class="fa-solid fa-medal text-warning mr-1"></i>전국 랭킹 및 뱃지 연동 기준</div>
+          <div class="font-weight-bold text-dark mb-1"><i class="fa-solid fa-medal text-warning mr-1"></i>전국 랭킹 집계 기준</div>
           • 전국 랭킹은 매일 자정에 최근 30일 및 누적 포인트 합계를 기준으로 집계됩니다.<br>
-          • 월간 누적 1,000P 이상 달성 시 [이달의 독서왕] 골드 뱃지가 학생 프로필에 자동 수여됩니다.<br>
+          • 월간 누적 1,000P 이상 달성 시 [이달의 독서왕] 명예가 학생 프로필에 자동 수여됩니다.<br>
           • 획득한 포인트는 학원별 포인트몰 및 나노 리포트 인증서에 반영됩니다.
         </div>
 
@@ -3099,7 +3182,7 @@
 
               <!-- 시리즈명 + 단권 체크박스 -->
               <div class="row">
-                <div class="col-12 form-group">
+                <div class="col-12 form-group" style="position: relative;">
                   <label class="font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 13px;">
                     <span>시리즈명</span>
                     <div class="custom-control custom-checkbox">
@@ -3109,7 +3192,12 @@
                       </label>
                     </div>
                   </label>
-                  <input type="text" id="mbAddSeries" class="form-control form-control-beige" placeholder="예: 해리포터 시리즈, 한국사 편지">
+                  <div style="position: relative;">
+                    <input type="text" id="mbAddSeries" class="form-control form-control-beige" placeholder="예: 해리포터 시리즈, 한국사 편지 (타이핑 시 등록 시리즈 추천)" autocomplete="off" oninput="handleSeriesInput(this.value)" onfocus="handleSeriesInput(this.value)">
+                    <div id="mbSeriesSuggestions" class="shadow-sm" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1060; background: #ffffff; border: 1px solid var(--border-medium); border-radius: 8px; max-height: 180px; overflow-y: auto; margin-top: 2px;">
+                    </div>
+                  </div>
+                  <small class="text-muted" style="font-size: 11px;">* 타이핑 시 기등록된 시리즈명 및 등록 권수가 드롭박스로 표시됩니다.</small>
                 </div>
               </div>
 
@@ -3145,11 +3233,12 @@
                 </div>
               </div>
 
-              <!-- 권장 학년 (초1~중3 개별 선택) -->
+              <!-- 권장 학년 (미취학, 초1~중3 개별 선택) -->
               <div class="row">
                 <div class="col-12 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
                   <select id="mbAddGrade" class="select-beige w-100" onchange="onGradeChanged(this.value)">
+                    <option value="미취학" data-code="0">미취학</option>
                     <option value="초등 1학년" data-code="1">초등 1학년</option>
                     <option value="초등 2학년" data-code="2">초등 2학년</option>
                     <option value="초등 3학년" data-code="3">초등 3학년</option>
@@ -3254,6 +3343,12 @@
                     <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAddCoverFile" onclick="switchAddCoverMode('file')">파일</button>
                   </div>
                 </div>
+                <div class="mb-2 p-1.5 px-2 rounded bg-light border text-center" style="border-color: #e2e8f0;">
+                  <span class="font-weight-bold text-primary" style="font-size: 11px;">
+                    <i class="fa-solid fa-ruler-combined mr-1"></i>권장 사이즈: <strong>300 × 420px</strong> (비율 1:1.4)
+                  </span>
+                  <div class="text-muted" style="font-size: 10px;">WebP, JPG, PNG 파일 지원 (5MB 이하 권장)</div>
+                </div>
                 <div id="addCoverUrlWrap">
                   <input type="text" id="mbAddCover" class="form-control form-control-beige" placeholder="https://..." oninput="updateAddCoverPreview(this.value)">
                 </div>
@@ -3263,6 +3358,7 @@
                     <label class="custom-file-label" for="mbAddCoverFileInput" id="mbAddCoverFileLabel" style="font-size: 11.5px;">이미지 선택</label>
                   </div>
                 </div>
+                <small class="text-muted d-block mt-1" style="font-size: 10.5px;">* 권장 비율(1:1.4)로 등록 시 목록 및 배너에 왜곡 없이 표시됩니다.</small>
               </div>
 
               <!-- 나노 시트 / 지도안 첨부 -->
@@ -3295,6 +3391,159 @@
             </div>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- [모달] 엑셀 대량 도서 등록 모달 -->
+<div class="modal fade" id="masterBookExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-file-excel mr-2 text-success"></i>엑셀 대량 도서 등록
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4" style="background: #faf8f5;">
+        <div class="mb-3 text-muted" style="font-size: 12.5px;">
+          표준 엑셀 서식에 맞추어 여러 권의 도서를 마스터 라이브러리에 한 번에 일괄 등록합니다.
+        </div>
+        <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded border">
+          <div>
+            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
+              <i class="fa-solid fa-file-csv text-success mr-1.5"></i>표준 도서 등록 서식 다운로드
+            </span>
+            <small class="text-muted">도서명, 저자, 출판사, 권장학년, 카테고리 등 필수 규격 포함</small>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadBookExcelTemplate()" style="border-radius: 8px; font-size: 12px; padding: 5px 12px;">
+            <i class="fa-solid fa-download mr-1"></i>샘플 다운로드 (.csv)
+          </button>
+        </div>
+        <div class="p-4 rounded text-center mb-3 bg-white" style="border: 2px dashed var(--border-medium); cursor: pointer;" onclick="document.getElementById('masterBookExcelFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up text-success mb-2" style="font-size: 38px;"></i>
+          <h6 class="font-weight-bold mb-1" id="masterBookExcelFileName" style="font-size: 13.5px;">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
+          <small class="text-muted">지원 형식: .xlsx, .xls, .csv (최대 10MB)</small>
+          <input type="file" id="masterBookExcelFileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleMasterBookExcelFileSelect(this)">
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+          <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+          <button type="button" class="btn-beige-primary" onclick="handleMasterBookExcelUpload()">
+            <i class="fa-solid fa-upload mr-1"></i>도서 일괄 업로드 실행
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- [모달] 새 북퀴즈 세트 추가 (기관명 자동 선택 모달) -->
+<div class="modal fade" id="newQuizSetModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 15px;">
+          <i class="fa-solid fa-circle-plus mr-2 text-primary"></i>새 북퀴즈 출제 세트 추가
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4" style="background: #faf8f5;">
+        <div class="mb-3 text-muted" style="font-size: 12.5px;">
+          새 북퀴즈를 추가할 출제 기관을 선택하세요. 직접 입력할 필요 없이 등록된 기관명이 자동으로 배정됩니다.
+        </div>
+        <div class="form-group mb-3">
+          <label class="font-weight-bold" style="font-size: 13px;">출제 기관 선택 <span class="text-danger">*</span></label>
+          <select id="newQuizAuthorSelect" class="select-beige w-100 font-weight-bold" style="font-size: 13px;">
+            <option value="HQ" data-name="본사" data-academy="본사 직속 (공용)">👑 본사 직속 (공용 북퀴즈 세트)</option>
+          </select>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+          <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+          <button type="button" class="btn-beige-primary" onclick="confirmAddNewQuizSet()">
+            <i class="fa-solid fa-check mr-1"></i>북퀴즈 세트 생성
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- [모달] 문항 멀티미디어 자료 첨부 모달 (WebP 이미지 압축 & 비디오 URL) -->
+<div class="modal fade" id="quizMediaModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 15px;">
+          <i class="fa-solid fa-photo-film text-info mr-2"></i>문항 멀티미디어 자료 첨부
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4" style="background: #faf8f5;">
+        <div class="d-flex gap-2 mb-3">
+          <button type="button" class="btn btn-sm flex-fill font-weight-bold active" id="btnMediaTabImage" onclick="switchMediaModalTab('image')" style="border-radius: 8px; border: 1px solid var(--border-medium); background: #fff;">
+            <i class="fa-solid fa-image text-primary mr-1"></i>이미지 (WebP 자동변환)
+          </button>
+          <button type="button" class="btn btn-sm flex-fill font-weight-bold" id="btnMediaTabVideo" onclick="switchMediaModalTab('video')" style="border-radius: 8px; border: 1px solid var(--border-medium); background: #fff;">
+            <i class="fa-brands fa-youtube text-danger mr-1"></i>동영상 (URL 링크)
+          </button>
+        </div>
+
+        <!-- 1) 이미지 업로드 탭 -->
+        <div id="mediaModalImageTab">
+          <div class="p-3 bg-white rounded border mb-3 text-center" style="border: 2px dashed #cbd5e1; cursor: pointer;" onclick="document.getElementById('mqModalImageFile').click()">
+            <i class="fa-solid fa-cloud-arrow-up text-primary mb-2" style="font-size: 32px;"></i>
+            <h6 class="font-weight-bold mb-1" style="font-size: 13px;">클릭하여 이미지 파일 선택</h6>
+            <small class="text-muted">JPG, PNG, GIF 등 지원 (업로드 시 초경량 고화질 WebP로 자동 압축 변환)</small>
+            <input type="file" id="mqModalImageFile" accept="image/*" style="display: none;" onchange="handleModalImageUpload(this)">
+          </div>
+          <div id="mqModalImagePreview" style="display: none;" class="p-3 bg-white rounded border mb-3">
+            <div class="d-flex align-items-center gap-3">
+              <img id="mqModalImageImg" src="" style="width: 100px; height: 75px; object-fit: contain; background: #f1f5f9; border-radius: 6px; border: 1px solid #e2e8f0;">
+              <div>
+                <div class="badge badge-success px-2 py-0.5 mb-1" style="font-size: 10px;">WebP 압축 변환 완료</div>
+                <div class="font-weight-bold text-dark" id="mqModalImageInfo" style="font-size: 12px;"></div>
+                <small class="text-muted" id="mqModalImageSaving" style="font-size: 11px;"></small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2) 동영상 URL 탭 -->
+        <div id="mediaModalVideoTab" style="display: none;">
+          <div class="form-group mb-3">
+            <label class="font-weight-bold" style="font-size: 12.5px;">동영상 URL (YouTube / Vimeo / MP4)</label>
+            <div class="input-group">
+              <input type="url" id="mqModalVideoUrl" class="form-control form-control-beige" placeholder="예: https://www.youtube.com/watch?v=..." oninput="handleModalVideoInput(this.value)">
+              <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary" onclick="previewModalVideoUrl()">미리보기</button>
+              </div>
+            </div>
+            <small class="text-muted mt-1 d-block" style="font-size: 11px;">* 유튜브 단축 주소(youtu.be) 및 Shorts URL도 자동으로 인식됩니다.</small>
+          </div>
+          <div id="mqModalVideoPreview" style="display: none;" class="mb-3">
+            <div style="position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 6px; background: #000;" id="mqModalVideoPlayerWrap"></div>
+          </div>
+        </div>
+
+        <!-- 공통 캡션 -->
+        <div class="form-group mb-0">
+          <label class="font-weight-bold" style="font-size: 12px; color: #475569;">자료 설명 / 캡션 <small class="text-muted">(선택)</small></label>
+          <input type="text" id="mqModalCaption" class="form-control form-control-beige" placeholder="예: [참고자료] 어린 왕자가 만난 사막여우 삽화" style="font-size: 12px;">
+        </div>
+
+        <!-- 버튼 영역 -->
+        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearModalMedia()">
+            <i class="fa-solid fa-trash-can mr-1"></i>자료 삭제
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+            <button type="button" class="btn-beige-primary" onclick="applyModalMedia()">
+              <i class="fa-solid fa-check mr-1"></i>적용하기
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -3345,20 +3594,10 @@
             <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteQuizSet" onclick="deleteCurQuizSet()" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; display: none;">
               <i class="fa-solid fa-trash mr-1"></i>선택 퀴즈 세트 삭제
             </button>
-            <button type="button" class="btn btn-xs btn-primary font-weight-bold shadow-sm" onclick="promptAddNewQuizSet()" style="border-radius: 6px; font-size: 11.5px; padding: 4.5px 11px; background: #6366f1; border-color: #6366f1;">
+            <button type="button" class="btn btn-xs btn-primary font-weight-bold shadow-sm" onclick="openNewQuizSetModal()" style="border-radius: 6px; font-size: 11.5px; padding: 4.5px 11px; background: #6366f1; border-color: #6366f1;">
               <i class="fa-solid fa-circle-plus mr-1"></i>새 북퀴즈 추가
             </button>
           </div>
-        </div>
-
-        <!-- 마스터 권한 알림 바 -->
-        <div class="py-1 px-2.5 mb-3 rounded d-flex align-items-center justify-content-between" style="background: #eef2ff; border: 1px solid #c7d2fe; font-size: 11.5px; color: #3730a3;">
-          <div class="d-flex align-items-center gap-1.5">
-            <i class="fa-solid fa-crown text-warning"></i>
-            <span id="mqCurAuthorText"><strong>선택된 출제 기관:</strong> 본사</span>
-            <span class="text-slate-500 ml-1 d-none d-md-inline">(마스터 관리자는 타 가맹점에서 등록한 퀴즈도 모두 직접 수정 및 삭제할 수 있습니다)</span>
-          </div>
-          <span class="badge badge-indigo text-white px-2 py-0.5" id="mqAuthorTypeBadge" style="background: #4f46e5; font-size: 10px;">본사 출제</span>
         </div>
 
         <!-- 문항 번호 탭 헤더 + 문항 추가/삭제 -->
@@ -3435,151 +3674,58 @@
             </div>
           </div>
 
-          <!-- 질문 내용 -->
-          <div class="form-group mb-2">
-            <label class="font-weight-bold" style="font-size: 12.5px;">질문 / 발문 내용 <span class="text-danger">*</span></label>
-            <textarea id="mqQuestionText" class="form-control form-control-beige" rows="2" placeholder="도서 내용을 바탕으로 독해력/이해도를 측정할 질문을 입력하세요." onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
-          </div>
-
-          <!-- 문항 멀티미디어 자료 첨부 (이미지 자동 WebP 변환 / 영상 URL) -->
-          <div class="p-2.5 mb-3 rounded border" style="background: #f8fafc; border-color: #e2e8f0;">
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-              <label class="font-weight-bold mb-0" style="font-size: 12px; color: #334155;">
-                <i class="fa-solid fa-photo-film text-info mr-1"></i>문항 멀티미디어 자료 <small class="text-muted font-weight-normal">(선택: 문제 이해를 돕는 시각/영상 자료)</small>
+          <!-- 질문 / 발문 내용 헤더 & 우측 상단 멀티미디어 자료 첨부 버튼 -->
+          <div class="form-group mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1.5 flex-wrap gap-2">
+              <label class="font-weight-bold mb-0" style="font-size: 13px; color: var(--text-main);">
+                질문 / 발문 내용 <span class="text-danger">*</span>
               </label>
-              <!-- 미디어 유형 선택 버튼 그룹 -->
-              <div class="btn-group btn-group-toggle" id="mqMediaTypeGroup" style="transform: scale(0.92); transform-origin: right center;">
-                <button type="button" class="btn btn-xs btn-outline-secondary active" id="mqMediaBtnNone" onclick="setQuizMediaType('none')">
-                  <i class="fa-solid fa-ban mr-1"></i>미디어 없음
-                </button>
-                <button type="button" class="btn btn-xs btn-outline-info" id="mqMediaBtnImage" onclick="setQuizMediaType('image')">
-                  <i class="fa-solid fa-image mr-1"></i>이미지 (WebP 자동변환)
-                </button>
-                <button type="button" class="btn btn-xs btn-outline-danger" id="mqMediaBtnVideo" onclick="setQuizMediaType('video')">
-                  <i class="fa-solid fa-video mr-1"></i>영상 (URL 링크)
-                </button>
-              </div>
-            </div>
-
-            <!-- 1) 이미지 업로드 영역 (WebP 자동 변환) -->
-            <div id="mqMediaImageArea" style="display: none;">
-              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                <input type="file" id="mqImageFileInput" accept="image/*" class="d-none" onchange="handleQuizImageUpload(this)">
-                <button type="button" class="btn btn-xs btn-primary font-weight-bold" onclick="document.getElementById('mqImageFileInput').click()" style="background: #0284c7; border-color: #0284c7; padding: 4px 10px;">
-                  <i class="fa-solid fa-cloud-arrow-up mr-1"></i>이미지 파일 선택
-                </button>
-                <small class="text-muted" id="mqImageStatusText" style="font-size: 11px;">
-                  <i class="fa-solid fa-wand-magic-sparkles text-warning mr-1"></i>업로드 시 고화질 WebP 파일로 자동 변환·경량화되어 초고속 로딩됩니다.
-                </small>
-              </div>
-
-              <!-- 이미지 미리보기 & 삭제 -->
-              <div id="mqImagePreviewBox" style="display: none; margin-top: 6px;">
-                <div class="d-flex align-items-start gap-3 p-2 bg-white rounded border" style="border-color: #cbd5e1;">
-                  <div style="position: relative; width: 130px; height: 90px; border-radius: 6px; overflow: hidden; background: #f1f5f9; border: 1px solid #cbd5e1; flex-shrink: 0;">
-                    <img id="mqImagePreviewImg" src="" alt="문항 이미지 미리보기" style="width: 100%; height: 100%; object-fit: contain; background: #fff;">
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <div class="d-flex align-items-center gap-1.5 mb-1">
-                      <span class="badge badge-success px-1.5 py-0.5" style="font-size: 10px;">WebP 자동 변환 완료</span>
-                      <small class="font-weight-bold text-dark" id="mqImageMetaText" style="font-size: 11px;"></small>
-                    </div>
-                    <div class="text-muted" style="font-size: 11px; margin-bottom: 6px;">
-                      서버 용량과 네트워크 속도를 고려하여 WebP 최적화 포맷으로 압축 저장됩니다.
-                    </div>
-                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="removeQuizMedia()" style="padding: 2px 7px; font-size: 10.5px;">
-                      <i class="fa-solid fa-trash-can mr-1"></i>이미지 삭제
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 2) 영상 URL 등록 영역 -->
-            <div id="mqMediaVideoArea" style="display: none;">
-              <div class="input-group input-group-sm mb-1.5">
-                <div class="input-group-prepend">
-                  <span class="input-group-text bg-white" style="font-size: 11px; color: #475569;">
-                    <i class="fa-brands fa-youtube text-danger mr-1"></i>영상 URL
-                  </span>
-                </div>
-                <input type="url" id="mqVideoUrlInput" class="form-control form-control-beige" placeholder="예: https://www.youtube.com/watch?v=... 또는 https://youtu.be/... (MP4 직접 링크 가능)" oninput="handleQuizVideoUrlInput(this.value)" style="font-size: 11.5px;">
-                <div class="input-group-append">
-                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="previewQuizVideoUrl()">미리보기</button>
-                  <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuizMedia()">삭제</button>
-                </div>
-              </div>
-              <small class="text-muted d-block mb-2" style="font-size: 10.5px;">
-                <i class="fa-solid fa-circle-info text-info mr-1"></i>용량 절감을 위해 영상은 YouTube, Vimeo 또는 외부 스트리밍 URL 링크로 등록됩니다.
-              </small>
-
-              <!-- 비디오 미리보기 플레이어 -->
-              <div id="mqVideoPreviewBox" style="display: none; margin-top: 6px;">
-                <div class="p-2 bg-white rounded border">
-                  <div style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
-                    <i class="fa-solid fa-circle-play text-danger mr-1"></i>영상 미리보기
-                  </div>
-                  <div style="position: relative; width: 100%; max-width: 440px; aspect-ratio: 16/9; overflow: hidden; border-radius: 6px; background: #000;" id="mqVideoPlayerWrap">
-                    <!-- iframe 또는 video 태그 동적 주입 -->
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 3) 공통 미디어 캡션 (선택) -->
-            <div id="mqMediaCaptionWrap" class="mt-2 pt-2 border-top" style="display: none; border-color: #e2e8f0;">
               <div class="d-flex align-items-center gap-2">
-                <span style="font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap;">자료 설명 / 캡션:</span>
-                <input type="text" id="mqMediaCaption" class="form-control form-control-sm form-control-beige" placeholder="예: [참고자료] 어린 왕자가 만난 사막여우 삽화" oninput="saveCurrentQuizDraft()" style="font-size: 11.5px; height: 28px;">
+                <!-- 첨부된 미디어 뱃지 (있을 때만 표시) -->
+                <span id="mqMediaBadgeIndicator" style="display: none;" class="badge badge-info px-2.5 py-1 font-weight-bold">
+                  <i class="fa-solid fa-paperclip mr-1"></i><span id="mqMediaBadgeIndicatorText">자료 첨부됨</span>
+                </span>
+                <!-- 우측 상단 멀티미디어 자료 첨부 버튼 -->
+                <button type="button" class="btn btn-xs btn-outline-info font-weight-bold shadow-sm" onclick="openQuizMediaModal()" style="border-radius: 6px; padding: 4px 10px; font-size: 11.5px;">
+                  <i class="fa-solid fa-photo-film mr-1"></i>문항 멀티미디어 자료 등록
+                </button>
+              </div>
+            </div>
+            <!-- 질문 입력창 height 2.5배 확대 -->
+            <textarea id="mqQuestionText" class="form-control form-control-beige" rows="5" style="min-height: 130px; font-size: 13px; line-height: 1.6;" placeholder="도서 내용을 바탕으로 독해력/이해도를 측정할 질문이나 지문을 입력하세요." onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
+            <!-- 첨부된 미디어 정보 요약 칩 (등록 시 노출) -->
+            <div id="mqMediaSummaryBox" class="mt-2 p-2 rounded bg-light border align-items-center justify-content-between" style="display: none; border-color: #cbd5e1 !important;">
+              <div class="d-flex align-items-center gap-2">
+                <span id="mqMediaSummaryIcon" style="font-size: 16px;">🖼️</span>
+                <span id="mqMediaSummaryTitle" class="font-weight-bold text-dark" style="font-size: 12px;">WebP 이미지 첨부 완료</span>
+                <small id="mqMediaSummaryDesc" class="text-muted" style="font-size: 11px;"></small>
+              </div>
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-xs btn-outline-primary" onclick="openQuizMediaModal()" style="font-size: 11px; padding: 2px 7px;">변경</button>
+                <button type="button" class="btn btn-xs btn-outline-danger" onclick="removeQuizMedia()" style="font-size: 11px; padding: 2px 7px;">삭제</button>
               </div>
             </div>
           </div>
 
-          <!-- A. 객관식 입력 폼 (4지선다) -->
+          <!-- A. 객관식 입력 폼 (3~5개 동적 옵션, 디폴트 3개, 하단 추가버튼, 우측 삭제버튼) -->
           <div id="mqChoiceFormWrap">
-            <label class="font-weight-bold d-flex justify-content-between" style="font-size: 12.5px;">
-              <span>보기 및 정답 번호 선택</span>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="font-weight-bold mb-0" style="font-size: 13px; color: var(--text-main);">
+                보기 및 정답 번호 선택 <small class="text-muted font-weight-normal">(기본 3개 ~ 최대 5개)</small>
+              </label>
               <small class="text-muted">* 정답인 보기의 라디오를 선택하세요.</small>
-            </label>
-
-            <div class="input-group mb-2">
-              <div class="input-group-prepend">
-                <div class="input-group-text bg-light border-right-0" style="border-radius: 8px 0 0 8px;">
-                  <input type="radio" name="mqChoiceCorrect" id="mqRadio1" value="1" checked onchange="saveCurrentQuizDraft()">
-                  <label for="mqRadio1" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">①번</label>
-                </div>
-              </div>
-              <input type="text" id="mqOpt1" class="form-control form-control-beige" placeholder="1번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()">
             </div>
 
-            <div class="input-group mb-2">
-              <div class="input-group-prepend">
-                <div class="input-group-text bg-light border-right-0" style="border-radius: 8px 0 0 8px;">
-                  <input type="radio" name="mqChoiceCorrect" id="mqRadio2" value="2" onchange="saveCurrentQuizDraft()">
-                  <label for="mqRadio2" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">②번</label>
-                </div>
-              </div>
-              <input type="text" id="mqOpt2" class="form-control form-control-beige" placeholder="2번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()">
+            <!-- 동적 보기 컨테이너 (3~5개) -->
+            <div id="mqDynamicChoicesContainer" class="d-flex flex-column gap-2 mb-2">
+              <!-- JS renderDynamicChoices()에서 렌더링 -->
             </div>
 
-            <div class="input-group mb-2">
-              <div class="input-group-prepend">
-                <div class="input-group-text bg-light border-right-0" style="border-radius: 8px 0 0 8px;">
-                  <input type="radio" name="mqChoiceCorrect" id="mqRadio3" value="3" onchange="saveCurrentQuizDraft()">
-                  <label for="mqRadio3" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">③번</label>
-                </div>
-              </div>
-              <input type="text" id="mqOpt3" class="form-control form-control-beige" placeholder="3번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()">
-            </div>
-
-            <div class="input-group mb-2">
-              <div class="input-group-prepend">
-                <div class="input-group-text bg-light border-right-0" style="border-radius: 8px 0 0 8px;">
-                  <input type="radio" name="mqChoiceCorrect" id="mqRadio4" value="4" onchange="saveCurrentQuizDraft()">
-                  <label for="mqRadio4" class="mb-0 ml-1 font-weight-bold" style="font-size: 12px; cursor: pointer;">④번</label>
-                </div>
-              </div>
-              <input type="text" id="mqOpt4" class="form-control form-control-beige" placeholder="4번 보기 내용" style="border-radius: 0 8px 8px 0;" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()">
+            <!-- 하단 보기 추가 버튼 (3~4개일 때 활성화) -->
+            <div id="mqAddChoiceBtnWrap" class="mt-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary w-100 font-weight-bold" id="btnAddChoiceOption" onclick="addQuizChoiceOption()" style="border-radius: 8px; border-style: dashed; padding: 7px; font-size: 12.5px;">
+                <i class="fa-solid fa-plus mr-1 text-primary"></i>보기 추가하기 (<span id="mqChoiceCountBadge">3</span>/5)
+              </button>
             </div>
           </div>
 
@@ -3639,7 +3785,7 @@
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">소속 가맹 학원 <span class="text-danger">*</span></label>
-              <select id="newMemAcademy" class="select-beige w-100" required>
+              <select id="newMemAcademy" class="select-beige w-100" required onchange="onMasterMemberAcademyChange(this.value)">
                 <!-- JS 동적 주입 -->
               </select>
             </div>
@@ -3649,18 +3795,22 @@
                 <option value="STUDENT" selected>학생 (원생)</option>
                 <option value="TEACHER">선생님 (지도교사)</option>
                 <option value="DIRECTOR">원장님 (관리자)</option>
+                <option value="HQ_ADMIN" id="newMemRoleHqOption" style="display:none;">본사 관리자 (HQ Admin)</option>
               </select>
+              <small class="text-muted d-none" id="newMemRoleNote" style="font-size: 11px;">본사 선택 시 본사 관리자로 고정됩니다.</small>
             </div>
           </div>
 
           <div class="row">
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">회원 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemName" class="form-control form-control-beige" placeholder="예: 김민준" required>
+              <input type="text" id="newMemName" class="form-control form-control-beige" placeholder="예: 김민준" required oninput="validateKoreanEngName(this)">
+              <small class="text-danger d-none" id="newMemNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다.</small>
             </div>
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">로그인 아이디 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemUsername" class="form-control form-control-beige" placeholder="예: minjun_k" required>
+              <input type="text" id="newMemUsername" class="form-control form-control-beige" placeholder="예: minjun_k" required oninput="formatUsernameInput(this)" onblur="checkMemberIdDuplicate(this.value, 'newMemUsernameStatus')">
+              <small id="newMemUsernameStatus" class="text-muted" style="font-size: 11px;"></small>
             </div>
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">초기 비밀번호 <span class="text-danger">*</span></label>
@@ -3672,6 +3822,7 @@
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학년 / 구분 <span class="text-danger">*</span></label>
               <select id="newMemGrade" class="select-beige w-100">
+                <option value="미취학">미취학 (유치원)</option>
                 <option value="초1">초등학교 1학년</option>
                 <option value="초2">초등학교 2학년</option>
                 <option value="초3">초등학교 3학년</option>
@@ -3686,17 +3837,19 @@
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">배정 학급 (클래스)</label>
-              <input type="text" id="newMemClass" class="form-control form-control-beige" placeholder="예: 소나무반, 매화반, 심화반">
+              <select id="newMemClass" class="select-beige w-100">
+                <!-- JS 동적 주입 -->
+              </select>
             </div>
           </div>
 
           <div class="row">
             <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">학생 (본인) 연락처 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" oninput="formatPhoneInput(this)" maxlength="13" required>
+              <label class="font-weight-bold" style="font-size: 13px;">학생 (본인) 연락처</label>
+              <input type="text" id="newMemPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" oninput="formatPhoneInput(this)" maxlength="13">
             </div>
             <div class="col-md-6 form-group" id="newMemParentPhoneWrap">
-              <label class="font-weight-bold" style="font-size: 13px;">학부모 연락처 <span class="text-danger">*</span></label>
+              <label class="font-weight-bold" style="font-size: 13px;">학부모 연락처</label>
               <input type="text" id="newMemParentPhone" class="form-control form-control-beige" placeholder="예: 010-9876-5432" oninput="formatPhoneInput(this)" maxlength="13">
               <small class="text-muted">알림톡 및 독서 리포트 발송용 번호입니다.</small>
             </div>
@@ -3743,14 +3896,6 @@
           </button>
         </div>
 
-        <div class="form-group">
-          <label class="font-weight-bold" style="font-size: 13px;">등록 대상 가맹 학원 <span class="text-danger">*</span></label>
-          <select id="excelTargetAcademy" class="select-beige w-100" required>
-            <!-- JS 동적 주입 -->
-          </select>
-          <small class="text-muted">엑셀 내 회원이 등록될 기준 학원을 지정합니다.</small>
-        </div>
-
         <!-- 드래그 앤 드롭 업로드 존 -->
         <div class="p-4 rounded text-center mb-3" style="border: 2px dashed var(--border-medium); background: #faf8f5; cursor: pointer;" onclick="document.getElementById('memberExcelFileInput').click()">
           <i class="fa-solid fa-cloud-arrow-up text-muted mb-2" style="font-size: 36px;"></i>
@@ -3761,7 +3906,8 @@
 
         <div class="p-3 bg-light rounded" style="font-size: 12px; color: var(--text-muted);">
           <div class="font-weight-bold mb-1 text-dark"><i class="fa-solid fa-circle-info mr-1 text-primary"></i>안내사항</div>
-          • 엑셀 서식의 1행(컬럼명: 이름, 아이디, 비밀번호, 학년, 학급, 연락처, 학부모연락처)을 변경하지 마세요.<br>
+          • 엑셀 서식 내 <strong>'등록 학원 코드'</strong> 셀에 가맹학원 코드(예: ACAD-001)를 입력하세요. 학원명이 아닌 코드로 입력합니다.<br>
+          • 엑셀 서식의 1행(컬럼명)을 변경하지 마세요.<br>
           • 중복된 아이디는 자동으로 제외되며 등록 결과 리포트가 표시됩니다.
         </div>
 
