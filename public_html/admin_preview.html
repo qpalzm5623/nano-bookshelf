@@ -72,6 +72,16 @@
       font-family: inherit;
     }
 
+    /* 브라우저 자동완성(Autofill) 임의의 배경색 및 입력 간섭 방지 */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+      -webkit-text-fill-color: var(--text-main) !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
     /* 전역 슬림 스크롤바 (스크롤바 유무에 따른 화면 덜컹거림 원천 차단) */
     ::-webkit-scrollbar {
       width: 8px;
@@ -1594,6 +1604,12 @@
 </head>
 <body>
 
+<!-- Chrome/Edge 브라우저 비밀번호 관리자 자동완성 가로채기 방지용 더미 필드 -->
+<div style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; opacity: 0; pointer-events: none; overflow: hidden;" aria-hidden="true" tabindex="-1">
+  <input type="text" name="fake_username_remember" tabindex="-1" autocomplete="username">
+  <input type="password" name="fake_password_remember" tabindex="-1" autocomplete="current-password">
+</div>
+
 <!-- 상단 고정 헤더 영역 (역할 전환 바 + 메인 헤더) -->
 <div class="admin-header-fixed-wrap">
 
@@ -1755,7 +1771,7 @@
             <div class="col-md-6">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">원생 검색</label>
               <div class="input-group input-group-sm">
-                <input type="text" class="form-control" id="searchStudentInput" oninput="filterStudents()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="김민준, S1021, 나노초 등 검색...">
+                <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudents()" onsearch="filterStudents()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="김민준, S1021, 나노초 등 검색...">
                 <div class="input-group-append">
                   <button class="btn btn-beige-primary px-3" style="border-radius: 0 8px 8px 0;" onclick="filterStudents()"><i class="fa-solid fa-search"></i></button>
                 </div>
@@ -1887,7 +1903,7 @@
             <div class="col-md-2">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">도서 검색</label>
               <div class="input-group input-group-sm">
-                <input type="text" class="form-control" id="searchAcadBookInput" oninput="filterAcademyBooks()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="도서명, 저자, 출판사...">
+                <input type="search" class="form-control" id="searchAcadBookInput" name="search_acad_book_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterAcademyBooks()" onsearch="filterAcademyBooks()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="도서명, 저자, 출판사...">
                 <div class="input-group-append">
                   <button class="btn btn-beige-primary px-2" style="border-radius: 0 8px 8px 0;" onclick="filterAcademyBooks()"><i class="fa-solid fa-search"></i></button>
                 </div>
@@ -2421,7 +2437,7 @@
             <div class="col-md-6">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">원생 / 리포트 검색</label>
               <div class="input-group input-group-sm">
-                <input type="text" class="form-control" id="searchPortfolioInput" oninput="filterPortfolioList()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="원생명, 학번, 포트폴리오 명칭 등 검색...">
+                <input type="search" class="form-control" id="searchPortfolioInput" name="search_portfolio_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterPortfolioList()" onsearch="filterPortfolioList()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="원생명, 학번, 포트폴리오 명칭 등 검색...">
                 <div class="input-group-append">
                   <button class="btn btn-beige-primary px-3" style="border-radius: 0 8px 8px 0;" onclick="filterPortfolioList()"><i class="fa-solid fa-search"></i></button>
                 </div>
@@ -2637,7 +2653,7 @@
                 <option value="심화반">심화반</option>
                 <option value="새싹반">새싹반</option>
               </select>
-              <input type="text" class="form-control form-control-sm mr-2" id="searchAssignStudentInput" oninput="filterStudentAssignments()" placeholder="원생 이름/학번 검색..." style="width: 180px; border-radius: 8px; font-size: 12.5px;">
+              <input type="search" class="form-control form-control-sm mr-2" id="searchAssignStudentInput" name="search_assign_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudentAssignments()" onsearch="filterStudentAssignments()" placeholder="원생 이름/학번 검색..." style="width: 180px; border-radius: 8px; font-size: 12.5px;">
               <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openIndividualAssignModal()" style="border-radius: 8px; font-size: 12px; white-space: nowrap;">
                 <i class="fa-solid fa-plus mr-1"></i>개별 원생 배정
               </button>
@@ -6037,7 +6053,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Daum 우편번호 서비스 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script src="admin_preview.js?v=20261002_ime_v2"></script>
+<script src="admin_preview.js?v=20261002_autofill_v5"></script>
 
 </body>
 </html>

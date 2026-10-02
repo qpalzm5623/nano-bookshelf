@@ -213,6 +213,10 @@ function switchTab(tab) {
     selectPlanTier(currentSelectedTier || 'standard');
   }
 
+  if (typeof clearAdminSearchAutofill === 'function') {
+    clearAdminSearchAutofill();
+  }
+
   var mainEl = document.querySelector('.main-workspace');
   if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -8162,19 +8166,50 @@ document.addEventListener('DOMContentLoaded', function() {
   renderAcademyPaymentTable();
   selectPlanTier('standard');
 
-  // 브라우저 저장 아이디(student01 등) 검색창 자동완성 침범 방지
-  function clearAdminSearchAutofill() {
-    ['learningSearchInput', 'indivStudentSearchInput', 'indivBookSearchInput', 'classNewBookSearchInput'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el && el.value && document.activeElement !== el) {
-        el.value = '';
-      }
-    });
-  }
+  // 브라우저 저장 아이디(student01 등) 검색창 자동완성 침범 방지 및 강제 클리어
   clearAdminSearchAutofill();
-  setTimeout(clearAdminSearchAutofill, 80);
+  setTimeout(clearAdminSearchAutofill, 50);
+  setTimeout(clearAdminSearchAutofill, 150);
   setTimeout(clearAdminSearchAutofill, 300);
   setTimeout(clearAdminSearchAutofill, 800);
+  setTimeout(clearAdminSearchAutofill, 1500);
+});
+
+// 브라우저 저장 아이디(student01 등) 검색창 자동완성 침범 방지 및 강제 클리어
+function clearAdminSearchAutofill() {
+  var searchConfigs = [
+    { id: 'searchStudentInput', fn: typeof filterStudents === 'function' ? filterStudents : null },
+    { id: 'searchAcadBookInput', fn: typeof filterAcademyBooks === 'function' ? filterAcademyBooks : null },
+    { id: 'searchPortfolioInput', fn: typeof filterPortfolioList === 'function' ? filterPortfolioList : null },
+    { id: 'searchAssignStudentInput', fn: typeof filterStudentAssignments === 'function' ? filterStudentAssignments : null },
+    { id: 'learningSearchInput', fn: null },
+    { id: 'indivStudentSearchInput', fn: typeof filterIndivModalStudents === 'function' ? filterIndivModalStudents : null },
+    { id: 'indivBookSearchInput', fn: typeof filterIndivBookCatalog === 'function' ? filterIndivBookCatalog : null },
+    { id: 'classNewBookSearchInput', fn: typeof filterClassNewBookCatalog === 'function' ? filterClassNewBookCatalog : null }
+  ];
+
+  searchConfigs.forEach(function(item) {
+    var el = document.getElementById(item.id);
+    if (el && el.value) {
+      // 사용자가 현재 해당 입력창에 직접 포커스를 두고 타이핑 중인 경우가 아니라면 강제 클리어
+      if (document.activeElement !== el) {
+        el.value = '';
+        if (typeof item.fn === 'function') {
+          item.fn();
+        }
+      }
+    }
+  });
+}
+
+window.addEventListener('pageshow', function() {
+  clearAdminSearchAutofill();
+});
+
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    clearAdminSearchAutofill();
+  }
 });
 
 // ==============================================================
