@@ -5121,21 +5121,23 @@ function printRankingPoster() {
   // 인쇄 전용 영역에 최신 포스터 렌더링
   renderAdminRankingPoster(printArea);
 
-  // 인쇄 클래스 활성화
+  // 인쇄 클래스 활성화 + 인쇄 영역 표시
+  printArea.style.display = 'block';
   document.body.classList.add('is-printing-poster');
 
   var cleanup = function() {
     document.body.classList.remove('is-printing-poster');
+    printArea.style.display = 'none'; // 인쇄 후 다시 숨김
     window.removeEventListener('afterprint', cleanup);
   };
   window.addEventListener('afterprint', cleanup);
 
-  // 브라우저 인쇄 다이얼로그 호출
+  // 브라우저 인쇄 다이얼로그 호출 (렌더링 완료 후)
   setTimeout(function() {
     window.print();
-    // 안전 fallback
-    setTimeout(cleanup, 2000);
-  }, 150);
+    // 안전 fallback (afterprint 미지원 브라우저 대비)
+    setTimeout(cleanup, 3000);
+  }, 200);
 }
 
 // 모달 내에서 바로 인쇄 실행
