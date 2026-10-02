@@ -50,15 +50,20 @@
 
     * { box-sizing: border-box; }
     html {
-      overflow-y: scroll;
-      scrollbar-gutter: stable;
+      height: 100%;
+      overflow: hidden;
     }
     body {
       font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
       background-color: var(--bg-base);
       color: var(--text-main);
-      min-height: 100vh;
-      overflow-x: hidden;
+      height: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       letter-spacing: -0.35px;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
@@ -126,14 +131,14 @@
       color: #ffffff;
     }
 
-    /* 상단 고정 헤더 래퍼 */
+    /* 상단 고정 헤더 래퍼 (로고 및 사용자 정보 영역 완벽 고정) */
     .master-header-fixed-wrap {
-      position: sticky;
-      top: 0;
+      width: 100%;
+      height: 64px;
+      flex-shrink: 0;
       z-index: 1020;
       background: var(--bg-surface);
       box-shadow: 0 2px 12px rgba(43, 35, 29, 0.05);
-      height: 64px;
     }
 
     /* 상단 미니멀 네비게이션 */
@@ -178,14 +183,18 @@
       margin-left: 6px;
     }
 
-    /* 레이아웃 구조 */
+    /* 레이아웃 구조 (상단 바 아래 100% 뷰포트 고정) */
     .app-container {
       display: flex;
-      min-height: calc(100vh - 64px);
-      align-items: flex-start;
+      flex: 1;
+      height: calc(100vh - 64px);
+      min-height: 0;
+      width: 100%;
+      overflow: hidden;
+      align-items: stretch;
     }
 
-    /* 좌측 사이드바 (상단 헤더에 항상 완벽히 밀착 고정) */
+    /* 좌측 사이드바 (상단 헤더 아래 항상 완벽히 밀착 고정, 메뉴 초과 시 자체 스크롤) */
     .simple-sidebar {
       width: 255px;
       background: var(--bg-subtle);
@@ -194,13 +203,12 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
-      position: sticky;
-      top: 64px;
-      height: calc(100vh - 64px);
+      height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
       z-index: 1000;
       margin-top: 0;
+      box-sizing: border-box;
     }
     .simple-sidebar::-webkit-scrollbar {
       width: 5px;
@@ -256,11 +264,29 @@
       color: var(--text-main);
     }
 
-    /* 메인 작업 영역 */
+    /* 메인 작업 영역 (우측 콘텐츠 영역만 부드럽게 단독 스크롤) */
     .main-workspace {
       flex: 1;
-      padding: 26px 36px;
+      height: 100%;
+      padding: 26px 36px 40px;
       overflow-y: auto;
+      overflow-x: hidden;
+      min-width: 0;
+      box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
+    }
+    .main-workspace::-webkit-scrollbar {
+      width: 8px;
+    }
+    .main-workspace::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .main-workspace::-webkit-scrollbar-thumb {
+      background: #dfd7cc;
+      border-radius: 4px;
+    }
+    .main-workspace::-webkit-scrollbar-thumb:hover {
+      background: #c8bcad;
     }
 
     /* 공통 카드 */

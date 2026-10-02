@@ -1,0 +1,312 @@
+// ==============================================================
+// 나노의책장 - Prisma Schema (Vercel Neon Postgres 전용 독립 DB)
+// ==============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --------------------------------------------------------------
+// 1. 가맹 학원 (Academy / Franchise)
+// --------------------------------------------------------------
+model Academy {
+  id              String         @id @default(cuid())
+  code            String         @unique // 예: ACAD-001
+  name            String         // 가맹 학원명
+  bizNo           String?        // 사업자등록번호
+  directorName    String         // 원장 성함
+  phone           String         // 대표 연락처
+  email           String?        // 대표 이메일
+  address         String?        // 학원 주소
+  plan            PlanTier       @default(STANDARD) // BASIC, STANDARD, VIP, ROYAL
+  maxStudents     Int            @default(50)       // 계약 학생 정원(슬롯)
+  monthlyFee      Int            @default(500000)   // 월 가맹비/이용료 (원)
+  joinDate        DateTime       @default(now())    // 가맹 등록일
+  startDate       DateTime                          // 계약 시작일
+  endDate         DateTime                          // 계약 종료일
+  status          AcademyStatus  @default(ACTIVE)   // ACTIVE, SUSPENDED, TERMINATED
+  memo            String?        @db.Text           // 본사 관리자 메모
+  deletedAt       DateTime?                         // 7일 임시보존 소프트 삭제 일시
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  members         Member[]
+  classes         ClassGroup[]
+  payments        Payment[]
+  dispatchLogs    AligoDispatchLog[]
+
+  @@map("academies")
+}
+
+// --------------------------------------------------------------
+// 2. 학원 내 반/그룹 편성 (ClassGroup)
+// --------------------------------------------------------------
+model ClassGroup {
+  id              String         @id @default(cuid())
+  academyId       String
+  academy         Academy        @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  name            String         // 예: 지혜반, 마스터반, 소나무반
+  targetGrade     String?        // 예: 초등 5학년, 중등 1학년
+  createdAt       DateTime       @default(now())
+
+  members         Member[]
+
+  @@map("class_groups")
+}
+
+// --------------------------------------------------------------
+// 3. 통합 회원 (원장, 선생님, 학생)
+// --------------------------------------------------------------
+model Member {
+  id              String         @id @default(cuid())
+  academyId       String
+  academy         Academy        @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  classGroupId    String?
+  classGroup      ClassGroup?    @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
+  role            Role           @default(STUDENT) // MASTER, DIRECTOR, TEACHER, STUDENT
+  name            String         // 이름
+  username        String         @unique           // 로그인 아이디
+  password        String?                          // 암호화된 비밀번호
+  gender          String?                          // 남 / 여
+  school          String?                          // 학교명 (예: 나노초등학교)
+  grade           String?                          // 학년 또는 직급 (초5, 중1, 원장, 교사)
+  phone           String?                          // 본인 연락처
+  parentName      String?                          // 학부모 성함
+  parentPhone     String?                          // 학부모 연락처
+  parentEmail     String?                          // 학부모 이메일
+  points          Int            @default(0)       // 누적 리딩 포인트
+  bookCount       Int            @default(0)       // 완독 도서 권수
+  quizAvg         Float          @default(0.0)     // 북퀴즈 평균 점수
+  reportYn        Boolean        @default(true)    // 학부모 리포트 카카오톡 발송 동의
+  status          MemberStatus   @default(APPROVED)// PENDING, APPROVED, WITHDRAWN
+  teacherName     String?                          // 담당 지도교사 성함
+  memo            String?        @db.Text          // 지도 및 상담 메모
+  lastLoginAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  quizAttempts    QuizAttempt[]
+  readingReports  ReadingReport[]
+
+  @@index([academyId])
+  @@index([role])
+  @@map("members")
+}
+
+// --------------------------------------------------------------
+// 4. 결제 및 수납 내역 (Payment)
+// --------------------------------------------------------------
+model Payment {
+  id              String         @id @default(cuid())
+  payCode         String         @unique           // 예: PAY-20260916-001
+  academyId       String
+  academy         Academy        @relation(fields: [academyId], references: [id])
+  plan            PlanTier
+  slotCount       Int                              // 구매/계약 학생 슬롯 수
+  amount          Int                              // 결제 금액 (원)
+  payMethod       String         @default("CARD")  // CARD, TRANSFER, VIRTUAL
+  status          PaymentStatus  @default(PAID)    // PAID, PENDING, OVERDUE, CANCELLED
+  receiptUrl      String?                          // 영수증 / 세금계산서 URL
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+
+  @@index([academyId])
+  @@map("payments")
+}
+
+// --------------------------------------------------------------
+// 5. 도서 콘텐츠 (Book)
+// --------------------------------------------------------------
+model Book {
+  id              String         @id @default(cuid())
+  title           String                           // 도서명
+  author          String                           // 저자
+  publisher       String?                          // 출판사
+  coverUrl        String?                          // 표지 이미지 URL
+  category        String?                          // 분류 (문학, 과학, 인문 등)
+  grade           String?                          // 추천 학년 (초1 ~ 중3)
+  level           String?                          // 레벨 (입문, 기본, 발전, 심화, 완성)
+  pageCount       Int            @default(100)
+  description     String?        @db.Text
+  isRecommended   Boolean        @default(false)   // 학년별 필독 권장도서 여부
+  recommendGrade  String?                          // 권장 학년 태그
+  themeId         String?
+  theme           ThemeCategory? @relation(fields: [themeId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  quizzes         BookQuiz[]
+  readingReports  ReadingReport[]
+
+  @@map("books")
+}
+
+// --------------------------------------------------------------
+// 6. 북퀴즈 문항 (BookQuiz)
+// --------------------------------------------------------------
+model BookQuiz {
+  id              String         @id @default(cuid())
+  bookId          String
+  book            Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  questionNo      Int                              // 문항 번호 (1, 2, 3...)
+  question        String         @db.Text          // 문제 내용
+  quizType        QuizType       @default(MULTIPLE_CHOICE) // MULTIPLE_CHOICE, SHORT_ANSWER
+  options         Json?                            // 객관식 보기 배열 ["1번", "2번", "3번", "4번"]
+  correctAnswer   String                           // 정답 (예: "2" 또는 단답형 정답)
+  explanation     String?        @db.Text          // 해설
+  score           Int            @default(20)      // 배점
+
+  @@map("book_quizzes")
+}
+
+// --------------------------------------------------------------
+// 7. 학생 북퀴즈 응시 결과 (QuizAttempt)
+// --------------------------------------------------------------
+model QuizAttempt {
+  id              String         @id @default(cuid())
+  memberId        String
+  member          Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId          String
+  score           Int                              // 획득 점수
+  totalScore      Int            @default(100)
+  answers         Json                             // 학생 제출 답안 및 채점 결과 상세
+  completedAt     DateTime       @default(now())
+
+  @@index([memberId])
+  @@map("quiz_attempts")
+}
+
+// --------------------------------------------------------------
+// 8. 학습 종합 리포트 (ReadingReport)
+// --------------------------------------------------------------
+model ReadingReport {
+  id              String         @id @default(cuid())
+  memberId        String
+  member          Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId          String?
+  book            Book?          @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  reportDate      DateTime       @default(now())
+  comprehension   Int            @default(85)      // 사실적 이해도 (0-100)
+  inference       Int            @default(80)      // 추론적 사고력
+  vocabulary      Int            @default(90)      // 어휘력
+  critical        Int            @default(75)      // 비판적 분석력
+  expression      Int            @default(85)      // 창의적 표현력
+  teacherComment  String?        @db.Text          // 지도교사 총평
+  sharedYn        Boolean        @default(true)    // 학부모 웹뷰 열람 공유 여부
+  createdAt       DateTime       @default(now())
+
+  @@index([memberId])
+  @@map("reading_reports")
+}
+
+// --------------------------------------------------------------
+// 9. 테마별 도서 카테고리 (ThemeCategory)
+// --------------------------------------------------------------
+model ThemeCategory {
+  id              String         @id @default(cuid())
+  name            String         // 예: "역사 속 과학 탐험", "철학하는 어린이"
+  code            String         @unique
+  description     String?
+  books           Book[]
+
+  @@map("theme_categories")
+}
+
+// --------------------------------------------------------------
+// 10. 메인 배너 (MainBanner)
+// --------------------------------------------------------------
+model MainBanner {
+  id              String         @id @default(cuid())
+  title           String
+  linkUrl         String?
+  imageUrl        String?
+  badgeText       String?        // 예: "HOT", "EVENT"
+  orderNo         Int            @default(0)
+  isActive        Boolean        @default(true)
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime       @default(now())
+
+  @@map("main_banners")
+}
+
+// --------------------------------------------------------------
+// 11. 공지사항 (Notice)
+// --------------------------------------------------------------
+model Notice {
+  id              String         @id @default(cuid())
+  title           String
+  content         String         @db.Text
+  targetRole      Role?                            // null이면 전체, DIRECTOR면 원장 전용
+  isPinned        Boolean        @default(false)   // 상단 고정 여부
+  viewCount       Int            @default(0)
+  createdAt       DateTime       @default(now())
+
+  @@map("notices")
+}
+
+// --------------------------------------------------------------
+// 12. 알리고 알림톡/문자 발송 내역 (AligoDispatchLog)
+// --------------------------------------------------------------
+model AligoDispatchLog {
+  id              String         @id @default(cuid())
+  academyId       String?
+  academy         Academy?       @relation(fields: [academyId], references: [id], onDelete: SetNull)
+  recipientName   String
+  recipientPhone  String
+  templateCode    String
+  message         String         @db.Text
+  cost            Int            @default(20)      // 차감 캐시 (원)
+  status          String         @default("SUCCESS")
+  sentAt          DateTime       @default(now())
+
+  @@map("aligo_dispatch_logs")
+}
+
+// --------------------------------------------------------------
+// Enums
+// --------------------------------------------------------------
+enum PlanTier {
+  BASIC
+  STANDARD
+  VIP
+  ROYAL
+}
+
+enum AcademyStatus {
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum Role {
+  MASTER
+  DIRECTOR
+  TEACHER
+  STUDENT
+}
+
+enum MemberStatus {
+  PENDING
+  APPROVED
+  WITHDRAWN
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+  CANCELLED
+}
+
+enum QuizType {
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+  ESSAY
+}

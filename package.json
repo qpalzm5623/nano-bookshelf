@@ -1,0 +1,37 @@
+{
+  "name": "nano-bookshelf",
+  "version": "1.0.0",
+  "description": "나노의책장 - B2B 독서논술 학원 및 원생 관리 시스템 (Supabase + Prisma)",
+  "main": "index.js",
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:studio": "prisma studio",
+    "db:backup": "tsx scripts/backup.ts",
+    "build": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "keywords": [
+    "nano-bookshelf",
+    "prisma",
+    "supabase",
+    "vercel"
+  ],
+  "author": "Nano Bookshelf",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.45.6",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

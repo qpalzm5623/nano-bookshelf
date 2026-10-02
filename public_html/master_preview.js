@@ -8,7 +8,7 @@
 // ==========================================
 
 // 1-1. 가맹 학원 데이터 (B2B Franchises)
-let franchiseList = [
+const defaultFranchiseList = [
   {
     id: "ACAD-001",
     name: "나노 독서아카데미 목동본원",
@@ -277,8 +277,40 @@ let franchiseList = [
   }
 ];
 
+// ==========================================
+// 1-1-B. 가맹 학원 LocalStorage 영구 보존 모듈
+// ==========================================
+const STORAGE_KEY_FRANCHISES = "NANO_MASTER_FRANCHISE_LIST";
+const STORAGE_KEY_DELETED_FRANCHISES = "NANO_MASTER_DELETED_FRANCHISES";
+
+function loadFranchisesFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_FRANCHISES);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn("가맹 학원 데이터 로드 실패, 기본값 사용:", e);
+  }
+  return JSON.parse(JSON.stringify(defaultFranchiseList));
+}
+
+function saveFranchisesToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(franchiseList));
+    if (typeof deletedAcademyList !== "undefined" && Array.isArray(deletedAcademyList)) {
+      localStorage.setItem(STORAGE_KEY_DELETED_FRANCHISES, JSON.stringify(deletedAcademyList));
+    }
+  } catch (e) {
+    console.error("가맹 학원 데이터 저장 실패:", e);
+  }
+}
+
+let franchiseList = loadFranchisesFromStorage();
+
 // 1-2. 통합 회원 데이터 (Universal Members)
-let memberList = [
+const defaultMemberList = [
   { id: 101, academyId: "ACAD-001", academyName: "나노 독서아카데미 목동본원", role: "DIRECTOR", name: "김은영", username: "director_mokdong", grade: "원장", className: "-", phone: "010-3342-9981", parentPhone: "-", points: 0, lastLogin: "2026-09-09 08:45", createdAt: "2025-03-01", status: "APPROVED" },
   { id: 102, academyId: "ACAD-001", academyName: "나노 독서아카데미 목동본원", role: "TEACHER", name: "송지민", username: "teacher_song", grade: "교사", className: "초등전담", phone: "010-5512-8871", parentPhone: "-", points: 0, lastLogin: "2026-09-09 09:10", createdAt: "2025-03-05", status: "APPROVED" },
   { id: 103, academyId: "ACAD-001", academyName: "나노 독서아카데미 목동본원", role: "STUDENT", name: "김태윤", username: "taeyoon_k", grade: "초6", className: "소나무반", phone: "010-2211-9981", parentPhone: "010-9988-1122", points: 4850, lastLogin: "2026-09-08 20:30", createdAt: "2025-03-10", status: "APPROVED" },
@@ -300,6 +332,34 @@ let memberList = [
   { id: 402, academyId: "ACAD-004", academyName: "판교 알파 독서학원", role: "STUDENT", name: "윤하은", username: "haeun_y", grade: "초5", className: "창의반", phone: "010-7711-2233", parentPhone: "010-8899-0011", points: 2850, lastLogin: "2026-09-08 16:50", createdAt: "2025-04-20", status: "APPROVED" },
   { id: 403, academyId: "ACAD-004", academyName: "판교 알파 독서학원", role: "STUDENT", name: "조현우", username: "hyunwoo_j", grade: "초4", className: "미지정", phone: "010-5522-3344", parentPhone: "010-6677-1122", points: 0, lastLogin: "2026-09-06 18:10", createdAt: "2025-09-06", status: "PENDING" }
 ];
+
+// ==========================================
+// 1-2-B. 통합 회원 LocalStorage 영구 보존 모듈
+// ==========================================
+const STORAGE_KEY_MEMBERS = "NANO_MASTER_MEMBER_LIST";
+
+function loadMembersFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_MEMBERS);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn("통합 회원 데이터 로드 실패, 기본값 사용:", e);
+  }
+  return JSON.parse(JSON.stringify(defaultMemberList));
+}
+
+function saveMembersToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_MEMBERS, JSON.stringify(memberList));
+  } catch (e) {
+    console.error("통합 회원 데이터 저장 실패:", e);
+  }
+}
+
+let memberList = loadMembersFromStorage();
 
 // 1-3. 운영 관리 배너 데이터 (Rolling Banners)
 // 1-3. 운영 관리 배너 데이터 (Rolling Banners)
@@ -1185,6 +1245,8 @@ function switchMasterTab(tabName) {
   } else if (tabName === "contents") {
     renderMasterContents();
   }
+  const mainEl = document.querySelector('.main-workspace');
+  if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
@@ -1209,6 +1271,8 @@ function switchOpSubTab(subName) {
   if (subName === "themes") renderThemeTable();
   if (subName === "notices" && typeof renderNoticeTable === "function") renderNoticeTable();
   if (subName === "recommended") renderRecommendedBooksTable();
+  const mainEl = document.querySelector('.main-workspace');
+  if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
@@ -1710,6 +1774,7 @@ function handleRegisterAcademy(e) {
   };
 
   franchiseList.unshift(newAcad);
+  saveFranchisesToStorage();
   $('#academyRegisterModal').modal('hide');
   document.getElementById("academyRegisterForm").reset();
 
@@ -1824,10 +1889,12 @@ function saveAcademyEdit(e) {
         d.academyName = newName;
       }
     });
+    saveMembersToStorage();
     populateMemberAcademyFilter();
     populateDispatchAcademyFilter();
   }
 
+  saveFranchisesToStorage();
   $('#academyEditModal').modal('hide');
   renderFranchiseTable();
   updateFranchiseStats();
@@ -1850,6 +1917,7 @@ function confirmDeleteAcademy() {
   const idx = franchiseList.findIndex(a => a.id === pendingDeleteAcademyId);
   if (idx !== -1) {
     const deleted = franchiseList.splice(idx, 1)[0];
+    saveFranchisesToStorage();
     $('#academyDeleteConfirmModal').modal('hide');
     renderFranchiseTable();
     updateFranchiseStats();
@@ -2257,6 +2325,7 @@ function handleMemberExcelUpload() {
   };
 
   memberList.unshift(sample1, sample2);
+  saveMembersToStorage();
   $("#memberExcelModal").modal("hide");
   renderMemberTable();
   showMasterToast(`[${targetAcad}] 엑셀 일괄 등록 완료: 2명의 원생이 성공적으로 등록되었습니다.`);
@@ -2329,6 +2398,7 @@ function handleMasterMemberRegister(e) {
   };
 
   memberList.unshift(newMember);
+  saveMembersToStorage();
   $("#masterMemberAddModal").modal("hide");
   renderMemberTable();
   showMasterToast(`[${name}] 신규 회원이 [${academyName}]에 성공적으로 등록되었습니다.`);
@@ -6685,7 +6755,19 @@ function toggleMemberStatus() {
 // -----------------------------------------------------------
 // [13] 가맹점 삭제 - 비밀번호 검증 + 7일 임시보존
 // -----------------------------------------------------------
-let deletedAcademyList = []; // 임시 보존 삭제 목록
+function loadDeletedAcademiesFromStorage() {
+  try {
+    const stored = localStorage.getItem("NANO_MASTER_DELETED_FRANCHISES");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn("삭제 가맹 학원 로드 실패:", e);
+  }
+  return [];
+}
+let deletedAcademyList = loadDeletedAcademiesFromStorage(); // 임시 보존 삭제 목록
 
 function confirmDeleteAcademy() {
   if (!pendingDeleteAcademyId) return;
@@ -6717,6 +6799,8 @@ function confirmDeleteAcademy() {
       deletedAt: deletedAt.toISOString().split("T")[0],
       expireAt: expireAt.toISOString().split("T")[0]
     });
+
+    saveFranchisesToStorage();
 
     // 비밀번호 초기화
     if (pwInput) pwInput.value = "";
@@ -6774,6 +6858,7 @@ function restoreDeletedAcademy(idx) {
   delete restored.deletedAt;
   delete restored.expireAt;
   franchiseList.unshift(restored);
+  saveFranchisesToStorage();
   renderDeletedAcademyList();
   renderFranchiseTable();
   updateFranchiseStats();
@@ -7120,6 +7205,7 @@ function handleRegisterAcademy(e) {
   };
 
   franchiseList.unshift(newAcad);
+  saveFranchisesToStorage();
   $('#academyRegisterModal').modal('hide');
   document.getElementById("academyRegisterForm").reset();
 
@@ -7128,6 +7214,19 @@ function handleRegisterAcademy(e) {
   populateMemberAcademyFilter();
   populateDispatchAcademyFilter();
   showMasterToast(`[${name}] 신규 가맹 학원(${plan} 플랜, 사용인원 ${maxStudents}명)이 성공적으로 등록되었습니다.`);
+}
+
+// 가맹 학원 데이터 초기화 헬퍼 (테스트 후 원상복구용)
+function resetMasterFranchiseData() {
+  localStorage.removeItem(STORAGE_KEY_FRANCHISES);
+  localStorage.removeItem(STORAGE_KEY_DELETED_FRANCHISES);
+  franchiseList = loadFranchisesFromStorage();
+  deletedAcademyList = loadDeletedAcademiesFromStorage();
+  renderFranchiseTable();
+  updateFranchiseStats();
+  populateMemberAcademyFilter();
+  populateDispatchAcademyFilter();
+  showMasterToast("가맹 학원 데이터가 기본 샘플 목록으로 초기화되었습니다.");
 }
 
 // -----------------------------------------------------------

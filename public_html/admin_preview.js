@@ -213,6 +213,8 @@ function switchTab(tab) {
     selectPlanTier(currentSelectedTier || 'standard');
   }
 
+  var mainEl = document.querySelector('.main-workspace');
+  if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
@@ -237,6 +239,8 @@ function switchContentSubTab(sub) {
     renderQuizTabs();
     loadCurrentQuizForm();
   }
+  var mainEl = document.querySelector('.main-workspace');
+  if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
@@ -257,6 +261,8 @@ function switchMemberSubTab(sub) {
 
   if (sub === 'teachers') renderTeacherTable();
   if (sub === 'students') renderStudentTable(studentDataList);
+  var mainEl = document.querySelector('.main-workspace');
+  if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
 }
 
