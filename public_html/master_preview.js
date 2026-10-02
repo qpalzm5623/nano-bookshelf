@@ -6294,15 +6294,134 @@ function openExcelUploadModal() {
   $("#masterBookExcelModal").modal("show");
 }
 
+// 권장 학년 코드/텍스트 표준 변환 헬퍼 (a:미취학, 1~6:초1~6, 7~9:중1~3, b:중등)
+function normalizeGradeInput(raw) {
+  if (!raw) return "초등 1학년";
+  let s = String(raw).trim().toLowerCase().replace(/["']/g, "");
+
+  // 1. 단일 코드 매핑
+  if (s === "a" || s === "0") return "미취학";
+  if (s === "1") return "초등 1학년";
+  if (s === "2") return "초등 2학년";
+  if (s === "3") return "초등 3학년";
+  if (s === "4") return "초등 4학년";
+  if (s === "5") return "초등 5학년";
+  if (s === "6") return "초등 6학년";
+  if (s === "7") return "중등 1학년";
+  if (s === "8") return "중등 2학년";
+  if (s === "9") return "중등 3학년";
+  if (s === "b") return "중등";
+
+  // 2. 한글 표기 유연 매핑
+  if (s.includes("미취학") || s.includes("유치")) return "미취학";
+  if (s.includes("초1") || s.includes("초등 1") || s.includes("초등1")) return "초등 1학년";
+  if (s.includes("초2") || s.includes("초등 2") || s.includes("초등2")) return "초등 2학년";
+  if (s.includes("초3") || s.includes("초등 3") || s.includes("초등3")) return "초등 3학년";
+  if (s.includes("초4") || s.includes("초등 4") || s.includes("초등4")) return "초등 4학년";
+  if (s.includes("초5") || s.includes("초등 5") || s.includes("초등5")) return "초등 5학년";
+  if (s.includes("초6") || s.includes("초등 6") || s.includes("초등6")) return "초등 6학년";
+  if (s.includes("중1") || s.includes("중등 1") || s.includes("중등1") || s.includes("중학 1")) return "중등 1학년";
+  if (s.includes("중2") || s.includes("중등 2") || s.includes("중등2") || s.includes("중학 2")) return "중등 2학년";
+  if (s.includes("중3") || s.includes("중등 3") || s.includes("중등3") || s.includes("중학 3")) return "중등 3학년";
+  if (s.includes("중등") || s.includes("중학교")) return "중등";
+  if (s.includes("고등") || s.includes("고등학교")) return "고등";
+
+  return null;
+}
+
+// 카테고리 1 검증 및 정규화 (A: 소설, B: 인물 이야기, C: 비문학/정보글)
+function validateAndNormalizeCat1(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim().toUpperCase().replace(/["']/g, "");
+
+  if (s === "A" || s === "소설") return "소설";
+  if (s === "B" || s.includes("인물")) return "인물 이야기 (위인)";
+  if (s === "C" || s.includes("비문학") || s.includes("정보글")) return "비문학/정보글";
+
+  return null;
+}
+
+// 카테고리 2 검증 및 정규화 (K: 국내서, F: 외서, N: 구분 없음)
+function validateAndNormalizeCat2(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim().toUpperCase().replace(/["']/g, "");
+
+  if (s === "K" || s.includes("국내")) return "국내서";
+  if (s === "F" || s.includes("외서") || s.includes("해외")) return "외서";
+  if (s === "N" || s.includes("구분") || s.includes("기타") || s === "-") return "구분 없음";
+
+  return null;
+}
+
+// ISBN 정제 헬퍼 (지수 표기 9.78E+12 복원 및 엑셀 수식 ="..." 제거)
+function sanitizeIsbnString(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim().replace(/["']/g, "");
+  s = s.replace(/^=/, "").trim();
+
+  // 엑셀 지수 표기 감지 시 정수 문자열로 복원
+  if (/^[0-9.]+[eE]\+[0-9]+$/.test(s)) {
+    try {
+      s = BigInt(Math.round(Number(s))).toString();
+    } catch(e) {
+      try {
+        s = Number(s).toLocaleString('fullwide', { useGrouping: false });
+      } catch(e2) {}
+    }
+  }
+  return s.replace(/[^0-9]/g, "");
+}
+
+// CSV 1행 파서
+function parseCSVRow(text) {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      result.push(cur.trim());
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 function downloadBookExcelTemplate() {
-  const headers = ["도서명", "저자", "출판사", "권장학년(예:초등 4학년)", "카테고리1(소설/인물/비문학)", "카테고리2(국내서/외서)", "시리즈명", "ISBN", "등록처(HQ 또는 학원코드)"];
-  const sampleRows = [
-    ["어린 왕자", "앙투안 드 생텍쥐페리", "열린책들", "초등 5학년", "소설", "외서", "단권", "9788932902708", "HQ"],
-    ["해리포터와 마법사의 돌", "J.K.롤링", "문학수첩", "초등 5학년", "소설", "외서", "해리포터 시리즈", "9788983920683", "HQ"],
-    ["한국사 편지 1", "박은봉", "책과함께어린이", "초등 4학년", "비문학/정보글", "국내서", "한국사 편지", "9788991221468", "HQ"]
+  const headers = [
+    "도서명",
+    "저자",
+    "출판사",
+    "권장학년(a:미취학,1~6:초1~6,7~9:중1~3,b:중등)",
+    "카테고리1(소설/인물이야기/비문학)",
+    "카테고리2(국내서/외서/구분없음)",
+    "시리즈명",
+    "ISBN",
+    "등록처(HQ 또는 학원코드)"
   ];
+
+  // 엑셀에서 ISBN이 지수(9.78E+12)로 변환되지 않도록 '="13자리"' 형태로 포맷팅
+  const sampleRows = [
+    ["어린 왕자", "앙투안 드 생텍쥐페리", "열린책들", "5", "소설", "외서", "단권", '="9788932902708"', "HQ"],
+    ["해리포터와 마법사의 돌", "J.K.롤링", "문학수첩", "5", "소설", "외서", "해리포터 시리즈", '="9788983920683"', "HQ"],
+    ["한국사 편지 1", "박은봉", "책과함께어린이", "4", "비문학/정보글", "국내서", "한국사 편지", '="9788991221468"', "HQ"],
+    ["엄마 마중", "이태준", "보림", "a", "소설", "국내서", "단권", '="9788943305437"', "HQ"],
+    ["자전거 도둑", "박완서", "다림", "7", "소설", "국내서", "단권", '="9788983940124"', "HQ"],
+    ["마당을 나온 암탉", "황선미", "사계절", "4", "소설", "국내서", "단권", '="9788971966969"', "HQ"]
+  ];
+
   downloadAsCSV("나노책장_도서대량등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
-  showMasterToast("샘플 도서 등록 엑셀 양식(CSV)이 다운로드되었습니다.");
+  showMasterToast("엑셀 샘플 양식(CSV)이 다운로드되었습니다. ISBN 지수 방지 및 권장학년 코드가 적용되어 있습니다.");
 }
 
 function handleMasterBookExcelFileSelect(input) {
@@ -6315,104 +6434,128 @@ function handleMasterBookExcelFileSelect(input) {
 function handleMasterBookExcelUpload() {
   const fileInput = document.getElementById("masterBookExcelFileInput");
   if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-    showMasterToast("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
+    alert("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
     return;
   }
 
-  const fileName = fileInput.files[0].name;
+  const file = fileInput.files[0];
+  const fileName = file.name;
 
-  // 샘플 대량 도서 3권 자동 추가
-  const nextIdNum = masterBooks.length + 1;
-  const newBooks = [
-    {
-      id: `MB-${String(nextIdNum).padStart(3, '0')}`,
-      title: "마법천자문 1권",
-      author: "시리얼",
-      publisher: "아울북",
-      grade: "초등 3학년",
-      category: "문학",
-      cat1: "소설",
-      cat2: "국내서",
-      series: "마법천자문",
-      isSingle: false,
-      tags: ["#교과연계한국사", "한자"],
-      detailTag: "#한자학습 #모험",
-      awards: "어린이 베스트셀러",
-      thinkExtract: "한자의 뜻과 소리를 알면 우리말 단어가 어떻게 쉽게 이해될까요?",
-      thinkInsert: "책에 나온 한자 중 가장 기억에 남는 글자와 그 이유를 써보세요.",
-      isPublic: "Y",
-      hasQuiz: true,
-      quizzes: 5,
-      likes: 12,
-      recommends: 15,
-      quizCompletions: 34,
-      academyId: "HQ",
-      academyName: "본사 직속 (공용)",
-      creatorType: "HQ",
-      sheet: true,
-      date: new Date().toISOString().split("T")[0],
-      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80",
-      quizSets: [
-        {
-          id: `qs_mb_${Date.now()}`,
-          authorType: "HQ",
-          authorName: "본사",
-          academyName: "본사 직속",
-          createdAt: new Date().toISOString().split("T")[0],
-          questions: [
-            { type: "CHOICE", question: "손오공이 처음으로 배운 마법 한자는 무엇인가요?", choices: ["불 화(火)", "물 수(水)", "바람 풍(風)"], opt1: "불 화(火)", opt2: "물 수(水)", opt3: "바람 풍(風)", ans: "1", hint: "도서 1권 1화" }
-          ]
-        }
-      ]
-    },
-    {
-      id: `MB-${String(nextIdNum + 1).padStart(3, '0')}`,
-      title: "만복이네 떡집",
-      author: "김리리",
-      publisher: "비룡소",
-      grade: "초등 3학년",
-      category: "문학",
-      cat1: "소설",
-      cat2: "국내서",
-      series: "만복이네 떡집 시리즈",
-      isSingle: false,
-      tags: ["#이달의나노북클럽", "성장"],
-      detailTag: "#마음성장 #친구관계",
-      awards: "초등 3학년 국어 교과서 수록",
-      thinkExtract: "만약 내 말과 행동을 바꿔주는 마법의 떡이 있다면 어떤 떡을 먹고 싶나요?",
-      thinkInsert: "만복이가 착한 말을 하게 되면서 친구들과의 관계가 어떻게 변했는지 적어보세요.",
-      isPublic: "Y",
-      hasQuiz: true,
-      quizzes: 5,
-      likes: 24,
-      recommends: 30,
-      quizCompletions: 68,
-      academyId: "HQ",
-      academyName: "본사 직속 (공용)",
-      creatorType: "HQ",
-      sheet: true,
-      date: new Date().toISOString().split("T")[0],
-      cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80",
-      quizSets: [
-        {
-          id: `qs_mb_${Date.now() + 1}`,
-          authorType: "HQ",
-          authorName: "본사",
-          academyName: "본사 직속",
-          createdAt: new Date().toISOString().split("T")[0],
-          questions: [
-            { type: "CHOICE", question: "만복이가 가장 먼저 먹은 떡의 이름은 무엇인가요?", choices: ["찹쌀떡", "바람떡", "무지개떡"], opt1: "찹쌀떡", opt2: "바람떡", opt3: "무지개떡", ans: "1", hint: "도서 초반부" }
-          ]
-        }
-      ]
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const content = e.target.result;
+    if (!content || !content.trim()) {
+      alert("선택하신 파일에 내용이 없습니다.");
+      return;
     }
-  ];
 
-  newBooks.forEach(b => masterBooks.unshift(b));
+    const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length <= 1) {
+      alert("등록할 도서 데이터 행이 존재하지 않습니다. (헤더만 있거나 빈 파일)");
+      return;
+    }
 
-  $("#masterBookExcelModal").modal("hide");
-  renderMasterContents();
-  showMasterToast(`[${fileName}] 엑셀 대량 도서 등록이 완료되었습니다! 신규 도서가 마스터 라이브러리에 반영되었습니다.`);
+    const parsedBooks = [];
+    const validationErrors = [];
+
+    // 2번째 줄(인덱스 1)부터 데이터 행 파싱
+    for (let i = 1; i < lines.length; i++) {
+      const rowNum = i + 1; // 엑셀 행 번호 (1-based)
+      const cols = parseCSVRow(lines[i]);
+      if (cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
+
+      const title = (cols[0] || "").trim();
+      const author = (cols[1] || "").trim();
+      const publisher = (cols[2] || "").trim();
+      const rawGrade = (cols[3] || "").trim();
+      const rawCat1 = (cols[4] || "").trim();
+      const rawCat2 = (cols[5] || "").trim();
+      const series = (cols[6] || "").trim();
+      const rawIsbn = (cols[7] || "").trim();
+      const academyId = (cols[8] || "HQ").trim();
+
+      // 도서명 필수
+      if (!title) {
+        validationErrors.push(`[${rowNum}행] 도서명(제목)이 비어있습니다.`);
+        continue;
+      }
+
+      // 권장 학년 검증 및 정규화
+      const normalizedGrade = normalizeGradeInput(rawGrade);
+      if (!normalizedGrade) {
+        validationErrors.push(`[${rowNum}행: ${title}] 올바르지 않은 권장학년('${rawGrade}')입니다.\n  👉 허용: a(미취학), 1~6(초등 1~6학년), 7~9(중등 1~3학년), b(중등 전체)`);
+      }
+
+      // 카테고리 1 검증 (소설, 인물 이야기, 비문학/정보글 또는 A, B, C 외 입력 차단)
+      const cat1 = validateAndNormalizeCat1(rawCat1);
+      if (!cat1) {
+        validationErrors.push(`[${rowNum}행: ${title}] 유효하지 않은 카테고리1('${rawCat1}')입니다.\n  👉 허용 항목: [소설, 인물 이야기, 비문학/정보글] (또는 A, B, C)`);
+      }
+
+      // 카테고리 2 검증 (국내서, 외서, 구분 없음 또는 K, F, N 외 입력 차단)
+      const cat2 = validateAndNormalizeCat2(rawCat2);
+      if (!cat2) {
+        validationErrors.push(`[${rowNum}행: ${title}] 유효하지 않은 카테고리2('${rawCat2}')입니다.\n  👉 허용 항목: [국내서, 외서, 구분 없음] (또는 K, F, N)`);
+      }
+
+      const isbn = sanitizeIsbnString(rawIsbn);
+
+      if (normalizedGrade && cat1 && cat2) {
+        const nextIdNum = masterBooks.length + parsedBooks.length + 1;
+        parsedBooks.push({
+          id: `MB-${String(nextIdNum).padStart(3, '0')}`,
+          title: title,
+          author: author || "작자 미상",
+          publisher: publisher || "출판사 미상",
+          grade: normalizedGrade,
+          category: cat1 === "소설" ? "문학" : "비문학",
+          cat1: cat1,
+          cat2: cat2,
+          series: series || "단권",
+          isSingle: !series || series === "단권",
+          isbn: isbn,
+          tags: ["#신규도서", cat1],
+          detailTag: `#${normalizedGrade} #${cat1}`,
+          isPublic: "Y",
+          hasQuiz: false,
+          quizzes: 0,
+          likes: 0,
+          recommends: 0,
+          quizCompletions: 0,
+          academyId: academyId || "HQ",
+          academyName: academyId === "HQ" ? "본사 직속 (공용)" : academyId,
+          creatorType: academyId === "HQ" ? "HQ" : "ACADEMY",
+          sheet: false,
+          date: new Date().toISOString().split("T")[0],
+          cover: "upload/banner/banner_reading_king.jpg",
+          quizSets: []
+        });
+      }
+    }
+
+    // 유효성 오류가 하나라도 있으면 전체 업로드 중단 및 상세 알림
+    if (validationErrors.length > 0) {
+      const errorMsg = `[엑셀 업로드 유효성 검사 실패]\n총 ${validationErrors.length}건의 규격 오류가 발견되어 등록이 취소되었습니다.\n엑셀 서식을 수정한 후 다시 업로드해주세요.\n\n` +
+        validationErrors.slice(0, 6).join("\n\n") +
+        (validationErrors.length > 6 ? `\n\n... 외 ${validationErrors.length - 6}건 추가 오류` : "");
+      alert(errorMsg);
+      return;
+    }
+
+    if (parsedBooks.length === 0) {
+      alert("등록 가능한 유효 도서 데이터가 없습니다.");
+      return;
+    }
+
+    // 통과된 도서들을 masterBooks에 등록
+    parsedBooks.forEach(b => masterBooks.unshift(b));
+
+    $("#masterBookExcelModal").modal("hide");
+    renderMasterContents();
+    showMasterToast(`[${fileName}] 엑셀 대량 등록 완료: 총 ${parsedBooks.length}권의 도서가 성공적으로 등록되었습니다!`);
+  };
+
+  reader.readAsText(file, "UTF-8");
 }
 
 // ==========================================
@@ -7723,11 +7866,18 @@ function exportMemberExcel() {
   showMasterToast(`통합 회원 명부(총 ${memberList.length}명)가 CSV 파일로 다운로드되었습니다.`);
 }
 
-// CSV 다운로드 공통 헬퍼
+// CSV 다운로드 공통 헬퍼 (엑셀 수식 보존 및 따옴표 이스케이프)
 function downloadAsCSV(filename, headers, rows) {
   const BOM = "\uFEFF"; // UTF-8 BOM (한글 깨짐 방지)
   const csvContent = BOM + [headers, ...rows].map(row =>
-    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    row.map(cell => {
+      const s = String(cell ?? "");
+      // 이미 '="1234567890123"' 수식 형태인 경우 엑셀 수식 보존 (지수 변환 방지)
+      if (s.startsWith('="') && s.endsWith('"')) {
+        return s;
+      }
+      return `"${s.replace(/"/g, '""')}"`;
+    }).join(",")
   ).join("\r\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
