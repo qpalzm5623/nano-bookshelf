@@ -1915,20 +1915,68 @@
       background: #ffffff;
       border: 1.5px solid var(--soft);
       border-radius: 18px;
-      padding: 18px 16px;
+      padding: 16px 14px;
       display: flex;
-      gap: 16px;
+      align-items: center;
+      gap: 14px;
       margin-bottom: 16px;
       box-shadow: 0 4px 16px rgba(58, 46, 38, 0.05);
     }
+    .detail-cover-wrap {
+      position: relative;
+      width: 96px;
+      height: 136px;
+      flex-shrink: 0;
+      border-radius: 10px;
+    }
     .detail-cover-large {
-      width: 104px;
-      height: 144px;
+      width: 100%;
+      height: 100%;
       border-radius: 10px;
       object-fit: cover;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
       flex-shrink: 0;
       background: #eae6df;
+      display: block;
+    }
+    /* [NEW] 북커버 이미지 좌측 상단 찜하기 버튼 */
+    .btn-cover-wish {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1.5px solid rgba(255, 255, 255, 0.95);
+      color: #e11d48;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10;
+      padding: 0;
+    }
+    .btn-cover-wish:hover {
+      transform: scale(1.12);
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
+    }
+    .btn-cover-wish.active {
+      background: #e11d48;
+      border-color: #e11d48;
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(225, 29, 72, 0.45);
+    }
+    .btn-cover-wish.active:hover {
+      background: #be123c;
+      border-color: #be123c;
+      transform: scale(1.12);
     }
     .detail-meta-group {
       flex: 1;
@@ -2118,26 +2166,18 @@
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
     }
-    /* 도서 상세 우측 상단 액션 버튼 그룹 (찜하기 하트 + 정사각형 북퀴즈 버튼) */
-    .detail-hero-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 7px;
-      flex-shrink: 0;
-    }
     .btn-hero-wish {
       border: 1.5px solid #fecdd3;
       background: #fff1f2;
       color: #e11d48;
-      width: 38px;
-      height: 38px;
-      border-radius: 11px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 15px;
       transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
       flex-shrink: 0;
       box-shadow: 0 2px 6px rgba(225, 29, 72, 0.12);
@@ -2153,40 +2193,119 @@
       color: #ffffff;
       box-shadow: 0 4px 10px rgba(225, 29, 72, 0.3);
     }
+    /* [NEW] 도서 상세 우측 퀴즈 풀기 대형 버튼 (기존 38px에서 가로세로 3배 확대: 92px x 98px) */
+    .detail-hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
     .btn-hero-quiz-square {
       border: 1.5px solid #a7f3d0;
-      background: #ecfdf5;
+      background: linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 100%);
       color: #065f46;
-      width: 38px;
-      height: 38px;
-      border-radius: 11px;
+      width: 92px;
+      height: 98px;
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.12);
-      padding: 0;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.12);
+      padding: 8px 6px;
+      box-sizing: border-box;
+      text-decoration: none;
     }
-    .btn-hero-quiz-square i {
-      font-size: 13px;
-      line-height: 1;
+    .btn-hero-quiz-square .bhq-icon-wrap {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: #d1fae5;
+      color: #047857;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+      margin-bottom: 5px;
+      transition: all .25s ease;
     }
-    .btn-hero-quiz-square span {
-      font-size: 9px;
+    .btn-hero-quiz-square .bhq-label {
+      font-size: 13.5px;
       font-weight: 900;
+      line-height: 1.2;
+      color: #065f46;
+      letter-spacing: -0.3px;
+    }
+    .btn-hero-quiz-square .bhq-sub {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #059669;
+      background: #ffffff;
+      border: 1px solid #a7f3d0;
+      padding: 2px 6px;
+      border-radius: 7px;
+      margin-top: 4px;
       line-height: 1;
-      margin-top: 3px;
-      letter-spacing: -0.2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all .25s ease;
     }
     .btn-hero-quiz-square:hover {
-      transform: translateY(-2px);
-      background: #059669;
+      transform: translateY(-3px) scale(1.02);
+      background: linear-gradient(145deg, #059669 0%, #047857 100%);
       border-color: #059669;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.3);
+    }
+    .btn-hero-quiz-square:hover .bhq-icon-wrap {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      transform: scale(1.06);
+    }
+    .btn-hero-quiz-square:hover .bhq-label {
+      color: #ffffff;
+    }
+    .btn-hero-quiz-square:hover .bhq-sub {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.4);
+      color: #ffffff;
+    }
+    .btn-hero-quiz-square:active {
+      transform: scale(0.97);
+    }
+
+    @media (max-width: 420px) {
+      .detail-hero-card {
+        gap: 10px;
+        padding: 14px 12px;
+      }
+      .detail-cover-wrap {
+        width: 86px;
+        height: 122px;
+      }
+      .btn-hero-quiz-square {
+        width: 78px;
+        height: 88px;
+        padding: 6px 4px;
+        border-radius: 13px;
+      }
+      .btn-hero-quiz-square .bhq-icon-wrap {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+        margin-bottom: 3px;
+      }
+      .btn-hero-quiz-square .bhq-label {
+        font-size: 12px;
+      }
+      .btn-hero-quiz-square .bhq-sub {
+        font-size: 9px;
+        padding: 2px 4px;
+      }
     }
     /* 내 책장 3대 메인 세분화 탭 및 하위 뷰 스타일 */
     .bookshelf-main-tabs {
@@ -2699,81 +2818,104 @@
       background: #ffe4e6;
       color: #be123c;
     }
-    /* [NEW] 북퀴즈 캐릭터 말풍선 대화 UI */
+    /* [NEW] 북퀴즈 질문 카드: 아래 카드들과 동일하게 좌우 꽉 찬 흰색 박스 + 박스 내부 캐릭터 & 말풍선 배치 */
     .quiz-char-row {
       display: flex;
       align-items: flex-start;
       gap: 12px;
       margin: 14px 0 16px;
-      padding-right: 64px; /* 좌측 캐릭터 너비(52px) + 간격(12px)과 대칭되도록 우측 여백 부여 */
+      padding: 14px 15px;
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      box-sizing: border-box;
     }
     .quiz-char-avatar-box {
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       background: #ffffff;
       border: 2px solid #00a896;
-      box-shadow: 0 4px 12px rgba(0, 168, 150, 0.16);
+      box-shadow: 0 3px 10px rgba(0, 168, 150, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       position: relative;
+      margin-top: 2px;
       animation: charGentleBob 3s ease-in-out infinite;
     }
     @keyframes charGentleBob {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-4px); }
     }
+    /* 박스 내부 캐릭터 말풍선 */
     .quiz-speech-bubble {
       flex: 1;
       min-width: 0;
-      background: #ffffff;
-      border: 1.5px solid #ccfbf1;
-      border-radius: 16px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
       border-top-left-radius: 4px;
-      padding: 13px 15px;
+      padding: 12px 14px;
       position: relative;
-      box-shadow: 0 3px 12px rgba(0, 168, 150, 0.07);
     }
     .quiz-speech-bubble::before {
       content: '';
       position: absolute;
-      top: 14px;
+      top: 13px;
       left: -8px;
-      width: 0;
-      height: 0;
-      border-top: 7px solid transparent;
-      border-bottom: 7px solid transparent;
-      border-right: 8px solid #ccfbf1;
-    }
-    .quiz-speech-bubble::after {
-      content: '';
-      position: absolute;
-      top: 15px;
-      left: -6px;
       width: 0;
       height: 0;
       border-top: 6px solid transparent;
       border-bottom: 6px solid transparent;
-      border-right: 7px solid #ffffff;
+      border-right: 8px solid #e2e8f0;
+    }
+    .quiz-speech-bubble::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: -6px;
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 7px solid #f8fafc;
     }
     .quiz-char-name-tag {
       display: inline-block;
-      font-size: 10.5px;
+      font-size: 11px;
       font-weight: 800;
       color: #0d9488;
-      background: #f0fdfa;
+      background: #ffffff;
       border: 1px solid #ccfbf1;
-      padding: 1px 6px;
+      padding: 2px 7px;
       border-radius: 6px;
       margin-bottom: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    /* 말풍선 내부 텍스트 - 이중 박스 제거 및 타이포그라피 최적화 */
+    .quiz-speech-bubble .qtext {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      font-size: 14.5px !important;
+      line-height: 1.6 !important;
+      font-weight: 700 !important;
+      color: #1e293b !important;
+      box-shadow: none !important;
+      white-space: pre-wrap;
     }
 
-    /* [NEW] 북퀴즈 본문 영역 (보기 목록, 미디어, 그만두기/다음문제 버튼): 말풍선 좌측 끝선 정렬 및 우측 대칭 여백 */
+    /* [NEW] 북퀴즈 본문 영역 (보기 목록, 미디어, 하단 버튼): 좌우 100% 꽉 차게 정렬 */
     .quiz-content-area {
-      margin-left: 64px; /* 캐릭터 폭(52px) + 간격(12px)으로 말풍선 좌측선과 일치 */
-      margin-right: 64px; /* 말풍선 우측 끝선과 대칭 일치 */
+      margin-left: 0;
+      margin-right: 0;
+      width: 100%;
     }
     .quiz-bottom-actions {
       display: flex;
@@ -2783,15 +2925,18 @@
     @media (max-width: 480px) {
       .quiz-char-row {
         gap: 10px;
-        padding-right: 52px;
+        padding: 12px 10px;
       }
       .quiz-char-avatar-box {
         width: 42px;
         height: 42px;
       }
+      .quiz-speech-bubble {
+        padding: 10px 12px;
+      }
       .quiz-content-area {
-        margin-left: 52px;
-        margin-right: 52px;
+        margin-left: 0;
+        margin-right: 0;
       }
     }
 
@@ -3450,16 +3595,16 @@
       </div>
       <div class="qbar"><div class="qfill" id="qFill" style="width:20%;"></div></div>
 
-      <!-- [NEW] 캐릭터 아바타 + 꼬리표 말풍선 속에 문제 디스플레이 -->
+      <!-- [NEW] 북퀴즈 질문 카드: 좌우 꽉 찬 흰색 박스 내부에 캐릭터 & 말풍선 배치 -->
       <div class="quiz-char-row">
         <div class="quiz-char-avatar-box" id="quizCurrentCharAvatar" title="대표 캐릭터"></div>
         <div class="quiz-speech-bubble">
           <div class="quiz-char-name-tag" id="quizCurrentCharTag">캐릭터 퀴즈</div>
-          <div class="qtext" id="qText" style="margin-top:0;font-size:14.5px;line-height:1.55;font-weight:800;color:#1e293b;">문제 로딩 중...</div>
+          <div class="qtext" id="qText">문제 로딩 중...</div>
         </div>
       </div>
 
-      <!-- [NEW] 북퀴즈 본문 영역 (보기 목록, 미디어, 하단 버튼): 말풍선 좌측 끝선 정렬 및 우측 대칭 여백 -->
+      <!-- [NEW] 북퀴즈 본문 영역 (보기 목록, 미디어, 하단 버튼): 좌우 100% 꽉 차게 정렬 -->
       <div class="quiz-content-area">
         <!-- 문항 첨부 미디어 (WebP 이미지 또는 영상 임베드 플레이어) -->
         <div id="qMediaBox" style="display:none; margin: 12px 0 16px 0;"></div>
@@ -4998,9 +5143,14 @@ function openBookDetail(id, from) {
 
     var isWished = studentWishlist.indexOf(b.id) !== -1;
     heroCard.innerHTML = 
-      getBookCoverHtml(b, 'detail-cover-large')
+      '<div class="detail-cover-wrap">'
+      +  getBookCoverHtml(b, 'detail-cover-large')
+      +  '<button type="button" class="btn-cover-wish '+(isWished?'active':'')+'" id="heroWishBtn_'+b.id+'" onclick="toggleWish(\''+b.id+'\', event)" title="'+(isWished?'찜 해제':'내 책장에 찜하기')+'">'
+      +    '<i class="'+(isWished?'fa-solid':'fa-regular')+' fa-heart"></i>'
+      +  '</button>'
+      +'</div>'
       +'<div class="detail-meta-group">'
-      +  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+      +  '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'
       +    '<div style="flex:1;min-width:0;">'
       +      '<div class="detail-title">'+b.title+'</div>'
       +      '<div class="detail-author-pub">'+b.author+' · '+b.pub+'</div>'
@@ -5011,12 +5161,10 @@ function openBookDetail(id, from) {
       +      '<div class="detail-tags">'+tagsHtml+'</div>'
       +    '</div>'
       +    '<div class="detail-hero-actions">'
-      +      '<button type="button" class="btn-hero-wish '+(isWished?'active':'')+'" id="heroWishBtn_'+b.id+'" onclick="toggleWish(\''+b.id+'\', event)" title="'+(isWished?'찜 해제':'내 책장에 찜하기')+'">'
-      +        '<i class="'+(isWished?'fa-solid':'fa-regular')+' fa-heart"></i>'
-      +      '</button>'
       +      '<button type="button" class="btn-hero-quiz-square" onclick="startQuizFromDetail()" title="북퀴즈 풀기">'
-      +        '<i class="fa-solid fa-book-open"></i>'
-      +        '<span>퀴즈</span>'
+      +        '<div class="bhq-icon-wrap"><i class="fa-solid fa-book-open"></i></div>'
+      +        '<span class="bhq-label">북퀴즈</span>'
+      +        '<span class="bhq-sub">도전하기 <i class="fa-solid fa-chevron-right" style="font-size:7.5px;"></i></span>'
       +      '</button>'
       +    '</div>'
       +  '</div>'
@@ -5962,7 +6110,7 @@ function renderQ() {
   var char = getCharacterById(charId);
   var quizAvatarEl = document.getElementById('quizCurrentCharAvatar');
   var quizTagEl = document.getElementById('quizCurrentCharTag');
-  if (quizAvatarEl) quizAvatarEl.innerHTML = getCharacterSvg(charId, 46);
+  if (quizAvatarEl) quizAvatarEl.innerHTML = getCharacterSvg(charId, 42);
   if (quizTagEl) {
     quizTagEl.innerText = char.name.split(' ')[0] + (q.isThoughtQuestion ? '의 생각 미션' : '의 질문');
     quizTagEl.style.color = char.themeColor;
