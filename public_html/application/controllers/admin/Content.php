@@ -2551,30 +2551,45 @@ class Content extends MY_Controller {
 			exit;
 		}
 
-		// 알라딘 ItemLookUp Open API
-		$ttbKey = "ttbkey_placeholder";
-		$aladinUrl = "http://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?ttbkey=" . $ttbKey . "&itemIdType=ISBN13&ItemId=" . $isbn . "&output=js&Version=20131101&Cover=Big";
+		// 1순위: 카카오 도서 검색 REST API (사용자 발급 키 연동)
+		$kakaoApiKey = "11d75cc8189f15ddf547b5538827d04d";
+		$kakaoUrl = "https://dapi.kakao.com/v3/search/book?target=isbn&query=" . urlencode($isbn);
 
 		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $aladinUrl);
+		curl_setopt($ch, CURLOPT_URL, $kakaoUrl);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: KakaoAK " . $kakaoApiKey));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 4);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 8);
-		$response = curl_exec($ch);
-		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$kakaoResponse = curl_exec($ch);
+		$kakaoHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 
 		$bookData = null;
-		if($response && $httpCode == 200){
-			$json = json_decode($response, true);
-			if(!empty($json['item'][0])){
-				$item = $json['item'][0];
+		if($kakaoResponse && $kakaoHttpCode == 200){
+			$kakaoJson = json_decode($kakaoResponse, true);
+			if(!empty($kakaoJson['documents'][0])){
+				$doc = $kakaoJson['documents'][0];
+				$authorStr = "";
+				if(!empty($doc['authors']) && is_array($doc['authors'])){
+					$authorStr = implode(', ', $doc['authors']);
+				} else if(!empty($doc['authors'])){
+					$authorStr = (string)$doc['authors'];
+				}
+
+				// 카카오 표지 이미지 고화질 썸네일 지원
+				$coverUrl = @$doc['thumbnail'];
+				if(!empty($coverUrl) && strpos($coverUrl, 'R120x174') !== false){
+					$coverUrl = str_replace('R120x174', 'R300x0', $coverUrl);
+				}
+
 				$bookData = array(
-					"book_name" => html_entity_decode(@$item['title'], ENT_QUOTES, 'UTF-8'),
-					"author"    => html_entity_decode(@$item['author'], ENT_QUOTES, 'UTF-8'),
-					"publisher" => html_entity_decode(@$item['publisher'], ENT_QUOTES, 'UTF-8'),
-					"serise"    => html_entity_decode(@$item['seriesInfo']['seriesName'] ?? '', ENT_QUOTES, 'UTF-8'),
-					"cover_url" => @$item['cover']
+					"book_name" => html_entity_decode(@$doc['title'], ENT_QUOTES, 'UTF-8'),
+					"author"    => html_entity_decode($authorStr, ENT_QUOTES, 'UTF-8'),
+					"publisher" => html_entity_decode(@$doc['publisher'], ENT_QUOTES, 'UTF-8'),
+					"serise"    => "",
+					"cover_url" => $coverUrl
 				);
 			}
 		}

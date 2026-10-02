@@ -462,7 +462,7 @@ FA200001	F	A	2	00001
                   }
                   if(res.book_cover) {
                       $('#book_cover_copy').val(res.book_cover);
-                      $('#cover_preview_area').html('<div style="margin-top:8px;"><img src="/upload/book/' + res.book_cover + '" style="max-height:120px; border:1px solid #007bff; border-radius:4px;" /> <span class="badge badge-success" style="vertical-align:bottom;">알라딘 표지 자동등록</span></div>');
+                      $('#cover_preview_area').html('<div style="margin-top:8px;"><img src="/upload/book/' + res.book_cover + '" style="max-height:120px; border:1px solid #007bff; border-radius:4px;" /> <span class="badge badge-success" style="vertical-align:bottom;">카카오 도서 표지 자동등록</span></div>');
                   }
                   alert("도서 기본 정보(제목, 지은이, 출판사, 시리즈, 표지)가 자동으로 입력되었습니다.");
               } else {

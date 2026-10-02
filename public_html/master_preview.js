@@ -4893,22 +4893,86 @@ function handleAddSheetFileUpload(e) {
   showMasterToast(`[${file.name}] 학습자료 파일이 업로드되었습니다.`);
 }
 
-function fetchMasterBookByIsbnForAdd() {
+async function fetchMasterBookByIsbnForAdd() {
   const isbnInput = document.getElementById("mbAddIsbn");
-  let isbn = (isbnInput ? isbnInput.value : "").replace(/-/g, "").trim();
+  let isbn = (isbnInput ? isbnInput.value : "").replace(/[^0-9xX]/g, "").trim();
   const btn = document.getElementById("btnIsbnFetchAdd");
 
   if (!isbn) {
     isbn = "9788932917245";
     if (isbnInput) isbnInput.value = isbn;
+    showMasterToast("ISBN 미입력으로 테스트용 예시 ISBN(9788932917245)을 조회합니다.", "info");
   }
 
   if (btn) {
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>조회중...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>카카오 조회중...';
     btn.disabled = true;
   }
 
-  setTimeout(() => {
+  const kakaoApiKey = "11d75cc8189f15ddf547b5538827d04d";
+  const apiUrl = `https://dapi.kakao.com/v3/search/book?target=isbn&query=${encodeURIComponent(isbn)}`;
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Authorization": `KakaoAK ${kakaoApiKey}`
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    if (data && data.documents && data.documents.length > 0) {
+      const doc = data.documents[0];
+      const title = doc.title || "";
+      const author = Array.isArray(doc.authors) ? doc.authors.join(", ") : (doc.authors || "");
+      const publisher = doc.publisher || "";
+      let cover = doc.thumbnail || "";
+
+      // 카카오 썸네일 고화질 지원 (R120x174 -> R300x0)
+      if (cover && cover.includes("R120x174")) {
+        cover = cover.replace("R120x174", "R300x0");
+      }
+
+      if (document.getElementById("mbAddTitle")) document.getElementById("mbAddTitle").value = title;
+      if (document.getElementById("mbAddAuthor")) document.getElementById("mbAddAuthor").value = author;
+      if (document.getElementById("mbAddPublisher")) document.getElementById("mbAddPublisher").value = publisher;
+
+      if (cover) {
+        if (document.getElementById("mbAddCover")) document.getElementById("mbAddCover").value = cover;
+        updateAddCoverPreview(cover);
+      }
+
+      // 중복 도서 체크
+      const dup = checkDuplicateBook(title, originalEditingBookIdForAdd);
+      if (dup) {
+        showMasterToast(`[주의] 이미 등록된 도서 '${dup.title}'와 유사합니다.`, "warning");
+      } else {
+        showMasterToast(`[ISBN: ${isbn}] '${title}' 서지정보와 표지가 연동되었습니다.`);
+      }
+
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
+        btn.disabled = false;
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+        }, 2000);
+      }
+    } else {
+      showMasterToast(`해당 ISBN(${isbn})에 대한 카카오 도서 검색 결과가 없습니다. 직접 정보를 입력해주세요.`, "warning");
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+        btn.disabled = false;
+      }
+    }
+  } catch (err) {
+    console.warn("카카오 API 실시간 조회 실패 (오프라인/네트워크 오류), 내장 데이터 백업 적용:", err);
+
+    // 내장 오프라인 백업 데이터
     const isbnMap = {
       "9788932917245": {
         title: "어린 왕자",
@@ -4940,15 +5004,15 @@ function fetchMasterBookByIsbnForAdd() {
       cover: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=150&q=80"
     };
 
-    document.getElementById("mbAddTitle").value = data.title;
-    document.getElementById("mbAddAuthor").value = data.author;
-    document.getElementById("mbAddPublisher").value = data.publisher;
-    document.getElementById("mbAddGrade").value = data.grade;
-    document.getElementById("mbAddCat1").value = data.cat1;
-    document.getElementById("mbAddCat2").value = data.cat2;
+    if (document.getElementById("mbAddTitle")) document.getElementById("mbAddTitle").value = data.title;
+    if (document.getElementById("mbAddAuthor")) document.getElementById("mbAddAuthor").value = data.author;
+    if (document.getElementById("mbAddPublisher")) document.getElementById("mbAddPublisher").value = data.publisher;
+    if (document.getElementById("mbAddGrade")) document.getElementById("mbAddGrade").value = data.grade;
+    if (document.getElementById("mbAddCat1")) document.getElementById("mbAddCat1").value = data.cat1;
+    if (document.getElementById("mbAddCat2")) document.getElementById("mbAddCat2").value = data.cat2;
     onCategory1Changed(data.cat1);
     onCategory2Changed(data.cat2);
-    document.getElementById("mbAddCover").value = data.cover;
+    if (document.getElementById("mbAddCover")) document.getElementById("mbAddCover").value = data.cover;
     updateAddCoverPreview(data.cover);
 
     if (btn) {
@@ -4959,7 +5023,7 @@ function fetchMasterBookByIsbnForAdd() {
       }, 2000);
     }
     showMasterToast(`[ISBN: ${isbn}] 서지정보가 자동 입력되었습니다.`);
-  }, 400);
+  }
 }
 
 // 중복 도서 의심 검사 알고리즘
