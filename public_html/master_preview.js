@@ -1359,27 +1359,33 @@ function saveRecommendedBooks(list) {
   }
 }
 
+let selectedRecGrade = "ALL";
+
 function renderRecommendedBooksTable() {
   const tbody = document.getElementById("recommendedBooksTableBody");
   const countSpan = document.getElementById("recBookCount");
-  const gradeFilter = document.getElementById("recGradeFilter");
   if (!tbody) return;
 
-  const currentGrade = gradeFilter ? gradeFilter.value : "ALL";
   const allList = getRecommendedBooks();
   
-  const filtered = (currentGrade === "ALL")
+  const filtered = (selectedRecGrade === "ALL")
     ? allList
-    : allList.filter(b => b.grade === currentGrade || (b.grade && b.grade.includes(currentGrade)));
+    : allList.filter(b => b.grade === selectedRecGrade || (b.grade && b.grade.includes(selectedRecGrade)));
 
-  if (countSpan) countSpan.textContent = filtered.length;
+  if (countSpan) {
+    countSpan.textContent = selectedRecGrade === "ALL" 
+      ? allList.length 
+      : `${filtered.length} (전체 ${allList.length})`;
+  }
 
   if (filtered.length === 0) {
+    const gradeName = selectedRecGrade === "ALL" ? "" : `[${selectedRecGrade}] `;
     tbody.innerHTML = `
       <tr>
         <td colspan="8" class="text-center py-5 text-muted">
           <i class="fa-solid fa-book-open mb-2" style="font-size: 28px; opacity: 0.5;"></i>
-          <div>등록된 권장 도서가 없습니다. [권장도서 추가] 버튼으로 등록해보세요.</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">${gradeName}등록된 권장 도서가 없습니다.</div>
+          <small class="text-muted">우측 상단의 <strong>[+ 권장도서 추가]</strong> 버튼을 눌러 이 학년의 권장도서를 등록해보세요.</small>
         </td>
       </tr>
     `;
@@ -1418,11 +1424,57 @@ function renderRecommendedBooksTable() {
 }
 
 function openAddRecommendedBookModal() {
-  const modal = $('#recommendedBookModal');
+  const modalGrade = document.getElementById("modalRecGrade");
+  const directGrade = document.getElementById("directRecGrade");
+  const targetGrade = (selectedRecGrade && selectedRecGrade !== "ALL") ? selectedRecGrade : "초등 1학년";
+  if (modalGrade) modalGrade.value = targetGrade;
+  if (directGrade) directGrade.value = targetGrade;
+
   const searchInput = document.getElementById("modalRecBookSearch");
   if (searchInput) searchInput.value = "";
+
+  switchRecModalTab('library');
   filterRecModalBooks();
-  if (modal.length) modal.modal('show');
+
+  if (window.jQuery && typeof $('#recommendedBookModal').modal === 'function') {
+    $('#recommendedBookModal').modal('show');
+  }
+}
+
+function switchRecModalTab(tab) {
+  const libTabBtn = document.getElementById("rec-tab-lib-btn");
+  const directTabBtn = document.getElementById("rec-tab-direct-btn");
+  const libView = document.getElementById("recModalViewLibrary");
+  const directView = document.getElementById("recModalViewDirect");
+
+  if (tab === 'library') {
+    if (libTabBtn) {
+      libTabBtn.className = "nav-link active font-weight-bold py-1 px-3";
+      libTabBtn.style.color = "";
+      libTabBtn.style.background = "";
+    }
+    if (directTabBtn) {
+      directTabBtn.className = "nav-link font-weight-bold py-1 px-3";
+      directTabBtn.style.color = "#5a4b3d";
+      directTabBtn.style.background = "transparent";
+    }
+    if (libView) libView.style.display = "block";
+    if (directView) directView.style.display = "none";
+    filterRecModalBooks();
+  } else {
+    if (libTabBtn) {
+      libTabBtn.className = "nav-link font-weight-bold py-1 px-3";
+      libTabBtn.style.color = "#5a4b3d";
+      libTabBtn.style.background = "transparent";
+    }
+    if (directTabBtn) {
+      directTabBtn.className = "nav-link active font-weight-bold py-1 px-3";
+      directTabBtn.style.color = "";
+      directTabBtn.style.background = "";
+    }
+    if (libView) libView.style.display = "none";
+    if (directView) directView.style.display = "block";
+  }
 }
 
 function filterRecModalBooks() {
@@ -1445,7 +1497,7 @@ function filterRecModalBooks() {
   if (countSpan) countSpan.textContent = candidates.length;
 
   if (candidates.length === 0) {
-    container.innerHTML = `<div class="p-4 text-center text-muted">검색된 도서가 없습니다.</div>`;
+    container.innerHTML = `<div class="p-4 text-center text-muted">검색된 도서가 없습니다. [신규 권장도서 직접 등록] 탭을 이용해 직접 추가할 수 있습니다.</div>`;
     return;
   }
 
@@ -1464,8 +1516,8 @@ function filterRecModalBooks() {
         </div>
         <div>
           ${isAlreadyRec
-            ? `<button class="btn btn-sm btn-secondary disabled" style="font-size: 11px;" disabled>이미 지정됨</button>`
-            : `<button class="btn btn-sm btn-beige-primary" style="font-size: 11px; padding: 4px 10px;" onclick="addBookToRecommended('${b.id}')">
+            ? `<button class="btn btn-sm btn-secondary disabled" style="font-size: 11px; border-radius: 6px;" disabled><i class="fa-solid fa-check mr-1"></i>이미 지정됨</button>`
+            : `<button class="btn btn-sm btn-beige-primary" style="font-size: 11px; padding: 4px 10px; border-radius: 6px;" onclick="addBookToRecommended('${b.id}')">
                 <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
                </button>`
           }
@@ -1503,14 +1555,107 @@ function addBookToRecommended(bookId) {
   saveRecommendedBooks(list);
   filterRecModalBooks();
   renderRecommendedBooksTable();
+  showMasterToast(`[${book.title}] 도서가 [${grade}] 권장도서로 성공적으로 등록되었습니다.`);
+}
+
+function saveDirectRecommendedBook(event) {
+  if (event) event.preventDefault();
+
+  const title = document.getElementById("directRecTitle")?.value.trim();
+  const author = document.getElementById("directRecAuthor")?.value.trim();
+  const publisher = document.getElementById("directRecPublisher")?.value.trim();
+  const grade = document.getElementById("directRecGrade")?.value || "초등 1학년";
+  const category = document.getElementById("directRecCategory")?.value || "문학";
+  let cover = document.getElementById("directRecCover")?.value.trim();
+
+  if (!title) {
+    alert("도서명을 입력해주세요.");
+    document.getElementById("directRecTitle")?.focus();
+    return;
+  }
+  if (!author) {
+    alert("저자명을 입력해주세요.");
+    document.getElementById("directRecAuthor")?.focus();
+    return;
+  }
+  if (!publisher) {
+    alert("출판사명을 입력해주세요.");
+    document.getElementById("directRecPublisher")?.focus();
+    return;
+  }
+
+  if (!cover) {
+    cover = "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150&q=80";
+  }
+
+  const list = getRecommendedBooks();
+  const exists = list.some(r => r.title === title && r.grade === grade);
+  if (exists) {
+    alert("이미 해당 학년에 동일한 도서명이 권장도서로 등록되어 있습니다.");
+    return;
+  }
+
+  const newRecId = 'REC-' + Date.now();
+  const newBookId = 'MB-REC-' + Date.now();
+
+  const newRecItem = {
+    id: newRecId,
+    bookId: newBookId,
+    title: title,
+    author: author,
+    publisher: publisher,
+    category: category,
+    cover: cover,
+    grade: grade,
+    createdAt: new Date().toISOString().slice(0, 10)
+  };
+
+  list.unshift(newRecItem);
+  saveRecommendedBooks(list);
+
+  if (typeof masterBooks !== 'undefined' && Array.isArray(masterBooks)) {
+    masterBooks.unshift({
+      id: newBookId,
+      title: title,
+      author: author,
+      publisher: publisher,
+      grade: grade,
+      category: category,
+      cover: cover,
+      isPublic: "Y",
+      hasQuiz: false,
+      quizzes: 0,
+      likes: 0,
+      recommends: 1,
+      date: new Date().toISOString().slice(0, 10)
+    });
+  }
+
+  renderRecommendedBooksTable();
+
+  if (document.getElementById("directRecTitle")) document.getElementById("directRecTitle").value = "";
+  if (document.getElementById("directRecAuthor")) document.getElementById("directRecAuthor").value = "";
+  if (document.getElementById("directRecPublisher")) document.getElementById("directRecPublisher").value = "";
+  if (document.getElementById("directRecCover")) document.getElementById("directRecCover").value = "";
+
+  if (window.jQuery && typeof $('#recommendedBookModal').modal === 'function') {
+    $('#recommendedBookModal').modal('hide');
+  }
+
+  showMasterToast(`[${title}] 신규 권장도서가 [${grade}]에 성공적으로 등록되었습니다.`);
 }
 
 function deleteRecommendedBook(recId) {
-  if (!confirm("해당 도서를 권장도서 목록에서 해제하시겠습니까?")) return;
-  let list = getRecommendedBooks();
-  list = list.filter(b => b.id !== recId);
-  saveRecommendedBooks(list);
+  const list = getRecommendedBooks();
+  const target = list.find(b => b.id === recId);
+  const targetName = target ? `[${target.title}] ` : '';
+
+  if (!confirm(`${targetName}해당 도서를 권장도서 목록에서 해제하시겠습니까?`)) return;
+
+  const updatedList = list.filter(b => b.id !== recId);
+  saveRecommendedBooks(updatedList);
   renderRecommendedBooksTable();
+  showMasterToast(`${targetName}권장도서가 성공적으로 해제되었습니다.`);
 }
 
 // ==========================================
@@ -7465,9 +7610,12 @@ function downloadMemberExcelTemplate() {
 }
 
 // -----------------------------------------------------------
+// -----------------------------------------------------------
 // [17] 권장도서 학년 버튼 선택 기능
 // -----------------------------------------------------------
 function selectRecGrade(grade) {
+  selectedRecGrade = grade;
+
   // 버튼 스타일 업데이트
   document.querySelectorAll(".rec-grade-btn").forEach(btn => {
     if (btn.dataset.grade === grade) {
@@ -7483,35 +7631,7 @@ function selectRecGrade(grade) {
     }
   });
 
-  // recGradeFilter 드롭박스 동기화 (renderRecommendedBooksTable 호출)
-  const filterEl = document.getElementById("recGradeFilter");
-  if (filterEl) {
-    filterEl.value = grade;
-    renderRecommendedBooksTable();
-  }
-}
-
-// 권장도서 추가 모달 - 현재 선택된 학년 자동 설정
-const _origOpenAddRecommendedBookModal = typeof openAddRecommendedBookModal === "function" ? openAddRecommendedBookModal : null;
-
-function openAddRecommendedBookModal() {
-  const filterEl = document.getElementById("recGradeFilter");
-  const curGrade = filterEl ? filterEl.value : "ALL";
-
-  const modalGrade = document.getElementById("modalRecGrade");
-  if (modalGrade && curGrade !== "ALL") {
-    modalGrade.value = curGrade;
-  }
-
-  if (_origOpenAddRecommendedBookModal) {
-    _origOpenAddRecommendedBookModal();
-  } else {
-    // 기본 모달 열기
-    const searchEl = document.getElementById("modalRecBookSearch");
-    if (searchEl) searchEl.value = "";
-    filterRecModalBooks();
-    $("#recommendedBookModal").modal("show");
-  }
+  renderRecommendedBooksTable();
 }
 
 // -----------------------------------------------------------

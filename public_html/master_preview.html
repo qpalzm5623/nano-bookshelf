@@ -2810,7 +2810,7 @@
 <!-- 5-1. 학년별 권장도서 등록 모달 -->
 <div class="modal fade" id="recommendedBookModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content modal-content-beige">
+    <div class="modal-content modal-content-beige" style="border-radius: 16px;">
       <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
         <h5 class="modal-title font-weight-bold" style="font-size: 16.5px;">
           <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 등록
@@ -2819,18 +2819,37 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body p-4">
+
+      <!-- 모달 내부 탭 (라이브러리 도서 선택 vs 신규 도서 직접 등록) -->
+      <div class="px-4 pt-3 border-bottom bg-light">
+        <ul class="nav nav-pills" id="recModalTab" style="gap: 8px;">
+          <li class="nav-item">
+            <button class="nav-link active font-weight-bold py-1 px-3" id="rec-tab-lib-btn" onclick="switchRecModalTab('library')" style="border-radius: 8px; font-size: 13px;">
+              <i class="fa-solid fa-book-bookmark mr-1"></i>라이브러리에서 선택 추가
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link font-weight-bold py-1 px-3" id="rec-tab-direct-btn" onclick="switchRecModalTab('direct')" style="border-radius: 8px; font-size: 13px; color: #5a4b3d; background: transparent;">
+              <i class="fa-solid fa-plus-circle mr-1"></i>신규 권장도서 직접 등록
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 탭 1: 라이브러리 도서 선택 -->
+      <div id="recModalViewLibrary" class="modal-body p-4">
         <div class="row mb-3">
           <div class="col-md-6">
-            <label class="form-label font-weight-bold" style="font-size: 13px;">지정 대상 학년</label>
-            <select id="modalRecGrade" class="form-control form-control-beige">
+            <label class="form-label font-weight-bold" style="font-size: 13px;">지정 대상 학년 <span class="text-danger">*</span></label>
+            <select id="modalRecGrade" class="form-control form-control-beige" onchange="filterRecModalBooks()">
+              <option value="미취학">미취학 (유아/7세)</option>
               <option value="초등 1학년">초등 1학년</option>
               <option value="초등 2학년">초등 2학년</option>
               <option value="초등 3학년">초등 3학년</option>
               <option value="초등 4학년">초등 4학년</option>
               <option value="초등 5학년">초등 5학년</option>
               <option value="초등 6학년">초등 6학년</option>
-              <option value="중학교">중학교</option>
+              <option value="중학교">중학교 (중등 전학년)</option>
             </select>
           </div>
           <div class="col-md-6">
@@ -2844,15 +2863,78 @@
           </div>
         </div>
 
-        <div class="font-weight-bold mb-2" style="font-size: 13px; color: var(--text-main);">
-          마스터 도서 라이브러리 목록에서 선택 (<span id="modalRecBookCandidateCount">0</span>권 검색됨)
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="font-weight-bold" style="font-size: 13px; color: var(--text-main);">
+            마스터 도서 라이브러리 목록 (<span id="modalRecBookCandidateCount">0</span>권 검색됨)
+          </span>
+          <small class="text-muted">원하는 도서의 [권장도서 추가] 버튼을 클릭하세요.</small>
         </div>
         <div class="border rounded p-2" style="max-height: 380px; overflow-y: auto; background: #fff;" id="modalRecBookCandidateList">
           <!-- JS 렌더링 -->
         </div>
       </div>
+
+      <!-- 탭 2: 신규 권장도서 직접 등록 -->
+      <div id="recModalViewDirect" class="modal-body p-4" style="display: none;">
+        <form onsubmit="saveDirectRecommendedBook(event)">
+          <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 12.5px; border-radius: 8px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>라이브러리에 없는 새로운 도서를 해당 학년의 권장도서로 즉시 등록합니다.
+          </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
+              <select id="directRecGrade" class="form-control form-control-beige" required>
+                <option value="미취학">미취학 (유아/7세)</option>
+                <option value="초등 1학년">초등 1학년</option>
+                <option value="초등 2학년">초등 2학년</option>
+                <option value="초등 3학년">초등 3학년</option>
+                <option value="초등 4학년">초등 4학년</option>
+                <option value="초등 5학년">초등 5학년</option>
+                <option value="초등 6학년">초등 6학년</option>
+                <option value="중학교">중학교 (중등 전학년)</option>
+              </select>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">카테고리 분류 <span class="text-danger">*</span></label>
+              <select id="directRecCategory" class="form-control form-control-beige">
+                <option value="문학">문학</option>
+                <option value="과학">과학</option>
+                <option value="역사">역사</option>
+                <option value="사회">사회</option>
+                <option value="인문">인문</option>
+                <option value="예술">예술</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <label class="font-weight-bold" style="font-size: 13px;">도서명 <span class="text-danger">*</span></label>
+            <input type="text" id="directRecTitle" class="form-control form-control-beige" placeholder="예: 해리 포터와 마법사의 돌" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">저자 <span class="text-danger">*</span></label>
+              <input type="text" id="directRecAuthor" class="form-control form-control-beige" placeholder="예: J.K. 롤링" required>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">출판사 <span class="text-danger">*</span></label>
+              <input type="text" id="directRecPublisher" class="form-control form-control-beige" placeholder="예: 문학수첩" required>
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <label class="font-weight-bold" style="font-size: 13px;">표지 이미지 URL <small class="text-muted">(선택)</small></label>
+            <input type="url" id="directRecCover" class="form-control form-control-beige" placeholder="https://... (미입력 시 기본 추천 표지가 자동 적용됩니다)">
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+            <button type="submit" class="btn-beige-primary">
+              <i class="fa-solid fa-plus-circle mr-1"></i>권장도서 신규 등록
+            </button>
+          </div>
+        </form>
+      </div>
+
       <div class="modal-footer modal-footer-beige d-flex justify-content-between">
-        <small class="text-muted">도서의 [권장도서 추가] 버튼을 누르면 해당 학년의 권장도서로 즉시 지정됩니다.</small>
+        <small class="text-muted"><i class="fa-solid fa-circle-check text-success mr-1"></i>등록된 권장도서는 학생 페이지 학년별 추천 도서관에 즉시 반영됩니다.</small>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
       </div>
     </div>
@@ -4179,7 +4261,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="upload/banner/banners_data.js"></script>
-<script src="master_preview.js?v=20261002_notice_v1"></script>
+<script src="master_preview.js?v=20261002_notice_v2"></script>
 
 </body>
 </html>
