@@ -1752,7 +1752,7 @@
     }
     .theme-tag-img-box {
       width: 100%;
-      height: 90px;
+      aspect-ratio: 16 / 9;
       background: #efebe4;
       position: relative;
       overflow: hidden;
@@ -1761,25 +1761,27 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
       transition: transform 0.3s ease;
     }
     .theme-tag-card:hover .theme-tag-img-box img {
       transform: scale(1.05);
     }
     .theme-tag-card-body {
-      padding: 10px 10px 12px 10px;
+      padding: 8px 10px 10px 10px;
       flex: 1;
       display: flex;
       flex-direction: column;
     }
     .theme-badge-title {
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 800;
       color: var(--wood-dark);
-      margin-bottom: 3px;
+      margin-bottom: 2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.25;
     }
     .theme-sub-badge {
       font-size: 10px;
@@ -1789,31 +1791,33 @@
       padding: 2px 6px;
       border-radius: 5px;
       display: inline-block;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       width: fit-content;
       max-width: 100%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.3;
     }
     .theme-desc-text {
-      font-size: 10.5px;
+      font-size: 10px;
       color: var(--muted);
-      line-height: 1.4;
-      margin-bottom: 10px;
+      line-height: 1.35;
+      margin-bottom: 4px;
       flex: 1;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      min-height: 29px;
+      min-height: 0;
     }
     .theme-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid #f0ece5;
-      padding-top: 8px;
+      padding-top: 6px;
+      margin-top: auto;
       font-size: 10.5px;
       color: var(--wood-mid);
       font-weight: 600;
@@ -5530,7 +5534,11 @@ function renderThemeTagBoxes() {
 
   grid.innerHTML = themes.map(function(t){
     var bookCnt = t.bookIds ? t.bookIds.length : 0;
-    var img = t.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+    var img = t.image || "upload/banner/banner_reading_king.jpg";
+    // 테마 안내글이 없거나 기본 텍스트인 경우 공간 낭비 방지를 위해 숨김 처리
+    var descHtml = (t.desc && t.desc.trim() && t.desc !== '테마 안내글이 없습니다.')
+      ? '<div class="theme-desc-text">'+t.desc+'</div>'
+      : '';
     return '<div class="theme-tag-card" onclick="selectThemeTag('+t.id+')">'
       + '<div class="theme-tag-img-box">'
       +   '<img src="'+img+'" alt="'+t.tag+'" onerror="this.src=\'upload/banner/banner_reading_king.jpg\'">'
@@ -5538,7 +5546,7 @@ function renderThemeTagBoxes() {
       + '<div class="theme-tag-card-body">'
       +   '<div class="theme-badge-title">'+t.tag+'</div>'
       +   (t.subTag ? '<div class="theme-sub-badge">'+t.subTag+'</div>' : '')
-      +   '<div class="theme-desc-text">'+(t.desc || '테마 안내글이 없습니다.')+'</div>'
+      +   descHtml
       +   '<div class="theme-card-footer">'
       +     '<span><i class="fa-solid fa-book-open-reader mr-1" style="color:var(--leaf);"></i>'+bookCnt+'권의 도서</span>'
       +     '<span style="color:var(--leaf); font-weight:700;">도서 보기 <i class="fa-solid fa-chevron-right ml-1"></i></span>'
@@ -5561,7 +5569,20 @@ function selectThemeTag(themeId) {
   if(tagBoxSec) tagBoxSec.style.display = 'none';
   if(selSec) selSec.style.display = 'block';
 
-  var bookCnt = theme.bookIds ? theme.bookIds.length : 0;
+  // 매핑된 도서 찾기 (ID 매칭: MB-001 <-> 1001, 또는 직접 ID 매칭)
+  var mappedBooks = [];
+  if(theme.bookIds && theme.bookIds.length > 0) {
+    theme.bookIds.forEach(function(bid){
+      var cleanNum = bid.toString().replace(/[^0-9]/g, '');
+      var book = libData.find(function(item){
+        var itemNum = item.id.toString().replace(/[^0-9]/g, '');
+        return item.id === bid || itemNum === cleanNum || itemNum.endsWith(cleanNum) || cleanNum.endsWith(itemNum);
+      });
+      if(book && !mappedBooks.includes(book)) mappedBooks.push(book);
+    });
+  }
+
+  var bookCnt = mappedBooks.length;
 
   if(header) {
     header.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">'
@@ -5576,40 +5597,31 @@ function selectThemeTag(themeId) {
       + '</div>';
   }
 
-  // 매핑된 도서 찾기 (ID 매칭: MB-001 <-> 1001, 또는 직접 ID 매칭)
-  var mappedBooks = [];
-  if(theme.bookIds && theme.bookIds.length > 0) {
-    theme.bookIds.forEach(function(bid){
-      var cleanNum = bid.toString().replace(/[^0-9]/g, '');
-      var book = libData.find(function(item){
-        var itemNum = item.id.toString().replace(/[^0-9]/g, '');
-        return item.id === bid || itemNum === cleanNum || itemNum.endsWith(cleanNum) || cleanNum.endsWith(itemNum);
-      });
-      if(book && !mappedBooks.includes(book)) mappedBooks.push(book);
-    });
-  }
-
-  if(mappedBooks.length === 0) {
-    mappedBooks = libData.slice(0, 5);
-  }
-
   if(listEl) {
-    listEl.innerHTML = mappedBooks.map(function(b){
-      var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
-      return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
-        + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
-        + '<div style="flex:1;min-width:0;">'
-        +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
-        +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
-        +   ab
-        +   '<span class="nbadge">'+b.grade+' 권장</span>'
-        +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
-        + '</div>'
-        + '<div style="display:flex; align-items:center;">'
-        +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
-        + '</div>'
+    if(mappedBooks.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center; padding: 60px 20px; background:#fff; border-radius:14px; border:1.5px dashed #e2dad0; margin-top:8px;">'
+        + '<i class="fa-solid fa-book-open" style="font-size:38px; color:#c7beaf; margin-bottom:12px; display:block;"></i>'
+        + '<strong style="font-size:15px; color:var(--wood-dark); display:block; margin-bottom:6px;">해당 주제에 등록된 도서가 없습니다.</strong>'
+        + '<p style="font-size:12px; color:var(--muted); margin:0;">관리자 페이지 [서비스 운영관리 > 테마관리]에서 추천 도서를 매핑해주세요.</p>'
         + '</div>';
-    }).join('');
+    } else {
+      listEl.innerHTML = mappedBooks.map(function(b){
+        var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
+        return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+          + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
+          + '<div style="flex:1;min-width:0;">'
+          +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
+          +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
+          +   ab
+          +   '<span class="nbadge">'+b.grade+' 권장</span>'
+          +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
+          + '</div>'
+          + '<div style="display:flex; align-items:center;">'
+          +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
   }
 }
 

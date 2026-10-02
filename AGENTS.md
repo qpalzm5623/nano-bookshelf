@@ -7,6 +7,9 @@
 - **최소 도구 호출(Minimal Tool Calls)**:
   - 파일 편집 도구(`replace_file_content`)를 활용해 군더더기 없이 정확하게 코드를 수정합니다.
   - 검증용 쉘 스크립트 작성이나 서버 재시작 등을 최소화하여 크레딧과 응답 지연을 방지합니다.
+- **Git 자동 푸시/커밋 금지 (User Manual Push)**:
+  - `git commit` 및 `git push`를 자동으로 실행하지 않습니다.
+  - 코드 및 파일 수정까지만 완료하고, 사용자가 GitHub Desktop에서 직접 변경점을 확인 후 커밋/푸시합니다.
 
 ## 2. Coding & Architecture
 - 한국어 주석 및 직관적인 코드 작성

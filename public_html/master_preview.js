@@ -1218,17 +1218,65 @@ function purgeAutofilledSearchInputs() {
     { id: "masterPaymentSearchInput", fn: filterMasterPaymentList }
   ];
 
+  const knownCredentials = ["student01", "student", "admin01", "admin", "master00", "master"];
+
   searchInputConfigs.forEach(item => {
     const el = document.getElementById(item.id);
-    if (el && el.value) {
-      // 사용자가 현재 직접 타이핑하고 있는 활성 상태가 아니라면 클리어
-      if (document.activeElement !== el) {
-        el.value = "";
-        if (typeof item.fn === "function") {
-          item.fn();
-        }
+    if (!el) return;
+    const val = (el.value || "").trim().toLowerCase();
+    
+    // 브라우저가 저장된 자격증명(student01 등)을 주입한 경우, 포커스 여부와 무관하게 즉시 강제 삭제
+    const isAutofillCredential = knownCredentials.includes(val) || val.startsWith("student0") || val.startsWith("admin0") || val.startsWith("master0");
+    if (isAutofillCredential) {
+      el.value = "";
+      if (typeof item.fn === "function") {
+        item.fn();
+      }
+    } else if (el.value && document.activeElement !== el) {
+      // 사용자가 직접 타이핑 중이 아닌데 남아있는 잔여 자동완성값 클리어
+      el.value = "";
+      if (typeof item.fn === "function") {
+        item.fn();
       }
     }
+  });
+}
+
+// 검색창 이벤트 레벨 자동완성 방어선 바인딩
+function bindMasterSearchAutofillGuards() {
+  const searchInputConfigs = [
+    { id: "franchiseSearchInput", fn: filterFranchiseList },
+    { id: "memberSearchInput", fn: filterMemberList },
+    { id: "rankStudentSearchInput", fn: filterStudentRankings },
+    { id: "contentSearchInput", fn: filterMasterContentList },
+    { id: "dispatchSearchInput", fn: filterDispatchList },
+    { id: "masterPaymentSearchInput", fn: filterMasterPaymentList }
+  ];
+
+  searchInputConfigs.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (!el) return;
+    
+    // 포커스 시 readonly 속성 해제 (초기 로딩 시 브라우저 휴리스틱 방어용)
+    el.addEventListener("focus", () => {
+      el.removeAttribute("readonly");
+      const v = (el.value || "").trim().toLowerCase();
+      if (v === "student01" || v.startsWith("student0") || v === "admin01" || v === "master00") {
+        el.value = "";
+        if (typeof item.fn === "function") item.fn();
+      }
+    });
+
+    // 브라우저가 강제로 채워넣는 순간 즉시 클리어
+    ["input", "change"].forEach(evtName => {
+      el.addEventListener(evtName, () => {
+        const v = (el.value || "").trim().toLowerCase();
+        if (v === "student01" || v.startsWith("student0") || v === "admin01" || v === "master00") {
+          el.value = "";
+          if (typeof item.fn === "function") item.fn();
+        }
+      });
+    });
   });
 }
 
@@ -1248,15 +1296,25 @@ document.addEventListener("DOMContentLoaded", () => {
   populateMasterPaymentAcademyFilter();
   updatePaymentKpis();
 
-  // 브라우저가 저장된 아이디(student01)를 폼으로 오인해 임의로 꽂는 현상 방어 (초기 및 지연 3회 검증)
+  // 브라우저 자동완성 방어선 바인딩 및 다단계 지연 소거
+  bindMasterSearchAutofillGuards();
   purgeAutofilledSearchInputs();
-  setTimeout(purgeAutofilledSearchInputs, 80);
+  setTimeout(purgeAutofilledSearchInputs, 50);
+  setTimeout(purgeAutofilledSearchInputs, 150);
   setTimeout(purgeAutofilledSearchInputs, 300);
-  setTimeout(purgeAutofilledSearchInputs, 800);
+  setTimeout(purgeAutofilledSearchInputs, 600);
+  setTimeout(purgeAutofilledSearchInputs, 1200);
+  setTimeout(purgeAutofilledSearchInputs, 2000);
 });
 
 window.addEventListener("pageshow", () => {
   purgeAutofilledSearchInputs();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    purgeAutofilledSearchInputs();
+  }
 });
 
 // 마스터 대메뉴 탭 전환
@@ -1289,6 +1347,9 @@ function switchMasterTab(tabName) {
   const mainEl = document.querySelector('.main-workspace');
   if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
+
+  // 탭 전환 시 브라우저 자동완성 침범 소거
+  purgeAutofilledSearchInputs();
 }
 
 // 운영 관리 서브탭 전환
@@ -1821,7 +1882,15 @@ function getDDayText(endDateStr) {
 
 // 가맹점 필터링 (가입일 기간 2개 박스, 이용 상품명, 운영 상태, 검색어)
 function filterFranchiseList() {
-  const query = (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim();
+  let query = (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim();
+  
+  // 브라우저 저장 계정(student01 등) 자동완성 오염 감지 시 검색창을 비우고 query를 빈값으로 리셋
+  if (query === "student01" || query.startsWith("student0") || query === "admin01" || query === "master00") {
+    const el = document.getElementById("franchiseSearchInput");
+    if (el) el.value = "";
+    query = "";
+  }
+
   const statusFilter = document.getElementById("franchiseStatusFilter")?.value || "ALL";
   const planFilter = document.getElementById("franchisePlanFilter")?.value || "ALL";
   const startDateFilter = document.getElementById("franchiseStartDateFilter")?.value || "";
@@ -2350,7 +2419,15 @@ function renderMemberTable(data = memberList) {
 
 // 회원 필터링 (학원, 등급 권한, 상태 3종, 통합검색어)
 function filterMemberList() {
-  const query = (document.getElementById("memberSearchInput")?.value || "").toLowerCase().trim();
+  let query = (document.getElementById("memberSearchInput")?.value || "").toLowerCase().trim();
+  
+  // 브라우저 저장 계정(student01 등) 자동완성 오염 감지 시 검색창을 비우고 query를 빈값으로 리셋
+  if (query === "student01" || query.startsWith("student0") || query === "admin01" || query === "master00") {
+    const el = document.getElementById("memberSearchInput");
+    if (el) el.value = "";
+    query = "";
+  }
+
   const acadFilter = currentSelectedAcademy;
   const roleFilter = document.getElementById("memberRoleFilter")?.value || "ALL";
   const statusFilter = document.getElementById("memberStatusFilter")?.value || "ALL";
@@ -2562,14 +2639,13 @@ function openMasterMemberAddModal() {
   if (form) form.reset();
   const acadSelect = document.getElementById("newMemAcademy");
   if (acadSelect && typeof franchiseList !== "undefined") {
-    acadSelect.innerHTML = franchiseList.map(a => `<option value="${a.name}">${a.name}</option>`).join("");
-    if (currentSelectedAcademy !== "ALL") {
-      acadSelect.value = currentSelectedAcademy;
-    }
+    acadSelect.innerHTML =
+      `<option value="" selected>선택</option>` +
+      `<option value="본사">🏢 본사 (나노의 책장 본사)</option>` +
+      franchiseList.map(a => `<option value="${a.name}">${a.name}</option>`).join("");
+    acadSelect.value = "";
   }
-  const initialAcad = acadSelect ? acadSelect.value : "";
-  updateClassDropdown(initialAcad);
-  onMasterMemberRoleChange("STUDENT");
+  onMasterMemberAcademyChange("");
   $("#masterMemberAddModal").modal("show");
 }
 
@@ -2588,7 +2664,17 @@ function handleMasterMemberRegister(e) {
   }
 
   const academyName = document.getElementById("newMemAcademy").value;
+  if (!academyName) {
+    alert("소속 가맹 학원을 선택해주세요.");
+    document.getElementById("newMemAcademy").focus();
+    return;
+  }
   const role = document.getElementById("newMemRole").value;
+  if (!role) {
+    alert("등급 권한을 선택해주세요.");
+    document.getElementById("newMemRole").focus();
+    return;
+  }
 
   if (role === "DIRECTOR") {
     alert("원장님(관리자) 계정은 [가맹점 관리] 메뉴에서 학원 신규 등록 시에만 생성됩니다.");
@@ -3183,18 +3269,15 @@ function updateThemeModalPreview() {
   const activeVal = document.getElementById("themeActive") ? document.getElementById("themeActive").value : "Y";
 
   box.innerHTML = `
-    <div style="position: relative; height: 120px; overflow: hidden; background: #e5e0d8;">
-      <img src="${finalImg}" alt="${tagVal}" style="width: 100%; height: 100%; object-fit: cover;">
+    <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: #e5e0d8;">
+      <img src="${finalImg}" alt="${tagVal}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
       <span class="badge" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10.5px; border-radius: 4px; padding: 2px 6px;">
         ${activeVal === 'Y' ? '노출' : '숨김'}
       </span>
     </div>
-    <div style="padding: 12px;">
-      <div class="badge-soft badge-soft-warning font-weight-bold mb-1" style="font-size: 12px; display: inline-block;">${tagVal}</div>
-      <div class="text-muted text-truncate mb-2" style="font-size: 11px; font-weight: 600;">${subTagVal}</div>
-      <p class="text-secondary mb-2" style="font-size: 11.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-        ${descVal}
-      </p>
+    <div style="padding: 10px;">
+      <div class="badge-soft badge-soft-warning font-weight-bold mb-1" style="font-size: 12.5px; display: inline-block;">${tagVal}</div>
+      <div class="text-muted text-truncate mb-1" style="font-size: 10.5px; font-weight: 600;">${subTagVal}</div>
       <div class="pt-2 border-top d-flex justify-content-between align-items-center">
         <span style="font-size: 11px; color: var(--text-soft);"><i class="fa-solid fa-book-open mr-1"></i>추천 도서 <strong>6</strong>권</span>
         <span class="badge-soft badge-soft-success" style="font-size: 10.5px;">주제별 도서</span>
@@ -3953,7 +4036,12 @@ function resetRankingFilters() {
 
 function renderRankings() {
   const acadFilter = document.getElementById("rankAcademyFilter")?.value || "ALL";
-  const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
+  let searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
+  if (searchQ === "student01" || searchQ.startsWith("student0") || searchQ === "admin01" || searchQ === "master00") {
+    const el = document.getElementById("rankStudentSearchInput");
+    if (el) el.value = "";
+    searchQ = "";
+  }
 
   const filtered = allStudentRankings.filter(s => {
     const matchAcad = acadFilter === "ALL" || s.academy === acadFilter;
@@ -7224,7 +7312,7 @@ function formatUsernameInput(input) {
 }
 
 // -----------------------------------------------------------
-// [8] 소속 학원 변경 시 - 본사 선택 시 역할 고정
+// [8] 소속 학원 변경 시 - 선택 여부에 따른 전체 필드 활성화/비활성화 및 본사 분기
 // -----------------------------------------------------------
 function onMasterMemberAcademyChange(val) {
   const roleSelect = document.getElementById("newMemRole");
@@ -7233,8 +7321,49 @@ function onMasterMemberAcademyChange(val) {
   const gradeRow = document.getElementById("newMemGradeClassRow");
   const parentWrap = document.getElementById("newMemParentPhoneWrap");
 
+  const nameEl = document.getElementById("newMemName");
+  const usernameEl = document.getElementById("newMemUsername");
+  const pwEl = document.getElementById("newMemPassword");
+  const gradeEl = document.getElementById("newMemGrade");
+  const classEl = document.getElementById("newMemClass");
+  const phoneEl = document.getElementById("newMemPhone");
+  const parentPhoneEl = document.getElementById("newMemParentPhone");
+  const statusEl = document.getElementById("newMemStatus");
+  const submitBtn = document.getElementById("btnSubmitMasterMember");
+
+  // 1. 소속 가맹 학원이 '선택' (미선택 빈값)인 경우: 모든 필드 비우고 disabled 처리
+  if (!val) {
+    if (roleSelect) {
+      roleSelect.value = "";
+      roleSelect.disabled = true;
+    }
+    if (hqOpt) hqOpt.style.display = "none";
+    if (roleNote) roleNote.classList.add("d-none");
+
+    if (nameEl) { nameEl.value = ""; nameEl.disabled = true; nameEl.placeholder = "소속 학원을 먼저 선택해주세요"; }
+    if (usernameEl) { usernameEl.value = ""; usernameEl.disabled = true; usernameEl.placeholder = "소속 학원을 먼저 선택해주세요"; }
+    if (pwEl) { pwEl.value = ""; pwEl.disabled = true; pwEl.placeholder = "소속 학원을 먼저 선택해주세요"; }
+    if (gradeEl) { gradeEl.disabled = true; }
+    if (classEl) { classEl.innerHTML = '<option value="">-</option>'; classEl.disabled = true; }
+    if (phoneEl) { phoneEl.value = ""; phoneEl.disabled = true; phoneEl.placeholder = "소속 학원을 먼저 선택해주세요"; }
+    if (parentPhoneEl) { parentPhoneEl.value = ""; parentPhoneEl.disabled = true; parentPhoneEl.placeholder = "소속 학원을 먼저 선택해주세요"; }
+    if (statusEl) { statusEl.disabled = true; }
+    if (submitBtn) { submitBtn.disabled = true; }
+    if (gradeRow) gradeRow.style.display = "flex";
+    if (parentWrap) parentWrap.style.display = "block";
+    return;
+  }
+
+  // 2. 소속 학원(또는 본사)이 정상 선택된 경우: 공통 필드 잠금 해제
+  if (nameEl) { nameEl.disabled = false; nameEl.placeholder = "예: 김민준 (한글, 영문만 가능)"; }
+  if (usernameEl) { usernameEl.disabled = false; usernameEl.placeholder = "예: minjun_k"; }
+  if (pwEl) { pwEl.disabled = false; if (!pwEl.value) pwEl.value = "nano1234!"; }
+  if (phoneEl) { phoneEl.disabled = false; phoneEl.placeholder = "예: 010-1234-5678"; }
+  if (statusEl) { statusEl.disabled = false; }
+  if (submitBtn) { submitBtn.disabled = false; }
+
+  // 3. 본사 선택 시: HQ_ADMIN으로 고정
   if (val === "본사") {
-    // 본사 선택 시 역할을 HQ_ADMIN으로 고정
     if (hqOpt) hqOpt.style.display = "";
     if (roleSelect) {
       roleSelect.value = "HQ_ADMIN";
@@ -7243,14 +7372,22 @@ function onMasterMemberAcademyChange(val) {
     if (roleNote) roleNote.classList.remove("d-none");
     if (gradeRow) gradeRow.style.display = "none";
     if (parentWrap) parentWrap.style.display = "none";
+    if (classEl) { classEl.innerHTML = '<option value="-">-</option>'; classEl.disabled = true; }
   } else {
-    // 학원 선택 시 선생님/학생 선택 가능, HQ_ADMIN 옵션 숨김
+    // 4. 일반 가맹 학원 선택 시: 학생/교사 선택 가능
     if (hqOpt) hqOpt.style.display = "none";
     if (roleSelect) {
-      if (roleSelect.value === "HQ_ADMIN") roleSelect.value = "STUDENT";
       roleSelect.disabled = false;
+      if (!roleSelect.value || roleSelect.value === "HQ_ADMIN") {
+        roleSelect.value = "STUDENT";
+      }
     }
     if (roleNote) roleNote.classList.add("d-none");
+    if (gradeEl) gradeEl.disabled = false;
+    if (classEl) classEl.disabled = false;
+    if (parentPhoneEl) { parentPhoneEl.disabled = false; parentPhoneEl.placeholder = "예: 010-9876-5432"; }
+
+    updateClassDropdown(val);
     onMasterMemberRoleChange(roleSelect ? roleSelect.value : "STUDENT");
   }
 }
@@ -7743,7 +7880,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // -----------------------------------------------------------
-// [22] openMasterMemberAddModal 오버라이드 - 본사 옵션 추가
+// [22] openMasterMemberAddModal 오버라이드 - 초기 '선택' 상태 및 나머지 필드 입력불가 잠금
 // -----------------------------------------------------------
 const _origOpenMasterMemberAddModal = typeof openMasterMemberAddModal === "function" ? openMasterMemberAddModal.bind({}) : null;
 function openMasterMemberAddModal() {
@@ -7752,31 +7889,17 @@ function openMasterMemberAddModal() {
 
   const acadSelect = document.getElementById("newMemAcademy");
   if (acadSelect && typeof franchiseList !== "undefined") {
-    // 본사 옵션 추가
     acadSelect.innerHTML =
+      `<option value="" selected>선택</option>` +
       `<option value="본사">🏢 본사 (나노의 책장 본사)</option>` +
       franchiseList.map(a => `<option value="${a.name}">${a.name}</option>`).join("");
 
-    if (currentSelectedAcademy !== "ALL") {
-      acadSelect.value = currentSelectedAcademy;
-    }
+    acadSelect.value = "";
   }
 
-  // 클래스 드롭박스 초기화 (선택된 학원의 실제 개설 학급 반영)
-  updateClassDropdown(acadSelect ? acadSelect.value : "");
+  // 초기 상태: 소속 가맹 학원이 '선택'이므로 나머지 모든 필드 초기화 및 disabled 잠금
+  onMasterMemberAcademyChange("");
 
-  // 역할 관련 초기화
-  const hqOpt = document.getElementById("newMemRoleHqOption");
-  if (hqOpt) hqOpt.style.display = "none";
-  const roleSelect = document.getElementById("newMemRole");
-  if (roleSelect) {
-    roleSelect.disabled = false;
-    roleSelect.value = "STUDENT";
-  }
-  const roleNote = document.getElementById("newMemRoleNote");
-  if (roleNote) roleNote.classList.add("d-none");
-
-  onMasterMemberRoleChange("STUDENT");
   $("#masterMemberAddModal").modal("show");
 }
 

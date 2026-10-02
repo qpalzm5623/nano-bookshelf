@@ -688,6 +688,12 @@
 </head>
 <body>
 
+<!-- Chrome/Edge 브라우저 비밀번호 관리자 자동완성 가로채기 방지용 더미 필드 -->
+<div style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; opacity: 0; pointer-events: none; overflow: hidden;" aria-hidden="true" tabindex="-1">
+  <input type="text" name="fake_username_remember" tabindex="-1" autocomplete="username">
+  <input type="password" name="fake_password_remember" tabindex="-1" autocomplete="current-password">
+</div>
+
 <!-- 상단 고정 헤더 영역 (역할 전환 바 + 메인 헤더) -->
 <div class="master-header-fixed-wrap">
 
@@ -866,7 +872,7 @@
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="franchiseSearchInput" name="franchise_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="학원명, 원장명, 관리자 ID, 지역, 사업자번호 검색..." onkeyup="filterFranchiseList()" onsearch="filterFranchiseList()">
+          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 지역, 사업자번호 검색..." onkeyup="filterFranchiseList()" onsearch="filterFranchiseList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetFranchiseFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium); white-space: nowrap;">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1012,7 +1018,7 @@
         <!-- 4. 통합 검색 입력 -->
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="memberSearchInput" name="member_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="이름, 아이디, 학년, 학급, 연락처 검색..." onkeyup="filterMemberList()" onsearch="filterMemberList()">
+          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." onkeyup="filterMemberList()" onsearch="filterMemberList()">
         </div>
 
         <!-- 5. 초기화 버튼 -->
@@ -1313,7 +1319,7 @@
           </div>
           <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0;">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="search" id="rankStudentSearchInput" name="rank_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="학생 이름 또는 로그인 아이디 검색..." onkeyup="filterStudentRankings()" onsearch="filterStudentRankings()">
+            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." onkeyup="filterStudentRankings()" onsearch="filterStudentRankings()">
           </div>
           <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium);">
             <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1475,7 +1481,7 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="contentSearchInput" name="content_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeyup="filterMasterContentList()" onsearch="filterMasterContentList()">
+          <input type="search" id="contentSearchInput" name="search_content_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeyup="filterMasterContentList()" onsearch="filterMasterContentList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetContentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1611,7 +1617,7 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="dispatchSearchInput" name="dispatch_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeyup="filterDispatchList()" onsearch="filterDispatchList()">
+          <input type="search" id="dispatchSearchInput" name="search_dispatch_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeyup="filterDispatchList()" onsearch="filterDispatchList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetDispatchFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1737,7 +1743,7 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="masterPaymentSearchInput" name="master_payment_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeyup="filterMasterPaymentList()" onsearch="filterMasterPaymentList()">
+          <input type="search" id="masterPaymentSearchInput" name="search_payment_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeyup="filterMasterPaymentList()" onsearch="filterMasterPaymentList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetMasterPaymentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -2674,7 +2680,7 @@
                 <div class="form-group mb-3">
                   <label class="font-weight-bold" style="font-size: 13px;">Image (대표 이미지)</label>
                   <div class="alert alert-secondary py-1 px-2 mb-2" style="font-size: 11px; border-radius: 6px;">
-                    <i class="fa-solid fa-circle-info mr-1 text-primary"></i>권장: 4:3 또는 16:9 비율 (600×450px 이상), JPG/PNG/WebP
+                    <i class="fa-solid fa-circle-info mr-1 text-primary"></i>권장 규격: 16:9 와이드 비율 (1280×720px 또는 640×360px), JPG/PNG/WebP
                   </div>
                   <input type="file" id="themeImageFile" class="form-control form-control-beige p-1" accept="image/png, image/jpeg, image/webp" onchange="handleThemeFileUpload(event)" style="height: auto; font-size: 12px;">
                   <small class="text-muted" style="font-size: 11px;">이미지 파일을 직접 업로드해 주세요 (JPG/PNG/WebP)</small>
@@ -4110,13 +4116,14 @@
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">소속 가맹 학원 <span class="text-danger">*</span></label>
               <select id="newMemAcademy" class="select-beige w-100" required onchange="onMasterMemberAcademyChange(this.value)">
-                <!-- JS 동적 주입 -->
+                <option value="" selected>선택</option>
               </select>
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">등급 권한 <span class="text-danger">*</span></label>
-              <select id="newMemRole" class="select-beige w-100" onchange="onMasterMemberRoleChange(this.value)" required>
-                <option value="STUDENT" selected>학생 (원생)</option>
+              <select id="newMemRole" class="select-beige w-100" onchange="onMasterMemberRoleChange(this.value)" required disabled>
+                <option value="" selected disabled>소속 학원 선택 후 지정</option>
+                <option value="STUDENT">학생 (원생)</option>
                 <option value="TEACHER">선생님 (지도교사)</option>
                 <option value="HQ_ADMIN" id="newMemRoleHqOption" style="display:none;">본사 관리자 (HQ Admin)</option>
               </select>
@@ -4130,24 +4137,24 @@
           <div class="row">
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">회원 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemName" class="form-control form-control-beige" placeholder="예: 김민준 (한글, 영문만 가능)" required oninput="validateKoreanEngName(this, 'newMemNameError')">
+              <input type="text" id="newMemName" class="form-control form-control-beige" placeholder="소속 학원을 먼저 선택해주세요" required disabled oninput="validateKoreanEngName(this, 'newMemNameError')">
               <small class="text-danger d-none" id="newMemNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다 (특수문자 및 숫자 입력 불가).</small>
             </div>
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">로그인 아이디 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemUsername" class="form-control form-control-beige" placeholder="예: minjun_k" required oninput="formatUsernameInput(this)" onblur="checkMemberIdDuplicate(this.value, 'newMemUsernameStatus')">
+              <input type="text" id="newMemUsername" class="form-control form-control-beige" placeholder="소속 학원을 먼저 선택해주세요" required disabled oninput="formatUsernameInput(this)" onblur="checkMemberIdDuplicate(this.value, 'newMemUsernameStatus')">
               <small id="newMemUsernameStatus" class="text-muted" style="font-size: 11px;"></small>
             </div>
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">초기 비밀번호 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemPassword" class="form-control form-control-beige" value="nano1234!" required>
+              <input type="text" id="newMemPassword" class="form-control form-control-beige" placeholder="소속 학원을 먼저 선택해주세요" value="" required disabled>
             </div>
           </div>
 
           <div class="row" id="newMemGradeClassRow">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학년 / 구분 <span class="text-danger">*</span></label>
-              <select id="newMemGrade" class="select-beige w-100">
+              <select id="newMemGrade" class="select-beige w-100" disabled>
                 <option value="미취학">미취학 (유치원)</option>
                 <option value="초1">초등학교 1학년</option>
                 <option value="초2">초등학교 2학년</option>
@@ -4163,8 +4170,8 @@
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">배정 학급 (클래스)</label>
-              <select id="newMemClass" class="select-beige w-100">
-                <!-- JS 동적 주입 -->
+              <select id="newMemClass" class="select-beige w-100" disabled>
+                <option value="">-</option>
               </select>
             </div>
           </div>
@@ -4172,11 +4179,11 @@
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학생 (본인) 연락처</label>
-              <input type="text" id="newMemPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" oninput="formatPhoneInput(this)" maxlength="13">
+              <input type="text" id="newMemPhone" class="form-control form-control-beige" placeholder="소속 학원을 먼저 선택해주세요" disabled oninput="formatPhoneInput(this)" maxlength="13">
             </div>
             <div class="col-md-6 form-group" id="newMemParentPhoneWrap">
               <label class="font-weight-bold" style="font-size: 13px;">학부모 연락처</label>
-              <input type="text" id="newMemParentPhone" class="form-control form-control-beige" placeholder="예: 010-9876-5432" oninput="formatPhoneInput(this)" maxlength="13">
+              <input type="text" id="newMemParentPhone" class="form-control form-control-beige" placeholder="소속 학원을 먼저 선택해주세요" disabled oninput="formatPhoneInput(this)" maxlength="13">
               <small class="text-muted">알림톡 및 독서 리포트 발송용 번호입니다.</small>
             </div>
           </div>
@@ -4184,7 +4191,7 @@
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">초기 계정 상태 <span class="text-danger">*</span></label>
-              <select id="newMemStatus" class="select-beige w-100">
+              <select id="newMemStatus" class="select-beige w-100" disabled>
                 <option value="APPROVED" selected>승인 (정상 이용 가능)</option>
                 <option value="PENDING">미승인 (승인 대기)</option>
               </select>
@@ -4193,7 +4200,7 @@
 
           <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
             <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
-            <button type="submit" class="btn-beige-primary">
+            <button type="submit" class="btn-beige-primary" id="btnSubmitMasterMember" disabled>
               <i class="fa-solid fa-user-check mr-1"></i>회원 등록 완료
             </button>
           </div>
