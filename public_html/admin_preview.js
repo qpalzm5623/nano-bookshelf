@@ -273,9 +273,66 @@ function switchMemberSubTab(sub) {
 // ==============================================================
 // 3. 회원 관리 (원생 + 선생님) 데이터 & 로직 (LocalStorage 영구 연동)
 // ==============================================================
-var STORAGE_KEY_CLASSES = 'NANO_ACADEMY_CLASSES';
-var STORAGE_KEY_STUDENTS = 'NANO_ACADEMY_STUDENTS';
-var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS';
+// 3. 회원 관리 (원생 + 선생님) 데이터 & 로직 (학원별 세션 및 LocalStorage 분리 연동)
+// ==============================================================
+
+// 현재 로그인된 학원 세션 정보 감지 (원장님 / 관리자 계정)
+var currentAcademyInfo = (function() {
+  var info = {
+    id: 'ACAD-001',
+    name: '나노 독서아카데미 본원',
+    director: '김은영 원장님',
+    maxStudents: 50,
+    phone: '010-3342-9981',
+    isDemo: true
+  };
+
+  try {
+    var rawAuth = sessionStorage.getItem('nano_auth_user');
+    if (rawAuth) {
+      var authUser = JSON.parse(rawAuth);
+      if (authUser.academyName) {
+        info.name = authUser.academyName;
+        info.id = authUser.academyId || authUser.academyName;
+        info.director = authUser.name ? authUser.name.split(' (')[0] : '원장님';
+        
+        // 'admin' 계정이거나 '나노 독서아카데미 본원'/'목동본원'이 아니면 가맹점 계정 (isDemo = false)
+        if (authUser.id !== 'admin' && authUser.academyName !== '나노 독서아카데미 본원' && authUser.academyName !== '나노 독서아카데미 목동본원') {
+          info.isDemo = false;
+        }
+      }
+    }
+
+    // 마스터 프랜차이즈 목록에서 정원 및 전화번호 등 추가 정보 동기화
+    var rawFranchises = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+    if (rawFranchises) {
+      var fList = JSON.parse(rawFranchises);
+      if (Array.isArray(fList)) {
+        var foundF = fList.find(function(f) {
+          return f.id === info.id || f.name === info.name || (authUser && f.adminId === authUser.id);
+        });
+        if (foundF) {
+          info.id = foundF.id;
+          info.name = foundF.name;
+          info.director = foundF.director || info.director;
+          info.maxStudents = parseInt(foundF.maxStudents, 10) || 50;
+          info.phone = foundF.phone || info.phone;
+          if (foundF.id !== 'ACAD-001' && foundF.name !== '나노 독서아카데미 본원' && foundF.name !== '나노 독서아카데미 목동본원') {
+            info.isDemo = false;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('현재 학원 세션 파싱 실패:', e);
+  }
+
+  return info;
+})();
+
+var STORAGE_KEY_CLASSES = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_CLASSES' : ('NANO_CLASSES_' + currentAcademyInfo.name);
+var STORAGE_KEY_STUDENTS = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_STUDENTS' : ('NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id);
+var STORAGE_KEY_TEACHERS = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_TEACHERS' : ('NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id);
 
 var defaultStudentDataList = [
   { id: 'S1021', name: '김민준', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '승인', level: '초등 심화 Lv 5', bookCount: 24, quizAvg: 94.2, parentName: '김영희', phone: '010-3847-1928', parentEmail: 'parent_kim@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.03.02', teacher: '박선혜 지도교사', memo: '줄거리 요약과 어휘력 영역이 탁월함. 토론 수업 시 자기 생각을 명확하게 표현함.' },
@@ -308,12 +365,13 @@ function loadAcademyClassesFromStorage() {
     var stored = localStorage.getItem(STORAGE_KEY_CLASSES);
     if (stored) {
       var parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.warn('학급 데이터 로드 실패, 기본값 사용:', e);
   }
-  return JSON.parse(JSON.stringify(defaultAcademyClassList));
+  // 데모 본원 계정일 때만 기본 6개 학급 제공, 신규 학원은 빈 목록([])으로 시작!
+  return currentAcademyInfo.isDemo ? JSON.parse(JSON.stringify(defaultAcademyClassList)) : [];
 }
 
 function saveAcademyClassesToStorage() {
@@ -329,19 +387,41 @@ function loadStudentsFromStorage() {
     var stored = localStorage.getItem(STORAGE_KEY_STUDENTS);
     if (stored) {
       var parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.warn('원생 데이터 로드 실패, 기본값 사용:', e);
   }
-  return JSON.parse(JSON.stringify(defaultStudentDataList));
+  // 데모 본원 계정일 때만 6명의 데모 원생 제공, 신규 학원은 빈 목록([])으로 시작!
+  return currentAcademyInfo.isDemo ? JSON.parse(JSON.stringify(defaultStudentDataList)) : [];
 }
 
 function saveStudentsToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentDataList));
+    syncFranchiseStudentCount(studentDataList.length);
   } catch (e) {
     console.error('원생 데이터 저장 실패:', e);
+  }
+}
+
+function syncFranchiseStudentCount(count) {
+  try {
+    var rawFranchises = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+    if (rawFranchises) {
+      var fList = JSON.parse(rawFranchises);
+      if (Array.isArray(fList)) {
+        var targetF = fList.find(function(f) {
+          return f.id === currentAcademyInfo.id || f.name === currentAcademyInfo.name;
+        });
+        if (targetF) {
+          targetF.currentStudents = count;
+          localStorage.setItem('NANO_MASTER_FRANCHISE_LIST', JSON.stringify(fList));
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('마스터 학원 원생수 동기화 실패:', e);
   }
 }
 
@@ -361,7 +441,27 @@ function loadTeachersFromStorage() {
   } catch (e) {
     console.warn('교사 데이터 로드 실패, 기본값 사용:', e);
   }
-  return JSON.parse(JSON.stringify(defaultTeacherDataList));
+
+  // 데모 본원 계정이면 4명의 데모 교사 제공
+  if (currentAcademyInfo.isDemo) {
+    return JSON.parse(JSON.stringify(defaultTeacherDataList));
+  }
+
+  // 신규 학원이면 로그인한 원장님 본인 1명만 기본 등록
+  var dirName = currentAcademyInfo.director.replace(/ 원장.*$/, '').trim();
+  var rawAuth = null;
+  try { rawAuth = JSON.parse(sessionStorage.getItem('nano_auth_user')); } catch (e) {}
+  return [{
+    id: 'T001',
+    name: dirName || '원장',
+    username: (rawAuth && rawAuth.id) ? rawAuth.id : 'director',
+    password: '••••',
+    role: '학원 원장',
+    classes: '전체 클래스 총괄',
+    studentCount: 0,
+    phone: currentAcademyInfo.phone || '-',
+    joinDate: new Date().toISOString().split('T')[0]
+  }];
 }
 
 function saveTeachersToStorage() {
@@ -382,15 +482,13 @@ var lastAddedStudentId = null;
 
 // 가맹점 원생 통계 실시간 동기화 함수
 function updateAllStudentCounts() {
-  var baseTotal = 48; // 기본 설정된 학원 재원생 기준
-  var addedCount = Math.max(0, studentDataList.length - 6);
-  var currentTotal = baseTotal + addedCount;
-  var maxSlots = 50; // 계약 정원
+  var currentTotal = studentDataList.length;
+  var maxSlots = currentAcademyInfo.maxStudents || 50; // 계약 정원
 
   // 초등 / 중등 인원 계산
-  var elemCount = 36;
-  var midCount = 12;
-  studentDataList.slice(0, addedCount).forEach(function(s) {
+  var elemCount = 0;
+  var midCount = 0;
+  studentDataList.forEach(function(s) {
     if (s.grade && s.grade.indexOf('중등') !== -1) {
       midCount++;
     } else {
@@ -398,19 +496,64 @@ function updateAllStudentCounts() {
     }
   });
 
+  // 데모 본원 계정일 때만 48명 mock 수치 유지
+  if (currentAcademyInfo.isDemo && currentTotal === 6) {
+    currentTotal = 48;
+    elemCount = 36;
+    midCount = 12;
+  }
+
   // 1. 탭 버튼 배지 갱신
   var tabCountEl = document.getElementById('tabStudentCount');
   if (tabCountEl) tabCountEl.innerText = currentTotal;
+
+  var tabTeacherEl = document.getElementById('tabTeacherCount');
+  if (tabTeacherEl) tabTeacherEl.innerText = teacherDataList.length;
 
   // 2. 전체 재원생 통계 카드 갱신
   var statCountEl = document.getElementById('statStudentCount');
   if (statCountEl) statCountEl.innerText = currentTotal;
   var statBreakdownEl = document.getElementById('statStudentBreakdown');
   if (statBreakdownEl) {
-    statBreakdownEl.innerHTML = `초등 ${elemCount}명 &middot; 중등 ${midCount}명 (활동 중)`;
+    if (currentTotal === 0) {
+      statBreakdownEl.innerHTML = '초등 0명 &middot; 중등 0명 (신규 학원: 원생 등록 대기)';
+    } else {
+      statBreakdownEl.innerHTML = `초등 ${elemCount}명 &middot; 중등 ${midCount}명 (활동 중)`;
+    }
   }
 
-  // 3. 사이드바 하단 슬롯 카드 갱신
+  // 3. 누적 완독 및 퀴즈 통계 갱신
+  var statBookEl = document.getElementById('statBookReadCount');
+  var statBookDescEl = document.getElementById('statBookReadDesc');
+  var statQuizEl = document.getElementById('statQuizPassRate');
+  var statQuizDescEl = document.getElementById('statQuizDesc');
+
+  if (currentTotal === 0) {
+    if (statBookEl) statBookEl.innerText = '0';
+    if (statBookDescEl) statBookDescEl.innerText = '완독 이력 없음';
+    if (statQuizEl) statQuizEl.innerText = '0.0';
+    if (statQuizDescEl) statQuizDescEl.innerHTML = '<span class="text-muted">북퀴즈 응시 데이터 없음</span>';
+  } else if (!currentAcademyInfo.isDemo) {
+    var totalBooks = studentDataList.reduce(function(acc, s) { return acc + (parseInt(s.bookCount, 10) || 0); }, 0);
+    var avgQuiz = 0;
+    var quizCount = 0;
+    studentDataList.forEach(function(s) {
+      var score = parseFloat(s.quizAvg);
+      if (!isNaN(score) && score > 0) {
+        avgQuiz += score;
+        quizCount++;
+      }
+    });
+    var avgQuizFinal = quizCount > 0 ? (avgQuiz / quizCount).toFixed(1) : '0.0';
+    var avgBooksPerStudent = currentTotal > 0 ? (totalBooks / currentTotal).toFixed(1) : '0.0';
+
+    if (statBookEl) statBookEl.innerText = totalBooks;
+    if (statBookDescEl) statBookDescEl.innerText = `원생 1인당 평균 ${avgBooksPerStudent}권 완독`;
+    if (statQuizEl) statQuizEl.innerText = avgQuizFinal;
+    if (statQuizDescEl) statQuizDescEl.innerHTML = `평균 점수 ${avgQuizFinal}점`;
+  }
+
+  // 4. 사이드바 하단 슬롯 카드 갱신
   var slotRate = Math.round((currentTotal / maxSlots) * 100);
   var sidebarSlotEl = document.getElementById('sidebarSlotStatus');
   if (sidebarSlotEl) {
@@ -418,7 +561,7 @@ function updateAllStudentCounts() {
     sidebarSlotEl.innerHTML = `${currentTotal} / ${maxSlots}명 <small class="${rateClass}">(${slotRate}%)</small>`;
   }
 
-  // 4. 상단 글로벌 역할 전환 바 계약 상태 갱신
+  // 5. 상단 글로벌 역할 전환 바 계약 상태 갱신
   var globalRoleSlotEl = document.getElementById('globalRoleSlotStatus');
   if (globalRoleSlotEl) {
     var statusText = currentTotal >= maxSlots ? '정원 마감' : '정상 운영';
@@ -426,7 +569,7 @@ function updateAllStudentCounts() {
     globalRoleSlotEl.innerHTML = `계약 상태: <strong class="${statusClass}">${statusText} (${currentTotal}/${maxSlots}명)</strong>`;
   }
 
-  // 5. 모달 내부 슬롯 상태 갱신
+  // 6. 모달 내부 슬롯 상태 갱신
   var modalSlotUsageEl = document.getElementById('modalSlotUsage');
   if (modalSlotUsageEl) modalSlotUsageEl.innerText = `${currentTotal} / ${maxSlots}명`;
   var modalSlotRemainEl = document.getElementById('modalSlotRemainBadge');
@@ -1433,7 +1576,10 @@ function renderStudentTable(list) {
   if (countEl) countEl.innerText = list.length;
 
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-5 text-muted">일치하는 원생이 없습니다.</td></tr>';
+    var emptyMessage = (studentDataList.length === 0)
+      ? '<div class="py-4"><i class="fa-solid fa-user-plus text-primary mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">우측 상단의 <strong>[+ 원생 등록]</strong> 또는 <strong>[엑셀 일괄 등록]</strong>을 통해 첫 원생을 등록해 보세요.</span></div>'
+      : '일치하는 원생이 없습니다.';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
     return;
   }
 
@@ -8132,21 +8278,14 @@ function saveMyInfo() {
 // 초기화
 document.addEventListener('DOMContentLoaded', function() {
   // 로그인 세션 확인 (원장님 / 선생님 계정 로그인 시 헤더 학원명 및 성함 동기화)
-  try {
-    var rawAuth = sessionStorage.getItem('nano_auth_user');
-    if (rawAuth) {
-      var authUser = JSON.parse(rawAuth);
-      var dirNameEl = document.getElementById('headerDirectorName');
-      var acadNameEl = document.getElementById('headerAcademyName');
-      if (authUser.name && dirNameEl) {
-        dirNameEl.innerText = authUser.name.split(' (')[0];
-      }
-      if (authUser.academyName && acadNameEl) {
-        acadNameEl.innerText = authUser.academyName;
-      }
-    }
-  } catch (e) {
-    console.warn('세션 확인 실패:', e);
+  var dirNameEl = document.getElementById('headerDirectorName');
+  var acadNameEl = document.getElementById('headerAcademyName');
+  if (dirNameEl && currentAcademyInfo.director) {
+    var dTitle = currentAcademyInfo.director.includes('원장') ? currentAcademyInfo.director : (currentAcademyInfo.director + ' 원장님');
+    dirNameEl.innerText = dTitle;
+  }
+  if (acadNameEl && currentAcademyInfo.name) {
+    acadNameEl.innerText = currentAcademyInfo.name;
   }
 
   updateAllStudentCounts();
@@ -8156,7 +8295,9 @@ document.addEventListener('DOMContentLoaded', function() {
   renderStudentTable(studentDataList);
   renderAcademyBookTable();
   initPortfolioOptions();
-  onPortfolioStudentChange('S1021');
+  if (studentDataList.length > 0) {
+    onPortfolioStudentChange(studentDataList[0].id);
+  }
   renderPortfolioTable(portfolioList);
   renderTeacherTable();
   renderLearningTable();

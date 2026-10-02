@@ -1723,7 +1723,7 @@
             <i class="fa-solid fa-user-graduate mr-1"></i>원생 관리 (<span id="tabStudentCount">48</span>명)
           </button>
           <button type="button" class="btn btn-beige-secondary" id="btn-member-teachers" onclick="switchMemberSubTab('teachers')">
-            <i class="fa-solid fa-chalkboard-user mr-1"></i>선생님 관리 (4명)
+            <i class="fa-solid fa-chalkboard-user mr-1"></i>선생님 관리 (<span id="tabTeacherCount">4</span>명)
           </button>
         </div>
       </div>
@@ -1741,15 +1741,15 @@
           <div class="col-md-4">
             <div class="stat-card">
               <div class="text-muted" style="font-size: 13px;">이번 달 누적 완독 권수</div>
-              <div class="stat-num"><span>214</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">권</span></div>
-              <small class="text-muted">원생 1인당 평균 4.5권 완독</small>
+              <div class="stat-num"><span id="statBookReadCount">214</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">권</span></div>
+              <small class="text-muted" id="statBookReadDesc">원생 1인당 평균 4.5권 완독</small>
             </div>
           </div>
           <div class="col-md-4">
             <div class="stat-card">
               <div class="text-muted" style="font-size: 13px;">북퀴즈 평균 통과율</div>
-              <div class="stat-num"><span>93.6</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">%</span></div>
-              <small class="text-success font-weight-600">평균 점수 91.8점 (1차 합격률 88%)</small>
+              <div class="stat-num"><span id="statQuizPassRate">93.6</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">%</span></div>
+              <small class="text-success font-weight-600" id="statQuizDesc">평균 점수 91.8점 (1차 합격률 88%)</small>
             </div>
           </div>
         </div>
@@ -6053,7 +6053,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Daum 우편번호 서비스 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script src="admin_preview.js?v=20261002_autofill_v5"></script>
+<script src="admin_preview.js?v=20261002_scoped_v1"></script>
 
 </body>
 </html>
