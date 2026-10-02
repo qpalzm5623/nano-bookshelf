@@ -1239,6 +1239,7 @@ document.addEventListener("DOMContentLoaded", () => {
   populateMemberAcademyFilter();
   renderBannerList();
   renderThemeTable();
+  renderNoticeTable();
   renderRankings();
   renderMasterContents();
   renderDispatchTable();
@@ -3291,8 +3292,398 @@ function renderTbmAutoMappedBooks() {
   }).join("");
 }
 
-function openNoticeModal() {
-  showMasterToast("전체 시스템 공지사항 작성 기능이 활성화되었습니다.");
+// ==========================================
+// 5-2. 플랫폼 전체 공지사항 및 점검 팝업 관리 모듈 (Notice Management)
+// ==========================================
+const STORAGE_KEY_SYSTEM_NOTICES = "NANO_MASTER_SYSTEM_NOTICES";
+
+const defaultSystemNotices = [
+  {
+    id: "NOT-1004",
+    title: "[안내] 2026 가을맞이 신규 필독서 120종 업데이트 및 북퀴즈 출제 완료",
+    target: "전체",
+    category: "신규 도서 입고",
+    isPopup: false,
+    popupStartDate: "",
+    popupEndDate: "",
+    isPinned: true,
+    status: "게시중",
+    createdAt: "2026-09-28",
+    content: "안녕하세요. 나노의 책장 본사 운영팀입니다.\n\n2026년도 2학기를 맞아 초등 및 중등 대상 교과 연계 필독도서 120종이 신규 등록되었으며, 각 도서별 문해력 5문항 북퀴즈 및 어휘 풀이가 완비되었습니다.\n\n각 가맹 학원에서는 [도서 배정] 메뉴에서 신규 도서를 확인하시고 원생들에게 추천 도서로 배정해 주시기 바랍니다.\n감사합니다.",
+    link: ""
+  },
+  {
+    id: "NOT-1003",
+    title: "[긴급] 정기 시스템 서버 안정화 및 인프라 점검 안내 (10/05 02:00~06:00)",
+    target: "가맹 학원",
+    category: "시스템 점검",
+    isPopup: true,
+    popupStartDate: "2026-10-01",
+    popupEndDate: "2026-10-05",
+    isPinned: true,
+    status: "게시중",
+    createdAt: "2026-09-25",
+    content: "안정적인 북퀴즈 응시 및 대용량 독서 리포트 데이터 처리를 위한 클라우드 인프라 확장 점검이 진행될 예정입니다.\n\n■ 점검 일시: 2026년 10월 5일(월) 새벽 02:00 ~ 06:00 (약 4시간)\n■ 영향 범위: 점검 시간 동안 전체 플랫폼 접속 및 북퀴즈 응시 일시 중단\n\n원활한 서비스 제공을 위해 새벽 시간대에 진행되오니 원장님 및 지도교사 분들의 너른 양해 부탁드립니다.",
+    link: ""
+  },
+  {
+    id: "NOT-1002",
+    title: "[공지] 제3회 전국 나노 독서왕 퀴즈 챌린지 랭킹 대회 개최 요강",
+    target: "학생",
+    category: "이벤트/대회",
+    isPopup: true,
+    popupStartDate: "2026-09-20",
+    popupEndDate: "2026-10-20",
+    isPinned: false,
+    status: "게시중",
+    createdAt: "2026-09-18",
+    content: "전국 모든 가맹 학원의 원생들이 참여하는 [제3회 전국 나노 독서왕 퀴즈 챌린지]가 시작됩니다!\n\n■ 참여 대상: 나노의 책장 재원 원생 누구나\n■ 챌린지 기간: 2026년 9월 20일 ~ 10월 20일 (1개월간)\n■ 시상: 전국 개인 랭킹 1~10위 장학 상품권 및 메달 수여, 최우수 학원 현판 제공\n\n매일 책을 읽고 북퀴즈에 도전하여 전국 랭킹에 이름을 올려보세요!",
+    link: ""
+  },
+  {
+    id: "NOT-1001",
+    title: "[안내] 가맹 학원 관리자 대시보드 리포트 발송 편의 기능 개선 배포",
+    target: "가맹 학원",
+    category: "서비스 업데이트",
+    isPopup: false,
+    popupStartDate: "",
+    popupEndDate: "",
+    isPinned: false,
+    status: "게시중",
+    createdAt: "2026-09-10",
+    content: "학원 관리자 페이지에서 학부모 알림톡 리포트 발송 시, 학급별 일괄 전송 및 개별 발송 미리보기 기능이 한층 업그레이드되었습니다.\n\n또한 원생 삭제 시 실수 방지를 위한 2단계 원장님 비밀번호 인증 및 7일 임시 보존 기능이 적용되었습니다.",
+    link: ""
+  }
+];
+
+function loadNoticesFromStorage() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_SYSTEM_NOTICES);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn("시스템 공지 로드 실패, 기본값 사용:", e);
+  }
+  return JSON.parse(JSON.stringify(defaultSystemNotices));
+}
+
+function saveNoticesToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_SYSTEM_NOTICES, JSON.stringify(systemNoticeList));
+  } catch (e) {
+    console.error("시스템 공지 저장 실패:", e);
+  }
+}
+
+let systemNoticeList = loadNoticesFromStorage();
+
+function renderNoticeTable() {
+  const tbody = document.getElementById("noticeTableBody");
+  if (!tbody) return;
+
+  if (systemNoticeList.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-5 text-muted">
+          <i class="fa-solid fa-bullhorn fa-2x mb-2" style="color: #cbd5e1;"></i><br>
+          <strong style="font-size: 14px; color: var(--text-main);">등록된 시스템 공지사항이 없습니다.</strong><br>
+          <span style="font-size: 12.5px;">우측 상단의 <strong>[+ 신규 공지 작성]</strong> 버튼을 눌러 첫 공지를 등록해보세요.</span>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // 상단 고정(isPinned) 우선 정렬 후 최신순
+  const sortedList = [...systemNoticeList].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return (b.id || "").localeCompare(a.id || "");
+  });
+
+  tbody.innerHTML = sortedList.map(not => {
+    // 대상 뱃지
+    let targetBadge = '<span class="badge badge-secondary" style="font-size: 11px;">전체</span>';
+    if (not.target === '가맹 학원') {
+      targetBadge = '<span class="badge badge-primary" style="font-size: 11px; background: #3b82f6;">가맹 학원</span>';
+    } else if (not.target === '학생') {
+      targetBadge = '<span class="badge badge-success" style="font-size: 11px; background: #10b981;">학생</span>';
+    } else if (not.target === '학부모') {
+      targetBadge = '<span class="badge badge-info" style="font-size: 11px; background: #6366f1;">학부모</span>';
+    }
+
+    // 팝업 뱃지
+    const popupBadge = not.isPopup
+      ? `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11px;"><i class="fa-solid fa-window-restore mr-1"></i>팝업 ON</span>${not.popupStartDate ? `<br><small class="text-muted" style="font-size: 10.5px;">${not.popupStartDate}~${not.popupEndDate || ''}</small>` : ''}`
+      : `<span class="text-muted" style="font-size: 11.5px;">일반 공지</span>`;
+
+    // 분류 뱃지
+    const categoryBadge = `<span class="badge badge-light border text-muted mr-1" style="font-size: 11px;">${not.category || '일반'}</span>`;
+
+    // 상단 고정 뱃지
+    const pinnedBadge = not.isPinned
+      ? `<span class="badge badge-warning text-dark ml-1 font-weight-bold" style="font-size: 10px; padding: 2px 5px;"><i class="fa-solid fa-thumbtack mr-1"></i>고정</span>`
+      : '';
+
+    // 상태 뱃지
+    const isPub = not.status === '게시중';
+    const statusBadge = `
+      <span class="badge ${isPub ? 'badge-success' : 'badge-secondary'}" onclick="toggleNoticeStatus('${not.id}')" style="cursor: pointer; font-size: 11px; padding: 4px 8px; border-radius: 10px;" title="클릭 시 상태 전환">
+        ${isPub ? '게시중' : '비공개'}
+      </span>
+    `;
+
+    return `
+      <tr>
+        <td class="text-center font-weight-bold text-muted" style="font-size: 12px;">
+          ${not.id}
+          ${not.isPinned ? '<br><i class="fa-solid fa-thumbtack text-danger" style="font-size: 11px;" title="상단 고정"></i>' : ''}
+        </td>
+        <td style="text-align: left;">
+          <div class="d-flex align-items-center flex-wrap">
+            ${categoryBadge}
+            <span class="font-weight-bold text-dark notice-item-title" onclick="viewNoticeDetail('${not.id}')" style="cursor: pointer; font-size: 13.5px; transition: color 0.15s;" onmouseover="this.style.color='#b45309'" onmouseout="this.style.color=''">
+              ${not.title}
+            </span>
+            ${pinnedBadge}
+          </div>
+        </td>
+        <td class="text-center">${targetBadge}</td>
+        <td class="text-center">${popupBadge}</td>
+        <td class="text-center text-muted" style="font-size: 12px;">${not.createdAt}</td>
+        <td class="text-center">${statusBadge}</td>
+        <td class="text-center">
+          <div class="d-flex justify-content-center align-items-center" style="gap: 4px;">
+            <button class="btn btn-xs btn-outline-info" onclick="viewNoticeDetail('${not.id}')" title="상세 보기" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button class="btn btn-xs btn-outline-secondary" onclick="openNoticeModal('${not.id}')" title="수정" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-xs btn-outline-danger" onclick="deleteNotice('${not.id}')" title="삭제" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openNoticeModal(noticeId) {
+  const modalTitleEl = document.getElementById("noticeModalTitle");
+  const editIdEl = document.getElementById("noticeEditId");
+  const titleEl = document.getElementById("noticeTitle");
+  const targetEl = document.getElementById("noticeTarget");
+  const catEl = document.getElementById("noticeCategory");
+  const statusEl = document.getElementById("noticeStatus");
+  const isPinnedEl = document.getElementById("noticeIsPinned");
+  const isPopupEl = document.getElementById("noticeIsPopup");
+  const popStartEl = document.getElementById("noticePopupStartDate");
+  const popEndEl = document.getElementById("noticePopupEndDate");
+  const contentEl = document.getElementById("noticeContent");
+  const linkEl = document.getElementById("noticeLink");
+
+  if (noticeId) {
+    const not = systemNoticeList.find(n => n.id === noticeId);
+    if (!not) return;
+    if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2 text-warning"></i>시스템 공지사항 수정';
+    if (editIdEl) editIdEl.value = not.id;
+    if (titleEl) titleEl.value = not.title || "";
+    if (targetEl) targetEl.value = not.target || "전체";
+    if (catEl) catEl.value = not.category || "일반 공지";
+    if (statusEl) statusEl.value = not.status || "게시중";
+    if (isPinnedEl) isPinnedEl.checked = !!not.isPinned;
+    if (isPopupEl) isPopupEl.checked = !!not.isPopup;
+    if (popStartEl) popStartEl.value = not.popupStartDate || "";
+    if (popEndEl) popEndEl.value = not.popupEndDate || "";
+    if (contentEl) contentEl.value = not.content || "";
+    if (linkEl) linkEl.value = not.link || "";
+  } else {
+    if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-bullhorn mr-2 text-warning"></i>신규 시스템 공지 등록';
+    if (editIdEl) editIdEl.value = "";
+    if (titleEl) titleEl.value = "";
+    if (targetEl) targetEl.value = "전체";
+    if (catEl) catEl.value = "일반 공지";
+    if (statusEl) statusEl.value = "게시중";
+    if (isPinnedEl) isPinnedEl.checked = false;
+    if (isPopupEl) isPopupEl.checked = false;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    if (popStartEl) popStartEl.value = todayStr;
+    if (popEndEl) popEndEl.value = nextWeek;
+    if (contentEl) contentEl.value = "";
+    if (linkEl) linkEl.value = "";
+  }
+
+  toggleNoticePopupDateSection();
+
+  if (window.jQuery && typeof $('#noticeModal').modal === 'function') {
+    $('#noticeModal').modal('show');
+  }
+}
+
+function toggleNoticePopupDateSection() {
+  const isPopup = document.getElementById("noticeIsPopup")?.checked;
+  const section = document.getElementById("noticePopupDateSection");
+  if (section) {
+    section.style.display = isPopup ? "flex" : "none";
+  }
+}
+
+function saveNotice(event) {
+  if (event) event.preventDefault();
+
+  const editId = document.getElementById("noticeEditId")?.value.trim();
+  const title = document.getElementById("noticeTitle")?.value.trim();
+  const target = document.getElementById("noticeTarget")?.value || "전체";
+  const category = document.getElementById("noticeCategory")?.value || "일반 공지";
+  const status = document.getElementById("noticeStatus")?.value || "게시중";
+  const isPinned = !!document.getElementById("noticeIsPinned")?.checked;
+  const isPopup = !!document.getElementById("noticeIsPopup")?.checked;
+  const popupStartDate = document.getElementById("noticePopupStartDate")?.value || "";
+  const popupEndDate = document.getElementById("noticePopupEndDate")?.value || "";
+  const content = document.getElementById("noticeContent")?.value.trim();
+  const link = document.getElementById("noticeLink")?.value.trim() || "";
+
+  if (!title) {
+    alert("공지 제목을 입력해주세요.");
+    document.getElementById("noticeTitle")?.focus();
+    return;
+  }
+  if (!content) {
+    alert("공지 본문 내용을 입력해주세요.");
+    document.getElementById("noticeContent")?.focus();
+    return;
+  }
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  if (editId) {
+    const idx = systemNoticeList.findIndex(n => n.id === editId);
+    if (idx !== -1) {
+      systemNoticeList[idx] = {
+        ...systemNoticeList[idx],
+        title,
+        target,
+        category,
+        status,
+        isPinned,
+        isPopup,
+        popupStartDate: isPopup ? popupStartDate : "",
+        popupEndDate: isPopup ? popupEndDate : "",
+        content,
+        link
+      };
+      saveNoticesToStorage();
+      renderNoticeTable();
+      if (window.jQuery && typeof $('#noticeModal').modal === 'function') {
+        $('#noticeModal').modal('hide');
+      }
+      showMasterToast(`[${title}] 공지사항이 성공적으로 수정되었습니다.`);
+    }
+  } else {
+    // 신규 생성
+    let maxNum = 1004;
+    systemNoticeList.forEach(n => {
+      if (n.id && n.id.startsWith("NOT-")) {
+        const num = parseInt(n.id.replace("NOT-", ""), 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+    const newId = "NOT-" + (maxNum + 1);
+
+    const newNotice = {
+      id: newId,
+      title,
+      target,
+      category,
+      status,
+      isPinned,
+      isPopup,
+      popupStartDate: isPopup ? popupStartDate : "",
+      popupEndDate: isPopup ? popupEndDate : "",
+      createdAt: todayStr,
+      content,
+      link
+    };
+
+    systemNoticeList.unshift(newNotice);
+    saveNoticesToStorage();
+    renderNoticeTable();
+    if (window.jQuery && typeof $('#noticeModal').modal === 'function') {
+      $('#noticeModal').modal('hide');
+    }
+    showMasterToast(`[${title}] 신규 공지사항이 성공적으로 등록되었습니다.`);
+  }
+}
+
+function deleteNotice(noticeId) {
+  const not = systemNoticeList.find(n => n.id === noticeId);
+  if (!not) return;
+
+  if (!confirm(`[${not.title}]\n\n이 공지사항을 삭제하시겠습니까?`)) return;
+
+  systemNoticeList = systemNoticeList.filter(n => n.id !== noticeId);
+  saveNoticesToStorage();
+  renderNoticeTable();
+  showMasterToast(`[${not.title}] 공지사항이 삭제되었습니다.`);
+}
+
+function toggleNoticeStatus(noticeId) {
+  const not = systemNoticeList.find(n => n.id === noticeId);
+  if (!not) return;
+
+  not.status = (not.status === "게시중") ? "비공개" : "게시중";
+  saveNoticesToStorage();
+  renderNoticeTable();
+  showMasterToast(`[${not.title}] 공지 상태가 '${not.status}'(으)로 변경되었습니다.`);
+}
+
+function viewNoticeDetail(noticeId) {
+  const not = systemNoticeList.find(n => n.id === noticeId);
+  if (!not) return;
+
+  const catEl = document.getElementById("viewNoticeCategory");
+  const targetEl = document.getElementById("viewNoticeTarget");
+  const pinnedEl = document.getElementById("viewNoticePinnedBadge");
+  const popupEl = document.getElementById("viewNoticePopupBadge");
+  const titleEl = document.getElementById("viewNoticeTitle");
+  const dateEl = document.getElementById("viewNoticeDate");
+  const contentEl = document.getElementById("viewNoticeContent");
+  const linkSection = document.getElementById("viewNoticeLinkSection");
+  const linkEl = document.getElementById("viewNoticeLink");
+
+  if (catEl) catEl.innerText = not.category || "일반 공지";
+  if (targetEl) targetEl.innerText = "대상: " + (not.target || "전체");
+  if (pinnedEl) {
+    if (not.isPinned) pinnedEl.classList.remove("d-none");
+    else pinnedEl.classList.add("d-none");
+  }
+  if (popupEl) {
+    if (not.isPopup) popupEl.classList.remove("d-none");
+    else popupEl.classList.add("d-none");
+  }
+  if (titleEl) titleEl.innerText = not.title;
+  if (dateEl) dateEl.innerText = not.createdAt;
+  if (contentEl) contentEl.innerText = not.content || "(내용 없음)";
+
+  if (linkSection && linkEl) {
+    if (not.link) {
+      linkSection.classList.remove("d-none");
+      linkEl.href = not.link;
+      linkEl.innerText = not.link;
+    } else {
+      linkSection.classList.add("d-none");
+    }
+  }
+
+  if (window.jQuery && typeof $('#noticeDetailModal').modal === 'function') {
+    $('#noticeDetailModal').modal('show');
+  }
 }
 
 // ==========================================
