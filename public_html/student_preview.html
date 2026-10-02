@@ -3440,69 +3440,69 @@
   <div id="p-books" class="panel anim">
     <div class="sec-title"><i class="fa-solid fa-books" style="color:var(--leaf);"></i> 도서관</div>
     <div class="tab2-btns">
-      <button class="tab2-btn on" id="btab-a" onclick="switchBookTab('assigned')"><i class="fa-solid fa-thumbtack mr-1"></i>배정 도서</button>
-      <button class="tab2-btn off" id="btab-b" onclick="switchBookTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
+      <button class="tab2-btn on" id="btab-a" onclick="switchBookMainTab('my')"><i class="fa-solid fa-book-bookmark mr-1"></i>내 도서관</button>
+      <button class="tab2-btn off" id="btab-b" onclick="switchBookMainTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
     </div>
-    <div id="bsub-assigned">
-      <div id="assignedLibList"></div>
-    </div>
-    <div id="bsub-all" style="display:none;">
-      <!-- 전체 도서관 2차 서브탭: 전체 / 권장도서 / 인기도서 / 관심주제 맞춤 -->
+
+    <!-- 1. 내 도서관 영역 -->
+    <div id="bsub-my">
+      <!-- 내 도서관 2차 서브탭: 배정 도서 / 권장 도서 / 인기 도서 / 관심 도서 -->
       <div class="lib-sub-nav">
-        <button type="button" class="lib-sub-pill" id="libSubPill-all" onclick="switchLibSubTab('all')">
-          <i class="fa-solid fa-list-ul"></i> 전체
+        <button type="button" class="lib-sub-pill active" id="myLibSubPill-assigned" onclick="switchMyLibSubTab('assigned')">
+          <i class="fa-solid fa-thumbtack"></i> 배정 도서
         </button>
-        <button type="button" class="lib-sub-pill active" id="libSubPill-recommended" onclick="switchLibSubTab('recommended')">
-          <i class="fa-solid fa-seedling"></i> 권장도서
+        <button type="button" class="lib-sub-pill" id="myLibSubPill-recommended" onclick="switchMyLibSubTab('recommended')">
+          <i class="fa-solid fa-seedling"></i> 권장 도서
         </button>
-        <button type="button" class="lib-sub-pill" id="libSubPill-popular" onclick="switchLibSubTab('popular')">
-          <i class="fa-solid fa-fire"></i> 인기도서
+        <button type="button" class="lib-sub-pill" id="myLibSubPill-popular" onclick="switchMyLibSubTab('popular')">
+          <i class="fa-solid fa-fire"></i> 인기 도서
         </button>
-        <button type="button" class="lib-sub-pill" id="libSubPill-interest" onclick="switchLibSubTab('interest')">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> 관심주제 맞춤
+        <button type="button" class="lib-sub-pill" id="myLibSubPill-interest" onclick="switchMyLibSubTab('interest')">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> 관심 도서
         </button>
       </div>
 
-      <!-- 학년 칩 필터 바: 전체 / 미취학 / 초1 / 초2 / ... -->
-      <div class="grade-filter-scroll" id="gradeFilterBar">
-        <button type="button" class="grade-chip" data-grade="all" onclick="selectGradeFilter('all')">전체</button>
-        <button type="button" class="grade-chip" data-grade="미취학" onclick="selectGradeFilter('미취학')">미취학</button>
-        <button type="button" class="grade-chip" data-grade="초1" onclick="selectGradeFilter('초1')">초1</button>
-        <button type="button" class="grade-chip" data-grade="초2" onclick="selectGradeFilter('초2')">초2</button>
-        <button type="button" class="grade-chip" data-grade="초3" onclick="selectGradeFilter('초3')">초3</button>
-        <button type="button" class="grade-chip" data-grade="초4" onclick="selectGradeFilter('초4')">초4</button>
-        <button type="button" class="grade-chip active" data-grade="초5" onclick="selectGradeFilter('초5')">초5 (민준)</button>
-        <button type="button" class="grade-chip" data-grade="초6" onclick="selectGradeFilter('초6')">초6</button>
-        <button type="button" class="grade-chip" data-grade="중1" onclick="selectGradeFilter('중1')">중1</button>
-        <button type="button" class="grade-chip" data-grade="중2" onclick="selectGradeFilter('중2')">중2</button>
-        <button type="button" class="grade-chip" data-grade="중3" onclick="selectGradeFilter('중3')">중3</button>
+      <!-- 1-1. 배정 도서 컨테이너 -->
+      <div id="mySubSection-assigned">
+        <div id="assignedLibList"></div>
       </div>
 
-      <!-- 1. 기본 도서관 리스트 컨테이너 (권장도서/인기도서) -->
-      <div id="normalLibContainer">
-        <!-- 인기도서 탭 기간 필터 버튼 -->
-        <div id="popularPeriodBar" style="display:none;margin-bottom:10px;">
+      <!-- 1-2. 권장 도서 컨테이너 (학년 필터 바 + 검색바 + 목록) -->
+      <div id="mySubSection-recommended" style="display:none;">
+        <div class="grade-filter-scroll" id="gradeFilterBar">
+          <button type="button" class="grade-chip" data-grade="all" onclick="selectGradeFilter('all')">전체</button>
+          <button type="button" class="grade-chip" data-grade="미취학" onclick="selectGradeFilter('미취학')">미취학</button>
+          <button type="button" class="grade-chip" data-grade="초1" onclick="selectGradeFilter('초1')">초1</button>
+          <button type="button" class="grade-chip" data-grade="초2" onclick="selectGradeFilter('초2')">초2</button>
+          <button type="button" class="grade-chip" data-grade="초3" onclick="selectGradeFilter('초3')">초3</button>
+          <button type="button" class="grade-chip" data-grade="초4" onclick="selectGradeFilter('초4')">초4</button>
+          <button type="button" class="grade-chip active" data-grade="초5" onclick="selectGradeFilter('초5')">초5 (민준)</button>
+          <button type="button" class="grade-chip" data-grade="초6" onclick="selectGradeFilter('초6')">초6</button>
+          <button type="button" class="grade-chip" data-grade="중1" onclick="selectGradeFilter('중1')">중1</button>
+          <button type="button" class="grade-chip" data-grade="중2" onclick="selectGradeFilter('중2')">중2</button>
+          <button type="button" class="grade-chip" data-grade="중3" onclick="selectGradeFilter('중3')">중3</button>
+        </div>
+        <div class="sbar" id="recSearchBar" style="margin-bottom:12px;">
+          <input type="text" id="recLibQ" placeholder="권장 도서명, 저자, 출판사 검색..." oninput="filterRecLib()">
+          <button onclick="filterRecLib()"><i class="fa-solid fa-search"></i></button>
+        </div>
+        <div id="recLibList"></div>
+      </div>
+
+      <!-- 1-3. 인기 도서 컨테이너 (일간/주간/월간 베스트 필터 바 + 랭킹 목록) -->
+      <div id="mySubSection-popular" style="display:none;">
+        <div id="popularPeriodBar" style="margin-bottom:12px;">
           <div style="display:flex;gap:6px;padding:2px 0;">
             <button type="button" class="popular-period-btn active" id="popularPeriodBtn-daily" onclick="switchPopularPeriod('daily')">🔥 일간 베스트</button>
             <button type="button" class="popular-period-btn" id="popularPeriodBtn-weekly" onclick="switchPopularPeriod('weekly')">📅 주간 베스트</button>
             <button type="button" class="popular-period-btn" id="popularPeriodBtn-monthly" onclick="switchPopularPeriod('monthly')">🏆 월간 베스트</button>
           </div>
         </div>
-        <div class="sbar" id="libSearchBar">
-          <input type="text" id="libQ" placeholder="도서명, 저자, 출판사 검색..." oninput="filterLib()">
-          <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
-        </div>
-        <div id="libList"></div>
-        <!-- 무한스크롤 로딩 인디케이터 -->
-        <div id="libLoadingIndicator" style="display:none;text-align:center;padding:20px;color:var(--muted);">
-          <i class="fa-solid fa-circle-notch fa-spin mr-1"></i>다음 목록 불러오는 중...
-        </div>
-        <div id="libScrollSentinel" style="height:1px;"></div>
+        <div id="popularLibList"></div>
       </div>
 
-      <!-- 2. 관심주제 맞춤 추천 도서 전용 컨테이너 (도서관 전체 도서관 하위) -->
-      <div id="interestLibContainer" style="display: none; margin-top: 6px;">
-        <!-- 관심 주제 선택 UI (내 책장 관심 도서에서 이동) -->
+      <!-- 1-4. 관심 도서 컨테이너 (관심 주제 선택 및 맞춤 추천 목록) -->
+      <div id="mySubSection-interest" style="display:none; margin-top: 6px;">
         <div class="interest-theme-box" style="margin-bottom:14px;">
           <div class="d-flex align-items-center justify-content-between">
             <div>
@@ -3520,21 +3520,62 @@
               </button>
             </div>
           </div>
-          <!-- 주제 태그 체크 칩 목록 -->
-          <div class="interest-tags-wrap mt-2" id="libInterestTagsContainer">
-            <!-- JS 동적 렌더링 -->
-          </div>
+          <div class="interest-tags-wrap mt-2" id="libInterestTagsContainer"></div>
         </div>
 
-        <!-- 매칭된 추천 도서 전체 목록 리스트 -->
         <div class="d-flex align-items-center justify-content-between mb-2">
           <span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
             <i class="fa-solid fa-book-bookmark mr-1" style="color:var(--leaf);"></i>관심 주제 추천 도서 전체 목록
           </span>
           <span class="badge-soft badge-soft-success" id="libInterestMatchedCountBadge">0권</span>
         </div>
-        <div id="libInterestMatchedList">
-          <!-- JS 동적 목록 렌더링 -->
+        <div id="libInterestMatchedList"></div>
+      </div>
+    </div>
+
+    <!-- 2. 전체 도서관 영역 -->
+    <div id="bsub-all" style="display:none;">
+      <!-- 전체 도서관 2차 서브탭: 전체 / 주제별 도서 -->
+      <div class="lib-sub-nav">
+        <button type="button" class="lib-sub-pill active" id="allLibSubPill-all" onclick="switchAllLibSubTab('all')">
+          <i class="fa-solid fa-list-ul"></i> 전체
+        </button>
+        <button type="button" class="lib-sub-pill" id="allLibSubPill-themes" onclick="switchAllLibSubTab('themes')">
+          <i class="fa-solid fa-tags"></i> 주제별 도서
+        </button>
+      </div>
+
+      <!-- 2-1. 전체 도서 목록 컨테이너 -->
+      <div id="allSubSection-all">
+        <div class="sbar" id="libSearchBar" style="margin-bottom:12px;">
+          <input type="text" id="libQ" placeholder="전체 도서관 도서명, 저자, 출판사 검색..." oninput="filterLib()">
+          <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
+        </div>
+        <div id="libList"></div>
+        <!-- 무한스크롤 로딩 인디케이터 -->
+        <div id="libLoadingIndicator" style="display:none;text-align:center;padding:20px;color:var(--muted);">
+          <i class="fa-solid fa-circle-notch fa-spin mr-1"></i>다음 목록 불러오는 중...
+        </div>
+        <div id="libScrollSentinel" style="height:1px;"></div>
+      </div>
+
+      <!-- 2-2. 주제별 도서 컨테이너 (관리자 페이지 서비스 운영관리 테마관리 등록 연동) -->
+      <div id="allSubSection-themes" style="display:none;">
+        <div id="themeTagBoxesSection">
+          <div style="background:#fcfbf8; border:1px solid var(--soft); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
+            <div style="font-size:13.5px; font-weight:800; color:var(--wood-dark);">
+              <i class="fa-solid fa-tags mr-1" style="color:var(--leaf);"></i>주제별 큐레이션 도서
+            </div>
+            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">
+              관리자 페이지 서비스 운영관리 [테마관리]에서 등록된 큐레이션 테마별 도서입니다.
+            </div>
+          </div>
+          <div id="themeTagGrid" class="theme-tag-grid"></div>
+        </div>
+
+        <div id="themeSelectedSection" style="display:none;">
+          <div id="themeSelectedHeader" class="theme-selected-header"></div>
+          <div id="themeBookList"></div>
         </div>
       </div>
     </div>
@@ -5001,8 +5042,8 @@ function switchPanel(n){
   if(n === 'home') renderHomeSliders();
   if(n === 'history') renderMyBookshelf();
   if(n === 'ranking') renderRank();
-  // 도서관 진입 시 배정도서 탭을 기본으로 표시
-  if(n === 'books') switchBookTab('assigned');
+  // 도서관 진입 시 내 도서관(배정도서) 탭을 기본으로 표시
+  if(n === 'books') switchBookMainTab('my', 'assigned');
 
   // 최상단으로 즉시 이동 (이전 화면의 스크롤 위치 잔상 방지)
   window.scrollTo(0, 0);
@@ -5126,8 +5167,7 @@ function slideHorizontal(trackId, direction) {
 // 홈 화면 '더보기' 클릭 시 도서관 해당 학년으로 원클릭 이동
 function goToGradeLibrary(grade) {
   switchPanel('books');
-  switchBookTab('all');
-  switchLibSubTab('recommended');
+  switchBookMainTab('my', 'recommended');
   selectGradeFilter(grade || '초5');
 }
 
@@ -5243,74 +5283,182 @@ function startQuizFromDetail() {
 
 // ==============================================================
 // 도서관 탭 및 서브탭/학년 필터 로직
+// 1. 최상위 탭: 내 도서관 (my) / 전체 도서관 (all)
+// 2. 내 도서관 하위: 배정 도서(assigned), 권장 도서(recommended), 인기 도서(popular), 관심 도서(interest)
+// 3. 전체 도서관 하위: 전체(all), 주제별 도서(themes)
 // ==============================================================
-function switchBookTab(t){
-  document.getElementById('bsub-assigned').style.display = (t==='assigned') ? 'block' : 'none';
-  document.getElementById('bsub-all').style.display = (t==='all') ? 'block' : 'none';
-  var a=document.getElementById('btab-a'), b=document.getElementById('btab-b');
-  if(t==='assigned'){
-    a.className='tab2-btn on'; b.className='tab2-btn off';
-    renderAssignedLib();
+var currentBookMainTab = 'my';
+var currentMyLibSubTab = 'assigned';
+var currentAllLibSubTab = 'all';
+
+function switchBookMainTab(mainTab, subTab){
+  currentBookMainTab = (mainTab === 'all') ? 'all' : 'my';
+  var a = document.getElementById('btab-a');
+  var b = document.getElementById('btab-b');
+  var bsubMy = document.getElementById('bsub-my');
+  var bsubAll = document.getElementById('bsub-all');
+
+  if(currentBookMainTab === 'my'){
+    if(a) a.className = 'tab2-btn on';
+    if(b) b.className = 'tab2-btn off';
+    if(bsubMy) bsubMy.style.display = 'block';
+    if(bsubAll) bsubAll.style.display = 'none';
+    switchMyLibSubTab(subTab || currentMyLibSubTab || 'assigned');
   } else {
-    b.className='tab2-btn on'; a.className='tab2-btn off';
-    // 전체 도서관 진입 시 기본 서브탭은 '권장도서'
-    currentLibSubTab = 'recommended';
-    switchLibSubTab('recommended');
+    if(a) a.className = 'tab2-btn off';
+    if(b) b.className = 'tab2-btn on';
+    if(bsubMy) bsubMy.style.display = 'none';
+    if(bsubAll) bsubAll.style.display = 'block';
+    switchAllLibSubTab(subTab || currentAllLibSubTab || 'all');
   }
 }
 
-function switchLibSubTab(tab) {
-  currentLibSubTab = tab;
-  ['all', 'recommended', 'popular', 'interest'].forEach(function(s){
-    var btn = document.getElementById('libSubPill-'+s);
-    if(btn) {
-      if(s === tab) btn.classList.add('active');
-      else btn.classList.remove('active');
-    }
+// 하위 호환용 래퍼 함수
+function switchBookTab(t){
+  if(t === 'assigned' || t === 'my'){
+    switchBookMainTab('my', 'assigned');
+  } else {
+    switchBookMainTab('all', 'all');
+  }
+}
+
+function switchMyLibSubTab(tab) {
+  currentMyLibSubTab = tab;
+  ['assigned', 'recommended', 'popular', 'interest'].forEach(function(s){
+    var pill = document.getElementById('myLibSubPill-' + s);
+    if(pill) pill.classList.toggle('active', s === tab);
+    var sec = document.getElementById('mySubSection-' + s);
+    if(sec) sec.style.display = (s === tab) ? 'block' : 'none';
   });
 
-  // 학년 필터 바는 '권장도서' 서브탭일 때만 노출 (전체 탭에서는 숨김)
-  var gradeBar = document.getElementById('gradeFilterBar');
-  if(gradeBar) {
-    gradeBar.style.display = (tab === 'recommended') ? 'flex' : 'none';
+  if(tab === 'assigned') {
+    renderAssignedLib();
+  } else if(tab === 'recommended') {
+    renderRecLib();
+  } else if(tab === 'popular') {
+    renderPopularLib();
+  } else if(tab === 'interest') {
+    renderInterestTags();
+    renderInterestRecommendations();
   }
+}
 
-  // 인기도서 기간 필터바 표시 여부 및 검색바 표시/숨김
-  var popularBar = document.getElementById('popularPeriodBar');
-  var searchBar = document.getElementById('libSearchBar');
-  if(popularBar) popularBar.style.display = (tab === 'popular') ? 'block' : 'none';
-  if(searchBar) searchBar.style.display = (tab === 'popular') ? 'none' : 'flex';
+function switchAllLibSubTab(tab) {
+  currentAllLibSubTab = tab;
+  ['all', 'themes'].forEach(function(s){
+    var pill = document.getElementById('allLibSubPill-' + s);
+    if(pill) pill.classList.toggle('active', s === tab);
+    var sec = document.getElementById('allSubSection-' + s);
+    if(sec) sec.style.display = (s === tab) ? 'block' : 'none';
+  });
 
-  var normalContainer = document.getElementById('normalLibContainer');
-  var interestContainer = document.getElementById('interestLibContainer');
+  if(tab === 'all') {
+    renderLib();
+  } else if(tab === 'themes') {
+    backToThemeTagList();
+    renderThemeTagBoxes();
+  }
+}
 
-  if(tab === 'interest') {
-    if(normalContainer) normalContainer.style.display = 'none';
-    if(interestContainer) {
-      interestContainer.style.display = 'block';
-      renderInterestTags();       // 태그 선택 칩 렌더링
-      renderInterestRecommendations(); // 추천 도서 목록 렌더링
-    }
+// 기존 외부 호출 호환
+function switchLibSubTab(tab) {
+  if(tab === 'all') {
+    switchBookMainTab('all', 'all');
+  } else if(tab === 'themes') {
+    switchBookMainTab('all', 'themes');
   } else {
-    if(normalContainer) normalContainer.style.display = 'block';
-    if(interestContainer) interestContainer.style.display = 'none';
-    // 인기도서 탭일 때는 무한스크롤 리셋
-    if(tab === 'popular') {
-      currentPopularPeriod = 'daily';
-      libScrollPage = 0;
-      libScrollDone = false;
-      // 일간 베스트 버튼 active
-      ['daily','weekly','monthly'].forEach(function(p){
-        var pb = document.getElementById('popularPeriodBtn-'+p);
-        if(pb) pb.classList.toggle('active', p === 'daily');
-      });
-      renderLib();
-    } else {
-      libScrollPage = 0;
-      libScrollDone = false;
-      renderLib();
-    }
+    switchBookMainTab('my', tab);
   }
+}
+
+// 내 도서관 > 권장 도서 렌더링
+function renderRecLib(q){
+  var c = document.getElementById('recLibList');
+  if(!c) return;
+  var query = (q || (document.getElementById('recLibQ') ? document.getElementById('recLibQ').value : '') || '').toLowerCase();
+  var list = libData.slice();
+
+  // 학년 필터 적용
+  if(currentGradeFilter && currentGradeFilter !== 'all') {
+    list = list.filter(function(b){ return b.grade === currentGradeFilter; });
+  }
+
+  // 검색어 필터 적용
+  if(query) {
+    list = list.filter(function(b){
+      return (b.title && b.title.toLowerCase().includes(query)) ||
+             (b.author && b.author.toLowerCase().includes(query)) ||
+             (b.pub && b.pub.toLowerCase().includes(query));
+    });
+  }
+
+  if(list.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-seedling mr-1"></i>선택한 학년의 권장 도서 또는 검색 조건에 맞는 도서가 없습니다.</div>';
+    return;
+  }
+
+  c.innerHTML = list.map(function(b){
+    var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
+    return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+      + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
+      +   ab
+      +   '<span class="nbadge">'+b.grade+' 권장</span>'
+      +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
+      + '</div>'
+      + '<div style="display:flex; align-items:center;">'
+      +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function filterRecLib() {
+  renderRecLib();
+}
+
+// 내 도서관 > 인기 도서 렌더링
+function renderPopularLib() {
+  var c = document.getElementById('popularLibList');
+  if(!c) return;
+  var list = getPopularSortedList();
+
+  if(list.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-fire mr-1"></i>인기 도서 데이터가 없습니다.</div>';
+    return;
+  }
+
+  c.innerHTML = list.map(function(b, i){
+    var rank = i + 1;
+    var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
+    var rankBadge = '';
+    if(rank === 1) {
+      rankBadge = '<span class="nbadge" style="background:#fee2e2;color:#dc2626;font-weight:900;"><i class="fa-solid fa-crown mr-1"></i>#1위</span>';
+    } else if(rank === 2) {
+      rankBadge = '<span class="nbadge" style="background:#fef3c7;color:#d97706;font-weight:900;"><i class="fa-solid fa-medal mr-1"></i>#2위</span>';
+    } else if(rank === 3) {
+      rankBadge = '<span class="nbadge" style="background:#e0f2fe;color:#0284c7;font-weight:900;"><i class="fa-solid fa-award mr-1"></i>#3위</span>';
+    } else {
+      rankBadge = '<span class="nbadge" style="background:#f3f4f6;color:#6b7280;font-weight:800;">#'+rank+'위</span>';
+    }
+
+    return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+      + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
+      +   ab
+      +   rankBadge
+      +   '<span class="nbadge">'+b.grade+' 권장</span>'
+      +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
+      + '</div>'
+      + '<div style="display:flex; align-items:center;">'
+      +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 // ==============================================================
@@ -5604,7 +5752,7 @@ function selectGradeFilter(grade) {
     if(g === grade) chip.classList.add('active');
     else chip.classList.remove('active');
   });
-  renderLib();
+  renderRecLib();
 }
 
 function renderAssignedLib() {
@@ -5643,43 +5791,22 @@ function switchPopularPeriod(period) {
     var btn = document.getElementById('popularPeriodBtn-'+p);
     if(btn) btn.classList.toggle('active', p === period);
   });
-  // 페이지 리셋 후 다시 렌더
-  libScrollPage = 0;
-  libScrollDone = false;
-  var c = document.getElementById('libList');
-  if(c) c.innerHTML = '';
-  renderLibPage();
+  renderPopularLib();
 }
 
 function renderLib(q){
-  // 인기도서 탭일 때는 페이지네이션으로 10개씩 표시
-  if(currentLibSubTab === 'popular') {
-    libScrollPage = 0;
-    libScrollDone = false;
-    var c = document.getElementById('libList');
-    if(c) c.innerHTML = '';
-    renderLibPage();
-    setupLibScrollObserver();
-    return;
-  }
-  var c=document.getElementById('libList');if(!c)return;
-  var query=(q||document.getElementById('libQ').value||'').toLowerCase();
+  var c = document.getElementById('libList');
+  if(!c) return;
+  var query = (q || (document.getElementById('libQ') ? document.getElementById('libQ').value : '') || '').toLowerCase();
 
   var list = libData.slice();
 
-  // 1. 서브탭별 필터링
-  if(currentLibSubTab === 'all') {
-    // 전체: 필터 없음
-  } else if(currentLibSubTab === 'recommended') {
-    if(currentGradeFilter !== 'all') {
-      list = list.filter(function(b){ return b.grade === currentGradeFilter; });
-    }
-  }
-
-  // 2. 검색어 필터링
+  // 검색어 필터링
   if(query) {
     list = list.filter(function(b){
-      return b.title.toLowerCase().includes(query) || b.author.toLowerCase().includes(query) || b.pub.toLowerCase().includes(query);
+      return (b.title && b.title.toLowerCase().includes(query)) ||
+             (b.author && b.author.toLowerCase().includes(query)) ||
+             (b.pub && b.pub.toLowerCase().includes(query));
     });
   }
 
@@ -5688,14 +5815,23 @@ function renderLib(q){
     return;
   }
 
-  c.innerHTML=list.map(function(b){
-    var ab=b.assigned?'<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>':'';
-    return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">' +getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
-      +'<div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
-      +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
-      +ab+'<span class="nbadge">'+b.grade+' 권장</span><span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span></div></div>';
+  c.innerHTML = list.map(function(b){
+    var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
+    return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
+      + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="font-size:13.5px;font-weight:800;margin-bottom:2px;color:var(--wood-dark);">'+b.title+'</div>'
+      +   '<div style="font-size:11.5px;color:var(--muted);margin-bottom:5px;">'+b.author+' · '+b.pub+'</div>'
+      +   ab
+      +   '<span class="nbadge">'+b.grade+' 권장</span>'
+      +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
+      + '</div>'
+      + '<div style="display:flex; align-items:center;">'
+      +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+      + '</div>'
+      + '</div>';
   }).join('');
-  // 센티넌 원상 복구 (인기 아닐 때)
+
   var sentinel = document.getElementById('libScrollSentinel');
   if(sentinel) sentinel.style.display = 'none';
   var loader = document.getElementById('libLoadingIndicator');
@@ -5780,10 +5916,10 @@ var curSelectedQuizSet = null;
 var studentSelectedAnsMap = {}; // 문항별 학생 선택 보기 index
 var currentStudentThoughtAnswer = ''; // 생각담기 주관식 답안
 
-// 메인 '인증 대기 도서' 클릭 시 배정도서 탭으로 바로 이동
+// 메인 '인증 대기 도서' 클릭 시 내 도서관 > 배정도서 탭으로 바로 이동
 function goToAssignedBooksTab() {
-  switchPanel('lib');
-  switchBookTab('assigned');
+  switchPanel('books');
+  switchBookMainTab('my', 'assigned');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -8363,9 +8499,13 @@ document.addEventListener('DOMContentLoaded',function(){
   renderHomeSliders();
   renderMyBookshelf();
   renderRank();
+  renderAssignedLib();
+  renderRecLib();
+  renderPopularLib();
   renderLib();
   renderInterestTags();
   renderInterestRecommendations();
+  renderThemeTagBoxes();
 });
 </script>
 <!-- 같은 도서의 다중 북퀴즈 출제처 선택 모달 (1순위 본사, 2순위 소속학원, 3순위 등록 오래된순) -->
