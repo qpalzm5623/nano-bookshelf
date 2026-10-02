@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>나노의 책장 - B2B 마스터 관리자 포털</title>
 
+  <!-- PWA & Mobile Web App Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3d342d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="나노의 책장">
+  <link rel="apple-touch-icon" href="resources/images/icons/apple-touch-icon.png">
+  <link rel="shortcut icon" href="resources/images/icons/icon-192.png" type="image/png">
+
   <!-- Modern Clean Korean Typography: Pretendard Variable + Noto Sans KR -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4320,6 +4330,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="upload/banner/banners_data.js"></script>
 <script src="master_preview.js?v=20261002_notice_v2"></script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then((reg) => console.log('[PWA] Service Worker registered scope:', reg.scope))
+        .catch((err) => console.warn('[PWA] Service Worker register failed:', err));
+    });
+  }
+</script>
+<!-- PWA 모바일 설치 유도 스크립트 -->
+<script src="js/pwa-install.js"></script>
 
 </body>
 </html>

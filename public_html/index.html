@@ -5,8 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>나노의 책장 - 통합 관리자 로그인</title>
   
+  <!-- PWA & Mobile Web App Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3d342d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="나노의 책장">
+  <link rel="apple-touch-icon" href="resources/images/icons/apple-touch-icon.png">
+
   <!-- Favicon -->
-  <link rel="shortcut icon" href="resources/images/common/logo.png" type="image/png">
+  <link rel="shortcut icon" href="resources/images/icons/icon-192.png" type="image/png">
 
   <!-- Modern Clean Korean Typography: Pretendard Variable + Noto Sans KR -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
@@ -821,7 +830,18 @@
     function handleForgotHelp() {
       alert('나노의 책장 본사 시스템 안내:\n\n- 본사 마스터 계정: master00 / master00\n- 가맹 학원 계정: admin01 / admin01\n- 원생 포털 계정: student01 / student01\n\n문의사항은 본사 고객지원센터(1588-0000)로 연락 바랍니다.');
     }
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then((reg) => console.log('[PWA] Service Worker registered scope:', reg.scope))
+          .catch((err) => console.warn('[PWA] Service Worker register failed:', err));
+      });
+    }
   </script>
+  <!-- PWA 모바일 설치 유도 스크립트 -->
+  <script src="js/pwa-install.js"></script>
 
 </body>
 </html>
