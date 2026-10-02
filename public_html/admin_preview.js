@@ -187,7 +187,7 @@ function saveAllQuizzes() {
 // 2. 7대 탭 네비게이션 제어
 // ==============================================================
 function switchTab(tab) {
-  var views = ['members', 'contents', 'learning', 'portfolio', 'assignment', 'dispatch', 'ranking', 'payment'];
+  var views = ['members', 'contents', 'learning', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   views.forEach(function(v) {
     var el = document.getElementById('view-' + v);
     var nav = document.getElementById('btn-nav-' + v);
@@ -200,6 +200,7 @@ function switchTab(tab) {
   if (targetView) targetView.style.display = 'block';
   if (targetNav) targetNav.classList.add('active');
 
+  if (tab === 'notice') renderAcademyNoticeViewList();
   if (tab === 'learning') renderLearningTable();
   if (tab === 'portfolio') {
     showPortfolioList();
@@ -7115,6 +7116,84 @@ function getAcadDetailTagsValue() {
 }
 
 // -------------------------------------------------------------
+// [학원 도서 지능형 서지 분석 알고리즘]
+// -------------------------------------------------------------
+function detectAcadBookSeries(title, rawSeries) {
+  if (rawSeries && rawSeries.trim() && rawSeries !== "단권") {
+    return { isSeries: true, seriesName: rawSeries.trim() };
+  }
+  if (!title) return { isSeries: false, seriesName: "단권" };
+
+  const clean = title.trim();
+  const bracketMatch = clean.match(/^(.*?)\s*[\(\[](.*?(?:권|탄|부|시리즈|편|vol|season|\d+).*?)[\)\]]/i);
+  if (bracketMatch) {
+    const sName = bracketMatch[1].trim();
+    if (sName.length >= 2 && !/^\d+$/.test(sName)) {
+      return { isSeries: true, seriesName: sName };
+    }
+  }
+
+  const endNumMatch = clean.match(/^(.*?)\s+(\d{1,3})\s*(?:권|탄|부|편|화)?$/);
+  if (endNumMatch) {
+    const sName = endNumMatch[1].trim();
+    if (sName.length >= 2 && !/^(19|20)\d\d$/.test(sName)) {
+      return { isSeries: true, seriesName: sName };
+    }
+  }
+
+  if (clean.includes("시리즈") || clean.includes("세트") || clean.includes("전집") || clean.includes("문고")) {
+    const sName = clean.replace(/\s*(?:전집|세트|시리즈|문고).*$/, " 시리즈").trim();
+    return { isSeries: true, seriesName: sName };
+  }
+
+  return { isSeries: false, seriesName: "단권" };
+}
+
+function detectAcadBookCategory2(isbn, doc) {
+  const isbnStr = (isbn || "").replace(/[^0-9]/g, "");
+  if (isbnStr.startsWith("978") && !isbnStr.startsWith("97889")) return "외서";
+  if (doc && doc.translators && Array.isArray(doc.translators) && doc.translators.length > 0) return "외서";
+
+  const allText = `${doc ? doc.title || "" : ""} ${doc && Array.isArray(doc.authors) ? doc.authors.join(" ") : (doc ? doc.authors || "" : "")} ${doc ? doc.publisher || "" : ""}`;
+  if (!/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(allText) && /[a-zA-Z]/.test(allText)) return "외서";
+
+  const authorStr = doc && Array.isArray(doc.authors) ? doc.authors.join(", ") : (doc ? doc.authors || "" : "");
+  if (authorStr.includes("·") || authorStr.includes(" 드 ") || authorStr.includes(" 생텍쥐페리") || authorStr.includes(" 롤링") || authorStr.includes(" 셰익스피어") || authorStr.includes(" 톨스토이")) {
+    return "외서";
+  }
+  return "국내서";
+}
+
+function detectAcadBookCategory1(doc) {
+  const text = `${(doc && doc.title) || ""} ${(doc && doc.contents) || ""}`;
+  const bioKws = ["위인", "전기", "평전", "인물 이야기", "위인전", "who?", "Who?", "자서전", "생애", "세종대왕", "이순신", "안중근", "정약용", "헬렌 켈러", "에디슨", "아인슈타인", "스티브 잡스", "마더 테레사", "간디", "링컨", "김구", "유관순", "신사임당"];
+  for (const kw of bioKws) {
+    if (text.includes(kw)) return "인물 이야기 (위인)";
+  }
+
+  const nonFicKws = ["과학", "역사", "한국사", "세계사", "사회", "경제", "수학", "백과", "탐구", "사전", "지식", "정보", "원리", "실험", "우주", "식물", "환경", "철학", "교양", "인문", "상식", "법", "정치", "코딩", "인공지능", "생태", "지리", "설명문"];
+  for (const kw of nonFicKws) {
+    if (text.includes(kw)) return "비문학/정보글";
+  }
+  return "소설";
+}
+
+function detectAcadBookGrade(doc) {
+  const text = `${(doc && doc.title) || ""} ${(doc && doc.contents) || ""}`;
+  if (/유아|그림책|보드북|미취학|[3-7]세|누리과정/.test(text)) return "미취학";
+  if (/초등\s*1|초1|초등\s*저학년|저학년용/.test(text)) return "초등 1학년";
+  if (/초등\s*2|초2/.test(text)) return "초등 2학년";
+  if (/초등\s*3|초3|초등\s*중학년|중학년용/.test(text)) return "초등 3학년";
+  if (/초등\s*4|초4/.test(text)) return "초등 4학년";
+  if (/초등\s*5|초5|초등\s*고학년|고학년용/.test(text)) return "초등 5학년";
+  if (/초등\s*6|초6/.test(text)) return "초등 6학년";
+  if (/중등\s*1|중1|중학생|청소년\s*초기/.test(text)) return "중등 1학년";
+  if (/중등\s*2|중2|청소년\s*문학|청소년용/.test(text)) return "중등 2학년";
+  if (/중등\s*3|중3/.test(text)) return "중등 3학년";
+  return "초등 5학년";
+}
+
+// -------------------------------------------------------------
 // ISBN 도서 정보 자동 조회 (학원 모달용)
 // -------------------------------------------------------------
 async function lookupAcademyIsbn() {
@@ -7164,6 +7243,32 @@ async function lookupAcademyIsbn() {
       if (document.getElementById("abEditAuthor")) document.getElementById("abEditAuthor").value = author;
       if (document.getElementById("abEditPublisher")) document.getElementById("abEditPublisher").value = publisher;
 
+      // 지능형 서지 분석 적용
+      const seriesInfo = detectAcadBookSeries(title, "");
+      const isSingle = !seriesInfo.isSeries;
+      const singleCheck = document.getElementById("abEditIsSingle");
+      const seriesInput = document.getElementById("abEditSeries");
+      if (singleCheck) singleCheck.checked = isSingle;
+      if (typeof toggleAcadSingleBookCheckbox === "function") toggleAcadSingleBookCheckbox(isSingle);
+      if (seriesInput && !isSingle) seriesInput.value = seriesInfo.seriesName;
+
+      const detectedCat1 = detectAcadBookCategory1(doc);
+      const detectedCat2 = detectAcadBookCategory2(isbn, doc);
+      const detectedGrade = detectAcadBookGrade(doc);
+
+      if (document.getElementById("abEditCat1")) {
+        document.getElementById("abEditCat1").value = detectedCat1;
+        if (typeof onAcadCategory1Changed === "function") onAcadCategory1Changed(detectedCat1);
+      }
+      if (document.getElementById("abEditCat2")) {
+        document.getElementById("abEditCat2").value = detectedCat2;
+        if (typeof onAcadCategory2Changed === "function") onAcadCategory2Changed(detectedCat2);
+      }
+      if (document.getElementById("abEditGrade")) {
+        document.getElementById("abEditGrade").value = detectedGrade;
+        if (typeof onAcadGradeChanged === "function") onAcadGradeChanged(detectedGrade);
+      }
+
       if (cover) {
         if (document.getElementById("abEditCover")) document.getElementById("abEditCover").value = cover;
         updateAcadCoverPreview(cover);
@@ -7176,7 +7281,8 @@ async function lookupAcademyIsbn() {
           btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
         }, 2000);
       }
-      showAcademyToast(`[ISBN: ${isbn}] '${title}' 서지정보와 표지가 연동되었습니다.`);
+      const seriesText = isSingle ? "단권" : `시리즈(${seriesInfo.seriesName})`;
+      showAcademyToast(`[ISBN: ${isbn}] '${title}' (${seriesText} / ${detectedCat1} / ${detectedCat2}) 분석 완료!`);
     } else {
       showAcademyToast(`해당 ISBN(${isbn})에 대한 카카오 도서 검색 결과가 없습니다. 직접 입력해주세요.`, "warning");
       if (btn) {
@@ -7224,8 +7330,8 @@ async function lookupAcademyIsbn() {
     if (document.getElementById("abEditGrade")) document.getElementById("abEditGrade").value = data.grade;
     if (document.getElementById("abEditCat1")) document.getElementById("abEditCat1").value = data.cat1;
     if (document.getElementById("abEditCat2")) document.getElementById("abEditCat2").value = data.cat2;
-    onAcadCategory1Changed(data.cat1);
-    onAcadCategory2Changed(data.cat2);
+    if (typeof onAcadCategory1Changed === "function") onAcadCategory1Changed(data.cat1);
+    if (typeof onAcadCategory2Changed === "function") onAcadCategory2Changed(data.cat2);
     if (document.getElementById("abEditCover")) document.getElementById("abEditCover").value = data.cover;
     updateAcadCoverPreview(data.cover);
 
@@ -9423,14 +9529,73 @@ function getAcademySystemNotices() {
 
 function updateAcademyNoticeBadge() {
   const badge = document.getElementById('academyNoticeCountBadge');
-  if (!badge) return;
+  const sidebarBadge = document.getElementById('sidebarNoticeCountBadge');
+  const viewBadge = document.getElementById('noticeViewTotalCountBadge');
   const notices = getAcademySystemNotices();
-  if (notices.length > 0) {
-    badge.innerText = notices.length;
-    badge.style.display = 'inline-block';
-  } else {
-    badge.style.display = 'none';
+  const count = notices.length;
+
+  if (badge) {
+    badge.innerText = count;
+    badge.style.display = count > 0 ? 'inline-block' : 'none';
   }
+  if (sidebarBadge) {
+    sidebarBadge.innerText = count;
+    sidebarBadge.style.display = count > 0 ? 'inline-block' : 'none';
+  }
+  if (viewBadge) {
+    viewBadge.innerText = `게시 중 공지 ${count}건`;
+  }
+}
+
+// 메인 작업 공간(view-notice) 공지사항 카드 목록 렌더링
+function renderAcademyNoticeViewList() {
+  const notices = getAcademySystemNotices();
+  const container = document.getElementById('academyNoticeViewContainer');
+  updateAcademyNoticeBadge();
+  if (!container) return;
+
+  if (notices.length === 0) {
+    container.innerHTML = `
+      <div class="simple-card p-5 text-center text-muted">
+        <i class="fa-solid fa-bullhorn fa-3x mb-3 text-secondary" style="opacity: 0.5;"></i>
+        <h5 class="font-weight-bold text-dark mb-1">등록된 본사 공지사항이 없습니다.</h5>
+        <p class="mb-0" style="font-size: 13px;">새로운 본사 소식이나 공지사항이 등록되면 이곳에 실시간으로 표시됩니다.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = notices.map(n => {
+    const isPinnedBadge = n.isPinned ? '<span class="badge badge-danger mr-1" style="font-size: 11px; font-weight: 800;"><i class="fa-solid fa-thumbtack mr-1"></i>필독</span>' : '';
+    const catBadge = '<span class="badge badge-light border text-muted mr-1" style="font-size: 11px;">' + (n.category || '공지') + '</span>';
+    const targetBadge = '<span class="badge badge-info mr-1" style="font-size: 10.5px;">' + n.target + '</span>';
+    const popupBadge = n.isPopup ? '<span class="badge badge-warning text-dark ml-1" style="font-size: 10.5px;"><i class="fa-solid fa-window-restore mr-1"></i>팝업 공지</span>' : '';
+    const contentFormatted = (n.content || '').replace(/\n/g, '<br>');
+    const linkHtml = (n.link && n.link.trim()) ? `<div class="mt-3 pt-2 border-top"><a href="${n.link}" target="_blank" class="btn btn-sm btn-outline-primary font-weight-bold" style="font-size: 12px; border-radius: 6px;"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>관련 안내 링크 바로가기</a></div>` : '';
+
+    return `
+      <div class="simple-card mb-3" style="border-radius: 14px; overflow: hidden; border: 1px solid var(--border-medium);">
+        <div class="p-3 bg-white d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-bottom: 1px solid var(--border-light);">
+          <div class="d-flex align-items-center flex-wrap" style="gap: 5px;">
+            ${isPinnedBadge}
+            ${catBadge}
+            ${targetBadge}
+            ${popupBadge}
+            <h5 class="font-weight-bold mb-0 ml-1" style="font-size: 15px; color: var(--text-main);">${n.title}</h5>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted" style="font-size: 12px;"><i class="fa-regular fa-clock mr-1"></i>${n.createdAt || ''}</span>
+          </div>
+        </div>
+        <div class="p-3.5 px-4" style="background: #faf8f5;">
+          <div style="font-size: 13.5px; color: var(--text-main); line-height: 1.75; white-space: normal; word-break: break-word;">
+            ${contentFormatted}
+          </div>
+          ${linkHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function checkAcademyNoticePopups() {
@@ -9564,5 +9729,16 @@ window.addEventListener('storage', function(e) {
     checkAcademyNoticePopups();
   }
 });
+
+// 초기 로드 시 공지 배지 및 팝업 점검
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    updateAcademyNoticeBadge();
+    checkAcademyNoticePopups();
+  });
+} else {
+  updateAcademyNoticeBadge();
+  checkAcademyNoticePopups();
+}
 
 

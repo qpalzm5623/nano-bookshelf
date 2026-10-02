@@ -453,12 +453,15 @@ FA200001	F	A	2	00001
                   if(res.book_name) $('#book_name').val(res.book_name);
                   if(res.author) $('#author').val(res.author);
                   if(res.publisher) $('#publisher').val(res.publisher);
-                  if(res.serise) {
+                  if(res.serise && res.serise !== "단권") {
                       $('#serise').val(res.serise);
                       $('#serise_one').prop('checked', false);
                   } else {
                       $('#serise').val('단권');
                       $('#serise_one').prop('checked', true);
+                  }
+                  if(res.category) {
+                      $('#category').val(res.category);
                   }
                   if(res.book_cover) {
                       $('#book_cover_copy').val(res.book_cover);

@@ -4717,7 +4717,130 @@ function generateNewBookId() {
 }
 
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// [도서 지능형 서지 분석 알고리즘]
+// 1. 시리즈 판별: 권수, 괄호, 권차 표기 감지 -> 시리즈명 자동 추출 / 아니면 단권 판별
+// 2. 카테고리 2: 영미/해외 ISBN, 영문 저자/출판사, 번역자 유무 기반 국내서 vs 외서 자동 판별
+// 3. 카테고리 1: 줄거리/제목 키워드 분석 (소설 vs 인물 이야기 vs 비문학)
+// 4. 권장 학년: 학년/연령 키워드 감지
+// -------------------------------------------------------------
+function detectBookSeries(title, rawSeries) {
+  if (rawSeries && rawSeries.trim() && rawSeries !== "단권") {
+    return { isSeries: true, seriesName: rawSeries.trim() };
+  }
+  if (!title) return { isSeries: false, seriesName: "단권" };
+
+  const clean = title.trim();
+
+  // (1) 괄호 안 시리즈/권수 감지: "해리포터 (1권)", "마법천자문 [3권]", "용선생 (1)"
+  const bracketMatch = clean.match(/^(.*?)\s*[\(\[](.*?(?:권|탄|부|시리즈|편|vol|season|\d+).*?)[\)\]]/i);
+  if (bracketMatch) {
+    const sName = bracketMatch[1].trim();
+    if (sName.length >= 2 && !/^\d+$/.test(sName)) {
+      return { isSeries: true, seriesName: sName };
+    }
+  }
+
+  // (2) 제목 끝 숫자 또는 권 표기: "놓지 마 과학! 14", "마법천자문 53권", "아홉 살 마음 사전 2"
+  const endNumMatch = clean.match(/^(.*?)\s+(\d{1,3})\s*(?:권|탄|부|편|화)?$/);
+  if (endNumMatch) {
+    const sName = endNumMatch[1].trim();
+    if (sName.length >= 2 && !/^(19|20)\d\d$/.test(sName)) {
+      return { isSeries: true, seriesName: sName };
+    }
+  }
+
+  // (3) 명시적 시리즈 키워드: "... 시리즈", "... 세트", "... 전집"
+  if (clean.includes("시리즈") || clean.includes("세트") || clean.includes("전집") || clean.includes("문고")) {
+    const sName = clean.replace(/\s*(?:전집|세트|시리즈|문고).*$/, " 시리즈").trim();
+    return { isSeries: true, seriesName: sName };
+  }
+
+  return { isSeries: false, seriesName: "단권" };
+}
+
+function detectBookCategory2(isbn, doc) {
+  const isbnStr = (isbn || "").replace(/[^0-9]/g, "");
+
+  // (1) 한국 출판 ISBN(978-89...)이 아닌 해외 ISBN 접두어 (예: 978-1, 978-0 등)
+  if (isbnStr.startsWith("978") && !isbnStr.startsWith("97889")) {
+    return "외서";
+  }
+
+  // (2) 번역자(translators)가 존재하는 경우 (외국 도서 번역 출간)
+  if (doc && doc.translators && Array.isArray(doc.translators) && doc.translators.length > 0) {
+    return "외서";
+  }
+
+  // (3) 한글이 전혀 없고 영문/외국어로만 구성된 도서 (예: 원서)
+  const allText = `${doc ? doc.title || "" : ""} ${doc && Array.isArray(doc.authors) ? doc.authors.join(" ") : (doc ? doc.authors || "" : "")} ${doc ? doc.publisher || "" : ""}`;
+  const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(allText);
+  if (!hasKorean && /[a-zA-Z]/.test(allText)) {
+    return "외서";
+  }
+
+  // (4) 외국인 저자 표기점(·) 또는 대표적인 외국인 이름 패턴
+  const authorStr = doc && Array.isArray(doc.authors) ? doc.authors.join(", ") : (doc ? doc.authors || "" : "");
+  if (authorStr.includes("·") || authorStr.includes(" 드 ") || authorStr.includes(" 생텍쥐페리") || authorStr.includes(" 롤링") || authorStr.includes(" 셰익스피어") || authorStr.includes(" 톨스토이") || authorStr.includes(" 앤더슨")) {
+    return "외서";
+  }
+
+  return "국내서";
+}
+
+function detectBookCategory1(doc) {
+  const title = (doc && doc.title) ? doc.title : "";
+  const contents = (doc && doc.contents) ? doc.contents : "";
+  const text = `${title} ${contents}`;
+
+  // (1) 인물 이야기 (위인) 키워드
+  const biographyKeywords = [
+    "위인", "전기", "평전", "인물 이야기", "위인전", "who?", "Who?", "자서전", "생애",
+    "세종대왕", "이순신", "안중근", "정약용", "헬렌 켈러", "에디슨", "아인슈타인",
+    "스티브 잡스", "마더 테레사", "간디", "링컨", "김구", "유관순", "신사임당", "장영실"
+  ];
+  for (const kw of biographyKeywords) {
+    if (text.includes(kw)) {
+      return "인물 이야기 (위인)";
+    }
+  }
+
+  // (2) 비문학/정보글 키워드
+  const nonFictionKeywords = [
+    "과학", "역사", "한국사", "세계사", "사회", "경제", "수학", "백과", "탐구", "사전",
+    "지식", "정보", "원리", "실험", "우주", "식물", "환경", "철학", "교양", "인문",
+    "상식", "법", "정치", "코딩", "인공지능", "생태", "지리", "설명문", "논픽션"
+  ];
+  for (const kw of nonFictionKeywords) {
+    if (text.includes(kw)) {
+      return "비문학/정보글";
+    }
+  }
+
+  // (3) 기본 문학/스토리
+  return "소설";
+}
+
+function detectBookGrade(doc) {
+  const text = `${(doc && doc.title) || ""} ${(doc && doc.contents) || ""}`;
+
+  if (/유아|그림책|보드북|미취학|[3-7]세|누리과정/.test(text)) return "미취학";
+  if (/초등\s*1|초1|초등\s*저학년|저학년용/.test(text)) return "초등 1학년";
+  if (/초등\s*2|초2/.test(text)) return "초등 2학년";
+  if (/초등\s*3|초3|초등\s*중학년|중학년용/.test(text)) return "초등 3학년";
+  if (/초등\s*4|초4/.test(text)) return "초등 4학년";
+  if (/초등\s*5|초5|초등\s*고학년|고학년용/.test(text)) return "초등 5학년";
+  if (/초등\s*6|초6/.test(text)) return "초등 6학년";
+  if (/중등\s*1|중1|중학생|청소년\s*초기/.test(text)) return "중등 1학년";
+  if (/중등\s*2|중2|청소년\s*문학|청소년용/.test(text)) return "중등 2학년";
+  if (/중등\s*3|중3/.test(text)) return "중등 3학년";
+
+  return "초등 5학년";
+}
+
+// -------------------------------------------------------------
 // [서비스 운영 관리 - 테마 관리]와 100% 일치하는 도서 주제 분류 태그 드롭박스 동적 렌더링
+// 디폴트값: '선택' (사용자가 직접 선택하도록 유도)
 // -------------------------------------------------------------
 function renderThemeSelectForMasterBook(selectedTag = "") {
   const select = document.getElementById("mbAddThemeTagSelect");
@@ -4732,14 +4855,17 @@ function renderThemeSelectForMasterBook(selectedTag = "") {
         { tag: "#인문문학여행", title: "마음을 키우는 인문 문학 여행" }
       ];
 
-  const targetVal = Array.isArray(selectedTag) ? (selectedTag[0] || "") : selectedTag;
+  const targetVal = Array.isArray(selectedTag) ? (selectedTag[0] || "") : (selectedTag || "");
 
-  select.innerHTML = currentThemes.map(t => {
+  let html = `<option value="" ${!targetVal ? 'selected' : ''}>선택 (주제 분류 태그를 선택해주세요)</option>`;
+  html += currentThemes.map(t => {
     const tagVal = t.tag || `#${t.title.replace(/\s+/g, '')}`;
-    const isSelected = (targetVal && targetVal === tagVal) || (!targetVal && tagVal === "#이달의나노북클럽");
+    const isSelected = (targetVal && targetVal === tagVal);
     const label = t.title ? `${tagVal} (${t.title})` : tagVal;
     return `<option value="${tagVal}" ${isSelected ? 'selected' : ''}>${label}</option>`;
   }).join("");
+
+  select.innerHTML = html;
 }
 
 // -------------------------------------------------------------
@@ -4942,6 +5068,39 @@ async function fetchMasterBookByIsbnForAdd() {
       if (document.getElementById("mbAddAuthor")) document.getElementById("mbAddAuthor").value = author;
       if (document.getElementById("mbAddPublisher")) document.getElementById("mbAddPublisher").value = publisher;
 
+      // 1. 시리즈 vs 단권 지능형 판별
+      const seriesInfo = detectBookSeries(title, "");
+      const isSingleBook = !seriesInfo.isSeries;
+      const singleCheck = document.getElementById("mbAddIsSingle");
+      const seriesInput = document.getElementById("mbAddSeries");
+      if (singleCheck) singleCheck.checked = isSingleBook;
+      toggleSingleBookCheckbox(isSingleBook);
+      if (seriesInput && !isSingleBook) {
+        seriesInput.value = seriesInfo.seriesName;
+      }
+
+      // 2. 카테고리 1, 카테고리 2, 권장 학년 지능형 판별
+      const detectedCat1 = detectBookCategory1(doc);
+      const detectedCat2 = detectBookCategory2(isbn, doc);
+      const detectedGrade = detectBookGrade(doc);
+
+      const cat1El = document.getElementById("mbAddCat1");
+      const cat2El = document.getElementById("mbAddCat2");
+      const gradeEl = document.getElementById("mbAddGrade");
+
+      if (cat1El) {
+        cat1El.value = detectedCat1;
+        onCategory1Changed(detectedCat1);
+      }
+      if (cat2El) {
+        cat2El.value = detectedCat2;
+        onCategory2Changed(detectedCat2);
+      }
+      if (gradeEl) {
+        gradeEl.value = detectedGrade;
+        onGradeChanged(detectedGrade);
+      }
+
       if (cover) {
         if (document.getElementById("mbAddCover")) document.getElementById("mbAddCover").value = cover;
         updateAddCoverPreview(cover);
@@ -4952,7 +5111,8 @@ async function fetchMasterBookByIsbnForAdd() {
       if (dup) {
         showMasterToast(`[주의] 이미 등록된 도서 '${dup.title}'와 유사합니다.`, "warning");
       } else {
-        showMasterToast(`[ISBN: ${isbn}] '${title}' 서지정보와 표지가 연동되었습니다.`);
+        const seriesText = isSingleBook ? "단권" : `시리즈(${seriesInfo.seriesName})`;
+        showMasterToast(`[ISBN: ${isbn}] '${title}' (${seriesText} / ${detectedCat1} / ${detectedCat2}) 분석 완료!`);
       }
 
       if (btn) {
@@ -5104,8 +5264,8 @@ function openMasterBookAddModal(id = null) {
   toggleSingleBookCheckbox(isSingle);
   document.getElementById("mbAddSeries").value = (book && book.series && book.series !== "단권") ? book.series : "";
 
-  // 주제 분류 태그 (드롭박스 - 테마 관리 연동) 렌더링
-  const selectedThemeTag = (book && book.themeTag) ? book.themeTag : ((book && Array.isArray(book.tags) && book.tags[0]) ? book.tags[0] : "#이달의나노북클럽");
+  // 주제 분류 태그 (드롭박스 - 테마 관리 연동) 렌더링 - 신규 등록 시 '선택'이 디폴트
+  const selectedThemeTag = (book && book.themeTag) ? book.themeTag : ((book && Array.isArray(book.tags) && book.tags[0]) ? book.tags[0] : "");
   renderThemeSelectForMasterBook(selectedThemeTag);
 
   // 세부 태그 동적 입력 슬롯 초기화
@@ -5156,7 +5316,12 @@ function handleSaveMasterBookOnly(e) {
 
   // 선택된 주제 분류 태그 수집 (드롭박스)
   const themeTagEl = document.getElementById("mbAddThemeTagSelect");
-  const themeTag = themeTagEl ? themeTagEl.value : "#이달의나노북클럽";
+  const themeTag = themeTagEl ? themeTagEl.value.trim() : "";
+  if (!themeTag) {
+    showMasterToast("주제 분류 태그를 선택해주세요.", "warning");
+    if (themeTagEl) themeTagEl.focus();
+    return;
+  }
   const tags = [themeTag];
 
   if (!cover) {

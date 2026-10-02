@@ -2802,6 +2802,24 @@
       color: var(--leaf);
       transform: translateX(4px);
     }
+    .drawer-nav-item.active {
+      background: #e6fffa !important;
+      color: #0f766e !important;
+      border: 1.5px solid #99f6e4 !important;
+      font-weight: 800;
+    }
+    .drawer-nav-item.active .drawer-nav-left i {
+      color: #0d9488 !important;
+    }
+    .drawer-nav-item.active .drawer-nav-right {
+      color: #0d9488 !important;
+    }
+    @media (min-width: 640px) {
+      #studentDrawerMenuModal .student-modal-dialog,
+      #characterSelectModal .student-modal-dialog {
+        margin-left: 280px;
+      }
+    }
     .drawer-nav-left {
       display: flex;
       align-items: center;
@@ -3192,7 +3210,7 @@
   <!-- 2. 메뉴 목록 -->
   <div class="drawer-nav-list">
     <!-- [NEW 1순위] 내 캐릭터 프로필 설정 -->
-    <button type="button" class="drawer-nav-item" onclick="openCharacterSelectModal()" style="background: #f0fdfa; border-color: #99f6e4;">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_char" onclick="openCharacterSelectModal()" style="background: #f0fdfa; border-color: #99f6e4;">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-icons" style="color: #0d9488;"></i>
         <span style="color: #0f766e; font-weight: 800;">내 캐릭터 프로필 설정</span>
@@ -3201,7 +3219,7 @@
     </button>
 
     <!-- 1) 내 정보 -->
-    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('myinfo')">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_myinfo" onclick="openDrawerMenuItem('myinfo')">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-user"></i>
         <span>내 정보</span>
@@ -3210,7 +3228,7 @@
     </button>
 
     <!-- 2) 비밀번호 변경 -->
-    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('password')">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_password" onclick="openDrawerMenuItem('password')">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-key"></i>
         <span>비밀번호 변경</span>
@@ -3219,7 +3237,7 @@
     </button>
 
     <!-- 3) 공지사항 -->
-    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('notice')">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_notice" onclick="openDrawerMenuItem('notice')">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-bullhorn"></i>
         <span>공지사항</span>
@@ -3228,7 +3246,7 @@
     </button>
 
     <!-- 4) 자주 묻는 질문 -->
-    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('faq')">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_faq" onclick="openDrawerMenuItem('faq')">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-circle-question"></i>
         <span>자주 묻는 질문</span>
@@ -3237,7 +3255,7 @@
     </button>
 
     <!-- 5) 고객센터 -->
-    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('support')">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_support" onclick="openDrawerMenuItem('support')">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-headset"></i>
         <span>고객센터</span>
@@ -3246,7 +3264,7 @@
     </button>
 
     <!-- 6) 이용약관 -->
-    <button type="button" class="drawer-nav-item" onclick="openDrawerMenuItem('terms')">
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_terms" onclick="openDrawerMenuItem('terms')">
       <div class="drawer-nav-left">
         <i class="fa-solid fa-file-contract"></i>
         <span>이용약관</span>
@@ -7587,11 +7605,25 @@ function openCharacterSelectModal() {
   renderCharacterSelectModal();
   var m = document.getElementById("characterSelectModal");
   if(m) m.style.display = "flex";
+  var navItems = document.querySelectorAll('.drawer-nav-item');
+  navItems.forEach(function(item) { item.classList.remove('active'); });
+  var activeBtn = document.getElementById('btnDrawerNav_char');
+  if (activeBtn) activeBtn.classList.add('active');
+  var dm = document.getElementById('studentDrawerMenuModal');
+  if(dm) dm.style.display = 'none';
 }
 
 function closeCharacterSelectModal() {
   var m = document.getElementById("characterSelectModal");
   if(m) m.style.display = "none";
+  var activeBtn = document.getElementById('btnDrawerNav_char');
+  if (activeBtn) activeBtn.classList.remove('active');
+  var drawer = document.getElementById('studentDrawer');
+  if (drawer && drawer.classList.contains('open')) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
 }
 
 function selectCharacterInModal(id) {
@@ -8341,22 +8373,47 @@ function closeStudentDrawer() {
   if(drawer) drawer.classList.remove('open');
   if(overlay) overlay.classList.remove('open');
   document.body.style.overflow = '';
+  // 드로어 메뉴 active 표시 초기화
+  var navItems = document.querySelectorAll('.drawer-nav-item');
+  navItems.forEach(function(item) { item.classList.remove('active'); });
+  // 드로어가 닫힐 때는 열려 있던 상세 모달도 함께 닫음
+  var m = document.getElementById('studentDrawerMenuModal');
+  if(m) m.style.display = 'none';
 }
 
 function closeDrawerModal() {
   var m = document.getElementById('studentDrawerMenuModal');
   if(m) m.style.display = 'none';
-  document.body.style.overflow = '';
+  // 드로어 메뉴 active 표시 초기화
+  var navItems = document.querySelectorAll('.drawer-nav-item');
+  navItems.forEach(function(item) { item.classList.remove('active'); });
+  // 드로어가 여전히 열려 있다면 body 스크롤 차단 유지
+  var drawer = document.getElementById('studentDrawer');
+  if(drawer && drawer.classList.contains('open')) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
 }
 
 function openDrawerMenuItem(type) {
-  closeStudentDrawer();
+  // [수정] 메뉴를 선택해도 좌측 드로어 바를 닫지 않고 유지함
   var m = document.getElementById('studentDrawerMenuModal');
   var cat = document.getElementById('drawerModalCategory');
   var title = document.getElementById('drawerModalTitle');
   var sub = document.getElementById('drawerModalSub');
   var body = document.getElementById('drawerModalBody');
   if(!m || !body) return;
+
+  // 캐릭터 모달이 열려 있다면 닫아줌
+  var cm = document.getElementById('characterSelectModal');
+  if(cm) cm.style.display = 'none';
+
+  // 드로어 메뉴 아이템 active 하이라이트 전환
+  var navItems = document.querySelectorAll('.drawer-nav-item');
+  navItems.forEach(function(item) { item.classList.remove('active'); });
+  var activeBtn = document.getElementById('btnDrawerNav_' + type);
+  if (activeBtn) activeBtn.classList.add('active');
 
   var contentHtml = '';
 

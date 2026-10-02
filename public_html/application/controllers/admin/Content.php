@@ -2584,11 +2584,26 @@ class Content extends MY_Controller {
 					$coverUrl = str_replace('R120x174', 'R300x0', $coverUrl);
 				}
 
+				$title = html_entity_decode(@$doc['title'], ENT_QUOTES, 'UTF-8');
+				$detectedSeries = "단권";
+				if(preg_match('/^(.*?)\s*[\(\[](.*?(?:권|탄|부|시리즈|편|vol|season|\d+).*?)[\)\]]/iu', $title, $m)){
+					$detectedSeries = trim($m[1]);
+				} else if(preg_match('/^(.*?)\s+(\d{1,3})\s*(?:권|탄|부|편|화)?$/u', $title, $m)){
+					$detectedSeries = trim($m[1]);
+				}
+
+				// 카테고리 (국내서: K vs 외서: F)
+				$category = "K";
+				if((substr($isbn, 0, 3) == "978" && substr($isbn, 0, 5) != "97889") || !empty($doc['translators']) || (!preg_match('/[가-힣]/u', $title . $authorStr . @$doc['publisher']) && preg_match('/[a-zA-Z]/', $title . $authorStr))){
+					$category = "F";
+				}
+
 				$bookData = array(
-					"book_name" => html_entity_decode(@$doc['title'], ENT_QUOTES, 'UTF-8'),
+					"book_name" => $title,
 					"author"    => html_entity_decode($authorStr, ENT_QUOTES, 'UTF-8'),
 					"publisher" => html_entity_decode(@$doc['publisher'], ENT_QUOTES, 'UTF-8'),
-					"serise"    => "",
+					"serise"    => $detectedSeries,
+					"category"  => $category,
 					"cover_url" => $coverUrl
 				);
 			}
@@ -2614,7 +2629,8 @@ class Content extends MY_Controller {
 						"book_name" => @$item['titleInfo'],
 						"author"    => @$item['authorInfo'],
 						"publisher" => @$item['pubInfo'],
-						"serise"    => "",
+						"serise"    => "단권",
+						"category"  => (substr($isbn, 0, 5) == "97889") ? "K" : "F",
 						"cover_url" => @$item['imageUrl']
 					);
 				}
@@ -2641,6 +2657,7 @@ class Content extends MY_Controller {
 				"author"     => $bookData['author'],
 				"publisher"  => $bookData['publisher'],
 				"serise"     => $bookData['serise'],
+				"category"   => $bookData['category'],
 				"book_cover" => $savedCoverName
 			), JSON_UNESCAPED_UNICODE);
 			exit;
