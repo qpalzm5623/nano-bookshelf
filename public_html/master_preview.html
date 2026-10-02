@@ -74,6 +74,16 @@
       font-family: inherit;
     }
 
+    /* 브라우저 자동완성(Autofill) 임의의 배경색 덮어쓰기 방지 */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+      -webkit-text-fill-color: var(--text-main) !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
     /* 전역 슬림 스크롤바 (스크롤바 유무에 따른 화면 덜컹거림 원천 차단) */
     ::-webkit-scrollbar {
       width: 8px;
@@ -856,7 +866,7 @@
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="franchiseSearchInput" class="form-control form-control-beige" placeholder="학원명, 원장명, 관리자 ID, 지역, 사업자번호 검색..." onkeyup="filterFranchiseList()">
+          <input type="search" id="franchiseSearchInput" name="franchise_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="학원명, 원장명, 관리자 ID, 지역, 사업자번호 검색..." onkeyup="filterFranchiseList()" onsearch="filterFranchiseList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetFranchiseFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium); white-space: nowrap;">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -970,7 +980,7 @@
                 <div class="input-group-prepend">
                   <span class="input-group-text bg-white border-right-0" style="border-color: var(--border-medium);"><i class="fa-solid fa-magnifying-glass text-muted" style="font-size: 11px;"></i></span>
                 </div>
-                <input type="text" id="memberAcademySearchInput" class="form-control border-left-0" style="border-color: var(--border-medium); font-size: 12px;" placeholder="학원명 검색 (예: 나노, 대치)..." oninput="searchAcademyInDropdown(this.value)" onclick="event.stopPropagation()">
+                <input type="search" id="memberAcademySearchInput" name="member_acad_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control border-left-0" style="border-color: var(--border-medium); font-size: 12px;" placeholder="학원명 검색 (예: 나노, 대치)..." oninput="searchAcademyInDropdown(this.value)" onclick="event.stopPropagation()">
               </div>
             </div>
             <div id="memberAcademyListContainer" style="max-height: 240px; overflow-y: auto; padding: 4px 0;">
@@ -1002,7 +1012,7 @@
         <!-- 4. 통합 검색 입력 -->
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="memberSearchInput" class="form-control form-control-beige" placeholder="이름, 아이디, 학년, 학급, 연락처 검색..." onkeyup="filterMemberList()">
+          <input type="search" id="memberSearchInput" name="member_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="이름, 아이디, 학년, 학급, 연락처 검색..." onkeyup="filterMemberList()" onsearch="filterMemberList()">
         </div>
 
         <!-- 5. 초기화 버튼 -->
@@ -1303,7 +1313,7 @@
           </div>
           <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0;">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="rankStudentSearchInput" class="form-control form-control-beige" placeholder="학생 이름 또는 로그인 아이디 검색..." onkeyup="filterStudentRankings()">
+            <input type="search" id="rankStudentSearchInput" name="rank_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="학생 이름 또는 로그인 아이디 검색..." onkeyup="filterStudentRankings()" onsearch="filterStudentRankings()">
           </div>
           <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium);">
             <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1465,7 +1475,7 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="contentSearchInput" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeyup="filterMasterContentList()">
+          <input type="search" id="contentSearchInput" name="content_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeyup="filterMasterContentList()" onsearch="filterMasterContentList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetContentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1601,7 +1611,7 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="dispatchSearchInput" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeyup="filterDispatchList()">
+          <input type="search" id="dispatchSearchInput" name="dispatch_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeyup="filterDispatchList()" onsearch="filterDispatchList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetDispatchFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -1727,7 +1737,7 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="masterPaymentSearchInput" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeyup="filterMasterPaymentList()">
+          <input type="search" id="masterPaymentSearchInput" name="master_payment_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeyup="filterMasterPaymentList()" onsearch="filterMasterPaymentList()">
         </div>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetMasterPaymentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
@@ -2015,7 +2025,8 @@
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장님 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="regDirectorName" class="form-control form-control-beige" placeholder="예: 김원장" required>
+              <input type="text" id="regDirectorName" class="form-control form-control-beige" placeholder="예: 김원장 (한글, 영문만 가능)" required oninput="validateKoreanEngName(this, 'regDirectorNameError')">
+              <small class="text-danger d-none" id="regDirectorNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다 (특수문자 및 숫자 입력 불가).</small>
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장님 이메일 <span class="text-danger">*</span></label>
@@ -2148,7 +2159,8 @@
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="editDirectorName" class="form-control form-control-beige" placeholder="예: 김도현 원장" required>
+              <input type="text" id="editDirectorName" class="form-control form-control-beige" placeholder="예: 김도현 원장 (한글, 영문만 가능)" required oninput="validateKoreanEngName(this, 'editDirectorNameError')">
+              <small class="text-danger d-none" id="editDirectorNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다 (특수문자 및 숫자 입력 불가).</small>
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장님 이메일 <span class="text-danger">*</span></label>
@@ -2164,6 +2176,27 @@
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 / 상세 주소 <span class="text-danger">*</span></label>
               <input type="text" id="editRegion" class="form-control form-control-beige" placeholder="예: 서울 양천구 목동중앙로 123 3층" required>
+            </div>
+          </div>
+
+          <!-- 관리자 계정 정보 (아이디 확인 및 비밀번호 변경) -->
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">원장 관리자 아이디</label>
+              <div class="input-group">
+                <input type="text" id="editDirectorId" class="form-control form-control-beige" readonly style="background: #f1ede3; cursor: not-allowed; font-weight: 700; color: var(--theme-brown);">
+                <div class="input-group-append">
+                  <span class="input-group-text bg-white" style="font-size: 11px; border-color: var(--border-medium); color: var(--text-muted);">
+                    <i class="fa-solid fa-lock mr-1"></i>아이디 고정
+                  </span>
+                </div>
+              </div>
+              <small class="text-muted">가맹 학원 관리자 로그인용 고유 아이디입니다.</small>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">비밀번호 변경</label>
+              <input type="text" id="editDirectorPw" class="form-control form-control-beige" placeholder="변경 시에만 새 비밀번호 입력 (유지 시 빈칸)">
+              <small class="text-muted">비밀번호 변경 시에만 입력하세요. (비워둘 경우 기존 비밀번호 유지)</small>
             </div>
           </div>
 
@@ -3857,18 +3890,20 @@
               <select id="newMemRole" class="select-beige w-100" onchange="onMasterMemberRoleChange(this.value)" required>
                 <option value="STUDENT" selected>학생 (원생)</option>
                 <option value="TEACHER">선생님 (지도교사)</option>
-                <option value="DIRECTOR">원장님 (관리자)</option>
                 <option value="HQ_ADMIN" id="newMemRoleHqOption" style="display:none;">본사 관리자 (HQ Admin)</option>
               </select>
               <small class="text-muted d-none" id="newMemRoleNote" style="font-size: 11px;">본사 선택 시 본사 관리자로 고정됩니다.</small>
+              <small class="text-muted" style="font-size: 11px; display: block; margin-top: 4px;">
+                <i class="fa-solid fa-circle-info mr-1 text-primary"></i>원장님(관리자) 계정은 <strong>[가맹점 관리]</strong> 학원 등록 시 생성됩니다.
+              </small>
             </div>
           </div>
 
           <div class="row">
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">회원 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="newMemName" class="form-control form-control-beige" placeholder="예: 김민준" required oninput="validateKoreanEngName(this)">
-              <small class="text-danger d-none" id="newMemNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다.</small>
+              <input type="text" id="newMemName" class="form-control form-control-beige" placeholder="예: 김민준 (한글, 영문만 가능)" required oninput="validateKoreanEngName(this, 'newMemNameError')">
+              <small class="text-danger d-none" id="newMemNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다 (특수문자 및 숫자 입력 불가).</small>
             </div>
             <div class="col-md-4 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">로그인 아이디 <span class="text-danger">*</span></label>
@@ -3997,7 +4032,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="upload/banner/banners_data.js"></script>
-<script src="master_preview.js?v=20260923_think_fix"></script>
+<script src="master_preview.js?v=20261002_auth_v4"></script>
 
 </body>
 </html>

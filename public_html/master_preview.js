@@ -288,7 +288,12 @@ function loadFranchisesFromStorage() {
     const stored = localStorage.getItem(STORAGE_KEY_FRANCHISES);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        parsed.forEach(f => {
+          if (!f.adminPw) f.adminPw = "nano1234!";
+        });
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn("가맹 학원 데이터 로드 실패, 기본값 사용:", e);
@@ -1202,6 +1207,31 @@ let dispatchLogs = [
 // ==========================================
 // 2. 초기화 및 네비게이션 (Init & Tabs)
 // ==========================================
+// 브라우저의 저장된 아이디(student01 등) 검색창 자동완성 침범 방지 및 강제 클리어
+function purgeAutofilledSearchInputs() {
+  const searchInputConfigs = [
+    { id: "franchiseSearchInput", fn: filterFranchiseList },
+    { id: "memberSearchInput", fn: filterMemberList },
+    { id: "rankStudentSearchInput", fn: filterStudentRankings },
+    { id: "contentSearchInput", fn: filterMasterContentList },
+    { id: "dispatchSearchInput", fn: filterDispatchList },
+    { id: "masterPaymentSearchInput", fn: filterMasterPaymentList }
+  ];
+
+  searchInputConfigs.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el && el.value) {
+      // 사용자가 현재 직접 타이핑하고 있는 활성 상태가 아니라면 클리어
+      if (document.activeElement !== el) {
+        el.value = "";
+        if (typeof item.fn === "function") {
+          item.fn();
+        }
+      }
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderFranchiseTable();
   renderMemberTable();
@@ -1216,6 +1246,16 @@ document.addEventListener("DOMContentLoaded", () => {
   renderMasterPaymentTable();
   populateMasterPaymentAcademyFilter();
   updatePaymentKpis();
+
+  // 브라우저가 저장된 아이디(student01)를 폼으로 오인해 임의로 꽂는 현상 방어 (초기 및 지연 3회 검증)
+  purgeAutofilledSearchInputs();
+  setTimeout(purgeAutofilledSearchInputs, 80);
+  setTimeout(purgeAutofilledSearchInputs, 300);
+  setTimeout(purgeAutofilledSearchInputs, 800);
+});
+
+window.addEventListener("pageshow", () => {
+  purgeAutofilledSearchInputs();
 });
 
 // 마스터 대메뉴 탭 전환
@@ -1762,6 +1802,7 @@ function handleRegisterAcademy(e) {
     phone: phone,
     region: region + (address ? ` (${address})` : ""),
     adminId: adminId,
+    adminPw: document.getElementById("regDirectorPw")?.value.trim() || "nano1234!",
     plan: plan,
     joinDate: joinDate,
     startDate: startDate,
@@ -1827,6 +1868,14 @@ function openAcademyEditModal(id) {
     document.getElementById("editMonthlyFee").value = acad.monthlyFee || PLAN_MONTHLY_FEES[acad.plan] || "330,000원";
   }
 
+  // 관리자 아이디 표시 및 비밀번호 변경창 초기화
+  if (document.getElementById("editDirectorId")) {
+    document.getElementById("editDirectorId").value = acad.adminId || "";
+  }
+  if (document.getElementById("editDirectorPw")) {
+    document.getElementById("editDirectorPw").value = "";
+  }
+
   document.getElementById("editStatus").value = acad.status || "ACTIVE";
 
   $('#academyEditModal').modal('show');
@@ -1842,9 +1891,20 @@ function saveAcademyEdit(e) {
   const oldName = acad.name;
   const newName = document.getElementById("editAcademyName").value.trim() || oldName;
 
+  const directorEl = document.getElementById("editDirectorName");
+  const directorVal = directorEl ? directorEl.value.trim() : "";
+  const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
+  if (!nameRegex.test(directorVal)) {
+    const errEl = document.getElementById("editDirectorNameError");
+    if (errEl) errEl.classList.remove("d-none");
+    if (directorEl) directorEl.focus();
+    alert("원장 성함에는 특수문자나 숫자를 입력할 수 없습니다. 한글 또는 영문으로 입력해주세요.");
+    return;
+  }
+
   acad.name = newName;
   acad.bizNumber = document.getElementById("editBizNumber").value.trim();
-  acad.director = document.getElementById("editDirectorName").value.trim();
+  acad.director = directorVal;
   if (document.getElementById("editDirectorEmail")) {
     acad.email = document.getElementById("editDirectorEmail").value.trim();
   }
@@ -1873,6 +1933,12 @@ function saveAcademyEdit(e) {
   // 월 결제 금액 저장
   if (document.getElementById("editMonthlyFee")) {
     acad.monthlyFee = document.getElementById("editMonthlyFee").value.trim() || PLAN_MONTHLY_FEES[acad.plan] || acad.monthlyFee;
+  }
+
+  // 비밀번호 변경 저장 (새 비밀번호 입력 시 갱신)
+  const newPwEl = document.getElementById("editDirectorPw");
+  if (newPwEl && newPwEl.value.trim()) {
+    acad.adminPw = newPwEl.value.trim();
   }
 
   acad.status = document.getElementById("editStatus").value;
@@ -2355,6 +2421,8 @@ function openMasterMemberAddModal() {
       acadSelect.value = currentSelectedAcademy;
     }
   }
+  const initialAcad = acadSelect ? acadSelect.value : "";
+  updateClassDropdown(initialAcad);
   onMasterMemberRoleChange("STUDENT");
   $("#masterMemberAddModal").modal("show");
 }
@@ -2362,11 +2430,27 @@ function openMasterMemberAddModal() {
 // 마스터 회원 등록 제출
 function handleMasterMemberRegister(e) {
   e.preventDefault();
+  const nameEl = document.getElementById("newMemName");
+  const name = nameEl ? nameEl.value.trim() : "";
+  const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
+  if (!nameRegex.test(name)) {
+    const errEl = document.getElementById("newMemNameError");
+    if (errEl) errEl.classList.remove("d-none");
+    if (nameEl) nameEl.focus();
+    alert("회원 성함에는 특수문자나 숫자를 입력할 수 없습니다. 한글 또는 영문으로 입력해주세요.");
+    return;
+  }
+
   const academyName = document.getElementById("newMemAcademy").value;
   const role = document.getElementById("newMemRole").value;
-  const name = document.getElementById("newMemName").value.trim();
+
+  if (role === "DIRECTOR") {
+    alert("원장님(관리자) 계정은 [가맹점 관리] 메뉴에서 학원 신규 등록 시에만 생성됩니다.");
+    return;
+  }
+
   const username = document.getElementById("newMemUsername").value.trim();
-  const grade = role === "STUDENT" ? document.getElementById("newMemGrade").value : (role === "DIRECTOR" ? "원장" : "교사");
+  const grade = role === "STUDENT" ? document.getElementById("newMemGrade").value : (role === "HQ_ADMIN" ? "본사관리자" : "교사");
   const className = role === "STUDENT" ? (document.getElementById("newMemClass").value.trim() || "미지정") : "-";
   const phone = document.getElementById("newMemPhone").value.trim();
   const parentPhone = role === "STUDENT" ? (document.getElementById("newMemParentPhone").value.trim() || "-") : "-";
@@ -6550,18 +6634,35 @@ function checkMemberIdDuplicate(val, statusElId) {
 }
 
 // -----------------------------------------------------------
-// [6] 회원 성함 유효성 검사 (한글, 영문, 띄어쓰기만 허용)
+// [6] 성함(원장/회원) 유효성 검사 (특수문자 및 숫자 즉시 제거 - 한글, 영문, 띄어쓰기 100% 보장)
 // -----------------------------------------------------------
-function validateKoreanEngName(input) {
-  const val = input.value;
-  const regex = /^[가-힣a-zA-Z\s]*$/;
-  const errEl = document.getElementById("newMemNameError");
-  if (!regex.test(val)) {
-    // 유효하지 않은 문자 제거
-    input.value = val.replace(/[^가-힣a-zA-Z\s]/g, "");
-    if (errEl) errEl.classList.remove("d-none");
-  } else {
+function validateKoreanEngName(input, errorElementId = "newMemNameError") {
+  const original = input.value;
+  if (!original) {
+    const errEl = errorElementId ? document.getElementById(errorElementId) : null;
     if (errEl) errEl.classList.add("d-none");
+    return;
+  }
+
+  // 숫자(0-9) 및 특수기호만 정확하게 타겟팅하여 제거 (한글 자모/조합 절대 방해 안 함)
+  const cleaned = original.replace(/[0-9`~!@#$%^&*()_=+\[\]{};':"\\|,.<>\/?₩]/g, "");
+
+  const errEl = errorElementId ? document.getElementById(errorElementId) : null;
+  if (original !== cleaned) {
+    // 특수문자나 숫자가 실제로 들어왔을 때만 치환
+    input.value = cleaned;
+    if (errEl) {
+      errEl.classList.remove("d-none");
+      clearTimeout(input._nameErrTimer);
+      input._nameErrTimer = setTimeout(() => {
+        errEl.classList.add("d-none");
+      }, 2500);
+    }
+  } else {
+    // 정상 한글/영문 입력 중일 때
+    if (errEl && !input._nameErrTimer) {
+      errEl.classList.add("d-none");
+    }
   }
 }
 
@@ -6610,16 +6711,58 @@ function onMasterMemberAcademyChange(val) {
 }
 
 // -----------------------------------------------------------
-// [9] 회원 클래스(학급) 드롭박스 업데이트
+// [9] 회원 클래스(학급) 드롭박스 업데이트 (실제 해당 학원에 개설된 학급만 동적 추출)
 // -----------------------------------------------------------
 function updateClassDropdown(academyName) {
   const classSelect = document.getElementById("newMemClass");
   if (!classSelect) return;
 
-  // 학원 데이터에서 실제 클래스 목록을 가져오거나 기본값 사용
-  const defaultClasses = ["소나무반", "매화반", "난초반", "심화반", "창의반", "기초반", "논술A", "논술B", "미지정"];
-  classSelect.innerHTML = defaultClasses.map(c => `<option value="${c}">${c}</option>`).join("") +
-    `<option value="미지정">미지정</option>`;
+  // 본사 선택 시 학급 없음
+  if (!academyName || academyName === "본사") {
+    classSelect.innerHTML = '<option value="-">-</option>';
+    return;
+  }
+
+  // 1. 해당 학원 회원 데이터(memberList)에서 실제 등록되어 있는 학급명 수집
+  const existingClasses = new Set();
+
+  if (Array.isArray(memberList)) {
+    memberList.forEach(m => {
+      if (m.academyName === academyName && m.className && m.className !== "-" && m.className !== "미지정") {
+        existingClasses.add(m.className);
+      }
+    });
+  }
+
+  // 2. 학원 로컬 스토리지에 등록된 학급 목록이 있는 경우 추가 반영
+  try {
+    const customClasses = localStorage.getItem("NANO_CLASSES_" + academyName);
+    if (customClasses) {
+      const parsed = JSON.parse(customClasses);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(c => {
+          const cName = typeof c === "string" ? c : c.name;
+          if (cName && cName !== "-" && cName !== "미지정") {
+            existingClasses.add(cName);
+          }
+        });
+      }
+    }
+  } catch (e) {}
+
+  const classArray = Array.from(existingClasses);
+
+  if (classArray.length === 0) {
+    // 아직 개설된 학급이 없는 신규 가맹 학원의 경우 임의의 더미 학급을 넣지 않고 '미지정'만 제공
+    classSelect.innerHTML = '<option value="미지정" selected>미지정 (개설된 학급 없음)</option>';
+  } else {
+    // 실제 학급이 존재하는 기존 학원의 경우: 미지정 + 실제 개설 학급 목록
+    let optionsHtml = '<option value="미지정">미지정</option>';
+    classArray.forEach(c => {
+      optionsHtml += `<option value="${c}">${c}</option>`;
+    });
+    classSelect.innerHTML = optionsHtml;
+  }
 }
 
 // -----------------------------------------------------------
@@ -7099,8 +7242,8 @@ function openMasterMemberAddModal() {
     }
   }
 
-  // 클래스 드롭박스 초기화
-  updateClassDropdown("");
+  // 클래스 드롭박스 초기화 (선택된 학원의 실제 개설 학급 반영)
+  updateClassDropdown(acadSelect ? acadSelect.value : "");
 
   // 역할 관련 초기화
   const hqOpt = document.getElementById("newMemRoleHqOption");
@@ -7146,6 +7289,18 @@ const _origHandleRegisterAcademy = typeof handleRegisterAcademy === "function" ?
 function handleRegisterAcademy(e) {
   e.preventDefault();
 
+  // 원장님 성함 검증 (특수문자, 숫자 금지)
+  const directorEl = document.getElementById("regDirectorName");
+  const director = directorEl ? directorEl.value.trim() : "";
+  const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
+  if (!nameRegex.test(director)) {
+    const errEl = document.getElementById("regDirectorNameError");
+    if (errEl) errEl.classList.remove("d-none");
+    if (directorEl) directorEl.focus();
+    alert("원장님 성함에는 특수문자나 숫자를 입력할 수 없습니다. 한글 또는 영문으로 입력해주세요.");
+    return;
+  }
+
   // 이메일 형식 검증
   const emailEl = document.getElementById("regDirectorEmail");
   if (emailEl) {
@@ -7160,7 +7315,6 @@ function handleRegisterAcademy(e) {
 
   const name = document.getElementById("regAcademyName").value.trim();
   const bizNumber = document.getElementById("regBizNumber")?.value.trim() || "";
-  const director = document.getElementById("regDirectorName").value.trim();
   const email = emailEl?.value.trim() || "";
   const phone = document.getElementById("regDirectorPhone").value.trim();
 
@@ -7192,6 +7346,7 @@ function handleRegisterAcademy(e) {
     region: region,
     address: fullAddress,
     adminId: adminId,
+    adminPw: document.getElementById("regDirectorPw")?.value.trim() || "nano1234!",
     plan: plan,
     joinDate: joinDate,
     startDate: startDate,

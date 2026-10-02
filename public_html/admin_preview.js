@@ -8127,14 +8127,18 @@ function saveMyInfo() {
 
 // 초기화
 document.addEventListener('DOMContentLoaded', function() {
-  // 로그인 세션 확인 (선생님 계정 로그인 시 헤더 명칭 동기화)
+  // 로그인 세션 확인 (원장님 / 선생님 계정 로그인 시 헤더 학원명 및 성함 동기화)
   try {
     var rawAuth = sessionStorage.getItem('nano_auth_user');
     if (rawAuth) {
       var authUser = JSON.parse(rawAuth);
-      if (authUser.role === 'teacher' && authUser.name) {
-        var dirNameEl = document.getElementById('headerDirectorName');
-        if (dirNameEl) dirNameEl.innerText = authUser.name.split(' (')[0];
+      var dirNameEl = document.getElementById('headerDirectorName');
+      var acadNameEl = document.getElementById('headerAcademyName');
+      if (authUser.name && dirNameEl) {
+        dirNameEl.innerText = authUser.name.split(' (')[0];
+      }
+      if (authUser.academyName && acadNameEl) {
+        acadNameEl.innerText = authUser.academyName;
       }
     }
   } catch (e) {
@@ -8157,6 +8161,20 @@ document.addEventListener('DOMContentLoaded', function() {
   renderAdminRankingView();
   renderAcademyPaymentTable();
   selectPlanTier('standard');
+
+  // 브라우저 저장 아이디(student01 등) 검색창 자동완성 침범 방지
+  function clearAdminSearchAutofill() {
+    ['learningSearchInput', 'indivStudentSearchInput', 'indivBookSearchInput', 'classNewBookSearchInput'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.value && document.activeElement !== el) {
+        el.value = '';
+      }
+    });
+  }
+  clearAdminSearchAutofill();
+  setTimeout(clearAdminSearchAutofill, 80);
+  setTimeout(clearAdminSearchAutofill, 300);
+  setTimeout(clearAdminSearchAutofill, 800);
 });
 
 // ==============================================================

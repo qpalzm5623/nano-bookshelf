@@ -1885,13 +1885,20 @@
     /* 신규 도서 상세 정보 화면 (Book Info Detail Panel) */
     /* ============================================================== */
     #p-book-detail {
-      padding-bottom: 145px; /* 하단 북퀴즈 바(~70px) + 네비바(60px) + 여백 */
+      padding-bottom: 12px; /* 과도한 하단 빈 공간 축소 (.main 기본 패딩 88px와 결합되어 최적의 여백 유지) */
     }
     .detail-nav-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 72px;
+      z-index: 90;
+      background: var(--bg);
+      padding: 10px 0;
+      margin-top: -10px;
       margin-bottom: 14px;
+      border-bottom: 1px solid rgba(229, 222, 210, 0.7);
     }
     .btn-detail-back {
       border: none;

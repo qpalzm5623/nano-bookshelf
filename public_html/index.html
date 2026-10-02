@@ -653,6 +653,58 @@
       // 계정 검증
       let user = ACCOUNTS[inputId];
 
+      // 1. 등록된 시스템 가맹 학원 원장 계정(NANO_MASTER_FRANCHISE_LIST) 확인
+      if (!user) {
+        try {
+          const storedFranchises = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+          if (storedFranchises) {
+            const fList = JSON.parse(storedFranchises);
+            if (Array.isArray(fList)) {
+              const foundAcad = fList.find(f => f.adminId && f.adminId.toLowerCase() === inputId.toLowerCase());
+              if (foundAcad) {
+                user = {
+                  pw: foundAcad.adminPw || 'nano1234!',
+                  role: 'admin',
+                  name: `${foundAcad.director || foundAcad.name + ' 원장님'}`,
+                  academyId: foundAcad.id,
+                  academyName: foundAcad.name,
+                  redirectUrl: 'admin_preview.html'
+                };
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('가맹 학원 원장 계정 조회 실패:', e);
+        }
+      }
+
+      // 2. 등록된 통합 회원 계정(NANO_MASTER_MEMBER_LIST) 확인
+      if (!user) {
+        try {
+          const storedMembers = localStorage.getItem('NANO_MASTER_MEMBER_LIST');
+          if (storedMembers) {
+            const mList = JSON.parse(storedMembers);
+            if (Array.isArray(mList)) {
+              const foundMem = mList.find(m => m.username && m.username.toLowerCase() === inputId.toLowerCase());
+              if (foundMem) {
+                const isTeacher = foundMem.role === 'TEACHER';
+                const isDirector = foundMem.role === 'DIRECTOR';
+                user = {
+                  pw: foundMem.password || 'nano1234!',
+                  role: (isTeacher || isDirector) ? 'admin' : 'student',
+                  name: `${foundMem.name} (${foundMem.academyName || '원생'})`,
+                  academyId: foundMem.academyId,
+                  academyName: foundMem.academyName,
+                  redirectUrl: (isTeacher || isDirector) ? 'admin_preview.html' : 'student_preview.html'
+                };
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('통합 회원 계정 조회 실패:', e);
+        }
+      }
+
       // LocalStorage 및 등록된 교사 계정 확인
       if (!user) {
         try {
@@ -704,9 +756,14 @@
           id: inputId,
           role: user.role,
           name: user.name,
+          academyId: user.academyId || '',
+          academyName: user.academyName || '',
           loginTime: new Date().toISOString()
         };
         sessionStorage.setItem('nano_auth_user', JSON.stringify(sessionData));
+        if (user.academyName) {
+          localStorage.setItem('nano_current_academy', JSON.stringify({ id: user.academyId, name: user.academyName }));
+        }
 
         // 버튼 로딩 상태
         btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>인증 완료, 포털로 이동 중...</span>';

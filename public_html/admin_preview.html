@@ -2316,7 +2316,7 @@
           <div class="col-md-4">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">학습 검색</label>
             <div class="input-group input-group-sm">
-              <input type="text" class="form-control" id="learningSearchInput" placeholder="학생명, 도서명 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;" onkeydown="if(event.key==='Enter') executeLearningSearch()">
+              <input type="search" class="form-control" id="learningSearchInput" name="learning_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="학생명, 도서명 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;" onkeydown="if(event.key==='Enter') executeLearningSearch()" onsearch="executeLearningSearch()">
               <div class="input-group-append">
                 <button type="button" class="btn btn-beige-primary px-3 font-weight-bold" onclick="executeLearningSearch()" style="border-radius: 0 8px 8px 0; font-size: 12.5px;">
                   <i class="fa-solid fa-search mr-1"></i>조회
@@ -3521,7 +3521,7 @@
             </div>
             <div class="col-md-8">
               <div class="input-group input-group-sm">
-                <input type="text" class="form-control" id="indivStudentSearchInput" oninput="filterIndivModalStudents()" placeholder="원생 이름, 학번(S1021...), 학교 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;">
+                <input type="search" class="form-control" id="indivStudentSearchInput" name="indiv_student_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="filterIndivModalStudents()" placeholder="원생 이름, 학번(S1021...), 학교 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;">
                 <div class="input-group-append">
                   <span class="input-group-text bg-white" style="border-radius: 0 8px 8px 0;"><i class="fa-solid fa-search text-muted"></i></span>
                 </div>
@@ -3609,7 +3609,7 @@
               <!-- 검색창 및 상세 필터 (학년, 출제처, 주제) -->
               <div class="mb-3 p-2.5 rounded bg-light border">
                 <div class="input-group input-group-sm mb-2">
-                  <input type="text" class="form-control" id="indivBookSearchInput" oninput="filterIndivBookCatalog()" placeholder="도서명, 저자, 출판사 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;">
+                  <input type="search" class="form-control" id="indivBookSearchInput" name="indiv_book_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="filterIndivBookCatalog()" placeholder="도서명, 저자, 출판사 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;">
                   <div class="input-group-append">
                     <button class="btn btn-beige-primary px-3" onclick="filterIndivBookCatalog()" style="border-radius: 0 8px 8px 0;"><i class="fa-solid fa-search"></i></button>
                   </div>
@@ -3732,7 +3732,7 @@
           </div>
           <div class="row align-items-center mb-2">
             <div class="col-md-5 mb-1 mb-md-0">
-              <input type="text" class="form-control form-control-sm" id="classNewBookSearchInput" oninput="filterClassNewBookCatalog()" placeholder="도서명, 저자, 출판사 검색...">
+              <input type="search" class="form-control form-control-sm" id="classNewBookSearchInput" name="class_new_book_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="filterClassNewBookCatalog()" placeholder="도서명, 저자, 출판사 검색...">
             </div>
             <div class="col-md-7 d-flex align-items-center gap-1.5 flex-wrap">
               <select class="form-control form-control-sm" id="classNewBookGrade" onchange="filterClassNewBookCatalog()" style="width: 125px; font-size: 11.5px; border-radius: 6px;">
@@ -6037,7 +6037,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Daum 우편번호 서비스 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script src="admin_preview.js"></script>
+<script src="admin_preview.js?v=20261002_ime_v2"></script>
 
 </body>
 </html>
