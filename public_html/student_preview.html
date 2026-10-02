@@ -2084,44 +2084,12 @@
       min-height: 30px;
     }
 
-    /* 하단 고정 북퀴즈 풀기 CTA 바 */
+    /* 하단 고정 북퀴즈 풀기 CTA 바 (상단 우측 버튼으로 대체되어 숨김) */
     .fixed-quiz-bottom-bar {
-      position: fixed;
-      bottom: 60px; /* 네비바 위에 표시 */
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 480px;
-      padding: 0;
-      background: transparent;
-      border-top: none;
-      z-index: 1050;
-      box-shadow: none;
-      display: flex;
-      gap: 0;
+      display: none !important;
     }
     .btn-quiz-cta {
-      flex: 1;
-      width: 100%;
-      padding: 16px 18px;
-      border: none;
-      border-radius: 0;
-      background: linear-gradient(135deg, #2d6a4f, #1b4332);
-      color: #ffffff;
-      font-size: 15px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      box-shadow: 0 -4px 16px rgba(45, 106, 79, 0.25);
-      transition: all .2s;
-    }
-    .btn-quiz-cta:hover {
-      background: linear-gradient(135deg, #357c5d, #24573f);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(45, 106, 79, 0.38);
+      display: none !important;
     }
     /* 찜 버튼 스타일 (하단 바 및 서지 카드) */
     .btn-wish-cta {
@@ -2150,29 +2118,75 @@
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
     }
+    /* 도서 상세 우측 상단 액션 버튼 그룹 (찜하기 하트 + 정사각형 북퀴즈 버튼) */
+    .detail-hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+    }
     .btn-hero-wish {
-      border: none;
+      border: 1.5px solid #fecdd3;
       background: #fff1f2;
       color: #e11d48;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       font-size: 16px;
-      transition: all .2s;
+      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.15);
+      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.12);
     }
     .btn-hero-wish:hover {
-      transform: scale(1.1);
+      transform: translateY(-2px);
       background: #ffe4e6;
+      box-shadow: 0 4px 10px rgba(225, 29, 72, 0.22);
     }
     .btn-hero-wish.active {
       background: #e11d48;
+      border-color: #e11d48;
       color: #ffffff;
+      box-shadow: 0 4px 10px rgba(225, 29, 72, 0.3);
+    }
+    .btn-hero-quiz-square {
+      border: 1.5px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #065f46;
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.12);
+      padding: 0;
+    }
+    .btn-hero-quiz-square i {
+      font-size: 13px;
+      line-height: 1;
+    }
+    .btn-hero-quiz-square span {
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+      margin-top: 3px;
+      letter-spacing: -0.2px;
+    }
+    .btn-hero-quiz-square:hover {
+      transform: translateY(-2px);
+      background: #059669;
+      border-color: #059669;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
     }
     /* 내 책장 3대 메인 세분화 탭 및 하위 뷰 스타일 */
     .bookshelf-main-tabs {
@@ -2691,6 +2705,7 @@
       align-items: flex-start;
       gap: 12px;
       margin: 14px 0 16px;
+      padding-right: 64px; /* 좌측 캐릭터 너비(52px) + 간격(12px)과 대칭되도록 우측 여백 부여 */
     }
     .quiz-char-avatar-box {
       width: 52px;
@@ -2753,6 +2768,31 @@
       padding: 1px 6px;
       border-radius: 6px;
       margin-bottom: 6px;
+    }
+
+    /* [NEW] 북퀴즈 본문 영역 (보기 목록, 미디어, 그만두기/다음문제 버튼): 말풍선 좌측 끝선 정렬 및 우측 대칭 여백 */
+    .quiz-content-area {
+      margin-left: 64px; /* 캐릭터 폭(52px) + 간격(12px)으로 말풍선 좌측선과 일치 */
+      margin-right: 64px; /* 말풍선 우측 끝선과 대칭 일치 */
+    }
+    .quiz-bottom-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .quiz-char-row {
+        gap: 10px;
+        padding-right: 52px;
+      }
+      .quiz-char-avatar-box {
+        width: 42px;
+        height: 42px;
+      }
+      .quiz-content-area {
+        margin-left: 52px;
+        margin-right: 52px;
+      }
     }
 
     /* 북퀴즈 결과 화면 캐릭터 말풍선 대사 */
@@ -2867,9 +2907,11 @@
       display: none;
     }
 
-    /* [NEW] 캐릭터 진화 & 실루엣 & 축하 연출 */
+    /* [NEW] 캐릭터 진화 & 어스름한 흑백 실루엣 & 모달 */
     .char-silhouette {
-      filter: brightness(0) opacity(0.25) contrast(1.2);
+      /* 캐릭터의 고유 외형/일러스트가 어스름한 흑백으로 돋보이도록 설정 */
+      filter: grayscale(100%) opacity(0.42) contrast(1.05);
+      transition: all 0.25s ease;
     }
     .char-evolved-badge {
       display: inline-flex;
@@ -2899,18 +2941,22 @@
       align-items: center;
       justify-content: center;
     }
-    .char-lock-center-icon {
+    .char-lock-center-icon,
+    .char-lock-corner-badge {
       position: absolute;
-      width: 26px;
-      height: 26px;
-      background: rgba(15, 23, 42, 0.7);
+      right: 2px;
+      bottom: 2px;
+      width: 18px;
+      height: 18px;
+      background: rgba(15, 23, 42, 0.78);
       border-radius: 50%;
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      font-size: 8.5px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+      border: 1.5px solid #fff;
     }
 
     /* 캐릭터 축하 모달 & 폭죽 이펙트 */
@@ -3385,12 +3431,7 @@
       </div>
     </div>
 
-    <!-- 하단 고정 북퀴즈 풀기 CTA 바 (찜하기는 우측 상단 하트 버튼 사용) -->
-    <div class="fixed-quiz-bottom-bar">
-      <button type="button" class="btn-quiz-cta" id="btnDetailQuizCta" onclick="startQuizFromDetail()" style="flex:1;">
-        <span id="detailQuizBtnText">북퀴즈 풀기 (5문항)</span>
-      </button>
-    </div>
+    <!-- 북퀴즈 풀기 버튼은 우측 상단 찜하기 하트 아래 정사각형 버튼으로 통합 배치됨 -->
   </div>
 
   <!-- 북퀴즈 -->
@@ -3418,13 +3459,16 @@
         </div>
       </div>
 
-      <!-- 문항 첨부 미디어 (WebP 이미지 또는 영상 임베드 플레이어) -->
-      <div id="qMediaBox" style="display:none; margin: 12px 0 16px 0;"></div>
-      <div id="qOpts"></div>
-      <div class="qfb" id="qFb"></div>
-      <div style="display:flex;gap:8px;">
-        <button class="qnav sec" onclick="backToSelect()">그만두기</button>
-        <button class="qnav prim" id="qNext" onclick="goNext()" style="flex:1;display:none;">다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+      <!-- [NEW] 북퀴즈 본문 영역 (보기 목록, 미디어, 하단 버튼): 말풍선 좌측 끝선 정렬 및 우측 대칭 여백 -->
+      <div class="quiz-content-area">
+        <!-- 문항 첨부 미디어 (WebP 이미지 또는 영상 임베드 플레이어) -->
+        <div id="qMediaBox" style="display:none; margin: 12px 0 16px 0;"></div>
+        <div id="qOpts"></div>
+        <div class="qfb" id="qFb"></div>
+        <div class="quiz-bottom-actions">
+          <button class="qnav sec" onclick="backToSelect()">그만두기</button>
+          <button class="qnav prim" id="qNext" onclick="goNext()" style="flex:1;display:none;">다음 문제 <i class="fa-solid fa-arrow-right ml-1"></i></button>
+        </div>
       </div>
     </div>
     <div id="qscreen-result" style="display:none;">
@@ -4956,18 +5000,26 @@ function openBookDetail(id, from) {
     heroCard.innerHTML = 
       getBookCoverHtml(b, 'detail-cover-large')
       +'<div class="detail-meta-group">'
-      +  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">'
-      +    '<div class="detail-title">'+b.title+'</div>'
-      +    '<button type="button" class="btn-hero-wish '+(isWished?'active':'')+'" id="heroWishBtn_'+b.id+'" onclick="toggleWish(\''+b.id+'\', event)" title="'+(isWished?'찜 해제':'내 책장에 찜하기')+'">'
-      +      '<i class="'+(isWished?'fa-solid':'fa-regular')+' fa-heart"></i>'
-      +    '</button>'
+      +  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+      +    '<div style="flex:1;min-width:0;">'
+      +      '<div class="detail-title">'+b.title+'</div>'
+      +      '<div class="detail-author-pub">'+b.author+' · '+b.pub+'</div>'
+      +      '<div class="detail-badges">'
+      +        '<span class="detail-badge-grade"><i class="fa-solid fa-graduation-cap mr-1"></i>'+b.grade+' 권장</span>'
+      +        '<span class="detail-badge-cat">'+b.cat+'</span>'
+      +      '</div>'
+      +      '<div class="detail-tags">'+tagsHtml+'</div>'
+      +    '</div>'
+      +    '<div class="detail-hero-actions">'
+      +      '<button type="button" class="btn-hero-wish '+(isWished?'active':'')+'" id="heroWishBtn_'+b.id+'" onclick="toggleWish(\''+b.id+'\', event)" title="'+(isWished?'찜 해제':'내 책장에 찜하기')+'">'
+      +        '<i class="'+(isWished?'fa-solid':'fa-regular')+' fa-heart"></i>'
+      +      '</button>'
+      +      '<button type="button" class="btn-hero-quiz-square" onclick="startQuizFromDetail()" title="북퀴즈 풀기">'
+      +        '<i class="fa-solid fa-book-open"></i>'
+      +        '<span>퀴즈</span>'
+      +      '</button>'
+      +    '</div>'
       +  '</div>'
-      +  '<div class="detail-author-pub">'+b.author+' · '+b.pub+'</div>'
-      +  '<div class="detail-badges">'
-      +    '<span class="detail-badge-grade"><i class="fa-solid fa-graduation-cap mr-1"></i>'+b.grade+' 권장</span>'
-      +    '<span class="detail-badge-cat">'+b.cat+'</span>'
-      +  '</div>'
-      +  '<div class="detail-tags">'+tagsHtml+'</div>'
       +'</div>';
   }
 
@@ -6760,10 +6812,14 @@ var NANO_CHARACTERS = [
     isDefault: true,
     isStarter: true,
     reqType: "starter",
+    stage1Count: 0,
+    stage2Count: 30,
+    stage3Count: 100,
     unlockCount: 0,
     evolveCount: 30,
-    unlockDesc: "가입 즉시 기본 지급",
-    evolveDesc: "전체 도서 30권 완독 시 외형 진화"
+    unlockDesc: "가입 즉시 1단계 지급",
+    stage2Desc: "전체 도서 30권 완독",
+    stage3Desc: "전체 도서 100권 완독"
   },
   {
     id: "toto",
@@ -6774,10 +6830,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
     story: "친구들의 따뜻한 마음과 일상 생활의 소중함을 누구보다 깊이 이해하는 다정파 토끼! 재미있는 이야기와 생활 동화를 품에 안고 다녀요.",
     reqType: "theme_human",
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 150,
     unlockCount: 50,
-    evolveCount: 150,
-    unlockDesc: "인간·생활 분야 도서 50권 완독 달성",
-    evolveDesc: "인간·생활 분야 도서 150권 완독 시 외형 진화"
+    evolveCount: 100,
+    unlockDesc: "인간·생활 도서 50권 완독",
+    stage2Desc: "인간·생활 도서 100권 완독",
+    stage3Desc: "인간·생활 도서 150권 완독"
   },
   {
     id: "booki",
@@ -6788,10 +6848,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
     story: "숲속 도서관을 지키며 풀잎과 동물들의 생명 이야기를 탐구하는 숲의 현자! 친구들에게 재미있는 상식과 깊은 자연의 지혜를 가르쳐줘요.",
     reqType: "theme_nature",
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 150,
     unlockCount: 50,
-    evolveCount: 150,
-    unlockDesc: "자연·생물 분야 도서 50권 완독 달성",
-    evolveDesc: "자연·생물 분야 도서 150권 완독 시 외형 진화"
+    evolveCount: 100,
+    unlockDesc: "자연·생물 도서 50권 완독",
+    stage2Desc: "자연·생물 도서 100권 완독",
+    stage3Desc: "자연·생물 도서 150권 완독"
   },
   {
     id: "pico",
@@ -6802,10 +6866,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
     story: "우주복 헬멧을 쓰고 AI, 로봇, 우주선과 미래 과학의 비밀을 분석하는 호기심 천재 펭귄! 미지의 과학 지식을 향해 로켓처럼 돌진해요.",
     reqType: "theme_tech",
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 150,
     unlockCount: 50,
-    evolveCount: 150,
-    unlockDesc: "기술·과학 분야 도서 50권 완독 달성",
-    evolveDesc: "기술·과학 분야 도서 150권 완독 시 외형 진화"
+    evolveCount: 100,
+    unlockDesc: "기술·과학 도서 50권 완독",
+    stage2Desc: "기술·과학 도서 100권 완독",
+    stage3Desc: "기술·과학 도서 150권 완독"
   },
   {
     id: "popo",
@@ -6816,10 +6884,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
     story: "천 년의 역사와 옛 조상들의 발자취를 듬직하게 들려주는 이야기꾼 아기 곰! 우직한 끈기로 두꺼운 역사책도 끝까지 읽어냅니다.",
     reqType: "theme_hist",
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 150,
     unlockCount: 50,
-    evolveCount: 150,
-    unlockDesc: "역사·이야기 분야 도서 50권 완독 달성",
-    evolveDesc: "역사·이야기 분야 도서 150권 완독 시 외형 진화"
+    evolveCount: 100,
+    unlockDesc: "역사·이야기 도서 50권 완독",
+    stage2Desc: "역사·이야기 도서 100권 완독",
+    stage3Desc: "역사·이야기 도서 150권 완독"
   },
   {
     id: "chichi",
@@ -6830,10 +6902,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
     story: "튼튼한 신체와 맛있는 음식, 건강한 영양 비결을 쏙쏙 모으는 에너지 대장! 책을 읽고 나면 비타민처럼 온몸에 생기가 퐁퐁 솟아나요.",
     reqType: "theme_health",
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 150,
     unlockCount: 50,
-    evolveCount: 150,
-    unlockDesc: "건강·음식 분야 도서 50권 완독 달성",
-    evolveDesc: "건강·음식 분야 도서 150권 완독 시 외형 진화"
+    evolveCount: 100,
+    unlockDesc: "건강·음식 도서 50권 완독",
+    stage2Desc: "건강·음식 도서 100권 완독",
+    stage3Desc: "건강·음식 도서 150권 완독"
   },
   {
     id: "lumi",
@@ -6844,10 +6920,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
     story: "마법 같은 수학 퍼즐과 생각의 날개를 활짝 펴주는 별빛 요정! 논리적 사고와 문제 해결의 힘을 눈부시게 밝혀줍니다.",
     reqType: "theme_study",
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 150,
     unlockCount: 50,
-    evolveCount: 150,
-    unlockDesc: "학습·수학 분야 도서 50권 완독 달성",
-    evolveDesc: "학습·수학 분야 도서 150권 완독 시 외형 진화"
+    evolveCount: 100,
+    unlockDesc: "학습·수학 분야 도서 50권 완독",
+    stage2Desc: "학습·수학 분야 도서 100권 완독",
+    stage3Desc: "학습·수학 분야 도서 150권 완독"
   },
   {
     id: "mir",
@@ -6858,10 +6938,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
     story: "6개 모든 학문의 영역을 골고루 섭렵한 자만이 깨울 수 있는 전설의 푸른 영물! 편식 없는 균형 독서의 수호신이에요.",
     reqType: "all_genres",
-    unlockCount: 20, // 전 분야 각 20권
-    evolveCount: 40, // 전 분야 각 40권
-    unlockDesc: "모든 6개 분야 각 20권 이상 완독 달성",
-    evolveDesc: "모든 6개 분야 각 40권 이상 완독 시 외형 진화"
+    stage1Count: 15,
+    stage2Count: 30,
+    stage3Count: 50,
+    unlockCount: 15,
+    evolveCount: 30,
+    unlockDesc: "모든 6개 분야 각 15권 이상 완독",
+    stage2Desc: "모든 6개 분야 각 30권 이상 완독",
+    stage3Desc: "모든 6개 분야 각 50권 이상 완독"
   },
   {
     id: "jelly",
@@ -6872,10 +6956,14 @@ var NANO_CHARACTERS = [
     bgGradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
     story: "누적 100권의 책을 정복한 진정한 대독서가의 책장에서 탄생한 무지개 마법 정령! 책 읽는 모든 순간을 꿀처럼 달콤하게 만들어줘요.",
     reqType: "total_read",
-    unlockCount: 100, // 전체 100권
-    evolveCount: 200, // 전체 200권
-    unlockDesc: "전체 완독 100권 돌파 (고유 도서 기준)",
-    evolveDesc: "전체 완독 200권 돌파 시 외형 진화"
+    stage1Count: 50,
+    stage2Count: 100,
+    stage3Count: 200,
+    unlockCount: 50,
+    evolveCount: 100,
+    unlockDesc: "전체 완독 50권 돌파 (고유 도서 기준)",
+    stage2Desc: "전체 완독 100권 돌파",
+    stage3Desc: "전체 완독 200권 돌파"
   }
 ];
 
@@ -6890,15 +6978,14 @@ function getStudentActivityStats() {
   }
 
   // 데모 학생(김민준)의 풍부한 분야별 고유 완독 실적 집계
-  // 인간·생활: 54권 (토토 해금 달성)
-  // 자연·생물: 52권 (부키 해금 달성)
-  // 기술·과학: 28권 (피코: 28/50권, 해금까지 22권 남음)
-  // 역사·이야기: 35권 (포포: 35/50권, 해금까지 15권 남음)
-  // 건강·음식: 24권 (치치: 24/50권, 해금까지 26권 남음)
-  // 학습·수학: 26권 (루미: 26/50권, 해금까지 24권 남음)
-  // 6개 전 분야 각 최소치: 24권 (모든 분야 각 20권 이상 -> 미르 해금 달성!)
-  // 전체 고유 완독: 112권 (전체 100권 돌파 -> 젤리 해금 달성!)
-  // 스타터 나노: 112/30권 달성으로 진화 완료!
+  // 인간·생활: 54권 (토토 1단계 달성, 2단계 도전)
+  // 자연·생물: 52권 (부키 1단계 달성, 2단계 도전)
+  // 기술·과학: 28권 (피코: 28/50권, 1단계까지 22권 남음)
+  // 역사·이야기: 35권 (포포: 35/50권, 1단계까지 15권 남음)
+  // 건강·음식: 24권 (치치: 24/50권, 1단계까지 26권 남음)
+  // 학습·수학: 26권 (루미: 26/50권, 1단계까지 24권 남음)
+  // 6개 전 분야 각 최소치: 24권 (모든 분야 각 15권 이상 -> 미르 1단계 달성!)
+  // 전체 고유 완독: 112권 (전체 100권 돌파 -> 젤리 2단계 달성! 나노 3단계 달성!)
   return {
     totalRead: 112,
     humanRead: 54,
@@ -6911,101 +6998,112 @@ function getStudentActivityStats() {
   };
 }
 
-// 캐릭터별 실시간 해금 및 진화 상태, 남은 권수 계산
+// 캐릭터별 실시간 1, 2, 3단계 해금/진화 상태 및 남은 권수 계산
 function getCharacterUnlockStatus(char) {
   var stats = getStudentActivityStats();
   var current = 0;
-  var unlockTarget = char.unlockCount || 0;
-  var evolveTarget = char.evolveCount || 100;
 
   if (char.isStarter) {
     current = stats.totalRead;
-    var isEvolved = current >= evolveTarget;
-    var remainToEvolve = Math.max(0, evolveTarget - current);
-    return {
-      unlocked: true,
-      isEvolved: isEvolved,
-      current: current,
-      unlockTarget: 0,
-      evolveTarget: evolveTarget,
-      remainCount: isEvolved ? 0 : remainToEvolve,
-      percent: isEvolved ? 100 : Math.min(100, Math.round((current / evolveTarget) * 100)),
-      statusText: isEvolved ? "🌟 진화 완료 (누적 " + current + "권)" : "진화까지 " + remainToEvolve + "권 남음 (" + current + "/" + evolveTarget + "권)",
-      badgeText: isEvolved ? "진화 완료" : "기본 지급"
-    };
-  }
-
-  switch (char.reqType) {
-    case 'theme_human':
-      current = stats.humanRead;
-      break;
-    case 'theme_nature':
-      current = stats.natureRead;
-      break;
-    case 'theme_tech':
-      current = stats.techRead;
-      break;
-    case 'theme_hist':
-      current = stats.histRead;
-      break;
-    case 'theme_health':
-      current = stats.healthRead;
-      break;
-    case 'theme_study':
-      current = stats.studyRead;
-      break;
-    case 'all_genres':
-      current = stats.allGenreMin;
-      break;
-    case 'total_read':
-      current = stats.totalRead;
-      break;
-    default:
-      current = 0;
-  }
-
-  var isUnlocked = current >= unlockTarget;
-  var isEvolved = current >= evolveTarget;
-  var remainToUnlock = Math.max(0, unlockTarget - current);
-  var remainToEvolve = Math.max(0, evolveTarget - current);
-
-  var percent = !isUnlocked
-    ? Math.min(99, Math.round((current / unlockTarget) * 100))
-    : (isEvolved ? 100 : Math.min(99, Math.round((current / evolveTarget) * 100)));
-
-  var statusText = "";
-  var badgeText = "";
-  var remainCount = 0;
-
-  if (!isUnlocked) {
-    statusText = "해금까지 " + remainToUnlock + "권 남음 (" + current + "/" + unlockTarget + "권)";
-    badgeText = "잠금 (해금까지 " + remainToUnlock + "권)";
-    remainCount = remainToUnlock;
-  } else if (!isEvolved) {
-    statusText = "진화까지 " + remainToEvolve + "권 남음 (" + current + "/" + evolveTarget + "권)";
-    badgeText = "해금 완료 (진화 도전)";
-    remainCount = remainToEvolve;
   } else {
-    statusText = "🌟 최종 진화 달성 (" + current + "/" + evolveTarget + "권)";
-    badgeText = "진화 완료";
-    remainCount = 0;
+    switch (char.reqType) {
+      case 'theme_human':
+        current = stats.humanRead;
+        break;
+      case 'theme_nature':
+        current = stats.natureRead;
+        break;
+      case 'theme_tech':
+        current = stats.techRead;
+        break;
+      case 'theme_hist':
+        current = stats.histRead;
+        break;
+      case 'theme_health':
+        current = stats.healthRead;
+        break;
+      case 'theme_study':
+        current = stats.studyRead;
+        break;
+      case 'all_genres':
+        current = stats.allGenreMin;
+        break;
+      case 'total_read':
+        current = stats.totalRead;
+        break;
+      default:
+        current = 0;
+    }
   }
+
+  var s1 = (char.stage1Count !== undefined) ? char.stage1Count : (char.unlockCount || 0);
+  var s2 = (char.stage2Count !== undefined) ? char.stage2Count : (char.evolveCount || 100);
+  var s3 = (char.stage3Count !== undefined) ? char.stage3Count : (s2 * 1.5);
+
+  var currentStage = 0;
+  var nextStage = 1;
+  var targetCount = s1;
+  var remainCount = 0;
+  var percent = 0;
+  var statusText = "";
+
+  if (current < s1) {
+    // 1단계 미달성 (잠금 상태)
+    currentStage = 0;
+    nextStage = 1;
+    targetCount = s1;
+    remainCount = Math.max(0, s1 - current);
+    percent = Math.min(99, Math.round((current / s1) * 100));
+    statusText = "1단계까지 " + remainCount + "권 남음 (" + current + "/" + s1 + "권)";
+  } else if (current < s2) {
+    // 1단계 달성, 2단계 진행 중
+    currentStage = 1;
+    nextStage = 2;
+    targetCount = s2;
+    remainCount = Math.max(0, s2 - current);
+    percent = Math.min(99, Math.round((current / s2) * 100));
+    statusText = "2단계까지 " + remainCount + "권 남음 (" + current + "/" + s2 + "권)";
+  } else if (current < s3) {
+    // 2단계 달성, 3단계 진행 중
+    currentStage = 2;
+    nextStage = 3;
+    targetCount = s3;
+    remainCount = Math.max(0, s3 - current);
+    percent = Math.min(99, Math.round((current / s3) * 100));
+    statusText = "3단계까지 " + remainCount + "권 남음 (" + current + "/" + s3 + "권)";
+  } else {
+    // 3단계 최종 달성
+    currentStage = 3;
+    nextStage = null;
+    targetCount = s3;
+    remainCount = 0;
+    percent = 100;
+    statusText = "🌟 3단계 최종 완성 (" + current + "/" + s3 + "권)";
+  }
+
+  var unlocked = currentStage >= 1;
+  var isEvolved = currentStage >= 2;
 
   return {
-    unlocked: isUnlocked,
-    isEvolved: isEvolved,
+    unlocked: unlocked,
+    currentStage: currentStage, // 0: 미해금, 1: 1단계, 2: 2단계, 3: 3단계
+    nextStage: nextStage,       // 1, 2, 3, null
+    isEvolved: isEvolved,       // 호환용
     current: current,
-    unlockTarget: unlockTarget,
-    evolveTarget: evolveTarget,
+    stage1Count: s1,
+    stage2Count: s2,
+    stage3Count: s3,
+    targetCount: targetCount,
     remainCount: remainCount,
     percent: percent,
-    statusText: statusText,
-    badgeText: badgeText
+    statusText: statusText
   };
 }
 
-function getCharacterSvg(charId, size, isEvolved, isSilhouette) {
+function getCharacterSvg(charId, size, stageOrEvolved, isSilhouette) {
   size = size || 60;
+  var isEvolved = (typeof stageOrEvolved === 'number') ? (stageOrEvolved >= 2) : !!stageOrEvolved;
+  var isStage3 = (typeof stageOrEvolved === 'number') ? (stageOrEvolved >= 3) : false;
   var svgs = {
     nano: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
       + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#f97316" stroke-width="2.5"/>'
@@ -7153,7 +7251,7 @@ function getCharacterSvg(charId, size, isEvolved, isSilhouette) {
       + '<div class="char-silhouette" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'
       +   baseSvg
       + '</div>'
-      + '<div class="char-lock-center-icon"><i class="fa-solid fa-lock"></i></div>'
+      + '<div class="char-lock-corner-badge"><i class="fa-solid fa-lock"></i></div>'
       + '</div>';
   }
   return baseSvg;
@@ -7284,19 +7382,12 @@ function renderCharacterSelectModal() {
   var cur = getCharacterById(tempSelectedCharId || getUserCharacterId());
   var curUnlock = getCharacterUnlockStatus(cur);
 
-  // 상단 상세 카드: 분야 안내, 해금/진화 상태, 남은 권수 게이지 바 및 축하 연출 체험 버튼
+  // 상단 상세 카드: 분야 안내, 단계별 달성 상태 및 남은 권수 게이지 바
   var statusBannerHtml = '';
-  if (cur.isStarter) {
-    statusBannerHtml = '<div style="background:#f0fdfa;border:1px solid #ccfbf1;border-radius:10px;padding:8px 10px;font-size:11px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
-      +   '<span style="color:#0f766e;font-weight:800;"><i class="fa-solid fa-gift mr-1 text-teal"></i>' + cur.unlockDesc + '</span>'
-      +   '<span class="char-evolved-badge"><i class="fa-solid fa-crown mr-1"></i>' + (curUnlock.isEvolved ? '진화 완료' : '진화 조건: 30권') + '</span>'
-      + '</div>'
-      + '<div style="font-size:10.5px;color:#0d9488;font-weight:700;">' + curUnlock.statusText + '</div>'
-      + '</div>';
-  } else if (!curUnlock.unlocked) {
+  if (!curUnlock.unlocked) {
+    // 1단계 미달성 (잠금)
     statusBannerHtml = '<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:8px 10px;font-size:11px;">'
-      + '<div style="color:#be123c;font-weight:800;margin-bottom:4px;"><i class="fa-solid fa-lock mr-1"></i>해금 조건: ' + cur.unlockDesc + '</div>'
+      + '<div style="color:#be123c;font-weight:800;margin-bottom:4px;"><i class="fa-solid fa-lock mr-1"></i>1단계 달성 조건: ' + cur.unlockDesc + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
       +   '<div style="flex:1;height:7px;background:#fecdd3;border-radius:4px;overflow:hidden;">'
       +     '<div style="width:' + curUnlock.percent + '%;height:100%;background:#e11d48;border-radius:4px;transition:width 0.3s;"></div>'
@@ -7305,11 +7396,11 @@ function renderCharacterSelectModal() {
       + '</div>'
       + '<div style="color:#881337;font-size:10.5px;margin-top:3px;font-weight:700;">' + curUnlock.statusText + '</div>'
       + '</div>';
-  } else {
+  } else if (curUnlock.currentStage === 1) {
+    // 1단계 달성 완료 -> 2단계 도전
     statusBannerHtml = '<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:8px 10px;font-size:11px;">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
-      +   '<span style="color:#059669;font-weight:800;"><i class="fa-solid fa-circle-check mr-1 text-success"></i>해금 완료! (' + cur.unlockDesc + ')</span>'
-      +   (curUnlock.isEvolved ? '<span class="char-evolved-badge"><i class="fa-solid fa-crown mr-1"></i>최종 진화</span>' : '<span style="font-size:10px;font-weight:700;color:#0d9488;">진화 도전 중</span>')
+      + '<div style="margin-bottom:4px;">'
+      +   '<span style="color:#059669;font-weight:800;"><i class="fa-solid fa-circle-check mr-1 text-success"></i>1단계 달성 (' + cur.unlockDesc + ')</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
       +   '<div style="flex:1;height:7px;background:#bbf7d0;border-radius:4px;overflow:hidden;">'
@@ -7319,26 +7410,63 @@ function renderCharacterSelectModal() {
       + '</div>'
       + '<div style="color:#065f46;font-size:10.5px;margin-top:3px;font-weight:700;">' + curUnlock.statusText + '</div>'
       + '</div>';
+  } else if (curUnlock.currentStage === 2) {
+    // 2단계 달성 완료 -> 3단계 도전
+    statusBannerHtml = '<div style="background:#f0fdfa;border:1px solid #ccfbf1;border-radius:10px;padding:8px 10px;font-size:11px;">'
+      + '<div style="margin-bottom:4px;">'
+      +   '<span style="color:#0f766e;font-weight:800;"><i class="fa-solid fa-circle-check mr-1 text-teal"></i>2단계 달성 (' + (cur.stage2Desc || '') + ')</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      +   '<div style="flex:1;height:7px;background:#ccfbf1;border-radius:4px;overflow:hidden;">'
+      +     '<div style="width:' + curUnlock.percent + '%;height:100%;background:#0d9488;border-radius:4px;transition:width 0.3s;"></div>'
+      +   '</div>'
+      +   '<span style="font-size:10.5px;font-weight:800;color:#0f766e;">' + curUnlock.percent + '%</span>'
+      + '</div>'
+      + '<div style="color:#0d9488;font-size:10.5px;margin-top:3px;font-weight:700;">' + curUnlock.statusText + '</div>'
+      + '</div>';
+  } else {
+    // 3단계 최종 달성
+    statusBannerHtml = '<div style="background:#fefce8;border:1px solid #fef08a;border-radius:10px;padding:8px 10px;font-size:11px;">'
+      + '<div style="margin-bottom:4px;">'
+      +   '<span style="color:#854d0e;font-weight:800;"><i class="fa-solid fa-crown mr-1 text-warning"></i>3단계 최종 완성! (' + (cur.stage3Desc || '') + ')</span>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      +   '<div style="flex:1;height:7px;background:#fef08a;border-radius:4px;overflow:hidden;">'
+      +     '<div style="width:100%;height:100%;background:#eab308;border-radius:4px;"></div>'
+      +   '</div>'
+      +   '<span style="font-size:10.5px;font-weight:800;color:#854d0e;">100%</span>'
+      + '</div>'
+      + '<div style="color:#854d0e;font-size:10.5px;margin-top:3px;font-weight:700;">' + curUnlock.statusText + '</div>'
+      + '</div>';
   }
 
-  var badgeHtml = curUnlock.unlocked
-    ? (curUnlock.isEvolved ? '<span class="char-evolved-badge"><i class="fa-solid fa-crown"></i> 진화형</span>' : '<span style="font-size:10px;font-weight:800;background:#00a896;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock-open mr-1"></i>해금 완료</span>')
-    : '<span style="font-size:10px;font-weight:800;background:#e11d48;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock mr-1"></i>실루엣 잠금</span>';
+  // 상단 이름 옆 뱃지:
+  // - 미해금: [잠금] 뱃지
+  // - 1단계: 해금 완료 버튼/뱃지 제거
+  // - 2단계: [2단계] 뱃지
+  // - 3단계: [3단계] 뱃지
+  var badgeHtml = '';
+  if (!curUnlock.unlocked) {
+    badgeHtml = '<span style="font-size:10px;font-weight:800;background:#e11d48;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock mr-1"></i>잠금</span>';
+  } else if (curUnlock.currentStage === 2) {
+    badgeHtml = '<span class="char-evolved-badge"><i class="fa-solid fa-crown mr-1"></i>2단계</span>';
+  } else if (curUnlock.currentStage >= 3) {
+    badgeHtml = '<span class="char-evolved-badge" style="background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-crown mr-1"></i>3단계</span>';
+  }
 
   previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;background:' + cur.bgGradient + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);">'
-    + getCharacterSvg(cur.id, 64, curUnlock.isEvolved, !curUnlock.unlocked)
+    + getCharacterSvg(cur.id, 64, curUnlock.currentStage, !curUnlock.unlocked)
     + '</div>'
     + '<div style="flex:1;min-width:0;">'
     +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;">'
     +     '<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;font-weight:900;color:#1e293b;">' + cur.name + '</span>' + badgeHtml + '</div>'
-    +     (curUnlock.unlocked ? '<button type="button" class="btn btn-xs btn-outline-warning" onclick="openCelebrationModal(\'' + cur.id + '\')" style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;" title="축하 연출 다시보기">🎉 축하 연출</button>' : '')
     +   '</div>'
     +   '<div style="font-size:11.5px;font-weight:700;color:' + cur.themeColor + ';margin-bottom:4px;">[' + cur.themeName + '] ' + cur.tag + '</div>'
     +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">' + cur.story + '</div>'
     +   statusBannerHtml
     + '</div>';
 
-  // 하단 [이 캐릭터로 설정] 버튼 활성/비활성 제어
+  // 하단 [이 캐릭터로 설정] 버튼 제어
   if (applyBtn) {
     if (curUnlock.unlocked) {
       applyBtn.disabled = false;
@@ -7353,7 +7481,7 @@ function renderCharacterSelectModal() {
       applyBtn.style.cursor = 'not-allowed';
       applyBtn.style.background = '#64748b';
       applyBtn.style.borderColor = '#64748b';
-      applyBtn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 해금까지 ' + curUnlock.remainCount + '권 남음';
+      applyBtn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 1단계까지 ' + curUnlock.remainCount + '권 남음';
     }
   }
 
@@ -7364,19 +7492,21 @@ function renderCharacterSelectModal() {
     var cardClass = 'char-select-card ' + (isSel ? 'selected' : '') + (st.unlocked ? '' : ' locked');
 
     var badgeIcon = st.unlocked
-      ? (st.isEvolved ? '<div class="char-select-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:9px;"></i></div>' : '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>')
-      : '<div class="char-lock-badge" title="잠금: ' + c.unlockDesc + '"><i class="fa-solid fa-lock"></i></div>';
+      ? (st.currentStage >= 2 ? '<div class="char-select-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:9px;"></i></div>' : '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>')
+      : '<div class="char-lock-badge" title="잠금"><i class="fa-solid fa-lock"></i></div>';
 
-    // 미획득 캐릭터는 실루엣으로 렌더링
-    var svgContent = getCharacterSvg(c.id, 50, st.isEvolved, !st.unlocked);
+    // 미획득 캐릭터는 어스름한 흑백 실루엣으로 렌더링
+    var svgContent = getCharacterSvg(c.id, 50, st.currentStage, !st.unlocked);
 
     var subTagHtml = '';
     if (!st.unlocked) {
       subTagHtml = '<span class="char-remain-tag">' + st.remainCount + '권 남음</span>';
-    } else if (st.isEvolved) {
-      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;"><i class="fa-solid fa-crown"></i> 진화형</span>';
+    } else if (st.currentStage === 1) {
+      subTagHtml = '<span style="font-size:10px;color:#0d9488;font-weight:700;">1단계</span>';
+    } else if (st.currentStage === 2) {
+      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;"><i class="fa-solid fa-crown"></i> 2단계</span>';
     } else {
-      subTagHtml = '<span style="font-size:10px;color:#0d9488;font-weight:700;">해금완료</span>';
+      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-crown"></i> 3단계</span>';
     }
 
     return '<div class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
@@ -7404,11 +7534,13 @@ function handleStudentLogout() {
 function updateAllCharacterAvatars() {
   var charId = getUserCharacterId();
   var char = getCharacterById(charId);
+  var st = getCharacterUnlockStatus(char);
+  var currentStage = st.currentStage || 1;
 
   // 1. 상단 헤더 아바타
   var hAvatar = document.getElementById("headerCharAvatar");
   var hTag = document.getElementById("headerCharTag");
-  if(hAvatar) hAvatar.innerHTML = getCharacterSvg(charId, 34);
+  if(hAvatar) hAvatar.innerHTML = getCharacterSvg(charId, 34, currentStage);
   if(hTag) {
     hTag.innerText = char.name.split(' ')[0];
     hTag.style.color = char.themeColor;
@@ -7417,7 +7549,7 @@ function updateAllCharacterAvatars() {
   // 2. 사이드 드로어 아바타
   var dAvatar = document.getElementById("drawerCharAvatar");
   var dBadge = document.getElementById("drawerCharBadge");
-  if(dAvatar) dAvatar.innerHTML = getCharacterSvg(charId, 58);
+  if(dAvatar) dAvatar.innerHTML = getCharacterSvg(charId, 58, currentStage);
   if(dBadge) {
     dBadge.innerText = char.name.split(' ')[0];
     dBadge.style.background = char.bgGradient;
@@ -7426,17 +7558,17 @@ function updateAllCharacterAvatars() {
 
   // 3. 랭킹 상단 내 캐릭터 아바타
   var rAvatar = document.getElementById("rankMyCharAvatar");
-  if(rAvatar) rAvatar.innerHTML = getCharacterSvg(charId, 50);
+  if(rAvatar) rAvatar.innerHTML = getCharacterSvg(charId, 50, currentStage);
 
   // 4. 포디움 2위 단상 아바타 (나)
   var p2Avatar = document.getElementById("podiumAvatar2");
-  if(p2Avatar) p2Avatar.innerHTML = getCharacterSvg(charId, 56);
+  if(p2Avatar) p2Avatar.innerHTML = getCharacterSvg(charId, 56, currentStage);
 
   // 5. 홈 화면 상단 캐릭터 환영 배너
   var hmAvatar = document.getElementById("homeCharAvatar");
   var hmTag = document.getElementById("homeCharNameTag");
   var hmQuote = document.getElementById("homeCharQuote");
-  if(hmAvatar) hmAvatar.innerHTML = getCharacterSvg(charId, 44);
+  if(hmAvatar) hmAvatar.innerHTML = getCharacterSvg(charId, 44, currentStage);
   if(hmTag) {
     hmTag.innerText = char.name.split(' ')[0];
     hmTag.style.background = char.themeColor;
