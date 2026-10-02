@@ -4544,17 +4544,35 @@
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span>&times;</span></button>
       </div>
       <div class="modal-body p-4 text-center">
-        <div style="width: 60px; height: 60px; border-radius: 50%; background: #eaf0eb; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
-          <i class="fa-solid fa-file-excel text-success" style="font-size: 28px;"></i>
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: #eaf0eb; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+          <i class="fa-solid fa-file-excel text-success" style="font-size: 26px;"></i>
         </div>
         <h6 class="font-weight-bold mb-1">나노 원생 표준 엑셀 양식 일괄 등록</h6>
-        <p class="text-muted" style="font-size: 12.5px; margin-bottom: 20px;">
+        <p class="text-muted" style="font-size: 12.5px; margin-bottom: 16px;">
           원생 명단 엑셀(이름, 학교, 학년, 클래스, 연락처)을 업로드하여 원생을 한 번에 자동 등록합니다.
         </p>
 
-        <div class="p-3 mb-3 text-left" style="background: #fbf9f5; border: 1px dashed var(--border-medium); border-radius: 10px; font-size: 12px;">
-          <div class="font-weight-bold mb-1 text-dark"><i class="fa-solid fa-download mr-1 text-primary"></i>표준 양식 다운로드 안내</div>
-          <div class="text-muted">학원 관리자 전용 [나노_원생등록_양식_v2.xlsx] 서식에 맞춰 작성된 파일을 업로드하세요.</div>
+        <!-- [NEW] 표준 서식 다운로드 안내 및 원클릭 다운로드 박스 -->
+        <div class="p-3 mb-3 text-left d-flex align-items-center justify-content-between" style="background: #fbf9f5; border: 1.5px dashed var(--border-medium); border-radius: 12px; font-size: 12px;">
+          <div>
+            <div class="font-weight-bold mb-1" style="color: var(--text-main);">
+              <i class="fa-solid fa-circle-down text-success mr-1"></i>표준 서식 파일 다운로드
+            </div>
+            <div class="text-muted" style="font-size: 11.5px;">
+              학원 전용 <strong>[나노_원생등록_양식_v2.xlsx]</strong> 서식을 내려받아 작성하세요.
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-success font-weight-bold ml-2 flex-shrink-0" onclick="downloadStudentExcelTemplate()" style="border-radius: 8px; padding: 6px 12px; font-size: 12px;">
+            <i class="fa-solid fa-download mr-1"></i>양식 다운로드
+          </button>
+        </div>
+
+        <!-- 엑셀 파일 선택 업로드 영역 -->
+        <div class="p-3 mb-3 rounded text-center" style="border: 1.5px dashed #cbd5e1; background: #faf8f5; cursor: pointer; transition: all .2s;" onclick="document.getElementById('studentExcelFileInput').click()" onmouseover="this.style.borderColor='var(--leaf)';" onmouseout="this.style.borderColor='#cbd5e1';">
+          <i class="fa-solid fa-cloud-arrow-up text-muted mb-1" style="font-size: 26px;"></i>
+          <div class="font-weight-bold text-dark" style="font-size: 12.5px;" id="studentExcelFileName">클릭하여 작성한 엑셀 파일 선택 (.xlsx, .csv)</div>
+          <small class="text-muted" style="font-size: 11px;">또는 샘플 데이터로 즉시 등록을 테스트할 수 있습니다.</small>
+          <input type="file" id="studentExcelFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleStudentExcelFileSelect(this)">
         </div>
 
         <div class="d-flex justify-content-center gap-2">
@@ -5989,6 +6007,8 @@
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- SheetJS for Excel Download & Upload Parsing -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Daum 우편번호 서비스 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script src="admin_preview.js"></script>

@@ -1279,6 +1279,139 @@ function importSampleExcelStudents() {
 }
 
 // ==============================================================
+// 3-3-B. 원생 등록 표준 엑셀 양식 다운로드 (SheetJS 있을 시 .xlsx, 없을 시 UTF-8 BOM CSV)
+// ==============================================================
+function downloadStudentExcelTemplate() {
+  var headers = ["원생이름", "성별", "초기비밀번호", "학교명", "학년", "클래스", "학부모이름", "학부모연락처", "학부모이메일", "담당지도교사", "메모"];
+  var sampleRows = [
+    ["이하늘", "여", "1234", "솔빛초등학교", "초등 5학년", "지혜반", "이진우", "010-4421-8890", "sky_parent@example.com", "박선혜 지도교사", "신규 입회 원생"],
+    ["윤도현", "남", "1234", "나노초등학교", "초등 6학년", "마스터반", "윤지훈", "010-8910-3345", "dohyun_home@example.com", "최승현 지도교사", "독서 레벨 6 완성"],
+    ["김민준", "남", "1234", "나노초등학교", "초등 5학년", "지혜반", "김정훈", "010-1234-5678", "minjun_p@example.com", "박선혜 지도교사", "2026 가을학기 신규"]
+  ];
+
+  var fileName = "나노_원생등록_양식_v2.xlsx";
+
+  // 1. SheetJS(XLSX) 라이브러리 사용 가능한 경우 실제 Excel(.xlsx) 파일 생성
+  if (typeof XLSX !== 'undefined') {
+    var wsData = [headers].concat(sampleRows);
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // 가독성을 위한 컬럼 너비 지정
+    ws['!cols'] = [
+      { wch: 12 }, // 원생이름
+      { wch: 8 },  // 성별
+      { wch: 14 }, // 초기비밀번호
+      { wch: 16 }, // 학교명
+      { wch: 14 }, // 학년
+      { wch: 12 }, // 클래스
+      { wch: 12 }, // 학부모이름
+      { wch: 16 }, // 학부모연락처
+      { wch: 24 }, // 학부모이메일
+      { wch: 16 }, // 담당지도교사
+      { wch: 22 }  // 메모
+    ];
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "원생등록양식");
+    XLSX.writeFile(wb, fileName);
+    showAcademyToast("표준 원생 등록 서식 [" + fileName + "] 파일이 다운로드되었습니다.");
+    return;
+  }
+
+  // 2. Fallback: UTF-8 BOM CSV 파일 다운로드
+  var csvContent = "\uFEFF" + headers.join(",") + "\n" +
+    sampleRows.map(function(r) { return r.join(","); }).join("\n");
+  
+  var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = "나노_원생등록_양식_v2.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showAcademyToast("표준 원생 등록 서식 CSV 파일이 다운로드되었습니다.");
+}
+
+// 엑셀 파일 직접 선택 업로드 핸들러
+function handleStudentExcelFileSelect(input) {
+  if (!input.files || input.files.length === 0) return;
+  var file = input.files[0];
+  var fileNameEl = document.getElementById('studentExcelFileName');
+  if (fileNameEl) {
+    fileNameEl.innerHTML = '<span class="text-success font-weight-bold"><i class="fa-solid fa-file-excel mr-1"></i>' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)</span>';
+  }
+
+  // SheetJS 지원 시 파일 파싱
+  if (typeof XLSX !== 'undefined') {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = new Uint8Array(e.target.result);
+        var workbook = XLSX.read(data, { type: 'array' });
+        var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        if (rows && rows.length > 1) {
+          var count = 0;
+          for (var i = 1; i < rows.length; i++) {
+            var r = rows[i];
+            if (!r || !r[0] || String(r[0]).trim() === '') continue;
+            var newId = 'S' + (1030 + studentDataList.length + i);
+            studentDataList.unshift({
+              id: newId,
+              name: String(r[0] || '').trim(),
+              gender: String(r[1] || '남').trim(),
+              password: String(r[2] || '1234').trim(),
+              school: String(r[3] || '나노초등학교').trim(),
+              grade: String(r[4] || '초등 5학년').trim(),
+              classGroup: String(r[5] || '지혜반').trim(),
+              status: '승인',
+              level: '초등 심화 Lv 5',
+              bookCount: 0,
+              quizAvg: '0.0',
+              parentName: String(r[6] || '').trim(),
+              phone: String(r[7] || '').trim(),
+              parentEmail: String(r[8] || '').trim(),
+              reportYn: true,
+              lastDate: '2026.09.09',
+              createdAt: '2026.09.09',
+              teacher: String(r[9] || '박선혜 지도교사').trim(),
+              memo: String(r[10] || '엑셀 업로드 원생').trim(),
+              joinDate: '2026-09-09'
+            });
+            count++;
+          }
+          if (count > 0) {
+            saveStudentsToStorage();
+            updateAllStudentCounts();
+            if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
+            if (window.jQuery && typeof $('#studentExcelModal').modal === 'function') {
+              $('#studentExcelModal').modal('hide');
+            } else {
+              hideModalVanilla('studentExcelModal');
+            }
+            filterStudents();
+            showAcademyToast('업로드한 엑셀 파일에서 ' + count + '명의 원생이 성공적으로 일괄 등록되었습니다.');
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("엑셀 파싱 오류:", err);
+      }
+      importSampleExcelStudents();
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
+  // Fallback
+  setTimeout(function() {
+    importSampleExcelStudents();
+  }, 400);
+}
+
+// ==============================================================
 // 3-4. 원생 테이블 렌더링 & 필터링 (신규 컬럼 완비)
 // ==============================================================
 function renderStudentTable(list) {
