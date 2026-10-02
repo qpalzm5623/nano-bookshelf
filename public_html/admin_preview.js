@@ -8560,6 +8560,10 @@ document.addEventListener('DOMContentLoaded', function() {
   renderAcademyPaymentTable();
   selectPlanTier('standard');
 
+  // 본사 시스템 공지 팝업 점검 및 상단 배지 업데이트
+  updateAcademyNoticeBadge();
+  setTimeout(checkAcademyNoticePopups, 500);
+
   // 브라우저 저장 아이디(student01 등) 검색창 자동완성 침범 방지 및 강제 클리어
   clearAdminSearchAutofill();
   setTimeout(clearAdminSearchAutofill, 50);
@@ -9300,5 +9304,210 @@ function viewPaymentReceipt(payId) {
         '· 결제수단: ' + item.method + '\n' +
         '· 결제상태: 정상 승인 (VAT 매입세액공제 가능)');
 }
+
+// ==============================================================
+// 본사 시스템 공지사항 연동 및 관리자 로그인/접속 팝업 모듈
+// ==============================================================
+const defaultAcademySystemNotices = [
+  {
+    id: "NOT-1004",
+    title: "[안내] 2026 가을맞이 신규 필독서 120종 업데이트 및 북퀴즈 출제 완료",
+    target: "전체",
+    category: "신규 도서 입고",
+    isPopup: false,
+    popupStartDate: "",
+    popupEndDate: "",
+    isPinned: true,
+    status: "게시중",
+    createdAt: "2026-09-28",
+    content: "안녕하세요. 나노의 책장 본사 운영팀입니다.\n\n2026년도 2학기를 맞아 초등 및 중등 대상 교과 연계 필독도서 120종이 신규 등록되었으며, 각 도서별 문해력 5문항 북퀴즈 및 어휘 풀이가 완비되었습니다.\n\n각 가맹 학원에서는 [도서 배정] 메뉴에서 신규 도서를 확인하시고 원생들에게 추천 도서로 배정해 주시기 바랍니다.\n감사합니다.",
+    link: ""
+  },
+  {
+    id: "NOT-1003",
+    title: "[긴급] 정기 시스템 서버 안정화 및 인프라 점검 안내 (10/05 02:00~06:00)",
+    target: "가맹 학원",
+    category: "시스템 점검",
+    isPopup: true,
+    popupStartDate: "2026-10-01",
+    popupEndDate: "2026-10-05",
+    isPinned: true,
+    status: "게시중",
+    createdAt: "2026-09-25",
+    content: "안정적인 북퀴즈 응시 및 대용량 독서 리포트 데이터 처리를 위한 클라우드 인프라 확장 점검이 진행될 예정입니다.\n\n■ 점검 일시: 2026년 10월 5일(월) 새벽 02:00 ~ 06:00 (약 4시간)\n■ 영향 범위: 점검 시간 동안 전체 플랫폼 접속 및 북퀴즈 응시 일시 중단\n\n원활한 서비스 제공을 위해 새벽 시간대에 진행되오니 원장님 및 지도교사 분들의 너른 양해 부탁드립니다.",
+    link: ""
+  },
+  {
+    id: "NOT-1001",
+    title: "[안내] 가맹 학원 관리자 대시보드 리포트 발송 편의 기능 개선 배포",
+    target: "가맹 학원",
+    category: "서비스 업데이트",
+    isPopup: false,
+    popupStartDate: "",
+    popupEndDate: "",
+    isPinned: false,
+    status: "게시중",
+    createdAt: "2026-09-10",
+    content: "학원 관리자 페이지에서 학부모 알림톡 리포트 발송 시, 학급별 일괄 전송 및 개별 발송 미리보기 기능이 한층 업그레이드되었습니다.\n\n또한 원생 삭제 시 실수 방지를 위한 2단계 원장님 비밀번호 인증 및 7일 임시 보존 기능이 적용되었습니다.",
+    link: ""
+  }
+];
+
+function getAcademySystemNotices() {
+  try {
+    const raw = localStorage.getItem("NANO_MASTER_SYSTEM_NOTICES");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter(n => n.status === '게시중' && (n.target === '전체' || n.target === '가맹 학원'));
+      }
+    }
+  } catch (e) {}
+  return defaultAcademySystemNotices;
+}
+
+function updateAcademyNoticeBadge() {
+  const badge = document.getElementById('academyNoticeCountBadge');
+  if (!badge) return;
+  const notices = getAcademySystemNotices();
+  if (notices.length > 0) {
+    badge.innerText = notices.length;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function checkAcademyNoticePopups() {
+  const notices = getAcademySystemNotices();
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayStr = yyyy + '-' + mm + '-' + dd;
+
+  const activePopups = notices.filter(n => {
+    if (!n.isPopup) return false;
+    if (n.popupStartDate && n.popupStartDate > todayStr) return false;
+    if (n.popupEndDate && n.popupEndDate < todayStr) return false;
+    const hideKey = "NANO_HIDE_ADMIN_POPUP_" + n.id;
+    if (localStorage.getItem(hideKey) === todayStr) return false;
+    return true;
+  });
+
+  if (activePopups.length === 0) return;
+
+  const targetNotice = activePopups[0];
+  showAcademyNoticePopup(targetNotice);
+}
+
+function showAcademyNoticePopup(not) {
+  const modal = document.getElementById('academyNoticePopupModal');
+  if (!modal) return;
+
+  const catBadge = document.getElementById('anpCatBadge');
+  const title = document.getElementById('anpTitle');
+  const date = document.getElementById('anpDate');
+  const content = document.getElementById('anpContent');
+  const linkBox = document.getElementById('anpLinkBox');
+  const chk = document.getElementById('anpDoNotShowToday');
+
+  if (catBadge) catBadge.innerText = not.category || '본사 시스템 공지';
+  if (title) title.innerText = not.title;
+  if (date) date.innerText = not.createdAt || '';
+  if (content) content.innerHTML = (not.content || '').replace(/\n/g, '<br>');
+  if (chk) chk.checked = false;
+
+  if (linkBox) {
+    if (not.link && not.link.trim()) {
+      linkBox.style.display = 'block';
+      linkBox.innerHTML = '<a href="' + not.link + '" target="_blank" class="btn btn-sm btn-outline-warning text-dark font-weight-bold" style="font-size: 12px; border-radius: 6px;"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>관련 안내 링크 바로가기</a>';
+    } else {
+      linkBox.style.display = 'none';
+    }
+  }
+
+  modal.setAttribute('data-current-notice-id', not.id);
+  if (window.jQuery && typeof $('#academyNoticePopupModal').modal === 'function') {
+    $('#academyNoticePopupModal').modal('show');
+  } else {
+    modal.style.display = 'block';
+    modal.classList.add('show');
+  }
+}
+
+function closeAcademyNoticePopup() {
+  const modal = document.getElementById('academyNoticePopupModal');
+  if (!modal) return;
+  const notId = modal.getAttribute('data-current-notice-id');
+  const chk = document.getElementById('anpDoNotShowToday');
+  if (chk && chk.checked && notId) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = yyyy + '-' + mm + '-' + dd;
+    localStorage.setItem("NANO_HIDE_ADMIN_POPUP_" + notId, todayStr);
+  }
+  if (window.jQuery && typeof $('#academyNoticePopupModal').modal === 'function') {
+    $('#academyNoticePopupModal').modal('hide');
+  } else {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+  }
+}
+
+function openAcademyNoticeListModal() {
+  const notices = getAcademySystemNotices();
+  const listEl = document.getElementById('academyNoticeListContainer');
+  if (!listEl) return;
+
+  if (notices.length === 0) {
+    listEl.innerHTML = '<div class="text-center py-5 text-muted"><i class="fa-solid fa-bullhorn fa-2x mb-2" style="color: #cbd5e1;"></i><p class="mb-0 font-weight-bold" style="font-size: 13.5px;">등록된 본사 공지사항이 없습니다.</p></div>';
+  } else {
+    listEl.innerHTML = notices.map(n => {
+      const isPinnedBadge = n.isPinned ? '<span class="badge badge-danger mr-1" style="font-size: 10.5px; font-weight: 800;"><i class="fa-solid fa-thumbtack mr-1"></i>필독</span>' : '';
+      const catBadge = '<span class="badge badge-light border text-muted mr-1" style="font-size: 11px;">' + (n.category || '공지') + '</span>';
+      const targetBadge = '<span class="badge badge-info" style="font-size: 10.5px;">' + n.target + '</span>';
+      const popupBadge = n.isPopup ? '<span class="badge badge-warning text-dark ml-1" style="font-size: 10.5px;"><i class="fa-solid fa-window-restore mr-1"></i>팝업</span>' : '';
+      const contentFormatted = (n.content || '').replace(/\n/g, '<br>');
+      const linkHtml = (n.link && n.link.trim()) ? '<div class="mt-2"><a href="' + n.link + '" target="_blank" class="text-primary font-weight-bold" style="font-size: 12px;"><i class="fa-solid fa-link mr-1"></i>참고 링크 바로가기</a></div>' : '';
+
+      return '<div class="card mb-3 border-beige shadow-sm" style="border-radius: 12px; overflow: hidden;">'
+        + '<div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap py-2 px-3" style="border-bottom: 1px solid var(--border-light);">'
+        +   '<div class="d-flex align-items-center flex-wrap" style="gap: 5px;">'
+        +     isPinnedBadge
+        +     catBadge
+        +     targetBadge
+        +     popupBadge
+        +     '<strong style="font-size: 14px; color: var(--text-main);" class="ml-1">' + n.title + '</strong>'
+        +   '</div>'
+        +   '<small class="text-muted">' + (n.createdAt || '') + '</small>'
+        + '</div>'
+        + '<div class="card-body py-3 px-3" style="background: #faf8f5;">'
+        +   '<div style="font-size: 13px; color: var(--text-main); line-height: 1.65; white-space: normal; word-break: break-word;">'
+        +     contentFormatted
+        +   '</div>'
+        +   linkHtml
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  if (window.jQuery && typeof $('#academyNoticeListModal').modal === 'function') {
+    $('#academyNoticeListModal').modal('show');
+  } else {
+    const modal = document.getElementById('academyNoticeListModal');
+    if (modal) { modal.style.display = 'block'; modal.classList.add('show'); }
+  }
+}
+
+// 본사 마스터에서 공지사항 저장 시 실시간 동기화
+window.addEventListener('storage', function(e) {
+  if (e.key === 'NANO_MASTER_SYSTEM_NOTICES') {
+    updateAcademyNoticeBadge();
+    checkAcademyNoticePopups();
+  }
+});
 
 

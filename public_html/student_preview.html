@@ -8396,33 +8396,29 @@ function openDrawerMenuItem(type) {
     cat.innerText = '새소식';
     title.innerText = '공지사항';
     sub.innerText = '나노의 책장 최신 소식 및 안내사항입니다.';
-    contentHtml = 
-      '<div style="display:flex;flex-direction:column;gap:10px;">'
-      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
-      +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-      +     '<span class="badge" style="background:#fef2f2;color:#ef4444;font-size:10px;">중요</span>'
-      +     '<span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">9월 나노 독서왕 챌린지 챌린저 모집</span>'
-      +   '</div>'
-      +   '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">이달 말까지 3권 이상 완독 시 골드 뱃지 및 특별 500P를 지급합니다.</div>'
-      +   '<div style="font-size:10.5px;color:#a89f91;margin-top:6px;">2026.09.01</div>'
-      + '</div>'
-      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
-      +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-      +     '<span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:10px;">안내</span>'
-      +     '<span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">생각 꺼내기 호기심 질문 기능 오픈</span>'
-      +   '</div>'
-      +   '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">책을 읽기 전 스스로 상상해볼 수 있는 생각 꺼내기 질문이 추가되었습니다.</div>'
-      +   '<div style="font-size:10.5px;color:#a89f91;margin-top:6px;">2026.08.28</div>'
-      + '</div>'
-      + '<div style="background:#ffffff;border:1px solid var(--soft);border-radius:12px;padding:12px 14px;">'
-      +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-      +     '<span class="badge" style="background:#f1ede4;color:var(--wood-mid);font-size:10px;">점검</span>'
-      +     '<span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">서버 안정화를 위한 정기 점검 완료</span>'
-      +   '</div>'
-      +   '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">더욱 쾌적한 퀴즈 응시 환경을 제공해 드립니다.</div>'
-      +   '<div style="font-size:10.5px;color:#a89f91;margin-top:6px;">2026.08.15</div>'
-      + '</div>'
-      + '</div>';
+    var notices = getStudentSystemNotices();
+    if(!notices || notices.length === 0) {
+      contentHtml = '<div style="text-align:center;padding:40px;color:var(--muted);"><i class="fa-solid fa-bullhorn mb-2" style="font-size:26px;opacity:0.35;"></i><p style="font-size:13px;font-weight:600;margin-top:6px;">등록된 공지사항이 없습니다.</p></div>';
+    } else {
+      contentHtml = '<div style="display:flex;flex-direction:column;gap:12px;">'
+        + notices.map(function(n){
+          var isPinnedBadge = n.isPinned ? '<span class="badge" style="background:#fee2e2;color:#dc2626;font-size:10.5px;font-weight:800;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-thumbtack mr-1"></i>필독</span>' : '';
+          var catBadge = '<span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:10.5px;padding:2px 7px;border-radius:4px;">' + (n.category || '공지') + '</span>';
+          var linkBtn = (n.link && n.link.trim()) ? '<div style="margin-top:8px;"><a href="' + n.link + '" target="_blank" style="font-size:11.5px;color:var(--leaf);font-weight:700;text-decoration:none;"><i class="fa-solid fa-link mr-1"></i>관련 링크 보기 <i class="fa-solid fa-chevron-right ml-1"></i></a></div>' : '';
+          var contentLines = (n.content || '').replace(/\n/g, '<br>');
+          return '<div style="background:#ffffff;border:1.5px solid var(--soft);border-radius:14px;padding:14px 16px;box-shadow:0 1px 4px rgba(58,46,38,0.04);">'
+            + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+            +   isPinnedBadge
+            +   catBadge
+            +   '<span style="font-size:11px;color:var(--muted);margin-left:auto;">' + (n.createdAt || '') + '</span>'
+            + '</div>'
+            + '<div style="font-size:14px;font-weight:800;color:var(--wood-dark);margin-bottom:8px;line-height:1.4;">' + n.title + '</div>'
+            + '<div style="font-size:12.5px;color:#4a3f35;line-height:1.6;background:#faf8f5;padding:11px 13px;border-radius:10px;border:1px solid #f0ebe2;">' + contentLines + '</div>'
+            + linkBtn
+            + '</div>';
+        }).join('')
+        + '</div>';
+    }
   } 
   else if(type === 'faq') {
     cat.innerText = '도움말';
@@ -8492,6 +8488,127 @@ function submitPasswordChange(e) {
   toast('🔒 비밀번호가 성공적으로 변경되었습니다!');
 }
 
+// ==============================================================
+// 본사 마스터 시스템 공지사항 연동 및 로그인/접속 팝업 모듈
+// ==============================================================
+var defaultStudentSystemNotices = [
+  {
+    id: "NOT-1004",
+    title: "[안내] 2026 가을맞이 신규 필독서 120종 업데이트 및 북퀴즈 출제 완료",
+    target: "전체",
+    category: "신규 도서 입고",
+    isPopup: false,
+    popupStartDate: "",
+    popupEndDate: "",
+    isPinned: true,
+    status: "게시중",
+    createdAt: "2026-09-28",
+    content: "안녕하세요. 나노의 책장 본사 운영팀입니다.\n\n2026년도 2학기를 맞아 초등 및 중등 대상 교과 연계 필독도서 120종이 신규 등록되었으며, 각 도서별 문해력 5문항 북퀴즈 및 어휘 풀이가 완비되었습니다.\n\n각 가맹 학원에서는 [도서 배정] 메뉴에서 신규 도서를 확인하시고 원생들에게 추천 도서로 배정해 주시기 바랍니다.\n감사합니다.",
+    link: ""
+  },
+  {
+    id: "NOT-1002",
+    title: "[공지] 제3회 전국 나노 독서왕 퀴즈 챌린지 랭킹 대회 개최 요강",
+    target: "학생",
+    category: "이벤트/대회",
+    isPopup: true,
+    popupStartDate: "2026-09-20",
+    popupEndDate: "2026-10-20",
+    isPinned: false,
+    status: "게시중",
+    createdAt: "2026-09-18",
+    content: "전국 모든 가맹 학원의 원생들이 참여하는 [제3회 전국 나노 독서왕 퀴즈 챌린지]가 시작됩니다!\n\n■ 참여 대상: 나노의 책장 재원 원생 누구나\n■ 챌린지 기간: 2026년 9월 20일 ~ 10월 20일 (1개월간)\n■ 시상: 전국 개인 랭킹 1~10위 장학 상품권 및 메달 수여, 최우수 학원 현판 제공\n\n매일 책을 읽고 북퀴즈에 도전하여 전국 랭킹에 이름을 올려보세요!",
+    link: ""
+  }
+];
+
+function getStudentSystemNotices() {
+  try {
+    var raw = localStorage.getItem("NANO_MASTER_SYSTEM_NOTICES");
+    if(raw) {
+      var parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter(function(n){
+          return n.status === '게시중' && (n.target === '전체' || n.target === '학생');
+        });
+      }
+    }
+  } catch(e) {}
+  return defaultStudentSystemNotices;
+}
+
+function checkStudentNoticePopups() {
+  var notices = getStudentSystemNotices();
+  var today = new Date();
+  var yyyy = today.getFullYear();
+  var mm = String(today.getMonth() + 1).padStart(2, '0');
+  var dd = String(today.getDate()).padStart(2, '0');
+  var todayStr = yyyy + '-' + mm + '-' + dd;
+
+  // 팝업 설정된 공지사항 필터링 (기간 내, 오늘 하루 보지 않기 미체크)
+  var activePopups = notices.filter(function(n){
+    if(!n.isPopup) return false;
+    if(n.popupStartDate && n.popupStartDate > todayStr) return false;
+    if(n.popupEndDate && n.popupEndDate < todayStr) return false;
+    var hideKey = "NANO_HIDE_STUDENT_POPUP_" + n.id;
+    if(localStorage.getItem(hideKey) === todayStr) return false;
+    return true;
+  });
+
+  if(activePopups.length === 0) return;
+
+  // 가장 최신 팝업 노출
+  var targetNotice = activePopups[0];
+  showStudentNoticePopup(targetNotice);
+}
+
+function showStudentNoticePopup(not) {
+  var modal = document.getElementById('studentNoticePopupModal');
+  if(!modal) return;
+
+  var catEl = document.getElementById('snpCatBadge');
+  var titleEl = document.getElementById('snpTitle');
+  var dateEl = document.getElementById('snpDate');
+  var contentEl = document.getElementById('snpContent');
+  var linkBox = document.getElementById('snpLinkBox');
+  var chk = document.getElementById('snpDoNotShowToday');
+
+  if(catEl) catEl.innerText = not.category || '공지';
+  if(titleEl) titleEl.innerText = not.title;
+  if(dateEl) dateEl.innerText = not.createdAt || '';
+  if(contentEl) contentEl.innerHTML = (not.content || '').replace(/\n/g, '<br>');
+
+  if(linkBox) {
+    if(not.link && not.link.trim()) {
+      linkBox.style.display = 'block';
+      linkBox.innerHTML = '<a href="' + not.link + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--leaf);color:#fff;border-radius:8px;font-size:12px;font-weight:700;padding:7px 14px;text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i>관련 안내 링크 바로가기</a>';
+    } else {
+      linkBox.style.display = 'none';
+    }
+  }
+
+  if(chk) chk.checked = false;
+
+  modal.setAttribute('data-current-notice-id', not.id);
+  modal.style.display = 'flex';
+}
+
+function closeStudentNoticePopup() {
+  var modal = document.getElementById('studentNoticePopupModal');
+  if(!modal) return;
+  var notId = modal.getAttribute('data-current-notice-id');
+  var chk = document.getElementById('snpDoNotShowToday');
+  if(chk && chk.checked && notId) {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    var todayStr = yyyy + '-' + mm + '-' + dd;
+    localStorage.setItem("NANO_HIDE_STUDENT_POPUP_" + notId, todayStr);
+  }
+  modal.style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   updateAllCharacterAvatars();
   renderStudentBanners();
@@ -8506,8 +8623,44 @@ document.addEventListener('DOMContentLoaded',function(){
   renderInterestTags();
   renderInterestRecommendations();
   renderThemeTagBoxes();
+
+  // 로그인/접속 시 본사 시스템 공지 팝업 점검 및 노출
+  setTimeout(checkStudentNoticePopups, 400);
+});
+
+// 마스터 관리자에서 공지사항 저장 시 실시간 동기화
+window.addEventListener('storage', function(e){
+  if(e.key === 'NANO_MASTER_SYSTEM_NOTICES') {
+    checkStudentNoticePopups();
+  }
 });
 </script>
+
+<!-- 학생 접속 시 시스템 공지 팝업 모달 -->
+<div id="studentNoticePopupModal" class="student-modal-overlay" style="display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10001;" onclick="if(event.target===this)closeStudentNoticePopup()">
+  <div style="background: #ffffff; width: 100%; max-width: 440px; border-radius: 20px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.24); border: 1.5px solid var(--soft); animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div style="background: linear-gradient(135deg, #f8f6f0 0%, #efebe4 100%); padding: 18px 20px; border-bottom: 1px solid var(--soft); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge" style="background: var(--leaf); color: #ffffff; font-size: 11px; padding: 4px 8px; border-radius: 6px;" id="snpCatBadge">이벤트/대회</span>
+        <span style="font-size: 11.5px; color: var(--muted);" id="snpDate">2026-09-18</span>
+      </div>
+      <button type="button" onclick="closeStudentNoticePopup()" style="border: none; background: #e5e0d8; width: 28px; height: 28px; border-radius: 50%; font-size: 15px; cursor: pointer; color: var(--wood-dark); display: flex; align-items: center; justify-content: center;">&times;</button>
+    </div>
+    <div style="padding: 20px; max-height: 60vh; overflow-y: auto;">
+      <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 800; color: var(--wood-dark); line-height: 1.4;" id="snpTitle">공지 제목</h4>
+      <div id="snpContent" style="font-size: 13px; color: #4b433b; line-height: 1.65; white-space: normal; word-break: break-word; background: #faf9f6; padding: 14px; border-radius: 12px; border: 1px solid #f0ece3;"></div>
+      <div id="snpLinkBox" style="margin-top: 14px; display: none;"></div>
+    </div>
+    <div style="padding: 12px 20px; background: #faf8f5; border-top: 1px solid var(--soft); display: flex; justify-content: space-between; align-items: center;">
+      <label style="margin: 0; font-size: 12px; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+        <input type="checkbox" id="snpDoNotShowToday" style="cursor: pointer;">
+        <span>오늘 하루 보지 않기</span>
+      </label>
+      <button type="button" class="btn" onclick="closeStudentNoticePopup()" style="background: var(--wood-dark); color: #ffffff; font-size: 12.5px; font-weight: 700; padding: 6px 18px; border-radius: 10px;">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 같은 도서의 다중 북퀴즈 출제처 선택 모달 (1순위 본사, 2순위 소속학원, 3순위 등록 오래된순) -->
 <div id="quizSetSelectModal" class="student-modal-overlay" style="display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10000;" onclick="if(event.target===this)closeQuizSetSelectModal()">
   <div style="background: #ffffff; width: 100%; max-width: 480px; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.22); border: 1.5px solid #e2ece9;">

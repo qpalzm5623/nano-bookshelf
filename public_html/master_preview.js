@@ -3506,7 +3506,13 @@ function loadNoticesFromStorage() {
     const stored = localStorage.getItem(STORAGE_KEY_SYSTEM_NOTICES);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // '학부모' 대상 공지가 남아있다면 '전체'로 안전 마이그레이션
+        parsed.forEach(n => {
+          if (n.target === '학부모') n.target = '전체';
+        });
+        return parsed;
+      }
     }
   } catch (e) {
     console.warn("시스템 공지 로드 실패, 기본값 사용:", e);
@@ -3517,6 +3523,11 @@ function loadNoticesFromStorage() {
 function saveNoticesToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY_SYSTEM_NOTICES, JSON.stringify(systemNoticeList));
+    // 타 탭(학원 관리자, 학생 프리뷰) 실시간 동기화 지원
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: STORAGE_KEY_SYSTEM_NOTICES,
+      newValue: JSON.stringify(systemNoticeList)
+    }));
   } catch (e) {
     console.error("시스템 공지 저장 실패:", e);
   }
@@ -3549,14 +3560,12 @@ function renderNoticeTable() {
   });
 
   tbody.innerHTML = sortedList.map(not => {
-    // 대상 뱃지
+    // 대상 뱃지 (전체 / 가맹 학원 / 학생)
     let targetBadge = '<span class="badge badge-secondary" style="font-size: 11px;">전체</span>';
     if (not.target === '가맹 학원') {
       targetBadge = '<span class="badge badge-primary" style="font-size: 11px; background: #3b82f6;">가맹 학원</span>';
     } else if (not.target === '학생') {
       targetBadge = '<span class="badge badge-success" style="font-size: 11px; background: #10b981;">학생</span>';
-    } else if (not.target === '학부모') {
-      targetBadge = '<span class="badge badge-info" style="font-size: 11px; background: #6366f1;">학부모</span>';
     }
 
     // 팝업 뱃지
