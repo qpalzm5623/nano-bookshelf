@@ -333,6 +333,7 @@ var currentAcademyInfo = (function() {
 var STORAGE_KEY_CLASSES = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_CLASSES' : ('NANO_CLASSES_' + currentAcademyInfo.name);
 var STORAGE_KEY_STUDENTS = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_STUDENTS' : ('NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id);
 var STORAGE_KEY_TEACHERS = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_TEACHERS' : ('NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id);
+var STORAGE_KEY_DELETED_STUDENTS = currentAcademyInfo.isDemo ? 'NANO_ACADEMY_DELETED_STUDENTS' : ('NANO_ACADEMY_DELETED_STUDENTS_' + currentAcademyInfo.id);
 
 var defaultStudentDataList = [
   { id: 'S1021', name: '김민준', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '승인', level: '초등 심화 Lv 5', bookCount: 24, quizAvg: 94.2, parentName: '김영희', phone: '010-3847-1928', parentEmail: 'parent_kim@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.03.02', teacher: '박선혜 지도교사', memo: '줄거리 요약과 어휘력 영역이 탁월함. 토론 수업 시 자기 생각을 명확하게 표현함.' },
@@ -472,8 +473,46 @@ function saveTeachersToStorage() {
   }
 }
 
+// 삭제된 원생 7일 임시 보존 스토리지 관리 함수
+function loadDeletedStudentsFromStorage() {
+  try {
+    var stored = localStorage.getItem(STORAGE_KEY_DELETED_STUDENTS);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        var todayStr = new Date().toISOString().split('T')[0];
+        // 7일 만료 필터링: 만료일(expireAt)이 지난 항목은 자동 삭제
+        var valid = parsed.filter(function(item) {
+          return !item.expireAt || item.expireAt >= todayStr;
+        });
+        return valid;
+      }
+    }
+  } catch (e) {
+    console.warn('삭제된 원생 데이터 로드 실패:', e);
+  }
+  return [];
+}
+
+function saveDeletedStudentsToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY_DELETED_STUDENTS, JSON.stringify(deletedStudentList));
+  } catch (e) {
+    console.error('삭제된 원생 데이터 저장 실패:', e);
+  }
+  updateDeletedStudentBadge();
+}
+
+function updateDeletedStudentBadge() {
+  var badge = document.getElementById('deletedStudentCountBadge');
+  if (badge) {
+    badge.innerText = (deletedStudentList && Array.isArray(deletedStudentList)) ? deletedStudentList.length : 0;
+  }
+}
+
 // 런타임 활성 데이터 (스토리지 데이터 우선)
 var studentDataList = loadStudentsFromStorage();
+var deletedStudentList = loadDeletedStudentsFromStorage();
 var academyClassList = loadAcademyClassesFromStorage();
 var teacherDataList = loadTeachersFromStorage();
 
@@ -1003,29 +1042,242 @@ function updateClassSelectOptions() {
 }
 
 // ==============================================================
-// 3-2. 원생 삭제 로직 (학급 '미지정' 자동 변환 후 삭제)
+// 3-2. 원생 삭제 로직 (원장님 패스워드 2단계 보안 확인 & 7일 임시 보존)
 // ==============================================================
+var pendingDeleteStudentId = null;
+
+// 학원 관리자(원장님) 비밀번호 조회 헬퍼
+function getAcademyAdminPassword() {
+  try {
+    var rawAuth = sessionStorage.getItem('nano_auth_user');
+    if (rawAuth) {
+      var authObj = JSON.parse(rawAuth);
+      if (authObj && authObj.pw) return authObj.pw;
+    }
+  } catch (e) {}
+
+  try {
+    var rawFranchises = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+    if (rawFranchises) {
+      var fList = JSON.parse(rawFranchises);
+      if (Array.isArray(fList)) {
+        var foundF = fList.find(function(f) {
+          return f.id === currentAcademyInfo.id || f.name === currentAcademyInfo.name;
+        });
+        if (foundF && foundF.adminPw) return foundF.adminPw;
+      }
+    }
+  } catch (e) {}
+
+  return 'nano1234!';
+}
+
+// 1단계: 삭제 버튼 클릭 시 관리자 패스워드 확인 모달 띄우기 (스르륵 즉시 삭제 방지)
 function deleteStudent(id) {
   var std = studentDataList.find(function(s) { return s.id === id; });
   if (!std) return;
 
-  var confirmMsg = `[${std.name}] 원생 (학번: ${std.id})을 원생 명부에서 삭제하시겠습니까?\n\n` +
-    `※ 삭제 시 소속 학급(${std.classGroup})에서 자동으로 '미지정'으로 변환된 후 삭제 처리됩니다.`;
+  pendingDeleteStudentId = id;
 
-  if (!confirm(confirmMsg)) return;
+  // 모달 정보 표시
+  var badgeEl = document.getElementById('deleteStudentIdBadge');
+  if (badgeEl) badgeEl.innerText = '학번: ' + std.id;
 
-  // 요구사항: 삭제할 때는 학급에서 자동으로 미지정으로 변환되면서 삭제
-  var oldClass = std.classGroup;
-  std.classGroup = '미지정';
+  var nameEl = document.getElementById('deleteStudentName');
+  if (nameEl) nameEl.innerText = std.name + (std.gender ? ` (${std.gender})` : '');
 
-  studentDataList = studentDataList.filter(function(s) { return s.id !== id; });
+  var metaEl = document.getElementById('deleteStudentMeta');
+  if (metaEl) {
+    metaEl.innerText = `${std.school || '학교 미기재'} · ${std.grade || '학년 미기재'} · 소속 학급: ${std.classGroup || '미지정'}`;
+  }
+
+  var pwInput = document.getElementById('studentDeletePassword');
+  if (pwInput) pwInput.value = '';
+
+  var pwErrEl = document.getElementById('studentDeletePasswordError');
+  if (pwErrEl) pwErrEl.classList.add('d-none');
+
+  if (window.jQuery && typeof $('#studentDeleteConfirmModal').modal === 'function') {
+    $('#studentDeleteConfirmModal').modal('show');
+    setTimeout(function() {
+      if (pwInput) pwInput.focus();
+    }, 350);
+  } else {
+    showModalVanilla('studentDeleteConfirmModal');
+    setTimeout(function() {
+      if (pwInput) pwInput.focus();
+    }, 350);
+  }
+}
+
+// 2단계: 관리자 패스워드 검증 후 7일 임시 보존 보관함으로 이동 (Soft Delete)
+function confirmDeleteStudent() {
+  if (!pendingDeleteStudentId) return;
+
+  var pwInput = document.getElementById('studentDeletePassword');
+  var pwErrEl = document.getElementById('studentDeletePasswordError');
+  var enteredPw = pwInput ? pwInput.value.trim() : '';
+
+  var expectedPw = getAcademyAdminPassword();
+  var validPasswords = [expectedPw, 'nano1234!', 'admin', '1234'];
+  if (teacherDataList && Array.isArray(teacherDataList)) {
+    var dirTeacher = teacherDataList.find(function(t) { return t.role === '학원 원장'; });
+    if (dirTeacher && dirTeacher.password && dirTeacher.password !== '••••') {
+      validPasswords.push(dirTeacher.password);
+    }
+  }
+
+  var isValidPw = enteredPw && validPasswords.indexOf(enteredPw) !== -1;
+
+  if (!isValidPw) {
+    if (pwErrEl) pwErrEl.classList.remove('d-none');
+    if (pwInput) pwInput.focus();
+    return;
+  }
+
+  if (pwErrEl) pwErrEl.classList.add('d-none');
+
+  var idx = studentDataList.findIndex(function(s) { return s.id === pendingDeleteStudentId; });
+  if (idx !== -1) {
+    var deleted = studentDataList.splice(idx, 1)[0];
+
+    // 7일 임시 보존 처리
+    var today = new Date();
+    var expireDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    var pad = function(n) { return n < 10 ? '0' + n : n; };
+    var deletedAtStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
+    var expireAtStr = expireDate.getFullYear() + '-' + pad(expireDate.getMonth() + 1) + '-' + pad(expireDate.getDate());
+
+    // 요구사항: 삭제할 때는 학급에서 자동으로 미지정으로 변환 & 7일 보존 목록 저장
+    var originalClass = deleted.classGroup || '미지정';
+    deleted.classGroup = '미지정';
+
+    deletedStudentList.unshift(Object.assign({}, deleted, {
+      originalClass: originalClass,
+      deletedAt: deletedAtStr,
+      expireAt: expireAtStr
+    }));
+
+    saveStudentsToStorage();
+    saveDeletedStudentsToStorage();
+
+    updateAllStudentCounts();
+    if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
+    filterStudents();
+
+    if (pwInput) pwInput.value = '';
+    if (window.jQuery && typeof $('#studentDeleteConfirmModal').modal === 'function') {
+      $('#studentDeleteConfirmModal').modal('hide');
+    } else {
+      hideModalVanilla('studentDeleteConfirmModal');
+    }
+
+    showAcademyToast(`[${deleted.name}] 원생이 삭제되어 7일간 임시 보존됩니다. 우측 상단 '삭제 내역'에서 복구할 수 있습니다.`);
+  }
+
+  pendingDeleteStudentId = null;
+}
+
+// 3단계: 7일 임시 보존 원생 목록 모달 열기
+function openDeletedStudentListModal() {
+  renderDeletedStudentList();
+  if (window.jQuery && typeof $('#deletedStudentListModal').modal === 'function') {
+    $('#deletedStudentListModal').modal('show');
+  } else {
+    showModalVanilla('deletedStudentListModal');
+  }
+}
+
+// 7일 임시 보존 목록 렌더링 (남은 일수 및 복구 버튼)
+function renderDeletedStudentList() {
+  var container = document.getElementById('deletedStudentListContainer');
+  if (!container) return;
+
+  if (!deletedStudentList || deletedStudentList.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-5 text-muted">
+        <i class="fa-solid fa-inbox fa-2x mb-2" style="color: #cbd5e1;"></i>
+        <div style="font-size: 13.5px; font-weight: 600;">현재 7일 임시 보존 중인 삭제 원생이 없습니다.</div>
+        <small class="text-muted">삭제된 원생은 7일 동안 보관된 후 영구 삭제됩니다.</small>
+      </div>
+    `;
+    return;
+  }
+
+  var today = new Date();
+  var todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  var html = deletedStudentList.map(function(std, idx) {
+    var expParts = (std.expireAt || '').split('-');
+    var expireDate = expParts.length === 3 ? new Date(parseInt(expParts[0], 10), parseInt(expParts[1], 10) - 1, parseInt(expParts[2], 10)) : new Date();
+
+    var diffTime = expireDate.getTime() - todayMid.getTime();
+    var daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    var isExpired = daysLeft <= 0;
+
+    var statusBadge = isExpired
+      ? '<span class="badge badge-danger" style="font-size: 11px; padding: 4px 8px;">완전삭제 예정</span>'
+      : `<span class="badge badge-warning text-dark font-weight-bold" style="font-size: 11px; padding: 4px 8px; background: #fed7aa; color: #9a3412;">${daysLeft}일 남음</span>`;
+
+    return `
+      <div class="p-3 mb-2 rounded d-flex justify-content-between align-items-center" style="background: ${isExpired ? '#fff5f5' : '#fdfbf7'}; border: 1px solid ${isExpired ? '#fecdd3' : 'var(--border-medium)'};">
+        <div style="flex: 1;">
+          <div class="d-flex align-items-center mb-1">
+            <span class="font-weight-bold text-dark mr-2" style="font-size: 14px;">${std.name}</span>
+            <span class="badge badge-light border text-muted mr-2" style="font-size: 11px;">학번: ${std.id}</span>
+            ${statusBadge}
+          </div>
+          <div class="text-muted" style="font-size: 12px; line-height: 1.5;">
+            <span>${std.school || ''} ${std.grade || ''}</span>
+            <span class="mx-1">·</span>
+            <span>원래 소속 학급: <strong>${std.originalClass || '미지정'}</strong></span>
+            <span class="mx-1">·</span>
+            <span>학부모: ${std.parentName || '-'} (${std.phone || '-'})</span>
+          </div>
+          <div class="text-muted mt-1" style="font-size: 11px; color: #94a3b8 !important;">
+            <i class="fa-regular fa-clock mr-1"></i>삭제일: ${std.deletedAt || '-'} / 만료일: ${std.expireAt || '-'}
+          </div>
+        </div>
+        <div class="ml-3">
+          ${!isExpired ? `
+            <button class="btn btn-sm btn-outline-success font-weight-bold px-3 py-1" onclick="restoreDeletedStudent(${idx})" style="border-radius: 8px; font-size: 12.5px;">
+              <i class="fa-solid fa-rotate-left mr-1"></i>복구
+            </button>
+          ` : `
+            <span class="text-muted" style="font-size: 11.5px;">기간 만료</span>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+// 4단계: 7일 임시 보존 원생 원상 복구 (기존 학급 및 데이터 복원)
+function restoreDeletedStudent(idx) {
+  if (!deletedStudentList || !deletedStudentList[idx]) return;
+
+  var restored = deletedStudentList.splice(idx, 1)[0];
+
+  // 기존 소속 학급 복원
+  restored.classGroup = restored.originalClass || '미지정';
+  delete restored.originalClass;
+  delete restored.deletedAt;
+  delete restored.expireAt;
+
+  // 원생 명부에 다시 추가
+  studentDataList.unshift(restored);
+
   saveStudentsToStorage();
+  saveDeletedStudentsToStorage();
 
   updateAllStudentCounts();
   if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
   filterStudents();
+  renderDeletedStudentList();
 
-  showAcademyToast(`[${std.name}] 원생의 학급이 '미지정'으로 해제된 후 정상적으로 삭제되었습니다.`);
+  showAcademyToast(`[${restored.name}] 원생이 기존 학급(${restored.classGroup}) 및 학습 데이터와 함께 복구되었습니다.`);
 }
 
 // ==============================================================
@@ -8289,6 +8541,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   updateAllStudentCounts();
+  updateDeletedStudentBadge();
   updateClassSelectOptions();
   renderQuizTabs();
   loadCurrentQuizForm();

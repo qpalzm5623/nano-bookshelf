@@ -1768,7 +1768,7 @@
                 <option value="새싹반">초등 1~2학년 (새싹반)</option>
               </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">원생 검색</label>
               <div class="input-group input-group-sm">
                 <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudents()" onsearch="filterStudents()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="김민준, S1021, 나노초 등 검색...">
@@ -1777,14 +1777,17 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-3 text-right pt-3">
-              <button class="btn btn-sm btn-outline-secondary mr-1" id="btnOpenClassManageModal" onclick="openClassManageModal()" style="border-radius: 8px; font-weight: 700;">
+            <div class="col-md-5 text-right pt-3 d-flex justify-content-end align-items-center" style="gap: 6px;">
+              <button class="btn btn-sm btn-outline-danger" id="btnOpenDeletedStudentsModal" onclick="openDeletedStudentListModal()" style="border-radius: 8px; font-weight: 700; white-space: nowrap;" title="7일 임시 보존 원생 복구 및 관리">
+                <i class="fa-solid fa-trash-clock mr-1"></i>삭제 내역 (<span id="deletedStudentCountBadge">0</span>)
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" id="btnOpenClassManageModal" onclick="openClassManageModal()" style="border-radius: 8px; font-weight: 700; white-space: nowrap;">
                 <i class="fa-solid fa-chalkboard-user mr-1 text-primary"></i>학급 관리
               </button>
-              <button class="btn btn-sm btn-beige-secondary mr-1" id="btnOpenStudentExcelModal" onclick="openStudentExcelModal()">
+              <button class="btn btn-sm btn-beige-secondary" id="btnOpenStudentExcelModal" onclick="openStudentExcelModal()" style="border-radius: 8px; font-weight: 700; white-space: nowrap;">
                 <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 일괄 등록
               </button>
-              <button class="btn btn-sm btn-beige-primary" id="btnOpenStudentAddModal" onclick="openStudentAddModal()">
+              <button class="btn btn-sm btn-beige-primary" id="btnOpenStudentAddModal" onclick="openStudentAddModal()" style="border-radius: 8px; font-weight: 700; white-space: nowrap;">
                 <i class="fa-solid fa-plus mr-1"></i>원생 등록
               </button>
             </div>
@@ -4247,6 +4250,95 @@
   </div>
 </div>
 
+<!-- 2단계 보안 확인: 원생 삭제 확인 모달 (원장님 패스워드 검증 & 7일 보존 안내) -->
+<div class="modal fade" id="studentDeleteConfirmModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius: 16px; border: 2px solid #e2a297; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+      <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4" style="background: #fff5f5; border-bottom: 1px solid #fecdd3; border-radius: 16px 16px 0 0;">
+        <div class="d-flex align-items-center">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 15px;"></i>
+          </div>
+          <div>
+            <h6 class="modal-title font-weight-bold mb-0" style="color: #991b1b; font-size: 15px;">원생 삭제 (2단계 보안 확인)</h6>
+            <small class="text-muted" style="font-size: 11.5px;">안전한 원생 정보 보호를 위해 원장님 비밀번호 확인이 필요합니다.</small>
+          </div>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+
+      <div class="modal-body p-4" style="background: #ffffff;">
+        <div class="alert alert-danger mb-3" style="font-size: 12.5px; border-radius: 10px; line-height: 1.6; border: 1px solid #fecdd3; background: #fff1f2; color: #9f1239;">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i>
+          <strong>⚠️ 삭제 시 7일간 '삭제 내역'에 임시 보존됩니다.</strong><br>
+          - 삭제된 원생은 명부에서 즉시 제외되며 소속 학급은 '미지정'으로 안전하게 분리됩니다.<br>
+          - <strong>7일 이내</strong>에는 언제든지 [삭제 내역]에서 원래 상태로 복구할 수 있으며, 7일 후 완전히 영구 삭제됩니다.
+        </div>
+
+        <div class="p-3 rounded mb-3" style="background: #fdfbf7; border: 1px solid var(--border-medium); font-size: 13px;">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted" style="font-size: 12px;">삭제 대상 원생</span>
+            <span class="badge-soft badge-soft-danger font-weight-bold" id="deleteStudentIdBadge">학번: -</span>
+          </div>
+          <div class="font-weight-bold" style="font-size: 16px; color: var(--text-main);" id="deleteStudentName">-</div>
+          <div class="text-muted mt-1" style="font-size: 12px;" id="deleteStudentMeta">-</div>
+        </div>
+
+        <div class="form-group mb-2">
+          <label class="font-weight-bold" style="font-size: 13px; color: var(--text-main);">
+            학원 관리자(원장님) 비밀번호 확인 <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <input type="password" id="studentDeletePassword" class="form-control" placeholder="원장님 계정 비밀번호를 입력하세요" style="border-radius: 8px; font-size: 13px;" onkeydown="if(event.key==='Enter') confirmDeleteStudent();">
+          </div>
+          <small class="text-danger d-none mt-1" id="studentDeletePasswordError">
+            <i class="fa-solid fa-circle-xmark mr-1"></i>비밀번호가 일치하지 않습니다. 다시 확인해주세요.
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-end p-3 px-4" style="background: #fdfbf7; border-top: 1px solid var(--border-light); border-radius: 0 0 16px 16px; gap: 8px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal" style="border-radius: 8px; padding: 7px 18px; font-weight: 600;">취소</button>
+        <button type="button" class="btn btn-sm btn-danger font-weight-bold" style="border-radius: 8px; padding: 7px 20px;" onclick="confirmDeleteStudent()">
+          <i class="fa-solid fa-trash-can mr-1"></i>삭제 진행 (7일 임시 보존)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7일 임시 보존 원생 목록 모달 (삭제 내역 및 복구) -->
+<div class="modal fade" id="deletedStudentListModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 10px 30px rgba(0,0,0,0.12);">
+      <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4" style="background: #fdfbf7; border-bottom: 1px solid var(--border-light); border-radius: 16px 16px 0 0;">
+        <div class="d-flex align-items-center">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: #e06d53; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+            <i class="fa-solid fa-trash-clock" style="font-size: 14px;"></i>
+          </div>
+          <div>
+            <h6 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 15px;">삭제된 원생 임시 보존 보관함 (7일 이내 복구 가능)</h6>
+            <small class="text-muted" style="font-size: 11.5px;">삭제일로부터 7일간 보존되며, 기간 내에는 언제든 [복구]할 수 있습니다.</small>
+          </div>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+
+      <div class="modal-body p-4" style="background: #ffffff; max-height: 520px; overflow-y: auto;">
+        <div class="alert alert-warning mb-3" style="font-size: 12.5px; border-radius: 10px;">
+          <i class="fa-solid fa-circle-info mr-1"></i>삭제된 원생은 <strong>7일 동안 보존</strong>되며, 복구 시 기존 학습 이력과 함께 즉시 원생 명부로 복귀합니다.
+        </div>
+        <div id="deletedStudentListContainer">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+      <div class="modal-footer p-3 px-4" style="background: #fdfbf7; border-top: 1px solid var(--border-light); border-radius: 0 0 16px 16px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal" style="border-radius: 8px; padding: 6px 16px;">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 원생 추가 모달 -->
 <div class="modal fade" id="studentAddModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -6053,7 +6145,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Daum 우편번호 서비스 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script src="admin_preview.js?v=20261002_scoped_v1"></script>
+<script src="admin_preview.js?v=20261002_softdelete_v1"></script>
 
 </body>
 </html>
