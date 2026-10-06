@@ -110,20 +110,22 @@ header .btn_info {position:absolute; top:28px; right:42px;}
 .input_box.readonly input {background:#ddd;}
 /*버튼*/
 .btn_area {display:flex; justify-content:center;}
-.btn_basic {display:block; font-size:25px; color:#fff; text-align:center; background:#f5a32d; border:none;}
+.btn_basic {display:block; font-size:25px; color:#fff; text-align:center; background:#f5a32d; border:none; cursor:pointer; transition:all 0.2s ease; border-radius:12px;}
+.btn_basic:active {transform:scale(0.98); opacity:0.92;}
 .btn_info {font-size:0; text-indent:-9999em;}
 
-/*레이어 팝업*/
-.layer_popup_wrap {position:fixed; top:0; left:0; width:100%; height:100%; display:none;}
-.layer_popup {position:absolute; top:50%; left:50%; background:#fff; border:2px solid #f5a32d; border-radius:14px; transform:translate(-50%,-50%); box-sizing:border-box; overflow:hidden;}
-.layer_popup .popup_text {line-height:32px; font-size:22px; color:#000; text-align:center;}
-.layer_popup .popup_text_confirm {line-height:32px; font-size:22px; color:#000; text-align:center;}
+/*레이어 팝업 - 배경 딤(dim) 및 그림자 처리로 시인성 대폭 향상*/
+.layer_popup_wrap {position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); z-index:999; display:none;}
+.layer_popup {position:absolute; top:50%; left:50%; background:#fff; border:2px solid #f5a32d; border-radius:16px; transform:translate(-50%,-50%); box-sizing:border-box; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.22);}
+.layer_popup .popup_text {line-height:30px; font-size:20px; font-weight:500; color:#222; text-align:center;}
+.layer_popup .popup_text_confirm {line-height:30px; font-size:20px; font-weight:500; color:#222; text-align:center;}
 .layer_popup .popup_btn_area {display:flex;}
-.layer_popup .popup_btn_area .btn {display:block; flex-grow:1; width:100%; font-size:25px; color:#fff; text-align:center; background:#f5a32d;}
+.layer_popup .popup_btn_area .btn {display:block; flex-grow:1; width:100%; font-size:22px; font-weight:600; color:#fff; text-align:center; background:#f5a32d; cursor:pointer; transition:background 0.2s ease;}
+.layer_popup .popup_btn_area .btn:active {opacity:0.9;}
 .layer_popup .popup_btn_area .btn + .btn {border-left:1px solid #fff;}
-.layer_popup_wrap.confirm .layer_popup {max-width:383px; width:100%;}
-.layer_popup_wrap.confirm .layer_popup .popup_contents {display:flex; align-items:center; justify-content:center; min-height:143px; padding:20px 10px; box-sizing:border-box;}
-.layer_popup_wrap.confirm .layer_popup .popup_btn_area .btn {height:53px; line-height:53px;}
+.layer_popup_wrap.confirm .layer_popup {max-width:380px; width:90%;}
+.layer_popup_wrap.confirm .layer_popup .popup_contents {display:flex; align-items:center; justify-content:center; min-height:130px; padding:24px 20px; box-sizing:border-box;}
+.layer_popup_wrap.confirm .layer_popup .popup_btn_area .btn {height:50px; line-height:50px;}
 .layer_popup.blue_green {border-color:#00ada9;}
 .layer_popup.blue_green .popup_btn_area .btn {background-color:#00ada9;}
 .scroll_contents {overflow:hidden;}
@@ -199,9 +201,9 @@ header .btn_info {position:absolute; top:28px; right:42px;}
 .board_item.on .board_title .icon_arrow {transform:rotate(180deg);}
 .board_item.on .board_content {display:block;}
 /*no data*/
-.no_data {display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; height:450px;}
-.no_data .icon_no_data {width:90px; height:90px; background:url(../images/common/no_data.png) no-repeat center/contain}
-.no_data .no_data_text {font-size:22px; color:#000; letter-spacing:-.01em;}
+.no_data {display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; min-height:260px; height:auto; padding:40px 20px;}
+.no_data .icon_no_data {width:80px; height:80px; opacity:0.85; background:url(../images/common/no_data.png) no-repeat center/contain}
+.no_data .no_data_text {font-size:18px; font-weight:500; color:#444; letter-spacing:-.01em;}
 /*아이콘*/
 .icon_info {display:block; width:27px; height:27px; background:url(../images/common/icon_info.png) no-repeat center/contain;}
 .icon_info.gray {background-image:url(../images/common/icon_info_gray.png);}

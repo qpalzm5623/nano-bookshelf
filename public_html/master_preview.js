@@ -1820,7 +1820,7 @@ function renderFranchiseTable(data = franchiseList) {
         <!-- 3. 가맹 학원명 -->
         <td>
           <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main); white-space: nowrap;">${acad.name}</div>
-          <small class="text-muted" style="white-space: nowrap;"><i class="fa-solid fa-location-dot mr-1"></i>${acad.region || '전국'} · 사업자: ${acad.bizNumber || '-'}</small>
+          <small style="color: #6c5f53; font-weight: 500; font-size: 11.5px; white-space: nowrap;"><i class="fa-solid fa-location-dot mr-1" style="color: #9c8a79;"></i>${acad.region || '전국'} · 사업자: ${acad.bizNumber || '-'}</small>
         </td>
         <!-- 4. 관리자 ID -->
         <td class="text-center" style="white-space: nowrap;">
@@ -1830,18 +1830,18 @@ function renderFranchiseTable(data = franchiseList) {
         <td class="text-center" style="white-space: nowrap;">
           <div style="font-size: 13px; white-space: nowrap; line-height: 1.35;">
             <strong style="color: var(--text-main); font-weight: 700;">${acad.director}</strong>
-            <span class="text-muted ml-1" style="font-size: 11.5px; font-weight: 500;">(${acad.phone || '-'})</span>
+            <span class="ml-1" style="font-size: 12px; font-weight: 600; color: #5c5044;">(${acad.phone || '-'})</span>
           </div>
-          ${acad.email ? `<div class="text-muted" style="font-size: 11px; opacity: 0.85; white-space: nowrap; margin-top: 3px; line-height: 1.2;"><i class="fa-regular fa-envelope mr-1" style="font-size: 10px;"></i>${acad.email}</div>` : ''}
+          ${acad.email ? `<div style="color: #7d7063; font-size: 11px; font-weight: 500; white-space: nowrap; margin-top: 3px; line-height: 1.2;"><i class="fa-regular fa-envelope mr-1" style="font-size: 10px;"></i>${acad.email}</div>` : ''}
         </td>
         <!-- 6. 가입일 -->
-        <td class="text-center font-weight-bold" style="font-size: 12px; color: #5a4b3d; white-space: nowrap;">
+        <td class="text-center font-weight-bold" style="font-size: 12.5px; color: #5a4b3d; white-space: nowrap; letter-spacing: -0.2px;">
           ${joinDateText}
         </td>
         <!-- 7. 계약 기간 -->
-        <td class="text-center" style="white-space: nowrap;">
-          <div style="font-size: 12px; font-weight: 600; white-space: nowrap;">${acad.startDate} ~ ${acad.endDate}</div>
-          <small class="text-muted d-block mt-1" style="white-space: nowrap;">${getDDayText(acad.endDate)}</small>
+        <td class="text-center" style="white-space: nowrap; min-width: 175px;">
+          <div style="font-size: 12.5px; font-weight: 700; color: var(--text-main); letter-spacing: -0.2px; white-space: nowrap;">${acad.startDate} ~ ${acad.endDate}</div>
+          <small class="d-block mt-1" style="color: #8c7662; font-weight: 600; font-size: 11px; white-space: nowrap;">${getDDayText(acad.endDate)}</small>
         </td>
         <!-- 8. 원생 수 / 계약 슬롯 (사용인원) -->
         <td style="min-width: 140px;">

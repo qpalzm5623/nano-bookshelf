@@ -872,13 +872,13 @@
           </select>
         </div>
         <!-- 가입일 기간 검색 (날짜 박스 2개) -->
-        <div class="d-flex align-items-center px-2 py-1" style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 10px; height: 38px; gap: 6px;">
-          <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">
-            <i class="fa-regular fa-calendar mr-1 text-primary"></i>가입일
+        <div class="d-flex align-items-center px-3" style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 10px; height: 38px; gap: 8px;">
+          <span style="font-size: 12.5px; font-weight: 700; color: #5a4b3d; white-space: nowrap; display: inline-flex; align-items: center;">
+            <i class="fa-regular fa-calendar mr-1" style="color: #8c7355;"></i>가입일
           </span>
-          <input type="date" id="franchiseStartDateFilter" class="form-control form-control-sm border-0 p-0" style="width: 125px; font-size: 12px; background: transparent; height: 30px;" onchange="filterFranchiseList()" title="가입일 시작일">
-          <span class="text-muted" style="font-size: 12px;">~</span>
-          <input type="date" id="franchiseEndDateFilter" class="form-control form-control-sm border-0 p-0" style="width: 125px; font-size: 12px; background: transparent; height: 30px;" onchange="filterFranchiseList()" title="가입일 종료일">
+          <input type="date" id="franchiseStartDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" onchange="filterFranchiseList()" title="가입일 시작일">
+          <span style="color: var(--text-muted); font-size: 13px; font-weight: 600;">~</span>
+          <input type="date" id="franchiseEndDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" onchange="filterFranchiseList()" title="가입일 종료일">
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
