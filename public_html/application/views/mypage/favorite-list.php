@@ -47,9 +47,10 @@
 					</div>
 				</div>
 				<?php if(empty($bookList)) {?>
-                <div class="no_data">
+                <div class="no_data" style="padding:48px 16px;text-align:center;">
 					<i class="icon_no_data"></i>
-					<span class="no_data_text">데이터가 없습니다.</span>
+					<p class="no_data_text" style="margin-bottom:16px;">아직 찜한 도서가 없습니다.</p>
+					<a href="/book/topic_list" class="btn_basic bg_blue_green" style="display:inline-block;padding:8px 20px;">책 둘러보기</a>
 				</div>				
 			    <?php } else {?>
 				<!-- 도서 목록 -->
@@ -65,11 +66,11 @@
 								<a href="javascript:;;" data-book_no="<?php echo $row['book_no'];?>" data-quiz_seq="<?php echo $row['quiz_seq'];?>" class="btn_wish <?php echo $row['fh_seq']!=null?"on":"";?>">wish</a>
 							</div>
 							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi"><?php echo $row['book_name'];?></a>
+								<a href="/book/detail/<?php echo $row['book_no'];?>/<?php echo $row['quiz_seq'];?>" class="book_subject ellipsis_multi"><?php echo htmlspecialchars($row['book_name']);?></a>
 								<ul class="book_info">
-									<li><?php echo $row['author'];?></li>
-									<li><?php echo $row['publisher'];?></li>
-									<li><?php echo $row['user_id'];?></li>
+									<li><?php echo htmlspecialchars($row['author']);?></li>
+									<li><?php echo htmlspecialchars($row['publisher']);?></li>
+									<li><?php echo htmlspecialchars($row['user_id']);?></li>
 								</ul>
 							</div>
 						</li>
@@ -88,7 +89,7 @@
 	       location = "?grade="+$('#grade :selected').val();
 	    });
 	    $('.btn_wish').on("click",function(){
-	        $(this).addClass("on");
+	        var $btn = $(this).addClass("on");
 	        
     		var data = {
     			"quiz_seq"	:	$(this).data("quiz_seq"),
@@ -118,8 +119,9 @@
     					cswal(data.msg);
     				}
                 },
-                error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
+                error: function(jqXHR) {
+                    $btn.removeClass("on");
+                    ajaxFail(jqXHR);
                 }
             });			        
 	    });

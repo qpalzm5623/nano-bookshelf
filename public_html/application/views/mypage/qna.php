@@ -60,6 +60,11 @@
 				<!-- 나의 문의 내역 -->
 				<div class="tab_contents">
 					<ul class="board_list">
+				    <?php if(count($list) == 0){ ?>
+					<li class="board_item" style="padding:48px 16px;text-align:center;color:#888;">
+						아직 등록한 문의가 없어요.<br>궁금한 점이 있다면 '1:1 문의' 탭에서 남겨 주세요.
+					</li>
+				    <?php } ?>
 				    <?php 
 				        for($i=0;$i<count($list);$i++){
 				            $row=$list[$i];
@@ -67,7 +72,7 @@
 					<li class="board_item">
 						<!-- 제목 -->
 						<div class="board_title inner">
-							<div class="board_subject"><?php echo $row['title'];?> <span class="status">
+							<div class="board_subject"><?php echo htmlspecialchars($row['title']);?> <span class="status">
 							    <?php if(!empty($row['reply_contents'])){?>답변완료<?php }else{ ?>문의중<?php }?>
 							    </span></div>
 							<span class="board_date"><?php echo date("Y-m-d", strtotime($row['reg_date']));?></span>
@@ -77,13 +82,13 @@
 						<div class="board_content">
 							<!-- 문의 -->
 							<div class="inquiry inner">
-								<?php echo nl2br($row['contents']);?>
+								<?php echo nl2br(htmlspecialchars($row['contents']));?>
 							</div>
 							<?php if($row['reply_contents'] != ""){?>
 							<!-- 답변 -->
 							<div class="answer board_text_box inner">
 								<span class="answer_title">└ 답변</span>
-								<div class="board_text"><?php echo nl2br($row['reply_contents']);?></div>
+								<div class="board_text"><?php echo nl2br(htmlspecialchars($row['reply_contents']));?></div>
 								<span class="board_date"><?php echo date("Y-m-d", strtotime($row['reply_date']));?></span>
 							</div>
 							<?php }?>
@@ -104,6 +109,10 @@
 
 	<script>
 		$(function() {
+			// 등록 직후에는 방금 쓴 문의를 바로 확인할 수 있도록 '나의 문의 내역' 탭을 연다
+			if (location.hash === '#history') {
+				$('.sub_tab_box .tab').eq(1).trigger('click');
+			}
 			$('.inquiry_agree_box .btn_view').on('click', function(e) {
 				e.preventDefault();
 				$('.inquiry_agree_box').toggleClass('on');
@@ -128,7 +137,7 @@
         		
         		if($('#check1').is(":checked") == false){
         			cswal("개인정보 수집 및 이용 동의를 해주세요.");
-        			$('#contents').focus();
+        			$('#check1').focus();
         			return
         		}
 
@@ -142,6 +151,8 @@
 
                 data[csrf_name] = csrf_val;
 
+        		// 중복 등록 방지: 요청이 끝날 때까지 버튼을 잠근다
+        		var $saveBtn = $('#saveBtn').prop('disabled', true);
         		$.ajax({
                     type: "POST",
                     url : "/mypage/qnaProc",
@@ -153,6 +164,7 @@
         						icon: "success",
         					}).then((value)=>{
         						//location.href = "/member/setting";
+        						location.href = location.pathname + "#history";
         						location.reload();
         					});
 
@@ -160,9 +172,8 @@
         					cswal(data.msg);
         				}
                     },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                      console.log(jqXHR.responseText);
-                    }
+                    error: ajaxFail,
+                    complete: function() { $saveBtn.prop('disabled', false); }
                 });		
                //$('mForm').submit();
            });

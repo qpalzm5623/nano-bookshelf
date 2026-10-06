@@ -54,11 +54,11 @@
 								<a href="javascript:;;" data-book_no="<?php echo $row['book_no'];?>" data-quiz_seq="<?php echo $row['quiz_seq'];?>" class="btn_wish <?php echo $row['fh_seq']!=null?"on":"";?>">wish</a>
 							</div>
 							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi"><?php echo $row['book_name'];?></a>
+								<a href="/book/quiz_result/<?php echo @$row['book_no'];?>/<?php echo @$row['quiz_seq'];?>/<?php echo @$row['qh_seq'];?>" class="book_subject ellipsis_multi"><?php echo htmlspecialchars($row['book_name']);?></a>
 								<ul class="book_info">
-									<li><?php echo $row['author'];?></li>
-									<li><?php echo $row['publisher'];?></li>
-									<li><?php echo $row['user_id'];?></li>
+									<li><?php echo htmlspecialchars($row['author']);?></li>
+									<li><?php echo htmlspecialchars($row['publisher']);?></li>
+									<li><?php echo htmlspecialchars($row['user_id']);?></li>
 								</ul>
 							</div>
 						</li>
@@ -66,93 +66,9 @@
 					</ul>
 				</div>
 			    <?php }?>
-			    <?php /*
-
-				
-				<div class="list_set_up">
-					<div class="inner">
-						<span class="count">YYYY-MM-DD</span>
-					</div>
-				</div>
-
-				<!-- 도서 목록 -->
-				<div class="inner">
-					<ul class="book_list basic_list">
-						<li class="book">
-							<div class="image_box">
-								<a href="#"><img src="/resources/images/common/no_image.png" alt=""></a>
-								<a href="#" class="btn_wish">wish</a>
-							</div>
-							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi">제목제제목제목제목제목제목제목목제목제목제제목제제목제목제목제목제목제목목제목제목제목제목목제목</a>
-								<ul class="book_info">
-									<li>지은이</li>
-									<li>출판사</li>
-									<li>출제자</li>
-								</ul>
-							</div>
-						</li>
-						<li class="book">
-							<div class="image_box">
-								<a href="#"><img src="/resources/images/common/no_image.png" alt=""></a>
-								<a href="#" class="btn_wish">wish</a>
-							</div>
-							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi">제목제제목제목제목제목제목제목목제목제목제제목제제목제목제목제목제목제목목제목제목제목제목목제목</a>
-								<ul class="book_info">
-									<li>지은이</li>
-									<li>출판사</li>
-									<li>출제자</li>
-								</ul>
-							</div>
-						</li>
-						<li class="book">
-							<div class="image_box">
-								<a href="#"><img src="/resources/images/common/no_image.png" alt=""></a>
-								<a href="#" class="btn_wish">wish</a>
-							</div>
-							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi">제목제제목제목제목제목제목제목목제목제목제제목제제목제목제목제목제목제목목제목제목제목제목목제목</a>
-								<ul class="book_info">
-									<li>지은이</li>
-									<li>출판사</li>
-									<li>출제자</li>
-								</ul>
-							</div>
-						</li>
-						<li class="book">
-							<div class="image_box">
-								<a href="#"><img src="/resources/images/common/no_image.png" alt=""></a>
-								<a href="#" class="btn_wish on">wish</a>
-							</div>
-							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi">제목제목제목제제목제목제목제목제목제목목제목제목</a>
-								<ul class="book_info">
-									<li>지은이</li>
-									<li>출판사</li>
-									<li>출제자</li>
-								</ul>
-							</div>
-						</li>
-						<li class="book">
-							<div class="image_box">
-								<a href="#"><img src="/resources/images/common/no_image.png" alt=""></a>
-								<a href="#" class="btn_wish on">wish</a>
-							</div>
-							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi">제목제목제목제제목제목제목제목제목제목목제목제목</a>
-								<ul class="book_info">
-									<li>지은이</li>
-									<li>출판사</li>
-									<li>출제자</li>
-								</ul>
-							</div>
-						</li>
-					</ul>
-				</div>
-			</div>
-			<!-- // 독서 인증 기록 -->
-			*/?>
+<?php if(empty($dateList)){ ?>
+<div class="inner" style="padding:64px 16px;text-align:center;color:#888;">아직 인증 완료한 책이 없어요.<br>책을 읽고 퀴즈를 풀면 여기에 기록돼요.<br><br><a href="/book/topic_list" class="btn_basic bg_blue_green" style="display:inline-block;padding:10px 24px;">책 검색하러 가기</a></div>
+<?php } ?>
 
 		</div>
 		<!-- // contents -->
@@ -165,7 +81,7 @@
 	<script>
 	$(function(){
 	    $('.btn_wish').on("click",function(){
-	        $(this).addClass("on");
+	        var $btn = $(this).addClass("on");
 	        
     		var data = {
     			"quiz_seq"	:	$(this).data("quiz_seq"),
@@ -195,8 +111,9 @@
     					cswal(data.msg);
     				}
                 },
-                error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
+                error: function(jqXHR) {
+                  $btn.removeClass("on");  // 저장 실패 시 하트를 되돌려 사용자가 저장된 것으로 오해하지 않게 한다
+                  ajaxFail(jqXHR);
                 }
             });			        
 	    });

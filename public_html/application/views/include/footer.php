@@ -27,8 +27,9 @@ function logout(){
 			//});
 
 		},
-		error: function(jqXHR, textStatus, errorThrown) {
-			console.log(jqXHR.responseText);
+		error: function(jqXHR) {
+			// 실패하더라도 세션 만료 등의 이유일 수 있으므로 알림 후 로그인으로 이동
+			location.href = "/login";
 		}
 	});
 }

@@ -71,13 +71,18 @@ function mytory_asterisk($string) {
 						<div class="ranking_list_area"> <!-- 240303 추가-->
     						<!-- 랭킹 목록 -->
     						<ul class="ranking_list">
+    						    <?php if(count(@$rankList) == 0){ ?>
+    							<li style="padding:48px 16px;text-align:center;color:#888;display:block;">
+    								해당 기간에 집계된 랭킹 데이터가 없습니다.<br>도서를 읽고 퀴즈를 풀어 랭킹에 도전해보세요!
+    							</li>
+    						    <?php } ?>
     						    <?php 
     						    for($i=0;$i<count(@$rankList);$i++){
     						        $row = $rankList[$i];
     						    ?>
     							<li>
     								<span class="number"><?php echo $i+1;?></span>
-    								<div class="name"><?php echo (@$_GET['myGroup']=="Y") ? $row['user_name'] : mytory_asterisk($row['user_name']);?><BR><span class="class">(<?php echo $row['group_name'];?>-<?php echo $row['class_name'];?>)</span></div>
+    								<div class="name"><?php echo htmlspecialchars((@$_GET['myGroup']=="Y") ? $row['user_name'] : mytory_asterisk($row['user_name']));?><BR><span class="class">(<?php echo htmlspecialchars($row['group_name']);?>-<?php echo htmlspecialchars($row['class_name']);?>)</span></div>
     								<div class="point"><?php echo number_format($row['point']);?>P</div>
     							</li>
     						    <?php }?>
@@ -113,21 +118,19 @@ function mytory_asterisk($string) {
 	</div>
 	<script>
 	    $(function() {
-	        $('#myGroup').on("change",function(){
-	            if($('#myGroup').is(":checked") == true)
-			        location="?year="+$('#year :selected').val()+"&month="+$('#month :selected').val()+"&myGroup=Y";
-			    else
-			        location="?year="+$('#year :selected').val()+"&month="+$('#month :selected').val()+"&myGroup=";
-			});
-			$('.btn_info').on("click", function(){
+	        function updateRankingUrl() {
+	            var y = $('#year :selected').val();
+	            var m = $('#month :selected').val();
+	            var mg = $('#myGroup').is(":checked") ? "Y" : "";
+	            location = "?year=" + y + "&month=" + m + (mg ? "&myGroup=" + mg : "");
+	        }
+	        $('#myGroup').on("change", updateRankingUrl);
+			$('.btn_info').on("click", function(e){
+			    e.preventDefault();
 			    $('#infoLayer').show();
 			});	    
-			$('#year').on("change",function(){
-			    location="?year="+$('#year :selected').val()+"&month="+$('#month :selected').val();
-			});
-			$('#month').on("change",function(){
-			    location="?year="+$('#year :selected').val()+"&month="+$('#month :selected').val();
-			});
+			$('#year').on("change", updateRankingUrl);
+			$('#month').on("change", updateRankingUrl);
 		});
 	</script>
 	

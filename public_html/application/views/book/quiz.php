@@ -411,9 +411,7 @@
     					cswal(data.msg);
     				}
                 },
-                error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
-                }
+                error: ajaxFail
             });	            
         });
         $('#recommendNBtn').on("click",function() {
@@ -453,32 +451,32 @@
     					cswal(data.msg);
     				}
                 },
-                error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
-                }
+                error: ajaxFail
             });	      
         });
         
         $('#submitBtn').on("click",function() {
-            let data = $('#quizForm').serialize();
+            var $btn = $(this);
+            if ($btn.prop('disabled')) return;
+            $btn.prop('disabled', true);
+
+            var formData = $('#quizForm').serialize();
     		var csrf_name = $('#csrf').attr("name");
             var csrf_val = $('#csrf').val();
 
-            data[csrf_name] = csrf_val;            
+            if (csrf_name && csrf_val) {
+                formData += (formData ? '&' : '') + encodeURIComponent(csrf_name) + '=' + encodeURIComponent(csrf_val);
+            }
+            
             // 저장
     		$.ajax({
                 type: "POST",
                 url : "/book/quizSaveProc",
-                data: data,
+                data: formData,
                 dataType:"json",
                 success : function(data, status, xhr) {
                     if(data.result=="success"){
                         qh_seq = data.qh_seq;
-    					//swal("저장되었습니다.", {
-    					//	icon: "success",
-    					//}).then((value)=>{
-    					//	//location.href = "/member/setting";
-    					//});
                         // 문제 완료
                         $('#submitAlert').hide(); 
                         
@@ -489,17 +487,17 @@
                             $('.recommend_contents').removeClass('hide');
                         } else 
                             $('#quizPassFail').show();
-                            
                         
     				}else{
-    					swal(data.msg);
+    					swal(data.msg || "제출 중 오류가 발생했습니다.");
+                        $btn.prop('disabled', false);
     				}
                 },
-                error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
+                error: function(jqXHR) {
+                    $btn.prop('disabled', false);
+                    ajaxFail(jqXHR);
                 }
             });		            
-            //$('#closeBtn').hide();
         });
         $('#closeBtn').on("click",function() {
              $('#submitAlert').hide();

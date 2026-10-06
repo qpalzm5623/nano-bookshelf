@@ -55,23 +55,23 @@
                                 <span class="book_badge"></span>
                             </div>
                             <div class="book_info" style="width:100%;">
-        						<h3 class="subject ellipsis_multi"><?php echo $data['book_name'];?></h3>
-        						<span class="series"><?php echo $data['serise'];?></span>
-        						<span class="author"><?php echo $data['author'];?></span>
+        						<h3 class="subject ellipsis_multi"><?php echo htmlspecialchars($data['book_name']);?></h3>
+        						<span class="series"><?php echo htmlspecialchars($data['serise']);?></span>
+        						<span class="author"><?php echo htmlspecialchars($data['author']);?></span>
                                 
                                 <div class="info_box">
                                     <ul class="info_list">
                                         <li class="info_item">
                                             <span class="info_title">출판사</span>
-                                            <div class="info_content"><?php echo $data['publisher'];?></div>
+                                            <div class="info_content"><?php echo htmlspecialchars($data['publisher']);?></div>
                                         </li>
                                         <li class="info_item">
                                             <span class="info_title">카테고리</span>
-                                            <div class="info_content"><?php echo $data['subject'];?></div>
+                                            <div class="info_content"><?php echo htmlspecialchars($data['subject']);?></div>
                                         </li>
                                         <li class="info_item">
                                             <span class="info_title">문항 수</span>
-                                            <div class="info_content"><?php echo $data['quiz_cnt'];?></div>
+                                            <div class="info_content"><?php echo (int)$data['quiz_cnt'];?></div>
                                         </li>
                                     </ul>
                                 </div>
@@ -142,12 +142,12 @@
                                     <div class="answer_area">
                                         <div class="answer_box">
                                             <span class="answer_title">나의답</span>
-                                            <div class="answer_content"><?php echo $ar[$i];?></div>
+                                            <div class="answer_content"><?php echo htmlspecialchars((string)@$ar[$i]);?></div>
                                         </div>
                                         <?php if($class == "wrong"){ ?>
                                         <div class="answer_box">
                                             <span class="answer_title bg_blue_green">정답</span>
-                                            <div class="answer_content"><?php echo $a['a'][$i];?></div>
+                                            <div class="answer_content"><?php echo htmlspecialchars((string)@$a['a'][$i]);?></div>
                                         </div>
                                         <?php }?>
                                     </div>

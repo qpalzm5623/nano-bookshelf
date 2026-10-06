@@ -43,7 +43,7 @@
     				        $row = @$keywordList[$i];    
     				    ?>					    
 						<div class="swiper-slide">
-							<a href="/book/?keyword=<?php echo $row['keyword'];?>" class="search_word"><?php echo $row['keyword'];?><i class="btn_delete" data-keyword="<?php echo $row['keyword'];?>"></i></a>
+							<a href="/book/?keyword=<?php echo urlencode($row['keyword']);?>" class="search_word"><?php echo htmlspecialchars($row['keyword']);?><i class="btn_delete" role="button" aria-label="최근 검색어 삭제" data-keyword="<?php echo htmlspecialchars($row['keyword'], ENT_QUOTES);?>"></i></a>
 							
 						</div>
 						<?php 
@@ -61,12 +61,12 @@
 				        $row = $topicList[$i];    
 				    ?>
 					<li class="book_topic">
-						<a href="/book/?topic=<?php echo $row['code_name'];?>"></a>
+						<a href="/book/?topic=<?php echo urlencode($row['code_name']);?>"></a>
 						<div class="book_content">
-							<h4 class="book_subject"><?php echo $row['code_name'];?></h4>
-							<p class="book_description"><?php echo $row['code_desc'];?></p>
+							<h4 class="book_subject"><?php echo htmlspecialchars($row['code_name']);?></h4>
+							<p class="book_description"><?php echo htmlspecialchars($row['code_desc']);?></p>
 						</div>
-						<div class="image_box" style="width:128px;height:79px;"><img src="/upload/code/<?php echo $row['code_image'];?>" alt=""></div>
+						<div class="image_box" style="width:128px;height:79px;"><img src="/upload/code/<?php echo htmlspecialchars($row['code_image']);?>" alt="<?php echo htmlspecialchars($row['code_name']);?>" onError="this.src='/resources/images/common/no_image.png'"></div>
 					</li>
 				    <?php }?>
 				</ul>
@@ -113,41 +113,30 @@
 			$('.btn_info').on("click", function(){
 			    $('#infoLayer').show();
 			});
-			$('.btn_delete').on("click",function(){
-		var data = {
-			"keyword"	:	$(this).data("keyword"),
-		};
-		
+			$('.btn_delete').on("click",function(e){
+				// 삭제 아이콘은 <a> 안에 있으므로, 검색 이동이 일어나지 않도록 가장 먼저 차단
+				e.preventDefault();
+				e.stopPropagation();
 
-		var csrf_name = $('#csrf').attr("name");
-        var csrf_val = $('#csrf').val();
+				var data = {
+					"keyword"	:	$(this).data("keyword"),
+				};
+				data[$('#csrf').attr("name")] = $('#csrf').val();
 
-        data[csrf_name] = csrf_val;
-		$.ajax({
-            type: "POST",
-            url : "/book/keywordDeleteProc",
-            data: data,
-            dataType:"json",
-            success : function(data, status, xhr) {
-                location.reload();
-                return;
-                if(data.result=="success"){
-					swal("삭제되었습니다.", {
-						icon: "success",
-					}).then((value)=>{
-						//location.href = "/member/setting";
-						location.reload();
-					});
-
-				}else{
-					cswal(data.msg);
-				}
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-              console.log(jqXHR.responseText);
-            }
-        });	
-       event.preventDefault();
+				$.ajax({
+					type: "POST",
+					url : "/book/keywordDeleteProc",
+					data: data,
+					dataType:"json",
+					success : function(res) {
+						if(res.result=="success"){
+							location.reload();
+						}else{
+							cswal(res.msg || "삭제하지 못했습니다.");
+						}
+					},
+					error: ajaxFail
+				});
 			});
 		})
 	</script>

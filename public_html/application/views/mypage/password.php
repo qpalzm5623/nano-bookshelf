@@ -100,9 +100,7 @@ $(function() {
 					swal(data.msg);
 				}
             },
-            error: function(jqXHR, textStatus, errorThrown) {
-              console.log(jqXHR.responseText);
-            }
+            error: ajaxFail
         });		
         $('mForm').submit();
    });

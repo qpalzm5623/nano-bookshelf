@@ -167,9 +167,7 @@
         					cswal(data.msg || "처리 중 오류가 발생했습니다.");
         				}
                     },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                      console.log(jqXHR.responseText);
-                    }
+                    error: ajaxFail
                 });			        
     	    });
     	});  		

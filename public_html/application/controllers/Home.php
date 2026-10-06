@@ -415,26 +415,31 @@ class Home extends MY_Controller {
 		$where ="";		
 		
 		$topic = json_decode($userData['topic']);
-		
-		
-		
+		// [보안] 아래 WHERE 문자열에 직접 들어가는 값은 반드시 이스케이프 (SQL 인젝션 방지)
+		$safeTopic = array();
+		for($t = 0; $t < 3; $t++) {
+			$safeTopic[$t] = isset($topic[$t]) ? $this->db->escape_str($topic[$t]) : "";
+		}
+		$safeGroup = $this->db->escape_str((string)$userData['group_name']);
+		$safeGrade = $this->db->escape_str((string)$userData['grade_org']);
+
 		// 7일간 
 		// 전체 두종류
 		$topicBookList1 = array();
 		$topicBookList2 = array();
 		$topicBookList3 = array();
 		if(@$topic[0] != "") {
-    		$where = " AND (a.subject ='{$topic[0]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+    		$where = " AND (a.subject ='{$safeTopic[0]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
             $whereData = array("where"=>$where, "limit"=>"", "user_id" => $userData['user_id']);
             $topicBookList1 = $this->book_model->getBookUserList($whereData);				
         }
         if(@$topic[1] != "") {
-    		$where = " AND (a.subject ='{$topic[1]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+    		$where = " AND (a.subject ='{$safeTopic[1]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
             $whereData = array("where"=>$where, "limit"=>"", "user_id" => $userData['user_id']);
             $topicBookList2 = $this->book_model->getBookUserList($whereData);				
         }
         if(@$topic[2] != "") {
-		    $where = " AND (a.subject ='{$topic[2]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+		    $where = " AND (a.subject ='{$safeTopic[2]}') AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
             $whereData = array("where"=>$where, "limit"=>"", "user_id" => $userData['user_id']);
             $topicBookList3 = $this->book_model->getBookUserList($whereData);
         }
@@ -445,10 +450,10 @@ class Home extends MY_Controller {
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'] , "order"=>"ORDER BY a.reg_date DESC");
         $recentlyBookList = $this->book_model->getBookUserList($whereData);
             		
-		$group_prio = !empty($userData['group_name']) ? "CASE WHEN u.group_name = '{$userData['group_name']}' THEN 0 ELSE 1 END, " : "";
+		$group_prio = !empty($userData['group_name']) ? "CASE WHEN u.group_name = '{$safeGroup}' THEN 0 ELSE 1 END, " : "";
 
 		$popularBook7List = array();
-	    $where = " AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} quiz_use_cnt_7 desc");
         $popularBook7List = $this->book_model->getBookUserList($whereData);		
         
@@ -457,18 +462,18 @@ class Home extends MY_Controller {
         $popularBookList = $this->book_model->getBookUserList($whereData);		        
         		
 		$gradeBook7List = array();
-	    $where = " and (a.recommend_class='".$userData['grade_org']."') AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " and (a.recommend_class='".$safeGrade."') AND a.reg_date < DATE_SUB(NOW(), INTERVAL 7 DAY)  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} quiz_use_cnt_7 desc");
         $gradeBook7List = $this->book_model->getBookUserList($whereData);		
         
 		$gradeBookList = array();
-	    $where = " and (a.recommend_class='".$userData['grade_org']."')  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " and (a.recommend_class='".$safeGrade."')  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} quiz_use_cnt desc");
         $gradeBookList = $this->book_model->getBookUserList($whereData);		        
 		
 		// 권장도서 (소속 학원 도서 우선 추천)
 		$recommendBookList = array();
-	    $where = " and (a.recommend_class='".$userData['grade_org']."') and (a.recommend_yn='Y')  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$userData['group_name']}'))";
+	    $where = " and (a.recommend_class='".$safeGrade."') and (a.recommend_yn='Y')  AND ((c.status='Y' OR s.quiz_seq IS NOT NULL) OR (u.group_name = '{$safeGroup}'))";
         $whereData = array("where"=>$where, "limit"=>" limit 20", "user_id" => $userData['user_id'], "order"=>" ORDER BY {$group_prio} a.reg_date desc");
         $recommendBookList = $this->book_model->getBookUserList($whereData);		        		
 		
@@ -508,12 +513,6 @@ class Home extends MY_Controller {
 		$this->parser->parse('include/footer',$this->CONFIG_DATA);
 	}
 
-	public function upload_test()
-	{
-		$data = array();
-		$this->parser->parse('/test-upload',$data);
-	}
-
 	public function sendEmailAjax()
 	{
 		$from_email = $this->input->post("from_email");
@@ -542,7 +541,7 @@ class Home extends MY_Controller {
 		$sub = "terms";
 
 		$terms = $this->board_model->getTermsData();
-		$terms = nl2br($terms['terms']);
+		$terms = !empty($terms['terms']) ? nl2br($terms['terms']) : "이용약관을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
 
 		$data = array(
 			"terms"	=>	$terms
@@ -558,7 +557,7 @@ class Home extends MY_Controller {
 		$sub = "terms";
 
 		$privacy = $this->board_model->getTermsData();
-		$privacy = nl2br($privacy['privacy']);
+		$privacy = !empty($privacy['privacy']) ? nl2br($privacy['privacy']) : "개인정보처리방침을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
 
 		$data = array(
 			"privacy"	=>	$privacy
@@ -573,7 +572,7 @@ class Home extends MY_Controller {
 		$sub = "terms";
 
 		$privacy = $this->board_model->getTermsData();
-		$privacy = nl2br($privacy['privacy2']);
+		$privacy = !empty($privacy['privacy2']) ? nl2br($privacy['privacy2']) : "개인정보처리방침을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
 
 		$data = array(
 			"privacy"	=>	$privacy
@@ -581,27 +580,6 @@ class Home extends MY_Controller {
 
 		$this->parser->parse('include/head',$this->CONFIG_DATA);
 		$this->parser->parse('/privacy2',$data);
-	}
-
-	public function test_pass()
-	{
-		echo $this->encrypt("password","rhddb0613$$");
-	}
-
-	public function uploadTest()
-	{
-		$upload_dir = $_SERVER['DOCUMENT_ROOT']."/upload/";
-		$img = $this->input->post("challenge_thumb");
-		$img = str_replace('data:image/png;base64,', '', $img);
-		$img = str_replace(' ', '+', $img);
-		$data = base64_decode($img);
-		$filename = time() . ".png";
-		$file = $upload_dir . $filename;
-		$success = file_put_contents($file, $data);
-
-		//echo $file;
-		echo '{"result":"success","imgUrl":"/upload/'.$filename.'"}';
-		exit;
 	}
 
 	public function oauth_proc()

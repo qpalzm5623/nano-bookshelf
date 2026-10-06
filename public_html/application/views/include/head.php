@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
 	<meta charset="UTF-8">
 	<!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<!-- 저시력 사용자를 위해 확대(핀치줌)를 허용한다 -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="나노의 책장 - 읽은 책을 퀴즈로 인증하고 독서 기록과 랭킹을 확인하세요.">
+	<meta name="theme-color" content="#ffffff">
 	<link rel="stylesheet" href="/resources/css/normalize.css">
 	<link rel="stylesheet" href="/resources/css/common.css">
 	<?php if(@$_SERVER['PATH_INFO'] == "/main" || empty($_SERVER['PATH_INFO'])) {?>

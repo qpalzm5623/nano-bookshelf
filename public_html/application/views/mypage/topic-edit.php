@@ -93,9 +93,7 @@
             
             
             },
-            error: function(jqXHR, textStatus, errorThrown) {
-              console.log(jqXHR.responseText);
-            }
+            error: ajaxFail
         });
       
     }    

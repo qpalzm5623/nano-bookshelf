@@ -17,8 +17,9 @@
 				<?php if(!empty(@$_REQUEST['keyword'])) {?>
 				    검색
 				<?php } else if(!empty(@$_REQUEST['topic'])) {?>
-				    <?php echo @$_REQUEST['topic'];?>
+				    <?php echo htmlspecialchars(@$_REQUEST['topic']);?>
 				<?php } else {?>
+				    도서 목록
 				<?php } ?>
 				</h2>
 			</div>
@@ -31,9 +32,9 @@
 			    <div class="inner">
     			    <form method="get" action="/book/" name="sform" id="sform">
     				<div class="input_box">
-    				    <input type="hidden" name="grade" id="grade" value="<?php echo @$_REQUEST['grade'];?>">
-    				    <input type="hidden" name="topic" id="topic" value="<?php echo @$_REQUEST['topic'];?>">
-    					<input type="text" placeholder="도서명, 지은이, 세부 태그, 출제자 아이디 를 검색하세요." name="keyword" id="keyword" required value="<?php echo @$_REQUEST['keyword'];?>">
+    				    <input type="hidden" name="grade" id="grade" value="<?php echo htmlspecialchars((string)@$_REQUEST['grade'], ENT_QUOTES);?>">
+    				    <input type="hidden" name="topic" id="topic" value="<?php echo htmlspecialchars((string)@$_REQUEST['topic'], ENT_QUOTES);?>">
+    					<input type="text" placeholder="도서명, 지은이, 세부 태그, 출제자 아이디 를 검색하세요." name="keyword" id="keyword" required value="<?php echo htmlspecialchars((string)@$_REQUEST['keyword'], ENT_QUOTES);?>">
     					<button type="submit" class="input_search"><i class="icon_search_orange"></i>검색</button>
     				</div>
     				</form>
@@ -44,7 +45,7 @@
         				        $row = @$keywordList[$i];    
         				    ?>					    
     						<div class="swiper-slide">
-    							<a href="/book/?keyword=<?php echo $row['keyword'];?>&grade=<?php echo @$_GET['grade'];?>&topic=<?php echo @$_GET['topic'];?>" class="search_word"><?php echo $row['keyword'];?><i class="btn_delete" data-keyword="<?php echo $row['keyword'];?>"></i></a>
+    							<a href="/book/?keyword=<?php echo urlencode($row['keyword']);?>&grade=<?php echo urlencode((string)@$_GET['grade']);?>&topic=<?php echo urlencode((string)@$_GET['topic']);?>" class="search_word"><?php echo htmlspecialchars($row['keyword']);?><i class="btn_delete" role="button" aria-label="삭제" data-keyword="<?php echo htmlspecialchars($row['keyword'], ENT_QUOTES);?>"></i></a>
     							
     						</div>
     						<?php 
@@ -85,9 +86,10 @@
 					</div>
 				</div>
 				<?php if(empty($bookList)) {?>
-                <div class="no_data">
+                <div class="no_data" style="padding:48px 16px;text-align:center;">
 					<i class="icon_no_data"></i>
-					<span class="no_data_text">검색 결과가 없습니다.</span>
+					<p class="no_data_text" style="margin-bottom:16px;">조건에 맞는 도서 검색 결과가 없습니다.</p>
+					<a href="/book/topic_list" class="btn_basic bg_blue_green" style="display:inline-block;padding:8px 20px;">주제별 책 목록 보기</a>
 				</div>				
 			    <?php } else {?>
 				<!-- 도서 목록 -->
@@ -103,11 +105,11 @@
 								<a href="javascript:;;" data-book_no="<?php echo $row['book_no'];?>" data-quiz_seq="<?php echo $row['quiz_seq'];?>" class="btn_wish <?php echo $row['fh_seq']!=null?"on":"";?>">wish</a>
 							</div>
 							<div class="book_content">
-								<a href="#" class="book_subject ellipsis_multi"><?php echo $row['book_name'];?></a>
+								<a href="/book/detail/<?php echo $row['book_no'];?>/<?php echo $row['quiz_seq'];?>" class="book_subject ellipsis_multi"><?php echo htmlspecialchars($row['book_name']);?></a>
 								<ul class="book_info">
-									<li><?php echo $row['author'];?></li>
-									<li><?php echo $row['publisher'];?></li>
-									<li><?php echo $row['user_id'];?></li>
+									<li><?php echo htmlspecialchars($row['author']);?></li>
+									<li><?php echo htmlspecialchars($row['publisher']);?></li>
+									<li><?php echo htmlspecialchars($row['user_id']);?></li>
 								</ul>
 							</div>
 						</li>
@@ -122,41 +124,28 @@
 	
 	<script>
 $(function(){
-   $('.btn_delete').on("click",function(){
+   $('.btn_delete').on("click",function(e){
+		e.preventDefault();
+		e.stopPropagation();
 		var data = {
 			"keyword"	:	$(this).data("keyword"),
 		};
-		
+		data[$('#csrf').attr("name")] = $('#csrf').val();
 
-		var csrf_name = $('#csrf').attr("name");
-        var csrf_val = $('#csrf').val();
-
-        data[csrf_name] = csrf_val;
 		$.ajax({
             type: "POST",
             url : "/book/keywordDeleteProc",
             data: data,
             dataType:"json",
-            success : function(data, status, xhr) {
-                location.reload();
-                return;
+            success : function(data) {
                 if(data.result=="success"){
-					swal("삭제되었습니다.", {
-						icon: "success",
-					}).then((value)=>{
-						//location.href = "/member/setting";
-						location.reload();
-					});
-
+					location.reload();
 				}else{
-					cswal(data.msg);
+					cswal(data.msg || "삭제하지 못했습니다.");
 				}
             },
-            error: function(jqXHR, textStatus, errorThrown) {
-              console.log(jqXHR.responseText);
-            }
-        });	
-       event.preventDefault();
+            error: ajaxFail
+        });
    });
    
    $('#sgrade').on("change",function(){
@@ -182,7 +171,7 @@ $(function(){
 		    
 	$(function(){
 	    $('.btn_wish').on("click",function(){
-	        $(this).addClass("on");
+	        var $btn = $(this).addClass("on");
 	        
     		var data = {
     			"quiz_seq"	:	$(this).data("quiz_seq"),
@@ -212,8 +201,9 @@ $(function(){
     					cswal(data.msg);
     				}
                 },
-                error: function(jqXHR, textStatus, errorThrown) {
-                  console.log(jqXHR.responseText);
+                error: function(jqXHR) {
+                    $btn.removeClass("on");
+                    ajaxFail(jqXHR);
                 }
             });			        
 	    });

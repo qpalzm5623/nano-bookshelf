@@ -23,22 +23,22 @@
 						<div class="info_box">
 							<div class="title_box">
 								<div class="title_image"><img src="/images/common/symbol.png" alt=""></div>
-								<h4 class="title"><?php echo $userData['user_name'];?></h4>
-								<div class="user_info"><?php echo $userData['grade'];?> | <?php echo $userData['gender']=="M"?"남":"여";?></div>
+								<h4 class="title"><?php echo htmlspecialchars($userData['user_name']);?></h4>
+								<div class="user_info"><?php echo htmlspecialchars($userData['grade']);?> | <?php echo $userData['gender']=="M"?"남":"여";?></div>
 							</div>
 	
 							<ul class="info_list">
 								<li class="info_item">
 									<span class="info_title">소속</span>
-									<div class="info_content ellipsis_multi"><?php echo $userData['group_name'];?></div>
+									<div class="info_content ellipsis_multi"><?php echo htmlspecialchars($userData['group_name']);?></div>
 								</li>
 								<li class="info_item">
 									<span class="info_title">반</span>
-									<div class="info_content"><?php echo $userData['class_name'];?></div>
+									<div class="info_content"><?php echo htmlspecialchars($userData['class_name']);?></div>
 								</li>
 								<li class="info_item">
 									<span class="info_title">담당 선생님</span>
-									<div class="info_content"><?php echo $userData['teacher_name'];?></div>
+									<div class="info_content"><?php echo htmlspecialchars($userData['teacher_name']);?></div>
 								</li>
 							</ul>
 						</div>
@@ -109,7 +109,8 @@
 	<script>
 	    $(function() {
 
-			$('.btn_info').on("click", function(){
+			$('.btn_info').on("click", function(e){
+			    e.preventDefault();
 			    $('#infoLayer').show();
 			});	    
 

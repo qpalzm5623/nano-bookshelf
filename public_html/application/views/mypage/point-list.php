@@ -40,6 +40,9 @@
 				
 					<!-- 포인트 목록 -->
 					<ul class="point_list">
+					    <?php if(count($pointList) == 0){ ?>
+						<li class="point_item" style="padding:48px 16px;text-align:center;color:#888;">이 기간에는 포인트 내역이 없어요.<br>퀴즈를 풀고 포인트를 모아보세요!</li>
+					    <?php } ?>
 					    <?php 
 					    $point = 0;
 					    for($i=0;$i<count($pointList);$i++){
@@ -48,12 +51,12 @@
 					    ?>
 						<li class="point_item">
 							<div class="point_inner">
-								<div class="point_title"><?php echo $row['content'];?></div>
-								<span class="point_amount">+ <?php echo $row['point'];?></span>
+								<div class="point_title"><?php echo htmlspecialchars($row['content']);?></div>
+								<span class="point_amount"><?php echo ($row['point'] >= 0 ? '+ ' : '- ').abs($row['point']);?></span>
 							</div>
 							<div class="point_inner">
 								<span class="point_date"><?php echo substr($row['reg_date'],0,10);?> </span>
-								<span class="total_point"><?php echo $point;?></span>
+								<span class="total_point">기간 누적 <?php echo $point;?></span>
 							</div>
 						</li>
 					    <?php }?>
