@@ -18,8 +18,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-  <!-- 배너 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
+  <!-- 배너 및 테마 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
   <script src="upload/banner/banners_data.js"></script>
+  <script src="upload/banner/themes_data.js"></script>
   <style>
     :root {
       /* 자연스러운 목재 베이지 & 오트밀 크림 배경 */
@@ -5499,42 +5500,132 @@ function renderPopularLib() {
 var defaultStudentThemes = [
   {
     id: 1,
-    title: "이달의 나노 북클럽",
-    tag: "#이달의나노북클럽",
-    subTag: "#초등필독 #문해력향상 #창의독서",
-    desc: "생각하는 힘과 문해력을 키워주는 9월 필수 추천 도서 세트",
-    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80",
-    bookIds: ["1001", "1003", "1004", "1007", "1011", "1014"],
+    title: "인간",
+    tag: "#인간",
+    subTag: "# 신체, 가족, 꿈, 직업, 인류, 외국인, 친구, 양자, 우정, 항쟁, 사랑",
+    desc: "신체, 가족, 인류, 우정과 삶의 이야기를 담은 테마 도서",
+    image: "upload/code/code_thumb_20240619114230_주제별아이콘_인간.jpg",
+    bookIds: [],
     active: "Y"
   },
   {
     id: 2,
-    title: "초등 교과연계 역사 탐구",
-    tag: "#교과연계한국사",
-    subTag: "#역사탐구 #인물스토리 #초등5~6학년",
-    desc: "한국사 흐름을 재미있는 이야기와 인물로 풀어낸 필독 도서",
-    image: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=400&q=80",
-    bookIds: ["1009", "1010", "1004", "1006"],
+    title: "생활",
+    tag: "#생활",
+    subTag: "# 집, 도시, 시골, 직업, 경제, 놀이, 게임",
+    desc: "일상생활, 도시와 시골, 경제와 놀이 이야기 테마 도서",
+    image: "upload/code/code_thumb_20240619114304_주제별아이콘_생활.jpg",
+    bookIds: [],
     active: "Y"
   },
   {
     id: 3,
-    title: "미래를 여는 과학 & 환경",
-    tag: "#미래과학환경",
-    subTag: "#창의융합 #AI시대 #기후환경탐구",
-    desc: "기후 변화와 인공지능 시대를 이해하는 흥미진진 과학책",
-    image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&q=80",
-    bookIds: ["1005", "1008", "1012", "1016"],
+    title: "자연",
+    tag: "#자연",
+    subTag: "# 산, 바다, 강, 호수, 하늘, 태양, 달, 별, 바람, 비, 무지개, 구름",
+    desc: "아름다운 자연과 환경, 지구의 신비를 담은 테마 도서",
+    image: "upload/code/code_thumb_20240618021550_주제별아이콘_자연.jpg",
+    bookIds: ["1005"],
     active: "Y"
   },
   {
     id: 4,
-    title: "마음을 키우는 인문 문학 여행",
-    tag: "#인문문학여행",
-    subTag: "#자아성찰 #공감과소통 #중등필독",
-    desc: "자아 정체성과 타인에 대한 공감을 넓히는 명작 문학선",
-    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&q=80",
-    bookIds: ["1001", "1002", "1006", "1015"],
+    title: "생물",
+    tag: "#생물",
+    subTag: "# 애완동물, 가축, 야생동물, 식물, 곤충, 물고기, 새, 미생물",
+    desc: "동물, 식물, 곤충과 다양한 생명체들의 이야기 테마 도서",
+    image: "upload/code/code_thumb_20240619114501_주제별아이콘_생물.jpg",
+    bookIds: [],
+    active: "Y"
+  },
+  {
+    id: 5,
+    title: "기술",
+    tag: "#기술",
+    subTag: "# 탈것, 자동차, 비행기, 배, 자전거, 핸드폰, 컴퓨터",
+    desc: "자동차, 비행기, 컴퓨터와 미래 기술을 탐구하는 테마 도서",
+    image: "upload/code/code_thumb_20240619114512_주제별아이콘_기술.jpg",
+    bookIds: [],
+    active: "Y"
+  },
+  {
+    id: 6,
+    title: "과학",
+    tag: "#과학",
+    subTag: "# 로봇, AI, 복제인간, 우주",
+    desc: "로봇, 인공지능, 우주와 과학의 원리를 배우는 테마 도서",
+    image: "upload/code/code_thumb_20240618021615_주제별아이콘_과학.jpg",
+    bookIds: ["1005", "1008", "1012", "1016"],
+    active: "Y"
+  },
+  {
+    id: 7,
+    title: "역사",
+    tag: "#역사",
+    subTag: "# 과거, 시대, 인물, 사건, 유물, 전통, 문화유산",
+    desc: "한국사와 세계사의 위대한 인물과 역사적 사건 테마 도서",
+    image: "upload/code/code_thumb_20240619114326_주제별아이콘_역사.jpg",
+    bookIds: ["1009", "1010"],
+    active: "Y"
+  },
+  {
+    id: 8,
+    title: "이야기",
+    tag: "#이야기",
+    subTag: "# 전래동화, 신화, 모험, 판타지, 상상, 우화",
+    desc: "상상력을 키워주는 흥미진진한 모험과 명작 이야기 테마 도서",
+    image: "upload/code/code_thumb_20240619114237_주제별아이콘_이야기.jpg",
+    bookIds: ["1001", "1002", "1003", "1004"],
+    active: "Y"
+  },
+  {
+    id: 9,
+    title: "사회",
+    tag: "#사회",
+    subTag: "# 사회, 정치, 법, 공동체, 시민, 환경, 지구촌",
+    desc: "더불어 살아가는 사회와 법, 공동체와 정의를 배우는 테마 도서",
+    image: "upload/code/code_thumb_20240421062532_planet-earth.png",
+    bookIds: ["1006"],
+    active: "Y"
+  },
+  {
+    id: 10,
+    title: "건강",
+    tag: "#건강",
+    subTag: "# 운동, 식습관, 마음건강, 안전, 보건, 신체발달",
+    desc: "몸과 마음을 튼튼하게 가꾸는 건강과 안전 상식 테마 도서",
+    image: "upload/code/code_thumb_20240619114246_주제별아이콘_건강-08.jpg",
+    bookIds: [],
+    active: "Y"
+  },
+  {
+    id: 11,
+    title: "학습",
+    tag: "#학습",
+    subTag: "# 공부, 교과연계, 언어, 수학, 탐구, 호기심",
+    desc: "교과와 연계된 기초 학력과 지적 호기심을 채우는 테마 도서",
+    image: "upload/code/code_thumb_20240619114312_주제별아이콘_학습.jpg",
+    bookIds: [],
+    active: "Y"
+  },
+  {
+    id: 12,
+    title: "요리",
+    tag: "#요리",
+    subTag: "# 음식, 요리, 영양, 식문화, 베이킹, 식재료",
+    desc: "맛있는 음식과 영양, 세계의 식문화를 배우는 테마 도서",
+    image: "upload/code/code_thumb_20240619114534_주제별아이콘_요리.jpg",
+    bookIds: [],
+    active: "Y"
+  },
+  {
+    id: 13,
+    title: "기타",
+    tag: "#기타",
+    subTag: "# 예술, 취미, 특별활동, 상식, 자유주제",
+    desc: "예술, 취미, 다양한 관심사를 탐색하는 특별 테마 도서",
+    image: "upload/code/code_thumb_20240619114559_주제별아이콘_기타.jpg",
+    bookIds: [],
     active: "Y"
   }
 ];
@@ -5544,10 +5635,70 @@ function getStudentThemes() {
     var raw = localStorage.getItem("NANO_MASTER_THEMES");
     if(raw) {
       var parsed = JSON.parse(raw);
-      if(Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if(Array.isArray(parsed) && parsed.length > 0) {
+        // 기존 4개 구버전 더미 데이터가 남아있는 경우 13개 신규 표준 테마로 안전 교체
+        if(parsed.length === 4 && parsed.some(function(item){ return item.tag === "#이달의나노북클럽"; })) {
+          localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(defaultStudentThemes));
+          return defaultStudentThemes;
+        }
+        return parsed;
+      }
     }
   } catch(e) {}
+  if(window.NANO_SERVER_THEMES && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+    return window.NANO_SERVER_THEMES;
+  }
   return defaultStudentThemes;
+}
+
+// 학생 도서관 테마별 자동 매핑 도서 추출 헬퍼 함수
+function getThemeMappedBooksForStudent(theme) {
+  if(!theme || !Array.isArray(libData)) return [];
+  var targetTag = (theme.tag || '').trim();
+  var cleanTarget = targetTag.replace(/^#/, '');
+  var subKeywords = [];
+  if(theme.subTag) {
+    subKeywords = theme.subTag.split(/[\s,#]+/).map(function(k){ return k.trim(); }).filter(Boolean);
+  }
+
+  return libData.filter(function(b){
+    // 1. 수동 지정된 bookIds 매칭 (MB-001 <-> 1001 및 직접 ID 일치)
+    if(theme.bookIds && Array.isArray(theme.bookIds) && theme.bookIds.length > 0) {
+      var matchedId = theme.bookIds.some(function(bid){
+        var cleanNum = bid.toString().replace(/[^0-9]/g, '');
+        var itemNum = b.id.toString().replace(/[^0-9]/g, '');
+        return b.id === bid || (cleanNum && itemNum && (cleanNum === itemNum || cleanNum.endsWith(itemNum) || itemNum.endsWith(cleanNum)));
+      });
+      if(matchedId) return true;
+    }
+
+    // 2. 도서 tags 배열 매칭
+    if(b.tags && Array.isArray(b.tags)) {
+      var hasTag = b.tags.some(function(t){
+        var cleanT = (t || '').trim().replace(/^#/, '');
+        return cleanT === cleanTarget || (t || '').trim() === targetTag;
+      });
+      if(hasTag) return true;
+    }
+
+    // 3. 도서 카테고리(cat) 직접 매칭
+    if(b.cat && (b.cat === cleanTarget || b.cat.includes(cleanTarget) || cleanTarget.includes(b.cat))) {
+      return true;
+    }
+
+    // 4. 도서 세부태그(detailTag) 및 제목 매칭
+    if(b.detailTag && typeof b.detailTag === 'string') {
+      if(b.detailTag.includes(cleanTarget) || b.detailTag.includes(targetTag)) return true;
+      if(subKeywords.some(function(kw){ return kw.length >= 2 && b.detailTag.includes(kw); })) return true;
+    }
+
+    // 5. 서브키워드가 도서 제목이나 태그에 매칭
+    if(subKeywords.some(function(kw){ return kw.length >= 2 && b.title && b.title.includes(kw); })) {
+      return true;
+    }
+
+    return false;
+  });
 }
 
 function renderThemeTagBoxes() {
@@ -5561,18 +5712,20 @@ function renderThemeTagBoxes() {
   }
 
   grid.innerHTML = themes.map(function(t){
-    var bookCnt = t.bookIds ? t.bookIds.length : 0;
+    var mappedBooks = getThemeMappedBooksForStudent(t);
+    var bookCnt = mappedBooks.length;
     var img = t.image || "upload/banner/banner_reading_king.jpg";
-    // 테마 안내글이 없거나 기본 텍스트인 경우 공간 낭비 방지를 위해 숨김 처리
-    var descHtml = (t.desc && t.desc.trim() && t.desc !== '테마 안내글이 없습니다.')
+    var descHtml = (t.desc && t.desc.trim() && t.desc !== '테마 설명이 없습니다.' && t.desc !== '테마 안내글이 없습니다.')
       ? '<div class="theme-desc-text">'+t.desc+'</div>'
       : '';
+    var displayTitle = t.title ? (t.tag.includes(t.title) ? t.tag : (t.tag + ' ' + t.title)) : t.tag;
+
     return '<div class="theme-tag-card" onclick="selectThemeTag('+t.id+')">'
       + '<div class="theme-tag-img-box">'
       +   '<img src="'+img+'" alt="'+t.tag+'" onerror="this.src=\'upload/banner/banner_reading_king.jpg\'">'
       + '</div>'
       + '<div class="theme-tag-card-body">'
-      +   '<div class="theme-badge-title">'+t.tag+'</div>'
+      +   '<div class="theme-badge-title">'+displayTitle+'</div>'
       +   (t.subTag ? '<div class="theme-sub-badge">'+t.subTag+'</div>' : '')
       +   descHtml
       +   '<div class="theme-card-footer">'
@@ -5597,20 +5750,10 @@ function selectThemeTag(themeId) {
   if(tagBoxSec) tagBoxSec.style.display = 'none';
   if(selSec) selSec.style.display = 'block';
 
-  // 매핑된 도서 찾기 (ID 매칭: MB-001 <-> 1001, 또는 직접 ID 매칭)
-  var mappedBooks = [];
-  if(theme.bookIds && theme.bookIds.length > 0) {
-    theme.bookIds.forEach(function(bid){
-      var cleanNum = bid.toString().replace(/[^0-9]/g, '');
-      var book = libData.find(function(item){
-        var itemNum = item.id.toString().replace(/[^0-9]/g, '');
-        return item.id === bid || itemNum === cleanNum || itemNum.endsWith(cleanNum) || cleanNum.endsWith(itemNum);
-      });
-      if(book && !mappedBooks.includes(book)) mappedBooks.push(book);
-    });
-  }
-
+  // 정밀 자동 매핑 도서 목록 획득
+  var mappedBooks = getThemeMappedBooksForStudent(theme);
   var bookCnt = mappedBooks.length;
+  var displayTitle = theme.title ? (theme.tag.includes(theme.title) ? theme.tag : (theme.tag + ' ' + theme.title)) : theme.tag;
 
   if(header) {
     header.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">'
@@ -5618,7 +5761,7 @@ function selectThemeTag(themeId) {
       + '<div>'
       +   '<div class="d-flex align-items-center gap-2">'
       +     '<span class="theme-sub-badge" style="margin-bottom:0;">'+(theme.subTag || '주제별 도서')+'</span>'
-      +     '<strong style="font-size:15.5px; color:var(--wood-dark);">'+theme.tag+'</strong>'
+      +     '<strong style="font-size:15.5px; color:var(--wood-dark);">'+displayTitle+'</strong>'
       +   '</div>'
       +   '<div style="font-size:12px; color:var(--muted); margin-top:2px;">'+(theme.desc || '')+' ('+bookCnt+'권)</div>'
       + '</div>'
@@ -5629,8 +5772,8 @@ function selectThemeTag(themeId) {
     if(mappedBooks.length === 0) {
       listEl.innerHTML = '<div style="text-align:center; padding: 60px 20px; background:#fff; border-radius:14px; border:1.5px dashed #e2dad0; margin-top:8px;">'
         + '<i class="fa-solid fa-book-open" style="font-size:38px; color:#c7beaf; margin-bottom:12px; display:block;"></i>'
-        + '<strong style="font-size:15px; color:var(--wood-dark); display:block; margin-bottom:6px;">해당 주제에 등록된 도서가 없습니다.</strong>'
-        + '<p style="font-size:12px; color:var(--muted); margin:0;">관리자 페이지 [서비스 운영관리 > 테마관리]에서 추천 도서를 매핑해주세요.</p>'
+        + '<strong style="font-size:15px; color:var(--wood-dark); display:block; margin-bottom:6px;">해당 주제에 매핑된 도서가 없습니다.</strong>'
+        + '<p style="font-size:12px; color:var(--muted); margin:0;">관리자 페이지 [서비스 운영관리 > 테마관리]에서 도서를 확인해주세요.</p>'
         + '</div>';
     } else {
       listEl.innerHTML = mappedBooks.map(function(b){
@@ -5658,6 +5801,41 @@ function backToThemeTagList() {
   var selSec = document.getElementById('themeSelectedSection');
   if(tagBoxSec) tagBoxSec.style.display = 'block';
   if(selSec) selSec.style.display = 'none';
+}
+
+// [실시간 테마 동기화] 마스터 관리자에서 등록된 최신 테마를 서버(api/sync_themes.php)로부터 즉각 로드
+function syncStudentThemesFromServer() {
+  var apiUrl = 'api/sync_themes.php?t=' + Date.now();
+  fetch(apiUrl)
+    .then(function(res){
+      if(!res.ok) throw new Error('API failed');
+      return res.json();
+    })
+    .catch(function(){
+      return fetch('upload/banner/themes.json?t=' + Date.now()).then(function(r){ return r.json(); });
+    })
+    .then(function(serverThemes){
+      if(Array.isArray(serverThemes) && serverThemes.length > 0) {
+        var localTime = parseInt(localStorage.getItem("NANO_MASTER_THEMES_TIME") || "0", 10);
+        var serverLatestTime = serverThemes.reduce(function(max, item) { return Math.max(max, item.updatedAt || 0); }, 0);
+
+        if(localTime > (serverLatestTime + 1000)) {
+          return;
+        }
+
+        var currentJson = localStorage.getItem("NANO_MASTER_THEMES");
+        var newJson = JSON.stringify(serverThemes);
+        if(currentJson !== newJson) {
+          localStorage.setItem("NANO_MASTER_THEMES_TIME", (serverLatestTime || Date.now()).toString());
+          localStorage.setItem("NANO_MASTER_THEMES", newJson);
+          renderThemeTagBoxes();
+          console.log("[테마 동기화] 서버의 최신 테마 " + serverThemes.length + "개가 학생 페이지에 즉시 동기화되었습니다.");
+        }
+      }
+    })
+    .catch(function(err){
+      console.log("[테마 동기화] 서버 테마 로드 안내 (themes_data.js 사용 중):", err.message || err);
+    });
 }
 
 // ==============================================================
@@ -8328,23 +8506,31 @@ function syncStudentBannersFromServer() {
     });
 }
 
-// 마스터 관리자에서 배너 변경 시 학생 화면에 즉각 실시간 반영 (동일 기기 storage 이벤트)
+// 마스터 관리자에서 배너 및 테마 변경 시 학생 화면에 즉각 실시간 반영 (동일 기기 storage 이벤트)
 window.addEventListener('storage', function(e) {
   if (e.key === 'NANO_MASTER_BANNERS') {
     renderStudentBanners();
   }
+  if (e.key === 'NANO_MASTER_THEMES') {
+    renderThemeTagBoxes();
+  }
 });
 
-// 태블릿 화면을 다시 켜거나 다른 탭에서 돌아왔을 때 서버 최신 배너 즉각 재동기화
+// 태블릿 화면을 다시 켜거나 다른 탭에서 돌아왔을 때 서버 최신 배너 및 테마 즉각 재동기화
 document.addEventListener('visibilitychange', function() {
   if (!document.hidden) {
     syncStudentBannersFromServer();
     renderStudentBanners();
+    syncStudentThemesFromServer();
+    renderThemeTagBoxes();
   }
 });
 
-// 주기적 서버 배너 동기화 (30초마다 최신 배너 확인)
-setInterval(syncStudentBannersFromServer, 30000);
+// 주기적 서버 배너 및 테마 동기화 (30초마다 최신 배너 & 테마 확인)
+setInterval(function() {
+  syncStudentBannersFromServer();
+  syncStudentThemesFromServer();
+}, 30000);
 
 var toastT;
 function toast(msg){
@@ -8702,6 +8888,7 @@ document.addEventListener('DOMContentLoaded',function(){
   renderInterestTags();
   renderInterestRecommendations();
   renderThemeTagBoxes();
+  syncStudentThemesFromServer();
 
   // 로그인/접속 시 본사 시스템 공지 팝업 점검 및 노출
   setTimeout(checkStudentNoticePopups, 400);

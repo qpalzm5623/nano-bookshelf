@@ -407,53 +407,154 @@ let bannerList = [
   }
 ];
 
-// 1-4. 추천 도서 큐레이션 테마 및 주제별 태그 관리 (도서 ID 매핑 연동)
-let themeList = [
+// 1-4. 추천 도서 큐레이션 테마 및 주제별 태그 관리 (도서 ID 매핑 연동 - 13개 표준 테마 기본 탑재)
+let defaultMasterThemeList = [
   {
     id: 1,
-    title: "이달의 나노 북클럽",
-    tag: "#이달의나노북클럽",
-    subTag: "#초등필독 #문해력향상 #창의독서",
-    desc: "생각하는 힘과 문해력을 키워주는 9월 필수 추천 도서 세트",
-    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80",
-    bookIds: ["MB-001", "MB-003", "MB-004", "MB-007", "MB-011", "MB-014"],
+    title: "인간",
+    tag: "#인간",
+    subTag: "# 신체, 가족, 꿈, 직업, 인류, 외국인, 친구, 양자, 우정, 항쟁, 사랑",
+    desc: "신체, 가족, 인류, 우정과 삶의 이야기를 담은 테마 도서",
+    image: "upload/code/code_thumb_20240619114230_주제별아이콘_인간.jpg",
+    bookIds: [],
     active: "Y",
     createdAt: "2026-09-01"
   },
   {
     id: 2,
-    title: "초등 교과연계 역사 탐구",
-    tag: "#교과연계한국사",
-    subTag: "#역사탐구 #인물스토리 #초등5~6학년",
-    desc: "한국사 흐름을 재미있는 이야기와 인물로 풀어낸 필독 도서",
-    image: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=400&q=80",
-    bookIds: ["MB-009", "MB-010", "MB-004", "MB-006"],
+    title: "생활",
+    tag: "#생활",
+    subTag: "# 집, 도시, 시골, 직업, 경제, 놀이, 게임",
+    desc: "일상생활, 도시와 시골, 경제와 놀이 이야기 테마 도서",
+    image: "upload/code/code_thumb_20240619114304_주제별아이콘_생활.jpg",
+    bookIds: [],
     active: "Y",
-    createdAt: "2026-09-02"
+    createdAt: "2026-09-01"
   },
   {
     id: 3,
-    title: "미래를 여는 과학 & 환경",
-    tag: "#미래과학환경",
-    subTag: "#창의융합 #AI시대 #기후환경탐구",
-    desc: "기후 변화와 인공지능 시대를 이해하는 흥미진진 과학책",
-    image: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&q=80",
-    bookIds: ["MB-005", "MB-008", "MB-012", "MB-016"],
+    title: "자연",
+    tag: "#자연",
+    subTag: "# 산, 바다, 강, 호수, 하늘, 태양, 달, 별, 바람, 비, 무지개, 구름",
+    desc: "아름다운 자연과 환경, 지구의 신비를 담은 테마 도서",
+    image: "upload/code/code_thumb_20240618021550_주제별아이콘_자연.jpg",
+    bookIds: ["MB-005"],
     active: "Y",
-    createdAt: "2026-09-04"
+    createdAt: "2026-09-01"
   },
   {
     id: 4,
-    title: "마음을 키우는 인문 문학 여행",
-    tag: "#인문문학여행",
-    subTag: "#자아성찰 #공감과소통 #중등필독",
-    desc: "자아 정체성과 타인에 대한 공감을 넓히는 명작 문학선",
-    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&q=80",
-    bookIds: ["MB-001", "MB-002", "MB-006", "MB-015"],
+    title: "생물",
+    tag: "#생물",
+    subTag: "# 애완동물, 가축, 야생동물, 식물, 곤충, 물고기, 새, 미생물",
+    desc: "동물, 식물, 곤충과 다양한 생명체들의 이야기 테마 도서",
+    image: "upload/code/code_thumb_20240619114501_주제별아이콘_생물.jpg",
+    bookIds: [],
     active: "Y",
-    createdAt: "2026-09-06"
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 5,
+    title: "기술",
+    tag: "#기술",
+    subTag: "# 탈것, 자동차, 비행기, 배, 자전거, 핸드폰, 컴퓨터",
+    desc: "자동차, 비행기, 컴퓨터와 미래 기술을 탐구하는 테마 도서",
+    image: "upload/code/code_thumb_20240619114512_주제별아이콘_기술.jpg",
+    bookIds: [],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 6,
+    title: "과학",
+    tag: "#과학",
+    subTag: "# 로봇, AI, 복제인간, 우주",
+    desc: "로봇, 인공지능, 우주와 과학의 원리를 배우는 테마 도서",
+    image: "upload/code/code_thumb_20240618021615_주제별아이콘_과학.jpg",
+    bookIds: ["MB-005", "MB-008", "MB-012", "MB-016"],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 7,
+    title: "역사",
+    tag: "#역사",
+    subTag: "# 과거, 시대, 인물, 사건, 유물, 전통, 문화유산",
+    desc: "한국사와 세계사의 위대한 인물과 역사적 사건 테마 도서",
+    image: "upload/code/code_thumb_20240619114326_주제별아이콘_역사.jpg",
+    bookIds: ["MB-009", "MB-010"],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 8,
+    title: "이야기",
+    tag: "#이야기",
+    subTag: "# 전래동화, 신화, 모험, 판타지, 상상, 우화",
+    desc: "상상력을 키워주는 흥미진진한 모험과 명작 이야기 테마 도서",
+    image: "upload/code/code_thumb_20240619114237_주제별아이콘_이야기.jpg",
+    bookIds: ["MB-001", "MB-002", "MB-003", "MB-004"],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 9,
+    title: "사회",
+    tag: "#사회",
+    subTag: "# 사회, 정치, 법, 공동체, 시민, 환경, 지구촌",
+    desc: "더불어 살아가는 사회와 법, 공동체와 정의를 배우는 테마 도서",
+    image: "upload/code/code_thumb_20240421062532_planet-earth.png",
+    bookIds: ["MB-006"],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 10,
+    title: "건강",
+    tag: "#건강",
+    subTag: "# 운동, 식습관, 마음건강, 안전, 보건, 신체발달",
+    desc: "몸과 마음을 튼튼하게 가꾸는 건강과 안전 상식 테마 도서",
+    image: "upload/code/code_thumb_20240619114246_주제별아이콘_건강-08.jpg",
+    bookIds: [],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 11,
+    title: "학습",
+    tag: "#학습",
+    subTag: "# 공부, 교과연계, 언어, 수학, 탐구, 호기심",
+    desc: "교과와 연계된 기초 학력과 지적 호기심을 채우는 테마 도서",
+    image: "upload/code/code_thumb_20240619114312_주제별아이콘_학습.jpg",
+    bookIds: [],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 12,
+    title: "요리",
+    tag: "#요리",
+    subTag: "# 음식, 요리, 영양, 식문화, 베이킹, 식재료",
+    desc: "맛있는 음식과 영양, 세계의 식문화를 배우는 테마 도서",
+    image: "upload/code/code_thumb_20240619114534_주제별아이콘_요리.jpg",
+    bookIds: [],
+    active: "Y",
+    createdAt: "2026-09-01"
+  },
+  {
+    id: 13,
+    title: "기타",
+    tag: "#기타",
+    subTag: "# 예술, 취미, 특별활동, 상식, 자유주제",
+    desc: "예술, 취미, 다양한 관심사를 탐색하는 특별 테마 도서",
+    image: "upload/code/code_thumb_20240619114559_주제별아이콘_기타.jpg",
+    bookIds: [],
+    active: "Y",
+    createdAt: "2026-09-01"
   }
 ];
+
+let themeList = defaultMasterThemeList.slice();
 
 // 로컬스토리지 및 중앙 서버 동기화 헬퍼 함수
 function saveOperationsToStorage() {
@@ -462,10 +563,14 @@ function saveOperationsToStorage() {
   bannerList.forEach(b => {
     if (!b.updatedAt) b.updatedAt = saveTime;
   });
+  themeList.forEach(t => {
+    if (!t.updatedAt) t.updatedAt = saveTime;
+  });
 
   try {
     localStorage.setItem("NANO_MASTER_BANNERS_TIME", saveTime.toString());
     localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
+    localStorage.setItem("NANO_MASTER_THEMES_TIME", saveTime.toString());
     localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
   } catch (e) {
     console.warn("로컬스토리지 저장 중 용량 주의:", e);
@@ -473,6 +578,8 @@ function saveOperationsToStorage() {
       localStorage.removeItem("NANO_MASTER_BANNERS");
       localStorage.setItem("NANO_MASTER_BANNERS_TIME", saveTime.toString());
       localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
+      localStorage.setItem("NANO_MASTER_THEMES_TIME", saveTime.toString());
+      localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
     } catch(err2) {
       console.error("로컬스토리지 재시도 실패:", err2);
       showMasterToast("저장소 용량 한도로 일부 변경사항이 브라우저에 영구 저장되지 못했습니다.");
@@ -484,6 +591,10 @@ function saveOperationsToStorage() {
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'NANO_MASTER_BANNERS',
       newValue: JSON.stringify(bannerList)
+    }));
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'NANO_MASTER_THEMES',
+      newValue: JSON.stringify(themeList)
     }));
   } catch(evErr) {}
 
@@ -498,8 +609,6 @@ function saveOperationsToStorage() {
       return res.json();
     }).then(data => {
       if (data && data.banners && Array.isArray(data.banners)) {
-        // 서버에서 Base64 이미지를 실제 upload/banner/ 파일로 추출 완료한 경우
-        // 로컬 객체도 파일 URL로 깔끔하게 치환하여 용량 초경량화 (수십KB -> 수백Byte)
         let hasImageConverted = false;
         data.banners.forEach(sb => {
           const target = bannerList.find(b => String(b.id) === String(sb.id));
@@ -522,6 +631,40 @@ function saveOperationsToStorage() {
   } catch(netErr) {
     console.warn("중앙 서버 동기화 요청 실패:", netErr);
   }
+
+  // [실시간 테마 동기화] 학생 화면 연동용 중앙 저장소(api/sync_themes.php)로 비동기 전송
+  try {
+    fetch('api/sync_themes.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(themeList)
+    }).then(res => {
+      if (!res.ok) throw new Error('서버 응답 오류: ' + res.status);
+      return res.json();
+    }).then(data => {
+      if (data && data.themes && Array.isArray(data.themes)) {
+        let hasImgConverted = false;
+        data.themes.forEach(st => {
+          const target = themeList.find(t => String(t.id) === String(st.id));
+          if (target && target.image !== st.image) {
+            target.image = st.image;
+            target.updatedAt = st.updatedAt || Date.now();
+            hasImgConverted = true;
+          }
+        });
+        if (hasImgConverted) {
+          localStorage.setItem("NANO_MASTER_THEMES_TIME", Date.now().toString());
+          localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
+          if (typeof renderThemeTable === 'function') renderThemeTable();
+        }
+      }
+      console.log("중앙 테마 서버 동기화 완료: 학생 페이지 [주제별 도서]에 즉시 반영됩니다.");
+    }).catch(err => {
+      console.warn("중앙 테마 서버 동기화 안내:", err);
+    });
+  } catch(themeNetErr) {
+    console.warn("중앙 서버 테마 동기화 요청 실패:", themeNetErr);
+  }
 }
 
 function loadOperationsFromStorage() {
@@ -539,10 +682,23 @@ function loadOperationsFromStorage() {
     } else if (window.NANO_SERVER_BANNERS && Array.isArray(window.NANO_SERVER_BANNERS) && window.NANO_SERVER_BANNERS.length > 0) {
       bannerList = window.NANO_SERVER_BANNERS;
     }
+
     const t = localStorage.getItem("NANO_MASTER_THEMES");
     if (t) {
       const parsed = JSON.parse(t);
-      if (Array.isArray(parsed) && parsed.length > 0) themeList = parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // 기존 4개 구버전 더미 데이터가 저장되어 있던 경우 13개 신규 표준 테마로 안전 마이그레이션
+        if (parsed.length === 4 && parsed.some(item => item.tag === "#이달의나노북클럽")) {
+          themeList = defaultMasterThemeList.slice();
+          localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
+        } else {
+          themeList = parsed;
+        }
+      }
+    } else if (window.NANO_SERVER_THEMES && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+      themeList = window.NANO_SERVER_THEMES;
+    } else {
+      themeList = defaultMasterThemeList.slice();
     }
   } catch (e) {
     console.warn("로컬스토리지 불러오기 중 오류:", e);
@@ -557,17 +713,12 @@ function loadOperationsFromStorage() {
       })
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          // 서버 데이터의 최신 updatedAt 산출
           const serverLatestTime = data.reduce((max, item) => Math.max(max, item.updatedAt || 0), 0);
-
-          // [핵심] 사용자가 로컬에서 수정한 내역이 더 최신이면, 옛날 서버 데이터로 덮어쓰지 않고 로컬 수정본을 서버로 업로드(자가 복구 동기화)!
           if (hasLocalData && localTime > (serverLatestTime + 1000)) {
             console.log("[동기화 보호] 로컬 배너 데이터가 서버보다 최신입니다. 서버로 최신 데이터를 푸시합니다.");
             saveOperationsToStorage();
             return;
           }
-
-          // 서버 데이터가 실제로 더 최신일 때만 로컬 동기화
           bannerList = data;
           localStorage.setItem("NANO_MASTER_BANNERS_TIME", (serverLatestTime || Date.now()).toString());
           localStorage.setItem("NANO_MASTER_BANNERS", JSON.stringify(bannerList));
@@ -576,6 +727,29 @@ function loadOperationsFromStorage() {
         }
       }).catch(e => {
         console.log("서버 배너 로드 건너뜀 (로컬스토리지 최신값 안전 유지):", e);
+      });
+  } catch(e) {}
+
+  // 서버의 최신 중앙 테마 가져와서 동기화
+  try {
+    fetch('api/sync_themes.php?t=' + Date.now())
+      .then(res => {
+        if (!res.ok) throw new Error('API 응답 불가: ' + res.status);
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const localThemeTime = parseInt(localStorage.getItem("NANO_MASTER_THEMES_TIME") || "0", 10);
+          const serverThemeTime = data.reduce((max, item) => Math.max(max, item.updatedAt || 0), 0);
+          if (localThemeTime > (serverThemeTime + 1000)) return;
+          themeList = data;
+          localStorage.setItem("NANO_MASTER_THEMES_TIME", (serverThemeTime || Date.now()).toString());
+          localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(themeList));
+          if (typeof renderThemeTable === 'function') renderThemeTable();
+          console.log("서버 중앙 테마 목록 동기화 완료:", themeList.length + "개 테마");
+        }
+      }).catch(e => {
+        console.log("서버 테마 로드 건너뜀 (로컬스토리지 최신값 유지):", e);
       });
   } catch(e) {}
 }

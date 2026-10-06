@@ -7005,20 +7005,27 @@ function renderThemeSelectForAcademyBook(selectedTag = "") {
   var select = document.getElementById("abEditThemeTagSelect");
   if (!select) return;
 
-  var currentThemes = (typeof themeList !== "undefined" && themeList.length > 0)
-    ? themeList
-    : [
-        { tag: "#이달의나노북클럽", title: "이달의 나노 북클럽" },
-        { tag: "#교과연계한국사", title: "초등 교과연계 역사 탐구" },
-        { tag: "#미래과학환경", title: "미래를 여는 과학 & 환경" },
-        { tag: "#인문문학여행", title: "마음을 키우는 인문 문학 여행" }
-      ];
+  var currentThemes = [];
+  try {
+    var raw = localStorage.getItem("NANO_MASTER_THEMES");
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) currentThemes = parsed;
+    }
+  } catch(e) {}
+
+  if (currentThemes.length === 0 && typeof window !== "undefined" && window.NANO_SERVER_THEMES && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+    currentThemes = window.NANO_SERVER_THEMES;
+  }
+  if (currentThemes.length === 0 && typeof themeList !== "undefined" && Array.isArray(themeList) && themeList.length > 0) {
+    currentThemes = themeList;
+  }
 
   var targetVal = Array.isArray(selectedTag) ? (selectedTag[0] || "") : selectedTag;
 
   select.innerHTML = currentThemes.map(function(t) {
     var tagVal = t.tag || `#${t.title.replace(/\s+/g, '')}`;
-    var isSelected = (targetVal && targetVal === tagVal) || (!targetVal && tagVal === "#이달의나노북클럽");
+    var isSelected = (targetVal && targetVal === tagVal);
     var label = t.title ? `${tagVal} (${t.title})` : tagVal;
     return `<option value="${tagVal}" ${isSelected ? 'selected' : ''}>${label}</option>`;
   }).join("");
