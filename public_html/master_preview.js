@@ -284,19 +284,39 @@ const STORAGE_KEY_FRANCHISES = "NANO_MASTER_FRANCHISE_LIST";
 const STORAGE_KEY_DELETED_FRANCHISES = "NANO_MASTER_DELETED_FRANCHISES";
 
 function loadFranchisesFromStorage() {
+  // 1. Neon DB에서 이관된 실데이터가 로드된 경우 (가맹점 143개소)
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
+    const curVer = localStorage.getItem("NANO_REAL_DATA_LOADED_VER");
+    const stored = localStorage.getItem(STORAGE_KEY_FRANCHISES);
+    let parsedCount = 0;
+    try { if (stored) parsedCount = JSON.parse(stored).length; } catch (e) {}
+
+    // 버전이 바뀌었거나 기존 저장된 데이터가 예전 더미(20개 이하)인 경우 즉시 실데이터로 강제 갱신
+    if (curVer !== window.__NANO_REAL_DATA_VERSION__ || parsedCount < 20) {
+      console.log("🔄 [실데이터 동기화] 가맹 학원 " + window.MIGRATED_FRANCHISES.length + "개소 로드 및 로컬 스토리지 갱신");
+      localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(window.MIGRATED_FRANCHISES));
+      localStorage.setItem("NANO_REAL_DATA_LOADED_VER", window.__NANO_REAL_DATA_VERSION__);
+      return JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES));
+    }
+  }
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY_FRANCHISES);
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
         parsed.forEach(f => {
-          if (!f.adminPw) f.adminPw = "nano1234!";
+          if (!f.adminPw) f.adminPw = "nano123!";
         });
         return parsed;
       }
     }
   } catch (e) {
     console.warn("가맹 학원 데이터 로드 실패, 기본값 사용:", e);
+  }
+
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
+    return JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES));
   }
   return JSON.parse(JSON.stringify(defaultFranchiseList));
 }
@@ -344,6 +364,22 @@ const defaultMemberList = [
 const STORAGE_KEY_MEMBERS = "NANO_MASTER_MEMBER_LIST";
 
 function loadMembersFromStorage() {
+  // 1. Neon DB에서 이관된 실데이터가 로드된 경우 (회원 2,133명)
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS) && window.MIGRATED_MEMBERS.length > 0) {
+    const curVer = localStorage.getItem("NANO_REAL_MEMBER_LOADED_VER");
+    const stored = localStorage.getItem(STORAGE_KEY_MEMBERS);
+    let parsedCount = 0;
+    try { if (stored) parsedCount = JSON.parse(stored).length; } catch (e) {}
+
+    // 버전이 바뀌었거나 기존 저장된 회원이 예전 더미(50명 이하)인 경우 즉시 실데이터로 강제 갱신
+    if (curVer !== window.__NANO_REAL_DATA_VERSION__ || parsedCount < 50) {
+      console.log("🔄 [실데이터 동기화] 통합 회원 " + window.MIGRATED_MEMBERS.length + "명 로드 및 로컬 스토리지 갱신");
+      localStorage.setItem(STORAGE_KEY_MEMBERS, JSON.stringify(window.MIGRATED_MEMBERS));
+      localStorage.setItem("NANO_REAL_MEMBER_LOADED_VER", window.__NANO_REAL_DATA_VERSION__);
+      return JSON.parse(JSON.stringify(window.MIGRATED_MEMBERS));
+    }
+  }
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY_MEMBERS);
     if (stored) {
@@ -352,6 +388,10 @@ function loadMembersFromStorage() {
     }
   } catch (e) {
     console.warn("통합 회원 데이터 로드 실패, 기본값 사용:", e);
+  }
+
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS) && window.MIGRATED_MEMBERS.length > 0) {
+    return JSON.parse(JSON.stringify(window.MIGRATED_MEMBERS));
   }
   return JSON.parse(JSON.stringify(defaultMemberList));
 }
@@ -1295,6 +1335,11 @@ let masterBooks = [
   }
 ];
 
+// Neon DB 실데이터 도서 라이브러리 연동 (300권)
+if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+  masterBooks = window.MIGRATED_BOOKS.slice();
+}
+
 // 1-6. 알리고 카톡 발송 로그 (Aligo Dispatch History)
 let aligoCash = 854200;
 let dispatchLogs = [
@@ -1455,6 +1500,7 @@ function bindMasterSearchAutofillGuards() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  updateFranchiseStats();
   renderFranchiseTable();
   renderMemberTable();
   initMemberAcademyDropdown();
@@ -2383,14 +2429,24 @@ function confirmDeleteAcademy() {
 function updateFranchiseStats() {
   const total = franchiseList.length;
   const activeCount = franchiseList.filter(a => a.status === "ACTIVE").length;
-  const currentSlots = franchiseList.reduce((acc, cur) => acc + cur.currentStudents, 0);
-  const maxSlots = franchiseList.reduce((acc, cur) => acc + cur.maxStudents, 0);
+  const pausedCount = total - activeCount;
+  const currentSlots = franchiseList.reduce((acc, cur) => acc + (cur.currentStudents || 0), 0);
+  const maxSlots = franchiseList.reduce((acc, cur) => acc + (cur.maxStudents || 0), 0);
+  const slotRate = maxSlots > 0 ? ((currentSlots / maxSlots) * 100).toFixed(1) : "0.0";
 
   if (document.getElementById("statFranchiseTotal")) {
     document.getElementById("statFranchiseTotal").innerHTML = `${total}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span>`;
+    const sub = document.getElementById("statFranchiseTotal").nextElementSibling;
+    if (sub && sub.classList.contains("stat-sub")) {
+      sub.innerHTML = `<span class="text-success font-weight-bold">정상 운영 ${activeCount}</span> / 일시정지 ${pausedCount}`;
+    }
   }
   if (document.getElementById("statFranchiseSlots")) {
-    document.getElementById("statFranchiseSlots").innerHTML = `${currentSlots} <span style="font-size: 15px; font-weight: 600; color: var(--text-muted);">/ ${maxSlots}명</span>`;
+    document.getElementById("statFranchiseSlots").innerHTML = `${currentSlots.toLocaleString()} <span style="font-size: 15px; font-weight: 600; color: var(--text-muted);">/ ${maxSlots.toLocaleString()}명</span>`;
+    const sub = document.getElementById("statFranchiseSlots").nextElementSibling;
+    if (sub && sub.classList.contains("stat-sub")) {
+      sub.innerHTML = `슬롯 사용률 <strong class="text-primary font-weight-bold">${slotRate}%</strong>`;
+    }
   }
 }
 
