@@ -2774,27 +2774,20 @@ function toggleNanoSheetStatus(logId) {
 
 var currentOpenCorrectionLogId = null;
 
-// 학습 관리 날짜 필터 초기화 (최근 90일 ~ 오늘 날짜 기본 세팅으로 실데이터 누락 방지)
+// 학습 관리 날짜 필터 초기화 (Default: 현재월 1일 ~ 오늘 날짜 기본 세팅)
 function initLearningDateFilters() {
   var startInput = document.getElementById('learningStartDate');
   var endInput = document.getElementById('learningEndDate');
   if (!startInput || !endInput) return;
 
   var now = new Date();
-  var past = new Date();
-  past.setDate(past.getDate() - 90);
-
   var yyyy = now.getFullYear();
   var mm = String(now.getMonth() + 1).padStart(2, '0');
   var dd = String(now.getDate()).padStart(2, '0');
   var todayStr = `${yyyy}-${mm}-${dd}`;
+  var firstDayStr = `${yyyy}-${mm}-01`;
 
-  var pY = past.getFullYear();
-  var pM = String(past.getMonth() + 1).padStart(2, '0');
-  var pD = String(past.getDate()).padStart(2, '0');
-  var pastDayStr = `${pY}-${pM}-${pD}`;
-
-  if (!startInput.value) startInput.value = pastDayStr;
+  if (!startInput.value) startInput.value = firstDayStr;
   if (!endInput.value) endInput.value = todayStr;
 }
 
@@ -2934,12 +2927,16 @@ function renderLearningTable() {
   if (countEl) countEl.innerText = filtered.length;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
     return;
   }
 
+  var total = filtered.length;
   filtered.forEach(function(l, idx) {
     var tr = document.createElement('tr');
+
+    // 번호 내림차순 계산 (N, N-1, ... 1)
+    var numDesc = total - idx;
 
     // 5. 나노 시트 상태 토글 버튼
     var isSheetDone = (l.sheet === '작성 완료');
@@ -2965,10 +2962,13 @@ function renderLearningTable() {
     var kakaoBtnHtml = getKakaoReportBtnHtml(l.id, false);
 
     tr.innerHTML = `
-      <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
+      <td class="text-center font-weight-bold text-muted" style="font-size: 12px;">${numDesc}</td>
+      <td class="text-center" style="font-size: 12px; color: var(--text-muted); font-weight: 600; white-space: nowrap;">
+        ${l.date || '-'}
+      </td>
       <td>
         <div class="font-weight-bold text-dark" style="font-size: 13.5px;">${l.bookTitle}</div>
-        <small class="text-muted">${l.bookPub || '나노 교육출판'} · ${l.date}</small>
+        <small class="text-muted">${l.bookPub || '나노 교육출판'}</small>
       </td>
       <td class="text-center">
         <strong style="color: var(--text-main); font-size: 13px;">${l.studentName}</strong>
@@ -6406,49 +6406,39 @@ function syncOwnedBooksState() {
 
 function updateOwnedBookCountBadge() {
   var ownedCount = academyBookList.filter(function(b) { return b.isOwned === true; }).length;
+  var unownedCount = academyBookList.length - ownedCount;
   var badge = document.getElementById('ownedBookCountBadge');
   if (badge) badge.innerText = ownedCount + '권';
   var subBadge = document.getElementById('ownedCountSub');
   if (subBadge) subBadge.innerText = ownedCount;
+
+  // 상단 카드 보유 도서 총 권수 동기화
+  var totalBadge = document.getElementById('totalAcadBookCount');
+  if (totalBadge) totalBadge.innerText = ownedCount;
+
+  // 보유 여부 드롭다운 옵션 텍스트에 실시간 권수 반영
+  var sel = document.getElementById('filterAcadBookOwned');
+  if (sel && sel.options && sel.options.length >= 3) {
+    sel.options[0].text = '전체 보기 (' + academyBookList.length + '권)';
+    sel.options[1].text = '보유도서만 보기 (' + ownedCount + '권)';
+    sel.options[2].text = '미보유 도서만 보기 (' + unownedCount + '권)';
+  }
 }
 
-// 보유 도서만 보기 버튼 클릭 시 토글 실행
+// 보유 도서만 보기 필터 전환 함수 (하위 호환)
 function toggleOnlyOwnedBooksFilter() {
-  window_ONLY_OWNED_FILTER = !window_ONLY_OWNED_FILTER;
-  var chk = document.getElementById('chkOnlyOwnedBooks');
-  if (chk) chk.checked = window_ONLY_OWNED_FILTER;
-
-  var btn = document.getElementById('btnToggleOnlyOwned');
-  if (btn) {
-    var ownedCount = academyBookList.filter(function(b){ return b.isOwned; }).length;
-    if (window_ONLY_OWNED_FILTER) {
-      btn.className = 'btn btn-sm btn-success text-white font-weight-bold shadow-sm';
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>보유 도서만 보는 중 <span id="ownedBookCountBadge" class="badge badge-light text-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
-    } else {
-      btn.className = 'btn btn-sm btn-outline-success font-weight-bold';
-      btn.innerHTML = '<i class="fa-solid fa-bookmark mr-1"></i>보유 도서만 보기 <span id="ownedBookCountBadge" class="badge badge-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
-    }
+  var sel = document.getElementById('filterAcadBookOwned');
+  if (sel) {
+    sel.value = (sel.value === 'OWNED') ? 'ALL' : 'OWNED';
   }
-
   filterAcademyBooks();
-  if (window_ONLY_OWNED_FILTER) {
-    showAcademyToast('우리 학원 [보유 도서]만 모아봅니다.');
-  }
 }
 
-// 하단 체크박스 변경 시 상단 버튼과 동기화
+// 하단 체크박스 변경 시 드롭다운과 동기화 (하위 호환)
 function syncOnlyOwnedBooksFromCheckbox(checked) {
-  window_ONLY_OWNED_FILTER = !!checked;
-  var btn = document.getElementById('btnToggleOnlyOwned');
-  if (btn) {
-    var ownedCount = academyBookList.filter(function(b){ return b.isOwned; }).length;
-    if (window_ONLY_OWNED_FILTER) {
-      btn.className = 'btn btn-sm btn-success text-white font-weight-bold shadow-sm';
-      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>보유 도서만 보는 중 <span id="ownedBookCountBadge" class="badge badge-light text-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
-    } else {
-      btn.className = 'btn btn-sm btn-outline-success font-weight-bold';
-      btn.innerHTML = '<i class="fa-solid fa-bookmark mr-1"></i>보유 도서만 보기 <span id="ownedBookCountBadge" class="badge badge-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
-    }
+  var sel = document.getElementById('filterAcadBookOwned');
+  if (sel) {
+    sel.value = checked ? 'OWNED' : 'ALL';
   }
   filterAcademyBooks();
 }
@@ -6459,22 +6449,26 @@ function toggleBookOwnership(bookId) {
   if (!book) return;
   book.isOwned = !book.isOwned;
   saveCustomAcademyBooks(academyBookList);
+  updateOwnedBookCountBadge();
   filterAcademyBooks();
   showAcademyToast(`[${book.title}] 도서가 [${book.isOwned ? '보유' : '미보유'}] 상태로 변경되었습니다. (도서 배정 시 활용)`);
 }
 
-// 도서 필터링 & 정렬 (보유 도서 필터, 등록일 최신순 Default, 도서번호, 등록일, 도서명, 학년 순)
+// 도서 필터링 & 정렬 (보유 여부 드롭다운, 등록일 최신순 Default, 도서번호, 등록일, 도서명, 학년 순)
 function filterAcademyBooks() {
   var originVal = document.getElementById('filterAcadBookOrigin') ? document.getElementById('filterAcadBookOrigin').value : 'ALL';
   var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
   var sortVal = document.getElementById('sortAcadBookSelect') ? document.getElementById('sortAcadBookSelect').value : 'DATE_DESC';
+  var ownedFilter = document.getElementById('filterAcadBookOwned') ? document.getElementById('filterAcadBookOwned').value : 'ALL';
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
   var onlyMyQuiz = document.getElementById('chkOnlyMyQuizBooks') ? document.getElementById('chkOnlyMyQuizBooks').checked : false;
-  var onlyOwned = (document.getElementById('chkOnlyOwnedBooks') && document.getElementById('chkOnlyOwnedBooks').checked) || (window_ONLY_OWNED_FILTER === true);
+
+  updateOwnedBookCountBadge();
 
   var filtered = academyBookList.filter(function(b) {
-    // 0. 보유 도서만 보기 필터
-    if (onlyOwned && !b.isOwned) return false;
+    // 0. 보유 여부 필터 (ALL: 전체 보기 / OWNED: 보유도서만 보기 / UNOWNED: 미보유 도서만 보기)
+    if (ownedFilter === 'OWNED' && !b.isOwned) return false;
+    if (ownedFilter === 'UNOWNED' && b.isOwned) return false;
 
     // 1. 내가 올린 (북퀴즈 생성한) 도서 모아보기 필터
     if (onlyMyQuiz) {
@@ -6533,7 +6527,57 @@ function filterAcademyBooks() {
   renderAcademyBookTable(filtered);
 }
 
-// 도서 테이블 렌더링 (No. 내림차순, 보유 여부 토글, 버튼 상하 배치)
+// -------------------------------------------------------------
+// 도서 등록 권한 판별: 내가(우리 학원이) 직접 등록한 도서인지 검증
+// -------------------------------------------------------------
+function isBookCreatedByMyAcademy(b) {
+  if (!b) return false;
+  // 1. 본사 공식 도서는 편집 불가
+  if (!b.creatorType || b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'))) {
+    return false;
+  }
+  // 2. 내가 직접 등록한 도서 플래그 확인
+  if (b.isMyCreation === true) return true;
+
+  // 3. 현재 로그인한 학원 정보 대조
+  var curAcadName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '';
+  var curAcadId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : '';
+
+  if (curAcadId && b.academyId === curAcadId) return true;
+  if (curAcadName && b.academyName === curAcadName) return true;
+
+  // 4. 로컬스토리지에 저장된 내가 등록한 도서 ID 목록 대조
+  try {
+    var key = 'NANO_MY_CREATED_BOOKS_' + (curAcadId || 'DEFAULT');
+    var raw = localStorage.getItem(key);
+    if (raw) {
+      var arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.indexOf(b.id) !== -1) return true;
+    }
+  } catch(e) {}
+
+  return false;
+}
+
+// 신규 도서 등록 시 내 학원 도서로 영구 기록
+function markBookAsMyCreation(bookId) {
+  var curAcadId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'DEFAULT';
+  var key = 'NANO_MY_CREATED_BOOKS_' + curAcadId;
+  try {
+    var arr = JSON.parse(localStorage.getItem(key) || '[]');
+    if (arr.indexOf(bookId) === -1) {
+      arr.push(bookId);
+      localStorage.setItem(key, JSON.stringify(arr));
+    }
+  } catch(e) {}
+}
+
+// 다른 가맹점 또는 본사 도서 편집 시도 시 안내 토스트
+function showCannotEditNotice(typeStr) {
+  showAcademyToast((typeStr || '다른 가맹점에서 등록한 도서') + '는 편집할 수 없습니다. (내가 등록한 도서만 수정 가능)');
+}
+
+// 도서 테이블 렌더링 (No. 내림차순, 보유 여부 토글, 내가 올린 도서만 편집 가능)
 function renderAcademyBookTable(data) {
   var list = data || academyBookList;
   var tbody = document.getElementById('academyBookTableBody');
@@ -6583,13 +6627,26 @@ function renderAcademyBookTable(data) {
       <i class="fa-solid fa-file-circle-check" style="font-size: 10.5px; color: #16a34a;"></i>답지
     </button>`;
 
-    // 등록처 뱃지 (본사 직속 / 학원 등록)
+    // 등록처 뱃지 및 내가 올린 도서 여부 판정
     var isHq = !b.creatorType || b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
+    var isMyBook = isBookCreatedByMyAcademy(b);
+
     var originBadge = isHq
       ? `<span class="badge-soft badge-soft-warning font-weight-bold" style="white-space: nowrap;"><i class="fa-solid fa-crown mr-1"></i>본사 직속</span>`
-      : `<span class="badge-soft badge-soft-primary font-weight-bold" style="white-space: nowrap;" title="${b.academyName}"><i class="fa-solid fa-school mr-1"></i>자체 등록</span>`;
+      : (isMyBook
+          ? `<span class="badge-soft badge-soft-success font-weight-bold" style="white-space: nowrap;" title="${b.academyName || '우리 학원'}"><i class="fa-solid fa-user-pen mr-1"></i>내가 등록</span>`
+          : `<span class="badge-soft badge-soft-primary font-weight-bold" style="white-space: nowrap;" title="${b.academyName || '타 가맹점'}"><i class="fa-solid fa-school mr-1"></i>${b.academyName || '타 가맹점'}</span>`
+        );
 
-    // 관리 컬럼: 도서 수정 및 퀴즈 관리 버튼 상하 배치
+    // 관리 컬럼: 내가 올린 도서만 '도서 수정' 버튼 활성화, 다른 가맹점/본사 도서는 '편집 불가' 잠금
+    var editBtnHtml = isMyBook
+      ? `<button type="button" class="btn btn-xs btn-outline-secondary w-100" onclick="openAcademyBookOnlyAddModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2.5px 6px; font-weight: 600;" title="도서 서지 정보 수정">
+           <i class="fa-solid fa-pen-to-square mr-1 text-secondary"></i>도서 수정
+         </button>`
+      : `<button type="button" class="btn btn-xs w-100" onclick="showCannotEditNotice('${isHq ? '본사 공식 도서' : '타 가맹점 등록 도서'}')" style="border-radius: 6px; font-size: 11px; padding: 2.5px 6px; font-weight: 600; background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8 !important; cursor: not-allowed;" title="${isHq ? '본사 공식 도서는 수정할 수 없습니다.' : '다른 가맹점에서 등록한 도서는 수정할 수 없습니다.'}">
+           <i class="fa-solid fa-lock mr-1" style="font-size: 10px;"></i>편집 불가
+         </button>`;
+
     tr.innerHTML = 
       `<td class="text-center font-weight-bold text-muted" style="font-size: 12px;">${numDesc}</td>
       <td class="text-center">
@@ -6627,9 +6684,7 @@ function renderAcademyBookTable(data) {
       <td class="text-center font-weight-bold">${b.readCount || '0회'}</td>
       <td class="text-center" style="white-space: nowrap;">
         <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
-          <button type="button" class="btn btn-xs btn-outline-secondary w-100" onclick="openAcademyBookOnlyAddModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2.5px 6px; font-weight: 600;" title="도서 서지 정보 수정">
-            <i class="fa-solid fa-pen-to-square mr-1 text-secondary"></i>도서 수정
-          </button>
+          ${editBtnHtml}
           <button type="button" class="btn btn-xs w-100" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2.5px 6px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309;" title="북퀴즈 문항 세트 관리 및 출제">
             <i class="fa-solid fa-clipboard-question mr-1 text-warning"></i>퀴즈 관리
           </button>
@@ -6735,7 +6790,11 @@ function executeBulkBookUpload() {
   ];
 
   sampleNewBooks.forEach(function(nb) {
+    nb.isMyCreation = true;
+    nb.academyName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '우리 학원';
+    nb.academyId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'MY_ACAD';
     academyBookList.unshift(nb);
+    markBookAsMyCreation(nb.id);
   });
 
   saveCustomAcademyBooks(academyBookList);
@@ -7647,6 +7706,15 @@ function openAcademyBookOnlyAddModal(id = null) {
   originalEditingAcadBookId = isNew ? null : id;
   var book = isNew ? null : academyBookList.find(function(b) { return b.id === id; });
 
+  // 타 가맹점 도서 및 본사 공식 도서 편집 시도 원천 차단
+  if (!isNew && book) {
+    if (!isBookCreatedByMyAcademy(book)) {
+      var sourceName = (!book.creatorType || book.creatorType === 'HQ' || (book.academyName && book.academyName.includes('본사'))) ? '본사 공식 도서' : '다른 가맹점에서 등록한 도서';
+      showAcademyToast(`[${book.title}] 도서는 ${sourceName}이므로 수정할 수 없습니다. (내가 등록한 도서만 수정 가능)`);
+      return;
+    }
+  }
+
   // 1. 모달 타이틀 설정
   var titleEl = document.getElementById('acadBookModalTitle');
   if (titleEl) {
@@ -7910,7 +7978,9 @@ function handleSaveAcademyBookOnly(event) {
       thinkExtract: thinkExtract,
       thinkInsert: thinkInsert,
       creatorType: 'ACADEMY',
-      academyName: '나노 독서아카데미 본원',
+      academyName: (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '우리 학원',
+      academyId: (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'MY_ACAD',
+      isMyCreation: true,
       cover: cover,
       materialName: matName,
       materialSize: matSize,
@@ -7920,8 +7990,9 @@ function handleSaveAcademyBookOnly(event) {
       answerGuide: '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
     };
     academyBookList.unshift(newBook);
-    lastAddedBookId = finalId;
-    showAcademyToast(`신규 도서 [${title}] (코드: ${finalId})이 등록되었습니다.`);
+    markBookAsMyCreation(newBook.id);
+    lastAddedBookId = newBook.id;
+    showAcademyToast(`신규 도서 [${title}] (코드: ${newBook.id})이 등록되었습니다.`);
   }
 
   if (typeof renderCartBookCatalog === 'function') renderCartBookCatalog();

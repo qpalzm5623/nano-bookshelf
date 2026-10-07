@@ -5052,7 +5052,7 @@ function initStudentMigratedData() {
         createdAt: b.date || '2026-09-01',
         quizCount7d: Math.floor((b.quizCompletions || 40) * 0.4) + 5,
         readCount: (b.quizCompletions || 40) * 3 + 20,
-        cover: b.cover || 'resources/images/book_default.png',
+        cover: b.cover || '',
         assigned: (idx % 7 === 0),
         isEditorPick: (idx % 4 === 0),
         tags: tagArr,
@@ -5178,12 +5178,24 @@ function switchPanel(n){
 // ==============================================================
 // 감성 서재 북커버 렌더링 헬퍼 (실제 커버 없는 도서는 예쁜 가상 북커버 생성)
 // ==============================================================
+// 감성 서재 북커버 렌더링 헬퍼 (실제 커버 있는 도서는 이미지 표시, 미등록 도서는 예쁜 가상 북커버 생성)
+// ==============================================================
 function getBookCoverHtml(b, customCls, styleStr) {
+  if (!b) return '';
   var cls = customCls || 'card-cover-img';
   var st = styleStr || '';
-  if(b.cover && (b.cover.indexOf('cover_1001') !== -1 || b.cover.indexOf('cover_1002') !== -1 || b.cover.indexOf('cover_1003') !== -1 || b.cover.indexOf('cover_1004') !== -1)) {
-    return '<img src="'+b.cover+'" class="'+cls+'" style="'+st+'" alt="'+b.title+'">';
+
+  // 1. 실제 커버 이미지가 있는 경우 (Neon DB 마이그레이션 실도서 및 신규 표지 100% 연동)
+  var coverUrl = (b.cover && typeof b.cover === 'string') ? b.cover.trim() : '';
+  if (coverUrl && coverUrl !== 'none' && coverUrl !== 'resources/images/book_default.png' && coverUrl !== 'upload/book/book_default.jpg') {
+    // 로컬 file:// 프로토콜 환경 및 웹서버 환경 모두 호환되도록 경로 정규화
+    var srcPath = (window.location.protocol === 'file:' && coverUrl.indexOf('/') === 0) ? coverUrl.substring(1) : coverUrl;
+    var titleAttr = (b.title || '').replace(/"/g, '&quot;');
+    var fallbackImg = window.location.protocol === 'file:' ? 'resources/images/common/no_image.png' : '/resources/images/common/no_image.png';
+    return '<img src="' + srcPath + '" class="' + cls + '" style="' + st + '" alt="' + titleAttr + '" onerror="this.onerror=null; this.src=\'' + fallbackImg + '\';">';
   }
+
+  // 2. 표지 이미지가 없는 경우 감성 가상 북커버 생성
   var bgGradients = [
     'linear-gradient(145deg, #2d6a4f, #1b4332)',
     'linear-gradient(145deg, #386641, #1f4225)',
@@ -5193,12 +5205,19 @@ function getBookCoverHtml(b, customCls, styleStr) {
     'linear-gradient(145deg, #4f5d75, #2d3142)'
   ];
   var icons = ['📖', '🌿', '📕', '📗', '📘', '✨', '🍃', '🌟'];
-  var num = parseInt(b.id || '1000', 10);
-  var bg = bgGradients[num % bgGradients.length];
-  var ic = icons[num % icons.length];
-  return '<div class="book-cover-placeholder '+cls+'" style="background:'+bg+';'+st+'">'
-    + '<div class="bcp-icon">'+ic+'</div>'
-    + '<div class="bcp-title">'+b.title+'</div>'
+
+  // FA000001 등 영문 문자열 ID일 때 parseInt()가 NaN을 반환하여 undefined가 출력되는 버그 방지 (문자열 해시 생성)
+  var num = 0;
+  var seedStr = String(b.id || b.title || '1000');
+  for (var i = 0; i < seedStr.length; i++) {
+    num = ((num << 5) - num + seedStr.charCodeAt(i)) >>> 0;
+  }
+  var bg = bgGradients[num % bgGradients.length] || bgGradients[0];
+  var ic = icons[num % icons.length] || '📖';
+
+  return '<div class="book-cover-placeholder ' + cls + '" style="background:' + bg + ';' + st + '">'
+    + '<div class="bcp-icon">' + ic + '</div>'
+    + '<div class="bcp-title">' + (b.title || '') + '</div>'
     + '</div>';
 }
 

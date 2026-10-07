@@ -587,6 +587,32 @@
       background: rgba(255, 255, 255, 0.22);
     }
 
+    /* 생각 담기 메뉴 세그먼트 탭 스타일 (회색 톤 제거 및 나노 브랜드 톤 적용) */
+    .think-seg-btn {
+      border: none;
+      background: transparent;
+      color: #736353;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4.5px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1.2;
+    }
+    .think-seg-btn:hover {
+      color: #2d6a4f;
+      background: rgba(255, 255, 255, 0.65);
+    }
+    .think-seg-btn.active {
+      background: #2d6a4f !important;
+      color: #ffffff !important;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(45, 106, 79, 0.35);
+    }
+
     /* 포디움 스테이지 */
     .admin-podium-wrap {
       background: #ffffff;
@@ -1676,14 +1702,6 @@
     </div>
 
     <div class="d-flex align-items-center">
-      <!-- 실데이터 가맹 학원 전환 드롭다운 -->
-      <div class="mr-3 text-left d-none d-md-block" style="min-width: 190px;">
-        <label style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 2px; display: block;">가맹 학원 선택</label>
-        <select id="headerFranchiseSelector" onchange="switchAcademyFranchise(this.value)" class="form-control form-control-sm select-beige" style="height: 30px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 8px;">
-          <!-- JS 동적 생성 -->
-        </select>
-      </div>
-
       <div class="mr-3 text-right">
         <span class="badge-soft badge-soft-master mr-2" style="font-size: 11px;">
           <i class="fa-solid fa-user-check mr-1"></i>원장님
@@ -1691,12 +1709,6 @@
         <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);" id="headerDirectorName">이강민 원장님</span>
         <small style="color: var(--text-muted); display: block; font-size: 11px;" id="headerAcademyName">나노의 책장S 개포</small>
       </div>
-      <!-- 본사 공지사항 버튼 -->
-      <button type="button" class="btn btn-sm btn-beige-secondary mr-2 position-relative" onclick="switchTab('notice')" style="border-radius: 10px; font-size: 12.5px; padding: 5px 12px; border-color: var(--border-medium); font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" title="본사 시스템 공지사항 확인">
-        <i class="fa-solid fa-bullhorn text-warning"></i>
-        <span>본사 공지</span>
-        <span class="badge badge-danger ml-1" id="academyNoticeCountBadge" style="display:none; font-size:10px; border-radius:10px; padding: 2px 6px;">0</span>
-      </button>
       <!-- 내 정보 관리 버튼 -->
       <button type="button" class="btn btn-sm btn-beige-secondary mr-2" onclick="openMyInfoModal()" style="border-radius: 10px; font-size: 12.5px; padding: 5px 12px; border-color: var(--border-medium); font-weight: 700; display: inline-flex; align-items: center; gap: 6px;" title="원장님 계정 및 학원 정보 관리">
         <i class="fa-solid fa-user-gear text-muted"></i>
@@ -1947,7 +1959,7 @@
       <div id="content-sub-list">
         <div class="simple-card p-3 mb-4">
           <div class="row align-items-center">
-            <div class="col-md-2">
+            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">등록처 필터</label>
               <select class="form-control form-control-sm" id="filterAcadBookOrigin" onchange="filterAcademyBooks()" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                 <option value="ALL" selected>전체</option>
@@ -1955,7 +1967,7 @@
                 <option value="ACADEMY">자체 등록</option>
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">권장 학년</label>
               <select class="form-control form-control-sm" id="filterAcadBookGrade" onchange="filterAcademyBooks()" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                 <option value="ALL" selected>전체 학년</option>
@@ -1965,7 +1977,7 @@
                 <option value="중등 1~3학년">중등 1~3학년</option>
               </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">리스트 정렬</label>
               <select class="form-control form-control-sm" id="sortAcadBookSelect" onchange="filterAcademyBooks()" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px; font-weight: 600;">
                 <option value="DATE_DESC" selected>등록일 최신순 (Default)</option>
@@ -1975,7 +1987,16 @@
                 <option value="GRADE_ASC">권장 학년 순</option>
               </select>
             </div>
-            <div class="col-md-2">
+            <!-- 리스트 정렬과 도서 검색 사이: 보유 여부 드롭다운 -->
+            <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">보유 여부</label>
+              <select class="form-control form-control-sm" id="filterAcadBookOwned" onchange="filterAcademyBooks()" style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px; font-weight: 600;">
+                <option value="ALL" selected>전체 보기</option>
+                <option value="OWNED">보유도서만 보기</option>
+                <option value="UNOWNED">미보유 도서만 보기</option>
+              </select>
+            </div>
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-6 mb-2 mb-xl-0">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">도서 검색</label>
               <div class="input-group input-group-sm">
                 <input type="search" class="form-control" id="searchAcadBookInput" name="search_acad_book_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterAcademyBooks()" onsearch="filterAcademyBooks()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="도서명, 저자, 출판사...">
@@ -1984,29 +2005,20 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4 text-right d-flex justify-content-end align-items-end flex-wrap" style="gap: 8px; padding-bottom: 2px;">
-              <button type="button" id="btnToggleOnlyOwned" class="btn btn-sm btn-outline-success font-weight-bold" onclick="toggleOnlyOwnedBooksFilter()" style="padding: 6px 14px; border-radius: 8px; border-width: 1.5px; transition: all 0.2s;" title="우리 학원이 보유한 도서만 모아보기">
-                <i class="fa-solid fa-bookmark mr-1"></i>보유 도서만 보기 <span id="ownedBookCountBadge" class="badge badge-success ml-1" style="font-size: 11px;">0권</span>
-              </button>
-              <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()" style="font-weight: 600; padding: 6px 14px; border-radius: 8px;">
+            <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12 text-right d-flex justify-content-end align-items-end flex-wrap" style="gap: 8px; padding-bottom: 2px;">
+              <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()" style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap;">
                 <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>대량 엑셀 업로드
               </button>
-              <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openAcademyBookOnlyAddModal()" style="padding: 6px 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2);">
+              <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openAcademyBookOnlyAddModal()" style="padding: 6px 14px; border-radius: 8px; box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2); font-size: 12px; white-space: nowrap;">
                 <i class="fa-solid fa-plus mr-1"></i>새 도서 등록
               </button>
             </div>
           </div>
 
-          <!-- 필터 보조 바: 보유 도서만 보기 & 내가 올린 도서 모아보기 -->
+          <!-- 필터 보조 바: 내가 올린 도서 모아보기 -->
           <div class="row align-items-center mt-3 pt-2 border-top">
             <div class="col-md-12 d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
               <div class="d-flex align-items-center" style="gap: 20px;">
-                <div class="custom-control custom-checkbox">
-                  <input type="checkbox" class="custom-control-input" id="chkOnlyOwnedBooks" onchange="syncOnlyOwnedBooksFromCheckbox(this.checked)">
-                  <label class="custom-control-label font-weight-bold text-success" for="chkOnlyOwnedBooks" style="cursor: pointer; font-size: 13px;">
-                    <i class="fa-solid fa-bookmark mr-1 text-success"></i>보유 도서만 보기 (<span id="ownedCountSub">0</span>권)
-                  </label>
-                </div>
                 <div class="custom-control custom-checkbox">
                   <input type="checkbox" class="custom-control-input" id="chkOnlyMyQuizBooks" onchange="filterAcademyBooks()">
                   <label class="custom-control-label font-weight-bold text-dark" for="chkOnlyMyQuizBooks" style="cursor: pointer; font-size: 13px;">
@@ -2014,7 +2026,7 @@
                   </label>
                 </div>
               </div>
-              <small class="text-muted" style="font-size: 11.5px;">* 표의 '보유 여부' 토글을 켜면 학원 보유 도서로 등록되며, '보유 도서만 보기'로 즉시 필터링할 수 있습니다.</small>
+              <small class="text-muted" style="font-size: 11.5px;">* 표의 '보유 여부' 스위치를 켜면 학원 보유 도서로 등록되며, 상단 필터에서 '보유도서만 보기'로 즉시 모아볼 수 있습니다.</small>
             </div>
           </div>
         </div>
@@ -2396,7 +2408,7 @@
         <div class="row align-items-center">
           <div class="col-md-2">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">클래스 필터</label>
-            <select class="form-control form-control-sm" id="learningClassFilter" style="border-radius: 8px;">
+            <select class="form-control form-control-sm" id="learningClassFilter" onchange="renderLearningTable()" style="border-radius: 8px;">
               <option value="ALL" selected>전체</option>
               <option value="지혜반">지혜반</option>
               <option value="슬기반">슬기반</option>
@@ -2405,9 +2417,9 @@
               <option value="새싹반">새싹반</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-5">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
-              조회 기간 <small class="text-muted font-weight-normal">(최대 6개월)</small>
+              조회 기간 <small class="text-muted font-weight-normal">(현재월 1일 ~ 오늘 기본)</small>
             </label>
             <div class="d-flex align-items-center gap-1">
               <input type="date" class="form-control form-control-sm" id="learningStartDate" style="border-radius: 8px; font-size: 12px;">
@@ -2415,7 +2427,7 @@
               <input type="date" class="form-control form-control-sm" id="learningEndDate" style="border-radius: 8px; font-size: 12px;">
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-5">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">학습 검색</label>
             <div class="input-group input-group-sm">
               <input type="search" class="form-control" id="learningSearchInput" name="learning_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" placeholder="학생명, 도서명 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;" onkeydown="if(event.key==='Enter') executeLearningSearch()" onsearch="executeLearningSearch()">
@@ -2426,20 +2438,21 @@
               </div>
             </div>
           </div>
-          <div class="col-md-2 text-right pt-3">
-            <span class="badge-soft badge-soft-neutral">
-              학습 기록 <strong id="learningLogCount">0</strong>건
-            </span>
-          </div>
         </div>
       </div>
 
-      <!-- 학습 기록 테이블: 컬럼 순서 (번호, 완독 도서명, 원생명, 북퀴즈 결과, 나노 시트, 첨삭, 관리) -->
+      <!-- 학습 기록 테이블: 컬럼 순서 (번호, 완료일, 완독 도서명, 원생명, 북퀴즈 결과, 나노 시트, 첨삭, 관리) -->
       <div class="simple-card">
+        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+          <span class="badge-soft badge-soft-neutral" style="font-size: 12px; font-weight: 700;">
+            <i class="fa-solid fa-list-check mr-1 text-primary"></i>학습 기록 <strong id="learningLogCount" class="text-dark">0</strong>건
+          </span>
+        </div>
         <table class="simple-table">
           <thead>
             <tr>
-              <th style="width: 60px;">번호</th>
+              <th style="width: 55px;">번호</th>
+              <th style="width: 140px;">완료일</th>
               <th style="text-align: left;">완독 도서명</th>
               <th>원생명</th>
               <th>북퀴즈 결과</th>
@@ -5475,32 +5488,43 @@
               </div>
 
               <!-- 생각 담기 메뉴 (직접 타이핑 / 제시된 텍스트 선택 / 생각 담기 없음) -->
-              <div class="form-group p-3 rounded bg-white border">
-                <label class="font-weight-bold d-flex justify-content-between align-items-center mb-2" style="font-size: 13px;">
-                  <span><i class="fa-solid fa-lightbulb text-warning mr-1"></i>생각 담기 메뉴 설정</span>
-                  <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-xs btn-outline-secondary active" id="btnAcadThinkPreset" onclick="switchAcadThinkMode('preset')">제시문 선택</button>
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAcadThinkCustom" onclick="switchAcadThinkMode('custom')">직접 입력</button>
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnAcadThinkNone" onclick="switchAcadThinkMode('none')">생각 담기 없음</button>
+              <div class="form-group p-3 rounded" style="background: #faf7f2; border: 1.5px solid #ebe2d3;">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap" style="gap: 8px;">
+                  <span class="font-weight-bold" style="font-size: 13px; color: var(--wood-dark);">
+                    <i class="fa-solid fa-lightbulb text-warning mr-1"></i>생각 담기 메뉴 설정
+                  </span>
+                  <!-- 세련된 내추럴 세그먼트 탭 버튼 (회색 톤 제거) -->
+                  <div class="think-segment-control" style="display: inline-flex; background: #e8e0d2; padding: 3px; border-radius: 20px; border: 1px solid #dcd2c2; gap: 3px;">
+                    <button type="button" class="think-seg-btn active" id="btnAcadThinkPreset" onclick="switchAcadThinkMode('preset')">
+                      <i class="fa-solid fa-list-check mr-1"></i>제시문 선택
+                    </button>
+                    <button type="button" class="think-seg-btn" id="btnAcadThinkCustom" onclick="switchAcadThinkMode('custom')">
+                      <i class="fa-solid fa-pen-fancy mr-1"></i>직접 입력
+                    </button>
+                    <button type="button" class="think-seg-btn" id="btnAcadThinkNone" onclick="switchAcadThinkMode('none')">
+                      <i class="fa-solid fa-ban mr-1"></i>생각 담기 없음
+                    </button>
                   </div>
-                </label>
+                </div>
 
                 <!-- 1) 제시문 드롭박스 -->
-                <div id="acadThinkPresetWrap">
-                  <label class="text-muted" style="font-size: 12px;">카테고리 1에 적합한 추천 제시문 중 하나를 선택하세요:</label>
-                  <select id="abEditThinkPresetSelect" class="select-beige w-100 font-weight-bold" onchange="applyAcadThinkPresetToInput(this.value)">
+                <div id="acadThinkPresetWrap" style="background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid #e2d9cb;">
+                  <label class="text-muted mb-1" style="font-size: 11.5px; font-weight: 600;">
+                    <i class="fa-solid fa-sparkles text-warning mr-1"></i>카테고리에 적합한 추천 제시문 중 하나를 선택하세요:
+                  </label>
+                  <select id="abEditThinkPresetSelect" class="form-control form-control-sm select-beige w-100 font-weight-bold" style="border-radius: 8px; font-size: 12.5px;" onchange="applyAcadThinkPresetToInput(this.value)">
                     <!-- JS로 카테고리1(소설/인물이야기 vs 비문학)에 따라 동적 주입 -->
                   </select>
                 </div>
 
                 <!-- 2) 직접 입력 textarea -->
                 <div id="acadThinkCustomWrap" class="mt-2">
-                  <textarea id="abEditThinkInsert" class="form-control form-control-beige" rows="2" placeholder="독서 후 학생이 깊이 생각하고 글을 쓸 수 있는 발문을 입력하세요."></textarea>
+                  <textarea id="abEditThinkInsert" class="form-control form-control-beige" rows="2" style="background: #ffffff; border-radius: 8px; font-size: 12.5px; line-height: 1.5;" placeholder="독서 후 학생이 깊이 생각하고 글을 쓸 수 있는 발문을 입력하세요."></textarea>
                 </div>
                 
                 <!-- 3) 생각 담기 없음 안내 -->
-                <div id="acadThinkNoneNotice" class="text-muted mt-2" style="display: none; font-size: 12px;">
-                  * 본 도서는 독서 후 생각 담기 과제 없이 퀴즈 및 완독만으로 진행됩니다.
+                <div id="acadThinkNoneNotice" class="mt-2 p-2.5 rounded" style="display: none; font-size: 12px; background: #ffffff; border: 1px dashed #dcd2c2; color: #786d63;">
+                  <i class="fa-solid fa-circle-info text-secondary mr-1"></i>* 본 도서는 독서 후 생각 담기 서술 과제 없이 <strong>북퀴즈 및 완독</strong>으로만 진행됩니다.
                 </div>
               </div>
 
