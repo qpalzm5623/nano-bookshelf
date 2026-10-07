@@ -24,7 +24,7 @@ model Academy {
   phone           String         // 대표 연락처
   email           String?        // 대표 이메일
   address         String?        // 학원 주소
-  plan            PlanTier       @default(STANDARD) // BASIC, STANDARD, VIP, ROYAL
+  plan            PlanTier       @default(STANDARD) // BASIC, STANDARD, PREMIUM, VIP, ROYAL
   maxStudents     Int            @default(50)       // 계약 학생 정원(슬롯)
   monthlyFee      Int            @default(500000)   // 월 가맹비/이용료 (원)
   joinDate        DateTime       @default(now())    // 가맹 등록일
@@ -33,6 +33,7 @@ model Academy {
   status          AcademyStatus  @default(ACTIVE)   // ACTIVE, SUSPENDED, TERMINATED
   memo            String?        @db.Text           // 본사 관리자 메모
   deletedAt       DateTime?                         // 7일 임시보존 소프트 삭제 일시
+  legacySeq       Int?           @unique            // 레거시 원장 user_seq
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -40,6 +41,8 @@ model Academy {
   classes         ClassGroup[]
   payments        Payment[]
   dispatchLogs    AligoDispatchLog[]
+  academyBooks    AcademyBook[]
+  bookAssignments BookAssignment[]
 
   @@map("academies")
 }
@@ -53,6 +56,7 @@ model ClassGroup {
   academy         Academy        @relation(fields: [academyId], references: [id], onDelete: Cascade)
   name            String         // 예: 지혜반, 마스터반, 소나무반
   targetGrade     String?        // 예: 초등 5학년, 중등 1학년
+  legacyClassSeq  Int?
   createdAt       DateTime       @default(now())
 
   members         Member[]
@@ -84,15 +88,18 @@ model Member {
   bookCount       Int            @default(0)       // 완독 도서 권수
   quizAvg         Float          @default(0.0)     // 북퀴즈 평균 점수
   reportYn        Boolean        @default(true)    // 학부모 리포트 카카오톡 발송 동의
-  status          MemberStatus   @default(APPROVED)// PENDING, APPROVED, WITHDRAWN
+  status          MemberStatus   @default(APPROVED)// PENDING, APPROVED, WITHDRAWN, SUSPENDED
   teacherName     String?                          // 담당 지도교사 성함
   memo            String?        @db.Text          // 지도 및 상담 메모
   lastLoginAt     DateTime?
+  legacySeq       Int?           @unique           // 레거시 user_seq
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   quizAttempts    QuizAttempt[]
   readingReports  ReadingReport[]
+  pointHistories  PointHistory[]
+  bookAssignments BookAssignment[]
 
   @@index([academyId])
   @@index([role])
@@ -125,15 +132,25 @@ model Payment {
 // --------------------------------------------------------------
 model Book {
   id              String         @id @default(cuid())
+  bookNo          String         @unique           // 레거시 도서 고유코드 (예: FA000001)
   title           String                           // 도서명
   author          String                           // 저자
   publisher       String?                          // 출판사
+  isbn            String?                          // ISBN (13자리)
+  series          String?                          // 시리즈명
   coverUrl        String?                          // 표지 이미지 URL
-  category        String?                          // 분류 (문학, 과학, 인문 등)
+  worksheetUrl    String?                          // 워크시트 PDF URL
+  category        String?                          // K (국내서), F (외서)
+  subCategory     String?                          // A (소설), B (인물), C (비문학)
   grade           String?                          // 추천 학년 (초1 ~ 중3)
   level           String?                          // 레벨 (입문, 기본, 발전, 심화, 완성)
   pageCount       Int            @default(100)
   description     String?        @db.Text
+  tags            String?                          // 세부 태그 (쉼표 구분)
+  award           String?                          // 어워드 및 추천 정보
+  subject         String?                          // 주제 (이야기, 인간, 과학 등)
+  thinkTitle      String?                          // 생각꺼내기 문구
+  thinkQuiz       String?                          // 생각담기 문구
   isRecommended   Boolean        @default(false)   // 학년별 필독 권장도서 여부
   recommendGrade  String?                          // 권장 학년 태그
   themeId         String?
@@ -143,6 +160,8 @@ model Book {
 
   quizzes         BookQuiz[]
   readingReports  ReadingReport[]
+  academyBooks    AcademyBook[]
+  bookAssignments BookAssignment[]
 
   @@map("books")
 }
@@ -154,11 +173,12 @@ model BookQuiz {
   id              String         @id @default(cuid())
   bookId          String
   book            Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  legacyQuizSeq   BigInt?                          // 레거시 tb_quiz.quiz_seq
   questionNo      Int                              // 문항 번호 (1, 2, 3...)
   question        String         @db.Text          // 문제 내용
   quizType        QuizType       @default(MULTIPLE_CHOICE) // MULTIPLE_CHOICE, SHORT_ANSWER
   options         Json?                            // 객관식 보기 배열 ["1번", "2번", "3번", "4번"]
-  correctAnswer   String                           // 정답 (예: "2" 또는 단답형 정답)
+  correctAnswer   String                           // 정답 (보기 인덱스 또는 텍스트)
   explanation     String?        @db.Text          // 해설
   score           Int            @default(20)      // 배점
 
@@ -175,10 +195,16 @@ model QuizAttempt {
   bookId          String
   score           Int                              // 획득 점수
   totalScore      Int            @default(100)
+  correctCount    Int?                             // 정답 문항 수
+  questionCount   Int?                             // 전체 문항 수
+  thinkReply      String?        @db.Text          // 생각담기 주관식 답변
+  thinkReplyFile  String?                          // 생각담기 첨부 이미지
   answers         Json                             // 학생 제출 답안 및 채점 결과 상세
+  legacyQhSeq     Int?           @unique           // 레거시 tb_quiz_history.qh_seq
   completedAt     DateTime       @default(now())
 
   @@index([memberId])
+  @@index([bookId])
   @@map("quiz_attempts")
 }
 
@@ -219,7 +245,62 @@ model ThemeCategory {
 }
 
 // --------------------------------------------------------------
-// 10. 메인 배너 (MainBanner)
+// 10. 포인트 적립/사용 내역 (PointHistory)
+// --------------------------------------------------------------
+model PointHistory {
+  id              String         @id @default(cuid())
+  memberId        String
+  member          Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  amount          Int                              // 포인트 변동 금액 (+ 또는 -)
+  pointType       String?                          // QUIZ 등
+  content         String?                          // 상세 내용 (예: "5개 (15) + 생각담기 (5)")
+  legacyPhSeq     Int?           @unique
+  createdAt       DateTime       @default(now())
+
+  @@index([memberId])
+  @@map("point_histories")
+}
+
+// --------------------------------------------------------------
+// 11. 도서 과제 배정 (BookAssignment)
+// --------------------------------------------------------------
+model BookAssignment {
+  id              String         @id @default(cuid())
+  academyId       String?
+  academy         Academy?       @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  memberId        String?
+  member          Member?        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  bookId          String
+  book            Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  isCompleted     Boolean        @default(false)
+  status          String?                          // 배정 상태
+  createdAt       DateTime       @default(now())
+
+  @@index([academyId])
+  @@index([memberId])
+  @@index([bookId])
+  @@map("book_assignments")
+}
+
+// --------------------------------------------------------------
+// 12. 학원 보유 도서 - 내 도서관 (AcademyBook)
+// --------------------------------------------------------------
+model AcademyBook {
+  id              String         @id @default(cuid())
+  academyId       String
+  academy         Academy        @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  bookId          String
+  book            Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+
+  @@unique([academyId, bookId])
+  @@index([academyId])
+  @@index([bookId])
+  @@map("academy_books")
+}
+
+// --------------------------------------------------------------
+// 13. 메인 배너 (MainBanner)
 // --------------------------------------------------------------
 model MainBanner {
   id              String         @id @default(cuid())
@@ -237,7 +318,7 @@ model MainBanner {
 }
 
 // --------------------------------------------------------------
-// 11. 공지사항 (Notice)
+// 14. 공지사항 (Notice)
 // --------------------------------------------------------------
 model Notice {
   id              String         @id @default(cuid())
@@ -252,7 +333,7 @@ model Notice {
 }
 
 // --------------------------------------------------------------
-// 12. 알리고 알림톡/문자 발송 내역 (AligoDispatchLog)
+// 15. 알리고 알림톡/문자 발송 내역 (AligoDispatchLog)
 // --------------------------------------------------------------
 model AligoDispatchLog {
   id              String         @id @default(cuid())
@@ -275,6 +356,7 @@ model AligoDispatchLog {
 enum PlanTier {
   BASIC
   STANDARD
+  PREMIUM
   VIP
   ROYAL
 }
@@ -296,6 +378,7 @@ enum MemberStatus {
   PENDING
   APPROVED
   WITHDRAWN
+  SUSPENDED
 }
 
 enum PaymentStatus {

@@ -11,6 +11,13 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 나노의책장 Supabase 초기 데이터 시딩 시작...');
 
+  const currentMemberCount = await prisma.member.count();
+  if (currentMemberCount > 50 && process.env.FORCE_SEED !== 'true') {
+    console.error(`⚠️ [안전장치 경고] 현재 데이터베이스에 ${currentMemberCount}명의 실제 회원이 존재합니다.`);
+    console.error('시드 데이터를 덮어쓰려면 환경변수 FORCE_SEED=true 를 명시적으로 선언하고 실행하세요.');
+    process.exit(1);
+  }
+
   // 1. 기존 데이터 정리 (순서: 종속 관계 고려)
   await prisma.payment.deleteMany();
   await prisma.quizAttempt.deleteMany();
