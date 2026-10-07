@@ -21,6 +21,8 @@
   <!-- 배너 및 테마 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
   <script src="upload/banner/banners_data.js"></script>
   <script src="upload/banner/themes_data.js"></script>
+  <!-- Neon DB 실데이터 연동 (학생 랭킹, 회원, 도서) -->
+  <script src="migrated_real_data.js?v=20261007_v2"></script>
   <style>
     :root {
       /* 자연스러운 목재 베이지 & 오트밀 크림 배경 */
@@ -3202,14 +3204,14 @@
       </div>
       <div class="drawer-profile-info" style="flex: 1; min-width: 0;">
         <div class="drawer-user-name" style="display: flex; align-items: center; gap: 6px;">
-          <span>김민준</span>
+          <span id="drawerStudentName">이문성</span>
           <span id="drawerCharBadge" style="font-size: 10.5px; font-weight: 800; background: #ccfbf1; color: #0d9488; padding: 2px 7px; border-radius: 8px;">부키</span>
         </div>
-        <div class="drawer-user-class">
-          <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>지혜반 · 초등 5학년
+        <div class="drawer-user-class" id="drawerStudentClass">
+          <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>글봄독서논술학원 · 초등 3학년
         </div>
-        <div class="drawer-user-point-badge" style="margin-top: 5px;">
-          <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>2,480 P 보유
+        <div class="drawer-user-point-badge" id="drawerStudentPoints" style="margin-top: 5px;">
+          <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>36,064 P 보유 (전국 1위)
         </div>
       </div>
     </div>
@@ -3341,12 +3343,12 @@
       <div id="headerCharAvatar" class="char-avatar-box" style="width:28px;height:28px;flex-shrink:0;"></div>
       <div style="text-align:left;">
         <div style="font-weight:800;font-size:12px;color:#1e293b;line-height:1.2;display:flex;align-items:center;gap:4px;">
-          <span>김민준</span>
+          <span id="headerStudentName">이문성</span>
           <span id="headerCharTag" style="font-size:9.5px;font-weight:800;color:#0d9488;background:#ccfbf1;padding:1px 4px;border-radius:4px;">부키</span>
         </div>
-        <div style="font-size:10px;color:#0f766e;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:3px;">
+        <div id="headerStudentClass" style="font-size:10px;color:#0f766e;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:3px;">
           <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#00a896;"></span>
-          지혜반 · 5학년
+          글봄독서 · 3학년
         </div>
       </div>
     </div>
@@ -8122,59 +8124,66 @@ var currentRankPeriod = 'month'; // 'month' 또는 'lastMonth'
 // 학급 운영 여부 (학급이 없으면 학원/전국 랭킹만 표출)
 var ACADEMY_HAS_CLASS = true; 
 
-var fullRankDatabase = {
-  class: {
-    month: [
-      { rank: 1, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 1, books: 26, titleTag: "🐿️ 퀴즈 달인" },
-      { rank: 2, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "same", changeNum: 0, books: 24, me: true, titleTag: "🦊 명탐정" },
-      { rank: 3, name: "박서준", charId: "nano", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🐰 완독왕" },
-      { rank: 4, name: "정하은", charId: "toto", cls: "지혜반", pt: 1980, change: "up", changeNum: 2, books: 19, titleTag: "🐰 번개 다독왕" },
-      { rank: 5, name: "이준우", charId: "pico", cls: "지혜반", pt: 1840, change: "same", changeNum: 0, books: 18, titleTag: "🐧 우주 탐험가" },
-      { rank: 6, name: "윤아인", charId: "lumi", cls: "지혜반", pt: 1720, change: "up", changeNum: 1, books: 16, titleTag: "🧚 별빛 요정" },
-      { rank: 7, name: "최서율", charId: "popo", cls: "지혜반", pt: 1590, change: "down", changeNum: 2, books: 15, titleTag: "🐻 끈기 대장" }
-    ],
-    lastMonth: [
-      { rank: 1, name: "유지유", charId: "chichi", cls: "지혜반", pt: 3120, change: "same", changeNum: 0, books: 32, titleTag: "🏆 8월 MVP" },
-      { rank: 2, name: "박서준", charId: "nano", cls: "지혜반", pt: 2890, change: "up", changeNum: 1, books: 29, titleTag: "🥈 8월 2등" },
-      { rank: 3, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2650, change: "same", changeNum: 0, books: 27, me: true, titleTag: "🥉 8월 포디움" },
-      { rank: 4, name: "정하은", charId: "toto", cls: "지혜반", pt: 2410, change: "same", changeNum: 0, books: 24, titleTag: "🐰 번개 다독왕" },
-      { rank: 5, name: "이준우", charId: "pico", cls: "지혜반", pt: 2180, change: "down", changeNum: 1, books: 22, titleTag: "🐧 우주 탐험가" }
-    ]
-  },
-  academy: {
-    month: [
-      { rank: 1, name: "장민서", charId: "nano", cls: "마스터반", pt: 3450, change: "up", changeNum: 1, books: 35, titleTag: "🦊 독서 챔피언" },
-      { rank: 2, name: "유지유", charId: "chichi", cls: "지혜반", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 퀴즈 달인" },
-      { rank: 3, name: "오세훈", charId: "mir", cls: "탐구반", pt: 2510, change: "down", changeNum: 1, books: 25, titleTag: "🐲 역사 마니아" },
-      { rank: 4, name: "배수아", charId: "lumi", cls: "열매반", pt: 2490, change: "up", changeNum: 1, books: 24, titleTag: "🧚 문학 탐험가" },
-      { rank: 5, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2480, change: "same", changeNum: 0, books: 24, me: true, titleTag: "🌟 학원 5위" },
-      { rank: 6, name: "박서준", charId: "toto", cls: "지혜반", pt: 2190, change: "down", changeNum: 1, books: 21, titleTag: "🐰 스피드러너" },
-      { rank: 7, name: "정하은", charId: "popo", cls: "지혜반", pt: 1980, change: "same", changeNum: 0, books: 19, titleTag: "🐻 끈기 독서" }
-    ],
-    lastMonth: [
-      { rank: 1, name: "장민서", charId: "nano", cls: "마스터반", pt: 4200, change: "same", changeNum: 0, books: 42, titleTag: "👑 8월 학원 MVP" },
-      { rank: 2, name: "오세훈", charId: "mir", cls: "탐구반", pt: 3620, change: "up", changeNum: 1, books: 36, titleTag: "🥈 8월 2위" },
-      { rank: 3, name: "유지유", charId: "chichi", cls: "지혜반", pt: 3120, change: "down", changeNum: 1, books: 32, titleTag: "🥉 8월 3위" },
-      { rank: 4, name: "김민준(나)", charId: "custom", cls: "지혜반", pt: 2650, change: "up", changeNum: 2, books: 27, me: true, titleTag: "🎖️ 학원 4위" },
-      { rank: 5, name: "배수아", charId: "lumi", cls: "열매반", pt: 2540, change: "same", changeNum: 0, books: 25, titleTag: "🧚 문학 탐험가" }
-    ]
-  },
-  national: {
-    month: [
-      { rank: 1, name: "전국 1위 (목동)", charId: "mir", cls: "목동 명문학원", pt: 5420, change: "same", changeNum: 0, books: 52, titleTag: "👑 전국 독서왕" },
-      { rank: 2, name: "전국 2위 (대치)", charId: "booki", cls: "대치 나노독서", pt: 5180, change: "up", changeNum: 1, books: 49, titleTag: "🦉 지혜의 거장" },
-      { rank: 3, name: "전국 3위 (해운대)", charId: "toto", cls: "센텀 영재학원", pt: 4890, change: "down", changeNum: 1, books: 46, titleTag: "🐰 전국 다독왕" },
-      { rank: 87, name: "김민준(나)", charId: "custom", cls: "판교 알파 독서학원", pt: 2480, change: "up", changeNum: 5, books: 24, me: true, titleTag: "🌟 전국 87위" },
-      { rank: 88, name: "유지유", charId: "chichi", cls: "판교 알파 독서학원", pt: 2620, change: "up", changeNum: 2, books: 26, titleTag: "🐿️ 판교의 자랑" }
-    ],
-    lastMonth: [
-      { rank: 1, name: "전국 1위 (목동)", charId: "mir", cls: "목동 명문학원", pt: 6850, change: "same", changeNum: 0, books: 65, titleTag: "👑 8월 전국 1위" },
-      { rank: 2, name: "전국 2위 (대치)", charId: "booki", cls: "대치 나노독서", pt: 6420, change: "same", changeNum: 0, books: 62, titleTag: "🥈 8월 전국 2위" },
-      { rank: 3, name: "전국 3위 (해운대)", charId: "toto", cls: "센텀 영재학원", pt: 5980, change: "up", changeNum: 1, books: 58, titleTag: "🥉 8월 전국 3위" },
-      { rank: 94, name: "김민준(나)", charId: "custom", cls: "판교 알파 독서학원", pt: 2650, change: "up", changeNum: 8, books: 27, me: true, titleTag: "🌟 전국 94위" }
-    ]
+var fullRankDatabase = (function() {
+  var charList = ['chichi', 'nano', 'toto', 'pico', 'lumi', 'popo', 'mir', 'choco', 'jelly', 'booki'];
+
+  // Neon DB 실데이터 연동 (window.MIGRATED_RANKINGS)
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_RANKINGS) && window.MIGRATED_RANKINGS.length > 0) {
+    var realTop = window.MIGRATED_RANKINGS.slice(0, 30);
+    var nationalMonth = realTop.map(function(s, idx) {
+      var isMe = (idx === 0) || (s.name === '이문성');
+      return {
+        rank: idx + 1,
+        name: isMe ? (s.name + '(나)') : s.name,
+        charId: isMe ? 'custom' : charList[idx % charList.length],
+        cls: s.academy || '가맹 학원',
+        pt: s.points || 0,
+        change: idx === 0 ? 'same' : (idx % 2 === 0 ? 'up' : 'down'),
+        changeNum: (idx % 3) + 1,
+        books: s.books || Math.max(1, Math.round((s.points || 100) / 80)),
+        me: isMe,
+        titleTag: idx === 0 ? '👑 전국 1위' : (idx < 3 ? '🏆 명예의 전당' : '🌟 전국 우수')
+      };
+    });
+
+    // 학원/학급 데이터 (글봄독서논술학원 또는 상위권 학생 매핑)
+    var acadMonth = nationalMonth.slice(0, 10).map(function(item, idx) {
+      return Object.assign({}, item, {
+        rank: idx + 1,
+        cls: '글봄독서 ' + (idx + 1) + '반',
+        titleTag: idx === 0 ? '🏆 학원 1위' : '🌟 학원 우수'
+      });
+    });
+
+    var classMonth = acadMonth.slice(0, 7).map(function(item, idx) {
+      return Object.assign({}, item, {
+        rank: idx + 1,
+        cls: '글봄 초3 정규반',
+        titleTag: idx === 0 ? '👑 우리반 1위' : '🦊 다독왕'
+      });
+    });
+
+    return {
+      class: { month: classMonth, lastMonth: classMonth },
+      academy: { month: acadMonth, lastMonth: acadMonth },
+      national: { month: nationalMonth, lastMonth: nationalMonth }
+    };
   }
-};
+
+  // 기본 Fallback
+  return {
+    class: {
+      month: [
+        { rank: 1, name: "이문성(나)", charId: "custom", cls: "글봄 초3반", pt: 36064, change: "same", changeNum: 0, books: 451, me: true, titleTag: "👑 다독왕" },
+        { rank: 2, name: "안여진", charId: "chichi", cls: "글봄 초3반", pt: 21440, change: "up", changeNum: 1, books: 268, titleTag: "🥈 퀴즈 달인" },
+        { rank: 3, name: "권순찬", charId: "nano", cls: "글봄 초3반", pt: 13056, change: "down", changeNum: 1, books: 163, titleTag: "🥉 완독왕" }
+      ],
+      lastMonth: []
+    },
+    academy: { month: [], lastMonth: [] },
+    national: { month: [], lastMonth: [] }
+  };
+})();
 
 // 학급 미운영 학원 대응 초기화
 function checkAcademyClassMode() {

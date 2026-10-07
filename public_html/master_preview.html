@@ -901,19 +901,19 @@
           <small class="text-muted">* 최근 가맹일(가입일) 기준으로 최신순 정렬됩니다.</small>
         </div>
         <div class="table-responsive" style="overflow-x: auto;">
-          <table class="simple-table" style="min-width: 1150px; width: 100%;">
+          <table class="simple-table" style="min-width: 1050px; width: 100%;">
             <thead>
               <tr>
-                <th style="width: 50px; white-space: nowrap;" class="text-center">번호</th>
-                <th style="width: 100px; white-space: nowrap;" class="text-center">이용 상품명</th>
-                <th style="min-width: 180px; white-space: nowrap; text-align: left;">가맹 학원명</th>
-                <th style="width: 125px; white-space: nowrap;" class="text-center">관리자 ID</th>
-                <th style="min-width: 175px; white-space: nowrap;" class="text-center">원장명 / 연락처</th>
-                <th style="width: 110px; white-space: nowrap;" class="text-center">가입일</th>
-                <th style="width: 185px; white-space: nowrap;" class="text-center">계약 기간</th>
-                <th style="width: 160px; white-space: nowrap;" class="text-center">원생 수 / 계약 슬롯</th>
-                <th style="width: 110px; white-space: nowrap;" class="text-center">가맹 상태</th>
-                <th style="width: 90px; white-space: nowrap;" class="text-center">관리</th>
+                <th style="width: 45px; white-space: nowrap;" class="text-center">번호</th>
+                <th style="width: 90px; white-space: nowrap;" class="text-center">이용 상품명</th>
+                <th style="min-width: 170px; white-space: nowrap; text-align: left;">가맹 학원명</th>
+                <th style="width: 90px; white-space: nowrap;" class="text-center">관리자 ID</th>
+                <th style="width: 140px; white-space: nowrap;" class="text-center">원장명 / 연락처</th>
+                <th style="width: 90px; white-space: nowrap;" class="text-center">가입일</th>
+                <th style="width: 160px; white-space: nowrap;" class="text-center">계약 기간</th>
+                <th style="width: 140px; white-space: nowrap;" class="text-center">원생 수 / 계약 슬롯</th>
+                <th style="width: 90px; white-space: nowrap;" class="text-center">가맹 상태</th>
+                <th style="width: 70px; white-space: nowrap;" class="text-center">관리</th>
               </tr>
             </thead>
             <tbody id="franchiseTableBody">
@@ -921,6 +921,8 @@
             </tbody>
           </table>
         </div>
+        <!-- 가맹 학원 20개 단위 페이지네이션 UI -->
+        <div id="franchisePagination" class="d-flex justify-content-center align-items-center mt-3 pt-2" style="gap: 5px;"></div>
       </div>
     </section>
 
@@ -955,32 +957,32 @@
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">전체 등록 회원 <i class="fa-solid fa-users text-muted"></i></div>
-            <div class="stat-num" id="statMemberTotal">712<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
-            <div class="stat-sub">원장 14 / 교사 56 / 학생 642</div>
+            <div class="stat-num" id="statMemberTotal">2,133<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
+            <div class="stat-sub" id="statMemberTotalSub">원장 81 / 교사 171 / 학생 1,863</div>
             <i class="fa-solid fa-address-book stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">주간 활성 학생(WAU) <i class="fa-solid fa-book-reader text-success"></i></div>
-            <div class="stat-num text-success" id="statMemberActive">588<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
-            <div class="stat-sub">매주 월~일 1회 이상 로그인 학생 수</div>
+            <div class="stat-num text-success" id="statMemberActive">260<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
+            <div class="stat-sub" id="statMemberActiveSub">최근 활성 학생 기준 집계</div>
             <i class="fa-solid fa-user-check stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">누적 완독 도서 <i class="fa-solid fa-book text-muted"></i></div>
-            <div class="stat-num" id="statMemberReadCount">12,480<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
-            <div class="stat-sub">퇴원생 이력 포함 / 1인당 평균 19.4권</div>
+            <div class="stat-num" id="statMemberReadCount">6,855<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
+            <div class="stat-sub" id="statMemberReadCountSub">최근 3개월 퀴즈 완독 이력 기준</div>
             <i class="fa-solid fa-bookmark stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">이용 정지 / 휴면 회원 <i class="fa-solid fa-user-slash text-danger"></i></div>
-            <div class="stat-num text-danger" id="statMemberDormant">8<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
-            <div class="stat-sub">퇴원 및 정지 처리 계정</div>
+            <div class="stat-num text-danger" id="statMemberDormant">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">명</span></div>
+            <div class="stat-sub" id="statMemberDormantSub">퇴원 및 정지 처리 계정</div>
             <i class="fa-solid fa-user-xmark stat-icon-bg"></i>
           </div>
         </div>
@@ -1072,6 +1074,8 @@
             </tbody>
           </table>
         </div>
+        <!-- 회원 30명 단위 페이지네이션 UI -->
+        <div id="memberPagination" class="d-flex justify-content-center align-items-center mt-3 pt-2" style="gap: 5px;"></div>
       </div>
     </section>
 
@@ -1268,11 +1272,11 @@
           <div class="stat-card text-center" style="border: 2px solid #e6b980; background: linear-gradient(180deg, #fffcf7 0%, #ffffff 100%);">
             <div style="font-size: 28px; margin-bottom: 4px;">🥇</div>
             <span class="badge-soft badge-soft-warn mb-2 font-weight-bold">전국 1위 (명예의 전당)</span>
-            <h5 class="font-weight-bold mt-2 mb-1" id="top1Name">김태윤 학생</h5>
-            <small class="text-muted d-block mb-3" id="top1Academy">나노 독서아카데미 목동본원 (초6)</small>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top1Name">이문성 학생</h5>
+            <small class="text-muted d-block mb-3" id="top1Academy">글봄독서논술학원 (초등 3학년)</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
-              <span style="font-size: 20px; font-weight: 900; color: #7d5a2b;" id="top1Points">4,850 P</span>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">완독 42권 · 퀴즈 정답률 98%</div>
+              <span style="font-size: 20px; font-weight: 900; color: #7d5a2b;" id="top1Points">36,064 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top1Stats">완독 451권 · 퀴즈 정답률 92%</div>
             </div>
           </div>
         </div>
@@ -1280,11 +1284,11 @@
           <div class="stat-card text-center" style="border: 1px solid #d5dbdb; background: #ffffff;">
             <div style="font-size: 28px; margin-bottom: 4px;">🥈</div>
             <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold">전국 2위</span>
-            <h5 class="font-weight-bold mt-2 mb-1" id="top2Name">이서현 학생</h5>
-            <small class="text-muted d-block mb-3" id="top2Academy">대치 에듀 독서논술 (초5)</small>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top2Name">안여진 학생</h5>
+            <small class="text-muted d-block mb-3" id="top2Academy">힘찬학당 (초등 6학년)</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
-              <span style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="top2Points">4,520 P</span>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">완독 39권 · 퀴즈 정답률 96%</div>
+              <span style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="top2Points">21,440 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top2Stats">완독 268권 · 퀴즈 정답률 92%</div>
             </div>
           </div>
         </div>
@@ -1292,11 +1296,11 @@
           <div class="stat-card text-center" style="border: 1px solid #e0c8b0; background: #ffffff;">
             <div style="font-size: 28px; margin-bottom: 4px;">🥉</div>
             <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold">전국 3위</span>
-            <h5 class="font-weight-bold mt-2 mb-1" id="top3Name">박지우 학생</h5>
-            <small class="text-muted d-block mb-3" id="top3Academy">송도 센트럴 리딩랩 (초6)</small>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top3Name">권순찬 학생</h5>
+            <small class="text-muted d-block mb-3" id="top3Academy">딱풀리는수학 과천율목초점 (초등 3학년)</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
-              <span style="font-size: 20px; font-weight: 900; color: #8c6d48;" id="top3Points">4,210 P</span>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">완독 36권 · 퀴즈 정답률 95%</div>
+              <span style="font-size: 20px; font-weight: 900; color: #8c6d48;" id="top3Points">13,056 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top3Stats">완독 163권 · 퀴즈 정답률 92%</div>
             </div>
           </div>
         </div>
@@ -3281,15 +3285,15 @@
         <div class="p-3 mb-3 rounded d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7; border: 1px solid #ebd9c8;">
           <div>
             <div class="font-weight-bold text-dark" style="font-size: 15px;">
-              <span id="pointDetailStudentName">김태윤</span>
-              <span class="badge-soft badge-soft-neutral ml-1" id="pointDetailStudentGrade">초6</span>
-              <small class="text-muted ml-1" id="pointDetailStudentId">(taeyun_k)</small>
+              <span id="pointDetailStudentName">이문성</span>
+              <span class="badge-soft badge-soft-neutral ml-1" id="pointDetailStudentGrade">초등 3학년</span>
+              <small class="text-muted ml-1" id="pointDetailStudentId">(gb6721)</small>
             </div>
-            <div class="text-muted mt-1" style="font-size: 12px;" id="pointDetailAcademy">나노 독서아카데미 목동본원</div>
+            <div class="text-muted mt-1" style="font-size: 12px;" id="pointDetailAcademy">글봄독서논술학원</div>
           </div>
           <div class="text-right">
             <small class="text-muted d-block">총 누적 포인트</small>
-            <span class="font-weight-bold text-warning" style="font-size: 22px;" id="pointDetailTotalPoints">4,850 P</span>
+            <span class="font-weight-bold text-warning" style="font-size: 22px;" id="pointDetailTotalPoints">36,064 P</span>
           </div>
         </div>
 
@@ -4333,8 +4337,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="upload/banner/banners_data.js"></script>
 <script src="upload/banner/themes_data.js"></script>
-<script src="migrated_real_data.js?v=20261007_v1"></script>
-<script src="master_preview.js?v=20261007_real_v1"></script>
+<script src="migrated_real_data.js?v=20261007_real_v7"></script>
+<script src="master_preview.js?v=20261007_real_v7"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>
