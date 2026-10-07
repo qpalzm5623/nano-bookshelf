@@ -87,8 +87,8 @@ async function main() {
       회원: `${p.member.name} (${p.member.username})`,
       학원: p.member.academy?.name,
       변동: `${p.amount > 0 ? '+' : ''}${p.amount} P`,
-      잔액: `${p.balance} P`,
-      사유: p.reason,
+      유형: p.pointType,
+      내용: p.content,
       일시: p.createdAt.toISOString().slice(0, 19).replace('T', ' '),
     });
   }

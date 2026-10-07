@@ -3288,46 +3288,39 @@ function openLearningDetailModal(id) {
     }
 
     container.innerHTML = quizzes.map(function(q) {
+      var qNumStr = String(q.qNum).padStart(2, '0');
       var statusBadge = q.isCorrect
-        ? `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 9px;">
-             <i class="fa-solid fa-circle-check mr-1 text-success"></i>정답 (+20점) [O]
+        ? `<span class="report-quiz-badge correct">
+             <i class="fa-solid fa-circle-check mr-1"></i>정답 (+20점)
            </span>`
-        : `<span class="badge-soft badge-soft-danger font-weight-bold" style="font-size: 11.5px; padding: 3px 9px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
-             <i class="fa-solid fa-circle-xmark mr-1 text-danger"></i>오답 (0점) [X]
+        : `<span class="report-quiz-badge wrong">
+             <i class="fa-solid fa-circle-xmark mr-1"></i>오답 (0점)
            </span>`;
 
       var choiceBox = q.isCorrect
-        ? `<div class="p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; font-size: 12.5px;">
-             <div>
-               <strong class="text-success mr-2"><i class="fa-solid fa-check mr-1"></i>내가 고른 보기 (내 답안):</strong>
-               <span class="font-weight-bold text-dark">${q.userChoiceText}</span>
-             </div>
-             <span class="badge badge-success px-2 py-1" style="font-size: 11px;">정답 일치</span>
+        ? `<div class="report-choice-box correct">
+             <div class="report-choice-label"><i class="fa-solid fa-check mr-1"></i>학생 선택 답안</div>
+             <div class="report-choice-val">${q.userChoiceText}</div>
            </div>`
-        : `<div class="mb-1 p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #fef2f2; border: 1.5px solid #fecaca; font-size: 12.5px;">
-             <div>
-               <strong class="text-danger mr-2"><i class="fa-solid fa-xmark mr-1"></i>내가 고른 보기 (내 오답):</strong>
-               <span class="font-weight-bold" style="color: #b91c1c; text-decoration: line-through;">${q.userChoiceText}</span>
-             </div>
-             <span class="badge badge-danger px-2 py-1" style="font-size: 11px;">오답 선택</span>
+        : `<div class="report-choice-box wrong mb-1.5">
+             <div class="report-choice-label"><i class="fa-solid fa-xmark mr-1"></i>선택한 오답</div>
+             <div class="report-choice-val strike">${q.userChoiceText}</div>
            </div>
-           <div class="p-2 px-3 rounded d-flex align-items-center justify-content-between" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; font-size: 12.5px;">
-             <div>
-               <strong class="text-success mr-2"><i class="fa-solid fa-key mr-1"></i>실제 정답:</strong>
-               <span class="font-weight-bold text-dark">${q.correctChoiceText}</span>
-             </div>
-             <span class="badge badge-success px-2 py-1" style="font-size: 11px;">정답 확인</span>
+           <div class="report-choice-box actual">
+             <div class="report-choice-label"><i class="fa-solid fa-key mr-1"></i>실제 정답</div>
+             <div class="report-choice-val font-weight-bold">${q.correctChoiceText}</div>
            </div>`;
 
       return `
-        <div class="p-3 bg-white rounded shadow-sm" style="border: 1px solid ${q.isCorrect ? '#e2e8f0' : '#fecaca'};">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="font-weight-bold text-dark" style="font-size: 13.5px;">
-              <span class="badge-soft badge-soft-neutral mr-2">Q${q.qNum}</span>문제 ${q.qNum}번 문항
-            </span>
+        <div class="report-quiz-card ${q.isCorrect ? 'is-correct' : 'is-wrong'}">
+          <div class="report-quiz-header">
+            <div class="d-flex align-items-center">
+              <span class="report-quiz-num">Q${qNumStr}</span>
+              <span class="report-quiz-title">문제 ${q.qNum}번 문항</span>
+            </div>
             ${statusBadge}
           </div>
-          <div class="mb-3 font-weight-bold" style="font-size: 13px; color: #1e293b; line-height: 1.6; white-space: pre-line;">
+          <div class="report-quiz-question">
             ${q.question}
           </div>
           ${choiceBox}

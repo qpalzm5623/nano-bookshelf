@@ -7,6 +7,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// BigInt JSON 직렬화 지원 (Next.js / Express res.json 크래시 방지)
+if (typeof BigInt !== 'undefined' && !(BigInt.prototype as any).toJSON) {
+  (BigInt.prototype as any).toJSON = function () {
+    return Number(this);
+  };
+}
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({

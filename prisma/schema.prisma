@@ -173,7 +173,7 @@ model BookQuiz {
   id              String         @id @default(cuid())
   bookId          String
   book            Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  legacyQuizSeq   BigInt?                          // 레거시 tb_quiz.quiz_seq
+  legacyQuizSeq   Int?                             // 레거시 tb_quiz.quiz_seq
   questionNo      Int                              // 문항 번호 (1, 2, 3...)
   question        String         @db.Text          // 문제 내용
   quizType        QuizType       @default(MULTIPLE_CHOICE) // MULTIPLE_CHOICE, SHORT_ANSWER

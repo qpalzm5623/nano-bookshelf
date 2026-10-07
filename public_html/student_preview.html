@@ -3875,11 +3875,28 @@
               관리자 페이지 서비스 운영관리 [테마관리]에서 등록된 큐레이션 테마별 도서입니다.
             </div>
           </div>
+          <div class="sbar" id="themeTagSearchBar" style="margin-bottom:14px; background:#fff;">
+            <input type="text" id="themeTagQ" placeholder="주제 큐레이션명, 키워드 검색... (예: 인간, 과학, 역사)" oninput="filterThemeTags()" autocomplete="off">
+            <button type="button" onclick="filterThemeTags()" title="검색"><i class="fa-solid fa-search"></i></button>
+            <button type="button" id="themeTagClearBtn" onclick="clearThemeTagSearch()" style="display:none; color:var(--muted); background:none; border:none; padding:0 8px; cursor:pointer;" title="검색어 지우기">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
           <div id="themeTagGrid" class="theme-tag-grid"></div>
         </div>
 
         <div id="themeSelectedSection" style="display:none;">
           <div id="themeSelectedHeader" class="theme-selected-header"></div>
+
+          <!-- [신규] 선택된 주제 내 도서 검색바 -->
+          <div class="sbar" id="themeBookSearchBar" style="margin-top:12px; margin-bottom:14px; background:#fff;">
+            <input type="text" id="themeBookQ" placeholder="현재 주제 내 도서명, 저자, 출판사 검색..." oninput="filterThemeBooks()" autocomplete="off">
+            <button type="button" onclick="filterThemeBooks()" title="검색"><i class="fa-solid fa-search"></i></button>
+            <button type="button" id="themeBookClearBtn" onclick="clearThemeBookSearch()" style="display:none; color:var(--muted); background:none; border:none; padding:0 8px; cursor:pointer;" title="검색어 지우기">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
           <div id="themeBookList"></div>
         </div>
       </div>
@@ -4037,6 +4054,15 @@
           <div class="bs-stat-num" id="statBsAvgScore" style="color:var(--leaf-mid);">94.2점</div>
           <div class="bs-stat-label"><i class="fa-solid fa-star mr-1" style="color:#f59e0b;"></i>평균 점수</div>
         </div>
+      </div>
+
+      <!-- [신규] 독서 인증 기록 검색바 -->
+      <div class="sbar" id="historySearchBar" style="margin-top:14px; margin-bottom:14px; background:#fff;">
+        <input type="text" id="historyQ" placeholder="완독한 도서명, 저자, 출판사 검색..." oninput="filterReadingHistory()" autocomplete="off">
+        <button type="button" onclick="filterReadingHistory()" title="검색"><i class="fa-solid fa-search"></i></button>
+        <button type="button" id="historyClearBtn" onclick="clearReadingHistorySearch()" style="display:none; color:var(--muted); background:none; border:none; padding:0 8px; cursor:pointer;" title="검색어 지우기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
       <!-- 완독 도서 목록 (월별 구분 그룹 렌더링) -->
@@ -6368,13 +6394,55 @@ function getThemeMappedBooksForStudent(theme) {
   });
 }
 
+var currentSelectedTheme = null;
+var currentThemeMappedBooks = [];
+
+function clearThemeTagSearch() {
+  var input = document.getElementById('themeTagQ');
+  if(input) {
+    input.value = '';
+    filterThemeTags();
+    input.focus();
+  }
+}
+
+function filterThemeTags() {
+  renderThemeTagBoxes();
+}
+
 function renderThemeTagBoxes() {
   var grid = document.getElementById("themeTagGrid");
   if(!grid) return;
-  var themes = getStudentThemes().filter(function(t){ return t.active === 'Y'; });
+  var qInput = document.getElementById('themeTagQ');
+  var clearBtn = document.getElementById('themeTagClearBtn');
+  var q = (qInput ? qInput.value : '').trim().toLowerCase();
+
+  if(clearBtn) clearBtn.style.display = q ? 'inline-block' : 'none';
+
+  var allThemes = getStudentThemes().filter(function(t){ return t.active === 'Y'; });
+  var themes = allThemes;
+
+  if(q) {
+    themes = allThemes.filter(function(t){
+      var tName = (t.tag || '').toLowerCase();
+      var tTitle = (t.title || '').toLowerCase();
+      var tDesc = (t.desc || '').toLowerCase();
+      var tSub = (t.subTag || '').toLowerCase();
+      return tName.includes(q) || tTitle.includes(q) || tDesc.includes(q) || tSub.includes(q);
+    });
+  }
 
   if(themes.length === 0) {
-    grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--muted);"><i class="fa-solid fa-tags mb-2" style="font-size:28px; opacity:0.35;"></i><p style="font-size:13px; font-weight:600;">등록된 주제별 태그가 없습니다.</p></div>';
+    if(q) {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 48px 20px; background:#fff; border-radius:14px; border:1px dashed #e2dad0; color: var(--muted);">'
+        + '<i class="fa-solid fa-magnifying-glass mb-2" style="font-size:30px; color:#c7beaf;"></i>'
+        + '<strong style="font-size:14.5px; color:var(--wood-dark); display:block; margin-bottom:4px;">\'' + q + '\'에 일치하는 주제가 없습니다.</strong>'
+        + '<span style="font-size:12px;">다른 주제명이나 키워드로 검색해보세요.</span>'
+        + '<div style="margin-top:12px;"><button type="button" class="btn-detail-back" onclick="clearThemeTagSearch()" style="background:#f5f2eb;padding:5px 12px;border-radius:8px;font-size:12px;">검색 초기화</button></div>'
+        + '</div>';
+    } else {
+      grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--muted);"><i class="fa-solid fa-tags mb-2" style="font-size:28px; opacity:0.35;"></i><p style="font-size:13px; font-weight:600;">등록된 주제별 태그가 없습니다.</p></div>';
+    }
     return;
   }
 
@@ -6409,18 +6477,60 @@ function selectThemeTag(themeId) {
   var theme = themes.find(function(t){ return t.id === themeId; });
   if(!theme) return;
 
+  currentSelectedTheme = theme;
+  currentThemeMappedBooks = getThemeMappedBooksForStudent(theme);
+
   var tagBoxSec = document.getElementById('themeTagBoxesSection');
   var selSec = document.getElementById('themeSelectedSection');
-  var header = document.getElementById('themeSelectedHeader');
-  var listEl = document.getElementById('themeBookList');
+  var qInput = document.getElementById('themeBookQ');
 
   if(tagBoxSec) tagBoxSec.style.display = 'none';
   if(selSec) selSec.style.display = 'block';
+  if(qInput) qInput.value = '';
 
-  // 정밀 자동 매핑 도서 목록 획득
-  var mappedBooks = getThemeMappedBooksForStudent(theme);
-  var bookCnt = mappedBooks.length;
+  filterThemeBooks();
+}
+
+function clearThemeBookSearch() {
+  var qInput = document.getElementById('themeBookQ');
+  if(qInput) {
+    qInput.value = '';
+    filterThemeBooks();
+    qInput.focus();
+  }
+}
+
+function filterThemeBooks() {
+  if(!currentSelectedTheme) return;
+
+  var theme = currentSelectedTheme;
+  var header = document.getElementById('themeSelectedHeader');
+  var listEl = document.getElementById('themeBookList');
+  var clearBtn = document.getElementById('themeBookClearBtn');
+  var qInput = document.getElementById('themeBookQ');
+  var q = (qInput ? qInput.value : '').trim().toLowerCase();
+
+  if(clearBtn) clearBtn.style.display = q ? 'inline-block' : 'none';
+
+  var totalBookCnt = currentThemeMappedBooks.length;
+  var targetBooks = currentThemeMappedBooks;
+
+  if(q) {
+    targetBooks = currentThemeMappedBooks.filter(function(b){
+      var title = (b.title || '').toLowerCase();
+      var author = (b.author || '').toLowerCase();
+      var pub = (b.pub || '').toLowerCase();
+      var grade = (b.grade || '').toLowerCase();
+      var cat = (b.cat || '').toLowerCase();
+      var tagStr = Array.isArray(b.tags) ? b.tags.join(' ').toLowerCase() : '';
+      return title.includes(q) || author.includes(q) || pub.includes(q) || grade.includes(q) || cat.includes(q) || tagStr.includes(q);
+    });
+  }
+
   var displayTitle = theme.title ? (theme.tag.includes(theme.title) ? theme.tag : (theme.tag + ' ' + theme.title)) : theme.tag;
+  var countText = q
+    ? '<strong style="color:var(--leaf);">' + targetBooks.length + '권</strong> 검색됨 (전체 ' + totalBookCnt + '권)'
+    : totalBookCnt + '권';
 
   if(header) {
     header.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">'
@@ -6430,20 +6540,29 @@ function selectThemeTag(themeId) {
       +     '<span class="theme-sub-badge" style="margin-bottom:0;">'+(theme.subTag || '주제별 도서')+'</span>'
       +     '<strong style="font-size:15.5px; color:var(--wood-dark);">'+displayTitle+'</strong>'
       +   '</div>'
-      +   '<div style="font-size:12px; color:var(--muted); margin-top:2px;">'+(theme.desc || '')+' ('+bookCnt+'권)</div>'
+      +   '<div style="font-size:12px; color:var(--muted); margin-top:2px;">'+(theme.desc || '')+' (' + countText + ')</div>'
       + '</div>'
       + '</div>';
   }
 
   if(listEl) {
-    if(mappedBooks.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center; padding: 60px 20px; background:#fff; border-radius:14px; border:1.5px dashed #e2dad0; margin-top:8px;">'
-        + '<i class="fa-solid fa-book-open" style="font-size:38px; color:#c7beaf; margin-bottom:12px; display:block;"></i>'
-        + '<strong style="font-size:15px; color:var(--wood-dark); display:block; margin-bottom:6px;">해당 주제에 매핑된 도서가 없습니다.</strong>'
-        + '<p style="font-size:12px; color:var(--muted); margin:0;">관리자 페이지 [서비스 운영관리 > 테마관리]에서 도서를 확인해주세요.</p>'
-        + '</div>';
+    if(targetBooks.length === 0) {
+      if(q) {
+        listEl.innerHTML = '<div style="text-align:center; padding: 50px 20px; background:#fff; border-radius:14px; border:1.5px dashed #e2dad0; margin-top:8px;">'
+          + '<i class="fa-solid fa-magnifying-glass" style="font-size:34px; color:#c7beaf; margin-bottom:12px; display:block;"></i>'
+          + '<strong style="font-size:14.5px; color:var(--wood-dark); display:block; margin-bottom:4px;">현재 주제 내에서 \'' + q + '\'에 일치하는 도서가 없습니다.</strong>'
+          + '<p style="font-size:12px; color:var(--muted); margin:0;">도서명이나 저자, 출판사를 다시 확인해보세요.</p>'
+          + '<div style="margin-top:14px;"><button type="button" class="btn-detail-back" onclick="clearThemeBookSearch()" style="background:#f5f2eb;padding:5px 12px;border-radius:8px;font-size:12px;">검색어 초기화</button></div>'
+          + '</div>';
+      } else {
+        listEl.innerHTML = '<div style="text-align:center; padding: 60px 20px; background:#fff; border-radius:14px; border:1.5px dashed #e2dad0; margin-top:8px;">'
+          + '<i class="fa-solid fa-book-open" style="font-size:38px; color:#c7beaf; margin-bottom:12px; display:block;"></i>'
+          + '<strong style="font-size:15px; color:var(--wood-dark); display:block; margin-bottom:6px;">해당 주제에 매핑된 도서가 없습니다.</strong>'
+          + '<p style="font-size:12px; color:var(--muted); margin:0;">관리자 페이지 [서비스 운영관리 > 테마관리]에서 도서를 확인해주세요.</p>'
+          + '</div>';
+      }
     } else {
-      listEl.innerHTML = mappedBooks.map(function(b){
+      listEl.innerHTML = targetBooks.map(function(b){
         var ab = b.assigned ? '<span class="nbadge" style="background:var(--leaf-soft);color:var(--leaf);">📌배정</span>' : '';
         return '<div class="lib-row" onclick="openBookDetail(\''+b.id+'\', \'books\')">'
           + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
@@ -6466,6 +6585,8 @@ function selectThemeTag(themeId) {
 function backToThemeTagList() {
   var tagBoxSec = document.getElementById('themeTagBoxesSection');
   var selSec = document.getElementById('themeSelectedSection');
+  var qInput = document.getElementById('themeBookQ');
+  if(qInput) qInput.value = '';
   if(tagBoxSec) tagBoxSec.style.display = 'block';
   if(selSec) selSec.style.display = 'none';
 }
@@ -7468,28 +7589,68 @@ function switchMyBookshelfMainTab(tab) {
 // ==============================================================
 // 2) 독서 기록 서브 뷰: [월별 구분 그룹핑] + [타이틀 아래 출판사, 시리즈명, 인증일자]
 // ==============================================================
+function clearReadingHistorySearch() {
+  var input = document.getElementById('historyQ');
+  if(input) {
+    input.value = '';
+    filterReadingHistory();
+    input.focus();
+  }
+}
+
+function filterReadingHistory() {
+  renderReadingHistoryGrid();
+}
+
 function renderReadingHistoryGrid() {
   var container = document.getElementById('readingHistoryMonthContainer');
   var countEl = document.getElementById('readingHistoryCount');
   var statCountEl = document.getElementById('statBsReadCount');
   var statAvgEl = document.getElementById('statBsAvgScore');
+  var clearBtn = document.getElementById('historyClearBtn');
+  var qInput = document.getElementById('historyQ');
+  var q = (qInput ? qInput.value : '').trim().toLowerCase();
   if(!container) return;
 
+  if(clearBtn) {
+    clearBtn.style.display = q ? 'inline-block' : 'none';
+  }
+
   var totalCount = readBooksMaster.length;
-  if(countEl) countEl.innerText = totalCount;
   if(statCountEl) statCountEl.innerText = totalCount + '권';
 
-  // 평균 점수 계산
+  // 평균 점수 계산 (전체 기준)
   if(statAvgEl && totalCount > 0) {
     var avg = readBooksMaster.reduce(function(acc, x){ return acc + x.score; }, 0) / totalCount;
     statAvgEl.innerText = avg.toFixed(1) + '점';
+  }
+
+  // 검색어 필터링 적용
+  var targetList = readBooksMaster;
+  if(q) {
+    targetList = readBooksMaster.filter(function(item) {
+      var b = libData.find(function(x){ return x.id === item.id; });
+      var title = (b ? b.title : ('도서 ' + item.id)).toLowerCase();
+      var author = (b ? (b.author || '') : '').toLowerCase();
+      var pub = (item.pub || (b ? b.pub : '')).toLowerCase();
+      var series = (item.series || (b ? (b.subtitle || b.cat || '') : '')).toLowerCase();
+      return title.includes(q) || author.includes(q) || pub.includes(q) || series.includes(q);
+    });
+  }
+
+  if(countEl) {
+    if(q) {
+      countEl.innerHTML = '<strong style="color:var(--leaf);">' + targetList.length + '건</strong> 검색됨 (전체 ' + totalCount + '권)';
+    } else {
+      countEl.innerText = totalCount + '권 완독';
+    }
   }
 
   // 월별(YYYY년 M월) 그룹핑
   var monthMap = {};
   var monthOrder = [];
 
-  readBooksMaster.forEach(function(item) {
+  targetList.forEach(function(item) {
     var parts = (item.date || '2026.09.01').split('.');
     var year = parts[0] || '2026';
     var month = parseInt(parts[1] || '9', 10);
@@ -7503,7 +7664,16 @@ function renderReadingHistoryGrid() {
   });
 
   if(monthOrder.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:36px;color:var(--muted);background:#fff;border-radius:14px;border:1px solid var(--soft);"><i class="fa-solid fa-book-open mr-1"></i>아직 완독한 도서가 없습니다.</div>';
+    if(q) {
+      container.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--muted);background:#fff;border-radius:14px;border:1px dashed var(--soft);margin-top:6px;">'
+        + '<i class="fa-solid fa-magnifying-glass" style="font-size:32px;color:#c7beaf;margin-bottom:12px;display:block;"></i>'
+        + '<strong style="font-size:14.5px;color:var(--wood-dark);display:block;margin-bottom:4px;">\'' + q + '\'에 일치하는 독서 인증 기록이 없습니다.</strong>'
+        + '<span style="font-size:12px;">도서 제목이나 저자, 출판사를 다시 확인해보세요.</span>'
+        + '<div style="margin-top:12px;"><button type="button" class="btn-detail-back" onclick="clearReadingHistorySearch()" style="background:#f5f2eb;padding:5px 12px;border-radius:8px;font-size:12px;">검색 초기화</button></div>'
+        + '</div>';
+    } else {
+      container.innerHTML = '<div style="text-align:center;padding:36px;color:var(--muted);background:#fff;border-radius:14px;border:1px solid var(--soft);"><i class="fa-solid fa-book-open mr-1"></i>아직 완독한 도서가 없습니다.</div>';
+    }
     return;
   }
 

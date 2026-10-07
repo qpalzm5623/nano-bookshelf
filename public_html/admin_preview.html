@@ -412,12 +412,229 @@
     }
 
     /* ============================================================== */
-    /* [개선] 학습 리포트 인쇄 스타일: 빈 페이지 11장 누수 원천 차단 및 A4 프리미엄 서식 */
     /* ============================================================== */
+    /* [개선] 학습 리포트: A4 공식 리포트 프리미엄 디자인 & 인쇄 스타일 */
+    /* ============================================================== */
+    
+    /* 1. 화면(모달) 및 인쇄 공통 리포트 컴포넌트 스타일 */
+    .report-print-container {
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+
+    .report-overview-card {
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
+    }
+
+    .report-cover-wrapper {
+      width: 74px;
+      height: 104px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      flex-shrink: 0;
+    }
+
+    .report-sub-card {
+      background: #f8fafc;
+      border: 1px solid #edf2f7;
+      border-radius: 10px;
+      padding: 10px 14px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .report-sub-card.highlight {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    /* 퀴즈 문항 2열 그리드 및 카드 스타일 */
+    .report-quiz-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .report-quiz-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .report-quiz-card.is-correct {
+      border-color: #e2e8f0;
+      background: #ffffff;
+    }
+
+    .report-quiz-card.is-wrong {
+      border-color: #fecaca;
+      background: #fffafa;
+    }
+
+    .report-quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .report-quiz-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-right: 8px;
+    }
+
+    .report-quiz-card.is-wrong .report-quiz-num {
+      background: #ef4444;
+    }
+
+    .report-quiz-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .report-quiz-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .report-quiz-badge.correct {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    .report-quiz-badge.wrong {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .report-quiz-question {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      min-height: 38px;
+    }
+
+    .report-choice-box {
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .report-choice-box.correct {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+
+    .report-choice-box.wrong {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .report-choice-box.actual {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+
+    .report-choice-label {
+      font-weight: 700;
+      opacity: 0.85;
+      font-size: 11px;
+    }
+
+    .report-choice-val {
+      font-weight: 700;
+      margin-left: 8px;
+    }
+
+    .report-choice-val.strike {
+      text-decoration: line-through;
+      opacity: 0.75;
+    }
+
+    /* 생각 담기 섹션 */
+    .report-thought-card {
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
+    }
+
+    .report-question-box {
+      background: #f8fafc;
+      border-left: 3.5px solid #3b82f6;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #1e293b;
+      margin-bottom: 12px;
+    }
+
+    .report-answer-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left: 3.5px solid #f59e0b;
+      border-radius: 0 8px 8px 0;
+      padding: 12px 14px;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #334155;
+      margin-bottom: 12px;
+    }
+
+    .report-comment-box {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 10px;
+      padding: 12px 16px;
+      position: relative;
+    }
+
+    /* 2. @media print 전용 A4 최적화 */
     @media print {
       @page {
         size: A4 portrait;
-        margin: 10mm 12mm 10mm 12mm;
+        margin: 12mm 14mm 12mm 14mm;
       }
 
       body.is-printing-report {
@@ -433,17 +650,14 @@
         color-adjust: exact !important;
       }
 
-      /* 핵심 1: 백그라운드 DOM(사이드바, 대시보드, 테이블 등) 완전히 제거하여 빈 페이지(11장) 누수 원천 차단 */
       body.is-printing-report>*:not(#learningDetailModal) {
         display: none !important;
         height: 0 !important;
-        max-height: 0 !important;
         overflow: hidden !important;
         margin: 0 !important;
         padding: 0 !important;
       }
 
-      /* 모달 배경 딤, 모달 기본 헤더/푸터, 버튼, 화면 전용 컨트롤 완전히 숨김 */
       body.is-printing-report .modal-backdrop,
       body.is-printing-report #learningDetailModal .modal-header,
       body.is-printing-report #learningDetailModal .modal-footer,
@@ -456,17 +670,14 @@
         display: none !important;
       }
 
-      /* 생각 담기 숨김 상태일 때 인쇄에서도 완전히 제외 */
       body.is-printing-report.thought-hidden-print #learnModalThoughtSection {
         display: none !important;
       }
 
-      /* 핵심 2: 인쇄 전용 공식 헤더 표시 */
       body.is-printing-report .report-print-header {
         display: block !important;
       }
 
-      /* 핵심 3: 모달을 일반 블록 흐름(static)으로 전환하여 실제 내용 높이만큼만 A4 페이지 생성 */
       body.is-printing-report #learningDetailModal {
         display: block !important;
         position: static !important;
@@ -510,13 +721,17 @@
         background: #ffffff !important;
       }
 
-      /* 상단 개요 카드 인쇄 최적화 */
-      body.is-printing-report .report-overview-card {
-        border: 1px solid #d5cdbf !important;
-        background: #faf8f5 !important;
-        padding: 10px 14px !important;
+      /* A4 1장에 꼭 맞추기 위한 마이크로 여백 최적화 */
+      body.is-printing-report .report-print-header {
         margin-bottom: 12px !important;
-        border-radius: 8px !important;
+        padding-bottom: 10px !important;
+        border-bottom: 2px solid #0f172a !important;
+      }
+
+      body.is-printing-report .report-overview-card {
+        padding: 10px 14px !important;
+        margin-bottom: 10px !important;
+        border: 1px solid #cbd5e1 !important;
         box-shadow: none !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
@@ -525,42 +740,63 @@
       body.is-printing-report .report-cover-wrapper {
         width: 60px !important;
         height: 84px !important;
+        box-shadow: none !important;
       }
 
       body.is-printing-report .report-sub-card {
-        background: #ffffff !important;
-        border: 1px solid #e5ded2 !important;
-        padding: 7px 10px !important;
+        padding: 6px 10px !important;
+        border: 1px solid #e2e8f0 !important;
       }
 
-      /* 북퀴즈 2열 문항 카드 인쇄 레이아웃 */
-      body.is-printing-report #learnModalQuizDetailContainer {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 10px !important;
-        margin-bottom: 12px !important;
+      body.is-printing-report .report-quiz-grid {
+        gap: 8px !important;
+        margin-bottom: 10px !important;
       }
 
-      body.is-printing-report #learnModalQuizDetailContainer>div {
+      body.is-printing-report .report-quiz-card {
+        padding: 8px 10px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        border: 1px solid #d0d7de !important;
-        box-shadow: none !important;
-        padding: 9px 11px !important;
-        background: #ffffff !important;
-        border-radius: 6px !important;
       }
 
-      /* 생각 담기 영역 인쇄 레이아웃 */
-      body.is-printing-report #learnModalThoughtSection {
+      body.is-printing-report .report-quiz-question {
+        font-size: 11.5px !important;
+        margin-bottom: 6px !important;
+        min-height: 0 !important;
+        line-height: 1.4 !important;
+      }
+
+      body.is-printing-report .report-choice-box {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+      }
+
+      body.is-printing-report .report-thought-card {
+        padding: 10px 14px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        border: 1px solid #d5cdbf !important;
-        box-shadow: none !important;
-        padding: 11px !important;
-        background: #ffffff !important;
-        border-radius: 6px !important;
-        margin-bottom: 0 !important;
+      }
+
+      body.is-printing-report .report-question-box {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+        margin-bottom: 8px !important;
+      }
+
+      body.is-printing-report .report-answer-box {
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+        line-height: 1.5 !important;
+        margin-bottom: 8px !important;
+      }
+
+      body.is-printing-report .report-comment-box {
+        padding: 8px 12px !important;
+        border: 1px solid #86efac !important;
       }
     }
 
@@ -4714,38 +4950,45 @@
 
           <!-- [인쇄 전용 공식 헤더: 인쇄 시에만 노출되어 고급스러운 공식 리포트 완성] -->
           <div class="report-print-header d-none"
-            style="border-bottom: 2px solid #2d2621; padding-bottom: 12px; margin-bottom: 14px;">
-            <div class="d-flex justify-content-between align-items-end">
-              <div>
-                <div
-                  style="font-size: 11px; font-weight: 700; color: #b45309; letter-spacing: 1px; text-transform: uppercase;">
-                  NANO BOOKSHELF OFFICIAL STUDY REPORT
+            style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px;">
+            <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom" style="border-color: #e2e8f0 !important;">
+              <div class="d-flex align-items-center" style="gap: 10px;">
+                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px;">
+                  <i class="fa-solid fa-book-bookmark"></i>
                 </div>
-                <h2
-                  style="font-size: 21px; font-weight: 800; color: #1a1512; margin: 2px 0 0 0; letter-spacing: -0.5px;">
-                  상세 학습 및 나노 시트 첨삭 리포트
-                </h2>
-                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                  북퀴즈 문항별 정답 채점 결과 및 독서논술 첨삭 지도 피드백
+                <div>
+                  <span style="font-size: 13.5px; font-weight: 900; letter-spacing: -0.3px; color: #0f172a;">나노의책장</span>
+                  <span style="font-size: 10px; font-weight: 700; color: #64748b; margin-left: 6px; letter-spacing: 0.5px;">OFFICIAL STUDY REPORT</span>
                 </div>
               </div>
-              <div style="text-align: right; font-size: 11px; color: #475569; line-height: 1.5;">
-                <div>발급 기관: <strong style="color: #0f172a;" id="printAcademyNameDisplay">나노의 책장</strong></div>
-                <div>발급 일시: <strong id="printReportIssuedDate">2026-10-07</strong></div>
+              <div style="border: 1px solid #cbd5e1; border-radius: 20px; padding: 2px 10px; font-size: 10.5px; font-weight: 700; color: #047857; background: #ecfdf5;">
+                <i class="fa-solid fa-certificate mr-1 text-success"></i>학습 성취도 진단 리포트
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-end pt-1">
+              <div>
+                <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px;">
+                  상세 학습 및 나노 시트 첨삭 리포트
+                </h2>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                  북퀴즈 문항별 정답 채점 결과 · 독서논술 첨삭 지도 피드백
+                </div>
+              </div>
+              <div style="text-align: right; font-size: 10.5px; color: #475569; line-height: 1.5; background: #f8fafc; padding: 4px 10px; border-radius: 6px; border: 1px solid #edf2f7;">
+                <div>발급 기관 : <strong style="color: #0f172a;" id="printAcademyNameDisplay">나노의 책장</strong></div>
+                <div>발급 일시 : <strong style="color: #0f172a;" id="printReportIssuedDate">2026-10-07</strong></div>
               </div>
             </div>
           </div>
 
           <!-- 1) 상단 개요 카드 (2단 레이아웃: 1행 도서 표지+정보 / 2행 성적+일시+원생 3열) -->
-          <div class="report-overview-card p-3 mb-3 bg-white rounded shadow-sm"
-            style="border: 1px solid var(--border-light);">
+          <div class="report-overview-card">
 
             <!-- 1행: 좌측 도서 표지 + 우측 도서 정보 -->
             <div class="d-flex align-items-center pb-3 mb-2.5 border-bottom"
               style="border-color: #f1ede5 !important; gap: 16px;">
               <!-- 좌측: 도서 표지 -->
-              <div class="report-cover-wrapper"
-                style="flex-shrink: 0; width: 72px; height: 100px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(45, 38, 33, 0.12); border: 1px solid #e5ded3; background: #f5f0e8; display: flex; align-items: center; justify-content: center;">
+              <div class="report-cover-wrapper">
                 <img id="learnModalCoverImg" src="upload/book/book_default.jpg" alt="도서 표지"
                   onerror="this.onerror=null; this.src='upload/book/book_default.jpg';"
                   style="width: 100%; height: 100%; object-fit: cover; display: block;">
@@ -4753,17 +4996,17 @@
               <!-- 우측: 도서 서지 정보 -->
               <div class="flex-grow-1" style="min-width: 0;">
                 <div class="d-flex align-items-center mb-1 flex-wrap" style="gap: 5px;">
-                  <span class="badge-soft badge-soft-warning font-weight-bold"
-                    style="font-size: 11px; padding: 2.5px 7px;">
+                  <span class="badge-soft badge-soft-success font-weight-bold"
+                    style="font-size: 11px; padding: 2.5px 8px; border-radius: 20px;">
                     <i class="fa-solid fa-book-open mr-1"></i>완독 도서
                   </span>
                   <span id="learnModalBookGrade" class="badge-soft badge-soft-neutral"
-                    style="font-size: 11px; padding: 2.5px 7px;">초등 전학년</span>
+                    style="font-size: 11px; padding: 2.5px 8px; border-radius: 20px;">초등 전학년</span>
                   <span id="learnModalBookCategory" class="badge-soft badge-soft-neutral"
-                    style="font-size: 11px; padding: 2.5px 7px;">문학 / 이야기</span>
+                    style="font-size: 11px; padding: 2.5px 8px; border-radius: 20px;">문학 / 이야기</span>
                 </div>
                 <h5 class="font-weight-bold mb-1 text-truncate"
-                  style="font-size: 18px; color: var(--text-main); letter-spacing: -0.3px;" id="learnModalBook">
+                  style="font-size: 18px; color: #0f172a; letter-spacing: -0.3px;" id="learnModalBook">
                   잠에서 깨어난 집
                 </h5>
                 <div class="text-muted text-truncate" style="font-size: 12.5px; line-height: 1.4;"
@@ -4774,50 +5017,46 @@
             </div>
 
             <!-- 2행: 북퀴즈 점수, 퀴즈 일시, 원생정보 (한 줄 3열 균등 카드) -->
-            <div class="row align-items-stretch" style="margin: 0 -6px;">
+            <div class="row align-items-stretch" style="margin: 0 -5px;">
 
               <!-- 2행-1: 북퀴즈 점수 -->
-              <div class="col-4 px-1.5">
-                <div class="report-sub-card rounded h-100 p-2.5"
-                  style="background: #fbf9f5; border: 1px solid #efe8dc;">
-                  <span class="text-muted d-block mb-1" style="font-size: 11.5px; font-weight: 600;">
-                    <i class="fa-solid fa-award mr-1 text-warning"></i>북퀴즈 최종 성적
+              <div class="col-4 px-1">
+                <div class="report-sub-card highlight">
+                  <span class="text-muted d-block mb-1" style="font-size: 11px; font-weight: 700; color: #047857 !important;">
+                    <i class="fa-solid fa-award mr-1 text-success"></i>북퀴즈 최종 성적
                   </span>
                   <div class="d-flex align-items-baseline" style="gap: 8px;">
-                    <span class="font-weight-bold" style="font-size: 21px; color: #2b7a3e; line-height: 1.1;"
+                    <span class="font-weight-bold" style="font-size: 20px; color: #047857; line-height: 1.1;"
                       id="learnModalScore">100점</span>
                     <span class="badge-soft badge-soft-success font-weight-bold"
-                      style="font-size: 10.5px; padding: 2px 6px;" id="learnModalPassBadge">1차 응시 합격</span>
+                      style="font-size: 10px; padding: 2px 6px; border-radius: 12px;" id="learnModalPassBadge">1차 응시 합격</span>
                   </div>
                 </div>
               </div>
 
               <!-- 2행-2: 학습 및 퀴즈 일시 -->
-              <div class="col-4 px-1.5">
-                <div class="report-sub-card rounded h-100 p-2.5"
-                  style="background: #fbf9f5; border: 1px solid #efe8dc;">
-                  <span class="text-muted d-block mb-1" style="font-size: 11.5px; font-weight: 600;">
-                    <i class="fa-solid fa-calendar-check mr-1 text-info"></i>학습 및 퀴즈 일시
+              <div class="col-4 px-1">
+                <div class="report-sub-card">
+                  <span class="text-muted d-block mb-1" style="font-size: 11px; font-weight: 700;">
+                    <i class="fa-solid fa-calendar-check mr-1 text-primary"></i>학습 및 퀴즈 일시
                   </span>
                   <div class="font-weight-bold mb-0.5"
-                    style="font-size: 13.5px; color: var(--text-main); line-height: 1.2;" id="learnModalDate">2026-10-06
-                    14:40</div>
-                  <small class="text-success font-weight-600" style="font-size: 11px;"><i
+                    style="font-size: 13px; color: #0f172a; line-height: 1.2;" id="learnModalDate">2026-10-06 14:40</div>
+                  <small class="text-success font-weight-600" style="font-size: 10.5px;"><i
                       class="fa-solid fa-circle-check mr-1"></i>정상 완독 인증</small>
                 </div>
               </div>
 
               <!-- 2행-3: 원생 정보 -->
-              <div class="col-4 px-1.5">
-                <div class="report-sub-card rounded h-100 p-2.5"
-                  style="background: #fbf9f5; border: 1px solid #efe8dc;">
-                  <span class="text-muted d-block mb-1" style="font-size: 11.5px; font-weight: 600;">
+              <div class="col-4 px-1">
+                <div class="report-sub-card">
+                  <span class="text-muted d-block mb-1" style="font-size: 11px; font-weight: 700;">
                     <i class="fa-solid fa-user-graduate mr-1 text-secondary"></i>원생 정보
                   </span>
                   <div class="font-weight-bold mb-0.5 text-truncate"
-                    style="font-size: 14px; color: var(--text-main); line-height: 1.2;" id="learnModalStudent">강태양 (나노반)
+                    style="font-size: 13.5px; color: #0f172a; line-height: 1.2;" id="learnModalStudent">강태양 (나노반)
                   </div>
-                  <small class="text-muted text-truncate d-block" style="font-size: 11.5px;"
+                  <small class="text-muted text-truncate d-block" style="font-size: 11px;"
                     id="learnModalStudentSchool">개포초등학교 3학년</small>
                 </div>
               </div>
@@ -4826,48 +5065,47 @@
 
           </div>
 
-          <!-- 2) 북퀴즈 문항별 상세 채점 결과 (어떤 문제, 정답, 내가 고른 보기, 맞았는지 틀렸는지) -->
-          <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="font-weight-bold mb-0" style="font-size: 14px; color: #3d342d;">
-                <i class="fa-solid fa-list-check mr-2 text-primary"></i>북퀴즈 문항별 응시 및 정답 상세
+          <!-- 2) 북퀴즈 문항별 상세 채점 결과 -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+              <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: #0f172a;">
+                <i class="fa-solid fa-list-check mr-1.5 text-primary"></i>북퀴즈 문항별 응시 및 정답 상세
               </h6>
-              <span class="text-muted" style="font-size: 12px;" id="learnModalQuizSummary">
+              <span class="text-muted font-weight-600" style="font-size: 11.5px;" id="learnModalQuizSummary">
                 총 5문항 중 <strong class="text-success">5문항</strong> 정답 (정답률 100%)
               </span>
             </div>
 
             <!-- 동적 문항 카드 목록 컨테이너 (한 줄에 2개씩 2열 그리드 배치) -->
-            <div id="learnModalQuizDetailContainer"
-              style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;">
+            <div id="learnModalQuizDetailContainer" class="report-quiz-grid">
               <!-- JS 동적 렌더링 -->
             </div>
           </div>
 
           <!-- 3) 생각 담기 (도서 질문 + 학생 주관식 작성 답안 + 교사 코멘트 직접 입력) -->
-          <div id="learnModalThoughtSection" class="p-3 bg-white rounded shadow-sm mb-3"
-            style="border: 1px solid var(--border-light); transition: all 0.2s ease;">
-            <div class="d-flex justify-content-between align-items-center mb-2">
+          <div id="learnModalThoughtSection" class="report-thought-card mb-2"
+            style="transition: all 0.2s ease;">
+            <div class="d-flex justify-content-between align-items-center mb-2.5">
               <div class="d-flex align-items-center" style="gap: 8px;">
-                <h6 class="font-weight-bold mb-0" style="font-size: 14px; color: #3d342d;">
-                  <i class="fa-solid fa-lightbulb mr-2 text-warning"></i>생각 담기
+                <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: #0f172a;">
+                  <i class="fa-solid fa-pen-nib mr-1.5 text-warning"></i>생각 담기 (서술형 독서논술)
                 </h6>
-                <span id="thoughtStatusBadge" class="badge-soft badge-soft-success" style="font-size: 11px;">
-                  <i class="fa-solid fa-eye mr-1"></i>리포트 포함 (보이기)
+                <span id="thoughtStatusBadge" class="badge-soft badge-soft-success" style="font-size: 10.5px; border-radius: 20px;">
+                  <i class="fa-solid fa-eye mr-1"></i>리포트 포함
                 </span>
               </div>
               <!-- 삭제 대신 숨기기 / 보이기 토글 버튼 -->
               <button type="button" class="btn btn-xs btn-outline-secondary d-print-none"
                 id="btnToggleThoughtVisibility" onclick="toggleThoughtSectionVisibility()"
                 title="카톡 발송 및 인쇄 리포트 포함 여부 설정"
-                style="border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 600;">
+                style="border-radius: 6px; padding: 3px 10px; font-size: 11.5px; font-weight: 600;">
                 <i class="fa-solid fa-eye-slash mr-1"></i>숨기기
               </button>
             </div>
 
             <!-- 숨기기 상태 시 안내 배너 -->
             <div id="thoughtHiddenNotice" class="p-3 rounded mb-2 d-print-none"
-              style="background: #fff8f0; border: 1px dashed #f59e0b; color: #92400e; font-size: 12.5px; display: none;">
+              style="background: #fff8f0; border: 1px dashed #f59e0b; color: #92400e; font-size: 12px; display: none;">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <i class="fa-solid fa-circle-exclamation mr-1 text-warning"></i>
@@ -4875,7 +5113,7 @@
                 </div>
                 <button type="button" class="btn btn-xs btn-warning ml-2 font-weight-bold"
                   onclick="toggleThoughtSectionVisibility()"
-                  style="border-radius: 5px; font-size: 11.5px; padding: 2px 8px;">
+                  style="border-radius: 5px; font-size: 11px; padding: 2px 8px;">
                   <i class="fa-solid fa-eye mr-1"></i>다시 보이기
                 </button>
               </div>
@@ -4884,39 +5122,40 @@
             <!-- 생각 담기 본문 (숨기기 시 접힘/숨김) -->
             <div id="learnModalThoughtBody">
               <!-- 도서의 생각담기 논제/질문 -->
-              <div class="mb-2 p-2 rounded" style="background: #fdfaf3; border: 1px dashed #dcd3c4; font-size: 12px;">
-                <strong class="text-primary"><i class="fa-solid fa-circle-question mr-1"></i>논제/생각 질문:</strong>
-                <span id="learnModalThoughtQuestion" class="ml-1 text-dark font-weight-600">이 책을 읽고 난 후 주인공의 태도나 선택에 대해
-                  나의 생각을 서술해 보세요.</span>
+              <div class="report-question-box">
+                <div class="font-weight-bold text-primary mb-1" style="font-size: 11px;">
+                  <i class="fa-solid fa-circle-question mr-1"></i>논제 / 생각 질문
+                </div>
+                <div id="learnModalThoughtQuestion" class="font-weight-600" style="line-height: 1.5; color: #1e293b;">
+                  이 책을 읽고 난 후 주인공의 태도나 선택에 대해 나의 생각을 서술해 보세요.
+                </div>
               </div>
 
               <!-- 학생 작성 주관식 답안 -->
-              <div class="mb-3">
+              <div class="report-answer-box">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="font-weight-bold text-muted" style="font-size: 12px;">
-                    <i class="fa-solid fa-user-pen mr-1"></i>학생 작성 답안:
+                  <span class="font-weight-bold text-muted" style="font-size: 11px;">
+                    <i class="fa-solid fa-user-pen mr-1 text-warning"></i>학생 작성 답안
                   </span>
-                  <span class="badge-soft badge-soft-neutral" style="font-size: 11px;">주관식 작성</span>
+                  <span class="badge-soft badge-soft-neutral" style="font-size: 10px; border-radius: 12px;">주관식 작성</span>
                 </div>
-                <div class="p-3 rounded"
-                  style="background: #fdfcf9; border: 1px solid var(--border-medium); font-size: 12.5px; line-height: 1.8; color: #2d2621;"
-                  id="learnModalSheetAnswer">
+                <div style="font-size: 12px; line-height: 1.7; color: #1e293b; white-space: pre-wrap;" id="learnModalSheetAnswer">
                   어린 왕자와 사막여우의 대화를 읽고, 관계란 서로 시간을 들이고 길들여질 때 비로소 진정한 의미를 가진다는 것을 깨달았습니다...
                 </div>
               </div>
 
               <!-- 지도교사 코멘트 영역 (디폴트: 없음, 교사 코멘트 넣기 옵션으로 직접 타이핑) -->
-              <div id="learnModalCommentWrapper" class="pt-2 border-top">
+              <div id="learnModalCommentWrapper" class="pt-1">
                 <!-- 상단 버튼/헤더 영역 -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="font-weight-bold text-muted" style="font-size: 12px;">
-                    <i class="fa-solid fa-comment-dots mr-1 text-primary"></i>지도교사 첨삭 코멘트:
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                  <span class="font-weight-bold text-muted" style="font-size: 11.5px;">
+                    <i class="fa-solid fa-comment-dots mr-1 text-success"></i>지도교사 첨삭 코멘트
                   </span>
                   <div class="d-print-none">
                     <!-- 코멘트가 없을 때: 코멘트 넣기 버튼 -->
                     <button type="button" class="btn btn-xs btn-outline-primary" id="btnToggleTeacherComment"
                       onclick="openTeacherCommentEditor()"
-                      style="border-radius: 6px; padding: 3px 9px; font-size: 11.5px; font-weight: 600;">
+                      style="border-radius: 6px; padding: 2.5px 8px; font-size: 11px; font-weight: 600;">
                       <i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기
                     </button>
                   </div>
@@ -4924,9 +5163,9 @@
 
                 <!-- 1) 코멘트 타이핑 입력 에디터 (교사 코멘트 넣기 클릭 시 오픈) -->
                 <div id="learnModalCommentEditor" class="p-3 rounded mb-2 d-print-none"
-                  style="background: #fdfcf9; border: 1px solid #dcd3c4; display: none;">
+                  style="background: #f8fafc; border: 1px solid #cbd5e1; display: none;">
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="font-weight-bold" style="font-size: 12px; color: #3d342d;">
+                    <span class="font-weight-bold" style="font-size: 12px; color: #0f172a;">
                       <i class="fa-solid fa-keyboard mr-1 text-primary"></i>선생님 코멘트 직접 입력
                     </span>
                     <small class="text-muted">입력 시 즉시 저장되며 리포트에 실시간 반영됩니다.</small>
@@ -4934,17 +5173,17 @@
                   <textarea id="learnModalCommentInput" class="form-control form-control-sm mb-2" rows="3"
                     placeholder="원생의 생각 담기 답안에 대한 지도교사 칭찬 및 첨삭 코멘트를 직접 입력하세요..."
                     oninput="onTeacherCommentInput(this.value)"
-                    style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;"></textarea>
+                    style="border-radius: 8px; font-size: 12px; line-height: 1.6;"></textarea>
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted" style="font-size: 11px;" id="commentCharCount">0자 작성됨</span>
                     <div>
                       <button type="button" class="btn btn-xs btn-outline-danger mr-1" onclick="clearTeacherComment()"
-                        style="border-radius: 5px; font-size: 11.5px; padding: 3px 8px;">
+                        style="border-radius: 5px; font-size: 11px; padding: 2.5px 7px;">
                         <i class="fa-solid fa-trash mr-1"></i>코멘트 비우기
                       </button>
                       <button type="button" class="btn btn-xs btn-beige-primary px-3"
                         onclick="closeTeacherCommentEditor()"
-                        style="border-radius: 5px; font-size: 11.5px; padding: 3px 10px;">
+                        style="border-radius: 5px; font-size: 11px; padding: 2.5px 9px;">
                         <i class="fa-solid fa-check mr-1"></i>입력 완료
                       </button>
                     </div>
@@ -4953,20 +5192,20 @@
 
                 <!-- 2) 작성된 코멘트 표시 카드 (코멘트가 있을 때만 노출) -->
                 <div id="learnModalCommentCard" style="display: none;">
-                  <div class="p-3 rounded"
-                    style="background: #fbf9f4; border: 1px solid #dcd3c4; font-size: 12.5px; line-height: 1.8; color: #3d342d; font-weight: 500;">
+                  <div class="report-comment-box">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                      <strong style="color: var(--text-main); font-size: 12px;"><i
-                          class="fa-solid fa-quote-left mr-1 text-muted"></i>선생님 첨삭 피드백</strong>
-                      <span class="badge-soft badge-soft-success" style="font-size: 10.5px;">첨삭 완료</span>
+                      <strong style="color: #065f46; font-size: 11.5px;">
+                        <i class="fa-solid fa-quote-left mr-1 text-success"></i>선생님 첨삭 피드백
+                      </strong>
+                      <span class="badge-soft badge-soft-success" style="font-size: 10px; border-radius: 12px;">첨삭 지도 완료</span>
                     </div>
-                    <div id="learnModalCommentDisplay" style="white-space: pre-wrap;"></div>
+                    <div id="learnModalCommentDisplay" style="white-space: pre-wrap; font-size: 12px; line-height: 1.7; color: #1e293b;"></div>
                   </div>
                 </div>
 
                 <!-- 3) 코멘트가 없을 때 디폴트 안내 (출력/인쇄 시에는 안 보임) -->
                 <div id="learnModalCommentEmptyGuide" class="p-2 rounded text-muted text-center d-print-none"
-                  style="background: #f9f9f9; border: 1px dashed #e2e8f0; font-size: 11.5px;">
+                  style="background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 11px;">
                   <i class="fa-solid fa-info-circle mr-1"></i>작성된 지도교사 코멘트가 없습니다. 상단의 <strong>[교사 코멘트 넣기]</strong>를 눌러
                   직접 타이핑할 수 있습니다.
                 </div>

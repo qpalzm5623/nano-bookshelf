@@ -171,7 +171,7 @@ async function runMigration() {
       options: any;
       correctAnswer: string;
       score: number;
-      legacyQuizSeq: bigint;
+      legacyQuizSeq: number;
     }> = [];
 
     for (const q of T.tb_quiz) {
@@ -209,7 +209,7 @@ async function runMigration() {
           options: optList.length > 0 ? optList : null,
           correctAnswer: String(rawAns ?? '1'),
           score: 20,
-          legacyQuizSeq: BigInt(String(q.quiz_seq)),
+          legacyQuizSeq: Number(q.quiz_seq),
         });
       }
     }
@@ -443,6 +443,24 @@ async function runMigration() {
     await prisma.quizAttempt.createMany({ data: aBatch, skipDuplicates: true });
   }
   console.log(`   ✅ 최근 3개월 학습 이력 ${attemptsData.length}건 적재 완료.`);
+
+  // 학생별 누적 완독 권수 및 평균 점수 동기화
+  console.log('   - 학생 누적 완독 권수(bookCount) 및 평균 점수(quizAvg) 집계 중...');
+  const memberQuizStats = await prisma.quizAttempt.groupBy({
+    by: ['memberId'],
+    _count: { id: true },
+    _avg: { score: true },
+  });
+  for (const st of memberQuizStats) {
+    await prisma.member.update({
+      where: { id: st.memberId },
+      data: {
+        bookCount: st._count.id,
+        quizAvg: Math.round((st._avg.score || 0) * 10) / 10,
+      },
+    });
+  }
+  console.log(`   ✅ 학생 ${memberQuizStats.length}명 완독 통계 동기화 완료.`);
 
   // 포인트 이력 적재
   console.log('   - 최근 3개월 포인트 이력(PointHistory) 대량 적재 중...');
