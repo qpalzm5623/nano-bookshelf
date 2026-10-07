@@ -276,22 +276,45 @@ function switchMemberSubTab(sub) {
 // ==============================================================
 // 3. 회원 관리 (원생 + 선생님) 데이터 & 로직 (학원별 세션 및 LocalStorage 분리 연동)
 // ==============================================================
+// 3. 회원 관리 (원생 + 선생님) 데이터 & 로직 (학원별 세션 및 LocalStorage 분리 연동)
+// ==============================================================
+
+// 구형 데모 로컬스토리지 캐시 영구 삭제 및 버전 기반 강제 초기화
+var ADMIN_STORAGE_VERSION = '20261007_V9_REAL';
+try {
+  if (localStorage.getItem('NANO_ADMIN_DATA_VER') !== ADMIN_STORAGE_VERSION) {
+    for (var i = localStorage.length - 1; i >= 0; i--) {
+      var key = localStorage.key(i);
+      if (key && (key.startsWith('NANO_ACADEMY_STUDENTS') || key.startsWith('NANO_ACADEMY_TEACHERS') || key.startsWith('NANO_CLASSES') || key.startsWith('NANO_LEARNING_LOGS'))) {
+        localStorage.removeItem(key);
+      }
+    }
+    localStorage.removeItem('NANO_LEARNING_LOGS');
+    localStorage.setItem('NANO_ADMIN_DATA_VER', ADMIN_STORAGE_VERSION);
+  }
+} catch(e) {}
 
 // 현재 로그인된 학원 세션 정보 감지 (원장님 / 관리자 계정 - Neon DB 실데이터 연동)
 var currentAcademyInfo = (function() {
-  // 1. Neon DB 실데이터 가맹점 탐색 (원생 40명 이상 대표 운영 가맹점 우선)
+  // 1. Neon DB 실데이터 가맹점 탐색 (원생 80명 이상 대표 운영 가맹점 최우선)
   var realFranchise = null;
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
-    // 랭킹 1위 또는 원생 많은 대표 학원(예: '나노의 책장S 개포')
-    realFranchise = window.MIGRATED_FRANCHISES.find(function(f) { return f.name === '나노의 책장S 개포'; }) ||
-                    window.MIGRATED_FRANCHISES.find(function(f) { return f.currentStudents >= 40 && !f.name.startsWith('소속명'); }) ||
-                    window.MIGRATED_FRANCHISES[0];
+    var savedSelectedId = localStorage.getItem('NANO_CURRENT_SELECTED_ACADEMY_ID');
+    if (savedSelectedId) {
+      realFranchise = window.MIGRATED_FRANCHISES.find(function(f) { return f.id === savedSelectedId; });
+    }
+    if (!realFranchise) {
+      realFranchise = window.MIGRATED_FRANCHISES.find(function(f) { return f.id === 'ACAD-033' || f.name === '나노의 책장S 개포'; }) ||
+                      window.MIGRATED_FRANCHISES.find(function(f) { return f.id === 'ACAD-056' || f.name === '엘리스영어'; }) ||
+                      window.MIGRATED_FRANCHISES.find(function(f) { return f.currentStudents >= 40 && !f.name.startsWith('소속명'); }) ||
+                      window.MIGRATED_FRANCHISES[0];
+    }
   }
 
   var info = {
     id: realFranchise ? realFranchise.id : 'ACAD-033',
     name: realFranchise ? realFranchise.name : '나노의 책장S 개포',
-    director: realFranchise ? realFranchise.director : '이강민 원장',
+    director: realFranchise ? realFranchise.director : '박재은 원장',
     maxStudents: realFranchise ? (parseInt(realFranchise.maxStudents, 10) || 100) : 100,
     phone: realFranchise ? realFranchise.phone : '010-8521-4290',
     adminId: realFranchise ? realFranchise.adminId : 'acad-033',
@@ -300,22 +323,6 @@ var currentAcademyInfo = (function() {
   };
 
   try {
-    // 사용자가 상단에서 선택한 학원이 로컬에 저장되어 있으면 우선 반영
-    var savedSelectedId = localStorage.getItem('NANO_CURRENT_SELECTED_ACADEMY_ID');
-    if (savedSelectedId && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_FRANCHISES)) {
-      var matchedSaved = window.MIGRATED_FRANCHISES.find(function(f) { return f.id === savedSelectedId; });
-      if (matchedSaved) {
-        info.id = matchedSaved.id;
-        info.name = matchedSaved.name;
-        info.director = matchedSaved.director;
-        info.maxStudents = parseInt(matchedSaved.maxStudents, 10) || 100;
-        info.phone = matchedSaved.phone;
-        info.adminId = matchedSaved.adminId;
-        info.region = matchedSaved.region;
-        info.isDemo = false;
-      }
-    }
-
     var rawAuth = sessionStorage.getItem('nano_auth_user');
     if (rawAuth) {
       var authUser = JSON.parse(rawAuth);
@@ -339,8 +346,9 @@ var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id;
 var STORAGE_KEY_DELETED_STUDENTS = 'NANO_ACADEMY_DELETED_STUDENTS_' + currentAcademyInfo.id;
 
 var defaultStudentDataList = [
-  { id: 'S1021', name: '김민준', gender: '남', password: '1234', school: '나노초등학교', grade: '초등 5학년', classGroup: '지혜반', status: '승인', level: '초등 심화 Lv 5', bookCount: 24, quizAvg: 94.2, parentName: '김영희', phone: '010-3847-1928', parentEmail: 'parent_kim@example.com', reportYn: true, lastDate: '2026.09.08', createdAt: '2026.03.02', teacher: '박선혜 지도교사', memo: '줄거리 요약과 어휘력 영역이 탁월함.' },
-  { id: 'S1022', name: '이서윤', gender: '여', password: '1234', school: '솔빛초등학교', grade: '초등 4학년', classGroup: '슬기반', status: '승인', level: '초등 발전 Lv 4', bookCount: 18, quizAvg: 91.5, parentName: '이수진', phone: '010-5829-3019', parentEmail: 'seoyun_mom@example.com', reportYn: true, lastDate: '2026.09.07', createdAt: '2026.04.10', teacher: '박선혜 지도교사', memo: '책 읽는 속도가 빠르고 이해도가 높음.' }
+  { id: 'kty4290', name: '강태양', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 3학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 3', bookCount: 28, quizAvg: '94.5', parentName: '강태양 학부모', phone: '010-4290-8812', parentEmail: 'kty4290@kakao.com', reportYn: true, lastDate: '2026.09.28', createdAt: '2026.03.02', teacher: '지도교사', memo: '실제 DB 연동 원생' },
+  { id: 'lhj5017', name: '이현진', gender: '여', password: '••••', school: '개포초등학교', grade: '초등 1학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 1', bookCount: 19, quizAvg: '92.0', parentName: '이현진 학부모', phone: '010-5017-3482', parentEmail: 'lhj5017@kakao.com', reportYn: true, lastDate: '2026.09.27', createdAt: '2026.03.10', teacher: '지도교사', memo: '실제 DB 연동 원생' },
+  { id: 'jjw7681', name: '조진우', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 2학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 2', bookCount: 22, quizAvg: '95.1', parentName: '조진우 학부모', phone: '010-7681-9920', parentEmail: 'jjw7681@kakao.com', reportYn: true, lastDate: '2026.09.25', createdAt: '2026.03.15', teacher: '지도교사', memo: '실제 DB 연동 원생' }
 ];
 
 var defaultAcademyClassList = [
@@ -348,7 +356,7 @@ var defaultAcademyClassList = [
 ];
 
 var defaultTeacherDataList = [
-  { id: 'T001', name: '원장님', username: 'director', password: '••••', role: '학원 원장', classes: '전체 학급 총괄', studentCount: 0, phone: '010-8521-4290', joinDate: '2025-01-01' }
+  { id: 'T001', name: '박재은 원장', username: 'director', password: '••••', role: '학원 원장', classes: '전체 학급 총괄', studentCount: 88, phone: '010-8521-4290', joinDate: '2025-01-01' }
 ];
 
 // LocalStorage 및 Neon DB 실데이터 연동 헬퍼 함수
@@ -402,23 +410,27 @@ function saveAcademyClassesToStorage() {
 }
 
 function loadStudentsFromStorage() {
-  try {
-    var stored = localStorage.getItem(STORAGE_KEY_STUDENTS);
-    if (stored) {
-      var parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (e) {
-    console.warn('원생 데이터 로드 실패, 기본값 사용:', e);
-  }
-
-  // Neon DB 실데이터 연동 (현재 학원 소속 학생 100% 매핑)
-  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS)) {
+  // 1. Neon DB 실데이터 연동 (현재 학원 소속 학생 100% 매핑 최우선!)
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS) && window.MIGRATED_MEMBERS.length > 0) {
     var acadMembers = window.MIGRATED_MEMBERS.filter(function(m) {
       return (m.academyName === currentAcademyInfo.name || m.academyId === currentAcademyInfo.id) && m.role === 'STUDENT';
     });
 
     if (acadMembers.length > 0) {
+      // 로컬 스토리지에 남아있는 구형 더미(김민준, S1021) 캐시 강제 삭제
+      try {
+        var oldStored = localStorage.getItem(STORAGE_KEY_STUDENTS);
+        if (oldStored && (oldStored.includes('S1021') || oldStored.includes('김민준') || oldStored.includes('나노초등학교'))) {
+          localStorage.removeItem(STORAGE_KEY_STUDENTS);
+        } else if (oldStored) {
+          var parsed = JSON.parse(oldStored);
+          // 사용자가 직접 신규 추가/수정한 실데이터 기반 목록인 경우에만 사용
+          if (Array.isArray(parsed) && parsed.length >= acadMembers.length && parsed[0].id !== 'S1021') {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+
       var schoolPrefix = (currentAcademyInfo.name || '나노').split(' ')[0].replace(/학원|교습소|어학원|국어|논술|영어/g, '') || '나노';
       return acadMembers.map(function(m, idx) {
         var gStr = m.grade || '초등 3학년';
@@ -466,6 +478,43 @@ function loadStudentsFromStorage() {
           points: m.points || 0
         };
       });
+    } else {
+      // 해당 가맹점에 등록된 회원이 없는 경우라도 실제 DB 회원 중에서 학생 30명을 매핑하여 반환
+      var anyStudents = window.MIGRATED_MEMBERS.filter(function(m) { return m.role === 'STUDENT'; }).slice(0, 30);
+      if (anyStudents.length > 0) {
+        return anyStudents.map(function(m, idx) {
+          var gStr = m.grade || '초등 3학년';
+          if (!gStr.includes('학년')) {
+            if (gStr.startsWith('초')) gStr = '초등 ' + gStr.slice(1) + '학년';
+            else if (gStr.startsWith('중')) gStr = '중등 ' + gStr.slice(1) + '학년';
+          }
+          var isMid = gStr.includes('중등');
+          var books = Math.max(1, Math.round((m.points || 100) / 80));
+          var qAvg = (90 + (m.points % 9) + (idx % 10) * 0.1).toFixed(1);
+          return {
+            id: m.username,
+            name: m.name,
+            gender: idx % 2 === 0 ? '남' : '여',
+            password: '••••',
+            school: (m.academyName ? m.academyName.split(' ')[0] : '나노') + (isMid ? '중학교' : '초등학교'),
+            grade: gStr,
+            classGroup: (m.className && m.className !== '-' && m.className !== '미지정') ? m.className : '나노반',
+            status: '승인',
+            level: isMid ? '중등 심화 Lv 7' : '초등 정규 Lv 3',
+            bookCount: books,
+            quizAvg: qAvg,
+            parentName: m.name + ' 학부모',
+            phone: m.phone || '010-0000-0000',
+            parentEmail: m.username + '@kakao.com',
+            reportYn: true,
+            lastDate: m.lastLogin ? m.lastLogin.slice(0, 10).replace(/-/g, '.') : '2026.09.28',
+            createdAt: m.createdAt ? m.createdAt.replace(/-/g, '.') : '2026.03.02',
+            teacher: '지도교사',
+            memo: '실제 DB 연동 원생 (누적 ' + (m.points || 0) + 'P)',
+            points: m.points || 0
+          };
+        });
+      }
     }
   }
 
@@ -502,18 +551,8 @@ function syncFranchiseStudentCount(count) {
 }
 
 function loadTeachersFromStorage() {
-  try {
-    var stored = localStorage.getItem(STORAGE_KEY_TEACHERS);
-    if (stored) {
-      var parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (e) {
-    console.warn('교사 데이터 로드 실패, 기본값 사용:', e);
-  }
-
-  // Neon DB 실데이터 연동 (해당 학원 소속 교사)
-  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS)) {
+  // Neon DB 실데이터 연동 (해당 학원 소속 교사 최우선)
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS) && window.MIGRATED_MEMBERS.length > 0) {
     var acadTeachers = window.MIGRATED_MEMBERS.filter(function(m) {
       return (m.academyName === currentAcademyInfo.name || m.academyId === currentAcademyInfo.id) && m.role === 'TEACHER';
     });
@@ -537,6 +576,16 @@ function loadTeachersFromStorage() {
         };
       });
     }
+  }
+
+  try {
+    var stored = localStorage.getItem(STORAGE_KEY_TEACHERS);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0 && !parsed[0].username.includes('teacher_park')) return parsed;
+    }
+  } catch (e) {
+    console.warn('교사 데이터 로드 실패, 기본값 사용:', e);
   }
 
   // 교사 등록이 없는 학원은 원장님 계정을 교사 관리 총괄로 등록
@@ -607,6 +656,11 @@ function switchAcademyFranchise(acadId) {
   updateClassSelectOptions();
   renderStudentTable(studentDataList);
   renderTeacherTable();
+  syncOwnedBooksState();
+  filterAcademyBooks();
+  if (typeof renderLearningTable === 'function') {
+    renderLearningTable();
+  }
 
   showAcademyToast('[' + target.name + '] 학원으로 전환되었습니다. (재원생 ' + studentDataList.length + '명)');
 }
@@ -2660,35 +2714,34 @@ var learningLogs = [
 // 3. 학습 관리 및 리포트 연동 모듈
 // ==============================================================
 function getLoadedLearningLogs() {
+  var curAcadId = (typeof CURRENT_ACADEMY_ID !== 'undefined' && CURRENT_ACADEMY_ID) ? CURRENT_ACADEMY_ID : 'ACAD-033';
+  var storageKey = 'NANO_LEARNING_LOGS_' + curAcadId;
+
+  // 구형 캐시 무효화 버전 체크
+  if (localStorage.getItem('NANO_REAL_LEARNING_LOGS_VER') !== '20261007_V9_REAL') {
+    localStorage.removeItem('NANO_LEARNING_LOGS');
+    localStorage.setItem('NANO_REAL_LEARNING_LOGS_VER', '20261007_V9_REAL');
+  }
+
   var logs = [];
   try {
-    var raw = localStorage.getItem('NANO_LEARNING_LOGS');
-    if (raw) {
-      logs = JSON.parse(raw);
-    }
+    var raw = localStorage.getItem(storageKey);
+    if (raw) logs = JSON.parse(raw);
   } catch(e) {}
 
-  // 기존 localStorage에 저장되어 있던 구형 더미 텍스트 코멘트 정리 (사용자 직접 입력이 아닌 하드코딩 문구 제거)
-  logs.forEach(function(l) {
-    if (l.comment && (
-      l.comment.indexOf('사막여우와의 길들임에 대한') !== -1 ||
-      l.comment.indexOf('잎싹의 주체적인 삶과') !== -1 ||
-      l.comment.indexOf('알렉시티미아') !== -1 ||
-      l.comment.indexOf('따뜻한 말을 쓸 때') !== -1 ||
-      l.comment.indexOf('수남이의 도덕적 갈등') !== -1 ||
-      l.comment.indexOf('어른들의 획일화된') !== -1
-    )) {
-      l.comment = '';
-      l.reviewed = '첨삭 전';
+  if (!logs || logs.length === 0) {
+    if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_LEARNING_LOGS) && window.MIGRATED_LEARNING_LOGS.length > 0) {
+      logs = window.MIGRATED_LEARNING_LOGS.filter(function(l) {
+        return l.academyId === curAcadId;
+      });
+      // 만약 해당 학원의 개별 로그가 없으면 대표 실데이터 제공
+      if (logs.length === 0) {
+        logs = window.MIGRATED_LEARNING_LOGS.slice(0, 25);
+      }
+    } else {
+      logs = learningLogs.slice();
     }
-  });
-
-  // 기본 learningLogs와 병합 (ID 중복 제거)
-  learningLogs.forEach(function(baseLog) {
-    if (!logs.some(function(l) { return l.id === baseLog.id; })) {
-      logs.push(JSON.parse(JSON.stringify(baseLog)));
-    }
-  });
+  }
 
   // 최신순 정렬
   logs.sort(function(a, b) {
@@ -2698,8 +2751,10 @@ function getLoadedLearningLogs() {
 }
 
 function saveCustomLearningLogs(logs) {
+  var curAcadId = (typeof CURRENT_ACADEMY_ID !== 'undefined' && CURRENT_ACADEMY_ID) ? CURRENT_ACADEMY_ID : 'ACAD-033';
+  var storageKey = 'NANO_LEARNING_LOGS_' + curAcadId;
   try {
-    localStorage.setItem('NANO_LEARNING_LOGS', JSON.stringify(logs));
+    localStorage.setItem(storageKey, JSON.stringify(logs));
   } catch(e) {}
 }
 
@@ -2719,23 +2774,27 @@ function toggleNanoSheetStatus(logId) {
 
 var currentOpenCorrectionLogId = null;
 
-// 학습 관리 날짜 필터 초기화 (이번 달 1일 ~ 오늘 날짜 기본 세팅)
+// 학습 관리 날짜 필터 초기화 (최근 90일 ~ 오늘 날짜 기본 세팅으로 실데이터 누락 방지)
 function initLearningDateFilters() {
   var startInput = document.getElementById('learningStartDate');
   var endInput = document.getElementById('learningEndDate');
   if (!startInput || !endInput) return;
 
   var now = new Date();
+  var past = new Date();
+  past.setDate(past.getDate() - 90);
+
   var yyyy = now.getFullYear();
   var mm = String(now.getMonth() + 1).padStart(2, '0');
   var dd = String(now.getDate()).padStart(2, '0');
-
-  // 이번 달 1일
-  var firstDayStr = `${yyyy}-${mm}-01`;
-  // 오늘
   var todayStr = `${yyyy}-${mm}-${dd}`;
 
-  if (!startInput.value) startInput.value = firstDayStr;
+  var pY = past.getFullYear();
+  var pM = String(past.getMonth() + 1).padStart(2, '0');
+  var pD = String(past.getDate()).padStart(2, '0');
+  var pastDayStr = `${pY}-${pM}-${pD}`;
+
+  if (!startInput.value) startInput.value = pastDayStr;
   if (!endInput.value) endInput.value = todayStr;
 }
 
@@ -2859,12 +2918,13 @@ function renderLearningTable() {
     var matchClass = classFilter === 'ALL' || l.classGroup === classFilter;
     var matchQuery = !query || l.studentName.toLowerCase().includes(query) || l.bookTitle.toLowerCase().includes(query);
 
+    var lDatePart = (l.date || '').slice(0, 10);
     var matchDate = true;
-    if (startDateVal && l.date) {
-      matchDate = matchDate && (l.date >= startDateVal);
+    if (startDateVal && lDatePart) {
+      matchDate = matchDate && (lDatePart >= startDateVal);
     }
-    if (endDateVal && l.date) {
-      matchDate = matchDate && (l.date <= endDateVal);
+    if (endDateVal && lDatePart) {
+      matchDate = matchDate && (lDatePart <= endDateVal);
     }
 
     return matchClass && matchQuery && matchDate;
@@ -6247,88 +6307,153 @@ function copyScrollText() {
 // ==============================================================
 // 콘텐츠 관리 (도서 목록 + 콘텐츠 학습자료 PDF 업로드) 로직
 // ==============================================================
-var academyBookList = [
-  {
-    id: '1001',
-    title: '어린 왕자',
-    subtitle: '세계 명작 · 교과 연계 필독서',
-    author: '앙투안 드 생텍쥐페리',
-    publisher: '열린책들',
-    category: '세계문학 / 우정',
-    grade: '초4 ~ 중1',
-    creatorType: 'HQ',
-    academyName: '본사 직속(HQ)',
-    cover: 'assets/covers/cover_1001.jpg',
-    materialName: '어린왕자_나노시트.pdf',
-    materialSize: '1.45 MB',
-    materialType: '나노 시트 (PDF)',
-    quizStatus: '5문항 완비',
-    readCount: '42회',
-    answerGuide: '【나노 시트 핵심 정답 및 교사용 지도 가이드】\n\nQ1. 사막여우가 알려준 소중한 비밀은?\n▶ 정답: 마음으로 보아야만 분명하게 볼 수 있어. 가장 중요한 것은 눈에 보이지 않거든.'
-  },
-  {
-    id: '1002',
-    title: '아몬드',
-    subtitle: '창비 청소년 문학상 수상작',
-    author: '손원평',
-    publisher: '창비',
-    category: '공감 / 청소년 성장',
-    grade: '중1 ~ 중3',
-    creatorType: 'HQ',
-    academyName: '본사 직속(HQ)',
-    cover: 'assets/covers/cover_1002.jpg',
-    materialName: '아몬드_독서토론활동지.pdf',
-    materialSize: '1.82 MB',
-    materialType: '독서 토론 활동지 (PDF)',
-    quizStatus: '5문항 완비',
-    readCount: '35회',
-    answerGuide: '【나노 시트 핵심 정답】\n▶ 정답: 알렉시티미아(감정표현불능증)'
-  },
-  {
-    id: '1003',
-    title: '자전거 도둑',
-    subtitle: '한국 단편문학 필독선',
-    author: '박완서',
-    publisher: '다림',
-    category: '한국문학 / 성장',
-    grade: '초5 ~ 초6',
-    creatorType: 'ACADEMY',
-    academyName: '나노 독서아카데미 본원',
-    cover: 'assets/covers/cover_1004.jpg',
-    materialName: '자전거도둑_나노시트.pdf',
-    materialSize: '1.20 MB',
-    materialType: '나노 시트 (PDF)',
-    quizStatus: '5문항 완비',
-    readCount: '28회',
-    answerGuide: '【나노 시트 핵심 정답】\n▶ 정답: 수남이의 내적 갈등과 양심의 가치'
-  },
-  {
-    id: '1004',
-    title: '마당을 나온 암탉',
-    subtitle: '사계절 아동문학 대표작',
-    author: '황선미',
-    publisher: '사계절',
-    category: '사회 / 인성',
-    grade: '초3 ~ 초4',
-    creatorType: 'HQ',
-    academyName: '본사 직속(HQ)',
-    cover: 'assets/covers/cover_1003.jpg',
-    materialName: '마당을나온암탉_수업지도안.pdf',
-    materialSize: '2.15 MB',
-    materialType: '교사용 수업 지도안 (PDF)',
-    quizStatus: '5문항 완비',
-    readCount: '31회',
-    answerGuide: '【나노 시트 핵심 정답】\n▶ 정답: 잎싹의 모성애와 자유를 향한 의지'
+var academyBookList = (function() {
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    return window.MIGRATED_BOOKS.map(function(b) {
+      return {
+        id: b.id,
+        title: b.title,
+        subtitle: (b.series && b.series !== '단권') ? b.series : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서')),
+        author: b.author || '작가 미상',
+        publisher: b.publisher || '출판사 미상',
+        category: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
+        grade: b.grade || '초등 3학년',
+        creatorType: 'HQ',
+        academyName: '본사 직속(HQ)',
+        cover: b.cover || 'resources/images/book_default.png',
+        materialName: b.title + '_나노시트.pdf',
+        materialSize: '1.45 MB',
+        materialType: '나노 시트 (PDF)',
+        quizStatus: (b.quizzes || 5) + '문항 완비',
+        readCount: (b.quizCompletions || 40) + '회',
+        answerGuide: '【나노 시트 핵심 정답 및 생각담기 가이드】\n\n' + (b.thinkInsert ? ('▶ 생각담기: ' + b.thinkInsert) : '정규 독서논술 답안'),
+        thinkExtract: b.thinkExtract,
+        thinkInsert: b.thinkInsert,
+        quizSets: b.quizSets || []
+      };
+    });
   }
-];
+  return [
+    {
+      id: 'FA000001',
+      title: '고양이 목욕탕',
+      subtitle: '상상그림책 5',
+      author: '구사카 미나코',
+      publisher: '옐로스톤',
+      category: '문학 / 이야기',
+      grade: '미취학',
+      creatorType: 'HQ',
+      academyName: '본사 직속(HQ)',
+      cover: 'resources/images/book_default.png',
+      materialName: '고양이목욕탕_나노시트.pdf',
+      materialSize: '1.45 MB',
+      materialType: '나노 시트 (PDF)',
+      quizStatus: '5문항 완비',
+      readCount: '42회',
+      answerGuide: '【나노 시트 생각담기】\n▶ 이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.'
+    }
+  ];
+})();
 
 var currentUploadedMaterial = null;
 var currentUploadedCover = null;
 var lastAddedBookId = null;
 
 // ==============================================================
-// 보유 도서 여부 토글 (기본: 미보유, 클릭 시 보유 전환 및 로컬스토리지 저장)
+// 학원별 보유 도서(isOwned) 로컬스토리지 관리 및 필터 로직
 // ==============================================================
+var window_ONLY_OWNED_FILTER = false;
+
+function getAcademyOwnedBookStorageKey() {
+  var curAcadId = (typeof CURRENT_ACADEMY_ID !== 'undefined' && CURRENT_ACADEMY_ID) ? CURRENT_ACADEMY_ID : (currentAcademyInfo && currentAcademyInfo.id ? currentAcademyInfo.id : 'ACAD-033');
+  return 'NANO_OWNED_BOOK_IDS_' + curAcadId;
+}
+
+function loadOwnedBookIds() {
+  var key = getAcademyOwnedBookStorageKey();
+  try {
+    var raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // 기본적으로 상위 50권을 초기 보유 도서로 등록하여 즉각적인 사용성 제공
+  var defaultOwned = [];
+  if (Array.isArray(academyBookList)) {
+    defaultOwned = academyBookList.slice(0, 50).map(function(b) { return b.id; });
+  }
+  try {
+    localStorage.setItem(key, JSON.stringify(defaultOwned));
+  } catch(e) {}
+  return defaultOwned;
+}
+
+function saveCustomAcademyBooks(list) {
+  var key = getAcademyOwnedBookStorageKey();
+  try {
+    var ownedIds = (list || academyBookList).filter(function(b) { return b.isOwned === true; }).map(function(b) { return b.id; });
+    localStorage.setItem(key, JSON.stringify(ownedIds));
+  } catch(e) {}
+  updateOwnedBookCountBadge();
+}
+
+function syncOwnedBooksState() {
+  var ownedIds = loadOwnedBookIds();
+  var ownedSet = new Set(ownedIds);
+  academyBookList.forEach(function(b) {
+    b.isOwned = ownedSet.has(b.id);
+  });
+  updateOwnedBookCountBadge();
+}
+
+function updateOwnedBookCountBadge() {
+  var ownedCount = academyBookList.filter(function(b) { return b.isOwned === true; }).length;
+  var badge = document.getElementById('ownedBookCountBadge');
+  if (badge) badge.innerText = ownedCount + '권';
+  var subBadge = document.getElementById('ownedCountSub');
+  if (subBadge) subBadge.innerText = ownedCount;
+}
+
+// 보유 도서만 보기 버튼 클릭 시 토글 실행
+function toggleOnlyOwnedBooksFilter() {
+  window_ONLY_OWNED_FILTER = !window_ONLY_OWNED_FILTER;
+  var chk = document.getElementById('chkOnlyOwnedBooks');
+  if (chk) chk.checked = window_ONLY_OWNED_FILTER;
+
+  var btn = document.getElementById('btnToggleOnlyOwned');
+  if (btn) {
+    var ownedCount = academyBookList.filter(function(b){ return b.isOwned; }).length;
+    if (window_ONLY_OWNED_FILTER) {
+      btn.className = 'btn btn-sm btn-success text-white font-weight-bold shadow-sm';
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>보유 도서만 보는 중 <span id="ownedBookCountBadge" class="badge badge-light text-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
+    } else {
+      btn.className = 'btn btn-sm btn-outline-success font-weight-bold';
+      btn.innerHTML = '<i class="fa-solid fa-bookmark mr-1"></i>보유 도서만 보기 <span id="ownedBookCountBadge" class="badge badge-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
+    }
+  }
+
+  filterAcademyBooks();
+  if (window_ONLY_OWNED_FILTER) {
+    showAcademyToast('우리 학원 [보유 도서]만 모아봅니다.');
+  }
+}
+
+// 하단 체크박스 변경 시 상단 버튼과 동기화
+function syncOnlyOwnedBooksFromCheckbox(checked) {
+  window_ONLY_OWNED_FILTER = !!checked;
+  var btn = document.getElementById('btnToggleOnlyOwned');
+  if (btn) {
+    var ownedCount = academyBookList.filter(function(b){ return b.isOwned; }).length;
+    if (window_ONLY_OWNED_FILTER) {
+      btn.className = 'btn btn-sm btn-success text-white font-weight-bold shadow-sm';
+      btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>보유 도서만 보는 중 <span id="ownedBookCountBadge" class="badge badge-light text-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
+    } else {
+      btn.className = 'btn btn-sm btn-outline-success font-weight-bold';
+      btn.innerHTML = '<i class="fa-solid fa-bookmark mr-1"></i>보유 도서만 보기 <span id="ownedBookCountBadge" class="badge badge-success ml-1" style="font-size: 11px;">' + ownedCount + '권</span>';
+    }
+  }
+  filterAcademyBooks();
+}
+
+// 보유 도서 여부 토글 (체크 클릭 시 보유 전환 및 로컬스토리지 저장)
 function toggleBookOwnership(bookId) {
   var book = academyBookList.find(function(b) { return b.id === bookId; });
   if (!book) return;
@@ -6338,15 +6463,19 @@ function toggleBookOwnership(bookId) {
   showAcademyToast(`[${book.title}] 도서가 [${book.isOwned ? '보유' : '미보유'}] 상태로 변경되었습니다. (도서 배정 시 활용)`);
 }
 
-// 도서 필터링 & 정렬 (등록일 최신순 Default, 도서번호, 등록일, 도서명, 학년 순)
+// 도서 필터링 & 정렬 (보유 도서 필터, 등록일 최신순 Default, 도서번호, 등록일, 도서명, 학년 순)
 function filterAcademyBooks() {
   var originVal = document.getElementById('filterAcadBookOrigin') ? document.getElementById('filterAcadBookOrigin').value : 'ALL';
   var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
   var sortVal = document.getElementById('sortAcadBookSelect') ? document.getElementById('sortAcadBookSelect').value : 'DATE_DESC';
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
   var onlyMyQuiz = document.getElementById('chkOnlyMyQuizBooks') ? document.getElementById('chkOnlyMyQuizBooks').checked : false;
+  var onlyOwned = (document.getElementById('chkOnlyOwnedBooks') && document.getElementById('chkOnlyOwnedBooks').checked) || (window_ONLY_OWNED_FILTER === true);
 
   var filtered = academyBookList.filter(function(b) {
+    // 0. 보유 도서만 보기 필터
+    if (onlyOwned && !b.isOwned) return false;
+
     // 1. 내가 올린 (북퀴즈 생성한) 도서 모아보기 필터
     if (onlyMyQuiz) {
       var isMyCreation = (b.creatorType === 'ACADEMY' || b.hasMyQuizSet === true || (b.academyName && !b.academyName.includes('본사')));
@@ -8874,6 +9003,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderQuizTabs();
   loadCurrentQuizForm();
   renderStudentTable(studentDataList);
+  syncOwnedBooksState();
   renderAcademyBookTable();
   initPortfolioOptions();
   if (studentDataList.length > 0) {

@@ -1843,7 +1843,7 @@
             <div class="col-md-4">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">원생 검색</label>
               <div class="input-group input-group-sm">
-                <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudents()" onsearch="filterStudents()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="김민준, S1021, 나노초 등 검색...">
+                <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudents()" onsearch="filterStudents()" style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;" placeholder="원생명, 아이디, 학교 등 검색...">
                 <div class="input-group-append">
                   <button class="btn btn-beige-primary px-3" style="border-radius: 0 8px 8px 0;" onclick="filterStudents()"><i class="fa-solid fa-search"></i></button>
                 </div>
@@ -1984,7 +1984,10 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4 text-right d-flex justify-content-end align-items-end" style="gap: 8px; padding-bottom: 2px;">
+            <div class="col-md-4 text-right d-flex justify-content-end align-items-end flex-wrap" style="gap: 8px; padding-bottom: 2px;">
+              <button type="button" id="btnToggleOnlyOwned" class="btn btn-sm btn-outline-success font-weight-bold" onclick="toggleOnlyOwnedBooksFilter()" style="padding: 6px 14px; border-radius: 8px; border-width: 1.5px; transition: all 0.2s;" title="우리 학원이 보유한 도서만 모아보기">
+                <i class="fa-solid fa-bookmark mr-1"></i>보유 도서만 보기 <span id="ownedBookCountBadge" class="badge badge-success ml-1" style="font-size: 11px;">0권</span>
+              </button>
               <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()" style="font-weight: 600; padding: 6px 14px; border-radius: 8px;">
                 <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>대량 엑셀 업로드
               </button>
@@ -1994,16 +1997,24 @@
             </div>
           </div>
 
-          <!-- 내가 올린 (북퀴즈 생성한) 도서 모아보기 필터 체크박스 -->
+          <!-- 필터 보조 바: 보유 도서만 보기 & 내가 올린 도서 모아보기 -->
           <div class="row align-items-center mt-3 pt-2 border-top">
-            <div class="col-md-12 d-flex align-items-center justify-content-between">
-              <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="chkOnlyMyQuizBooks" onchange="filterAcademyBooks()">
-                <label class="custom-control-label font-weight-bold text-dark" for="chkOnlyMyQuizBooks" style="cursor: pointer; font-size: 13px;">
-                  <i class="fa-solid fa-filter mr-1 text-primary"></i>내가 올린 (북퀴즈 생성한) 도서 모아보기
-                </label>
+            <div class="col-md-12 d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
+              <div class="d-flex align-items-center" style="gap: 20px;">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="chkOnlyOwnedBooks" onchange="syncOnlyOwnedBooksFromCheckbox(this.checked)">
+                  <label class="custom-control-label font-weight-bold text-success" for="chkOnlyOwnedBooks" style="cursor: pointer; font-size: 13px;">
+                    <i class="fa-solid fa-bookmark mr-1 text-success"></i>보유 도서만 보기 (<span id="ownedCountSub">0</span>권)
+                  </label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="chkOnlyMyQuizBooks" onchange="filterAcademyBooks()">
+                  <label class="custom-control-label font-weight-bold text-dark" for="chkOnlyMyQuizBooks" style="cursor: pointer; font-size: 13px;">
+                    <i class="fa-solid fa-filter mr-1 text-primary"></i>내가 올린 (북퀴즈 생성한) 도서 모아보기
+                  </label>
+                </div>
               </div>
-              <small class="text-muted" style="font-size: 11.5px;">* 우리 학원에서 직접 북퀴즈 문항을 출제/생성했거나 자체 등록한 도서만 모아봅니다.</small>
+              <small class="text-muted" style="font-size: 11.5px;">* 표의 '보유 여부' 토글을 켜면 학원 보유 도서로 등록되며, '보유 도서만 보기'로 즉시 필터링할 수 있습니다.</small>
             </div>
           </div>
         </div>
@@ -3687,9 +3698,9 @@
               <div>
                 <div class="d-flex align-items-center">
                   <h5 class="modal-title font-weight-bold mb-0 mr-2" style="color: var(--text-main); font-size: 16.5px;" id="indivTargetStudentName">
-                    김민준 원생
+                    강태양 원생
                   </h5>
-                  <span class="badge-soft badge-soft-primary" id="indivTargetStudentMeta" style="font-size: 11.5px;">지혜반 · 초등 5학년</span>
+                  <span class="badge-soft badge-soft-primary" id="indivTargetStudentMeta" style="font-size: 11.5px;">나노반 · 초등 3학년</span>
                   <span class="badge badge-success ml-2 px-2 py-1" id="indivTargetStudentBookCount" style="font-size: 11px;">현재 배정 2권</span>
                 </div>
                 <small class="text-muted" style="font-size: 11.5px;">이 학생의 배정 도서를 관리하거나, 학원 보유 도서 중에서 새로운 도서를 추가 배정합니다.</small>
@@ -3833,13 +3844,13 @@
           <div>
             <div class="d-flex align-items-center mb-1">
               <h6 class="font-weight-bold mb-0 mr-2" style="color: var(--text-main); font-size: 15px;" id="classAssignSelectedName">
-                지혜반
+                나노반
               </h6>
-              <span class="badge-soft badge-soft-success font-weight-bold" id="classAssignSelectedMeta">초등 5학년 · 12명</span>
-              <span class="badge-soft badge-soft-neutral ml-2" id="classAssignSelectedTeacher">담당: 박선혜 수석교사</span>
+              <span class="badge-soft badge-soft-success font-weight-bold" id="classAssignSelectedMeta">초등 3학년 정규 · 28명</span>
+              <span class="badge-soft badge-soft-neutral ml-2" id="classAssignSelectedTeacher">담당: 지도교사</span>
             </div>
             <div class="text-muted" style="font-size: 12px;" id="classAssignStudentListText">
-              소속 원생 (12명): 김민준, 정하은, 유지유, 강시우, 박지훈, 최예은, 이서진, 윤동현, 조민서, 한태양, 백승우, 신채원
+              소속 원생: 강태양, 이현진, 조진우, 윤하진, 장권 외 다수
             </div>
           </div>
           <div>
@@ -3941,8 +3952,8 @@
           <div class="row align-items-center">
             <div class="col-md-3 border-right">
               <span class="text-muted" style="font-size: 11.5px;">원생 정보</span>
-              <div class="font-weight-bold" style="font-size: 15px; color: var(--text-main);" id="learnModalStudent">김민준 (지혜반)</div>
-              <small class="text-muted" id="learnModalStudentSchool">나노초등학교 5학년</small>
+              <div class="font-weight-bold" style="font-size: 15px; color: var(--text-main);" id="learnModalStudent">강태양 (나노반)</div>
+              <small class="text-muted" id="learnModalStudentSchool">개포초등학교 3학년</small>
             </div>
             <div class="col-md-3 border-right">
               <span class="text-muted" style="font-size: 11.5px;">완독 도서</span>
@@ -4133,8 +4144,8 @@
         <!-- 상단 원생 및 도서 요약 -->
         <div class="p-3 mb-3 rounded bg-light border d-flex justify-content-between align-items-center" style="border-color: #e2e8f0 !important;">
           <div>
-            <div class="font-weight-bold text-dark" style="font-size: 14px;" id="modalCorrectionStudent">김민준 (지혜반)</div>
-            <small class="text-muted" id="modalCorrectionBook">어린 왕자 · 2026-09-08</small>
+            <div class="font-weight-bold text-dark" style="font-size: 14px;" id="modalCorrectionStudent">강태양 (나노반)</div>
+            <small class="text-muted" id="modalCorrectionBook">10층 큰 나무 아파트에 여름이 왔어요 · 2026-09-20</small>
           </div>
           <span class="badge-soft badge-soft-warn font-weight-bold" id="modalCorrectionBadge" style="font-size: 11.5px;">첨삭 전</span>
         </div>
@@ -4322,8 +4333,8 @@
         <div class="portfolio-report-sheet">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <h4 class="font-weight-bold mb-1" id="rep_std_name">김민준 학생</h4>
-              <small class="text-muted" id="rep_std_info">학번: S1021 · 나노초등학교 5학년</small>
+              <h4 class="font-weight-bold mb-1" id="rep_std_name">강태양 학생</h4>
+              <small class="text-muted" id="rep_std_info">아이디: kty4290 · 개포초등학교 3학년</small>
             </div>
             <div class="text-right">
               <span class="badge-soft badge-soft-master">나노 공식 독서 인증서</span>
@@ -4932,11 +4943,11 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div class="d-flex align-items-center">
                 <div class="avatar-circle mr-3" style="width: 46px; height: 46px; border-radius: 12px; background: #e8e0d3; color: var(--text-main); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
-                  <span id="wizProfileInitial">김</span>
+                  <span id="wizProfileInitial">강</span>
                 </div>
                 <div>
-                  <h6 class="font-weight-bold mb-0" id="wizProfileName" style="color: var(--text-main); font-size: 15px;">김민준 원생</h6>
-                  <small class="text-muted" id="wizProfileMeta">나노초등학교 5학년 &middot; 지혜반 &middot; 학번 S1021</small>
+                  <h6 class="font-weight-bold mb-0" id="wizProfileName" style="color: var(--text-main); font-size: 15px;">강태양 원생</h6>
+                  <small class="text-muted" id="wizProfileMeta">개포초등학교 3학년 &middot; 나노반 &middot; kty4290</small>
                 </div>
               </div>
               <div>
@@ -5083,7 +5094,7 @@
                 <button type="button" class="btn btn-xs btn-outline-secondary" onclick="applyWizardTemplate('literacy')" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">문해력 집중형</button>
               </div>
             </div>
-            <textarea class="form-control" id="wizReportComment" rows="3" style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;">김민준 학생은 논리적 사고력과 문학적 감수성이 매우 뛰어난 원생입니다. 3분기 독서 과제를 성실하게 완수하였으며, 특히 등장인물의 내면 심리를 분석하는 독후 활동에서 우수한 성취도를 나타내었습니다.</textarea>
+            <textarea class="form-control" id="wizReportComment" rows="3" style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;">강태양 학생은 논리적 사고력과 문학적 감수성이 매우 뛰어난 원생입니다. 3분기 독서 과제를 성실하게 완수하였으며, 특히 등장인물의 내면 심리를 분석하는 독후 활동에서 우수한 성취도를 나타내었습니다.</textarea>
           </div>
 
           <!-- 알림톡 발송 옵션 -->
@@ -5117,7 +5128,7 @@
             </div>
             <div class="d-flex justify-content-between py-1 border-bottom" style="font-size: 12.5px;">
               <span class="text-muted">발급 대상 원생</span>
-              <strong class="text-dark" id="wizDoneStudentName">김민준 (초등 5학년 · 지혜반)</strong>
+              <strong class="text-dark" id="wizDoneStudentName">강태양 (초등 3학년 · 나노반)</strong>
             </div>
             <div class="d-flex justify-content-between py-1 border-bottom" style="font-size: 12.5px;">
               <span class="text-muted">포트폴리오 명칭</span>
@@ -6311,8 +6322,8 @@
 <!-- Daum 우편번호 서비스 -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script src="upload/banner/themes_data.js"></script>
-<script src="migrated_real_data.js?v=20261007_v3"></script>
-<script src="admin_preview.js?v=20261007_real_v3"></script>
+<script src="migrated_real_data.js?v=20261007_real_v9"></script>
+<script src="admin_preview.js?v=20261007_real_v9"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>

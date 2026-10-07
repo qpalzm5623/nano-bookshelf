@@ -9,6 +9,8 @@ composer.phar
 
 # 3. 임시 스크래치 스크립트 및 테스트 파일
 scratch_*.ps1
+scratch_*.php
+scripts/migrate/find_cat_quiz.ts
 public_html/scratch_*.js
 public_html/test_*.html
 *.log

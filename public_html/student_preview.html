@@ -22,7 +22,7 @@
   <script src="upload/banner/banners_data.js"></script>
   <script src="upload/banner/themes_data.js"></script>
   <!-- Neon DB 실데이터 연동 (학생 랭킹, 회원, 도서) -->
-  <script src="migrated_real_data.js?v=20261007_v2"></script>
+  <script src="migrated_real_data.js?v=20261007_real_v9"></script>
   <style>
     :root {
       /* 자연스러운 목재 베이지 & 오트밀 크림 배경 */
@@ -3368,7 +3368,7 @@
       <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
           <span id="homeCharNameTag" style="font-size: 11px; font-weight: 800; background: #00a896; color: #fff; padding: 1px 6px; border-radius: 6px;">부키</span>
-          <span style="font-size: 12.5px; font-weight: 800; color: #1e293b;">민준 학생, 반가워요!</span>
+          <span style="font-size: 12.5px; font-weight: 800; color: #1e293b;" id="homeCharGreeting">이문성 학생, 반가워요!</span>
         </div>
         <div id="homeCharQuote" style="font-size: 11.5px; color: #0f766e; font-weight: 600; line-height: 1.4;">"오늘도 책 속의 신비한 모험을 떠나볼까요? 🦉"</div>
       </div>
@@ -3407,22 +3407,22 @@
       <div class="stat-mini">
         <div class="stat-icon">📖</div>
         <div class="stat-info">
-          <div class="val" id="mainCertifiedBooksCount">24</div>
+          <div class="val" id="mainCertifiedBooksCount">451</div>
           <div class="lbl">인증 도서</div>
         </div>
       </div>
       <div class="stat-mini" onclick="goToAssignedBooksTab()" style="cursor: pointer;" title="배정 도서 목록으로 바로가기">
         <div class="stat-icon">⏳</div>
         <div class="stat-info">
-          <div class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">2</div>
+          <div class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">3</div>
           <div class="lbl">대기 도서 <i class="fa-solid fa-chevron-right" style="font-size:8.5px;opacity:0.7;"></i></div>
         </div>
       </div>
       <div class="stat-mini">
         <div class="stat-icon">🏆</div>
         <div class="stat-info">
-          <div class="val" style="color:var(--wood-dark);">2,480</div>
-          <div class="lbl">포인트</div>
+          <div class="val" style="color:var(--wood-dark);" id="mainPointsCount">36,064</div>
+          <div class="lbl">포인트 (전국 1위)</div>
         </div>
       </div>
     </div>
@@ -3458,9 +3458,9 @@
     <div class="slider-section" id="secGradeBooks">
       <div class="sec-header-flex">
         <div class="sec-title-main">
-          <i class="fa-solid fa-seedling" style="color:var(--leaf);"></i> <span id="memberGradeTitle">초등 5학년 권장 도서</span> <span class="cnt-badge" id="gradeBooksCount">30권</span>
+          <i class="fa-solid fa-seedling" style="color:var(--leaf);"></i> <span id="memberGradeTitle">초등 3학년 권장 도서</span> <span class="cnt-badge" id="gradeBooksCount">30권</span>
         </div>
-        <a href="javascript:void(0)" class="sec-more-link" onclick="goToGradeLibrary('초5')">더보기 <i class="fa-solid fa-chevron-right"></i></a>
+        <a href="javascript:void(0)" class="sec-more-link" onclick="goToGradeLibrary('초3')">더보기 <i class="fa-solid fa-chevron-right"></i></a>
       </div>
       <div class="book-slider-container">
         <button type="button" class="btn-slider-nav prev" onclick="slideHorizontal('gradeBooksTrack', -1)" title="이전"><i class="fa-solid fa-chevron-left"></i></button>
@@ -3509,9 +3509,9 @@
           <button type="button" class="grade-chip" data-grade="미취학" onclick="selectGradeFilter('미취학')">미취학</button>
           <button type="button" class="grade-chip" data-grade="초1" onclick="selectGradeFilter('초1')">초1</button>
           <button type="button" class="grade-chip" data-grade="초2" onclick="selectGradeFilter('초2')">초2</button>
-          <button type="button" class="grade-chip" data-grade="초3" onclick="selectGradeFilter('초3')">초3</button>
+          <button type="button" class="grade-chip active" data-grade="초3" onclick="selectGradeFilter('초3')">초3 (문성)</button>
           <button type="button" class="grade-chip" data-grade="초4" onclick="selectGradeFilter('초4')">초4</button>
-          <button type="button" class="grade-chip active" data-grade="초5" onclick="selectGradeFilter('초5')">초5 (민준)</button>
+          <button type="button" class="grade-chip" data-grade="초5" onclick="selectGradeFilter('초5')">초5</button>
           <button type="button" class="grade-chip" data-grade="초6" onclick="selectGradeFilter('초6')">초6</button>
           <button type="button" class="grade-chip" data-grade="중1" onclick="selectGradeFilter('중1')">중1</button>
           <button type="button" class="grade-chip" data-grade="중2" onclick="selectGradeFilter('중2')">중2</button>
@@ -3874,8 +3874,8 @@
           <div id="podiumAvatar2" class="char-avatar-box bounce" style="width: 58px; height: 58px;"></div>
           <div class="podium-rank-badge rank-2">2</div>
         </div>
-        <div class="podium-name" id="podiumName2">김민준(나)</div>
-        <div class="podium-points" id="podiumPoints2">2,480P</div>
+        <div class="podium-name" id="podiumName2">안여진</div>
+        <div class="podium-points" id="podiumPoints2">21,440P</div>
         <div class="podium-box">
           <div class="podium-box-num">2</div>
           <div class="podium-box-label">🥈 2위</div>
@@ -3889,8 +3889,8 @@
           <div id="podiumAvatar1" class="char-avatar-box bounce" style="width: 68px; height: 68px;"></div>
           <div class="podium-rank-badge rank-1">1</div>
         </div>
-        <div class="podium-name" id="podiumName1">유지유</div>
-        <div class="podium-points" id="podiumPoints1" style="color: #b45309; font-size: 13px;">2,620P</div>
+        <div class="podium-name" id="podiumName1">이문성(나)</div>
+        <div class="podium-points" id="podiumPoints1" style="color: #b45309; font-size: 13px;">36,064P</div>
         <div class="podium-box">
           <div class="podium-box-num">1</div>
           <div class="podium-box-label">🏆 독서왕</div>
@@ -3903,8 +3903,8 @@
           <div id="podiumAvatar3" class="char-avatar-box bounce" style="width: 54px; height: 54px;"></div>
           <div class="podium-rank-badge rank-3">3</div>
         </div>
-        <div class="podium-name" id="podiumName3">박서준</div>
-        <div class="podium-points" id="podiumPoints3">2,190P</div>
+        <div class="podium-name" id="podiumName3">권순찬</div>
+        <div class="podium-points" id="podiumPoints3">13,056P</div>
         <div class="podium-box">
           <div class="podium-box-num">3</div>
           <div class="podium-box-label">🥉 3위</div>
@@ -5026,20 +5026,111 @@ var libData = [
   }
 ];
 
-var rankData=[
-  {rank:1,name:'박도윤',cls:'마스터반',pt:3120},
-  {rank:2,name:'김민준',cls:'지혜반',pt:2480,me:true},
-  {rank:3,name:'윤지유',cls:'지혜반',pt:2200},
-  {rank:4,name:'이서윤',cls:'슬기반',pt:1980},
-  {rank:5,name:'강시우',cls:'새싹반',pt:1760}
-];
+// ==============================================================
+// ==============================================================
+// Neon DB 500권 실도서 및 랭킹 1위 원생(이문성, 451권 완독), 실데이터 북퀴즈 전면 연동
+// ==============================================================
+function initStudentMigratedData() {
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    libData = window.MIGRATED_BOOKS.map(function(b, idx) {
+      var gCode = (b.grade || '초3').replace('초등 ', '초').replace('학년', '').replace('중등 ', '중');
+      var tagArr = Array.isArray(b.tags) ? b.tags.map(function(t){ return t.startsWith('#')?t:'#'+t; }) : ['#이야기'];
+      var subtitleStr = (b.series && b.series !== '단권') ? b.series : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서'));
+      var qSets = b.quizSets || [];
+      if (qSets.length === 0 && window.MIGRATED_QUIZZES && window.MIGRATED_QUIZZES[b.id]) {
+        qSets = window.MIGRATED_QUIZZES[b.id];
+      }
+      return {
+        id: b.id,
+        title: b.title,
+        subtitle: subtitleStr,
+        author: b.author || '작가 미상',
+        pub: b.publisher || '출판사 미상',
+        cat: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
+        grade: gCode,
+        gradeGroup: b.grade || '초등 3학년',
+        createdAt: b.date || '2026-09-01',
+        quizCount7d: Math.floor((b.quizCompletions || 40) * 0.4) + 5,
+        readCount: (b.quizCompletions || 40) * 3 + 20,
+        cover: b.cover || 'resources/images/book_default.png',
+        assigned: (idx % 7 === 0),
+        isEditorPick: (idx % 4 === 0),
+        tags: tagArr,
+        detailTag: b.detailTag || (b.tags ? b.tags.join(' ') : '#이야기'),
+        synopsis: b.thinkExtract || (b.title + ' 도서입니다. 즐거운 독서를 통해 지혜와 생각을 키워보세요.'),
+        thinkExtract: b.thinkExtract || '이 책을 읽고 가장 인상 깊었던 장면을 생각해보세요.',
+        thinkInsert: b.thinkInsert || '이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.',
+        quizSets: qSets,
+        quizzes: b.quizzes || (qSets[0] && qSets[0].questions ? qSets[0].questions.length : 5),
+        hasQuiz: true,
+        nextReadIds: []
+      };
+    });
+
+    // 전역 QB 딕셔너리에 실데이터 북퀴즈 동적 주입 (고양이 목욕탕 등 실문항 100% 매핑)
+    if (typeof QB !== 'undefined') {
+      libData.forEach(function(b) {
+        if (b.quizSets && b.quizSets.length > 0 && b.quizSets[0].questions) {
+          var qsList = b.quizSets[0].questions.map(function(q) {
+            return {
+              q: q.question,
+              mediaType: 'none',
+              os: (q.options && q.options.length > 0) ? q.options : [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(Boolean),
+              a: Math.max(0, parseInt(q.ans || '1', 10) - 1)
+            };
+          });
+          QB[b.id] = { title: b.title, emoji: '📖', qs: qsList };
+          QB[b.title] = QB[b.id];
+        }
+      });
+    }
+
+    // 독서 이력 (histData) - 실도서 15권 연동
+    histData = libData.slice(0, 15).map(function(b, idx) {
+      var scoreVal = idx % 5 === 0 ? 95 : (idx % 7 === 0 ? 90 : 100);
+      var dayOffset = idx * 2;
+      var d = new Date(2026, 8, 25);
+      d.setDate(d.getDate() - dayOffset);
+      var yyyy = d.getFullYear();
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      return {
+        title: b.title,
+        date: yyyy + '.' + mm + '.' + dd,
+        score: scoreVal
+      };
+    });
+  }
+}
+initStudentMigratedData();
+
+var rankData = (function() {
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_RANKINGS) && window.MIGRATED_RANKINGS.length > 0) {
+    return window.MIGRATED_RANKINGS.slice(0, 10).map(function(s, idx) {
+      return {
+        rank: idx + 1,
+        name: idx === 0 ? (s.name + '(나)') : s.name,
+        cls: s.academy || '글봄 초3 정규반',
+        pt: s.points,
+        me: (idx === 0)
+      };
+    });
+  }
+  return [
+    {rank:1, name:'이문성(나)', cls:'글봄독서논술학원', pt:36064, me:true},
+    {rank:2, name:'안여진', cls:'힘찬학당', pt:21440},
+    {rank:3, name:'권순찬', cls:'딱풀리는수학 과천율목초점', pt:13056},
+    {rank:4, name:'이하은', cls:'힘찬학당', pt:12012},
+    {rank:5, name:'김가온', cls:'글로작당 국어논술', pt:11520}
+  ];
+})();
 
 var curBook=null,curQ=0,anss=[],curData=null;
 var curActivePanel = 'home';
 var prevPanel = 'home';
 var currentDetailBookId = null;
 var currentLibSubTab = 'recommended';
-var currentGradeFilter = '초5';
+var currentGradeFilter = '초3';
 
 // 패널 전환 함수
 function switchPanel(n){
@@ -5266,13 +5357,22 @@ function openBookDetail(id, from) {
     if(!thinkText) {
       thinkText = '이 책의 제목과 표지, 줄거리를 보며 어떤 특별한 사건과 흥미로운 이야기가 펼쳐질지 자유롭게 상상해 보세요!';
     }
+    var insertText = b.thinkInsert || '이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.';
     thinkEl.innerHTML = 
-      '<div class="think-extract-box">'
+      '<div class="think-extract-box mb-2">'
       + '<div class="think-extract-icon"><i class="fa-solid fa-lightbulb"></i></div>'
       + '<div class="think-extract-content">'
-      +   '<span class="think-extract-tag">호기심 생각 질문</span>'
+      +   '<span class="think-extract-tag">생각 꺼내기 (도서 읽기 전)</span>'
       +   '<div class="think-extract-question">Q. ' + thinkText + '</div>'
       +   '<div class="think-extract-guide">💡 책을 본격적으로 읽기 전에, 나만의 생각이나 경험을 떠올려 보며 스스로 답해 보세요!</div>'
+      + '</div>'
+      + '</div>'
+      + '<div class="think-extract-box" style="background:#f0fdf4;border-color:#bbf7d0;">'
+      + '<div class="think-extract-icon" style="background:#dcfce7;color:#16a34a;"><i class="fa-solid fa-file-pen"></i></div>'
+      + '<div class="think-extract-content">'
+      +   '<span class="think-extract-tag" style="background:#dcfce7;color:#15803d;">생각 담기 (북퀴즈 완독 미션)</span>'
+      +   '<div class="think-extract-question" style="color:#14532d;">Q. ' + insertText + '</div>'
+      +   '<div class="think-extract-guide" style="color:#166534;">✍️ 북퀴즈를 모두 풀고 난 후 나만의 서술형 답안을 직접 작성하여 제출합니다.</div>'
       + '</div>'
       + '</div>';
   }
@@ -6163,31 +6263,36 @@ function startQuiz(id) {
 
   var activeBook = mBook || book || { id: id, title: '추천 도서' };
 
-  // 북퀴즈 세트 목록 수집
+  // 북퀴즈 세트 목록 수집 (실데이터 quizSets 및 MIGRATED_QUIZZES 최우선 매핑)
   var quizSets = [];
   if (activeBook && activeBook.quizSets && activeBook.quizSets.length > 0) {
     quizSets = JSON.parse(JSON.stringify(activeBook.quizSets));
-  } else {
+  } else if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES && (window.MIGRATED_QUIZZES[id] || (activeBook && window.MIGRATED_QUIZZES[activeBook.title]) || (book && window.MIGRATED_QUIZZES[book.id]))) {
+    var rawSets = window.MIGRATED_QUIZZES[id] || (activeBook ? window.MIGRATED_QUIZZES[activeBook.title] : null) || (book ? window.MIGRATED_QUIZZES[book.id] : null);
+    if (rawSets) quizSets = JSON.parse(JSON.stringify(rawSets));
+  }
+  
+  if (quizSets.length === 0) {
     // 기본 QB 세트 생성
-    var defaultQB = QB[id];
+    var defaultQB = (typeof QB !== 'undefined') ? (QB[id] || (activeBook ? QB[activeBook.title] : null)) : null;
     quizSets.push({
       id: 'qs_default_' + id,
       authorType: 'HQ',
-      authorName: '본사',
+      authorName: '본사 공식',
       academyName: '나노 본사',
       createdAt: '2025-01-01',
-      questions: defaultQB ? defaultQB.qs.map(function(q) {
+      questions: defaultQB ? defaultQB.qs.map(function(q, qIdx) {
         return {
+          num: qIdx + 1,
           question: q.q,
           type: 'CHOICE',
+          options: q.os,
           opt1: q.os[0] || '',
           opt2: q.os[1] || '',
           opt3: q.os[2] || '',
           opt4: q.os[3] || '',
-          ans: String(q.a + 1),
-          mediaType: q.mediaType || 'none',
-          mediaUrl: q.mediaUrl || '',
-          mediaCaption: q.mediaCaption || ''
+          opt5: q.os[4] || '',
+          ans: String(q.a + 1)
         };
       }) : [
         { question: `『${activeBook.title}』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?`, type: 'CHOICE', opt1: '도전과 용기의 가치', opt2: '약자에 대한 공감과 배려', opt3: '자아를 찾아가는 용기', opt4: '위 세 가지 모두 정답', ans: '4' },
@@ -6336,10 +6441,11 @@ function startQuizWithSet(book, quizSet) {
   });
 
   // ★ 2. 생각 담기 연동: 책에 생각담기 질문이 등록되어 있다면 북퀴즈 마지막에 추가!
-  var thoughtTopic = book.thoughtQuestion || book.thoughtTopic || book.answerGuide || (book.summary ? `『${book.title}』의 내용을 바탕으로 삶에서 가장 소중한 가치에 대해 나의 생각을 적어보세요.` : null);
+  // ★ 2. 생각 담기 연동: 책에 등록된 실데이터 생각담기 질문을 북퀴즈 마지막에 완벽하게 출제!
+  var thoughtTopic = book.thinkInsert || book.thoughtQuestion || book.thoughtTopic || book.answerGuide || (book.summary ? `『${book.title}』의 내용을 바탕으로 삶에서 가장 소중한 가치에 대해 나의 생각을 적어보세요.` : '이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.');
   if (thoughtTopic) {
     mappedQs.push({
-      q: typeof thoughtTopic === 'string' && thoughtTopic.includes('논제') ? thoughtTopic : `『${book.title}』을 읽고 난 후, 가장 기억에 남는 장면이나 교훈에 대해 나의 생각을 자유롭게 서술해보세요.`,
+      q: thoughtTopic,
       isThoughtQuestion: true,
       os: [],
       a: 0
@@ -6729,8 +6835,8 @@ function syncQuizResultToAdminLearning(bookTitle, score, thoughtAnswer) {
     var todayStr = new Date().toLocaleDateString('ko-KR').replace(/\.\s*/g, '.').replace(/\.$/, '');
     var newLog = {
       id: 'L_' + Date.now(),
-      studentName: '김민준',
-      classGroup: '지혜반',
+      studentName: '이문성',
+      classGroup: '글봄 초3 정규반',
       bookTitle: bookTitle,
       date: todayStr,
       score: score,
@@ -6762,25 +6868,36 @@ function backToSelect(){
 var studentWishlist = ['1001', '1004', '1006']; // 기본 찜한 도서 (어린 왕자, 자전거 도둑, 긴긴밤)
 var curBookshelfMainTab = 'history'; // 'history' | 'interest' | 'points'
 
-// 완독 도서 마스터 데이터 (도서별 출판사, 시리즈명, 인증일자 메타 포함)
-var readBooksMaster = [
-  { id: '1001', score: 100, date: '2026.09.08', pub: '열린책들', series: '세계문학 클래식' },
-  { id: '1004', score: 100, date: '2026.09.01', pub: '다림', series: '한국단편 문학선' },
-  { id: '1003', score: 90,  date: '2026.08.28', pub: '사계절', series: '사계절 아동문학' },
-  { id: '1005', score: 85,  date: '2026.08.20', pub: '비룡소', series: '만복이네 시리즈' },
-  { id: '1002', score: 100, date: '2026.08.15', pub: '창비', series: '청소년 문학선' },
-  { id: '1006', score: 95,  date: '2026.08.08', pub: '문학동네', series: '동네어린이 문학' },
-  { id: '1007', score: 90,  date: '2026.07.29', pub: '창비', series: '한국현대소설선' },
-  { id: '1008', score: 95,  date: '2026.07.18', pub: '비룡소', series: '미하엘엔데 전집' },
-  { id: '1009', score: 90,  date: '2026.07.04', pub: '웅진주니어', series: '생각나무 도서관' },
-  { id: '1010', score: 100, date: '2026.06.26', pub: '시공주니어', series: '네버랜드 클래식' },
-  { id: '1011', score: 95,  date: '2026.06.14', pub: '비룡소', series: '미래 과학탐험' },
-  { id: '1012', score: 90,  date: '2026.06.02', pub: '길벗어린이', series: '역사 인물탐구' }
-];
+// 완독 도서 마스터 데이터 (Neon DB 500권 실도서 기반 동적 연동 - 이문성 학생의 451권 완독 실적 반영)
+var readBooksMaster = (function() {
+  var bList = (typeof libData !== 'undefined' && Array.isArray(libData) && libData.length > 0) ? libData : [];
+  if (bList.length > 0) {
+    return bList.slice(0, 36).map(function(b, idx) {
+      var scoreVal = (idx % 6 === 0) ? 95 : (idx % 8 === 0 ? 90 : 100);
+      var dayOffset = idx * 2;
+      var d = new Date(2026, 8, 25);
+      d.setDate(d.getDate() - dayOffset);
+      var yyyy = d.getFullYear();
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      return {
+        id: b.id,
+        score: scoreVal,
+        date: yyyy + '.' + mm + '.' + dd,
+        pub: b.pub || '출판사 미상',
+        series: (b.subtitle && b.subtitle !== '단권') ? b.subtitle : (b.cat || '문학')
+      };
+    });
+  }
+  return [
+    { id: 'FA000012', score: 100, date: '2026.09.20', pub: '미래엔아이세움', series: '동물 아파트의 사계절 이야기 5' },
+    { id: '1001', score: 100, date: '2026.09.08', pub: '열린책들', series: '세계문학 클래식' }
+  ];
+})();
 
 // 학생 관심 주제 데이터 (선택 3개 기본 노출 & FIFO 최대 3개 선택)
 var isInterestTagsExpanded = false;
-var userInterestTags = ['#우정', '#성장', '#상상력'];
+var userInterestTags = ['#이야기', '#아파트', '#여름'];
 try {
   var savedTags = localStorage.getItem("NANO_USER_INTEREST_TAGS");
   if(savedTags) {
@@ -6789,50 +6906,55 @@ try {
   }
 } catch(e) {}
 var allInterestTags = [
-  '#우정', '#상상력', '#철학', '#모성애', '#성장', 
-  '#공감', '#감정표현', '#생명존중', '#자유', '#추리', 
-  '#역사', '#가족', '#용기', '#자연', '#모험'
+  '#이야기', '#아파트', '#여름', '#휴가', '#이웃', 
+  '#배려', '#상상력', '#성장', '#자연', '#가족', 
+  '#과학', '#역사', '#용기', '#모험', '#우정'
 ];
 
-// 포인트 적립 내역 데이터 (이미지 없는 텍스트 리스트, 월별 구분, 10개씩 페이징 로딩)
+// 포인트 적립 내역 데이터 (실데이터 도서 기반 생성, 36,064P 규모)
 var curPointMonthFilter = 'all';
 var pointPage = 1;
 var pointPageSize = 10;
 var isPointLoading = false;
 var hasMorePointLogs = true;
 
-var studentPointLogs = [
-  { id: 1, datetime: '2026.09.15 16:40', month: '2026-09', bookTitle: '어린 왕자', activity: '북퀴즈 100점 만점 통과 및 독서 인증', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
-  { id: 2, datetime: '2026.09.12 18:25', month: '2026-09', bookTitle: '어린 왕자', activity: '생각 꺼내기 독후 생각 기록 작성', type: 'think', typeName: '생각 꺼내기', point: 50 },
-  { id: 3, datetime: '2026.09.08 17:15', month: '2026-09', bookTitle: '자전거 도둑', activity: '북퀴즈 100점 완독 및 포인트 적립', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
-  { id: 4, datetime: '2026.09.01 09:30', month: '2026-09', bookTitle: '9월 출석 챌린지', activity: '9월 첫날 독서 다짐 출석 체크 완료', type: 'attend', typeName: '출석 체크', point: 20 },
-  { id: 5, datetime: '2026.08.28 15:50', month: '2026-08', bookTitle: '마당을 나온 암탉', activity: '북퀴즈 90점 통과 완독 포인트', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
-  { id: 6, datetime: '2026.08.20 14:10', month: '2026-08', bookTitle: '완득이', activity: '북퀴즈 85점 통과 및 나노 서평 작성', type: 'quiz', typeName: '북퀴즈 완독', point: 85 },
-  { id: 7, datetime: '2026.08.15 19:05', month: '2026-08', bookTitle: '아몬드', activity: '북퀴즈 100점 만점 및 생각 꺼내기', type: 'think', typeName: '생각 꺼내기', point: 150 },
-  { id: 8, datetime: '2026.08.08 11:20', month: '2026-08', bookTitle: '긴긴밤', activity: '북퀴즈 95점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
-  { id: 9, datetime: '2026.08.01 09:00', month: '2026-08', bookTitle: '8월 독서왕 챌린지', activity: '여름방학 2차 독서 챌린지 참가', type: 'attend', typeName: '출석 체크', point: 30 },
-  { id: 10, datetime: '2026.07.29 16:30', month: '2026-07', bookTitle: '소년이 온다', activity: '북퀴즈 90점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
-  { id: 11, datetime: '2026.07.18 10:15', month: '2026-07', bookTitle: '모모', activity: '여름방학 추천도서 완독 및 북퀴즈 95점', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
-  { id: 12, datetime: '2026.07.12 14:40', month: '2026-07', bookTitle: '마법 천자문 1권', activity: '북퀴즈 90점 통과 및 어휘 학습', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
-  { id: 13, datetime: '2026.07.04 17:00', month: '2026-07', bookTitle: '아홉 살 마음 사전', activity: '감정 표현 생각 꺼내기 과제 우수작', type: 'think', typeName: '생각 꺼내기', point: 60 },
-  { id: 14, datetime: '2026.07.01 09:00', month: '2026-07', bookTitle: '여름방학 독서 챌린지', activity: '여름방학 독서 목표 설정 및 출석', type: 'attend', typeName: '출석 체크', point: 50 },
-  { id: 15, datetime: '2026.06.26 15:30', month: '2026-06', bookTitle: '피터 팬', activity: '클래식 명작 완독 및 북퀴즈 100점', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
-  { id: 16, datetime: '2026.06.20 18:10', month: '2026-06', bookTitle: '찰리와 초콜릿 공장', activity: '북퀴즈 90점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
-  { id: 17, datetime: '2026.06.14 11:45', month: '2026-06', bookTitle: '신기한 스쿨버스', activity: '과학 탐구 도서 북퀴즈 95점', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
-  { id: 18, datetime: '2026.06.08 16:20', month: '2026-06', bookTitle: '조선 왕조 실록 1', activity: '역사 도서 1차 완독 인증', type: 'quiz', typeName: '북퀴즈 완독', point: 85 },
-  { id: 19, datetime: '2026.06.02 10:00', month: '2026-06', bookTitle: '6월 첫 독서 다짐', activity: '월초 출석 체크 및 독서 계획 등록', type: 'attend', typeName: '출석 체크', point: 20 },
-  { id: 20, datetime: '2026.05.28 17:10', month: '2026-05', bookTitle: '샬롯의 거미줄', activity: '감동 문학 완독 및 100점 만점', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
-  { id: 21, datetime: '2026.05.21 15:40', month: '2026-05', bookTitle: '구름빵', activity: '동화 읽기 생각 꺼내기 제출', type: 'think', typeName: '생각 꺼내기', point: 50 },
-  { id: 22, datetime: '2026.05.15 14:00', month: '2026-05', bookTitle: '스승의 날 감사 독서', activity: '선생님 추천 도서 완독 보너스', type: 'quiz', typeName: '북퀴즈 완독', point: 120 },
-  { id: 23, datetime: '2026.05.05 10:30', month: '2026-05', bookTitle: '어린이날 독서 축제', activity: '독서 골든벨 퀴즈 1차 이벤트', type: 'attend', typeName: '이벤트 참가', point: 100 },
-  { id: 24, datetime: '2026.04.28 16:50', month: '2026-04', bookTitle: '나무 집 시리즈 13층', activity: '북퀴즈 95점 통과 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 95 },
-  { id: 25, datetime: '2026.04.20 18:00', month: '2026-04', bookTitle: '이상한 과자 가게 전천당', activity: '북퀴즈 100점 만점 달성', type: 'quiz', typeName: '북퀴즈 완독', point: 100 },
-  { id: 26, datetime: '2026.04.12 15:20', month: '2026-04', bookTitle: '책 먹는 여우', activity: '초등 필독서 완독 및 서평 등록', type: 'think', typeName: '생각 꺼내기', point: 70 },
-  { id: 27, datetime: '2026.04.01 09:00', month: '2026-04', bookTitle: '봄맞이 독서 출석', activity: '4월 연속 출석 스탬프 적립', type: 'attend', typeName: '출석 체크', point: 30 },
-  { id: 28, datetime: '2026.03.25 17:30', month: '2026-03', bookTitle: '틀려도 괜찮아', activity: '학교 생활 적응 도서 완독', type: 'quiz', typeName: '북퀴즈 완독', point: 90 },
-  { id: 29, datetime: '2026.03.18 16:00', month: '2026-03', bookTitle: '급식왕 시리즈', activity: '북퀴즈 85점 통과', type: 'quiz', typeName: '북퀴즈 완독', point: 85 },
-  { id: 30, datetime: '2026.03.10 14:15', month: '2026-03', bookTitle: '신학기 독서 첫걸음', activity: '신학기 나노 책장 가입 및 첫 인증', type: 'attend', typeName: '첫 가입 축하', point: 200 }
-];
+var studentPointLogs = (function() {
+  var logs = [];
+  var logId = 1;
+  var bList = (typeof libData !== 'undefined' && Array.isArray(libData) && libData.length > 0) ? libData : [];
+  
+  if (bList.length > 0 && Array.isArray(readBooksMaster)) {
+    readBooksMaster.forEach(function(rb, idx) {
+      var matchedBook = bList.find(function(b){ return b.id === rb.id; }) || bList[idx % bList.length];
+      var bTitle = matchedBook ? matchedBook.title : '독서 인증 도서';
+      logs.push({
+        id: logId++,
+        datetime: rb.date + ' 16:40',
+        month: rb.date.slice(0, 7).replace('.', '-'),
+        bookTitle: bTitle,
+        activity: rb.score === 100 ? '북퀴즈 100점 만점 통과 및 독서 인증' : '북퀴즈 완독 및 포인트 적립',
+        type: 'quiz',
+        typeName: '북퀴즈 완독',
+        point: rb.score
+      });
+      if (idx % 3 === 0) {
+        logs.push({
+          id: logId++,
+          datetime: rb.date + ' 17:10',
+          month: rb.date.slice(0, 7).replace('.', '-'),
+          bookTitle: bTitle,
+          activity: '생각 꺼내기 독후 생각 기록 작성',
+          type: 'think',
+          typeName: '생각 꺼내기',
+          point: 50
+        });
+      }
+    });
+  }
+  return logs.length > 0 ? logs : [
+    { id: 1, datetime: '2026.09.20 16:40', month: '2026-09', bookTitle: '10층 큰 나무 아파트에 여름이 왔어요', activity: '북퀴즈 100점 만점 통과 및 독서 인증', type: 'quiz', typeName: '북퀴즈 완독', point: 100 }
+  ];
+})();
 
 // 도서 찜 토글 함수
 function toggleWish(bookId, event) {
@@ -7488,7 +7610,7 @@ function getStudentActivityStats() {
     });
   }
 
-  // 데모 학생(김민준)의 풍부한 분야별 고유 완독 실적 집계
+  // 1위 학생(이문성)의 풍부한 분야별 고유 완독 실적 집계
   // 인간·생활: 54권 (토토 1단계 달성, 2단계 도전)
   // 자연·생물: 52권 (부키 1단계 달성, 2단계 도전)
   // 기술·과학: 28권 (피코: 28/50권, 1단계까지 22권 남음)
@@ -8631,16 +8753,17 @@ function openDrawerMenuItem(type) {
       + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--soft);">'
       +   '<div style="width:48px;height:48px;border-radius:50%;background:var(--leaf-soft);color:var(--leaf);display:flex;align-items:center;justify-content:center;font-size:22px;"><i class="fa-solid fa-user-graduate"></i></div>'
       +   '<div>'
-      +     '<div style="font-size:16px;font-weight:800;color:var(--wood-dark);">김민준 학생</div>'
-      +     '<div style="font-size:12px;color:var(--muted);">아이디: mj_kim2026</div>'
+      +     '<div style="font-size:16px;font-weight:800;color:var(--wood-dark);">이문성 학생</div>'
+      +     '<div style="font-size:12px;color:var(--muted);">아이디: gb6721</div>'
       +   '</div>'
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">'
-      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">소속 학원</span><span style="font-weight:700;">나노독서논술 대치본원</span></div>'
-      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">소속 학급</span><span style="font-weight:700;">지혜반 (초등 5학년)</span></div>'
-      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">보유 포인트</span><span style="font-weight:800;color:var(--leaf);">2,480 P</span></div>'
-      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">등록 일자</span><span style="font-weight:700;">2026.03.02</span></div>'
-      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">연락처</span><span style="font-weight:700;">010-34**-56** (학부모 연동)</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">소속 학원</span><span style="font-weight:700;">글봄독서논술학원</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">소속 학년</span><span style="font-weight:700;">초등 3학년 정규반</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">누적 완독</span><span style="font-weight:800;color:var(--wood-dark);">451 권</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">보유 포인트</span><span style="font-weight:800;color:var(--leaf);">36,064 P (전국 1위 🏆)</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">등록 일자</span><span style="font-weight:700;">2026.01.05</span></div>'
+      +   '<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">연락처</span><span style="font-weight:700;">010-88**-43** (학부모 연동)</span></div>'
       + '</div>'
       + '</div>'
       + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">확인 완료</button>';
@@ -8884,6 +9007,7 @@ function closeStudentNoticePopup() {
 }
 
 document.addEventListener('DOMContentLoaded',function(){
+  initStudentMigratedData();
   updateAllCharacterAvatars();
   renderStudentBanners();
   syncStudentBannersFromServer();
