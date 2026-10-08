@@ -3318,13 +3318,14 @@ function openLearningDetailModal(id) {
         <div class="report-quiz-card ${q.isCorrect ? 'is-correct' : 'is-wrong'}">
           <div class="report-quiz-header">
             <div class="d-flex align-items-center">
-              <span class="report-quiz-num">Q ${qNumStr}</span>
+              <span class="report-quiz-q-badge">Q</span>
+              <span class="report-quiz-q-num">${qNumStr}</span>
               <span class="report-quiz-title">문제 ${q.qNum}번 문항</span>
             </div>
             ${statusBadge}
           </div>
           <div class="report-quiz-question">
-            ${q.question}
+            <span>${q.question}</span>
           </div>
           ${choiceBox}
         </div>
@@ -5880,39 +5881,50 @@ function renderPortfolioDocument(studentId, pfId) {
     return '<span class="pf-tag-badge">' + t + '</span>';
   }).join(' ');
 
-  // 완독 도서 커버 그리드 HTML (모바일 2열 그리드 대응)
-  var booksGridHtml = books.map(function(b) {
+  // 완독 도서 목록 HTML (한 줄에 한 권씩: No./날짜 + 도서 표지 + 제목/출판사/작가/북퀴즈 점수)
+  var booksGridHtml = books.map(function(b, idx) {
     return (
-      '<div class="col-6 col-md-3 mb-3 pf-book-col">' +
-        '<div class="pf-book-card">' +
-          '<div style="cursor:pointer;" onclick="openCoverModal(\'' + b.cover + '\', \'' + b.title + '\', \'' + b.pub + '\')">' +
-            '<img src="' + b.cover + '" class="pf-book-cover-img" alt="' + b.title + '">' +
+      '<div class="col-12 mb-2.5 pf-book-col">' +
+        '<div class="pf-book-row-card d-flex align-items-center p-2.5 rounded border" style="background:#ffffff; border-color:#e8e2d8 !important; box-shadow:0 1px 4px rgba(40,30,20,0.04); gap:11px;">' +
+          '<!-- 1. 가장 좌측: No. 및 날짜 -->' +
+          '<div class="pf-book-meta-left text-center" style="min-width:54px; flex-shrink:0; border-right:1px dashed #e6ded3; padding-right:8px;">' +
+            '<span class="badge badge-soft-primary font-weight-bold" style="font-size:11px; padding:2px 6px; border-radius:4px;">No.' + (idx + 1) + '</span>' +
+            '<div class="text-muted mt-1" style="font-size:10px; font-weight:600; white-space:nowrap; letter-spacing:-0.2px;">' + b.date + '</div>' +
           '</div>' +
-          '<div class="font-weight-bold text-truncate" style="font-size:12.5px; color:#1e242b;" title="' + b.title + '">' + b.title + '</div>' +
-          '<div class="text-muted text-truncate" style="font-size:11px; margin-bottom:4px;">' + b.pub + '</div>' +
-          '<div class="d-flex justify-content-between align-items-center mt-2 px-1" style="font-size:10.5px;">' +
-            '<span class="text-muted">' + b.date + '</span>' +
-            '<span class="badge badge-success text-white" style="font-size:10px; font-weight:600; padding:2px 5px; background:#1f8a7e;">' + b.score + ' 통과</span>' +
+          '<!-- 2. 도서 표지 -->' +
+          '<div class="pf-book-cover-wrap" style="width:48px; height:68px; flex-shrink:0; border-radius:6px; overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,0.12); cursor:pointer;" onclick="openCoverModal(\'' + b.cover + '\', \'' + b.title + '\', \'' + b.pub + '\')">' +
+            '<img src="' + b.cover + '" class="pf-book-cover-img" style="width:100%; height:100%; object-fit:cover; display:block;" alt="' + b.title + '">' +
+          '</div>' +
+          '<!-- 3. 도서 표지 우측: 제목, 출판사, 작가, 북퀴즈 점수 -->' +
+          '<div class="flex-grow-1" style="min-width:0;">' +
+            '<div class="font-weight-bold text-truncate" style="font-size:13px; color:#1e242b; line-height:1.3;" title="' + b.title + '">' + b.title + '</div>' +
+            '<div class="text-muted text-truncate" style="font-size:11px; margin:2px 0 4px; line-height:1.2;">' + b.pub + (b.author ? (' · ' + b.author) : '') + '</div>' +
+            '<div class="d-flex align-items-center">' +
+              '<span class="badge text-white" style="font-size:10px; font-weight:700; padding:2px 7px; background:#1f8a7e; border-radius:12px;">' +
+                '<i class="fa-solid fa-check mr-1"></i>북퀴즈 ' + b.score + ' 통과' +
+              '</span>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>'
     );
   }).join('');
 
-  // 북퀴즈 응시 이력 테이블 행 HTML
+  // 북퀴즈 응시 이력 테이블 행 HTML (No., 도서명/출판사, 응시일, 핵심 문맥 파악 및 성취 내용 4개 컬럼 & 좌우 스크롤 없이 표시)
   var quizRowsHtml = books.map(function(b, idx) {
     return (
       '<tr>' +
-        '<td class="text-center font-weight-bold text-muted" style="font-size:12px;">' + (idx + 1) + '</td>' +
-        '<td>' +
-          '<div class="font-weight-bold" style="font-size:12.5px; color:#1e242b;">' + b.title + '</div>' +
-          '<small class="text-muted">' + b.pub + '</small>' +
+        '<td class="text-center font-weight-bold text-muted" style="font-size:11px; padding:7px 2px; vertical-align:middle;">' + (idx + 1) + '</td>' +
+        '<td style="padding:7px 4px; vertical-align:middle;">' +
+          '<div class="font-weight-bold" style="font-size:11.5px; color:#1e242b; line-height:1.25; word-break:keep-all;">' + b.title + '</div>' +
+          '<small class="text-muted" style="font-size:10px; display:block; margin-top:1px;">' + b.pub + '</small>' +
         '</td>' +
-        '<td class="text-center text-muted" style="font-size:11.5px; white-space:nowrap;">' + b.date + '</td>' +
-        '<td class="text-center font-weight-bold" style="font-size:12px; white-space:nowrap;">5문항</td>' +
-        '<td class="text-center font-weight-bold text-success" style="font-size:12.5px; white-space:nowrap; color:#1f8a7e !important;">' + b.score + '</td>' +
-        '<td class="text-center" style="white-space:nowrap;"><span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11px;">우수 완결</span></td>' +
-        '<td style="font-size:12px; color:#493f37; line-height:1.5;">' + b.comment + '</td>' +
+        '<td class="text-center text-muted" style="font-size:10.5px; padding:7px 2px; vertical-align:middle; line-height:1.2;">' +
+          b.date +
+        '</td>' +
+        '<td style="font-size:11px; color:#3d342d; line-height:1.45; padding:7px 6px; vertical-align:middle; word-break:keep-all;">' +
+          b.comment +
+        '</td>' +
       '</tr>'
     );
   }).join('');
@@ -5931,9 +5943,7 @@ function renderPortfolioDocument(studentId, pfId) {
             '</div>' +
             '<p class="pf-insight-text">' + item.text + '</p>' +
           '</div>' +
-          '<div class="text-right mt-2">' +
-            '<small class="text-muted" style="font-size:10.5px;"><i class="fa-solid fa-check text-success mr-1"></i>북퀴즈 완료 데이터 분석</small>' +
-          '</div>' +
+
         '</div>' +
       '</div>'
     );
@@ -6067,19 +6077,15 @@ function renderPortfolioDocument(studentId, pfId) {
     '<div class="mb-4">' +
       '<div class="d-flex justify-content-between align-items-center mb-2">' +
         '<div class="pf-section-title mb-0"><i class="fa-solid fa-list-check"></i>북퀴즈 응시 및 성취도 이력</div>' +
-        '<small class="text-muted d-md-none" style="font-size:11px;"><i class="fa-solid fa-arrows-left-right mr-1"></i>가로 스와이프</small>' +
       '</div>' +
-      '<div class="pf-quiz-table-wrap table-responsive rounded border" style="background:#ffffff; border-color:#e6ded3 !important;">' +
-        '<table class="table table-sm table-hover mb-0 pf-quiz-table" style="font-size:12.5px;">' +
+      '<div class="pf-quiz-table-wrap rounded border" style="background:#ffffff; border-color:#e6ded3 !important;">' +
+        '<table class="table table-sm table-hover mb-0 pf-quiz-table" style="font-size:11px; table-layout:fixed; width:100%;">' +
           '<thead style="background:#f8f6f0; color:#5c4f44;">' +
             '<tr>' +
-              '<th class="text-center" style="width:40px;">No.</th>' +
-              '<th>도서명 / 출판사</th>' +
-              '<th class="text-center" style="width:90px;">응시일</th>' +
-              '<th class="text-center" style="width:65px;">문항수</th>' +
-              '<th class="text-center" style="width:65px;">점수</th>' +
-              '<th class="text-center" style="width:80px;">평가상태</th>' +
-              '<th>핵심 문맥 파악 및 성취 내용</th>' +
+              '<th class="text-center" style="width:34px; padding:6px 2px;">No.</th>' +
+              '<th style="width:96px; padding:6px 4px;">도서명 / 출판사</th>' +
+              '<th class="text-center" style="width:68px; padding:6px 2px;">응시일</th>' +
+              '<th style="padding:6px 6px;">핵심 문맥 파악 및 성취 내용</th>' +
             '</tr>' +
           '</thead>' +
           '<tbody>' +
@@ -6108,7 +6114,7 @@ function renderPortfolioDocument(studentId, pfId) {
     '<div class="mb-4">' +
       '<div class="p-3 rounded" style="background:#edf7f6; border:1px solid #b2ded9;">' +
         '<div class="d-flex align-items-center justify-content-between mb-2">' +
-          '<strong style="font-size:13.5px; color:#124e47;"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>지도교사 따뜻한 총평</strong>' +
+          '<strong style="font-size:13.5px; color:#124e47;"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>지도교사 총평</strong>' +
           '<span class="badge" style="background:#ffffff; color:#124e47; border:1px solid #b2ded9; font-size:11px; padding:3px 8px;">' + teacher + '</span>' +
         '</div>' +
         '<div id="pfTeacherNoteDisplay" style="font-size:13px; line-height:1.75; color:#1e242b;">' +
@@ -6812,14 +6818,30 @@ function copyScrollText() {
 var academyBookList = (function() {
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
     return window.MIGRATED_BOOKS.map(function(b) {
+      // 시리즈명이 비어있거나 '단권'인 경우 단권(isSingle = true)으로 정규화
+      var hasValidSeries = !!(b.series && b.series.trim() !== '' && b.series.trim() !== '단권');
+      var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
+      var seriesVal = isSingleBook ? '단권' : b.series.trim();
+
       return {
         id: b.id,
         title: b.title,
-        subtitle: (b.series && b.series !== '단권') ? b.series : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서')),
+        subtitle: (seriesVal && seriesVal !== '단권') ? seriesVal : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서')),
         author: b.author || '작가 미상',
         publisher: b.publisher || '출판사 미상',
         category: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
         grade: b.grade || '초등 3학년',
+        cat1: b.cat1 || '소설',
+        cat2: b.cat2 || '국내서',
+        isbn: b.isbn || '',
+        series: seriesVal,
+        isSingle: isSingleBook,
+        themeTag: b.themeTag || (b.subject ? ('#' + b.subject) : '#이달의나노북클럽'),
+        subject: b.subject || '이야기',
+        tags: b.tags || [],
+        detailTag: b.detailTag || '',
+        awards: b.awards || '',
+        isPublic: b.isPublic || 'Y',
         creatorType: 'HQ',
         academyName: '본사 직속(HQ)',
         cover: b.cover || 'resources/images/book_default.png',
@@ -8641,11 +8663,14 @@ function openAcademyBookOnlyAddModal(id = null) {
   if (document.getElementById('abEditAuthor')) document.getElementById('abEditAuthor').value = isNew ? '' : book.author;
   if (document.getElementById('abEditPublisher')) document.getElementById('abEditPublisher').value = isNew ? '' : (book.publisher || '열린책들');
 
-  // 7. 시리즈명 & 단권
-  var isSingle = isNew ? false : (book.isSingle || book.series === '단권');
+  // 7. 시리즈명 & 단권 (시리즈명이 비어있거나 '단권'인 경우 단권 체크박스 자동 체크)
+  var hasValidSeries = !!(book && book.series && book.series.trim() !== '' && book.series.trim() !== '단권');
+  var isSingle = isNew ? false : (!hasValidSeries || book.isSingle === true || book.series === '단권');
   if (document.getElementById('abEditIsSingle')) document.getElementById('abEditIsSingle').checked = isSingle;
   toggleAcadSingleBookCheckbox(isSingle);
-  if (document.getElementById('abEditSeries')) document.getElementById('abEditSeries').value = (book && book.series && book.series !== '단권') ? book.series : '';
+  if (document.getElementById('abEditSeries')) {
+    document.getElementById('abEditSeries').value = hasValidSeries ? book.series.trim() : '';
+  }
 
   // 8. 주제 분류 태그 (드롭박스 - 테마 관리 연동)
   var selectedThemeTag = (book && book.themeTag) ? book.themeTag : ((book && Array.isArray(book.tags) && book.tags[0]) ? book.tags[0] : "#이달의나노북클럽");

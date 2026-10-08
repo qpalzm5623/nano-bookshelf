@@ -487,31 +487,46 @@
       margin-bottom: 8px;
     }
 
-    .report-quiz-num {
+    /* Q 배지: 초록색(오답 시 빨간색) 바탕에 흰색 글자 유지 */
+    .report-quiz-q-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 38px;
+      width: 22px;
       height: 22px;
-      padding: 0 7px;
       background: #047857;
       color: #ffffff;
       border-radius: 6px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.2px;
-      margin-right: 8px;
+      font-size: 11.5px;
+      font-weight: 900;
+      line-height: 1;
+      margin-right: 6px;
       flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(4, 120, 87, 0.25);
     }
 
-    .report-quiz-card.is-correct .report-quiz-num {
-      background: #047857;
-      color: #ffffff;
-    }
-
-    .report-quiz-card.is-wrong .report-quiz-num {
+    .report-quiz-card.is-wrong .report-quiz-q-badge {
       background: #ef4444;
       color: #ffffff;
+      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
+    }
+
+    /* 01 번호: 박스(배경) 없애고 글자색만 초록색(오답 시 빨간색)으로 표현 */
+    .report-quiz-q-num {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #047857;
+      letter-spacing: -0.3px;
+      margin-right: 8px;
+      line-height: 1;
+    }
+
+    .report-quiz-card.is-wrong .report-quiz-q-num {
+      color: #ef4444;
+    }
+
+    .report-quiz-num {
+      display: none;
     }
 
     /* 보유 여부 원형 체크박스(라디오) 포인트 컬러 */
@@ -555,7 +570,9 @@
       color: #1e293b;
       line-height: 1.5;
       margin-bottom: 10px;
-      min-height: 38px;
+      min-height: 42px;
+      display: flex;
+      align-items: center; /* 문제 텍스트 수직 가운데 정렬 */
     }
 
     .report-choice-box {
@@ -798,23 +815,30 @@
         background: #fffcfc !important;
       }
 
-      body.is-printing-report .report-quiz-num {
-        min-width: 36px !important;
-        height: 21px !important;
-        padding: 0 6px !important;
+      body.is-printing-report .report-quiz-q-badge {
+        width: 18px !important;
+        height: 18px !important;
         background: #1f8a7e !important;
         color: #ffffff !important;
-        border-radius: 5px !important;
-        font-size: 10.5px !important;
-        font-weight: 800 !important;
-        letter-spacing: 0.4px !important;
+        border-radius: 4px !important;
+        font-size: 10px !important;
+        font-weight: 900 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-
-      body.is-printing-report .report-quiz-card.is-wrong .report-quiz-num {
+      body.is-printing-report .report-quiz-card.is-wrong .report-quiz-q-badge {
         background: #ef4444 !important;
         color: #ffffff !important;
+      }
+      body.is-printing-report .report-quiz-q-num {
+        font-size: 12.5px !important;
+        font-weight: 800 !important;
+        color: #1f8a7e !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body.is-printing-report .report-quiz-card.is-wrong .report-quiz-q-num {
+        color: #ef4444 !important;
       }
 
       body.is-printing-report .report-quiz-question {
@@ -2493,14 +2517,15 @@
   background: linear-gradient(90deg, #1f8a7e 0%, #10b981 50%, #c59b27 100%);
 }
 
-/* 2) 모바일 카카오톡 규격 모드 */
+/* A4 뷰 모드 시 스크린 래퍼 투명화 */\n#portfolioViewportContainer.portfolio-view-a4 .portfolio-mobile-screen { background: transparent; border: none; border-radius: 0; overflow: visible; max-height: none; display: block; }\n\n/* 2) 모바일 카카오톡 규격 모드 */
 #portfolioViewportContainer.portfolio-view-mobile .portfolio-device-frame {
-  width: 400px;
+  width: 410px;
+  max-width: 410px;
   background: #1e1b18;
-  border-radius: 42px;
-  padding: 14px 10px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-  border: 3px solid #3d352e;
+  border-radius: 46px;
+  padding: 14px 10px 18px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  border: 3.5px solid #3d352e;
   position: relative;
 }
 
@@ -2514,13 +2539,54 @@
   margin: 0 auto 10px;
 }
 
-#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper {
+/* 스마트폰 스크린 래퍼: 노란 바 및 스크롤바 삐져나감 완전 방지 */
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-mobile-screen {
   background: #fbf9f5;
-  border-radius: 30px;
-  max-height: 780px;
-  overflow-y: auto;
-  padding: 24px 18px;
-  border: 1px solid #e5ded5;
+  border-radius: 32px;
+  overflow: hidden !important; /* 삐져나감 원천 차단 */
+  border: 1px solid #3d352e;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 상단 카카오 알림톡 노란색 네비 헤더 */
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-mobile-header {
+  background: #FEE500 !important;
+  color: #3C1E1E !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid #ebd300 !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper {
+  flex: 1 1 auto;
+  background: #fbf9f5;
+  border-radius: 0 !important;
+  max-height: 750px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 18px 14px 36px !important;
+  border: none !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 베젤 내부 얇은 프리미엄 스크롤바 (절대 베젤 밖으로 튀어나오지 않음) */
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar {
+  width: 4px !important;
+}
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar-thumb {
+  background: rgba(80, 60, 40, 0.22) !important;
+  border-radius: 4px !important;
+}
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 /* 포트폴리오 섹션 공통 컴포넌트 */
@@ -2885,23 +2951,9 @@
   position: relative;
 }
 
+/* 본문 스크롤 영역 */
 #portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper {
-  background: #fbf9f5;
-  border-radius: 34px;
-  max-height: 820px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px 14px 36px !important;
-  border: 1px solid #e5ded5;
-  -webkit-overflow-scrolling: touch;
-}
-
-#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar {
-  width: 4px;
-}
-#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar-thumb {
-  background: #d8cebf;
-  border-radius: 4px;
+  padding: 18px 14px 36px !important;
 }
 
 /* 상단 메타 영역 세로 스택 */
@@ -2982,22 +3034,47 @@
   font-size: 10px !important;
 }
 
-/* 모바일 독서 취향 & 선호도 차트 세로 스택 */
+/* 모바일 독서 취향 & 선호도 분석: 그래프(왼쪽) + 테마 키워드 및 구성비율(오른쪽) 나란히 배치 */
 #portfolioViewportContainer.portfolio-view-mobile .pf-preference-row {
-  flex-direction: column !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  margin: 0 -4px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-preference-chart-col {
-  border-right: none !important;
-  border-bottom: 1px solid #e7ded2;
-  padding-bottom: 14px;
-  margin-bottom: 14px;
-  width: 100% !important;
+  flex: 0 0 42% !important;
+  max-width: 42% !important;
+  width: 42% !important;
+  border-right: 1px dashed #e6ded3 !important;
+  border-bottom: none !important;
+  padding: 0 6px 0 0 !important;
+  margin-bottom: 0 !important;
+  text-align: center !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-preference-chart-col svg {
+  max-width: 105px !important;
+  max-height: 105px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-preference-chart-col .text-muted {
+  font-size: 10.5px !important;
+  line-height: 1.25 !important;
+  margin-top: 4px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-preference-detail-col {
-  padding-left: 0 !important;
-  width: 100% !important;
+  flex: 0 0 58% !important;
+  max-width: 58% !important;
+  width: 58% !important;
+  padding-left: 10px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-tag-badge {
+  font-size: 10px !important;
+  padding: 2.5px 6px !important;
+  margin: 0 2px 3px 0 !important;
+  display: inline-block !important;
 }
 
 /* 모바일 완독 도서 그리드 (2열) */
@@ -3017,14 +3094,16 @@
   height: 78px !important;
 }
 
-/* 모바일 북퀴즈 테이블 가로 스크롤 보장 */
+/* 모바일 북퀴즈 테이블: 좌우 스크롤 완전 제거 & 390px 내 100% 최적화 */
 #portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table-wrap {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden !important; /* 좌우 스크롤 제거 */
+  width: 100% !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table {
-  min-width: 520px !important;
+  min-width: 100% !important;
+  width: 100% !important;
+  table-layout: fixed !important; /* 고정 레이아웃 */
   font-size: 11px !important;
 }
 
@@ -3051,6 +3130,123 @@
   font-size: 12px !important;
   line-height: 1.55 !important;
 }
+
+  
+    /* ============================================================== */
+    /* [반응형 레이아웃] 학습 리포트 모달 - PC / Mobile 전용 화면 분리 */
+    /* ============================================================== */
+    @media (max-width: 768px) {
+      #learningDetailModal .modal-dialog {
+        margin: 10px auto !important;
+        max-width: calc(100% - 16px) !important;
+      }
+      #learningDetailModal .modal-content {
+        border-radius: 16px !important;
+      }
+      #learningDetailModal .modal-header {
+        padding: 13px 16px !important;
+      }
+      #learningDetailModal .modal-header .modal-title {
+        font-size: 15px !important;
+      }
+      #learningDetailModal .modal-body {
+        padding: 12px !important;
+        max-height: 82vh !important;
+      }
+
+      /* 1. 상단 개요 카드 모바일 최적화 */
+      .report-overview-card {
+        padding: 12px 14px !important;
+        margin-bottom: 12px !important;
+      }
+      .report-cover-wrapper {
+        width: 58px !important;
+        height: 82px !important;
+      }
+      #learnModalBook {
+        font-size: 15.5px !important;
+      }
+      #learnModalBookPub {
+        font-size: 11.5px !important;
+      }
+
+      /* 성적, 일시, 원생 3열 카드 -> 모바일 친화적 1열(성적) + 2열(일시/원생) 그리드 배치 */
+      .report-overview-card .row {
+        margin: 0 -3px !important;
+      }
+      .report-overview-card .row .col-4:nth-child(1) {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 6px !important;
+        padding: 0 3px !important;
+      }
+      .report-overview-card .row .col-4:nth-child(2),
+      .report-overview-card .row .col-4:nth-child(3) {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        padding: 0 3px !important;
+      }
+      .report-sub-card {
+        padding: 8px 10px !important;
+      }
+      #learnModalScore {
+        font-size: 18px !important;
+      }
+
+      /* 2. 북퀴즈 문항 그리드: 모바일 1열 풀위드(Full-width) 전환 */
+      .report-quiz-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 12px !important;
+      }
+      .report-quiz-card {
+        padding: 10px 12px !important;
+      }
+      .report-quiz-question {
+        min-height: 32px !important;
+        font-size: 12px !important;
+        margin-bottom: 8px !important;
+      }
+      .report-choice-box {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+      }
+
+      /* 3. 생각 담기 모바일 최적화 */
+      .report-thought-card {
+        padding: 12px 14px !important;
+      }
+      .report-question-box {
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+      }
+      .report-answer-box {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+      }
+
+      /* 4. 모달 푸터 버튼 터치 최적화 */
+      #learningDetailModal .modal-footer {
+        flex-direction: column-reverse !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+        padding: 12px 14px !important;
+      }
+      #learningDetailModal .modal-footer > small {
+        text-align: center;
+        font-size: 11px;
+      }
+      #learningDetailModal .modal-footer > div {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+      }
+      #learningDetailModal .modal-footer .btn {
+        flex: 1;
+        padding: 8px 6px;
+        font-size: 12px;
+      }
+    }
 
   </style>
 </head>
@@ -3962,13 +4158,28 @@
 
         <!-- 학습 기록 테이블: 컬럼 순서 (번호, 완료일, 완독 도서명, 원생명, 북퀴즈 결과, 나노 시트, 첨삭, 관리) -->
         <div class="simple-card">
-          <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-            <span class="badge-soft badge-soft-neutral" style="font-size: 12px; font-weight: 700;">
-              <i class="fa-solid fa-list-check mr-1 text-primary"></i>학습 기록 <strong id="learningLogCount"
-                class="text-dark">0</strong>건
-            </span>
+          <!-- 카드 상단 헤더 컨트롤 바: 위 필터 카드와 겹치지 않고 정돈된 프리미엄 바 -->
+          <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom" style="background: var(--bg-surface); min-height: 56px;">
+            <div class="d-flex align-items-center" style="gap: 10px;">
+              <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+                <i class="fa-solid fa-list-check mr-1.5 text-primary"></i>학습 기록 내역
+              </span>
+              <span class="badge-soft badge-soft-primary" style="font-size: 12px; font-weight: 700; padding: 4px 11px; border-radius: 20px;">
+                <i class="fa-solid fa-database mr-1" style="font-size: 10.5px;"></i>총 <strong id="learningLogCount" class="text-primary font-weight-bold">0</strong>건
+              </span>
+            </div>
+            <div class="d-flex align-items-center" style="gap: 12px;">
+              <small class="text-muted d-none d-md-inline" style="font-size: 12px;">
+                <i class="fa-solid fa-circle-check text-success mr-1"></i>북퀴즈 응시 및 첨삭 상태가 실시간으로 집계됩니다.
+              </small>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="renderLearningTable()"
+                style="border-radius: 6px; font-size: 11.5px; padding: 4px 10px; font-weight: 600;" title="학습 기록 목록 새로고침">
+                <i class="fa-solid fa-rotate-right mr-1"></i>새로고침
+              </button>
+            </div>
           </div>
-          <table class="simple-table">
+          <div class="table-responsive">
+          <table class="simple-table mb-0">
             <thead>
               <tr>
                 <th style="width: 55px;">번호</th>
@@ -3985,6 +4196,7 @@
               <!-- JS 렌더링 -->
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -4149,17 +4361,20 @@
           <!-- 2. 듀얼 뷰포트 캔버스 (A4 뷰 or 모바일 뷰) -->
           <div id="portfolioViewportContainer" class="portfolio-view-a4">
             <div class="portfolio-device-frame">
-              <!-- 모바일 상단 카카오톡 알림톡 네비게이션 헤더 (모바일 모드에서만 표시) -->
-              <div class="portfolio-mobile-header" style="display:none; background:#FEE500; color:#3C1E1E; padding:10px 14px; border-radius:18px 18px 0 0; margin:-24px -18px 16px; font-size:12.5px; font-weight:700;">
-                <div class="d-flex justify-content-between align-items-center">
-                  <span><i class="fa-solid fa-comment mr-1"></i>나노의 책장 독서 리포트</span>
-                  <span style="font-size:11px; font-weight:normal; opacity:0.85;">카카오 알림톡 웹뷰</span>
+              <!-- 스마트폰 스크린 영역: 삐져나감 완전 방지 overflow:hidden 래퍼 -->
+              <div class="portfolio-mobile-screen">
+                <!-- 모바일 상단 카카오톡 알림톡 네비게이션 헤더 -->
+                <div class="portfolio-mobile-header" style="display:none;">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-comment mr-1"></i>나노의 책장 독서 리포트</span>
+                    <span style="font-size:11px; font-weight:normal; opacity:0.85;">카카오 알림톡 웹뷰</span>
+                  </div>
                 </div>
-              </div>
 
-              <!-- 리포트 본문 페이퍼 (JS로 6대 섹션 동적 렌더링) -->
-              <div id="portfolioPrintDoc" class="portfolio-document-paper">
-                <!-- JS renderPortfolioDocument() 실행 시 동적 렌더링 -->
+                <!-- 리포트 본문 페이퍼 (JS로 6대 섹션 동적 렌더링) -->
+                <div id="portfolioPrintDoc" class="portfolio-document-paper">
+                  <!-- JS renderPortfolioDocument() 실행 시 동적 렌더링 -->
+                </div>
               </div>
             </div>
           </div>
@@ -5616,7 +5831,7 @@
             </div>
             <div>
               <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: var(--text-main);">
-                상세 학습 및 나노 시트 첨삭 리포트
+                학습 리포트
               </h5>
               <small class="text-muted" style="font-size: 11.5px;">북퀴즈 문항별 채점 결과 및 나노 시트 지도교사 첨삭 피드백</small>
             </div>
@@ -5648,7 +5863,7 @@
             <div class="d-flex justify-content-between align-items-end pt-1">
               <div>
                 <h2 style="font-size: 18.5px; font-weight: 800; color: #1e242b; margin: 0; letter-spacing: -0.5px; line-height: 1.25;">
-                  상세 학습 및 나노 시트 첨삭 리포트
+                  학습 리포트
                 </h2>
                 <div style="font-size: 11px; color: #5c6470; margin-top: 3px;">
                   북퀴즈 문항별 정답 채점 결과 · 독서논술 첨삭 지도 피드백
@@ -5749,8 +5964,8 @@
           <!-- 2) 북퀴즈 문항별 상세 채점 결과 -->
           <div class="mb-3">
             <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-              <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: #0f172a;">
-                <i class="fa-solid fa-list-check mr-1.5 text-primary"></i>북퀴즈 문항별 응시 및 정답 상세
+              <h6 class="font-weight-bold mb-0 d-flex align-items-center" style="font-size: 13.5px; color: #0f172a; gap: 8px;">
+                <i class="fa-solid fa-list-check text-primary"></i><span>북퀴즈 문항별 응시 및 정답 상세</span>
               </h6>
               <span class="text-muted font-weight-600" style="font-size: 11.5px;" id="learnModalQuizSummary">
                 총 5문항 중 <strong class="text-success">5문항</strong> 정답 (정답률 100%)

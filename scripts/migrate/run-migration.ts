@@ -113,7 +113,8 @@ async function runMigration() {
     const author = String(b.author ?? '저자 미상');
     const pub = b.publisher ? String(b.publisher) : null;
     const isbn = b.isbn ? String(b.isbn) : null;
-    const series = b.serise ? String(b.serise) : null;
+    const rawSeries = b.serise ? String(b.serise).trim() : '';
+    const series = (rawSeries === '' || rawSeries === '단권') ? '단권' : rawSeries;
     const cover = b.book_cover ? `/upload/book/${b.book_cover}` : null;
     const ws = b.worksheet ? `/upload/book/${b.worksheet}` : null;
     const cat = b.category ? String(b.category) : null;

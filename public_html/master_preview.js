@@ -5792,12 +5792,14 @@ function openMasterBookAddModal(id = null) {
   document.getElementById("mbAddAuthor").value = isNew ? "" : book.author;
   document.getElementById("mbAddPublisher").value = isNew ? "" : book.publisher;
 
-  // 시리즈명 & 단권 (시리즈명이 명시되어 있으면 단권 체크박스 해제 및 입력값 바인딩)
+  // 시리즈명 & 단권 (시리즈명이 비어있거나 '단권'이면 단권 체크박스 자동 체크)
   const hasSeries = !!(book && book.series && book.series.trim() !== "" && book.series.trim() !== "단권");
-  const isSingle = isNew ? false : !hasSeries;
-  document.getElementById("mbAddIsSingle").checked = isSingle;
+  const isSingle = isNew ? false : (!hasSeries || book.isSingle === true || book.series === "단권");
+  if (document.getElementById("mbAddIsSingle")) document.getElementById("mbAddIsSingle").checked = isSingle;
   toggleSingleBookCheckbox(isSingle);
-  document.getElementById("mbAddSeries").value = hasSeries ? book.series.trim() : "";
+  if (document.getElementById("mbAddSeries")) {
+    document.getElementById("mbAddSeries").value = hasSeries ? book.series.trim() : "";
+  }
 
   // 주제 분류 태그 (드롭박스 - 테마 관리 연동) 렌더링
   let selectedThemeTag = "";
