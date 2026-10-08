@@ -2042,6 +2042,42 @@
       margin-bottom: 16px;
       box-shadow: 0 4px 16px rgba(58, 46, 38, 0.05);
     }
+    .detail-hero-card.detail-integrated-card {
+      display: block;
+      padding: 18px 20px 18px 20px;
+    }
+    .detail-hero-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .detail-synopsis-subcard {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #f0ece4;
+    }
+    .detail-synopsis-subcard .sec-title {
+      font-weight: 700;
+      color: var(--text, #1e242b);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .detail-synopsis-subcard .synopsis-text {
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #4a4037;
+      word-break: keep-all;
+    }
+    @media (max-width: 480px) {
+      .detail-hero-card.detail-integrated-card {
+        padding: 14px 14px;
+      }
+      .detail-hero-top {
+        gap: 12px;
+      }
+    }
+
     .detail-cover-wrap {
       position: relative;
       width: 96px;
@@ -2398,13 +2434,13 @@
       transform: scale(0.97);
     }
 
-    /* 상세페이지 북퀴즈 전용 배너 카드 (생각 꺼내기와 함께 읽은 책 사이) */
+    /* [파스텔톤 리디자인] 상세페이지 북퀴즈 완독 미션 배너 카드 */
     .detail-quiz-banner-card {
-      background: linear-gradient(135deg, #059669 0%, #10b981 60%, #047857 100%);
+      background: linear-gradient(135deg, #edf7f5 0%, #e2f1ee 100%);
       border-radius: 20px;
       padding: 18px 22px;
       margin: 14px 0 16px 0;
-      box-shadow: 0 8px 24px rgba(5, 150, 105, 0.22);
+      box-shadow: 0 6px 20px rgba(31, 138, 126, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -2413,7 +2449,7 @@
       position: relative;
       overflow: hidden;
       transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1.5px solid #b8e0d9;
     }
     .detail-quiz-banner-card::before {
       content: '';
@@ -2422,14 +2458,14 @@
       right: -30px;
       width: 130px;
       height: 130px;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
       pointer-events: none;
       border-radius: 50%;
     }
     .detail-quiz-banner-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 28px rgba(5, 150, 105, 0.32);
-      filter: brightness(1.02);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(31, 138, 126, 0.15);
+      border-color: #9cd5cc;
     }
     .detail-quiz-banner-card:active {
       transform: scale(0.985);
@@ -2445,16 +2481,15 @@
       width: 48px;
       height: 48px;
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(4px);
+      background: #ffffff;
+      color: #1f8a7e;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #ffffff;
       font-size: 22px;
       flex-shrink: 0;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 3px 10px rgba(31, 138, 126, 0.12);
+      border: 1.5px solid #cce8e2;
     }
     .dqb-text-group {
       min-width: 0;
@@ -2471,7 +2506,7 @@
     .dqb-title {
       font-size: 16px;
       font-weight: 800;
-      color: #ffffff;
+      color: #165b53;
       letter-spacing: -0.3px;
       line-height: 1.25;
     }
@@ -2479,25 +2514,26 @@
       display: inline-flex;
       align-items: center;
       gap: 3px;
-      background: rgba(255, 255, 255, 0.24);
-      color: #ffffff;
+      background: #ffffff;
+      color: #1f8a7e;
       font-size: 11px;
       font-weight: 800;
       padding: 2px 8px;
       border-radius: 10px;
       line-height: 1.2;
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid #b8e0d9;
+      box-shadow: 0 1px 3px rgba(31, 138, 126, 0.08);
     }
     .dqb-desc {
       font-size: 12.5px;
-      color: rgba(255, 255, 255, 0.9);
+      color: #4b6e68;
       font-weight: 500;
       line-height: 1.35;
       letter-spacing: -0.2px;
     }
     .btn-dqb-action {
-      background: #ffffff;
-      color: #047857;
+      background: #1f8a7e;
+      color: #ffffff;
       border: none;
       border-radius: 26px;
       padding: 10px 18px;
@@ -2507,7 +2543,7 @@
       align-items: center;
       gap: 7px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 4px 12px rgba(31, 138, 126, 0.25);
       white-space: nowrap;
       flex-shrink: 0;
       transition: all 0.2s ease;
@@ -2517,9 +2553,9 @@
       transition: transform 0.2s ease;
     }
     .detail-quiz-banner-card:hover .btn-dqb-action {
-      background: #f0fdf4;
-      color: #065f46;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+      background: #166e64;
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(31, 138, 126, 0.35);
     }
     .detail-quiz-banner-card:hover .btn-dqb-action i {
       transform: translateX(3px);
@@ -3943,17 +3979,20 @@
       <span style="font-size:12px;font-weight:700;color:var(--muted);"><i class="fa-solid fa-book-open mr-1"></i>도서 상세 정보</span>
     </div>
 
-    <!-- 메인 도서 서지 카드 -->
-    <div class="detail-hero-card" id="detailHeroCard">
-      <!-- 동적 주입 -->
+    <!-- [신규 통합] 메인 도서 서지 정보 + 도서 줄거리 일체형 카드 -->
+    <div class="detail-hero-card detail-integrated-card">
+      <div id="detailHeroCard" class="detail-hero-top">
+        <!-- 동적 주입 -->
+      </div>
+      <div class="detail-synopsis-subcard">
+        <div class="sec-title" style="margin-bottom:8px;font-size:13.5px;">
+          <i class="fa-solid fa-feather-pointed" style="color:var(--leaf);"></i> 도서 줄거리 및 읽기 포인트
+        </div>
+        <div class="synopsis-text" id="detailSynopsis">
+          줄거리를 불러오는 중입니다.
+        </div>
     </div>
 
-    <!-- 줄거리 카드 -->
-    <div class="detail-section-card">
-      <div class="sec-title" style="margin-bottom:8px;font-size:14px;"><i class="fa-solid fa-feather-pointed" style="color:var(--leaf);"></i> 도서 줄거리 및 읽기 포인트</div>
-      <div class="synopsis-text" id="detailSynopsis">
-        줄거리를 불러오는 중입니다.
-      </div>
     </div>
 
     <!-- 생각 꺼내기 카드 (도서 읽기 전 호기심 유발 질문) -->

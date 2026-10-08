@@ -638,11 +638,11 @@
       position: relative;
     }
 
-    /* 2. @media print 전용 A4 최적화 */
+    /* 2. @media print 전용 A4 최적화: 여백과 품격을 갖춘 나노의 책장 공식 리포트 */
     @media print {
       @page {
         size: A4 portrait;
-        margin: 10mm 12mm 10mm 12mm;
+        margin: 12mm 15mm 12mm 15mm;
       }
 
       body.is-printing-report {
@@ -704,16 +704,17 @@
         position: static !important;
         max-width: 100% !important;
         width: 100% !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         border: none !important;
         transform: none !important;
       }
 
+      /* 최고급 A4 양식지 프레임: 시그니처 딥 틸 테두리 & 상단 포인트 */
       body.is-printing-report #learningDetailModal .modal-content {
         display: block !important;
-        position: static !important;
-        border: 2px solid #0f172a !important;
+        position: relative !important;
+        border: 1.5px solid #1f8a7e !important;
         border-radius: 12px !important;
         box-shadow: none !important;
         background: #ffffff !important;
@@ -724,66 +725,87 @@
         break-after: avoid !important;
       }
 
+      /* 상하좌우 숨 쉴 수 있는 정갈하고 쾌적한 안쪽 여백 */
       body.is-printing-report #learningDetailModal .modal-body {
         display: block !important;
         max-height: none !important;
         overflow: visible !important;
-        padding: 16px 20px 18px 20px !important;
+        padding: 16px 20px 16px 20px !important;
         background: #ffffff !important;
         box-sizing: border-box !important;
       }
 
-
-      /* A4 1장에 꼭 맞추기 위한 마이크로 여백 최적화 */
+      /* 공식 헤더 영역 */
       body.is-printing-report .report-print-header {
-        margin-bottom: 12px !important;
-        padding-bottom: 10px !important;
-        border-bottom: 2px solid #0f172a !important;
+        margin-bottom: 11px !important;
+        padding-bottom: 9px !important;
+        border-bottom: 1.5px solid #1f8a7e !important;
       }
 
+      /* 1행: 도서 정보 & 3열 성적 개요 카드 */
       body.is-printing-report .report-overview-card {
-        padding: 10px 14px !important;
-        margin-bottom: 10px !important;
-        border: 1px solid #cbd5e1 !important;
+        padding: 9px 12px !important;
+        margin-bottom: 9px !important;
+        background: #fbf9f5 !important;
+        border: 1px solid #e8e2d8 !important;
+        border-radius: 9px !important;
         box-shadow: none !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
 
       body.is-printing-report .report-cover-wrapper {
-        width: 60px !important;
-        height: 84px !important;
-        box-shadow: none !important;
+        width: 58px !important;
+        height: 80px !important;
+        border-radius: 6px !important;
+        border: 1px solid #e2dacd !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+        background: #ffffff !important;
       }
 
       body.is-printing-report .report-sub-card {
-        padding: 6px 10px !important;
-        border: 1px solid #e2e8f0 !important;
+        padding: 5px 9px !important;
+        background: #ffffff !important;
+        border: 1px solid #ebe5dc !important;
+        border-radius: 7px !important;
       }
 
+      body.is-printing-report .report-sub-card.highlight {
+        background: #f4faf9 !important;
+        border-color: #b2dfdb !important;
+      }
+
+      /* 2행: 북퀴즈 문항 2열 그리드 */
       body.is-printing-report .report-quiz-grid {
-        gap: 8px !important;
-        margin-bottom: 10px !important;
+        gap: 7px 10px !important;
+        margin-bottom: 9px !important;
       }
 
       body.is-printing-report .report-quiz-card {
-        padding: 8px 10px !important;
-        border: 1px solid #cbd5e1 !important;
+        padding: 7px 9px !important;
+        background: #ffffff !important;
+        border: 1px solid #ebe5dc !important;
+        border-radius: 7px !important;
         box-shadow: none !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
 
+      body.is-printing-report .report-quiz-card.is-wrong {
+        border-color: #fecaca !important;
+        background: #fffcfc !important;
+      }
+
       body.is-printing-report .report-quiz-num {
         min-width: 36px !important;
-        height: 22px !important;
-        padding: 0 7px !important;
-        background: #047857 !important;
+        height: 21px !important;
+        padding: 0 6px !important;
+        background: #1f8a7e !important;
         color: #ffffff !important;
-        border-radius: 6px !important;
-        font-size: 11px !important;
+        border-radius: 5px !important;
+        font-size: 10.5px !important;
         font-weight: 800 !important;
-        letter-spacing: 0.2px !important;
+        letter-spacing: 0.4px !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -794,45 +816,68 @@
       }
 
       body.is-printing-report .report-quiz-question {
-        font-size: 11.5px !important;
-        margin-bottom: 6px !important;
+        font-size: 11px !important;
+        margin-bottom: 4px !important;
         min-height: 0 !important;
-        line-height: 1.4 !important;
+        line-height: 1.35 !important;
+        color: #1e242b !important;
       }
 
       body.is-printing-report .report-choice-box {
-        padding: 4px 8px !important;
-        font-size: 11px !important;
+        padding: 3.5px 7px !important;
+        font-size: 10px !important;
+        border-radius: 5px !important;
       }
 
+      body.is-printing-report .report-choice-box.correct {
+        background: #f0fdf4 !important;
+        border: 1px solid #bbf7d0 !important;
+        color: #15803d !important;
+      }
+
+      /* 3행: 생각 담기 (서술형 피드백) */
       body.is-printing-report .report-thought-card {
-        padding: 10px 14px !important;
-        border: 1px solid #cbd5e1 !important;
+        padding: 8px 12px !important;
+        background: #fbf9f5 !important;
+        border: 1px solid #e8e2d8 !important;
+        border-radius: 9px !important;
         box-shadow: none !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
 
       body.is-printing-report .report-question-box {
-        padding: 6px 10px !important;
-        font-size: 11px !important;
-        margin-bottom: 8px !important;
+        padding: 5px 9px !important;
+        font-size: 10.5px !important;
+        line-height: 1.35 !important;
+        margin-bottom: 5px !important;
+        background: #ffffff !important;
+        border: 1px solid #ebe5dc !important;
+        border-radius: 6px !important;
+        color: #1e242b !important;
       }
 
       body.is-printing-report .report-answer-box {
-        padding: 8px 10px !important;
-        font-size: 11.5px !important;
-        line-height: 1.5 !important;
-        margin-bottom: 8px !important;
+        padding: 6px 9px !important;
+        font-size: 10.5px !important;
+        line-height: 1.4 !important;
+        margin-bottom: 5px !important;
+        background: #ffffff !important;
+        border: 1px solid #ebe5dc !important;
+        border-radius: 6px !important;
+        color: #1e242b !important;
       }
 
       body.is-printing-report .report-comment-box {
-        padding: 8px 12px !important;
-        border: 1px solid #86efac !important;
+        padding: 6px 10px !important;
+        font-size: 10.5px !important;
+        line-height: 1.4 !important;
+        background: #f0fdf9 !important;
+        border: 1px solid #99f6e4 !important;
+        border-radius: 6px !important;
       }
     }
 
-    /* ============================================================== */
     /* A4 랭킹 포스터 인쇄 스타일: A4 1장 완벽 핏 */
     /* ============================================================== */
     body.is-printing-poster {
@@ -847,7 +892,7 @@
       /* 인쇄 시 페이지 여백 최소화 - 브라우저 마진 제어 */
       @page {
         size: A4 portrait;
-        margin: 0mm;
+        margin: 12mm 15mm 12mm 15mm;
       }
 
       body.is-printing-poster {
@@ -2073,21 +2118,22 @@
     }
 
     @media print {
-      body * {
+      body.is-printing-report * {
         visibility: hidden;
       }
 
-      #portfolioReportPrintArea,
-      #portfolioReportPrintArea * {
+      body.is-printing-report #portfolioReportPrintArea,
+      body.is-printing-report #portfolioReportPrintArea * {
         visibility: visible;
       }
 
-      #portfolioReportPrintArea {
+      body.is-printing-report #portfolioReportPrintArea {
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
       }
+    }
     }
 
     @keyframes newRowHighlight {
@@ -2619,7 +2665,61 @@
 }
 
 /* 인쇄 미디어 쿼리 - 포트폴리오 전용 */
+/* ============================================================== */
+/* [독서 포트폴리오 학생 정보 스트립: 순수 CSS 그리드] */
+/* ============================================================== */
+.pf-student-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  background: #f7f4ee;
+  border: 1px solid #e8e0d5;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.pf-student-info-cell {
+  background: #ffffff;
+  border: 1px solid #ebe5dc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+
+.pf-student-info-cell .pf-info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7d756d;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.pf-student-info-cell .pf-info-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e242b;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-student-info-cell .pf-info-highlight {
+  color: #1f8a7e !important;
+}
+
+/* ============================================================== */
+/* [독서 포트폴리오 전용 인쇄 (@media print)] */
+/* ============================================================== */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 12mm 15mm;
+  }
+
   body.is-printing-portfolio {
     background: #ffffff !important;
     margin: 0 !important;
@@ -2630,21 +2730,27 @@
     color-adjust: exact !important;
   }
 
-  body.is-printing-portfolio > *:not(.admin-layout) {
-    display: none !important;
+  /* 모든 자식 요소를 확실히 보이도록 보장 (전역 visibility: hidden 무효화) */
+  body.is-printing-portfolio,
+  body.is-printing-portfolio * {
+    visibility: visible !important;
   }
 
-  body.is-printing-portfolio .admin-sidebar,
-  body.is-printing-portfolio .admin-header,
-  body.is-printing-portfolio .workspace-header,
+  /* 관리자 화면의 고정 헤더, 사이드바, 툴바, 탭 목록, 모바일 목업 외곽 숨김 */
+  body.is-printing-portfolio .admin-header-fixed-wrap,
+  body.is-printing-portfolio .simple-sidebar,
   body.is-printing-portfolio .portfolio-admin-toolbar,
-  body.is-printing-portfolio #portfolio-sub-list {
+  body.is-printing-portfolio #portfolio-sub-list,
+  body.is-printing-portfolio .portfolio-mobile-header,
+  body.is-printing-portfolio .portfolio-device-frame::before,
+  body.is-printing-portfolio #portfolioDeviceMockupFrame::before {
     display: none !important;
+    visibility: hidden !important;
   }
 
-  body.is-printing-portfolio .admin-layout,
-  body.is-printing-portfolio .admin-main,
-  body.is-printing-portfolio .admin-content,
+  /* 포트폴리오 문서 컨테이너를 A4 전폭 레이아웃으로 확장 */
+  body.is-printing-portfolio .app-container,
+  body.is-printing-portfolio .main-content,
   body.is-printing-portfolio #view-portfolio,
   body.is-printing-portfolio #portfolio-sub-detail,
   body.is-printing-portfolio #portfolioViewportContainer {
@@ -2655,34 +2761,116 @@
     width: 100% !important;
     max-width: 100% !important;
     background: #ffffff !important;
-    box-shadow: none !important;
     border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
   }
 
   body.is-printing-portfolio .portfolio-device-frame {
+    display: block !important;
     width: 100% !important;
     max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border: none !important;
     background: transparent !important;
-    padding: 0 !important;
     box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  body.is-printing-portfolio #portfolioPrintDoc {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   body.is-printing-portfolio .portfolio-document-paper {
+    display: block !important;
     width: 100% !important;
     max-width: 100% !important;
-    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 12mm 10mm !important;
+    background: #ffffff !important;
     border: 1.5px solid #1f8a7e !important;
     border-radius: 8px !important;
-    padding: 24px 28px !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* 인쇄 시 학생 정보 4열 가로 정렬 강제 */
+  body.is-printing-portfolio .pf-student-info-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 10px !important;
+    background: #f7f4ee !important;
+    border: 1px solid #e8e0d5 !important;
+    padding: 10px 12px !important;
+  }
+
+  body.is-printing-portfolio .pf-student-info-cell {
     background: #ffffff !important;
-    page-break-after: avoid;
-    break-after: avoid;
+    border: 1px solid #ebe5dc !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    text-align: left !important;
+  }
+
+  /* 인쇄 시 핵심 요약 통계 4열 가로 정렬 강제 */
+  body.is-printing-portfolio .pf-stat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* 인쇄 시 독서 취향 2열 가로 정렬 */
+  body.is-printing-portfolio .pf-preference-row {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+
+  body.is-printing-portfolio .pf-preference-chart-col {
+    flex: 0 0 38% !important;
+    max-width: 38% !important;
+    border-right: 1px solid #e7ded2 !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  body.is-printing-portfolio .pf-preference-detail-col {
+    flex: 0 0 62% !important;
+    max-width: 62% !important;
+    padding-left: 20px !important;
+  }
+
+  /* 인쇄 시 도서 카드 4열 가로 정렬 */
+  body.is-printing-portfolio .pf-book-col {
+    flex: 0 0 25% !important;
+    max-width: 25% !important;
+    padding: 0 6px !important;
+  }
+
+  /* 인쇄 시 나노의 독서 이야기 2열 가로 정렬 */
+  body.is-printing-portfolio .pf-insight-col {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  /* 인쇄 시 페이지 넘김 최적화 */
+  body.is-printing-portfolio .pf-book-card,
+  body.is-printing-portfolio .pf-insight-card,
+  body.is-printing-portfolio .pf-teacher-comment-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 
 /* ============================================================== */
-/* [모바일 알림톡 뷰 전용 최적화 스타일] */
+/* [모바일 앤톡 뷰 최적화 스타일 (390px 스마트폰 프레임)] */
 /* ============================================================== */
 #portfolioViewportContainer.portfolio-view-mobile .portfolio-device-frame {
   width: 410px !important;
@@ -2701,7 +2889,7 @@
   max-height: 820px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 20px 15px 36px !important;
+  padding: 20px 14px 36px !important;
   border: 1px solid #e5ded5;
   -webkit-overflow-scrolling: touch;
 }
@@ -2714,7 +2902,7 @@
   border-radius: 4px;
 }
 
-/* 모바일 헤더 섹션 줄바꿈 방지 */
+/* 상단 메타 영역 세로 스택 */
 #portfolioViewportContainer.portfolio-view-mobile .pf-header-top {
   flex-direction: column !important;
   align-items: flex-start !important;
@@ -2734,45 +2922,62 @@
   flex-wrap: wrap;
 }
 
-/* 모바일 학생 정보 스트립 2x2 그리드 */
+/* 모바일 학생 정보 스트립 2x2 그리드: 텍스트 줄바꿈/잘림 완전 방지 */
 #portfolioViewportContainer.portfolio-view-mobile .pf-student-info-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
   gap: 8px !important;
   background: #f7f4ee !important;
-  padding: 12px !important;
+  padding: 10px !important;
   border-radius: 12px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-student-info-cell {
-  background: #ffffff;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #ebe5dc;
-  border-right: none !important;
+  background: #ffffff !important;
+  border: 1px solid #ebe5dc !important;
+  border-radius: 8px !important;
+  padding: 7px 10px !important;
   text-align: left !important;
 }
 
-#portfolioViewportContainer.portfolio-view-mobile .pf-student-info-cell strong {
-  font-size: 13px !important;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+#portfolioViewportContainer.portfolio-view-mobile .pf-student-info-cell .pf-info-label {
+  font-size: 10px !important;
+  color: #7d756d !important;
+  font-weight: 600 !important;
+  margin-bottom: 2px !important;
 }
 
-/* 모바일 4대 통계 카드 2x2 그리드 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-student-info-cell .pf-info-val {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #1e242b !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 모바일 4대 핵심 요약 카드 2x2 그리드 */
 #portfolioViewportContainer.portfolio-view-mobile .pf-stat-grid {
   grid-template-columns: repeat(2, 1fr) !important;
-  gap: 10px !important;
+  gap: 8px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-stat-box {
-  padding: 12px 8px !important;
+  padding: 10px 8px !important;
+  border-radius: 8px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-stat-label {
+  font-size: 11px !important;
+  margin-bottom: 2px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-stat-value {
-  font-size: 20px !important;
+  font-size: 19px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-stat-sub {
+  font-size: 10px !important;
 }
 
 /* 모바일 독서 취향 & 선호도 차트 세로 스택 */
@@ -2783,8 +2988,8 @@
 #portfolioViewportContainer.portfolio-view-mobile .pf-preference-chart-col {
   border-right: none !important;
   border-bottom: 1px solid #e7ded2;
-  padding-bottom: 16px;
-  margin-bottom: 16px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
   width: 100% !important;
 }
 
@@ -2797,11 +3002,12 @@
 #portfolioViewportContainer.portfolio-view-mobile .pf-book-col {
   flex: 0 0 50% !important;
   max-width: 50% !important;
-  padding: 0 5px !important;
+  padding: 0 4px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-book-card {
   padding: 8px 6px !important;
+  border-radius: 8px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-book-cover-img {
@@ -2809,7 +3015,7 @@
   height: 78px !important;
 }
 
-/* 모바일 북퀴즈 테이블 가로 스크롤 지원 */
+/* 모바일 북퀴즈 테이블 가로 스크롤 보장 */
 #portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table-wrap {
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch;
@@ -2817,19 +3023,33 @@
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table {
   min-width: 520px !important;
-  font-size: 11.5px !important;
+  font-size: 11px !important;
 }
 
-/* 모바일 나노의 독서 이야기 (1열 풀 위드 스택) */
+/* 모바일 나노의 독서 이야기 (1열 풀 너비) */
 #portfolioViewportContainer.portfolio-view-mobile .pf-insight-col {
   flex: 0 0 100% !important;
   max-width: 100% !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
 }
 
 #portfolioViewportContainer.portfolio-view-mobile .pf-insight-card {
-  padding: 14px 14px !important;
+  padding: 12px 12px !important;
+  border-radius: 10px !important;
 }
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-insight-text {
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+}
+
+/* 모바일 지도교사 총평 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-teacher-comment-box {
+  padding: 12px !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+}
+
   </style>
 </head>
 
@@ -5405,38 +5625,39 @@
 
         <div class="modal-body p-4" style="background: #faf8f5; max-height: 80vh; overflow-y: auto;">
 
-          <!-- [인쇄 전용 공식 헤더: 인쇄 시에만 노출되어 고급스러운 공식 리포트 완성] -->
+          <!-- [인쇄 전용 공식 헤더: 나노의 책장 프리미엄 아이덴티티 적용] -->
           <div class="report-print-header d-none"
-            style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px;">
-            <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom" style="border-color: #e2e8f0 !important;">
-              <div class="d-flex align-items-center" style="gap: 10px;">
-                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #10b981 0%, #047857 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px;">
+            style="border-bottom: 2px solid #1f8a7e; padding-bottom: 10px; margin-bottom: 12px;">
+            <div class="d-flex align-items-center justify-content-between pb-2 mb-2" style="border-bottom: 1px solid #ebe5dc !important;">
+              <div class="d-flex align-items-center" style="gap: 9px;">
+                <div style="width: 26px; height: 26px; background: linear-gradient(135deg, #1f8a7e 0%, #166e64 100%); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px;">
                   <i class="fa-solid fa-book-bookmark"></i>
                 </div>
-                <div>
-                  <span style="font-size: 13.5px; font-weight: 900; letter-spacing: -0.3px; color: #0f172a;">나노의책장</span>
-                  <span style="font-size: 10px; font-weight: 700; color: #64748b; margin-left: 6px; letter-spacing: 0.5px;">OFFICIAL STUDY REPORT</span>
+                <div class="d-flex align-items-baseline" style="gap: 6px;">
+                  <span style="font-size: 14px; font-weight: 900; letter-spacing: -0.3px; color: #1e242b;">나노의책장</span>
+                  <span style="font-size: 10px; font-weight: 800; color: #1f8a7e; letter-spacing: 0.6px;">OFFICIAL STUDY REPORT</span>
                 </div>
               </div>
-              <div style="border: 1px solid #cbd5e1; border-radius: 20px; padding: 2px 10px; font-size: 10.5px; font-weight: 700; color: #047857; background: #ecfdf5;">
-                <i class="fa-solid fa-certificate mr-1 text-success"></i>학습 성취도 진단 리포트
+              <div style="border: 1px solid #b2dfdb; border-radius: 20px; padding: 2px 10px; font-size: 10.5px; font-weight: 700; color: #1f8a7e; background: #edf7f6;">
+                <i class="fa-solid fa-certificate mr-1 text-success" style="color: #1f8a7e !important;"></i>학습 성취도 진단 리포트
               </div>
             </div>
             <div class="d-flex justify-content-between align-items-end pt-1">
               <div>
-                <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px;">
+                <h2 style="font-size: 18.5px; font-weight: 800; color: #1e242b; margin: 0; letter-spacing: -0.5px; line-height: 1.25;">
                   상세 학습 및 나노 시트 첨삭 리포트
                 </h2>
-                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                <div style="font-size: 11px; color: #5c6470; margin-top: 3px;">
                   북퀴즈 문항별 정답 채점 결과 · 독서논술 첨삭 지도 피드백
                 </div>
               </div>
-              <div style="text-align: right; font-size: 10.5px; color: #475569; line-height: 1.5; background: #f8fafc; padding: 4px 10px; border-radius: 6px; border: 1px solid #edf2f7;">
-                <div>발급 기관 : <strong style="color: #0f172a;" id="printAcademyNameDisplay">나노의 책장</strong></div>
-                <div>발급 일시 : <strong style="color: #0f172a;" id="printReportIssuedDate">2026-10-07</strong></div>
+              <div style="text-align: right; font-size: 10px; color: #5c6470; line-height: 1.5; background: #fbf9f5; padding: 4px 10px; border-radius: 6px; border: 1px solid #e8e2d8;">
+                <div>발급 기관 : <strong style="color: #1e242b;" id="printAcademyNameDisplay">나노의 책장</strong></div>
+                <div>발급 일시 : <strong style="color: #1e242b;" id="printReportIssuedDate">2026-10-07</strong></div>
               </div>
             </div>
           </div>
+
 
           <!-- 1) 상단 개요 카드 (2단 레이아웃: 1행 도서 표지+정보 / 2행 성적+일시+원생 3열) -->
           <div class="report-overview-card">

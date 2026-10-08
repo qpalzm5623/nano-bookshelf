@@ -5956,27 +5956,26 @@ function renderPortfolioDocument(studentId, pfId) {
         '</div>' +
       '</div>' +
 
-      '<!-- 학생 기본 정보 스트립 (모바일 2x2 반응형 지원) -->' +
-      '<div class="pf-student-info-grid rounded mt-3 p-3" style="background:#f7f4ee; border:1px solid #e8e0d5;">' +
-        '<div class="row text-center text-md-left align-items-center m-0">' +
-          '<div class="col-6 col-md-3 mb-2 mb-md-0 border-right pf-student-info-cell">' +
-            '<small class="text-muted d-block" style="font-size:11px;">학생명</small>' +
-            '<strong style="font-size:15px; color:#1e242b;">' + studentName + '</strong>' +
-          '</div>' +
-          '<div class="col-6 col-md-3 mb-2 mb-md-0 border-right pf-student-info-cell">' +
-            '<small class="text-muted d-block" style="font-size:11px;">학교 / 학년</small>' +
-            '<strong style="font-size:14px; color:#1e242b;">' + schoolGrade + '</strong>' +
-          '</div>' +
-          '<div class="col-6 col-md-3 border-right pf-student-info-cell">' +
-            '<small class="text-muted d-block" style="font-size:11px;">소속 / 지도교사</small>' +
-            '<strong style="font-size:14px; color:#1e242b;">' + classGroup + ' · ' + teacher + '</strong>' +
-          '</div>' +
-          '<div class="col-6 col-md-3 pf-student-info-cell">' +
-            '<small class="text-muted d-block" style="font-size:11px;">분석 대상 기간</small>' +
-            '<strong style="font-size:14px; color:#1f8a7e;">' + period + '</strong>' +
-          '</div>' +
+      '<!-- 학생 기본 정보 스트립 (순수 CSS 그리드) -->' +
+      '<div class="pf-student-info-grid mt-3">' +
+        '<div class="pf-student-info-cell">' +
+          '<span class="pf-info-label">학생명</span>' +
+          '<strong class="pf-info-val">' + studentName + '</strong>' +
+        '</div>' +
+        '<div class="pf-student-info-cell">' +
+          '<span class="pf-info-label">학교 / 학년</span>' +
+          '<strong class="pf-info-val">' + schoolGrade + '</strong>' +
+        '</div>' +
+        '<div class="pf-student-info-cell">' +
+          '<span class="pf-info-label">소속 / 지도교사</span>' +
+          '<strong class="pf-info-val">' + classGroup + ' · ' + teacher + '</strong>' +
+        '</div>' +
+        '<div class="pf-student-info-cell">' +
+          '<span class="pf-info-label">분석 대상 기간</span>' +
+          '<strong class="pf-info-val pf-info-highlight">' + period + '</strong>' +
         '</div>' +
       '</div>' +
+
     '</div>' +
 
     '<!-- ============================================== -->' +
@@ -6258,11 +6257,17 @@ function openPortfolioReportModal() {
 // 현재 보고 있는 포트폴리오 인쇄 / PDF 저장
 function printCurrentPortfolio() {
   document.body.classList.add('is-printing-portfolio');
-  window.print();
-  window.addEventListener('afterprint', function() {
+  setTimeout(function() {
+    window.print();
+  }, 50);
+
+  var cleanup = function() {
     document.body.classList.remove('is-printing-portfolio');
-  }, { once: true });
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
 }
+
 
 // 목록에서 단건 바로 인쇄
 function printSinglePortfolio(studentId, pfId) {
