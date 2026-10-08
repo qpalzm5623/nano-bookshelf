@@ -2041,16 +2041,18 @@ function renderStudentTable(list) {
     var emptyMessage = (studentDataList.length === 0)
       ? '<div class="py-4"><i class="fa-solid fa-user-plus text-primary mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">우측 상단의 <strong>[+ 원생 등록]</strong> 또는 <strong>[엑셀 일괄 등록]</strong>을 통해 첫 원생을 등록해 보세요.</span></div>'
       : '일치하는 원생이 없습니다.';
-    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
     return;
   }
 
-  list.forEach(function(std) {
+  var totalCount = list.length;
+  list.forEach(function(std, index) {
     var tr = document.createElement('tr');
     if (std.id === lastAddedStudentId) {
       tr.className = 'row-highlight-new';
     }
 
+    var rowNo = totalCount - index; // 번호 내림차순
     var quizScoreDisplay = (std.quizAvg === '0.0' || std.quizAvg === 0) ? '<span class="text-muted">-</span>' : std.quizAvg + '점';
 
     // 성별 뱃지
@@ -2086,6 +2088,7 @@ function renderStudentTable(list) {
     var createDateStr = std.createdAt || std.joinDate || '2026.03.01';
 
     tr.innerHTML = 
+      '<td class="text-center"><span class="font-weight-bold" style="color:#64748b; font-size:12.5px;">' + rowNo + '</span></td>' +
       '<td class="text-center"><small class="text-muted font-weight-bold">' + std.id + '</small></td>' +
       '<td class="text-center"><span class="student-link font-weight-bold" onclick="openStudentEditModal(\'' + std.id + '\')">' + std.name + '</span>' + 
       (std.id === lastAddedStudentId ? ' <span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : '') + '</td>' +
@@ -7425,10 +7428,165 @@ function toggleAcadQuizMediaBox() {
   }
 }
 
-// 학습자료 파일 선택 시 처리
+// ==============================================================
+// [보안 PDF 뷰어 엔진] PDF.js 캔버스 렌더링 & 전면 보안 워터마크 파이프라인
+// ==============================================================
+var currentUploadedPdfBlob = null; // 사용자가 첨부한 실제 PDF File/Blob 객체
+var activePdfDoc = null;          // PDF.js 로드된 문서 객체
+var activePdfPageNum = 1;         // 현재 페이지 번호
+var activePdfTotalPages = 1;      // 전체 페이지 수
+
+// PDF.js 글로벌 워커 설정
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// 표준 샘플 PDF 바이너리 Blob 생성 (테스트 및 즉시 시연용 유효한 A4 PDF 데이터)
+function createMinimalSamplePdfBlob(title) {
+  var content = "BT /F1 18 Tf 50 720 Td (" + (title || "Nano Sheet Material") + ") Tj ET\nBT /F1 12 Tf 50 680 Td (Nano Reading Academy Standard Worksheet) Tj ET\nBT /F1 10 Tf 50 640 Td ([STEP 1] Vocabulary and Background Reading) Tj ET\nBT /F1 10 Tf 50 600 Td ([STEP 2] Critical Thinking and Book Quiz Verification) Tj ET\nBT /F1 10 Tf 50 560 Td ([STEP 3] Essay and Perspective Sharing) Tj ET";
+  var streamLen = content.length;
+  var pdfSource = "%PDF-1.4\n" +
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n" +
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n" +
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n" +
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n" +
+    "5 0 obj\n<< /Length " + streamLen + " >>\nstream\n" + content + "\nendstream\nendobj\n" +
+    "xref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000244 00000 n \n0000000318 00000 n \n" +
+    "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + (370 + streamLen) + "\n%%EOF";
+  return new Blob([pdfSource], { type: 'application/pdf' });
+}
+
+// 전면 보안 워터마크 동적 주입 (학원명, 출력일시, IP 대각선 3단 반복 격자)
+function updateRealPdfWatermarkOverlay() {
+  var overlay = document.getElementById('realPdfWatermarkOverlay');
+  if (!overlay) return;
+
+  var acadElem = document.getElementById('wmAcademyName');
+  var timeElem = document.getElementById('wmPrintTime');
+  var ipElem = document.getElementById('wmIpAddress');
+
+  var acad = (acadElem && acadElem.innerText) ? acadElem.innerText : '나노 독서아카데미 목동본원';
+  var time = (timeElem && timeElem.innerText) ? timeElem.innerText : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var ip = (ipElem && ipElem.innerText) ? ipElem.innerText : '118.235.12.89';
+
+  var tileHtml = 
+    '<div style="transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 35px 0;">' +
+      '<div style="font-size: 21px; letter-spacing: -0.5px; color: #1e293b;">' + acad + '</div>' +
+      '<div style="font-size: 14.5px; font-family: monospace; color: #334155;">' + time + ' &middot; IP: ' + ip + '</div>' +
+      '<div style="font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px;">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
+    '</div>';
+
+  overlay.innerHTML = tileHtml + tileHtml + tileHtml;
+}
+
+// 실제 PDF 파일 읽어와서 캔버스 렌더링 + 워터마크 합성
+function renderPdfFileWithWatermark(pdfSource) {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  var pageControls = document.getElementById('pdfPageControls');
+
+  if (realWrapper) realWrapper.style.display = 'block';
+  if (htmlContainer) htmlContainer.style.display = 'none';
+  if (pageControls) pageControls.style.display = 'flex';
+
+  updateRealPdfWatermarkOverlay();
+
+  var loadPromise = null;
+  if (pdfSource instanceof Blob || pdfSource instanceof File) {
+    loadPromise = new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(new Uint8Array(e.target.result)); };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(pdfSource);
+    });
+  } else if (typeof pdfSource === 'string') {
+    loadPromise = Promise.resolve(pdfSource);
+  } else {
+    loadPromise = Promise.resolve(pdfSource);
+  }
+
+  loadPromise.then(function(data) {
+    if (typeof pdfjsLib === 'undefined') {
+      alert('PDF.js 엔진을 로드 중입니다. 잠시 후 다시 열어주세요.');
+      return;
+    }
+    return pdfjsLib.getDocument({ data: data }).promise;
+  }).then(function(pdf) {
+    activePdfDoc = pdf;
+    activePdfTotalPages = pdf.numPages;
+    activePdfPageNum = 1;
+    renderCurrentPdfPage();
+  }).catch(function(err) {
+    console.warn('PDF 캔버스 렌더링 오류 (기본 나노 시트 서식으로 전환):', err);
+    showDefaultHtmlSheetView();
+  });
+}
+
+// 현재 PDF 페이지 캔버스 렌더링
+function renderCurrentPdfPage() {
+  if (!activePdfDoc) return;
+  activePdfDoc.getPage(activePdfPageNum).then(function(page) {
+    var canvas = document.getElementById('pdfViewerCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    var viewport = page.getViewport({ scale: 1.8 });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    var renderContext = {
+      canvasContext: ctx,
+      viewport: viewport
+    };
+
+    page.render(renderContext).promise.then(function() {
+      var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
+      if (pageNumDisplay) pageNumDisplay.innerText = activePdfPageNum + ' / ' + activePdfTotalPages;
+
+      var prevBtn = document.getElementById('btnPdfPrev');
+      var nextBtn = document.getElementById('btnPdfNext');
+      if (prevBtn) prevBtn.disabled = (activePdfPageNum <= 1);
+      if (nextBtn) nextBtn.disabled = (activePdfPageNum >= activePdfTotalPages);
+    });
+  });
+}
+
+function prevPdfPage() {
+  if (activePdfDoc && activePdfPageNum > 1) {
+    activePdfPageNum--;
+    renderCurrentPdfPage();
+  }
+}
+
+function nextPdfPage() {
+  if (activePdfDoc && activePdfPageNum < activePdfTotalPages) {
+    activePdfPageNum++;
+    renderCurrentPdfPage();
+  }
+}
+
+function showDefaultHtmlSheetView() {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  var pageControls = document.getElementById('pdfPageControls');
+
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'block';
+  if (pageControls) pageControls.style.display = 'none';
+}
+
+// 학습자료 파일 선택 시 처리 (PDF 파일 검증 및 실제 Blob 보관)
 function handleAcademySheetFileUpload(input) {
   if (!input.files || !input.files[0]) return;
   var file = input.files[0];
+
+  if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+    alert('나노 시트 학습자료는 PDF 파일(*.pdf)만 업로드할 수 있습니다.');
+    input.value = '';
+    return;
+  }
+
+  currentUploadedPdfBlob = file; // 실제 PDF File 객체 저장!
   var sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
   if (file.size < 1024 * 1024) {
     sizeStr = Math.round(file.size / 1024) + ' KB';
@@ -7437,7 +7595,8 @@ function handleAcademySheetFileUpload(input) {
   currentUploadedMaterial = {
     name: file.name,
     size: sizeStr,
-    type: document.getElementById('reg_material_type') ? document.getElementById('reg_material_type').value : '나노 시트 (PDF)'
+    type: document.getElementById('reg_material_type') ? document.getElementById('reg_material_type').value : '나노 시트 (PDF)',
+    pdfBlob: file
   };
 
   document.getElementById('material_upload_empty').style.display = 'none';
@@ -7445,19 +7604,21 @@ function handleAcademySheetFileUpload(input) {
   document.getElementById('uploaded_pdf_name').innerText = currentUploadedMaterial.name;
   document.getElementById('uploaded_pdf_meta').innerText = `${currentUploadedMaterial.size} · ${currentUploadedMaterial.type} · 정상 첨부됨`;
 
-  showAcademyToast(`[${file.name}] 자료가 성공적으로 첨부되었습니다.`);
+  showAcademyToast(`[${file.name}] PDF가 성공적으로 첨부되었습니다. '미리보기'를 누르면 보안 워터마크가 박힌 뷰어로 즉시 열람됩니다.`);
 }
 
-// 표준 샘플 PDF 첨부 버튼
+// 표준 샘플 PDF 첨부 버튼 (시연용 실제 PDF 생성)
 function attachSampleContentPdf() {
   var bookName = (document.getElementById('reg_book_name') ? document.getElementById('reg_book_name').value : '').trim() || '신규도서';
   var cleanName = bookName.split('(')[0].trim().replace(/\s+/g, '');
   var sampleFileName = `${cleanName}_나노시트_학습용.pdf`;
 
+  currentUploadedPdfBlob = createMinimalSamplePdfBlob(cleanName + ' - Nano Sheet');
   currentUploadedMaterial = {
     name: sampleFileName,
     size: '1.45 MB',
-    type: document.getElementById('reg_material_type') ? document.getElementById('reg_material_type').value : '나노 시트 (PDF)'
+    type: document.getElementById('reg_material_type') ? document.getElementById('reg_material_type').value : '나노 시트 (PDF)',
+    pdfBlob: currentUploadedPdfBlob
   };
 
   document.getElementById('material_upload_empty').style.display = 'none';
@@ -7465,12 +7626,13 @@ function attachSampleContentPdf() {
   document.getElementById('uploaded_pdf_name').innerText = currentUploadedMaterial.name;
   document.getElementById('uploaded_pdf_meta').innerText = `${currentUploadedMaterial.size} · ${currentUploadedMaterial.type} · 정상 첨부됨`;
 
-  showAcademyToast('표준 나노 시트 (PDF)가 첨부되었습니다.');
+  showAcademyToast('표준 나노 시트 (PDF)가 첨부되었습니다. 미리보기를 누르면 보안 뷰어에 워터마크가 그려집니다.');
 }
 
 // 첨부된 자료 삭제
 function removeUploadedMaterial() {
   currentUploadedMaterial = null;
+  currentUploadedPdfBlob = null;
   var fileInput = document.getElementById('reg_sheet_file');
   if (fileInput) fileInput.value = '';
   document.getElementById('material_upload_empty').style.display = 'block';
@@ -7510,19 +7672,26 @@ function updateWatermarkInfo() {
   }
 }
 
-// PDF 학습자료 미리보기 모달 열기
+// PDF 학습자료 미리보기 모달 열기 (도서별 PDF 렌더링 + 워터마크 합성)
 function openContentPdfModal(bookId) {
   var b = academyBookList.find(item => item.id === bookId);
   var title = b ? b.title : '나노 도서';
   var fileName = b && b.materialName ? b.materialName : `${title}_나노시트.pdf`;
   var fileSize = b && b.materialSize ? b.materialSize : '1.45 MB';
 
-  document.getElementById('pdfModalTitle').innerText = `[${title}] 나노 시트 (PDF 웹뷰어)`;
+  document.getElementById('pdfModalTitle').innerText = `[${title}] 나노 시트 (보안 PDF 웹뷰어)`;
   document.getElementById('pdfFileNameDisplay').innerText = fileName;
   document.getElementById('pdfFileSizeDisplay').innerText = `(${fileSize} · 표준 규격)`;
   document.getElementById('pdfSheetBookTitle').innerText = title;
 
   updateWatermarkInfo();
+
+  // 실제 도서에 첨부된 PDF Blob이 있으면 PDF.js 캔버스 렌더링 + 워터마크 합성!
+  if (b && b.pdfBlob) {
+    renderPdfFileWithWatermark(b.pdfBlob);
+  } else {
+    showDefaultHtmlSheetView();
+  }
 
   if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
     $('#contentPdfPreviewModal').modal('show');
@@ -7531,18 +7700,25 @@ function openContentPdfModal(bookId) {
   }
 }
 
-// 등록 폼 작성 중 현재 첨부된 PDF 바로 확인
+// 등록 폼 작성 중 현재 첨부된 PDF 바로 확인 (보안 뷰어 + 워터마크 합성)
 function previewCurrentUploadedPdf() {
   var bookName = (document.getElementById('reg_book_name') ? document.getElementById('reg_book_name').value : '').trim() || '도서 미리보기';
   var fileName = currentUploadedMaterial ? currentUploadedMaterial.name : `${bookName}_학습시트.pdf`;
   var fileSize = currentUploadedMaterial ? currentUploadedMaterial.size : '1.45 MB';
 
-  document.getElementById('pdfModalTitle').innerText = `[${bookName}] 콘텐츠 학습시트 (PDF 웹뷰어)`;
+  document.getElementById('pdfModalTitle').innerText = `[${bookName}] 콘텐츠 학습시트 (보안 PDF 웹뷰어)`;
   document.getElementById('pdfFileNameDisplay').innerText = fileName;
   document.getElementById('pdfFileSizeDisplay').innerText = `(${fileSize} · 첨부 파일 검수)`;
   document.getElementById('pdfSheetBookTitle').innerText = bookName;
 
   updateWatermarkInfo();
+
+  // 사용자가 방금 첨부한 실제 PDF File/Blob이 있으면 PDF.js 캔버스 렌더링 + 워터마크 합성!
+  if (currentUploadedPdfBlob) {
+    renderPdfFileWithWatermark(currentUploadedPdfBlob);
+  } else {
+    showDefaultHtmlSheetView();
+  }
 
   if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
     $('#contentPdfPreviewModal').modal('show');
@@ -7603,6 +7779,7 @@ function saveAcademyBook() {
     materialName: matName,
     materialSize: matSize,
     materialType: matType,
+    pdfBlob: currentUploadedPdfBlob,
     quizStatus: '5문항 완비',
     readCount: '0회',
     answerGuide: memo || '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'

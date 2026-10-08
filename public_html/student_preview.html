@@ -771,7 +771,7 @@
       padding: 8px 20px;
       font-size: 14px;
       font-weight: 800;
-      margin-bottom: 22px;
+      margin-bottom: 26px;
       box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
     }
     .hist-row {
@@ -2044,7 +2044,8 @@
     }
     .detail-hero-card.detail-integrated-card {
       display: block;
-      padding: 18px 20px 18px 20px;
+      padding: 18px 20px 28px 20px;
+      margin-bottom: 26px;
     }
     .detail-hero-top {
       display: flex;
@@ -2053,7 +2054,8 @@
     }
     .detail-synopsis-subcard {
       margin-top: 16px;
-      padding-top: 14px;
+      padding-top: 16px;
+      padding-bottom: 14px;
       border-top: 1px solid #f0ece4;
     }
     .detail-synopsis-subcard .sec-title {
@@ -2062,21 +2064,24 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-bottom: 10px;
     }
     .detail-synopsis-subcard .synopsis-text {
       font-size: 13.5px;
-      line-height: 1.65;
+      line-height: 1.7;
       color: #4a4037;
       word-break: keep-all;
     }
     @media (max-width: 480px) {
       .detail-hero-card.detail-integrated-card {
-        padding: 14px 14px;
+        padding: 14px 14px 18px 14px;
+        margin-bottom: 16px;
       }
       .detail-hero-top {
         gap: 12px;
       }
     }
+
 
     .detail-cover-wrap {
       position: relative;
@@ -2434,13 +2439,13 @@
       transform: scale(0.97);
     }
 
-    /* [파스텔톤 리디자인] 상세페이지 북퀴즈 완독 미션 배너 카드 */
+    /* [파스텔톤 리디자인] 상세페이지 북퀴즈 완독 미션 배너 카드 (바램/그라데이션 효과 제거 및 고른 파스텔톤) */
     .detail-quiz-banner-card {
-      background: linear-gradient(135deg, #edf7f5 0%, #e2f1ee 100%);
+      background: #edf7f5;
       border-radius: 20px;
       padding: 18px 22px;
-      margin: 14px 0 16px 0;
-      box-shadow: 0 6px 20px rgba(31, 138, 126, 0.08);
+      margin: 16px 0 18px 0;
+      box-shadow: 0 4px 16px rgba(31, 138, 126, 0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -2448,24 +2453,14 @@
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.25s ease;
       border: 1.5px solid #b8e0d9;
-    }
-    .detail-quiz-banner-card::before {
-      content: '';
-      position: absolute;
-      top: -30px;
-      right: -30px;
-      width: 130px;
-      height: 130px;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
-      pointer-events: none;
-      border-radius: 50%;
     }
     .detail-quiz-banner-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(31, 138, 126, 0.15);
+      box-shadow: 0 8px 20px rgba(31, 138, 126, 0.14);
       border-color: #9cd5cc;
+      background: #e8f5f2;
     }
     .detail-quiz-banner-card:active {
       transform: scale(0.985);
@@ -2488,7 +2483,7 @@
       justify-content: center;
       font-size: 22px;
       flex-shrink: 0;
-      box-shadow: 0 3px 10px rgba(31, 138, 126, 0.12);
+      box-shadow: 0 3px 10px rgba(31, 138, 126, 0.1);
       border: 1.5px solid #cce8e2;
     }
     .dqb-text-group {
@@ -2543,7 +2538,7 @@
       align-items: center;
       gap: 7px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(31, 138, 126, 0.25);
+      box-shadow: 0 4px 12px rgba(31, 138, 126, 0.22);
       white-space: nowrap;
       flex-shrink: 0;
       transition: all 0.2s ease;
@@ -2555,7 +2550,7 @@
     .detail-quiz-banner-card:hover .btn-dqb-action {
       background: #166e64;
       color: #ffffff;
-      box-shadow: 0 6px 16px rgba(31, 138, 126, 0.35);
+      box-shadow: 0 6px 16px rgba(31, 138, 126, 0.32);
     }
     .detail-quiz-banner-card:hover .btn-dqb-action i {
       transform: translateX(3px);
@@ -2935,7 +2930,7 @@
       gap: 6px;
       overflow-x: auto;
       margin-bottom: 12px;
-      padding-bottom: 4px;
+      padding-bottom: 14px;
     }
     .point-month-chip {
       padding: 6px 13px;
@@ -3365,7 +3360,7 @@
 
     /* [NEW] 내 책장 독서 기록 월별 그룹핑 & 도서 상세 메타 */
     .history-month-block {
-      margin-bottom: 22px;
+      margin-bottom: 26px;
     }
     .history-month-header {
       display: flex;
@@ -3660,18 +3655,11 @@
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:2;">
-    <div class="user-info-pill" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경" style="display:flex;align-items:center;gap:7px;padding:3px 10px 3px 5px;background:rgba(240,253,250,0.9);border:1px solid #ccfbf1;border-radius:20px;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);box-shadow:0 1px 3px rgba(0,168,150,0.06);">
-      <div id="headerCharAvatar" class="char-avatar-box" style="width:28px;height:28px;flex-shrink:0;"></div>
-      <div style="text-align:left;">
-        <div style="font-weight:800;font-size:12px;color:#1e293b;line-height:1.2;display:flex;align-items:center;gap:4px;">
-          <span id="headerStudentName">이문성</span>
-          <span id="headerCharTag" style="font-size:9.5px;font-weight:800;color:#0d9488;background:#ccfbf1;padding:1px 4px;border-radius:4px;">부키</span>
-        </div>
-        <div id="headerStudentClass" style="font-size:10px;color:#0f766e;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:3px;">
-          <span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:#00a896;"></span>
-          글봄독서 · 3학년
-        </div>
-      </div>
+    <div class="user-info-pill" onclick="openCharacterSelectModal()" title="내 캐릭터 프로필 변경" style="display:flex;align-items:center;gap:8px;padding:3px 12px 3px 4px;background:rgba(240,253,250,0.9);border:1px solid #ccfbf1;border-radius:22px;cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);box-shadow:0 1px 3px rgba(0,168,150,0.06);">
+      <div id="headerCharAvatar" class="char-avatar-box" style="width:30px;height:30px;flex-shrink:0;"></div>
+      <span id="headerStudentName" style="font-weight:800;font-size:13px;color:#1e293b;line-height:1;letter-spacing:-0.2px;">이문성</span>
+      <span id="headerCharTag" style="display:none;"></span>
+      <div id="headerStudentClass" style="display:none;"></div>
     </div>
     <button type="button" class="btn-student-logout" onclick="handleStudentLogout()" title="로그아웃" aria-label="로그아웃">
       <i class="fa-solid fa-right-from-bracket"></i>
@@ -5757,25 +5745,17 @@ function openBookDetail(id, from) {
     if(!thinkText) {
       thinkText = '이 책의 제목과 표지, 줄거리를 보며 어떤 특별한 사건과 흥미로운 이야기가 펼쳐질지 자유롭게 상상해 보세요!';
     }
-    var insertText = b.thinkInsert || '이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.';
     thinkEl.innerHTML = 
-      '<div class="think-extract-box mb-2">'
+      '<div class="think-extract-box">'
       + '<div class="think-extract-icon"><i class="fa-solid fa-lightbulb"></i></div>'
       + '<div class="think-extract-content">'
       +   '<span class="think-extract-tag">생각 꺼내기 (도서 읽기 전)</span>'
       +   '<div class="think-extract-question">Q. ' + thinkText + '</div>'
       +   '<div class="think-extract-guide">💡 책을 본격적으로 읽기 전에, 나만의 생각이나 경험을 떠올려 보며 스스로 답해 보세요!</div>'
       + '</div>'
-      + '</div>'
-      + '<div class="think-extract-box" style="background:#f0fdf4;border-color:#bbf7d0;">'
-      + '<div class="think-extract-icon" style="background:#dcfce7;color:#16a34a;"><i class="fa-solid fa-file-pen"></i></div>'
-      + '<div class="think-extract-content">'
-      +   '<span class="think-extract-tag" style="background:#dcfce7;color:#15803d;">생각 담기 (북퀴즈 완독 미션)</span>'
-      +   '<div class="think-extract-question" style="color:#14532d;">Q. ' + insertText + '</div>'
-      +   '<div class="think-extract-guide" style="color:#166534;">✍️ 북퀴즈를 모두 풀고 난 후 나만의 서술형 답안을 직접 작성하여 제출합니다.</div>'
-      + '</div>'
       + '</div>';
   }
+
 
   // 3. 이 도서를 읽은 학생이 함께 읽은 책 추천
   var nextContainer = document.getElementById('detailNextBooks');

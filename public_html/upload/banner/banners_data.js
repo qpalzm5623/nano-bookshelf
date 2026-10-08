@@ -1,4 +1,4 @@
-// 나노의 책장 - 중앙 배너 실시간 데이터 (file:// 및 웹서버 환경 공통 지원)
+// 나노의 책장 - 중앙 배너 실시간 데이터 (자동 동기화)
 window.NANO_SERVER_BANNERS = [
   {
     "id": 1,
@@ -11,8 +11,12 @@ window.NANO_SERVER_BANNERS = [
     "active": "Y",
     "clicks": 1420,
     "createdAt": "2026-09-01",
-    "bookIds": ["MB-001", "MB-003", "MB-007"],
-    "updatedAt": 1789692000
+    "bookIds": [
+      "MB-001",
+      "MB-003",
+      "MB-007"
+    ],
+    "updatedAt": 1791436641243
   },
   {
     "id": 2,
@@ -25,21 +29,30 @@ window.NANO_SERVER_BANNERS = [
     "active": "Y",
     "clicks": 890,
     "createdAt": "2026-09-03",
-    "bookIds": ["MB-004", "MB-011", "MB-014"],
-    "updatedAt": 1789692000
+    "bookIds": [
+      "MB-004",
+      "MB-011",
+      "MB-014"
+    ],
+    "updatedAt": 1791436641243
   },
   {
     "id": 3,
-    "title": "전국 학생 랭킹 실시간 집계 오픈 🌟",
-    "sub": "내가 속한 학원의 친구들과 전국 친구들의 독서 포인트를 확인해요.",
+    "title": "가을은 독서의 계절! '좋아요'를 많이 받은 책?",
+    "sub": "신선해진 날씨~ 책 읽기에 딱 좋은 10월입니다. 나노의책장 친구들이 가장 찜(좋아요)을 많이 한 책을 소개합니다!",
     "imageUrl": "upload/banner/banner_ranking.jpg",
-    "tag": "랭킹",
+    "tag": "인기",
     "bgTheme": "linear-gradient(135deg, #8c6d48, #d4a373)",
     "order": 3,
     "active": "Y",
     "clicks": 2150,
-    "createdAt": "2026-09-05",
-    "bookIds": ["MB-002", "MB-005", "MB-008", "MB-016"],
-    "updatedAt": 1789692000
+    "createdAt": "2026-10-01",
+    "bookIds": [
+      "MB-002",
+      "MB-005",
+      "MB-008",
+      "MB-016"
+    ],
+    "updatedAt": 1791436641243
   }
 ];
