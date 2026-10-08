@@ -4796,7 +4796,7 @@ function renderMasterContents() {
   if (countEl) countEl.innerText = filtered.length;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="text-center py-5 text-muted">일치하는 마스터 도서가 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14" class="text-center py-5 text-muted">일치하는 마스터 도서가 없습니다.</td></tr>`;
     renderContentPagination(0, 1);
     return;
   }
@@ -4805,7 +4805,11 @@ function renderMasterContents() {
   const startIndex = (contentCurrentPage - 1) * contentPageSize;
   const pageData = filtered.slice(startIndex, startIndex + contentPageSize);
 
-  tbody.innerHTML = pageData.map(b => {
+  tbody.innerHTML = pageData.map((b, idx) => {
+    const rowNo = filtered.length - (startIndex + idx);
+    const seriesVal = (b.series && b.series !== "단권" && b.series.trim()) ? b.series.trim() : "";
+    const cleanTitle = (seriesVal && b.title.startsWith("[" + seriesVal + "]")) ? b.title.replace("[" + seriesVal + "]", "").trim() : b.title;
+    const seriesColHtml = seriesVal ? `<span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size: 11.5px; color: #475569; padding: 2px 7px; border-radius: 6px;">${seriesVal}</span>` : `<span class="text-muted font-weight-bold" style="font-size: 12px;">-</span>`;
     const isHq = !b.academyId || b.academyId === "HQ";
     const academyName = b.academyName || (isHq ? "본사 직속 (공용)" : "가맹 학원");
     const badgeHtml = isHq
@@ -4828,15 +4832,17 @@ function renderMasterContents() {
 
     return `
       <tr>
+        <td class="text-center"><span class="font-weight-bold" style="color: #64748b; font-size: 12.5px;">${rowNo}</span></td>
         <td class="text-center">
           <img src="${b.cover}" alt="${b.title}" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium);">
         </td>
         <td>
           <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
-            ${seriesLabel}${b.title}
+            ${cleanTitle}
           </div>
           <small class="text-muted font-weight-bold">코드: ${b.id}</small>
         </td>
+        <td>${seriesColHtml}</td>
         <td class="text-center">
           ${badgeHtml}
         </td>
