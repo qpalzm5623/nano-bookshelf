@@ -2787,11 +2787,11 @@ function renderMemberTable(data = memberList, keepPage = false) {
         <!-- 1. 번호 -->
         <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px; white-space: nowrap;">${startIdx + idx + 1}</td>
         <!-- 2. 소속 학원 -->
-        <td class="font-weight-bold" style="font-size: 13px; color: var(--text-main); white-space: nowrap;">${mem.academyName}</td>
+        <td class="text-center font-weight-bold" style="font-size: 13px; color: var(--text-main); white-space: nowrap;">${mem.academyName}</td>
         <!-- 3. 등급 권한 -->
         <td class="text-center" style="white-space: nowrap;">${roleBadge}</td>
         <!-- 4. 이름 (아이디) -->
-        <td style="white-space: nowrap;">
+        <td class="text-center" style="white-space: nowrap;">
           <span class="font-weight-bold text-dark" style="font-size: 13.5px;">${mem.name}</span>
           <small class="text-muted font-weight-bold">(${mem.username})</small>
         </td>
