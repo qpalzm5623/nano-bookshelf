@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 나노의 책장 - 학원 관리자(Academy Admin) 포털 로직
  * 7대 핵심 메뉴:
  * 1. 회원 관리 (선생님 / 원생 관리 분리 및 등록/수정/삭제)
@@ -5832,6 +5832,17 @@ function generatePortfolioInsights(student, pfData) {
 // ==============================================================
 // 6대 섹션 포트폴리오 리포트 본문 동적 렌더링
 // ==============================================================
+// ==============================================================
+// 6대 섹션 포트폴리오 리포트 본문 동적 렌더링
+// 사용자 지정 순서:
+// 1. 학생 정보
+// 2. 기간 독서 핵심 요약
+// 3. 독서 취향 및 선호도 분석
+// 4. 기간내 완독 도서
+// 5. 북퀴즈 응시 및 성취도 이력
+// 6. 나노의 독서 이야기
+// 7. 지도교사 총평
+// ==============================================================
 function renderPortfolioDocument(studentId, pfId) {
   var docContainer = document.getElementById('portfolioPrintDoc');
   if (!docContainer) return;
@@ -5866,19 +5877,19 @@ function renderPortfolioDocument(studentId, pfId) {
     return '<span class="pf-tag-badge">' + t + '</span>';
   }).join(' ');
 
-  // 완독 도서 커버 그리드 HTML
+  // 완독 도서 커버 그리드 HTML (모바일 2열 그리드 대응)
   var booksGridHtml = books.map(function(b) {
     return (
-      '<div class="col-6 col-md-3 mb-3">' +
+      '<div class="col-6 col-md-3 mb-3 pf-book-col">' +
         '<div class="pf-book-card">' +
           '<div style="cursor:pointer;" onclick="openCoverModal(\'' + b.cover + '\', \'' + b.title + '\', \'' + b.pub + '\')">' +
             '<img src="' + b.cover + '" class="pf-book-cover-img" alt="' + b.title + '">' +
           '</div>' +
-          '<div class="font-weight-bold text-truncate" style="font-size:13px; color:#2e2620;" title="' + b.title + '">' + b.title + '</div>' +
-          '<div class="text-muted text-truncate" style="font-size:11.5px; margin-bottom:4px;">' + b.pub + '</div>' +
-          '<div class="d-flex justify-content-between align-items-center mt-2 px-1" style="font-size:11px;">' +
+          '<div class="font-weight-bold text-truncate" style="font-size:12.5px; color:#1e242b;" title="' + b.title + '">' + b.title + '</div>' +
+          '<div class="text-muted text-truncate" style="font-size:11px; margin-bottom:4px;">' + b.pub + '</div>' +
+          '<div class="d-flex justify-content-between align-items-center mt-2 px-1" style="font-size:10.5px;">' +
             '<span class="text-muted">' + b.date + '</span>' +
-            '<span class="badge badge-success text-white" style="font-size:10.5px; font-weight:600; padding:2px 6px;">' + b.score + ' 통과</span>' +
+            '<span class="badge badge-success text-white" style="font-size:10px; font-weight:600; padding:2px 5px; background:#1f8a7e;">' + b.score + ' 통과</span>' +
           '</div>' +
         '</div>' +
       '</div>'
@@ -5891,22 +5902,22 @@ function renderPortfolioDocument(studentId, pfId) {
       '<tr>' +
         '<td class="text-center font-weight-bold text-muted" style="font-size:12px;">' + (idx + 1) + '</td>' +
         '<td>' +
-          '<div class="font-weight-bold" style="font-size:13px; color:#2e2620;">' + b.title + '</div>' +
+          '<div class="font-weight-bold" style="font-size:12.5px; color:#1e242b;">' + b.title + '</div>' +
           '<small class="text-muted">' + b.pub + '</small>' +
         '</td>' +
-        '<td class="text-center text-muted" style="font-size:12px;">' + b.date + '</td>' +
-        '<td class="text-center font-weight-bold" style="font-size:12.5px;">5문항</td>' +
-        '<td class="text-center font-weight-bold text-success" style="font-size:13px;">' + b.score + '</td>' +
-        '<td class="text-center"><span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11.5px;">우수 완결</span></td>' +
-        '<td style="font-size:12.5px; color:#493f37; line-height:1.5;">' + b.comment + '</td>' +
+        '<td class="text-center text-muted" style="font-size:11.5px; white-space:nowrap;">' + b.date + '</td>' +
+        '<td class="text-center font-weight-bold" style="font-size:12px; white-space:nowrap;">5문항</td>' +
+        '<td class="text-center font-weight-bold text-success" style="font-size:12.5px; white-space:nowrap; color:#1f8a7e !important;">' + b.score + '</td>' +
+        '<td class="text-center" style="white-space:nowrap;"><span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11px;">우수 완결</span></td>' +
+        '<td style="font-size:12px; color:#493f37; line-height:1.5;">' + b.comment + '</td>' +
       '</tr>'
     );
   }).join('');
 
-  // 4개 정성 코멘트 카드 HTML
+  // 4개 정성 코멘트 카드 HTML (모바일 1열 스택 대응)
   var insightsCardsHtml = insights.map(function(item) {
     return (
-      '<div class="col-md-6 mb-3">' +
+      '<div class="col-md-6 mb-3 pf-insight-col">' +
         '<div class="pf-insight-card">' +
           '<div>' +
             '<div class="d-flex justify-content-between align-items-center mb-2">' +
@@ -5925,60 +5936,64 @@ function renderPortfolioDocument(studentId, pfId) {
     );
   }).join('');
 
-  // 6대 섹션 결합 마크업
+  // 결합 마크업: 7대 섹션 정확한 순서 반영
   var html = 
-    '<!-- 섹션 1: 학원 및 학생 기본 정보 헤더 -->' +
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 1: 학생 정보 (기본 정보 헤더 & 2x2 반응형 스트립) -->' +
+    '<!-- ============================================== -->' +
     '<div class="pf-header-section mb-4 pb-3 border-bottom">' +
-      '<div class="d-flex justify-content-between align-items-start mb-2">' +
+      '<div class="d-flex justify-content-between align-items-start mb-2 pf-header-top">' +
         '<div>' +
-          '<div style="font-size:11.5px; font-weight:800; letter-spacing:1px; color:#2f5436; text-transform:uppercase;">Nano Reading Academy</div>' +
-          '<h3 class="font-weight-bold mb-1" style="color:#2d241e; font-size:22px; letter-spacing:-0.5px;">' +
-            '<i class="fa-solid fa-book-bookmark text-success mr-2"></i>나노의 책장 독서 성장 포트폴리오' +
+          '<div style="font-size:11.5px; font-weight:800; letter-spacing:1px; color:#1f8a7e; text-transform:uppercase;">Nano Reading Academy</div>' +
+          '<h3 class="font-weight-bold mb-1 pf-header-title" style="color:#1e242b; font-size:22px; letter-spacing:-0.5px;">' +
+            '<i class="fa-solid fa-book-bookmark text-success mr-2" style="color:#1f8a7e !important;"></i>나노의 책장 독서 성장 포트폴리오' +
           '</h3>' +
           '<p class="text-muted mb-0" style="font-size:12.5px;">체계적인 북퀴즈 응시 이력과 다면적 독서 경향을 입체적으로 분석한 정기 리포트입니다.</p>' +
         '</div>' +
-        '<div class="text-right">' +
-          '<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-1 d-inline-block" style="font-size:11px;">발급번호 ' + reportId + '</span>' +
+        '<div class="text-right pf-header-meta">' +
+          '<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-1 d-inline-block" style="font-size:11px; background:#FEE500; color:#3C1E1E;">발급번호 ' + reportId + '</span>' +
           '<div class="text-muted" style="font-size:11.5px;">발급일: ' + issueDate + '</div>' +
         '</div>' +
       '</div>' +
 
-      '<!-- 학생 기본 정보 스트립 -->' +
-      '<div class="p-3 rounded mt-3" style="background:#f7f4ee; border:1px solid #e8e0d5;">' +
-        '<div class="row text-center text-md-left align-items-center">' +
-          '<div class="col-6 col-md-3 mb-2 mb-md-0 border-right">' +
+      '<!-- 학생 기본 정보 스트립 (모바일 2x2 반응형 지원) -->' +
+      '<div class="pf-student-info-grid rounded mt-3 p-3" style="background:#f7f4ee; border:1px solid #e8e0d5;">' +
+        '<div class="row text-center text-md-left align-items-center m-0">' +
+          '<div class="col-6 col-md-3 mb-2 mb-md-0 border-right pf-student-info-cell">' +
             '<small class="text-muted d-block" style="font-size:11px;">학생명</small>' +
-            '<strong style="font-size:15px; color:#2e2620;">' + studentName + '</strong>' +
+            '<strong style="font-size:15px; color:#1e242b;">' + studentName + '</strong>' +
           '</div>' +
-          '<div class="col-6 col-md-3 mb-2 mb-md-0 border-right">' +
+          '<div class="col-6 col-md-3 mb-2 mb-md-0 border-right pf-student-info-cell">' +
             '<small class="text-muted d-block" style="font-size:11px;">학교 / 학년</small>' +
-            '<strong style="font-size:14px; color:#2e2620;">' + schoolGrade + '</strong>' +
+            '<strong style="font-size:14px; color:#1e242b;">' + schoolGrade + '</strong>' +
           '</div>' +
-          '<div class="col-6 col-md-3 border-right">' +
+          '<div class="col-6 col-md-3 border-right pf-student-info-cell">' +
             '<small class="text-muted d-block" style="font-size:11px;">소속 / 지도교사</small>' +
-            '<strong style="font-size:14px; color:#2e2620;">' + classGroup + ' · ' + teacher + '</strong>' +
+            '<strong style="font-size:14px; color:#1e242b;">' + classGroup + ' · ' + teacher + '</strong>' +
           '</div>' +
-          '<div class="col-6 col-md-3">' +
+          '<div class="col-6 col-md-3 pf-student-info-cell">' +
             '<small class="text-muted d-block" style="font-size:11px;">분석 대상 기간</small>' +
-            '<strong style="font-size:14px; color:#2f5436;">' + period + '</strong>' +
+            '<strong style="font-size:14px; color:#1f8a7e;">' + period + '</strong>' +
           '</div>' +
         '</div>' +
       '</div>' +
     '</div>' +
 
-    '<!-- 섹션 2: 기간 독서 요약 (4대 핵심 지표) -->' +
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 2: 기간 독서 핵심 요약 (4대 지표) -->' +
+    '<!-- ============================================== -->' +
     '<div class="mb-4">' +
       '<div class="pf-section-title"><i class="fa-solid fa-chart-simple"></i>기간 독서 핵심 요약</div>' +
       '<div class="pf-stat-grid">' +
         '<div class="pf-stat-box">' +
           '<div class="pf-stat-label">완독 도서수</div>' +
           '<div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">권</span></div>' +
-          '<div class="pf-stat-sub text-success font-weight-bold">목표 완독 완료</div>' +
+          '<div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">목표 완독 완료</div>' +
         '</div>' +
         '<div class="pf-stat-box">' +
           '<div class="pf-stat-label">북퀴즈 완료</div>' +
           '<div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">회</span></div>' +
-          '<div class="pf-stat-sub text-success font-weight-bold">응시율 100%</div>' +
+          '<div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">응시율 100%</div>' +
         '</div>' +
         '<div class="pf-stat-box">' +
           '<div class="pf-stat-label">평균 이해도</div>' +
@@ -5988,43 +6003,23 @@ function renderPortfolioDocument(studentId, pfId) {
         '<div class="pf-stat-box">' +
           '<div class="pf-stat-label">독서 성실도</div>' +
           '<div class="pf-stat-value">100<span class="pf-stat-unit">%</span></div>' +
-          '<div class="pf-stat-sub text-success font-weight-bold">성실한 루틴 완성</div>' +
+          '<div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">성실한 루틴 완성</div>' +
         '</div>' +
       '</div>' +
     '</div>' +
 
-    '<!-- 섹션 3: 나노의 독서 이야기 (4대 분석 정성 코멘트 & 교사 총평) -->' +
-    '<div class="mb-4">' +
-      '<div class="pf-section-title">' +
-        '<i class="fa-solid fa-sparkles text-emerald"></i>나노의 독서 이야기' +
-        '<small class="text-muted ml-2 font-weight-normal" style="font-size:12px;">(북퀴즈 이력 기반 자동 생성 정성 코멘트)</small>' +
-      '</div>' +
-      '<div class="row">' +
-        insightsCardsHtml +
-      '</div>' +
-
-      '<!-- 선생님 총평 및 응원 메시지 -->' +
-      '<div class="p-3 rounded mt-2" style="background:#f4fbf5; border:1px solid #c7e8cc;">' +
-        '<div class="d-flex align-items-center justify-content-between mb-2">' +
-          '<strong style="font-size:13px; color:#234b2a;"><i class="fa-solid fa-chalkboard-user mr-2 text-success"></i>지도교사 따뜻한 총평</strong>' +
-          '<small class="text-muted" style="font-size:11.5px;">' + teacher + '</small>' +
-        '</div>' +
-        '<div id="pfTeacherNoteDisplay" style="font-size:13px; line-height:1.75; color:#2f3f33;">' +
-          (pfData.teacherNote || (studentName + ' 학생은 정기적인 독서 루틴을 성실히 실천하며, 독서 후 퀴즈 풀이를 통해 책의 맥락을 깊이 파악하는 힘이 뛰어납니다.')) +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    '<!-- 섹션 4: 독서 취향 & 선호도 분석 (SVG 도넛 차트 + 해시태그) -->' +
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 3: 독서 취향 및 선호도 분석 (SVG 도넛 차트 & 키워드 태그) -->' +
+    '<!-- ============================================== -->' +
     '<div class="mb-4">' +
       '<div class="pf-section-title"><i class="fa-solid fa-pie-chart"></i>독서 취향 및 선호도 분석</div>' +
       '<div class="pf-preference-wrap">' +
-        '<div class="row align-items-center">' +
-          '<div class="col-md-5 text-center mb-3 mb-md-0 border-right-md">' +
+        '<div class="row align-items-center pf-preference-row">' +
+          '<div class="col-md-5 text-center mb-3 mb-md-0 border-right-md pf-preference-chart-col">' +
             donutSvg +
             '<div class="text-muted mt-2" style="font-size:11.5px; font-weight:600;">도서 카테고리별 완독 분포</div>' +
           '</div>' +
-          '<div class="col-md-7 pl-md-4">' +
+          '<div class="col-md-7 pl-md-4 pf-preference-detail-col">' +
             '<div class="mb-3">' +
               '<div class="font-weight-bold mb-2 text-dark" style="font-size:13px;">선호 독서 테마 & 키워드</div>' +
               '<div>' + tagsHtml + '</div>' +
@@ -6037,10 +6032,10 @@ function renderPortfolioDocument(studentId, pfId) {
                   '<div class="mb-1" style="font-size:12px;">' +
                     '<div class="d-flex justify-content-between mb-1">' +
                       '<span>' + k + '</span>' +
-                      '<span class="font-weight-bold text-success">' + val + '%</span>' +
+                      '<span class="font-weight-bold text-success" style="color:#1f8a7e !important;">' + val + '%</span>' +
                     '</div>' +
                     '<div class="progress" style="height:6px; background:#ece5d9; border-radius:3px;">' +
-                      '<div class="progress-bar" style="width:' + val + '%; background:#2f5436; border-radius:3px;"></div>' +
+                      '<div class="progress-bar" style="width:' + val + '%; background:#1f8a7e; border-radius:3px;"></div>' +
                     '</div>' +
                   '</div>'
                 );
@@ -6051,31 +6046,38 @@ function renderPortfolioDocument(studentId, pfId) {
       '</div>' +
     '</div>' +
 
-    '<!-- 섹션 5: 완독 도서 커버 갤러리 그리드 -->' +
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 4: 기간내 완독 도서 (커버 갤러리 그리드) -->' +
+    '<!-- ============================================== -->' +
     '<div class="mb-4">' +
       '<div class="d-flex justify-content-between align-items-center mb-2">' +
         '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-open-reader"></i>기간 내 완독 도서 (' + bookCount + '권)</div>' +
-        '<small class="text-muted" style="font-size:11.5px;">표지를 클릭하면 확대 보기가 가능합니다.</small>' +
+        '<small class="text-muted" style="font-size:11px;">표지 클릭 시 확대 보기</small>' +
       '</div>' +
       '<div class="row">' +
         booksGridHtml +
       '</div>' +
     '</div>' +
 
-    '<!-- 섹션 6: 북퀴즈 응시 이력 테이블 -->' +
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 5: 북퀴즈 응시 및 성취도 이력 (상세 테이블) -->' +
+    '<!-- ============================================== -->' +
     '<div class="mb-4">' +
-      '<div class="pf-section-title"><i class="fa-solid fa-list-check"></i>북퀴즈 응시 및 성취도 이력</div>' +
-      '<div class="table-responsive rounded border" style="background:#ffffff; border-color:#e6ded3 !important;">' +
-        '<table class="table table-sm table-hover mb-0" style="font-size:12.5px;">' +
+      '<div class="d-flex justify-content-between align-items-center mb-2">' +
+        '<div class="pf-section-title mb-0"><i class="fa-solid fa-list-check"></i>북퀴즈 응시 및 성취도 이력</div>' +
+        '<small class="text-muted d-md-none" style="font-size:11px;"><i class="fa-solid fa-arrows-left-right mr-1"></i>가로 스와이프</small>' +
+      '</div>' +
+      '<div class="pf-quiz-table-wrap table-responsive rounded border" style="background:#ffffff; border-color:#e6ded3 !important;">' +
+        '<table class="table table-sm table-hover mb-0 pf-quiz-table" style="font-size:12.5px;">' +
           '<thead style="background:#f8f6f0; color:#5c4f44;">' +
             '<tr>' +
               '<th class="text-center" style="width:40px;">No.</th>' +
               '<th>도서명 / 출판사</th>' +
               '<th class="text-center" style="width:90px;">응시일</th>' +
-              '<th class="text-center" style="width:70px;">문항수</th>' +
-              '<th class="text-center" style="width:70px;">점수</th>' +
-              '<th class="text-center" style="width:85px;">평가상태</th>' +
-              '<th>핵심 문맥 파악 및 코멘트</th>' +
+              '<th class="text-center" style="width:65px;">문항수</th>' +
+              '<th class="text-center" style="width:65px;">점수</th>' +
+              '<th class="text-center" style="width:80px;">평가상태</th>' +
+              '<th>핵심 문맥 파악 및 성취 내용</th>' +
             '</tr>' +
           '</thead>' +
           '<tbody>' +
@@ -6085,10 +6087,40 @@ function renderPortfolioDocument(studentId, pfId) {
       '</div>' +
     '</div>' +
 
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 6: 나노의 독서 이야기 (4대 분석 정성 코멘트) -->' +
+    '<!-- ============================================== -->' +
+    '<div class="mb-4">' +
+      '<div class="pf-section-title">' +
+        '<i class="fa-solid fa-sparkles text-emerald" style="color:#1f8a7e !important;"></i>나노의 독서 이야기' +
+        '<small class="text-muted ml-2 font-weight-normal" style="font-size:12px;">(북퀴즈 이력 기반 자동 생성 정성 코멘트)</small>' +
+      '</div>' +
+      '<div class="row">' +
+        insightsCardsHtml +
+      '</div>' +
+    '</div>' +
+
+    '<!-- ============================================== -->' +
+    '<!-- 섹션 7: 지도교사 총평 (선생님의 따뜻한 격려) -->' +
+    '<!-- ============================================== -->' +
+    '<div class="mb-4">' +
+      '<div class="p-3 rounded" style="background:#edf7f6; border:1px solid #b2ded9;">' +
+        '<div class="d-flex align-items-center justify-content-between mb-2">' +
+          '<strong style="font-size:13.5px; color:#124e47;"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>지도교사 따뜻한 총평</strong>' +
+          '<span class="badge" style="background:#ffffff; color:#124e47; border:1px solid #b2ded9; font-size:11px; padding:3px 8px;">' + teacher + '</span>' +
+        '</div>' +
+        '<div id="pfTeacherNoteDisplay" style="font-size:13px; line-height:1.75; color:#1e242b;">' +
+          (pfData.teacherNote || (studentName + ' 학생은 정기적인 독서 루틴을 성실히 실천하며, 독서 후 퀴즈 풀이를 통해 책의 맥락을 깊이 파악하는 힘이 뛰어납니다. 스스로 생각의 지평을 넓혀가는 모습이 매우 인상적입니다.')) +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<!-- ============================================== -->' +
     '<!-- 리포트 푸터 & 공식 서명 날인 -->' +
+    '<!-- ============================================== -->' +
     '<div class="pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted" style="font-size:11.5px;">' +
       '<div>' +
-        '<span class="font-weight-bold" style="color:#2f5436;">나노 리딩 아카데미</span> · 독서 교육 연구소 인증' +
+        '<span class="font-weight-bold" style="color:#1f8a7e;">나노 리딩 아카데미</span> · 독서 교육 연구소 인증' +
       '</div>' +
       '<div>' +
         '아이의 독서는 끝없는 가능성의 시작입니다. · © Nano Reading Academy' +
@@ -6098,13 +6130,13 @@ function renderPortfolioDocument(studentId, pfId) {
   docContainer.innerHTML = html;
 }
 
-// SVG 도넛 차트 빌더 함수
+// 화면 전환: 포트폴리오 상세 화면 표시
 function buildGenreDonutSvg(dist) {
   var total = 0;
   for (var k in dist) total += dist[k];
   if (total === 0) total = 100;
 
-  var colors = ['#2f5436', '#10b981', '#c59b27', '#eab308'];
+  var colors = ['#1f8a7e', '#3ab3a4', '#e67828', '#f59e0b'];
   var accumulatedPercent = 0;
   var paths = [];
 
@@ -6179,14 +6211,7 @@ function viewPortfolioDetail(studentId, pfId) {
 
   currentViewingPortfolioId = pfId || 'PF-2026-0901';
 
-  initPortfolioOptions();
-
-  var sel = document.getElementById('selectPortfolioStudent');
-  if (sel) {
-    sel.value = studentId;
-  }
-
-  // 6대 섹션 문서 렌더링
+  // 7대 섹션 문서 렌더링 (순서: 학생정보 -> 기간요약 -> 독서취향 -> 완독도서 -> 북퀴즈이력 -> 독서이야기 -> 지도교사총평)
   renderPortfolioDocument(studentId, currentViewingPortfolioId);
 
   // 상단 카톡 액션 버튼 업데이트
@@ -6199,24 +6224,16 @@ function viewPortfolioDetail(studentId, pfId) {
 }
 
 function initPortfolioOptions() {
-  var sel = document.getElementById('selectPortfolioStudent');
-  if (!sel) return;
-  sel.innerHTML = '';
-  studentDataList.forEach(function(std) {
-    var opt = document.createElement('option');
-    opt.value = std.id;
-    opt.innerText = std.name + ' (' + std.id + ' · ' + std.classGroup + ' · ' + std.grade + ')';
-    sel.appendChild(opt);
-  });
+  // 학생 전환 드롭다운이 제거되었으므로 안전한 no-op 처리
 }
 
-// 학생 선택 변경 시
 function onPortfolioStudentChange(stdId) {
   var pf = portfolioList.find(function(p) { return p.studentId === stdId; }) || portfolioList[0];
   currentViewingPortfolioId = pf.id;
   renderPortfolioDocument(stdId, pf.id);
   updatePortfolioDetailKakaoButton(pf.id);
 }
+
 
 function viewStudentPortfolio(stdId) {
   switchTab('portfolio');
@@ -6395,6 +6412,9 @@ function goToWizardStep(step) {
     if (nextGroup) nextGroup.style.display = 'block';
     if (doneGroup) doneGroup.style.display = 'none';
     if (btnNext) btnNext.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i>포트폴리오 생성 완료!';
+    var std = studentDataList.find(function(s) { return s.id === wizardSelectedStudentId; });
+    var tInput = document.getElementById('wizReportTitle');
+    if (std && tInput) { tInput.value = '[' + std.name + '] 2026년 3분기 독서 포트폴리오'; }
   } else if (step === 4) {
     if (btnPrev) btnPrev.style.display = 'none';
     if (btnCancel) btnCancel.style.display = 'none';
@@ -6573,32 +6593,35 @@ function updateWizardBookCountBadge() {
 }
 
 // 3단계 원장 총평 템플릿
+// ==============================================================
+// 포트폴리오 생성 마법사 세부 옵션 & 완료 로직
+// ==============================================================
+
 function applyWizardTemplate(type) {
   var commentInput = document.getElementById('wizReportComment');
   if (!commentInput) return;
   var std = studentDataList.find(function(s) { return s.id === wizardSelectedStudentId; });
-  var name = std ? std.name : '해당 원생';
+  var name = std ? std.name : '해당 학생';
 
-  if (type === 'excellent') {
-    commentInput.value = name + ' 학생은 논리적 사고력과 문학적 감수성이 매우 뛰어난 우수 원생입니다. 독서 과제를 성실하게 완수하였으며, 특히 비판적 시각과 나노 시트 논술 표현에서 탁월한 성취를 나타내었습니다.';
-    showAcademyToast('[우수 역량형] 지도 총평 템플릿이 적용되었습니다.');
-  } else if (type === 'growth') {
-    commentInput.value = name + ' 학생은 독서에 대한 흥미와 집중력이 지속적으로 향상되고 있으며, 꾸준한 독후 활동을 통해 생각의 깊이와 어휘력이 크게 발전하고 있습니다.';
-    showAcademyToast('[성실 발전형] 지도 총평 템플릿이 적용되었습니다.');
-  } else if (type === 'literacy') {
-    commentInput.value = name + ' 학생은 다양한 장르의 텍스트를 맥락 속에서 정확히 이해하는 문해력이 눈에 띄게 성장하고 있습니다. 질문을 던지고 토론하는 태도가 매우 우수합니다.';
-    showAcademyToast('[문해력 집중형] 지도 총평 템플릿이 적용되었습니다.');
+  if (type === 'habit' || type === 'growth') {
+    commentInput.value = name + ' 학생은 정해진 독서 계획을 성실하게 실천하며, 책 읽기에서 북퀴즈 완수까지 훌륭한 자기주도적 독서 루틴을 확립했습니다. 꾸준함이 가장 큰 힘입니다.';
+    showAcademyToast('[성실 루틴형] 지도교사 총평 템플릿이 적용되었습니다.');
+  } else if (type === 'comprehension' || type === 'excellent') {
+    commentInput.value = name + ' 학생은 책의 중심 문맥과 등장인물의 선택을 입체적으로 짚어내며, 북퀴즈에서도 흔들림 없는 높은 이해도와 정밀한 분석력을 보여주었습니다.';
+    showAcademyToast('[문해 탐구형] 지도교사 총평 템플릿이 적용되었습니다.');
+  } else if (type === 'variety' || type === 'literacy') {
+    commentInput.value = name + ' 학생은 문학과 인문 등 다양한 주제의 도서를 주도적으로 탐색하며 풍부한 지적 호기심과 균형 잡힌 독서 안목을 완성해가고 있습니다.';
+    showAcademyToast('[다양성 확장형] 지도교사 총평 템플릿이 적용되었습니다.');
   }
 }
 
-// 4단계 포트폴리오 생성 완료 및 데이터 반영
+// 4단계 포트폴리오 발급 완료 및 데이터 반영
+// 카카오톡 즉시 발송 옵션 제거: 기본 상태 '카톡 발송하기' (미발송) -> 목록에서 원클릭 발송
 function finishPortfolioCreate() {
   var std = studentDataList.find(function(s) { return s.id === wizardSelectedStudentId; });
-  var title = (document.getElementById('wizReportTitle') ? document.getElementById('wizReportTitle').value : '').trim() || '2026년 3분기 독서역량 포트폴리오';
-  // 3단계: 발급 기준 기간 직접 타이핑한 값 반영
+  var title = (document.getElementById('wizReportTitle') ? document.getElementById('wizReportTitle').value : '').trim() || ((std ? '[' + std.name + '] ' : '') + '2026년 3분기 독서 포트폴리오');
   var period = document.getElementById('wizReportPeriod') ? document.getElementById('wizReportPeriod').value.trim() : '2026년 3분기 (7~9월)';
   var comment = (document.getElementById('wizReportComment') ? document.getElementById('wizReportComment').value : '').trim();
-  var isKakao = document.getElementById('wizOptKakao') ? document.getElementById('wizOptKakao').checked : true;
 
   // 새 포트폴리오 번호 채번
   var maxPfNum = 902;
@@ -6622,11 +6645,12 @@ function finishPortfolioCreate() {
   var min = String(now.getMinutes()).padStart(2, '0');
   var formattedIssueDate = now.toISOString().split('T')[0].replace(/-/g, '.') + ' ' + hh + ':' + min;
 
+  // 신규 발급: 카톡 발송 전 상태 ('카톡 발송하기' 버튼 표시)
   var newPf = {
     id: newPfId,
     studentId: wizardSelectedStudentId,
-    studentName: std ? std.name : '원생',
-    school: std ? std.school : '나노초',
+    studentName: std ? std.name : '김민준',
+    school: std ? std.school : '나노초등학교',
     grade: std ? std.grade : '초등 5학년',
     classGroup: std ? std.classGroup : '지혜반',
     title: title,
@@ -6635,43 +6659,48 @@ function finishPortfolioCreate() {
     booksSummary: booksSummary,
     quizAvg: (std ? std.quizAvg : 95.0) + '점',
     issueDate: formattedIssueDate,
-    status: isKakao ? '諛쒖넚 ?꾨즺' : '移댄넚 諛쒖넚?섍린',
-    kakaoSent: isKakao
+    status: '카톡 발송하기',
+    kakaoSent: false
   };
 
   portfolioList.unshift(newPf);
 
-  // 대상 학생의 지도 총평 업데이트
+  // 학생별 포트폴리오 데이터 맵 갱신
   if (portfolioDataMap[wizardSelectedStudentId]) {
-    portfolioDataMap[wizardSelectedStudentId].comment = comment;
+    portfolioDataMap[wizardSelectedStudentId].teacherNote = comment;
+  } else {
+    portfolioDataMap[wizardSelectedStudentId] = {
+      name: std ? std.name : '학생',
+      school: std ? (std.school + ' ' + std.grade) : '초등학교',
+      classGroup: std ? std.classGroup : '반',
+      teacher: std ? std.teacher : '박선우 지도교사',
+      level: std ? std.level : '초등 심화 Lv 5',
+      bookCount: bookCount,
+      quizAvg: std ? std.quizAvg : 95.0,
+      genreDist: { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 },
+      tags: ['#성장소설', '#독서루틴', '#인물공감', '#지적호기심'],
+      books: [
+        { cover: 'assets/covers/cover_1001.jpg', title: wizardSelectedBooks[0] || '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '95점', sheet: '우수 완결', comment: '주제 의식을 바르게 파악하고 성실히 완독함.' }
+      ],
+      teacherNote: comment
+    };
   }
 
-  // 카카오 알림톡 발송 로그 추가
-  if (isKakao) {
-    var phone = std ? std.phone : '010-0000-0000';
-    academyDispatchLogs.unshift({
-      id: 'AL-M' + String(academyDispatchLogs.length + 1).padStart(2, '0'),
-      date: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().substr(0, 5),
-      type: '독서 포트폴리오 리포트',
-      receiver: (std ? std.name : '원생') + ' 학부모 (' + phone + ')',
-      summary: '[나노 독서아카데미 본원] ' + (std ? std.name : '원생') + ' 학생의 ' + title + '가 발급되었습니다. 모바일 열람 링크: bit.ly/' + newPfId,
-      status: 'SUCCESS'
-    });
-    renderAcademyDispatchTable();
+  // Step 4 완료 화면 요소 업데이트
+  if (document.getElementById('wizDonePfId')) document.getElementById('wizDonePfId').innerText = newPfId;
+  if (document.getElementById('wizDoneStudentName')) document.getElementById('wizDoneStudentName').innerText = (std ? std.name : '학생') + ' (' + (std ? std.grade : '') + ' · ' + (std ? std.classGroup : '') + ')';
+  if (document.getElementById('wizDoneReportTitle')) document.getElementById('wizDoneReportTitle').innerText = title;
+  if (document.getElementById('wizDoneBookCount')) document.getElementById('wizDoneBookCount').innerText = '총 ' + bookCount + '권 (' + booksSummary + ')';
+  if (document.getElementById('wizDoneKakaoStatus')) {
+    document.getElementById('wizDoneKakaoStatus').innerHTML = 
+      '<span class="badge font-weight-bold" style="background:#FEE500; color:#3C1E1E; padding:4px 10px; border-radius:6px; font-size:12px;">' +
+      '<i class="fa-solid fa-comment mr-1"></i>카톡 발송 대기 (목록에서 원클릭 발송 가능)' +
+      '</span>';
   }
-
-  // Step 4 완료 화면 내용 바인딩
-  document.getElementById('wizDonePfId').innerText = newPfId;
-  document.getElementById('wizDoneStudentName').innerText = (std ? std.name : '원생') + ' (' + (std ? std.grade : '') + ' · ' + (std ? std.classGroup : '') + ')';
-  document.getElementById('wizDoneReportTitle').innerText = title;
-  document.getElementById('wizDoneBookCount').innerText = '총 ' + bookCount + '권 (' + booksSummary + ')';
-  document.getElementById('wizDoneKakaoStatus').innerHTML = isKakao 
-    ? '<i class="fa-solid fa-paper-plane mr-1 text-primary"></i>학부모 카카오 알림톡 즉시 발송 완료'
-    : '<span class="text-muted">알림톡 미발송 (학원 보관용)</span>';
 
   renderPortfolioTable(portfolioList);
   goToWizardStep(4);
-  showAcademyToast('독서 포트폴리오 [' + newPfId + ']가 성공적으로 발급되었습니다!');
+  showAcademyToast('새 포트폴리오 [' + newPfId + ']가 생성되었습니다. 목록에서 카톡 발송이 가능합니다.');
 }
 
 function closeWizardAndShowList() {

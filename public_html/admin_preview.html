@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 
 <head>
@@ -31,47 +31,36 @@
 
   <style>
     :root {
-      /* 심플 & 웜 베이지 테마 토큰 */
-      --bg-base: #f7f4ee;
-      /* 부드러운 린넨 베이지 배경 */
+      /* 스크린샷 기반: 따뜻하고 부드러운 웜 아이보리/오프화이트 배경 */
+      --bg-base: #f8f7f4;
       --bg-surface: #ffffff;
-      /* 깔끔한 화이트 카드 */
-      --bg-subtle: #fbf9f5;
-      /* 사이드바 및 보조 베이지 */
-      --bg-hover: #f1ede3;
-      /* 호버 시 연한 베이지 */
-      --border-light: #e8e2d5;
-      /* 은은한 베이지 경계선 */
-      --border-medium: #d8cebf;
-      /* 구분선 및 테두리 */
+      --bg-subtle: #fcfbfa;
+      --bg-hover: #f0f7f6;
+      --border-light: #ebe6df;
+      --border-medium: #dcd6cb;
 
-      --text-main: #2e2620;
-      /* 편안하고 선명한 다크 모카 */
-      --text-muted: #786d63;
-      /* 웜 그레이 보조 텍스트 */
-      --text-soft: #a09589;
-      /* 연한 캡션 텍스트 */
+      /* 스크린샷 텍스트 계층: 선명한 다크 차콜 & 모던 그레이 */
+      --text-main: #1e242b;
+      --text-muted: #5c6470;
+      --text-soft: #8c949f;
 
-      --btn-primary: #3d342d;
-      /* 차분한 딥 모카 메인 버튼 */
-      --btn-primary-hover: #29221d;
-      --btn-secondary: #eee8dd;
-      /* 소프트 오트밀 서브 버튼 */
-      --btn-secondary-text: #4a4037;
+      /* 스크린샷 시그니처 틸 / 청록 에메랄드 메인 버튼 & 포인트 */
+      --btn-primary: #1f8a7e;
+      --btn-primary-hover: #166e64;
+      --btn-secondary: #edf7f6;
+      --btn-secondary-text: #124e47;
 
-      --badge-neutral-bg: #efebe2;
-      /* 뉴트럴 뱃지 배경 */
-      --badge-neutral-text: #594e44;
-      --badge-success-bg: #eaf0eb;
-      /* 은은한 세이지 그린 뱃지 */
-      --badge-success-text: #2f5436;
-      --badge-warn-bg: #f5ede1;
-      /* 은은한 웜 샌드 뱃지 */
-      --badge-warn-text: #7d5a2b;
-      --badge-danger-bg: #fbeae8;
-      --badge-danger-text: #962a22;
-      --badge-master-bg: #4a3b32;
-      --badge-master-text: #f9f5f0;
+      /* 뱃지 & 인디케이터 컬러 팔레트 */
+      --badge-neutral-bg: #f0ede6;
+      --badge-neutral-text: #554d45;
+      --badge-success-bg: #edf7f6;
+      --badge-success-text: #1f8a7e;
+      --badge-warn-bg: #fef4eb;
+      --badge-warn-text: #d96b1a;
+      --badge-danger-bg: #fef2f2;
+      --badge-danger-text: #dc2626;
+      --badge-master-bg: #124e47;
+      --badge-master-text: #ffffff;
     }
 
     * {
@@ -1687,10 +1676,10 @@
     }
 
     .nav-item-btn.active {
-      background: #ece5d9;
-      color: var(--text-main);
+      background: #edf7f6;
+      color: #124e47;
       font-weight: 700;
-      border: 1px solid var(--border-medium);
+      border: 1px solid #b2ded9;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     }
 
@@ -1703,7 +1692,7 @@
     }
 
     .nav-item-btn.active i {
-      color: var(--text-main);
+      color: #1f8a7e;
     }
 
     /* 메인 작업 영역 (우측 콘텐츠 영역만 부드럽게 단독 스크롤) */
@@ -2158,7 +2147,7 @@
     }
 
     .wizard-step.completed .step-circle {
-      background: #2f5436;
+      background: #1f8a7e;
       color: #ffffff;
     }
 
@@ -2176,7 +2165,7 @@
     }
 
     .wizard-step.completed .step-label {
-      color: #2f5436;
+      color: #1f8a7e;
     }
 
     .wizard-connector {
@@ -2453,7 +2442,7 @@
   left: 0;
   right: 0;
   height: 6px;
-  background: linear-gradient(90deg, #2f5436 0%, #10b981 50%, #c59b27 100%);
+  background: linear-gradient(90deg, #1f8a7e 0%, #10b981 50%, #c59b27 100%);
 }
 
 /* 2) 모바일 카카오톡 규격 모드 */
@@ -2497,7 +2486,7 @@
 }
 
 .pf-section-title i {
-  color: #2f5436;
+  color: #1f8a7e;
   margin-right: 8px;
 }
 
@@ -2530,7 +2519,7 @@
 .pf-stat-value {
   font-size: 22px;
   font-weight: 800;
-  color: #2f5436;
+  color: #1f8a7e;
   line-height: 1.2;
 }
 
@@ -2551,7 +2540,7 @@
 .pf-insight-card {
   background: #ffffff;
   border: 1.5px solid #e5ded3;
-  border-left: 4px solid #2f5436;
+  border-left: 4px solid #1f8a7e;
   border-radius: 10px;
   padding: 14px 16px;
   height: 100%;
@@ -2567,8 +2556,8 @@
   gap: 5px;
   font-size: 11.5px;
   font-weight: 700;
-  color: #2f5436;
-  background: #edf5ef;
+  color: #1f8a7e;
+  background: #edf7f6;
   padding: 3px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
@@ -2683,7 +2672,7 @@
     width: 100% !important;
     max-width: 100% !important;
     box-shadow: none !important;
-    border: 1.5px solid #2f5436 !important;
+    border: 1.5px solid #1f8a7e !important;
     border-radius: 8px !important;
     padding: 24px 28px !important;
     background: #ffffff !important;
@@ -2692,6 +2681,155 @@
   }
 }
 
+/* ============================================================== */
+/* [모바일 알림톡 뷰 전용 최적화 스타일] */
+/* ============================================================== */
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-device-frame {
+  width: 410px !important;
+  max-width: 410px !important;
+  background: #1e1b18;
+  border-radius: 46px;
+  padding: 14px 10px 18px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  border: 3.5px solid #3d352e;
+  position: relative;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper {
+  background: #fbf9f5;
+  border-radius: 34px;
+  max-height: 820px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 15px 36px !important;
+  border: 1px solid #e5ded5;
+  -webkit-overflow-scrolling: touch;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar {
+  width: 4px;
+}
+#portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper::-webkit-scrollbar-thumb {
+  background: #d8cebf;
+  border-radius: 4px;
+}
+
+/* 모바일 헤더 섹션 줄바꿈 방지 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-header-top {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-header-title {
+  font-size: 19px !important;
+  letter-spacing: -0.5px;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-header-meta {
+  text-align: left !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 모바일 학생 정보 스트립 2x2 그리드 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-student-info-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  background: #f7f4ee !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-student-info-cell {
+  background: #ffffff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ebe5dc;
+  border-right: none !important;
+  text-align: left !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-student-info-cell strong {
+  font-size: 13px !important;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 모바일 4대 통계 카드 2x2 그리드 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-stat-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-stat-box {
+  padding: 12px 8px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-stat-value {
+  font-size: 20px !important;
+}
+
+/* 모바일 독서 취향 & 선호도 차트 세로 스택 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-preference-row {
+  flex-direction: column !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-preference-chart-col {
+  border-right: none !important;
+  border-bottom: 1px solid #e7ded2;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  width: 100% !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-preference-detail-col {
+  padding-left: 0 !important;
+  width: 100% !important;
+}
+
+/* 모바일 완독 도서 그리드 (2열) */
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-col {
+  flex: 0 0 50% !important;
+  max-width: 50% !important;
+  padding: 0 5px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-card {
+  padding: 8px 6px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-cover-img {
+  width: 56px !important;
+  height: 78px !important;
+}
+
+/* 모바일 북퀴즈 테이블 가로 스크롤 지원 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table-wrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table {
+  min-width: 520px !important;
+  font-size: 11.5px !important;
+}
+
+/* 모바일 나노의 독서 이야기 (1열 풀 위드 스택) */
+#portfolioViewportContainer.portfolio-view-mobile .pf-insight-col {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  margin-bottom: 10px !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-insight-card {
+  padding: 14px 14px !important;
+}
   </style>
 </head>
 
@@ -3757,13 +3895,6 @@
                   style="border-radius: 8px; font-size: 13px; padding: 6px 14px; background:#fff;">
                   <i class="fa-solid fa-arrow-left mr-1"></i>목록으로 돌아가기
                 </button>
-                <div class="d-flex align-items-center ml-2">
-                  <span class="font-weight-bold mr-2 text-muted" style="font-size: 13px;">학생 전환:</span>
-                  <select class="form-control form-control-sm font-weight-bold" id="selectPortfolioStudent"
-                    onchange="onPortfolioStudentChange(this.value)" style="width: 260px; border-radius: 8px; font-size: 13px; height: 36px;">
-                    <!-- JS로 학생 목록 동적 삽입 -->
-                  </select>
-                </div>
               </div>
 
               <!-- 우측: 듀얼 뷰포트 토글 & 액션 버튼 -->
@@ -6662,10 +6793,10 @@
           <div id="wizPanel-3" class="wizard-panel" style="display: none;">
             <div class="mb-3">
               <h6 class="font-weight-bold mb-1" style="color: var(--text-main); font-size: 14.5px;">
-                <i class="fa-solid fa-sliders mr-2 text-warning"></i>3단계: 포트폴리오 리포트 세부 옵션을 설정하세요.
+                <i class="fa-solid fa-sliders mr-2" style="color: #1f8a7e;"></i>3단계: 포트폴리오 리포트 세부 옵션을 설정하세요.
               </h6>
               <p class="text-muted mb-0" style="font-size: 12.5px;">
-                리포트 명칭과 발급 기준 기간을 타이핑하고, 포함 분석 차트 및 발송 설정을 진행합니다. (세부 로직은 추후 업데이트 예정)
+                리포트 명칭과 발급 기준 기간을 입력하고, 수록 섹션 및 지도교사 총평을 확인합니다.
               </p>
             </div>
 
@@ -6674,7 +6805,7 @@
                 <div class="form-group mb-3">
                   <label class="font-weight-bold" style="font-size: 12.5px;">포트폴리오 리포트 명칭</label>
                   <input type="text" class="form-control form-control-sm" id="wizReportTitle"
-                    value="2026년 3분기 독서역량 포트폴리오" style="border-radius: 8px; font-weight: 600;">
+                    value="2026년 3분기 독서 포트폴리오" style="border-radius: 8px; font-weight: 600;">
                 </div>
               </div>
               <div class="col-md-5">
@@ -6686,80 +6817,77 @@
               </div>
             </div>
 
-            <!-- 포함 항목 체크박스 -->
+            <!-- 신규 6대 섹션 기반 리포트 수록 항목 구성 -->
             <div class="form-group mb-3">
-              <label class="font-weight-bold mb-2" style="font-size: 12.5px;">리포트 수록 항목 구성</label>
+              <label class="font-weight-bold mb-2" style="font-size: 12.5px;">리포트 수록 섹션 구성</label>
               <div class="p-2 px-3 rounded border" style="background: #faf8f4; font-size: 12.5px;">
                 <div class="row">
-                  <div class="col-6 mb-1">
+                  <div class="col-6 mb-2">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="wizOptRadar" checked>
-                      <label class="custom-control-label" for="wizOptRadar">5대 독서 핵심역량 분석표 (어휘/추론/사실/비판)</label>
+                      <input type="checkbox" class="custom-control-input" id="wizOptInsights" checked>
+                      <label class="custom-control-label" for="wizOptInsights">나노의 독서 이야기 (4대 정성 코멘트 자동 생성)</label>
                     </div>
                   </div>
-                  <div class="col-6 mb-1">
+                  <div class="col-6 mb-2">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="wizOptSheet" checked>
-                      <label class="custom-control-label" for="wizOptSheet">나노 시트 서술형 과제 평가</label>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="wizOptBookComment" checked>
-                      <label class="custom-control-label" for="wizOptBookComment">도서별 담당교사 상세 지도 코멘트</label>
+                      <input type="checkbox" class="custom-control-input" id="wizOptChart" checked>
+                      <label class="custom-control-label" for="wizOptChart">독서 취향 & 선호도 분석 (카테고리 도넛 차트)</label>
                     </div>
                   </div>
                   <div class="col-6">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="wizOptTotalComment" checked>
-                      <label class="custom-control-label" for="wizOptTotalComment">원장님 종합 독서 지도 총평</label>
+                      <input type="checkbox" class="custom-control-input" id="wizOptBooks" checked>
+                      <label class="custom-control-label" for="wizOptBooks">완독 도서 커버 갤러리 그리드</label>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="wizOptQuizTable" checked>
+                      <label class="custom-control-label" for="wizOptQuizTable">북퀴즈 응시 및 성취도 이력 테이블</label>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 원장 총평 및 템플릿 선택 -->
+            <!-- 지도교사 총평 및 템플릿 추천 -->
             <div class="form-group mb-3">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="font-weight-bold mb-0" style="font-size: 12.5px;">원장 종합 독서 지도 총평</label>
+                <label class="font-weight-bold mb-0" style="font-size: 12.5px;">지도교사 따뜻한 총평 (리포트 수록)</label>
                 <div>
                   <span class="text-muted mr-1" style="font-size: 11px;">추천 템플릿:</span>
                   <button type="button" class="btn btn-xs btn-outline-secondary mr-1"
-                    onclick="applyWizardTemplate('excellent')"
-                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">우수 역량형</button>
+                    onclick="applyWizardTemplate('habit')"
+                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">성실 루틴형</button>
                   <button type="button" class="btn btn-xs btn-outline-secondary mr-1"
-                    onclick="applyWizardTemplate('growth')"
-                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">성실 발전형</button>
+                    onclick="applyWizardTemplate('comprehension')"
+                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">문해 탐구형</button>
                   <button type="button" class="btn btn-xs btn-outline-secondary"
-                    onclick="applyWizardTemplate('literacy')"
-                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">문해력 집중형</button>
+                    onclick="applyWizardTemplate('variety')"
+                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">다양성 확장형</button>
                 </div>
               </div>
               <textarea class="form-control" id="wizReportComment" rows="3"
-                style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;">강태양 학생은 논리적 사고력과 문학적 감수성이 매우 뛰어난 원생입니다. 3분기 독서 과제를 성실하게 완수하였으며, 특히 등장인물의 내면 심리를 분석하는 독후 활동에서 우수한 성취도를 나타내었습니다.</textarea>
+                style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;">정해진 독서 계획을 성실하게 실천하며, 책 읽기에서 북퀴즈 완수까지 훌륭한 자기주도적 독서 루틴을 보여주었습니다. 스스로 생각의 지평을 넓혀가는 모습이 매우 인상적입니다.</textarea>
             </div>
 
-            <!-- 알림톡 발송 옵션 -->
-            <div class="p-2 px-3 rounded border d-flex align-items-center justify-content-between"
-              style="background: #fdfaf3; border-color: #e5dbc9 !important;">
-              <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="wizOptKakao" checked>
-                <label class="custom-control-label font-weight-bold" for="wizOptKakao"
-                  style="font-size: 12.5px; cursor: pointer;">
-                  <i class="fa-solid fa-comment text-warning mr-1"></i>포트폴리오 생성 즉시 학부모에게 카카오 알림톡 발송
-                </label>
-                <div class="text-muted" style="font-size: 11px; margin-left: 24px;">학부모 스마트폰으로 공식 모바일 리포트 열람 링크가 즉시
-                  전송됩니다.</div>
+            <!-- 카카오톡 발송 안내 박스 (즉시 발송 체크박스 제거, 목록에서 원클릭 발송 안내) -->
+            <div class="p-2 px-3 rounded border d-flex align-items-center"
+              style="background: #edf7f6; border-color: #b2ded9 !important;">
+              <div style="color: #1f8a7e; font-size: 16px; margin-right: 12px; flex-shrink: 0;">
+                <i class="fa-solid fa-circle-info"></i>
               </div>
-              <span class="badge badge-success font-weight-normal px-2 py-1" style="font-size: 11px;">알리고 자동연동</span>
+              <div style="font-size: 12px; color: #124e47; line-height: 1.5;">
+                <strong>카톡 발송 안내:</strong> 포트폴리오 생성 완료 후, 목록에서 검토 후 <span class="badge font-weight-bold" style="background:#FEE500; color:#3C1E1E; padding:2px 6px; border-radius:4px;"><i class="fa-solid fa-comment mr-1"></i>카톡 발송하기</span> 버튼으로 학부모님께 즉시 알림톡을 전송할 수 있습니다.
+              </div>
             </div>
           </div>
+
 
           <!-- STEP 4: 생성 완료 -->
           <div id="wizPanel-4" class="wizard-panel text-center py-4" style="display: none;">
             <div
-              style="width: 68px; height: 68px; border-radius: 50%; background: #eaf0eb; color: #2f5436; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px;">
+              style="width: 68px; height: 68px; border-radius: 50%; background: #eaf0eb; color: #1f8a7e; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px;">
               <i class="fa-solid fa-check"></i>
             </div>
             <h5 class="font-weight-bold mb-2" style="color: var(--text-main);">독서 포트폴리오 생성이 완료되었습니다!</h5>

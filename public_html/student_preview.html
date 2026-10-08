@@ -15,7 +15,8 @@
   <link rel="shortcut icon" href="resources/images/icons/icon-192.png" type="image/png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
   <!-- 배너 및 테마 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
@@ -24,52 +25,82 @@
   <script src="migrated_real_data.js?v=20261007_report_v10"></script>
   <style>
     :root {
-      /* 자연스러운 목재 베이지 & 오트밀 크림 배경 */
-      --bg: #f8f6f0;
+      /* 스크린샷 기반: 따뜻하고 편안한 웜 아이보리/오프화이트 배경 */
+      --bg: #f8f7f4;
       --surface: #ffffff;
-      --surface-warm: #faf7f2;
+      --surface-warm: #fcfbfa;
       
-      /* 싱그러운 초록초록 잎사귀 그린 */
-      --leaf-dark: #1b4332;
-      --leaf-deep: #245738;
-      --leaf: #2d6a4f;
-      --leaf-mid: #388e5a;
-      --leaf-light: #52b788;
-      --leaf-soft: #eaf5ef;
-      --leaf-pale: #f2f9f5;
+      /* 스크린샷 시그니처 틸 / 청록 에메랄드 메인 컬러 */
+      --leaf-dark: #124e47;
+      --leaf-deep: #16645b;
+      --leaf: #1f8a7e;
+      --leaf-mid: #259d90;
+      --leaf-light: #3ab3a4;
+      --leaf-soft: #edf7f6;
+      --leaf-pale: #f4faf9;
       
-      /* 목재 베이지 & 내추럴 우드 톤 */
-      --wood-dark: #3a2e26;
-      --wood-mid: #5c4a3e;
-      --wood-warm: #7f6452;
+      /* 스크린샷 텍스트 & 구분선 */
+      --wood-dark: #2c2520;
+      --wood-mid: #4a4037;
+      --wood-warm: #695e54;
       --wood-light: #f3ede4;
-      --soft: #e5ded2;
+      --soft: #ebe6de;
       
-      /* 포인트 컬러 */
-      --amber: #c87941;
-      --amber-lt: #fdf3ea;
-      --green: #2d6a4f;
-      --green-lt: #eaf5ef;
-      --red: #c53030;
-      --text: #2d241e;
-      --muted: #7d7165;
+      /* 스크린샷 액센트: 웜 탠저린 오렌지 (지금 학년 마커 & 하이라이트) */
+      --amber: #e67828;
+      --amber-lt: #fef4eb;
+      --green: #1f8a7e;
+      --green-lt: #edf7f6;
+      --red: #dc2626;
+      --text: #1e242b;
+      --muted: #5c6470;
       
       /* 호환 변수 */
-      --blue: #2d6a4f;
-      --blue-lt: #eaf5ef;
-      --purple: #5c4a3e;
-      --purple-lt: #f3ede4;
-      --orange: #c87941;
-      --orange-lt: #fdf3ea;
+      --blue: #1f8a7e;
+      --blue-lt: #edf7f6;
+      --purple: #16645b;
+      --purple-lt: #edf7f6;
+      --orange: #e67828;
+      --orange-lt: #fef4eb;
     }
     * { box-sizing: border-box; }
     body {
-      font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       margin: 0;
-      letter-spacing: -0.2px;
+      letter-spacing: -0.35px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button, input, select, textarea, .table, table {
+      font-family: inherit;
+    }
+    /* 스크린샷 기반 유틸리티: 원형 숫자 뱃지 & 민트 틴트 안내 박스 */
+    .badge-step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1f8a7e;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .info-box-mint {
+      background: #edf7f6;
+      border: 1px solid #b2ded9;
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: #1e242b;
+      line-height: 1.7;
+    }
+    .info-box-mint strong {
+      color: #124e47;
     }
     .role-bar {
       background: #0f372e;
