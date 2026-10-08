@@ -3738,6 +3738,81 @@ var classAssignmentList = [
   }
 ];
 
+// ==============================================================
+// 도서 배정 영속성 매니저 (로컬 스토리지 & 서버 assignments.json 자동 동기화)
+// ==============================================================
+var STORAGE_KEY_STUDENT_ASSIGN = 'nano_student_assignments_data';
+var STORAGE_KEY_CLASS_ASSIGN = 'nano_class_assignments_data';
+
+// 1) 초기화 시 로컬 스토리지 즉시 복원 (새로고침 시 배정 내역 100% 보존)
+(function restoreAssignmentsData() {
+  try {
+    var storedStudents = localStorage.getItem(STORAGE_KEY_STUDENT_ASSIGN);
+    if (storedStudents) {
+      var parsedS = JSON.parse(storedStudents);
+      if (Array.isArray(parsedS) && parsedS.length > 0) {
+        studentAssignmentList = parsedS;
+        console.log('[도서 배정 복원] 개별 원생 배정 ' + studentAssignmentList.length + '명 로컬 복원 완료');
+      }
+    }
+    var storedClasses = localStorage.getItem(STORAGE_KEY_CLASS_ASSIGN);
+    if (storedClasses) {
+      var parsedC = JSON.parse(storedClasses);
+      if (Array.isArray(parsedC) && parsedC.length > 0) {
+        classAssignmentList = parsedC;
+        console.log('[도서 배정 복원] 학급별 배정 ' + classAssignmentList.length + '개 반 로컬 복원 완료');
+      }
+    }
+  } catch(e) {
+    console.warn('도서 배정 로컬 복원 예외:', e);
+  }
+
+  // 서버 API에서 추가 최신 동기화 확인
+  if (typeof fetch === 'function') {
+    fetch('/api/sync_assignments')
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        var updated = false;
+        if (data && Array.isArray(data.studentAssignments) && data.studentAssignments.length > 0) {
+          studentAssignmentList = data.studentAssignments;
+          localStorage.setItem(STORAGE_KEY_STUDENT_ASSIGN, JSON.stringify(studentAssignmentList));
+          updated = true;
+        }
+        if (data && Array.isArray(data.classAssignments) && data.classAssignments.length > 0) {
+          classAssignmentList = data.classAssignments;
+          localStorage.setItem(STORAGE_KEY_CLASS_ASSIGN, JSON.stringify(classAssignmentList));
+          updated = true;
+        }
+        if (updated && typeof renderStudentAssignmentTable === 'function') {
+          renderStudentAssignmentTable();
+          if (typeof renderClassAssignmentTable === 'function') renderClassAssignmentTable();
+        }
+      })
+      .catch(function(err) {});
+  }
+})();
+
+// 2) 배정 변경 발생 시 로컬 & 서버 실시간 동기화 저장 헬퍼
+function syncAssignmentsData() {
+  try {
+    localStorage.setItem(STORAGE_KEY_STUDENT_ASSIGN, JSON.stringify(studentAssignmentList));
+    localStorage.setItem(STORAGE_KEY_CLASS_ASSIGN, JSON.stringify(classAssignmentList));
+  } catch(e) {
+    console.warn('배정 데이터 로컬 저장 예외:', e);
+  }
+
+  if (typeof fetch === 'function') {
+    fetch('/api/sync_assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentAssignments: studentAssignmentList,
+        classAssignments: classAssignmentList
+      })
+    }).catch(function(err) {});
+  }
+}
+
 var lastAddedStudentAssignId = null;
 var lastAddedClassAssignId = null;
 
@@ -3960,6 +4035,7 @@ function cancelStudentAssignment(id) {
   if (confirm(`[${name}] 원생의 맞춤 도서 배정 내역을 삭제하시겠습니까?`)) {
     studentAssignmentList = studentAssignmentList.filter(function(a) { return a.id !== id; });
     renderStudentAssignmentTable();
+    if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
     showAcademyToast(`[${name}] 원생의 도서 배정 내역이 삭제되었습니다.`);
   }
 }
@@ -3970,6 +4046,7 @@ function cancelClassAssignment(id) {
   if (confirm(`[${name}]의 도서 배정을 삭제하시겠습니까?`)) {
     classAssignmentList = classAssignmentList.filter(function(a) { return a.id !== id; });
     renderClassAssignmentTable();
+    if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
     showAcademyToast(`[${name}]의 도서 배정이 삭제되었습니다.`);
   }
 }
@@ -4199,6 +4276,7 @@ function releaseIndivCertifiedBooks() {
   renderIndivStudentAssignedBooks(currentIndivStudentId);
   renderIndivBookCatalog();
   renderStudentAssignmentTable();
+  if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
   showAcademyToast(`인증 완료된 도서 ${removedCount}권이 배정 해제되었습니다.`);
 }
 
@@ -4363,6 +4441,7 @@ function addBookToStudent(studentId, bookId) {
   renderIndivStudentAssignedBooks(studentId);
   renderIndivBookCatalog();
   renderStudentAssignmentTable();
+  if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
 
   showAcademyToast(`[${stdName}] 학생에게 <${b.title}> 도서가 배정되었습니다. (${assignedAtStr})`);
 }
@@ -4381,6 +4460,7 @@ function removeBookFromStudent(studentId, bookId) {
   renderIndivStudentAssignedBooks(studentId);
   renderIndivBookCatalog();
   renderStudentAssignmentTable();
+  if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
 
   showAcademyToast(`<${bookTitle}> 도서 배정이 해제되었습니다.`);
 }
@@ -4745,6 +4825,7 @@ function batchAssignBookToClass(className, bookId) {
 
   renderClassAssignModalContent(className);
   renderAssignmentTable();
+  if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
   showAcademyToast(`[${className}] 전체 원생 중 ${addedCount}명에게 <${b.title}> 도서가 일괄 배정되었습니다!`);
 }
 
@@ -4778,6 +4859,7 @@ function batchUnassignBookFromClass(className, bookId) {
 
   renderClassAssignModalContent(className);
   renderAssignmentTable();
+  if (typeof syncAssignmentsData === 'function') syncAssignmentsData();
   showAcademyToast(`[${className}] 소속 ${removedCount}명의 학생에게서 <${bookTitle}> 배정이 일괄 해제되었습니다.`);
 }
 
@@ -6879,6 +6961,38 @@ var academyBookList = (function() {
   ];
 })();
 
+// 로컬 저장소에 보관된 학원 신규 등록 도서(PDF 데이터 포함) 자동 복원
+(function restoreCustomAcademyBooks() {
+  try {
+    var stored = localStorage.getItem('nano_custom_academy_books');
+    if (stored) {
+      var list = JSON.parse(stored);
+      if (Array.isArray(list)) {
+        list.forEach(function(item) {
+          var exists = academyBookList.some(function(b) { return b.id === item.id; });
+          if (!exists) {
+            academyBookList.unshift(item);
+          }
+        });
+      }
+    }
+  } catch(e) {
+    console.warn('자체 등록 도서 로컬 복원 실패:', e);
+  }
+})();
+
+// 학원 자체 등록 도서 로컬 저장소 동기화 헬퍼
+function syncCustomAcademyBooksToStorage() {
+  try {
+    var myBooks = academyBookList.filter(function(b) {
+      return b.creatorType === 'ACADEMY' || b.isMyCreation === true || (b.id && b.id.startsWith('KA'));
+    });
+    localStorage.setItem('nano_custom_academy_books', JSON.stringify(myBooks));
+  } catch(e) {
+    console.warn('자체 등록 도서 로컬 저장 실패 (용량 초과 등):', e);
+  }
+}
+
 var currentUploadedMaterial = null;
 var currentUploadedCover = null;
 var lastAddedBookId = null;
@@ -7501,7 +7615,7 @@ function updateRealPdfWatermarkOverlay() {
   overlay.innerHTML = tileHtml + tileHtml + tileHtml;
 }
 
-// 실제 PDF 파일 읽어와서 캔버스 렌더링 + 워터마크 합성
+// 실제 PDF 파일 읽어와서 캔버스 렌더링 + 워터마크 합성 (완전 호환 버전)
 function renderPdfFileWithWatermark(pdfSource) {
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
@@ -7509,9 +7623,13 @@ function renderPdfFileWithWatermark(pdfSource) {
 
   if (realWrapper) realWrapper.style.display = 'block';
   if (htmlContainer) htmlContainer.style.display = 'none';
-  if (pageControls) pageControls.style.display = 'flex';
 
   updateRealPdfWatermarkOverlay();
+
+  // PDF.js workerSrc 보장
+  if (typeof pdfjsLib !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'plugin/build/pdf.worker.js';
+  }
 
   var loadPromise = null;
   if (pdfSource instanceof Blob || pdfSource instanceof File) {
@@ -7521,8 +7639,20 @@ function renderPdfFileWithWatermark(pdfSource) {
       reader.onerror = reject;
       reader.readAsArrayBuffer(pdfSource);
     });
-  } else if (typeof pdfSource === 'string') {
-    loadPromise = Promise.resolve(pdfSource);
+  } else if (typeof pdfSource === 'string' && pdfSource.startsWith('data:')) {
+    // Base64 Data URL to Uint8Array 변환
+    try {
+      var base64 = pdfSource.split(',')[1];
+      var binaryStr = atob(base64);
+      var len = binaryStr.length;
+      var bytes = new Uint8Array(len);
+      for (var i = 0; i < len; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      loadPromise = Promise.resolve(bytes);
+    } catch(e) {
+      loadPromise = Promise.resolve(pdfSource);
+    }
   } else {
     loadPromise = Promise.resolve(pdfSource);
   }
@@ -7532,11 +7662,17 @@ function renderPdfFileWithWatermark(pdfSource) {
       alert('PDF.js 엔진을 로드 중입니다. 잠시 후 다시 열어주세요.');
       return;
     }
-    return pdfjsLib.getDocument({ data: data }).promise;
+    var loadingTask = (data instanceof Uint8Array) 
+      ? pdfjsLib.getDocument({ data: data }) 
+      : pdfjsLib.getDocument(data);
+    return loadingTask.promise;
   }).then(function(pdf) {
     activePdfDoc = pdf;
     activePdfTotalPages = pdf.numPages;
     activePdfPageNum = 1;
+    if (pageControls) {
+      pageControls.style.display = (pdf.numPages > 1) ? 'flex' : 'none';
+    }
     renderCurrentPdfPage();
   }).catch(function(err) {
     console.warn('PDF 캔버스 렌더링 오류 (기본 나노 시트 서식으로 전환):', err);
@@ -7694,24 +7830,40 @@ function updateWatermarkInfo() {
   }
 }
 
-// PDF 학습자료 미리보기 모달 열기 (도서별 PDF 렌더링 + 워터마크 합성)
+// PDF 학습자료 미리보기 모달 열기 (업로드된 실제 PDF 파일 캔버스 렌더링 + 워터마크 합성)
 function openContentPdfModal(bookId) {
   var b = academyBookList.find(item => item.id === bookId);
   var title = b ? b.title : '나노 도서';
   var fileName = b && b.materialName ? b.materialName : `${title}_나노시트.pdf`;
-  var fileSize = b && b.materialSize ? b.materialSize : '1.45 MB';
 
-  document.getElementById('pdfModalTitle').innerText = `[${title}] 나노 시트 (보안 PDF 웹뷰어)`;
-  document.getElementById('pdfFileNameDisplay').innerText = fileName;
-  document.getElementById('pdfFileSizeDisplay').innerText = `(${fileSize} · 표준 규격)`;
-  document.getElementById('pdfSheetBookTitle').innerText = title;
+  var titleEl = document.getElementById('pdfModalTitle');
+  if (titleEl) titleEl.innerText = `[${title}] 나노 시트 (보안 PDF 웹뷰어)`;
+
+  var nameDisp = document.getElementById('pdfFileNameDisplay');
+  if (nameDisp) nameDisp.innerText = fileName;
+
+  var sheetBookTitle = document.getElementById('pdfSheetBookTitle');
+  if (sheetBookTitle) sheetBookTitle.innerText = title;
 
   updateWatermarkInfo();
 
-  // 실제 도서에 첨부된 PDF Blob이 있으면 PDF.js 캔버스 렌더링 + 워터마크 합성!
-  if (b && b.pdfBlob) {
-    renderPdfFileWithWatermark(b.pdfBlob);
+  // 1. 도서 객체에 연결된 PDF 데이터 찾기 (Blob, File, Data URL, server URL)
+  var pdfSource = (b && (b.pdfBlob || b.pdfDataUrl || b.pdfUrl)) || null;
+
+  // 2. 만약 해당 도서 객체에 누락되었으나 최근 업로드된 세션 캐시가 있는 경우 (방금 등록한 테스트 도서 등)
+  if (!pdfSource && b && b.isMyCreation) {
+    var cachedData = sessionStorage.getItem('nano_last_uploaded_pdf');
+    if (cachedData) {
+      pdfSource = cachedData;
+      b.pdfDataUrl = cachedData;
+    }
+  }
+
+  // 3. 실제 PDF 소스가 있으면 PDF.js 캔버스 렌더링 + 보안 워터마크 합성!
+  if (pdfSource) {
+    renderPdfFileWithWatermark(pdfSource);
   } else {
+    // PDF 미첨부 도서일 경우 기본 서식 안내
     showDefaultHtmlSheetView();
   }
 
@@ -7867,6 +8019,9 @@ var currentAcadQuizSetIdx = 0;
 var editingAcadQuizzes = [];
 var currentAcadQuizIdx = 0;
 var editingAcadSheetFile = null;
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'plugin/build/pdf.worker.js';
+}
 var curActiveAcadQuizInput = null;
 
 function getInitialAcadQuizList(book) {
@@ -8359,9 +8514,9 @@ async function lookupAcademyIsbn() {
   var isbnInput = document.getElementById("abEditIsbn");
   var isbn = isbnInput ? isbnInput.value.trim().replace(/[^0-9xX]/g, "") : "";
   if (!isbn) {
-    isbn = "9788932917245";
-    if (isbnInput) isbnInput.value = isbn;
-    showAcademyToast("ISBN 미입력으로 테스트용 예시 ISBN(9788932917245)을 조회합니다.", "info");
+    showAcademyToast("ISBN 13자리 번호를 입력해 주세요.", "warning");
+    if (isbnInput) isbnInput.focus();
+    return;
   }
 
   var btn = document.getElementById("btnAcadIsbnFetch");
@@ -8652,16 +8807,16 @@ function openAcademyBookOnlyAddModal(id = null) {
     if (document.getElementById('abEditPublicN')) document.getElementById('abEditPublicN').checked = true;
   }
 
-  // 5. ISBN 바인딩
+  // 5. ISBN 바인딩 (신규 도서 등록 시 자동 입력 제거 -> 공란으로 초기화)
   var isbnInput = document.getElementById('abEditIsbn');
   if (isbnInput) {
-    isbnInput.value = (book && book.isbn) ? book.isbn : (isNew ? '9791190000010' : '');
+    isbnInput.value = (book && book.isbn) ? book.isbn : '';
   }
 
-  // 6. 기본 서지 정보 바인딩
+  // 6. 기본 서지 정보 바인딩 (신규 등록 시 공란 유지)
   if (document.getElementById('abEditTitle')) document.getElementById('abEditTitle').value = isNew ? '' : book.title;
   if (document.getElementById('abEditAuthor')) document.getElementById('abEditAuthor').value = isNew ? '' : book.author;
-  if (document.getElementById('abEditPublisher')) document.getElementById('abEditPublisher').value = isNew ? '' : (book.publisher || '열린책들');
+  if (document.getElementById('abEditPublisher')) document.getElementById('abEditPublisher').value = isNew ? '' : (book.publisher || '');
 
   // 7. 시리즈명 & 단권 (시리즈명이 비어있거나 '단권'인 경우 단권 체크박스 자동 체크)
   var hasValidSeries = !!(book && book.series && book.series.trim() !== '' && book.series.trim() !== '단권');
@@ -8692,10 +8847,10 @@ function openAcademyBookOnlyAddModal(id = null) {
     switchAcadThinkMode('preset');
   }
 
-  // 12. 표지 처리
+  // 12. 표지 처리 (신규 등록 시 기본 도서 썸네일 노출)
   var coverUrl = isNew
-    ? 'assets/covers/cover_1001.jpg'
-    : (book.cover || 'assets/covers/cover_1001.jpg');
+    ? 'resources/images/book_default.png'
+    : (book.cover || 'resources/images/book_default.png');
   if (document.getElementById('abEditCover')) document.getElementById('abEditCover').value = isNew ? '' : (book.cover || '');
   updateAcadCoverPreview(coverUrl);
   switchAcadCoverMode('url');
@@ -8759,7 +8914,7 @@ function updateAcadCoverPreview(url) {
   var img = document.getElementById('abEditCoverPreview');
   if (!img) return;
   if (!url || url.trim() === '') {
-    img.src = 'assets/covers/cover_1001.jpg';
+    img.src = 'resources/images/book_default.png';
   } else {
     img.src = url;
   }
@@ -8783,19 +8938,33 @@ function handleAcadCoverFileUpload(event) {
   reader.readAsDataURL(file);
 }
 
-// 학습자료 파일 업로드
+// 학습자료 파일 업로드 (실제 PDF File/Blob/DataURL 보관 및 영속화)
 function handleAcadSheetFileUpload(event) {
   var file = event.target.files[0];
   if (!file) return;
   var label = document.getElementById('abSheetFileName');
   if (label) label.innerText = file.name;
 
-  editingAcadSheetFile = {
-    name: file.name,
-    size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-    type: file.name.endsWith('.pdf') ? '나노 시트 (PDF)' : '문서 자료'
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    editingAcadSheetFile = {
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      type: file.name.endsWith('.pdf') ? '나노 시트 (PDF)' : '문서 자료',
+      file: file,
+      pdfBlob: file,
+      dataUrl: dataUrl
+    };
+    try {
+      sessionStorage.setItem('nano_last_uploaded_pdf', dataUrl);
+      sessionStorage.setItem('nano_last_uploaded_pdf_name', file.name);
+    } catch(err) {
+      console.warn('sessionStorage PDF 캐싱 생략 (대용량):', err);
+    }
   };
-  showAcademyToast(`[${file.name}] 학습자료 파일이 연결되었습니다.`);
+  reader.readAsDataURL(file);
+  showAcademyToast(`[${file.name}] 학습자료(PDF) 파일이 연결되었습니다.`);
 }
 
 // 도서 서지 정보만 독립 저장
@@ -8871,6 +9040,10 @@ function handleSaveAcademyBookOnly(event) {
     b.materialName = matName;
     b.materialSize = matSize;
     b.materialType = matType;
+    if (editingAcadSheetFile) {
+      if (editingAcadSheetFile.file) b.pdfBlob = editingAcadSheetFile.file;
+      if (editingAcadSheetFile.dataUrl) b.pdfDataUrl = editingAcadSheetFile.dataUrl;
+    }
     lastAddedBookId = b.id;
     showAcademyToast(`도서 [${title}] 서지 정보가 성공적으로 수정되었습니다.`);
   } else {
@@ -8902,6 +9075,8 @@ function handleSaveAcademyBookOnly(event) {
       materialName: matName,
       materialSize: matSize,
       materialType: matType,
+      pdfBlob: editingAcadSheetFile ? (editingAcadSheetFile.file || editingAcadSheetFile.pdfBlob) : null,
+      pdfDataUrl: editingAcadSheetFile ? editingAcadSheetFile.dataUrl : null,
       quizStatus: '3문항 완비',
       readCount: '0회',
       answerGuide: '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
@@ -8914,6 +9089,7 @@ function handleSaveAcademyBookOnly(event) {
 
   if (typeof renderCartBookCatalog === 'function') renderCartBookCatalog();
   renderAcademyBookTable();
+  if (typeof syncCustomAcademyBooksToStorage === 'function') syncCustomAcademyBooksToStorage();
 
   $('#academyBookAddModal').modal('hide');
 }
@@ -11031,3 +11207,84 @@ if (document.readyState === 'loading') {
 }
 
 
+
+// 보안 나노시트 인쇄 (실제 렌더링된 A4 캔버스 + 워터마크 고화질 출력)
+function printNanoSheetViewer() {
+  var canvas = document.getElementById('pdfViewerCanvas');
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+
+  if (!canvas || !realWrapper || realWrapper.style.display === 'none') {
+    window.print();
+    return;
+  }
+
+  var imgData = canvas.toDataURL('image/png');
+  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노 독서아카데미 목동본원');
+  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : new Date().toISOString().slice(0, 16).replace('T', ' '));
+  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+
+  var printWin = window.open('', '_blank', 'width=850,height=1100');
+  if (!printWin) {
+    window.print();
+    return;
+  }
+
+  printWin.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>나노 시트 보안 출력 - ${acadName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .sheet-wrapper { position: relative; width: 100%; max-width: 210mm; min-height: 297mm; overflow: hidden; background: #fff; }
+    img.sheet-canvas-img { width: 100%; height: auto; display: block; }
+    .wm-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
+      display: flex; flex-direction: column; justify-content: space-around; align-items: center;
+      user-select: none;
+    }
+    .wm-block {
+      transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000;
+      line-height: 1.4; user-select: none; margin: 35px 0;
+    }
+    .wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }
+    .wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }
+    .wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="sheet-wrapper">
+    <img src="${imgData}" class="sheet-canvas-img" />
+    <div class="wm-overlay">
+      <div class="wm-block">
+        <div class="wm-title">${acadName}</div>
+        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
+        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
+      </div>
+      <div class="wm-block">
+        <div class="wm-title">${acadName}</div>
+        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
+        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
+      </div>
+      <div class="wm-block">
+        <div class="wm-title">${acadName}</div>
+        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
+        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+        setTimeout(function() { window.close(); }, 500);
+      }, 300);
+    };
+  </script>
+</body>
+</html>`);
+  printWin.document.close();
+}
