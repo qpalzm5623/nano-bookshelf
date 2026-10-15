@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nano BookShelf 구현 결과와 운영 연결 안내</title>
+<style>body{max-width:1050px;margin:40px auto;padding:0 24px;font-family:system-ui,'Malgun Gothic',sans-serif;line-height:1.85;color:#203c33}h1,h2{line-height:1.4}h2{margin-top:38px}table{border-collapse:collapse;width:100%}td,th{padding:12px;border:1px solid #dbe5df;text-align:left;vertical-align:top}th{background:#edf5ef}code{background:#edf5ef;padding:2px 5px;overflow-wrap:anywhere}.note{background:#fff5d9;padding:18px;border-radius:12px}.success{background:#e9f6ee;padding:18px;border-radius:12px}small{color:#586b63}pre{background:#f2f6f3;padding:16px;overflow:auto}@media(max-width:640px){body{padding:0 12px}td,th{padding:8px;font-size:13px}}</style></head><body>
+<h1>남은 기능 구현 결과와 운영 연결 안내</h1><small>최종 갱신: 2026-10-15 · Vercel + Postgres · Git 커밋/푸시 없음</small>
+<p class="success">회원·학급·배정·콘텐츠·포트폴리오를 관리하는 공통 서버 화면, 최초 완료 100P + 최초 생각담기 50P, 월별 랭킹, 첨삭 파일, 개인 설정 동기화와 학습 기록 이관 코드를 추가했습니다.</p>
+<p class="note"><strong>운영 배포 완료 상태는 아닙니다.</strong> 연결된 Vercel 계정은 프로젝트 목록을 조회할 수 있지만 <code>looklearning</code> 팀의 프로젝트 상세·환경변수 조회에서 403 권한 오류가 발생했습니다. 따라서 운영 DB 테이블 추가, 서버 비밀번호 설정, 배포와 실제 서비스 검증은 실행하지 않았습니다. 알림톡·결제 운영 정보도 아직 없어 비활성 상태입니다.</p>
+<h2>실제 사용 흐름의 변화</h2>
+<table><thead><tr><th>영역</th><th>구현한 동작</th><th>확인할 점</th></tr></thead><tbody>
+<tr><td>운영 관리</td><td><code>manage.html</code>에서 본사·학원이 같은 화면과 API를 사용합니다. 기존 편집 버튼과 운영 메뉴가 이 화면으로 연결됩니다. 검색, 빈 목록, 저장 오류, CSV 내보내기, 모바일 메뉴와 키보드 초점을 제공합니다.</td><td>학생은 관리 API에 접근할 수 없습니다. 교사는 배정·보유 도서·포트폴리오, 원장은 회원·학급까지, 본사는 가맹 학원·전체 콘텐츠를 변경할 수 있습니다.</td></tr>
+<tr><td>회원·학급</td><td>회원 생성/수정/퇴원, 승인/정지, 비밀번호 해시 저장, 학급 편성, 학원 정원 검사. CSV 1~200명 등록은 한 트랜잭션으로 처리합니다. 회원 수정 충돌은 덮어쓰지 않습니다.</td><td>비밀번호 12~128자. CSV 등록 회원은 미승인 상태이며 보호자 발송 동의는 기본 해제입니다. 본사 계정은 이 화면에서 권한을 낮추거나 삭제할 수 없습니다.</td></tr>
+<tr><td>도서·배정</td><td>도서, 객관식 문항, 생각담기, 추천 여부, 테마 연결, 표지/학습지 HTTPS 주소, 학원 보유 도서와 개인/학급 배정을 저장합니다. 학생 화면도 DB의 도서·문항·배정을 조회합니다.</td><td>문항이 없으면 임시 퀴즈를 만들지 않습니다. 문항 번호 중복을 거부하고 완료된 학습의 도서는 삭제하지 않습니다. 운영 콘텐츠 편집 권한은 본사에 있습니다.</td></tr>
+<tr><td>포인트</td><td>학생·도서별 최초 완료 100P, 최초 생각담기 50P. 나중에 생각담기를 추가하면 50P만 적립합니다. 회원 행 잠금과 고유 적립 ID로 중복 보상을 방지합니다.</td><td>기존 DB 기록에 대한 소급 적립은 하지 않습니다. 로컬 기록 이관에도 새 포인트를 지급하지 않습니다.</td></tr>
+<tr><td>랭킹·개인 기록</td><td>한국 시간 월경계로 이번 달/지난 달 포인트를 집계합니다. 학생은 반·학원·전국 순위를 보고, 전국 다른 학생 이름은 가립니다. 포인트와 학습 내역을 페이지 단위로 끝까지 조회합니다. 찜·관심 주제는 서버에 저장합니다.</td><td>다른 기기와 수정이 충돌하면 새로고침을 안내합니다. 새로고침·화면 진입 시 최신 데이터를 조회하며 실시간 푸시 동기화는 제공하지 않습니다.</td></tr>
+<tr><td>첨삭 파일</td><td>PDF/PNG/JPG를 Postgres에 비공개 저장하고 인증된 다운로드 API로 제공합니다. 같은 파일 재시도는 중복 저장하지 않습니다. 학생은 본인의 기록만, 교사는 소속 학원의 파일만 엽니다.</td><td>파일당 2MB, 학습 기록당 10개. 파일의 실제 시작 바이트를 검사합니다. 파일 업로드와 첨삭 글 저장은 별도 단계이므로 글 저장 실패 시 이미 올라간 파일은 유지됩니다.</td></tr>
+<tr><td>포트폴리오</td><td>학생과 기간을 선택하여 실제 학습 도서·날짜·점수와 교사 총평을 저장하고 인쇄/PDF 저장 화면을 제공합니다. 수정 충돌 검사를 적용합니다.</td><td>기존 예시 문해력 점수·임의 평가를 사용하지 않습니다. 발급 시점의 기록을 저장한 문서입니다.</td></tr>
+<tr><td>공지·배너</td><td>본사 서버 관리 화면에서 등록하고 학생/학원 화면은 최신 DB 자료를 읽습니다. 공지는 대상 권한을 구분하고, 활성 배너만 표시합니다.</td><td>배너 이미지는 HTTPS 주소를 사용합니다. 상단 고정 공지는 팝업으로도 표시합니다.</td></tr>
+<tr><td>로컬 기록 이관</td><td>학생 화면 상단에서 본인 기록을 JSON으로 먼저 내려받은 후, 확인을 거쳐 서버 문항으로 재채점합니다. 완료 기록 ID 재시도를 처리하며 오류 내역은 따로 내려받습니다.</td><td>원본은 삭제하지 않습니다. 서버 문항과 다른 기록은 자동으로 강제 이관하지 않습니다. 로컬 회원·콘텐츠는 CSV 또는 운영 관리 화면에서 검토 후 등록해야 합니다.</td></tr>
+<tr><td>알림톡</td><td>환경변수가 준비되면 수신 동의·번호를 검증하고, 리포트 내용과 수신자를 확인한 뒤 Aligo API에 요청합니다. 같은 내용의 중복 요청과 결과 불명 요청의 자동 재발송을 차단합니다.</td><td><code>ACCEPTED</code>는 발송 요청 접수이며 최종 수신 성공이 아닙니다. 최종 결과와 결과 불명 건은 알리고 관리자에서 확인합니다. 이번 작업에서는 실제 전송하지 않았습니다. <a href="https://smartsms.aligo.in/alimapi.html">Aligo 공식 API 문서</a></td></tr>
+<tr><td>결제</td><td>설정된 업체의 HTTPS 결제 안내 페이지로 진입하고, 본사는 실제 확인한 입금을 기록합니다. 같은 등록 요청 재시도를 중복 입금으로 기록하지 않습니다.</td><td><strong>업체가 정해지지 않아 자동 과금·정기결제·웹훅 검증·자동 계약 갱신은 연결하지 않았습니다.</strong> 결제 주소만 설정해도 이 기능들이 자동 활성화되지는 않습니다. 임의 결제 성공 처리는 사용하지 않습니다.</td></tr>
+</tbody></table>
+<h2>운영 연결에 남은 작업</h2>
+<ol>
+<li><strong>Vercel 접근 복구:</strong> <code>nano-bookshelf</code> 프로젝트가 속한 <code>looklearning</code> 팀에 접근 가능한 계정으로 커넥터를 재연결합니다. 현재 프로젝트 상세와 환경변수 조회가 403입니다.</li>
+<li><strong>환경 확인:</strong> 실제 프로젝트와 Postgres가 올바르게 연결됐는지 확인하고 <code>DATABASE_URL</code>, <code>DIRECT_URL</code>, 무작위 32자 이상의 <code>PORTAL_AUTH_SECRET</code>을 서버 환경변수에 설정합니다. <a href="../.env.example">환경변수 예시</a>에는 값 없이 필요한 이름과 용도를 정리했습니다.</li>
+<li><strong>추가 테이블:</strong> 연결 대상을 확인한 뒤 <a href="../prisma/portal-upgrade.sql">portal-upgrade.sql</a>을 적용합니다. 개인 설정·포트폴리오용 <code>portal_settings</code>, 비공개 첨부용 <code>portal_files</code>를 추가하는 SQL입니다. 기존 테이블 삭제나 초기화는 포함하지 않습니다. SQL은 아직 실행하지 않았습니다.</li>
+<li><strong>운영 계정:</strong> 기존 이관 계정은 평문 비밀번호로 로그인할 수 없습니다. 승인된 운영 계정의 비밀번호를 <code>scripts/set-portal-password.ts</code>로 설정한 뒤 초기 설정 환경변수를 제거합니다. 첫 본사 계정은 <code>MASTER</code>여야 합니다. 실제 계정 변경은 아직 하지 않았습니다.</li>
+<li><strong>배포:</strong> 빌드 <code>npm run build</code>, 출력 <code>dist</code>. API는 <code>portal</code>, <code>bootstrap</code>, <code>manage</code>, <code>activity</code>, <code>files</code>, <code>services</code>가 필요합니다. 운영 빌드는 전체 회원 덤프와 PHP 서버 설정을 제외하고 인증 후 데이터를 가져옵니다.</li>
+<li><strong>실제 사용 확인:</strong> 별도 학생/교사 계정으로 로그인 → 배정 → 퀴즈 제출 → 150P 확인 → 재풀이 중복 적립 없음 → 다른 기기 첨삭/첨부 → 포트폴리오 인쇄를 확인합니다. 현재 검증은 로컬 자동 테스트이며 실제 DB·브라우저의 종단 간 검증은 아직 하지 않았습니다.</li>
+<li><strong>외부 서비스 활성화:</strong> Aligo 승인 발신 프로필·템플릿과 API 설정 후 <code>ALIGO_ENABLED=true</code>로 전환합니다. 결제 업체가 정해지면 해당 업체의 결제 생성·서명 검증·환불/갱신 흐름을 추가 연동해야 합니다.</li>
+</ol>
+<p><small>적용한 Vercel bootstrap 가이드는 “Do not run db:push, db:migrate, db:seed, or dev until Vercel linking is complete and env keys are verified.”라고 명시합니다. 현재는 프로젝트 접근 권한이 확인되지 않아 DB 변경을 실행하지 않았습니다. <a href="C:/Users/김태환/.codex/plugins/cache/openai-curated-remote/vercel/0.54.1/skills/bootstrap/SKILL.md">읽은 bootstrap SKILL.md</a></small></p>
+<h2>검증 결과</h2>
+<ul><li>자동 테스트 <strong>47개 통과</strong>: 기존 UI 회귀, 인증·학원 분리, 서버 채점, 포인트·재시도, 월경계, 파일 권한·크기·형식, 발송 비활성/결과 불명 재시도 차단, 설정 충돌, 편집창 회귀 포함.</li>
+<li><code>node node_modules/typescript/bin/tsc -p tsconfig.portal.json</code>: 통과. 새 운영 API와 인증/학습 헬퍼 및 계정 설정 스크립트 범위입니다.</li><li><code>prisma validate</code>: 통과. Prisma Client 생성 완료.</li>
+<li>운영 배포 파일 생성 완료. 관리 화면 포함, 참조 스크립트 누락 0건, 전체 회원 덤프와 PHP 설정 제외를 확인했습니다.</li><li>테스트는 메모리 대역을 사용합니다. 실제 Postgres 잠금·트랜잭션, Vercel 함수 실행, Aligo 전달 성공, 실제 결제는 검증하지 않았습니다.</li>
+<li>Git 커밋·푸시는 하지 않았습니다. GitHub Desktop에서 변경 내용을 확인할 수 있습니다.</li></ul>
+</body></html>

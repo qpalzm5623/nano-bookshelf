@@ -698,6 +698,10 @@
       background: #eee8dd;
     }
   </style>
+<script src="js/preview-data.js?v=20261014"></script>
+<script src="js/portal-client.js?v=20261014"></script>
+<link rel="stylesheet" href="css/preview-ux.css?v=20261014">
+<script src="js/preview-ux.js?v=20261014" defer></script>
 </head>
 <body>
 
@@ -4305,7 +4309,7 @@
           <i class="fa-solid fa-cloud-arrow-up text-muted mb-2" style="font-size: 36px;"></i>
           <h6 class="font-weight-bold mb-1" id="excelFileNameText">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
           <small class="text-muted">지원 형식: .xlsx, .xls, .csv (최대 10MB)</small>
-          <input type="file" id="memberExcelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileSelect(this)">
+          <input type="file" id="memberExcelFileInput" accept=".csv,text/csv" style="display: none;" onchange="handleExcelFileSelect(this)">
         </div>
 
         <div class="p-3 bg-light rounded" style="font-size: 12px; color: var(--text-muted);">
@@ -4337,10 +4341,10 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="upload/banner/banners_data.js"></script>
-<script src="upload/banner/themes_data.js"></script>
-<script src="migrated_real_data.js?v=20261007_real_v9"></script>
-<script src="master_preview.js?v=20261007_real_v9"></script>
+
+
+
+<script src="master_preview.js?v=20261014_ux2"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>
@@ -4355,5 +4359,6 @@
 <!-- PWA 모바일 설치 유도 스크립트 -->
 <script src="js/pwa-install.js"></script>
 
+<script src="js/portal-extras.js"></script>
 </body>
 </html>

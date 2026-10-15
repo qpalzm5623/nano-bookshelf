@@ -1,0 +1,23 @@
+/* 키보드 초점과 터치 조작을 본사·학원 화면에 동일하게 적용합니다. */
+:focus-visible { outline: 3px solid #087f71 !important; outline-offset: 3px; }
+.nano-menu-toggle { display: none; }
+.nano-storage-notice { padding: 10px 14px; margin-bottom: 16px; border: 1px solid #d8c9a6; border-radius: 10px; background: #fff9e9; color: #554622; font-size: 13px; line-height: 1.5; }
+.nano-table-hint { display: none; }
+[role="status"] { overflow-wrap: anywhere; }
+@media screen and (max-width: 900px) {
+  .nano-menu-toggle { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; border-radius: 8px; background: white; color: #285d51; border: 1px solid #b5c8bf; }
+  .app-container { position: relative; }
+  .simple-sidebar { display: none !important; position: absolute; top: 0; left: 0; width: min(85vw, 280px) !important; height: 100% !important; box-shadow: 10px 0 30px #0003; z-index: 1040; }
+  body.nano-menu-open .simple-sidebar { display: flex !important; }
+  .main-workspace { padding: 16px 12px 32px !important; }
+  .simple-header { padding-left: 12px !important; padding-right: 12px !important; gap: 8px; }
+  .simple-header .logo-area span { display: none; }
+  .nav-item-btn, .main-workspace button { min-height: 40px; }
+  .main-workspace input, .main-workspace select { font-size: 16px !important; max-width: 100%; }
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nano-table-hint { display: block; margin: 8px 0; color: #5f635f; font-size: 13px; }
+  #masterToast, #academyToast { left: 12px !important; right: 12px !important; min-width: 0 !important; max-width: calc(100vw - 24px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

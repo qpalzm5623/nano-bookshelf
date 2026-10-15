@@ -10,7 +10,10 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "db:backup": "tsx scripts/backup.ts",
-    "build": "prisma generate"
+    "build": "node scripts/prepare-portal.cjs && node scripts/build-portal.cjs",
+    "test:ux": "node --test scripts/preview-ux.test.cjs scripts/portal-api.test.cjs scripts/portal-operations.test.cjs",
+    "portal:password": "tsx scripts/set-portal-password.ts",
+    "typecheck:portal": "tsc -p tsconfig.portal.json"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

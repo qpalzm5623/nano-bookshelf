@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "target": "ES2022", "module": "commonjs", "strict": true, "skipLibCheck": true, "esModuleInterop": true, "noEmit": true },
+  "include": ["api/**/*.ts", "lib/portal*.ts", "lib/prisma.ts", "scripts/set-portal-password.ts"]
+}

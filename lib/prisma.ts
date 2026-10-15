@@ -3,6 +3,9 @@
 // ==============================================================
 import { PrismaClient } from '@prisma/client';
 
+// Vercel Neon 통합이 제공하는 직접 연결 변수를 기존 설정 이름과 호환합니다.
+process.env.DIRECT_URL ||= process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING;
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };

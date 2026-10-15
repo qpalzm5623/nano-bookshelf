@@ -428,6 +428,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
+<script src="js/portal-client.js?v=20261014"></script>
 </head>
 <body>
 
@@ -582,19 +583,28 @@
       'admin01': {
         pw: 'admin01',
         role: 'admin',
-        name: '김은영 원장님 (나노 독서아카데미 본원)',
+        name: '김은영 원장님 (체험 학원)',
+        academyId: 'DEMO-ACADEMY',
+        academyName: '체험 학원',
         redirectUrl: 'admin_preview.html'
       },
       'admin': {
         pw: 'admin123',
         role: 'admin',
-        name: '김은영 원장님 (나노 독서아카데미 본원)',
+        name: '김은영 원장님 (체험 학원)',
+        academyId: 'DEMO-ACADEMY',
+        academyName: '체험 학원',
         redirectUrl: 'admin_preview.html'
       },
       'student01': {
         pw: 'student01',
         role: 'student',
         name: '김나노 학생 (초등 4학년)',
+        studentName: '김나노',
+        studentId: 'student01',
+        academyId: 'DEMO-ACADEMY',
+        academyName: '체험 학원',
+        classGroup: '체험반',
         redirectUrl: 'student_preview.html'
       }
     };
@@ -625,7 +635,7 @@
     }
 
     // 로그인 제출 처리
-    function handleLoginSubmit(event) {
+    async function handleLoginSubmit(event) {
       if (event) event.preventDefault();
       
       const idInput = document.getElementById('userId');
@@ -637,7 +647,7 @@
       const btnLogin = document.getElementById('btnLogin');
 
       const inputId = idInput.value.trim();
-      const inputPw = pwInput.value.trim();
+      const inputPw = pwInput.value;
 
       // 유효성 체크
       if (!inputId) {
@@ -651,6 +661,17 @@
         return;
       }
 
+      if (window.NanoPortal && NanoPortal.remote) {
+        btnLogin.disabled = true;
+        try {
+          const data = await NanoPortal.request('login', { username: inputId, password: inputPw });
+          sessionStorage.setItem('nano_auth_user', JSON.stringify(data.user));
+          if (rememberMe) localStorage.setItem('nano_saved_id', inputId); else localStorage.removeItem('nano_saved_id');
+          location.href = data.user.role === 'master' ? 'master_preview.html' : data.user.role === 'student' ? 'student_preview.html' : 'admin_preview.html';
+        } catch(e) { errorMessage.textContent = e.message; errorAlert.style.display = 'block'; }
+        finally { btnLogin.disabled = false; }
+        return;
+      }
       // 계정 검증
       let user = ACCOUNTS[inputId];
 
@@ -692,8 +713,11 @@
                 const isDirector = foundMem.role === 'DIRECTOR';
                 user = {
                   pw: foundMem.password || 'nano1234!',
-                  role: (isTeacher || isDirector) ? 'admin' : 'student',
+                  role: isTeacher ? 'teacher' : isDirector ? 'admin' : 'student',
                   name: `${foundMem.name} (${foundMem.academyName || '원생'})`,
+                  studentName: foundMem.name,
+                  studentId: foundMem.username,
+                  classGroup: foundMem.className || '미지정',
                   academyId: foundMem.academyId,
                   academyName: foundMem.academyName,
                   redirectUrl: (isTeacher || isDirector) ? 'admin_preview.html' : 'student_preview.html'
@@ -706,25 +730,23 @@
         }
       }
 
-      // LocalStorage 및 등록된 교사 계정 확인
+      // 로컬 체험에서도 학원별 교사 저장 키를 동일하게 사용합니다.
       if (!user) {
         try {
-          const stored = localStorage.getItem('NANO_ACADEMY_TEACHERS');
-          if (stored) {
-            const list = JSON.parse(stored);
-            const found = list.find(t => (t.username && t.username.toLowerCase() === inputId.toLowerCase()) || (t.id && t.id.toLowerCase() === inputId.toLowerCase()));
-            if (found) {
-              user = {
-                pw: found.password || '1234',
-                role: 'teacher',
-                name: `${found.name} 지도교사 (나노 독서아카데미 본원)`,
-                redirectUrl: 'admin_preview.html'
-              };
-            }
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key.startsWith('NANO_ACADEMY_TEACHERS_')) continue;
+            const teachers = JSON.parse(localStorage.getItem(key));
+            if (!Array.isArray(teachers)) continue;
+            const found = teachers.find(t => String(t.username || t.id).toLowerCase() === inputId.toLowerCase());
+            if (!found || !found.password || found.password === '••••') continue;
+            const academyId = key.slice('NANO_ACADEMY_TEACHERS_'.length);
+            const academy = (window.MIGRATED_FRANCHISES || []).find(a => a.id === academyId);
+            user = { pw: found.password, role: 'teacher', name: found.name,
+              academyId, academyName: academy ? academy.name : '체험 학원', redirectUrl: 'admin_preview.html' };
+            break;
           }
-        } catch (e) {
-          console.warn('교사 계정 조회 실패:', e);
-        }
+        } catch(e) { console.warn('교사 계정 조회 실패'); }
       }
 
       // 기본 더미 교사 계정 fallback
@@ -738,6 +760,7 @@
           pw: '1234',
           role: 'teacher',
           name: fallbackNames[inputId] || '지도교사',
+          academyId: 'DEMO-ACADEMY', academyName: '체험 학원',
           redirectUrl: 'admin_preview.html'
         };
       }
@@ -759,6 +782,9 @@
           name: user.name,
           academyId: user.academyId || '',
           academyName: user.academyName || '',
+          studentName: user.studentName || '',
+          studentId: user.studentId || inputId,
+          classGroup: user.classGroup || '',
           loginTime: new Date().toISOString()
         };
         sessionStorage.setItem('nano_auth_user', JSON.stringify(sessionData));

@@ -3,7 +3,7 @@
  * PWA 오프라인 지원, 캐싱 및 빠른 로딩 처리
  */
 
-const CACHE_NAME = 'nano-bookshelf-v1.0.0';
+const CACHE_NAME = 'nano-bookshelf-v20261014-server2';
 
 // 오프라인 및 기본 캐싱 대상 핵심 리소스
 const PRECACHE_ASSETS = [
@@ -44,7 +44,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((name) => {
-          if (name !== CACHE_NAME) {
+          if (name.startsWith('nano-bookshelf-') && name !== CACHE_NAME) {
             console.log('[PWA SW] Clearing old cache:', name);
             return caches.delete(name);
           }
@@ -63,7 +63,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
 
   // POST 요청이나 chrome-extension, API 호출 등은 네트워크로 바로 통과
-  if (req.method !== 'GET' || !req.url.startsWith('http')) {
+  if (req.method !== 'GET' || !req.url.startsWith('http') || url.pathname.startsWith('/api/') || url.pathname.endsWith('.php') || url.pathname.includes('migrated_real_data')) {
     return;
   }
 
@@ -94,7 +94,7 @@ self.addEventListener('fetch', (event) => {
     fetch(req)
       .then((networkResponse) => {
         // 성공 응답 시 캐시 업데이트
-        if (networkResponse && networkResponse.status === 200) {
+        if (networkResponse && networkResponse.status === 200 && !/no-store|private/i.test(networkResponse.headers.get('Cache-Control') || '')) {
           const resClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(req, resClone);

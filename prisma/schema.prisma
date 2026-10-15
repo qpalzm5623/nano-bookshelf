@@ -353,6 +353,32 @@ model AligoDispatchLog {
 // --------------------------------------------------------------
 // Enums
 // --------------------------------------------------------------
+// 프리뷰 전용 옵션과 퀴즈 세트 등을 서버에서 버전 관리합니다.
+model PortalSetting {
+  key       String   @id
+  scope     String
+  value     Json
+  revision  Int      @default(1)
+  updatedAt DateTime @updatedAt
+  @@index([scope])
+  @@map("portal_settings")
+}
+
+// 작은 첨삭 파일은 인증된 API로만 내려주며 공개 업로드 폴더에 두지 않습니다.
+model PortalFile {
+  id        String   @id @default(cuid())
+  academyId String
+  memberId  String
+  attemptId String
+  name      String
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+  @@index([attemptId])
+  @@index([academyId])
+  @@map("portal_files")
+}
+
 enum PlanTier {
   BASIC
   STANDARD

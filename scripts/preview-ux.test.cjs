@@ -1,0 +1,357 @@
+// 브라우저나 서버 없이 실제 프리뷰 함수의 저장·복원·계정 분리를 검증합니다.
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const ts = require('typescript');
+const root = path.join(__dirname, '..', 'public_html');
+const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+
+function storage() {
+  const values = new Map();
+  return {
+    getItem: key => values.has(key) ? values.get(key) : null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: key => values.delete(key)
+  };
+}
+
+// 문자열의 중괄호가 아니라 TypeScript 파서로 함수의 정확한 범위를 가져옵니다.
+function loadFunctions(context, file, names) {
+  let source = read(file);
+  if (file.endsWith('.html')) {
+    source = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+      .map(match => match[1]).join('\n');
+  }
+  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  for (const name of names) {
+    const node = ast.statements.find(item => ts.isFunctionDeclaration(item) && item.name.text === name);
+    assert.ok(node, `${file}: ${name} 함수 없음`);
+    vm.runInContext(node.getText(ast), context);
+  }
+}
+
+function context(localStorage = storage()) {
+  const elements = new Map();
+  const notices = [];
+  function element() {
+    return {
+      value: '', style: {}, disabled: false, innerHTML: '', textContent: '',
+      classList: { add() {}, remove() {} },
+      setAttribute() {}, removeAttribute() {}, addEventListener() {}, appendChild() {}
+    };
+  }
+  const ctx = vm.createContext({
+    console: { warn() {}, error() {} }, localStorage, sessionStorage: storage(),
+    document: {
+      getElementById(id) {
+        if (!elements.has(id)) elements.set(id, element());
+        return elements.get(id);
+      },
+      createElement: element, querySelector: () => null, querySelectorAll: () => [],
+      addEventListener() {}
+    },
+    addEventListener() {}, scrollTo() {}, toast: message => notices.push(message),
+    showAcademyToast: message => notices.push(message),
+    switchPanel() {}, openBookDetail() {},
+    getUserCharacterId: () => 'nano', getCharacterById: () => ({ name: '나노', themeColor: '#185b45' }),
+    getCharacterSvg: () => '', CHAR_QUIZ_FEEDBACKS: { nano: { perfect: '', high: '', pass: '', retry: '' } },
+    curBook: null, curData: null, curQ: 0, curSelectedQuizSet: null, anss: [],
+    studentSelectedAnsMap: {}, currentStudentThoughtAnswer: '', studentQuizAttemptId: null,
+    studentQuizDraftKey: null, studentQuizSignature: '', studentQuizOwner: null,
+    studentQuizSubmitted: false, currentDetailBookId: null, prevPanel: 'books',
+    currentAcademyInfo: { id: 'A' }, MIGRATED_LEARNING_LOGS: [], notices
+  });
+  ctx.window = ctx;
+  vm.runInContext(read('js/learning-storage.js'), ctx);
+  vm.runInContext(read('js/preview-data.js'), ctx);
+  return ctx;
+}
+
+function student(localStorage, account = 'student-a', academyId = 'A') {
+  const ctx = context(localStorage);
+  ctx.sessionStorage.setItem('nano_auth_user', JSON.stringify({
+    id: account, role: 'student', studentName: '검증 학생 ' + account,
+    academyId, academyName: '검증 학원', classGroup: '검증반'
+  }));
+  loadFunctions(ctx, 'student_preview.html', [
+    'getStudentQuizIdentity', 'updateStudentSessionLabels', 'setQuizDraftStatus', 'escapeStudentQuizText', 'saveStudentQuizDraft',
+    'startQuizWithSet', 'renderQ', 'onThoughtTextareaInput', 'selectAns', 'goNext',
+    'goPreviousQuestion', 'showResult', 'syncQuizResultToAdminLearning', 'backToSelect'
+  ]);
+  return ctx;
+}
+
+const book = { id: 'BOOK-1', title: '검증 도서', thinkInsert: '나의 생각은?' };
+const quiz = { id: 'SET-1', authorName: '본사', questions: [
+  { question: '첫 문제', options: ['가', '나'], ans: '2' },
+  { question: '둘째 문제', options: ['다', '라'], ans: '1' }
+] };
+
+function answerAll(ctx) {
+  ctx.startQuizWithSet(book, quiz);
+  ctx.selectAns(1);
+  ctx.goNext();
+  ctx.selectAns(0);
+  ctx.goNext();
+  ctx.onThoughtTextareaInput('내 생각 <태그> & 줄바꿈\n두 번째 줄');
+}
+
+test('수정한 HTML/JS의 모든 실행 스크립트가 구문 검사에 통과한다', () => {
+  for (const file of ['index.html', 'student_preview.html', 'admin_preview.html', 'master_preview.html']) {
+    for (const match of read(file).matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+      if (!/\bsrc\s*=/.test(match[1]) && match[2].trim()) new vm.Script(match[2], { filename: file });
+    }
+  }
+  for (const file of ['admin_preview.js', 'master_preview.js', 'js/learning-storage.js', 'js/preview-data.js', 'js/portal-client.js', 'js/preview-ux.js', 'service-worker.js']) {
+    new vm.Script(read(file), { filename: file });
+  }
+});
+
+test('본사·학원 검색은 포커스 상실과 계정명 입력 후에도 유지된다', () => {
+  const ctx = context();
+  for (const name of ['filterFranchiseList', 'filterMemberList', 'filterStudentRankings',
+    'filterMasterContentList', 'filterDispatchList', 'filterMasterPaymentList']) ctx[name] = () => {};
+  loadFunctions(ctx, 'master_preview.js', ['purgeAutofilledSearchInputs', 'bindMasterSearchAutofillGuards']);
+  loadFunctions(ctx, 'admin_preview.js', ['clearAdminSearchAutofill']);
+  const master = ctx.document.getElementById('memberSearchInput');
+  const admin = ctx.document.getElementById('searchStudentInput');
+  master.value = 'student01';
+  admin.value = '검증 학생';
+  ctx.bindMasterSearchAutofillGuards();
+  ctx.purgeAutofilledSearchInputs();
+  ctx.clearAdminSearchAutofill();
+  assert.equal(master.value, 'student01');
+  assert.equal(admin.value, '검증 학생');
+});
+
+test('실제 본사 필터와 랭킹 검색에서도 계정명으로 올바른 결과를 찾는다', () => {
+  const ctx = context();
+  let memberResult, franchiseResult;
+  Object.assign(ctx, {
+    franchiseList: [{ adminId: 'admin01' }, { adminId: 'unrelated' }],
+    memberList: [{ username: 'student01' }, { username: 'unrelated' }],
+    currentSelectedAcademy: 'ALL',
+    renderFranchiseTable: list => { franchiseResult = list; },
+    renderMemberTable: list => { memberResult = list; },
+    syncRankingDatasetsFromWindow() {}, renderRankingPagination() {},
+    rankingCurrentPage: 1, rankingPageSize: 20, academyRankingData: [],
+    allStudentRankings: [
+      { id: 'student01', name: '검증 학생', academy: 'A', points: 100 },
+      { id: 'unrelated', name: '다른 학생', academy: 'A', points: 50 }
+    ]
+  });
+  loadFunctions(ctx, 'master_preview.js', ['filterFranchiseList', 'filterMemberList', 'renderRankings']);
+  ctx.document.getElementById('franchiseSearchInput').value = 'admin01';
+  ctx.document.getElementById('memberSearchInput').value = 'student01';
+  ctx.document.getElementById('rankStudentSearchInput').value = 'student01';
+  ctx.filterFranchiseList();
+  ctx.filterMemberList();
+  ctx.renderRankings();
+  assert.equal(franchiseResult.length, 1);
+  assert.equal(franchiseResult[0].adminId, 'admin01');
+  assert.equal(memberResult.length, 1);
+  assert.equal(memberResult[0].username, 'student01');
+  assert.equal(ctx.document.getElementById('rankStudentSearchInput').value, 'student01');
+  assert.equal(ctx.document.getElementById('rankTotalCount').innerText, 1);
+});
+
+test('같은 학원은 이관 기록과 신규 제출을 함께 읽고 다른 학원 기록은 제외한다', () => {
+  const ctx = context();
+  const seeds = [{ id: 'old-a', academyId: 'A' }, { id: 'old-b', academyId: 'B' }];
+  ctx.NanoLearningStore.add('A', { id: 'new-a', academyId: 'A' }, seeds);
+  assert.equal(ctx.NanoLearningStore.read('A').length, 2);
+  assert.equal(ctx.NanoLearningStore.read('B').length, 0);
+  assert.throws(() => ctx.NanoLearningStore.save('A', [{ id: 'bad', academyId: 'B' }]));
+});
+
+test('빈 학원과 의도적으로 저장한 빈 목록을 다른 학원 예시로 대체하지 않는다', () => {
+  const ctx = context();
+  ctx.MIGRATED_LEARNING_LOGS = [{ id: 'other', academyId: 'B', date: '2026-10-01' }];
+  loadFunctions(ctx, 'admin_preview.js', ['getLearningAcademyId', 'getLoadedLearningLogs', 'saveCustomLearningLogs']);
+  assert.equal(ctx.getLoadedLearningLogs().length, 0);
+  ctx.NanoLearningStore.save('A', []);
+  ctx.MIGRATED_LEARNING_LOGS.push({ id: 'seed-a', academyId: 'A' });
+  assert.equal(ctx.getLoadedLearningLogs().length, 0);
+  ctx.currentAcademyInfo.id = 'B';
+  assert.equal(ctx.getLoadedLearningLogs()[0].id, 'other');
+});
+
+test('손상된 저장소를 덮어쓰지 않고 오류로 반환한다', () => {
+  const ctx = context();
+  ctx.localStorage.setItem('NANO_LEARNING_LOGS_A', '{broken');
+  assert.throws(() => ctx.NanoLearningStore.add('A', { id: 'new', academyId: 'A' }));
+  assert.equal(ctx.localStorage.getItem('NANO_LEARNING_LOGS_A'), '{broken');
+});
+
+test('새 페이지에서 객관식·생각 담기·문제 위치·풀이 ID를 복원한다', () => {
+  const shared = storage();
+  const first = student(shared);
+  answerAll(first);
+  const id = first.studentQuizAttemptId;
+  const second = student(shared);
+  second.startQuizWithSet(book, quiz);
+  assert.equal(second.curQ, 2);
+  assert.equal(second.studentSelectedAnsMap[0], 1);
+  assert.equal(second.currentStudentThoughtAnswer, first.currentStudentThoughtAnswer);
+  assert.equal(second.studentQuizAttemptId, id);
+});
+
+test('학생·학원·퀴즈 세트별 초안을 서로 섞지 않는다', () => {
+  const shared = storage();
+  const first = student(shared);
+  answerAll(first);
+  for (const [account, academy, set] of [
+    ['student-b', 'A', quiz], ['student-a', 'B', quiz], ['student-a', 'A', { ...quiz, id: 'SET-2' }]
+  ]) {
+    const other = student(shared, account, academy);
+    other.startQuizWithSet(book, set);
+    assert.equal(other.curQ, 0);
+    assert.equal(Object.keys(other.studentSelectedAnsMap).length, 0);
+    assert.equal(other.currentStudentThoughtAnswer, '');
+  }
+});
+
+test('밑줄이 있는 소속/계정과 ID 없는 여러 퀴즈도 각각의 초안을 유지한다', () => {
+  const shared = storage();
+  const first = student(shared, 'b', 'A_x');
+  first.startQuizWithSet(book, quiz);
+  first.selectAns(1);
+  const other = student(shared, 'x_b', 'A');
+  other.startQuizWithSet(book, quiz);
+  assert.notEqual(other.studentQuizDraftKey, first.studentQuizDraftKey);
+  assert.equal(Object.keys(other.studentSelectedAnsMap).length, 0);
+  const noId = student(shared);
+  noId.startQuizWithSet(book, { ...quiz, id: undefined });
+  noId.selectAns(1);
+  const previousKey = noId.studentQuizDraftKey;
+  noId.startQuizWithSet(book, { ...quiz, id: undefined, questions: [{ question: '다른 문제', opt1: '예', ans: '1' }] });
+  assert.notEqual(noId.studentQuizDraftKey, previousKey);
+  assert.ok(shared.getItem(previousKey));
+});
+
+test('학생 화면의 이름과 학급은 로그인 정보로 표시한다', () => {
+  const ctx = student();
+  ctx.updateStudentSessionLabels();
+  assert.equal(ctx.document.getElementById('headerStudentName').textContent, '검증 학생 student-a');
+  assert.equal(ctx.document.getElementById('drawerStudentClass').textContent, '검증 학원 · 검증반');
+});
+
+test('이전 문제에서 답을 수정해도 생각 담기와 다른 답은 유지된다', () => {
+  const ctx = student();
+  answerAll(ctx);
+  ctx.goPreviousQuestion();
+  assert.equal(ctx.curQ, 1);
+  ctx.selectAns(1);
+  ctx.goNext();
+  assert.equal(ctx.studentSelectedAnsMap[0], 1);
+  assert.ok(ctx.currentStudentThoughtAnswer.includes('<태그>'));
+});
+
+test('학생 저장 기록이 같은 학원 관리자에게 정확한 답안과 신원으로 보인다', () => {
+  const shared = storage();
+  const ctx = student(shared);
+  answerAll(ctx);
+  ctx.showResult();
+  const admin = context(shared);
+  loadFunctions(admin, 'admin_preview.js', ['getLearningAcademyId', 'getLoadedLearningLogs']);
+  const logs = admin.getLoadedLearningLogs();
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].studentId, 'student-a');
+  assert.equal(logs[0].studentName, '검증 학생 student-a');
+  assert.equal(logs[0].classGroup, '검증반');
+  assert.equal(logs[0].score, 100);
+  assert.equal(logs[0].quizResults.length, 2);
+  assert.equal(logs[0].quizResults[0].userChoiceText, '나');
+  assert.equal(logs[0].studentThoughtAnswer, ctx.currentStudentThoughtAnswer);
+  assert.equal(logs[0].sheet, '작성 완료');
+  assert.match(logs[0].date, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(shared.getItem(ctx.studentQuizDraftKey), null);
+  assert.ok(!ctx.document.getElementById('rPt').textContent.includes('포인트 지급'));
+});
+
+test('같은 풀이의 저장 재시도와 완료 버튼 반복 호출이 기록을 중복 생성하지 않는다', () => {
+  const ctx = student();
+  answerAll(ctx);
+  assert.equal(ctx.syncQuizResultToAdminLearning(book.title, 100, ctx.currentStudentThoughtAnswer), true);
+  assert.equal(ctx.syncQuizResultToAdminLearning(book.title, 100, ctx.currentStudentThoughtAnswer), true);
+  ctx.showResult();
+  ctx.showResult();
+  assert.equal(ctx.NanoLearningStore.read('A').length, 1);
+});
+
+test('저장 실패 때 완료 화면을 열지 않고 답안과 초안을 유지한다', () => {
+  const ctx = student();
+  answerAll(ctx);
+  ctx.localStorage.setItem = () => { throw new Error('저장 공간 부족'); };
+  ctx.showResult();
+  assert.equal(ctx.studentQuizSubmitted, false);
+  assert.equal(ctx.document.getElementById('qscreen-ing').style.display, 'block');
+  assert.ok(ctx.localStorage.getItem(ctx.studentQuizDraftKey));
+  assert.ok(ctx.currentStudentThoughtAnswer);
+  assert.ok(ctx.document.getElementById('quizDraftStatus').textContent.includes('저장하지 못했습니다'));
+  ctx.backToSelect();
+  assert.ok(ctx.curData);
+});
+
+test('계정이 바뀐 풀이를 다른 학생의 기록으로 저장하지 않는다', () => {
+  const ctx = student();
+  answerAll(ctx);
+  ctx.sessionStorage.setItem('nano_auth_user', JSON.stringify({ id: 'student-b', role: 'student', academyId: 'A' }));
+  ctx.showResult();
+  assert.equal(ctx.studentQuizSubmitted, false);
+  assert.equal(ctx.NanoLearningStore.read('A').length, 0);
+});
+
+test('미응답을 검토하도록 이동하며 비로그인 사용자는 퀴즈를 시작하지 않는다', () => {
+  const ctx = student();
+  ctx.startQuizWithSet(book, quiz);
+  ctx.showResult();
+  assert.equal(ctx.curQ, 0);
+  assert.equal(ctx.NanoLearningStore.read('A').length, 0);
+  const guest = student();
+  guest.sessionStorage.removeItem('nano_auth_user');
+  guest.startQuizWithSet(book, quiz);
+  assert.equal(guest.curData, null);
+});
+
+test('복원한 텍스트가 HTML로 실행되지 않도록 이스케이프한다', () => {
+  const ctx = student();
+  assert.equal(ctx.escapeStudentQuizText('</textarea><script>&'), '&lt;/textarea&gt;&lt;script&gt;&amp;');
+});
+
+
+test('학원 배정은 동일 이름의 다른 학원·학생과 섞이지 않고 빈 목록도 보존한다', () => {
+  const ctx = context(); const data = ctx.NanoPreviewData;
+  data.saveAssignments('A', [{studentId:'s1', books:[{id:'book-a'}]}], [{className:'1반',books:[{id:'class-a'}]}]);
+  data.saveAssignments('B', [{studentId:'s1', books:[{id:'book-b'}]}], []);
+  assert.equal(data.assignedBookIds({academyId:'A',studentId:'s1',classGroup:'1반'}).join(','), 'book-a,class-a');
+  assert.equal(data.assignedBookIds({academyId:'B',studentId:'s1',classGroup:'1반'}).join(','), 'book-b');
+  data.saveAssignments('A', [], []); assert.equal(data.readAssignments('A').students.length, 0);
+});
+
+test('CSV의 한글·줄바꿈·따옴표를 읽고 수식 실행을 방지한다', () => {
+  const data = context().NanoPreviewData;
+  const rows = data.parseCSV('이름,설명\r\n"홍,길동","첫 줄\n둘째 ""인용"""');
+  assert.equal(rows[1][0], '홍,길동'); assert.equal(rows[1][1], '첫 줄\n둘째 "인용"');
+  assert.match(data.csvCell('=1+1'), /^"'/); assert.throws(() => data.parseCSV('"닫지 않은 값'));
+});
+
+test('원생이 없는 학원은 다른 학원 원생을 가져오지 않고 저장한 빈 목록을 유지한다', () => {
+  const ctx = context(); ctx.STORAGE_KEY_STUDENTS = 'students-A';
+  ctx.MIGRATED_MEMBERS = [{ username:'foreign', role:'STUDENT', academyId:'B', academyName:'같은 이름' }];
+  loadFunctions(ctx, 'admin_preview.js', ['loadStudentsFromStorage']);
+  assert.equal(ctx.loadStudentsFromStorage().length, 0);
+  ctx.MIGRATED_MEMBERS.push({username:'own',role:'STUDENT',academyId:'A',name:'학생'});
+  const own = ctx.loadStudentsFromStorage()[0]; assert.equal(own.gender,'미등록'); assert.equal(own.parentEmail,'');
+  ctx.localStorage.setItem('students-A', '[]'); assert.equal(ctx.loadStudentsFromStorage().length,0);
+});
+
+test('서버 저장 실패 시 완료 처리하지 않고 초안을 유지한다', async () => {
+  const ctx = student(); ctx.startQuizWithSet(book, quiz);
+  ctx.studentSelectedAnsMap = {0:0,1:1}; ctx.currentStudentThoughtAnswer='내 생각';
+  ctx.NanoPortal = { remote:true, request:async () => { throw new Error('서버 저장 실패'); } };
+  await ctx.showResult(); assert.equal(ctx.studentQuizSubmitted,false);
+  assert.ok(ctx.localStorage.getItem(ctx.studentQuizDraftKey)); assert.equal(ctx.studentSubmissionPending,false);
+});
