@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nano BookShelf 구현 결과와 운영 연결 안내</title>
 <style>body{max-width:1050px;margin:40px auto;padding:0 24px;font-family:system-ui,'Malgun Gothic',sans-serif;line-height:1.85;color:#203c33}h1,h2{line-height:1.4}h2{margin-top:38px}table{border-collapse:collapse;width:100%}td,th{padding:12px;border:1px solid #dbe5df;text-align:left;vertical-align:top}th{background:#edf5ef}code{background:#edf5ef;padding:2px 5px;overflow-wrap:anywhere}.note{background:#fff5d9;padding:18px;border-radius:12px}.success{background:#e9f6ee;padding:18px;border-radius:12px}small{color:#586b63}pre{background:#f2f6f3;padding:16px;overflow:auto}@media(max-width:640px){body{padding:0 12px}td,th{padding:8px;font-size:13px}}</style></head><body>
-<h1>남은 기능 구현 결과와 운영 연결 안내</h1><small>최종 갱신: 2026-10-15 · Vercel + Postgres · Git 커밋/푸시 없음</small>
+<h1>남은 기능 구현 결과와 운영 연결 안내</h1><small>최종 갱신: 2026-10-15 · Vercel + Postgres · 구현 커밋 e59e017a</small>
 <p class="success">회원·학급·배정·콘텐츠·포트폴리오를 관리하는 공통 서버 화면, 최초 완료 100P + 최초 생각담기 50P, 월별 랭킹, 첨삭 파일, 개인 설정 동기화와 학습 기록 이관 코드를 추가했습니다.</p>
-<p class="note"><strong>운영 배포 완료 상태는 아닙니다.</strong> 연결된 Vercel 계정은 프로젝트 목록을 조회할 수 있지만 <code>looklearning</code> 팀의 프로젝트 상세·환경변수 조회에서 403 권한 오류가 발생했습니다. 따라서 운영 DB 테이블 추가, 서버 비밀번호 설정, 배포와 실제 서비스 검증은 실행하지 않았습니다. 알림톡·결제 운영 정보도 아직 없어 비활성 상태입니다.</p>
+<p class="note"><strong>배포 준비를 완료하고 GitHub 인증을 진행 중입니다.</strong> 팀 식별자를 생략한 Vercel 커넥터 요청으로 프로젝트와 환경변수 접근을 확인했습니다. 기존 Postgres 연결을 확인하고 운영용 세션 서명 비밀키를 등록했습니다. 배포 빌드에서 추가 테이블과 비밀번호 해시 전환을 실행하도록 구성했으며, 운영 배포 완료는 아직 확인하지 않았습니다. 알림톡·결제 운영 정보가 없어 해당 외부 연동은 비활성 상태입니다.</p>
 <h2>실제 사용 흐름의 변화</h2>
 <table><thead><tr><th>영역</th><th>구현한 동작</th><th>확인할 점</th></tr></thead><tbody>
 <tr><td>운영 관리</td><td><code>manage.html</code>에서 본사·학원이 같은 화면과 API를 사용합니다. 기존 편집 버튼과 운영 메뉴가 이 화면으로 연결됩니다. 검색, 빈 목록, 저장 오류, CSV 내보내기, 모바일 메뉴와 키보드 초점을 제공합니다.</td><td>학생은 관리 API에 접근할 수 없습니다. 교사는 배정·보유 도서·포트폴리오, 원장은 회원·학급까지, 본사는 가맹 학원·전체 콘텐츠를 변경할 수 있습니다.</td></tr>
@@ -20,18 +20,18 @@
 </tbody></table>
 <h2>운영 연결에 남은 작업</h2>
 <ol>
-<li><strong>Vercel 접근 복구:</strong> <code>nano-bookshelf</code> 프로젝트가 속한 <code>looklearning</code> 팀에 접근 가능한 계정으로 커넥터를 재연결합니다. 현재 프로젝트 상세와 환경변수 조회가 403입니다.</li>
-<li><strong>환경 확인:</strong> 실제 프로젝트와 Postgres가 올바르게 연결됐는지 확인하고 <code>DATABASE_URL</code>, <code>DIRECT_URL</code>, 무작위 32자 이상의 <code>PORTAL_AUTH_SECRET</code>을 서버 환경변수에 설정합니다. <a href="../.env.example">환경변수 예시</a>에는 값 없이 필요한 이름과 용도를 정리했습니다.</li>
-<li><strong>추가 테이블:</strong> 연결 대상을 확인한 뒤 <a href="../prisma/portal-upgrade.sql">portal-upgrade.sql</a>을 적용합니다. 개인 설정·포트폴리오용 <code>portal_settings</code>, 비공개 첨부용 <code>portal_files</code>를 추가하는 SQL입니다. 기존 테이블 삭제나 초기화는 포함하지 않습니다. SQL은 아직 실행하지 않았습니다.</li>
-<li><strong>운영 계정:</strong> 기존 이관 계정은 평문 비밀번호로 로그인할 수 없습니다. 승인된 운영 계정의 비밀번호를 <code>scripts/set-portal-password.ts</code>로 설정한 뒤 초기 설정 환경변수를 제거합니다. 첫 본사 계정은 <code>MASTER</code>여야 합니다. 실제 계정 변경은 아직 하지 않았습니다.</li>
+<li><strong>Vercel 접근:</strong> <code>nano-bookshelf</code> 프로젝트 상세와 환경변수 조회 성공. 로컬 프로젝트 연결 정보도 등록했습니다.</li>
+<li><strong>환경 확인:</strong> 기존 <code>DATABASE_URL</code>과 비풀링 연결을 확인하고 운영 <code>PORTAL_AUTH_SECRET</code>을 등록했습니다. <code>DIRECT_URL</code>이 없으면 <code>DATABASE_URL_UNPOOLED</code> 또는 <code>POSTGRES_URL_NON_POOLING</code>을 사용합니다. <a href="../.env.example">환경변수 예시</a>에는 이름과 용도를 정리했습니다.</li>
+<li><strong>추가 테이블:</strong> 운영 빌드의 <code>scripts/prepare-portal.cjs</code>가 <a href="../prisma/portal-upgrade.sql">portal-upgrade.sql</a>을 적용합니다. 개인 설정·포트폴리오용 <code>portal_settings</code>, 비공개 첨부용 <code>portal_files</code>를 추가합니다. 기존 테이블 삭제나 초기화는 포함하지 않습니다.</li>
+<li><strong>운영 계정:</strong> 로컬 설정이 가리키는 DB에서 기존 평문 비밀번호 2,194건을 확인했습니다. 운영 빌드가 기존 입력 비밀번호를 유지하며 scrypt 해시로 전환하고 승인된 본사 계정을 확인합니다. 이미 전환된 계정은 다시 변경하지 않습니다. 계정 초기화가 필요한 경우 <code>scripts/set-portal-password.ts</code>를 사용합니다.</li>
 <li><strong>배포:</strong> 빌드 <code>npm run build</code>, 출력 <code>dist</code>. API는 <code>portal</code>, <code>bootstrap</code>, <code>manage</code>, <code>activity</code>, <code>files</code>, <code>services</code>가 필요합니다. 운영 빌드는 전체 회원 덤프와 PHP 서버 설정을 제외하고 인증 후 데이터를 가져옵니다.</li>
 <li><strong>실제 사용 확인:</strong> 별도 학생/교사 계정으로 로그인 → 배정 → 퀴즈 제출 → 150P 확인 → 재풀이 중복 적립 없음 → 다른 기기 첨삭/첨부 → 포트폴리오 인쇄를 확인합니다. 현재 검증은 로컬 자동 테스트이며 실제 DB·브라우저의 종단 간 검증은 아직 하지 않았습니다.</li>
 <li><strong>외부 서비스 활성화:</strong> Aligo 승인 발신 프로필·템플릿과 API 설정 후 <code>ALIGO_ENABLED=true</code>로 전환합니다. 결제 업체가 정해지면 해당 업체의 결제 생성·서명 검증·환불/갱신 흐름을 추가 연동해야 합니다.</li>
 </ol>
-<p><small>적용한 Vercel bootstrap 가이드는 “Do not run db:push, db:migrate, db:seed, or dev until Vercel linking is complete and env keys are verified.”라고 명시합니다. 현재는 프로젝트 접근 권한이 확인되지 않아 DB 변경을 실행하지 않았습니다. <a href="C:/Users/김태환/.codex/plugins/cache/openai-curated-remote/vercel/0.54.1/skills/bootstrap/SKILL.md">읽은 bootstrap SKILL.md</a></small></p>
+<p><small>프로젝트와 환경변수 확인을 완료했습니다. 운영 빌드는 필수 환경변수·스키마·본사 계정 검사에 실패하면 중단됩니다. 빌드 중 DB에 적용된 추가 테이블과 비밀번호 해시는 이후 빌드가 실패하더라도 유지됩니다.</small></p>
 <h2>검증 결과</h2>
-<ul><li>자동 테스트 <strong>47개 통과</strong>: 기존 UI 회귀, 인증·학원 분리, 서버 채점, 포인트·재시도, 월경계, 파일 권한·크기·형식, 발송 비활성/결과 불명 재시도 차단, 설정 충돌, 편집창 회귀 포함.</li>
+<ul><li>자동 테스트 <strong>48개 통과</strong>: 기존 UI 회귀, 인증·학원 분리, 서버 채점, 포인트·재시도, 월경계, 파일 권한·크기·형식, 발송 비활성/결과 불명 재시도 차단, 설정 충돌, 편집창 회귀, 비밀번호 해시 전환과 재실행 검증 포함.</li>
 <li><code>node node_modules/typescript/bin/tsc -p tsconfig.portal.json</code>: 통과. 새 운영 API와 인증/학습 헬퍼 및 계정 설정 스크립트 범위입니다.</li><li><code>prisma validate</code>: 통과. Prisma Client 생성 완료.</li>
 <li>운영 배포 파일 생성 완료. 관리 화면 포함, 참조 스크립트 누락 0건, 전체 회원 덤프와 PHP 설정 제외를 확인했습니다.</li><li>테스트는 메모리 대역을 사용합니다. 실제 Postgres 잠금·트랜잭션, Vercel 함수 실행, Aligo 전달 성공, 실제 결제는 검증하지 않았습니다.</li>
-<li>Git 커밋·푸시는 하지 않았습니다. GitHub Desktop에서 변경 내용을 확인할 수 있습니다.</li></ul>
+<li>사용자 요청에 따라 구현 변경을 <code>e59e017a</code>로 커밋했습니다. GitHub 푸시는 로컬 Git 인증이 필요합니다.</li></ul>
 </body></html>
