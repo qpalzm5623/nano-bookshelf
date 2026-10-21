@@ -65,10 +65,12 @@
   window.addEventListener('nano:ready',async()=>{
     if(!NanoPortal.remote||started)return;started=true;
     const user=NanoPortal.user();if(!user||user.role==='master')return;
-    const bar=document.createElement('div');bar.style.cssText='padding:10px 16px;background:#eff8f3;display:flex;flex-wrap:wrap;gap:12px';bar.setAttribute('aria-label','서버 학습 도구');
-    function button(label,run){const b=document.createElement('button');b.type='button';b.textContent=label;b.style.cssText='padding:10px;border:1px solid #becfc4;border-radius:8px;background:white;color:#20533f';b.onclick=async()=>{b.disabled=true;try{await run();}finally{b.disabled=false;}};bar.append(b);}
+    const bar=document.createElement('details');bar.className='nano-learning-tools';
+    const summary=document.createElement('summary');summary.textContent='학습 기록 · 첨삭 파일';bar.append(summary);
+    const actions=document.createElement('div');actions.className='nano-tool-actions';bar.append(actions);
+    function button(label,run){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=async()=>{b.disabled=true;try{await run();}finally{b.disabled=false;}};actions.append(b);}
     button('학습·첨삭 파일 보기',showHistory);
-    button('내 학습 기록 내보내기',async()=>{await NanoPortal.refreshLearning();download('nano-learning.json',NanoPortal.logs());});
+    button(user.role==='student'?'내 학습 기록 내보내기':'학원 학습 기록 내보내기',async()=>{await NanoPortal.refreshLearning();download('nano-learning.json',NanoPortal.logs());});
     if(user.role==='student'){
       button('이 기기의 이전 기록 이관',importLocal);
       // 기존의 성공 안내를 먼저 띄우는 로컬 토글 대신 저장 후 화면에 반영합니다.
@@ -78,6 +80,8 @@
       catch(e){notice('개인 기록 조회 실패: '+e.message);}
       window.addEventListener('nano:activity',()=>points().catch(e=>notice(e.message)));
     }
-    const host=document.querySelector('.main-workspace')||document.body;host.prepend(bar);
+    const host=document.querySelector('.main-workspace');
+    if(host) { const note=host.querySelector('.nano-storage-notice'); if(note)note.after(bar);else host.prepend(bar); }
+    else { const header=document.querySelector('header');if(header)header.after(bar);else document.body.prepend(bar); }
   });
 })();

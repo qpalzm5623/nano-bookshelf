@@ -1,8 +1,16 @@
 /* 키보드 초점과 터치 조작을 본사·학원 화면에 동일하게 적용합니다. */
 :focus-visible { outline: 3px solid #087f71 !important; outline-offset: 3px; }
+[hidden] { display: none !important; }
+.main-workspace { min-width: 0; }
+.nano-table-hint { display: none; margin: 10px 16px; color: #5f635f; font-size: 13px; }
+.table-responsive th:last-child:not([colspan]), .table-responsive td:last-child:not([colspan]) { position: sticky; right: 0; background: #fff; box-shadow: -5px 0 8px #253a2710; z-index: 1; }
+.nano-learning-tools { margin: 12px 0; padding: 12px 16px; border: 1px solid #dce8df; border-radius: 12px; background: #f5faf7; color: #285d51; }
+.nano-learning-tools summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.nano-learning-tools .nano-tool-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+.nano-learning-tools button { min-height: 44px; padding: 10px 12px; background: white; color: #285d51; border: 1px solid #bdcfc3; border-radius: 8px; }
+body > .nano-learning-tools { margin: 12px auto; width: calc(100% - 32px); max-width: 1200px; }
 .nano-menu-toggle { display: none; }
 .nano-storage-notice { padding: 10px 14px; margin-bottom: 16px; border: 1px solid #d8c9a6; border-radius: 10px; background: #fff9e9; color: #554622; font-size: 13px; line-height: 1.5; }
-.nano-table-hint { display: none; }
 [role="status"] { overflow-wrap: anywhere; }
 @media screen and (max-width: 900px) {
   .nano-menu-toggle { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 12px; border-radius: 8px; background: white; color: #285d51; border: 1px solid #b5c8bf; }
@@ -10,6 +18,18 @@
   .simple-sidebar { display: none !important; position: absolute; top: 0; left: 0; width: min(85vw, 280px) !important; height: 100% !important; box-shadow: 10px 0 30px #0003; z-index: 1040; }
   body.nano-menu-open .simple-sidebar { display: flex !important; }
   .main-workspace { padding: 16px 12px 32px !important; }
+  .top-header { min-height: 64px; height: auto !important; padding: 10px 12px !important; gap: 8px; flex-wrap: wrap; }
+  .top-header .brand-sub { display: none !important; }
+  .top-header .brand-logo-wrap { flex: 1 1 140px; min-width: 0; }
+  .top-header .brand-logo-wrap img { max-width: 155px; height: auto !important; }
+  .top-header > .d-flex { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .top-header .btn { min-height: 40px; white-space: nowrap; align-items: center; }
+  .top-header .text-right { display: none !important; }
+  .top-header .mr-2 { margin-right: 0 !important; }
+  .top-header button[onclick="openMyInfoModal()"] { padding: 8px !important; }
+  .top-header button[onclick="openMyInfoModal()"] span { display: none; }
+  .nano-storage-notice { font-size: 13px; }
+  .nano-menu-toggle { margin-bottom: 12px; }
   .simple-header { padding-left: 12px !important; padding-right: 12px !important; gap: 8px; }
   .simple-header .logo-area span { display: none; }
   .nav-item-btn, .main-workspace button { min-height: 40px; }
