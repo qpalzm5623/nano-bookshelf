@@ -278,13 +278,46 @@ const defaultFranchiseList = [
 ];
 
 // ==========================================
-// 1-1-B. 가맹 학원 LocalStorage 영구 보존 모듈
+// 1-1-B. 가맹 학원 요금제 및 계정 안전 헬퍼 & LocalStorage 영구 보존 모듈
 // ==========================================
 const STORAGE_KEY_FRANCHISES = "NANO_MASTER_FRANCHISE_LIST";
 const STORAGE_KEY_DELETED_FRANCHISES = "NANO_MASTER_DELETED_FRANCHISES";
 
+// 이용 상품명(요금제) 표준 정규화 함수 (대소문자/한글 등 안전 매핑)
+function normalizePlan(plan) {
+  if (!plan) return "Basic";
+  const p = String(plan).trim().toLowerCase();
+  if (p === "vip" || p === "브이아이피") return "VIP";
+  if (p === "royal" || p === "로얄") return "Royal";
+  if (p === "premium" || p === "프리미엄") return "Premium";
+  if (p === "standard" || p === "스탠다드") return "Standard";
+  return "Basic";
+}
+
+// 가맹점 관리자 ID 안전 조회 헬퍼 (누락된 경우 고유 ID 생성)
+function getFranchiseAdminId(acad) {
+  if (!acad) return "";
+  if (acad.adminId && String(acad.adminId).trim()) return String(acad.adminId).trim();
+  if (acad.loginId && String(acad.loginId).trim()) return String(acad.loginId).trim();
+  const idStr = String(acad.id || "").toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return `admin_${idStr}`;
+}
+
+// 가맹점 목록 데이터 무결성 검증 및 보정 (ID 및 요금제 정규화)
+function sanitizeFranchises(list) {
+  if (!Array.isArray(list)) return [];
+  list.forEach(f => {
+    if (!f.adminPw) f.adminPw = "nano123!";
+    if (!f.adminId || !String(f.adminId).trim()) {
+      f.adminId = getFranchiseAdminId(f);
+    }
+    f.plan = normalizePlan(f.plan);
+  });
+  return list;
+}
+
 function loadFranchisesFromStorage() {
-  if (window.NANO_SERVER_DATA) return window.MIGRATED_FRANCHISES || [];
+  if (window.NANO_SERVER_DATA) return sanitizeFranchises(window.MIGRATED_FRANCHISES || []);
   // 1. Neon DB에서 이관된 실데이터가 로드된 경우 (가맹점 143개소)
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
     const curVer = localStorage.getItem("NANO_REAL_DATA_LOADED_VER");
@@ -295,9 +328,10 @@ function loadFranchisesFromStorage() {
     // 버전이 바뀌었거나 기존 저장된 데이터가 예전 더미(20개 이하)인 경우 즉시 실데이터로 강제 갱신
     if (curVer !== window.__NANO_REAL_DATA_VERSION__ || parsedCount < 20) {
       console.log("🔄 [실데이터 동기화] 가맹 학원 " + window.MIGRATED_FRANCHISES.length + "개소 로드 및 로컬 스토리지 갱신");
-      localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(window.MIGRATED_FRANCHISES));
+      const sanitized = sanitizeFranchises(JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES)));
+      localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(sanitized));
       localStorage.setItem("NANO_REAL_DATA_LOADED_VER", window.__NANO_REAL_DATA_VERSION__);
-      return JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES));
+      return sanitized;
     }
   }
 
@@ -306,10 +340,7 @@ function loadFranchisesFromStorage() {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        parsed.forEach(f => {
-          if (!f.adminPw) f.adminPw = "nano123!";
-        });
-        return parsed;
+        return sanitizeFranchises(parsed);
       }
     }
   } catch (e) {
@@ -317,9 +348,9 @@ function loadFranchisesFromStorage() {
   }
 
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
-    return JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES));
+    return sanitizeFranchises(JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES)));
   }
-  return JSON.parse(JSON.stringify(defaultFranchiseList));
+  return sanitizeFranchises(JSON.parse(JSON.stringify(defaultFranchiseList)));
 }
 
 function saveFranchisesToStorage() {
@@ -1906,7 +1937,8 @@ const PLAN_MONTHLY_FEES = {
 
 // 이용 상품별 품격 있는 뱃지 스타일 헬퍼
 function getPlanBadge(plan) {
-  switch (plan) {
+  const normalized = normalizePlan(plan);
+  switch (normalized) {
     case "VIP":
       return `<span class="badge-soft" style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; font-weight: 800; font-size: 11.5px; padding: 4px 9px; border-radius: 6px;"><i class="fa-solid fa-crown mr-1 text-warning"></i>VIP</span>`;
     case "Royal":
@@ -2007,11 +2039,11 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     // 가입일 표시
     const joinDateText = acad.joinDate || acad.startDate || "-";
 
-    // 이용 상품명 뱃지
+    // 이용 상품명 뱃지 (대소문자/한글 등 안전 정규화)
     const planBadge = getPlanBadge(acad.plan || "Standard");
 
-    // 관리자 ID
-    const adminIdText = acad.adminId || `admin_${acad.id.toLowerCase().replace('-', '_')}`;
+    // 관리자 ID (누락된 경우 고유 ID 자동 생성)
+    const adminIdText = getFranchiseAdminId(acad);
 
     return `
       <tr>
@@ -2175,7 +2207,7 @@ function filterFranchiseList() {
       (item.email && item.email.toLowerCase().includes(query));
 
     const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
-    const matchPlan = planFilter === "ALL" || (item.plan || "Standard") === planFilter;
+    const matchPlan = planFilter === "ALL" || normalizePlan(item.plan) === planFilter;
 
     // 가입일 기간 조건
     let matchDate = true;
@@ -2314,9 +2346,12 @@ function openAcademyEditModal(id) {
   const acad = franchiseList.find(a => a.id === id);
   if (!acad) return;
 
+  const currentAdminId = getFranchiseAdminId(acad);
+  if (!acad.adminId) acad.adminId = currentAdminId;
+
   document.getElementById("editAcademyId").value = acad.id;
   const badge = document.getElementById("editAcademyIdBadge");
-  if (badge) badge.innerText = `${acad.id} (${acad.adminId || ''})`;
+  if (badge) badge.innerText = `${acad.id} (${currentAdminId})`;
 
   document.getElementById("editAcademyName").value = acad.name || "";
   document.getElementById("editBizNumber").value = acad.bizNumber || "";
@@ -2338,22 +2373,29 @@ function openAcademyEditModal(id) {
     document.getElementById("editEndDate").value = acad.endDate || "";
   }
 
-  // 이용 상품 및 사용인원
+  // 이용 상품 정규화 및 바인딩 (대소문자/한글 등 안전 정규화하여 select option과 정확히 매칭)
+  const normalizedPlan = normalizePlan(acad.plan);
+  acad.plan = normalizedPlan;
   if (document.getElementById("editPlan")) {
-    document.getElementById("editPlan").value = acad.plan || "Standard";
+    document.getElementById("editPlan").value = normalizedPlan;
   }
   if (document.getElementById("editMaxStudents")) {
     document.getElementById("editMaxStudents").value = acad.maxStudents || 50;
   }
 
-  // 월 결제 금액 바인딩
+  // 월 결제 금액 바인딩 (숫자만 있는 경우 '원' 포맷팅)
   if (document.getElementById("editMonthlyFee")) {
-    document.getElementById("editMonthlyFee").value = acad.monthlyFee || PLAN_MONTHLY_FEES[acad.plan] || "330,000원";
+    let fee = acad.monthlyFee || PLAN_MONTHLY_FEES[normalizedPlan] || "220,000원";
+    const digitsOnly = String(fee).replace(/[^0-9]/g, '');
+    if (digitsOnly && (!String(fee).includes('원') || /^\d+$/.test(String(fee).trim()))) {
+      fee = Number(digitsOnly).toLocaleString() + '원';
+    }
+    document.getElementById("editMonthlyFee").value = fee;
   }
 
   // 관리자 아이디 표시 및 비밀번호 변경창 초기화
   if (document.getElementById("editDirectorId")) {
-    document.getElementById("editDirectorId").value = acad.adminId || "";
+    document.getElementById("editDirectorId").value = currentAdminId;
   }
   if (document.getElementById("editDirectorPw")) {
     document.getElementById("editDirectorPw").value = "";
@@ -2377,12 +2419,12 @@ async function saveAcademyEdit(e) {
 
   const directorEl = document.getElementById("editDirectorName");
   const directorVal = directorEl ? directorEl.value.trim() : "";
-  const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
-  if (!nameRegex.test(directorVal)) {
+  const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9\s()_.-]+$/;
+  if (directorVal && !nameRegex.test(directorVal)) {
     const errEl = document.getElementById("editDirectorNameError");
     if (errEl) errEl.classList.remove("d-none");
     if (directorEl) directorEl.focus();
-    alert("원장 성함에는 특수문자나 숫자를 입력할 수 없습니다. 한글 또는 영문으로 입력해주세요.");
+    alert("원장 성함에는 특수문자나 기호를 입력할 수 없습니다. 한글 또는 영문으로 입력해주세요.");
     return;
   }
 
@@ -2394,6 +2436,9 @@ async function saveAcademyEdit(e) {
   }
   acad.phone = document.getElementById("editDirectorPhone").value.trim();
   acad.region = document.getElementById("editRegion").value.trim();
+
+  // 관리자 고유 아이디 저장 보장
+  acad.adminId = document.getElementById("editDirectorId")?.value.trim() || getFranchiseAdminId(acad);
 
   // 등록일, 계약 시작일, 계약 만료일 저장
   if (document.getElementById("editJoinDate")) {
@@ -2408,15 +2453,20 @@ async function saveAcademyEdit(e) {
 
   // 이용 상품 및 사용인원
   if (document.getElementById("editPlan")) {
-    acad.plan = document.getElementById("editPlan").value;
+    acad.plan = normalizePlan(document.getElementById("editPlan").value);
   }
   if (document.getElementById("editMaxStudents")) {
     acad.maxStudents = parseInt(document.getElementById("editMaxStudents").value, 10) || acad.maxStudents;
   }
 
-  // 월 결제 금액 저장
+  // 월 결제 금액 저장 (숫자만 입력된 경우 '원' 포맷팅 적용)
   if (document.getElementById("editMonthlyFee")) {
-    acad.monthlyFee = document.getElementById("editMonthlyFee").value.trim() || PLAN_MONTHLY_FEES[acad.plan] || acad.monthlyFee;
+    let rawFee = document.getElementById("editMonthlyFee").value.trim();
+    const digits = rawFee.replace(/[^0-9]/g, '');
+    if (digits && (!rawFee.includes('원') || /^\d+$/.test(rawFee))) {
+      rawFee = Number(digits).toLocaleString() + '원';
+    }
+    acad.monthlyFee = rawFee || PLAN_MONTHLY_FEES[acad.plan] || acad.monthlyFee;
   }
 
   // 비밀번호 변경 저장 (새 비밀번호 입력 시 갱신)
@@ -2444,6 +2494,14 @@ async function saveAcademyEdit(e) {
     populateDispatchAcademyFilter();
   }
 
+  // window.MIGRATED_FRANCHISES 메모리 배열에도 즉시 동기화
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES)) {
+    const mIdx = window.MIGRATED_FRANCHISES.findIndex(a => a.id === id);
+    if (mIdx !== -1) {
+      window.MIGRATED_FRANCHISES[mIdx] = { ...acad };
+    }
+  }
+
   if (window.NanoPortal && NanoPortal.remote) {
     try {
       await NanoPortal.saveAcademy(acad);
@@ -2455,7 +2513,13 @@ async function saveAcademyEdit(e) {
   }
   saveFranchisesToStorage();
   $('#academyEditModal').modal('hide');
-  renderFranchiseTable();
+
+  // 현재 필터/검색 조건 유지하여 즉시 재렌더링
+  if (typeof filterFranchiseList === "function") {
+    filterFranchiseList();
+  } else {
+    renderFranchiseTable(franchiseList, true);
+  }
   updateFranchiseStats();
   showMasterToast(`[${acad.name}] 가맹 학원 정보 및 계약/상품 설정이 갱신되었습니다.`);
 }
