@@ -8,7 +8,7 @@
  * 랭킹 학원: 20개소
  */
 
-window.__NANO_REAL_DATA_VERSION__ = "20261007_V3_REPAIRED";
+window.__NANO_REAL_DATA_VERSION__ = "20261022_REAL_ID_RESTORED_V1";
 
 window.MIGRATED_FRANCHISES = [
   {

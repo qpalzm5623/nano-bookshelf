@@ -857,19 +857,20 @@
         </div>
       </div>
 
-      <!-- 필터 & 검색 바 (결제상태 삭제, 이용상품 드롭박스, 가입일 기간 날짜박스 2개 추가) -->
+      <!-- 필터 & 검색 바 (결제상태 삭제, 이용상품 드롭박스, 가입일 기간 날짜박스 2개, 검색 버튼 추가) -->
       <div class="filter-bar d-flex flex-wrap align-items-center gap-2">
         <div>
-          <select id="franchiseStatusFilter" class="select-beige" onchange="filterFranchiseList()">
+          <select id="franchiseStatusFilter" class="select-beige">
             <option value="ALL">전체 운영 상태</option>
             <option value="ACTIVE">정상 운영중</option>
             <option value="EXPIRING">계약 만료 임박</option>
+            <option value="EXPIRED">계약 만료</option>
             <option value="PAUSED">일시 정지</option>
             <option value="TERMINATED">해지 완료</option>
           </select>
         </div>
         <div>
-          <select id="franchisePlanFilter" class="select-beige" onchange="filterFranchiseList()">
+          <select id="franchisePlanFilter" class="select-beige">
             <option value="ALL">전체 이용 상품</option>
             <option value="Basic">Basic</option>
             <option value="Standard">Standard</option>
@@ -883,14 +884,18 @@
           <span style="font-size: 12.5px; font-weight: 700; color: #5a4b3d; white-space: nowrap; display: inline-flex; align-items: center;">
             <i class="fa-regular fa-calendar mr-1" style="color: #8c7355;"></i>가입일
           </span>
-          <input type="date" id="franchiseStartDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" onchange="filterFranchiseList()" title="가입일 시작일">
+          <input type="date" id="franchiseStartDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" title="가입일 시작일" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
           <span style="color: var(--text-muted); font-size: 13px; font-weight: 600;">~</span>
-          <input type="date" id="franchiseEndDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" onchange="filterFranchiseList()" title="가입일 종료일">
+          <input type="date" id="franchiseEndDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" title="가입일 종료일" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 지역, 사업자번호 검색..." onkeyup="filterFranchiseList()" onsearch="filterFranchiseList()">
+          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 지역, 사업자번호 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
         </div>
+        <!-- 검색 버튼 (버튼 클릭 또는 Enter 시에만 검색 실행) -->
+        <button type="button" class="btn btn-sm font-weight-bold" onclick="filterFranchiseList()" style="border-radius: 10px; height: 38px; background: #3d342d; border: 1px solid #3d342d; color: #ffffff; white-space: nowrap; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(61,52,45,0.18); cursor: pointer;" title="설정한 조건으로 가맹 학원을 검색합니다.">
+          <i class="fa-solid fa-magnifying-glass"></i>검색
+        </button>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetFranchiseFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium); white-space: nowrap;">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
         </button>
@@ -1209,9 +1214,17 @@
             </h6>
             <small class="text-muted">학생 도서관에 노출될 학년별(미취학~중등) 권장/추천 도서 목록을 관리합니다.</small>
           </div>
-          <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
-            <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
-          </button>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadRecommendedExcelTemplate()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
+              <i class="fa-solid fa-file-excel mr-1 text-success"></i>양식 다운로드
+            </button>
+            <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openRecommendedExcelModal()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
+              <i class="fa-solid fa-file-import mr-1 text-primary"></i>엑셀 일괄 등록/삭제
+            </button>
+            <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
+              <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+            </button>
+          </div>
         </div>
         <!-- 학년별 버튼 탭 -->
         <div class="mb-3 d-flex flex-wrap gap-2" id="recGradeBtnGroup">
@@ -1264,6 +1277,9 @@
           </div>
         </div>
         <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportRankingToExcel()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff; border-color: #28a745; color: #28a745; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-file-excel"></i>내역 엑셀 다운로드
+          </button>
           <button class="btn-beige-secondary" onclick="openPointPolicyModal()">
             <i class="fa-solid fa-gear"></i>포인트 지급 정책
           </button>
@@ -1328,6 +1344,11 @@
 
         <!-- 전국 학생 랭킹 전용 검색 & 필터 바 -->
         <div id="rankingFilterBar" class="p-3 border-bottom d-flex flex-wrap align-items-center gap-2" style="background: #ffffff;">
+          <div style="min-width: 150px;">
+            <select id="rankMonthFilter" class="select-beige w-100" onchange="filterStudentRankings()">
+              <!-- JS 동적 생성 (최근 6개월) -->
+            </select>
+          </div>
           <div style="min-width: 180px;">
             <select id="rankAcademyFilter" class="select-beige w-100" onchange="filterStudentRankings()">
               <option value="ALL">전체 가맹 학원</option>
@@ -1345,6 +1366,9 @@
           <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium);">
             <i class="fa-solid fa-rotate-left mr-1"></i>초기화
           </button>
+          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportRankingToExcel()" style="border-radius: 8px; height: 38px; border-color: #28a745; color: #28a745; background: #fff; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; white-space: nowrap;" title="현재 랭킹 내역을 엑셀(CSV) 파일로 다운로드합니다.">
+            <i class="fa-solid fa-file-excel"></i>엑셀 다운로드
+          </button>
           <div class="text-muted ml-auto font-weight-bold" style="font-size: 12.5px;">
             총 <span id="rankTotalCount" class="text-dark">0</span>명 (20개씩 보기)
           </div>
@@ -1355,7 +1379,7 @@
             <thead>
               <tr>
                 <th style="width: 80px;">전국 순위</th>
-                <th style="width: 80px;">학원 순위</th>
+                <th style="width: 90px;">학원 내 순위</th>
                 <th style="text-align: left;">학생 성명 (아이디)</th>
                 <th style="text-align: left;">소속 학원</th>
                 <th>학년</th>
@@ -1413,6 +1437,9 @@
           </div>
         </div>
         <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportMasterBooksToExcel()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
+            <i class="fa-solid fa-file-excel mr-1 text-success"></i>콘텐츠 엑셀 다운로드
+          </button>
           <button class="btn-beige-secondary" onclick="openExcelUploadModal()">
             <i class="fa-solid fa-file-excel"></i>엑셀 대량 도서 등록
           </button>
@@ -2272,6 +2299,7 @@
               <select id="editStatus" class="select-beige w-100">
                 <option value="ACTIVE">정상 운영</option>
                 <option value="EXPIRING">만료 임박</option>
+                <option value="EXPIRED">계약 만료</option>
                 <option value="PAUSED">일시 정지</option>
                 <option value="TERMINATED">계약 해지</option>
               </select>
@@ -2434,7 +2462,9 @@
           </div>
           <div class="col-md-6 form-group">
             <label class="font-weight-bold" style="font-size: 12.5px;">배정 학급</label>
-            <input type="text" id="detailMemberClass" class="form-control form-control-beige" placeholder="예: 소나무반">
+            <select id="detailMemberClass" class="select-beige w-100">
+              <option value="미지정">미지정</option>
+            </select>
           </div>
           <div class="col-md-6 form-group">
             <label class="font-weight-bold" style="font-size: 12.5px;">누적 포인트</label>
@@ -2609,20 +2639,20 @@
                 </div>
               </div>
 
-              <!-- 우측: 전체 마스터 도서 검색 및 추가 -->
+              <!-- 우측: 전체 마스터 도서 검색 및 추가 (30권씩 페이징 & 도서 주제별 태그 필터) -->
               <div class="col-lg-6">
-                <div class="border rounded p-2 bg-light h-100" style="min-height: 240px; display: flex; flex-direction: column;">
+                <div class="border rounded p-2 bg-light h-100" style="min-height: 280px; display: flex; flex-direction: column;">
                   <div class="d-flex gap-2 mb-2">
-                    <input type="text" id="bmSearchInput" class="form-control form-control-sm form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="renderBmAvailableBooks()">
-                    <select id="bmCategorySelect" class="select-beige" style="font-size: 12px; padding: 4px 8px; width: 100px;" onchange="renderBmAvailableBooks()">
-                      <option value="">전체 분야</option>
-                      <option value="문학">문학</option>
-                      <option value="과학">과학</option>
-                      <option value="역사">역사</option>
-                      <option value="사회">사회</option>
+                    <input type="text" id="bmSearchInput" class="form-control form-control-sm form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="onBmFilterChange()">
+                    <select id="bmCategorySelect" class="select-beige" style="font-size: 11.5px; padding: 4px 6px; min-width: 130px; max-width: 160px;" onchange="onBmFilterChange()">
+                      <option value="">전체 주제별 태그</option>
                     </select>
                   </div>
-                  <div id="bmAvailableListContainer" style="max-height: 240px; overflow-y: auto; flex: 1;">
+                  <div id="bmAvailableListContainer" style="max-height: 260px; overflow-y: auto; flex: 1;">
+                    <!-- JS 렌더링 -->
+                  </div>
+                  <!-- 30권 단위 페이징 바 -->
+                  <div id="bmAvailablePagination" class="d-flex justify-content-between align-items-center pt-2 border-top mt-1" style="font-size: 11.5px;">
                     <!-- JS 렌더링 -->
                   </div>
                 </div>
@@ -4130,7 +4160,7 @@
               <label class="font-weight-bold mb-0" style="font-size: 13px; color: var(--text-main);">
                 보기 및 정답 번호 선택 <small class="text-muted font-weight-normal">(기본 3개 ~ 최대 5개)</small>
               </label>
-              <small class="text-muted">* 정답인 보기의 라디오를 선택하세요.</small>
+              <small class="text-muted">정답을 선택해주세요.</small>
             </div>
 
             <!-- 동적 보기 컨테이너 (3~5개) -->
@@ -4342,6 +4372,53 @@
   </div>
 </div>
 
+<!-- 11. 권장도서 엑셀(Excel) 일괄 등록 및 삭제 모달 -->
+<div class="modal fade" id="recommendedExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-file-excel mr-2 text-warning"></i>권장도서 엑셀(Excel) 일괄 등록 / 삭제
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-3 text-right">
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadRecommendedExcelTemplate()" style="border-radius: 8px; font-weight: 700; font-size: 12px;">
+            <i class="fa-solid fa-download mr-1"></i>표준 엑셀 서식 다운로드 (.csv)
+          </button>
+        </div>
+
+        <!-- 드래그 앤 드롭 업로드 존 -->
+        <div class="p-4 rounded text-center mb-3" style="border: 2px dashed var(--border-medium); background: #faf8f5; cursor: pointer;" onclick="document.getElementById('recExcelFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up text-warning mb-2" style="font-size: 36px;"></i>
+          <h6 class="font-weight-bold mb-1" id="recExcelFileNameText">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
+          <small class="text-muted">지원 형식: .csv (엑셀 호환 UTF-8 CSV)</small>
+          <input type="file" id="recExcelFileInput" accept=".csv,text/csv" style="display: none;" onchange="handleRecommendedExcelFileSelect(this)">
+        </div>
+
+        <div class="p-3 bg-light rounded" style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+          <div class="font-weight-bold mb-1 text-dark"><i class="fa-solid fa-circle-info mr-1 text-primary"></i>서식 작성 안내</div>
+          • <strong>1열(구분)</strong>: <code>등록</code> 또는 <code>삭제</code> 입력<br>
+          • <strong>2열(학년)</strong>: <code>미취학</code>, <code>초등 1학년</code> ~ <code>초등 6학년</code>, <code>중학교</code> 입력<br>
+          • <strong>3열(콘텐츠 넘버)</strong>: 마스터 도서 코드(예: MB-001) 입력<br>
+          • <strong>4열(도서명)</strong>: 도서명 (참고용, 비워두셔도 콘텐츠 넘버 기준으로 매칭됩니다)<br>
+          • <strong>덮어쓰기 안내</strong>: 이미 등록된 도서를 다시 '등록'으로 업로드 시 학년 정보가 덮어씌워지며, '삭제'로 업로드 시 리스트에서 자동 해제됩니다.
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+          <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+          <button type="button" class="btn-beige-primary" onclick="handleRecommendedExcelUpload()">
+            <i class="fa-solid fa-upload mr-1"></i>엑셀 일괄 처리 진행
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 알림 토스트 (Non-blocking) -->
 <div id="masterToast" style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;" class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
   <div class="d-flex align-items-center">
@@ -4356,7 +4433,7 @@
 
 
 
-<script src="master_preview.js?v=20261022_pw_sync"></script>
+<script src="master_preview.js?v=20261022_master_8reqs_complete"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>
