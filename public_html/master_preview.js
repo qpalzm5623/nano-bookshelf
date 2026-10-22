@@ -2393,9 +2393,14 @@ function openAcademyEditModal(id) {
     document.getElementById("editMonthlyFee").value = fee;
   }
 
-  // 관리자 아이디 표시 및 비밀번호 변경창 초기화
+  // 관리자 아이디 표시 및 현재 비밀번호 정보 바인딩
   if (document.getElementById("editDirectorId")) {
     document.getElementById("editDirectorId").value = currentAdminId;
+  }
+  const currentPw = acad.adminPw || "nano123!";
+  const curPwEl = document.getElementById("currentDirectorPwText");
+  if (curPwEl) {
+    curPwEl.innerText = currentPw;
   }
   if (document.getElementById("editDirectorPw")) {
     document.getElementById("editDirectorPw").value = "";
@@ -2404,6 +2409,16 @@ function openAcademyEditModal(id) {
   document.getElementById("editStatus").value = acad.status || "ACTIVE";
 
   $('#academyEditModal').modal('show');
+}
+
+// 임시 비밀번호 간편 생성 헬퍼
+function applyQuickDirectorPw() {
+  const input = document.getElementById("editDirectorPw");
+  if (!input) return;
+  const year = new Date().getFullYear();
+  const rand = Math.floor(100 + Math.random() * 900);
+  input.value = `nano${year}!${rand}`;
+  input.focus();
 }
 
 // 학원 수정 내용 저장 (등록일, 계약시작일, 계약만료일, 이용상품, 사용인원, 월결제금액 저장)
@@ -2469,10 +2484,28 @@ async function saveAcademyEdit(e) {
     acad.monthlyFee = rawFee || PLAN_MONTHLY_FEES[acad.plan] || acad.monthlyFee;
   }
 
-  // 비밀번호 변경 저장 (새 비밀번호 입력 시 갱신)
+  // 비밀번호 변경 저장 (새 비밀번호 입력 시 갱신 & 통합 회원 목록 원장 계정도 실시간 동시 동기화)
   const newPwEl = document.getElementById("editDirectorPw");
+  let isPasswordUpdated = false;
   if (newPwEl && newPwEl.value.trim()) {
-    acad.adminPw = newPwEl.value.trim();
+    const newPassword = newPwEl.value.trim();
+    acad.adminPw = newPassword;
+    isPasswordUpdated = true;
+
+    // 통합 회원 목록(memberList) 내 원장(DIRECTOR) 계정의 password 동기화
+    if (typeof memberList !== "undefined" && Array.isArray(memberList)) {
+      let memberFound = false;
+      memberList.forEach(m => {
+        if ((m.academyId === id || m.academyName === oldName || m.academyName === newName) &&
+            (m.role === "DIRECTOR" || m.username === acad.adminId)) {
+          m.password = newPassword;
+          memberFound = true;
+        }
+      });
+      if (memberFound) {
+        saveMembersToStorage();
+      }
+    }
   }
 
   acad.status = document.getElementById("editStatus").value;
@@ -2521,7 +2554,9 @@ async function saveAcademyEdit(e) {
     renderFranchiseTable(franchiseList, true);
   }
   updateFranchiseStats();
-  showMasterToast(`[${acad.name}] 가맹 학원 정보 및 계약/상품 설정이 갱신되었습니다.`);
+
+  const pwMsg = isPasswordUpdated ? ` (원장 PW가 '${acad.adminPw}'로 변경되었습니다.)` : '';
+  showMasterToast(`[${acad.name}] 가맹 학원 정보가 갱신되었습니다.${pwMsg}`);
 }
 
 // 학원 삭제/해지 확인 모달
