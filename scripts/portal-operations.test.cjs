@@ -92,18 +92,15 @@ test('개인 설정의 다른 기기 변경은 덮어쓰지 않는다',async()=>
   const run=api('api/activity.ts',student,{portalSetting:{updateMany:async()=>({count:0})}});const res=response();
   await run({method:'POST',query:{action:'preferences'},body:{revision:1,value:{wishlist:['B1'],interests:[]}}},res);assert.equal(res.code,409);
 });
-test('새 운영 화면 스크립트가 구문 검사에 통과한다',()=>{
-  for(const name of ['manage','portal-extras','portal-client'])new vm.Script(fs.readFileSync(path.join(__dirname,'../public_html/js/'+name+'.js'),'utf8'),{filename:name});
-});
-test('도서 편집의 긴 글 입력창은 읽기 전용 type 속성을 변경하지 않고 열린다',async()=>{
-  const source=fs.readFileSync(path.join(__dirname,'../public_html/js/manage.js'),'utf8');
-  const ast=ts.createSourceFile('manage.js',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
-  let fn;function walk(node){if(ts.isFunctionDeclaration(node)&&node.name?.text==='openEditor')fn=node.getText(ast);ts.forEachChild(node,walk);}walk(ast);
-  const elements=new Map();
-  function element(tag='div') {const value={tagName:tag.toUpperCase(),children:[],value:'',options:[],append(child){this.children.push(child);if(child.tagName==='OPTION')this.options.push(child);},replaceChildren(){this.children=[];},showModal(){this.open=true;},querySelector(){return {focus(){}};}};if(tag==='textarea')Object.defineProperty(value,'type',{get:()=> 'textarea'});return value;}
-  const context=vm.createContext({busy:false,editing:{},entity:'books',labels:{books:'도서'},schemas:{books:[['description','소개','textarea'],['thinkQuiz','생각담기','textarea']]},lookups:{},user:{role:'master'},crypto:require('node:crypto'),document:{createElement:element},$:id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);}});
-  vm.runInContext("'use strict';\n"+fn,context);await context.openEditor({id:'b',description:'소개 문장',thinkQuiz:'나의 생각은?'});
-  assert.equal(elements.get('editor').open,true);assert.equal(elements.get('fields').children[0].children[0].value,'소개 문장');
+test('대시보드 운영 스크립트가 구문 검사에 통과하고 별도 관리 페이지를 참조하지 않는다',()=>{
+  for(const name of ['portal-extras','portal-client','preview-ux'])new vm.Script(fs.readFileSync(path.join(__dirname,'../public_html/js/'+name+'.js'),'utf8'),{filename:name});
+  for(const name of ['master_preview.js','admin_preview.js']) {
+    const source=fs.readFileSync(path.join(__dirname,'../public_html/'+name),'utf8');
+    new vm.Script(source,{filename:name});
+    assert.equal(source.includes('openManage'),false);
+    assert.equal(source.includes('manage.html'),false);
+  }
+  assert.equal(fs.existsSync(path.join(__dirname,'../public_html/manage.html')),false);
 });
 test('배포 준비는 기존 비밀번호를 유지하며 해시로 바꾸고 두 번째 실행은 다시 바꾸지 않는다',async()=>{
   const {prepare}=require('./prepare-portal.cjs');const auth=load('lib/portal-auth.ts');

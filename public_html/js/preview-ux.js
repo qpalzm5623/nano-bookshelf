@@ -28,8 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   if (workspace) {
     var note = document.createElement('div'); note.className = 'nano-storage-notice'; note.setAttribute('role', 'note');
-    note.textContent = NanoPortal.remote ? '운영 데이터는 서버에 저장됩니다. 회원·학급·콘텐츠 수정은 운영 관리에서 진행합니다. 외부 서비스는 설정 완료 후 활성화됩니다.' : '로컬 체험 화면입니다. 변경 사항은 이 브라우저에만 저장되며 다른 기기에는 전달되지 않습니다.';
-    if (NanoPortal.remote) { var manage = document.createElement('a'); manage.href = 'manage.html'; manage.textContent = '운영 관리 열기 →'; manage.style.marginLeft = '12px'; note.append(manage); }
+    note.textContent = NanoPortal.remote ? '운영 데이터는 현재 화면에서 바로 서버에 저장됩니다. 외부 서비스는 설정 완료 후 활성화됩니다.' : '로컬 체험 화면입니다. 변경 사항은 이 브라우저에만 저장되며 다른 기기에는 전달되지 않습니다.';
     workspace.prepend(note);
   }
   document.querySelectorAll('a[href="index.html"]').forEach(function (link) {

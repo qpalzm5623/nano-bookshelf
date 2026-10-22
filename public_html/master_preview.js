@@ -1396,6 +1396,7 @@ let dispatchLogs = [
     code: "0000"
   }
 ];
+if (window.NANO_SERVER_DATA) dispatchLogs = window.NANO_SERVER_DISPATCH || [];
 
 // ==========================================
 // 2. 초기화 및 네비게이션 (Init & Tabs)
@@ -1477,7 +1478,6 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환
 function switchMasterTab(tabName) {
-  if (window.NanoPortal && NanoPortal.remote && {operations:1,dispatch:1,payment:1,ranking:1}[tabName]) return NanoPortal.openManage({operations:'banners',dispatch:'dispatch',payment:'payments',ranking:'rankings'}[tabName]);
   const tabs = ["franchise", "members", "operations", "ranking", "contents", "dispatch", "payment"];
   
   tabs.forEach(t => {
@@ -1645,7 +1645,6 @@ function renderRecommendedBooksTable() {
 }
 
 function openAddRecommendedBookModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
   const modalGrade = document.getElementById("modalRecGrade");
   const directGrade = document.getElementById("directRecGrade");
   const targetGrade = (selectedRecGrade && selectedRecGrade !== "ALL") ? selectedRecGrade : "초등 1학년";
@@ -1749,8 +1748,7 @@ function filterRecModalBooks() {
   }).join("");
 }
 
-function addBookToRecommended(bookId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
+async function addBookToRecommended(bookId) {
   const grade = document.getElementById("modalRecGrade") ? document.getElementById("modalRecGrade").value : "초등 1학년";
   const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0) ? masterBooks : (typeof mockBooks !== 'undefined' ? mockBooks : []);
   const book = allMasterBooks.find(b => b.id === bookId);
@@ -1761,6 +1759,13 @@ function addBookToRecommended(bookId) {
   if (exists) {
     alert("이미 해당 학년의 권장도서로 등록되어 있습니다.");
     return;
+  }
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    const previousRecommended = book.isRecommended;
+    book.isRecommended = true;
+    try { await NanoPortal.saveBook(book); }
+    catch (error) { book.isRecommended = previousRecommended; showMasterToast('권장도서로 지정하지 못했습니다: ' + error.message); return; }
   }
 
   list.unshift({
@@ -1781,8 +1786,7 @@ function addBookToRecommended(bookId) {
   showMasterToast(`[${book.title}] 도서가 [${grade}] 권장도서로 성공적으로 등록되었습니다.`);
 }
 
-function saveDirectRecommendedBook(event) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
+async function saveDirectRecommendedBook(event) {
   if (event) event.preventDefault();
 
   const title = document.getElementById("directRecTitle")?.value.trim();
@@ -1834,25 +1838,20 @@ function saveDirectRecommendedBook(event) {
     createdAt: new Date().toISOString().slice(0, 10)
   };
 
+  const newMasterBook = {
+    id: newBookId, title: title, author: author, publisher: publisher, grade: grade, category: category, cover: cover,
+    isRecommended: true, isPublic: "Y", hasQuiz: false, quizzes: 0, likes: 0, recommends: 1, date: new Date().toISOString().slice(0, 10)
+  };
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.saveBook(newMasterBook); }
+    catch (error) { showMasterToast('권장도서를 등록하지 못했습니다: ' + error.message); return; }
+  }
+
   list.unshift(newRecItem);
   saveRecommendedBooks(list);
 
   if (typeof masterBooks !== 'undefined' && Array.isArray(masterBooks)) {
-    masterBooks.unshift({
-      id: newBookId,
-      title: title,
-      author: author,
-      publisher: publisher,
-      grade: grade,
-      category: category,
-      cover: cover,
-      isPublic: "Y",
-      hasQuiz: false,
-      quizzes: 0,
-      likes: 0,
-      recommends: 1,
-      date: new Date().toISOString().slice(0, 10)
-    });
+    masterBooks.unshift(newMasterBook);
   }
 
   renderRecommendedBooksTable();
@@ -1869,13 +1868,22 @@ function saveDirectRecommendedBook(event) {
   showMasterToast(`[${title}] 신규 권장도서가 [${grade}]에 성공적으로 등록되었습니다.`);
 }
 
-function deleteRecommendedBook(recId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
+async function deleteRecommendedBook(recId) {
   const list = getRecommendedBooks();
   const target = list.find(b => b.id === recId);
   const targetName = target ? `[${target.title}] ` : '';
 
   if (!confirm(`${targetName}해당 도서를 권장도서 목록에서 해제하시겠습니까?`)) return;
+
+  if (window.NanoPortal && NanoPortal.remote && target) {
+    const book = masterBooks.find(item => item.id === target.bookId);
+    if (book) {
+      const previousRecommended = book.isRecommended;
+      book.isRecommended = false;
+      try { await NanoPortal.saveBook(book); }
+      catch (error) { book.isRecommended = previousRecommended; showMasterToast('권장도서를 해제하지 못했습니다: ' + error.message); return; }
+    }
+  }
 
   const updatedList = list.filter(b => b.id !== recId);
   saveRecommendedBooks(updatedList);
@@ -2202,7 +2210,6 @@ function resetFranchiseFilters() {
 
 // 신규 학원 등록 모달 열기
 function openAcademyRegisterModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   const form = document.getElementById("academyRegisterForm");
   if (form) form.reset();
   const today = new Date().toISOString().split("T")[0];
@@ -2235,7 +2242,6 @@ function handleRegPlanChange(plan) {
 
 // 신규 가맹 학원 등록 모달 열기
 function openAcademyRegisterModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   const today = new Date().toISOString().split('T')[0];
   const nextYear = new Date();
   nextYear.setFullYear(nextYear.getFullYear() + 1);
@@ -2253,7 +2259,6 @@ function openAcademyRegisterModal() {
 
 // 신규 학원 등록 제출 처리 (등록일, 계약시작일, 계약만료일, 월결제금액 등 반영)
 function handleRegisterAcademy(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   e.preventDefault();
   const name = document.getElementById("regAcademyName").value.trim();
   const bizNumber = document.getElementById("regBizNumber")?.value.trim() || "";
@@ -2306,7 +2311,6 @@ function handleRegisterAcademy(e) {
 
 // 학원 수정 모달 열기 (등록일, 계약 시작일, 계약 만료일, 이용상품, 사용인원, 월 결제금액 바인딩)
 function openAcademyEditModal(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   const acad = franchiseList.find(a => a.id === id);
   if (!acad) return;
 
@@ -2361,12 +2365,12 @@ function openAcademyEditModal(id) {
 }
 
 // 학원 수정 내용 저장 (등록일, 계약시작일, 계약만료일, 이용상품, 사용인원, 월결제금액 저장)
-function saveAcademyEdit(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
+async function saveAcademyEdit(e) {
   if (e) e.preventDefault();
   const id = document.getElementById("editAcademyId").value;
   const acad = franchiseList.find(a => a.id === id);
   if (!acad) return;
+  const previousAcademy = { ...acad };
 
   const oldName = acad.name;
   const newName = document.getElementById("editAcademyName").value.trim() || oldName;
@@ -2440,6 +2444,15 @@ function saveAcademyEdit(e) {
     populateDispatchAcademyFilter();
   }
 
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveAcademy(acad);
+    } catch (error) {
+      Object.assign(acad, previousAcademy);
+      showMasterToast('학원 정보를 저장하지 못했습니다: ' + error.message);
+      return;
+    }
+  }
   saveFranchisesToStorage();
   $('#academyEditModal').modal('hide');
   renderFranchiseTable();
@@ -2450,7 +2463,6 @@ function saveAcademyEdit(e) {
 // 학원 삭제/해지 확인 모달
 let pendingDeleteAcademyId = null;
 function openAcademyDeleteConfirm(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   const acad = franchiseList.find(a => a.id === id);
   if (!acad) return;
 
@@ -2460,7 +2472,6 @@ function openAcademyDeleteConfirm(id) {
 }
 
 function confirmDeleteAcademy() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   if (!pendingDeleteAcademyId) return;
   const idx = franchiseList.findIndex(a => a.id === pendingDeleteAcademyId);
   if (idx !== -1) {
@@ -2888,7 +2899,6 @@ function resetMemberFilters() {
 
 // 회원 상세 모달 열기
 function openMemberDetailModal(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
 
@@ -2922,7 +2932,6 @@ function openMemberDetailModal(id) {
 
 // 회원 계정 상태 토글 (승인 <-> 탈퇴)
 function toggleMemberStatus() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
   const id = parseInt(document.getElementById("detailMemberId").value, 10);
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
@@ -2941,7 +2950,7 @@ function toggleMemberStatus() {
 }
 
 function resetSingleMemberPassword() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members'); showMasterToast('임시 비밀번호 발송은 아직 연결되지 않았습니다. 비밀번호를 변경하거나 메시지를 발송하지 않았습니다.'); }
+  showMasterToast('임시 비밀번호 발송은 아직 연결되지 않았습니다. 비밀번호를 변경하거나 메시지를 발송하지 않았습니다.'); }
 
 function bulkResetPassword() { showMasterToast('임시 비밀번호 발송은 아직 연결되지 않았습니다. 비밀번호를 변경하거나 메시지를 발송하지 않았습니다.'); }
 
@@ -2952,7 +2961,6 @@ function exportMemberExcel() {
 
 // 엑셀 일괄 등록 모달
 function openMemberExcelModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
   const targetSelect = document.getElementById("excelTargetAcademy");
   if (targetSelect && typeof franchiseList !== "undefined") {
     targetSelect.innerHTML = franchiseList.map(a => `<option value="${a.name}">${a.name}</option>`).join("");
@@ -3022,7 +3030,6 @@ function onMasterMemberRoleChange(role) {
 
 // 마스터 회원 등록 모달 열기
 function openMasterMemberAddModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
   const form = document.getElementById("masterMemberAddForm");
   if (form) form.reset();
   const acadSelect = document.getElementById("newMemAcademy");
@@ -3038,8 +3045,7 @@ function openMasterMemberAddModal() {
 }
 
 // 마스터 회원 등록 제출
-function handleMasterMemberRegister(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
+async function handleMasterMemberRegister(e) {
   e.preventDefault();
   const nameEl = document.getElementById("newMemName");
   const name = nameEl ? nameEl.value.trim() : "";
@@ -3069,8 +3075,18 @@ function handleMasterMemberRegister(e) {
     alert("원장님(관리자) 계정은 [가맹점 관리] 메뉴에서 학원 신규 등록 시에만 생성됩니다.");
     return;
   }
+  if (role === "HQ_ADMIN" && window.NanoPortal && NanoPortal.remote) {
+    alert("본사 관리자 계정 생성은 보안상 별도 계정 설정에서 진행해야 합니다.");
+    return;
+  }
 
   const username = document.getElementById("newMemUsername").value.trim();
+  const password = document.getElementById("newMemPassword")?.value.trim() || "";
+  if (window.NanoPortal && NanoPortal.remote && password.length < 12) {
+    alert("운영 계정 비밀번호는 12자 이상 입력해 주세요.");
+    document.getElementById("newMemPassword")?.focus();
+    return;
+  }
   const grade = role === "STUDENT" ? document.getElementById("newMemGrade").value : (role === "HQ_ADMIN" ? "본사관리자" : "교사");
   const className = role === "STUDENT" ? (document.getElementById("newMemClass").value.trim() || "미지정") : "-";
   const phone = document.getElementById("newMemPhone").value.trim();
@@ -3078,7 +3094,7 @@ function handleMasterMemberRegister(e) {
   const status = document.getElementById("newMemStatus").value;
 
   const acadObj = franchiseList.find(a => a.name === academyName);
-  const academyId = acadObj ? acadObj.id : "ACAD-001";
+  const academyId = acadObj ? acadObj.id : (window.NanoPortal ? NanoPortal.academy() : "ACAD-001");
 
   const today = new Date().toISOString().split("T")[0];
   const now = new Date();
@@ -3092,6 +3108,7 @@ function handleMasterMemberRegister(e) {
     role: role,
     name: name,
     username: username,
+    password: password,
     grade: grade,
     className: className,
     phone: phone,
@@ -3102,6 +3119,14 @@ function handleMasterMemberRegister(e) {
     status: status
   };
 
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveMember(newMember, academyId);
+    } catch (error) {
+      showMasterToast('회원을 등록하지 못했습니다: ' + error.message);
+      return;
+    }
+  }
   memberList.unshift(newMember);
   saveMembersToStorage();
   $("#masterMemberAddModal").modal("hide");
@@ -3171,16 +3196,16 @@ function renderBannerList() {
       <div class="d-flex align-items-center gap-2 flex-shrink-0">
         <!-- 순서 조정 버튼 (위/아래) -->
         <div class="d-flex flex-column" style="gap: 2px;">
-          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder(${b.id}, 'up')" title="위로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▲</button>
-          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder(${b.id}, 'down')" title="아래로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▼</button>
+          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder('${b.id}', 'up')" title="위로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▲</button>
+          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder('${b.id}', 'down')" title="아래로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▼</button>
         </div>
-        <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openBannerModal(${b.id})" style="border-radius: 8px;">
+        <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openBannerModal('${b.id}')" style="border-radius: 8px;">
           <i class="fa-solid fa-pen mr-1"></i>편집
         </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="toggleBannerActive(${b.id})" style="border-radius: 8px;">
+        <button class="btn btn-sm btn-outline-secondary" onclick="toggleBannerActive('${b.id}')" style="border-radius: 8px;">
           ${b.active === 'Y' ? '숨김 전환' : '노출 전환'}
         </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner(${b.id})" style="border-radius: 8px;">
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner('${b.id}')" style="border-radius: 8px;">
           <i class="fa-solid fa-trash-can"></i>
         </button>
       </div>
@@ -3293,7 +3318,6 @@ function handleBannerPresetChange(val) {
 }
 
 function openBannerModal(bannerId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('banners');
   curBannerUploadedImgData = "";
   curBannerExistingImgUrl = "";
   const fileInput = document.getElementById("bannerImageFile");
@@ -3307,7 +3331,7 @@ function openBannerModal(bannerId) {
   const activeSelect = document.getElementById("bannerActive");
 
   if (bannerId) {
-    const target = bannerList.find(b => b.id === bannerId);
+    const target = bannerList.find(b => String(b.id) === String(bannerId));
     if (!target) return;
 
     if (modalHeader) modalHeader.innerHTML = `<i class="fa-solid fa-pen mr-2 text-warning"></i>홈 메인 롤링 배너 편집`;
@@ -3458,8 +3482,7 @@ function clearCurBannerBooks() {
   }
 }
 
-function handleSaveBanner(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('banners');
+async function handleSaveBanner(e) {
   e.preventDefault();
   const editId = document.getElementById("bannerEditId").value;
   const title = document.getElementById("bannerTitle").value.trim();
@@ -3469,9 +3492,13 @@ function handleSaveBanner(e) {
   const active = document.getElementById("bannerActive").value;
 
   const nowTime = Date.now();
+  let savedBanner = null;
+  let previousBanner = null;
+  let bannerMessage = '';
   if (editId) {
     const target = bannerList.find(b => String(b.id) === String(editId));
     if (target) {
+      previousBanner = { ...target };
       target.title = title;
       target.sub = sub;
       target.imageUrl = imageUrl;
@@ -3479,7 +3506,8 @@ function handleSaveBanner(e) {
       target.active = active;
       target.bookIds = [...curBannerBooks];
       target.updatedAt = nowTime;
-      showMasterToast(`'${title}' 배너 정보가 수정되었습니다.`);
+      savedBanner = target;
+      bannerMessage = `'${title}' 배너 정보가 수정되었습니다.`;
     }
   } else {
     const todayStr = new Date().toISOString().split("T")[0];
@@ -3496,30 +3524,49 @@ function handleSaveBanner(e) {
       bookIds: [...curBannerBooks]
     };
     bannerList.push(newBanner);
-    showMasterToast(`'${title}' 신규 메인 배너가 등록되었습니다.`);
+    savedBanner = newBanner;
+    bannerMessage = `'${title}' 신규 메인 배너가 등록되었습니다.`;
+  }
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveBanner(savedBanner);
+    } catch (error) {
+      if (previousBanner) Object.assign(savedBanner, previousBanner);
+      else bannerList = bannerList.filter(item => item !== savedBanner);
+      showMasterToast('배너를 저장하지 못했습니다: ' + error.message);
+      return;
+    }
   }
 
   saveOperationsToStorage();
   $('#bannerEditModal').modal('hide');
   renderBannerList();
+  showMasterToast(bannerMessage);
 }
 
-function toggleBannerActive(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('banners');
+async function toggleBannerActive(id) {
   const b = bannerList.find(item => String(item.id) === String(id));
   if (!b) return;
   b.active = b.active === "Y" ? "N" : "Y";
   b.updatedAt = Date.now();
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.saveBanner(b); }
+    catch (error) { b.active = b.active === "Y" ? "N" : "Y"; showMasterToast('배너 상태를 저장하지 못했습니다: ' + error.message); return; }
+  }
   saveOperationsToStorage();
   renderBannerList();
   showMasterToast(`배너 노출 상태가 [${b.active === "Y" ? "노출" : "숨김"}]으로 변경되었습니다.`);
 }
 
-function deleteBanner(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('banners');
+async function deleteBanner(id) {
   const b = bannerList.find(item => String(item.id) === String(id));
   const name = b ? b.title : "선택 배너";
   if (confirm(`'${name}' 배너를 정말 삭제하시겠습니까?`)) {
+    if (window.NanoPortal && NanoPortal.remote) {
+      try { await NanoPortal.deleteBanner(b); }
+      catch (error) { showMasterToast('배너를 삭제하지 못했습니다: ' + error.message); return; }
+    }
     bannerList = bannerList.filter(item => String(item.id) !== String(id));
     saveOperationsToStorage();
     renderBannerList();
@@ -3602,19 +3649,19 @@ function renderThemeTable() {
           </button>
         </td>
         <td style="text-align: center;">
-          <button type="button" class="btn btn-xs ${t.active === 'Y' ? 'btn-success' : 'btn-secondary'}" onclick="toggleThemeActive(${t.id})" style="border-radius: 14px; font-size: 11.5px; padding: 3px 10px;">
+          <button type="button" class="btn btn-xs ${t.active === 'Y' ? 'btn-success' : 'btn-secondary'}" onclick="toggleThemeActive('${t.id}')" style="border-radius: 14px; font-size: 11.5px; padding: 3px 10px;">
             ${t.active === 'Y' ? '노출 (Y)' : '숨김 (N)'}
           </button>
         </td>
         <td style="text-align: center;">
           <div class="d-flex align-items-center justify-content-center gap-1">
-            <button class="btn btn-xs btn-outline-secondary" onclick="openThemeModal(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;" title="태그 정보 수정">
+            <button class="btn btn-xs btn-outline-secondary" onclick="openThemeModal('${t.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;" title="태그 정보 수정">
               <i class="fa-solid fa-pen mr-1"></i>편집
             </button>
             <button class="btn btn-xs btn-outline-primary font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 9px;" title="자동 매핑된 도서 목록 보기">
               <i class="fa-solid fa-list-check mr-1"></i>도서 목록
             </button>
-            <button class="btn btn-xs btn-outline-danger" onclick="deleteTheme(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 7px;" title="태그 삭제">
+            <button class="btn btn-xs btn-outline-danger" onclick="deleteTheme('${t.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 7px;" title="태그 삭제">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </div>
@@ -3680,7 +3727,6 @@ function updateThemeModalPreview() {
 }
 
 function openThemeModal(themeId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('themes');
   curThemeUploadedImgData = "";
   const fileInput = document.getElementById("themeImageFile");
   if (fileInput) fileInput.value = "";
@@ -3694,7 +3740,7 @@ function openThemeModal(themeId) {
   const activeSelect = document.getElementById("themeActive");
 
   if (themeId) {
-    const target = themeList.find(item => item.id === themeId);
+    const target = themeList.find(item => String(item.id) === String(themeId));
     if (!target) return;
     if (modalHeader) modalHeader.innerHTML = `<i class="fa-solid fa-pen mr-2 text-warning"></i>테마(태그) 정보 수정`;
     if (editIdInput) editIdInput.value = target.id;
@@ -3717,8 +3763,7 @@ function openThemeModal(themeId) {
   $('#themeEditModal').modal('show');
 }
 
-function handleSaveTheme(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('themes');
+async function handleSaveTheme(e) {
   e.preventDefault();
   const editId = document.getElementById("themeEditId").value;
   const tagTitle = document.getElementById("themeTagTitle").value.trim();
@@ -3734,16 +3779,21 @@ function handleSaveTheme(e) {
     formattedTag = "#" + formattedTag;
   }
 
+  let savedTheme = null;
+  let previousTheme = null;
+  let themeMessage = '';
   if (editId) {
-    const target = themeList.find(item => item.id === parseInt(editId, 10));
+    const target = themeList.find(item => String(item.id) === String(editId));
     if (target) {
+      previousTheme = { ...target };
       target.title = formattedTag.replace("#", "");
       target.tag = formattedTag;
       target.subTag = subTag;
       target.desc = desc;
       target.image = finalImage;
       target.active = active;
-      showMasterToast(`'${formattedTag}' 태그 정보가 수정되었습니다.`);
+      savedTheme = target;
+      themeMessage = `'${formattedTag}' 태그 정보가 수정되었습니다.`;
     }
   } else {
     const todayStr = new Date().toISOString().split("T")[0];
@@ -3759,30 +3809,46 @@ function handleSaveTheme(e) {
       createdAt: todayStr
     };
     themeList.push(newTheme);
-    showMasterToast(`'${formattedTag}' 신규 태그가 등록되었습니다.`);
+    savedTheme = newTheme;
+    themeMessage = `'${formattedTag}' 신규 태그가 등록되었습니다.`;
+  }
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveTheme(savedTheme);
+    } catch (error) {
+      if (previousTheme) Object.assign(savedTheme, previousTheme);
+      else themeList = themeList.filter(item => item !== savedTheme);
+      showMasterToast('테마를 저장하지 못했습니다: ' + error.message);
+      return;
+    }
   }
 
   saveOperationsToStorage();
   $('#themeEditModal').modal('hide');
   renderThemeTable();
+  showMasterToast(themeMessage);
 }
 
 function toggleThemeActive(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('themes');
-  const t = themeList.find(item => item.id === id);
+  const t = themeList.find(item => String(item.id) === String(id));
   if (!t) return;
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 테마는 등록·수정·삭제로 관리되며 별도 숨김 상태는 지원하지 않습니다.'); return; }
   t.active = t.active === "Y" ? "N" : "Y";
   saveOperationsToStorage();
   renderThemeTable();
   showMasterToast(`[${t.tag}] 노출 상태가 [${t.active === "Y" ? "노출" : "숨김"}]으로 변경되었습니다.`);
 }
 
-function deleteTheme(themeId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('themes');
-  const target = themeList.find(item => item.id === themeId);
+async function deleteTheme(themeId) {
+  const target = themeList.find(item => String(item.id) === String(themeId));
   if (!target) return;
 
   if (confirm(`'${target.tag}' 태그를 정말 삭제하시겠습니까?\n매핑된 도서 연결 정보도 함께 해제됩니다.`)) {
+    if (window.NanoPortal && NanoPortal.remote) {
+      try { await NanoPortal.deleteTheme(target); }
+      catch (error) { showMasterToast('테마를 삭제하지 못했습니다: ' + error.message); return; }
+    }
     themeList = themeList.filter(item => item.id !== themeId);
     saveOperationsToStorage();
     renderThemeTable();
@@ -3792,7 +3858,6 @@ function deleteTheme(themeId) {
 
 // 4. 테마별 자동 매핑 도서 목록 모달 열기 (수동 매핑 불필요, 자동 매핑 리스트 뷰)
 function openThemeBooksModal(themeId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
   const theme = themeList.find(t => t.id === themeId);
   if (!theme) return;
   curThemeBooksThemeId = themeId;
@@ -4109,7 +4174,6 @@ function renderNoticeTable() {
 }
 
 function openNoticeModal(noticeId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('notices');
   const modalTitleEl = document.getElementById("noticeModalTitle");
   const editIdEl = document.getElementById("noticeEditId");
   const titleEl = document.getElementById("noticeTitle");
@@ -4171,8 +4235,7 @@ function toggleNoticePopupDateSection() {
   }
 }
 
-function saveNotice(event) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('notices');
+async function saveNotice(event) {
   if (event) event.preventDefault();
 
   const editId = document.getElementById("noticeEditId")?.value.trim();
@@ -4203,6 +4266,7 @@ function saveNotice(event) {
   if (editId) {
     const idx = systemNoticeList.findIndex(n => n.id === editId);
     if (idx !== -1) {
+      const previousNotice = { ...systemNoticeList[idx] };
       systemNoticeList[idx] = {
         ...systemNoticeList[idx],
         title,
@@ -4216,6 +4280,10 @@ function saveNotice(event) {
         content,
         link
       };
+      if (window.NanoPortal && NanoPortal.remote) {
+        try { await NanoPortal.saveNotice(systemNoticeList[idx]); }
+        catch (error) { systemNoticeList[idx] = previousNotice; showMasterToast('공지사항을 저장하지 못했습니다: ' + error.message); return; }
+      }
       saveNoticesToStorage();
       renderNoticeTable();
       if (window.jQuery && typeof $('#noticeModal').modal === 'function') {
@@ -4250,6 +4318,10 @@ function saveNotice(event) {
     };
 
     systemNoticeList.unshift(newNotice);
+    if (window.NanoPortal && NanoPortal.remote) {
+      try { await NanoPortal.saveNotice(newNotice); }
+      catch (error) { systemNoticeList = systemNoticeList.filter(notice => notice !== newNotice); showMasterToast('공지사항을 등록하지 못했습니다: ' + error.message); return; }
+    }
     saveNoticesToStorage();
     renderNoticeTable();
     if (window.jQuery && typeof $('#noticeModal').modal === 'function') {
@@ -4259,12 +4331,16 @@ function saveNotice(event) {
   }
 }
 
-function deleteNotice(noticeId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('notices');
+async function deleteNotice(noticeId) {
   const not = systemNoticeList.find(n => n.id === noticeId);
   if (!not) return;
 
   if (!confirm(`[${not.title}]\n\n이 공지사항을 삭제하시겠습니까?`)) return;
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.deleteNotice(not); }
+    catch (error) { showMasterToast('공지사항을 삭제하지 못했습니다: ' + error.message); return; }
+  }
 
   systemNoticeList = systemNoticeList.filter(n => n.id !== noticeId);
   saveNoticesToStorage();
@@ -4273,9 +4349,10 @@ function deleteNotice(noticeId) {
 }
 
 function toggleNoticeStatus(noticeId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('notices');
   const not = systemNoticeList.find(n => n.id === noticeId);
   if (!not) return;
+
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 공지는 게시 상태 대신 등록·수정·삭제로 관리됩니다.'); return; }
 
   not.status = (not.status === "게시중") ? "비공개" : "게시중";
   saveNoticesToStorage();
@@ -4333,7 +4410,7 @@ let rankingCurrentPage = 1;
 const rankingPageSize = 20;
 
 // 전국 학생 개인 랭킹 데이터 (Neon DB 실데이터 연동: 100명)
-let allStudentRankings = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_RANKINGS) && window.MIGRATED_RANKINGS.length > 0)
+let allStudentRankings = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_RANKINGS.length > 0))
   ? window.MIGRATED_RANKINGS.slice()
   : [
     { rank: 1, name: "이문성", id: "gb6721", academy: "글봄독서논술학원", grade: "초등 3학년", books: 451, accRate: "92%", points: 36064, recent: "최근" },
@@ -4342,16 +4419,16 @@ let allStudentRankings = (typeof window !== "undefined" && Array.isArray(window.
   ];
 
 // 가맹 학원 랭킹 데이터 (Neon DB 실데이터 연동: 20개소)
-let academyRankingData = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS) && window.MIGRATED_ACADEMY_RANKINGS.length > 0)
+let academyRankingData = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_ACADEMY_RANKINGS.length > 0))
   ? window.MIGRATED_ACADEMY_RANKINGS.slice()
   : [];
 
 // 데이터 최신화 동기화 헬퍼
 function syncRankingDatasetsFromWindow() {
-  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_RANKINGS) && window.MIGRATED_RANKINGS.length > 0) {
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_RANKINGS.length > 0)) {
     allStudentRankings = window.MIGRATED_RANKINGS.slice();
   }
-  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS) && window.MIGRATED_ACADEMY_RANKINGS.length > 0) {
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_ACADEMY_RANKINGS.length > 0)) {
     academyRankingData = window.MIGRATED_ACADEMY_RANKINGS.slice();
   }
 }
@@ -4869,9 +4946,9 @@ function goContentPage(p) {
 
 // 공개 여부 원클릭 토글
 function toggleBookPublic(bookId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
   const book = masterBooks.find(b => b.id === bookId);
   if (!book) return;
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 도서는 공개 상태 대신 등록·수정·삭제로 관리됩니다.'); return; }
 
   const currentStatus = book.isPublic !== "N";
   book.isPublic = currentStatus ? "N" : "Y";
@@ -5650,7 +5727,6 @@ function toggleSingleBookCheckbox(isSingle) {
 
 // 신규 마스터 도서 등록 / 편집 모달 열기
 function openMasterBookAddModal(id = null) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
   const isNew = !id;
   originalEditingBookIdForAdd = isNew ? null : id;
   const book = isNew ? null : masterBooks.find(b => b.id === id);
@@ -5768,7 +5844,6 @@ function openMasterBookAddModal(id = null) {
 
 // 신규 도서 등록/수정 폼 제출 처리 (중복 감지 적용)
 function handleSaveMasterBookOnly(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
   e.preventDefault();
 
   const id = document.getElementById("mbAddId").value.trim();
@@ -5862,17 +5937,28 @@ function confirmProceedDuplicateSave() {
   }
 }
 
-function saveBookDataDirectly(bookData) {
+async function saveBookDataDirectly(bookData) {
+  let nextBook = bookData;
+  let editIndex = -1;
   if (originalEditingBookIdForAdd) {
-    // 수정 모드
-    const idx = masterBooks.findIndex(b => b.id === originalEditingBookIdForAdd);
-    if (idx !== -1) {
-      masterBooks[idx] = { ...masterBooks[idx], ...bookData, id: originalEditingBookIdForAdd };
+    editIndex = masterBooks.findIndex(b => b.id === originalEditingBookIdForAdd);
+    if (editIndex !== -1) nextBook = { ...masterBooks[editIndex], ...bookData, id: originalEditingBookIdForAdd };
+  }
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveBook(nextBook);
+    } catch (error) {
+      showMasterToast('도서를 저장하지 못했습니다: ' + error.message);
+      return;
     }
+  }
+
+  if (editIndex !== -1) {
+    masterBooks[editIndex] = nextBook;
     showMasterToast(`[${bookData.title}] 도서 서지 정보가 성공적으로 수정되었습니다.`);
   } else {
-    // 신규 등록 모드
-    masterBooks.unshift(bookData);
+    masterBooks.unshift(nextBook);
     showMasterToast(`신규 도서 [${bookData.title}] (코드: ${bookData.id})이 등록되었습니다! 리스트에서 [북퀴즈]를 생성할 수 있습니다.`);
   }
 
@@ -5880,10 +5966,14 @@ function saveBookDataDirectly(bookData) {
   renderMasterContents();
 }
 
-function deleteMasterBook(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
+async function deleteMasterBook(id) {
   const book = masterBooks.find(b => b.id === id);
   const name = book ? book.title : "도서";
+  if (!book) return;
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.deleteBook(book); }
+    catch (error) { showMasterToast('도서를 삭제하지 못했습니다: ' + error.message); return; }
+  }
   masterBooks = masterBooks.filter(b => b.id !== id);
   showMasterToast(`'${name}' 도서가 라이브러리에서 삭제되었습니다.`);
   renderMasterContents();
@@ -6087,7 +6177,6 @@ function ensureMasterQuizSets(book) {
 
 // 북퀴즈 모달 열기
 function openMasterQuizModal(bookId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('quizzes');
   const book = masterBooks.find(b => b.id === bookId);
   if (!book) return;
 
@@ -6886,13 +6975,18 @@ function deleteCurQuizQuestion() {
   showMasterToast("문항이 삭제되었습니다.");
 }
 
-function handleSaveMasterQuizOnly() {
+async function handleSaveMasterQuizOnly() {
   saveCurrentQuizDraft();
 
   const book = masterBooks.find(b => b.id === curQuizTargetBookId);
   if (!book || !book.quizSets[curQuizSetIdx]) return;
 
   const curSet = book.quizSets[curQuizSetIdx];
+  if (window.NanoPortal && NanoPortal.remote) {
+    if (curQuizSetIdx !== 0) { showMasterToast('운영 서버에는 도서별 기본 퀴즈 세트 한 개만 저장할 수 있습니다.'); return; }
+    try { await NanoPortal.syncQuizzes(book, currentQuizQuestions); }
+    catch (error) { showMasterToast('북퀴즈를 저장하지 못했습니다: ' + error.message); return; }
+  }
   curSet.questions = JSON.parse(JSON.stringify(currentQuizQuestions));
 
   // 기본 목록 표시용 하위 호환
@@ -7137,7 +7231,6 @@ function handleMasterBookExcelFileSelect(input) {
 }
 
 function handleMasterBookExcelUpload() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('books');
   const fileInput = document.getElementById("masterBookExcelFileInput");
   if (!fileInput || !fileInput.files || !fileInput.files[0]) {
     alert("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
@@ -7376,7 +7469,6 @@ function openDispatchDetailModal(id) {
 }
 
 function previewDispatchLink() {
-  if (NanoPortal.remote) return NanoPortal.openManage('dispatch');
   showMasterToast("학부모 알림톡 내의 포트폴리오 리포트 모바일 링크가 정상 호출되었습니다.");
 }
 
@@ -7385,7 +7477,7 @@ function retryDispatch() { showMasterToast('발송 서버가 연결되지 않아
 async function testAligoConnection() { if (!NanoPortal.remote) { showMasterToast('운영 서버에서 설정을 확인해 주세요.'); return; } try { var config = await NanoPortal.api('/api/services'); showMasterToast(config.aligoReady ? '알림톡 설정이 준비되었습니다. 실제 발송은 리포트에서 수신자와 내용을 확인한 후 진행하세요.' : '알림톡 비활성: ' + (config.missing.join(', ') || 'ALIGO_ENABLED=true 설정 필요')); } catch(e) { showMasterToast(e.message); } }
 
 function openAligoChargeModal() {
-  if (NanoPortal.remote) return NanoPortal.openManage('services');
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('알리고 충전은 알리고 관리자에서 진행해 주세요.'); return; }
   $('#aligoChargeModal').modal('show');
 }
 
@@ -7574,6 +7666,7 @@ let masterPaymentList = [
     memo: "최초 가맹 계약 시 무통장 입금 수납 완료 건."
   }
 ];
+if (window.NANO_SERVER_DATA) masterPaymentList = window.NANO_SERVER_PAYMENTS || [];
 
 // 마스터 결제 테이블 렌더링
 function renderMasterPaymentTable(data = masterPaymentList) {
@@ -7751,9 +7844,9 @@ function updatePaymentKpis() {
 
 // 인라인 상태 변경 핸들러 (수동 결제 건만 변경 가능)
 function updatePaymentStatusInline(payId, newStatus) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('payments');
   const item = masterPaymentList.find(p => p.id === payId);
   if (!item) return;
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 결제 상태는 결제사 및 입금 확인 결과로만 변경됩니다.'); renderMasterPaymentTable(); return; }
 
   if (isCardPayment(item.method)) {
     showMasterToast("신용카드 결제 건은 PG사 전산 자동 승인 데이터이므로 수동 변경이 불가합니다.");
@@ -7774,7 +7867,6 @@ function updatePaymentStatusInline(payId, newStatus) {
 
 // 결제 상세 모달 열기
 function openMasterPaymentDetailModal(payId) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('payments');
   const item = masterPaymentList.find(p => p.id === payId);
   if (!item) return;
 
@@ -7821,10 +7913,10 @@ function openMasterPaymentDetailModal(payId) {
 
 // 상세 모달에서 상태 및 관리자 메모 저장
 function saveMasterPaymentDetail() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('payments');
   const payId = document.getElementById("modalDetailPayId").value;
   const item = masterPaymentList.find(p => p.id === payId);
   if (!item) return;
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 결제 내역은 서버 원장 데이터이며 이 화면에서 임의 변경할 수 없습니다.'); return; }
 
   const isCard = isCardPayment(item.method);
   if (!isCard) {
@@ -7854,7 +7946,7 @@ const PLAN_PRICE_TABLE = {
 
 // 수동 결제 등록 모달 열기
 function openSimulateNewPaymentModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('payments');
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 결제 시뮬레이션은 비활성화되어 있습니다.'); return; }
   const select = document.getElementById("manualPayAcademy");
   if (select && Array.isArray(franchiseList)) {
     select.innerHTML = franchiseList.map(f => {
@@ -7925,8 +8017,8 @@ function calcManualPayEndDate() {
 
 // 수동 결제 폼 제출 처리 (기존 결제 히스토리 위에 영구 누적 저장)
 function handleManualPaymentSubmit(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('payments');
   if (e) e.preventDefault();
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 수동 결제 등록은 실제 입금 확인 절차가 연결된 뒤 사용할 수 있습니다.'); return; }
 
   const acadSelect = document.getElementById("manualPayAcademy");
   const acadId = acadSelect.value;
@@ -8291,7 +8383,6 @@ function updateClassDropdown(academyName) {
 // [10] 회원 상세 모달 열기 (수정 가능 버전)
 // -----------------------------------------------------------
 function openMemberDetailModal(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
 
@@ -8353,11 +8444,11 @@ function openMemberDetailModal(id) {
 // -----------------------------------------------------------
 // [11] 회원 상세 저장 (수정사항 저장)
 // -----------------------------------------------------------
-function saveMemberDetailEdit() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
+async function saveMemberDetailEdit() {
   const id = parseInt(document.getElementById("detailMemberId").value, 10);
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
+  const previousMember = { ...mem };
 
   const phoneEl = document.getElementById("detailMemberPhone");
   const parentPhoneEl = document.getElementById("detailMemberParentPhone");
@@ -8369,7 +8460,18 @@ function saveMemberDetailEdit() {
   if (gradeEl) mem.grade = gradeEl.value;
   if (classEl) mem.className = classEl.value.trim();
 
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveMember(mem, mem.academyId);
+    } catch (error) {
+      Object.assign(mem, previousMember);
+      showMasterToast('회원 정보를 저장하지 못했습니다: ' + error.message);
+      return;
+    }
+  }
+
   $('#memberDetailModal').modal('hide');
+  saveMembersToStorage();
   renderMemberTable();
   showMasterToast(`[${mem.name}] 회원 정보가 수정되었습니다.`);
 }
@@ -8377,15 +8479,21 @@ function saveMemberDetailEdit() {
 // -----------------------------------------------------------
 // [12] 탈퇴/정지 처리 - 학원명 입력 확인 depth 추가
 // -----------------------------------------------------------
-function handleToggleMemberStatusClick() {
+async function handleToggleMemberStatusClick() {
   const id = parseInt(document.getElementById("detailMemberId").value, 10);
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
 
   // 이미 탈퇴/정지 상태면 바로 승인 전환
   if (mem.status === "WITHDRAWN" || mem.status === "PAUSED") {
+    const previousStatus = mem.status;
     mem.status = "APPROVED";
+    if (window.NanoPortal && NanoPortal.remote) {
+      try { await NanoPortal.saveMember(mem, mem.academyId); }
+      catch (error) { mem.status = previousStatus; showMasterToast('회원 상태를 변경하지 못했습니다: ' + error.message); return; }
+    }
     $('#memberDetailModal').modal('hide');
+    saveMembersToStorage();
     renderMemberTable();
     showMasterToast(`[${mem.name}] 계정이 정상 승인 상태로 전환되었습니다.`);
     return;
@@ -8408,16 +8516,21 @@ function handleToggleMemberStatusClick() {
     return;
   }
 
+  const previousStatus = mem.status;
   mem.status = "WITHDRAWN";
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.saveMember(mem, mem.academyId); }
+    catch (error) { mem.status = previousStatus; showMasterToast('회원 상태를 변경하지 못했습니다: ' + error.message); return; }
+  }
   $('#memberDetailModal').modal('hide');
+  saveMembersToStorage();
   renderMemberTable();
   showMasterToast(`[${mem.name}] 회원이 탈퇴/정지 처리되었습니다.`);
 }
 
 // 레거시 toggleMemberStatus 유지 (다른 곳에서 호출될 수 있어서)
 function toggleMemberStatus() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
-  handleToggleMemberStatusClick();
+  return handleToggleMemberStatusClick();
 }
 
 // -----------------------------------------------------------
@@ -8437,20 +8550,20 @@ function loadDeletedAcademiesFromStorage() {
 }
 let deletedAcademyList = loadDeletedAcademiesFromStorage(); // 임시 보존 삭제 목록
 
-function confirmDeleteAcademy() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
+async function confirmDeleteAcademy() {
   if (!pendingDeleteAcademyId) return;
 
-  // 비밀번호 검증 (데모: "master1234!")
+  const isRemote = window.NanoPortal && NanoPortal.remote;
+  // 로컬 체험 화면에서만 데모 확인값을 사용합니다. 운영 서버는 로그인 세션의 본사 권한으로 검증합니다.
   const pwInput = document.getElementById("deleteConfirmPassword");
   const pwErrEl = document.getElementById("deletePasswordError");
   const MASTER_PASSWORD = "master1234!"; // 실제로는 서버 검증
 
-  if (!pwInput || !pwInput.value.trim()) {
+  if (!isRemote && (!pwInput || !pwInput.value.trim())) {
     if (pwErrEl) pwErrEl.classList.remove("d-none");
     return;
   }
-  if (pwInput.value !== MASTER_PASSWORD) {
+  if (!isRemote && pwInput.value !== MASTER_PASSWORD) {
     if (pwErrEl) pwErrEl.classList.remove("d-none");
     return;
   }
@@ -8458,7 +8571,16 @@ function confirmDeleteAcademy() {
 
   const idx = franchiseList.findIndex(a => a.id === pendingDeleteAcademyId);
   if (idx !== -1) {
-    const deleted = franchiseList.splice(idx, 1)[0];
+    const deleted = franchiseList[idx];
+    if (isRemote) {
+      try {
+        await NanoPortal.deleteAcademy(deleted);
+      } catch (error) {
+        showMasterToast('학원을 삭제하지 못했습니다: ' + error.message);
+        return;
+      }
+    }
+    franchiseList.splice(idx, 1);
 
     // 7일 임시 보존
     const deletedAt = new Date();
@@ -8522,9 +8644,18 @@ function renderDeletedAcademyList() {
   }).join("");
 }
 
-function restoreDeletedAcademy(idx) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
-  const restored = deletedAcademyList.splice(idx, 1)[0];
+async function restoreDeletedAcademy(idx) {
+  const restored = deletedAcademyList[idx];
+  if (!restored) return;
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.restoreAcademy(restored);
+    } catch (error) {
+      showMasterToast('학원을 복구하지 못했습니다: ' + error.message);
+      return;
+    }
+  }
+  deletedAcademyList.splice(idx, 1);
   delete restored.deletedAt;
   delete restored.expireAt;
   franchiseList.unshift(restored);
@@ -8618,10 +8749,10 @@ function selectRecGrade(grade) {
 // -----------------------------------------------------------
 // [18] 배너 순서 조정 (리스트에서 위/아래 버튼)
 // -----------------------------------------------------------
-function moveBannerOrder(id, direction) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('banners');
-  const idx = bannerList.findIndex(b => b.id === id);
+async function moveBannerOrder(id, direction) {
+  const idx = bannerList.findIndex(b => String(b.id) === String(id));
   if (idx === -1) return;
+  const beforeOrder = bannerList.map(b => ({ id: b.id, order: b.order }));
 
   if (direction === "up" && idx > 0) {
     // 순서 교환
@@ -8640,6 +8771,18 @@ function moveBannerOrder(id, direction) {
     bannerList[idx + 1] = tempBanner;
   }
 
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await Promise.all(bannerList.map(b => NanoPortal.saveBanner(b)));
+    } catch (error) {
+      beforeOrder.forEach(previous => { const banner = bannerList.find(b => b.id === previous.id); if (banner) banner.order = previous.order; });
+      bannerList.sort((a, b) => (a.order || 0) - (b.order || 0));
+      showMasterToast('배너 순서를 저장하지 못했습니다: ' + error.message);
+      renderBannerList();
+      return;
+    }
+  }
+  saveOperationsToStorage();
   renderBannerList();
 }
 
@@ -8720,7 +8863,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // -----------------------------------------------------------
 const _origOpenMasterMemberAddModal = typeof openMasterMemberAddModal === "function" ? openMasterMemberAddModal.bind({}) : null;
 function openMasterMemberAddModal() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('members');
   const form = document.getElementById("masterMemberAddForm");
   if (form) form.reset();
 
@@ -8747,7 +8889,6 @@ function openMasterMemberAddModal() {
 // openAcademyDeleteConfirm - 기존 함수 오버라이드
 const _origOpenAcademyDeleteConfirm = typeof openAcademyDeleteConfirm === "function" ? openAcademyDeleteConfirm : null;
 function openAcademyDeleteConfirm(id) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
   const acad = franchiseList.find(a => a.id === id);
   if (!acad) return;
 
@@ -8767,8 +8908,7 @@ function openAcademyDeleteConfirm(id) {
 // [24] handleRegisterAcademy 오버라이드 - 주소 및 메모 포함
 // -----------------------------------------------------------
 const _origHandleRegisterAcademy = typeof handleRegisterAcademy === "function" ? handleRegisterAcademy : null;
-function handleRegisterAcademy(e) {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
+async function handleRegisterAcademy(e) {
   e.preventDefault();
 
   // 원장님 성함 검증 (특수문자, 숫자 금지)
@@ -8816,7 +8956,8 @@ function handleRegisterAcademy(e) {
   const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "330,000원";
   const memo = document.getElementById("regMemo")?.value.trim() || "";
 
-  const newId = `ACAD-0${String(franchiseList.length + 1).padStart(2, '0')}`;
+  const nextAcademyNumber = franchiseList.reduce((max, academy) => Math.max(max, Number(String(academy.id || '').replace(/\D/g, '')) || 0), 0) + 1;
+  const newId = `ACAD-${String(nextAcademyNumber).padStart(3, '0')}`;
   const newAcad = {
     id: newId,
     name: name,
@@ -8841,6 +8982,14 @@ function handleRegisterAcademy(e) {
     memo: memo
   };
 
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveAcademy(newAcad);
+    } catch (error) {
+      showMasterToast('학원을 등록하지 못했습니다: ' + error.message);
+      return;
+    }
+  }
   franchiseList.unshift(newAcad);
   saveFranchisesToStorage();
   $('#academyRegisterModal').modal('hide');
@@ -8855,7 +9004,7 @@ function handleRegisterAcademy(e) {
 
 // 가맹 학원 데이터 초기화 헬퍼 (테스트 후 원상복구용)
 function resetMasterFranchiseData() {
-  if (window.NanoPortal && NanoPortal.remote) return NanoPortal.openManage('academies');
+  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 데이터는 초기화할 수 없습니다. 필요한 항목을 직접 수정해 주세요.'); return; }
   localStorage.removeItem(STORAGE_KEY_FRANCHISES);
   localStorage.removeItem(STORAGE_KEY_DELETED_FRANCHISES);
   franchiseList = loadFranchisesFromStorage();
@@ -8921,4 +9070,3 @@ const _origRenderStudentRankings = null; // renderRankings 내부에서 처리
     initRankingViewOnReady();
   }
 })();
-

@@ -13,11 +13,13 @@ export default async function handler(req: any, res: any) {
   try {
     const user = await authenticate(req); staff(user);
     const entity = String(req.query.entity || 'members');
-    const academyId = await academyScope(user, req.query.academy);
+    // 학원 자체의 생성·수정은 아직 존재하지 않는 코드도 받을 수 있으므로 세션 학원을 기준으로 권한만 확인합니다.
+    const academyId = entity === 'academies' ? user.academyId : await academyScope(user, req.query.academy);
     const body = req.body || {}; const input = body.data || {};
     if (req.method === 'POST') {
-      need(['save','delete','import'].includes(body.operation), '요청 작업을 확인해 주세요.');
-      if (body.operation === 'delete') need(typeof input.id === 'string' && input.id.length > 0, '삭제할 항목을 선택해 주세요.');
+      need(['save','delete','import','restore'].includes(body.operation), '요청 작업을 확인해 주세요.');
+      if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
+      if (body.operation === 'delete' || body.operation === 'restore') need(typeof input.id === 'string' && input.id.length > 0, '대상 항목을 선택해 주세요.');
     }
     if (req.method === 'GET') {
       if (entity === 'rankings') {
@@ -140,7 +142,8 @@ export default async function handler(req: any, res: any) {
     if (entity === 'academies') {
       const existing = input.id && await prisma.academy.findUnique({ where: { id: input.id } }); need(!input.id || existing, '학원을 찾을 수 없습니다.', 404);
       if (body.operation === 'delete') { need(existing.id !== user.academyId, '본사 계정의 소속 학원은 삭제할 수 없습니다.'); await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: new Date(), status: 'SUSPENDED' } }); return res.json({ ok: true }); }
-      const data = { code: text(input.code, '학원 코드', 60, true), name: text(input.name, '학원명', 200, true), directorName: text(input.directorName, '원장 이름', 100, true), phone: text(input.phone, '연락처', 30), address: text(input.address, '주소', 500),
+      if (body.operation === 'restore') { need(existing.deletedAt, '삭제된 학원이 아닙니다.'); return res.json({ item: await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: null, status: 'ACTIVE' } }) }); }
+      const data = { code: text(input.code, '학원 코드', 60, true), name: text(input.name, '학원명', 200, true), bizNo: text(input.bizNo, '사업자등록번호', 50), directorName: text(input.directorName, '원장 이름', 100, true), phone: text(input.phone, '연락처', 30), email: text(input.email, '이메일', 200), address: text(input.address, '주소', 500), memo: text(input.memo, '메모', 20000), joinDate: date(input.joinDate || input.startDate, '등록'),
         maxStudents: Number(input.maxStudents), monthlyFee: Number(input.monthlyFee) || 0, plan: enumValue(input.plan || 'STANDARD', ['BASIC','STANDARD','PREMIUM','VIP','ROYAL'], '요금제') as any,
         status: enumValue(input.status || 'ACTIVE', ['ACTIVE','SUSPENDED','TERMINATED'], '학원 상태') as any, startDate: date(input.startDate, '시작'), endDate: date(input.endDate, '종료') };
       need(Number.isSafeInteger(data.maxStudents) && data.maxStudents > 0 && Number.isSafeInteger(data.monthlyFee) && data.monthlyFee >= 0 && data.endDate > data.startDate, '정원과 계약 기간·이용료를 확인해 주세요.');
