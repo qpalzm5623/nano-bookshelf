@@ -756,6 +756,70 @@ function formatPhoneInput(input) {
 // ==============================================================
 // 3-1. 학급(클래스) 관리 모달 & CRUD 로직 (담당교사 복수 지정 및 수정 모달 완비)
 // ==============================================================
+// ---- 학급 대상 학년 복수 선택 (체크박스) ----
+var CLASS_GRADE_OPTIONS = ['미취학', '초등 1학년', '초등 2학년', '초등 3학년', '초등 4학년', '초등 5학년', '초등 6학년', '중등 1학년', '중등 2학년', '중등 3학년'];
+
+// 기존에 저장된 묶음 표기(예: "초등 1~2학년")를 개별 학년 배열로 변환해 하위 호환 유지
+function parseClassGrades(gradeStr) {
+  var result = [];
+  String(gradeStr || '').split(',').forEach(function(part) {
+    var p = part.trim();
+    if (!p) return;
+    if (CLASS_GRADE_OPTIONS.indexOf(p) !== -1) { result.push(p); return; }
+    if (p.indexOf('미취학') === 0) result.push('미취학');
+    else if (p === '초등 1~2학년') result.push('초등 1학년', '초등 2학년');
+    else if (p === '중등 전학년') result.push('중등 1학년', '중등 2학년', '중등 3학년');
+  });
+  return result;
+}
+
+function getCheckedClassGrades(cbClass) {
+  return Array.from(document.querySelectorAll('.' + cbClass + ':checked')).map(function(cb) { return cb.value; });
+}
+
+function updateNewClassGradeLabel() {
+  var labelEl = document.getElementById('newClassGradeLabel');
+  if (!labelEl) return;
+  var checked = getCheckedClassGrades('new-cls-grade-cb');
+  if (checked.length === 0) {
+    labelEl.innerText = '대상 학년 선택 (복수 가능)';
+    labelEl.className = 'text-truncate text-muted';
+  } else {
+    labelEl.innerText = checked.length <= 2 ? checked.join(', ') : checked[0] + ' 외 ' + (checked.length - 1) + '개';
+    labelEl.className = 'text-truncate font-weight-bold text-dark';
+  }
+}
+
+function renderNewClassGradeDropdown() {
+  var menu = document.getElementById('newClassGradeDropdownMenu');
+  if (!menu) return;
+  menu.innerHTML = '';
+  CLASS_GRADE_OPTIONS.forEach(function(g, idx) {
+    var item = document.createElement('div');
+    item.className = 'form-check py-1 px-3 d-flex align-items-center';
+    item.onclick = function(e) { e.stopPropagation(); }; // 체크 시 드롭다운이 닫히지 않게
+    item.innerHTML = '<input class="form-check-input new-cls-grade-cb" type="checkbox" value="' + g + '" id="cb_new_g_' + idx + '" onchange="updateNewClassGradeLabel()">' +
+      '<label class="form-check-label ml-2 mb-0" for="cb_new_g_' + idx + '" style="cursor:pointer; font-size:12.5px;">' + g + '</label>';
+    menu.appendChild(item);
+  });
+  updateNewClassGradeLabel();
+}
+
+function renderEditClassGradeBox(gradeStr) {
+  var box = document.getElementById('editClassGradeBox');
+  if (!box) return;
+  var selected = parseClassGrades(gradeStr);
+  box.innerHTML = '';
+  CLASS_GRADE_OPTIONS.forEach(function(g, idx) {
+    var item = document.createElement('div');
+    item.className = 'form-check mr-3 mb-1';
+    item.style.minWidth = '110px';
+    item.innerHTML = '<input class="form-check-input edit-cls-grade-cb" type="checkbox" value="' + g + '" id="cb_edit_g_' + idx + '"' + (selected.indexOf(g) !== -1 ? ' checked' : '') + '>' +
+      '<label class="form-check-label" for="cb_edit_g_' + idx + '" style="cursor:pointer;">' + g + '</label>';
+    box.appendChild(item);
+  });
+}
+
 function renderNewClassTeacherDropdown() {
   var menu = document.getElementById('newClassTeacherDropdownMenu');
   if (!menu) return;
@@ -804,6 +868,7 @@ function updateNewClassTeacherLabel() {
 
 function openClassManageModal() {
   renderNewClassTeacherDropdown();
+  renderNewClassGradeDropdown();
   renderClassManageTable();
   if (window.jQuery && typeof $('#classManageModal').modal === 'function') {
     $('#classManageModal').modal('show');
@@ -850,10 +915,13 @@ function renderClassManageTable() {
 
 async function addClass() {
   var nameInput = document.getElementById('newClassNameInput');
-  var gradeSelect = document.getElementById('newClassGradeSelect');
-
   var name = (nameInput ? nameInput.value : '').trim();
-  var grade = gradeSelect ? gradeSelect.value : '초등 5학년';
+  var gradeList = getCheckedClassGrades('new-cls-grade-cb');
+  var grade = gradeList.join(', ');
+  if (gradeList.length === 0) {
+    alert('대상 학년을 1개 이상 선택해주세요.');
+    return;
+  }
 
   var checkedTeachers = Array.from(document.querySelectorAll('.new-cls-teacher-cb:checked')).map(function(cb) {
     return cb.value;
@@ -913,8 +981,7 @@ function editClass(id) {
   var nameInput = document.getElementById('editClassNameInput');
   if (nameInput) nameInput.value = cls.name;
 
-  var gradeSelect = document.getElementById('editClassGradeSelect');
-  if (gradeSelect) gradeSelect.value = cls.grade;
+  renderEditClassGradeBox(cls.grade);
 
   renderEditClassTeacherList(cls.teacher || '');
 
@@ -975,9 +1042,12 @@ async function saveEditedClass() {
   if (!cls) return;
 
   var nameInput = document.getElementById('editClassNameInput');
-  var gradeSelect = document.getElementById('editClassGradeSelect');
   var newName = (nameInput ? nameInput.value : '').trim();
-  var newGrade = gradeSelect ? gradeSelect.value : cls.grade;
+  var newGrade = getCheckedClassGrades('edit-cls-grade-cb').join(', ');
+  if (!newGrade) {
+    alert('대상 학년을 1개 이상 선택해주세요.');
+    return;
+  }
 
   if (!newName) {
     alert('학급명을 입력해주세요.');
@@ -1119,6 +1189,86 @@ function updateClassSelectOptions() {
 
     if (curFilterVal) {
       filterClassSelect.value = curFilterVal;
+    }
+  }
+
+  // 1. 학습 관리 클래스 필터 동기화
+  var learningClassSelect = document.getElementById('learningClassFilter');
+  if (learningClassSelect) {
+    var curLVal = learningClassSelect.value;
+    learningClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.name;
+      learningClassSelect.appendChild(opt);
+    });
+    if (curLVal && (academyClassList.some(function(c) { return c.name === curLVal; }) || curLVal === 'ALL')) {
+      learningClassSelect.value = curLVal;
+    }
+  }
+
+  // 2. 도서 배정 - 개별 원생 클래스 필터 동기화
+  var assignStudentClassSelect = document.getElementById('filterAssignStudentClass');
+  if (assignStudentClassSelect) {
+    var curASVal = assignStudentClassSelect.value;
+    assignStudentClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.name;
+      assignStudentClassSelect.appendChild(opt);
+    });
+    if (curASVal && (academyClassList.some(function(c) { return c.name === curASVal; }) || curASVal === 'ALL')) {
+      assignStudentClassSelect.value = curASVal;
+    }
+  }
+
+  // 3. 도서 배정 - 학급별 배정 클래스 필터 동기화
+  var assignClassSelect = document.getElementById('filterAssignClassSelect');
+  if (assignClassSelect) {
+    var curACVal = assignClassSelect.value;
+    assignClassSelect.innerHTML = '<option value="ALL">전체 클래스 보기</option>';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.name + (c.grade ? ' (' + c.grade + ')' : '');
+      assignClassSelect.appendChild(opt);
+    });
+    if (curACVal && (academyClassList.some(function(c) { return c.name === curACVal; }) || curACVal === 'ALL')) {
+      assignClassSelect.value = curACVal;
+    }
+  }
+
+  // 4. 독서 포트폴리오 클래스 필터 동기화
+  var portfolioClassSelect = document.getElementById('filterPortfolioClass');
+  if (portfolioClassSelect) {
+    var curPFVal = portfolioClassSelect.value;
+    portfolioClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.name;
+      portfolioClassSelect.appendChild(opt);
+    });
+    if (curPFVal && (academyClassList.some(function(c) { return c.name === curPFVal; }) || curPFVal === 'ALL')) {
+      portfolioClassSelect.value = curPFVal;
+    }
+  }
+
+  // 5. 포트폴리오 생성 마법사 클래스 필터 동기화
+  var wizClassSelect = document.getElementById('wizStudentClassFilter');
+  if (wizClassSelect) {
+    var curWVal = wizClassSelect.value;
+    wizClassSelect.innerHTML = '<option value="ALL">전체 학급</option>';
+    academyClassList.forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c.name;
+      opt.innerText = c.name;
+      wizClassSelect.appendChild(opt);
+    });
+    if (curWVal && (academyClassList.some(function(c) { return c.name === curWVal; }) || curWVal === 'ALL')) {
+      wizClassSelect.value = curWVal;
     }
   }
 }
@@ -2034,7 +2184,10 @@ function filterStudents() {
       std.id.toLowerCase().indexOf(query) !== -1 || 
       (std.parentName && std.parentName.toLowerCase().indexOf(query) !== -1) ||
       (std.school && std.school.toLowerCase().indexOf(query) !== -1);
-    return matchClass && matchQuery;
+    var statusVal = document.getElementById('filterStudentStatus') ? document.getElementById('filterStudentStatus').value : 'ALL';
+    var stdStatus = std.status || '승인';
+    var matchStatus = (statusVal === 'ALL') || (stdStatus === statusVal);
+    return matchClass && matchQuery && matchStatus;
   });
 
   renderStudentTable(filtered);
@@ -3520,10 +3673,12 @@ function openAcademyDispatchDetailModal(dispatchId) {
 // ==============================================================
 var currentAssignSection = 'student'; // 'student' (1순위 기본) 또는 'class'
 
-// 학원 보유 도서 여부 판별 헬퍼 (초기 1001~1006 및 creatorType === 'ACADEMY' 등)
+// 학원 보유 도서 여부 판별 헬퍼 (콘텐츠 관리 isOwned 및 기본 보유 도서, 직접 등록 도서 통합 판별)
 function isBookOwnedByAcademy(book) {
   if (!book) return false;
-  if (book.isAcademyOwned !== undefined) return book.isAcademyOwned;
+  if (book.isOwned !== undefined) return !!book.isOwned;
+  if (book.isAcademyOwned !== undefined) return !!book.isAcademyOwned;
+  if (book.owned !== undefined) return !!book.owned;
   // 기본적으로 1001, 1002, 1003, 1004, 1005 및 본원 등록 도서는 보유 도서로 처리
   var defaultOwnedIds = ['1001', '1002', '1003', '1004', '1005', '1006'];
   return defaultOwnedIds.indexOf(String(book.id)) !== -1 || book.creatorType === 'ACADEMY';
@@ -3689,6 +3844,17 @@ function renderClassAssignmentTable(list) {
     var tr = document.createElement('tr');
     if (item.id === lastAddedClassAssignId) tr.className = 'row-highlight-new';
 
+    // 9. 실제 academyClassList 및 studentDataList와 100% 동기화
+    var matchedClass = (typeof academyClassList !== 'undefined') ? academyClassList.find(function(c) { return c.name === item.className; }) : null;
+    var displayTeacher = (matchedClass && matchedClass.teacher) ? matchedClass.teacher : (item.teacher || '담당교사');
+    var displayGrade = (matchedClass && (matchedClass.grade || matchedClass.targetGrade)) ? (matchedClass.grade || matchedClass.targetGrade) : (item.gradeText || '전학년');
+    
+    // 해당 학급에 소속된 실제 원생 수 카운트
+    var actualStudentCount = (typeof studentDataList !== 'undefined') ? studentDataList.filter(function(s) { return s.classGroup === item.className; }).length : 0;
+    var totalStudents = actualStudentCount > 0 ? actualStudentCount : (item.totalStudents || 1);
+    var completedCount = Math.min(item.completedCount || 0, totalStudents);
+    var progressRate = Math.round((completedCount / totalStudents) * 100) + '%';
+
     var booksHtml = item.books.map(function(b) {
       var pubName = b.pub || b.publisher || '출판사';
       return `<div class="d-inline-flex align-items-center p-1 px-2 mr-2 mb-1 rounded border shadow-xs" style="background:#ffffff; font-size:12px; border-color: var(--border-light) !important;">
@@ -3705,7 +3871,7 @@ function renderClassAssignmentTable(list) {
       <td>
         <strong style="font-size: 14px; color: var(--text-main);">${item.className}</strong>
         ${item.id === lastAddedClassAssignId ? '<span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : ''}
-        <small class="text-muted d-block">${item.gradeText} &middot; ${item.teacher}</small>
+        <small class="text-muted d-block">${displayGrade} &middot; ${displayTeacher}</small>
       </td>
       <td>
         <div class="d-flex flex-wrap align-items-center">
@@ -3716,11 +3882,11 @@ function renderClassAssignmentTable(list) {
       <td class="text-center"><small class="text-muted font-weight-bold">${item.assignDate}</small></td>
       <td>
         <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:11px;">
-          <span class="text-muted">${item.completedCount}/${item.totalStudents}명 완독</span>
-          <strong class="text-success">${item.progressRate}</strong>
+          <span class="text-muted">${completedCount}/${totalStudents}명 완독</span>
+          <strong class="text-success">${progressRate}</strong>
         </div>
         <div class="progress" style="height: 6px; border-radius: 4px;">
-          <div class="progress-bar bg-success" role="progressbar" style="width: ${item.progressRate}"></div>
+          <div class="progress-bar bg-success" role="progressbar" style="width: ${progressRate}"></div>
         </div>
       </td>
       <td class="text-center">
@@ -4244,17 +4410,22 @@ async function removeBookFromStudent(studentId, bookId) {
 // ==============================================================
 var currentClassForModal = '지혜반';
 
-var academyClassMeta = [
-  { name: '지혜반', grade: '초등 5학년', total: 12, teacher: '박선혜 수석교사' },
-  { name: '슬기반', grade: '초등 4학년', total: 10, teacher: '박선혜 지도교사' },
-  { name: '마스터반', grade: '초등 6학년', total: 14, teacher: '최승현 지도교사' },
-  { name: '심화반', grade: '중등 논술', total: 16, teacher: '최승현 지도교사' },
-  { name: '새싹반', grade: '초등 저학년', total: 8, teacher: '이지연 지도교사' }
-];
+// 더미 학급 목록 대신, 학원이 실제 등록한 학급/담당교사/소속 원생 수를 매번 계산해 사용 (DB와 항상 일치)
+function getAcademyClassMeta() {
+  return academyClassList.map(function(c) {
+    return {
+      name: c.name,
+      grade: c.grade || '-',
+      total: studentDataList.filter(function(s) { return s.classGroup === c.name; }).length,
+      teacher: c.teacher || '미지정'
+    };
+  });
+}
 
 // 학급 배정 모달 열기
 function openClassAssignModal(defaultClass) {
-  currentClassForModal = defaultClass || '지혜반';
+  var metaList = getAcademyClassMeta();
+  currentClassForModal = defaultClass || (metaList.length > 0 ? metaList[0].name : '');
   renderClassAssignModalContent(currentClassForModal);
   $('#modalClassAssign').modal('show');
 }
@@ -4271,7 +4442,7 @@ function renderClassAssignModalContent(className) {
   var tabContainer = document.getElementById('classAssignTabButtons');
   if (tabContainer) {
     tabContainer.innerHTML = '';
-    academyClassMeta.forEach(function(c) {
+    getAcademyClassMeta().forEach(function(c) {
       var isSel = c.name === className;
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -4284,7 +4455,7 @@ function renderClassAssignModalContent(className) {
     });
   }
 
-  var cMeta = academyClassMeta.find(function(c) { return c.name === className; }) || { name: className, grade: '초등', total: 12, teacher: '지도교사' };
+  var cMeta = getAcademyClassMeta().find(function(c) { return c.name === className; }) || { name: className, grade: '-', total: 0, teacher: '미지정' };
 
   if (document.getElementById('classAssignSelectedName')) {
     document.getElementById('classAssignSelectedName').innerText = cMeta.name;
@@ -4298,9 +4469,7 @@ function renderClassAssignModalContent(className) {
 
   // 2) 해당 반 소속 학생 명단 취합
   var classStudents = studentDataList.filter(function(s) { return s.classGroup === className; });
-  if (classStudents.length === 0) {
-    classStudents = studentDataList.slice(0, cMeta.total);
-  }
+  // 소속 원생이 없으면 없는 그대로 표시 (임의 학생으로 채우지 않음)
   var studentNames = classStudents.map(function(s) { return s.name; });
   if (document.getElementById('classAssignStudentListText')) {
     document.getElementById('classAssignStudentListText').innerText = `소속 원생 (${classStudents.length}명): ${studentNames.join(', ')}`;
@@ -4551,10 +4720,7 @@ async function batchAssignBookToClass(className, bookId) {
   }
 
   var classStudents = studentDataList.filter(function(s) { return s.classGroup === className; });
-  if (classStudents.length === 0) {
-    var cMeta = academyClassMeta.find(function(c) { return c.name === className; });
-    classStudents = studentDataList.slice(0, cMeta ? cMeta.total : 10);
-  }
+
 
   var now = new Date();
   var yyyy = now.getFullYear();
@@ -4852,45 +5018,82 @@ function getCharacterSvg(charId, size) {
   return svgs[charId] || svgs.nano;
 }
 
-// 랭킹 필터 상태
-var adminRankPeriod = 'month'; // 'month' (9월) | 'lastMonth' (8월)
-var adminRankClass = 'all';    // 'all' | 'master' | 'wisdom' | 'wise' | 'sprout'
+// 랭킹 필터 상태: 집계 월(YYYY-MM)과 학급명('all' 또는 실제 학급명)
+var adminRankPeriod = ''; // 비어 있으면 현재월으로 초기화
+var adminRankClass = 'all';
 
-// 랭킹 종합 데이터베이스
-var adminRankingDatabase = {
-  month: [
-    { rank: 1, change: 'same', name: '박도윤', charId: 'booki', grade: '초등 6학년 (마스터반)', classKey: 'master', books: 31, quizRate: '97.0%', points: 3410, badge: '골드 독서왕 🥇' },
-    { rank: 2, change: 'up',   diff: 1, name: '김민준', charId: 'nano',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 24, quizRate: '94.2%', points: 2850, badge: '실버 리더 🥈' },
-    { rank: 3, change: 'up',   diff: 2, name: '윤지유', charId: 'lumi',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 22, quizRate: '95.8%', points: 2640, badge: '브론즈 리더 🥉' },
-    { rank: 4, change: 'down', diff: 2, name: '이서윤', charId: 'toto',  grade: '초등 4학년 (슬기반)',   classKey: 'wise',   books: 18, quizRate: '91.5%', points: 2190, badge: '열정 독서가 🌟' },
-    { rank: 5, change: 'same', name: '정하은', charId: 'mir',   grade: '중등 1학년 (심화반)',   classKey: 'master', books: 15, quizRate: '88.4%', points: 1980, badge: '탐구 독서가 🚀' },
-    { rank: 6, change: 'up',   diff: 1, name: '강시우', charId: 'pico',  grade: '초등 2학년 (새싹반)',   classKey: 'sprout', books: 12, quizRate: '92.0%', points: 1650, badge: '새싹 독서가 🌱' },
-    { rank: 7, change: 'same', name: '최준우', charId: 'popo',  grade: '초등 6학년 (마스터반)', classKey: 'master', books: 11, quizRate: '89.5%', points: 1520, badge: '성실 리더 📘' },
-    { rank: 8, change: 'up',   diff: 3, name: '송예은', charId: 'choco', grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 10, quizRate: '93.0%', points: 1410, badge: '지혜의 별 ⭐' }
-  ],
-  lastMonth: [
-    { rank: 1, change: 'same', name: '김민준', charId: 'nano',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 28, quizRate: '96.5%', points: 3200, badge: '골드 독서왕 🥇' },
-    { rank: 2, change: 'down', diff: 1, name: '박도윤', charId: 'booki', grade: '초등 6학년 (마스터반)', classKey: 'master', books: 27, quizRate: '95.0%', points: 3050, badge: '실버 리더 🥈' },
-    { rank: 3, change: 'same', name: '이서윤', charId: 'toto',  grade: '초등 4학년 (슬기반)',   classKey: 'wise',   books: 21, quizRate: '93.0%', points: 2510, badge: '브론즈 리더 🥉' },
-    { rank: 4, change: 'down', diff: 1, name: '윤지유', charId: 'lumi',  grade: '초등 5학년 (지혜반)',   classKey: 'wisdom', books: 19, quizRate: '92.4%', points: 2320, badge: '열정 독서가 🌟' },
-    { rank: 5, change: 'same', name: '정하은', charId: 'mir',   grade: '중등 1학년 (심화반)',   classKey: 'master', books: 16, quizRate: '90.1%', points: 1990, badge: '탐구 독서가 🚀' },
-    { rank: 6, change: 'same', name: '강시우', charId: 'pico',  grade: '초등 2학년 (새싹반)',   classKey: 'sprout', books: 13, quizRate: '91.0%', points: 1680, badge: '새싹 독서가 🌱' },
-    { rank: 7, change: 'up',   diff: 2, name: '한지민', charId: 'jelly', grade: '초등 4학년 (슬기반)',   classKey: 'wise',   books: 12, quizRate: '88.5%', points: 1490, badge: '독서 수호자 🛡️' },
-    { rank: 8, change: 'same', name: '백승우', charId: 'chichi',grade: '초등 2학년 (새싹반)',   classKey: 'sprout', books: 10, quizRate: '90.5%', points: 1380, badge: '꿈나무 독서가 🌿' }
-  ]
-};
-if (window.NANO_SERVER_DATA) {
-  var serverRankingRows = studentDataList.slice().sort(function(a, b) { return (Number(b.points) || 0) - (Number(a.points) || 0) || a.name.localeCompare(b.name, 'ko'); }).map(function(student, index) {
-    return { rank: index + 1, change: 'same', name: student.name, charId: 'nano', grade: (student.grade || '') + ' (' + (student.classGroup || '미지정') + ')',
-      classKey: student.classGroup || '미지정', books: Number(student.bookCount) || 0, quizRate: (Number(student.quizAvg) || 0).toFixed(1) + '%', points: Number(student.points) || 0,
-      badge: index === 0 ? '골드 독서왕 🥇' : index === 1 ? '실버 리더 🥈' : index === 2 ? '브론즈 리더 🥉' : '독서가' };
+// 집계 가능한 기간: 현재월 포함 최근 6개월 (상한을 두는 이유: 불필요한 장기 조회로 인한 부하 방지)
+function getAdminRankMonthOptions() {
+  var options = [];
+  var now = new Date();
+  for (var i = 0; i < 6; i++) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    var label = d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월' + (i === 0 ? ' (이번 달)' : '');
+    options.push({ key: key, label: label, short: d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월' });
+  }
+  return options;
+}
+
+// 랭킹 화면의 기간/학급 드롭다운을 실제 데이터로 채움 (선택값은 유지)
+function populateAdminRankFilters() {
+  var months = getAdminRankMonthOptions();
+  if (!adminRankPeriod || !months.some(function(m) { return m.key === adminRankPeriod; })) adminRankPeriod = months[0].key;
+
+  var periodSel = document.getElementById('adminRankPeriodSelect');
+  if (periodSel) {
+    periodSel.innerHTML = months.map(function(m) { return '<option value="' + m.key + '">' + m.label + '</option>'; }).join('');
+    periodSel.value = adminRankPeriod;
+  }
+
+  var classSel = document.getElementById('adminRankClassSelect');
+  if (classSel) {
+    var html = '<option value="all">원내 전체</option>';
+    academyClassList.forEach(function(c) { html += '<option value="' + c.name + '">' + c.name + '</option>'; });
+    classSel.innerHTML = html;
+    if (adminRankClass !== 'all' && !academyClassList.some(function(c) { return c.name === adminRankClass; })) adminRankClass = 'all';
+    classSel.value = adminRankClass;
+  }
+}
+
+// 선택한 월의 학습 기록(완독 도서 + 북퀘즈 점수)에서 원생별 순위 산출
+// 포인트 = 해당 월 북퀘즈 획득 점수 합계
+function buildAdminRankingRows(monthKey) {
+  var logs = getLoadedLearningLogs().filter(function(l) { return (l.date || '').slice(0, 7) === monthKey; });
+  var byStudent = {};
+  logs.forEach(function(l) {
+    var key = String(l.studentId || l.studentName);
+    if (!byStudent[key]) byStudent[key] = { studentId: l.studentId || '', name: l.studentName || l.name || '-', classGroup: l.classGroup || '미지정', books: 0, scoreSum: 0 };
+    byStudent[key].books += 1;
+    byStudent[key].scoreSum += Number(l.score) || 0;
   });
-  adminRankingDatabase = { month: serverRankingRows, lastMonth: [] };
+
+  var rows = Object.keys(byStudent).map(function(key) {
+    var item = byStudent[key];
+    var std = studentDataList.find(function(s) { return s.id === item.studentId || s.username === item.studentId || (!item.studentId && s.name === item.name); });
+    return {
+      name: item.name,
+      loginId: std ? (std.username || std.id) : item.studentId,
+      charId: 'nano',
+      grade: ((std && std.grade) ? std.grade : '') + ' (' + ((std && std.classGroup) ? std.classGroup : item.classGroup) + ')',
+      classKey: (std && std.classGroup) ? std.classGroup : item.classGroup,
+      books: item.books,
+      quizRate: (item.scoreSum / item.books).toFixed(1) + '%',
+      points: item.scoreSum
+    };
+  });
+
+  rows.sort(function(a, b) { return b.points - a.points || b.books - a.books || a.name.localeCompare(b.name, 'ko'); });
+  rows.forEach(function(r, idx) {
+    r.badge = idx === 0 ? '골드 독서왕 🥇' : idx === 1 ? '실버 리더 🥈' : idx === 2 ? '브론즈 리더 🥉' : '독서가';
+  });
+  return rows;
 }
 
 // 현재 필터된 랭킹 리스트 가져오기
 function getFilteredAdminRankingList() {
-  var list = adminRankingDatabase[adminRankPeriod] || adminRankingDatabase.month;
+  if (!adminRankPeriod) populateAdminRankFilters();
+  var list = buildAdminRankingRows(adminRankPeriod);
   if (adminRankClass !== 'all') {
     list = list.filter(function(item) {
       return item.classKey === adminRankClass;
@@ -4906,6 +5109,7 @@ function getFilteredAdminRankingList() {
 
 // 화면 랭킹 뷰 메인 렌더링
 function renderAdminRankingView() {
+  populateAdminRankFilters();
   var list = getFilteredAdminRankingList();
   
   // 1. 상단 요약 통계 갱신
@@ -4915,9 +5119,9 @@ function renderAdminRankingView() {
   var countLabel = document.getElementById('adminRankCountLabel');
   var podiumTitle = document.getElementById('adminPodiumTitle');
 
-  var periodText = (adminRankPeriod === 'month') ? '2026년 9월' : '2026년 8월 결산';
-  var classLabelMap = { all: '원내 전체', master: '마스터반', wisdom: '지혜반', wise: '슬기반', sprout: '새싹반' };
-  var currentClassText = classLabelMap[adminRankClass] || '원내 전체';
+  var periodOpt = getAdminRankMonthOptions().find(function(m) { return m.key === adminRankPeriod; });
+  var periodText = periodOpt ? periodOpt.short : adminRankPeriod;
+  var currentClassText = adminRankClass === 'all' ? '원내 전체' : adminRankClass;
 
   if (podiumTitle) {
     podiumTitle.textContent = periodText + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
@@ -5050,7 +5254,7 @@ function renderAdminRankingView() {
               </div>
               <div>
                 <strong style="color: var(--text-main); font-size: 14.5px;">${r.name}</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">파트너 나노 프렌즈</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${r.loginId ? '(' + r.loginId + ')' : ''}</div>
               </div>
             </div>
           </td>
@@ -5079,32 +5283,12 @@ function renderAdminRankingView() {
 // 기간 필터 전환 핸들러
 function switchAdminRankPeriod(period) {
   adminRankPeriod = period;
-  var btnThis = document.getElementById('adminRankBtnThisMonth');
-  var btnLast = document.getElementById('adminRankBtnLastMonth');
-  if (period === 'month') {
-    if (btnThis) { btnThis.className = 'btn btn-dark font-weight-bold'; }
-    if (btnLast) { btnLast.className = 'btn btn-outline-secondary font-weight-bold'; }
-  } else {
-    if (btnThis) { btnThis.className = 'btn btn-outline-secondary font-weight-bold'; }
-    if (btnLast) { btnLast.className = 'btn btn-dark font-weight-bold'; }
-  }
   renderAdminRankingView();
 }
 
 // 학급 필터 전환 핸들러
 function switchAdminRankClass(cls) {
   adminRankClass = cls;
-  var container = document.getElementById('adminRankClassGroup');
-  if (container) {
-    var buttons = container.querySelectorAll('button');
-    buttons.forEach(function(b) {
-      if (b.getAttribute('data-class') === cls) {
-        b.className = 'btn btn-primary font-weight-bold active';
-      } else {
-        b.className = 'btn btn-outline-secondary font-weight-bold';
-      }
-    });
-  }
   renderAdminRankingView();
 }
 
@@ -5113,13 +5297,19 @@ function renderAdminRankingPoster(container) {
   if (!container) return;
   var list = getFilteredAdminRankingList();
   
-  var periodLabel = (adminRankPeriod === 'month') ? '2026년 9월' : '2026년 8월 결산';
-  var classLabelMap = { all: '원내 전체 명예의 전당', master: '초등 마스터반', wisdom: '초등 지혜반', wise: '초등 슬기반', sprout: '초등 새싹반' };
-  var classLabel = classLabelMap[adminRankClass] || '원내 전체 명예의 전당';
+  var periodOptP = getAdminRankMonthOptions().find(function(m) { return m.key === adminRankPeriod; });
+  var periodLabel = periodOptP ? periodOptP.short : adminRankPeriod;
+  var classLabel = adminRankClass === 'all' ? '원내 전체 명예의 전당' : adminRankClass;
+  var academyName = (currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '나노의 책장';
+  var directorName = (currentAcademyInfo && currentAcademyInfo.director) ? String(currentAcademyInfo.director).replace(/\s*원장님?$/, '') : '';
+  var today = new Date();
+  var issueDateText = today.getFullYear() + '년 ' + String(today.getMonth() + 1).padStart(2, '0') + '월 ' + String(today.getDate()).padStart(2, '0') + '일';
 
-  var top1 = list[0] || { name: '박도윤', grade: '초등 6학년 (마스터반)', books: 31, points: 3410, charId: 'booki' };
-  var top2 = list[1] || { name: '김민준', grade: '초등 5학년 (지혜반)', books: 24, points: 2850, charId: 'nano' };
-  var top3 = list[2] || { name: '윤지유', grade: '초등 5학년 (지혜반)', books: 22, points: 2640, charId: 'lumi' };
+  // 인원이 부족할 때는 빈 칸으로 표시 (가상의 학생을 채우지 않음)
+  var emptyEntry = { name: '-', grade: '', books: 0, points: 0, charId: 'nano' };
+  var top1 = list[0] || emptyEntry;
+  var top2 = list[1] || emptyEntry;
+  var top3 = list[2] || emptyEntry;
 
   // 4~8위 리더 목록
   var leaders = list.slice(3, 8);
@@ -5155,7 +5345,7 @@ function renderAdminRankingPoster(container) {
       <div>
         <div class="text-center">
           <div class="poster-header-badge">
-            <i class="fa-solid fa-award"></i> 판교 알파 나노 독서 아카데미 공식 인증
+            <i class="fa-solid fa-award"></i> ${academyName} 공식 인증
           </div>
           <div class="poster-main-title">
             🏆 ${periodLabel} 독서 명예의 전당 🏆
@@ -5255,15 +5445,15 @@ function renderAdminRankingPoster(container) {
             스스로 책을 펼치고 지혜로운 독서 습관을 실천하여 명예의 전당에 오른 원생 여러분께 진심 어린 축하와 격려를 보냅니다. 앞으로도 더 넓은 세상을 향해 즐겁게 책과 동행하길 응원합니다.
           </div>
           <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 6px;">
-            발행일자: 2026년 09월 21일
+            발행일자: ${issueDateText}
           </div>
         </div>
 
         <!-- 원장 직인 낙관 도장 -->
         <div class="d-flex align-items-center gap-2">
           <div style="text-align: right;">
-            <div style="font-size: 10px; color: #64748b; font-weight: 700;">판교 알파 나노 독서 아카데미</div>
-            <div style="font-size: 15px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">원 장 &nbsp; 나 &nbsp; 노 &nbsp; 쌤</div>
+            <div style="font-size: 10px; color: #64748b; font-weight: 700;">${academyName}</div>
+            <div style="font-size: 15px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">원 장 &nbsp; ${directorName || '나노쌤'}</div>
           </div>
           <div class="poster-official-seal">
             <span>나노독서</span>
@@ -5286,31 +5476,51 @@ function openPosterPreviewModal() {
   $('#rankingPosterPreviewModal').modal('show');
 }
 
+// ------------------------------------------------------------------
+// 공통 인쇄 헬퍼: 현재 페이지의 여러 @media print 규칙(body * { visibility:hidden } 등)이 서로 충돌해
+// 인쇄 미리보기가 백지로 나오는 문제가 있어, 인쇄 대상만 복사한 숨김 iframe에서 인쇄한다.
+// ------------------------------------------------------------------
+function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
+  var frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(frame);
+
+  var frameWin = frame.contentWindow;
+  var frameDoc = frameWin.document;
+  // 화면에 쓰이는 스타일(외부 CSS + 인라인 <style>)을 그대로 재사용해 디자인을 동일하게 유지
+  var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
+  // 기존 전역 숨김 규칙을 마지막 규칙으로 무효화 (동일 우선순위에서는 뒤에 온 규칙이 적용됨)
+  var overrideCss = '@media print { html, body { height:auto !important; overflow:visible !important; background:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
+
+  frameDoc.open();
+  frameDoc.write('<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><base href="' + document.baseURI + '"><title>' + (title || '인쇄') + '</title>' +
+    headStyles + '<style>' + overrideCss + '</style></head><body class="' + (bodyClass || '') + '">' + innerHtml + '</body></html>');
+  frameDoc.close();
+
+  var removeFrame = function() { if (frame.parentNode) frame.parentNode.removeChild(frame); };
+  // 스타일시트/폰트 로딩이 끝난 뒤 인쇄해야 백지가 되지 않음
+  setTimeout(function() {
+    try {
+      frameWin.focus();
+      frameWin.addEventListener('afterprint', removeFrame);
+      frameWin.print();
+    } catch (error) {
+      removeFrame();
+      showAcademyToast('인쇄를 시작하지 못했습니다: ' + error.message);
+      return;
+    }
+    // afterprint를 지원하지 않는 브라우저 대비 안전 정리
+    setTimeout(removeFrame, 120000);
+  }, 700);
+}
+
 // A4 포스터 브라우저 인쇄 실행
 function printRankingPoster() {
-  var printArea = document.getElementById('rankingPosterPrintArea');
-  if (!printArea) return;
-  
-  // 인쇄 전용 영역에 최신 포스터 렌더링
-  renderAdminRankingPoster(printArea);
-
-  // 인쇄 클래스 활성화 + 인쇄 영역 표시
-  printArea.style.display = 'block';
-  document.body.classList.add('is-printing-poster');
-
-  var cleanup = function() {
-    document.body.classList.remove('is-printing-poster');
-    printArea.style.display = 'none'; // 인쇄 후 다시 숨김
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
-
-  // 브라우저 인쇄 다이얼로그 호출 (렌더링 완료 후)
-  setTimeout(function() {
-    window.print();
-    // 안전 fallback (afterprint 미지원 브라우저 대비)
-    setTimeout(cleanup, 3000);
-  }, 200);
+  var holder = document.createElement('div');
+  renderAdminRankingPoster(holder);
+  // 인쇄 전용 CSS(body.is-printing-poster #rankingPosterPrintArea)가 그대로 적용되도록 같은 id로 감싼다
+  printHtmlInIsolatedFrame('<div id="rankingPosterPrintArea">' + holder.innerHTML + '</div>', 'is-printing-poster', '독서 명예의 전당 포스터');
 }
 
 // 모달 내에서 바로 인쇄 실행
@@ -5694,14 +5904,41 @@ function renderPortfolioDocument(studentId, pfId) {
   var studentName = pfData.name || (std ? std.name : '김민준');
   var schoolGrade = pfData.school || ((std ? std.school : '나노초등학교') + ' ' + (std ? std.grade : '5학년'));
   var classGroup = pfData.classGroup || (std ? std.classGroup : '지혜반');
-  var teacher = pfData.teacher || '박선우 지도교사';
+
+  // 7-8. 상단 지도교사 이름을 실제 지도교사 이름으로 바인딩
+  var teacher = '';
+  if (std) {
+    teacher = std.teacher || std.teacherName || '';
+    if (!teacher && std.classGroup && typeof academyClassList !== 'undefined') {
+      var cls = academyClassList.find(function(c) { return c.name === std.classGroup; });
+      if (cls && cls.teacher) teacher = cls.teacher;
+    }
+  }
+  if (!teacher) teacher = pfData.teacher || '박선우 지도교사';
+  if (!teacher.includes('지도교사') && !teacher.includes('선생님') && !teacher.includes('교사')) {
+    teacher += ' 지도교사';
+  }
+
   var period = pfMeta.period || '2026년 3분기 (7~9월)';
   var issueDate = pfMeta.issueDate || '2026.09.08';
-  var reportId = pfMeta.id || 'PF-2026-0901';
+
+  // 7-3. 발급 번호 간소화 ('PF-2026-0901' -> '제 2026-01호')
+  var rawReportId = pfMeta.id || 'PF-2026-0901';
+  var reportNumMatch = rawReportId.match(/\d+/g);
+  var reportId = '제 2026-01호';
+  if (reportNumMatch) {
+    var numStr = reportNumMatch.join('');
+    if (numStr.length >= 6) {
+      reportId = '제 ' + numStr.slice(0, 4) + '-' + numStr.slice(4) + '호';
+    } else {
+      reportId = '제 ' + numStr + '호';
+    }
+  }
 
   var books = pfData.books || [];
   var bookCount = books.length;
-  var quizAvg = pfData.quizAvg || 94.2;
+  // 7-4. 평균이해도 소수점 첫째자리 반올림
+  var quizAvg = Math.round(Number(pfData.quizAvg) || 94);
 
   // 5대 분석 축 정성 코멘트 4개 생성 (각 40~70자, 2문장 이내)
   var insights = generatePortfolioInsights(std, pfData);
@@ -5748,6 +5985,10 @@ function renderPortfolioDocument(studentId, pfId) {
 
   // 북퀴즈 응시 이력 테이블 행 HTML (No., 도서명/출판사, 응시일, 핵심 문맥 파악 및 성취 내용 4개 컬럼 & 좌우 스크롤 없이 표시)
   var quizRowsHtml = books.map(function(b, idx) {
+    var commentText = b.comment || '';
+    if (!commentText || /^[\d\s]+$/.test(commentText) || commentText.length < 5) {
+      commentText = '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 완벽히 이해함.';
+    }
     return (
       '<tr>' +
         '<td class="text-center font-weight-bold text-muted" style="font-size:11px; padding:7px 2px; vertical-align:middle;">' + (idx + 1) + '</td>' +
@@ -5759,7 +6000,7 @@ function renderPortfolioDocument(studentId, pfId) {
           b.date +
         '</td>' +
         '<td style="font-size:11px; color:#3d342d; line-height:1.45; padding:7px 6px; vertical-align:middle; word-break:keep-all;">' +
-          b.comment +
+          commentText +
         '</td>' +
       '</tr>'
     );
@@ -5793,7 +6034,7 @@ function renderPortfolioDocument(studentId, pfId) {
     '<div class="pf-header-section mb-4 pb-3 border-bottom">' +
       '<div class="d-flex justify-content-between align-items-start mb-2 pf-header-top">' +
         '<div>' +
-          '<div style="font-size:11.5px; font-weight:800; letter-spacing:1px; color:#1f8a7e; text-transform:uppercase;">Nano Reading Academy</div>' +
+          '<div style="font-size:11.5px; font-weight:800; letter-spacing:1px; color:#1f8a7e; text-transform:uppercase;">나노의 책장 (Nano Bookshelf)</div>' +
           '<h3 class="font-weight-bold mb-1 pf-header-title" style="color:#1e242b; font-size:22px; letter-spacing:-0.5px;">' +
             '<i class="fa-solid fa-book-bookmark text-success mr-2" style="color:#1f8a7e !important;"></i>나노의 책장 독서 성장 포트폴리오' +
           '</h3>' +
@@ -5937,7 +6178,6 @@ function renderPortfolioDocument(studentId, pfId) {
     '<div class="mb-4">' +
       '<div class="pf-section-title">' +
         '<i class="fa-solid fa-sparkles text-emerald" style="color:#1f8a7e !important;"></i>나노의 독서 이야기' +
-        '<small class="text-muted ml-2 font-weight-normal" style="font-size:12px;">(북퀴즈 이력 기반 자동 생성 정성 코멘트)</small>' +
       '</div>' +
       '<div class="row">' +
         insightsCardsHtml +
@@ -5964,10 +6204,10 @@ function renderPortfolioDocument(studentId, pfId) {
     '<!-- ============================================== -->' +
     '<div class="pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted" style="font-size:11.5px;">' +
       '<div>' +
-        '<span class="font-weight-bold" style="color:#1f8a7e;">나노 리딩 아카데미</span> · 독서 교육 연구소 인증' +
+        '<span class="font-weight-bold" style="color:#1f8a7e;">나노의 책장</span> · 독서 교육 연구소 인증' +
       '</div>' +
       '<div>' +
-        '아이의 독서는 끝없는 가능성의 시작입니다. · © Nano Reading Academy' +
+        '아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)' +
       '</div>' +
     '</div>';
 
@@ -6110,18 +6350,18 @@ function openPortfolioReportModal() {
   printCurrentPortfolio();
 }
 
-// 현재 보고 있는 포트폴리오 인쇄 / PDF 저장
+// 현재 보고 있는 포트폴리오 인쇄 / PDF 저장 (전역 미디어 쿼리 간섭 없는 격리 iframe 인쇄)
 function printCurrentPortfolio() {
-  document.body.classList.add('is-printing-portfolio');
-  setTimeout(function() {
-    window.print();
-  }, 50);
-
-  var cleanup = function() {
-    document.body.classList.remove('is-printing-portfolio');
-    window.removeEventListener('afterprint', cleanup);
-  };
-  window.addEventListener('afterprint', cleanup);
+  var docContainer = document.getElementById('portfolioPrintDoc');
+  if (!docContainer) {
+    showAcademyToast('인쇄할 포트폴리오 문서를 찾을 수 없습니다.');
+    return;
+  }
+  printHtmlInIsolatedFrame(
+    '<div id="portfolioPrintDoc" class="portfolio-document-view" style="max-width:800px; margin:0 auto; padding:24px; background:#ffffff;">' + docContainer.innerHTML + '</div>',
+    'is-printing-portfolio',
+    '나노의 책장 독서 성장 포트폴리오'
+  );
 }
 
 
@@ -6350,12 +6590,73 @@ function renderWizardBookList(stdId) {
   if (!container) return;
   container.innerHTML = '';
 
-  var pf = portfolioDataMap[stdId];
-  var allBooks = pf && pf.books && pf.books.length > 0 ? pf.books : [
-    { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '100점', sheet: '제출 완료', comment: '사막여우와 장미의 의미를 문해력 높게 해석하고 논술 과제를 훌륭히 완수함.' },
-    { cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.02', score: '90점', sheet: '제출 완료', comment: '타인의 고통과 감정에 대한 공감 능력을 자신의 경험에 빗대어 설득력 있게 표현함.' },
-    { cover: 'assets/covers/cover_1004.jpg', title: '자전거 도둑', pub: '다림', date: '2026.08.28', score: '92점', sheet: '제출 완료', comment: '물질주의와 양심 사이의 갈등을 비판적 시각으로 깊이 있게 고찰함.' }
-  ];
+  // 7-2. 실제 학습 로그(getLoadedLearningLogs)에서 해당 학생의 완독 도서 조회
+  var std = studentDataList.find(function(s) { return s.id === stdId; });
+  var stdName = std ? std.name : '';
+
+  var loadedLogs = [];
+  try {
+    if (typeof getLoadedLearningLogs === 'function') {
+      loadedLogs = getLoadedLearningLogs();
+    }
+  } catch (e) {
+    console.warn('학습 로그 로딩 예외:', e);
+  }
+  if (!loadedLogs || loadedLogs.length === 0) {
+    loadedLogs = typeof learningLogs !== 'undefined' ? learningLogs : [];
+  }
+
+  // 학생 id 또는 이름으로 매칭되는 완독/응시 로그 필터링
+  var studentLogs = loadedLogs.filter(function(log) {
+    return (log.studentId && log.studentId === stdId) ||
+           (stdName && log.studentName === stdName);
+  });
+
+  var allBooks = [];
+  if (studentLogs.length > 0) {
+    // 중복 도서는 최신 일자로 1권씩만 매핑
+    var seenTitles = {};
+    studentLogs.forEach(function(log) {
+      var title = log.bookTitle || log.title || '도서';
+      if (!seenTitles[title]) {
+        seenTitles[title] = true;
+        // 도서 커버 매칭
+        var cover = 'assets/covers/cover_1001.jpg';
+        if (typeof bookList !== 'undefined') {
+          var matchedBook = bookList.find(function(b) { return b.title === title; });
+          if (matchedBook && matchedBook.cover) cover = matchedBook.cover;
+        }
+        var logDate = log.submittedAt || log.date || '2026.09.01';
+        var dateFormatted = logDate.split(' ')[0].replace(/-/g, '.');
+        var scoreStr = (log.score !== undefined ? log.score : 100) + '점';
+        var sheetStr = log.sheet || '작성 완료';
+        var commentStr = log.comment || log.sheetAnswer || '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 완벽히 이해함.';
+        allBooks.push({
+          cover: cover,
+          title: title,
+          pub: log.bookPub || log.pub || '출판사',
+          date: dateFormatted,
+          score: scoreStr,
+          sheet: sheetStr,
+          comment: commentStr
+        });
+      }
+    });
+  }
+
+  // 학습 로그에 완독 기록이 없는 경우 fallback (기존 pfData 또는 기본값)
+  if (allBooks.length === 0) {
+    var pf = portfolioDataMap[stdId];
+    if (pf && pf.books && pf.books.length > 0) {
+      allBooks = pf.books;
+    } else {
+      allBooks = [
+        { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '100점', sheet: '제출 완료', comment: '사막여우와 장미의 의미를 문해력 높게 해석하고 논술 과제를 훌륭히 완수함.' },
+        { cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.02', score: '90점', sheet: '제출 완료', comment: '타인의 고통과 감정에 대한 공감 능력을 자신의 경험에 빗대어 설득력 있게 표현함.' },
+        { cover: 'assets/covers/cover_1004.jpg', title: '자전거 도둑', pub: '다림', date: '2026.08.28', score: '92점', sheet: '제출 완료', comment: '물질주의와 양심 사이의 갈등을 비판적 시각으로 깊이 있게 고찰함.' }
+      ];
+    }
+  }
 
   var startDateVal = document.getElementById('wizBookStartDate') ? document.getElementById('wizBookStartDate').value.replace(/-/g, '.') : '';
   var endDateVal = document.getElementById('wizBookEndDate') ? document.getElementById('wizBookEndDate').value.replace(/-/g, '.') : '';
@@ -6968,7 +7269,7 @@ function filterAcademyBooks(keepPage) {
     // 3. 학년 매칭
     var matchGrade = true;
     if (gradeVal !== 'ALL') {
-      matchGrade = b.grade && (b.grade.includes(gradeVal) || gradeVal.includes(b.grade));
+      matchGrade = bookGradeMatches(b.grade, gradeVal);
     }
 
     // 4. 검색어 매칭
@@ -7026,6 +7327,36 @@ function filterAcademyBooks(keepPage) {
 
   renderAcademyBookTable(pagedList, total, startIdx);
   renderAcademyBookPagination(total, academyBookCurrentPage, totalPages);
+}
+
+// -------------------------------------------------------------
+// 도서 권장학년 문자열("초등 5학년", "초등 1~2학년", "중등 전학년" 등)을
+// 개별 학년 목록으로 풀어 선택한 학년이 포함되는지 판별 (문자열 포함 비교로는 범위 표기를 놓침)
+// -------------------------------------------------------------
+function bookGradeMatches(bookGrade, selected) {
+  var text = String(bookGrade || '');
+  if (!text) return false;
+  if (text.indexOf('미취학') !== -1 || text.indexOf('유아') !== -1) return selected === '미취학';
+
+  var m = selected.match(/^(초등|중등) (\d)학년$/);
+  if (!m) return text.indexOf(selected) !== -1;
+  var level = m[1];
+  var num = parseInt(m[2], 10);
+
+  // 해당 학교급(초등/중등) 표기가 있는 부분만 분리해 검사
+  var parts = text.split(/[,\/]/);
+  return parts.some(function(part) {
+    var p = part.trim();
+    var isMiddle = p.indexOf('중등') !== -1 || /^중\d/.test(p);
+    var isElem = p.indexOf('초등') !== -1 || /^초\d/.test(p);
+    if (level === '중등' && !isMiddle) return false;
+    if (level === '초등' && !isElem) return false;
+    if (p.indexOf('전학년') !== -1) return level === '중등';
+    var range = p.match(/(\d)\s*[~\-]\s*(\d)/);
+    if (range) return num >= parseInt(range[1], 10) && num <= parseInt(range[2], 10);
+    var single = p.match(/(\d)/);
+    return !!single && parseInt(single[1], 10) === num;
+  });
 }
 
 // -------------------------------------------------------------
@@ -8091,7 +8422,8 @@ function generateAcademyBookId() {
   else if (cat1Val.includes("비문학") || cat1Val.includes("정보") || cat1Val === "C") c1Code = "C";
 
   var gCode = "1";
-  if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
+  if (gradeVal.includes("미취학")) gCode = "0";
+  else if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
   else if (gradeVal.includes("2학년") && !gradeVal.includes("중등")) gCode = "2";
   else if (gradeVal.includes("3학년") && !gradeVal.includes("중등")) gCode = "3";
   else if (gradeVal.includes("4학년")) gCode = "4";
@@ -9701,19 +10033,30 @@ function openMyInfoModal() {
   var elCDate = document.getElementById('infoDisplayContractDate');
   var elEDate = document.getElementById('infoDisplayExpireDate');
 
-  if (elId) elId.innerText = myAcademyInfo.id;
-  if (elBiz) elBiz.innerText = myAcademyInfo.bizNumber;
-  if (elAcad) elAcad.innerText = myAcademyInfo.academyName;
-  if (elDir) elDir.innerText = myAcademyInfo.directorName;
-  if (elPlan) elPlan.innerText = myAcademyInfo.plan;
-  if (elCDate) elCDate.innerText = myAcademyInfo.contractDate;
-  if (elEDate) elEDate.innerText = myAcademyInfo.expireDate;
+  var curCount = studentDataList.length;
+  var maxCount = currentAcademyInfo.maxStudents || 50;
+  var slotRate = Math.round((curCount / maxCount) * 100);
 
-  // 상단 배너 텍스트 동기화
+  if (elId) elId.innerText = currentAcademyInfo.adminId || currentAcademyInfo.id || myAcademyInfo.id;
+  if (elBiz) elBiz.innerText = currentAcademyInfo.bizNumber || myAcademyInfo.bizNumber;
+  if (elAcad) elAcad.innerText = currentAcademyInfo.name || myAcademyInfo.academyName;
+  var cleanDir = (currentAcademyInfo.director || myAcademyInfo.directorName).replace(/\s*원장님?$/, '');
+  if (elDir) elDir.innerText = cleanDir;
+  if (elPlan) elPlan.innerText = '프리미엄 프랜차이즈 ' + maxCount + '인 슬롯형';
+  if (elCDate) elCDate.innerText = currentAcademyInfo.contractDate || myAcademyInfo.contractDate;
+  if (elEDate) elEDate.innerText = currentAcademyInfo.expireDate || myAcademyInfo.expireDate;
+
+  // 상단 배너 텍스트 및 정원 슬롯 동기화
   var bannerDir = document.getElementById('bannerDirectorName');
   var bannerAcad = document.getElementById('bannerAcademyName');
-  if (bannerDir) bannerDir.innerText = myAcademyInfo.directorName + ' 원장님';
-  if (bannerAcad) bannerAcad.innerText = myAcademyInfo.academyName + ' (가맹 1호점)';
+  if (bannerDir) bannerDir.innerText = cleanDir + ' 원장님';
+  if (bannerAcad) bannerAcad.innerText = (currentAcademyInfo.name || myAcademyInfo.academyName);
+
+  var slotEl = document.getElementById('myInfoSlotStatus');
+  if (slotEl) slotEl.innerText = curCount + ' / ' + maxCount + '명 (' + slotRate + '%)';
+
+  var sideSlotEl = document.getElementById('sidebarSlotStatus');
+  if (sideSlotEl) sideSlotEl.innerHTML = curCount + ' / ' + maxCount + '명 <small class="text-success font-weight-bold">(' + slotRate + '%)</small>';
 
   // 2) 수정 가능 입력 필드 값 채우기
   var inputPhone = document.getElementById('myInfoPhone');
@@ -10422,32 +10765,121 @@ function filterAcademyPaymentTable() {
   }
 }
 
-// 만료 알림 상태 시뮬레이션 (D-3 / D-7 / normal)
-function setExpireAlert(type) {
+// ==============================================================
+// 11. 정기 결제 자동 갱신 ON/OFF 및 구독 배너 제어
+// ==============================================================
+var isAutoRenewActive = true;
+
+function toggleAutoRenew() {
+  isAutoRenewActive = !isAutoRenewActive;
+  updateAutoRenewUI();
+  if (isAutoRenewActive) {
+    showAcademyToast('정기 결제 자동 갱신이 활성화되었습니다. 만료일에 맞추어 자동으로 연장 결제됩니다.');
+  } else {
+    showAcademyToast('정기 결제 자동 갱신이 해제되었습니다. 만료일 전 수동 연장이 필요합니다.');
+  }
+}
+
+function updateAutoRenewUI() {
+  var toggleContainer = document.getElementById('autoRenewToggleContainer');
+  if (toggleContainer) {
+    if (isAutoRenewActive) {
+      toggleContainer.innerHTML = '<button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleAutoRenew()" style="border-radius:6px; padding:2px 8px;"><i class="fa-solid fa-toggle-on mr-1"></i>자동갱신 ON</button>';
+    } else {
+      toggleContainer.innerHTML = '<button type="button" class="btn btn-xs btn-outline-secondary font-weight-bold" onclick="toggleAutoRenew()" style="border-radius:6px; padding:2px 8px;"><i class="fa-solid fa-toggle-off mr-1"></i>자동갱신 OFF</button>';
+    }
+  }
+
+  // 사이드바 뱃지 업데이트
+  var navPaymentBadge = document.querySelector('#btn-nav-payment .badge');
+  if (navPaymentBadge) {
+    if (isAutoRenewActive) {
+      navPaymentBadge.className = 'badge badge-success text-white ml-1';
+      navPaymentBadge.style.background = '#16a34a';
+      navPaymentBadge.innerText = '구독중';
+    } else {
+      navPaymentBadge.className = 'badge badge-danger text-white ml-1';
+      navPaymentBadge.style.background = '#dc2626';
+      navPaymentBadge.innerText = 'D-3';
+    }
+  }
+
+  // 상단 만료 안내 배너 업데이트
   var banner = document.getElementById('paymentExpireAlertBanner');
+  var iconWrap = document.getElementById('paymentAlertIconWrap');
   var titleEl = document.getElementById('paymentAlertTitle');
   var descEl = document.getElementById('paymentAlertDesc');
+  var btnWrap = document.getElementById('paymentAlertBtnWrap');
+
   if (!banner || !titleEl || !descEl) return;
 
-  if (type === 'd3') {
+  if (isAutoRenewActive) {
+    banner.style.display = 'flex';
+    banner.style.background = '#f0fdf4';
+    banner.style.borderColor = '#bbf7d0';
+    banner.style.color = '#166534';
+    if (iconWrap) {
+      iconWrap.style.background = '#dcfce7';
+      iconWrap.style.color = '#16a34a';
+      iconWrap.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+    }
+    titleEl.innerHTML = '<span class="badge badge-success mr-2" style="font-size:11.5px; padding:4px 8px; background:#16a34a;">정기 구독 이용 중</span> 정기 결제 구독 중 <strong style="color:#15803d;">(자동 갱신 ON)</strong> - 3일 후(2026.09.19) 자동 갱신 결제됩니다.';
+    descEl.innerText = '등록된 결제 수단으로 만료일에 맞춰 자동 연장되며, 모든 원생의 독서 이력 및 포트폴리오가 끊김 없이 보존됩니다.';
+    if (btnWrap) {
+      btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-outline-success px-3 py-2 font-weight-bold" onclick="scrollToPaymentHistory()" style="border-radius:10px; white-space:nowrap; border-width:1.5px;"><i class="fa-solid fa-receipt mr-1"></i>결제 내역 관리</button>';
+    }
+  } else {
     banner.style.display = 'flex';
     banner.style.background = '#fff7ed';
     banner.style.borderColor = '#fed7aa';
     banner.style.color = '#9a3412';
+    if (iconWrap) {
+      iconWrap.style.background = '#ffedd5';
+      iconWrap.style.color = '#ea580c';
+      iconWrap.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    }
     titleEl.innerHTML = '<span class="badge badge-danger mr-2" style="font-size:11.5px; padding:4px 8px;">D-3 만료 임박</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#c2410c;">3일 후</strong> 만료됩니다! (만료 예정일: 2026-09-19)';
-    descEl.innerText = '만료 7일 전 및 3일 전에 원장님 휴대폰으로 알림톡이 자동 발송됩니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.';
+    descEl.innerText = '자동 갱신이 해제되어 있습니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.';
+    if (btnWrap) {
+      btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-danger px-3 py-2 font-weight-bold" onclick="scrollToPlans()" style="border-radius:10px; white-space:nowrap; box-shadow:0 2px 8px rgba(220,53,69,0.3);"><i class="fa-solid fa-bolt mr-1"></i>지금 바로 연장하기</button>';
+    }
+  }
+}
+
+// 만료 알림 상태 시뮬레이션 (D-3 / D-7 / normal)
+function setExpireAlert(type) {
+  var banner = document.getElementById('paymentExpireAlertBanner');
+  var iconWrap = document.getElementById('paymentAlertIconWrap');
+  var titleEl = document.getElementById('paymentAlertTitle');
+  var descEl = document.getElementById('paymentAlertDesc');
+  var btnWrap = document.getElementById('paymentAlertBtnWrap');
+  if (!banner || !titleEl || !descEl) return;
+
+  if (type === 'd3') {
+    isAutoRenewActive = false;
+    updateAutoRenewUI();
     showAcademyToast('만료 3일 전(D-3) 알림 상태로 시뮬레이션 전환되었습니다.');
   } else if (type === 'd7') {
+    isAutoRenewActive = false;
     banner.style.display = 'flex';
     banner.style.background = '#fefce8';
     banner.style.borderColor = '#fef08a';
     banner.style.color = '#854d0e';
+    if (iconWrap) {
+      iconWrap.style.background = '#fef9c3';
+      iconWrap.style.color = '#ca8a04';
+      iconWrap.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    }
     titleEl.innerHTML = '<span class="badge badge-warning text-dark mr-2" style="font-size:11.5px; padding:4px 8px;">D-7 만료 사전 안내</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#a16207;">7일 후</strong> 만료됩니다. (만료 예정일: 2026-09-19)';
     descEl.innerText = '학원 정기 구독 갱신 안내 알림톡이 발송되었습니다. 미리 이용권을 연장하시면 기존 커리큘럼 및 원생 포트폴리오가 끊김 없이 보존됩니다.';
+    if (btnWrap) {
+      btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-warning text-dark px-3 py-2 font-weight-bold" onclick="scrollToPlans()" style="border-radius:10px; white-space:nowrap;"><i class="fa-solid fa-bolt mr-1"></i>이용권 미리 연장</button>';
+    }
     showAcademyToast('만료 7일 전(D-7) 사전 안내 상태로 시뮬레이션 전환되었습니다.');
   } else {
-    banner.style.display = 'none';
-    showAcademyToast('정상 이용 상태로 변경되었습니다 (만료 안내 배너 숨김).');
+    isAutoRenewActive = true;
+    updateAutoRenewUI();
+    showAcademyToast('정상 정기구독(자동 갱신 ON) 상태로 전환되었습니다.');
   }
 }
 
@@ -11011,15 +11443,17 @@ window.addEventListener('storage', function(e) {
   }
 });
 
-// 초기 로드 시 공지 배지 및 팝업 점검
+// 초기 로드 시 공지 배지 및 팝업 점검 & 구독 자동갱신 UI 초기화
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
     updateAcademyNoticeBadge();
     checkAcademyNoticePopups();
+    if (typeof updateAutoRenewUI === 'function') updateAutoRenewUI();
   });
 } else {
   updateAcademyNoticeBadge();
   checkAcademyNoticePopups();
+  if (typeof updateAutoRenewUI === 'function') updateAutoRenewUI();
 }
 
 

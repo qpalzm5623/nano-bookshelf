@@ -3447,7 +3447,16 @@
                   <option value="새싹반">초등 1~2학년 (새싹반)</option>
                 </select>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-2">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">상태</label>
+                <select class="form-control form-control-sm" id="filterStudentStatus" onchange="filterStudents()"
+                  style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                  <option value="ALL" selected>전체 상태</option>
+                  <option value="승인">승인</option>
+                  <option value="미승인">미승인</option>
+                </select>
+              </div>
+              <div class="col-md-3">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">원생
                   검색</label>
                 <div class="input-group input-group-sm">
@@ -3462,7 +3471,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-5 text-right pt-3 d-flex justify-content-end align-items-center" style="gap: 6px;">
+              <div class="col-md-4 text-right pt-3 d-flex justify-content-end align-items-center" style="gap: 6px;">
                 <button class="btn btn-sm btn-outline-danger" id="btnOpenDeletedStudentsModal"
                   onclick="openDeletedStudentListModal()"
                   style="border-radius: 8px; font-weight: 700; white-space: nowrap;" title="7일 임시 보존 원생 복구 및 관리">
@@ -3589,10 +3598,16 @@
                 <select class="form-control form-control-sm" id="filterAcadBookGrade" onchange="filterAcademyBooks()"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="ALL" selected>전체 학년</option>
-                  <option value="초등 1~2학년">초등 1~2학년</option>
-                  <option value="초등 3~4학년">초등 3~4학년</option>
-                  <option value="초등 5~6학년">초등 5~6학년</option>
-                  <option value="중등 1~3학년">중등 1~3학년</option>
+                  <option value="미취학">미취학</option>
+                  <option value="초등 1학년">초등 1학년</option>
+                  <option value="초등 2학년">초등 2학년</option>
+                  <option value="초등 3학년">초등 3학년</option>
+                  <option value="초등 4학년">초등 4학년</option>
+                  <option value="초등 5학년">초등 5학년</option>
+                  <option value="초등 6학년">초등 6학년</option>
+                  <option value="중등 1학년">중등 1학년</option>
+                  <option value="중등 2학년">중등 2학년</option>
+                  <option value="중등 3학년">중등 3학년</option>
                 </select>
               </div>
 
@@ -4223,11 +4238,6 @@
                 원생별 누적 독서 이력과 나노 시트를 바탕으로 학부모 상담용 포트폴리오를 생성하고 발급 내역을 관리합니다.
               </div>
             </div>
-            <div>
-              <button type="button" class="btn btn-beige-primary" onclick="openPortfolioCreateWizard()">
-                <i class="fa-solid fa-plus mr-1"></i>신규 포트폴리오 생성
-              </button>
-            </div>
           </div>
 
           <!-- 포트폴리오 요약 통계: 1. 이번달 포트폴리오 생성 건수, 2. 누적 발급 포트폴리오 건수, 3. 학부모 알림톡 발송률 -->
@@ -4738,16 +4748,10 @@
                 <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
                   <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>집계 기간:
                 </span>
-                <div class="btn-group btn-group-sm" role="group">
-                  <button type="button" class="btn btn-beige-primary font-weight-bold" id="adminRankBtnThisMonth"
-                    onclick="switchAdminRankPeriod('month')">
-                    <i class="fa-solid fa-bolt mr-1 text-warning"></i>이번 달 (9월 실시간)
-                  </button>
-                  <button type="button" class="btn btn-outline-secondary font-weight-bold" id="adminRankBtnLastMonth"
-                    onclick="switchAdminRankPeriod('lastMonth')">
-                    <i class="fa-solid fa-clock-rotate-left mr-1"></i>지난 달 (8월 최종)
-                  </button>
-                </div>
+                <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect"
+                  onchange="switchAdminRankPeriod(this.value)" style="min-width: 190px; border-radius: 8px;">
+                  <!-- JS 동적 생성: 현재월 포함 최근 6개월 -->
+                </select>
               </div>
 
               <!-- 우측: 학급 필터 -->
@@ -4755,18 +4759,10 @@
                 <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
                   <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
                 </span>
-                <div class="btn-group btn-group-sm" role="group" id="adminRankClassGroup">
-                  <button type="button" class="btn btn-beige-primary font-weight-bold active" data-class="all"
-                    onclick="switchAdminRankClass('all')">원내 전체</button>
-                  <button type="button" class="btn btn-outline-secondary font-weight-bold" data-class="master"
-                    onclick="switchAdminRankClass('master')">마스터반</button>
-                  <button type="button" class="btn btn-outline-secondary font-weight-bold" data-class="wisdom"
-                    onclick="switchAdminRankClass('wisdom')">지혜반</button>
-                  <button type="button" class="btn btn-outline-secondary font-weight-bold" data-class="wise"
-                    onclick="switchAdminRankClass('wise')">슬기반</button>
-                  <button type="button" class="btn btn-outline-secondary font-weight-bold" data-class="sprout"
-                    onclick="switchAdminRankClass('sprout')">새싹반</button>
-                </div>
+                <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect"
+                  onchange="switchAdminRankClass(this.value)" style="min-width: 170px; border-radius: 8px;">
+                  <option value="all">원내 전체</option>
+                </select>
               </div>
             </div>
           </div>
@@ -4863,28 +4859,28 @@
           </div>
         </div>
 
-        <!-- 1. 만료 안내 알림 배너 (요구사항: 만료 7일, 3일 전 안내) -->
+        <!-- 1. 만료 안내 알림 배너 (자동 갱신 ON/OFF 상태 연동) -->
         <div id="paymentExpireAlertBanner" class="p-3 mb-4 rounded d-flex justify-content-between align-items-center"
-          style="background: #fff7ed; border: 1.5px solid #fed7aa; color: #9a3412;">
+          style="background: #f0fdf4; border: 1.5px solid #bbf7d0; color: #166534;">
           <div class="d-flex align-items-center">
-            <div
-              style="width: 44px; height: 44px; border-radius: 12px; background: #ffedd5; color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 14px;">
-              <i class="fa-solid fa-triangle-exclamation"></i>
+            <div id="paymentAlertIconWrap"
+              style="width: 44px; height: 44px; border-radius: 12px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 14px;">
+              <i class="fa-solid fa-circle-check"></i>
             </div>
             <div>
               <div class="font-weight-bold" style="font-size: 14.5px;" id="paymentAlertTitle">
-                <span class="badge badge-danger mr-2" style="font-size: 11.5px; padding: 4px 8px;">D-3 만료 임박</span>
-                나노의 책장 서비스 이용 기간이 <strong style="color: #c2410c;">3일 후</strong> 만료됩니다! (만료 예정일: 2026-09-19)
+                <span class="badge badge-success mr-2" style="font-size: 11.5px; padding: 4px 8px; background: #16a34a;">정기 구독 이용 중</span>
+                정기 결제 구독 중 <strong style="color: #15803d;">(자동 갱신 ON)</strong> - 3일 후(2026.09.19) 자동 갱신 결제됩니다.
               </div>
-              <div style="font-size: 12.5px; color: #c2410c; margin-top: 2px;" id="paymentAlertDesc">
-                만료 7일 전 및 3일 전에 원장님 휴대폰으로 알림톡이 자동 발송됩니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.
+              <div style="font-size: 12.5px; color: #166534; margin-top: 2px;" id="paymentAlertDesc">
+                등록된 결제 수단으로 만료일에 맞춰 자동 연장되며, 모든 원생의 독서 이력 및 포트폴리오가 끊김 없이 보존됩니다.
               </div>
             </div>
           </div>
-          <div>
-            <button type="button" class="btn btn-sm btn-danger px-3 py-2 font-weight-bold" onclick="scrollToPlans()"
-              style="border-radius: 10px; white-space: nowrap; box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);">
-              <i class="fa-solid fa-bolt mr-1"></i>지금 바로 연장하기
+          <div id="paymentAlertBtnWrap">
+            <button type="button" class="btn btn-sm btn-outline-success px-3 py-2 font-weight-bold" onclick="scrollToPaymentHistory()"
+              style="border-radius: 10px; white-space: nowrap; border-width: 1.5px;">
+              <i class="fa-solid fa-receipt mr-1"></i>결제 내역 관리
             </button>
           </div>
         </div>
@@ -4902,7 +4898,11 @@
               <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top"
                 style="font-size: 12px; color: var(--text-muted);">
                 <span>월 결제액: <strong>110,000원</strong> <small>(VAT 포함)</small></span>
-                <span class="text-success font-weight-bold"><i class="fa-solid fa-rotate mr-1"></i>자동갱신 ON</span>
+                <span id="autoRenewToggleContainer">
+                  <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleAutoRenew()" style="border-radius: 6px; padding: 2px 8px;">
+                    <i class="fa-solid fa-toggle-on mr-1"></i>자동갱신 ON
+                  </button>
+                </span>
               </div>
             </div>
           </div>
@@ -5447,8 +5447,7 @@
               <label class="font-weight-bold" style="font-size: 13px;">비밀번호 <span class="text-danger">*</span></label>
               <input type="password" id="teacherPasswordInput" class="form-control" placeholder="접속 비밀번호 입력 (예: 1234)"
                 style="border-radius: 8px;">
-              <small class="text-muted" style="font-size: 11.5px;">* 선생님 계정으로 로그인 시 사용하는 비밀번호입니다. (수정 시 미입력 시 기존 비밀번호
-                유지)</small>
+              <small class="text-muted" style="font-size: 11.5px;">* 선생님 계정으로 로그인 시 사용하는 비밀번호입니다.</small>
             </div>
             <div class="form-group mb-3">
               <label class="font-weight-bold" style="font-size: 13px;">연락처 (휴대폰)</label>
@@ -6173,16 +6172,6 @@
               style="font-size: 11.5px;">첨삭 전</span>
           </div>
 
-          <!-- 추후 업데이트 안내 배너 -->
-          <div class="alert alert-info py-2.5 px-3 mb-3 d-flex align-items-center"
-            style="font-size: 12px; border-radius: 8px;">
-            <i class="fa-solid fa-wand-magic-sparkles mr-2 text-primary" style="font-size: 16px;"></i>
-            <div>
-              <strong>[기능 안내]</strong> 실시간 디지털 펜 첨삭 기능은 추후 업데이트 예정입니다.<br>
-              현재는 교사 첨삭 파일 업로드 및 피드백 코멘트 저장을 지원합니다.
-            </div>
-          </div>
-
           <!-- 1) 첨삭 완료 파일 업로드 -->
           <div class="form-group mb-3">
             <label class="font-weight-bold mb-1" style="font-size: 12.5px;">
@@ -6818,17 +6807,20 @@
                   placeholder="학급명 (예: 지혜반, 푸름반)" required style="border-radius: 8px; font-size: 12.5px;">
               </div>
               <div class="col-md-3 mb-2 mb-md-0">
-                <select class="form-control form-control-sm" id="newClassGradeSelect"
-                  style="border-radius: 8px; font-size: 12.5px;">
-                  <option value="미취학 / 유아">미취학 / 유아</option>
-                  <option value="초등 1~2학년">초등 1~2학년</option>
-                  <option value="초등 3학년">초등 3학년</option>
-                  <option value="초등 4학년">초등 4학년</option>
-                  <option value="초등 5학년" selected>초등 5학년</option>
-                  <option value="초등 6학년">초등 6학년</option>
-                  <option value="중등 전학년">중등 전학년</option>
-                  <option value="전체 학년 혼합">전체 학년 혼합</option>
-                </select>
+                <div class="dropdown" style="width: 100%;">
+                  <button
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle text-left text-truncate w-100 d-flex justify-content-between align-items-center"
+                    type="button" id="dropdownNewClassGrades" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false"
+                    style="border-radius: 8px; font-size: 12.5px; background: #ffffff; height: 31px;">
+                    <span id="newClassGradeLabel" class="text-truncate">대상 학년 선택 (복수 가능)</span>
+                  </button>
+                  <div class="dropdown-menu p-2 shadow-sm" aria-labelledby="dropdownNewClassGrades"
+                    id="newClassGradeDropdownMenu"
+                    style="min-width: 200px; font-size: 12.5px; max-height: 260px; overflow-y: auto;">
+                    <!-- JS 동적 생성: 학년 체크박스 목록 -->
+                  </div>
+                </div>
               </div>
               <div class="col-md-3 mb-2 mb-md-0">
                 <div class="dropdown" style="width: 100%;">
@@ -6926,16 +6918,10 @@
 
             <div class="form-group mb-3">
               <label class="font-weight-bold" style="font-size: 13px;">대상 학년 <span class="text-danger">*</span></label>
-              <select class="form-control" id="editClassGradeSelect" style="border-radius: 8px; font-size: 13px;">
-                <option value="미취학 / 유아">미취학 / 유아</option>
-                <option value="초등 1~2학년">초등 1~2학년</option>
-                <option value="초등 3학년">초등 3학년</option>
-                <option value="초등 4학년">초등 4학년</option>
-                <option value="초등 5학년">초등 5학년</option>
-                <option value="초등 6학년">초등 6학년</option>
-                <option value="중등 전학년">중등 전학년</option>
-                <option value="전체 학년 혼합">전체 학년 혼합</option>
-              </select>
+              <div id="editClassGradeBox" class="p-2"
+                style="border: 1px solid var(--border-light); border-radius: 8px; font-size: 13px; display: flex; flex-wrap: wrap;">
+                <!-- JS 동적 생성: 학년 체크박스 목록 -->
+              </div>
             </div>
 
             <div class="form-group mb-3">
@@ -7706,6 +7692,7 @@
                     <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span
                         class="text-danger">*</span></label>
                     <select id="abEditGrade" class="select-beige w-100" onchange="onAcadGradeChanged(this.value)">
+                      <option value="미취학" data-code="0">미취학</option>
                       <option value="초등 1학년" data-code="1">초등 1학년</option>
                       <option value="초등 2학년" data-code="2">초등 2학년</option>
                       <option value="초등 3학년" data-code="3">초등 3학년</option>
@@ -8504,7 +8491,7 @@
                 <i class="fa-solid fa-circle-check mr-1"></i>정상 운영중
               </span>
               <div style="font-size: 11.5px; color: var(--text-muted);">
-                정원 슬롯: <strong class="text-dark">48 / 50명 (96%)</strong>
+                정원 슬롯: <strong class="text-dark" id="myInfoSlotStatus">48 / 50명 (96%)</strong>
               </div>
             </div>
           </div>

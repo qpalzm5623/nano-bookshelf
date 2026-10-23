@@ -26,11 +26,6 @@ document.addEventListener('DOMContentLoaded', function () {
     table.tabIndex = 0; table.setAttribute('role', 'region'); table.setAttribute('aria-label', '목록 표. 좌우로 스크롤할 수 있습니다.');
     var hint = document.createElement('p'); hint.className = 'nano-table-hint'; hint.textContent = '표를 좌우로 밀어 나머지 항목을 확인하세요.'; table.before(hint);
   });
-  if (workspace) {
-    var note = document.createElement('div'); note.className = 'nano-storage-notice'; note.setAttribute('role', 'note');
-    note.textContent = NanoPortal.remote ? '운영 데이터는 현재 화면에서 바로 서버에 저장됩니다. 외부 서비스는 설정 완료 후 활성화됩니다.' : '로컬 체험 화면입니다. 변경 사항은 이 브라우저에만 저장되며 다른 기기에는 전달되지 않습니다.';
-    workspace.prepend(note);
-  }
   document.querySelectorAll('a[href="index.html"]').forEach(function (link) {
     if (!(link.title + link.textContent).includes('로그아웃')) return;
     link.addEventListener('click', function (event) { event.preventDefault(); NanoPortal.logout().catch(function(e) { alert(e.message); }); });

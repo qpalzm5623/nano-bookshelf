@@ -5634,13 +5634,19 @@ function renderContentPagination(total, page) {
 
   if (infoEl) infoEl.innerText = `${start}-${end} / 총 ${total}권 (페이지 ${page}/${totalPages})`;
 
+  // 번호가 수백 개로 늘어나는 것을 막기 위해 10개 단위 블록(1~10, 11~20...)으로만 노출
+  const blockSize = 10;
+  const blockStart = Math.floor((page - 1) / blockSize) * blockSize + 1;
+  const blockEnd = Math.min(blockStart + blockSize - 1, totalPages);
+
+  // 화살표는 이전/다음 블록의 첫 페이지로 이동
   let html = `
-    <button class="btn btn-xs btn-outline-secondary" onclick="goContentPage(${page - 1})" ${page <= 1 ? 'disabled' : ''} style="border-radius: 6px; padding: 4px 8px;">
+    <button class="btn btn-xs btn-outline-secondary" onclick="goContentPage(${blockStart - blockSize})" ${blockStart <= 1 ? 'disabled' : ''} style="border-radius: 6px; padding: 4px 8px;">
       <i class="fa-solid fa-chevron-left"></i>
     </button>
   `;
 
-  for (let i = 1; i <= totalPages; i++) {
+  for (let i = blockStart; i <= blockEnd; i++) {
     html += `
       <button class="btn btn-xs ${i === page ? 'btn-beige-primary text-white font-weight-bold' : 'btn-outline-secondary'}" 
               onclick="goContentPage(${i})" style="border-radius: 6px; min-width: 28px; padding: 4px 8px;">
@@ -5650,7 +5656,7 @@ function renderContentPagination(total, page) {
   }
 
   html += `
-    <button class="btn btn-xs btn-outline-secondary" onclick="goContentPage(${page + 1})" ${page >= totalPages ? 'disabled' : ''} style="border-radius: 6px; padding: 4px 8px;">
+    <button class="btn btn-xs btn-outline-secondary" onclick="goContentPage(${blockEnd + 1})" ${blockEnd >= totalPages ? 'disabled' : ''} style="border-radius: 6px; padding: 4px 8px;">
       <i class="fa-solid fa-chevron-right"></i>
     </button>
   `;
