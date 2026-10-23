@@ -3432,8 +3432,9 @@ async function handleMasterMemberRegister(e) {
 
   const username = document.getElementById("newMemUsername").value.trim();
   const password = document.getElementById("newMemPassword")?.value.trim() || "";
-  if (window.NanoPortal && NanoPortal.remote && password.length < 12) {
-    alert("운영 계정 비밀번호는 12자 이상 입력해 주세요.");
+  const minPwLen = role === "STUDENT" ? 6 : 12;
+  if (window.NanoPortal && NanoPortal.remote && password.length < minPwLen) {
+    alert(role === "STUDENT" ? "원생 비밀번호는 6자 이상 입력해 주세요." : "운영 계정 비밀번호는 12자 이상 입력해 주세요.");
     document.getElementById("newMemPassword")?.focus();
     return;
   }

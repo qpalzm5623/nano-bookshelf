@@ -1562,8 +1562,8 @@ function openStudentAddModal() {
 
   var pwEl = document.getElementById('newStdPw');
   if (pwEl) {
-    pwEl.value = '1234';
-    pwEl.placeholder = '원생 접속용 비밀번호 입력 (예: 1234)';
+    pwEl.value = '123456';
+    pwEl.placeholder = '원생 접속용 비밀번호 입력 (6자리 이상, 예: 123456)';
   }
 
   var schoolEl = document.getElementById('newStdSchool');
@@ -1653,7 +1653,7 @@ function openStudentEditModal(id) {
   var pwEl = document.getElementById('newStdPw');
   if (pwEl) {
     pwEl.value = std.password || '';
-    pwEl.placeholder = '비밀번호 변경 시 새 비밀번호 입력 (유지 시 그대로 둠)';
+    pwEl.placeholder = '비밀번호 변경 시 새 비밀번호 입력 (6자리 이상, 유지 시 공란)';
   }
 
   var schoolEl = document.getElementById('newStdSchool');
@@ -1787,8 +1787,8 @@ async function saveNewStudent() {
     document.getElementById('newStdParentPhone').focus();
     return;
   }
-  if (window.NanoPortal && NanoPortal.remote && ((!editId && pw.length < 12) || (editId && pw && pw.length < 12))) {
-    alert('운영 계정 비밀번호는 12자 이상 입력해 주세요.');
+  if ((!editId && pw.length < 6) || (editId && pw && pw.length < 6)) {
+    alert('원생 비밀번호는 6자 이상 입력해 주세요.');
     document.getElementById('newStdPw').focus();
     return;
   }
@@ -1830,7 +1830,7 @@ async function saveNewStudent() {
       id: id,
       name: name,
       gender: gender,
-      password: pw || '1234',
+      password: pw || '123456',
       school: school,
       grade: grade,
       classGroup: classGroup,
@@ -1899,7 +1899,7 @@ async function importSampleExcelStudents() {
     id: 'S1027',
     name: '이하늘',
     gender: '여',
-    password: '1234',
+    password: '123456',
     school: '솔빛초등학교',
     grade: '초등 5학년',
     classGroup: '지혜반',
@@ -1921,7 +1921,7 @@ async function importSampleExcelStudents() {
     id: 'S1028',
     name: '윤도현',
     gender: '남',
-    password: '1234',
+    password: '123456',
     school: '나노초등학교',
     grade: '초등 6학년',
     classGroup: '마스터반',
@@ -1964,9 +1964,9 @@ async function importSampleExcelStudents() {
 function downloadStudentExcelTemplate() {
   var headers = ["원생이름", "성별", "초기비밀번호", "학교명", "학년", "클래스", "학부모이름", "학부모연락처", "학부모이메일", "담당지도교사", "메모"];
   var sampleRows = [
-    ["이하늘", "여", "1234", "솔빛초등학교", "초등 5학년", "지혜반", "이진우", "010-4421-8890", "sky_parent@example.com", "박선혜 지도교사", "신규 입회 원생"],
-    ["윤도현", "남", "1234", "나노초등학교", "초등 6학년", "마스터반", "윤지훈", "010-8910-3345", "dohyun_home@example.com", "최승현 지도교사", "독서 레벨 6 완성"],
-    ["김민준", "남", "1234", "나노초등학교", "초등 5학년", "지혜반", "김정훈", "010-1234-5678", "minjun_p@example.com", "박선혜 지도교사", "2026 가을학기 신규"]
+    ["이하늘", "여", "123456", "솔빛초등학교", "초등 5학년", "지혜반", "이진우", "010-4421-8890", "sky_parent@example.com", "박선혜 지도교사", "신규 입회 원생"],
+    ["윤도현", "남", "123456", "나노초등학교", "초등 6학년", "마스터반", "윤지훈", "010-8910-3345", "dohyun_home@example.com", "최승현 지도교사", "독서 레벨 6 완성"],
+    ["김민준", "남", "123456", "나노초등학교", "초등 5학년", "지혜반", "김정훈", "010-1234-5678", "minjun_p@example.com", "박선혜 지도교사", "2026 가을학기 신규"]
   ];
 
   var fileName = "나노_원생등록_양식_v2.xlsx";
@@ -2042,7 +2042,7 @@ function handleStudentExcelFileSelect(input) {
               id: newId,
               name: String(r[0] || '').trim(),
               gender: String(r[1] || '남').trim(),
-              password: String(r[2] || '1234').trim(),
+              password: String(r[2] || '123456').trim(),
               school: String(r[3] || '나노초등학교').trim(),
               grade: String(r[4] || '초등 5학년').trim(),
               classGroup: String(r[5] || '지혜반').trim(),
