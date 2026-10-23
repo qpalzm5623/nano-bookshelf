@@ -2,5 +2,17 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "regions": ["icn1"],
+  "headers": [
+    {
+      "source": "/(.*)\\.(css|js|png|jpg|jpeg|webp|svg|woff2|ttf)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ]
 }

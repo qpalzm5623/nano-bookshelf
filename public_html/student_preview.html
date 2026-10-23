@@ -9455,7 +9455,7 @@ function openDrawerMenuItem(type) {
       + '</div>'
       + '<div>'
       +   '<label style="font-size:12px;font-weight:700;color:var(--wood-dark);margin-bottom:4px;display:block;">새 비밀번호</label>'
-      +   '<input type="password" id="pwNew" required placeholder="12~128자 비밀번호" style="width:100%;padding:10px 12px;border:1.5px solid var(--soft);border-radius:10px;font-size:13px;">'
+      +   '<input type="password" id="pwNew" required placeholder="6~128자 비밀번호" style="width:100%;padding:10px 12px;border:1.5px solid var(--soft);border-radius:10px;font-size:13px;">'
       + '</div>'
       + '<div>'
       +   '<label style="font-size:12px;font-weight:700;color:var(--wood-dark);margin-bottom:4px;display:block;">새 비밀번호 확인</label>'
@@ -9554,7 +9554,7 @@ async function submitPasswordChange(e) {
   var next = document.getElementById('pwNew').value;
   if(next !== document.getElementById('pwConfirm').value) { toast('새 비밀번호가 일치하지 않습니다.'); return; }
   if(!NanoPortal.remote) { toast('로컬 체험 화면에서는 비밀번호를 변경하지 않습니다.'); return; }
-  if(next.length < 12 || next.length > 128) { toast('새 비밀번호는 12~128자로 입력해 주세요.'); return; }
+  if(next.length < 6 || next.length > 128) { toast('새 비밀번호는 6~128자로 입력해 주세요.'); return; }
   try { await NanoPortal.request('password', { currentPassword: current, newPassword: next }); closeDrawerModal(); toast('비밀번호가 변경되었습니다.'); }
   catch(error) { toast(error.message); }
 }

@@ -1652,8 +1652,8 @@ function openStudentEditModal(id) {
 
   var pwEl = document.getElementById('newStdPw');
   if (pwEl) {
-    pwEl.value = std.password || '';
-    pwEl.placeholder = '비밀번호 변경 시 새 비밀번호 입력 (6자리 이상, 유지 시 공란)';
+    pwEl.value = '';
+    pwEl.placeholder = '비밀번호 변경 시 새 비밀번호 입력 (6자리 이상, 미입력 시 기존 비밀번호 유지)';
   }
 
   var schoolEl = document.getElementById('newStdSchool');
@@ -1787,7 +1787,13 @@ async function saveNewStudent() {
     document.getElementById('newStdParentPhone').focus();
     return;
   }
-  if ((!editId && pw.length < 6) || (editId && pw && pw.length < 6)) {
+  var isMaskedPw = !pw || /^[•·*]+$/.test(pw);
+  if (!editId && isMaskedPw) {
+    alert('신규 원생의 비밀번호는 6자 이상 입력해 주세요.');
+    document.getElementById('newStdPw').focus();
+    return;
+  }
+  if (pw && !isMaskedPw && pw.length < 6) {
     alert('원생 비밀번호는 6자 이상 입력해 주세요.');
     document.getElementById('newStdPw').focus();
     return;
@@ -1802,7 +1808,11 @@ async function saveNewStudent() {
     if (std) {
       std.name = name;
       std.gender = gender;
-      if (pw) std.password = pw;
+      if (pw && !isMaskedPw) {
+        std.password = pw;
+      } else {
+        delete std.password;
+      }
       std.school = school;
       std.grade = grade;
       std.classGroup = classGroup;

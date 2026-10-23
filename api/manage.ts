@@ -94,7 +94,15 @@ export default async function handler(req: any, res: any) {
             const count = await tx.member.count({ where: { academyId, role: 'STUDENT', status: 'APPROVED' } });
             need(count < academy.maxStudents, '계약 정원을 초과했습니다. 본사에 정원 변경을 요청해 주세요.');
           }
-          if (row.password) { need(typeof row.password === 'string' && row.password.length >= 12 && row.password.length <= 128, '비밀번호는 12~128자로 입력해 주세요.'); data.password = hashPassword(row.password); }
+          if (row.password) {
+            const rawPw = String(row.password).trim();
+            const isMasked = !rawPw || /^[•·*]+$/.test(rawPw);
+            if (!isMasked) {
+              const minLen = role === 'STUDENT' ? 6 : 12;
+              need(rawPw.length >= minLen && rawPw.length <= 128, role === 'STUDENT' ? '비밀번호는 6~128자로 입력해 주세요.' : '비밀번호는 12~128자로 입력해 주세요.');
+              data.password = hashPassword(rawPw);
+            }
+          }
           need(existing || data.password, '신규 회원의 비밀번호를 입력해 주세요.');
           if (existing) {
             need(row.updatedAt === existing.updatedAt.toISOString(), '다른 관리자가 수정한 회원입니다. 새로고침 후 다시 저장해 주세요.', 409);

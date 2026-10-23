@@ -70,7 +70,8 @@ export default async function handler(req: any, res: any) {
     const user = member!;
     if (action === 'session' && req.method === 'GET') return res.status(200).json({ user: publicUser(user) });
     if (action === 'password' && req.method === 'POST') {
-      if (typeof body.newPassword !== 'string' || body.newPassword.length < 12 || body.newPassword.length > 128 || !verifyPassword(body.currentPassword, user.password || '')) return res.status(400).json({ error: '현재 비밀번호와 새 비밀번호(12~128자)를 확인해 주세요.' });
+      const minLen = user.role === 'STUDENT' ? 6 : 12;
+      if (typeof body.newPassword !== 'string' || body.newPassword.length < minLen || body.newPassword.length > 128 || !verifyPassword(body.currentPassword, user.password || '')) return res.status(400).json({ error: `현재 비밀번호와 새 비밀번호(${minLen}~128자)를 확인해 주세요.` });
       const password = hashPassword(body.newPassword);
       await prisma.member.update({ where: { id: user.id }, data: { password } });
       res.setHeader('Set-Cookie', cookie(signSession(user.id, password)));

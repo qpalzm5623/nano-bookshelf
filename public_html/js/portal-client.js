@@ -47,7 +47,11 @@
       phone: academyStudentShape ? (item.stdPhone || '') : (item.phone || ''), parentName: item.parentName || '', parentPhone: academyStudentShape ? (item.phone || '') : (item.parentPhone || ''),
       parentEmail: item.parentEmail || '', reportYn: item.reportYn === true, classGroupId: classIdFor(item, academyCode)
     };
-    if (item.password && item.password !== '••••') payload.password = item.password;
+    if (item.password && typeof item.password === 'string') {
+      var pwTrim = item.password.trim();
+      var isMasked = !pwTrim || /^[•·*]+$/.test(pwTrim);
+      if (!isMasked) payload.password = pwTrim;
+    }
     return payload;
   }
   async function saveMember(item, academyCode) {
