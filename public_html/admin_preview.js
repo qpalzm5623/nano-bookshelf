@@ -328,6 +328,15 @@ var currentAcademyInfo = (function() {
     phone: franchise.phone || '', adminId: auth.id || '', region: franchise.region || '', isDemo: id === 'DEMO-ACADEMY' };
 })();
 
+// 운영 환경(Vercel 서버)에서는 브라우저에 남아있던 예전 로컬 스토리지 더미 캐시를 제거하여 서버 DB와 100% 일치 보장
+if (typeof window !== "undefined" && window.location.protocol !== "file:" && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
+  try {
+    localStorage.removeItem('NANO_CLASSES_' + currentAcademyInfo.id);
+    localStorage.removeItem('NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id);
+    localStorage.removeItem('NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id);
+  } catch (e) {}
+}
+
 var STORAGE_KEY_CLASSES = 'NANO_CLASSES_' + currentAcademyInfo.id;
 var STORAGE_KEY_STUDENTS = 'NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id;
 var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id;
@@ -391,11 +400,10 @@ function loadAcademyClassesFromStorage() {
 }
 
 function saveAcademyClassesToStorage() {
+  if (window.NanoPortal && NanoPortal.remote) return;
   try {
     localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(academyClassList));
-  } catch (e) {
-    console.error('학급 데이터 저장 실패:', e);
-  }
+  } catch (e) {}
 }
 
 function loadStudentsFromStorage() {
@@ -417,15 +425,15 @@ function loadStudentsFromStorage() {
 }
 
 function saveStudentsToStorage() {
+  if (window.NanoPortal && NanoPortal.remote) return;
   try {
     localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentDataList));
     syncFranchiseStudentCount(studentDataList.length);
-  } catch (e) {
-    console.error('원생 데이터 저장 실패:', e);
-  }
+  } catch (e) {}
 }
 
 function syncFranchiseStudentCount(count) {
+  if (window.NanoPortal && NanoPortal.remote) return;
   try {
     var rawFranchises = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
     if (rawFranchises) {
@@ -440,9 +448,7 @@ function syncFranchiseStudentCount(count) {
         }
       }
     }
-  } catch (e) {
-    console.warn('마스터 학원 원생수 동기화 실패:', e);
-  }
+  } catch (e) {}
 }
 
 function loadTeachersFromStorage() {
@@ -457,11 +463,10 @@ function loadTeachersFromStorage() {
 }
 
 function saveTeachersToStorage() {
+  if (window.NanoPortal && NanoPortal.remote) return;
   try {
     localStorage.setItem(STORAGE_KEY_TEACHERS, JSON.stringify(teacherDataList));
-  } catch (e) {
-    console.error('교사 데이터 저장 실패:', e);
-  }
+  } catch (e) {}
 }
 
 // 가맹 학원 전환 함수 (드롭다운 선택 시 실행)

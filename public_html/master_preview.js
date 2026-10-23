@@ -277,6 +277,15 @@ const defaultFranchiseList = [
   }
 ];
 
+// 운영 환경(Vercel 서버)에서는 브라우저에 남아있던 예전 로컬 스토리지 더미 캐시를 제거하여 서버 DB와 100% 일치 보장
+if (typeof window !== "undefined" && window.location.protocol !== "file:" && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
+  try {
+    localStorage.removeItem("NANO_MASTER_FRANCHISE_LIST");
+    localStorage.removeItem("NANO_MASTER_DELETED_FRANCHISES");
+    localStorage.removeItem("NANO_REAL_DATA_LOADED_VER");
+  } catch (e) {}
+}
+
 // ==========================================
 // 1-1-B. 가맹 학원 요금제 및 계정 안전 헬퍼 & LocalStorage 영구 보존 모듈
 // ==========================================
@@ -366,58 +375,42 @@ function sanitizeFranchises(list) {
 const CURRENT_DATA_SYNC_VER = "20261022_RESTORE_ORIGINAL_ID_V4";
 
 function loadFranchisesFromStorage() {
-  if (window.NANO_SERVER_DATA) return sanitizeFranchises(window.MIGRATED_FRANCHISES || []);
-  // 1. Neon DB에서 이관된 실데이터가 로드된 경우 (가맹점 143개소)
+  // 1. Vercel 운영 환경 또는 DB 서버 실데이터 우선 로드 (Single Source of Truth)
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
-    const curVer = localStorage.getItem("NANO_REAL_DATA_LOADED_VER");
-    const stored = localStorage.getItem(STORAGE_KEY_FRANCHISES);
-    let parsedCount = 0;
-    try { if (stored) parsedCount = JSON.parse(stored).length; } catch (e) {}
-
-    // 버전이 바뀌었거나 기존 저장된 데이터가 예전 더미이거나, 기존 임시 아이디(admin_acad_)가 포함된 경우 즉시 실데이터로 강제 갱신
-    let hasArtificialIds = false;
-    try {
-      if (stored && stored.includes("admin_acad_")) hasArtificialIds = true;
-    } catch (e) {}
-
-    if (curVer !== CURRENT_DATA_SYNC_VER || parsedCount < 20 || hasArtificialIds) {
-      console.log("🔄 [실데이터 동기화] 가맹 학원 " + window.MIGRATED_FRANCHISES.length + "개소 원본 관리자 아이디로 동기화 갱신");
-      const sanitized = sanitizeFranchises(JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES)));
-      localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(sanitized));
-      localStorage.setItem("NANO_REAL_DATA_LOADED_VER", CURRENT_DATA_SYNC_VER);
-      return sanitized;
-    }
+    return sanitizeFranchises(window.MIGRATED_FRANCHISES);
+  }
+  if (window.NANO_SERVER_DATA) {
+    return sanitizeFranchises(window.MIGRATED_FRANCHISES || []);
   }
 
+  // 2. 오프라인 로컬(file://) 체험용 환경에서만 로컬 스토리지 보조 사용
   try {
     const stored = localStorage.getItem(STORAGE_KEY_FRANCHISES);
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const sanitized = sanitizeFranchises(parsed);
-        localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(sanitized));
-        return sanitized;
+        return sanitizeFranchises(parsed);
       }
     }
-  } catch (e) {
-    console.warn("가맹 학원 데이터 로드 실패, 기본값 사용:", e);
-  }
+  } catch (e) {}
 
-  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
-    return sanitizeFranchises(JSON.parse(JSON.stringify(window.MIGRATED_FRANCHISES)));
-  }
   return sanitizeFranchises(JSON.parse(JSON.stringify(defaultFranchiseList)));
 }
 
 function saveFranchisesToStorage() {
+  // 운영 환경(Vercel + Neon DB)에서는 로컬 스토리지 캐시를 오염시키지 않고 메모리/서버 일관성 유지
+  if (window.NanoPortal && NanoPortal.remote) {
+    if (typeof window !== "undefined") {
+      window.MIGRATED_FRANCHISES = franchiseList;
+    }
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY_FRANCHISES, JSON.stringify(franchiseList));
     if (typeof deletedAcademyList !== "undefined" && Array.isArray(deletedAcademyList)) {
       localStorage.setItem(STORAGE_KEY_DELETED_FRANCHISES, JSON.stringify(deletedAcademyList));
     }
-  } catch (e) {
-    console.error("가맹 학원 데이터 저장 실패:", e);
-  }
+  } catch (e) {}
 }
 
 let franchiseList = loadFranchisesFromStorage();
@@ -452,16 +445,30 @@ const defaultMemberList = [
 const STORAGE_KEY_MEMBERS = "NANO_MASTER_MEMBER_LIST";
 
 function loadMembersFromStorage() {
-  try { return window.NANO_SERVER_DATA ? window.MIGRATED_MEMBERS || [] : NanoPreviewData.readArray(STORAGE_KEY_MEMBERS, window.MIGRATED_MEMBERS || []); }
-  catch(e) { console.warn('회원 목록 조회 실패:', e); return []; }
+  // 1. Vercel 운영 환경 또는 DB 서버 실데이터 우선 로드
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS) && window.MIGRATED_MEMBERS.length > 0) {
+    return window.MIGRATED_MEMBERS;
+  }
+  if (window.NANO_SERVER_DATA) return window.MIGRATED_MEMBERS || [];
+
+  // 2. 오프라인 체험 환경 보조
+  try {
+    return NanoPreviewData.readArray(STORAGE_KEY_MEMBERS, defaultMemberList);
+  } catch(e) {
+    return defaultMemberList;
+  }
 }
 
 function saveMembersToStorage() {
+  if (window.NanoPortal && NanoPortal.remote) {
+    if (typeof window !== "undefined") {
+      window.MIGRATED_MEMBERS = memberList;
+    }
+    return;
+  }
   try {
     localStorage.setItem(STORAGE_KEY_MEMBERS, JSON.stringify(memberList));
-  } catch (e) {
-    console.error("통합 회원 데이터 저장 실패:", e);
-  }
+  } catch (e) {}
 }
 
 let memberList = loadMembersFromStorage();
@@ -2821,17 +2828,32 @@ function openAcademyDeleteConfirm(id) {
   $('#academyDeleteConfirmModal').modal('show');
 }
 
-function confirmDeleteAcademy() {
+async function confirmDeleteAcademy() {
   if (!pendingDeleteAcademyId) return;
   const idx = franchiseList.findIndex(a => a.id === pendingDeleteAcademyId);
-  if (idx !== -1) {
-    const deleted = franchiseList.splice(idx, 1)[0];
-    saveFranchisesToStorage();
-    $('#academyDeleteConfirmModal').modal('hide');
-    renderFranchiseTable();
-    updateFranchiseStats();
-    showMasterToast(`[${deleted.name}] 가맹 계약이 해지 및 삭제되었습니다.`);
+  if (idx === -1) return;
+
+  const target = franchiseList[idx];
+
+  // 운영 서버(Vercel + Neon DB)에 가맹 학원 삭제(해지) 요청 전송
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.deleteAcademy(target);
+    } catch (error) {
+      showMasterToast('가맹 학원을 삭제하지 못했습니다: ' + error.message);
+      return;
+    }
   }
+
+  const deleted = franchiseList.splice(idx, 1)[0];
+  saveFranchisesToStorage();
+  $('#academyDeleteConfirmModal').modal('hide');
+  pendingDeleteAcademyId = null;
+  renderFranchiseTable();
+  updateFranchiseStats();
+  populateMemberAcademyFilter();
+  populateDispatchAcademyFilter();
+  showMasterToast(`[${deleted.name}] 가맹 계약이 해지 및 삭제되었습니다.`);
 }
 
 function updateFranchiseStats() {
@@ -9375,35 +9397,6 @@ async function handleToggleMemberStatusClick() {
   renderMemberTable();
   showMasterToast(`[${mem.name}] 계정이 '${targetMsg}' 상태로 변경되었습니다.`);
   return;
-}
-
-  // 탈퇴/정지 처리 시 - 학원명 확인 depth 추가
-  const confirmBox = document.getElementById("memberStatusChangeConfirmBox");
-  if (confirmBox && confirmBox.classList.contains("d-none")) {
-    confirmBox.classList.remove("d-none");
-    showMasterToast("소속 학원명을 입력하고 다시 버튼을 눌러주세요.");
-    return;
-  }
-
-  // 학원명 확인 검증
-  const confirmInput = document.getElementById("memberStatusAcademyConfirm");
-  const entered = confirmInput ? confirmInput.value.trim() : "";
-
-  if (entered !== mem.academyName) {
-    alert(`입력한 학원명이 일치하지 않습니다.\n정확한 학원명을 입력해주세요: "${mem.academyName}"`);
-    return;
-  }
-
-  const previousStatus = mem.status;
-  mem.status = "WITHDRAWN";
-  if (window.NanoPortal && NanoPortal.remote) {
-    try { await NanoPortal.saveMember(mem, mem.academyId); }
-    catch (error) { mem.status = previousStatus; showMasterToast('회원 상태를 변경하지 못했습니다: ' + error.message); return; }
-  }
-  $('#memberDetailModal').modal('hide');
-  saveMembersToStorage();
-  renderMemberTable();
-  showMasterToast(`[${mem.name}] 회원이 탈퇴/정지 처리되었습니다.`);
 }
 
 // 레거시 toggleMemberStatus 유지 (다른 곳에서 호출될 수 있어서)
