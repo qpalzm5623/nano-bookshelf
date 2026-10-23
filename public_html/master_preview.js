@@ -310,12 +310,9 @@ function getFranchiseAdminId(acad) {
     }
   }
 
-  // 2. 통합 회원 목록에서 해당 학원의 원장(DIRECTOR) 계정 조회
-  const memberSource = (typeof memberList !== "undefined" && Array.isArray(memberList)) 
-    ? memberList 
-    : (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS) ? window.MIGRATED_MEMBERS : []);
-  if (Array.isArray(memberSource)) {
-    const director = memberSource.find(m => 
+  // 2. 통합 회원 원본 데이터셋(MIGRATED_MEMBERS)에서 해당 학원의 원장(DIRECTOR) 계정 조회
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS)) {
+    const director = window.MIGRATED_MEMBERS.find(m => 
       (m.role === "DIRECTOR" || m.grade === "원장") &&
       ((m.academyId && (m.academyId === acad.id || m.academyId === acad.code)) || (m.academyName && m.academyName === acad.name))
     );
@@ -366,7 +363,7 @@ function sanitizeFranchises(list) {
   return list;
 }
 
-const CURRENT_DATA_SYNC_VER = "20261022_RESTORE_ORIGINAL_ID_V2";
+const CURRENT_DATA_SYNC_VER = "20261022_RESTORE_ORIGINAL_ID_V4";
 
 function loadFranchisesFromStorage() {
   if (window.NANO_SERVER_DATA) return sanitizeFranchises(window.MIGRATED_FRANCHISES || []);
