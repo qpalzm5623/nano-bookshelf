@@ -2166,13 +2166,19 @@ async function handleRecommendedExcelUpload() {
 // 3. 가맹점 관리 모듈 (Franchise Management)
 // ==========================================
 
-// 상품별 월 표준 결제 금액 매핑
+// 상품별 월 표준 결제 금액 및 기본 사용인원 매핑
 const PLAN_MONTHLY_FEES = {
-  "Basic": "220,000원",
-  "Standard": "330,000원",
-  "Premium": "440,000원",
-  "Royal": "550,000원",
-  "VIP": "770,000원"
+  "Basic": "80,000원",
+  "Standard": "120,000원",
+  "Premium": "180,000원",
+  "Royal": "300,000원"
+};
+
+const PLAN_MAX_STUDENTS = {
+  "Basic": 25,
+  "Standard": 50,
+  "Premium": 100,
+  "Royal": 100
 };
 
 // 이용 상품별 품격 있는 뱃지 스타일 헬퍼
@@ -2515,18 +2521,26 @@ function openAcademyRegisterModal() {
   $('#academyRegisterModal').modal('show');
 }
 
-// 요금제 변경 시 월 결제 금액 자동 설정 핸들러
+// 요금제 변경 시 월 결제 금액 및 사용인원 자동 설정 핸들러 (직접 수정도 가능)
 function handleEditPlanChange(plan) {
   const feeInput = document.getElementById("editMonthlyFee");
   if (feeInput) {
-    feeInput.value = PLAN_MONTHLY_FEES[plan] || "330,000원";
+    feeInput.value = PLAN_MONTHLY_FEES[plan] || "120,000원";
+  }
+  const maxStudentsInput = document.getElementById("editMaxStudents");
+  if (maxStudentsInput) {
+    maxStudentsInput.value = PLAN_MAX_STUDENTS[plan] || 50;
   }
 }
 
 function handleRegPlanChange(plan) {
   const feeInput = document.getElementById("regMonthlyFee");
   if (feeInput) {
-    feeInput.value = PLAN_MONTHLY_FEES[plan] || "330,000원";
+    feeInput.value = PLAN_MONTHLY_FEES[plan] || "120,000원";
+  }
+  const maxStudentsInput = document.getElementById("regMaxStudents");
+  if (maxStudentsInput) {
+    maxStudentsInput.value = PLAN_MAX_STUDENTS[plan] || 50;
   }
 }
 
@@ -2541,8 +2555,8 @@ function openAcademyRegisterModal() {
   if (document.getElementById("regStartDate")) document.getElementById("regStartDate").value = today;
   if (document.getElementById("regEndDate")) document.getElementById("regEndDate").value = nextYearStr;
   if (document.getElementById("regPlan")) document.getElementById("regPlan").value = "Standard";
-  if (document.getElementById("regMonthlyFee")) document.getElementById("regMonthlyFee").value = PLAN_MONTHLY_FEES["Standard"];
-  if (document.getElementById("regMaxStudents")) document.getElementById("regMaxStudents").value = 50;
+  if (document.getElementById("regMonthlyFee")) document.getElementById("regMonthlyFee").value = PLAN_MONTHLY_FEES["Standard"] || "120,000원";
+  if (document.getElementById("regMaxStudents")) document.getElementById("regMaxStudents").value = PLAN_MAX_STUDENTS["Standard"] || 50;
 
   $('#academyRegisterModal').modal('show');
 }
@@ -2563,7 +2577,7 @@ function handleRegisterAcademy(e) {
   const endDate = document.getElementById("regEndDate").value;
   const plan = document.getElementById("regPlan")?.value || "Standard";
   const maxStudents = parseInt(document.getElementById("regMaxStudents")?.value, 10) || 50;
-  const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "330,000원";
+  const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "120,000원";
 
   const newId = `ACAD-0${String(franchiseList.length + 1).padStart(2, '0')}`;
   const newAcad = {
@@ -2643,7 +2657,7 @@ function openAcademyEditModal(id) {
 
   // 월 결제 금액 바인딩 (숫자만 있는 경우 '원' 포맷팅)
   if (document.getElementById("editMonthlyFee")) {
-    let fee = acad.monthlyFee || PLAN_MONTHLY_FEES[normalizedPlan] || "220,000원";
+    let fee = acad.monthlyFee || PLAN_MONTHLY_FEES[normalizedPlan] || "120,000원";
     const digitsOnly = String(fee).replace(/[^0-9]/g, '');
     if (digitsOnly && (!String(fee).includes('원') || /^\d+$/.test(String(fee).trim()))) {
       fee = Number(digitsOnly).toLocaleString() + '원';
@@ -9824,7 +9838,7 @@ async function handleRegisterAcademy(e) {
   const endDate = document.getElementById("regEndDate").value;
   const plan = document.getElementById("regPlan")?.value || "Standard";
   const maxStudents = parseInt(document.getElementById("regMaxStudents")?.value, 10) || 50;
-  const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "330,000원";
+  const monthlyFee = document.getElementById("regMonthlyFee")?.value.trim() || PLAN_MONTHLY_FEES[plan] || "120,000원";
   const memo = document.getElementById("regMemo")?.value.trim() || "";
 
   const nextAcademyNumber = franchiseList.reduce((max, academy) => Math.max(max, Number(String(academy.id || '').replace(/\D/g, '')) || 0), 0) + 1;

@@ -4487,11 +4487,6 @@
                 <select class="form-control form-control-sm mr-2" id="filterAssignStudentClass"
                   onchange="filterStudentAssignments()" style="width: 140px; border-radius: 8px; font-size: 12.5px;">
                   <option value="ALL">전체 클래스</option>
-                  <option value="지혜반">지혜반</option>
-                  <option value="슬기반">슬기반</option>
-                  <option value="마스터반">마스터반</option>
-                  <option value="심화반">심화반</option>
-                  <option value="새싹반">새싹반</option>
                 </select>
                 <input type="search" class="form-control form-control-sm mr-2" id="searchAssignStudentInput"
                   name="search_assign_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
@@ -5517,11 +5512,6 @@
                 <select class="form-control form-control-sm" id="indivStudentClassFilter"
                   onchange="filterIndivModalStudents()" style="border-radius: 8px; font-weight: 700;">
                   <option value="ALL">전체 클래스</option>
-                  <option value="지혜반">지혜반</option>
-                  <option value="슬기반">슬기반</option>
-                  <option value="마스터반">마스터반</option>
-                  <option value="심화반">심화반</option>
-                  <option value="새싹반">새싹반</option>
                 </select>
               </div>
               <div class="col-md-8">
@@ -5673,7 +5663,11 @@
                 </div>
 
                 <!-- 도서 카탈로그 목록 -->
-                <div id="indivBookCatalogContainer" style="max-height: 385px; overflow-y: auto; padding-right: 4px;">
+                <div id="indivBookCatalogContainer" style="max-height: 350px; overflow-y: auto; padding-right: 4px;">
+                  <!-- JS 동적 렌더링 -->
+                </div>
+                <!-- 우측 도서 카탈로그 페이징 네비게이션 (20권씩) -->
+                <div id="indivBookCatalogPagination" class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="font-size: 11.5px;">
                   <!-- JS 동적 렌더링 -->
                 </div>
               </div>

@@ -23,19 +23,37 @@ function ledger() {
 }
 const student={id:'s1',username:'student',role:'STUDENT',academyId:'a1',academy:{code:'A1'}};
 const book={id:'b1',title:'검증 도서'};
-const attempt=(id,thinkReply='')=>({id,memberId:'s1',bookId:'b1',thinkReply,score:80});
-test('동시 최초 제출은 완독 100P와 생각담기 50P를 한 번씩만 적립한다',async()=>{
-  const db=ledger();const result=await Promise.all([learning.saveAttempt(db,student,book,attempt('L_1','생각')),learning.saveAttempt(db,student,book,attempt('L_2','새 생각'))]);
-  assert.equal(result.reduce((sum,r)=>sum+r.earned,0),150);assert.equal(db.member.points,150);assert.equal(db.member.bookCount,1);assert.equal(db.awards.length,2);
+const attempt=(id,thinkReply='',score=80,completedAt=new Date())=>({id,memberId:'s1',bookId:'b1',thinkReply,score,completedAt});
+test('60점 이상 인증 시 퀴즈 3P + 생각담기 5P 적립, 60점 미만은 0P 적립',async()=>{
+  const db=ledger();
+  // 60점 미만 시도 -> 포인트 0P, 완독 0
+  const failResult = await learning.saveAttempt(db,student,book,attempt('L_fail','생각담기',50));
+  assert.equal(failResult.earned,0);assert.equal(failResult.isCertified,false);assert.equal(db.member.bookCount,0);
+  // 60점 이상 시도 -> 포인트 3+5=8P, 완독 1
+  const passResult = await learning.saveAttempt(db,student,book,attempt('L_pass','생각담기',80));
+  assert.equal(passResult.earned,8);assert.equal(passResult.isCertified,true);assert.equal(db.member.points,8);assert.equal(db.member.bookCount,1);
 });
-test('완독 후 처음 작성한 생각담기만 추가 50P, 재시도는 0P다',async()=>{
-  const db=ledger();assert.equal((await learning.saveAttempt(db,student,book,attempt('L_1'))).earned,100);
-  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_2','생각'))).earned,50);
-  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_2','생각'))).earned,0);assert.equal(db.attempts.length,2);
+test('초등학교 4학년 이상 도서는 퀴즈 포인트 1.2배(4P) 적용',async()=>{
+  const db=ledger();
+  const bookHigh={id:'b_high',title:'초등 4학년 도서',grade:'초4'};
+  const passResult = await learning.saveAttempt(db,student,bookHigh,{...attempt('L_high','생각담기',80),bookId:'b_high'});
+  assert.equal(passResult.earned,9); // 퀴즈 4P + 생각담기 5P = 9P
 });
-test('이관 기록은 보상 없이 저장하며 이미 완료한 도서의 보상을 다시 만들지 않는다',async()=>{
-  const db=ledger();await learning.saveAttempt(db,student,book,attempt('L_old','생각'),true);
-  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_new','생각'))).earned,0);assert.equal(db.member.points,0);assert.equal(db.member.bookCount,1);
+test('동일 도서는 최대 2회까지만 포인트 적립되며 3회차는 0P',async()=>{
+  const db=ledger();
+  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_1','생각',80))).earned,8);
+  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_2','생각',80))).earned,8);
+  // 3회차 성공 -> 0P
+  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_3','생각',80))).earned,0);
+  assert.equal(db.member.points,16);
+});
+test('동일 도서 당일 3회 이상 실패 시 DAILY_LIMIT_EXCEEDED 발생',async()=>{
+  const db=ledger();
+  await learning.saveAttempt(db,student,book,attempt('L_f1','',50));
+  await learning.saveAttempt(db,student,book,attempt('L_f2','',40));
+  await learning.saveAttempt(db,student,book,attempt('L_f3','',30));
+  // 4회차 시도 시 에러
+  await assert.rejects(()=>learning.saveAttempt(db,student,book,attempt('L_f4','',70)),/DAILY_LIMIT_EXCEEDED/);
 });
 test('다른 학생의 제출 ID는 재사용할 수 없다',async()=>{
   const db=ledger();db.attempts.push({...attempt('L_other'),memberId:'other'});

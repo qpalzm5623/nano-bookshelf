@@ -144,7 +144,11 @@
   async function saveOwnedBook(item, academyCode) { return manage('owned', 'save', { bookId: item.serverId }, { academy: academyCode }); }
   async function deleteOwnedBook(ownedId, academyCode) { return manage('owned', 'delete', { id: ownedId }, { academy: academyCode }); }
   async function saveAssignment(book, member, classGroup, academyCode) {
-    return manage('assignments', 'save', { bookId: book.serverId, memberId: member && member.serverId, classGroupId: classGroup && (classGroup.serverId || classGroup.id) }, { academy: academyCode });
+    return manage('assignments', 'save', {
+      bookId: book.serverId || book.id,
+      memberId: member && (member.serverId || member.id),
+      classGroupId: classGroup && (classGroup.serverId || classGroup.id)
+    }, { academy: academyCode });
   }
   async function deleteAssignment(id, academyCode) { return manage('assignments', 'delete', { id: id }, { academy: academyCode }); }
   async function refreshPortfolios() {
@@ -155,13 +159,15 @@
       var student = (global.studentDataList || []).find(function (entry) { return entry.serverId === item.memberId; });
       var studentId = student ? student.id : item.memberId;
       var books = item.books || [];
+      var avgScore = books.length ? Math.round(books.reduce(function(sum, book) { return sum + (Number(book.score) || 0); }, 0) / books.length) : 0;
       portfolioDataMap[studentId] = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : '', classGroup: student ? student.classGroup : '미지정',
         teacher: student ? student.teacher : '', level: student ? student.level : '', bookCount: books.length,
-        quizAvg: books.length ? books.reduce(function(sum, book) { return sum + (Number(book.score) || 0); }, 0) / books.length : 0,
+        quizAvg: avgScore,
         books: books.map(function(book) { return { title: book.title, date: book.date, score: (book.score || 0) + '점', comment: book.thought || '' }; }), teacherNote: item.comment || '' };
       return { id: item.id, revision: item.revision, memberId: item.memberId, studentId: studentId, studentName: item.name, school: student ? student.school : '', grade: student ? student.grade : '',
         classGroup: student ? student.classGroup : '미지정', title: item.title, period: item.from + ' ~ ' + item.to, from: item.from, to: item.to, comment: item.comment || '',
-        bookCount: books.length, booksSummary: books.length ? books[0].title + (books.length > 1 ? ' 외 ' + (books.length - 1) + '권' : '') : '완독 도서 없음', issueDate: String(item.createdAt || '').replace('T', ' ').slice(0, 16), status: '발급 완료', kakaoSent: false };
+        bookCount: books.length, booksSummary: books.length ? books[0].title + (books.length > 1 ? ' 외 ' + (books.length - 1) + '권' : '') : '완독 도서 없음',
+        quizAvg: avgScore + '점', issueDate: String(item.createdAt || '').replace('T', ' ').slice(0, 16), status: '발급 완료', kakaoSent: false };
     });
     if (typeof renderPortfolioTable === 'function') renderPortfolioTable(portfolioList);
     if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
@@ -172,8 +178,22 @@
   async function refreshActivity() { activity = await api('/api/activity'); window.dispatchEvent(new Event('nano:activity')); return activity; }
   async function refreshAssignments() {
     var result = await api('/api/activity?action=assignments&academy=' + encodeURIComponent(academy() || ''));
-    if (typeof studentAssignmentList !== 'undefined') { studentAssignmentList = result.students; classAssignmentList = result.classes; assignmentLoadError = false; }
+    if (typeof studentAssignmentList !== 'undefined') {
+      studentAssignmentList = (result.students || []).map(function(s) {
+        var total = (s.books || []).length;
+        var completed = s.completedBooks || 0;
+        if (!s.status) {
+          s.status = total > 0 ? (completed >= total ? '완료' : '읽는 중 (' + completed + '/' + total + '권)') : '배정 없음';
+        }
+        return s;
+      });
+      classAssignmentList = result.classes || [];
+      assignmentLoadError = false;
+    }
     if (typeof renderStudentAssignmentTable === 'function') renderStudentAssignmentTable();
+    if (typeof renderClassAssignmentTable === 'function') renderClassAssignmentTable();
+    if (typeof renderIndivBookCatalog === 'function') renderIndivBookCatalog();
+    if (typeof renderIndivStudentAssignedBooks === 'function') renderIndivStudentAssignedBooks(typeof currentIndivStudentId !== 'undefined' ? currentIndivStudentId : null);
     return result;
   }
   async function request(action, body) {

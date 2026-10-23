@@ -110,7 +110,7 @@ export default async function handler(req: any, res: any) {
       const saved = await saveAttempt(prisma, user, book, { id: body.id, memberId: user.id, bookId: book.id, score, correctCount, questionCount: results.length,
         ...(sourceDate ? { completedAt: sourceDate } : {}),
         thinkReply: String(body.thoughtAnswer || '').slice(0, 20000), answers: { quizResults: results, thoughtQuestion: book.thinkQuiz || '', ...(body.importing === true ? { importedAt: new Date().toISOString(), sourceDate: String(body.sourceDate || '').slice(0,30) } : {}) } }, body.importing === true);
-      return res.status(201).json({ score: saved.attempt.score, quizResults: results, earned: saved.earned });
+      return res.status(201).json({ score: saved.attempt.score, quizResults: results, earned: saved.earned, isCertified: saved.isCertified });
     }
     if (action === 'review' && req.method === 'POST') {
       if (!['MASTER', 'DIRECTOR', 'TEACHER'].includes(user.role)) return res.status(403).json({ error: '지도교사와 관리자만 첨삭을 저장할 수 있습니다.' });
@@ -127,6 +127,7 @@ export default async function handler(req: any, res: any) {
     }
     return res.status(404).json({ error: '아직 연결되지 않은 기능입니다.' });
   } catch (error: any) {
+    if (error.message === 'DAILY_LIMIT_EXCEEDED') return res.status(429).json({ error: '해당 도서의 오늘 인증 실패 횟수(3회)를 초과하여 오늘 자정까지 재도전할 수 없습니다.' });
     if (error.message === 'QUIZ_MISMATCH') return res.status(409).json({ error: '서버 문항과 답안이 일치하지 않습니다. 답안은 기기에 유지됩니다.' });
     // 중복 클릭/재시도 시 고유 ID 제약으로 두 번 저장되지 않습니다.
     if (error.code === 'P2002') return res.status(409).json({ error: '이미 처리 중인 답안입니다. 잠시 후 다시 시도해 주세요.' });

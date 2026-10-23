@@ -124,8 +124,8 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'assignments') {
       if (body.operation === 'delete') { const result = await prisma.bookAssignment.deleteMany({ where: { id: input.id, academyId } }); need(result.count, '배정 내역을 찾을 수 없습니다.', 404); return res.json({ ok: true }); }
-      const book = await prisma.book.findUnique({ where: { id: input.bookId } }); need(book, '도서를 선택해 주세요.');
-      const members = await prisma.member.findMany({ where: { academyId, role: 'STUDENT', status: 'APPROVED', ...(input.classGroupId ? { classGroupId: input.classGroupId } : { id: input.memberId || '' }) }, select: { id: true } });
+      const book = await prisma.book.findFirst({ where: { OR: [{ id: String(input.bookId || '') }, { bookNo: Number(input.bookId) || -1 }] } }); need(book, '도서를 선택해 주세요.');
+      const members = await prisma.member.findMany({ where: { academyId, role: 'STUDENT', status: 'APPROVED', ...(input.classGroupId ? { classGroupId: input.classGroupId } : { OR: [{ id: String(input.memberId || '') }, { username: String(input.memberId || '') }] }) }, select: { id: true } });
       need(members.length, '배정할 재원생이 없습니다.');
       await prisma.$transaction(async tx => {
         for (const member of members) {

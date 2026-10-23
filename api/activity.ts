@@ -36,14 +36,67 @@ export default async function handler(req: any, res: any) {
       const scope = ['class','academy','national'].includes(req.query.scope) ? req.query.scope : 'academy';
       const memberWhere = scope === 'national' ? { role: 'STUDENT' as const, status: 'APPROVED' as const } : { role: 'STUDENT' as const, status: 'APPROVED' as const,
         academyId: user.academyId, ...(scope === 'class' ? { classGroupId: user.classGroupId || '__none__' } : {}) };
-      const totals = await prisma.pointHistory.groupBy({ by: ['memberId'], where: { createdAt: monthWindow(String(req.query.period)), member: memberWhere }, _sum: { amount: true } });
-      totals.sort((a, b) => (b._sum.amount || 0) - (a._sum.amount || 0) || a.memberId.localeCompare(b.memberId));
-      const top = totals.slice(0, 100);
-      const members = await prisma.member.findMany({ where: { id: { in: top.map(t => t.memberId) } }, select: { id: true, name: true, bookCount: true, academy: { select: { name: true } } } });
-      const rows = top.map((t, i) => { const m = members.find(m => m.id === t.memberId)!; return { rank: i + 1, name: scope === 'national' && m.id !== user.id ? m.name.slice(0, 1) + '**' : m.name,
-        pt: t._sum.amount || 0, cls: m.academy.name, books: m.bookCount, me: m.id === user.id, charId: m.id === user.id ? 'custom' : 'nano', change: 'same', changeNum: 0 }; });
-      const own = totals.findIndex(t => t.memberId === user.id);
-      return res.json({ rows, myRank: own < 0 ? null : own + 1, participants: totals.length, myPoints: own < 0 ? 0 : totals[own]._sum.amount });
+      
+      const members = await prisma.member.findMany({
+        where: memberWhere,
+        select: { id: true, name: true, bookCount: true, points: true, academy: { select: { name: true } } }
+      });
+      const memberMap = new Map(members.map(m => [m.id, m]));
+
+      const totals = await prisma.pointHistory.groupBy({
+        by: ['memberId'],
+        where: { createdAt: monthWindow(String(req.query.period)), member: memberWhere },
+        _sum: { amount: true }
+      });
+      const pointMap = new Map(totals.map(t => [t.memberId, t._sum.amount || 0]));
+
+      const rankCandidates = totals.map(t => {
+        const m = memberMap.get(t.memberId);
+        return {
+          memberId: t.memberId,
+          amount: t._sum.amount || 0,
+          bookCount: m ? m.bookCount : 0,
+          name: m ? m.name : '학생',
+          academyName: m?.academy?.name || ''
+        };
+      });
+
+      // 1순위: 포인트 내림차순, 2순위: 완독 도서 수(bookCount) 내림차순, 3순위: 이름 오름차순
+      rankCandidates.sort((a, b) => {
+        if (b.amount !== a.amount) {
+          return b.amount - a.amount;
+        }
+        if (b.bookCount !== a.bookCount) {
+          return b.bookCount - a.bookCount;
+        }
+        return a.name.localeCompare(b.name) || a.memberId.localeCompare(b.memberId);
+      });
+
+      const top = rankCandidates.slice(0, 100);
+      const rows = top.map((t, i) => ({
+        rank: i + 1,
+        name: scope === 'national' && t.memberId !== user.id ? t.name.slice(0, 1) + '**' : t.name,
+        pt: t.amount,
+        cls: t.academyName,
+        books: t.bookCount,
+        me: t.memberId === user.id,
+        charId: t.memberId === user.id ? 'custom' : 'nano',
+        change: 'same',
+        changeNum: 0
+      }));
+
+      const ownIdx = rankCandidates.findIndex(t => t.memberId === user.id);
+      const ownMember = memberMap.get(user.id);
+      const ownPoints = pointMap.get(user.id) || 0;
+
+      return res.json({
+        rows,
+        myRank: ownIdx < 0 ? null : ownIdx + 1,
+        participants: rankCandidates.length,
+        myPoints: ownPoints,
+        myTotalPoints: ownMember ? ownMember.points : user.points,
+        myBooks: ownMember ? ownMember.bookCount : 0
+      });
     }
     if (action === 'assignments') {
       const academyId = await academyScope(user, req.query.academy);
@@ -52,9 +105,10 @@ export default async function handler(req: any, res: any) {
       for (const row of rows) {
         if (!row.member) continue;
         const key = row.memberId!;
-        if (!grouped.has(key)) grouped.set(key, { id: key, studentId: row.member.username, studentName: row.member.name, classGroup: row.member.classGroup?.name || '미지정', school: row.member.school || '', grade: row.member.grade || '', books: [], completedBooks: 0, assignDate: row.createdAt.toISOString().slice(0, 10) });
+        if (!grouped.has(key)) grouped.set(key, { id: key, studentId: row.member.username, studentName: row.member.name, classGroup: row.member.classGroup?.name || '미지정', school: row.member.school || '', grade: row.member.grade || '', books: [], completedBooks: 0, status: '읽는 중', assignDate: row.createdAt.toISOString().slice(0, 10) });
         const item = grouped.get(key); item.books.push({ id: row.book.bookNo, title: row.book.title, pub: row.book.publisher || '', cover: row.book.coverUrl || '', isCompleted: row.isCompleted, assignmentId: row.id });
         if (row.isCompleted) item.completedBooks++;
+        item.status = item.completedBooks >= item.books.length ? '완료' : `읽는 중 (${item.completedBooks}/${item.books.length}권)`;
       }
       return res.json({ students: [...grouped.values()], classes: [] });
     }
