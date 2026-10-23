@@ -265,7 +265,7 @@ function switchMemberSubTab(sub) {
   if (activeBtn) activeBtn.className = 'btn btn-beige-primary';
 
   if (sub === 'teachers') renderTeacherTable();
-  if (sub === 'students') renderStudentTable(studentDataList);
+  if (sub === 'students') filterStudents(true);
   var mainEl = document.querySelector('.main-workspace');
   if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -2092,32 +2092,52 @@ function handleStudentExcelFileSelect(input) {
 }
 
 // ==============================================================
-// 3-4. 원생 테이블 렌더링 & 필터링 (신규 컬럼 완비)
 // ==============================================================
-function renderStudentTable(list) {
+// 3-4. 원생 테이블 렌더링 & 페이징 & 필터링 (한 페이지 20명 단위)
+// ==============================================================
+var studentPageSize = 20;
+var studentCurrentPage = 1;
+var currentFilteredStudents = [];
+
+function renderStudentTable(list, page) {
   var tbody = document.getElementById('studentTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  var countEl = document.getElementById('searchResultCount');
-  if (countEl) countEl.innerText = list.length;
+  var dataList = list || studentDataList;
+  currentFilteredStudents = dataList;
 
-  if (list.length === 0) {
+  var total = dataList.length;
+  var totalPages = Math.ceil(total / studentPageSize) || 1;
+
+  page = page || studentCurrentPage || 1;
+  if (page > totalPages) page = totalPages;
+  if (page < 1) page = 1;
+  studentCurrentPage = page;
+
+  var countEl = document.getElementById('searchResultCount');
+  if (countEl) countEl.innerText = total;
+
+  if (total === 0) {
     var emptyMessage = (studentDataList.length === 0)
       ? '<div class="py-4"><i class="fa-solid fa-user-plus text-primary mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">우측 상단의 <strong>[+ 원생 등록]</strong> 또는 <strong>[엑셀 일괄 등록]</strong>을 통해 첫 원생을 등록해 보세요.</span></div>'
       : '일치하는 원생이 없습니다.';
     tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
+    renderStudentPagination(0, 1, 1);
     return;
   }
 
-  var totalCount = list.length;
-  list.forEach(function(std, index) {
+  // 한 페이지 20명 슬라이스
+  var startIndex = (page - 1) * studentPageSize;
+  var pageItems = dataList.slice(startIndex, startIndex + studentPageSize);
+
+  pageItems.forEach(function(std, index) {
     var tr = document.createElement('tr');
     if (std.id === lastAddedStudentId) {
       tr.className = 'row-highlight-new';
     }
 
-    var rowNo = totalCount - index; // 번호 내림차순
+    var rowNo = total - (startIndex + index); // 전체 기준 내림차순 번호
     var quizScoreDisplay = (std.quizAvg === '0.0' || std.quizAvg === 0) ? '<span class="text-muted">-</span>' : std.quizAvg + '점';
 
     // 성별 뱃지
@@ -2171,11 +2191,76 @@ function renderStudentTable(list) {
       '</td>';
     tbody.appendChild(tr);
   });
+
+  renderStudentPagination(total, page, totalPages);
 }
 
-function filterStudents() {
+// 원생 목록 페이징 바 렌더링 (최대 10개 번호 블록 & 10페이지 이전/다음 화살표)
+function renderStudentPagination(total, page, totalPages) {
+  var infoEl = document.getElementById('studentPageInfo');
+  var pagEl = document.getElementById('studentPagination');
+  if (!pagEl) return;
+
+  if (total === 0) {
+    if (infoEl) infoEl.innerHTML = '일치하는 원생이 없습니다.';
+    pagEl.innerHTML = '';
+    return;
+  }
+
+  var startItem = (page - 1) * studentPageSize + 1;
+  var endItem = Math.min(page * studentPageSize, total);
+  if (infoEl) {
+    infoEl.innerHTML = `총 <b>${total.toLocaleString()}</b>명 중 <b>${startItem}-${endItem}</b>명 표시 <span class="text-muted ml-1" style="font-weight: 500;">(페이지 ${page} / ${totalPages})</span>`;
+  }
+
+  var html = '';
+  // 10페이지 단위 페이징 블록 (1~10, 11~20...)
+  var blockSize = 10;
+  var startPage = Math.floor((page - 1) / blockSize) * blockSize + 1;
+  var endPage = Math.min(startPage + blockSize - 1, totalPages);
+
+  // 처음으로 및 이전 10페이지
+  html += `<button type="button" class="acad-page-btn" onclick="goStudentPage(1)" ${page === 1 ? 'disabled' : ''} title="첫 페이지"><i class="fa-solid fa-angles-left"></i></button>`;
+  html += `<button type="button" class="acad-page-btn" onclick="goStudentPage(${Math.max(1, startPage - blockSize)})" ${startPage === 1 ? 'disabled' : ''} title="이전 10페이지"><i class="fa-solid fa-angle-left"></i></button>`;
+
+  // 1~10 페이지 번호
+  for (var p = startPage; p <= endPage; p++) {
+    if (p === page) {
+      html += `<button type="button" class="acad-page-btn active" aria-current="page">${p}</button>`;
+    } else {
+      html += `<button type="button" class="acad-page-btn" onclick="goStudentPage(${p})">${p}</button>`;
+    }
+  }
+
+  // 다음 10페이지 및 마지막 페이지
+  html += `<button type="button" class="acad-page-btn" onclick="goStudentPage(${Math.min(totalPages, startPage + blockSize)})" ${endPage >= totalPages ? 'disabled' : ''} title="다음 10페이지"><i class="fa-solid fa-angle-right"></i></button>`;
+  html += `<button type="button" class="acad-page-btn" onclick="goStudentPage(${totalPages})" ${page === totalPages ? 'disabled' : ''} title="마지막 페이지"><i class="fa-solid fa-angles-right"></i></button>`;
+
+  pagEl.innerHTML = html;
+}
+
+// 특정 페이지로 이동
+function goStudentPage(targetPage) {
+  if (targetPage < 1) targetPage = 1;
+  studentCurrentPage = targetPage;
+  renderStudentTable(currentFilteredStudents, targetPage);
+
+  var tableEl = document.getElementById('studentTableBody');
+  if (tableEl) {
+    var cardEl = tableEl.closest('.simple-card');
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+}
+
+function filterStudents(keepPage) {
+  if (!keepPage) {
+    studentCurrentPage = 1;
+  }
   var classVal = document.getElementById('filterStudentClass') ? document.getElementById('filterStudentClass').value : 'ALL';
   var query = (document.getElementById('searchStudentInput') ? document.getElementById('searchStudentInput').value : '').toLowerCase().trim();
+  var statusVal = document.getElementById('filterStudentStatus') ? document.getElementById('filterStudentStatus').value : 'ALL';
 
   var filtered = studentDataList.filter(function(std) {
     var matchClass = (classVal === 'ALL') || (std.classGroup === classVal);
@@ -2184,13 +2269,12 @@ function filterStudents() {
       std.id.toLowerCase().indexOf(query) !== -1 || 
       (std.parentName && std.parentName.toLowerCase().indexOf(query) !== -1) ||
       (std.school && std.school.toLowerCase().indexOf(query) !== -1);
-    var statusVal = document.getElementById('filterStudentStatus') ? document.getElementById('filterStudentStatus').value : 'ALL';
     var stdStatus = std.status || '승인';
     var matchStatus = (statusVal === 'ALL') || (stdStatus === statusVal);
     return matchClass && matchQuery && matchStatus;
   });
 
-  renderStudentTable(filtered);
+  renderStudentTable(filtered, studentCurrentPage);
 }
 
 function renderTeacherTable() {
