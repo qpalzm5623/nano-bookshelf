@@ -12,15 +12,17 @@ export default async function handler(req: any, res: any) {
     const session = readSession(token);
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
-    const members = await prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
+    // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
+    const [members, academies, books, classes, banners, themes, notices, owned, payments, dispatches] = await Promise.all([
+      prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
-        lastLoginAt: true, createdAt: true, updatedAt: true, academy: { select: { code: true, name: true } }, classGroup: { select: { id: true, name: true } } } });
-    const academies = await prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { id: user.academyId }) },
+        lastLoginAt: true, createdAt: true, updatedAt: true, academy: { select: { code: true, name: true } }, classGroup: { select: { id: true, name: true } } } }),
+      prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { id: user.academyId }) },
       select: { id: true, code: true, name: true, bizNo: true, directorName: true, phone: true, email: true, maxStudents: true, monthlyFee: true, plan: true, address: true, memo: true, joinDate: true, status: true, startDate: true, endDate: true,
-        _count: { select: { members: { where: { role: 'STUDENT', status: 'APPROVED' } } } } } });
-    const [books, classes, banners, themes, notices, owned, payments, dispatches] = await Promise.all([
-      prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { quizzes: { orderBy: { questionNo: 'asc' } }, theme: true } }),
+        _count: { select: { members: { where: { role: 'STUDENT', status: 'APPROVED' } } } } } }),
+      prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { quizzes: { orderBy: { questionNo: 'asc' },
+        select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } }, theme: true } }),
       prisma.classGroup.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: { select: { code: true } } } }),
       prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }), prisma.themeCategory.findMany(),
       prisma.notice.findMany({ where: user.role === 'MASTER' ? {} : { OR: [{ targetRole: null }, { targetRole: user.role }] }, orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }] }),
@@ -45,7 +47,7 @@ export default async function handler(req: any, res: any) {
         cat: b.series || '단권', series: b.series || '단권', single: !b.series || b.series === '단권', tags: (b.tags || '').split(',').map(t => t.trim()).filter(Boolean),
         cat1: b.subCategory === 'C' ? '비문학/정보글' : b.subCategory === 'B' ? '인물 이야기 (위인)' : '소설',
         cat2: b.category === 'F' ? '외서' : '국내서', tag: b.theme ? '#' + b.theme.name : '',
-        thinkInsert: b.thinkQuiz || '', thinkOpen: b.thinkTitle || '', quizSets: quizzes[b.bookNo], quizzes: undefined, theme: undefined })),
+        thinkInsert: b.thinkQuiz || '', thinkOpen: b.thinkTitle || '', quizzes: undefined, theme: undefined })),
       MIGRATED_QUIZZES: quizzes,
       NANO_SERVER_CLASSES: classes.map(c => ({ id: c.id, serverId: c.id, name: c.name, grade: c.targetGrade || '', academyId: c.academy.code })),
       NANO_SERVER_OWNED: owned.map(b => b.book.bookNo),
@@ -71,7 +73,9 @@ export default async function handler(req: any, res: any) {
     const sessionUser = { id: user.username, memberId: user.id, name: user.name, studentName: user.name, studentId: user.username,
       role: user.role === 'MASTER' ? 'master' : user.role === 'STUDENT' ? 'student' : user.role === 'TEACHER' ? 'teacher' : 'admin',
       academyId: user.academy.code, academyName: user.academy.name, classGroup: members.find(m => m.id === user.id)?.classGroup?.name || '미지정', server: true };
-    return res.status(200).send('sessionStorage.setItem("nano_auth_user", ' + JSON.stringify(JSON.stringify(sessionUser)).replace(/</g, '\\u003c') + ');\n' + Object.entries(data).map(([key, value]) => `window.${key} = ${JSON.stringify(value).replace(/</g, '\\u003c')};`).join('\n'));
+    // 큰 퀴즈 배열은 한 번만 전송하고, 기존 화면이 사용하는 도서별 속성을 복원합니다.
+    return res.status(200).send('sessionStorage.setItem("nano_auth_user", ' + JSON.stringify(JSON.stringify(sessionUser)).replace(/</g, '\\u003c') + ');\n' + Object.entries(data).map(([key, value]) => `window.${key} = ${JSON.stringify(value).replace(/</g, '\\u003c')};`).join('\n')
+      + '\nwindow.MIGRATED_BOOKS.forEach(function(book) { book.quizSets = JSON.parse(JSON.stringify(window.MIGRATED_QUIZZES[book.id] || [])); });');
   } catch {
     return res.status(503).send('window.NANO_BOOTSTRAP_FAILED = true;');
   }

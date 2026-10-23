@@ -82,9 +82,12 @@ export default async function handler(req: any, res: any) {
       const academyId = await academyScope(user, req.query.academy);
       const attempts = await prisma.quizAttempt.findMany({ where: { member: { academyId }, ...(user.role === 'STUDENT' ? { memberId: user.id } : {}) },
         include: { member: { include: { academy: true, classGroup: true } } }, orderBy: [{ completedAt: 'desc' }, { id: 'desc' }], take: 101, ...(typeof req.query.cursor === 'string' ? { cursor: { id: req.query.cursor }, skip: 1 } : {}) });
-      const books = await prisma.book.findMany({ where: { id: { in: attempts.map(a => a.bookId) } }, select: { id: true, title: true, bookNo: true } });
       const page = attempts.slice(0, 100);
-      const files = await prisma.portalFile.findMany({ where: { attemptId: { in: page.map(a => a.id) } }, select: { id: true, name: true, attemptId: true } });
+      // 현재 페이지의 도서·첨부 목록은 서로 독립적이므로 동시에 조회합니다.
+      const [books, files] = await Promise.all([
+        prisma.book.findMany({ where: { id: { in: [...new Set(page.map(a => a.bookId))] } }, select: { id: true, title: true, bookNo: true } }),
+        prisma.portalFile.findMany({ where: { attemptId: { in: page.map(a => a.id) } }, select: { id: true, name: true, attemptId: true } })
+      ]);
       return res.status(200).json({ logs: page.map(a => ({ ...logView(a, books.find(b => b.id === a.bookId)), files: files.filter(f => f.attemptId === a.id) })), nextCursor: attempts.length > 100 ? page[99].id : null });
     }
     if (action === 'learning' && req.method === 'POST') {

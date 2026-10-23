@@ -27,7 +27,8 @@ for (const name of fs.readdirSync(source)) if (assets.has(name) || files.has(nam
 for (const file of ['index.html', 'admin_preview.html', 'master_preview.html', 'student_preview.html']) {
   const dest = path.join(output, file);
   let html = fs.readFileSync(dest, 'utf8');
-  html = html.replace(/<script src="migrated_real_data\.js[^\"]*"><\/script>/g, '<script src="/api/bootstrap"></script>');
+  // 로그인 화면에는 회원·도서 데이터가 필요하지 않습니다. 보호된 화면에서만 조회합니다.
+  html = html.replace(/<script src="migrated_real_data\.js[^\"]*"><\/script>/g, file === 'index.html' ? '' : '<script src="/api/bootstrap"></script>');
   fs.writeFileSync(dest, html);
 }
 console.log('운영 배포 파일 생성 완료: dist (회원 덤프 및 PHP 설정 제외)');

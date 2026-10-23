@@ -98,3 +98,57 @@ test('첨삭은 소속 학원으로 제한하고 동시 수정 충돌을 덮어�
   await run(request('review', { id: 'L_attempt123', comment: '검토', sheet: '작성 완료', reviewed: '첨삭 완료', thoughtHidden: false, reviewRevision: 'older' }, auth.signSession('member-a', hash)), res);
   assert.equal(where.member.academyId, 'academy-a'); assert.equal(res.code, 409);
 });
+
+test('초기 데이터 조회를 병렬화해도 사용자 범위와 기존 퀴즈 구조를 유지한다', async () => {
+  for (const role of ['MASTER', 'DIRECTOR', 'TEACHER', 'STUDENT']) {
+    const user = member(role);
+    const queries = {}, pending = [];
+    const date = new Date('2026-10-01T00:00:00Z');
+    const rows = {
+      member: [{ ...user, createdAt: date, updatedAt: date }],
+      academy: [{ ...user.academy, id: user.academyId, joinDate: date, startDate: date, endDate: date, _count: { members: 1 } }],
+      book: [{ id: 'book-id', bookNo: 'B001', title: '검증 도서', quizzes: [{ id: 'q1', question: '고유문항<검증>', options: ['가', '나'], correctAnswer: '1', questionNo: 1 }], theme: null }]
+    };
+    const db = {};
+    for (const name of ['member', 'academy', 'book', 'classGroup', 'mainBanner', 'themeCategory', 'notice', 'academyBook', 'payment', 'aligoDispatchLog']) {
+      db[name] = { findMany: query => {
+        queries[name] = query;
+        return new Promise(resolve => pending.push(() => resolve(rows[name] || [])));
+      } };
+    }
+    db.member.findUnique = async () => user;
+    const run = load('api/bootstrap.ts', { '../lib/prisma': { prisma: db }, '../lib/portal-auth': auth }).default;
+    const res = { ...response(), send(value) { this.data = value; return this; } };
+    const completion = run(request('bootstrap', undefined, auth.signSession(user.id, hash)), res);
+    await new Promise(setImmediate);
+    assert.equal(pending.length, 10, '앞선 목록 조회 완료를 기다리지 않고 독립 조회를 시작한다');
+    pending.forEach(resolve => resolve());
+    await completion;
+    assert.equal(res.code, 200);
+    assert.equal(res.headers['Cache-Control'], 'no-store');
+    assert.deepEqual(JSON.parse(JSON.stringify(queries.member.where)), role === 'MASTER' ? {} : role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId });
+    assert.equal(queries.academy.where.deletedAt, null);
+    if (role !== 'MASTER') assert.equal(queries.academy.where.id, user.academyId);
+    // 큰 문항 데이터는 한 번만 직렬화하되 두 공개 접근 경로에서 동일하게 읽힙니다.
+    assert.equal(res.data.split('고유문항').length - 1, 1);
+    const context = { window: {}, sessionStorage: { setItem() {} } };
+    vm.runInNewContext(res.data, context);
+    const data = context.window;
+    assert.deepEqual(JSON.parse(JSON.stringify(data.MIGRATED_BOOKS[0].quizSets)), JSON.parse(JSON.stringify(data.MIGRATED_QUIZZES.B001)));
+    assert.equal(data.MIGRATED_BOOKS[0].quizSets[0].questions[0].question, '고유문항<검증>');
+    assert.equal(data.MIGRATED_BOOKS[0].quizSets[0].questions[0].ans, 1);
+    data.MIGRATED_BOOKS[0].quizSets[0].questions[0].choices[0] = '편집한 보기';
+    assert.equal(data.MIGRATED_QUIZZES.B001[0].questions[0].choices[0], '가');
+  }
+});
+
+test('인증 실패 시 초기 데이터 목록을 조회하지 않는다', async () => {
+  const run = load('api/bootstrap.ts', {
+    '../lib/prisma': { prisma: { member: { findUnique: async () => assert.fail('인증 전 DB 접근') } } },
+    '../lib/portal-auth': auth
+  }).default;
+  const res = { ...response(), send(value) { this.data = value; return this; } };
+  await run(request('bootstrap'), res);
+  assert.equal(res.code, 401);
+  assert.equal(res.data, 'window.NANO_BOOTSTRAP_FAILED = true;');
+});

@@ -75,6 +75,18 @@ test('삭제 대상 ID가 없으면 전체 삭제 쿼리를 실행하지 않는�
   const run=api('api/manage.ts',teacher,{bookAssignment:{deleteMany:async()=>assert.fail('삭제 실행')}});const res=response();
   await run({method:'POST',query:{entity:'assignments'},body:{operation:'delete',data:{}}},res);assert.equal(res.code,400);
 });
+
+test('문자 도서 코드로 과제를 배정해도 도서 번호를 숫자로 변환하지 않는다',async()=>{
+  let saved;
+  const db={book:{findFirst:async({where})=>{
+    assert.equal(where.OR[1].bookNo,'FA000001');return {id:'book-server-id'};
+  }},member:{findMany:async()=>[{id:'s1'}]},$transaction:async fn=>fn({
+    $queryRaw:async()=>[],bookAssignment:{findFirst:async()=>null,create:async({data})=>{saved=data;}}
+  })};
+  const res=response();
+  await api('api/manage.ts',teacher,db)({method:'POST',query:{entity:'assignments'},body:{operation:'save',data:{bookId:'FA000001',memberId:'s1'}}},res);
+  assert.equal(res.code,200);assert.equal(saved.bookId,'book-server-id');assert.equal(saved.academyId,'a1');
+});
 test('학생은 타 학생 첨삭 파일을 열 수 없고 교사도 타 학원 파일을 열 수 없다',async()=>{
   const db={portalFile:{findUnique:async()=>({academyId:'a1',attemptId:'attempt',mime:'application/pdf',name:'첨삭.pdf',data:Buffer.from('%PDF-')})},quizAttempt:{findUnique:async()=>({memberId:'other'})}};
   const res=response();await api('api/files.ts',student,db)({method:'GET',query:{id:'file'}},res);assert.equal(res.code,403);
