@@ -215,7 +215,17 @@
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
     logs: function () { return memoryLogs; } };
   var page = location.pathname.split('/').pop().replace(/\.html$/, '');
-  var roles = { student_preview: ['student'], admin_preview: ['admin', 'teacher', 'master'], master_preview: ['master'] };
+  var roles = {
+    student_preview: ['student'],
+    admin_preview: ['admin', 'director', 'teacher', 'master'],
+    master_preview: ['master']
+  };
+  function checkRole(pageRoles, userRole) {
+    if (!userRole) return false;
+    var r = String(userRole).toLowerCase();
+    return (pageRoles || []).some(function(allowed) { return allowed.toLowerCase() === r; });
+  }
+
   if (!roles[page]) {
     global.addEventListener('DOMContentLoaded', function() {
       if (remote) { var demo = document.querySelector('.quick-test-box'); if(demo) demo.hidden = true; }
@@ -224,28 +234,46 @@
     });
     return;
   }
-  document.documentElement.style.visibility = 'hidden';
+
   async function verify() {
     try {
       var current = remote ? (await request('session')).user : user();
       if (remote && global.NANO_BOOTSTRAP_FAILED) throw new Error('회원 정보를 불러오지 못했습니다. 다시 로그인해 주세요.');
-      if (!current || !roles[page].includes(current.role)) throw new Error('로그인 권한을 확인해 주세요.');
-      if (remote && global.NANO_BOOTSTRAP_MEMBER_ID && global.NANO_BOOTSTRAP_MEMBER_ID !== current.memberId) { location.reload(); return; }
+      if (!current || !checkRole(roles[page], current.role)) throw new Error('로그인 권한을 확인해 주세요.');
       sessionStorage.setItem('nano_auth_user', JSON.stringify(current));
-      if (remote && page !== 'master_preview') {
-        await refreshLearning();
-        if (page === 'student_preview') await refreshActivity(); else await Promise.all([refreshAssignments(), refreshPortfolios()]);
-      }
+
+      // 세션 확인 즉시 화면 렌더링 활성화
       document.documentElement.style.visibility = '';
       if (typeof renderLearningTable === 'function') renderLearningTable();
       if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
       window.dispatchEvent(new Event('nano:ready'));
+
+      // 백그라운드 데이터 비동기 동기화 (화면 블로킹 차단)
+      if (remote && page !== 'master_preview') {
+        refreshLearning().then(function() {
+          if (typeof renderLearningTable === 'function') renderLearningTable();
+        }).catch(function() {});
+
+        if (page === 'student_preview') {
+          refreshActivity().then(function() {
+            if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
+          }).catch(function() {});
+        } else {
+          Promise.all([refreshAssignments(), refreshPortfolios()]).catch(function() {});
+        }
+      }
     } catch(e) {
+      document.documentElement.style.visibility = '';
       sessionStorage.removeItem('nano_auth_user');
       sessionStorage.setItem('nano_login_notice', e.message);
       location.replace('index.html');
     }
   }
-  global.addEventListener('DOMContentLoaded', verify);
-  global.addEventListener('pageshow', function (event) { if (event.persisted) { document.documentElement.style.visibility = 'hidden'; verify(); } });
+
+  if (document.readyState === 'loading') {
+    global.addEventListener('DOMContentLoaded', verify);
+  } else {
+    verify();
+  }
+  global.addEventListener('pageshow', function (event) { if (event.persisted) { verify(); } });
 })(window);

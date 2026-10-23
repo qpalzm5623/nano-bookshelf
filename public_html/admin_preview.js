@@ -223,6 +223,28 @@ function switchTab(tab) {
   window.scrollTo(0, 0);
 }
 
+// 상단 좌측 로고 클릭 시 페이지 전체 새로고침 없이 즉각 홈(회원 관리)으로 이동
+function goHomeTab(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  switchTab('members');
+  if (typeof switchStudentSubTab === 'function') {
+    switchStudentSubTab('students');
+  }
+  var searchInput = document.getElementById('searchStudentInput');
+  if (searchInput) searchInput.value = '';
+  var classFilter = document.getElementById('filterClassSelect');
+  if (classFilter) classFilter.value = 'all';
+  if (typeof filterStudents === 'function') {
+    filterStudents();
+  }
+  var mainEl = document.querySelector('.main-workspace');
+  if (mainEl) mainEl.scrollTop = 0;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // 콘텐츠 관리 내부 서브탭 전환 (도서 목록 / 도서 직접 등록 / 북퀴즈 출제)
 function switchContentSubTab(sub) {
   var subs = ['list', 'write', 'quiz'];

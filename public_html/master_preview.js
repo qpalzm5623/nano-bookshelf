@@ -2211,20 +2211,11 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
   const tbody = document.getElementById("franchiseTableBody");
   if (!tbody) return;
 
-  // 실제 운영 가맹점 우선 정렬 (원생 많은 순서, '소속명' 테스트 학원은 맨 뒤로)
+  // 가맹 학원명(name) 기준 한글 ㄱㄴㄷ 오름차순 (가나다순) 정렬
   const sortedData = [...data].sort((a, b) => {
-    const aTest = (a.name || '').startsWith('소속명');
-    const bTest = (b.name || '').startsWith('소속명');
-    if (aTest !== bTest) return aTest ? 1 : -1;
-
-    // 실제 원생 수 내림차순 우선
-    const curA = a.currentStudents || 0;
-    const curB = b.currentStudents || 0;
-    if (curB !== curA) return curB - curA;
-
-    const dateA = new Date(a.joinDate || a.startDate || 0);
-    const dateB = new Date(b.joinDate || b.startDate || 0);
-    return dateB - dateA;
+    const nameA = (a.name || '').trim();
+    const nameB = (b.name || '').trim();
+    return nameA.localeCompare(nameB, 'ko');
   });
 
   lastSortedFranchises = sortedData;
@@ -2259,10 +2250,18 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     if (slotRate >= 95) progressClass = "danger";
     else if (slotRate >= 80) progressClass = "warn";
 
-    // 가맹 상태 뱃지 (계약 만료 포함)
+    // 가맹 상태 뱃지 (계약 만료 및 30일내 만료 임박 포함)
     const todayStr = new Date().toISOString().slice(0, 10);
     const isExpired = (acad.endDate && acad.endDate < todayStr && acad.status !== "TERMINATED");
-    const effStatus = isExpired ? "EXPIRED" : acad.status;
+    let effStatus = isExpired ? "EXPIRED" : acad.status;
+    if (!isExpired && acad.status !== "TERMINATED" && acad.status !== "PAUSED" && acad.endDate) {
+      const end = new Date(acad.endDate);
+      const now = new Date();
+      const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 30) {
+        effStatus = "EXPIRING";
+      }
+    }
 
     let statusBadge = `<span class="badge-soft badge-soft-success" style="font-size: 11px; padding: 3px 7px;"><i class="fa-solid fa-circle-check"></i> 정상 운영</span>`;
     if (effStatus === "EXPIRED") {
@@ -2446,9 +2445,17 @@ function filterFranchiseList() {
       (item.adminId && item.adminId.toLowerCase().includes(query)) ||
       (item.email && item.email.toLowerCase().includes(query));
 
-    // 계약 만료 자동 판정 반영
+    // 계약 만료 및 30일내 만료 임박 자동 판정 반영
     const isExpired = (item.endDate && item.endDate < todayStr && item.status !== "TERMINATED");
-    const effStatus = isExpired ? "EXPIRED" : item.status;
+    let effStatus = isExpired ? "EXPIRED" : item.status;
+    if (!isExpired && item.status !== "TERMINATED" && item.status !== "PAUSED" && item.endDate) {
+      const end = new Date(item.endDate);
+      const now = new Date();
+      const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 30) {
+        effStatus = "EXPIRING";
+      }
+    }
 
     const matchStatus = statusFilter === "ALL" || effStatus === statusFilter;
     const matchPlan = planFilter === "ALL" || normalizePlan(item.plan) === planFilter;
@@ -2830,6 +2837,19 @@ function confirmDeleteAcademy() {
 function updateFranchiseStats() {
   const total = franchiseList.length;
   const todayStr = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+
+  // 만료 임박(30일내) 개수 실시간 동적 계산
+  const expiringCount = franchiseList.filter(a => {
+    if (a.status === "TERMINATED" || a.status === "PAUSED") return false;
+    const isExpired = (a.endDate && a.endDate < todayStr);
+    if (isExpired) return false;
+    if (a.status === "EXPIRING") return true;
+    if (!a.endDate) return false;
+    const diffDays = Math.ceil((new Date(a.endDate) - now) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 30;
+  }).length;
+
   const activeCount = franchiseList.filter(a => {
     const isExpired = (a.endDate && a.endDate < todayStr && a.status !== "TERMINATED");
     return !isExpired && a.status === "ACTIVE";
@@ -2856,6 +2876,9 @@ function updateFranchiseStats() {
     if (sub && sub.classList.contains("stat-sub")) {
       sub.innerHTML = `슬롯 사용률 <strong class="text-primary font-weight-bold">${slotRate}%</strong>`;
     }
+  }
+  if (document.getElementById("statFranchiseExpiring")) {
+    document.getElementById("statFranchiseExpiring").innerHTML = `${expiringCount}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span>`;
   }
 }
 
@@ -3053,12 +3076,35 @@ function renderMemberTable(data = memberList, keepPage = false) {
       roleBadge = `<span class="badge-soft badge-soft-warn"><i class="fa-solid fa-chalkboard-user mr-1"></i>선생님</span>`;
     }
 
-    // 2. 계정 상태 뱃지 (APPROVED, PENDING, WITHDRAWN)
-    let statusBadge = `<span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>승인</span>`;
-    if (mem.status === "PENDING") {
-      statusBadge = `<span class="badge-soft badge-soft-warn"><i class="fa-solid fa-clock mr-1"></i>미승인</span>`;
-    } else if (mem.status === "WITHDRAWN" || mem.status === "PAUSED") {
-      statusBadge = `<span class="badge-soft badge-soft-neutral"><i class="fa-solid fa-user-xmark mr-1"></i>탈퇴</span>`;
+    // 2. 계정 상태 토글 버튼 (APPROVED, PENDING, WITHDRAWN)
+    let statusBadge = "";
+    if (mem.status === "PENDING" || mem.status === "미승인") {
+      statusBadge = `
+        <button type="button" class="btn btn-xs font-weight-bold" 
+          onclick="quickToggleStudentApproval(${mem.id}, event)" 
+          title="클릭 시 즉시 [정상 승인]으로 상태 변경"
+          style="background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <i class="fa-solid fa-clock"></i>미승인 <span style="font-size: 10px; text-decoration: underline;">(승인)</span>
+        </button>
+      `;
+    } else if (mem.status === "WITHDRAWN" || mem.status === "PAUSED" || mem.status === "탈퇴") {
+      statusBadge = `
+        <button type="button" class="btn btn-xs font-weight-bold" 
+          onclick="quickToggleStudentApproval(${mem.id}, event)" 
+          title="클릭 시 [정상 승인]으로 복구"
+          style="background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <i class="fa-solid fa-user-xmark"></i>탈퇴 <span style="font-size: 10px; text-decoration: underline;">(복구)</span>
+        </button>
+      `;
+    } else {
+      statusBadge = `
+        <button type="button" class="btn btn-xs font-weight-bold" 
+          onclick="quickToggleStudentApproval(${mem.id}, event)" 
+          title="클릭 시 [미승인]으로 상태 전환"
+          style="background: #ecfdf5; color: #047857; border: 1px solid #10b981; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <i class="fa-solid fa-check"></i>승인
+        </button>
+      `;
     }
 
     // 3. 최근 접속일 2줄 나누기 (yyyy-mm-dd \n (hh:mm))
@@ -3127,6 +3173,48 @@ function renderMemberTable(data = memberList, keepPage = false) {
   }).join("");
 
   renderMemberPagination(totalPages, memberCurrentPage);
+}
+
+// 통합 회원 목록에서 즉시 학생 승인/미승인 토글
+async function quickToggleStudentApproval(id, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const mem = memberList.find(m => m.id === id);
+  if (!mem) return;
+
+  const previousStatus = mem.status;
+  let targetStatus = "APPROVED";
+  let confirmMsg = "";
+
+  if (mem.status === "APPROVED" || mem.status === "NORMAL" || mem.status === "승인") {
+    targetStatus = "PENDING";
+    confirmMsg = `[${mem.name}] 회원의 상태를 '미승인'으로 전환하시겠습니까?\n(미승인 시 학생 로그인이 제한됩니다.)`;
+  } else if (mem.status === "PENDING" || mem.status === "미승인") {
+    targetStatus = "APPROVED";
+    confirmMsg = `[${mem.name}] 회원을 '정상 승인' 상태로 승인하시겠습니까?`;
+  } else {
+    targetStatus = "APPROVED";
+    confirmMsg = `[${mem.name}] 탈퇴/정지된 회원을 다시 '정상 승인' 상태로 복구하시겠습니까?`;
+  }
+
+  if (!confirm(confirmMsg)) return;
+
+  mem.status = targetStatus;
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveMember(mem, mem.academyId);
+    } catch (error) {
+      mem.status = previousStatus;
+      showMasterToast('상태 변경 실패: ' + error.message);
+      return;
+    }
+  }
+
+  saveMembersToStorage();
+  renderMemberTable(lastFilteredMembers, true);
+  showMasterToast(`[${mem.name}] 회원 상태가 '${targetStatus === "APPROVED" ? "정상 승인" : "미승인"}'으로 변경되었습니다.`);
 }
 
 // 회원 30명 단위 페이지네이션 UI 렌더링
@@ -7883,11 +7971,10 @@ function validateAndNormalizeCat2(raw) {
 // ISBN 정제 헬퍼 (지수 표기 9.78E+12 복원 및 엑셀 수식 ="..." 제거)
 function sanitizeIsbnString(raw) {
   if (!raw) return "";
-  let s = String(raw).trim().replace(/["']/g, "");
-  s = s.replace(/^=/, "").trim();
+  let s = String(raw).trim().replace(/["']/g, "").replace(/^=/, "").trim().replace(/["']/g, "");
 
-  // 엑셀 지수 표기 감지 시 정수 문자열로 복원
-  if (/^[0-9.]+[eE]\+[0-9]+$/.test(s)) {
+  // 엑셀 지수 표기(9.78E+12) 감지 시 정수 문자열로 복원
+  if (/^[0-9.]+[eE]\+[0-9]+$/i.test(s)) {
     try {
       s = BigInt(Math.round(Number(s))).toString();
     } catch(e) {
@@ -7896,6 +7983,7 @@ function sanitizeIsbnString(raw) {
       } catch(e2) {}
     }
   }
+  // 하이픈, 특수기호 제거 후 숫자만 추출
   return s.replace(/[^0-9]/g, "");
 }
 
@@ -7937,18 +8025,18 @@ function downloadBookExcelTemplate() {
     "등록처(HQ 또는 학원코드)"
   ];
 
-  // 엑셀에서 ISBN이 지수(9.78E+12)로 변환되지 않도록 '="13자리"' 형태로 포맷팅
+  // ISBN은 수식 없이 순수 숫자만 입력해도 정상 등록되도록 표준 숫자 형식으로 제공
   const sampleRows = [
-    ["어린 왕자", "앙투안 드 생텍쥐페리", "열린책들", "5", "소설", "외서", "단권", '="9788932902708"', "HQ"],
-    ["해리포터와 마법사의 돌", "J.K.롤링", "문학수첩", "5", "소설", "외서", "해리포터 시리즈", '="9788983920683"', "HQ"],
-    ["한국사 편지 1", "박은봉", "책과함께어린이", "4", "비문학/정보글", "국내서", "한국사 편지", '="9788991221468"', "HQ"],
-    ["엄마 마중", "이태준", "보림", "a", "소설", "국내서", "단권", '="9788943305437"', "HQ"],
-    ["자전거 도둑", "박완서", "다림", "7", "소설", "국내서", "단권", '="9788983940124"', "HQ"],
-    ["마당을 나온 암탉", "황선미", "사계절", "4", "소설", "국내서", "단권", '="9788971966969"', "HQ"]
+    ["어린 왕자", "앙투안 드 생텍쥐페리", "열린책들", "5", "소설", "외서", "단권", "9788932902708", "HQ"],
+    ["해리포터와 마법사의 돌", "J.K.롤링", "문학수첩", "5", "소설", "외서", "해리포터 시리즈", "9788983920683", "HQ"],
+    ["한국사 편지 1", "박은봉", "책과함께어린이", "4", "비문학/정보글", "국내서", "한국사 편지", "9788991221468", "HQ"],
+    ["엄마 마중", "이태준", "보림", "a", "소설", "국내서", "단권", "9788943305437", "HQ"],
+    ["자전거 도둑", "박완서", "다림", "7", "소설", "국내서", "단권", "9788983940124", "HQ"],
+    ["마당을 나온 암탉", "황선미", "사계절", "4", "소설", "국내서", "단권", "9788971966969", "HQ"]
   ];
 
   downloadAsCSV("나노책장_도서대량등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
-  showMasterToast("엑셀 샘플 양식(CSV)이 다운로드되었습니다. ISBN 지수 방지 및 권장학년 코드가 적용되어 있습니다.");
+  showMasterToast("도서 대량 등록 샘플 서식(CSV)이 다운로드되었습니다. ISBN은 수식 없이 숫자만 입력하시면 됩니다.");
 }
 
 function handleMasterBookExcelFileSelect(input) {
@@ -9184,23 +9272,24 @@ function openMemberDetailModal(id) {
   const pointsEl = document.getElementById("detailMemberPoints");
   if (pointsEl) pointsEl.value = mem.points ? mem.points.toLocaleString() + " P" : "0 P";
 
-  let statusBadge = `<span class="badge-soft badge-soft-success">정상 승인</span>`;
-  if (mem.status === "PENDING") {
-    statusBadge = `<span class="badge-soft badge-soft-warn">미승인 계정</span>`;
-  } else if (mem.status === "WITHDRAWN" || mem.status === "PAUSED") {
-    statusBadge = `<span class="badge-soft badge-soft-danger">탈퇴 / 정지</span>`;
+  const statusSelect = document.getElementById("detailMemberStatus");
+  if (statusSelect) {
+    statusSelect.value = (mem.status === "PENDING" || mem.status === "미승인") ? "PENDING" 
+      : (mem.status === "WITHDRAWN" || mem.status === "PAUSED" || mem.status === "탈퇴") ? "WITHDRAWN" 
+      : "APPROVED";
   }
-  const statusEl = document.getElementById("detailMemberStatusBadge");
-  if (statusEl) statusEl.innerHTML = statusBadge;
 
   const btnToggle = document.getElementById("btnToggleMemberStatus");
   if (btnToggle) {
-    if (mem.status === "APPROVED" || mem.status === "NORMAL") {
-      btnToggle.className = "btn btn-sm btn-outline-danger";
-      btnToggle.innerText = "탈퇴/정지 처리";
+    if (mem.status === "PENDING" || mem.status === "미승인") {
+      btnToggle.className = "btn btn-sm btn-outline-success font-weight-bold";
+      btnToggle.innerHTML = '<i class="fa-solid fa-user-check mr-1"></i>정상 승인 처리';
+    } else if (mem.status === "APPROVED" || mem.status === "NORMAL" || mem.status === "승인") {
+      btnToggle.className = "btn btn-sm btn-outline-warning font-weight-bold";
+      btnToggle.innerHTML = '<i class="fa-solid fa-clock mr-1"></i>미승인으로 변경';
     } else {
-      btnToggle.className = "btn btn-sm btn-outline-success";
-      btnToggle.innerText = "승인 전환 (정상화)";
+      btnToggle.className = "btn btn-sm btn-outline-success font-weight-bold";
+      btnToggle.innerHTML = '<i class="fa-solid fa-rotate-left mr-1"></i>정상 승인 복구';
     }
   }
 
@@ -9226,11 +9315,13 @@ async function saveMemberDetailEdit() {
   const parentPhoneEl = document.getElementById("detailMemberParentPhone");
   const gradeEl = document.getElementById("detailMemberGrade");
   const classEl = document.getElementById("detailMemberClass");
+  const statusEl = document.getElementById("detailMemberStatus");
 
   if (phoneEl) mem.phone = phoneEl.value.trim();
   if (parentPhoneEl) mem.parentPhone = parentPhoneEl.value.trim();
   if (gradeEl) mem.grade = gradeEl.value;
   if (classEl) mem.className = classEl.value.trim();
+  if (statusEl) mem.status = statusEl.value;
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
@@ -9245,31 +9336,46 @@ async function saveMemberDetailEdit() {
   $('#memberDetailModal').modal('hide');
   saveMembersToStorage();
   renderMemberTable();
-  showMasterToast(`[${mem.name}] 회원 정보가 수정되었습니다.`);
+  const statusKor = mem.status === "APPROVED" ? "정상 승인" : mem.status === "PENDING" ? "미승인 대기" : "탈퇴/정지";
+  showMasterToast(`[${mem.name}] 회원 정보 및 계정 상태(${statusKor})가 저장되었습니다.`);
 }
 
 // -----------------------------------------------------------
-// [12] 탈퇴/정지 처리 - 학원명 입력 확인 depth 추가
+// [12] 회원 승인/미승인 토글 또는 탈퇴 복구 처리
 // -----------------------------------------------------------
 async function handleToggleMemberStatusClick() {
   const id = parseInt(document.getElementById("detailMemberId").value, 10);
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
 
-  // 이미 탈퇴/정지 상태면 바로 승인 전환
-  if (mem.status === "WITHDRAWN" || mem.status === "PAUSED") {
-    const previousStatus = mem.status;
-    mem.status = "APPROVED";
-    if (window.NanoPortal && NanoPortal.remote) {
-      try { await NanoPortal.saveMember(mem, mem.academyId); }
-      catch (error) { mem.status = previousStatus; showMasterToast('회원 상태를 변경하지 못했습니다: ' + error.message); return; }
-    }
-    $('#memberDetailModal').modal('hide');
-    saveMembersToStorage();
-    renderMemberTable();
-    showMasterToast(`[${mem.name}] 계정이 정상 승인 상태로 전환되었습니다.`);
-    return;
+  const previousStatus = mem.status;
+  let targetStatus = "APPROVED";
+  let targetMsg = "정상 승인";
+
+  if (mem.status === "APPROVED" || mem.status === "NORMAL" || mem.status === "승인") {
+    targetStatus = "PENDING";
+    targetMsg = "미승인 대기";
+  } else {
+    targetStatus = "APPROVED";
+    targetMsg = "정상 승인";
   }
+
+  mem.status = targetStatus;
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await NanoPortal.saveMember(mem, mem.academyId);
+    } catch (error) {
+      mem.status = previousStatus;
+      showMasterToast('회원 상태를 변경하지 못했습니다: ' + error.message);
+      return;
+    }
+  }
+  $('#memberDetailModal').modal('hide');
+  saveMembersToStorage();
+  renderMemberTable();
+  showMasterToast(`[${mem.name}] 계정이 '${targetMsg}' 상태로 변경되었습니다.`);
+  return;
+}
 
   // 탈퇴/정지 처리 시 - 학원명 확인 depth 추가
   const confirmBox = document.getElementById("memberStatusChangeConfirmBox");

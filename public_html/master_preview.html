@@ -717,7 +717,7 @@
   <!-- 1. 심플 탑 헤더 -->
   <header class="top-header d-flex justify-content-between align-items-center">
     <div class="brand-logo-wrap">
-      <a href="master_preview.html" style="display: inline-flex; align-items: center; text-decoration: none; margin-right: 8px;">
+      <a href="javascript:void(0);" onclick="switchMasterTab('franchise'); window.scrollTo({top:0, behavior:'smooth'});" title="가맹점 관리로 이동" style="display: inline-flex; align-items: center; text-decoration: none; margin-right: 8px; cursor: pointer;">
         <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 32px; width: auto; object-fit: contain;">
       </a>
       <span class="brand-sub">| &nbsp;B2B 마스터 관리자 시스템 (HQ)</span>
@@ -848,9 +848,9 @@
           </div>
         </div>
         <div class="col-md-4 col-sm-12">
-          <div class="stat-card">
+          <div class="stat-card" style="cursor: pointer;" onclick="document.getElementById('franchiseStatusFilter').value='EXPIRING'; filterFranchiseList();" title="클릭 시 30일 이내 만료 임박 가맹 학원을 바로 조회합니다.">
             <div class="stat-label">계약 만료 임박(30일내) <i class="fa-solid fa-clock text-warning"></i></div>
-            <div class="stat-num text-warning" id="statFranchiseExpiring">2<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span></div>
+            <div class="stat-num text-warning" id="statFranchiseExpiring">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">개소</span></div>
             <div class="stat-sub">갱신 안내 카톡 발송 필요</div>
             <i class="fa-solid fa-hourglass-half stat-icon-bg"></i>
           </div>
@@ -2471,8 +2471,12 @@
             <input type="text" id="detailMemberPoints" class="form-control form-control-beige" readonly style="background: #f8f6f3; color: #b47a00; font-weight: 700;">
           </div>
           <div class="col-md-6 form-group">
-            <label class="font-weight-bold" style="font-size: 12.5px;">계정 상태</label>
-            <div id="detailMemberStatusBadge" class="mt-1"></div>
+            <label class="font-weight-bold" style="font-size: 12.5px;">계정 상태 <span class="text-danger">*</span></label>
+            <select id="detailMemberStatus" class="select-beige w-100 font-weight-bold" style="height: 38px;">
+              <option value="APPROVED" class="text-success font-weight-bold">✓ 정상 승인 (APPROVED)</option>
+              <option value="PENDING" class="text-warning font-weight-bold">⏳ 미승인 대기 (PENDING)</option>
+              <option value="WITHDRAWN" class="text-danger font-weight-bold">✕ 탈퇴 / 정지 (WITHDRAWN)</option>
+            </select>
           </div>
         </div>
 
@@ -3850,7 +3854,8 @@
                 <tr>
                   <td class="font-weight-bold">ISBN</td>
                   <td>
-                    13자리 또는 10자리 번호 <small class="text-success font-weight-bold">(엑셀에서 지수 9.78E+12로 변환되지 않도록 서식 적용됨)</small>
+                    13자리 또는 10자리 번호 <span class="badge badge-success font-weight-bold ml-1" style="font-size: 11px;">숫자만 입력</span>
+                    <small class="text-muted d-block mt-0.5">* 하이픈(-)이나 수식 없이 순수 숫자만 입력하시면 자동 정제되어 등록됩니다. (예: 9788932902708)</small>
                   </td>
                 </tr>
               </tbody>
