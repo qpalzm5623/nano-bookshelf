@@ -118,8 +118,8 @@
     var tags = Array.isArray(item.tags) ? item.tags.join(',') : (item.tags || item.detailTag || '');
     var coverUrl = item.coverUrl || item.cover || '';
     var worksheetUrl = item.worksheetUrl || '';
-    if (coverUrl && !/^https:\/\//.test(coverUrl)) coverUrl = '';
-    if (worksheetUrl && !/^https:\/\//.test(worksheetUrl)) worksheetUrl = '';
+    if (coverUrl && (/^javascript:/i.test(coverUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(coverUrl))) coverUrl = '';
+    if (worksheetUrl && (/^javascript:/i.test(worksheetUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(worksheetUrl))) worksheetUrl = '';
     var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.bookNo || item.id, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
       isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), description: item.description || '',
       thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });

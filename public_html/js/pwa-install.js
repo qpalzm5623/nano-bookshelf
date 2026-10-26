@@ -138,15 +138,28 @@
     }
   }
 
-  // Android: beforeinstallprompt 이벤트 감지
+  // 모바일 디바이스 체크 (PC 데스크톱에서는 PWA 설치 배너 미노출)
+  function isMobileDevice() {
+    const ua = navigator.userAgent || '';
+    const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|webOS/i.test(ua);
+    const isTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isNarrow = window.innerWidth <= 768;
+    return isMobileUA || (isTouchScreen && isNarrow);
+  }
+
+  // Android / Chromium: beforeinstallprompt 이벤트 감지
   window.addEventListener('beforeinstallprompt', (e) => {
+    // PC 데스크톱 접속 시에는 앱 설치 유도 배너를 일체 띄우지 않음
+    if (!isMobileDevice()) {
+      return;
+    }
     e.preventDefault();
     deferredPrompt = e;
     renderInstallBanner('android');
   });
 
   // iOS Safari: 모바일 사파리 접속 시 안내
-  if (isIOS && !isStandalone) {
+  if (isIOS && !isStandalone && isMobileDevice()) {
     // 페이지 로드 3초 후 은은하게 안내 배너 렌더링
     window.addEventListener('load', () => {
       setTimeout(() => {

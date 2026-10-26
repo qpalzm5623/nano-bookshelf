@@ -162,7 +162,7 @@ export default async function handler(req: any, res: any) {
       if (body.operation === 'delete') { need(!await prisma.quizAttempt.count({ where: { bookId: input.id } }), '학습 기록이 있는 도서는 삭제할 수 없습니다.'); await prisma.book.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
       const data = { bookNo: text(input.bookNo, '도서 코드', 100, true), title: text(input.title, '도서명', 300, true), author: text(input.author, '저자', 200, true), publisher: text(input.publisher, '출판사'), isbn: text(input.isbn, 'ISBN'), grade: text(input.grade, '권장 학년'), category: text(input.category, '분류'), description: text(input.description, '소개', 20000), thinkQuiz: text(input.thinkQuiz, '생각담기', 3000) };
       need(/^[A-Za-z0-9_-]+$/.test(data.bookNo), '도서 코드는 영문·숫자·하이픈·밑줄로 입력해 주세요.');
-      for (const url of [input.coverUrl,input.worksheetUrl].filter(Boolean)) need(/^https:\/\//.test(url), '자료 주소는 HTTPS 주소를 사용해 주세요.');
+      for (const url of [input.coverUrl,input.worksheetUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|data:application\/pdf)/i.test(url), '자료 주소 형식을 확인해 주세요.');
       if (input.themeId) need(await prisma.themeCategory.findUnique({ where: { id: input.themeId } }), '테마를 확인해 주세요.');
       const extra = { themeId: input.themeId || null, isRecommended: input.isRecommended === true, coverUrl: text(input.coverUrl, '표지 주소', 2000), worksheetUrl: text(input.worksheetUrl, '학습지 주소', 2000), tags: text(input.tags, '태그', 2000), series: text(input.series, '시리즈') };
       return res.json({ item: input.id ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } }) : await prisma.book.create({ data: { ...data, ...extra } }) });
@@ -193,8 +193,8 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'banners') {
       if (body.operation === 'delete') { await prisma.mainBanner.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
-      for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(/^https:\/\//.test(url), '이미지와 연결 주소는 HTTPS 주소를 사용해 주세요.');
-      const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 2000), linkUrl: text(input.linkUrl, '연결 주소', 2000), isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
+      for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|#)/i.test(url), '유효한 이미지 또는 연결 주소를 입력해 주세요.');
+      const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: text(input.linkUrl, '연결 주소', 2000), isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
       return res.json({ item: input.id ? await prisma.mainBanner.update({ where: { id: input.id }, data }) : await prisma.mainBanner.create({ data }) });
     }
     need(false, '지원하지 않는 항목입니다.', 404);
