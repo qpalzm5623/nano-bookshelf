@@ -105,8 +105,8 @@ async function main() {
     bookStatsMap.set(bs.bookId, { count: bs._count.id, avgScore: Math.round(bs._avg.score || 0) });
   }
 
+  // 3. 도서 목록 추출 (전체 도서 추출)
   const rawBooks = await prisma.book.findMany({
-    take: 500,
     orderBy: { bookNo: 'asc' },
     include: {
       _count: {

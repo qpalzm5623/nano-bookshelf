@@ -15,7 +15,7 @@ import { loadTables } from './legacy-dump';
 import { tryPhpUnserialize } from './php-unserialize';
 import { PlanTier, Role, MemberStatus, QuizType, AcademyStatus } from '@prisma/client';
 
-const CUTOFF_DATE = '2026-07-07';
+const CUTOFF_DATE = '2026-04-01'; // 최근 6개월 학습이력 및 포인트 필터 기준일
 const DEFAULT_PASSWORD = 'nano123!';
 
 function mapPlanTier(plan: any): PlanTier {
@@ -83,8 +83,8 @@ async function runMigration() {
   console.log(`   - 정상 회원: ${T.tb_user.length}명`);
   console.log(`   - 도서: ${T.tb_book.length}권`);
   console.log(`   - 퀴즈 세트: ${T.tb_quiz.length}건`);
-  console.log(`   - 최근 3개월 퀴즈 풀이 이력: ${T.tb_quiz_history.length}건`);
-  console.log(`   - 최근 3개월 포인트 이력: ${T.tb_point_history.length}건\n`);
+  console.log(`   - 최근 6개월 퀴즈 풀이 이력: ${T.tb_quiz_history.length}건`);
+  console.log(`   - 최근 6개월 포인트 이력: ${T.tb_point_history.length}건\n`);
 
   // 2. 테마 카테고리 (ThemeCategory)
   console.log('📚 2/7. 테마 카테고리(ThemeCategory) 적재 중...');

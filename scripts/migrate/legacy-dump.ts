@@ -15,9 +15,26 @@ import readline from 'readline';
 export type LegacyValue = string | number | null;
 export type LegacyRow = Record<string, LegacyValue>;
 
-// 덤프 파일 위치 (환경변수로 덮어쓸 수 있음)
-export const DUMP_PATH =
-  process.env.LEGACY_DUMP_PATH ?? path.join(process.cwd(), 'backups', 'nanobook_backup.sql');
+// 덤프 파일 위치 (환경변수 또는 backups 디렉토리 내 최신 .sql 파일 자동 감지)
+function resolveDumpPath(): string {
+  if (process.env.LEGACY_DUMP_PATH && fs.existsSync(process.env.LEGACY_DUMP_PATH)) {
+    return process.env.LEGACY_DUMP_PATH;
+  }
+  const defaultPath = path.join(process.cwd(), 'backups', 'nanobook_backup.sql');
+  if (fs.existsSync(defaultPath)) return defaultPath;
+
+  const backupDir = path.join(process.cwd(), 'backups');
+  if (fs.existsSync(backupDir)) {
+    const files = fs.readdirSync(backupDir)
+      .filter((f) => f.endsWith('.sql'))
+      .map((f) => path.join(backupDir, f))
+      .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    if (files.length > 0) return files[0];
+  }
+  return defaultPath;
+}
+
+export const DUMP_PATH = resolveDumpPath();
 
 // MySQL 문자열 이스케이프 → 실제 문자
 const ESCAPES: Record<string, string> = {
@@ -47,6 +64,8 @@ function parseTuples(line: string, startIdx: number, onRow: (values: LegacyValue
 
     const row: LegacyValue[] = [];
     for (;;) {
+      while (i < n && (line.charCodeAt(i) === 32 || line.charCodeAt(i) === 9 || line.charCodeAt(i) === 10 || line.charCodeAt(i) === 13)) i++;
+
       if (line.charCodeAt(i) === 39 /* ' */) {
         // ---- 문자열 값 ----
         i++;
@@ -81,15 +100,17 @@ function parseTuples(line: string, startIdx: number, onRow: (values: LegacyValue
         row.push(out);
       } else {
         // ---- NULL / 숫자 값 ----
+        while (i < n && (line.charCodeAt(i) === 32 || line.charCodeAt(i) === 9)) i++;
         let j = i;
         while (j < n && line.charCodeAt(j) !== 44 /* , */ && line.charCodeAt(j) !== 41 /* ) */) j++;
-        const token = line.slice(i, j);
-        if (token === 'NULL') row.push(null);
+        const token = line.slice(i, j).trim();
+        if (token === 'NULL' || token === '') row.push(null);
         else if (token.startsWith('0x')) row.push(token); // 16진 BLOB은 문자열로 보관
         else row.push(Number(token));
         i = j;
       }
 
+      while (i < n && (line.charCodeAt(i) === 32 || line.charCodeAt(i) === 9)) i++;
       const sep = line.charCodeAt(i);
       if (sep === 44) {
         i++;
@@ -99,7 +120,7 @@ function parseTuples(line: string, startIdx: number, onRow: (values: LegacyValue
         i++;
         break;
       }
-      throw new Error(`예상치 못한 문자(코드 ${sep}) 위치 ${i}`);
+      throw new Error(`예상치 못한 문자(코드 ${sep}: '${String.fromCharCode(sep)}') 위치 ${i}\n주변 내용: ${line.slice(Math.max(0, i - 50), i + 50)}`);
     }
     onRow(row);
   }
@@ -124,43 +145,118 @@ export async function loadTables(
 
   const columns: Record<string, string[]> = {};
   let creating: string | null = null;
+  let insertingTable: string | null = null;
+  let pendingLine = '';
+  let inQuote = false;
+  let inTuple = false;
 
   const rl = readline.createInterface({
     input: fs.createReadStream(DUMP_PATH, { encoding: 'utf8' }),
     crlfDelay: Infinity,
   });
 
-  for await (const line of rl) {
-    // 1) CREATE TABLE 블록에서 컬럼 이름 순서를 기억한다
-    if (line.startsWith('CREATE TABLE `')) {
-      creating = line.slice(14, line.indexOf('`', 14));
-      columns[creating] = [];
-      continue;
-    }
-    if (creating) {
-      if (line.startsWith('  `')) {
-        columns[creating].push(line.slice(3, line.indexOf('`', 3)));
-      } else if (line.startsWith(')')) {
-        creating = null;
+  for await (const rawLine of rl) {
+    const trimmed = rawLine.trim();
+
+    // 1) INSERT가 진행 중이 아닐 때는 DDL(CREATE TABLE 등)을 파싱
+    if (!insertingTable) {
+      if (trimmed.startsWith('CREATE TABLE')) {
+        const m = trimmed.match(/^CREATE TABLE [`"']([^`"']+)[`"']/);
+        if (m) {
+          creating = m[1];
+          columns[creating] = [];
+        }
+        continue;
       }
-      continue;
+      if (creating) {
+        const cm = trimmed.match(/^[`"']([^`"']+)[`"']/);
+        if (cm) {
+          columns[creating].push(cm[1]);
+        } else if (trimmed.startsWith(')')) {
+          creating = null;
+        }
+        continue;
+      }
+      if (trimmed.startsWith('INSERT INTO')) {
+        const im = trimmed.match(/^INSERT INTO [`"']([^`"']+)[`"']/);
+        if (im && wanted.has(im[1])) {
+          insertingTable = im[1];
+        }
+        const vMatch = rawLine.search(/\bVALUES\b/i);
+        if (vMatch !== -1) {
+          const afterValues = vMatch + 6;
+          if (rawLine.indexOf('(', afterValues) !== -1 && insertingTable) {
+            const cols = columns[insertingTable];
+            const filter = filters[insertingTable];
+            parseTuples(rawLine, afterValues, (values) => {
+              const row: LegacyRow = {};
+              for (let k = 0; k < cols.length; k++) row[cols[k]] = values[k] ?? null;
+              if (!filter || filter(row)) result[insertingTable!].push(row);
+            });
+            if (trimmed.endsWith(';')) insertingTable = null;
+          }
+        }
+        continue;
+      }
     }
 
-    // 2) 필요한 테이블의 INSERT 라인만 파싱한다
-    if (!line.startsWith('INSERT INTO `')) continue;
-    const nameEnd = line.indexOf('`', 13);
-    const table = line.slice(13, nameEnd);
-    if (!wanted.has(table)) continue;
+    // 2) INSERT 데이터 행 파싱 (멀티라인 튜플 버퍼링 적용)
+    if (insertingTable) {
+      const line = pendingLine ? pendingLine + '\n' + rawLine : rawLine;
 
-    const cols = columns[table];
-    const valuesIdx = line.indexOf(' VALUES ', nameEnd) + 8;
-    const filter = filters[table];
+      let escaped = false;
+      let quote = inQuote;
+      let tuple = inTuple;
+      const len = line.length;
+      const startScan = pendingLine ? pendingLine.length + 1 : 0;
 
-    parseTuples(line, valuesIdx, (values) => {
-      const row: LegacyRow = {};
-      for (let k = 0; k < cols.length; k++) row[cols[k]] = values[k] ?? null;
-      if (!filter || filter(row)) result[table].push(row);
-    });
+      for (let idx = startScan; idx < len; idx++) {
+        const ch = line.charCodeAt(idx);
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (ch === 92 /* \ */) {
+          if (quote) escaped = true;
+          continue;
+        }
+        if (ch === 39 /* ' */) {
+          if (quote && idx + 1 < len && line.charCodeAt(idx + 1) === 39) {
+            idx++;
+            continue;
+          }
+          quote = !quote;
+          continue;
+        }
+        if (!quote) {
+          if (ch === 40 /* ( */) tuple = true;
+          else if (ch === 41 /* ) */) tuple = false;
+        }
+      }
+
+      inQuote = quote;
+      inTuple = tuple;
+
+      if (inQuote || inTuple) {
+        pendingLine = line;
+        continue;
+      }
+      pendingLine = '';
+
+      const lineTrim = line.trim();
+      if (lineTrim.startsWith('(')) {
+        const cols = columns[insertingTable];
+        const filter = filters[insertingTable];
+        parseTuples(line, 0, (values) => {
+          const row: LegacyRow = {};
+          for (let k = 0; k < cols.length; k++) row[cols[k]] = values[k] ?? null;
+          if (!filter || filter(row)) result[insertingTable!].push(row);
+        });
+      }
+      if (lineTrim.endsWith(';')) {
+        insertingTable = null;
+      }
+    }
   }
 
   return result;

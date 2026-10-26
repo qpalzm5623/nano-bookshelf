@@ -18,8 +18,11 @@ public_html/test_*.html
 .DS_Store
 Thumbs.db
 
-# 4. Git 추적 필요 없는 임시 업로드 (필요시 조절)
-# public_html/upload/book/
+# 4. 미디어 업로드 및 대용량 파일 (GitHub 100MB 초과 및 용량 폭발 방지)
+public_html/upload/
+public_html/export_db_dump.php
+backups/
+*.sql
 
 # 5. Node & 환경변수 (.env)
 node_modules/
