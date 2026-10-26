@@ -1,6 +1,7 @@
 import { PrismaClient, Role } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
+import { loadTables } from './legacy-dump';
 
 const prisma = new PrismaClient();
 
@@ -94,7 +95,32 @@ async function main() {
 
   console.log(`✅ 통합 회원 추출 완료: ${members.length}명 (완독 권수 및 평균점수 실데이터 반영)`);
 
-  // 3. 도서 목록 추출 (주요 도서 500권)
+  // 3. 덤프 원본 실데이터 찜(tb_favorite_history), 추천(tb_recommend_history), 퀴즈완료(tb_quiz_history) 집계
+  console.log('📊 덤프 원본에서 도서별 찜/추천/인증 실데이터 집계 중...');
+  const dumpHistory = await loadTables(['tb_favorite_history', 'tb_recommend_history', 'tb_quiz_history']);
+
+  const bookFavMap = new Map<string, number>();
+  for (const f of dumpHistory.tb_favorite_history) {
+    const bNo = String(f.book_no).trim();
+    bookFavMap.set(bNo, (bookFavMap.get(bNo) || 0) + 1);
+  }
+
+  const bookRecMap = new Map<string, number>();
+  for (const r of dumpHistory.tb_recommend_history) {
+    const bNo = String(r.book_no).trim();
+    bookRecMap.set(bNo, (bookRecMap.get(bNo) || 0) + 1);
+  }
+
+  const bookQuizHistMap = new Map<string, number>();
+  for (const q of dumpHistory.tb_quiz_history) {
+    const bNo = String(q.book_no).trim();
+    bookQuizHistMap.set(bNo, (bookQuizHistMap.get(bNo) || 0) + 1);
+  }
+
+  console.log(`   ✅ 찜 실데이터: ${dumpHistory.tb_favorite_history.length}건 (도서 ${bookFavMap.size}종)`);
+  console.log(`   ✅ 추천 실데이터: ${dumpHistory.tb_recommend_history.length}건 (도서 ${bookRecMap.size}종)`);
+  console.log(`   ✅ 인증(퀴즈완료) 실데이터: ${dumpHistory.tb_quiz_history.length}건 (도서 ${bookQuizHistMap.size}종)`);
+
   const bookQuizStats = await prisma.quizAttempt.groupBy({
     by: ['bookId'],
     _count: { id: true },
@@ -150,7 +176,10 @@ async function main() {
       : `#${subjName}`;
 
     const bStat = bookStatsMap.get(b.id);
-    const completions = bStat?.count || 0;
+    const dbCompletions = bStat?.count || 0;
+    const realCompletions = bookQuizHistMap.get(b.bookNo) || dbCompletions;
+    const realLikes = bookFavMap.get(b.bookNo) || 0;
+    const realRecommends = bookRecMap.get(b.bookNo) || 0;
 
     return {
       id: b.bookNo,
@@ -174,19 +203,19 @@ async function main() {
       isPublic: 'Y',
       hasQuiz: b._count.quizzes > 0,
       quizzes: b._count.quizzes,
-      likes: Math.max(12, Math.round(completions * 0.4) + 12),
-      recommends: Math.max(18, Math.round(completions * 0.5) + 18),
-      quizCompletions: completions,
+      likes: realLikes,
+      recommends: realRecommends,
+      quizCompletions: realCompletions,
       academyId: 'HQ',
       academyName: '본사 직속 (공용)',
       creatorType: 'HQ',
       sheet: !!b.worksheetUrl,
       date: b.createdAt.toISOString().slice(0, 10),
-      cover: b.coverUrl || 'resources/images/book_default.png',
+      cover: b.coverUrl || 'resources/images/book_default.svg',
     };
   });
 
-  console.log(`✅ 주요 도서 추출 완료: ${books.length}권 (실제 풀이수 연동 완료)`);
+  console.log(`✅ 전체 도서 추출 완료: ${books.length}권 (실제 찜/추천/인증 실데이터 연동 완료)`);
 
   // 4. 전국 학생 랭킹 실데이터 집계
   const quizStats = await prisma.quizAttempt.groupBy({

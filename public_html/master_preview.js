@@ -1708,7 +1708,7 @@ function renderRecommendedBooksTable() {
   }
 
   tbody.innerHTML = filtered.map((b, index) => {
-    const coverHtml = b.cover ? `<img src="${b.cover}" alt="${b.title}" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">` : `<div style="width: 44px; height: 58px; background: #e8e2d5; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888;">No Img</div>`;
+    const coverHtml = `<img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">`;
     return `
       <tr>
         <td class="text-center font-weight-bold text-muted">${index + 1}</td>
@@ -4545,7 +4545,7 @@ function renderTbmAutoMappedBooks() {
   }
 
   tbody.innerHTML = filtered.map((b, idx) => {
-    const coverUrl = b.cover || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80";
+    const coverUrl = b.cover || "resources/images/book_default.svg";
     const seriesText = b.series && b.series !== "단권" ? `<span class="badge-soft badge-soft-warning ml-1" style="font-size: 10px;">${b.series}</span>` : "";
     const acadName = b.academy || "본사 (공용)";
     const isPublic = b.isPublic !== "N";
@@ -4555,7 +4555,7 @@ function renderTbmAutoMappedBooks() {
         <td style="font-weight: 700; color: var(--text-soft); font-size: 12px;">${idx + 1}</td>
         <td>
           <div style="width: 42px; height: 56px; border-radius: 4px; overflow: hidden; background: #ece7e1; margin: 0 auto; box-shadow: 0 2px 6px rgba(0,0,0,0.08); border: 1px solid var(--border-medium);">
-            <img src="${coverUrl}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80'">
+            <img src="${coverUrl}" alt="" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
           </div>
         </td>
         <td style="text-align: left;">
@@ -5698,7 +5698,7 @@ function renderMasterContents() {
       <tr>
         <td class="text-center"><span class="font-weight-bold" style="color: #64748b; font-size: 12.5px;">${rowNo}</span></td>
         <td class="text-center">
-          <img src="${b.cover}" alt="${b.title}" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium);">
+          <img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium); box-shadow: 0 1px 3px rgba(0,0,0,0.06);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         </td>
         <td>
           <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">

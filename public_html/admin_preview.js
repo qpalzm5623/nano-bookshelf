@@ -200,6 +200,10 @@ function switchTab(tab) {
   if (targetView) targetView.style.display = 'block';
   if (targetNav) targetNav.classList.add('active');
 
+  if (tab === 'contents') {
+    if (typeof syncAcademyBooksState === 'function') syncAcademyBooksState();
+    if (typeof filterAcademyBooks === 'function') filterAcademyBooks(true);
+  }
   if (tab === 'notice') renderAcademyNoticeViewList();
   if (tab === 'learning') renderLearningTable();
   if (tab === 'portfolio') {
@@ -3206,6 +3210,39 @@ function uploadCorrectionSheet(logId) {
   openCorrectionModal(logId);
 }
 
+// 학습 관리 테이블 페이징 상태 (20건씩)
+var LEARNING_PAGE_SIZE = 20;
+var learningCurrentPage = 1;
+// 필터가 바뀌면 1페이지로 되돌리기 위해 직전 필터 조합을 기억
+// (첨삭/시트 토글 등 같은 필터로 재렌더링될 때는 현재 페이지 유지)
+var learningLastFilterKey = '';
+
+function goLearningPage(page) {
+  learningCurrentPage = page;
+  renderLearningTable();
+}
+
+// 하단 페이지 번호 UI 렌더링 (현재 페이지 기준 앞뒤 2개씩 노출)
+function renderLearningPagination(totalCount, totalPages) {
+  var el = document.getElementById('learningPagination');
+  if (!el) return;
+  if (totalCount <= LEARNING_PAGE_SIZE) { el.innerHTML = ''; return; }
+
+  var start = Math.max(1, learningCurrentPage - 2);
+  var end = Math.min(totalPages, learningCurrentPage + 2);
+  var btn = function(label, page, disabled, active) {
+    return '<button type="button" class="btn btn-xs ' + (active ? 'btn-beige-primary' : 'btn-outline-secondary') + '"' +
+      (disabled ? ' disabled' : ' onclick="goLearningPage(' + page + ')"') +
+      ' style="min-width:32px; border-radius:6px; font-size:12px; font-weight:600; margin:0 2px;">' + label + '</button>';
+  };
+
+  var html = btn('«', 1, learningCurrentPage === 1, false) + btn('‹', learningCurrentPage - 1, learningCurrentPage === 1, false);
+  for (var p = start; p <= end; p++) html += btn(p, p, false, p === learningCurrentPage);
+  html += btn('›', learningCurrentPage + 1, learningCurrentPage === totalPages, false) + btn('»', totalPages, learningCurrentPage === totalPages, false);
+  html += '<span class="text-muted ml-3" style="font-size:12px;">' + learningCurrentPage + ' / ' + totalPages + ' 페이지</span>';
+  el.innerHTML = html;
+}
+
 // 학습 관리 테이블 렌더링
 // 컬럼 순서: 1.번호, 2.완독 도서명, 3.원생명, 4.북퀴즈 결과, 5.나노 시트, 6.첨삭, 7.관리
 function renderLearningTable() {
@@ -3240,17 +3277,34 @@ function renderLearningTable() {
   var countEl = document.getElementById('learningLogCount');
   if (countEl) countEl.innerText = filtered.length;
 
+  // 필터 조합이 바뀌었으면 1페이지로 복귀
+  var filterKey = [classFilter, query, startDateVal, endDateVal].join('|');
+  if (filterKey !== learningLastFilterKey) {
+    learningCurrentPage = 1;
+    learningLastFilterKey = filterKey;
+  }
+
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
+    renderLearningPagination(0, 1);
     return;
   }
 
   var total = filtered.length;
-  filtered.forEach(function(l, idx) {
+  var totalPages = Math.ceil(total / LEARNING_PAGE_SIZE);
+  // 삭제 등으로 마지막 페이지가 사라진 경우 보정
+  if (learningCurrentPage > totalPages) learningCurrentPage = totalPages;
+  if (learningCurrentPage < 1) learningCurrentPage = 1;
+
+  var pageStart = (learningCurrentPage - 1) * LEARNING_PAGE_SIZE;
+  var pageItems = filtered.slice(pageStart, pageStart + LEARNING_PAGE_SIZE);
+  renderLearningPagination(total, totalPages);
+
+  pageItems.forEach(function(l, pIdx) {
     var tr = document.createElement('tr');
 
-    // 번호 내림차순 계산 (N, N-1, ... 1)
-    var numDesc = total - idx;
+    // 번호 내림차순 계산 (전체 기준 N, N-1, ... 1)
+    var numDesc = total - (pageStart + pIdx);
 
     // 5. 나노 시트 상태 토글 버튼
     var isSheetDone = (l.sheet === '작성 완료');
@@ -4341,7 +4395,7 @@ function renderBatchSelectedBooks() {
 
     card.innerHTML = `
       <div class="d-flex align-items-center" style="flex: 1; min-width: 0; margin-right: 8px;">
-        <img src="${b.cover}" alt="${b.title}" style="width: 38px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-right: 10px; flex-shrink: 0;">
+        <img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 38px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-right: 10px; flex-shrink: 0;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         <div style="flex: 1; min-width: 0;">
           <div class="d-flex align-items-center mb-0.5">
             <span class="badge badge-light border text-muted mr-1" style="font-size: 10px;">#${idx + 1}</span>
@@ -4454,7 +4508,7 @@ function renderBatchBookCatalog() {
 
     card.innerHTML = `
       <div style="position: relative; flex-shrink: 0; margin-right: 12px;">
-        <img src="${b.cover}" alt="${b.title}" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium);">
+        <img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         ${isSelected ? '<span style="position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: #2b7a3e; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;"><i class="fa-solid fa-check"></i></span>' : ''}
       </div>
       <div style="flex: 1; min-width: 0;">
@@ -4797,7 +4851,7 @@ function renderIndivStudentAssignedBooks(studentId) {
 
     card.innerHTML = `
       <div class="d-flex align-items-center" style="flex: 1; min-width: 0; margin-right: 10px;">
-        <img src="${b.cover}" alt="${b.title}" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-right: 12px; flex-shrink: 0;">
+        <img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; margin-right: 12px; flex-shrink: 0;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         <div style="flex: 1; min-width: 0;">
           <div class="d-flex align-items-center mb-0.5">
             <span class="badge badge-light border text-muted mr-1" style="font-size: 10px;">#${idx + 1}</span>
@@ -4945,7 +4999,7 @@ function renderIndivBookCatalog() {
 
     card.innerHTML = `
       <div style="position: relative; flex-shrink: 0; margin-right: 12px;">
-        <img src="${b.cover}" alt="${b.title}" style="width: 48px; height: 66px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium);">
+        <img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 48px; height: 66px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         ${isAssigned ? '<span style="position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: #2b7a3e; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;"><i class="fa-solid fa-check"></i></span>' : ''}
       </div>
       <div style="flex: 1; min-width: 0;">
@@ -6263,8 +6317,8 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
   var frameDoc = frameWin.document;
   // 화면에 쓰이는 스타일(외부 CSS + 인라인 <style>)을 그대로 재사용해 디자인을 동일하게 유지
   var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
-  // 기존 전역 숨김 규칙을 마지막 규칙으로 무효화 (동일 우선순위에서는 뒤에 온 규칙이 적용됨)
-  var overrideCss = '@media print { html, body { height:auto !important; overflow:visible !important; background:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
+  // 기존 전역 숨김 규칙 무효화 및 인쇄 페이지 상하좌우 여백 20px 적용
+  var overrideCss = '@page { margin: 20px !important; size: auto; } @media print { @page { margin: 20px !important; size: auto; } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
 
   frameDoc.open();
   frameDoc.write('<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><base href="' + document.baseURI + '"><title>' + (title || '인쇄') + '</title>' +
@@ -6772,34 +6826,37 @@ function renderPortfolioDocument(studentId, pfId) {
 
     return (
       '<div class="col-12 mb-2.5 pf-book-col">' +
-        '<div class="pf-book-row-card d-flex align-items-center p-2.5 rounded border" style="background:#ffffff; border-color:#e8e2d8 !important; box-shadow:0 1px 4px rgba(40,30,20,0.04); gap:12px; flex-wrap:wrap;">' +
-          '<!-- 1. 가장 좌측: No. 및 완독/응시일자 -->' +
-          '<div class="pf-book-meta-left text-center" style="min-width:54px; flex-shrink:0; border-right:1px dashed #e6ded3; padding-right:8px;">' +
-            '<span class="badge badge-soft-primary font-weight-bold" style="font-size:11px; padding:2px 6px; border-radius:4px;">No.' + (idx + 1) + '</span>' +
-            '<div class="text-muted mt-1" style="font-size:10px; font-weight:600; white-space:nowrap; letter-spacing:-0.2px;">' + (b.date || '2026-08-01') + '</div>' +
-          '</div>' +
-          '<!-- 2. 도서 표지 -->' +
-          '<div class="pf-book-cover-wrap" style="width:48px; height:68px; flex-shrink:0; border-radius:6px; overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,0.12); cursor:pointer;" onclick="openCoverModal(\'' + coverUrl + '\', \'' + (b.title || '').replace(/'/g, "\\'") + '\', \'' + (pubText || '').replace(/'/g, "\\'") + '\')">' +
-            '<img src="' + coverUrl + '" class="pf-book-cover-img" style="width:100%; height:100%; object-fit:cover; display:block;" alt="' + (b.title || '') + '" onerror="this.src=\'assets/covers/cover_default.jpg\'">' +
-          '</div>' +
-          '<!-- 3. 도서 기본 정보 (제목, 출판사, 북퀴즈 통과 점수) -->' +
-          '<div class="pf-book-info-block" style="width:230px; min-width:180px; flex-shrink:0;">' +
-            '<div class="font-weight-bold text-truncate" style="font-size:13px; color:#1e242b; line-height:1.3;" title="' + (b.title || '') + '">' + (b.title || '') + '</div>' +
-            '<div class="text-muted text-truncate" style="font-size:11px; margin:2px 0 4px; line-height:1.2;">' + pubText + (authorText ? (' · ' + authorText) : '') + '</div>' +
-            '<div class="d-flex align-items-center">' +
-              '<span class="badge text-white" style="font-size:10px; font-weight:700; padding:2px 7px; background:#1f8a7e; border-radius:12px;">' +
-                '<i class="fa-solid fa-check mr-1"></i>북퀴즈 ' + scoreText + ' 통과' +
-              '</span>' +
+        '<div class="pf-book-row-card d-flex align-items-center p-2.5 rounded border" style="background:#ffffff; border-color:#e8e2d8 !important; box-shadow:0 1px 4px rgba(40,30,20,0.04); gap:10px; flex-wrap:wrap;">' +
+          '<!-- [상단 헤더 묶음] No, 표지, 기본 정보 -->' +
+          '<div class="pf-book-card-top d-flex align-items-start" style="gap:8px; flex-shrink:0;">' +
+            '<!-- 1. 가장 좌측: No. 및 완독/응시일자 -->' +
+            '<div class="pf-book-meta-left text-center" style="min-width:48px; flex-shrink:0; border-right:1px dashed #e6ded3; padding-right:6px;">' +
+              '<span class="badge badge-soft-primary font-weight-bold" style="font-size:11px; padding:2px 5px; border-radius:4px;">No.' + (idx + 1) + '</span>' +
+              '<div class="text-muted mt-1" style="font-size:10px; font-weight:600; white-space:nowrap; letter-spacing:-0.2px;">' + (b.date || '2026-08-01') + '</div>' +
+            '</div>' +
+            '<!-- 2. 도서 표지 -->' +
+            '<div class="pf-book-cover-wrap" style="width:46px; height:66px; flex-shrink:0; border-radius:5px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.12); cursor:pointer;" onclick="openCoverModal(\'' + coverUrl + '\', \'' + (b.title || '').replace(/'/g, "\\'") + '\', \'' + (pubText || '').replace(/'/g, "\\'") + '\')">' +
+              '<img src="' + coverUrl + '" class="pf-book-cover-img" style="width:100%; height:100%; object-fit:cover; display:block;" alt="' + (b.title || '') + '" onerror="this.src=\'assets/covers/cover_default.jpg\'">' +
+            '</div>' +
+            '<!-- 3. 도서 기본 정보 (제목, 출판사, 북퀴즈 통과 점수) -->' +
+            '<div class="pf-book-info-block" style="width:200px; min-width:140px; flex-shrink:0;">' +
+              '<div class="font-weight-bold text-truncate" style="font-size:12.5px; color:#1e242b; line-height:1.3;" title="' + (b.title || '') + '">' + (b.title || '') + '</div>' +
+              '<div class="text-muted text-truncate" style="font-size:10.5px; margin:2px 0 3px; line-height:1.2;">' + pubText + (authorText ? (' · ' + authorText) : '') + '</div>' +
+              '<div class="d-flex align-items-center">' +
+                '<span class="badge text-white" style="font-size:9.5px; font-weight:700; padding:2px 6px; background:#1f8a7e; border-radius:12px;">' +
+                  '<i class="fa-solid fa-check mr-1"></i>북퀴즈 ' + scoreText + ' 통과' +
+                '</span>' +
+              '</div>' +
             '</div>' +
           '</div>' +
           '<!-- 4. [신규 통합] 우측: 핵심 문맥 파악 및 성취 내역 -->' +
-          '<div class="pf-book-achievement-block flex-grow-1" style="min-width:240px; border-left:1px dashed #e6ded3; padding-left:14px;">' +
+          '<div class="pf-book-achievement-block flex-grow-1" style="min-width:220px; border-left:1px dashed #e6ded3; padding-left:12px;">' +
             '<div class="d-flex align-items-center mb-1">' +
               '<span class="font-weight-bold" style="font-size:11px; color:#1f8a7e;">' +
                 '<i class="fa-solid fa-award mr-1"></i>핵심 문맥 파악 및 성취 내역' +
               '</span>' +
             '</div>' +
-            '<div style="font-size:11.5px; color:#3d342d; line-height:1.5; word-break:keep-all;">' +
+            '<div style="font-size:11px; color:#3d342d; line-height:1.45; word-break:keep-all;">' +
               commentText +
             '</div>' +
           '</div>' +
@@ -6945,7 +7002,7 @@ function renderPortfolioDocument(studentId, pfId) {
         '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-open-reader"></i>기간 내 완독 도서 및 북퀴즈 성취 이력 (' + bookCount + '권)</div>' +
         '<small class="text-muted" style="font-size:11px;">표지 클릭 시 확대 보기</small>' +
       '</div>' +
-      '<div class="row">' +
+      '<div class="row pf-books-grid-row">' +
         booksGridHtml +
       '</div>' +
     '</div>' +
@@ -7136,7 +7193,7 @@ function printCurrentPortfolio() {
     return;
   }
   printHtmlInIsolatedFrame(
-    '<div id="portfolioPrintDoc" class="portfolio-document-view" style="max-width:800px; margin:0 auto; padding:24px; background:#ffffff;">' + docContainer.innerHTML + '</div>',
+    '<div id="portfolioPrintDoc" class="portfolio-document-view" style="max-width:800px; margin:0 auto; padding:0; background:#ffffff;">' + docContainer.innerHTML + '</div>',
     'is-printing-portfolio',
     '나노의 책장 독서 성장 포트폴리오'
   );
@@ -7463,7 +7520,7 @@ function renderWizardBookList(stdId) {
         '<input type="checkbox" class="custom-control-input wiz-book-chk" id="wizBookChk_' + idx + '" checked onchange="toggleWizardBook(' + idx + ', \'' + b.title.replace(/'/g, "\\'") + '\', this.checked)">' +
         '<label class="custom-control-label" for="wizBookChk_' + idx + '"></label>' +
       '</div>' +
-      '<img src="' + b.cover + '" style="width: 36px; height: 50px; border-radius: 4px; object-fit: cover; margin-right: 12px;">' +
+      '<img src="' + (b.cover || 'resources/images/book_default.svg') + '" alt="" style="width: 36px; height: 50px; border-radius: 4px; object-fit: cover; margin-right: 12px;" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
       '<div style="flex: 1;">' +
         '<div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">' + b.title + '</div>' +
         '<small class="text-muted">' + b.pub + ' &middot; 완독일: ' + b.date + '</small>' +
@@ -7774,49 +7831,61 @@ function copyScrollText() {
 // ==============================================================
 // 콘텐츠 관리 (도서 목록 + 콘텐츠 학습자료 PDF 업로드) 로직
 // ==============================================================
+// 도서 표지 경로 정규화:
+// 마스터 페이지와 100% 동일한 연동 표준 유지: /upload/book/xxx 경로를 그대로 보존하여 브라우저에서 확실히 로드되게 함.
+function normalizeBookCoverUrl(url) {
+  if (!url || url === 'undefined' || url === 'null') return 'resources/images/book_default.svg';
+  if (/^(https?:)?\/\//.test(url) || url.indexOf('data:') === 0) return url;
+  if (url.startsWith('/upload/') || url.startsWith('upload/')) {
+    return url.startsWith('/') ? url : ('/' + url);
+  }
+  return url;
+}
+
+function createAcademyBookItem(b) {
+  var hasValidSeries = !!(b.series && b.series.trim() !== '' && b.series.trim() !== '단권');
+  var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
+  var seriesVal = isSingleBook ? '단권' : b.series.trim();
+
+  return {
+    id: b.id,
+    serverId: b.serverId,
+    themeId: b.themeId || null,
+    title: b.title,
+    subtitle: (seriesVal && seriesVal !== '단권') ? seriesVal : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서')),
+    author: b.author || '작가 미상',
+    publisher: b.publisher || '출판사 미상',
+    category: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
+    grade: b.grade || '초등 3학년',
+    cat1: b.cat1 || '소설',
+    cat2: b.cat2 || '국내서',
+    isbn: b.isbn || '',
+    series: seriesVal,
+    isSingle: isSingleBook,
+    themeTag: b.themeTag || (b.subject ? ('#' + b.subject) : '#이달의나노북클럽'),
+    subject: b.subject || '이야기',
+    tags: b.tags || [],
+    detailTag: b.detailTag || '',
+    awards: b.awards || '',
+    isPublic: b.isPublic || 'Y',
+    creatorType: b.creatorType || 'HQ',
+    academyName: b.academyName || '본사 직속(HQ)',
+    cover: normalizeBookCoverUrl(b.cover),
+    materialName: b.title + '_나노시트.pdf',
+    materialSize: '1.45 MB',
+    materialType: '나노 시트 (PDF)',
+    quizStatus: (b.quizzes || 5) + '문항 완비',
+    readCount: (b.quizCompletions || 0) + '회',
+    answerGuide: '【나노 시트 핵심 정답 및 생각담기 가이드】\n\n' + (b.thinkInsert ? ('▶ 생각담기: ' + b.thinkInsert) : '정규 독서논술 답안'),
+    thinkExtract: b.thinkExtract,
+    thinkInsert: b.thinkInsert,
+    quizSets: b.quizSets || []
+  };
+}
+
 var academyBookList = (function() {
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && (window.NANO_SERVER_DATA || window.MIGRATED_BOOKS.length > 0)) {
-    return window.MIGRATED_BOOKS.map(function(b) {
-      // 시리즈명이 비어있거나 '단권'인 경우 단권(isSingle = true)으로 정규화
-      var hasValidSeries = !!(b.series && b.series.trim() !== '' && b.series.trim() !== '단권');
-      var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
-      var seriesVal = isSingleBook ? '단권' : b.series.trim();
-
-      return {
-        id: b.id,
-        serverId: b.serverId,
-        themeId: b.themeId || null,
-        title: b.title,
-        subtitle: (seriesVal && seriesVal !== '단권') ? seriesVal : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서')),
-        author: b.author || '작가 미상',
-        publisher: b.publisher || '출판사 미상',
-        category: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
-        grade: b.grade || '초등 3학년',
-        cat1: b.cat1 || '소설',
-        cat2: b.cat2 || '국내서',
-        isbn: b.isbn || '',
-        series: seriesVal,
-        isSingle: isSingleBook,
-        themeTag: b.themeTag || (b.subject ? ('#' + b.subject) : '#이달의나노북클럽'),
-        subject: b.subject || '이야기',
-        tags: b.tags || [],
-        detailTag: b.detailTag || '',
-        awards: b.awards || '',
-        isPublic: b.isPublic || 'Y',
-        creatorType: 'HQ',
-        academyName: '본사 직속(HQ)',
-        cover: b.cover || 'resources/images/book_default.png',
-        materialName: b.title + '_나노시트.pdf',
-        materialSize: '1.45 MB',
-        materialType: '나노 시트 (PDF)',
-        quizStatus: (b.quizzes || 5) + '문항 완비',
-        readCount: (b.quizCompletions || 40) + '회',
-        answerGuide: '【나노 시트 핵심 정답 및 생각담기 가이드】\n\n' + (b.thinkInsert ? ('▶ 생각담기: ' + b.thinkInsert) : '정규 독서논술 답안'),
-        thinkExtract: b.thinkExtract,
-        thinkInsert: b.thinkInsert,
-        quizSets: b.quizSets || []
-      };
-    });
+    return window.MIGRATED_BOOKS.map(createAcademyBookItem);
   }
   return [
     {
@@ -7829,7 +7898,7 @@ var academyBookList = (function() {
       grade: '미취학',
       creatorType: 'HQ',
       academyName: '본사 직속(HQ)',
-      cover: 'resources/images/book_default.png',
+      cover: '/upload/book/9791187079521.jpg',
       materialName: '고양이목욕탕_나노시트.pdf',
       materialSize: '1.45 MB',
       materialType: '나노 시트 (PDF)',
@@ -7840,6 +7909,16 @@ var academyBookList = (function() {
   ];
 })();
 
+// 마스터 페이지와 100% 동일하게 MIGRATED_BOOKS 실데이터 상시 동기화 보장
+function syncAcademyBooksState() {
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    if (!academyBookList || academyBookList.length <= 1 || academyBookList.length !== window.MIGRATED_BOOKS.length) {
+      academyBookList = window.MIGRATED_BOOKS.map(createAcademyBookItem);
+      syncOwnedBooksState();
+    }
+  }
+}
+
 // 로컬 저장소에 보관된 학원 신규 등록 도서(PDF 데이터 포함) 자동 복원
 (function restoreCustomAcademyBooks() {
   if (window.NANO_SERVER_DATA) return;
@@ -7849,6 +7928,8 @@ var academyBookList = (function() {
       var list = JSON.parse(stored);
       if (Array.isArray(list)) {
         list.forEach(function(item) {
+          // id가 없는 손상된 항목은 목록을 깨뜨리므로 복원에서 제외
+          if (!item || !item.id || item.id === 'undefined') return;
           var exists = academyBookList.some(function(b) { return b.id === item.id; });
           if (!exists) {
             academyBookList.unshift(item);
@@ -8007,6 +8088,8 @@ var currentAcademyFilteredBooks = [];
 
 // 도서 필터링 & 정렬 (기본: 보유 순 -> 도서 번호 내림차순, 30개 페이징)
 function filterAcademyBooks(keepPage) {
+  syncAcademyBooksState();
+
   if (!keepPage) {
     academyBookCurrentPage = 1;
   }
@@ -8227,7 +8310,7 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
            미보유
          </button>`;
 
-    var coverImg = b.cover || 'assets/covers/cover_1001.jpg';
+    var coverImg = normalizeBookCoverUrl(b.cover);
     
     // 나노시트 / 답지 버튼: 상하 배치
     var pdfBtn = b.materialName
@@ -8268,8 +8351,8 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
         ${ownershipBtn}
       </td>
       <td class="text-center">
-        <div class="book-thumb-wrap" onclick="openCoverModal('${coverImg}', '${b.title.replace(/'/g, "\\'")}', '${b.publisher} · ${b.author}')">
-          <img src="${coverImg}" class="book-thumb" alt="${b.title}">
+        <div class="book-thumb-wrap" onclick="openCoverModal('${coverImg}', '${(b.title || '').replace(/'/g, "\\'")}', '${(b.publisher || '').replace(/'/g, "\\'")} · ${(b.author || '').replace(/'/g, "\\'")}')">
+          <img src="${coverImg}" class="book-thumb" alt="${b.title || ''}" onerror="if(!this.dataset.retried){this.dataset.retried='1'; if(this.src.includes('/upload/')) { this.src=this.src.replace(/^.*\/upload\//, 'upload/'); } else { this.src='resources/images/book_default.svg'; }} else { this.src='resources/images/book_default.svg'; }">
           <div class="book-thumb-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
         </div>
       </td>

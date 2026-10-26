@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160" width="120" height="160">
+  <defs>
+    <!-- 양장본 책 표지 그라디언트 (고급스러운 인디고-슬레이트 톤) -->
+    <linearGradient id="coverBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="50%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#1e3a8a" />
+    </linearGradient>
+    <!-- 책등(Spine) 음영 효과 -->
+    <linearGradient id="spineShade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.35)" />
+      <stop offset="60%" stop-color="rgba(0,0,0,0.1)" />
+      <stop offset="100%" stop-color="rgba(255,255,255,0.15)" />
+    </linearGradient>
+    <!-- 북마크 리본 그라디언트 -->
+    <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#fbbf24" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- 전체 책 테두리 및 배경 -->
+  <rect x="2" y="2" width="116" height="156" rx="6" fill="url(#coverBg)" filter="url(#shadow)" />
+  
+  <!-- 내측 섬세한 테두리 라인 -->
+  <rect x="12" y="8" width="100" height="144" rx="3" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="2,2" />
+
+  <!-- 책등(Spine) 입체 바 -->
+  <path d="M2 8 C2 4.69 4.69 2 8 2 L12 2 L12 158 L8 158 C4.69 158 2 155.31 2 152 Z" fill="url(#spineShade)" />
+  <line x1="12" y1="2" x2="12" y2="158" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+
+  <!-- 상단 북마크 리본 -->
+  <polygon points="76,2 90,2 90,32 83,24 76,32" fill="url(#ribbonGrad)" opacity="0.95" />
+
+  <!-- 중앙 책 펼침 아이콘 -->
+  <g transform="translate(38, 56)" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <!-- 펼쳐진 왼쪽/오른쪽 페이지 -->
+    <path d="M22 28 C15 24 6 25 0 28 L0 6 C6 3 15 2 22 6 Z" fill="rgba(255,255,255,0.12)" />
+    <path d="M22 28 C29 24 38 25 44 28 L44 6 C38 3 29 2 22 6 Z" fill="rgba(255,255,255,0.18)" />
+    <line x1="22" y1="6" x2="22" y2="28" stroke="#ffffff" stroke-width="2.5" />
+    <!-- 텍스트 라인 힌트 -->
+    <line x1="6" y1="12" x2="16" y2="10" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+    <line x1="6" y1="18" x2="16" y2="16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+    <line x1="28" y1="10" x2="38" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+    <line x1="28" y1="16" x2="38" y2="18" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+  </g>
+
+  <!-- 하단 도서관/책장 로고 텍스트 -->
+  <text x="64" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="9" font-weight="700" fill="#ffffff" letter-spacing="1" opacity="0.85">NANO BOOK</text>
+  <rect x="42" y="118" width="44" height="1.5" rx="0.75" fill="rgba(255,255,255,0.3)" />
+</svg>

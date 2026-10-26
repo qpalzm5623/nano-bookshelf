@@ -28,6 +28,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Bootstrap 4.6 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <!-- 배너, 테마 및 Neon DB 실데이터 연동 스크립트 (가맹점 143개소, 회원 2133명, 도서 5844종) -->
+  <script src="upload/banner/themes_data.js"></script>
+  <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <!-- PDF.js - 브라우저 기반 보안 PDF 렌더링 & 워터마크 합성 엔진 (비동기 지연 로딩) -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
@@ -2785,7 +2788,7 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm 15mm 12mm 15mm;
+    margin: 20px !important;
   }
 
   body.is-printing-portfolio {
@@ -2859,7 +2862,7 @@
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 12mm 10mm !important;
+    padding: 16px 16px !important;
     background: #ffffff !important;
     border: 1.5px solid #1f8a7e !important;
     border-radius: 8px !important;
@@ -2877,6 +2880,8 @@
     background: #f7f4ee !important;
     border: 1px solid #e8e0d5 !important;
     padding: 10px 12px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   body.is-printing-portfolio .pf-student-info-cell {
@@ -2892,12 +2897,16 @@
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 10px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* 인쇄 시 독서 취향 2열 가로 정렬 */
   body.is-printing-portfolio .pf-preference-row {
     display: flex !important;
     flex-direction: row !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   body.is-printing-portfolio .pf-preference-chart-col {
@@ -2915,25 +2924,154 @@
     padding-left: 20px !important;
   }
 
-  /* 인쇄 시 도서 카드 4열 가로 정렬 */
-  body.is-printing-portfolio .pf-book-col {
-    flex: 0 0 25% !important;
-    max-width: 25% !important;
-    padding: 0 6px !important;
+  /* ============================================================== */
+  /* [중요] 인쇄 시 완독 도서 목록: 한 줄에 3개씩(3열) 배치 & 페이지 넘김 시 항목 잘림 방지 */
+  /* ============================================================== */
+  body.is-printing-portfolio .pf-books-grid-row {
+    display: block !important;
+  }
+  body.is-printing-portfolio .pf-books-grid-row::after {
+    content: "";
+    display: table;
+    clear: both;
   }
 
-  /* 인쇄 시 나노의 독서 이야기 2열 가로 정렬 */
+  body.is-printing-portfolio .pf-book-col {
+    display: block !important;
+    float: left !important;
+    width: 33.333333% !important;
+    max-width: 33.333333% !important;
+    flex: 0 0 33.333333% !important;
+    padding: 0 5px !important;
+    margin-bottom: 10px !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  /* 3개마다 줄바꿈 확실히 정리 */
+  body.is-printing-portfolio .pf-book-col:nth-child(3n+1) {
+    clear: left !important;
+  }
+
+  /* 도서 카드 본체: 페이지 경계에서 잘림 방지 및 내부 여백 정돈 */
+  body.is-printing-portfolio .pf-book-row-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 8px 8px !important;
+    gap: 6px !important;
+    border: 1px solid #ded5c7 !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  /* 카드 상단 영역 (No + 완독일자 + 표지 + 제목/출판사/점수 뱃지) */
+  body.is-printing-portfolio .pf-book-card-top {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 7px !important;
+    width: 100% !important;
+  }
+
+  body.is-printing-portfolio .pf-book-meta-left {
+    min-width: 44px !important;
+    padding-right: 5px !important;
+    border-right: 1px dashed #e6ded3 !important;
+    flex-shrink: 0 !important;
+  }
+
+  body.is-printing-portfolio .pf-book-cover-wrap {
+    width: 44px !important;
+    height: 62px !important;
+    flex-shrink: 0 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12) !important;
+  }
+
+  body.is-printing-portfolio .pf-book-info-block {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+
+  body.is-printing-portfolio .pf-book-info-block .font-weight-bold {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    color: #1e242b !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+  }
+
+  body.is-printing-portfolio .pf-book-info-block .text-muted {
+    font-size: 9.5px !important;
+    margin: 2px 0 3px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body.is-printing-portfolio .pf-book-info-block .badge {
+    font-size: 9px !important;
+    padding: 1.5px 5px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 카드 하단 성취 내역 요약 박스 */
+  body.is-printing-portfolio .pf-book-achievement-block {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-left: none !important;
+    border-top: 1px dashed #e8e2d8 !important;
+    padding-left: 0 !important;
+    padding-top: 5px !important;
+    margin-top: 1px !important;
+  }
+
+  body.is-printing-portfolio .pf-book-achievement-block span.font-weight-bold {
+    font-size: 9.5px !important;
+    color: #1f8a7e !important;
+  }
+
+  body.is-printing-portfolio .pf-book-achievement-block > div:last-child {
+    font-size: 9.5px !important;
+    line-height: 1.35 !important;
+    color: #473e35 !important;
+    word-break: keep-all !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  /* 인쇄 시 나노의 독서 이야기 2열 가로 정렬 & 잘림 방지 */
   body.is-printing-portfolio .pf-insight-col {
     flex: 0 0 50% !important;
     max-width: 50% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    break-inside: avoid-page !important;
   }
 
-  /* 인쇄 시 페이지 넘김 최적화 */
+  /* 인쇄 시 페이지 넘김 최적화 (모든 주요 블록 단위로 적용) */
   body.is-printing-portfolio .pf-book-card,
   body.is-printing-portfolio .pf-insight-card,
   body.is-printing-portfolio .pf-teacher-comment-box {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    break-inside: avoid-page !important;
   }
 }
 
@@ -4262,6 +4400,8 @@
             </tbody>
           </table>
           </div>
+          <!-- 20건 단위 페이지네이션 -->
+          <div id="learningPagination" class="d-flex justify-content-center align-items-center py-3 border-top"></div>
         </div>
       </div>
 
@@ -8893,9 +9033,9 @@
   <!-- Daum 우편번호 서비스 -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script src="upload/banner/themes_data.js"></script>
-  <script src="migrated_real_data.js?v=20261007_real_v9"></script>
+  <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/learning-storage.js?v=20261014_ux2"></script>
-  <script src="admin_preview.js?v=20261022_dashboard"></script>
+  <script src="admin_preview.js?v=20261026_learning_paging"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

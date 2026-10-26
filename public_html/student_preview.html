@@ -22,7 +22,7 @@
   <!-- 배너 및 테마 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
   <script src="upload/banner/banners_data.js"></script>
   <script src="upload/banner/themes_data.js"></script>
-  <script src="migrated_real_data.js?v=20261007_report_v10"></script>
+  <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <style>
     :root {
       /* 스크린샷 기반: 따뜻하고 편안한 웜 아이보리/오프화이트 배경 */
@@ -758,7 +758,31 @@
       color: var(--muted);
       border: 1.5px solid var(--soft);
     }
-    .result-box { text-align: center; padding: 28px 16px; }
+    .result-box { text-align: center; padding: 20px 16px 28px 16px; }
+    /* ==============================================================
+       [NEW] 북퀴즈 결과 화면 프리미엄 일러스트 히어로 배너
+       ============================================================== */
+    .quiz-result-hero-banner {
+      width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 28px -6px rgba(15, 23, 42, 0.18), 0 4px 12px -2px rgba(15, 23, 42, 0.1);
+      position: relative;
+      background: #0f172a;
+      line-height: 0;
+      animation: heroCardPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .quiz-result-hero-banner svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      vertical-align: middle;
+    }
+    @keyframes heroCardPop {
+      0% { transform: scale(0.94); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
     .res-emoji { font-size: 60px; margin-bottom: 10px; }
     .res-score { font-size: 50px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
     .res-score.p { color: var(--leaf); } .res-score.g { color: var(--leaf-mid); } .res-score.f { color: var(--amber); }
@@ -4074,8 +4098,12 @@
     </div>
     <div id="qscreen-result" style="display:none;">
       <div class="card"><div class="result-box">
-        <div class="res-emoji" id="rEmoji">🎉</div>
-        <div class="res-score" id="rScore">100점</div>
+        <!-- [NEW] 점수 구간 + 나노프렌즈 + 도서 테마 반응형 일러스트 아트워크 배너 -->
+        <div id="quizResultHeroBanner" class="quiz-result-hero-banner"></div>
+
+        <!-- 하위 호환성 및 스크린리더용 기존 텍스트 엘리먼트 (시각적으로는 일러스트 배너 내부에 통합) -->
+        <div class="res-emoji" id="rEmoji" style="display:none;">🎉</div>
+        <div class="res-score" id="rScore" style="display:none;">100점</div>
 
         <!-- [NEW] 점수에 따라 캐릭터가 말풍선으로 건네는 개성 맞춤 대사 -->
         <div class="quiz-result-char-wrap" id="quizResultCharBox">
@@ -5549,9 +5577,8 @@ function getBookCoverHtml(b, customCls, styleStr) {
   if (coverUrl && coverUrl !== 'none' && coverUrl !== 'resources/images/book_default.png' && coverUrl !== 'upload/book/book_default.jpg') {
     // 로컬 file:// 프로토콜 환경 및 웹서버 환경 모두 호환되도록 경로 정규화
     var srcPath = (window.location.protocol === 'file:' && coverUrl.indexOf('/') === 0) ? coverUrl.substring(1) : coverUrl;
-    var titleAttr = (b.title || '').replace(/"/g, '&quot;');
-    var fallbackImg = window.location.protocol === 'file:' ? 'resources/images/common/no_image.png' : '/resources/images/common/no_image.png';
-    return '<img src="' + srcPath + '" class="' + cls + '" style="' + st + '" alt="' + titleAttr + '" onerror="this.onerror=null; this.src=\'' + fallbackImg + '\';">';
+    var fallbackImg = 'resources/images/book_default.svg';
+    return '<img src="' + srcPath + '" class="' + cls + '" style="' + st + '" alt="" onerror="this.onerror=null; this.src=\'' + fallbackImg + '\';">';
   }
 
   // 2. 표지 이미지가 없는 경우 감성 가상 북커버 생성
@@ -7264,6 +7291,7 @@ function startQuizWithSet(book, quizSet) {
   }
 
   curBook = book.id;
+  window.currentQuizBookObj = book;
   curData = {
     title: book.title,
     emoji: '📕',
@@ -7575,6 +7603,354 @@ function goPreviousQuestion() {
   window.scrollTo(0, 0);
 }
 
+// ==============================================================
+// [NEW] 북퀴즈 결과 화면 프리미엄 일러스트레이션 엔진
+// 점수 구간(100점/80~90점/60~70점/<60점) + 나노프렌즈 캐릭터(9종) + 도서 테마(6종)
+// ==============================================================
+function generateQuizResultIllustration(score, charId, book) {
+  charId = charId || 'nano';
+  book = book || window.currentQuizBookObj || {};
+
+  // 1. 도서 테마 판별 (자연, 과학, 역사, 마음, 문학, 예술 6개 테마)
+  var themeKey = 'literature';
+  var catStr = ((book.cat || '') + ' ' + (book.themeTag || '') + ' ' + (book.tags || '') + ' ' + (book.title || '') + ' ' + (book.subject || '')).toLowerCase();
+
+  if (/자연|생태|동물|식물|환경|숲|바다|곤충|지구|공룡|반려|나무|하늘|꽃/.test(catStr)) {
+    themeKey = 'nature';
+  } else if (/과학|우주|발명|기술|로봇|수학|물리|화학|인공지능|ai|행성|천문|실험|코딩|컴퓨터|미래/.test(catStr)) {
+    themeKey = 'science';
+  } else if (/역사|사회|인물|위인|전통|문화|지리|세계|나라|조선|전쟁|법|한국사|유적|고대/.test(catStr)) {
+    themeKey = 'history';
+  } else if (/마음|인성|가족|철학|감정|우정|사랑|심리|자아|도덕|행복|배려|친구|부모/.test(catStr)) {
+    themeKey = 'mind';
+  } else if (/예술|음악|미술|체육|스포츠|악기|그림|디자인|공예|건축|노래|무용/.test(catStr)) {
+    themeKey = 'art';
+  } else {
+    themeKey = 'literature'; // 문학, 동화, 소설, 모험, 판타지 기본
+  }
+
+  // 2. 점수 구간 판별 (perfect, high, pass, retry)
+  var tier = 'retry';
+  if (score === 100) tier = 'perfect';
+  else if (score >= 80) tier = 'high';
+  else if (score >= 60) tier = 'pass';
+  else tier = 'retry';
+
+  // 도서 제목 텍스트 정리 (최대 16자)
+  var rawTitle = book.title || '선택 도서';
+  var bookTitleDisp = rawTitle.length > 15 ? rawTitle.substring(0, 14) + '…' : rawTitle;
+
+  // 3. 테마별 비주얼 에셋 (배경 그라데이션, 배경 아트워크 오브젝트, 단상, 테마 라벨)
+  var themeDefs = {
+    nature: {
+      label: '🌿 자연 & 생태',
+      bgGrad: '<stop offset="0%" stop-color="#064e3b"/><stop offset="50%" stop-color="#047857"/><stop offset="100%" stop-color="#10b981"/>',
+      bgArt: `
+        <path d="M0,170 Q130,130 250,165 T500,160 L500,240 L0,240 Z" fill="#065f46" opacity="0.45"/>
+        <path d="M0,195 Q150,165 300,195 T500,185 L500,240 L0,240 Z" fill="#047857" opacity="0.6"/>
+        <path d="M30,70 C50,40 85,50 80,75 C75,100 40,95 30,70 Z" fill="#6ee7b7" opacity="0.5"/>
+        <path d="M50,90 C70,65 95,75 90,95 C85,115 60,110 50,90 Z" fill="#34d399" opacity="0.65"/>
+        <path d="M20,110 C40,85 75,95 65,120 C55,140 30,130 20,110 Z" fill="#a7f3d0" opacity="0.4"/>
+        <path d="M430,70 Q445,55 455,70 Q440,85 430,70 Z" fill="#fde047" opacity="0.85"/>
+        <path d="M430,70 Q415,55 405,70 Q420,85 430,70 Z" fill="#fde047" opacity="0.85"/>
+        <circle cx="430" cy="70" r="2" fill="#78350f"/>
+        <circle cx="140" cy="60" r="3" fill="#a7f3d0" opacity="0.7"/>
+        <circle cx="360" cy="80" r="3.5" fill="#6ee7b7" opacity="0.75"/>
+        <circle cx="390" cy="120" r="2.5" fill="#fef08a" opacity="0.8"/>
+      `,
+      podium: `
+        <ellipse cx="250" cy="180" rx="92" ry="25" fill="#064e3b" stroke="#34d399" stroke-width="2.5"/>
+        <ellipse cx="250" cy="177" rx="76" ry="18" fill="#059669"/>
+        <ellipse cx="250" cy="175" rx="55" ry="12" fill="#10b981" opacity="0.4"/>
+        <path d="M235,178 Q240,166 245,178 Q250,166 255,178" stroke="#a7f3d0" stroke-width="2" fill="none"/>
+      `
+    },
+    science: {
+      label: '🚀 과학 & 우주',
+      bgGrad: '<stop offset="0%" stop-color="#030712"/><stop offset="50%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#312e81"/>',
+      bgArt: `
+        <circle cx="75" cy="75" r="24" fill="#818cf8" opacity="0.85"/>
+        <ellipse cx="75" cy="75" rx="42" ry="12" fill="none" stroke="#c7d2fe" stroke-width="3" transform="rotate(-25 75 75)" opacity="0.75"/>
+        <g transform="translate(410, 60) rotate(35)">
+          <path d="M0,0 Q12,-8 24,0 L18,22 L6,22 Z" fill="#f43f5e"/>
+          <circle cx="12" cy="8" r="4" fill="#38bdf8"/>
+          <path d="M6,22 L2,28 L8,24 L12,28 L16,24 L22,28 L18,22 Z" fill="#f59e0b"/>
+        </g>
+        <line x1="130" y1="50" x2="165" y2="40" stroke="#a5b4fc" stroke-width="1.2" stroke-dasharray="2,2"/>
+        <line x1="165" y1="40" x2="190" y2="60" stroke="#a5b4fc" stroke-width="1.2" stroke-dasharray="2,2"/>
+        <circle cx="130" cy="50" r="2.5" fill="#ffffff"/>
+        <circle cx="165" cy="40" r="3" fill="#67e8f9"/>
+        <circle cx="190" cy="60" r="2.5" fill="#ffffff"/>
+        <circle cx="340" cy="55" r="2" fill="#fde047"/>
+        <circle cx="375" cy="90" r="3" fill="#ffffff" opacity="0.8"/>
+        <circle cx="100" cy="130" r="1.5" fill="#c7d2fe"/>
+      `,
+      podium: `
+        <ellipse cx="250" cy="180" rx="94" ry="25" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5"/>
+        <ellipse cx="250" cy="177" rx="76" ry="18" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5"/>
+        <ellipse cx="250" cy="175" rx="55" ry="12" fill="#0284c7" opacity="0.45"/>
+        <circle cx="250" cy="175" r="4" fill="#38bdf8"/>
+      `
+    },
+    history: {
+      label: '📜 역사 & 문화',
+      bgGrad: '<stop offset="0%" stop-color="#2d1305"/><stop offset="50%" stop-color="#78350f"/><stop offset="100%" stop-color="#b45309"/>',
+      bgArt: `
+        <circle cx="75" cy="80" r="28" fill="none" stroke="#fde68a" stroke-width="1.5" opacity="0.4"/>
+        <path d="M75,58 L80,80 L75,102 L70,80 Z" fill="#f59e0b" opacity="0.65"/>
+        <circle cx="75" cy="80" r="3.5" fill="#fef3c7"/>
+        <path d="M415,95 Q430,65 440,50 Q435,75 425,100 Z" fill="#fde68a" opacity="0.7"/>
+        <rect x="420" y="96" width="30" height="20" rx="3" fill="#fef3c7" opacity="0.3" transform="rotate(-15 420 96)"/>
+        <circle cx="150" cy="65" r="3" fill="#fde68a" opacity="0.75"/>
+        <circle cx="360" cy="70" r="2.5" fill="#fcd34d" opacity="0.6"/>
+        <circle cx="340" cy="115" r="2" fill="#fed7aa" opacity="0.5"/>
+      `,
+      podium: `
+        <ellipse cx="250" cy="180" rx="90" ry="24" fill="#451a03" stroke="#d97706" stroke-width="2.5"/>
+        <ellipse cx="250" cy="177" rx="74" ry="18" fill="#78350f"/>
+        <ellipse cx="250" cy="175" rx="55" ry="12" fill="#b45309" opacity="0.5"/>
+        <line x1="190" y1="180" x2="310" y2="180" stroke="#fde68a" stroke-width="1" opacity="0.5"/>
+      `
+    },
+    mind: {
+      label: '💖 마음 & 공감',
+      bgGrad: '<stop offset="0%" stop-color="#4a044e"/><stop offset="50%" stop-color="#9d174d"/><stop offset="100%" stop-color="#e11d48"/>',
+      bgArt: `
+        <path d="M60,85 A8,8 0 0,0 50,75 A8,8 0 0,0 42,85 Q42,95 50,102 Q58,95 58,85 Z" fill="#fda4af" opacity="0.75" transform="rotate(-10 50 85)"/>
+        <path d="M80,60 A11,11 0 0,0 67,47 A11,11 0 0,0 56,60 Q56,75 67,84 Q78,75 78,60 Z" fill="#f43f5e" opacity="0.65" transform="rotate(12 67 60)"/>
+        <circle cx="435" cy="65" r="16" fill="#fef08a" opacity="0.7"/>
+        <path d="M400,90 Q410,75 425,82 Q440,70 455,85 L400,85 Z" fill="#ffffff" opacity="0.3"/>
+        <circle cx="150" cy="60" r="3" fill="#fbcfe8" opacity="0.8"/>
+        <circle cx="355" cy="75" r="3.5" fill="#f472b6" opacity="0.7"/>
+        <circle cx="380" cy="115" r="2" fill="#ffe4e6" opacity="0.6"/>
+      `,
+      podium: `
+        <ellipse cx="250" cy="180" rx="92" ry="24" fill="#831843" stroke="#f472b6" stroke-width="2"/>
+        <circle cx="205" cy="177" r="18" fill="#f472b6" opacity="0.6"/>
+        <circle cx="295" cy="177" r="18" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="250" cy="176" rx="72" ry="17" fill="#fbcfe8"/>
+      `
+    },
+    literature: {
+      label: '📚 문학 & 상상',
+      bgGrad: '<stop offset="0%" stop-color="#2e1065"/><stop offset="50%" stop-color="#581c87"/><stop offset="100%" stop-color="#7e22ce"/>',
+      bgArt: `
+        <g transform="translate(60, 65)">
+          <path d="M0,15 Q12,5 24,15 Q36,5 48,15 L48,22 Q36,12 24,22 Q12,12 0,22 Z" fill="#fde047" opacity="0.9"/>
+          <path d="M0,15 Q-12,2 -18,12 Q-12,16 0,18 Z" fill="#ffffff" opacity="0.6"/>
+          <path d="M48,15 Q60,2 66,12 Q60,16 48,18 Z" fill="#ffffff" opacity="0.6"/>
+        </g>
+        <path d="M360,40 Q410,75 460,50 T500,70" fill="none" stroke="#c084fc" stroke-width="3" opacity="0.5"/>
+        <path d="M350,60 Q400,95 450,70 T500,90" fill="none" stroke="#e879f9" stroke-width="2" opacity="0.4"/>
+        <circle cx="150" cy="50" r="3" fill="#fef08a"/>
+        <circle cx="180" cy="70" r="2" fill="#c084fc"/>
+        <circle cx="350" cy="80" r="3.5" fill="#fbcfe8" opacity="0.8"/>
+        <circle cx="410" cy="100" r="2.5" fill="#ffffff"/>
+      `,
+      podium: `
+        <ellipse cx="250" cy="180" rx="92" ry="25" fill="#3b0764" stroke="#c084fc" stroke-width="2.5"/>
+        <ellipse cx="250" cy="177" rx="76" ry="18" fill="#6b21a8"/>
+        <polygon points="250,166 256,177 244,177" fill="#fde047" opacity="0.85"/>
+        <polygon points="250,188 256,177 244,177" fill="#fde047" opacity="0.85"/>
+      `
+    },
+    art: {
+      label: '🎨 예술 & 창의',
+      bgGrad: '<stop offset="0%" stop-color="#0c4a6e"/><stop offset="50%" stop-color="#0284c7"/><stop offset="100%" stop-color="#06b6d4"/>',
+      bgArt: `
+        <path d="M40,90 Q70,55 90,75 Q95,95 75,105 Q50,110 40,90 Z" fill="#fde047" opacity="0.6"/>
+        <circle cx="65" cy="80" r="3" fill="#ef4444"/>
+        <circle cx="78" cy="88" r="3" fill="#3b82f6"/>
+        <circle cx="68" cy="95" r="3" fill="#10b981"/>
+        <g transform="translate(420, 65)">
+          <ellipse cx="6" cy="18" rx="5" ry="3.5" fill="#ffffff" transform="rotate(-20 6 18)"/>
+          <line x1="10" y1="17" x2="10" y2="4" stroke="#ffffff" stroke-width="1.8"/>
+          <path d="M10,4 Q16,2 18,10" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+        </g>
+        <g transform="translate(445, 85)">
+          <ellipse cx="5" cy="14" rx="4" ry="3" fill="#fbcfe8" transform="rotate(-20 5 14)"/>
+          <line x1="8" y1="13" x2="8" y2="2" stroke="#fbcfe8" stroke-width="1.5"/>
+        </g>
+        <circle cx="150" cy="55" r="3" fill="#7dd3fc"/>
+        <circle cx="360" cy="70" r="3" fill="#fef08a"/>
+        <circle cx="390" cy="115" r="2" fill="#ffffff" opacity="0.7"/>
+      `,
+      podium: `
+        <ellipse cx="250" cy="180" rx="90" ry="24" fill="#075985" stroke="#38bdf8" stroke-width="2.5"/>
+        <ellipse cx="250" cy="177" rx="74" ry="18" fill="#0284c7"/>
+        <circle cx="230" cy="177" r="5" fill="#f43f5e"/>
+        <circle cx="250" cy="177" r="5" fill="#facc15"/>
+        <circle cx="270" cy="177" r="5" fill="#4ade80"/>
+      `
+    }
+  };
+
+  var curTheme = themeDefs[themeKey] || themeDefs.literature;
+
+  // 4. 점수 구간별 이펙트 및 스코어 뱃지
+  var tierEffects = '';
+  var scoreBadge = '';
+
+  if (tier === 'perfect') {
+    tierEffects = `
+      <g opacity="0.25">
+        <line x1="250" y1="120" x2="190" y2="35" stroke="#facc15" stroke-width="2.5"/>
+        <line x1="250" y1="120" x2="310" y2="35" stroke="#facc15" stroke-width="2.5"/>
+        <line x1="250" y1="120" x2="150" y2="85" stroke="#facc15" stroke-width="2"/>
+        <line x1="250" y1="120" x2="350" y2="85" stroke="#facc15" stroke-width="2"/>
+        <line x1="250" y1="120" x2="250" y2="15" stroke="#facc15" stroke-width="3"/>
+      </g>
+      <g stroke="#facc15" stroke-width="2" fill="none" opacity="0.85">
+        <path d="M195,140 Q180,105 195,75"/>
+        <path d="M192,85 L182,80"/> <path d="M188,105 L178,103"/> <path d="M190,125 L180,127"/>
+        <path d="M305,140 Q320,105 305,75"/>
+        <path d="M308,85 L318,80"/> <path d="M312,105 L322,103"/> <path d="M310,125 L320,127"/>
+      </g>
+      <g transform="translate(233, 14)">
+        <path d="M6,4 L28,4 L25,18 Q22,25 17,25 Q12,25 9,18 Z" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/>
+        <path d="M6,7 Q-1,10 4,16 Q8,20 10,18" fill="none" stroke="#ca8a04" stroke-width="1.8"/>
+        <path d="M28,7 Q35,10 30,16 Q26,20 24,18" fill="none" stroke="#ca8a04" stroke-width="1.8"/>
+        <rect x="14" y="25" width="6" height="7" fill="#eab308"/>
+        <rect x="10" y="32" width="14" height="5" rx="1.5" fill="#a16207"/>
+        <polygon points="17,10 19,14 23,14 20,17 21,21 17,18 13,21 14,17 11,14 15,14" fill="#fef08a"/>
+      </g>
+      <rect x="175" y="45" width="6" height="6" fill="#f43f5e" transform="rotate(25 175 45)"/>
+      <rect x="315" y="40" width="7" height="5" fill="#38bdf8" transform="rotate(-30 315 40)"/>
+      <rect x="155" y="75" width="6" height="6" fill="#4ade80" transform="rotate(15 155 75)"/>
+      <rect x="335" y="70" width="6" height="6" fill="#facc15" transform="rotate(45 335 70)"/>
+      <circle cx="215" cy="40" r="3" fill="#f43f5e"/>
+      <circle cx="285" cy="45" r="3" fill="#a855f7"/>
+      <circle cx="160" cy="110" r="3" fill="#facc15"/>
+      <circle cx="340" cy="115" r="3" fill="#38bdf8"/>
+    `;
+    scoreBadge = `
+      <g filter="url(#qrDropShadow)">
+        <rect x="150" y="194" width="200" height="36" rx="18" fill="url(#qrGoldGrad)" stroke="#fef08a" stroke-width="2"/>
+        <text x="250" y="218" text-anchor="middle" font-size="15" font-weight="900" fill="#78350f" letter-spacing="0.5">🏆 100점 PERFECT! 🏆</text>
+      </g>
+    `;
+  } else if (tier === 'high') {
+    tierEffects = `
+      <ellipse cx="250" cy="122" rx="65" ry="35" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="4,3" transform="rotate(-15 250 122)" opacity="0.6"/>
+      <g transform="translate(236, 18)">
+        <polygon points="14,0 18,9 28,10 20,17 23,26 14,21 5,26 8,17 0,10 10,9" fill="#facc15" stroke="#eab308" stroke-width="1.5"/>
+        <circle cx="14" cy="13" r="4.5" fill="#fef08a"/>
+      </g>
+      <g fill="#ffffff" opacity="0.85">
+        <polygon points="185,55 187,60 192,62 187,64 185,69 183,64 178,62 183,60"/>
+        <polygon points="315,50 317,55 322,57 317,59 315,64 313,59 308,57 313,55"/>
+        <polygon points="160,90 162,94 166,95 162,96 160,100 158,96 154,95 158,94"/>
+        <polygon points="340,95 342,99 346,100 342,101 340,105 338,101 334,100 338,99"/>
+      </g>
+    `;
+    scoreBadge = `
+      <g filter="url(#qrDropShadow)">
+        <rect x="155" y="194" width="190" height="36" rx="18" fill="url(#qrHighGrad)" stroke="#bae6fd" stroke-width="2"/>
+        <text x="250" y="218" text-anchor="middle" font-size="15" font-weight="900" fill="#ffffff" letter-spacing="0.5">★ ${score}점 EXCELLENT! ★</text>
+      </g>
+    `;
+  } else if (tier === 'pass') {
+    tierEffects = `
+      <g transform="translate(236, 22)">
+        <circle cx="14" cy="14" r="14" fill="#10b981" stroke="#059669" stroke-width="2"/>
+        <path d="M8,14 L12,18 L20,10" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6,25 L10,33 L14,27 L18,33 L22,25" fill="#059669"/>
+      </g>
+      <circle cx="190" cy="65" r="3" fill="#a7f3d0" opacity="0.8"/>
+      <circle cx="310" cy="65" r="3" fill="#a7f3d0" opacity="0.8"/>
+      <path d="M175,95 Q185,85 180,75 Q170,85 175,95 Z" fill="#34d399" opacity="0.7"/>
+      <path d="M325,95 Q315,85 320,75 Q330,85 325,95 Z" fill="#34d399" opacity="0.7"/>
+    `;
+    scoreBadge = `
+      <g filter="url(#qrDropShadow)">
+        <rect x="160" y="194" width="180" height="36" rx="18" fill="url(#qrPassGrad)" stroke="#a7f3d0" stroke-width="2"/>
+        <text x="250" y="218" text-anchor="middle" font-size="15" font-weight="900" fill="#ffffff" letter-spacing="0.5">✓ ${score}점 인증 통과!</text>
+      </g>
+    `;
+  } else {
+    tierEffects = `
+      <g transform="translate(236, 24)">
+        <circle cx="12" cy="12" r="10" fill="none" stroke="#fde047" stroke-width="2.5"/>
+        <line x1="19" y1="19" x2="26" y2="26" stroke="#fde047" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="4" fill="#fef08a" opacity="0.6"/>
+      </g>
+      <circle cx="190" cy="70" r="3.5" fill="#fde047" opacity="0.7"/>
+      <circle cx="310" cy="70" r="3.5" fill="#fde047" opacity="0.7"/>
+      <circle cx="170" cy="105" r="2.5" fill="#fed7aa" opacity="0.6"/>
+      <circle cx="330" cy="105" r="2.5" fill="#fed7aa" opacity="0.6"/>
+    `;
+    scoreBadge = `
+      <g filter="url(#qrDropShadow)">
+        <rect x="155" y="194" width="190" height="36" rx="18" fill="url(#qrRetryGrad)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="250" y="218" text-anchor="middle" font-size="14" font-weight="800" fill="#f8fafc" letter-spacing="0.3">📖 ${score}점 (다시 도전해봐요!)</text>
+      </g>
+    `;
+  }
+
+  // 5. 나노프렌즈 캐릭터 SVG 추출 및 단상 위 배치
+  var charSvgRaw = '';
+  if (typeof getCharacterSvg === 'function') {
+    charSvgRaw = getCharacterSvg(charId, 76, true);
+  } else {
+    charSvgRaw = '<circle cx="50" cy="50" r="38" fill="#f97316"/>';
+  }
+  var charSvgPositioned = charSvgRaw.replace('<svg ', '<svg x="212" y="86" ');
+
+  // 6. 전체 SVG 조합
+  var fullSvg = `
+    <svg viewBox="0 0 500 240" xmlns="http://www.w3.org/2000/svg" style="border-radius:20px;display:block;width:100%;height:auto;">
+      <defs>
+        <linearGradient id="qrBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          ${curTheme.bgGrad}
+        </linearGradient>
+        <linearGradient id="qrGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a"/><stop offset="50%" stop-color="#facc15"/><stop offset="100%" stop-color="#eab308"/>
+        </linearGradient>
+        <linearGradient id="qrHighGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#2563eb"/>
+        </linearGradient>
+        <linearGradient id="qrPassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/>
+        </linearGradient>
+        <linearGradient id="qrRetryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#475569"/><stop offset="100%" stop-color="#1e293b"/>
+        </linearGradient>
+        <filter id="qrDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.35"/>
+        </filter>
+        <filter id="qrGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <rect width="500" height="240" rx="20" fill="url(#qrBgGrad)"/>
+
+      ${curTheme.bgArt}
+
+      <g>
+        <rect x="14" y="14" width="115" height="24" rx="12" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <text x="24" y="30.5" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.2">${curTheme.label}</text>
+        
+        <rect x="330" y="14" width="156" height="24" rx="12" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+        <text x="408" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(255,255,255,0.92)">📖 ${bookTitleDisp}</text>
+      </g>
+
+      ${curTheme.podium}
+
+      <circle cx="250" cy="124" r="44" fill="#ffffff" opacity="0.18" filter="url(#qrGlow)"/>
+
+      ${tierEffects}
+
+      ${charSvgPositioned}
+
+      ${scoreBadge}
+    </svg>
+  `;
+
+  return fullSvg;
+}
+
 // 북퀴즈 제출 및 최종 채점 결과 화면 렌더링
 async function showResult() {
   if (!curData || studentQuizSubmitted) return;
@@ -7692,6 +8068,13 @@ async function showResult() {
     document.getElementById('rMsg').innerText = failMsg;
     document.getElementById('rScore').className = 'res-score f';
     speechText = '60점 이상이어야 인증과 포인트가 지급돼요. 조금만 더 꼼꼼히 읽고 재도전해 봐요!';
+  }
+
+  // [NEW] 최상단 점수 구간 + 나노프렌즈 + 도서 테마 반응형 일러스트 아트워크 히어로 배너 렌더링
+  var heroBannerEl = document.getElementById('quizResultHeroBanner');
+  if (heroBannerEl) {
+    var activeBookObj = window.currentQuizBookObj || (typeof libData !== 'undefined' ? libData.find(function(b){ return b.id === curBook; }) : null);
+    heroBannerEl.innerHTML = generateQuizResultIllustration(score, charId, activeBookObj);
   }
 
   // 결과 화면 캐릭터 말풍선 렌더링
