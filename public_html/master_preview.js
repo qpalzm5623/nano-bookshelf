@@ -1675,6 +1675,29 @@ function saveRecommendedBooks(list) {
 }
 
 let selectedRecGrade = "ALL";
+let recommendedCurrentPage = 1;
+const RECOMMENDED_PAGE_SIZE = 20;
+
+// 학년 탭 선택 시 필터링 및 1페이지 리셋
+function selectRecGrade(grade) {
+  selectedRecGrade = grade;
+  recommendedCurrentPage = 1;
+  const btns = document.querySelectorAll(".rec-grade-btn");
+  btns.forEach(b => {
+    if (b.getAttribute("data-grade") === grade) {
+      b.className = "btn font-weight-bold rec-grade-btn active";
+      b.style.background = "#7d5a2b";
+      b.style.color = "#fff";
+      b.style.border = "none";
+    } else {
+      b.className = "btn font-weight-bold rec-grade-btn";
+      b.style.background = "#fff";
+      b.style.color = "#5a4b3d";
+      b.style.border = "1.5px solid #d4c4b0";
+    }
+  });
+  renderRecommendedBooksTable();
+}
 
 function renderRecommendedBooksTable() {
   const tbody = document.getElementById("recommendedBooksTableBody");
@@ -1693,6 +1716,8 @@ function renderRecommendedBooksTable() {
       : `${filtered.length} (전체 ${allList.length})`;
   }
 
+  const paginationContainer = document.getElementById("recommendedPagination");
+
   if (filtered.length === 0) {
     const gradeName = selectedRecGrade === "ALL" ? "" : `[${selectedRecGrade}] `;
     tbody.innerHTML = `
@@ -1704,14 +1729,24 @@ function renderRecommendedBooksTable() {
         </td>
       </tr>
     `;
+    if (paginationContainer) paginationContainer.innerHTML = "";
     return;
   }
 
-  tbody.innerHTML = filtered.map((b, index) => {
+  // 20권 단위 페이징 슬라이싱
+  const totalPages = Math.ceil(filtered.length / RECOMMENDED_PAGE_SIZE) || 1;
+  if (recommendedCurrentPage > totalPages) recommendedCurrentPage = totalPages;
+  if (recommendedCurrentPage < 1) recommendedCurrentPage = 1;
+
+  const startIdx = (recommendedCurrentPage - 1) * RECOMMENDED_PAGE_SIZE;
+  const pagedList = filtered.slice(startIdx, startIdx + RECOMMENDED_PAGE_SIZE);
+
+  tbody.innerHTML = pagedList.map((b, index) => {
     const coverHtml = `<img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">`;
+    const num = startIdx + index + 1;
     return `
       <tr>
-        <td class="text-center font-weight-bold text-muted">${index + 1}</td>
+        <td class="text-center font-weight-bold text-muted">${num}</td>
         <td class="text-center">${coverHtml}</td>
         <td class="text-left font-weight-bold" style="color: var(--text-main); font-size: 13.5px;">
           ${b.title}
@@ -1736,6 +1771,74 @@ function renderRecommendedBooksTable() {
       </tr>
     `;
   }).join("");
+
+  renderRecommendedPagination(totalPages, recommendedCurrentPage);
+}
+
+// 20권 단위 권장도서 페이지네이션 UI 렌더링
+function renderRecommendedPagination(totalPages, curPage) {
+  const container = document.getElementById("recommendedPagination");
+  if (!container) return;
+
+  if (totalPages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+
+  let html = "";
+  // 이전 페이지 버튼
+  const isFirst = curPage === 1;
+  html += `
+    <button class="btn btn-sm" onclick="goToRecommendedPage(${curPage - 1})" ${isFirst ? 'disabled style="opacity: 0.35; cursor: not-allowed; background: #fff; border: 1px solid #e0d8cc; color: #888;"' : 'style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 12px; padding: 4px 10px; border-radius: 6px;"'}>
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+  `;
+
+  // 페이지 번호 (최대 7개 노출)
+  let startP = Math.max(1, curPage - 3);
+  let endP = Math.min(totalPages, startP + 6);
+  if (endP - startP < 6) {
+    startP = Math.max(1, endP - 6);
+  }
+
+  if (startP > 1) {
+    html += `<button class="btn btn-sm" onclick="goToRecommendedPage(1)" style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 12px; padding: 4px 10px; border-radius: 6px;">1</button>`;
+    if (startP > 2) html += `<span style="color: var(--text-muted); font-size: 12px; padding: 0 3px;">...</span>`;
+  }
+
+  for (let p = startP; p <= endP; p++) {
+    const isActive = p === curPage;
+    html += `
+      <button class="btn btn-sm" onclick="goToRecommendedPage(${p})" style="${isActive ? 'background: #7d5a2b; color: #fff; font-weight: 700; border: 1px solid #7d5a2b;' : 'background: #fff; border: 1px solid #d8cebf; color: var(--text-main);'} font-size: 12px; padding: 4px 10px; border-radius: 6px;">
+        ${p}
+      </button>
+    `;
+  }
+
+  if (endP < totalPages) {
+    if (endP < totalPages - 1) html += `<span style="color: var(--text-muted); font-size: 12px; padding: 0 3px;">...</span>`;
+    html += `<button class="btn btn-sm" onclick="goToRecommendedPage(${totalPages})" style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 12px; padding: 4px 10px; border-radius: 6px;">${totalPages}</button>`;
+  }
+
+  // 다음 페이지 버튼
+  const isLast = curPage === totalPages;
+  html += `
+    <button class="btn btn-sm" onclick="goToRecommendedPage(${curPage + 1})" ${isLast ? 'disabled style="opacity: 0.35; cursor: not-allowed; background: #fff; border: 1px solid #e0d8cc; color: #888;"' : 'style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 12px; padding: 4px 10px; border-radius: 6px;"'}>
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  `;
+
+  container.innerHTML = html;
+}
+
+// 특정 페이지로 이동
+function goToRecommendedPage(page) {
+  recommendedCurrentPage = page;
+  renderRecommendedBooksTable();
+  const tableEl = document.getElementById("recommendedBooksTableBody");
+  if (tableEl) {
+    tableEl.closest('.table-responsive')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function openAddRecommendedBookModal() {

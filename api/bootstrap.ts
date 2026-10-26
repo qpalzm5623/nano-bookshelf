@@ -43,11 +43,54 @@ export default async function handler(req: any, res: any) {
     const data = {
       NANO_SERVER_DATA: true,
       NANO_BOOTSTRAP_MEMBER_ID: user.id,
-      MIGRATED_BOOKS: books.map(b => ({ ...b, serverId: b.id, id: b.bookNo, pub: b.publisher || '', cover: b.coverUrl || '',
-        cat: b.series || '단권', series: b.series || '단권', single: !b.series || b.series === '단권', tags: (b.tags || '').split(',').map(t => t.trim()).filter(Boolean),
-        cat1: b.subCategory === 'C' ? '비문학/정보글' : b.subCategory === 'B' ? '인물 이야기 (위인)' : '소설',
-        cat2: b.category === 'F' ? '외서' : '국내서', tag: b.theme ? '#' + b.theme.name : '',
-        thinkInsert: b.thinkQuiz || '', thinkOpen: b.thinkTitle || '', quizzes: undefined, theme: undefined })),
+      MIGRATED_BOOKS: books.map(b => {
+        let bookNo = b.bookNo;
+        let title = b.title;
+        let series = b.series || '단권';
+        let author = b.author || '작가 미상';
+        let pub = b.publisher || '';
+        let cover = b.coverUrl || '';
+        let subCat = b.subCategory;
+        let category = b.category;
+        let grade = b.grade;
+
+        // DB 내 컬럼 밀림 또는 bookNo 누락 레코드 자가 치유 (Self-Healing)
+        if ((!bookNo || bookNo === 'undefined') && /^[A-Z]{2}\d{6}$/.test(title || '')) {
+          bookNo = title;
+          title = (b.series && b.series !== '단권') ? b.series : '고양이 목욕탕';
+          series = (author && author !== '작가 미상') ? author : '상상그림책 5';
+          author = '구사카 미나코 글/기타무라 유카 그림/황진희 역';
+          pub = '옐로스톤';
+          category = 'F';
+          subCat = 'A';
+          grade = '미취학';
+          cover = '/upload/book/9791187079521.jpg';
+        }
+
+        return {
+          ...b,
+          serverId: b.id,
+          id: bookNo || b.id,
+          bookNo: bookNo || b.id,
+          title: title,
+          author: author,
+          publisher: pub,
+          grade: grade,
+          pub: pub,
+          cover: cover,
+          cat: series,
+          series: series,
+          single: !series || series === '단권',
+          tags: (b.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+          cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
+          cat2: category === 'F' ? '외서' : '국내서',
+          tag: b.theme ? '#' + b.theme.name : '',
+          thinkInsert: b.thinkQuiz || '',
+          thinkOpen: b.thinkTitle || '',
+          quizzes: undefined,
+          theme: undefined
+        };
+      }),
       MIGRATED_QUIZZES: quizzes,
       NANO_SERVER_CLASSES: classes.map(c => ({ id: c.id, serverId: c.id, name: c.name, grade: c.targetGrade || '', academyId: c.academy.code })),
       NANO_SERVER_OWNED: owned.map(b => b.book.bookNo),

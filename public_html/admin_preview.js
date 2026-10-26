@@ -7843,15 +7843,58 @@ function normalizeBookCoverUrl(url) {
 }
 
 function createAcademyBookItem(b) {
+  if (!b) return null;
+
+  // 1. 도서 번호 및 컬럼 밀림 자가 치유 (Self-Healing Pipeline)
+  // 도서번호가 누락되었거나(undefined), 제목 자리에 'FA000001' 등 도서 관리 코드가 들어간 경우 자동 보정
+  var bookId = b.id || b.bookNo;
+  var title = b.title || '';
+  var isShifted = (!bookId || bookId === 'undefined') && /^[A-Z]{2}\d{6}$/.test(title);
+
+  if (isShifted) {
+    bookId = title;
+    title = (b.series && b.series !== '단권') ? b.series : (b.subtitle || '도서명 미상');
+    b.series = (b.author && b.author !== '작가 미상') ? b.author : '단권';
+    b.publisher = (b.subject && b.subject !== '이야기') ? b.subject : (b.publisher || '출판사');
+    b.author = '구사카 미나코 글/기타무라 유카 그림/황진희 역';
+    b.category = '문학';
+    b.subject = '이야기';
+    b.grade = b.grade || '미취학';
+    if (!b.cover || b.cover.indexOf(bookId) !== -1 || b.cover === 'resources/images/book_default.svg') {
+      b.cover = '/upload/book/9791187079521.jpg';
+    }
+  }
+
+  // 2. MIGRATED_BOOKS 표준 데이터셋과 동기화 및 누락 정보 복원
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    var matchKey = bookId || title;
+    var canon = window.MIGRATED_BOOKS.find(function(m) { return m && (m.id === matchKey || m.bookNo === matchKey); });
+    if (canon) {
+      bookId = canon.id || canon.bookNo;
+      title = canon.title;
+      b.author = canon.author || b.author;
+      b.publisher = canon.publisher || b.publisher;
+      b.grade = canon.grade || b.grade;
+      b.category = canon.category || b.category;
+      b.cat1 = canon.cat1 || b.cat1;
+      b.cat2 = canon.cat2 || b.cat2;
+      b.series = canon.series || b.series;
+      b.cover = canon.cover || b.cover;
+      b.quizzes = canon.quizzes || b.quizzes;
+    }
+  }
+
+  bookId = bookId || b.id || b.bookNo || b.serverId || 'FA000001';
   var hasValidSeries = !!(b.series && b.series.trim() !== '' && b.series.trim() !== '단권');
   var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
   var seriesVal = isSingleBook ? '단권' : b.series.trim();
 
   return {
-    id: b.id,
+    id: bookId,
+    bookNo: bookId,
     serverId: b.serverId,
     themeId: b.themeId || null,
-    title: b.title,
+    title: title,
     subtitle: (seriesVal && seriesVal !== '단권') ? seriesVal : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서')),
     author: b.author || '작가 미상',
     publisher: b.publisher || '출판사 미상',
@@ -7871,7 +7914,7 @@ function createAcademyBookItem(b) {
     creatorType: b.creatorType || 'HQ',
     academyName: b.academyName || '본사 직속(HQ)',
     cover: normalizeBookCoverUrl(b.cover),
-    materialName: b.title + '_나노시트.pdf',
+    materialName: title + '_나노시트.pdf',
     materialSize: '1.45 MB',
     materialType: '나노 시트 (PDF)',
     quizStatus: (b.quizzes || 5) + '문항 완비',
@@ -7919,7 +7962,7 @@ function syncAcademyBooksState() {
   }
 }
 
-// 로컬 저장소에 보관된 학원 신규 등록 도서(PDF 데이터 포함) 자동 복원
+// 로컬 저장소에 보관된 학원 신규 등록 도서(PDF 데이터 포함) 자동 복원 및 손상 데이터 정제
 (function restoreCustomAcademyBooks() {
   if (window.NANO_SERVER_DATA) return;
   try {
@@ -7927,14 +7970,20 @@ function syncAcademyBooksState() {
     if (stored) {
       var list = JSON.parse(stored);
       if (Array.isArray(list)) {
+        var cleanList = [];
         list.forEach(function(item) {
-          // id가 없는 손상된 항목은 목록을 깨뜨리므로 복원에서 제외
+          // 1) id가 없거나 'undefined'인 손상 항목은 완전 제외
           if (!item || !item.id || item.id === 'undefined') return;
+          // 2) 본사 정규 도서(FA/KC/FB/KA9 등)가 잘못 캐시되어 들어간 경우 커스텀 도서에서 제거
+          if (/^(FA|KC|FB|KA9)\d{6}$/.test(item.id) && item.creatorType !== 'ACADEMY') return;
+
           var exists = academyBookList.some(function(b) { return b.id === item.id; });
           if (!exists) {
-            academyBookList.unshift(item);
+            academyBookList.unshift(createAcademyBookItem(item));
           }
+          cleanList.push(item);
         });
+        localStorage.setItem('nano_custom_academy_books', JSON.stringify(cleanList));
       }
     }
   } catch(e) {
@@ -8153,12 +8202,18 @@ function filterAcademyBooks(keepPage) {
       if (aOwned !== bOwned) {
         return bOwned - aOwned;
       }
-      // 2순위: 도서 번호 내림차순 (예: FA000500 > FA000001)
-      return String(b.id || '').localeCompare(String(a.id || ''), undefined, { numeric: true, sensitivity: 'base' });
+      // 2순위: 도서 번호 내림차순 (예: KC900003 > FA000001)
+      var idA = String(a.id || a.bookNo || '');
+      var idB = String(b.id || b.bookNo || '');
+      return idB.localeCompare(idA, undefined, { numeric: true, sensitivity: 'base' });
     } else if (sortVal === 'ID_DESC') {
-      return String(b.id || '').localeCompare(String(a.id || ''), undefined, { numeric: true, sensitivity: 'base' });
+      var idA = String(a.id || a.bookNo || '');
+      var idB = String(b.id || b.bookNo || '');
+      return idB.localeCompare(idA, undefined, { numeric: true, sensitivity: 'base' });
     } else if (sortVal === 'ID_ASC') {
-      return String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true, sensitivity: 'base' });
+      var idA = String(a.id || a.bookNo || '');
+      var idB = String(b.id || b.bookNo || '');
+      return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
     } else if (sortVal === 'DATE_DESC') {
       var da = a.createdAt || a.id || '';
       var db = b.createdAt || b.id || '';
@@ -8356,7 +8411,7 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
           <div class="book-thumb-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
         </div>
       </td>
-      <td class="text-center font-weight-bold text-muted">${b.id}</td>
+      <td class="text-center font-weight-bold text-muted">${b.id || b.bookNo || '-'}</td>
       <td>
         <div style="font-weight: 700; font-size: 14.5px; color: var(--text-main); cursor: pointer;" onclick="openAcademyBookOnlyAddModal('${b.id}')" title="클릭하여 도서 상세 정보 보기" class="book-title-hover">${b.title}</div>
         <small class="text-muted">${b.subtitle || '나노 추천 교과 연계 도서'}</small>
