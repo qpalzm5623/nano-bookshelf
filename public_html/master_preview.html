@@ -2536,13 +2536,13 @@
                     <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
                     <strong>안내:</strong> 입력하신 배너 제목과 설명 문구는 <strong>관리자 목록 확인용</strong>입니다. 학생 화면에는 텍스트가 겹치지 않고 배너 이미지만 원본 그대로 표출됩니다.
                   </div>
-                  <div class="form-group mb-2">
-                    <label class="font-weight-bold" style="font-size: 13px;">배너 제목 (관리 식별용) <span class="text-danger">*</span></label>
-                    <input type="text" id="bannerTitle" class="form-control form-control-beige" placeholder="예: 9월 나노 독서왕 챌린지!" required>
+                  <div class="form-group mb-3">
+                    <label class="font-weight-bold text-dark mb-1" style="font-size: 13px;">배너 제목 (관리 식별용) <span class="text-danger">*</span></label>
+                    <input type="text" id="bannerTitle" class="form-control form-control-beige" placeholder="예: 9월 나노 독서왕 챌린지!" required style="height: 42px; border-radius: 9px; font-size: 13px;">
                   </div>
                   <div class="form-group mb-3">
-                    <label class="font-weight-bold" style="font-size: 13px;">배너 서브 설명 (관리 메모용)</label>
-                    <input type="text" id="bannerSub" class="form-control form-control-beige" placeholder="예: 이번 달 3권 완독하고 골드 뱃지를 획득하세요!">
+                    <label class="font-weight-bold text-dark mb-1" style="font-size: 13px;">배너 서브 설명 (관리 메모용)</label>
+                    <input type="text" id="bannerSub" class="form-control form-control-beige" placeholder="예: 이번 달 3권 완독하고 골드 뱃지를 획득하세요!" style="height: 42px; border-radius: 9px; font-size: 13px;">
                   </div>
                 </div>
                 <div class="row">
@@ -2550,9 +2550,9 @@
                     <label class="font-weight-bold" style="font-size: 13px;">노출 순서</label>
                     <input type="number" id="bannerOrder" class="form-control form-control-beige" value="1" min="1">
                   </div>
-                  <div class="col-6 form-group mb-0">
-                    <label class="font-weight-bold" style="font-size: 13px;">활성 여부</label>
-                    <select id="bannerActive" class="select-beige w-100">
+                  <div class="col-12 form-group mb-0">
+                    <label class="font-weight-bold text-dark mb-1" style="font-size: 13px;">활성 여부</label>
+                    <select id="bannerActive" class="select-beige w-100" style="height: 42px; border-radius: 9px; font-size: 13px; padding: 0 12px;">
                       <option value="Y">노출 (활성)</option>
                       <option value="N">숨김 (비활성)</option>
                     </select>
@@ -2569,7 +2569,7 @@
                     <h6 class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
                       <i class="fa-solid fa-cloud-arrow-up mr-1 text-primary"></i>배너 이미지 직접 업로드
                     </h6>
-                    <button type="button" class="btn btn-xs btn-outline-danger" id="bannerImgResetBtn" onclick="handleBannerImageRemove()" style="font-size: 11px; padding: 2px 8px; border-radius: 6px;">
+                    <button type="button" class="btn btn-xs btn-outline-danger" id="bannerImgResetBtn" onclick="handleBannerImageRemove()" style="font-size: 11.5px; padding: 4px 10px; border-radius: 7px;">
                       <i class="fa-solid fa-trash-can mr-1"></i>이미지 삭제
                     </button>
                   </div>
@@ -2579,8 +2579,8 @@
                   </div>
 
                   <!-- 직접 파일 업로드 -->
-                  <div class="form-group mb-2">
-                    <input type="file" id="bannerImageFile" class="form-control form-control-beige p-1" accept="image/png, image/jpeg, image/webp" onchange="handleBannerFileUpload(event)" style="height: auto; font-size: 12px;">
+                  <div class="form-group mb-3">
+                    <input type="file" id="bannerImageFile" class="form-control form-control-beige" accept="image/png, image/jpeg, image/webp" onchange="handleBannerFileUpload(event)" style="height: 42px; font-size: 12.5px; padding: 7px 12px; border-radius: 9px;">
                   </div>
                 </div>
 
@@ -2627,14 +2627,14 @@
             <div class="row">
               <!-- 좌측: 현재 배너에 등록된 도서 목록 -->
               <div class="col-lg-6 mb-3 mb-lg-0">
-                <div class="border rounded p-2 bg-light h-100" style="min-height: 240px; display: flex; flex-direction: column;">
+                <div class="border rounded-lg p-3 bg-light h-100" style="min-height: 280px; display: flex; flex-direction: column;">
                   <div class="d-flex justify-content-between align-items-center mb-2 px-1">
                     <span class="font-weight-bold text-muted" style="font-size: 12px;">
                       <i class="fa-solid fa-list-check mr-1 text-primary"></i>선택된 도서 리스트 (<span id="bmLeftCount">0</span>)
                     </span>
-                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="clearCurBannerBooks()" style="font-size: 11px; padding: 2px 7px;">전체 비우기</button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="clearCurBannerBooks()" style="font-size: 11.5px; padding: 3px 9px; border-radius: 6px;">전체 비우기</button>
                   </div>
-                  <div id="bmMappedListContainer" style="max-height: 240px; overflow-y: auto; flex: 1;">
+                  <div id="bmMappedListContainer" style="max-height: 270px; overflow-y: auto; flex: 1;">
                     <!-- JS 렌더링 -->
                   </div>
                 </div>
@@ -2642,14 +2642,14 @@
 
               <!-- 우측: 전체 마스터 도서 검색 및 추가 (30권씩 페이징 & 도서 주제별 태그 필터) -->
               <div class="col-lg-6">
-                <div class="border rounded p-2 bg-light h-100" style="min-height: 280px; display: flex; flex-direction: column;">
-                  <div class="d-flex gap-2 mb-2">
-                    <input type="text" id="bmSearchInput" class="form-control form-control-sm form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="onBmFilterChange()">
-                    <select id="bmCategorySelect" class="select-beige" style="font-size: 11.5px; padding: 4px 6px; min-width: 130px; max-width: 160px;" onchange="onBmFilterChange()">
+                <div class="border rounded-lg p-3 bg-light h-100" style="min-height: 280px; display: flex; flex-direction: column;">
+                  <div class="d-flex align-items-center mb-2" style="gap: 8px;">
+                    <input type="text" id="bmSearchInput" class="form-control form-control-sm form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="onBmFilterChange()" style="height: 38px; border-radius: 8px; font-size: 12.5px;">
+                    <select id="bmCategorySelect" class="select-beige" style="font-size: 12px; height: 38px; padding: 4px 10px; min-width: 140px; border-radius: 8px;" onchange="onBmFilterChange()">
                       <option value="">전체 주제별 태그</option>
                     </select>
                   </div>
-                  <div id="bmAvailableListContainer" style="max-height: 260px; overflow-y: auto; flex: 1;">
+                  <div id="bmAvailableListContainer" style="max-height: 270px; overflow-y: auto; flex: 1;">
                     <!-- JS 렌더링 -->
                   </div>
                   <!-- 30권 단위 페이징 바 -->
@@ -2661,10 +2661,10 @@
             </div>
           </div>
 
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
-            <button type="submit" class="btn-beige-primary">
-              <i class="fa-solid fa-floppy-disk mr-1"></i>배너 저장하기
+          <div class="d-flex justify-content-end align-items-center mt-4 pt-3" style="gap: 12px; border-top: 1px solid var(--border-light);">
+            <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal" style="padding: 10px 24px; border-radius: 10px; font-size: 13.5px; background: #eee9e2; color: #4a423a; border: 1px solid #dcd4c9;">취소</button>
+            <button type="submit" class="btn btn-primary font-weight-bold" style="padding: 10px 28px; border-radius: 10px; font-size: 13.5px; background: #26211d; border-color: #26211d; color: #fff; box-shadow: 0 4px 12px rgba(38,33,29,0.18); display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-floppy-disk"></i>배너 저장하기
             </button>
           </div>
         </form>

@@ -3629,58 +3629,59 @@ function renderBannerList() {
   const countEl = document.getElementById("bannerCount");
   if (countEl) countEl.innerText = activeCount;
 
-  container.innerHTML = bannerList.map((b) => {
+  container.innerHTML = bannerList.map((b, index) => {
     const bookCount = b.bookIds ? b.bookIds.length : 0;
     const clicks = typeof b.clicks === "number" ? b.clicks.toLocaleString() : (b.clicks || "0");
     const regDate = b.createdAt || "2026-09-01";
+    const displayOrder = (b.order != null && !isNaN(b.order)) ? b.order : (index + 1);
 
     return `
-    <div class="banner-preview-box">
-      <div style="font-size: 18px; font-weight: 900; color: var(--text-soft); width: 32px; text-align: center;">
-        #${b.order}
+    <div class="banner-preview-box" style="padding: 18px 22px; gap: 20px; align-items: center; border-radius: 14px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.2s ease;">
+      <div style="font-size: 16px; font-weight: 800; color: #8c827a; min-width: 42px; text-align: center; letter-spacing: -0.5px; background: #f5f2ec; padding: 6px 8px; border-radius: 8px;">
+        #${displayOrder}
       </div>
-      <div class="banner-img-thumb" onclick="previewBannerImage('${b.imageUrl || ''}', '${b.title}')" title="배너 이미지 크게 보기 (클릭)" style="background: #ece7e1; cursor: pointer;">
+      <div class="banner-img-thumb" onclick="previewBannerImage('${b.imageUrl || ''}', '${b.title}')" title="배너 이미지 크게 보기 (클릭)" style="background: #ece7e1; cursor: pointer; width: 140px; height: 68px; border-radius: 10px; overflow: hidden; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.06);">
         ${b.imageUrl ? `
-          <img src="${b.imageUrl}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <img src="${b.imageUrl}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="banner-thumb-hover-overlay">
-            <i class="fa-solid fa-magnifying-glass-plus text-white" style="font-size: 20px;"></i>
+            <i class="fa-solid fa-magnifying-glass-plus text-white" style="font-size: 18px;"></i>
           </div>
           <div class="d-none w-100 h-100 align-items-center justify-content-center text-muted" style="background: #ece7e1;">
-            <i class="fa-solid fa-image" style="font-size: 24px; opacity: 0.6;"></i>
+            <i class="fa-solid fa-image" style="font-size: 22px; opacity: 0.5;"></i>
           </div>
         ` : `
           <div class="d-flex w-100 h-100 align-items-center justify-content-center text-muted">
-            <i class="fa-solid fa-image" style="font-size: 24px; opacity: 0.6;"></i>
+            <i class="fa-solid fa-image" style="font-size: 22px; opacity: 0.5;"></i>
           </div>
         `}
       </div>
       <div class="flex-grow-1" style="min-width: 0;">
         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-          <span class="badge-soft ${b.active === 'Y' ? 'badge-soft-success' : 'badge-soft-neutral'}">
+          <span class="badge-soft ${b.active === 'Y' ? 'badge-soft-success' : 'badge-soft-neutral'}" style="font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
             ${b.active === 'Y' ? '노출중' : '숨김'}
           </span>
-          <strong style="font-size: 15px; color: var(--text-main);">${b.title}</strong>
+          <strong style="font-size: 15.5px; font-weight: 700; color: var(--text-main); line-height: 1.4;">${b.title}</strong>
         </div>
-        <div class="text-muted text-truncate mb-2" style="font-size: 13px;">${b.sub || '서브 설명 없음'}</div>
+        <div class="text-muted text-truncate mb-2" style="font-size: 13px; line-height: 1.4;">${b.sub || '서브 설명 없음'}</div>
         <div class="d-flex align-items-center gap-3 text-muted" style="font-size: 12px;">
           <span><i class="fa-regular fa-calendar-check mr-1 text-primary"></i>등록일: <strong>${regDate}</strong></span>
           <span><i class="fa-solid fa-arrow-pointer mr-1 text-success"></i>클릭수: <strong>${clicks}회</strong></span>
           <span><i class="fa-solid fa-book-bookmark mr-1 text-warning"></i>연결 도서: <strong>${bookCount}권</strong></span>
         </div>
       </div>
-      <div class="d-flex align-items-center gap-2 flex-shrink-0">
+      <div class="d-flex align-items-center flex-shrink-0" style="gap: 8px;">
         <!-- 순서 조정 버튼 (위/아래) -->
-        <div class="d-flex flex-column" style="gap: 2px;">
-          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder('${b.id}', 'up')" title="위로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▲</button>
-          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder('${b.id}', 'down')" title="아래로" style="border-radius: 4px; padding: 2px 7px; font-size: 11px; line-height: 1.4;">▼</button>
+        <div class="d-flex flex-column" style="gap: 3px;">
+          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder('${b.id}', 'up')" title="위로" style="border-radius: 5px; padding: 3px 8px; font-size: 11px; line-height: 1.2;">▲</button>
+          <button class="btn btn-xs btn-outline-secondary" onclick="moveBannerOrder('${b.id}', 'down')" title="아래로" style="border-radius: 5px; padding: 3px 8px; font-size: 11px; line-height: 1.2;">▼</button>
         </div>
-        <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openBannerModal('${b.id}')" style="border-radius: 8px;">
-          <i class="fa-solid fa-pen mr-1"></i>편집
+        <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openBannerModal('${b.id}')" style="border-radius: 8px; padding: 6px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px;">
+          <i class="fa-solid fa-pen" style="font-size: 11px;"></i>편집
         </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="toggleBannerActive('${b.id}')" style="border-radius: 8px;">
+        <button class="btn btn-sm btn-outline-secondary" onclick="toggleBannerActive('${b.id}')" style="border-radius: 8px; padding: 6px 12px; font-size: 12.5px;">
           ${b.active === 'Y' ? '숨김 전환' : '노출 전환'}
         </button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner('${b.id}')" style="border-radius: 8px;">
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner('${b.id}')" style="border-radius: 8px; padding: 6px 12px; font-size: 12.5px;" title="배너 삭제">
           <i class="fa-solid fa-trash-can"></i>
         </button>
       </div>
@@ -3907,18 +3908,25 @@ function renderBmMappedBooks() {
   const mapped = curBannerBooks.map(id => masterBooks.find(b => b.id === id)).filter(Boolean);
 
   container.innerHTML = mapped.map((b, idx) => `
-    <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded border shadow-2xs">
+    <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded-lg border shadow-2xs" style="gap: 12px; padding: 10px 12px !important; border-radius: 10px !important;">
       <div class="d-flex align-items-center gap-2" style="min-width: 0; flex: 1;">
-        <span class="badge-soft badge-soft-neutral" style="font-size: 10.5px; width: 20px; text-align: center;">${idx + 1}</span>
-        <div style="width: 30px; height: 40px; border-radius: 4px; overflow: hidden; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-          ${b.cover ? `<img src="${b.cover}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-book text-muted"></i>`}
+        <span class="badge-soft badge-soft-neutral" style="font-size: 11px; font-weight: 700; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0;">${idx + 1}</span>
+        <div style="width: 36px; height: 48px; border-radius: 6px; overflow: hidden; background: #ece7e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.06);">
+          ${b.cover ? `
+            <img src="${b.cover}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="d-none w-100 h-100 align-items-center justify-content-center text-muted" style="background: #ece7e1;">
+              <i class="fa-solid fa-book" style="font-size: 14px; opacity: 0.5;"></i>
+            </div>
+          ` : `
+            <i class="fa-solid fa-book text-muted" style="font-size: 14px; opacity: 0.5;"></i>
+          `}
         </div>
         <div style="min-width: 0; flex: 1;">
-          <div class="text-truncate font-weight-bold" style="font-size: 12.5px; color: var(--text-main);">${b.title}</div>
-          <div class="text-truncate text-muted" style="font-size: 11px;">${b.author} · ${b.publisher}</div>
+          <div class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main); margin-bottom: 2px;">${b.title}</div>
+          <div class="text-truncate text-muted" style="font-size: 11.5px;">${b.author || '저자 미상'} · ${b.publisher || '출판사 미상'}</div>
         </div>
       </div>
-      <button type="button" class="btn btn-xs btn-outline-danger ml-2" onclick="removeBookFromCurBanner('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBookFromCurBanner('${b.id}')" style="border-radius: 7px; font-size: 11.5px; padding: 4px 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
         <i class="fa-solid fa-xmark mr-1"></i>제외
       </button>
     </div>
@@ -3971,24 +3979,36 @@ function renderBmAvailableBooks() {
 
   container.innerHTML = pagedBooks.map(b => {
     const isAdded = curBannerBooks.includes(b.id);
-    const tagDisplay = b.themeTag ? `#${b.themeTag}` : (b.category || '');
+    const cleanTag = (b.themeTag || b.category || '').replace(/^#+/, '');
+    const tagDisplay = cleanTag ? `#${cleanTag}` : '';
+
     return `
-      <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded border">
+      <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded-lg border shadow-2xs" style="gap: 12px; padding: 10px 12px !important; border-radius: 10px !important;">
         <div class="d-flex align-items-center gap-2" style="min-width: 0; flex: 1;">
-          <div style="width: 30px; height: 40px; border-radius: 4px; overflow: hidden; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-            ${b.cover ? `<img src="${b.cover}" alt="${b.title}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-book text-muted"></i>`}
+          <div style="width: 36px; height: 48px; border-radius: 6px; overflow: hidden; background: #ece7e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.06);">
+            ${b.cover ? `
+              <img src="${b.cover}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+              <div class="d-none w-100 h-100 align-items-center justify-content-center text-muted" style="background: #ece7e1;">
+                <i class="fa-solid fa-book" style="font-size: 14px; opacity: 0.5;"></i>
+              </div>
+            ` : `
+              <i class="fa-solid fa-book text-muted" style="font-size: 14px; opacity: 0.5;"></i>
+            `}
           </div>
           <div style="min-width: 0; flex: 1;">
-            <div class="text-truncate font-weight-bold" style="font-size: 12.5px; color: var(--text-main);">${b.title}</div>
-            <div class="text-truncate text-muted" style="font-size: 11px;">${b.author} · ${b.publisher} · <span class="badge-soft badge-soft-neutral" style="font-size: 10px; padding: 1px 4px;">${tagDisplay}</span></div>
+            <div class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main); margin-bottom: 2px;">${b.title}</div>
+            <div class="text-truncate text-muted" style="font-size: 11.5px; display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;">
+              <span class="text-truncate">${b.author || '저자 미상'} · ${b.publisher || '출판사'}</span>
+              ${tagDisplay ? `<span class="badge-soft badge-soft-neutral flex-shrink-0" style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; font-weight: 600;">${tagDisplay}</span>` : ''}
+            </div>
           </div>
         </div>
         ${isAdded ? `
-          <button type="button" class="btn btn-xs btn-secondary ml-2" disabled style="border-radius: 6px; font-size: 11px; padding: 3px 8px; opacity: 0.7;">
+          <button type="button" class="btn btn-sm btn-secondary font-weight-bold" disabled style="border-radius: 7px; font-size: 11.5px; padding: 5px 12px; opacity: 0.75; white-space: nowrap; flex-shrink: 0;">
             <i class="fa-solid fa-check mr-1"></i>추가됨
           </button>
         ` : `
-          <button type="button" class="btn btn-xs btn-outline-primary ml-2 font-weight-bold" onclick="addBookToCurBanner('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 3px 8px;">
+          <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold" onclick="addBookToCurBanner('${b.id}')" style="border-radius: 7px; font-size: 11.5px; padding: 5px 14px; white-space: nowrap; flex-shrink: 0; transition: all 0.15s ease;">
             <i class="fa-solid fa-plus mr-1"></i>추가
           </button>
         `}
