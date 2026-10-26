@@ -3077,34 +3077,42 @@
   display: inline-block !important;
 }
 
-/* 모바일 완독 도서 그리드 (2열) */
+/* 모바일 완독 도서 및 성취 내역 카드 (1열 풀 너비 & 상하 스택) */
 #portfolioViewportContainer.portfolio-view-mobile .pf-book-col {
-  flex: 0 0 50% !important;
-  max-width: 50% !important;
-  padding: 0 4px !important;
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  padding: 0 0 8px 0 !important;
 }
 
-#portfolioViewportContainer.portfolio-view-mobile .pf-book-card {
-  padding: 8px 6px !important;
-  border-radius: 8px !important;
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-row-card {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  padding: 12px !important;
 }
 
-#portfolioViewportContainer.portfolio-view-mobile .pf-book-cover-img {
-  width: 56px !important;
-  height: 78px !important;
-}
-
-/* 모바일 북퀴즈 테이블: 좌우 스크롤 완전 제거 & 390px 내 100% 최적화 */
-#portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table-wrap {
-  overflow-x: hidden !important; /* 좌우 스크롤 제거 */
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-row-card > div:first-child {
+  display: flex !important;
+  align-items: center !important;
+  border-right: none !important;
+  border-bottom: 1px dashed #e6ded3 !important;
+  padding-right: 0 !important;
+  padding-bottom: 6px !important;
   width: 100% !important;
+  justify-content: space-between !important;
 }
 
-#portfolioViewportContainer.portfolio-view-mobile .pf-quiz-table {
-  min-width: 100% !important;
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-info-block {
   width: 100% !important;
-  table-layout: fixed !important; /* 고정 레이아웃 */
-  font-size: 11px !important;
+  max-width: 100% !important;
+}
+
+#portfolioViewportContainer.portfolio-view-mobile .pf-book-achievement-block {
+  border-left: none !important;
+  border-top: 1px dashed #e6ded3 !important;
+  padding-left: 0 !important;
+  padding-top: 8px !important;
+  width: 100% !important;
 }
 
 /* 모바일 나노의 독서 이야기 (1열 풀 너비) */
@@ -3438,7 +3446,7 @@
               <div class="d-flex flex-wrap align-items-center" style="gap: 12px; flex: 1; min-width: 320px;">
                 <div style="min-width: 145px;">
                   <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">클래스 필터</label>
-                  <select class="form-control" id="filterStudentClass" onchange="filterStudents()"
+                  <select class="form-control" id="filterStudentClass"
                     style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                     <option value="ALL" selected>전체 클래스 보기</option>
                     <option value="지혜반">초등 5학년 (지혜반)</option>
@@ -3450,7 +3458,7 @@
                 </div>
                 <div style="min-width: 110px;">
                   <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">상태</label>
-                  <select class="form-control" id="filterStudentStatus" onchange="filterStudents()"
+                  <select class="form-control" id="filterStudentStatus"
                     style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                     <option value="ALL" selected>전체 상태</option>
                     <option value="승인">승인</option>
@@ -3462,12 +3470,12 @@
                   <div class="input-group">
                     <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill"
                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
-                      data-1p-ignore="true" oninput="filterStudents()" onsearch="filterStudents()"
+                      data-1p-ignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudents();}"
                       style="height: 38px; border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 12.5px;"
                       placeholder="원생명, 아이디, 학교 등 검색...">
                     <div class="input-group-append">
-                      <button class="btn btn-beige-primary px-3" style="height: 38px; border-radius: 0 8px 8px 0;"
-                        onclick="filterStudents()"><i class="fa-solid fa-search"></i></button>
+                      <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 0 8px 8px 0; display: inline-flex; align-items: center; gap: 4px;"
+                        onclick="filterStudents()"><i class="fa-solid fa-search"></i>검색</button>
                     </div>
                   </div>
                 </div>
@@ -3535,16 +3543,40 @@
 
         <!-- 1-2. 선생님 관리 서브탭 -->
         <div id="member-sub-teachers" style="display: none;">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="font-weight-bold mb-0 text-muted">
-              <i class="fa-solid fa-chalkboard-user mr-2"></i>담당 지도교사 목록 (<span id="teacherTotalCount">4</span>명)
-            </h6>
-            <button class="btn-beige-primary" onclick="openTeacherAddModal()">
-              <i class="fa-solid fa-user-plus mr-1"></i>신규 선생님 등록
-            </button>
+          <!-- 선생님 검색 & 액션 바 -->
+          <div class="simple-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="d-flex align-items-center flex-wrap gap-2" style="flex: 1; max-width: 480px;">
+                <div class="input-group">
+                  <input type="search" class="form-control" id="searchTeacherInput"
+                    placeholder="선생님 성명, 아이디, 직책, 담당 클래스, 연락처 검색..."
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();filterTeachers();}"
+                    style="height: 38px; border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                  <div class="input-group-append">
+                    <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 0 8px 8px 0; display: inline-flex; align-items: center; gap: 4px;" onclick="filterTeachers()">
+                      <i class="fa-solid fa-search"></i>검색
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="resetTeacherSearch()" style="height: 38px; border-radius: 8px; font-size: 12.5px;">
+                  <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+                </button>
+                <button class="btn btn-beige-primary font-weight-bold" onclick="openTeacherAddModal()" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; padding: 0 16px; font-size: 12.5px;">
+                  <i class="fa-solid fa-user-plus mr-1.5"></i>신규 선생님 등록
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="simple-card">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
+              <h6 class="font-weight-bold mb-0 text-muted" style="font-size: 13.5px;">
+                <i class="fa-solid fa-chalkboard-user mr-2 text-primary"></i>담당 지도교사 목록 (<span id="teacherTotalCount">4</span>명)
+              </h6>
+              <small class="text-muted">* 학원에 등록된 지도교사 명부입니다. 상단 검색바에서 검색 후 관리할 수 있습니다.</small>
+            </div>
             <table class="simple-table">
               <thead>
                 <tr>
@@ -3599,7 +3631,7 @@
               <!-- 1. 등록처 필터 -->
               <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">등록처 필터</label>
-                <select class="form-control form-control-sm" id="filterAcadBookOrigin" onchange="filterAcademyBooks()"
+                <select class="form-control form-control-sm" id="filterAcadBookOrigin"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="ALL" selected>전체</option>
                   <option value="HQ">본사</option>
@@ -3610,7 +3642,7 @@
               <!-- 2. 권장 학년 -->
               <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">권장 학년</label>
-                <select class="form-control form-control-sm" id="filterAcadBookGrade" onchange="filterAcademyBooks()"
+                <select class="form-control form-control-sm" id="filterAcadBookGrade"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="ALL" selected>전체 학년</option>
                   <option value="미취학">미취학</option>
@@ -3631,19 +3663,19 @@
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">보유 여부</label>
                 <div class="d-flex align-items-center" style="gap: 16px; height: 31px;">
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked onchange="filterAcademyBooks()">
+                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked>
                     <label class="custom-control-label font-weight-bold" for="ownedFilterAll" style="cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;">
                       전체
                     </label>
                   </div>
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED" onchange="filterAcademyBooks()">
+                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterOwned" style="cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;">
                       보유
                     </label>
                   </div>
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED" onchange="filterAcademyBooks()">
+                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterUnowned" style="cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;">
                       미보유
                     </label>
@@ -3651,18 +3683,18 @@
                 </div>
               </div>
 
-              <!-- 4. 도서 검색 (남은 5열을 확보하여 여유롭고 시원하게 검색) -->
+              <!-- 4. 도서 검색 (버튼 클릭 또는 Enter 키로만 검색 실행) -->
               <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 mb-2 mb-xl-0">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">도서 검색</label>
                 <div class="input-group input-group-sm">
                   <input type="search" class="form-control" id="searchAcadBookInput" name="search_acad_book_no_autofill"
                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
-                    data-1p-ignore="true" oninput="filterAcademyBooks()" onsearch="filterAcademyBooks()"
+                    data-1p-ignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAcademyBooks();}"
                     style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;"
                     placeholder="도서명, 저자, 출판사...">
                   <div class="input-group-append">
-                    <button class="btn btn-beige-primary px-3" style="border-radius: 0 8px 8px 0;"
-                      onclick="filterAcademyBooks()"><i class="fa-solid fa-search"></i></button>
+                    <button class="btn btn-beige-primary px-3 font-weight-bold" style="border-radius: 0 8px 8px 0;"
+                      onclick="filterAcademyBooks()"><i class="fa-solid fa-search mr-1"></i>검색</button>
                   </div>
                 </div>
               </div>
@@ -3673,15 +3705,14 @@
               <div class="col-md-12 d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
                 <div class="d-flex align-items-center" style="gap: 20px;">
                   <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="chkOnlyMyQuizBooks"
-                      onchange="filterAcademyBooks()">
+                    <input type="checkbox" class="custom-control-input" id="chkOnlyMyQuizBooks">
                     <label class="custom-control-label font-weight-bold text-dark" for="chkOnlyMyQuizBooks"
                       style="cursor: pointer; font-size: 13px;">
                       <i class="fa-solid fa-filter mr-1 text-primary"></i>내가 올린 (북퀴즈 생성한) 도서 모아보기
                     </label>
                   </div>
                 </div>
-                <small class="text-muted" style="font-size: 11.5px;">* 표의 '보유 여부' 스위치를 켜면 학원 보유 도서로 등록되며, 상단 필터에서 '보유'를 선택해 즉시 모아볼 수 있습니다.</small>
+                <small class="text-muted" style="font-size: 11.5px;">* 검색 조건을 설정한 후 우측 '검색' 버튼을 클릭하거나 Enter를 누르면 목록이 필터링됩니다.</small>
               </div>
             </div>
           </div>
@@ -4439,10 +4470,10 @@
           </div>
           <div class="col-md-4">
             <div class="stat-card">
-              <div class="text-muted" style="font-size: 13px;">학급별 정규 배정</div>
-              <div class="stat-num"><span id="assignClassCount">3</span><span
-                  style="font-size: 16px; font-weight: normal; margin-left: 2px;">개 반</span></div>
-              <small class="text-success font-weight-600">지혜반, 슬기반, 마스터반 (총 36명 배정 진행)</small>
+              <div class="text-muted" style="font-size: 13px;">배정 도서 총 권수</div>
+              <div class="stat-num"><span id="assignTotalBookCount">0</span><span
+                  style="font-size: 16px; font-weight: normal; margin-left: 2px;">권</span></div>
+              <small class="text-success font-weight-600">원생별 맞춤 및 학급 배정 도서 총합</small>
             </div>
           </div>
           <div class="col-md-4">
@@ -4455,53 +4486,44 @@
           </div>
         </div>
 
-        <!-- 2개 섹션 서브 탭 (중복 버튼 제거) -->
-        <div class="d-flex align-items-center justify-content-between p-2 mb-4 rounded"
-          style="background: #ede7dc; border: 1px solid var(--border-medium);">
-          <div class="d-flex">
-            <button type="button" class="assign-nav-btn active mr-2" id="btn-assign-sub-student"
-              onclick="switchAssignSubSection('student')">
-              <i class="fa-solid fa-user-graduate mr-2"></i>1. 개별 원생 맞춤 배정
-              <span class="badge badge-light text-dark ml-2" id="badgeStudentAssignNum">4명</span>
-            </button>
-            <button type="button" class="assign-nav-btn" id="btn-assign-sub-class"
-              onclick="switchAssignSubSection('class')">
-              <i class="fa-solid fa-school mr-2"></i>2. 학급별(클래스) 도서 배정
-              <span class="badge badge-light text-dark ml-2" id="badgeClassAssignNum">3개 반</span>
-            </button>
-          </div>
-        </div>
-
         <!-- ============================================== -->
-        <!-- 섹션 1: 개별 원생 맞춤 도서 배정 현황 리스트 (기본 노출) -->
+        <!-- 개별 원생 맞춤 도서 배정 현황 리스트 (단일 통합 화면) -->
         <!-- ============================================== -->
         <div id="assign-section-student" style="display: block;">
           <div class="simple-card">
             <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div class="d-flex align-items-center">
                 <h6 class="font-weight-bold mb-0 mr-3" style="color: var(--text-main);">
-                  <i class="fa-solid fa-user-check mr-2 text-primary"></i>개별 원생 맞춤 도서 배정 현황
+                  <i class="fa-solid fa-user-check mr-2 text-primary"></i>원생 맞춤 도서 배정 현황
                 </h6>
-                <span class="badge-soft badge-soft-primary">원생별 맞춤 추천/심화 도서 관리</span>
+                <span class="badge-soft badge-soft-primary">원생별 맞춤 추천/심화 및 학급 배정 관리</span>
               </div>
-              <!-- 클래스 검색이 검색박스 왼쪽으로 배치 -->
-              <div class="d-flex align-items-center">
-                <select class="form-control form-control-sm mr-2" id="filterAssignStudentClass"
-                  onchange="filterStudentAssignments()" style="width: 140px; border-radius: 8px; font-size: 12.5px;">
+              <!-- 우측 툴바: 학급 필터, 검색 인풋, 개별 원생 배정, 학급 일괄 배정, 인증 도서 일괄 삭제 -->
+              <div class="d-flex align-items-center flex-wrap gap-2">
+                <select class="form-control form-control-sm" id="filterAssignStudentClass"
+                  onchange="filterStudentAssignments()" style="width: 130px; border-radius: 8px; font-size: 12.5px; height: 34px;">
                   <option value="ALL">전체 클래스</option>
                 </select>
-                <input type="search" class="form-control form-control-sm mr-2" id="searchAssignStudentInput"
+                <input type="search" class="form-control form-control-sm" id="searchAssignStudentInput"
                   name="search_assign_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
                   spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudentAssignments()"
                   onsearch="filterStudentAssignments()" placeholder="원생 이름/학번 검색..."
-                  style="width: 180px; border-radius: 8px; font-size: 12.5px;">
+                  style="width: 160px; border-radius: 8px; font-size: 12.5px; height: 34px;">
                 <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openIndividualAssignModal()"
-                  style="border-radius: 8px; font-size: 12px; white-space: nowrap;">
+                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center;">
                   <i class="fa-solid fa-plus mr-1"></i>개별 원생 배정
+                </button>
+                <button class="btn btn-sm font-weight-bold" onclick="openBatchClassAssignModal()"
+                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border: 1.5px solid #2b7a3e; color: #2b7a3e; background: #f0fdf4;">
+                  <i class="fa-solid fa-school mr-1.5"></i>학급 일괄 배정
+                </button>
+                <button class="btn btn-sm font-weight-bold" onclick="cleanCertifiedStudentAssignments()"
+                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border: 1.5px solid #dc2626; color: #dc2626; background: #fff5f5;">
+                  <i class="fa-solid fa-broom mr-1.5"></i>인증 도서 일괄 삭제
                 </button>
               </div>
             </div>
-            <table class="simple-table">
+            <table class="simple-table mb-0">
               <thead>
                 <tr>
                   <th style="width: 60px;">번호</th>
@@ -4516,53 +4538,10 @@
                 <!-- JS 동적 렌더링 -->
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- 섹션 2: 학급별(반) 도서 배정 현황 리스트 (탭 클릭 시 노출) -->
-        <!-- ============================================== -->
-        <div id="assign-section-class" style="display: none;">
-          <div class="simple-card">
-            <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div class="d-flex align-items-center">
-                <h6 class="font-weight-bold mb-0 mr-3" style="color: var(--text-main);">
-                  <i class="fa-solid fa-users-rectangle mr-2 text-warning"></i>학급별 도서 배정 현황
-                </h6>
-                <span class="badge-soft badge-soft-neutral">반 전체 원생에게 일괄 적용</span>
-              </div>
-              <div class="d-flex align-items-center">
-                <select class="form-control form-control-sm mr-2" id="filterAssignClassSelect"
-                  onchange="filterClassAssignments()" style="width: 170px; border-radius: 8px; font-size: 12.5px;">
-                  <option value="ALL">전체 클래스 보기</option>
-                  <option value="지혜반">지혜반 (초등 5학년)</option>
-                  <option value="슬기반">슬기반 (초등 4학년)</option>
-                  <option value="마스터반">마스터반 (초등 6학년)</option>
-                  <option value="심화반">심화반 (중등 논술)</option>
-                  <option value="새싹반">새싹반 (초등 저학년)</option>
-                </select>
-                <button class="btn btn-sm btn-outline-secondary" onclick="openClassAssignModal()"
-                  style="border-radius: 8px; font-size: 12px; white-space: nowrap;">
-                  <i class="fa-solid fa-users mr-1"></i>학급별 배정 관리
-                </button>
-              </div>
+            <!-- 20개씩 페이징 컨트롤 바 -->
+            <div id="assignStudentPaginationWrap" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #faf8f5;">
+              <!-- JS 동적 렌더링 -->
             </div>
-            <table class="simple-table">
-              <thead>
-                <tr>
-                  <th style="width: 60px;">번호</th>
-                  <th style="text-align: left; width: 180px;">대상 학급 (클래스)</th>
-                  <th style="text-align: left;">배정된 도서 목록</th>
-                  <th style="width: 110px;">배정일자</th>
-                  <th style="width: 140px;">반 완독 진행률</th>
-                  <th style="width: 120px;">학생 우선 노출</th>
-                  <th style="width: 140px; text-align: center;">관리</th>
-                </tr>
-              </thead>
-              <tbody id="classAssignmentTableBody">
-                <!-- JS 동적 렌더링 -->
-              </tbody>
-            </table>
           </div>
         </div>
 
@@ -4750,29 +4729,47 @@
             </div>
           </div>
 
-          <!-- 필터 툴바 (기간 & 학급 선택: 버튼 디자인 정돈) -->
+          <!-- 필터 툴바 (기간 & 학급 선택 및 원생 검색 + 검색 버튼) -->
           <div class="simple-card p-3 mb-4" style="background: #ffffff; border-radius: 12px;">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-              <!-- 좌측: 기간 필터 -->
-              <div class="d-flex align-items-center gap-2">
-                <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
-                  <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>집계 기간:
-                </span>
-                <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect"
-                  onchange="switchAdminRankPeriod(this.value)" style="min-width: 190px; border-radius: 8px;">
-                  <!-- JS 동적 생성: 현재월 포함 최근 6개월 -->
-                </select>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <!-- 좌측: 기간 & 학급 조건 필터 -->
+              <div class="d-flex align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
+                    <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>집계 기간:
+                  </span>
+                  <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect"
+                    style="min-width: 170px; border-radius: 8px;">
+                    <!-- JS 동적 생성: 현재월 포함 최근 6개월 -->
+                  </select>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
+                    <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
+                  </span>
+                  <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect"
+                    style="min-width: 150px; border-radius: 8px;">
+                    <option value="all">원내 전체</option>
+                  </select>
+                </div>
               </div>
 
-              <!-- 우측: 학급 필터 -->
-              <div class="d-flex align-items-center gap-2">
-                <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
-                  <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
-                </span>
-                <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect"
-                  onchange="switchAdminRankClass(this.value)" style="min-width: 170px; border-radius: 8px;">
-                  <option value="all">원내 전체</option>
-                </select>
+              <!-- 우측: 원생 검색창 및 검색/초기화 버튼 -->
+              <div class="d-flex align-items-center gap-2 ml-auto">
+                <div class="input-group input-group-sm" style="width: 240px;">
+                  <input type="search" class="form-control" id="adminRankSearchInput"
+                    placeholder="원생 이름/아이디 검색..."
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();executeAdminRankingSearch();}"
+                    style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;">
+                  <div class="input-group-append">
+                    <button class="btn btn-beige-primary px-3 font-weight-bold" style="border-radius: 0 8px 8px 0;"
+                      onclick="executeAdminRankingSearch()"><i class="fa-solid fa-search mr-1"></i>검색</button>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary font-weight-bold px-2.5" onclick="resetAdminRankingSearch()" title="조건 초기화" style="border-radius: 8px; height: 31px;">
+                  <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+                </button>
               </div>
             </div>
           </div>
@@ -5691,136 +5688,197 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- 2-2. 학급별(클래스) 도서 배정 관리 모달 (중복 배정 순위 정렬 & 일괄 관리) -->
+  <!-- 2-2. [신규] 학급 일괄 도서 배정 모달 (1 Depth: 학급 선택 ➔ 2 Depth: 배정 도서 선택) -->
   <!-- ============================================================== -->
-  <div class="modal fade" id="modalClassAssign" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+  <div class="modal fade" id="modalBatchClassAssign" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content"
         style="border-radius: 18px; border: 1px solid var(--border-medium); box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
 
-        <!-- 헤더 및 학급 선택 탭 -->
-        <div class="modal-header-simple p-4 pb-3"
-          style="background: #fdfbf7; border-bottom: 1px solid var(--border-light);">
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <div
-                style="width: 38px; height: 38px; border-radius: 10px; background: #c28e2b; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
-                <i class="fa-solid fa-school" style="font-size: 17px;"></i>
+        <!-- Depth 1: 배정 대상 학급 선택 화면 -->
+        <div id="batchClassAssignDepth1">
+          <div class="modal-header-simple p-4 pb-3"
+            style="background: #fdfbf7; border-bottom: 1px solid var(--border-light);">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <div
+                  style="width: 38px; height: 38px; border-radius: 10px; background: #2b7a3e; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                  <i class="fa-solid fa-school" style="font-size: 17px;"></i>
+                </div>
+                <div>
+                  <div class="d-flex align-items-center">
+                    <h5 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 17px;">
+                      학급 일괄 도서 배정
+                    </h5>
+                    <span class="badge badge-success ml-2" style="font-size: 11px; padding: 3px 8px;">1단계 : 학급 선택</span>
+                  </div>
+                  <small class="text-muted" style="font-size: 12px;">
+                    도서를 일괄 배정할 학급(클래스)을 선택해 주세요. 학급을 선택하면 해당 반 소속 학생들에게 배정할 도서를 고르는 2단계로 진입합니다.
+                  </small>
+                </div>
               </div>
-              <div>
-                <h5 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 17px;">
-                  학급별(클래스) 도서 배정 관리
-                </h5>
-                <small class="text-muted" style="font-size: 12px;">
-                  소속 학생들의 배정 도서를 취합하여 가장 많이 배정된 순서로 정렬하고, 도서별로 일괄 추가 또는 해제할 수 있습니다.
-                </small>
-              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                  aria-hidden="true">&times;</span></button>
             </div>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                aria-hidden="true">&times;</span></button>
           </div>
 
-          <!-- 학급 선택 버튼 그룹 -->
-          <div class="d-flex align-items-center mt-3 pt-2" style="border-top: 1px dashed var(--border-light);">
-            <span class="font-weight-bold mr-3" style="font-size: 13px; color: var(--text-main);">관리할 학급 선택 :</span>
-            <div class="d-flex gap-2 flex-wrap" id="classAssignTabButtons">
+          <div class="modal-body p-4" style="background: #faf8f5; max-height: 540px; overflow-y: auto;">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+              <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+                <i class="fa-solid fa-users-rectangle text-success mr-1.5"></i>학원 개설 학급 목록
+              </span>
+              <small class="text-muted">배정할 학급을 클릭하여 선택해 주세요.</small>
+            </div>
+
+            <!-- 학급 선택 카드 그리드 -->
+            <div class="row" id="batchClassCardList">
               <!-- JS 동적 렌더링 -->
             </div>
-          </div>
-        </div>
 
-        <div class="modal-body p-4" style="background: #faf8f5; max-height: 560px; overflow-y: auto;">
-
-          <!-- 학급 개요 배너 -->
-          <div class="p-3 mb-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center"
-            style="border: 1px solid var(--border-light);">
-            <div>
-              <div class="d-flex align-items-center mb-1">
-                <h6 class="font-weight-bold mb-0 mr-2" style="color: var(--text-main); font-size: 15px;"
-                  id="classAssignSelectedName">
-                  나노반
-                </h6>
-                <span class="badge-soft badge-soft-success font-weight-bold" id="classAssignSelectedMeta">초등 3학년 정규 ·
-                  28명</span>
-                <span class="badge-soft badge-soft-neutral ml-2" id="classAssignSelectedTeacher">담당: 지도교사</span>
+            <!-- 선택된 학급 미리보기 및 안내 바 -->
+            <div id="batchClassSelectedBanner" class="p-3 mt-3 rounded d-flex justify-content-between align-items-center flex-wrap gap-2"
+              style="background: #ffffff; border: 1.5px solid #2b7a3e; box-shadow: 0 2px 8px rgba(43, 122, 62, 0.08); display: none;">
+              <div class="d-flex align-items-center">
+                <i class="fa-solid fa-circle-check text-success mr-2" style="font-size: 18px;"></i>
+                <div>
+                  <strong style="color: var(--text-main); font-size: 14px;" id="batchClassSelectedTitle">지혜반</strong>
+                  <span class="text-muted ml-2" style="font-size: 12px;" id="batchClassSelectedStudentCount">대상 원생: 8명</span>
+                  <div class="text-muted mt-0.5" style="font-size: 11.5px;" id="batchClassSelectedNames">소속 원생: 강태양, 김소율, 박지민 ...</div>
+                </div>
               </div>
-              <div class="text-muted" style="font-size: 12px;" id="classAssignStudentListText">
-                소속 원생: 강태양, 이현진, 조진우, 윤하진, 장권 외 다수
-              </div>
-            </div>
-            <div>
-              <button type="button" class="btn btn-sm btn-beige-primary" onclick="toggleNewBookForClassSection()">
-                <i class="fa-solid fa-plus mr-1"></i>이 반에 새 도서 일괄 배정
+              <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold px-3" onclick="goToBatchClassDepth2()">
+                배정 도서 선택 단계로 이동 <i class="fa-solid fa-arrow-right ml-1"></i>
               </button>
             </div>
           </div>
 
-          <!-- 새 도서 학급 일괄 배정 아코디언/패널 (토글) -->
-          <div id="classNewBookSection" class="p-3 mb-3 rounded shadow-xs"
-            style="background: #ffffff; border: 1.5px dashed var(--border-medium); display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="font-weight-bold mb-0 text-success" style="font-size: 13.5px;">
-                <i class="fa-solid fa-cart-plus mr-1"></i>신규 도서를 해당 학급 전체 학생에게 일괄 배정하기
-              </h6>
-              <button type="button" class="btn btn-xs btn-outline-secondary"
-                onclick="toggleNewBookForClassSection()">닫기</button>
-            </div>
-            <div class="row align-items-center mb-2">
-              <div class="col-md-5 mb-1 mb-md-0">
-                <input type="search" class="form-control form-control-sm" id="classNewBookSearchInput"
-                  name="class_new_book_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
-                  spellcheck="false" data-lpignore="true" oninput="filterClassNewBookCatalog()"
-                  placeholder="도서명, 저자, 출판사 검색...">
-              </div>
-              <div class="col-md-7 d-flex align-items-center gap-1.5 flex-wrap">
-                <select class="form-control form-control-sm" id="classNewBookGrade"
-                  onchange="filterClassNewBookCatalog()" style="width: 125px; font-size: 11.5px; border-radius: 6px;">
-                  <option value="ALL">전체 학년</option>
-                  <option value="초등 1~2학년">초등 1~2학년</option>
-                  <option value="초등 3~4학년">초등 3~4학년</option>
-                  <option value="초등 5~6학년">초등 5~6학년</option>
-                  <option value="중등 1~3학년">중등 1~3학년</option>
-                </select>
-                <select class="form-control form-control-sm" id="classNewBookOrigin"
-                  onchange="filterClassNewBookCatalog()" style="width: 110px; font-size: 11.5px; border-radius: 6px;">
-                  <option value="ALL">전체 출제처</option>
-                  <option value="HQ">본사 직속</option>
-                  <option value="ACADEMY">자체 등록</option>
-                </select>
-                <select class="form-control form-control-sm" id="classNewBookCategory"
-                  onchange="filterClassNewBookCatalog()" style="width: 115px; font-size: 11.5px; border-radius: 6px;">
-                  <option value="ALL">전체 주제</option>
-                  <option value="문학">문학 / 소설</option>
-                  <option value="사회">사회 / 인성</option>
-                  <option value="과학">과학 / 환경</option>
-                  <option value="인문">인문 / 철학</option>
-                </select>
-              </div>
-            </div>
-            <div id="classNewBookCatalogContainer" style="max-height: 180px; overflow-y: auto;">
-              <!-- JS 렌더링 -->
+          <div class="modal-footer py-2 px-4 bg-light d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              <i class="fa-solid fa-shield-halved text-success mr-1"></i>학급 전체 학생에게 안전하게 배정되며, 기존 개인 배정 도서는 안전하게 보존됩니다.
+            </small>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 font-weight-bold mr-2" data-dismiss="modal">취소</button>
+              <button type="button" class="btn btn-sm btn-beige-primary px-4 font-weight-bold" id="btnGoToDepth2" onclick="goToBatchClassDepth2()" disabled>
+                다음: 배정 도서 선택 <i class="fa-solid fa-chevron-right ml-1"></i>
+              </button>
             </div>
           </div>
-
-          <!-- 1순위 핵심 영역: 학생들에게 배정된 도서 목록 (중복 배정 순위 정렬 & 우측 학생 명단 텍스트 & 일괄 추가/해제) -->
-          <div class="mb-2 d-flex justify-content-between align-items-center">
-            <span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
-              <i class="fa-solid fa-arrow-down-wide-short mr-1 text-warning"></i>학급 원생 배정 도서 현황 (가장 많은 학생에게 중복 배정된 순 정렬)
-            </span>
-            <small class="text-muted">* 도서별로 아직 안 받은 학생에게 일괄 배정하거나, 전체 일괄 해제할 수 있습니다.</small>
-          </div>
-
-          <div id="classAssignBookAnalysisContainer">
-            <!-- JS 동적 렌더링: 중복 배정 순 도서 카드 목록 -->
-          </div>
-
         </div>
 
-        <div class="modal-footer py-2 px-4 bg-light d-flex justify-content-between align-items-center">
-          <small class="text-muted"><i class="fa-solid fa-shield-halved text-success mr-1"></i>일괄 배정 및 일괄 해제 결과는 각 원생의
-            개인 배정 목록에 즉시 반영됩니다.</small>
-          <button type="button" class="btn btn-sm btn-beige-secondary px-4 font-weight-bold"
-            data-dismiss="modal">닫기</button>
+        <!-- Depth 2: 배정할 도서 선택 화면 -->
+        <div id="batchClassAssignDepth2" style="display: none;">
+          <div class="modal-header-simple p-4 pb-3"
+            style="background: #fdfbf7; border-bottom: 1px solid var(--border-light);">
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold mr-3" onclick="backToBatchClassDepth1()" style="border-radius: 8px; font-size: 12px; height: 34px;">
+                  <i class="fa-solid fa-arrow-left mr-1"></i>학급 변경
+                </button>
+                <div>
+                  <div class="d-flex align-items-center">
+                    <h5 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 17px;" id="batchTargetClassName">
+                      [학급명] 도서 일괄 배정
+                    </h5>
+                    <span class="badge badge-primary ml-2" style="font-size: 11px; padding: 3px 8px;">2단계 : 도서 선택</span>
+                  </div>
+                  <small class="text-muted" style="font-size: 12px;" id="batchTargetClassMeta">
+                    해당 학급 소속 원생 전체에게 배정할 도서를 우측 목록에서 담아주세요.
+                  </small>
+                </div>
+              </div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                  aria-hidden="true">&times;</span></button>
+            </div>
+          </div>
+
+          <div class="modal-body p-4" style="background: #faf8f5;">
+            <div class="row">
+
+              <!-- 좌측: 배정할 도서 바구니 (담긴 도서 목록) -->
+              <div class="col-md-5 mb-3 mb-md-0" style="border-right: 1px solid var(--border-medium);">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="font-weight-bold mb-0" style="color: var(--text-main); font-size: 13.5px;">
+                    <i class="fa-solid fa-book-bookmark text-success mr-1.5"></i>배정 대상 도서 목록
+                    <span class="badge badge-success ml-1" id="batchSelectedBookCountBadge" style="font-size: 11px;">0권 선택됨</span>
+                  </h6>
+                  <button type="button" class="btn btn-xs btn-outline-danger" onclick="clearBatchSelectedBooks()" style="border-radius: 6px; font-size: 11px;">
+                    <i class="fa-solid fa-trash-can mr-1"></i>비우기
+                  </button>
+                </div>
+
+                <div id="batchSelectedBooksContainer" style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
+                  <!-- JS 동적 렌더링 -->
+                </div>
+              </div>
+
+              <!-- 우측: 도서 검색 카탈로그 -->
+              <div class="col-md-7">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="font-weight-bold mb-0" style="color: var(--text-main); font-size: 13.5px;">
+                    <i class="fa-solid fa-magnifying-glass text-primary mr-1.5"></i>학원 보유 & 추천 도서 카탈로그
+                  </h6>
+                  <span class="text-muted" style="font-size: 11.5px;">[+ 도서 담기]를 눌러 좌측 목록에 추가</span>
+                </div>
+
+                <!-- 검색 및 필터 바 -->
+                <div class="p-2 mb-2 rounded bg-white" style="border: 1px solid var(--border-light);">
+                  <div class="row no-gutters">
+                    <div class="col-md-5 pr-md-1 mb-1 mb-md-0">
+                      <input type="search" class="form-control form-control-sm" id="batchBookSearchInput"
+                        oninput="filterBatchBookCatalog()" placeholder="도서명, 저자, 출판사 검색..." style="border-radius: 6px; font-size: 12px;">
+                    </div>
+                    <div class="col-md-7 d-flex gap-1 flex-wrap">
+                      <select class="form-control form-control-sm" id="batchBookFilterGrade"
+                        onchange="filterBatchBookCatalog()" style="width: 120px; font-size: 11.5px; border-radius: 6px;">
+                        <option value="ALL">전체 학년</option>
+                        <option value="초등 1~2학년">초등 1~2학년</option>
+                        <option value="초등 3~4학년">초등 3~4학년</option>
+                        <option value="초등 5~6학년">초등 5~6학년</option>
+                        <option value="중등 1~3학년">중등 1~3학년</option>
+                      </select>
+                      <select class="form-control form-control-sm" id="batchBookFilterOrigin"
+                        onchange="filterBatchBookCatalog()" style="width: 105px; font-size: 11.5px; border-radius: 6px;">
+                        <option value="ALL">전체 출제처</option>
+                        <option value="HQ">본사 직속</option>
+                        <option value="ACADEMY">자체 등록</option>
+                      </select>
+                      <select class="form-control form-control-sm" id="batchBookFilterCategory"
+                        onchange="filterBatchBookCatalog()" style="width: 110px; font-size: 11.5px; border-radius: 6px;">
+                        <option value="ALL">전체 주제</option>
+                        <option value="문학">문학 / 소설</option>
+                        <option value="사회">사회 / 인성</option>
+                        <option value="과학">과학 / 환경</option>
+                        <option value="인문">인문 / 철학</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 도서 목록 -->
+                <div id="batchBookCatalogContainer" style="max-height: 330px; overflow-y: auto; padding-right: 4px;">
+                  <!-- JS 동적 렌더링 -->
+                </div>
+
+                <!-- 20권씩 페이징 -->
+                <div id="batchBookCatalogPagination" class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top" style="font-size: 11.5px;">
+                  <!-- JS 동적 렌더링 -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              <i class="fa-solid fa-circle-check text-success mr-1"></i>이미 해당 도서가 배정되어 있던 학생은 변화 없이 유지되며, 미배정 학생에게만 신규 배정됩니다.
+            </small>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 font-weight-bold mr-2" onclick="backToBatchClassDepth1()">학급 변경</button>
+              <button type="button" class="btn btn-sm btn-beige-primary px-4 font-weight-bold" id="btnExecuteBatchClassAssign" onclick="executeBatchClassAssign()" style="height: 38px; border-radius: 8px;">
+                <i class="fa-solid fa-check mr-1.5"></i>학급 일괄 배정 완료
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -7420,6 +7478,15 @@
         </div>
         <div class="modal-body p-4" style="background: #f5f2eb; max-height: 75vh; overflow-y: auto;">
 
+          <!-- PDF 로딩 인디케이터 -->
+          <div id="pdfLoadingIndicator" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+              <span class="sr-only">Loading...</span>
+            </div>
+            <h6 class="font-weight-bold" style="color: var(--text-main);" id="pdfLoadingText">실제 서버 나노 시트(PDF)를 로드 중입니다...</h6>
+            <small class="text-muted" id="pdfLoadingSubText">보안 인가 검증 및 PDF.js 캔버스 렌더링 준비 중</small>
+          </div>
+
           <!-- 실제 업로드 PDF 캔버스 뷰어 래퍼 (실제 PDF 파일 업로드 시 캔버스에 렌더링 + 보안 워터마크 합성) -->
           <div id="realPdfViewerWrapper" style="display: none; position: relative; max-width: 740px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.12); border-radius: 8px; overflow: hidden; background: #fff; padding: 0; margin-bottom: 12px;">
             <div style="position: relative; width: 100%; background: #fff; overflow: hidden;">
@@ -8820,7 +8887,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
   <!-- SheetJS for Excel Download & Upload Parsing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- PDF.js library for secure worksheet viewer -->
+  <!-- PDF.js library for secure worksheet viewer (최신 CDN 및 로컬 fallback) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="plugin/build/pdf.js"></script>
   <!-- Daum 우편번호 서비스 -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>

@@ -5688,8 +5688,8 @@ function renderMasterContents() {
     // 공개 여부 토글 뱃지
     const isPublic = b.isPublic !== "N";
     const publicBadge = isPublic
-      ? `<button class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleBookPublic('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2px 8px;" title="클릭하여 비공개로 전환"><i class="fa-solid fa-eye mr-1"></i>공개</button>`
-      : `<button class="btn btn-xs btn-outline-secondary font-weight-bold text-muted" onclick="toggleBookPublic('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2px 8px;" title="클릭하여 가맹점 공개로 전환"><i class="fa-solid fa-eye-slash mr-1"></i>비공개</button>`;
+      ? `<button class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleBookPublic('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 3px 8px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-width: 58px;" title="클릭하여 비공개로 전환"><i class="fa-solid fa-eye mr-1"></i>공개</button>`
+      : `<button class="btn btn-xs btn-outline-secondary font-weight-bold text-muted" onclick="toggleBookPublic('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 3px 8px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-width: 58px;" title="클릭하여 가맹점 공개로 전환"><i class="fa-solid fa-eye-slash mr-1"></i>비공개</button>`;
 
     // 시리즈명 표시
     const seriesLabel = b.series && b.series !== "단권" ? `<span class="badge-soft badge-soft-neutral mr-1" style="font-size: 10.5px;">${b.series}</span>` : '';
@@ -5722,11 +5722,11 @@ function renderMasterContents() {
         <td class="text-center">
           ${hasQuizBadge}
         </td>
-        <td class="text-center">
+        <td class="text-center" style="white-space: nowrap;">
           ${publicBadge}
         </td>
         <!-- 찜 (숫자만 표시, 클릭 시 통계 모달) -->
-        <td class="text-center">
+        <td class="text-center" style="padding-left: 4px; padding-right: 4px; white-space: nowrap;">
           <span class="font-weight-bold text-danger" style="font-size: 13.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;"
                 title="클릭 시 '${b.title}' 찜 학년/성별 통계 모달 열기"
                 onclick="openBookStatsModal('${b.id}', 'like')">
@@ -5734,17 +5734,17 @@ function renderMasterContents() {
           </span>
         </td>
         <!-- 추천 (숫자만 표시, 클릭 시 통계 모달) -->
-        <td class="text-center">
+        <td class="text-center" style="padding-left: 4px; padding-right: 4px; white-space: nowrap;">
           <span class="font-weight-bold text-primary" style="font-size: 13.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;"
                 title="클릭 시 '${b.title}' 추천 학년/성별 통계 모달 열기"
                 onclick="openBookStatsModal('${b.id}', 'recommend')">
             ${b.recommends || 0}
           </span>
         </td>
-        <!-- 북퀴즈 완료 (숫자만 표시, 클릭 시 통계 모달) -->
-        <td class="text-center">
+        <!-- 인증 (북퀴즈 완료 - 숫자만 표시, 클릭 시 통계 모달) -->
+        <td class="text-center" style="padding-left: 4px; padding-right: 4px; white-space: nowrap;">
           <span class="font-weight-bold text-success" style="font-size: 13.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;"
-                title="클릭 시 '${b.title}' 북퀴즈 완료 학년/성별 통계 모달 열기"
+                title="클릭 시 '${b.title}' 인증(완료) 학년/성별 통계 모달 열기"
                 onclick="openBookStatsModal('${b.id}', 'quiz')">
             ${b.quizCompletions || 0}
           </span>
@@ -5852,8 +5852,8 @@ function openBookStatsModal(bookId, statType) {
     countTitle = "누적 추천 합계";
     totalCount = book.recommends || 0;
   } else {
-    typeLabel = "북퀴즈 완료 학생 통계 분석";
-    countTitle = "북퀴즈 완료 합계";
+    typeLabel = "인증(북퀴즈 완료) 학생 통계 분석";
+    countTitle = "인증 합계";
     totalCount = book.quizCompletions || 0;
   }
 

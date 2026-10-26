@@ -163,7 +163,21 @@
       portfolioDataMap[studentId] = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : '', classGroup: student ? student.classGroup : '미지정',
         teacher: student ? student.teacher : '', level: student ? student.level : '', bookCount: books.length,
         quizAvg: avgScore,
-        books: books.map(function(book) { return { title: book.title, date: book.date, score: (book.score || 0) + '점', comment: book.thought || '' }; }), teacherNote: item.comment || '' };
+        books: books.map(function(book) {
+          var matchedBook = (global.academyBookList || []).find(function(ab) {
+            if (!ab || !ab.title) return false;
+            return ab.title === book.title || ab.title.replace(/\s+/g, '') === (book.title || '').replace(/\s+/g, '');
+          });
+          return {
+            title: book.title,
+            date: book.date,
+            score: (book.score || 0) + '점',
+            cover: book.cover || (matchedBook ? matchedBook.cover : 'assets/covers/cover_default.jpg'),
+            pub: book.pub || book.publisher || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '나노출판'),
+            author: book.author || (matchedBook ? matchedBook.author : ''),
+            comment: book.thought || book.comment || ''
+          };
+        }), teacherNote: item.comment || '' };
       return { id: item.id, revision: item.revision, memberId: item.memberId, studentId: studentId, studentName: item.name, school: student ? student.school : '', grade: student ? student.grade : '',
         classGroup: student ? student.classGroup : '미지정', title: item.title, period: item.from + ' ~ ' + item.to, from: item.from, to: item.to, comment: item.comment || '',
         bookCount: books.length, booksSummary: books.length ? books[0].title + (books.length > 1 ? ' 외 ' + (books.length - 1) + '권' : '') : '완독 도서 없음',

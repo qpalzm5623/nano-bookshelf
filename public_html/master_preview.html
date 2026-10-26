@@ -1020,7 +1020,7 @@
 
         <!-- 2. 등급 권한 필터 -->
         <div>
-          <select id="memberRoleFilter" class="select-beige" onchange="filterMemberList()">
+          <select id="memberRoleFilter" class="select-beige">
             <option value="ALL">등급 권한 (전체)</option>
             <option value="DIRECTOR">원장님</option>
             <option value="TEACHER">선생님</option>
@@ -1030,7 +1030,7 @@
 
         <!-- 3. 계정 상태 필터 (승인, 미승인, 탈퇴) -->
         <div>
-          <select id="memberStatusFilter" class="select-beige" onchange="filterMemberList()">
+          <select id="memberStatusFilter" class="select-beige">
             <option value="ALL">전체 상태</option>
             <option value="APPROVED">승인</option>
             <option value="PENDING">미승인</option>
@@ -1041,10 +1041,13 @@
         <!-- 4. 통합 검색 입력 -->
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." onkeyup="filterMemberList()" onsearch="filterMemberList()">
+          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMemberList();}">
         </div>
 
-        <!-- 5. 초기화 버튼 -->
+        <!-- 5. 검색 및 초기화 버튼 -->
+        <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterMemberList()" style="border-radius: 10px; height: 38px; white-space: nowrap; padding: 0 16px;">
+          <i class="fa-solid fa-search mr-1.5"></i>검색
+        </button>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetMemberFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium); white-space: nowrap;">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
         </button>
@@ -1344,12 +1347,12 @@
         <!-- 전국 학생 랭킹 전용 검색 & 필터 바 -->
         <div id="rankingFilterBar" class="p-3 border-bottom d-flex flex-wrap align-items-center gap-2" style="background: #ffffff;">
           <div style="min-width: 150px;">
-            <select id="rankMonthFilter" class="select-beige w-100" onchange="filterStudentRankings()">
+            <select id="rankMonthFilter" class="select-beige w-100">
               <!-- JS 동적 생성 (최근 6개월) -->
             </select>
           </div>
           <div style="min-width: 180px;">
-            <select id="rankAcademyFilter" class="select-beige w-100" onchange="filterStudentRankings()">
+            <select id="rankAcademyFilter" class="select-beige w-100">
               <option value="ALL">전체 가맹 학원</option>
               <option value="나노 독서아카데미 목동본원">🏫 나노 목동본원</option>
               <option value="대치 에듀 독서논술센터">🏫 대치 에듀센터</option>
@@ -1360,8 +1363,11 @@
           </div>
           <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0;">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." onkeyup="filterStudentRankings()" onsearch="filterStudentRankings()">
+            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentRankings();}">
           </div>
+          <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterStudentRankings()" style="border-radius: 8px; height: 38px; padding: 0 16px; white-space: nowrap;">
+            <i class="fa-solid fa-search mr-1.5"></i>검색
+          </button>
           <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium);">
             <i class="fa-solid fa-rotate-left mr-1"></i>초기화
           </button>
@@ -1487,7 +1493,7 @@
       <!-- 검색 및 필터 (등록처, 권장학년, 주제 필터 및 검색창) -->
       <div class="filter-bar">
         <div>
-          <select id="contentAcademyFilter" class="select-beige" onchange="filterMasterContentList()">
+          <select id="contentAcademyFilter" class="select-beige">
             <option value="ALL">등록처 (전체)</option>
             <option value="HQ">👑 본사 직속 (공용)</option>
             <option value="ACAD-001">🏫 나노 목동본원</option>
@@ -1497,7 +1503,7 @@
           </select>
         </div>
         <div>
-          <select id="contentGradeFilter" class="select-beige" onchange="filterMasterContentList()">
+          <select id="contentGradeFilter" class="select-beige">
             <option value="ALL">전체 권장 학년</option>
             <option value="미취학">미취학</option>
             <option value="초등 1학년">초등 1학년</option>
@@ -1512,7 +1518,7 @@
           </select>
         </div>
         <div>
-          <select id="contentCategoryFilter" class="select-beige" onchange="filterMasterContentList()">
+          <select id="contentCategoryFilter" class="select-beige">
             <option value="ALL">전체 주제 (전체 태그)</option>
             <option value="#이달의나노북클럽">#이달의나노북클럽</option>
             <option value="#교과연계한국사">#교과연계한국사</option>
@@ -1528,8 +1534,11 @@
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="contentSearchInput" name="search_content_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeyup="filterMasterContentList()" onsearch="filterMasterContentList()">
+          <input type="search" id="contentSearchInput" name="search_content_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMasterContentList();}">
         </div>
+        <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterMasterContentList()" style="border-radius: 10px; height: 38px; padding: 0 16px; white-space: nowrap;">
+          <i class="fa-solid fa-search mr-1.5"></i>검색
+        </button>
         <button class="btn btn-sm btn-outline-secondary" onclick="resetContentFilters()" style="border-radius: 10px; height: 38px; border-color: var(--border-medium);">
           <i class="fa-solid fa-rotate-left mr-1"></i>초기화
         </button>
@@ -1542,7 +1551,7 @@
             <i class="fa-solid fa-book mr-2 text-muted"></i>마스터 도서 라이브러리 (<span id="contentFilteredCount">0</span>권 등록됨)
           </span>
           <div class="d-flex align-items-center gap-2">
-            <span class="badge-soft badge-soft-neutral" style="font-size: 11.5px;">* 찜/추천/퀴즈완료 숫자를 클릭하면 학년별/성별 통계 모달이 열립니다.</span>
+            <span class="badge-soft badge-soft-neutral" style="font-size: 11.5px;">* 찜/추천/인증 숫자를 클릭하면 학년별/성별 통계 모달이 열립니다.</span>
           </div>
         </div>
         <div class="table-responsive">
@@ -1557,12 +1566,12 @@
                 <th>저자 / 출판사</th>
                 <th>권장 학년</th>
                 <th>주제 분류</th>
-                <th>퀴즈 등록 여부</th>
-                <th>공개 여부</th>
-                <th style="width: 55px;" title="클릭 시 학년/성별 통계">찜</th>
-                <th style="width: 55px;" title="클릭 시 학년/성별 통계">추천</th>
-                <th style="width: 85px;" title="클릭 시 학년/성별 통계">북퀴즈 완료</th>
-                <th style="width: 155px;">관리</th>
+                <th style="width: 105px; text-align: center; white-space: nowrap;">퀴즈 등록 여부</th>
+                <th style="width: 76px; text-align: center; white-space: nowrap;">공개 여부</th>
+                <th style="width: 42px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">찜</th>
+                <th style="width: 42px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">추천</th>
+                <th style="width: 46px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">인증</th>
+                <th style="width: 155px; text-align: center; white-space: nowrap;">관리</th>
               </tr>
             </thead>
             <tbody id="masterContentTableBody">
