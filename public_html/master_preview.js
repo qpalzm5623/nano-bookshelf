@@ -367,10 +367,10 @@ function getFranchiseAdminId(acad) {
     return currentId;
   }
 
-  // 5. fallback: 원본 adminId 또는 loginId
+  // 5. fallback: 원본 adminId 또는 loginId (단, 인위적 더미 ID는 차단하여 빈 문자열 반환)
   if (acad.adminId && !isSyntheticAdminId(acad.adminId)) return acad.adminId;
   if (acad.loginId && !isSyntheticAdminId(acad.loginId)) return acad.loginId;
-  return acad.adminId || acad.loginId || acad.id || "";
+  return "";
 }
 
 // 가맹점 목록 데이터 무결성 검증 및 보정 (ID, 요금제, 계약 만료 자동 정규화)
@@ -2498,15 +2498,16 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     const adminStaff = getFranchiseAdminStaff(acad);
     const adminIdText = getFranchiseAdminId(acad);
 
-    let displayDirector = acad.director || "";
+    let displayDirector = (acad.director || "").replace(/\s*원장\s*원장/g, " 원장").trim();
     let displayPhone = acad.phone || "";
+    if (displayPhone === "010-0000-0000") displayPhone = "";
 
     if (adminStaff) {
       if (!displayDirector || displayDirector.endsWith(" 원장") || displayDirector.includes("원장")) {
         displayDirector = adminStaff.name || displayDirector;
       }
       if (!displayPhone || displayPhone === "010-0000-0000") {
-        displayPhone = (adminStaff.phone && adminStaff.phone !== "010-0000-0000") ? adminStaff.phone : displayPhone;
+        displayPhone = (adminStaff.phone && adminStaff.phone !== "010-0000-0000") ? adminStaff.phone : "";
       }
     }
 
@@ -2526,13 +2527,19 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
         </td>
         <!-- 4. 관리자 ID -->
         <td class="text-center" style="white-space: nowrap; padding: 8px 4px;">
-          <span class="badge-soft badge-soft-neutral" style="font-family: monospace; font-size: 11.5px; font-weight: 700; color: #495057; padding: 3px 6px;">${adminIdText}</span>
+          ${(adminIdText && !isSyntheticAdminId(adminIdText)) ? `
+            <span class="badge-soft badge-soft-neutral" style="font-family: monospace; font-size: 11.5px; font-weight: 700; color: #495057; padding: 3px 6px;">${adminIdText}</span>
+          ` : `
+            <span class="badge-soft" style="font-size: 11px; padding: 3px 7px; border-radius: 6px; font-weight: 700; background: #fef3c7; color: #b45309; border: 1px solid #fde68a;" title="원장/관리자 계정 등록 대기 상태입니다.">
+              <i class="fa-solid fa-user-clock mr-1"></i>계정 미등록
+            </span>
+          `}
         </td>
         <!-- 5. 원장명 / 연락처 -->
         <td class="text-center" style="white-space: nowrap; padding: 8px 6px;">
           <div style="font-size: 12.5px; white-space: nowrap; line-height: 1.3;">
             <strong style="color: var(--text-main); font-weight: 700;">${displayDirector || '-'}</strong>
-            <span class="ml-1" style="font-size: 11.5px; font-weight: 600; color: #5c5044;">(${displayPhone || '-'})</span>
+            ${displayPhone ? `<span class="ml-1" style="font-size: 11.5px; font-weight: 600; color: #5c5044;">(${displayPhone})</span>` : ''}
           </div>
           ${acad.email ? `<div style="color: #7d7063; font-size: 10.5px; font-weight: 500; white-space: nowrap; margin-top: 2px; line-height: 1.2;"><i class="fa-regular fa-envelope mr-1" style="font-size: 9.5px;"></i>${acad.email}</div>` : ''}
         </td>

@@ -1277,7 +1277,7 @@
     }
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
     .anim { animation: fadeUp .3s ease; }
-    #toast {
+    #studentToast {
       position: fixed;
       bottom: 74px; right: 16px;
       z-index: 9999;
@@ -4465,9 +4465,9 @@
   </div>
 </div>
 
-<div id="toast"></div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<div id="studentToast"></div>
+<script src="js/jquery-3.6.0.min.js"></script>
+<script src="js/bootstrap.bundle.min.js"></script>
 <script src="js/learning-storage.js?v=20261014_ux2"></script>
 <script>
 var QB={
@@ -5599,7 +5599,7 @@ function getBookCoverHtml(b, customCls, styleStr) {
     // 로컬 file:// 프로토콜 환경 및 웹서버 환경 모두 호환되도록 경로 정규화
     var srcPath = (window.location.protocol === 'file:' && coverUrl.indexOf('/') === 0) ? coverUrl.substring(1) : coverUrl;
     var fallbackImg = 'resources/images/book_default.svg';
-    return '<img src="' + srcPath + '" class="' + cls + '" style="' + st + '" alt="" onerror="this.onerror=null; this.src=\'' + fallbackImg + '\';">';
+    return '<img src="' + srcPath + '" class="' + cls + '" style="' + st + '" alt="" loading="lazy" decoding="async" fetchpriority="low" onerror="this.onerror=null; this.src=\'' + fallbackImg + '\';">';
   }
 
   // 2. 표지 이미지가 없는 경우 감성 가상 북커버 생성
@@ -7075,7 +7075,7 @@ function checkDailyQuizLimit(bookId) {
 }
 
 // 퀴즈 시작 메인 엔트리: 여러 북퀴즈 세트가 있으면 선택 모달, 1개면 바로 시작
-function startQuiz(id) {
+async function startQuiz(id) {
   // 5. 동일한 도서에 한해서 하루 3번 이상 인증 실패 시 자정이 넘어갈때 까지 재도전 불가
   var limitCheck = checkDailyQuizLimit(id);
   if (limitCheck.blocked) {
@@ -7100,7 +7100,7 @@ function startQuiz(id) {
     }
   } catch(e) {}
 
-  var activeBook = mBook || book || { id: id, title: '추천 도서' };
+  var activeBook = window.NANO_SERVER_DATA ? (book || mBook || { id: id, title: '추천 도서' }) : (mBook || book || { id: id, title: '추천 도서' });
 
   // 북퀴즈 세트 목록 수집 (실데이터 quizSets 및 MIGRATED_QUIZZES 최우선 매핑)
   var quizSets = [];
@@ -7109,6 +7109,20 @@ function startQuiz(id) {
   } else if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES && (window.MIGRATED_QUIZZES[id] || (activeBook && window.MIGRATED_QUIZZES[activeBook.title]) || (book && window.MIGRATED_QUIZZES[book.id]))) {
     var rawSets = window.MIGRATED_QUIZZES[id] || (activeBook ? window.MIGRATED_QUIZZES[activeBook.title] : null) || (book ? window.MIGRATED_QUIZZES[book.id] : null);
     if (rawSets) quizSets = JSON.parse(JSON.stringify(rawSets));
+  }
+
+  // 운영 학생 화면은 수천 권의 문항을 처음부터 받지 않고, 선택한 도서만 조회합니다.
+  if (window.NANO_SERVER_DATA && quizSets.length === 0 && activeBook.hasQuiz && window.NanoPortal) {
+    try {
+      var quizResponse = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(activeBook.id || id));
+      quizSets = Array.isArray(quizResponse.quizSets) ? quizResponse.quizSets : [];
+      if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+      window.MIGRATED_QUIZZES[activeBook.id || id] = quizSets;
+      activeBook.quizSets = quizSets;
+    } catch (error) {
+      toast(error.message || '북퀴즈 문항을 불러오지 못했습니다.');
+      return;
+    }
   }
   
   if (window.NANO_SERVER_DATA && quizSets.length === 0) { toast('등록된 문항이 없습니다. 선생님께 문의해 주세요.'); return; }
@@ -7546,6 +7560,7 @@ function renderQ() {
   } else {
     mediaBox.style.display = 'none';
     mediaBox.innerHTML = '';
+  }
   }
 
   // 보기 버튼 목록 생성
@@ -8119,6 +8134,7 @@ function syncQuizResultToAdminLearning(bookTitle, score, thoughtAnswer) {
       bookTitle: bookTitle,
       date: todayStr,
       submittedAt: now.toISOString(),
+      score: score,
       sheet: '작성 전',
       reviewed: '대기',
       thoughtAnswer: thoughtAnswer || '',
@@ -10014,7 +10030,7 @@ setInterval(function() {
 
 var toastT;
 function toast(msg){
-  var el=document.getElementById('toast');
+  var el=document.getElementById('studentToast');
   if(!el) return;
   el.innerHTML='<i class="fa-solid fa-circle-check mr-2" style="color:#4ade80;"></i>'+msg;
   el.style.display='block';

@@ -5,7 +5,7 @@
   "cleanUrls": true,
   "headers": [
     {
-      "source": "/(.*)\\.(css|js|png|jpg|jpeg|webp|svg|woff2|ttf)",
+      "source": "/(.*)\\.(css|js|png|jpg|jpeg|jfif|gif|ico|webp|svg|woff2|ttf|pdf)",
       "headers": [
         {
           "key": "Cache-Control",

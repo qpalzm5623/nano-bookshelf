@@ -77,6 +77,22 @@ export default async function handler(req: any, res: any) {
       res.setHeader('Set-Cookie', cookie(signSession(user.id, password)));
       return res.status(200).json({ ok: true });
     }
+    if (action === 'quiz' && req.method === 'GET') {
+      const bookId = String(req.query.bookId || '').trim();
+      if (!bookId || bookId.length > 100 || !/^[A-Za-z0-9_-]+$/.test(bookId)) return res.status(400).json({ error: '도서 정보를 확인해 주세요.' });
+      const book = await prisma.book.findFirst({
+        where: { OR: [{ id: bookId }, { bookNo: bookId }] },
+        select: { id: true, bookNo: true, quizzes: { orderBy: { questionNo: 'asc' },
+          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } } }
+      });
+      if (!book) return res.status(404).json({ error: '도서를 찾을 수 없습니다.' });
+      return res.status(200).json({
+        bookId: book.bookNo,
+        quizSets: book.quizzes.length ? [{ id: 'server-' + book.id, authorName: '본사', authorType: 'master',
+          questions: book.quizzes.map(q => ({ id: q.id, serverId: q.id, question: q.question, choices: q.options,
+            options: q.options, ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE' })) }] : []
+      });
+    }
     if (action === 'learning' && req.method === 'GET') {
       // 학생은 자신의 기록만, 교사·원장은 소속 학원의 기록만 조회합니다.
       const academyId = await academyScope(user, req.query.academy);

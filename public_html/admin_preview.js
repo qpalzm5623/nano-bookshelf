@@ -8662,18 +8662,14 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
 
     var coverImg = normalizeBookCoverUrl(b.cover);
     
-    // 나노시트 / 답지 버튼: 상하 배치
+    // 나노시트 단독 버튼
     var pdfBtn = b.materialName
-      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 2px 7px; font-size: 11px;">
-           <i class="fa-solid fa-file-pdf" style="font-size: 10.5px;"></i>나노시트
+      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
+           <i class="fa-solid fa-file-pdf" style="font-size: 11px;"></i>나노시트
          </button>`
-      : `<button type="button" class="btn-sheet-action btn-sheet-empty w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 자료 등록" style="padding: 2px 7px; font-size: 10.5px;">
+      : `<button type="button" class="btn-sheet-action btn-sheet-empty w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 자료 등록" style="padding: 3px 8px; font-size: 11px;">
            <i class="fa-solid fa-arrow-up-from-bracket" style="font-size: 10px;"></i>시트등록
          </button>`;
-
-    var answerBtn = `<button type="button" class="btn-sheet-action btn-sheet-answer w-100" onclick="openScrollAnswer('${b.id}', '${b.title.replace(/'/g, "\\'")}', \`${b.answerGuide || '핵심 정답 준비 중'}\`)" title="핵심 답지 보기" style="padding: 2px 7px; font-size: 11px;">
-      <i class="fa-solid fa-file-circle-check" style="font-size: 10.5px; color: #16a34a;"></i>답지
-    </button>`;
 
     // 등록처 뱃지 및 내가 올린 도서 여부 판정
     var isHq = !b.creatorType || b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
@@ -8720,11 +8716,8 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
       </td>
       <td class="text-center"><span class="badge-soft badge-soft-neutral">${b.category}</span></td>
       <td class="text-center"><span class="badge-soft badge-soft-neutral">${b.grade}</span></td>
-      <td class="text-center" style="white-space: nowrap; width: 110px;">
-        <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
-          ${pdfBtn}
-          ${answerBtn}
-        </div>
+      <td class="text-center" style="white-space: nowrap; width: 100px; padding: 6px 8px;">
+        ${pdfBtn}
       </td>
       <td class="text-center" style="cursor: pointer;" onclick="openAcademyStandaloneQuizModal('${b.id}')" title="북퀴즈 문항 세트 바로 열기">
         <span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>${b.quizStatus || '5문항 완비'}</span>

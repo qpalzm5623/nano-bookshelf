@@ -3,7 +3,7 @@
  * PWA 오프라인 지원, 캐싱 및 빠른 로딩 처리
  */
 
-const CACHE_NAME = 'nano-bookshelf-v20261022-dashboard-management';
+const CACHE_NAME = 'nano-bookshelf-v20261027-student-performance';
 
 // 오프라인 및 기본 캐싱 대상 핵심 리소스
 const PRECACHE_ASSETS = [
@@ -85,6 +85,21 @@ self.addEventListener('fetch', (event) => {
           return res;
         }).catch(() => cached);
       })
+    );
+    return;
+  }
+
+  // 표지·학습자료는 URL이 고정되어 있으므로 재방문 때 네트워크 대기 없이 바로 사용합니다.
+  const isBookAsset = url.origin === self.location.origin && /^\/upload\/book\/[^/]+\.(?:png|jpe?g|jfif|webp|gif|svg|pdf)$/i.test(url.pathname);
+  if (isBookAsset) {
+    event.respondWith(
+      caches.match(req).then((cached) => cached || fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        }
+        return res;
+      }))
     );
     return;
   }

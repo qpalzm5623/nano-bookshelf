@@ -55,6 +55,7 @@ function context(localStorage = storage()) {
     addEventListener() {}, scrollTo() {}, toast: message => notices.push(message),
     showAcademyToast: message => notices.push(message),
     switchPanel() {}, openBookDetail() {},
+    generateQuizResultIllustration: () => '',
     getUserCharacterId: () => 'nano', getCharacterById: () => ({ name: '나노', themeColor: '#185b45' }),
     getCharacterSvg: () => '', CHAR_QUIZ_FEEDBACKS: { nano: { perfect: '', high: '', pass: '', retry: '' } },
     curBook: null, curData: null, curQ: 0, curSelectedQuizSet: null, anss: [],
@@ -104,9 +105,38 @@ test('수정한 HTML/JS의 모든 실행 스크립트가 구문 검사에 통과
       if (!/\bsrc\s*=/.test(match[1]) && match[2].trim()) new vm.Script(match[2], { filename: file });
     }
   }
-  for (const file of ['admin_preview.js', 'master_preview.js', 'js/learning-storage.js', 'js/preview-data.js', 'js/portal-client.js', 'js/preview-ux.js', 'service-worker.js']) {
+  for (const file of ['admin_preview.js', 'master_preview.js', 'js/learning-storage.js', 'js/preview-data.js', 'js/portal-client.js', 'js/portal-extras.js', 'js/preview-ux.js', 'service-worker.js']) {
     new vm.Script(read(file), { filename: file });
   }
+});
+
+test('학생 알림 요소가 toast 함수 이름을 덮어쓰지 않는다', () => {
+  const html = read('student_preview.html');
+  assert.doesNotMatch(html, /id=["']toast["']/);
+  assert.match(html, /id=["']studentToast["']/);
+  assert.match(html, /function toast\s*\(/);
+});
+
+test('운영 학생 화면은 선택한 도서의 퀴즈만 지연 조회한다', async () => {
+  const ctx = context();
+  let requestedPath = '', selected;
+  Object.assign(ctx, {
+    NANO_SERVER_DATA: true,
+    MIGRATED_QUIZZES: {},
+    libData: [{ id: 'B001', title: '검증 도서', hasQuiz: true, quizSets: [] }],
+    checkDailyQuizLimit: () => ({ blocked: false, count: 0 }),
+    NanoPortal: { api: async path => {
+      requestedPath = path;
+      return { quizSets: [{ id: 'set-1', questions: [{ question: '선택 문항' }] }] };
+    } },
+    startQuizWithSet: (book, set) => { selected = { book, set }; },
+    openQuizSetSelectModal: () => assert.fail('단일 문항 세트는 선택창을 열지 않는다')
+  });
+  loadFunctions(ctx, 'student_preview.html', ['startQuiz']);
+  await ctx.startQuiz('B001');
+  assert.match(requestedPath, /action=quiz&bookId=B001/);
+  assert.equal(selected.book.id, 'B001');
+  assert.equal(selected.set.questions[0].question, '선택 문항');
 });
 
 test('본사·학원 검색은 포커스 상실과 계정명 입력 후에도 유지된다', () => {
@@ -136,7 +166,7 @@ test('실제 본사 필터와 랭킹 검색에서도 계정명으로 올바른 �
     renderFranchiseTable: list => { franchiseResult = list; },
     renderMemberTable: list => { memberResult = list; },
     syncRankingDatasetsFromWindow() {}, renderRankingPagination() {},
-    rankingCurrentPage: 1, rankingPageSize: 20, academyRankingData: [],
+    currentRankingType: 'student', rankingCurrentPage: 1, rankingPageSize: 20, academyRankingData: [],
     allStudentRankings: [
       { id: 'student01', name: '검증 학생', academy: 'A', points: 100 },
       { id: 'unrelated', name: '다른 학생', academy: 'A', points: 50 }
@@ -265,7 +295,7 @@ test('학생 저장 기록이 같은 학원 관리자에게 정확한 답안과 
   assert.equal(logs[0].quizResults.length, 2);
   assert.equal(logs[0].quizResults[0].userChoiceText, '나');
   assert.equal(logs[0].studentThoughtAnswer, ctx.currentStudentThoughtAnswer);
-  assert.equal(logs[0].sheet, '작성 완료');
+  assert.equal(logs[0].sheet, '작성 전');
   assert.match(logs[0].date, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(shared.getItem(ctx.studentQuizDraftKey), null);
   assert.ok(!ctx.document.getElementById('rPt').textContent.includes('포인트 지급'));

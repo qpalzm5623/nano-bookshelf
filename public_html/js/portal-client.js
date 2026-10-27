@@ -276,8 +276,10 @@
 
   async function verify() {
     try {
-      var current = remote ? (await request('session')).user : user();
       if (remote && global.NANO_BOOTSTRAP_FAILED) throw new Error('회원 정보를 불러오지 못했습니다. 다시 로그인해 주세요.');
+      // 보호된 초기 데이터가 이미 같은 세션을 검증하고 사용자 정보를 저장했습니다.
+      // 초기 데이터가 없는 예외 상황에서만 세션 API를 한 번 더 확인합니다.
+      var current = remote && global.NANO_SERVER_DATA ? user() : remote ? (await request('session')).user : user();
       if (!current || !checkRole(roles[page], current.role)) throw new Error('로그인 권한을 확인해 주세요.');
       sessionStorage.setItem('nano_auth_user', JSON.stringify(current));
 

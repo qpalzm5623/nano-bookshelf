@@ -22,13 +22,16 @@
     try { const result=await NanoPortal.api('/api/activity?action=preferences',{value:next,revision}); preferences=next;revision=result.revision;applyPreferences();notice('서버에 저장했습니다.'); }
     catch(e) { notice(e.message); } finally { saving=false; }
   }
-  async function points() {
-    const all=[];let cursor='';
-    do { const result=await NanoPortal.api('/api/activity?action=points'+(cursor?'&cursor='+encodeURIComponent(cursor):''));all.push(...result.items);cursor=result.nextCursor; } while(cursor);
-    studentPointLogs=all.map(p=>{const korea=new Date(+new Date(p.createdAt)+9*3600000).toISOString();return {datetime:korea.slice(0,16).replace('T',' '),month:korea.slice(0,7),point:p.amount,bookTitle:p.content||'포인트 내역',activity:p.pointType||'적립',type:'quiz',typeName:p.pointType==='THOUGHT_FIRST'?'생각담기':'포인트'};});
+  function renderPoints(items) {
+    studentPointLogs=(items||[]).map(p=>{const korea=new Date(+new Date(p.createdAt)+9*3600000).toISOString();return {datetime:korea.slice(0,16).replace('T',' '),month:korea.slice(0,7),point:p.amount,bookTitle:p.content||'포인트 내역',activity:p.pointType||'적립',type:'quiz',typeName:p.pointType==='THOUGHT_FIRST'?'생각담기':'포인트'};});
     const chips=document.getElementById('pointMonthFilterChips');
     if(chips){chips.replaceChildren();for(const month of ['all',...new Set(studentPointLogs.map(p=>p.month))]){const b=document.createElement('button');b.type='button';b.className='point-month-chip'+(month==='all'?' active':'');b.textContent=month==='all'?'전체 내역':month;b.onclick=()=>filterPointHistory(month,b);chips.append(b);}}
     curPointMonthFilter='all';renderPointHistory(true);
+  }
+  async function points() {
+    const all=[];let cursor='';
+    do { const result=await NanoPortal.api('/api/activity?action=points'+(cursor?'&cursor='+encodeURIComponent(cursor):''));all.push(...result.items);cursor=result.nextCursor; } while(cursor);
+    renderPoints(all);
   }
   async function showHistory() {
     try {
@@ -70,9 +73,10 @@
       // 기존의 성공 안내를 먼저 띄우는 로컬 토글 대신 저장 후 화면에 반영합니다.
       window.toggleWish=(id,event)=>{event?.preventDefault();event?.stopPropagation();return changePreference('wishlist',id);};
       window.toggleInterestTag=tag=>changePreference('interests',tag);
-      try{const data=await NanoPortal.api('/api/activity?action=preferences');preferences=data.value;revision=data.revision;applyPreferences();await points();}
+      // 요약 응답에 포함된 포인트를 재사용해 첫 화면의 중복 포인트 조회를 없앱니다.
+      window.addEventListener('nano:activity',()=>{const summary=NanoPortal.activity();if(summary&&Array.isArray(summary.pointLogs))renderPoints(summary.pointLogs);else points().catch(e=>notice(e.message));});
+      try{const data=await NanoPortal.api('/api/activity?action=preferences');preferences=data.value;revision=data.revision;applyPreferences();const summary=NanoPortal.activity();if(summary&&Array.isArray(summary.pointLogs))renderPoints(summary.pointLogs);}
       catch(e){notice('개인 기록 조회 실패: '+e.message);}
-      window.addEventListener('nano:activity',()=>points().catch(e=>notice(e.message)));
     }
   });
 })();

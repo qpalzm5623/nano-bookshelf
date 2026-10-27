@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { readSession, passwordVersion, hashPassword } from '../lib/portal-auth';
+import { readSession, passwordVersion } from '../lib/portal-auth';
 
 // 공개 JS 파일로 배포하던 회원 정보를 로그인한 사용자의 범위로만 제공합니다.
 export default async function handler(req: any, res: any) {
@@ -12,8 +12,14 @@ export default async function handler(req: any, res: any) {
     const session = readSession(token);
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
+    const isStudent = user.role === 'STUDENT';
+    // 학생에게는 목록에 필요한 퀴즈 개수만 보내고, 실제 문항은 퀴즈를 시작할 때 조회합니다.
+    const booksPromise = isStudent
+      ? prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { _count: { select: { quizzes: true } }, theme: true } })
+      : prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { quizzes: { orderBy: { questionNo: 'asc' },
+          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } }, theme: true } });
     // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
-    const [members, academies, books, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows] = await Promise.all([
+    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows] = await Promise.all([
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
@@ -21,18 +27,22 @@ export default async function handler(req: any, res: any) {
       prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { id: user.academyId }) },
       select: { id: true, code: true, name: true, bizNo: true, directorName: true, phone: true, email: true, maxStudents: true, monthlyFee: true, plan: true, address: true, memo: true, joinDate: true, status: true, startDate: true, endDate: true,
         _count: { select: { members: { where: { role: 'STUDENT', status: 'APPROVED' } } } } } }),
-      prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { quizzes: { orderBy: { questionNo: 'asc' },
-        select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } }, theme: true } }),
+      booksPromise,
       prisma.classGroup.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: { select: { code: true } } } }),
       prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }), prisma.themeCategory.findMany(),
       prisma.notice.findMany({ where: user.role === 'MASTER' ? {} : { OR: [{ targetRole: null }, { targetRole: user.role }] }, orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }] }),
       prisma.academyBook.findMany({ where: { academyId: user.academyId }, include: { book: { select: { bookNo: true } } } }),
-      prisma.payment.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'DIRECTOR' ? { academyId: user.academyId } : { id: '__none__' }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 }),
-      prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : ['DIRECTOR','TEACHER'].includes(user.role) ? { academyId: user.academyId } : { id: '__none__' }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 }),
-      prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
-      prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
-      prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } })
+      user.role === 'MASTER' || user.role === 'DIRECTOR'
+        ? prisma.payment.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 })
+        : Promise.resolve([]),
+      user.role === 'MASTER' || user.role === 'DIRECTOR' || user.role === 'TEACHER'
+        ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
+        : Promise.resolve([]),
+      isStudent ? Promise.resolve([]) : prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
+      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
+      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } })
     ]);
+    const books: any[] = bookRows as any[];
 
     // 학급별 담당 지도교사 매핑 복원
     const classTeacherMap = new Map<string, string>();
@@ -59,62 +69,12 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    // 가맹 학원별 원장(DIRECTOR) 계정 부재 시에만 자동 치유 (이미 존재하는 경우 DB 호출 완전 생략)
+    // 초기 화면 조회는 읽기 전용으로 유지합니다. 계정 생성·역할 변경은 관리 API에서만 수행합니다.
     const directorMembers = members.filter(m => m.role === 'DIRECTOR');
-    const missingAcademies = academies.filter(a => !directorMembers.some(m => m.academy.code === a.code));
 
-    if (missingAcademies.length > 0) {
-      for (const acad of missingAcademies) {
-        let dir = directorMembers.find(m => m.academy.code === acad.code);
-        if (!dir) {
-          const teacher = members.find(m => m.academy.code === acad.code && m.role === 'TEACHER');
-          if (teacher) {
-            try {
-              await prisma.member.update({
-                where: { id: teacher.id },
-                data: { role: 'DIRECTOR' }
-              });
-              teacher.role = 'DIRECTOR';
-            } catch (e) {}
-            dir = teacher;
-            directorMembers.push(teacher);
-          }
-        }
-
-        if (!dir) {
-          const isLook = (acad.code === 'ACAD-143' || acad.name.includes('루크러닝'));
-          const targetUsername = isLook ? 'lookadmin' : `director_${acad.code.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-          try {
-            const createdDirector = await prisma.member.upsert({
-              where: { username: targetUsername },
-              create: {
-                academyId: acad.id,
-                username: targetUsername,
-                name: acad.directorName || '이정빈 원장',
-                role: 'DIRECTOR',
-                status: 'APPROVED',
-                phone: acad.phone || '',
-                parentPhone: '',
-                password: hashPassword('nano123!')
-              },
-              update: {
-                academyId: acad.id,
-                status: 'APPROVED'
-              },
-              select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
-                phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
-                lastLoginAt: true, createdAt: true, updatedAt: true, academy: { select: { code: true, name: true } }, classGroup: { select: { id: true, name: true } } }
-            });
-            members.push(createdDirector as any);
-            directorMembers.push(createdDirector as any);
-          } catch (e) {}
-        }
-      }
-    }
-
-    // 퀴즈가 있는 도서만 매핑하여 전송 페이로드 경량화
-    const quizzes = Object.fromEntries(books.filter(b => b.quizzes && b.quizzes.length > 0).map(b => [b.bookNo, [{ id: 'server-' + b.id, authorName: '본사', authorType: 'master',
-      questions: b.quizzes.map(q => ({ id: q.id, serverId: q.id, question: q.question, choices: q.options, options: q.options, ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE' })) }]]));
+    // 관리자 화면은 편집에 필요한 문항을 유지하고, 학생 화면은 클릭 시 지연 조회합니다.
+    const quizzes = isStudent ? {} : Object.fromEntries(books.filter(b => b.quizzes && b.quizzes.length > 0).map(b => [b.bookNo, [{ id: 'server-' + b.id, authorName: '본사', authorType: 'master',
+      questions: b.quizzes.map((q: any) => ({ id: q.id, serverId: q.id, question: q.question, choices: q.options, options: q.options, ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE' })) }]]));
     const rankedMembers = members.filter(m => m.role === 'STUDENT').sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
     const academyRankings = academies.map(a => {
       const students = rankedMembers.filter(m => m.academy.code === a.code);
@@ -185,18 +145,19 @@ export default async function handler(req: any, res: any) {
             cat: series,
             series: series,
             single: !series || series === '단권',
-            tags: (b.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+            tags: (b.tags || '').split(',').map((t: string) => t.trim()).filter(Boolean),
             cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
             cat2: category === 'F' ? '외서' : '국내서',
             tag: b.theme ? '#' + b.theme.name : '',
             thinkInsert: b.thinkQuiz || '',
             thinkOpen: b.thinkTitle || '',
-            hasQuiz: (b.quizzes && b.quizzes.length > 0) ? true : false,
-            quizCount: b.quizzes ? b.quizzes.length : 0,
+            hasQuiz: ((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0,
+            quizCount: (b.quizzes && b.quizzes.length) || b._count?.quizzes || 0,
             likes: totalLikes,
             recommends: totalRecs,
             quizCompletions: totalCerts,
             quizzes: undefined,
+            _count: undefined,
             theme: undefined
           });
         }
@@ -249,10 +210,9 @@ export default async function handler(req: any, res: any) {
       }),
       MIGRATED_FRANCHISES: academies.map(a => {
         let admin = directorMembers.find(m => m.academy.code === a.code && !m.username.startsWith('director_acad'))
-          || members.find(m => m.academy.code === a.code && ['DIRECTOR', 'TEACHER'].includes(m.role) && !m.username.startsWith('director_acad'))
-          || directorMembers.find(m => m.academy.code === a.code);
+          || members.find(m => m.academy.code === a.code && ['DIRECTOR', 'TEACHER'].includes(m.role) && !m.username.startsWith('director_acad'));
 
-        const realAdminId = admin ? admin.username : ((a.code === 'ACAD-143' || a.name.includes('루크러닝')) ? 'lookadmin' : a.code);
+        const realAdminId = admin ? admin.username : ((a.code === 'ACAD-143' || a.name.includes('루크러닝')) ? 'lookadmin' : '');
 
         let directorName = a.directorName;
         let phone = a.phone;
