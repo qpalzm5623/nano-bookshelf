@@ -98,8 +98,8 @@ export default async function handler(req: any, res: any) {
             const rawPw = String(row.password).trim();
             const isMasked = !rawPw || /^[•·*]+$/.test(rawPw);
             if (!isMasked) {
-              const minLen = role === 'STUDENT' ? 6 : 12;
-              need(rawPw.length >= minLen && rawPw.length <= 128, role === 'STUDENT' ? '비밀번호는 6~128자로 입력해 주세요.' : '비밀번호는 12~128자로 입력해 주세요.');
+              const minLen = 6;
+              need(rawPw.length >= minLen && rawPw.length <= 128, '비밀번호는 6~128자로 입력해 주세요.');
               data.password = hashPassword(rawPw);
             }
           }

@@ -356,9 +356,7 @@ var defaultAcademyClassList = [
   { id: 'CLS01', name: '나노반', grade: '초등/중등 정규', teacher: '지도교사', desc: '정규 독서논술 및 문해력 집중 훈련반' }
 ];
 
-var defaultTeacherDataList = [
-  { id: 'T001', name: '박재은 원장', username: 'director', password: '••••', role: '학원 원장', classes: '전체 학급 총괄', studentCount: 88, phone: '010-8521-4290', joinDate: '2025-01-01' }
-];
+var defaultTeacherDataList = [];
 
 // LocalStorage 및 Neon DB 실데이터 연동 헬퍼 함수
 function loadAcademyClassesFromStorage() {
@@ -457,11 +455,15 @@ function syncFranchiseStudentCount(count) {
 
 function loadTeachersFromStorage() {
   try {
-    if (!window.NANO_SERVER_DATA && localStorage.getItem(STORAGE_KEY_TEACHERS) !== null) return NanoPreviewData.readArray(STORAGE_KEY_TEACHERS);
+    if (!window.NANO_SERVER_DATA && localStorage.getItem(STORAGE_KEY_TEACHERS) !== null) {
+      return NanoPreviewData.readArray(STORAGE_KEY_TEACHERS).filter(function(t) {
+        return t.role !== '학원 원장' && (t.name || '').indexOf('원장') === -1;
+      });
+    }
     return (window.MIGRATED_MEMBERS || []).filter(function(m) {
-      return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && (m.role === 'TEACHER' || m.role === 'DIRECTOR');
+      return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && m.role === 'TEACHER';
     }).map(function(m) { return { id: m.username, serverId: m.serverId, updatedAt: m.updatedAt, username: m.username, name: m.name, password: '••••',
-      role: m.role === 'DIRECTOR' ? '학원 원장' : '지도교사', classes: m.className || '미지정',
+      role: '지도교사', classes: m.className || '미지정',
       studentCount: 0, phone: m.phone || '', joinDate: m.createdAt || '-' }; });
   } catch(e) { console.warn('교사 목록 조회 실패:', e); return []; }
 }
@@ -851,26 +853,87 @@ function renderEditClassGradeBox(gradeStr) {
   });
 }
 
+// 학급 생성/수정 시 지도교사 후보 목록 추출 (원장님 포함, 직책 수식어 제거 후 '이름 지도교사' 형식)
+function getClassTeacherCandidates() {
+  var list = [];
+  var seen = {};
+
+  // 1. 원장님 정보 (MIGRATED_MEMBERS 또는 currentAcademyInfo)
+  var dirName = '';
+  var dirUsername = currentAcademyInfo.adminId || 'director';
+  var dirPhone = currentAcademyInfo.phone || '';
+
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS)) {
+    var dirMember = window.MIGRATED_MEMBERS.find(function(m) {
+      return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && m.role === 'DIRECTOR';
+    });
+    if (dirMember) {
+      dirName = dirMember.name || '';
+      dirUsername = dirMember.username || dirUsername;
+      dirPhone = dirMember.phone || dirPhone;
+    }
+  }
+  if (!dirName && currentAcademyInfo && currentAcademyInfo.director) {
+    dirName = currentAcademyInfo.director;
+  }
+
+  var cleanDirName = (dirName || '').replace(/원장|선생님|교사/g, '').trim();
+  if (cleanDirName) {
+    var key = cleanDirName.toLowerCase();
+    seen[key] = true;
+    list.push({
+      id: 'DIR_' + dirUsername,
+      name: cleanDirName,
+      rawName: dirName,
+      username: dirUsername,
+      role: '원장',
+      label: cleanDirName + ' 지도교사',
+      phone: dirPhone
+    });
+  }
+
+  // 2. 선생님 목록 (teacherDataList)
+  (teacherDataList || []).forEach(function(t) {
+    var cleanName = (t.name || '').replace(/원장|선생님|교사/g, '').trim() || t.name;
+    var key = cleanName.toLowerCase();
+    if (!seen[key]) {
+      seen[key] = true;
+      list.push({
+        id: t.id,
+        name: cleanName,
+        rawName: t.name,
+        username: t.username,
+        role: '지도교사',
+        label: cleanName + ' 지도교사',
+        phone: t.phone || ''
+      });
+    }
+  });
+
+  return list;
+}
+
 function renderNewClassTeacherDropdown() {
   var menu = document.getElementById('newClassTeacherDropdownMenu');
   if (!menu) return;
   menu.innerHTML = '';
 
-  if (teacherDataList.length === 0) {
-    menu.innerHTML = '<div class="p-2 text-muted" style="font-size:11.5px;">등록된 선생님이 없습니다.</div>';
+  var candidates = getClassTeacherCandidates();
+  if (candidates.length === 0) {
+    menu.innerHTML = '<div class="p-2 text-muted" style="font-size:11.5px;">선택 가능한 지도교사(원장/선생님)가 없습니다.</div>';
     return;
   }
 
-  teacherDataList.forEach(function(t, idx) {
+  candidates.forEach(function(t, idx) {
     var item = document.createElement('div');
     item.className = 'form-check py-1 px-3 d-flex align-items-center';
     item.style.cursor = 'pointer';
     item.onclick = function(e) { e.stopPropagation(); };
-    var isDefaultChecked = idx === 0; // 첫 번째 교사 기본 선택
+    var isDefaultChecked = idx === 0; // 첫 번째 교사(원장 또는 첫 교사) 기본 선택
     item.innerHTML = `
-      <input class="form-check-input new-cls-teacher-cb" type="checkbox" value="${t.name} 지도교사" id="cb_new_t_${t.id}" ${isDefaultChecked ? 'checked' : ''} onchange="updateNewClassTeacherLabel()">
+      <input class="form-check-input new-cls-teacher-cb" type="checkbox" value="${t.label}" id="cb_new_t_${t.id}" ${isDefaultChecked ? 'checked' : ''} onchange="updateNewClassTeacherLabel()">
       <label class="form-check-label ml-2 mb-0" for="cb_new_t_${t.id}" style="cursor: pointer; font-size: 12px; color: var(--text-main);">
-        <strong>${t.name}</strong> <small class="text-muted">(${t.role || '지도교사'})</small>
+        <strong>${t.name}</strong> <small class="text-muted">(${t.role})</small>
       </label>
     `;
     menu.appendChild(item);
@@ -880,7 +943,7 @@ function renderNewClassTeacherDropdown() {
 
 function updateNewClassTeacherLabel() {
   var checked = Array.from(document.querySelectorAll('.new-cls-teacher-cb:checked')).map(function(cb) {
-    return cb.value.replace(' 지도교사', '').trim();
+    return cb.value.trim();
   });
   var labelEl = document.getElementById('newClassTeacherSelectLabel');
   if (!labelEl) return;
@@ -889,7 +952,7 @@ function updateNewClassTeacherLabel() {
     labelEl.innerText = '담당 교사 선택 (복수 가능)';
     labelEl.className = 'text-truncate text-muted';
   } else if (checked.length === 1) {
-    labelEl.innerText = checked[0] + ' 지도교사';
+    labelEl.innerText = checked[0];
     labelEl.className = 'text-truncate font-weight-bold text-dark';
   } else {
     labelEl.innerText = checked.join(', ') + ' (' + checked.length + '명)';
@@ -1028,21 +1091,26 @@ function renderEditClassTeacherList(currentTeachersStr) {
   if (!container) return;
   container.innerHTML = '';
 
-  if (teacherDataList.length === 0) {
-    container.innerHTML = '<div class="text-muted p-2" style="font-size:12px;">등록된 선생님이 없습니다.</div>';
+  var candidates = getClassTeacherCandidates();
+  if (candidates.length === 0) {
+    container.innerHTML = '<div class="text-muted p-2" style="font-size:12px;">선택 가능한 지도교사(원장/선생님)가 없습니다.</div>';
     return;
   }
 
-  teacherDataList.forEach(function(t) {
-    var isAssigned = currentTeachersStr && currentTeachersStr.indexOf(t.name) !== -1;
+  candidates.forEach(function(t) {
+    var isAssigned = currentTeachersStr && (
+      currentTeachersStr.indexOf(t.name) !== -1 ||
+      currentTeachersStr.indexOf(t.label) !== -1 ||
+      (t.rawName && currentTeachersStr.indexOf(t.rawName) !== -1)
+    );
     var div = document.createElement('div');
     div.className = 'form-check py-1 px-2 mb-1 d-flex align-items-center';
     div.style.background = isAssigned ? '#f0fdf4' : 'transparent';
     div.style.borderRadius = '6px';
     div.innerHTML = `
-      <input class="form-check-input edit-cls-teacher-cb" type="checkbox" value="${t.name} 지도교사" id="cb_edit_t_${t.id}" ${isAssigned ? 'checked' : ''} onchange="updateEditClassTeacherCount(this)">
+      <input class="form-check-input edit-cls-teacher-cb" type="checkbox" value="${t.label}" id="cb_edit_t_${t.id}" ${isAssigned ? 'checked' : ''} onchange="updateEditClassTeacherCount(this)">
       <label class="form-check-label ml-2 mb-0 d-flex justify-content-between align-items-center w-100" for="cb_edit_t_${t.id}" style="cursor: pointer; font-size: 12.5px;">
-        <span><strong>${t.name}</strong> <small class="text-muted">(${t.role || '지도교사'})</small></span>
+        <span><strong>${t.name}</strong> <small class="text-muted">(${t.role})</small></span>
         <small class="text-muted">${t.phone || ''}</small>
       </label>
     `;
@@ -1643,12 +1711,11 @@ function openStudentAddModal() {
   }
 
   var schoolEl = document.getElementById('newStdSchool');
-  if (schoolEl) schoolEl.value = '나노초등학교';
+  if (schoolEl) schoolEl.value = '';
 
   var gradeEl = document.getElementById('newStdGrade');
   if (gradeEl) {
-    gradeEl.value = '초등 5학년';
-    onStudentGradeChange('초등 5학년');
+    gradeEl.value = '';
   }
 
   var classEl = document.getElementById('newStdClass');
@@ -1812,7 +1879,7 @@ async function saveNewStudent() {
   var id = (document.getElementById('newStdId') ? document.getElementById('newStdId').value : '').trim();
   var pw = (document.getElementById('newStdPw') ? document.getElementById('newStdPw').value : '').trim();
   var school = (document.getElementById('newStdSchool') ? document.getElementById('newStdSchool').value : '').trim();
-  var grade = document.getElementById('newStdGrade') ? document.getElementById('newStdGrade').value : '초등 5학년';
+  var grade = document.getElementById('newStdGrade') ? document.getElementById('newStdGrade').value : '';
   var classGroup = document.getElementById('newStdClass') ? document.getElementById('newStdClass').value : '지혜반';
   var status = document.getElementById('newStdStatus') ? document.getElementById('newStdStatus').value : '승인';
   var existingStd = editId ? studentDataList.find(function(s){ return s.id === editId; }) : null;
@@ -1848,18 +1915,18 @@ async function saveNewStudent() {
     document.getElementById('newStdSchool').focus();
     return;
   }
-  if (!parentName) {
-    alert('학부모 이름을 입력해 주세요.');
-    document.getElementById('newStdParentName').focus();
+  if (!grade) {
+    alert('학년을 선택해 주세요.');
+    document.getElementById('newStdGrade').focus();
     return;
   }
-  if (!korEngRegex.test(parentName)) {
+  if (parentName && !korEngRegex.test(parentName)) {
     alert('학부모 이름은 한글 및 영문만 입력할 수 있습니다.');
     document.getElementById('newStdParentName').focus();
     return;
   }
-  if (!parentPhone || parentPhone.length < 11) {
-    alert('학부모 연락처를 정확히 입력해 주세요. (예: 010-1234-5678)');
+  if (parentPhone && parentPhone.length < 10) {
+    alert('학부모 연락처를 올바르게 입력해 주세요. (예: 010-1234-5678)');
     document.getElementById('newStdParentPhone').focus();
     return;
   }
@@ -2368,9 +2435,14 @@ function renderTeacherTable(customList) {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  var listToRender = customList || teacherDataList;
+  var rawList = customList || teacherDataList || [];
+  var listToRender = rawList.filter(function(t) {
+    return t.role !== '학원 원장' && (t.name || '').indexOf('원장') === -1;
+  });
   var countEl = document.getElementById('teacherTotalCount');
   if (countEl) countEl.innerText = listToRender.length;
+  var tabTeacherEl = document.getElementById('tabTeacherCount');
+  if (tabTeacherEl) tabTeacherEl.innerText = listToRender.length;
 
   if (listToRender.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">검색된 선생님 정보가 없습니다.</td></tr>';
@@ -2443,8 +2515,8 @@ function openTeacherAddModal() {
   document.getElementById('teacherUsernameInput').value = '';
   var pwEl = document.getElementById('teacherPasswordInput');
   if (pwEl) {
-    pwEl.value = '1234';
-    pwEl.placeholder = '접속 비밀번호 입력 (예: 1234)';
+    pwEl.value = '123456';
+    pwEl.placeholder = '6자 이상 입력 (예: 123456)';
   }
   document.getElementById('teacherPhoneInput').value = '';
   $('#teacherModal').modal('show');
@@ -2492,8 +2564,8 @@ async function handleSaveTeacher(e) {
     document.getElementById('teacherUsernameInput').focus();
     return;
   }
-  if (window.NanoPortal && NanoPortal.remote && ((!id && password.length < 12) || (id && password && password.length < 12))) {
-    alert('운영 계정 비밀번호는 12자 이상 입력해 주세요.');
+  if (window.NanoPortal && NanoPortal.remote && ((!id && password.length < 6) || (id && password && password.length < 6))) {
+    alert('비밀번호는 6자 이상 입력해 주세요.');
     if (pwEl) pwEl.focus();
     return;
   }
@@ -3022,9 +3094,26 @@ function getLearningAcademyId() {
 }
 
 function getLoadedLearningLogs() {
-  if (window.NanoPortal && NanoPortal.remote) return JSON.parse(JSON.stringify(NanoPortal.logs() || []));
+  if (window.NanoPortal && NanoPortal.remote) {
+    var remoteLogs = JSON.parse(JSON.stringify(NanoPortal.logs() || []));
+    remoteLogs.forEach(function(l) {
+      if (!l.sheet || (l.sheet !== '작성 완료' && l.sheet !== '작성 전')) {
+        l.sheet = '작성 전';
+      }
+    });
+    return remoteLogs;
+  }
   try {
     var logs = window.NanoLearningStore.read(getLearningAcademyId(), window.MIGRATED_LEARNING_LOGS);
+    logs.forEach(function(l) {
+      // 나노 시트는 기본적으로 '작성 전'이 디폴트값 (교사가 직접 완료 처리하지 않은 신규 퀴즈 응시 건)
+      if (!l.manualSheetDone && (!l.reviewed || l.reviewed === '대기' || l.reviewed === '첨삭 전')) {
+        l.sheet = '작성 전';
+      }
+      if (!l.sheet || (l.sheet !== '작성 완료' && l.sheet !== '작성 전')) {
+        l.sheet = '작성 전';
+      }
+    });
     logs.sort(function(a, b) {
       return (b.submittedAt || b.date || '').localeCompare(a.submittedAt || a.date || '');
     });
@@ -3076,7 +3165,9 @@ async function toggleNanoSheetStatus(logId) {
     log = learningLogs.find(function(l) { return l.id === logId; });
   }
   if (log) {
-    log.sheet = (log.sheet === '작성 완료') ? '작성 전' : '작성 완료';
+    var nextSheet = (log.sheet === '작성 완료') ? '작성 전' : '작성 완료';
+    log.sheet = nextSheet;
+    log.manualSheetDone = (nextSheet === '작성 완료');
     if (!await saveCustomLearningLogs(allLogs)) return;
     renderLearningTable();
     showAcademyToast(`[${(log.studentName || log.name)}] 나노 시트 상태가 [${log.sheet}]로 변경되었습니다.`);
@@ -3179,6 +3270,8 @@ async function saveCorrectionFromModal() {
 
   if (log) {
     log.reviewed = '첨삭 완료';
+    log.sheet = '작성 완료';
+    log.manualSheetDone = true;
     var commentEl = document.getElementById('correctionCommentInput');
     if (commentEl) {
       log.comment = commentEl.value.trim();
@@ -7830,16 +7923,18 @@ function copyScrollText() {
 
 // ==============================================================
 // 콘텐츠 관리 (도서 목록 + 콘텐츠 학습자료 PDF 업로드) 로직
-// ==============================================================
+// 양장본 기본 도서 커버 (네트워크 지연/누락 없이 즉시 렌더링되는 인라인 SVG Data URI)
+var DEFAULT_BOOK_COVER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160" width="120" height="160"><defs><linearGradient id="coverBg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%233b82f6"/><stop offset="50%" stop-color="%231d4ed8"/><stop offset="100%" stop-color="%231e3a8a"/></linearGradient><linearGradient id="spineShade" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="rgba(0,0,0,0.35)"/><stop offset="60%" stop-color="rgba(0,0,0,0.1)"/><stop offset="100%" stop-color="rgba(255,255,255,0.15)"/></linearGradient><linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="%23f59e0b"/><stop offset="100%" stop-color="%23fbbf24"/></linearGradient></defs><rect x="2" y="2" width="116" height="156" rx="6" fill="url(%23coverBg)"/><rect x="12" y="8" width="100" height="144" rx="3" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="2,2"/><path d="M2 8 C2 4.69 4.69 2 8 2 L12 2 L12 158 L8 158 C4.69 158 2 155.31 2 152 Z" fill="url(%23spineShade)"/><polygon points="76,2 90,2 90,32 83,24 76,32" fill="url(%23ribbonGrad)" opacity="0.95"/><g transform="translate(38, 56)" fill="none" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"><path d="M22 28 C15 24 6 25 0 28 L0 6 C6 3 15 2 22 6 Z" fill="rgba(255,255,255,0.12)"/><path d="M22 28 C29 24 38 25 44 28 L44 6 C38 3 29 2 22 6 Z" fill="rgba(255,255,255,0.18)"/><line x1="22" y1="6" x2="22" y2="28" stroke="%23ffffff" stroke-width="2.5"/><line x1="6" y1="12" x2="16" y2="10" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/><line x1="6" y1="18" x2="16" y2="16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/><line x1="28" y1="10" x2="38" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/><line x1="28" y1="16" x2="38" y2="18" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/></g><text x="64" y="112" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Pretendard, sans-serif" font-size="9" font-weight="700" fill="%23ffffff" letter-spacing="1" opacity="0.85">NANO BOOK</text><rect x="42" y="118" width="44" height="1.5" rx="0.75" fill="rgba(255,255,255,0.3)"/></svg>';
+
 // 도서 표지 경로 정규화:
-// 마스터 페이지와 100% 동일한 연동 표준 유지: /upload/book/xxx 경로를 그대로 보존하여 브라우저에서 확실히 로드되게 함.
 function normalizeBookCoverUrl(url) {
-  if (!url || url === 'undefined' || url === 'null') return 'resources/images/book_default.svg';
-  if (/^(https?:)?\/\//.test(url) || url.indexOf('data:') === 0) return url;
-  if (url.startsWith('/upload/') || url.startsWith('upload/')) {
-    return url.startsWith('/') ? url : ('/' + url);
+  if (!url || url === 'undefined' || url === 'null' || !String(url).trim()) return DEFAULT_BOOK_COVER;
+  var trimmed = String(url).trim();
+  if (/^(https?:)?\/\//.test(trimmed) || trimmed.indexOf('data:') === 0) return trimmed;
+  if (trimmed.startsWith('/upload/') || trimmed.startsWith('upload/')) {
+    return trimmed.startsWith('/') ? trimmed : ('/' + trimmed);
   }
-  return url;
+  return trimmed;
 }
 
 function createAcademyBookItem(b) {
@@ -7922,13 +8017,28 @@ function createAcademyBookItem(b) {
     answerGuide: '【나노 시트 핵심 정답 및 생각담기 가이드】\n\n' + (b.thinkInsert ? ('▶ 생각담기: ' + b.thinkInsert) : '정규 독서논술 답안'),
     thinkExtract: b.thinkExtract,
     thinkInsert: b.thinkInsert,
+    createdAt: b.createdAt || b.date || b.regDate || '',
     quizSets: b.quizSets || []
   };
 }
 
+function deduplicateAcademyBooks(list) {
+  if (!Array.isArray(list)) return [];
+  var seen = {};
+  var result = [];
+  list.forEach(function(b) {
+    if (!b) return;
+    var k = String(b.id || b.bookNo || '').trim();
+    if (!k || seen[k]) return;
+    seen[k] = true;
+    result.push(b);
+  });
+  return result;
+}
+
 var academyBookList = (function() {
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && (window.NANO_SERVER_DATA || window.MIGRATED_BOOKS.length > 0)) {
-    return window.MIGRATED_BOOKS.map(createAcademyBookItem);
+    return deduplicateAcademyBooks(window.MIGRATED_BOOKS.map(createAcademyBookItem));
   }
   return [
     {
@@ -7952,11 +8062,12 @@ var academyBookList = (function() {
   ];
 })();
 
-// 마스터 페이지와 100% 동일하게 MIGRATED_BOOKS 실데이터 상시 동기화 보장
+// 마스터 페이지와 100% 동일하게 MIGRATED_BOOKS 실데이터 상시 동기화 보장 (도서번호 기준 중복 제거)
 function syncAcademyBooksState() {
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
-    if (!academyBookList || academyBookList.length <= 1 || academyBookList.length !== window.MIGRATED_BOOKS.length) {
-      academyBookList = window.MIGRATED_BOOKS.map(createAcademyBookItem);
+    var deduped = deduplicateAcademyBooks(window.MIGRATED_BOOKS.map(createAcademyBookItem));
+    if (!academyBookList || academyBookList.length <= 1 || academyBookList.length !== deduped.length) {
+      academyBookList = deduped;
       syncOwnedBooksState();
     }
   }
@@ -8145,7 +8256,7 @@ function filterAcademyBooks(keepPage) {
 
   var originVal = document.getElementById('filterAcadBookOrigin') ? document.getElementById('filterAcadBookOrigin').value : 'ALL';
   var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
-  var sortVal = document.getElementById('sortAcadBookSelect') ? document.getElementById('sortAcadBookSelect').value : 'DEFAULT';
+  var sortVal = document.getElementById('sortAcadBookSelect') ? document.getElementById('sortAcadBookSelect').value : 'DATE_DESC';
   var ownedRadio = document.querySelector('input[name="filterAcadBookOwned"]:checked');
   var ownedFilter = ownedRadio ? ownedRadio.value : (document.getElementById('filterAcadBookOwned') ? document.getElementById('filterAcadBookOwned').value : 'ALL');
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
@@ -8215,13 +8326,23 @@ function filterAcademyBooks(keepPage) {
       var idB = String(b.id || b.bookNo || '');
       return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
     } else if (sortVal === 'DATE_DESC') {
-      var da = a.createdAt || a.id || '';
-      var db = b.createdAt || b.id || '';
-      return String(db).localeCompare(String(da));
+      var da = a.createdAt || a.date || a.regDate || '';
+      var db = b.createdAt || b.date || b.regDate || '';
+      if (da && db && da !== db) {
+        return String(db).localeCompare(String(da));
+      }
+      var idA = String(a.id || a.bookNo || '');
+      var idB = String(b.id || b.bookNo || '');
+      return idB.localeCompare(idA, undefined, { numeric: true, sensitivity: 'base' });
     } else if (sortVal === 'DATE_ASC') {
-      var da = a.createdAt || a.id || '';
-      var db = b.createdAt || b.id || '';
-      return String(da).localeCompare(String(db));
+      var da = a.createdAt || a.date || a.regDate || '';
+      var db = b.createdAt || b.date || b.regDate || '';
+      if (da && db && da !== db) {
+        return String(da).localeCompare(String(db));
+      }
+      var idA = String(a.id || a.bookNo || '');
+      var idB = String(b.id || b.bookNo || '');
+      return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
     } else if (sortVal === 'TITLE_ASC') {
       return a.title.localeCompare(b.title, 'ko');
     } else if (sortVal === 'GRADE_ASC') {
@@ -8407,7 +8528,7 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
       </td>
       <td class="text-center">
         <div class="book-thumb-wrap" onclick="openCoverModal('${coverImg}', '${(b.title || '').replace(/'/g, "\\'")}', '${(b.publisher || '').replace(/'/g, "\\'")} · ${(b.author || '').replace(/'/g, "\\'")}')">
-          <img src="${coverImg}" class="book-thumb" alt="${b.title || ''}" onerror="if(!this.dataset.retried){this.dataset.retried='1'; if(this.src.includes('/upload/')) { this.src=this.src.replace(/^.*\/upload\//, 'upload/'); } else { this.src='resources/images/book_default.svg'; }} else { this.src='resources/images/book_default.svg'; }">
+          <img src="${coverImg}" class="book-thumb" alt="" onerror="this.onerror=null; this.src=DEFAULT_BOOK_COVER;">
           <div class="book-thumb-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
         </div>
       </td>

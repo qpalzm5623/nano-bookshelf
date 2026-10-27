@@ -3541,7 +3541,7 @@
             </button>
             <button type="button" class="btn btn-beige-secondary" id="btn-member-teachers"
               onclick="switchMemberSubTab('teachers')">
-              <i class="fa-solid fa-chalkboard-user mr-1"></i>선생님 관리 (<span id="tabTeacherCount">4</span>명)
+              <i class="fa-solid fa-chalkboard-user mr-1"></i>선생님 관리 (<span id="tabTeacherCount">0</span>명)
             </button>
           </div>
         </div>
@@ -3872,10 +3872,10 @@
                 </label>
                 <select class="form-control form-control-sm" id="sortAcadBookSelect" onchange="filterAcademyBooks()"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; font-weight: 600; width: auto; min-width: 210px;">
-                  <option value="DEFAULT" selected>보유순 · 도서번호 내림차순 (기본)</option>
+                  <option value="DATE_DESC" selected>등록일 최신순 (기본)</option>
+                  <option value="DEFAULT">보유순 · 도서번호 내림차순</option>
                   <option value="ID_DESC">도서 번호 내림차순</option>
                   <option value="ID_ASC">도서 번호 오름차순</option>
-                  <option value="DATE_DESC">등록일 최신순</option>
                   <option value="TITLE_ASC">도서명 순</option>
                   <option value="GRADE_ASC">권장 학년 순</option>
                 </select>
@@ -4631,15 +4631,15 @@
         <!-- ============================================== -->
         <div id="assign-section-student" style="display: block;">
           <div class="simple-card">
-            <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div class="d-flex align-items-center">
-                <h6 class="font-weight-bold mb-0 mr-3" style="color: var(--text-main);">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap" style="gap: 12px;">
+              <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+                <h6 class="font-weight-bold mb-0" style="color: var(--text-main);">
                   <i class="fa-solid fa-user-check mr-2 text-primary"></i>원생 맞춤 도서 배정 현황
                 </h6>
                 <span class="badge-soft badge-soft-primary">원생별 맞춤 추천/심화 및 학급 배정 관리</span>
               </div>
-              <!-- 우측 툴바: 학급 필터, 검색 인풋, 개별 원생 배정, 학급 일괄 배정, 인증 도서 일괄 삭제 -->
-              <div class="d-flex align-items-center flex-wrap gap-2">
+              <!-- 우측 툴바: 학급 필터, 검색 인풋, 개별 원생 배정, 학급 일괄 배정, 인증 도서 일괄 삭제 (간격 부여) -->
+              <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
                 <select class="form-control form-control-sm" id="filterAssignStudentClass"
                   onchange="filterStudentAssignments()" style="width: 130px; border-radius: 8px; font-size: 12.5px; height: 34px;">
                   <option value="ALL">전체 클래스</option>
@@ -4650,16 +4650,16 @@
                   onsearch="filterStudentAssignments()" placeholder="원생 이름/학번 검색..."
                   style="width: 160px; border-radius: 8px; font-size: 12.5px; height: 34px;">
                 <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openIndividualAssignModal()"
-                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center;">
-                  <i class="fa-solid fa-plus mr-1"></i>개별 원생 배정
+                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-plus"></i>개별 원생 배정
                 </button>
                 <button class="btn btn-sm font-weight-bold" onclick="openBatchClassAssignModal()"
-                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border: 1.5px solid #2b7a3e; color: #2b7a3e; background: #f0fdf4;">
-                  <i class="fa-solid fa-school mr-1.5"></i>학급 일괄 배정
+                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid #2b7a3e; color: #2b7a3e; background: #f0fdf4;">
+                  <i class="fa-solid fa-school"></i>학급 일괄 배정
                 </button>
                 <button class="btn btn-sm font-weight-bold" onclick="cleanCertifiedStudentAssignments()"
-                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; border: 1.5px solid #dc2626; color: #dc2626; background: #fff5f5;">
-                  <i class="fa-solid fa-broom mr-1.5"></i>인증 도서 일괄 삭제
+                  style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid #dc2626; color: #dc2626; background: #fff5f5;">
+                  <i class="fa-solid fa-broom"></i>인증 도서 일괄 삭제
                 </button>
               </div>
             </div>
@@ -4871,32 +4871,32 @@
 
           <!-- 필터 툴바 (기간 & 학급 선택 및 원생 검색 + 검색 버튼) -->
           <div class="simple-card p-3 mb-4" style="background: #ffffff; border-radius: 12px;">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap: 16px;">
               <!-- 좌측: 기간 & 학급 조건 필터 -->
-              <div class="d-flex align-items-center flex-wrap gap-3">
-                <div class="d-flex align-items-center gap-2">
-                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
+              <div class="d-flex align-items-center flex-wrap" style="gap: 20px;">
+                <div class="d-flex align-items-center" style="flex-shrink: 0;">
+                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 8px; white-space: nowrap; flex-shrink: 0;">
                     <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>집계 기간:
                   </span>
                   <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect"
-                    style="min-width: 170px; border-radius: 8px;">
+                    style="width: 190px; border-radius: 8px; flex-shrink: 0;">
                     <!-- JS 동적 생성: 현재월 포함 최근 6개월 -->
                   </select>
                 </div>
 
-                <div class="d-flex align-items-center gap-2">
-                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px;">
+                <div class="d-flex align-items-center" style="flex-shrink: 0;">
+                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 8px; white-space: nowrap; flex-shrink: 0;">
                     <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
                   </span>
                   <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect"
-                    style="min-width: 150px; border-radius: 8px;">
+                    style="width: 160px; border-radius: 8px; flex-shrink: 0;">
                     <option value="all">원내 전체</option>
                   </select>
                 </div>
               </div>
 
               <!-- 우측: 원생 검색창 및 검색/초기화 버튼 -->
-              <div class="d-flex align-items-center gap-2 ml-auto">
+              <div class="d-flex align-items-center ml-auto" style="gap: 8px; flex-shrink: 0;">
                 <div class="input-group input-group-sm" style="width: 240px;">
                   <input type="search" class="form-control" id="adminRankSearchInput"
                     placeholder="원생 이름/아이디 검색..."
@@ -4907,7 +4907,7 @@
                       onclick="executeAdminRankingSearch()"><i class="fa-solid fa-search mr-1"></i>검색</button>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-outline-secondary font-weight-bold px-2.5" onclick="resetAdminRankingSearch()" title="조건 초기화" style="border-radius: 8px; height: 31px;">
+                <button class="btn btn-sm btn-outline-secondary font-weight-bold px-2.5 ml-2" onclick="resetAdminRankingSearch()" title="조건 초기화" style="border-radius: 8px; height: 31px; white-space: nowrap;">
                   <i class="fa-solid fa-rotate-left mr-1"></i>초기화
                 </button>
               </div>
@@ -5592,9 +5592,9 @@
             </div>
             <div class="form-group mb-3">
               <label class="font-weight-bold" style="font-size: 13px;">비밀번호 <span class="text-danger">*</span></label>
-              <input type="password" id="teacherPasswordInput" class="form-control" placeholder="접속 비밀번호 입력 (예: 1234)"
+              <input type="password" id="teacherPasswordInput" class="form-control" placeholder="6자 이상 입력 (예: 123456)"
                 style="border-radius: 8px;">
-              <small class="text-muted" style="font-size: 11.5px;">* 선생님 계정으로 로그인 시 사용하는 비밀번호입니다.</small>
+              <small class="text-muted" style="font-size: 11.5px;">* 선생님 계정으로 로그인 시 사용하는 비밀번호입니다. (6자 이상)</small>
             </div>
             <div class="form-group mb-3">
               <label class="font-weight-bold" style="font-size: 13px;">연락처 (휴대폰)</label>
@@ -6451,6 +6451,7 @@
         </div>
         <div class="modal-body p-4 text-center" style="background: #faf8f4;">
           <img id="zoomCoverImg" src=""
+            onerror="this.onerror=null; this.src=DEFAULT_BOOK_COVER;"
             style="max-width: 100%; border-radius: 10px; border: 1px solid var(--border-medium);" alt="표지">
         </div>
       </div>
@@ -6853,12 +6854,13 @@
                     <select class="form-control form-control-sm" id="newStdGrade"
                       onchange="onStudentGradeChange(this.value)"
                       style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                      <option value="" selected>선택</option>
                       <option value="미취학">미취학</option>
                       <option value="초등 1학년">초등 1학년</option>
                       <option value="초등 2학년">초등 2학년</option>
                       <option value="초등 3학년">초등 3학년</option>
                       <option value="초등 4학년">초등 4학년</option>
-                      <option value="초등 5학년" selected>초등 5학년</option>
+                      <option value="초등 5학년">초등 5학년</option>
                       <option value="초등 6학년">초등 6학년</option>
                       <option value="중등 1학년">중등 1학년</option>
                       <option value="중등 2학년">중등 2학년</option>
@@ -6912,18 +6914,16 @@
 
                 <div class="form-row mb-2">
                   <div class="col-6">
-                    <label class="font-weight-bold" style="font-size: 12.5px;">학부모 이름 <span
-                        class="text-danger">*</span></label>
+                    <label class="font-weight-bold" style="font-size: 12.5px;">학부모 이름 <small class="text-muted">(선택 입력)</small></label>
                     <input type="text" class="form-control form-control-sm" id="newStdParentName"
-                      placeholder="예: 김영희 (한글, 영문만 가능)"
-                      oninput="this.value = this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]/g, '')" required
+                      placeholder="예: 김영희 (선택 입력)"
+                      oninput="this.value = this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]/g, '')"
                       style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   </div>
                   <div class="col-6">
-                    <label class="font-weight-bold" style="font-size: 12.5px;">학부모 연락처 <span
-                        class="text-danger">*</span></label>
+                    <label class="font-weight-bold" style="font-size: 12.5px;">학부모 연락처 <small class="text-muted">(선택 입력)</small></label>
                     <input type="tel" class="form-control form-control-sm" id="newStdParentPhone"
-                      placeholder="예: 010-1234-5678" maxlength="13" oninput="formatPhoneInput(this)" required
+                      placeholder="예: 010-1234-5678 (선택 입력)" maxlength="13" oninput="formatPhoneInput(this)"
                       style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   </div>
                 </div>

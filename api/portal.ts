@@ -32,9 +32,9 @@ function logView(attempt: any, book: any) {
     studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정', bookId: book?.bookNo || attempt.bookId,
     bookTitle: book?.title || '도서', date: attempt.completedAt.toISOString().slice(0, 10), submittedAt: attempt.completedAt.toISOString(),
     score: attempt.score, quizResults: details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
-    studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '', sheet: attempt.thinkReply ? '작성 완료' : '작성 전',
-    comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '',
-    ...(details.sheet ? { sheet: details.sheet } : {}) };
+    studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
+    sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
+    comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
 }
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
@@ -70,8 +70,8 @@ export default async function handler(req: any, res: any) {
     const user = member!;
     if (action === 'session' && req.method === 'GET') return res.status(200).json({ user: publicUser(user) });
     if (action === 'password' && req.method === 'POST') {
-      const minLen = user.role === 'STUDENT' ? 6 : 12;
-      if (typeof body.newPassword !== 'string' || body.newPassword.length < minLen || body.newPassword.length > 128 || !verifyPassword(body.currentPassword, user.password || '')) return res.status(400).json({ error: `현재 비밀번호와 새 비밀번호(${minLen}~128자)를 확인해 주세요.` });
+      const minLen = 6;
+      if (typeof body.newPassword !== 'string' || body.newPassword.length < minLen || body.newPassword.length > 128 || !verifyPassword(body.currentPassword, user.password || '')) return res.status(400).json({ error: `현재 비밀번호와 새 비밀번호(6~128자)를 확인해 주세요.` });
       const password = hashPassword(body.newPassword);
       await prisma.member.update({ where: { id: user.id }, data: { password } });
       res.setHeader('Set-Cookie', cookie(signSession(user.id, password)));

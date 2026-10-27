@@ -78,56 +78,67 @@ export default async function handler(req: any, res: any) {
     const data = {
       NANO_SERVER_DATA: true,
       NANO_BOOTSTRAP_MEMBER_ID: user.id,
-      MIGRATED_BOOKS: books.map(b => {
-        let bookNo = b.bookNo;
-        let title = b.title;
-        let series = b.series || '단권';
-        let author = b.author || '작가 미상';
-        let pub = b.publisher || '';
-        let cover = b.coverUrl || '';
-        let subCat = b.subCategory;
-        let category = b.category;
-        let grade = b.grade;
+      MIGRATED_BOOKS: (() => {
+        const bookMap = new Map<string, any>();
+        for (const b of books) {
+          let bookNo = b.bookNo;
+          let title = b.title;
+          let series = b.series || '단권';
+          let author = b.author || '작가 미상';
+          let pub = b.publisher || '';
+          let cover = b.coverUrl || '';
+          let subCat = b.subCategory;
+          let category = b.category;
+          let grade = b.grade;
+          const isShifted = (!bookNo || bookNo === 'undefined') && /^[A-Z]{2}\d{6}$/.test(title || '');
 
-        // DB 내 컬럼 밀림 또는 bookNo 누락 레코드 자가 치유 (Self-Healing)
-        if ((!bookNo || bookNo === 'undefined') && /^[A-Z]{2}\d{6}$/.test(title || '')) {
-          bookNo = title;
-          title = (b.series && b.series !== '단권') ? b.series : '고양이 목욕탕';
-          series = (author && author !== '작가 미상') ? author : '상상그림책 5';
-          author = '구사카 미나코 글/기타무라 유카 그림/황진희 역';
-          pub = '옐로스톤';
-          category = 'F';
-          subCat = 'A';
-          grade = '미취학';
-          cover = '/upload/book/9791187079521.jpg';
+          // DB 내 컬럼 밀림 또는 bookNo 누락 레코드 자가 치유 (Self-Healing)
+          if (isShifted) {
+            bookNo = title;
+            title = (b.series && b.series !== '단권') ? b.series : '고양이 목욕탕';
+            series = (author && author !== '작가 미상') ? author : '상상그림책 5';
+            author = '구사카 미나코 글/기타무라 유카 그림/황진희 역';
+            pub = '옐로스톤';
+            category = 'F';
+            subCat = 'A';
+            grade = '미취학';
+            cover = '/upload/book/9791187079521.jpg';
+          }
+
+          const finalBookId = String(bookNo || b.id);
+          // 이미 정상 도서가 등록되어 있는데 현재 도서가 컬럼 밀림(shifted)인 경우 스킵
+          if (bookMap.has(finalBookId) && isShifted) {
+            continue;
+          }
+
+          bookMap.set(finalBookId, {
+            ...b,
+            serverId: b.id,
+            id: finalBookId,
+            bookNo: finalBookId,
+            title: title,
+            author: author,
+            publisher: pub,
+            grade: grade,
+            pub: pub,
+            cover: cover,
+            cat: series,
+            series: series,
+            single: !series || series === '단권',
+            tags: (b.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+            cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
+            cat2: category === 'F' ? '외서' : '국내서',
+            tag: b.theme ? '#' + b.theme.name : '',
+            thinkInsert: b.thinkQuiz || '',
+            thinkOpen: b.thinkTitle || '',
+            hasQuiz: (b.quizzes && b.quizzes.length > 0) ? true : false,
+            quizCount: b.quizzes ? b.quizzes.length : 0,
+            quizzes: undefined,
+            theme: undefined
+          });
         }
-
-        return {
-          ...b,
-          serverId: b.id,
-          id: bookNo || b.id,
-          bookNo: bookNo || b.id,
-          title: title,
-          author: author,
-          publisher: pub,
-          grade: grade,
-          pub: pub,
-          cover: cover,
-          cat: series,
-          series: series,
-          single: !series || series === '단권',
-          tags: (b.tags || '').split(',').map(t => t.trim()).filter(Boolean),
-          cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
-          cat2: category === 'F' ? '외서' : '국내서',
-          tag: b.theme ? '#' + b.theme.name : '',
-          thinkInsert: b.thinkQuiz || '',
-          thinkOpen: b.thinkTitle || '',
-          hasQuiz: (b.quizzes && b.quizzes.length > 0) ? true : false,
-          quizCount: b.quizzes ? b.quizzes.length : 0,
-          quizzes: undefined,
-          theme: undefined
-        };
-      }),
+        return Array.from(bookMap.values());
+      })(),
       MIGRATED_QUIZZES: quizzes,
       NANO_SERVER_CLASSES: classes.map(c => ({ id: c.id, serverId: c.id, name: c.name, grade: c.targetGrade || '', academyId: c.academy.code })),
       NANO_SERVER_OWNED: owned.map(b => b.book.bookNo),
