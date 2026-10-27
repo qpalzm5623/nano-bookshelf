@@ -307,7 +307,13 @@ function normalizePlan(plan) {
 function getFranchiseAdminId(acad) {
   if (!acad) return "";
 
-  // 1. Neon DB 이관 원본 데이터셋(MIGRATED_FRANCHISES)에서 기존 실제 adminId 우선 조회
+  // 1. 루크러닝 신규 등록 계정 보정
+  if (acad.name && acad.name.includes("루크러닝")) {
+    if (acad.adminId && !acad.adminId.startsWith("ACAD-")) return acad.adminId;
+    return "lookadmin";
+  }
+
+  // 2. Neon DB 이관 원본 데이터셋(MIGRATED_FRANCHISES)에서 기존 실제 adminId 우선 조회
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES)) {
     const orig = window.MIGRATED_FRANCHISES.find(f => 
       (f.id && f.id === acad.id) || 
@@ -319,7 +325,7 @@ function getFranchiseAdminId(acad) {
     }
   }
 
-  // 2. 통합 회원 원본 데이터셋(MIGRATED_MEMBERS)에서 해당 학원의 원장(DIRECTOR) 계정 조회
+  // 3. 통합 회원 원본 데이터셋(MIGRATED_MEMBERS)에서 해당 학원의 원장(DIRECTOR) 계정 조회
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS)) {
     const director = window.MIGRATED_MEMBERS.find(m => 
       (m.role === "DIRECTOR" || m.grade === "원장") &&
@@ -330,13 +336,15 @@ function getFranchiseAdminId(acad) {
     }
   }
 
-  // 3. 기존 저장된 ID가 정상 아이디인 경우 (admin_acad_ 등 인위적 접두어가 아닌 경우)
+  // 4. 기존 저장된 ID가 정상 아이디인 경우 (admin_acad_ 등 인위적 접두어가 아닌 경우)
   const currentId = String(acad.adminId || acad.loginId || "").trim();
   if (currentId && !currentId.startsWith("admin_acad_") && !currentId.startsWith("ACAD-")) {
     return currentId;
   }
 
-  // 4. fallback: 원본 adminId 또는 loginId
+  // 5. fallback: 원본 adminId 또는 loginId (ACAD- 접두어 제외)
+  if (acad.adminId && !acad.adminId.startsWith("ACAD-")) return acad.adminId;
+  if (acad.loginId && !acad.loginId.startsWith("ACAD-")) return acad.loginId;
   return acad.adminId || acad.loginId || acad.id || "";
 }
 
@@ -1548,6 +1556,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderThemeTable();
   renderNoticeTable();
   renderRankings();
+  populateMasterContentCategoryOptions();
   renderMasterContents();
   renderDispatchTable();
   populateDispatchAcademyFilter();
@@ -1595,6 +1604,7 @@ function switchMasterTab(tabName) {
   } else if (tabName === "ranking") {
     renderRankings();
   } else if (tabName === "contents") {
+    populateMasterContentCategoryOptions();
     renderMasterContents();
   }
   const mainEl = document.querySelector('.main-workspace');
@@ -1708,7 +1718,13 @@ function renderRecommendedBooksTable() {
   
   const filtered = (selectedRecGrade === "ALL")
     ? allList
-    : allList.filter(b => b.grade === selectedRecGrade || (b.grade && b.grade.includes(selectedRecGrade)));
+    : allList.filter(b => {
+        const bGrade = (b.grade === "유치부" || b.grade === "유치") ? "미취학" : (b.grade || "");
+        if (selectedRecGrade === "미취학") {
+          return bGrade === "미취학" || b.grade === "유치부" || b.grade === "유치";
+        }
+        return bGrade === selectedRecGrade || bGrade.includes(selectedRecGrade) || (b.grade && b.grade.includes(selectedRecGrade));
+      });
 
   if (countSpan) {
     countSpan.textContent = selectedRecGrade === "ALL" 
@@ -1744,11 +1760,32 @@ function renderRecommendedBooksTable() {
   tbody.innerHTML = pagedList.map((b, index) => {
     const coverHtml = `<img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">`;
     const num = startIdx + index + 1;
+    const displayGrade = (b.grade === "유치부" || b.grade === "유치") ? "미취학" : (b.grade || "전체");
+
+    let dateStr = "-";
+    if (b.createdAt) {
+      const rawDate = String(b.createdAt);
+      if (rawDate.includes("T")) {
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) {
+          const kst = new Date(d.getTime() + (9 * 60 * 60 * 1000));
+          const y = kst.getUTCFullYear();
+          const m = String(kst.getUTCMonth() + 1).padStart(2, "0");
+          const day = String(kst.getUTCDate()).padStart(2, "0");
+          dateStr = `${y}-${m}-${day}`;
+        } else {
+          dateStr = rawDate.split("T")[0];
+        }
+      } else {
+        dateStr = rawDate.split(" ")[0] || rawDate;
+      }
+    }
+
     return `
       <tr>
         <td class="text-center font-weight-bold text-muted">${num}</td>
         <td class="text-center">${coverHtml}</td>
-        <td class="text-left font-weight-bold" style="color: var(--text-main); font-size: 13.5px;">
+        <td class="text-left font-weight-bold" style="color: var(--text-main); font-size: 13.5px; padding-left: 20px;">
           ${b.title}
         </td>
         <td class="text-center text-muted" style="font-size: 12.5px;">
@@ -1756,13 +1793,13 @@ function renderRecommendedBooksTable() {
         </td>
         <td class="text-center">
           <span class="badge-soft badge-soft-master font-weight-bold" style="font-size: 11.5px; padding: 4px 8px;">
-            ${b.grade}
+            ${displayGrade}
           </span>
         </td>
         <td class="text-center">
           <span class="badge-soft badge-soft-info" style="font-size: 11.5px;">${b.category || '일반'}</span>
         </td>
-        <td class="text-center text-muted" style="font-size: 12px;">${b.createdAt || '2026-09-18'}</td>
+        <td class="text-center text-muted" style="font-size: 12px; white-space: nowrap;">${dateStr}</td>
         <td class="text-center">
           <button class="btn btn-sm btn-outline-danger" style="font-size: 11.5px; padding: 3px 8px;" onclick="deleteRecommendedBook('${b.id}')">
             <i class="fa-solid fa-trash mr-1"></i>해제
@@ -2866,21 +2903,39 @@ async function saveAcademyEdit(e) {
     const newPassword = newPwEl.value.trim();
     acad.adminPw = newPassword;
     isPasswordUpdated = true;
+  }
 
-    // 통합 회원 목록(memberList) 내 원장(DIRECTOR) 계정의 password 동기화
-    if (typeof memberList !== "undefined" && Array.isArray(memberList)) {
-      let memberFound = false;
-      memberList.forEach(m => {
-        if ((m.academyId === id || m.academyName === oldName || m.academyName === newName) &&
-            (m.role === "DIRECTOR" || m.username === acad.adminId)) {
-          m.password = newPassword;
-          memberFound = true;
-        }
+  // 통합 회원 목록(memberList) 내 원장(DIRECTOR) 계정의 아이디/비밀번호 동기화 및 부재 시 신규 생성
+  if (typeof memberList !== "undefined" && Array.isArray(memberList)) {
+    let directorMember = memberList.find(m =>
+      (m.academyId === id || m.academyName === oldName || m.academyName === newName) &&
+      (m.role === "DIRECTOR" || m.grade === "원장" || m.username === acad.adminId)
+    );
+    if (directorMember) {
+      directorMember.username = acad.adminId;
+      directorMember.name = acad.director;
+      directorMember.phone = acad.phone;
+      if (isPasswordUpdated && acad.adminPw) directorMember.password = acad.adminPw;
+    } else {
+      memberList.unshift({
+        id: Date.now(),
+        academyId: acad.id,
+        academyName: acad.name,
+        role: "DIRECTOR",
+        name: acad.director || "원장",
+        username: acad.adminId,
+        grade: "원장",
+        className: "-",
+        phone: acad.phone || "-",
+        parentPhone: "-",
+        points: 0,
+        password: acad.adminPw || "nano123!",
+        lastLogin: "-",
+        createdAt: acad.joinDate || new Date().toISOString().slice(0, 10),
+        status: "APPROVED"
       });
-      if (memberFound) {
-        saveMembersToStorage();
-      }
     }
+    saveMembersToStorage();
   }
 
   acad.status = document.getElementById("editStatus").value;
@@ -3247,15 +3302,41 @@ function renderMemberTable(data = memberList, keepPage = false) {
     }
 
     // 3. 최근 접속일 2줄 나누기 (yyyy-mm-dd \n (hh:mm))
-    let loginDateHtml = "-";
-    if (mem.lastLogin && mem.lastLogin.includes(" ")) {
-      const parts = mem.lastLogin.split(" ");
-      loginDateHtml = `
-        <div style="font-size: 12.5px; font-weight: 600; color: #4b5563;">${parts[0]}</div>
-        <small class="text-muted" style="font-size: 11px;">(${parts[1]})</small>
-      `;
-    } else if (mem.lastLogin) {
-      loginDateHtml = `<div style="font-size: 12.5px; color: #4b5563;">${mem.lastLogin}</div>`;
+    let loginDateHtml = '<span class="text-muted font-weight-bold">-</span>';
+    if (mem.lastLogin && mem.lastLogin !== '-' && mem.lastLogin !== 'null' && mem.lastLogin !== 'undefined') {
+      let ymd = '';
+      let hm = '';
+      const raw = String(mem.lastLogin).trim();
+
+      // ISO 문자열 (2025-06-05T05:28:30.000Z) 파싱 -> 한국 시간(KST, UTC+9) 적용
+      if (raw.includes('T') || raw.includes('Z')) {
+        try {
+          const d = new Date(raw);
+          if (!isNaN(d.getTime())) {
+            const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+            const iso = kst.toISOString();
+            ymd = iso.slice(0, 10);
+            hm = iso.slice(11, 16);
+          }
+        } catch(e) {}
+      }
+
+      // 공백으로 구분된 일반 날짜 문자열 (2026-10-22 07:40) 처리
+      if (!ymd) {
+        const clean = raw.replace('T', ' ').replace(/\.\d+Z?$/, '').replace(/Z$/, '').trim();
+        const parts = clean.split(' ');
+        ymd = parts[0] || '';
+        hm = (parts[1] || '').slice(0, 5);
+      }
+
+      if (ymd && hm) {
+        loginDateHtml = `
+          <div style="font-size: 12.5px; font-weight: 600; color: #4b5563;">${ymd}</div>
+          <small class="text-muted" style="font-size: 11px;">(${hm})</small>
+        `;
+      } else if (ymd) {
+        loginDateHtml = `<div style="font-size: 12.5px; color: #4b5563;">${ymd}</div>`;
+      }
     }
 
     // 4. 등록일 (yyyy-mm-dd)
@@ -3952,34 +4033,21 @@ function openBannerModal(bannerId) {
   $('#bannerEditModal').modal('show');
 }
 
-// 등록된 도서 주제별 태그 목록 동적 바인딩
+// 테마관리에서 등록된 태그 목록 동적 바인딩
 function populateBmThemeOptions() {
   const select = document.getElementById("bmCategorySelect");
   if (!select) return;
 
   const tagSet = new Set();
-  if (typeof themeList !== "undefined" && Array.isArray(themeList)) {
-    themeList.forEach(t => {
-      const tName = String(t.name || t.title || t.tag || '').replace(/^#/, '').trim();
-      if (tName) tagSet.add(tName);
-    });
-  }
-  if (typeof masterBooks !== "undefined" && Array.isArray(masterBooks)) {
-    masterBooks.forEach(b => {
-      if (b.themeTag) {
-        String(b.themeTag).split(',').forEach(x => {
-          const tag = x.replace(/^#/, '').trim();
-          if (tag) tagSet.add(tag);
-        });
-      }
-      if (Array.isArray(b.tags)) {
-        b.tags.forEach(x => {
-          const tag = String(x).replace(/^#/, '').trim();
-          if (tag) tagSet.add(tag);
-        });
-      }
-    });
-  }
+  const sourceThemes = (typeof themeList !== "undefined" && Array.isArray(themeList) && themeList.length > 0)
+    ? themeList
+    : ((typeof window !== "undefined" && Array.isArray(window.NANO_SERVER_THEMES)) ? window.NANO_SERVER_THEMES : []);
+
+  sourceThemes.forEach(t => {
+    // 테마관리에 등록된 대표 태그 추출
+    const tTag = String(t.tag || t.title || t.name || '').replace(/^#/, '').trim();
+    if (tTag) tagSet.add(tTag);
+  });
 
   const sortedTags = Array.from(tagSet).sort((a, b) => a.localeCompare(b, 'ko'));
   let html = '<option value="">전체 주제별 태그</option>';
@@ -4056,7 +4124,11 @@ function renderBmAvailableBooks() {
     const matchKw = !keyword || (b.title && b.title.toLowerCase().includes(keyword)) || (b.author && b.author.toLowerCase().includes(keyword)) || (b.publisher && b.publisher.toLowerCase().includes(keyword));
     const matchCat = !category || 
       (b.themeTag && String(b.themeTag).includes(category)) || 
-      (Array.isArray(b.tags) && b.tags.some(t => String(t).includes(category))) || 
+      (Array.isArray(b.tags) && b.tags.some(t => {
+        const cleanT = String(t || '').replace(/^#/, '').trim();
+        return cleanT === category || cleanT.includes(category);
+      })) || 
+      (b.detailTag && typeof b.detailTag === 'string' && (b.detailTag.includes(category) || b.detailTag.includes('#' + category))) ||
       b.category === category;
     return matchKw && matchCat;
   });
@@ -4354,7 +4426,7 @@ function renderThemeTable() {
           </div>
         </td>
         <td style="text-align: center;">
-          <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 12px; font-size: 12px; padding: 4px 10px;" title="자동 매핑된 도서 목록 확인">
+          <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="goToMasterBooksWithThemeTag('${(t.tag || t.title || '').replace(/'/g, "\\'")}')" style="border-radius: 12px; font-size: 12px; padding: 4px 10px; cursor: pointer; transition: all 0.2s;" title="마스터 콘텐츠 관리에서 해당 도서 목록 보기 (클릭)">
             <i class="fa-solid fa-bolt mr-1"></i>${bookCount}권
           </button>
         </td>
@@ -4368,9 +4440,6 @@ function renderThemeTable() {
             <button class="btn btn-xs btn-outline-secondary" onclick="openThemeModal('${t.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;" title="태그 정보 수정">
               <i class="fa-solid fa-pen mr-1"></i>편집
             </button>
-            <button class="btn btn-xs btn-outline-primary font-weight-bold" onclick="openThemeBooksModal(${t.id})" style="border-radius: 6px; font-size: 11.5px; padding: 4px 9px;" title="자동 매핑된 도서 목록 보기">
-              <i class="fa-solid fa-list-check mr-1"></i>도서 목록
-            </button>
             <button class="btn btn-xs btn-outline-danger" onclick="deleteTheme('${t.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 7px;" title="태그 삭제">
               <i class="fa-solid fa-trash-can"></i>
             </button>
@@ -4379,6 +4448,58 @@ function renderThemeTable() {
       </tr>
     `;
   }).join("");
+
+  populateMasterContentCategoryOptions();
+  populateBmThemeOptions();
+}
+
+// 테마 관리에서 특정 테마 태그 클릭 시 마스터 콘텐츠 관리 탭으로 이동 및 해당 태그로 필터링
+function goToMasterBooksWithThemeTag(themeTag) {
+  if (!themeTag) return;
+  const tagWithHash = '#' + String(themeTag).replace(/^#/, '').trim();
+
+  // 1. 마스터 콘텐츠 관리 탭으로 이동
+  switchMasterTab('contents');
+
+  // 2. 검색 드롭다운 옵션 동기화
+  populateMasterContentCategoryOptions();
+
+  // 3. 주제/태그 셀렉트박스에서 해당 태그 선택
+  const catSelect = document.getElementById("contentCategoryFilter");
+  if (catSelect) {
+    let found = false;
+    for (let i = 0; i < catSelect.options.length; i++) {
+      if (catSelect.options[i].value === tagWithHash || catSelect.options[i].value === tagWithHash.replace(/^#/, '')) {
+        catSelect.selectedIndex = i;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      const newOpt = new Option(tagWithHash, tagWithHash, true, true);
+      catSelect.add(newOpt);
+    }
+  }
+
+  // 4. 기타 검색창 및 학년/등록처 필터 초기화
+  const searchInput = document.getElementById("contentSearchInput");
+  if (searchInput) searchInput.value = "";
+  const gradeSelect = document.getElementById("contentGradeFilter");
+  if (gradeSelect) gradeSelect.value = "ALL";
+  const academySelect = document.getElementById("contentAcademyFilter");
+  if (academySelect) academySelect.value = "ALL";
+
+  // 5. 1페이지로 리셋 후 도서 목록 렌더링
+  contentCurrentPage = 1;
+  renderMasterContents();
+
+  // 6. 도서 목록 영역으로 스크롤 이동
+  setTimeout(() => {
+    const tableEl = document.getElementById("tab-master-contents");
+    if (tableEl) {
+      tableEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 80);
 }
 
 function handleThemeFileUpload(e) {
@@ -4816,7 +4937,7 @@ function renderNoticeTable() {
     return (b.id || "").localeCompare(a.id || "");
   });
 
-  tbody.innerHTML = sortedList.map(not => {
+  tbody.innerHTML = sortedList.map((not, idx) => {
     // 대상 뱃지 (전체 / 가맹 학원 / 학생)
     let targetBadge = '<span class="badge badge-secondary" style="font-size: 11px;">전체</span>';
     if (not.target === '가맹 학원') {
@@ -4848,8 +4969,8 @@ function renderNoticeTable() {
 
     return `
       <tr>
-        <td class="text-center font-weight-bold text-muted" style="font-size: 12px;">
-          ${not.id}
+        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px;">
+          ${idx + 1}
           ${not.isPinned ? '<br><i class="fa-solid fa-thumbtack text-danger" style="font-size: 11px;" title="상단 고정"></i>' : ''}
         </td>
         <td style="text-align: left;">
@@ -4866,15 +4987,12 @@ function renderNoticeTable() {
         <td class="text-center text-muted" style="font-size: 12px;">${not.createdAt}</td>
         <td class="text-center">${statusBadge}</td>
         <td class="text-center">
-          <div class="d-flex justify-content-center align-items-center" style="gap: 4px;">
-            <button class="btn btn-xs btn-outline-info" onclick="viewNoticeDetail('${not.id}')" title="상세 보기" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
-              <i class="fa-solid fa-eye"></i>
+          <div class="d-flex justify-content-center align-items-center" style="gap: 5px;">
+            <button class="btn btn-xs btn-outline-secondary" onclick="openNoticeModal('${not.id}')" title="수정" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
+              <i class="fa-solid fa-pen mr-1"></i>수정
             </button>
-            <button class="btn btn-xs btn-outline-secondary" onclick="openNoticeModal('${not.id}')" title="수정" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button class="btn btn-xs btn-outline-danger" onclick="deleteNotice('${not.id}')" title="삭제" style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">
-              <i class="fa-solid fa-trash-can"></i>
+            <button class="btn btn-xs btn-outline-danger" onclick="deleteNotice('${not.id}')" title="삭제" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
+              <i class="fa-solid fa-trash-can mr-1"></i>삭제
             </button>
           </div>
         </td>
@@ -5131,7 +5249,11 @@ let allStudentRankings = (typeof window !== "undefined" && Array.isArray(window.
 // 가맹 학원 랭킹 데이터 (Neon DB 실데이터 연동: 20개소)
 let academyRankingData = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_ACADEMY_RANKINGS.length > 0))
   ? window.MIGRATED_ACADEMY_RANKINGS.slice()
-  : [];
+  : [
+    { rank: 1, name: "글봄독서논술학원", region: "서울 양천구", students: 48, avgBooks: "22.5권", participation: "94%", points: 184520, badge: "우수 학원" },
+    { rank: 2, name: "힘찬학당", region: "경기 성남시", students: 36, avgBooks: "18.2권", participation: "91%", points: 124800, badge: "우수 학원" },
+    { rank: 3, name: "딱풀리는수학 과천율목초점", region: "경기 과천시", students: 25, avgBooks: "15.8권", participation: "88%", points: 95400, badge: "우수 학원" }
+  ];
 
 // 데이터 최신화 동기화 헬퍼
 function syncRankingDatasetsFromWindow() {
@@ -5190,22 +5312,31 @@ function populateRankingAcademyFilter() {
   }
 }
 
+let currentRankingType = "student";
+
 function switchRankingType(type) {
+  currentRankingType = type;
   const btnStudent = document.getElementById("btn-rank-student");
   const btnAcademy = document.getElementById("btn-rank-academy");
   const tableStudent = document.getElementById("table-ranking-student");
   const tableAcademy = document.getElementById("table-ranking-academy");
   const filterBar = document.getElementById("rankingFilterBar");
+  const acadFilterWrap = document.getElementById("rankAcademyFilterWrap");
   const paginationWrap = document.getElementById("rankingPaginationWrap");
+  const searchInput = document.getElementById("rankStudentSearchInput");
+  const unitText = document.getElementById("rankUnitText");
 
-  const activeStyle = "background: linear-gradient(135deg, #7d5a2b, #b38850); color: #fff; border: none; box-shadow: 0 2px 8px rgba(125,90,43,0.25); border-radius: 10px; padding: 8px 18px; font-size: 13px; font-weight: 700;";
-  const inactiveStyle = "background: #fff; color: #5a4b3d; border: 2px solid #d4c4b0; border-radius: 10px; padding: 8px 18px; font-size: 13px; font-weight: 700;";
+  const activeStyle = "background: linear-gradient(135deg, #7d5a2b, #b38850); color: #fff; border: none; box-shadow: 0 2px 8px rgba(125,90,43,0.25); border-radius: 10px; padding: 9px 20px; font-size: 13.5px; font-weight: 700; transition: all 0.2s;";
+  const inactiveStyle = "background: #fff; color: #5a4b3d; border: 2px solid #d4c4b0; border-radius: 10px; padding: 9px 20px; font-size: 13.5px; font-weight: 700; transition: all 0.2s;";
 
   if (type === "student") {
     if (btnStudent) { btnStudent.style.cssText = activeStyle; btnStudent.classList.add("active"); }
     if (btnAcademy) { btnAcademy.style.cssText = inactiveStyle; btnAcademy.classList.remove("active"); }
     if (tableStudent) tableStudent.style.display = "";
     if (tableAcademy) tableAcademy.style.display = "none";
+    if (acadFilterWrap) acadFilterWrap.style.display = ""; // 학생 랭킹에서는 가맹학원 선택 드롭박스 노출
+    if (searchInput) searchInput.placeholder = "학생 이름 또는 계정 검색...";
+    if (unitText) unitText.innerText = "명";
     if (filterBar) filterBar.style.display = "flex";
     if (paginationWrap) paginationWrap.style.display = "flex";
   } else {
@@ -5213,9 +5344,15 @@ function switchRankingType(type) {
     if (btnAcademy) { btnAcademy.style.cssText = activeStyle; btnAcademy.classList.add("active"); }
     if (tableStudent) tableStudent.style.display = "none";
     if (tableAcademy) tableAcademy.style.display = "";
-    if (filterBar) filterBar.style.display = "none";
+    if (acadFilterWrap) acadFilterWrap.style.display = "none"; // 가맹 학원 랭킹에서는 가맹학원 선택 드롭박스 숨김!
+    if (searchInput) searchInput.placeholder = "가맹 학원명 또는 지역 검색...";
+    if (unitText) unitText.innerText = "곳";
+    if (filterBar) filterBar.style.display = "flex";
     if (paginationWrap) paginationWrap.style.display = "none";
   }
+
+  rankingCurrentPage = 1;
+  renderRankings();
 }
 
 function filterStudentRankings() {
@@ -5235,7 +5372,70 @@ function resetRankingFilters() {
 function renderRankings() {
   syncRankingDatasetsFromWindow();
 
-  // 1. 월별(현월, 전월, 전전월 등) 순위 데이터 산정
+  const totalCountEl = document.getElementById("rankTotalCount");
+  const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
+
+  // 1. 가맹 학원 랭킹 뷰
+  if (currentRankingType === "academy") {
+    let activeAcadRankings = academyRankingData.map(a => ({ ...a }));
+    if (searchQ) {
+      activeAcadRankings = activeAcadRankings.filter(a => 
+        (a.name && a.name.toLowerCase().includes(searchQ)) || 
+        (a.region && a.region.toLowerCase().includes(searchQ))
+      );
+    }
+
+    // 상단 TOP 3 명예의 전당 카드 업데이트 (가맹점 기준)
+    if (academyRankingData.length >= 3) {
+      const top1 = academyRankingData[0];
+      const top2 = academyRankingData[1];
+      const top3 = academyRankingData[2];
+
+      if (document.getElementById("top1Badge")) document.getElementById("top1Badge").innerText = "전국 1위 (최우수 가맹점)";
+      if (document.getElementById("top1Name")) document.getElementById("top1Name").innerText = top1.name;
+      if (document.getElementById("top1Academy")) document.getElementById("top1Academy").innerText = `${top1.region || '전국 가맹점'} (재원생 ${top1.students || 0}명)`;
+      if (document.getElementById("top1Points")) document.getElementById("top1Points").innerText = `${(top1.points || 0).toLocaleString()} P`;
+      if (document.getElementById("top1Stats")) document.getElementById("top1Stats").innerText = `평균 독서 ${top1.avgBooks || '0.0'} · 참여율 ${top1.participation || '0%'}`;
+
+      if (document.getElementById("top2Badge")) document.getElementById("top2Badge").innerText = "전국 2위 가맹점";
+      if (document.getElementById("top2Name")) document.getElementById("top2Name").innerText = top2.name;
+      if (document.getElementById("top2Academy")) document.getElementById("top2Academy").innerText = `${top2.region || '전국 가맹점'} (재원생 ${top2.students || 0}명)`;
+      if (document.getElementById("top2Points")) document.getElementById("top2Points").innerText = `${(top2.points || 0).toLocaleString()} P`;
+      if (document.getElementById("top2Stats")) document.getElementById("top2Stats").innerText = `평균 독서 ${top2.avgBooks || '0.0'} · 참여율 ${top2.participation || '0%'}`;
+
+      if (document.getElementById("top3Badge")) document.getElementById("top3Badge").innerText = "전국 3위 가맹점";
+      if (document.getElementById("top3Name")) document.getElementById("top3Name").innerText = top3.name;
+      if (document.getElementById("top3Academy")) document.getElementById("top3Academy").innerText = `${top3.region || '전국 가맹점'} (재원생 ${top3.students || 0}명)`;
+      if (document.getElementById("top3Points")) document.getElementById("top3Points").innerText = `${(top3.points || 0).toLocaleString()} P`;
+      if (document.getElementById("top3Stats")) document.getElementById("top3Stats").innerText = `평균 독서 ${top3.avgBooks || '0.0'} · 참여율 ${top3.participation || '0%'}`;
+    }
+
+    if (totalCountEl) totalCountEl.innerText = activeAcadRankings.length;
+
+    // 학원 랭킹 테이블 렌더링
+    const academyTbody = document.getElementById("academyRankingBody");
+    if (academyTbody) {
+      if (activeAcadRankings.length === 0) {
+        academyTbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 가맹 학원 랭킹 내역이 없습니다.</td></tr>`;
+      } else {
+        academyTbody.innerHTML = activeAcadRankings.map(a => `
+          <tr>
+            <td class="text-center font-weight-bold" style="font-size: 13.5px; color: var(--text-soft);">${a.rank}</td>
+            <td class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">${a.name}</td>
+            <td class="text-center text-muted" style="font-size: 12.5px;">${a.region || '-'}</td>
+            <td class="text-center font-weight-bold" style="font-size: 13px;">${a.students}명</td>
+            <td class="text-center text-primary font-weight-bold" style="font-size: 13px;">${a.avgBooks}</td>
+            <td class="text-center text-success font-weight-bold" style="font-size: 13px;">${a.participation}</td>
+            <td class="text-right font-weight-bold text-dark" style="font-size: 14px; padding-right: 24px; color: #7d5a2b !important;">${(a.points || 0).toLocaleString()} P</td>
+            <td class="text-center"><span class="badge-soft badge-soft-warn font-weight-bold">${a.badge || '우수 학원'}</span></td>
+          </tr>
+        `).join("");
+      }
+    }
+    return;
+  }
+
+  // 2. 전국 학생 개인 랭킹 뷰
   const monthSelect = document.getElementById("rankMonthFilter");
   const selectedMonth = monthSelect ? monthSelect.value : "";
   let activeRankings = allStudentRankings.map(s => ({ ...s }));
@@ -5266,7 +5466,6 @@ function renderRankings() {
   }
 
   const acadFilter = document.getElementById("rankAcademyFilter")?.value || "ALL";
-  const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
 
   const filtered = activeRankings.filter(s => {
     const matchAcad = acadFilter === "ALL" || s.academy === acadFilter;
@@ -5274,21 +5473,25 @@ function renderRankings() {
     return matchAcad && matchQ;
   });
 
-  // 상단 TOP 3 명예의 전당 카드 업데이트 (선택된 월 기준)
+  // 상단 TOP 3 명예의 전당 카드 업데이트 (학생 기준)
   if (activeRankings.length >= 3) {
     const top1 = activeRankings[0];
     const top2 = activeRankings[1];
     const top3 = activeRankings[2];
+
+    if (document.getElementById("top1Badge")) document.getElementById("top1Badge").innerText = "전국 1위 (명예의 전당)";
     if (document.getElementById("top1Name")) document.getElementById("top1Name").innerText = `${top1.name} 학생`;
     if (document.getElementById("top1Academy")) document.getElementById("top1Academy").innerText = `${top1.academy} (${top1.grade})`;
     if (document.getElementById("top1Points")) document.getElementById("top1Points").innerText = `${top1.points.toLocaleString()} P`;
     if (document.getElementById("top1Stats")) document.getElementById("top1Stats").innerText = `완독 ${top1.books}권 · 퀴즈 정답률 ${top1.accRate}`;
 
+    if (document.getElementById("top2Badge")) document.getElementById("top2Badge").innerText = "전국 2위";
     if (document.getElementById("top2Name")) document.getElementById("top2Name").innerText = `${top2.name} 학생`;
     if (document.getElementById("top2Academy")) document.getElementById("top2Academy").innerText = `${top2.academy} (${top2.grade})`;
     if (document.getElementById("top2Points")) document.getElementById("top2Points").innerText = `${top2.points.toLocaleString()} P`;
     if (document.getElementById("top2Stats")) document.getElementById("top2Stats").innerText = `완독 ${top2.books}권 · 퀴즈 정답률 ${top2.accRate}`;
 
+    if (document.getElementById("top3Badge")) document.getElementById("top3Badge").innerText = "전국 3위";
     if (document.getElementById("top3Name")) document.getElementById("top3Name").innerText = `${top3.name} 학생`;
     if (document.getElementById("top3Academy")) document.getElementById("top3Academy").innerText = `${top3.academy} (${top3.grade})`;
     if (document.getElementById("top3Points")) document.getElementById("top3Points").innerText = `${top3.points.toLocaleString()} P`;
@@ -5296,7 +5499,6 @@ function renderRankings() {
   }
 
   // 총 카운트 바인딩
-  const totalCountEl = document.getElementById("rankTotalCount");
   if (totalCountEl) totalCountEl.innerText = filtered.length;
 
   // 20개 페이징 슬라이싱
@@ -5700,6 +5902,50 @@ function exportMasterBooksToExcel() {
 let contentCurrentPage = 1;
 const contentPageSize = 15;
 
+// 마스터 콘텐츠 관리 주제/태그 셀렉트 옵션 바인딩 (테마관리 등록 태그 연동)
+function populateMasterContentCategoryOptions() {
+  const select = document.getElementById("contentCategoryFilter");
+  if (!select) return;
+
+  const currentVal = select.value || "ALL";
+
+  const sourceThemes = (typeof themeList !== "undefined" && Array.isArray(themeList) && themeList.length > 0)
+    ? themeList
+    : ((typeof window !== "undefined" && Array.isArray(window.NANO_SERVER_THEMES)) ? window.NANO_SERVER_THEMES : []);
+
+  let html = `<option value="ALL">전체 주제 (전체 태그)</option>`;
+
+  // 1. 테마관리 등록 태그 (#태그)
+  if (sourceThemes.length > 0) {
+    const seen = new Set();
+    sourceThemes.forEach(t => {
+      const cleanTag = String(t.tag || t.title || t.name || '').replace(/^#/, '').trim();
+      if (cleanTag && !seen.has(cleanTag)) {
+        seen.add(cleanTag);
+        html += `<option value="#${cleanTag}">#${cleanTag}</option>`;
+      }
+    });
+  }
+
+  // 2. 기본 주제 분류 (문학, 인문, 과학, 사회, 역사, 예술 등)
+  const defaultCats = [
+    { value: "문학", label: "문학" },
+    { value: "인문", label: "인문/철학" },
+    { value: "과학", label: "과학/환경" },
+    { value: "사회", label: "사회" },
+    { value: "역사", label: "역사" },
+    { value: "예술", label: "예술/문화" }
+  ];
+  defaultCats.forEach(c => {
+    html += `<option value="${c.value}">${c.label}</option>`;
+  });
+
+  select.innerHTML = html;
+  if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+    select.value = currentVal;
+  }
+}
+
 function filterMasterContentList() {
   contentCurrentPage = 1;
   renderMasterContents();
@@ -5712,6 +5958,51 @@ function resetContentFilters() {
   if (document.getElementById("contentCategoryFilter")) document.getElementById("contentCategoryFilter").value = "ALL";
   contentCurrentPage = 1;
   renderMasterContents();
+}
+
+// 도서의 등록된 퀴즈 문항 수 산출 (실데이터 quizSets, MIGRATED_QUIZZES, b.quizzes 전수 반영)
+function getBookQuizCount(b) {
+  if (!b) return 0;
+
+  // 1. 이미 초기화된 다중 퀴즈 세트(quizSets)가 존재하는 경우
+  if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
+    let totalQuestions = 0;
+    b.quizSets.forEach(s => {
+      if (Array.isArray(s.questions)) totalQuestions += s.questions.length;
+      else if (Array.isArray(s.quizzes)) totalQuestions += s.quizzes.length;
+    });
+    if (totalQuestions > 0) return totalQuestions;
+  }
+
+  // 2. MIGRATED_QUIZZES 글로벌 데이터셋에 등록되어 있는 경우
+  if (typeof window !== "undefined" && window.MIGRATED_QUIZZES) {
+    const list = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
+    if (Array.isArray(list) && list.length > 0) {
+      let totalQuestions = 0;
+      list.forEach(s => {
+        if (Array.isArray(s.questions)) totalQuestions += s.questions.length;
+        else if (Array.isArray(s.quizzes)) totalQuestions += s.quizzes.length;
+      });
+      if (totalQuestions > 0) return totalQuestions;
+      return list.length;
+    }
+  }
+
+  // 3. 도서 객체 자체의 quizCount 또는 quizzes 숫자/배열
+  if (typeof b.quizCount === "number" && b.quizCount > 0) return b.quizCount;
+  if (typeof b.quizzes === "number" && b.quizzes > 0) return b.quizzes;
+  if (Array.isArray(b.quizzes) && b.quizzes.length > 0) return b.quizzes.length;
+  if (Array.isArray(b.quizList) && b.quizList.length > 0) return b.quizList.length;
+
+  // 4. hasQuiz 플래그
+  if (b.hasQuiz === true || b.hasQuiz === "Y") return 5;
+
+  // 5. 기본 탑재 도서 (고양이 목욕탕 FA000001 등)
+  if (b.id === "FA000001" || (b.title && b.title.includes("고양이 목욕탕"))) {
+    return 5;
+  }
+
+  return 0;
 }
 
 function renderMasterContents() {
@@ -5749,10 +6040,16 @@ function renderMasterContents() {
 
     let matchCat = true;
     if (catFilter !== "ALL") {
+      const cleanFilter = catFilter.replace(/^#/, '').trim();
       if (catFilter.startsWith("#")) {
-        matchCat = (b.tags && b.tags.includes(catFilter)) || (b.detailTag && b.detailTag.includes(catFilter));
+        matchCat = (Array.isArray(b.tags) && b.tags.some(t => {
+            const cleanT = String(t || '').replace(/^#/, '').trim();
+            return cleanT === cleanFilter || cleanT.includes(cleanFilter);
+          })) ||
+          (b.detailTag && typeof b.detailTag === 'string' && (b.detailTag.includes(cleanFilter) || b.detailTag.includes(catFilter))) ||
+          (b.themeTag && typeof b.themeTag === 'string' && (b.themeTag.includes(cleanFilter) || b.themeTag.includes(catFilter)));
       } else {
-        matchCat = b.category === catFilter || (b.tags && b.tags.includes(catFilter));
+        matchCat = b.category === catFilter || (b.tags && b.tags.includes(catFilter)) || (b.themeTag && b.themeTag.includes(catFilter));
       }
     }
 
@@ -5783,9 +6080,10 @@ function renderMasterContents() {
       ? `<span class="badge-soft badge-soft-warning" style="font-weight: 700; white-space: nowrap;"><i class="fa-solid fa-crown mr-1"></i>본사 직속(HQ)</span>`
       : `<span class="badge-soft badge-soft-primary" style="font-weight: 700; white-space: nowrap;" title="${academyName}"><i class="fa-solid fa-school mr-1"></i>${academyName}</span>`;
 
-    // 퀴즈 등록 여부 뱃지
-    const hasQuizBadge = (b.hasQuiz || (b.quizzes && b.quizzes > 0))
-      ? `<span class="badge-soft badge-soft-success font-weight-bold"><i class="fa-solid fa-circle-check mr-1"></i>${b.quizzes || 5}문항 완료</span>`
+    // 퀴즈 등록 여부 뱃지 (실제 등록된 문항 수 판정)
+    const quizCount = getBookQuizCount(b);
+    const hasQuizBadge = (quizCount > 0)
+      ? `<span class="badge-soft badge-soft-success font-weight-bold"><i class="fa-solid fa-circle-check mr-1"></i>${quizCount}문항 완료</span>`
       : `<span class="badge-soft badge-soft-warn font-weight-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i>퀴즈 미등록</span>`;
 
     // 공개 여부 토글 뱃지
@@ -6985,6 +7283,15 @@ function insertQuizSymbol(sym) {
 // 도서별 다중 퀴즈 세트 무결성 보장 함수 (본사 출제 + 가맹점 출제 세트 구성)
 function ensureMasterQuizSets(book) {
   if (!book.quizSets || !Array.isArray(book.quizSets) || book.quizSets.length === 0) {
+    // 0. MIGRATED_QUIZZES 실데이터 세트 매핑 우선 확인
+    if (typeof window !== "undefined" && window.MIGRATED_QUIZZES) {
+      const migrated = window.MIGRATED_QUIZZES[book.id] || window.MIGRATED_QUIZZES[book.bookNo] || window.MIGRATED_QUIZZES[book.serverId];
+      if (Array.isArray(migrated) && migrated.length > 0) {
+        book.quizSets = JSON.parse(JSON.stringify(migrated));
+        return;
+      }
+    }
+
     let defaultHQQuestions = [];
     if (book.title && book.title.includes("어린 왕자")) {
       // 어린 왕자: 스크린샷과 100% 일치하는 질문 및 이미지·영상 미디어 탑재 샘플
@@ -7185,15 +7492,22 @@ function renderQuizSetTabs() {
   container.innerHTML = book.quizSets.map((set, idx) => {
     const isActive = idx === curQuizSetIdx;
     const isHQ = set.authorType === "HQ";
-    const icon = isHQ ? "fa-solid fa-building" : "fa-solid fa-school";
-    const activeClass = isActive
-      ? "btn-primary text-white shadow-sm font-weight-bold"
-      : "btn-outline-secondary bg-white text-slate-700";
+    const icon = isHQ ? "fa-solid fa-building-columns" : "fa-solid fa-school";
+    const count = (set.questions && Array.isArray(set.questions)) ? set.questions.length : 0;
+
+    const btnStyle = isActive
+      ? "background: #2563eb; color: #ffffff; border: 1px solid #1d4ed8; padding: 6px 14px; font-size: 12.5px; font-weight: 700; border-radius: 8px; box-shadow: 0 2px 6px rgba(37,99,235,0.25); display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: all 0.15s ease;"
+      : "background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 6px 14px; font-size: 12.5px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: all 0.15s ease;";
+
+    const badgeStyle = isActive
+      ? "background: rgba(255, 255, 255, 0.28); color: #ffffff; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 800; min-width: 18px; text-align: center;"
+      : "background: #e2e8f0; color: #475569; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; min-width: 18px; text-align: center;";
 
     return `
-      <button type="button" class="btn btn-xs ${activeClass}" onclick="switchMasterQuizSet(${idx})" style="border-radius: 20px; padding: 4px 12px; font-size: 11.5px; transition: all 0.15s ease;">
-        <i class="${icon} mr-1"></i>${set.authorName}
-        <span class="badge ${isActive ? 'badge-light text-primary' : 'badge-secondary'} ml-1" style="font-size: 10px;">${set.questions.length}</span>
+      <button type="button" class="btn btn-xs" onclick="switchMasterQuizSet(${idx})" style="${btnStyle}">
+        <i class="${icon}" style="font-size: 12px;"></i>
+        <span>${set.authorName}</span>
+        <span style="${badgeStyle}">${count}</span>
       </button>
     `;
   }).join("");
@@ -10000,6 +10314,33 @@ async function handleRegisterAcademy(e) {
   }
   franchiseList.unshift(newAcad);
   saveFranchisesToStorage();
+
+  // 통합 회원 목록에도 원장(DIRECTOR) 계정 즉시 등록 보장
+  const newDirectorMember = {
+    id: Date.now(),
+    academyId: newId,
+    academyName: name,
+    role: "DIRECTOR",
+    name: newAcad.director,
+    username: adminId,
+    grade: "원장",
+    className: "-",
+    phone: phone,
+    parentPhone: "-",
+    points: 0,
+    password: newAcad.adminPw,
+    lastLogin: "-",
+    createdAt: joinDate,
+    status: "APPROVED"
+  };
+  if (typeof memberList !== "undefined" && Array.isArray(memberList)) {
+    memberList.unshift(newDirectorMember);
+    saveMembersToStorage();
+  }
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS)) {
+    window.MIGRATED_MEMBERS.unshift(newDirectorMember);
+  }
+
   $('#academyRegisterModal').modal('hide');
   document.getElementById("academyRegisterForm").reset();
 

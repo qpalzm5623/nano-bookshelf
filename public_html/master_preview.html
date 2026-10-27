@@ -1248,7 +1248,7 @@
                 <tr>
                   <th style="width: 60px;">순번</th>
                   <th style="width: 70px;">표지</th>
-                  <th style="text-align: left;">도서명</th>
+                  <th style="text-align: left; padding-left: 20px;">도서명</th>
                   <th style="width: 150px;">저자 / 출판사</th>
                   <th style="width: 120px;">권장 학년</th>
                   <th style="width: 120px;">카테고리</th>
@@ -1290,12 +1290,27 @@
         </div>
       </div>
 
+      <!-- 랭킹 구분 선택 탭 (최상단 배치) -->
+      <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff; border: 1px solid var(--border-medium); border-radius: 12px; padding: 14px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); gap: 12px;">
+        <div class="d-flex align-items-center" style="gap: 10px;">
+          <button class="btn font-weight-bold" id="btn-rank-student" onclick="switchRankingType('student')" style="border-radius: 10px; padding: 9px 20px; font-size: 13.5px; background: linear-gradient(135deg, #7d5a2b, #b38850); color: #fff; border: none; box-shadow: 0 2px 8px rgba(125,90,43,0.25); transition: all 0.2s;">
+            <i class="fa-solid fa-user-graduate mr-2"></i>전국 학생 개인 랭킹
+          </button>
+          <button class="btn font-weight-bold" id="btn-rank-academy" onclick="switchRankingType('academy')" style="border-radius: 10px; padding: 9px 20px; font-size: 13.5px; background: #fff; color: #5a4b3d; border: 2px solid #d4c4b0; transition: all 0.2s;">
+            <i class="fa-solid fa-school mr-2"></i>전국 가맹 학원 랭킹
+          </button>
+        </div>
+        <div class="d-flex align-items-center">
+          <small class="text-muted" style="font-size: 12.5px;"><i class="fa-solid fa-clock-rotate-left mr-1.5 opacity-60"></i>매일 자정 포인트 기준 자동 갱신됩니다.</small>
+        </div>
+      </div>
+
       <!-- 상단 TOP 3 명예의 전당 하이라이트 -->
-      <div class="row mb-4">
+      <div class="row mb-4" id="rankingTop3Row">
         <div class="col-md-4 mb-3 mb-md-0">
           <div class="stat-card text-center" style="border: 2px solid #e6b980; background: linear-gradient(180deg, #fffcf7 0%, #ffffff 100%);">
             <div style="font-size: 28px; margin-bottom: 4px;">🥇</div>
-            <span class="badge-soft badge-soft-warn mb-2 font-weight-bold">전국 1위 (명예의 전당)</span>
+            <span class="badge-soft badge-soft-warn mb-2 font-weight-bold" id="top1Badge">전국 1위 (명예의 전당)</span>
             <h5 class="font-weight-bold mt-2 mb-1" id="top1Name">이문성 학생</h5>
             <small class="text-muted d-block mb-3" id="top1Academy">글봄독서논술학원 (초등 3학년)</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
@@ -1307,7 +1322,7 @@
         <div class="col-md-4 mb-3 mb-md-0">
           <div class="stat-card text-center" style="border: 1px solid #d5dbdb; background: #ffffff;">
             <div style="font-size: 28px; margin-bottom: 4px;">🥈</div>
-            <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold">전국 2위</span>
+            <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold" id="top2Badge">전국 2위</span>
             <h5 class="font-weight-bold mt-2 mb-1" id="top2Name">안여진 학생</h5>
             <small class="text-muted d-block mb-3" id="top2Academy">힘찬학당 (초등 6학년)</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
@@ -1319,7 +1334,7 @@
         <div class="col-md-4 mb-3 mb-md-0">
           <div class="stat-card text-center" style="border: 1px solid #e0c8b0; background: #ffffff;">
             <div style="font-size: 28px; margin-bottom: 4px;">🥉</div>
-            <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold">전국 3위</span>
+            <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold" id="top3Badge">전국 3위</span>
             <h5 class="font-weight-bold mt-2 mb-1" id="top3Name">권순찬 학생</h5>
             <small class="text-muted d-block mb-3" id="top3Academy">딱풀리는수학 과천율목초점 (초등 3학년)</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
@@ -1330,30 +1345,17 @@
         </div>
       </div>
 
-      <!-- 전국 랭킹 테이블 탭 (학생 랭킹 / 학원 랭킹) -->
+      <!-- 전국 랭킹 테이블 카드 -->
       <div class="simple-card">
-        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7;">
-          <div class="d-flex gap-2">
-            <button class="btn font-weight-bold" id="btn-rank-student" onclick="switchRankingType('student')" style="border-radius: 10px; padding: 8px 18px; font-size: 13px; background: linear-gradient(135deg, #7d5a2b, #b38850); color: #fff; border: none; box-shadow: 0 2px 8px rgba(125,90,43,0.25); transition: all 0.2s;">
-              <i class="fa-solid fa-user-graduate mr-2"></i>전국 학생 개인 랭킹
-            </button>
-            <button class="btn font-weight-bold" id="btn-rank-academy" onclick="switchRankingType('academy')" style="border-radius: 10px; padding: 8px 18px; font-size: 13px; background: #fff; color: #5a4b3d; border: 2px solid #d4c4b0; transition: all 0.2s;">
-              <i class="fa-solid fa-school mr-2"></i>전국 가맹 학원 랭킹
-            </button>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <small class="text-muted">* 매일 자정 포인트 기준 자동 갱신됩니다.</small>
-          </div>
-        </div>
-
-        <!-- 전국 학생 랭킹 전용 검색 & 필터 바 -->
-        <div id="rankingFilterBar" class="p-3 border-bottom d-flex flex-wrap align-items-center gap-2" style="background: #ffffff;">
+        <!-- 검색 & 필터 바 (요소 간격 개선 및 가맹학원 드롭박스 래퍼 추가) -->
+        <div id="rankingFilterBar" class="p-3 border-bottom d-flex flex-wrap align-items-center" style="background: #ffffff; gap: 12px; padding: 16px 20px !important;">
           <div style="min-width: 150px;">
             <select id="rankMonthFilter" class="select-beige w-100">
               <!-- JS 동적 생성 (최근 6개월) -->
             </select>
           </div>
-          <div style="min-width: 180px;">
+          <!-- 가맹학원 선택 드롭박스 (가맹 학원 랭킹 선택 시 숨김) -->
+          <div id="rankAcademyFilterWrap" style="min-width: 180px;">
             <select id="rankAcademyFilter" class="select-beige w-100">
               <option value="ALL">전체 가맹 학원</option>
               <option value="나노 독서아카데미 목동본원">🏫 나노 목동본원</option>
@@ -1367,17 +1369,19 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentRankings();}">
           </div>
-          <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterStudentRankings()" style="border-radius: 8px; height: 38px; padding: 0 16px; white-space: nowrap;">
-            <i class="fa-solid fa-search mr-1.5"></i>검색
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium);">
-            <i class="fa-solid fa-rotate-left mr-1"></i>초기화
-          </button>
-          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportRankingToExcel()" style="border-radius: 8px; height: 38px; border-color: #28a745; color: #28a745; background: #fff; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; white-space: nowrap;" title="현재 랭킹 내역을 엑셀(CSV) 파일로 다운로드합니다.">
-            <i class="fa-solid fa-file-excel"></i>엑셀 다운로드
-          </button>
-          <div class="text-muted ml-auto font-weight-bold" style="font-size: 12.5px;">
-            총 <span id="rankTotalCount" class="text-dark">0</span>명 (20개씩 보기)
+          <div class="d-flex align-items-center" style="gap: 8px;">
+            <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterStudentRankings()" style="border-radius: 8px; height: 38px; padding: 0 16px; white-space: nowrap;">
+              <i class="fa-solid fa-search mr-1.5"></i>검색
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium); padding: 0 14px;">
+              <i class="fa-solid fa-rotate-left mr-1"></i>초기화
+            </button>
+            <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportRankingToExcel()" style="border-radius: 8px; height: 38px; border-color: #28a745; color: #28a745; background: #fff; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; white-space: nowrap;" title="현재 랭킹 내역을 엑셀(CSV) 파일로 다운로드합니다.">
+              <i class="fa-solid fa-file-excel"></i>엑셀 다운로드
+            </button>
+          </div>
+          <div class="text-muted ml-auto font-weight-bold pl-2" style="font-size: 12.5px; white-space: nowrap;">
+            총 <span id="rankTotalCount" class="text-dark">0</span><span id="rankUnitText">명</span> (20개씩 보기)
           </div>
         </div>
 
@@ -1495,7 +1499,7 @@
       <!-- 검색 및 필터 (등록처, 권장학년, 주제 필터 및 검색창) -->
       <div class="filter-bar">
         <div>
-          <select id="contentAcademyFilter" class="select-beige">
+          <select id="contentAcademyFilter" class="select-beige" onchange="filterMasterContentList()">
             <option value="ALL">등록처 (전체)</option>
             <option value="HQ">👑 본사 직속 (공용)</option>
             <option value="ACAD-001">🏫 나노 목동본원</option>
@@ -1505,7 +1509,7 @@
           </select>
         </div>
         <div>
-          <select id="contentGradeFilter" class="select-beige">
+          <select id="contentGradeFilter" class="select-beige" onchange="filterMasterContentList()">
             <option value="ALL">전체 권장 학년</option>
             <option value="미취학">미취학</option>
             <option value="초등 1학년">초등 1학년</option>
@@ -1520,18 +1524,8 @@
           </select>
         </div>
         <div>
-          <select id="contentCategoryFilter" class="select-beige">
+          <select id="contentCategoryFilter" class="select-beige" onchange="filterMasterContentList()">
             <option value="ALL">전체 주제 (전체 태그)</option>
-            <option value="#이달의나노북클럽">#이달의나노북클럽</option>
-            <option value="#교과연계한국사">#교과연계한국사</option>
-            <option value="#미래과학환경">#미래과학환경</option>
-            <option value="#인문문학여행">#인문문학여행</option>
-            <option value="문학">문학</option>
-            <option value="인문">인문/철학</option>
-            <option value="과학">과학/환경</option>
-            <option value="사회">사회</option>
-            <option value="역사">역사</option>
-            <option value="예술">예술/문화</option>
           </select>
         </div>
         <div class="search-input-wrap">
@@ -2247,16 +2241,16 @@
           <!-- 관리자 계정 정보 (아이디 확인 및 비밀번호 변경) -->
           <div class="row">
             <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">원장 관리자 아이디</label>
+              <label class="font-weight-bold" style="font-size: 13px;">원장 관리자 아이디 <span class="text-danger">*</span></label>
               <div class="input-group">
-                <input type="text" id="editDirectorId" class="form-control form-control-beige" readonly style="background: #f1ede3; cursor: not-allowed; font-weight: 700; color: var(--theme-brown);">
+                <input type="text" id="editDirectorId" class="form-control form-control-beige font-weight-bold" placeholder="예: lookadmin" required style="color: var(--theme-brown);">
                 <div class="input-group-append">
                   <span class="input-group-text bg-white" style="font-size: 11px; border-color: var(--border-medium); color: var(--text-muted);">
-                    <i class="fa-solid fa-lock mr-1"></i>아이디 고정
+                    <i class="fa-solid fa-user-shield mr-1"></i>로그인 ID
                   </span>
                 </div>
               </div>
-              <small class="text-muted">가맹 학원 관리자 로그인용 고유 아이디입니다.</small>
+              <small class="text-muted">가맹 학원 관리자 로그인용 고유 아이디입니다. (원장 계정과 실시간 연동)</small>
             </div>
             <div class="col-md-6 form-group">
               <div class="d-flex justify-content-between align-items-center mb-1">
@@ -4023,39 +4017,43 @@
       </div>
 
       <div class="modal-body p-4" style="background: #faf8f5;">
-        <!-- 대상 도서 정보 요약 바 -->
-        <div class="p-3 mb-3 rounded bg-white border d-flex align-items-center justify-content-between flex-wrap gap-2">
-          <div class="d-flex align-items-center gap-3">
-            <img id="mqTargetBookCover" src="" alt="도서 표지" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd;">
-            <div>
-              <div class="d-flex align-items-center gap-2">
-                <h6 class="font-weight-bold mb-0" id="mqTargetBookTitle">어린 왕자</h6>
-                <span class="badge-soft badge-soft-neutral" id="mqTargetBookGrade">초등 5학년</span>
+        <!-- 대상 도서 정보 요약 바 (표지와 북인포 간격 20px 확보) -->
+        <div class="p-3 mb-3 rounded-xl bg-white border d-flex align-items-center justify-content-between flex-wrap shadow-2xs" style="gap: 16px; border-color: #e8e2d8;">
+          <div class="d-flex align-items-center" style="gap: 20px; min-width: 0; flex: 1;">
+            <div style="width: 50px; height: 68px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); box-shadow: 0 2px 6px rgba(0,0,0,0.08); background: #f0ece5;">
+              <img id="mqTargetBookCover" src="" alt="도서 표지" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
+            </div>
+            <div style="min-width: 0; flex: 1;">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <h5 class="font-weight-bold mb-0 text-truncate" id="mqTargetBookTitle" style="font-size: 16px; color: var(--text-main);">어린 왕자</h5>
+                <span class="badge-soft badge-soft-neutral font-weight-bold" id="mqTargetBookGrade" style="font-size: 11.5px; padding: 2px 7px;">초등 5학년</span>
               </div>
-              <small class="text-muted" id="mqTargetBookAuthor">저자: 앙투안 드 생텍쥐페리 | 관리코드: <span id="mqTargetBookId">MB-001</span></small>
+              <div class="text-muted text-truncate" id="mqTargetBookAuthor" style="font-size: 12.5px; line-height: 1.4;">
+                저자: 앙투안 드 생텍쥐페리 | 관리코드: <span id="mqTargetBookId" class="font-weight-bold text-dark">MB-001</span>
+              </div>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge badge-success px-3 py-2 font-weight-bold" id="mqQuizCountBadge">총 5문항 구성됨</span>
+          <div class="d-flex align-items-center">
+            <span class="badge badge-success px-3 py-2 font-weight-bold shadow-2xs" id="mqQuizCountBadge" style="font-size: 12px; border-radius: 8px; letter-spacing: -0.2px;">총 5문항 구성됨</span>
           </div>
         </div>
 
         <!-- 출제 기관(본사 / 가맹 학원) 탭 및 새 북퀴즈 추가 바 -->
-        <div class="p-2.5 mb-3 rounded bg-white border d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm" style="border-color: #e5e7eb;">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="text-xs font-bold text-slate-700 d-flex align-items-center">
-              <i class="fa-solid fa-layer-group text-warning mr-1.5"></i>출제 기관 선택:
+        <div class="p-3 mb-3 rounded-xl bg-white border d-flex justify-content-between align-items-center flex-wrap shadow-2xs" style="border-color: #e8e2d8; gap: 14px;">
+          <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
+            <span style="font-size: 13px; font-weight: 700; color: #475569; display: inline-flex; align-items: center; letter-spacing: -0.3px;">
+              <i class="fa-solid fa-layer-group text-warning mr-2" style="font-size: 13.5px;"></i>출제 기관 선택:
             </span>
-            <div id="mqQuizSetTabs" class="d-flex align-items-center gap-1.5 flex-wrap">
-              <!-- JS 동적 생성: [본사] [A 학원] 등 -->
+            <div id="mqQuizSetTabs" class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+              <!-- JS 동적 생성: [본사 5] [A 학원] 등 -->
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteQuizSet" onclick="deleteCurQuizSet()" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; display: none;">
+          <div class="d-flex align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteQuizSet" onclick="deleteCurQuizSet()" style="border-radius: 8px; font-size: 11.5px; padding: 5px 10px; display: none;">
               <i class="fa-solid fa-trash mr-1"></i>선택 퀴즈 세트 삭제
             </button>
-            <button type="button" class="btn btn-xs btn-primary font-weight-bold shadow-sm" onclick="openNewQuizSetModal()" style="border-radius: 6px; font-size: 11.5px; padding: 4.5px 11px; background: #6366f1; border-color: #6366f1;">
-              <i class="fa-solid fa-circle-plus mr-1"></i>새 북퀴즈 추가
+            <button type="button" class="btn btn-xs font-weight-bold shadow-2xs text-white" onclick="openNewQuizSetModal()" style="border-radius: 8px; font-size: 12px; padding: 6px 14px; background: #4f46e5; border: 1px solid #4338ca; transition: all 0.2s;">
+              <i class="fa-solid fa-circle-plus mr-1.5"></i>새 북퀴즈 추가
             </button>
           </div>
         </div>

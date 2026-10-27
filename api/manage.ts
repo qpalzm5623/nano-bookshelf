@@ -156,7 +156,33 @@ export default async function handler(req: any, res: any) {
         status: enumValue(input.status || 'ACTIVE', ['ACTIVE','SUSPENDED','TERMINATED'], '학원 상태') as any, startDate: date(input.startDate, '시작'), endDate: date(input.endDate, '종료') };
       need(Number.isSafeInteger(data.maxStudents) && data.maxStudents > 0 && Number.isSafeInteger(data.monthlyFee) && data.monthlyFee >= 0 && data.endDate > data.startDate, '정원과 계약 기간·이용료를 확인해 주세요.');
       if (existing) need(data.maxStudents >= await prisma.member.count({ where: { academyId: existing.id, role: 'STUDENT', status: 'APPROVED' } }), '재원생 수보다 정원을 줄일 수 없습니다.');
-      return res.json({ item: existing ? await prisma.academy.update({ where: { id: existing.id }, data }) : await prisma.academy.create({ data }) });
+      const academy = existing ? await prisma.academy.update({ where: { id: existing.id }, data }) : await prisma.academy.create({ data });
+      const adminUsername = input.adminId || input.username;
+      if (adminUsername) {
+        const cleanUsername = String(adminUsername).trim();
+        const rawPassword = String(input.adminPw || input.password || 'nano123!').trim();
+        const existingDirector = await prisma.member.findFirst({
+          where: { OR: [{ username: cleanUsername }, { academyId: academy.id, role: 'DIRECTOR' }] }
+        });
+        if (existingDirector) {
+          const updateData: any = { username: cleanUsername, academyId: academy.id, name: data.directorName, phone: data.phone, status: 'APPROVED' };
+          if (rawPassword && !/^[•·*]+$/.test(rawPassword)) updateData.password = hashPassword(rawPassword);
+          await prisma.member.update({ where: { id: existingDirector.id }, data: updateData });
+        } else {
+          await prisma.member.create({
+            data: {
+              academyId: academy.id,
+              username: cleanUsername,
+              name: data.directorName,
+              role: 'DIRECTOR',
+              status: 'APPROVED',
+              phone: data.phone,
+              password: hashPassword(rawPassword || 'nano123!')
+            }
+          });
+        }
+      }
+      return res.json({ item: academy });
     }
     if (entity === 'books') {
       if (body.operation === 'delete') { need(!await prisma.quizAttempt.count({ where: { bookId: input.id } }), '학습 기록이 있는 도서는 삭제할 수 없습니다.'); await prisma.book.delete({ where: { id: input.id } }); return res.json({ ok: true }); }

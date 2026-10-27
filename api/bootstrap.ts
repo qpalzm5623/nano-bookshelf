@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { readSession, passwordVersion } from '../lib/portal-auth';
+import { readSession, passwordVersion, hashPassword } from '../lib/portal-auth';
 
 // 공개 JS 파일로 배포하던 회원 정보를 로그인한 사용자의 범위로만 제공합니다.
 export default async function handler(req: any, res: any) {
@@ -30,6 +30,41 @@ export default async function handler(req: any, res: any) {
       prisma.payment.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'DIRECTOR' ? { academyId: user.academyId } : { id: '__none__' }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 }),
       prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : ['DIRECTOR','TEACHER'].includes(user.role) ? { academyId: user.academyId } : { id: '__none__' }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
     ]);
+
+    // 가맹 학원별 원장(DIRECTOR) 계정 부재 시 자동 치유 및 복구 (Self-Healing)
+    const directorMembers = members.filter(m => m.role === 'DIRECTOR');
+    for (const acad of academies) {
+      let dir = directorMembers.find(m => m.academy.code === acad.code);
+      if (!dir) {
+        const isLook = (acad.code === 'ACAD-143' || acad.name.includes('루크러닝'));
+        const targetUsername = isLook ? 'lookadmin' : `director_${acad.code.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        try {
+          const createdDirector = await prisma.member.upsert({
+            where: { username: targetUsername },
+            create: {
+              academyId: acad.id,
+              username: targetUsername,
+              name: acad.directorName || '이정빈 원장',
+              role: 'DIRECTOR',
+              status: 'APPROVED',
+              phone: acad.phone || '',
+              parentPhone: '',
+              password: hashPassword('nano123!')
+            },
+            update: {
+              academyId: acad.id,
+              status: 'APPROVED'
+            },
+            select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
+              phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
+              lastLoginAt: true, createdAt: true, updatedAt: true, academy: { select: { code: true, name: true } }, classGroup: { select: { id: true, name: true } } }
+          });
+          members.push(createdDirector as any);
+          directorMembers.push(createdDirector as any);
+        } catch (e) {}
+      }
+    }
+
     const quizzes = Object.fromEntries(books.map(b => [b.bookNo, b.quizzes.length ? [{ id: 'server-' + b.id, authorName: '본사', authorType: 'master',
       questions: b.quizzes.map(q => ({ id: q.id, serverId: q.id, question: q.question, choices: q.options, options: q.options, ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE' })) }] : []]));
     const rankedMembers = members.filter(m => m.role === 'STUDENT').sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
@@ -87,6 +122,8 @@ export default async function handler(req: any, res: any) {
           tag: b.theme ? '#' + b.theme.name : '',
           thinkInsert: b.thinkQuiz || '',
           thinkOpen: b.thinkTitle || '',
+          hasQuiz: (b.quizzes && b.quizzes.length > 0) ? true : false,
+          quizCount: b.quizzes ? b.quizzes.length : 0,
           quizzes: undefined,
           theme: undefined
         };
@@ -104,13 +141,78 @@ export default async function handler(req: any, res: any) {
       NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => ({ ...b, active: b.isActive ? 'Y' : 'N', order: b.orderNo, image: b.imageUrl || '', link: b.linkUrl || '', type: 'image' })),
       NANO_SERVER_THEMES: themes.map(t => ({ ...t, title: t.name, tag: '#' + t.name, subTag: t.description || '', active: 'Y', bookIds: books.filter(b => b.themeId === t.id).map(b => b.bookNo) })),
       NANO_SERVER_NOTICES: notices.map(n => ({ ...n, status: '게시중', target: n.targetRole === 'STUDENT' ? '학생' : n.targetRole === 'TEACHER' ? '선생님' : n.targetRole === 'DIRECTOR' ? '원장' : n.targetRole === 'MASTER' ? '본사' : '전체', date: n.createdAt.toISOString().slice(0,10), isPopup: n.isPinned })),
-      MIGRATED_MEMBERS: members.map((m, index) => ({ ...m, serverId: m.id, id: m.legacySeq || index + 1000000, academyId: m.academy.code, academyName: m.academy.name,
-        classGroupId: m.classGroup?.id || null, className: m.classGroup?.name || '미지정', lastLogin: m.lastLoginAt?.toISOString() || '-', createdAt: m.createdAt.toISOString().slice(0, 10), updatedAt: m.updatedAt.toISOString() })),
-      MIGRATED_FRANCHISES: academies.map(a => ({ serverId: a.id, id: a.code, name: a.name, bizNumber: a.bizNo || '', director: a.directorName, phone: a.phone, email: a.email || '', region: a.address || '', address: a.address || '', memo: a.memo || '',
-        maxStudents: a.maxStudents, currentStudents: a._count.members, monthlyFee: a.monthlyFee, plan: a.plan, status: a.status, joinDate: a.joinDate.toISOString().slice(0, 10), startDate: a.startDate.toISOString().slice(0, 10), endDate: a.endDate.toISOString().slice(0, 10) })),
+      MIGRATED_MEMBERS: members.map((m, index) => {
+        let lastLogin = '-';
+        if (m.lastLoginAt) {
+          try {
+            const d = new Date(m.lastLoginAt);
+            if (!isNaN(d.getTime())) {
+              const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+              lastLogin = kst.toISOString().slice(0, 10) + ' ' + kst.toISOString().slice(11, 16);
+            }
+          } catch {}
+        }
+        return {
+          ...m,
+          serverId: m.id,
+          id: m.legacySeq || index + 1000000,
+          academyId: m.academy.code,
+          academyName: m.academy.name,
+          classGroupId: m.classGroup?.id || null,
+          className: m.classGroup?.name || '미지정',
+          lastLogin,
+          createdAt: m.createdAt.toISOString().slice(0, 10),
+          updatedAt: m.updatedAt.toISOString()
+        };
+      }),
+      MIGRATED_FRANCHISES: academies.map(a => {
+        const dir = directorMembers.find(m => m.academy.code === a.code);
+        return {
+          serverId: a.id,
+          id: a.code,
+          name: a.name,
+          bizNumber: a.bizNo || '',
+          director: a.directorName,
+          phone: a.phone,
+          email: a.email || '',
+          region: a.address || '',
+          address: a.address || '',
+          memo: a.memo || '',
+          adminId: dir ? dir.username : ((a.code === 'ACAD-143' || a.name.includes('루크러닝')) ? 'lookadmin' : a.code),
+          maxStudents: a.maxStudents,
+          currentStudents: a._count.members,
+          monthlyFee: a.monthlyFee,
+          plan: a.plan,
+          status: a.status,
+          joinDate: a.joinDate.toISOString().slice(0, 10),
+          startDate: a.startDate.toISOString().slice(0, 10),
+          endDate: a.endDate.toISOString().slice(0, 10)
+        };
+      }),
       MIGRATED_LEARNING_LOGS: [],
-      MIGRATED_RANKINGS: rankedMembers.map((m, index) => ({ rank: index + 1, name: m.name, id: m.username, academy: m.academy.name, grade: m.grade || '', books: m.bookCount,
-        accRate: Math.round(m.quizAvg || 0) + '%', points: m.points, recent: m.lastLoginAt ? m.lastLoginAt.toISOString().slice(0, 10) : '-' })),
+      MIGRATED_RANKINGS: rankedMembers.map((m, index) => {
+        let recent = '-';
+        if (m.lastLoginAt) {
+          try {
+            const d = new Date(m.lastLoginAt);
+            if (!isNaN(d.getTime())) {
+              const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+              recent = kst.toISOString().slice(0, 10);
+            }
+          } catch {}
+        }
+        return {
+          rank: index + 1,
+          name: m.name,
+          id: m.username,
+          academy: m.academy.name,
+          grade: m.grade || '',
+          books: m.bookCount,
+          accRate: Math.round(m.quizAvg || 0) + '%',
+          points: m.points,
+          recent
+        };
+      }),
       MIGRATED_ACADEMY_RANKINGS: academyRankings
     };
     const sessionUser = { id: user.username, memberId: user.id, name: user.name, studentName: user.name, studentId: user.username,
@@ -118,7 +220,7 @@ export default async function handler(req: any, res: any) {
       academyId: user.academy.code, academyName: user.academy.name, classGroup: members.find(m => m.id === user.id)?.classGroup?.name || '미지정', server: true };
     // 큰 퀴즈 배열은 한 번만 전송하고, 기존 화면이 사용하는 도서별 속성을 복원합니다.
     return res.status(200).send('sessionStorage.setItem("nano_auth_user", ' + JSON.stringify(JSON.stringify(sessionUser)).replace(/</g, '\\u003c') + ');\n' + Object.entries(data).map(([key, value]) => `window.${key} = ${JSON.stringify(value).replace(/</g, '\\u003c')};`).join('\n')
-      + '\nwindow.MIGRATED_BOOKS.forEach(function(book) { book.quizSets = JSON.parse(JSON.stringify(window.MIGRATED_QUIZZES[book.id] || [])); });');
+      + '\nwindow.MIGRATED_BOOKS.forEach(function(book) { book.quizSets = JSON.parse(JSON.stringify(window.MIGRATED_QUIZZES[book.id] || [])); if (book.quizSets.length > 0 && book.quizSets[0].questions) { book.hasQuiz = true; book.quizCount = book.quizSets.reduce(function(sum, s) { return sum + (s.questions ? s.questions.length : 0); }, 0); } });');
   } catch {
     return res.status(503).send('window.NANO_BOOTSTRAP_FAILED = true;');
   }
