@@ -7994,6 +7994,14 @@ async function showResult() {
   var earnedPts = (serverResult && typeof serverResult.earned === 'number') ? serverResult.earned : 0;
   if (isPass) {
     document.getElementById('rPt').innerHTML = '<span style="color:#16a34a;font-weight:800;">✓ 도서 인증 완료!</span> · 획득 포인트: <strong>+' + earnedPts + ' P</strong>';
+    try {
+      var certMap = JSON.parse(localStorage.getItem('NANO_BOOK_CERT_COUNTS') || '{}');
+      var bKey = String(curBook || (activeBookObj ? (activeBookObj.bookNo || activeBookObj.id) : '')).trim();
+      if (bKey) {
+        certMap[bKey] = (certMap[bKey] || 0) + 1;
+        localStorage.setItem('NANO_BOOK_CERT_COUNTS', JSON.stringify(certMap));
+      }
+    } catch(e) {}
   } else {
     var failInfo = checkDailyQuizLimit(curBook);
     document.getElementById('rPt').innerHTML = '<span style="color:#dc2626;font-weight:800;">✗ 인증 실패 (60점 이상 통과)</span> · 포인트 미지급 (오늘 실패 ' + failInfo.count + '/3회)';
@@ -8153,7 +8161,14 @@ function backToSelect(){
 // ==============================================================
 // 찜하기(Wishlist) 및 내 책장(Bookshelf) 종합 모듈
 // ==============================================================
-var studentWishlist = []; // 기본 찜한 도서 (어린 왕자, 자전거 도둑, 긴긴밤)
+var studentWishlist = []; // 학생 찜한 도서 목록
+try {
+  var savedWish = localStorage.getItem("NANO_STUDENT_WISHLIST");
+  if (savedWish) {
+    var parsedWish = JSON.parse(savedWish);
+    if (Array.isArray(parsedWish)) studentWishlist = parsedWish;
+  }
+} catch(e) {}
 var curBookshelfMainTab = 'history'; // 'history' | 'interest' | 'points'
 
 // 완독 도서 마스터 데이터 (Neon DB 500권 실도서 기반 동적 연동 - 이문성 학생의 451권 완독 실적 반영)
@@ -8184,7 +8199,7 @@ var hasMorePointLogs = true;
 
 var studentPointLogs = [];
 
-// 도서 찜 토글 함수
+// 도서 찜 토글 함수 (학생 페이지 하트 클릭 연동 및 통계 반영)
 function toggleWish(bookId, event) {
   if(event) {
     event.stopPropagation();
@@ -8193,13 +8208,35 @@ function toggleWish(bookId, event) {
   var b = libData.find(function(x){ return x.id === bookId; });
   var idx = studentWishlist.indexOf(bookId);
 
+  var wishDeltaMap = {};
+  try {
+    wishDeltaMap = JSON.parse(localStorage.getItem('NANO_BOOK_WISH_COUNTS') || '{}');
+  } catch(e) {}
+
   if(idx > -1) {
     studentWishlist.splice(idx, 1);
     toast((b ? '『' + b.title + '』' : '도서') + ' 찜을 해제했습니다.');
+    wishDeltaMap[bookId] = Math.max(0, (wishDeltaMap[bookId] || 1) - 1);
   } else {
     studentWishlist.unshift(bookId);
     toast('💖 ' + (b ? '『' + b.title + '』' : '도서') + '을(를) 내 책장에 찜했습니다!');
+    wishDeltaMap[bookId] = (wishDeltaMap[bookId] || 0) + 1;
   }
+
+  try {
+    localStorage.setItem('NANO_BOOK_WISH_COUNTS', JSON.stringify(wishDeltaMap));
+    localStorage.setItem('NANO_STUDENT_WISHLIST', JSON.stringify(studentWishlist));
+  } catch(e) {}
+
+  try {
+    if (window.NanoPortal && typeof fetch !== 'undefined') {
+      fetch('/api/activity?action=preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: { wishlist: studentWishlist, interests: userInterestTags || [] }, revision: 0 })
+      }).catch(function(){});
+    }
+  } catch(e) {}
 
   updateDetailWishUI(bookId);
   renderWishList();

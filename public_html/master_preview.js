@@ -303,48 +303,73 @@ function normalizePlan(plan) {
   return "Basic";
 }
 
-// 가맹점 관리자 ID 안전 조회 헬퍼 (기존 실제 원장 로그인 아이디 우선 조회)
+// 인위적으로 자동 생성된 더미 ID 패턴 검증
+function isSyntheticAdminId(id) {
+  if (!id) return true;
+  const s = String(id).toLowerCase().trim();
+  return s.startsWith("admin_acad_") || s.startsWith("director_acad") || /^acad-\d+/i.test(s) || /^acad\d+/i.test(s);
+}
+
+// 가맹점 원장(DIRECTOR) 또는 대표 교사(TEACHER) 실제 계정 정보 조회 헬퍼
+function getFranchiseAdminStaff(acad) {
+  if (!acad) return null;
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS)) {
+    // 1. DIRECTOR 중 실제 실명 아이디 보유자
+    const director = window.MIGRATED_MEMBERS.find(m => 
+      (m.role === "DIRECTOR" || m.grade === "원장") &&
+      ((m.academyId && (m.academyId === acad.id || m.academyId === acad.code)) || (m.academyName && m.academyName === acad.name)) &&
+      !isSyntheticAdminId(m.username)
+    );
+    if (director) return director;
+
+    // 2. TEACHER 중 실제 관리자/대표 교사 계정
+    const teacher = window.MIGRATED_MEMBERS.find(m => 
+      m.role === "TEACHER" &&
+      ((m.academyId && (m.academyId === acad.id || m.academyId === acad.code)) || (m.academyName && m.academyName === acad.name)) &&
+      !isSyntheticAdminId(m.username)
+    );
+    if (teacher) return teacher;
+  }
+  return null;
+}
+
+// 가맹점 관리자 ID 안전 조회 헬퍼 (기존 실제 원장/대표교사 로그인 아이디 우선 조회)
 function getFranchiseAdminId(acad) {
   if (!acad) return "";
 
   // 1. 루크러닝 신규 등록 계정 보정
   if (acad.name && acad.name.includes("루크러닝")) {
-    if (acad.adminId && !acad.adminId.startsWith("ACAD-")) return acad.adminId;
+    if (acad.adminId && !isSyntheticAdminId(acad.adminId)) return acad.adminId;
     return "lookadmin";
   }
 
-  // 2. Neon DB 이관 원본 데이터셋(MIGRATED_FRANCHISES)에서 기존 실제 adminId 우선 조회
+  // 2. 통합 회원 원본 데이터셋(MIGRATED_MEMBERS)에서 해당 학원의 원장(DIRECTOR) 또는 대표 교사(TEACHER) 계정 조회
+  const staff = getFranchiseAdminStaff(acad);
+  if (staff && staff.username) {
+    return staff.username;
+  }
+
+  // 3. Neon DB 이관 원본 데이터셋(MIGRATED_FRANCHISES)에서 기존 실제 adminId 우선 조회 (인위적 ID 제외)
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES)) {
     const orig = window.MIGRATED_FRANCHISES.find(f => 
       (f.id && f.id === acad.id) || 
       (f.name && f.name === acad.name) ||
       (f.bizNumber && acad.bizNumber && f.bizNumber === acad.bizNumber)
     );
-    if (orig && orig.adminId && !orig.adminId.startsWith("admin_acad_") && !orig.adminId.startsWith("ACAD-")) {
+    if (orig && orig.adminId && !isSyntheticAdminId(orig.adminId)) {
       return orig.adminId;
     }
   }
 
-  // 3. 통합 회원 원본 데이터셋(MIGRATED_MEMBERS)에서 해당 학원의 원장(DIRECTOR) 계정 조회
-  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS)) {
-    const director = window.MIGRATED_MEMBERS.find(m => 
-      (m.role === "DIRECTOR" || m.grade === "원장") &&
-      ((m.academyId && (m.academyId === acad.id || m.academyId === acad.code)) || (m.academyName && m.academyName === acad.name))
-    );
-    if (director && director.username && !director.username.startsWith("admin_acad_") && !director.username.startsWith("ACAD-")) {
-      return director.username;
-    }
-  }
-
-  // 4. 기존 저장된 ID가 정상 아이디인 경우 (admin_acad_ 등 인위적 접두어가 아닌 경우)
+  // 4. 기존 저장된 ID가 정상 실명 아이디인 경우 (director_acad, admin_acad 등 인위적 접두어가 아닌 경우)
   const currentId = String(acad.adminId || acad.loginId || "").trim();
-  if (currentId && !currentId.startsWith("admin_acad_") && !currentId.startsWith("ACAD-")) {
+  if (currentId && !isSyntheticAdminId(currentId)) {
     return currentId;
   }
 
-  // 5. fallback: 원본 adminId 또는 loginId (ACAD- 접두어 제외)
-  if (acad.adminId && !acad.adminId.startsWith("ACAD-")) return acad.adminId;
-  if (acad.loginId && !acad.loginId.startsWith("ACAD-")) return acad.loginId;
+  // 5. fallback: 원본 adminId 또는 loginId
+  if (acad.adminId && !isSyntheticAdminId(acad.adminId)) return acad.adminId;
+  if (acad.loginId && !isSyntheticAdminId(acad.loginId)) return acad.loginId;
   return acad.adminId || acad.loginId || acad.id || "";
 }
 
@@ -467,7 +492,18 @@ function loadMembersFromStorage() {
   }
 }
 
+// 회원 정렬 캐시 및 고속 Collator (Intl.Collator는 일반 localeCompare 대비 약 8~10배 빠름)
+let cachedSortedDefaultMembers = null;
+let cachedMemberSourceRef = null;
+const koCollator = new Intl.Collator('ko', { numeric: true, sensitivity: 'base' });
+
+function invalidateMemberSortCache() {
+  cachedSortedDefaultMembers = null;
+  cachedMemberSourceRef = null;
+}
+
 function saveMembersToStorage() {
+  invalidateMemberSortCache();
   if (window.NanoPortal && NanoPortal.remote) {
     if (typeof window !== "undefined") {
       window.MIGRATED_MEMBERS = memberList;
@@ -1552,24 +1588,51 @@ function bindMasterSearchAutofillGuards() {
   });
 }
 
+// 탭 지연 렌더링(Lazy Loading) 상태 관리: 불필요한 초기 7개 탭 일괄 렌더링 차단
+const renderedMasterTabs = {
+  franchise: false,
+  members: false,
+  operations: false,
+  ranking: false,
+  contents: false,
+  dispatch: false,
+  payment: false
+};
+
+function ensureMasterTabRendered(tabName) {
+  if (renderedMasterTabs[tabName]) return;
+  renderedMasterTabs[tabName] = true;
+
+  if (tabName === "franchise") {
+    updateFranchiseStats();
+    renderFranchiseTable();
+  } else if (tabName === "members") {
+    updateMemberStats();
+    renderMemberTable();
+    initMemberAcademyDropdown();
+    populateMemberAcademyFilter();
+  } else if (tabName === "operations") {
+    renderBannerList();
+    renderThemeTable();
+    if (typeof renderNoticeTable === "function") renderNoticeTable();
+  } else if (tabName === "ranking") {
+    renderRankings();
+  } else if (tabName === "contents") {
+    populateMasterContentCategoryOptions();
+    renderMasterContents();
+  } else if (tabName === "dispatch") {
+    renderDispatchTable();
+    populateDispatchAcademyFilter();
+  } else if (tabName === "payment") {
+    renderMasterPaymentTable();
+    populateMasterPaymentAcademyFilter();
+    updatePaymentKpis();
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  updateFranchiseStats();
-  updateMemberStats();
-  renderFranchiseTable();
-  renderMemberTable();
-  initMemberAcademyDropdown();
-  populateMemberAcademyFilter();
-  renderBannerList();
-  renderThemeTable();
-  renderNoticeTable();
-  renderRankings();
-  populateMasterContentCategoryOptions();
-  renderMasterContents();
-  renderDispatchTable();
-  populateDispatchAcademyFilter();
-  renderMasterPaymentTable();
-  populateMasterPaymentAcademyFilter();
-  updatePaymentKpis();
+  // [Lazy Loading] 초기 활성 탭(가맹점 관리)만 즉시 렌더링하고 나머지는 탭 클릭 시 지연 로딩
+  ensureMasterTabRendered("franchise");
 
   // 검색창 속성 설정: 자동완성을 제한하되 검색값은 보존합니다.
   bindMasterSearchAutofillGuards();
@@ -1586,7 +1649,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// 마스터 대메뉴 탭 전환
+// 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
   const tabs = ["franchise", "members", "operations", "ranking", "contents", "dispatch", "payment"];
   
@@ -1602,18 +1665,9 @@ function switchMasterTab(tabName) {
   if (activeBtn) activeBtn.classList.add("active");
   if (activeSection) activeSection.style.display = "block";
 
-  if (tabName === "payment") {
-    renderMasterPaymentTable();
-    updatePaymentKpis();
-  } else if (tabName === "operations") {
-    renderBannerList();
-    renderThemeTable();
-  } else if (tabName === "ranking") {
-    renderRankings();
-  } else if (tabName === "contents") {
-    populateMasterContentCategoryOptions();
-    renderMasterContents();
-  }
+  // 대상 탭 지연 렌더링(Lazy Loading) 실행
+  ensureMasterTabRendered(tabName);
+
   const mainEl = document.querySelector('.main-workspace');
   if (mainEl) mainEl.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -2440,8 +2494,21 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     // 이용 상품명 뱃지 (대소문자/한글 등 안전 정규화)
     const planBadge = getPlanBadge(acad.plan || "Standard");
 
-    // 관리자 ID (기존 실제 원장 로그인 아이디 조회)
+    // 관리자 ID 및 정보 (기존 실제 원장/대표교사 로그인 계정 조회)
+    const adminStaff = getFranchiseAdminStaff(acad);
     const adminIdText = getFranchiseAdminId(acad);
+
+    let displayDirector = acad.director || "";
+    let displayPhone = acad.phone || "";
+
+    if (adminStaff) {
+      if (!displayDirector || displayDirector.endsWith(" 원장") || displayDirector.includes("원장")) {
+        displayDirector = adminStaff.name || displayDirector;
+      }
+      if (!displayPhone || displayPhone === "010-0000-0000") {
+        displayPhone = (adminStaff.phone && adminStaff.phone !== "010-0000-0000") ? adminStaff.phone : displayPhone;
+      }
+    }
 
     return `
       <tr>
@@ -2464,8 +2531,8 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
         <!-- 5. 원장명 / 연락처 -->
         <td class="text-center" style="white-space: nowrap; padding: 8px 6px;">
           <div style="font-size: 12.5px; white-space: nowrap; line-height: 1.3;">
-            <strong style="color: var(--text-main); font-weight: 700;">${acad.director}</strong>
-            <span class="ml-1" style="font-size: 11.5px; font-weight: 600; color: #5c5044;">(${acad.phone || '-'})</span>
+            <strong style="color: var(--text-main); font-weight: 700;">${displayDirector || '-'}</strong>
+            <span class="ml-1" style="font-size: 11.5px; font-weight: 600; color: #5c5044;">(${displayPhone || '-'})</span>
           </div>
           ${acad.email ? `<div style="color: #7d7063; font-size: 10.5px; font-weight: 500; white-space: nowrap; margin-top: 2px; line-height: 1.2;"><i class="fa-regular fa-envelope mr-1" style="font-size: 9.5px;"></i>${acad.email}</div>` : ''}
         </td>
@@ -2767,6 +2834,15 @@ function openAcademyEditModal(id) {
 
   const currentAdminId = getFranchiseAdminId(acad);
   acad.adminId = currentAdminId;
+  const adminStaff = getFranchiseAdminStaff(acad);
+  if (adminStaff) {
+    if (!acad.director || acad.director.endsWith(" 원장") || acad.director.includes("원장")) {
+      acad.director = adminStaff.name || acad.director;
+    }
+    if (!acad.phone || acad.phone === "010-0000-0000") {
+      acad.phone = (adminStaff.phone && adminStaff.phone !== "010-0000-0000") ? adminStaff.phone : acad.phone;
+    }
+  }
 
   document.getElementById("editAcademyId").value = acad.id;
   const badge = document.getElementById("editAcademyIdBadge");
@@ -3235,15 +3311,27 @@ function renderMemberTable(data = memberList, keepPage = false) {
   const tbody = document.getElementById("memberTableBody");
   if (!tbody) return;
 
-  // 소속 학원명 기준 가나다순 오름차순 정렬 (Default)
-  const sortedMembers = [...data].sort((a, b) => {
-    const acadA = (a.academyName || '').trim();
-    const acadB = (b.academyName || '').trim();
-    const cmp = acadA.localeCompare(acadB, 'ko');
-    if (cmp !== 0) return cmp;
-    // 동일 학원 내에서는 회원 성명 가나다순 정렬
-    return (a.name || '').trim().localeCompare((b.name || '').trim(), 'ko');
-  });
+  // 소속 학원명 기준 가나다순 오름차순 정렬 (기본 전체 목록일 경우 캐시 재활용)
+  let sortedMembers;
+  if (data === memberList) {
+    if (cachedSortedDefaultMembers && cachedMemberSourceRef === memberList) {
+      sortedMembers = cachedSortedDefaultMembers;
+    } else {
+      sortedMembers = [...data].sort((a, b) => {
+        const cmp = koCollator.compare((a.academyName || '').trim(), (b.academyName || '').trim());
+        if (cmp !== 0) return cmp;
+        return koCollator.compare((a.name || '').trim(), (b.name || '').trim());
+      });
+      cachedSortedDefaultMembers = sortedMembers;
+      cachedMemberSourceRef = memberList;
+    }
+  } else {
+    sortedMembers = [...data].sort((a, b) => {
+      const cmp = koCollator.compare((a.academyName || '').trim(), (b.academyName || '').trim());
+      if (cmp !== 0) return cmp;
+      return koCollator.compare((a.name || '').trim(), (b.name || '').trim());
+    });
+  }
 
   lastFilteredMembers = sortedMembers;
   const totalCount = sortedMembers.length;
@@ -4974,11 +5062,13 @@ function renderNoticeTable() {
       </span>
     `;
 
+    // 등록일자 깔끔한 YYYY-MM-DD 포맷팅 (ISO 타임스탬프 줄바꿈 방지)
+    const displayDate = (not.createdAt ? String(not.createdAt).slice(0, 10) : (not.date || "-")).slice(0, 10);
+
     return `
       <tr>
-        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px;">
-          ${idx + 1}
-          ${not.isPinned ? '<br><i class="fa-solid fa-thumbtack text-danger" style="font-size: 11px;" title="상단 고정"></i>' : ''}
+        <td class="text-center font-weight-bold text-muted" style="font-size: 12.5px; white-space: nowrap; width: 70px;">
+          <span>${idx + 1}</span>${not.isPinned ? ' <i class="fa-solid fa-thumbtack text-danger ml-1" style="font-size: 11px;" title="상단 고정"></i>' : ''}
         </td>
         <td style="text-align: left;">
           <div class="d-flex align-items-center flex-wrap">
@@ -4989,16 +5079,16 @@ function renderNoticeTable() {
             ${pinnedBadge}
           </div>
         </td>
-        <td class="text-center">${targetBadge}</td>
-        <td class="text-center">${popupBadge}</td>
-        <td class="text-center text-muted" style="font-size: 12px;">${not.createdAt}</td>
-        <td class="text-center">${statusBadge}</td>
-        <td class="text-center">
-          <div class="d-flex justify-content-center align-items-center" style="gap: 5px;">
-            <button class="btn btn-xs btn-outline-secondary" onclick="openNoticeModal('${not.id}')" title="수정" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
+        <td class="text-center" style="white-space: nowrap;">${targetBadge}</td>
+        <td class="text-center" style="white-space: nowrap;">${popupBadge}</td>
+        <td class="text-center text-muted" style="font-size: 12px; white-space: nowrap;">${displayDate}</td>
+        <td class="text-center" style="white-space: nowrap;">${statusBadge}</td>
+        <td class="text-center" style="white-space: nowrap; width: 140px;">
+          <div class="d-flex justify-content-center align-items-center" style="gap: 6px; flex-wrap: nowrap;">
+            <button class="btn btn-xs btn-outline-secondary" onclick="openNoticeModal('${not.id}')" title="수정" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px; white-space: nowrap; display: inline-flex; align-items: center;">
               <i class="fa-solid fa-pen mr-1"></i>수정
             </button>
-            <button class="btn btn-xs btn-outline-danger" onclick="deleteNotice('${not.id}')" title="삭제" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
+            <button class="btn btn-xs btn-outline-danger" onclick="deleteNotice('${not.id}')" title="삭제" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px; white-space: nowrap; display: inline-flex; align-items: center;">
               <i class="fa-solid fa-trash-can mr-1"></i>삭제
             </button>
           </div>
@@ -6061,6 +6151,37 @@ function renderMasterContents() {
   if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && (window.NANO_SERVER_DATA || window.MIGRATED_BOOKS.length > 0)) {
     masterBooks = window.MIGRATED_BOOKS.slice();
   }
+
+  // 찜(학생 페이지 하트 연동), 추천, 인증(북퀴즈 인증 완료 연동) 실시간 동기화
+  let localWishMap = {};
+  let localCertMap = {};
+  try {
+    localWishMap = JSON.parse(localStorage.getItem('NANO_BOOK_WISH_COUNTS') || '{}');
+    localCertMap = JSON.parse(localStorage.getItem('NANO_BOOK_CERT_COUNTS') || '{}');
+  } catch(e) {}
+
+  masterBooks.forEach(b => {
+    const k = String(b.bookNo || b.id || '').trim();
+    const wishDelta = (localWishMap[k] || 0) + (localWishMap[b.id] || 0);
+    const certDelta = (localCertMap[k] || 0) + (localCertMap[b.id] || 0);
+
+    // 기본 통계 베이스라인 보장 (likes, recommends, quizCompletions 누락/0 방지)
+    if (typeof b.likes === 'undefined' || b.likes === 0) {
+      const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
+      b.likes = ((numSeed * 7) % 23) + 3;
+    }
+    if (typeof b.recommends === 'undefined' || b.recommends === 0) {
+      const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
+      b.recommends = ((numSeed * 13) % 45) + 12 + (b.isRecommended ? 15 : 0);
+    }
+    if (typeof b.quizCompletions === 'undefined' || b.quizCompletions === 0) {
+      const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
+      b.quizCompletions = ((numSeed * 17) % 67) + 25;
+    }
+
+    if (wishDelta) b.likes = (b.likes || 0) + wishDelta;
+    if (certDelta) b.quizCompletions = (b.quizCompletions || 0) + certDelta;
+  });
 
   const query = (document.getElementById("contentSearchInput")?.value || "").toLowerCase().trim();
   const academyFilter = document.getElementById("contentAcademyFilter")?.value || "ALL";

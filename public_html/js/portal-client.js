@@ -82,8 +82,12 @@
   async function deleteAcademy(item) { return manage('academies', 'delete', { id: item.serverId }, { academy: item.id }); }
   async function restoreAcademy(item) { return manage('academies', 'restore', { id: item.serverId }, { academy: item.id }); }
   async function saveClass(item, academyCode) {
-    var result = await manage('classes', 'save', { id: item.serverId || undefined, name: item.name, targetGrade: item.grade || item.targetGrade || '' }, { academy: academyCode });
-    if (result.item) { item.serverId = result.item.id; item.id = result.item.id; }
+    var result = await manage('classes', 'save', { id: item.serverId || undefined, name: item.name, targetGrade: item.grade || item.targetGrade || '', teacher: item.teacher || '' }, { academy: academyCode });
+    if (result.item) {
+      item.serverId = result.item.id;
+      item.id = result.item.id;
+      if (result.item.teacher) item.teacher = result.item.teacher;
+    }
     return result.item;
   }
   async function deleteClass(item, academyCode) { return manage('classes', 'delete', { id: item.serverId || item.id }, { academy: academyCode }); }

@@ -3428,11 +3428,11 @@
 
       <div class="d-flex align-items-center" style="gap: 10px;">
         <div class="text-right" style="padding-right: 4px;">
-          <span class="badge-soft badge-soft-master mr-2" style="font-size: 11px; padding: 3px 8px; border-radius: 6px;">
+          <span class="badge-soft badge-soft-master mr-2" id="headerUserRoleBadge" style="font-size: 11px; padding: 3px 8px; border-radius: 6px;">
             <i class="fa-solid fa-user-check mr-1"></i>원장님
           </span>
-          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);" id="headerDirectorName">이강민 원장님</span>
-          <small style="color: var(--text-muted); display: block; font-size: 11.5px; margin-top: 1px;" id="headerAcademyName">나노의 책장S 개포</small>
+          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);" id="headerDirectorName">-</span>
+          <small style="color: var(--text-muted); display: block; font-size: 11.5px; margin-top: 1px;" id="headerAcademyName">로딩 중...</small>
         </div>
         <!-- 내 정보 관리 버튼 -->
         <button type="button" class="btn btn-sm btn-beige-secondary" onclick="openMyInfoModal()"
@@ -3450,6 +3450,39 @@
       </div>
     </header>
   </div>
+  <script>
+    // [초고속 사전 렌더링] 외부 대용량 JS(14MB)가 로드되기 전에 세션 스토리지에서 즉시 헤더 사용자/학원 정보 동기화 (FOUC 방지)
+    (function() {
+      try {
+        var rawAuth = sessionStorage.getItem('nano_auth_user') || localStorage.getItem('nano_auth_user');
+        if (rawAuth) {
+          var u = JSON.parse(rawAuth);
+          var dName = document.getElementById('headerDirectorName');
+          var aName = document.getElementById('headerAcademyName');
+          var rBadge = document.getElementById('headerUserRoleBadge');
+          if (u.academyName && aName) aName.textContent = u.academyName;
+          var role = String(u.role || '').toLowerCase();
+          var isTeacher = (role === 'teacher' || role === 'staff' || String(u.id || '').includes('teacher'));
+          if (isTeacher) {
+            if (rBadge) {
+              rBadge.className = 'badge-soft mr-2';
+              rBadge.style.cssText = 'font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700;';
+              rBadge.innerHTML = '<i class="fa-solid fa-chalkboard-user mr-1"></i>선생님';
+            }
+            if (dName) {
+              var tName = u.name || u.id || '선생님';
+              dName.textContent = tName.includes('선생님') ? tName : (tName + ' 선생님');
+            }
+          } else {
+            if (dName) {
+              var d = u.name || u.director || '원장';
+              dName.textContent = d.includes('원장') ? d : (d + ' 원장님');
+            }
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <div class="app-container">
 
@@ -3513,8 +3546,8 @@
       <div
         style="margin-top: auto; padding: 14px; background: #ffffff; border-radius: 14px; border: 1px solid var(--border-light); text-align: center;">
         <div style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px;">계약 정원 슬롯 현황</div>
-        <div id="sidebarSlotStatus" style="font-size: 16px; font-weight: 800; color: var(--text-main);">48 / 50명 <small
-            class="text-success font-weight-bold">(96%)</small></div>
+        <div id="sidebarSlotStatus" style="font-size: 16px; font-weight: 800; color: var(--text-main);">- / -명 <small
+            class="text-muted font-weight-bold">(-%)</small></div>
       </div>
     </aside>
 
@@ -3537,11 +3570,11 @@
           <div class="btn-group">
             <button type="button" class="btn btn-beige-primary" id="btn-member-students"
               onclick="switchMemberSubTab('students')">
-              <i class="fa-solid fa-user-graduate mr-1"></i>원생 관리 (<span id="tabStudentCount">48</span>명)
+              <i class="fa-solid fa-user-graduate mr-1"></i>원생 관리 (<span id="tabStudentCount">-</span>명)
             </button>
             <button type="button" class="btn btn-beige-secondary" id="btn-member-teachers"
               onclick="switchMemberSubTab('teachers')">
-              <i class="fa-solid fa-chalkboard-user mr-1"></i>선생님 관리 (<span id="tabTeacherCount">0</span>명)
+              <i class="fa-solid fa-chalkboard-user mr-1"></i>선생님 관리 (<span id="tabTeacherCount">-</span>명)
             </button>
           </div>
         </div>
@@ -3552,26 +3585,25 @@
             <div class="col-md-4">
               <div class="stat-card">
                 <div class="text-muted" style="font-size: 13px;">전체 재원생</div>
-                <div class="stat-num"><span id="statStudentCount">48</span><span
+                <div class="stat-num"><span id="statStudentCount">-</span><span
                     style="font-size: 16px; font-weight: normal; margin-left: 2px;">명</span></div>
-                <small class="text-success font-weight-600" id="statStudentBreakdown">초등 36명 &middot; 중등 12명 (활동
-                  중)</small>
+                <small class="text-muted font-weight-600" id="statStudentBreakdown">원생 데이터 집계 중...</small>
               </div>
             </div>
             <div class="col-md-4">
               <div class="stat-card">
                 <div class="text-muted" style="font-size: 13px;">이번 달 누적 완독 권수</div>
-                <div class="stat-num"><span id="statBookReadCount">214</span><span
+                <div class="stat-num"><span id="statBookReadCount">-</span><span
                     style="font-size: 16px; font-weight: normal; margin-left: 2px;">권</span></div>
-                <small class="text-muted" id="statBookReadDesc">원생 1인당 평균 4.5권 완독</small>
+                <small class="text-muted" id="statBookReadDesc">완독 통계 집계 중...</small>
               </div>
             </div>
             <div class="col-md-4">
               <div class="stat-card">
                 <div class="text-muted" style="font-size: 13px;">북퀴즈 평균 통과율</div>
-                <div class="stat-num"><span id="statQuizPassRate">93.6</span><span
+                <div class="stat-num"><span id="statQuizPassRate">-</span><span
                     style="font-size: 16px; font-weight: normal; margin-left: 2px;">%</span></div>
-                <small class="text-success font-weight-600" id="statQuizDesc">평균 점수 91.8점 (1차 합격률 88%)</small>
+                <small class="text-muted font-weight-600" id="statQuizDesc">퀴즈 통계 집계 중...</small>
               </div>
             </div>
           </div>
@@ -3661,7 +3693,11 @@
                 </tr>
               </thead>
               <tbody id="studentTableBody">
-                <!-- JS 렌더링 -->
+                <tr id="studentLoadingRow">
+                  <td colspan="11" class="text-center py-5 text-muted" style="background: #faf8f5;">
+                    <i class="fa-solid fa-spinner fa-spin mr-2 text-warning"></i>원생 데이터를 불러오는 중입니다...
+                  </td>
+                </tr>
               </tbody>
             </table>
 
@@ -3670,7 +3706,7 @@
               class="d-flex justify-content-between align-items-center flex-wrap pt-3 mt-2 border-top"
               style="gap: 10px;">
               <div class="text-muted" id="studentPageInfo" style="font-size: 12px; font-weight: 600;">
-                총 0명 중 0-0명 표시
+                원생 목록 로딩 중...
               </div>
               <div class="d-flex align-items-center" id="studentPagination" style="gap: 4px;">
                 <!-- JS 동적 생성 -->

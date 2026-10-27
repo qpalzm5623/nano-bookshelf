@@ -490,13 +490,12 @@
           </div>
         </div>
 
-        <!-- 옵션: 아이디 저장 & 안내 -->
+        <!-- 옵션: 아이디 저장 -->
         <div class="form-options">
           <label class="remember-me">
             <input type="checkbox" id="rememberMe" checked>
             <span>아이디 저장</span>
           </label>
-          <a href="javascript:void(0)" class="forgot-link" onclick="handleForgotHelp()">계정 문의/안내</a>
         </div>
 
         <!-- 로그인 실행 버튼 -->
@@ -557,12 +556,9 @@
     </div>
   </main>
 
-  <!-- 하단 카피라이트 및 보조 메뉴 -->
+  <!-- 하단 카피라이트 -->
   <footer class="login-footer">
     <p>© 2026 나노의 책장 (Nano BookShelf) · All Rights Reserved.</p>
-    <p style="margin-top: 4px; font-size: 11px;">
-      <a href="prototype_hub.html">이전 프로토타입 프리뷰 카드 허브 보기</a>
-    </p>
   </footer>
 
   <!-- 토스트 안내 -->
@@ -859,17 +855,15 @@
     function showToast(msg) {
       const toast = document.getElementById('toastOverlay');
       const toastMsg = document.getElementById('toastMessage');
-      toastMsg.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2500);
+      if (toastMsg) toastMsg.textContent = msg;
+      if (toast) {
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 2500);
+      }
     }
-
-    // 계정 문의 안내
-    function handleForgotHelp() {
-      alert('나노의 책장 본사 시스템 안내:\n\n- 본사 마스터 계정: master00 / master00\n- 가맹 학원 계정: admin01 / admin01\n- 원생 포털 계정: student01 / student01\n\n문의사항은 본사 고객지원센터(1588-0000)로 연락 바랍니다.');
-    }
+    window.toast = showToast;
 
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

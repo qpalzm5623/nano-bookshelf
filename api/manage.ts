@@ -118,9 +118,24 @@ export default async function handler(req: any, res: any) {
       need(user.role !== 'TEACHER', '학급 변경은 원장 또는 본사 관리자만 가능합니다.', 403);
       const existing = input.id && await prisma.classGroup.findFirst({ where: { id: input.id, academyId } });
       need(!input.id || existing, '학급을 찾을 수 없습니다.', 404);
-      if (body.operation === 'delete') { await prisma.classGroup.delete({ where: { id: existing.id } }); return res.json({ ok: true }); }
+      if (body.operation === 'delete') {
+        await prisma.classGroup.delete({ where: { id: existing.id } });
+        try { await prisma.portalSetting.delete({ where: { key: 'class_meta:' + existing.id } }); } catch {}
+        return res.json({ ok: true });
+      }
       const data = { academyId, name: text(input.name, '학급명', 100, true), targetGrade: text(input.targetGrade, '대상 학년') };
-      return res.json({ item: existing ? await prisma.classGroup.update({ where: { id: existing.id }, data }) : await prisma.classGroup.create({ data }) });
+      const item = existing ? await prisma.classGroup.update({ where: { id: existing.id }, data }) : await prisma.classGroup.create({ data });
+      const teacherStr = typeof input.teacher === 'string' ? input.teacher.trim() : '';
+      if (teacherStr !== undefined) {
+        try {
+          await prisma.portalSetting.upsert({
+            where: { key: 'class_meta:' + item.id },
+            create: { key: 'class_meta:' + item.id, scope: 'class_meta:' + academyId, value: { teacher: teacherStr } },
+            update: { value: { teacher: teacherStr } }
+          });
+        } catch {}
+      }
+      return res.json({ item: { ...item, teacher: teacherStr } });
     }
     if (entity === 'assignments') {
       if (body.operation === 'delete') { const result = await prisma.bookAssignment.deleteMany({ where: { id: input.id, academyId } }); need(result.count, '배정 내역을 찾을 수 없습니다.', 404); return res.json({ ok: true }); }
