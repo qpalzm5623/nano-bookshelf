@@ -118,6 +118,33 @@ test('포인트 페이지 조회는 요청자 회원으로 제한하고 다음 �
   const run=api('api/activity.ts',student,{pointHistory:{findMany:async q=>{query=q;return items;}}});const res=response();
   await run({method:'GET',query:{action:'points',cursor:'old',memberId:'other'}},res);assert.equal(query.where.memberId,'s1');assert.equal(query.skip,1);assert.equal(res.data.items.length,200);assert.equal(res.data.nextCursor,'p199');
 });
+test('학생 랭킹은 실제 학원·학급 명단 전체와 기간별 포인트·완독 수를 반환한다',async()=>{
+  let memberWhere;
+  const rankingStudent={...student,classGroupId:'class-1',classGroup:{name:'실제 반'},academy:{code:'A1',name:'실제 학원'}};
+  const members=[
+    {id:'s1',name:'박진호',points:8,bookCount:1,academy:{name:'실제 학원'},classGroup:{name:'실제 반'}},
+    {id:'s2',name:'김학생',points:900,bookCount:9,academy:{name:'실제 학원'},classGroup:{name:'실제 반'}},
+    {id:'s3',name:'이학생',points:0,bookCount:0,academy:{name:'실제 학원'},classGroup:{name:'실제 반'}}
+  ];
+  const db={
+    member:{findMany:async q=>{memberWhere=q.where;return members;}},
+    pointHistory:{groupBy:async()=>[{memberId:'s1',_sum:{amount:8}},{memberId:'s2',_sum:{amount:20}}]},
+    quizAttempt:{findMany:async()=>[{memberId:'s2',bookId:'b1'},{memberId:'s2',bookId:'b2'},{memberId:'s1',bookId:'b3'}]}
+  };
+  const res=response();
+  await api('api/activity.ts',rankingStudent,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
+  assert.equal(memberWhere.classGroupId,'class-1');
+  assert.equal(res.data.academyName,'실제 학원');assert.equal(res.data.className,'실제 반');assert.equal(res.data.hasClass,true);
+  assert.equal(res.data.participants,3);assert.equal(res.data.rows.length,3);
+  assert.deepEqual(Array.from(res.data.rows,r=>[r.name,r.pt,r.books,r.cls]),[['김학생',20,2,'실제 반'],['박진호',8,1,'실제 반'],['이학생',0,0,'실제 반']]);
+});
+test('학급 미지정 학생의 우리 반 요청은 실제 소속 학원 랭킹으로 전환한다',async()=>{
+  let memberWhere;
+  const noClass={...student,classGroupId:null,classGroup:null,academy:{code:'A1',name:'실제 학원'}};
+  const db={member:{findMany:async q=>{memberWhere=q.where;return [{id:'s1',name:'학생',points:0,bookCount:0,academy:{name:'실제 학원'},classGroup:null}];}},pointHistory:{groupBy:async()=>[]},quizAttempt:{findMany:async()=>[]}};
+  const res=response();await api('api/activity.ts',noClass,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
+  assert.equal(res.data.scope,'academy');assert.equal(res.data.hasClass,false);assert.equal('classGroupId' in memberWhere,false);assert.equal(res.data.rows.length,1);
+});
 test('개인 설정의 다른 기기 변경은 덮어쓰지 않는다',async()=>{
   const run=api('api/activity.ts',student,{portalSetting:{updateMany:async()=>({count:0})}});const res=response();
   await run({method:'POST',query:{action:'preferences'},body:{revision:1,value:{wishlist:['B1'],interests:[]}}},res);assert.equal(res.code,409);

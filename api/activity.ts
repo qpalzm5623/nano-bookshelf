@@ -33,33 +33,45 @@ export default async function handler(req: any, res: any) {
         assignedBookIds: assignments.map(a => a.book.bookNo), pointLimit: 200 });
     }
     if (action === 'rankings') {
-      const scope = ['class','academy','national'].includes(req.query.scope) ? req.query.scope : 'academy';
-      const memberWhere = scope === 'national' ? { role: 'STUDENT' as const, status: 'APPROVED' as const } : { role: 'STUDENT' as const, status: 'APPROVED' as const,
+      const requestedScope = ['class','academy','national'].includes(req.query.scope) ? req.query.scope : 'academy';
+      // 학급이 지정되지 않은 학생은 빈 학급 랭킹 대신 소속 학원 랭킹을 제공합니다.
+      const scope = requestedScope === 'class' && !user.classGroupId ? 'academy' : requestedScope;
+      const memberWhere = scope === 'national' ? { role: 'STUDENT' as const, status: 'APPROVED' as const,
+        academy: { status: 'ACTIVE' as const, deletedAt: null } } : { role: 'STUDENT' as const, status: 'APPROVED' as const,
         academyId: user.academyId, ...(scope === 'class' ? { classGroupId: user.classGroupId || '__none__' } : {}) };
-      
-      const members = await prisma.member.findMany({
-        where: memberWhere,
-        select: { id: true, name: true, bookCount: true, points: true, academy: { select: { name: true } } }
-      });
+
+      const periodWindow = monthWindow(String(req.query.period));
+      const [members, totals, completedBooks] = await Promise.all([
+        prisma.member.findMany({
+          where: memberWhere,
+          select: { id: true, name: true, bookCount: true, points: true,
+            academy: { select: { name: true } }, classGroup: { select: { name: true } } }
+        }),
+        prisma.pointHistory.groupBy({
+          by: ['memberId'],
+          where: { createdAt: periodWindow, member: memberWhere },
+          _sum: { amount: true }
+        }),
+        prisma.quizAttempt.findMany({
+          where: { completedAt: periodWindow, score: { gte: 60 }, member: memberWhere },
+          select: { memberId: true, bookId: true },
+          distinct: ['memberId', 'bookId']
+        })
+      ]);
       const memberMap = new Map(members.map(m => [m.id, m]));
-
-      const totals = await prisma.pointHistory.groupBy({
-        by: ['memberId'],
-        where: { createdAt: monthWindow(String(req.query.period)), member: memberWhere },
-        _sum: { amount: true }
-      });
       const pointMap = new Map(totals.map(t => [t.memberId, t._sum.amount || 0]));
+      const bookCountMap = new Map<string, number>();
+      for (const row of completedBooks) bookCountMap.set(row.memberId, (bookCountMap.get(row.memberId) || 0) + 1);
 
-      const rankCandidates = totals.map(t => {
-        const m = memberMap.get(t.memberId);
-        return {
-          memberId: t.memberId,
-          amount: t._sum.amount || 0,
-          bookCount: m ? m.bookCount : 0,
-          name: m ? m.name : '학생',
-          academyName: m?.academy?.name || ''
-        };
-      });
+      // 해당 기간에 포인트가 없는 학생도 실제 소속 명단에 포함해 참가 인원과 순위를 일치시킵니다.
+      const rankCandidates = members.map(m => ({
+        memberId: m.id,
+        amount: pointMap.get(m.id) || 0,
+        bookCount: bookCountMap.get(m.id) || 0,
+        name: m.name,
+        academyName: m.academy?.name || '',
+        className: m.classGroup?.name || ''
+      }));
 
       // 1순위: 포인트 내림차순, 2순위: 완독 도서 수(bookCount) 내림차순, 3순위: 이름 오름차순
       rankCandidates.sort((a, b) => {
@@ -77,7 +89,9 @@ export default async function handler(req: any, res: any) {
         rank: i + 1,
         name: scope === 'national' && t.memberId !== user.id ? t.name.slice(0, 1) + '**' : t.name,
         pt: t.amount,
-        cls: t.academyName,
+        cls: scope === 'national' ? [t.academyName, t.className].filter(Boolean).join(' · ') : (t.className || '학급 미지정'),
+        academyName: t.academyName,
+        className: t.className,
         books: t.bookCount,
         me: t.memberId === user.id,
         charId: t.memberId === user.id ? 'custom' : 'nano',
@@ -90,6 +104,10 @@ export default async function handler(req: any, res: any) {
       const ownPoints = pointMap.get(user.id) || 0;
 
       return res.json({
+        scope,
+        academyName: user.academy.name,
+        className: user.classGroup?.name || '',
+        hasClass: !!user.classGroupId,
         rows,
         myRank: ownIdx < 0 ? null : ownIdx + 1,
         participants: rankCandidates.length,

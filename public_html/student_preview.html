@@ -3573,7 +3573,7 @@
           <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>글봄독서논술학원 · 초등 3학년
         </div>
         <div class="drawer-user-point-badge" id="drawerStudentPoints" style="margin-top: 5px;">
-          <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>36,064 P 보유 (전국 1위)
+          <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>포인트 불러오는 중
         </div>
       </div>
     </div>
@@ -3777,7 +3777,7 @@
         <div class="stat-icon">🏆</div>
         <div class="stat-info">
           <div class="val" style="color:var(--wood-dark);" id="mainPointsCount">36,064</div>
-          <div class="lbl">포인트 (전국 1위)</div>
+          <div class="lbl">누적 포인트</div>
         </div>
       </div>
     </div>
@@ -4247,10 +4247,10 @@
             <div class="char-edit-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:8px;"></i></div>
           </div>
           <div>
-            <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;" id="myRankScopeTitle">내 실시간 우리 반 랭킹</div>
+            <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;" id="myRankScopeTitle">포인트 순위 불러오는 중</div>
             <div style="font-size: 22px; font-weight: 900; line-height: 1.2;">
-              <span id="myRankHighlightText">우리 반 2등</span> 
-              <span id="myRankHighlightPercent" style="font-size: 14px; font-weight: 700; opacity: 0.95;">(상위 3%)</span>
+              <span id="myRankHighlightText">집계 중</span>
+              <span id="myRankHighlightPercent" style="font-size: 14px; font-weight: 700; opacity: 0.95;"></span>
             </div>
           </div>
         </div>
@@ -4261,17 +4261,17 @@
       </div>
       <div class="my-rank-speech" id="rankMyCharSpeech">
         <i class="fa-solid fa-sparkles" style="color: #f59e0b;"></i>
-        <span><strong>부키</strong>의 응원: "1위 유지유 친구까지 140P! 북퀴즈 2권이면 오늘 1등 가능해! 🦉"</span>
+        <span>실제 학습 포인트를 집계하고 있어요.</span>
       </div>
     </div>
 
     <!-- 2. 랭킹 범위 탭 (우리 반 / 학원 전체 / 전국) -->
     <div class="rank-tab-group" id="rankTabGroup">
       <button type="button" class="rank-tab-btn active" id="rankTabClass" onclick="switchRankScope('class')">
-        <i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반 (지혜반)
+        <i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반
       </button>
       <button type="button" class="rank-tab-btn" id="rankTabAcademy" onclick="switchRankScope('academy')">
-        <i class="fa-solid fa-school mr-1"></i> 판교 알파 독서학원
+        <i class="fa-solid fa-school mr-1"></i> 소속 학원
       </button>
       <button type="button" class="rank-tab-btn" id="rankTabNational" onclick="switchRankScope('national')">
         <i class="fa-solid fa-earth-asia mr-1"></i> 전국 랭킹
@@ -4282,7 +4282,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
       <div style="font-size: 14px; font-weight: 800; color: var(--wood-dark); display: flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
-        <span id="rankTitleLabel">9월 우리 반 명예의 전당</span>
+        <span id="rankTitleLabel">포인트 명예의 전당</span>
       </div>
       <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
         <button type="button" class="btn btn-xs" id="rankPeriodMonth" onclick="switchRankPeriod('month')" style="font-size: 11px; font-weight: 800; border-radius: 6px; padding: 3px 8px; border: none; background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">이번 달</button>
@@ -4298,8 +4298,8 @@
           <div id="podiumAvatar2" class="char-avatar-box bounce" style="width: 58px; height: 58px;"></div>
           <div class="podium-rank-badge rank-2">2</div>
         </div>
-        <div class="podium-name" id="podiumName2">안여진</div>
-        <div class="podium-points" id="podiumPoints2">21,440P</div>
+        <div class="podium-name" id="podiumName2">집계 대기</div>
+        <div class="podium-points" id="podiumPoints2"></div>
         <div class="podium-box">
           <div class="podium-box-num">2</div>
           <div class="podium-box-label">🥈 2위</div>
@@ -4313,8 +4313,8 @@
           <div id="podiumAvatar1" class="char-avatar-box bounce" style="width: 68px; height: 68px;"></div>
           <div class="podium-rank-badge rank-1">1</div>
         </div>
-        <div class="podium-name" id="podiumName1">이문성(나)</div>
-        <div class="podium-points" id="podiumPoints1" style="color: #b45309; font-size: 13px;">36,064P</div>
+        <div class="podium-name" id="podiumName1">집계 대기</div>
+        <div class="podium-points" id="podiumPoints1" style="color: #b45309; font-size: 13px;"></div>
         <div class="podium-box">
           <div class="podium-box-num">1</div>
           <div class="podium-box-label">🏆 독서왕</div>
@@ -4327,8 +4327,8 @@
           <div id="podiumAvatar3" class="char-avatar-box bounce" style="width: 54px; height: 54px;"></div>
           <div class="podium-rank-badge rank-3">3</div>
         </div>
-        <div class="podium-name" id="podiumName3">권순찬</div>
-        <div class="podium-points" id="podiumPoints3">13,056P</div>
+        <div class="podium-name" id="podiumName3">집계 대기</div>
+        <div class="podium-points" id="podiumPoints3"></div>
         <div class="podium-box">
           <div class="podium-box-num">3</div>
           <div class="podium-box-label">🥉 3위</div>
@@ -5490,8 +5490,8 @@ function initStudentMigratedData() {
         thinkExtract: b.thinkExtract || '이 책을 읽고 가장 인상 깊었던 장면을 생각해보세요.',
         thinkInsert: b.thinkInsert || '이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.',
         quizSets: qSets,
-        quizzes: b.quizzes || (qSets[0] && qSets[0].questions ? qSets[0].questions.length : 5),
-        hasQuiz: qSets.length > 0,
+        quizzes: Number(b.quizCount) || (qSets[0] && qSets[0].questions ? qSets[0].questions.length : 0),
+        hasQuiz: b.hasQuiz === true || Number(b.quizCount) > 0 || qSets.length > 0,
         nextReadIds: []
       };
     });
@@ -6937,7 +6937,8 @@ function getStudentQuizIdentity() {
   var auth = JSON.parse(raw);
   if (!auth || auth.role !== 'student' || !auth.id) return null;
   var members = Array.isArray(window.MIGRATED_MEMBERS) ? window.MIGRATED_MEMBERS : [];
-  var storedMembers = localStorage.getItem('NANO_MASTER_MEMBER_LIST');
+  // 운영에서는 서버가 내려준 현재 계정만 신뢰합니다. 브라우저의 오래된 미리보기 회원 정보와 섞지 않습니다.
+  var storedMembers = window.NANO_SERVER_DATA ? null : localStorage.getItem('NANO_MASTER_MEMBER_LIST');
   if (storedMembers) {
     var parsedMembers = JSON.parse(storedMembers);
     if (Array.isArray(parsedMembers)) members = parsedMembers.concat(members);
@@ -7112,9 +7113,10 @@ async function startQuiz(id) {
   }
 
   // 운영 학생 화면은 수천 권의 문항을 처음부터 받지 않고, 선택한 도서만 조회합니다.
-  if (window.NANO_SERVER_DATA && quizSets.length === 0 && activeBook.hasQuiz && window.NanoPortal) {
+  if (window.NANO_SERVER_DATA && quizSets.length === 0 && (activeBook.hasQuiz || Number(activeBook.quizCount) > 0) && window.NanoPortal) {
     try {
-      var quizResponse = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(activeBook.id || id));
+      var lookupBookId = activeBook.serverId || activeBook.bookNo || activeBook.id || id;
+      var quizResponse = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupBookId));
       quizSets = Array.isArray(quizResponse.quizSets) ? quizResponse.quizSets : [];
       if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
       window.MIGRATED_QUIZZES[activeBook.id || id] = quizSets;
@@ -9576,11 +9578,7 @@ function updateAllCharacterAvatars() {
   var rAvatar = document.getElementById("rankMyCharAvatar");
   if(rAvatar) rAvatar.innerHTML = getCharacterSvg(charId, 50, currentStage);
 
-  // 4. 포디움 2위 단상 아바타 (나)
-  var p2Avatar = document.getElementById("podiumAvatar2");
-  if(p2Avatar) p2Avatar.innerHTML = getCharacterSvg(charId, 56, currentStage);
-
-  // 5. 홈 화면 상단 캐릭터 환영 배너
+  // 4. 홈 화면 상단 캐릭터 환영 배너
   var hmAvatar = document.getElementById("homeCharAvatar");
   var hmTag = document.getElementById("homeCharNameTag");
   var hmQuote = document.getElementById("homeCharQuote");
@@ -9613,14 +9611,40 @@ var currentRankScope = 'class';
 var currentRankPeriod = 'month'; // 'month' 또는 'lastMonth'
 
 // 학급 운영 여부 (학급이 없으면 학원/전국 랭킹만 표출)
-var ACADEMY_HAS_CLASS = true; 
+var ACADEMY_HAS_CLASS = false;
 
 var fullRankDatabase = ({ class: { month: [], lastMonth: [] }, academy: { month: [], lastMonth: [] }, national: { month: [], lastMonth: [] } });
+
+function syncRankingScopeLabels(meta) {
+  var identity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  var className = (meta && meta.className) || (identity && identity.classGroup) || '';
+  var academyName = (meta && meta.academyName) || (identity && identity.academyName) || '';
+  ACADEMY_HAS_CLASS = meta && typeof meta.hasClass === 'boolean'
+    ? meta.hasClass
+    : !!className && className !== '미지정';
+
+  var classBtn = document.getElementById('rankTabClass');
+  var academyBtn = document.getElementById('rankTabAcademy');
+  if (classBtn) classBtn.innerHTML = '<i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반' + (ACADEMY_HAS_CLASS ? ' (' + escapeStudentQuizText(className) + ')' : '');
+  if (academyBtn) academyBtn.innerHTML = '<i class="fa-solid fa-school mr-1"></i> ' + escapeStudentQuizText(academyName || '소속 학원');
+}
+
+function clearRankPodium(label) {
+  [1, 2, 3].forEach(function(n) {
+    var avatar = document.getElementById('podiumAvatar' + n);
+    var name = document.getElementById('podiumName' + n);
+    var points = document.getElementById('podiumPoints' + n);
+    if (avatar) avatar.innerHTML = '';
+    if (name) name.textContent = label || '집계 대기';
+    if (points) points.textContent = '';
+  });
+}
 
 // 학급 미운영 학원 대응 초기화
 function checkAcademyClassMode() {
   var classBtn = document.getElementById("rankTabClass");
   if (!classBtn) return;
+  syncRankingScopeLabels(remoteRankResult);
   // 소속 학급 정보 검사
   if (!ACADEMY_HAS_CLASS) {
     classBtn.style.display = "none";
@@ -9630,6 +9654,10 @@ function checkAcademyClassMode() {
   } else {
     classBtn.style.display = "inline-flex";
   }
+  ['class', 'academy', 'national'].forEach(function(scope) {
+    var btn = document.getElementById('rankTab' + scope.charAt(0).toUpperCase() + scope.slice(1));
+    if (btn) btn.classList[scope === currentRankScope ? 'add' : 'remove']('active');
+  });
 }
 
 // 랭킹 범위 탭 전환 (우리 반 / 학원 전체 / 전국)
@@ -9657,14 +9685,16 @@ function updateRankingHeaderTexts() {
   var now = new Date();
   var month = now.getMonth() + 1;
   var displayMonth = currentRankPeriod === 'lastMonth' ? (month === 1 ? 12 : month - 1) : month;
-  var scopeName = currentRankScope === 'class' ? '우리 반' : (currentRankScope === 'academy' ? '학원' : '전국');
+  var identity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  var className = (remoteRankResult && remoteRankResult.className) || (identity && identity.classGroup) || '';
+  var academyName = (remoteRankResult && remoteRankResult.academyName) || (identity && identity.academyName) || '';
+  var scopeName = currentRankScope === 'class' ? (className || '우리 반') : (currentRankScope === 'academy' ? (academyName || '학원') : '전국');
 
   var rankTitleLabel = document.getElementById('rankTitleLabel');
   if (rankTitleLabel) {
     rankTitleLabel.textContent = displayMonth + '월 ' + scopeName + ' 명예의 전당';
   }
 
-  var identity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
   var member = null;
   if (identity && window.MIGRATED_MEMBERS) {
     member = window.MIGRATED_MEMBERS.find(function(m){ return m.username === identity.studentId; });
@@ -9735,12 +9765,14 @@ function switchRankPeriod(period) {
 
 var remoteRankKey = '', remoteRankResult = null, remoteRankSequence = 0;
 function renderRank() {
+  checkAcademyClassMode();
   if (window.NanoPortal && NanoPortal.remote) {
     var key = currentRankScope + ':' + currentRankPeriod;
     if (remoteRankKey !== key) {
       remoteRankKey = key; remoteRankResult = null;
       var sequence = ++remoteRankSequence;
       var list = document.getElementById('rankList'); if(list) list.textContent = '월별 포인트를 조회하고 있어요…';
+      clearRankPodium('조회 중');
       NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod).then(function(result) {
         if(sequence !== remoteRankSequence) return;
         // 포인트 동점 시 완독 도서 수(books) 우선 정렬
@@ -9754,13 +9786,17 @@ function renderRank() {
           var myRow = result.rows.find(function(r){ return r.me; });
           if (myRow) result.myRank = myRow.rank;
         }
-        remoteRankResult = result; fullRankDatabase[currentRankScope][currentRankPeriod] = result.rows; renderRank();
+        var resolvedScope = ['class', 'academy', 'national'].includes(result.scope) ? result.scope : currentRankScope;
+        currentRankScope = resolvedScope;
+        remoteRankKey = resolvedScope + ':' + currentRankPeriod;
+        remoteRankResult = result;
+        fullRankDatabase[resolvedScope][currentRankPeriod] = result.rows || [];
+        renderRank();
       }).catch(function(e) { if(sequence === remoteRankSequence) { remoteRankKey = ''; if(list) list.textContent = e.message + ' 기간을 다시 선택하면 재시도합니다.'; } });
       return;
     }
     if(!remoteRankResult) return;
   }
-  checkAcademyClassMode();
   updateAllCharacterAvatars();
   updateRankingHeaderTexts();
 
@@ -9775,11 +9811,12 @@ function renderRank() {
     data.forEach(function(r, idx) { r.rank = idx + 1; });
   }
   if (!data.length) {
-    [1,2,3].forEach(function(n) { ['podiumAvatar','podiumName','podiumPoints'].forEach(function(prefix) { var el = document.getElementById(prefix + n); if(el) el.textContent = prefix === 'podiumName' ? '집계 대기' : ''; }); });
-    var empty = document.getElementById('rankList'); if(empty) empty.textContent = window.NANO_SERVER_DATA ? '선택한 기간에는 적립 기록이 없습니다.' : '월별 포인트 기록이 연결되면 순위를 표시합니다.';
+    clearRankPodium('집계 대기');
+    var empty = document.getElementById('rankList'); if(empty) empty.textContent = window.NANO_SERVER_DATA ? '현재 소속에 등록된 학생이 없습니다.' : '월별 포인트 기록이 연결되면 순위를 표시합니다.';
     return;
   }
   var userChar = getUserCharacterId();
+  clearRankPodium('집계 대기');
 
   // 1. TOP 3 포디움 렌더링
   var top1 = data.find(function(d){ return d.rank === 1; });
@@ -9819,17 +9856,11 @@ function renderRank() {
     if(p3Points) p3Points.innerText = top3.pt.toLocaleString() + 'P';
   }
 
-  // 2. 4위 이하 카드 목록 렌더링
+  // 2. 포디움과 별개로 실제 전체 순위 목록을 모두 렌더링
   var listEl = document.getElementById("rankList");
   if(!listEl) return;
 
-  var restData = data.filter(function(d){ return d.rank > 3; });
-  if(restData.length === 0) {
-    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:12.5px;">해당 순위 데이터가 집계 중입니다.</div>';
-    return;
-  }
-
-  listEl.innerHTML = restData.map(function(r){
+  listEl.innerHTML = data.map(function(r){
     var cId = r.charId === 'custom' ? userChar : r.charId;
     var changeHtml = '<span class="rank-card-change same">-</span>';
     if(r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
@@ -9847,7 +9878,7 @@ function renderRank() {
       +   '<div class="rank-card-title">'
       +     '<span>' + escapeStudentQuizText(r.name) + '</span>'
       +     (r.me ? '<span style="font-size: 10.5px; font-weight: 800; color: #00a896; background: #ccfbf1; padding: 1px 6px; border-radius: 6px;">나</span>' : '')
-      +     '<span class="rank-char-tag">' + (r.titleTag || '독서왕') + '</span>'
+      +     '<span class="rank-char-tag">' + escapeStudentQuizText(r.titleTag || '독서왕') + '</span>'
       +   '</div>'
       +   '<div class="rank-card-sub">' + escapeStudentQuizText(r.cls) + ' · 완독 ' + (r.books || 0) + '권</div>'
       + '</div>'

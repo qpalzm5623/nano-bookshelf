@@ -123,7 +123,7 @@ test('운영 학생 화면은 선택한 도서의 퀴즈만 지연 조회한다'
   Object.assign(ctx, {
     NANO_SERVER_DATA: true,
     MIGRATED_QUIZZES: {},
-    libData: [{ id: 'B001', title: '검증 도서', hasQuiz: true, quizSets: [] }],
+    libData: [{ id: 'B001', serverId: 'book-server-id', title: '검증 도서', hasQuiz: true, quizCount: 5, quizSets: [] }],
     checkDailyQuizLimit: () => ({ blocked: false, count: 0 }),
     NanoPortal: { api: async path => {
       requestedPath = path;
@@ -134,9 +134,38 @@ test('운영 학생 화면은 선택한 도서의 퀴즈만 지연 조회한다'
   });
   loadFunctions(ctx, 'student_preview.html', ['startQuiz']);
   await ctx.startQuiz('B001');
-  assert.match(requestedPath, /action=quiz&bookId=B001/);
+  assert.match(requestedPath, /action=quiz&bookId=book-server-id/);
   assert.equal(selected.book.id, 'B001');
   assert.equal(selected.set.questions[0].question, '선택 문항');
+});
+
+test('운영 도서의 문항 수는 초기 문항 배열이 비어 있어도 퀴즈 보유 상태를 유지한다', () => {
+  const ctx = context();
+  Object.assign(ctx, {
+    NANO_SERVER_DATA: true,
+    MIGRATED_BOOKS: [{ id: 'B001', title: '실제 퀴즈 도서', hasQuiz: true, quizCount: 5, tags: [] }],
+    MIGRATED_QUIZZES: {},
+    libData: [], histData: []
+  });
+  loadFunctions(ctx, 'student_preview.html', ['initStudentMigratedData']);
+  ctx.initStudentMigratedData();
+  assert.equal(ctx.libData[0].hasQuiz, true);
+  assert.equal(ctx.libData[0].quizzes, 5);
+});
+
+test('운영 학생 소속은 브라우저의 오래된 미리보기 회원보다 서버 회원을 우선한다', () => {
+  const local = storage();
+  local.setItem('NANO_MASTER_MEMBER_LIST', JSON.stringify([{ username: 'student-a', academyId: 'A', academyName: '이전 학원', className: '이전 반' }]));
+  const ctx = context(local);
+  Object.assign(ctx, {
+    NANO_SERVER_DATA: true,
+    MIGRATED_MEMBERS: [{ username: 'student-a', academyId: 'A', academyName: '실제 학원', className: '실제 반', name: '실제 학생' }]
+  });
+  ctx.sessionStorage.setItem('nano_auth_user', JSON.stringify({ id: 'student-a', role: 'student', academyId: 'A' }));
+  loadFunctions(ctx, 'student_preview.html', ['getStudentQuizIdentity']);
+  const identity = ctx.getStudentQuizIdentity();
+  assert.equal(identity.academyName, '실제 학원');
+  assert.equal(identity.classGroup, '실제 반');
 });
 
 test('본사·학원 검색은 포커스 상실과 계정명 입력 후에도 유지된다', () => {
