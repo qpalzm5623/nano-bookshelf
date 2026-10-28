@@ -6060,6 +6060,7 @@ function resetContentFilters() {
   if (document.getElementById("contentAcademyFilter")) document.getElementById("contentAcademyFilter").value = "ALL";
   if (document.getElementById("contentGradeFilter")) document.getElementById("contentGradeFilter").value = "ALL";
   if (document.getElementById("contentCategoryFilter")) document.getElementById("contentCategoryFilter").value = "ALL";
+  if (document.getElementById("contentPublicFilter")) document.getElementById("contentPublicFilter").value = "ALL";
   contentCurrentPage = 1;
   renderMasterContents();
 }
@@ -6194,6 +6195,7 @@ function renderMasterContents() {
   const academyFilter = document.getElementById("contentAcademyFilter")?.value || "ALL";
   const gradeFilter = document.getElementById("contentGradeFilter")?.value || "ALL";
   const catFilter = document.getElementById("contentCategoryFilter")?.value || "ALL";
+  const publicFilter = document.getElementById("contentPublicFilter")?.value || "ALL";
 
   const filtered = masterBooks.filter(b => {
     const matchQuery = !query ||
@@ -6230,7 +6232,14 @@ function renderMasterContents() {
       }
     }
 
-    return matchQuery && matchAcademy && matchGrade && matchCat;
+    let matchPublic = true;
+    if (publicFilter === "Y") {
+      matchPublic = b.isPublic !== "N";
+    } else if (publicFilter === "N") {
+      matchPublic = b.isPublic === "N";
+    }
+
+    return matchQuery && matchAcademy && matchGrade && matchCat && matchPublic;
   });
 
   const countEl = document.getElementById("contentFilteredCount");
@@ -6263,11 +6272,21 @@ function renderMasterContents() {
       ? `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-check mr-1"></i>${setCount}Set</span>`
       : `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-xmark mr-1"></i>No</span>`;
 
-    // 공개 여부 토글 뱃지
-    const isPublic = b.isPublic !== "N";
-    const publicBadge = isPublic
-      ? `<button class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleBookPublic('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 3px 8px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-width: 58px;" title="클릭하여 비공개로 전환"><i class="fa-solid fa-eye mr-1"></i>공개</button>`
-      : `<button class="btn btn-xs btn-outline-secondary font-weight-bold text-muted" onclick="toggleBookPublic('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 3px 8px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; min-width: 58px;" title="클릭하여 가맹점 공개로 전환"><i class="fa-solid fa-eye-slash mr-1"></i>비공개</button>`;
+    // 나노시트 단독 버튼 (학원관리자와 100% 동일: 실제 파일 준비된 도서만 활성화, 없는 도서는 비활성화 상태 명시)
+    let hasSheet = false;
+    if (b.worksheetUrl || b.pdfUrl || b.hasSheet === true || b.sheet === true || (b.worksheet && b.worksheet !== false)) {
+      hasSheet = true;
+    }
+    if (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N') {
+      hasSheet = false;
+    }
+    const pdfBtn = hasSheet
+      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openMasterPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
+           <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
+         </button>`
+      : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF)가 없는 도서입니다" style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
+           <i class="fa-regular fa-file-circle-xmark mr-1" style="font-size: 10px;"></i>시트 없음
+         </button>`;
 
     // 시리즈명 표시
     const seriesLabel = b.series && b.series !== "단권" ? `<span class="badge-soft badge-soft-neutral mr-1" style="font-size: 10.5px;">${b.series}</span>` : '';
@@ -6279,10 +6298,10 @@ function renderMasterContents() {
           <img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-medium); box-shadow: 0 1px 3px rgba(0,0,0,0.06);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         </td>
         <td>
-          <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
+          <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main); margin-left: 5px;">
             ${cleanTitle}
           </div>
-          <small class="text-muted font-weight-bold">코드: ${b.id}</small>
+          <small class="text-muted font-weight-bold" style="margin-left: 5px; display: inline-block;">코드: ${b.id}</small>
         </td>
         <td>${seriesColHtml}</td>
         <td class="text-center">
@@ -6301,7 +6320,7 @@ function renderMasterContents() {
           ${hasQuizBadge}
         </td>
         <td class="text-center" style="white-space: nowrap;">
-          ${publicBadge}
+          ${pdfBtn}
         </td>
         <!-- 찜 (숫자만 표시, 클릭 시 통계 모달) -->
         <td class="text-center" style="padding-left: 4px; padding-right: 4px; white-space: nowrap;">
@@ -6406,6 +6425,620 @@ function toggleBookPublic(bookId) {
   showMasterToast(`'${book.title}' 도서가 [${statusKor}] 상태로 전환되었습니다.`);
   renderMasterContents();
 }
+
+// ========================================================
+// 나노시트 (보안 PDF 웹뷰어 & 인쇄 시스템 - 학원관리자 100% 동일 규격)
+// ========================================================
+var activeViewingBook = null;
+var activePdfDoc = null;
+var activePdfPageNum = 1;
+var activePdfTotalPages = 1;
+var activePdfRenderTask = null;
+
+function escapeMasterHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function updateWatermarkInfo() {
+  var acadElem = document.getElementById('wmAcademyName');
+  var timeElem = document.getElementById('wmPrintTime');
+  var ipElem = document.getElementById('wmIpAddress');
+  if (acadElem) acadElem.innerText = '나노의 책장 B2B 본사 (HQ)';
+  if (timeElem) {
+    var now = new Date();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    timeElem.innerText = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+  if (ipElem) {
+    ipElem.innerText = '118.235.12.89';
+  }
+}
+
+function updateRealPdfWatermarkOverlay() {
+  var overlay = document.getElementById('realPdfWatermarkOverlay');
+  if (!overlay) return;
+
+  var acadElem = document.getElementById('wmAcademyName');
+  var timeElem = document.getElementById('wmPrintTime');
+  var ipElem = document.getElementById('wmIpAddress');
+
+  var acad = (acadElem && acadElem.innerText) ? acadElem.innerText : '나노의 책장 B2B 본사 (HQ)';
+  var time = (timeElem && timeElem.innerText) ? timeElem.innerText : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var ip = (ipElem && ipElem.innerText) ? ipElem.innerText : '118.235.12.89';
+
+  var tileHtml = 
+    '<div style="transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 35px 0;">' +
+      '<div style="font-size: 21px; letter-spacing: -0.5px; color: #1e293b;">' + acad + '</div>' +
+      '<div style="font-size: 14.5px; font-family: monospace; color: #334155;">' + time + ' &middot; IP: ' + ip + '</div>' +
+      '<div style="font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px;">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
+    '</div>';
+
+  overlay.innerHTML = tileHtml + tileHtml + tileHtml;
+}
+
+function extractBookPdfCandidates(book) {
+  if (!book) return [];
+  var list = [];
+  if (book.pdfUrl) list.push(book.pdfUrl);
+  if (book.worksheetUrl) list.push(book.worksheetUrl);
+
+  if (book.cover && typeof book.cover === 'string') {
+    var coverClean = String(book.cover).split('?')[0];
+    var match = coverClean.match(/([0-9]{10,13}|book_[0-9]+)/);
+    if (match && match[1]) {
+      list.push('upload/book/' + match[1] + '.pdf');
+      list.push('/upload/book/' + match[1] + '.pdf');
+    }
+  }
+
+  if (book.isbn) {
+    var cleanIsbn = String(book.isbn).replace(/[^0-9]/g, '');
+    if (cleanIsbn) {
+      list.push('upload/book/' + cleanIsbn + '.pdf');
+      list.push('/upload/book/' + cleanIsbn + '.pdf');
+    }
+  }
+
+  if (book.id) {
+    var cleanId = String(book.id).trim();
+    if (cleanId) {
+      list.push('upload/book/' + cleanId + '.pdf');
+      list.push('/upload/book/' + cleanId + '.pdf');
+    }
+  }
+  if (book.serverId) {
+    var cleanSId = String(book.serverId).trim();
+    if (cleanSId) {
+      list.push('upload/book/' + cleanSId + '.pdf');
+      list.push('/upload/book/' + cleanSId + '.pdf');
+    }
+  }
+
+  return list.filter(function(item, idx) { return list.indexOf(item) === idx; });
+}
+
+function tryLoadCandidatePdfs(candidates, index, book) {
+  if (!candidates || index >= candidates.length) {
+    var loadingInd = document.getElementById('pdfLoadingIndicator');
+    if (loadingInd) loadingInd.style.display = 'none';
+    if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+      $('#contentPdfPreviewModal').modal('hide');
+    }
+    showMasterToast(`[${(book && book.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
+    return;
+  }
+
+  var currentCandidate = candidates[index];
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  if (loadingInd) loadingInd.style.display = 'block';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'none';
+
+  var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
+  if (!engine) {
+    console.warn('PDF.js 엔진 미탑재, 커스텀 HTML 시트로 전환');
+    renderCustomNanoSheetHtml(book);
+    return;
+  }
+  if (!engine.GlobalWorkerOptions) engine.GlobalWorkerOptions = {};
+  engine.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var loadingTask = engine.getDocument(currentCandidate);
+  loadingTask.promise.then(function(pdf) {
+    activePdfDoc = pdf;
+    activePdfTotalPages = pdf.numPages;
+    activePdfPageNum = 1;
+
+    if (loadingInd) loadingInd.style.display = 'none';
+    if (realWrapper) realWrapper.style.display = 'block';
+    if (htmlContainer) htmlContainer.style.display = 'none';
+
+    var pageControls = document.getElementById('pdfPageControls');
+    if (pageControls) {
+      pageControls.style.display = (pdf.numPages > 1) ? 'flex' : 'none';
+    }
+    updateRealPdfWatermarkOverlay();
+    renderCurrentPdfPage();
+  }).catch(function(err) {
+    console.warn('PDF 후보 파일 로드 실패 (' + currentCandidate + '), 다음 후보 시도:', err);
+    tryLoadCandidatePdfs(candidates, index + 1, book);
+  });
+}
+
+function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  var pageControls = document.getElementById('pdfPageControls');
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+
+  if (loadingInd) loadingInd.style.display = 'block';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'none';
+
+  updateRealPdfWatermarkOverlay();
+
+  var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
+  if (engine) {
+    if (!engine.GlobalWorkerOptions) engine.GlobalWorkerOptions = {};
+    engine.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  var loadPromise = null;
+  if (pdfSource instanceof Blob || pdfSource instanceof File) {
+    loadPromise = new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(new Uint8Array(e.target.result)); };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(pdfSource);
+    });
+  } else if (typeof pdfSource === 'string' && pdfSource.startsWith('data:')) {
+    try {
+      var base64 = pdfSource.split(',')[1];
+      var binaryStr = atob(base64);
+      var len = binaryStr.length;
+      var bytes = new Uint8Array(len);
+      for (var i = 0; i < len; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      loadPromise = Promise.resolve(bytes);
+    } catch(e) {
+      loadPromise = Promise.resolve(pdfSource);
+    }
+  } else {
+    loadPromise = Promise.resolve(pdfSource);
+  }
+
+  loadPromise.then(function(data) {
+    var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
+    if (!engine) {
+      throw new Error('PDF.js 엔진을 찾을 수 없습니다.');
+    }
+    var loadingTask = (data instanceof Uint8Array) 
+      ? engine.getDocument({ data: data }) 
+      : engine.getDocument(data);
+    return loadingTask.promise;
+  }).then(function(pdf) {
+    activePdfDoc = pdf;
+    activePdfTotalPages = pdf.numPages;
+    activePdfPageNum = 1;
+
+    if (loadingInd) loadingInd.style.display = 'none';
+    if (realWrapper) realWrapper.style.display = 'block';
+    if (htmlContainer) htmlContainer.style.display = 'none';
+
+    if (pageControls) {
+      pageControls.style.display = (pdf.numPages > 1) ? 'flex' : 'none';
+    }
+    renderCurrentPdfPage();
+  }).catch(function(err) {
+    console.warn('PDF 캔버스 렌더링 실패, 도서 맞춤형 동적 나노시트로 안전 전환:', err);
+    if (fallbackBook || activeViewingBook) {
+      renderCustomNanoSheetHtml(fallbackBook || activeViewingBook);
+    } else {
+      showDefaultHtmlSheetView();
+    }
+  });
+}
+
+function renderCurrentPdfPage() {
+  if (!activePdfDoc) return;
+  if (activePdfRenderTask) {
+    try { activePdfRenderTask.cancel(); } catch(e) {}
+    activePdfRenderTask = null;
+  }
+
+  activePdfDoc.getPage(activePdfPageNum).then(function(page) {
+    var canvas = document.getElementById('pdfViewerCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    var wrapper = document.getElementById('realPdfViewerWrapper');
+    var targetWidth = wrapper ? (wrapper.clientWidth || 740) : 740;
+    if (targetWidth < 300) targetWidth = 740;
+
+    var unscaledViewport = page.getViewport({ scale: 1.0 });
+    var scale = targetWidth / unscaledViewport.width;
+    if (scale < 1.2) scale = 1.2;
+
+    var outputScale = window.devicePixelRatio || 1;
+    var viewport = page.getViewport({ scale: scale });
+
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+    canvas.style.width = Math.floor(viewport.width) + "px";
+    canvas.style.height = Math.floor(viewport.height) + "px";
+
+    var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+
+    var renderContext = {
+      canvasContext: ctx,
+      transform: transform,
+      viewport: viewport
+    };
+
+    activePdfRenderTask = page.render(renderContext);
+    activePdfRenderTask.promise.then(function() {
+      activePdfRenderTask = null;
+      var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
+      if (pageNumDisplay) {
+        pageNumDisplay.innerText = activePdfPageNum + ' / ' + activePdfTotalPages;
+      }
+      var btnPrev = document.getElementById('btnPdfPrev');
+      var btnNext = document.getElementById('btnPdfNext');
+      if (btnPrev) btnPrev.disabled = (activePdfPageNum <= 1);
+      if (btnNext) btnNext.disabled = (activePdfPageNum >= activePdfTotalPages);
+    }).catch(function(err) {
+      if (err && err.name === 'RenderingCancelledException') return;
+      console.error('PDF.js 렌더링 에러:', err);
+    });
+  }).catch(function(err) {
+    console.error('PDF.js getPage 에러:', err);
+  });
+}
+
+function prevPdfPage() {
+  if (activePdfDoc && activePdfPageNum > 1) {
+    activePdfPageNum--;
+    renderCurrentPdfPage();
+  }
+}
+
+function nextPdfPage() {
+  if (activePdfDoc && activePdfPageNum < activePdfTotalPages) {
+    activePdfPageNum++;
+    renderCurrentPdfPage();
+  }
+}
+
+function showDefaultHtmlSheetView() {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+  var pageControls = document.getElementById('pdfPageControls');
+  if (loadingInd) loadingInd.style.display = 'none';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (pageControls) pageControls.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'block';
+}
+
+function renderCustomNanoSheetHtml(b) {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  var pageControls = document.getElementById('pdfPageControls');
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+
+  if (loadingInd) loadingInd.style.display = 'none';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (pageControls) pageControls.style.display = 'none';
+  if (!htmlContainer) return;
+
+  htmlContainer.style.display = 'block';
+
+  var title = (b && b.title) ? b.title : '나노 도서';
+  var author = (b && b.author) ? b.author : '저자 미상';
+  var publisher = (b && b.publisher) ? b.publisher : '출판사';
+  var grade = (b && b.grade) ? b.grade : '초등 전학년';
+  var category = (b && (b.category || b.cat1)) ? (b.category || b.cat1) : '문학';
+  var tags = (b && (b.rawTags || (b.tags && b.tags.join(' ')))) ? String(b.rawTags || b.tags.join(' ')).replace(/#/g, '').split(/[,\s]+/).filter(Boolean) : ['독서 성찰', '문해력'];
+  var thinkExtract = (b && b.thinkExtract) ? b.thinkExtract : '이 책에서 가장 흥미로웠거나 기억에 남는 장면은 무엇이었나요? 그 이유는 무엇인가요?';
+  var thinkInsert = (b && b.thinkInsert) ? b.thinkInsert : '책 속 주인공의 선택이나 교훈을 바탕으로, 나의 생각이나 경험을 자유롭게 서술해 보세요.';
+  var coverUrl = (b && b.cover) ? b.cover : 'resources/images/book_default.svg';
+
+  var quizQuestions = [];
+  try {
+    var qData = (window.MIGRATED_QUIZZES && (MIGRATED_QUIZZES[title] || (b && MIGRATED_QUIZZES[b.id]))) || null;
+    if (qData && qData.length > 0 && qData[0].questions) {
+      quizQuestions = qData[0].questions;
+    }
+  } catch(e) {}
+
+  var q1Text = quizQuestions.length > 0 ? ('<strong>Q1. </strong>' + escapeMasterHtml(quizQuestions[0].question)) : '<strong>Q1. </strong>본문의 핵심 사건과 등장인물의 선택을 되짚어보며 내용을 간략히 정리해 보세요.';
+  var q2Text = quizQuestions.length > 1 ? ('<strong>Q2. </strong>' + escapeMasterHtml(quizQuestions[1].question)) : '<strong>Q2. </strong>주인공의 가치관이나 행동에 대해 나의 일상생활에 빗대어 느낀 점을 설명해 보세요.';
+
+  var tagBadges = tags.slice(0, 5).map(function(t) {
+    return '<span style="display: inline-block; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 5px; border: 1px solid #e2e8f0; font-weight: 600;">#' + escapeMasterHtml(t) + '</span>';
+  }).join('');
+
+  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노의 책장 B2B 본사 (HQ)');
+  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : '');
+  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+
+  var html = 
+    '<!-- 워터마크 오버레이 -->' +
+    '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); pointer-events: none; opacity: 0.12; font-weight: 900; font-size: 24px; line-height: 1.6; text-align: center; color: #111; z-index: 10; user-select: none; width: 100%; letter-spacing: -0.5px;">' +
+      '<div>' + acadName + '</div>' +
+      '<div style="font-size: 20px;">' + printTime + '</div>' +
+      '<div style="font-size: 18px; font-family: monospace;">' + ipAddr + '</div>' +
+    '</div>' +
+
+    '<!-- 시트지 헤더 -->' +
+    '<div class="d-flex justify-content-between align-items-center pb-3 mb-3" style="border-bottom: 2px solid #2563eb;">' +
+      '<div style="flex: 1; padding-right: 15px;">' +
+        '<div class="d-flex align-items-center gap-2 mb-1">' +
+          '<span class="badge badge-warning text-dark font-weight-bold px-2 py-1" style="font-size: 11px;">나노 독서논술 정규 워크시트</span>' +
+          '<span class="badge badge-secondary px-2 py-1" style="font-size: 11px;">' + escapeMasterHtml(grade) + '</span>' +
+          '<span class="badge badge-light border px-2 py-1" style="font-size: 11px;">' + escapeMasterHtml(category) + '</span>' +
+        '</div>' +
+        '<h3 class="font-weight-bold mb-1" style="color: #1e293b; font-size: 20px; letter-spacing: -0.5px;">' + escapeMasterHtml(title) + '</h3>' +
+        '<div style="font-size: 12px; color: #64748b;">' +
+          '<span>지은이: ' + escapeMasterHtml(author) + '</span>' +
+          '<span style="margin: 0 6px;">&middot;</span>' +
+          '<span>출판사: ' + escapeMasterHtml(publisher) + '</span>' +
+        '</div>' +
+        '<div class="mt-1">' + tagBadges + '</div>' +
+      '</div>' +
+      '<div style="width: 70px; height: 95px; border-radius: 4px; overflow: hidden; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0;">' +
+        '<img src="' + coverUrl + '" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src=\'resources/images/book_default.svg\'">' +
+      '</div>' +
+    '</div>' +
+
+    '<!-- 학생 정보란 -->' +
+    '<div class="d-flex justify-content-between align-items-center px-3 py-2 mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; color: #475569;">' +
+      '<div>소속: <strong>' + acadName + '</strong></div>' +
+      '<div>날짜: <strong>' + (printTime ? printTime.split(' ')[0] : '2026-10-28') + '</strong></div>' +
+      '<div>이름: <span style="display: inline-block; width: 100px; border-bottom: 1px solid #94a3b8; margin-left: 4px;"></span></div>' +
+    '</div>' +
+
+    '<!-- STEP 1 -->' +
+    '<div class="mb-3">' +
+      '<div style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px; display: flex; align-items: center;">' +
+        '<span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #2563eb; color: #fff; border-radius: 50%; font-size: 11px; margin-right: 6px;">1</span>' +
+        '어휘 및 배경지식 탐구' +
+      '</div>' +
+      '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.6; color: #334155;">' +
+        '<strong>&bull; 핵심 키워드:</strong> ' + tags.join(', ') + '<br>' +
+        '<strong>&bull; 생각 꺼내기:</strong> ' + escapeMasterHtml(thinkExtract) +
+      '</div>' +
+    '</div>' +
+
+    '<!-- STEP 2 -->' +
+    '<div class="mb-3">' +
+      '<div style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px; display: flex; align-items: center;">' +
+        '<span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #2563eb; color: #fff; border-radius: 50%; font-size: 11px; margin-right: 6px;">2</span>' +
+        '본문 이해 및 문해력 다지기' +
+      '</div>' +
+      '<div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #334155; margin-bottom: 6px;">' +
+        '<div style="margin-bottom: 4px;">' + q1Text + '</div>' +
+        '<div style="min-height: 48px; background: #fdfdfd; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 6px; color: #94a3b8; font-size: 11px;">(학생 작성란)</div>' +
+      '</div>' +
+      '<div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #334155;">' +
+        '<div style="margin-bottom: 4px;">' + q2Text + '</div>' +
+        '<div style="min-height: 48px; background: #fdfdfd; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 6px; color: #94a3b8; font-size: 11px;">(학생 작성란)</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<!-- STEP 3 -->' +
+    '<div class="mb-2">' +
+      '<div style="font-size: 13px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px; display: flex; align-items: center;">' +
+        '<span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #2563eb; color: #fff; border-radius: 50%; font-size: 11px; margin-right: 6px;">3</span>' +
+        '나노 생각담기 (서술형 논술)' +
+      '</div>' +
+      '<div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #334155;">' +
+        '<div style="margin-bottom: 6px; font-weight: 700; color: #0f172a;">논제: ' + escapeMasterHtml(thinkInsert) + '</div>' +
+        '<div style="min-height: 120px; background: #fdfdfd; border: 1px dashed #cbd5e1; border-radius: 4px; padding: 8px; color: #94a3b8; font-size: 11px; line-height: 1.8;">' +
+          '(200~300자 내외 서술 영역)' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<!-- 교사용 가이드 푸터 -->' +
+    '<div class="pt-2 text-right" style="font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; margin-top: 12px;">' +
+      '* 나노의 책장 B2B 공식 인증 활동지 &middot; 교사용 평가 가이드라인 준수' +
+    '</div>';
+
+  htmlContainer.innerHTML = html;
+}
+
+function printNanoSheetViewer() {
+  var canvas = document.getElementById('pdfViewerCanvas');
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+
+  if (!canvas || !realWrapper || realWrapper.style.display === 'none') {
+    window.print();
+    return;
+  }
+
+  var imgData = canvas.toDataURL('image/png');
+  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노의 책장 B2B 본사 (HQ)');
+  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : new Date().toISOString().slice(0, 16).replace('T', ' '));
+  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+
+  var printWin = window.open('', '_blank', 'width=850,height=1100');
+  if (!printWin) {
+    window.print();
+    return;
+  }
+
+  printWin.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>나노 시트 보안 출력 - ${acadName}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .sheet-wrapper { position: relative; width: 100%; max-width: 210mm; min-height: 297mm; overflow: hidden; background: #fff; }
+    img.sheet-canvas-img { width: 100%; height: auto; display: block; }
+    .wm-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
+      display: flex; flex-direction: column; justify-content: space-around; align-items: center;
+      user-select: none;
+    }
+    .wm-block {
+      transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000;
+      line-height: 1.4; user-select: none; margin: 35px 0;
+    }
+    .wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }
+    .wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }
+    .wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="sheet-wrapper">
+    <img src="${imgData}" class="sheet-canvas-img" />
+    <div class="wm-overlay">
+      <div class="wm-block">
+        <div class="wm-title">${acadName}</div>
+        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
+        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
+      </div>
+      <div class="wm-block">
+        <div class="wm-title">${acadName}</div>
+        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
+        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
+      </div>
+      <div class="wm-block">
+        <div class="wm-title">${acadName}</div>
+        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
+        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 250);
+    };
+  <\/script>
+</body>
+</html>`);
+  printWin.document.close();
+}
+
+// 마스터 관리자 나노시트 모달 열기 (학원관리자와 100% 동일 규격 및 API 연동)
+function openMasterPdfModal(bookId) {
+  var b = masterBooks.find(function(item) { return item.id === bookId; });
+  if (!b && typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS)) {
+    b = window.MIGRATED_BOOKS.find(function(item) { return item.id === bookId; });
+  }
+  activeViewingBook = b || null;
+
+  var hasSheet = false;
+  if (b && (b.worksheetUrl || b.pdfUrl || b.hasSheet === true || b.sheet === true || (b.worksheet && b.worksheet !== false))) {
+    hasSheet = true;
+  }
+  if (b && (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N')) {
+    hasSheet = false;
+  }
+
+  if (!b || !hasSheet) {
+    showMasterToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
+    return;
+  }
+
+  var title = b ? b.title : '나노 도서';
+  var fileName = b && b.materialName ? b.materialName : `${title}_나노시트.pdf`;
+
+  var titleEl = document.getElementById('pdfModalTitle');
+  if (titleEl) titleEl.innerText = `[${title}] 나노 시트 (보안 PDF 웹뷰어)`;
+
+  var nameDisp = document.getElementById('pdfFileNameDisplay');
+  if (nameDisp) nameDisp.innerText = fileName;
+
+  var sheetBookTitle = document.getElementById('pdfSheetBookTitle');
+  if (sheetBookTitle) sheetBookTitle.innerText = title;
+
+  updateWatermarkInfo();
+
+  if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+    $('#contentPdfPreviewModal').modal('show');
+  }
+
+  var directPdf = (b && (b.pdfBlob || b.pdfDataUrl)) || null;
+  if (directPdf) {
+    renderPdfFileWithWatermark(directPdf, b);
+    return;
+  }
+
+  if (b && (b.pdfUrl || b.worksheetUrl)) {
+    renderPdfFileWithWatermark(b.pdfUrl || b.worksheetUrl, b);
+    return;
+  }
+
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  if (loadingInd) loadingInd.style.display = 'block';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'none';
+
+  var queryParams = new URLSearchParams({
+    book_id: b ? (b.serverId || b.id || '') : (bookId || ''),
+    isbn: b && b.isbn ? String(b.isbn).replace(/[^0-9]/g, '') : '',
+    title: b ? (b.title || '') : '',
+    cover: b ? (b.cover || '') : ''
+  });
+
+  fetch('api/get_worksheet.php?' + queryParams.toString())
+    .then(function(res) {
+      if (!res.ok) throw new Error('API 응답 HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      if (data && data.ok && data.pdfUrl) {
+        if (b) {
+          b.pdfUrl = data.pdfUrl;
+          if (data.fileName) b.materialName = data.fileName;
+        }
+        if (nameDisp && data.fileName) nameDisp.innerText = data.fileName;
+        renderPdfFileWithWatermark(data.pdfUrl, b);
+      } else {
+        var candidates = extractBookPdfCandidates(b);
+        if (candidates.length > 0) {
+          tryLoadCandidatePdfs(candidates, 0, b);
+        } else {
+          if (loadingInd) loadingInd.style.display = 'none';
+          if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+            $('#contentPdfPreviewModal').modal('hide');
+          }
+          showMasterToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
+        }
+      }
+    })
+    .catch(function(err) {
+      console.warn('get_worksheet.php API 조회 실패 또는 로컬 환경, 후보 파일 순차 로드:', err);
+      var candidates = extractBookPdfCandidates(b);
+      if (candidates.length > 0) {
+        tryLoadCandidatePdfs(candidates, 0, b);
+      } else {
+        if (loadingInd) loadingInd.style.display = 'none';
+        if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+          $('#contentPdfPreviewModal').modal('hide');
+        }
+        showMasterToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
+      }
+    });
+}
+window.openContentPdfModal = openMasterPdfModal;
 
 // 3. 도서 인터랙션 통계 분석 모달 (찜 / 추천 / 북퀴즈 완료)
 function openBookStatsModal(bookId, statType) {

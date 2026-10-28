@@ -697,6 +697,39 @@
     .sym-btn-compact:hover {
       background: #eee8dd;
     }
+
+    /* 나노시트 액션 버튼 스타일 (학원관리자 규격 일치) */
+    .btn-sheet-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4.5px;
+      height: 28px;
+      padding: 0 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1;
+      border: 1px solid transparent;
+      text-decoration: none !important;
+    }
+
+    .btn-sheet-nanosheet {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+      box-shadow: 0 1px 2px rgba(220, 38, 38, 0.05);
+    }
+
+    .btn-sheet-nanosheet:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+      transform: translateY(-1px);
+    }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261022"></script>
@@ -1528,6 +1561,13 @@
             <option value="ALL">전체 주제 (전체 태그)</option>
           </select>
         </div>
+        <div>
+          <select id="contentPublicFilter" class="select-beige" onchange="filterMasterContentList()">
+            <option value="ALL">공개 여부 (전체)</option>
+            <option value="Y">공개</option>
+            <option value="N">비공개</option>
+          </select>
+        </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="search" id="contentSearchInput" name="search_content_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMasterContentList();}">
@@ -1563,7 +1603,7 @@
                 <th>권장 학년</th>
                 <th>주제 분류</th>
                 <th style="width: 105px; text-align: center; white-space: nowrap;">퀴즈 등록 여부</th>
-                <th style="width: 76px; text-align: center; white-space: nowrap;">공개 여부</th>
+                <th style="width: 88px; text-align: center; white-space: nowrap;">나노시트</th>
                 <th style="width: 42px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">찜</th>
                 <th style="width: 42px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">추천</th>
                 <th style="width: 46px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">인증</th>
@@ -4430,6 +4470,134 @@
   </div>
 </div>
 
+<!-- 콘텐츠 학습자료 (PDF) 뷰어 모달 (학원관리자와 100% 동일 규격 및 본사 보안 워터마크) -->
+<div class="modal fade" id="contentPdfPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 10px 30px rgba(0,0,0,0.12);">
+      <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4" style="background: #fdfbf7; border-bottom: 1px solid var(--border-light); border-radius: 16px 16px 0 0;">
+        <div class="d-flex align-items-center">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: #c53030; color: #fff; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+            <i class="fa-solid fa-file-pdf" style="font-size: 15px;"></i>
+          </div>
+          <div>
+            <h6 class="modal-title font-weight-bold mb-0" id="pdfModalTitle" style="color: var(--text-main); font-size: 15px;">나노 시트 (PDF)</h6>
+            <small class="text-muted" id="pdfModalSubtitle" style="font-size: 11.5px;">교사용/학생용 독서 활동지 및 서술형 논술 시트</small>
+          </div>
+        </div>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body p-4" style="background: #f5f2eb; max-height: 75vh; overflow-y: auto;">
+
+        <!-- PDF 로딩 인디케이터 -->
+        <div id="pdfLoadingIndicator" class="text-center py-5" style="display: none;">
+          <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+          </div>
+          <h6 class="font-weight-bold" style="color: var(--text-main);" id="pdfLoadingText">실제 서버 나노 시트(PDF)를 로드 중입니다...</h6>
+          <small class="text-muted" id="pdfLoadingSubText">보안 인가 검증 및 PDF.js 캔버스 렌더링 준비 중</small>
+        </div>
+
+        <!-- 실제 업로드 PDF 캔버스 뷰어 래퍼 (캔버스 렌더링 + 본사 보안 워터마크) -->
+        <div id="realPdfViewerWrapper" style="display: none; position: relative; max-width: 740px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.12); border-radius: 8px; overflow: hidden; background: #fff; padding: 0; margin-bottom: 12px;">
+          <div style="position: relative; width: 100%; background: #fff; overflow: hidden;">
+            <canvas id="pdfViewerCanvas" style="display: block; width: 100%; height: auto; margin: 0 auto;"></canvas>
+            
+            <!-- 전면 보안 워터마크 오버레이 (대각선 반복 3단 격자 패턴) -->
+            <div id="realPdfWatermarkOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-around; align-items: center; overflow: hidden; user-select: none;">
+              <!-- 동적 워터마크 주입 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- A4 나노 시트 동적 렌더링 시트지 -->
+        <div class="bg-white p-4 mx-auto shadow-sm" id="nanoSheetViewerContainer" style="display: none; position: relative; overflow: hidden; max-width: 680px; min-height: 780px; border-radius: 4px; border: 1px solid #dcd5c7; font-family: 'Gowun Dodum', sans-serif;">
+          <!-- 워터마크 오버레이 -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); pointer-events: none; opacity: 0.13; font-weight: 900; font-size: 24px; line-height: 1.6; text-align: center; color: #111; z-index: 10; user-select: none; width: 100%; letter-spacing: -0.5px;">
+            <div id="wmAcademyName">나노의 책장 B2B 본사 (HQ)</div>
+            <div id="wmPrintTime" style="font-size: 20px;">2026-10-28 15:00</div>
+            <div id="wmIpAddress" style="font-size: 18px; font-family: monospace;">118.235.12.89</div>
+          </div>
+          <!-- 시트지 헤더 -->
+          <div class="d-flex justify-content-between align-items-end pb-3 mb-3" style="border-bottom: 2px solid var(--btn-primary);">
+            <div>
+              <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-1">나노 독서아카데미 나노 시트</span>
+              <h4 class="font-weight-bold mb-0 mt-1" id="pdfSheetBookTitle" style="color: var(--text-main);">어린 왕자</h4>
+            </div>
+            <div class="text-right" style="font-size: 12px; color: var(--text-muted);">
+              <div>소속: <span class="border-bottom pb-0 px-2 font-weight-bold text-dark">나노의 책장 B2B 본사</span></div>
+              <div class="mt-1">원생: <span class="border-bottom pb-0 px-2 font-weight-bold text-dark">______________</span></div>
+            </div>
+          </div>
+
+          <!-- 1단계: 독서 전/중 핵심 어휘 -->
+          <div class="mb-4">
+            <h6 class="font-weight-bold text-primary mb-2" style="font-size: 13.5px;">
+              <i class="fa-solid fa-feather mr-1"></i>[STEP 1] 어휘 및 배경 이해하기
+            </h6>
+            <div class="p-3 rounded" style="background: #faf8f4; border: 1px dashed var(--border-medium); font-size: 12.5px; line-height: 1.7;" id="pdfSheetVocab">
+              <strong>1. 길들이다 (타동사):</strong> 서로에게 세상에서 오직 하나뿐인 존재가 되도록 인연을 맺고 정성을 들이는 과정.<br>
+              <strong>2. 책임 (명사):</strong> 자신이 맡아서 해야 할 의무. (예: "네가 길들인 것에 대해서는 영원히 책임을 져야 해.")
+            </div>
+          </div>
+
+          <!-- 2단계: 핵심 내용 이해 및 문해력 독해 퀴즈 -->
+          <div class="mb-4">
+            <h6 class="font-weight-bold text-primary mb-2" style="font-size: 13.5px;">
+              <i class="fa-solid fa-compass mr-1"></i>[STEP 2] 본문 속 문해력 성찰
+            </h6>
+            <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 12.5px; line-height: 1.8;">
+              <p class="mb-2"><strong>Q1.</strong> 본문에서 인상 깊었던 구절이나 주인공의 핵심적인 선택은 무엇이었나요?</p>
+              <div class="p-2 mb-2 bg-light rounded text-muted" style="min-height: 45px; border: 1px dotted #ccc;">
+                (학생 작성란)
+              </div>
+              <p class="mb-2"><strong>Q2.</strong> 주인공의 가치관이나 상황을 바탕으로 나의 일상생활에 빗대어 설명해 보세요.</p>
+              <div class="p-2 bg-light rounded text-muted" style="min-height: 45px; border: 1px dotted #ccc;">
+                (학생 작성란)
+              </div>
+            </div>
+          </div>
+
+          <!-- 3단계: 나노 시트 논술 표현 -->
+          <div class="mb-3">
+            <h6 class="font-weight-bold text-primary mb-2" style="font-size: 13.5px;">
+              <i class="fa-solid fa-lightbulb mr-1"></i>[STEP 3] 나노 시트 생각담기 논술
+            </h6>
+            <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 12.5px;">
+              <p class="font-weight-bold mb-2" id="pdfSheetPrompt">논제: 이 책을 읽고 난 후, 삶에서 가장 소중하게 지켜야 할 가치에 대해 자신의 생각을 자유롭게 서술하시오.</p>
+              <div style="border: 1px dashed var(--border-medium); height: 140px; border-radius: 6px; background: #fffdfa; padding: 10px; color: #bbb;">
+                (200자 내외 원고지 서술 영역)
+              </div>
+            </div>
+          </div>
+
+          <!-- 교사용 가이드 -->
+          <div class="p-2 text-right text-muted" style="font-size: 11px; border-top: 1px solid var(--border-light);">
+            * 나노의 책장 B2B 공식 인증 활동지 &middot; 본사 및 가맹 학원 평가 가이드라인 준수
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer py-2 bg-light d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="gap: 12px;">
+          <small class="text-muted"><i class="fa-solid fa-shield-check text-success mr-1"></i>전국 나노 가맹 학원 정회원 전용 보안 교육 자료</small>
+          <!-- 다중 페이지 이동 컨트롤 -->
+          <div id="pdfPageControls" style="display: none; align-items: center; gap: 6px;">
+            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="prevPdfPage()" id="btnPdfPrev" title="이전 페이지"><i class="fa-solid fa-chevron-left"></i></button>
+            <span style="font-size: 11.5px; font-weight: 700; color: #475569;" id="pdfPageNumDisplay">1 / 1</span>
+            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="nextPdfPage()" id="btnPdfNext" title="다음 페이지"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="d-flex align-items-center" style="gap: 8px;">
+          <button type="button" class="btn btn-sm btn-beige-primary px-3 font-weight-bold" onclick="printNanoSheetViewer()" id="btnPrintNanoSheet">
+            <i class="fa-solid fa-print mr-1"></i>인쇄
+          </button>
+          <button type="button" class="btn btn-sm btn-beige-secondary px-3" data-dismiss="modal">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 알림 토스트 (Non-blocking) -->
 <div id="masterToast" style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;" class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
   <div class="d-flex align-items-center">
@@ -4441,6 +4609,8 @@
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- PDF.js library for secure worksheet viewer (비동기 지연 로딩) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
 
 
