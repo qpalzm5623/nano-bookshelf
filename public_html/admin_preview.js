@@ -8686,9 +8686,14 @@ function createAcademyBookItem(b) {
   var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
   var seriesVal = isSingleBook ? '단권' : b.series.trim();
 
-  // 나노시트 보유 여부 명확한 판정: b.sheet === false인 경우 나노시트 없음
-  var hasSheet = (b.sheet !== false) && (b.sheet === true || b.hasSheet === true || !!b.worksheet || !!b.pdfUrl || b.isMyCreation === true);
-  if (b.sheet === false) {
+  // 나노시트 보유 여부 명확한 판정:
+  // 1. b.sheet === false 또는 b.hasSheet === false로 명시된 경우만 비활성화
+  // 2. 자체 등록 도서(isMyCreation === true)인데 PDF 파일이나 데이터가 전혀 없는 경우 비활성화
+  // 3. 마이그레이션된 정규 도서(5,842종) 및 일반 도서는 나노시트 정상 제공
+  var hasSheet = true;
+  if (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N') {
+    hasSheet = false;
+  } else if (b.isMyCreation === true && !b.pdfBlob && !b.pdfUrl && !b.pdfDataUrl && !b.worksheet && !b.materialName) {
     hasSheet = false;
   }
 
@@ -9198,7 +9203,7 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
     var coverImg = normalizeBookCoverUrl(b.cover);
     
     // 나노시트 단독 버튼 (시트 없는 도서는 비활성화 상태로 명시)
-    var pdfBtn = (b.hasSheet && b.materialName)
+    var pdfBtn = (b.hasSheet !== false)
       ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
            <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
          </button>`
