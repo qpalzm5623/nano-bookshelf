@@ -200,6 +200,10 @@ function switchTab(tab) {
   if (targetView) targetView.style.display = 'block';
   if (targetNav) targetNav.classList.add('active');
 
+  if (tab === 'members') {
+    if (typeof filterStudents === 'function') filterStudents();
+    else if (typeof renderStudentTable === 'function') renderStudentTable();
+  }
   if (tab === 'contents') {
     if (typeof syncAcademyBooksState === 'function') syncAcademyBooksState();
     if (typeof filterAcademyBooks === 'function') filterAcademyBooks(true);
@@ -3629,8 +3633,42 @@ function renderLearningPagination(totalCount, totalPages) {
   el.innerHTML = html;
 }
 
+// 학습 관리용 도서 표지 및 메타데이터 실시간 매칭 헬퍼
+function getLearningLogBookMeta(log) {
+  var targetBook = null;
+  var logTitleNorm = (log && log.bookTitle) ? String(log.bookTitle).replace(/\s+/g, '').toLowerCase() : '';
+  
+  if (logTitleNorm) {
+    if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
+      targetBook = academyBookList.find(function(b) {
+        return b && b.title && String(b.title).replace(/\s+/g, '').toLowerCase() === logTitleNorm;
+      });
+    }
+    if (!targetBook && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+      targetBook = window.MIGRATED_BOOKS.find(function(b) {
+        return b && b.title && String(b.title).replace(/\s+/g, '').toLowerCase() === logTitleNorm;
+      });
+    }
+  }
+
+  var rawCover = (log && log.cover) || (targetBook && targetBook.cover);
+  var coverUrl = (typeof normalizeBookCoverUrl === 'function') 
+    ? normalizeBookCoverUrl(rawCover)
+    : (rawCover || (typeof DEFAULT_BOOK_COVER !== 'undefined' ? DEFAULT_BOOK_COVER : ''));
+
+  var pubText = (log && log.bookPub) 
+    ? log.bookPub 
+    : ((targetBook && targetBook.publisher) ? targetBook.publisher : '나노 교육출판');
+
+  return {
+    cover: coverUrl,
+    publisher: pubText,
+    book: targetBook
+  };
+}
+
 // 학습 관리 테이블 렌더링
-// 컬럼 순서: 1.번호, 2.완독 도서명, 3.원생명, 4.북퀴즈 결과, 5.나노 시트, 6.첨삭, 7.관리
+// 컬럼 순서: 1.번호, 2.완료일, 3.완독 도서명, 4.원생명, 5.북퀴즈 결과, 6.나노 시트, 7.첨삭, 8.관리
 function renderLearningTable() {
   initLearningDateFilters();
 
@@ -3692,6 +3730,9 @@ function renderLearningTable() {
     // 번호 내림차순 계산 (전체 기준 N, N-1, ... 1)
     var numDesc = total - (pageStart + pIdx);
 
+    // 도서 표지 및 출판사 메타데이터 조회
+    var bookMeta = getLearningLogBookMeta(l);
+
     // 5. 나노 시트 상태 토글 버튼
     var isSheetDone = (l.sheet === '작성 완료');
     var sheetBtnHtml = isSheetDone
@@ -3720,9 +3761,16 @@ function renderLearningTable() {
       <td class="text-center" style="font-size: 12px; color: var(--text-muted); font-weight: 600; white-space: nowrap;">
         ${l.date || '-'}
       </td>
-      <td>
-        <div class="font-weight-bold text-dark" style="font-size: 13.5px;">${l.bookTitle}</div>
-        <small class="text-muted">${l.bookPub || '나노 교육출판'}</small>
+      <td style="padding: 9px 12px;">
+        <div class="d-flex align-items-center" style="gap: 12px;">
+          <div style="flex-shrink: 0; width: 42px; height: 58px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); background: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center;">
+            <img src="${bookMeta.cover}" alt="" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src=(typeof DEFAULT_BOOK_COVER !== 'undefined' ? DEFAULT_BOOK_COVER : '');">
+          </div>
+          <div style="min-width: 0;">
+            <div class="font-weight-bold text-dark text-truncate" style="font-size: 13.5px;" title="${l.bookTitle}">${l.bookTitle}</div>
+            <small class="text-muted d-block text-truncate" style="font-size: 11.5px;">${bookMeta.publisher}</small>
+          </div>
+        </div>
       </td>
       <td class="text-center">
         <strong style="color: var(--text-main); font-size: 13px;">${l.studentName}</strong>
@@ -4372,6 +4420,64 @@ var assignStudentCurrentPage = 1;
 var ASSIGN_STUDENT_PAGE_SIZE = 20;
 var currentFilteredStudentAssignments = null;
 
+// 개별 원생 배정 도서의 실시간 북퀴즈 인증 상태 및 완독 수 동기화
+function syncStudentAssignmentsWithLearningLogs(list) {
+  var targetList = list || studentAssignmentList;
+  if (!Array.isArray(targetList) || targetList.length === 0) return;
+  var allLogs = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
+  if (!allLogs || allLogs.length === 0) return;
+
+  targetList.forEach(function(item) {
+    if (!item || !item.books || !Array.isArray(item.books)) return;
+
+    // 해당 원생의 학습 로그 필터링
+    var sLogs = allLogs.filter(function(l) {
+      var matchId = (l.studentId && (l.studentId === item.studentId || l.studentId === item.id || l.studentId === item.username));
+      var matchName = (l.studentName && l.studentName === item.studentName);
+      return matchId || matchName;
+    });
+
+    item.books.forEach(function(b) {
+      if (!b) return;
+      var cleanBTitle = b.title ? String(b.title).replace(/\s+/g, '').toLowerCase() : '';
+      
+      var matched = sLogs.find(function(l) {
+        var cleanLTitle = l.bookTitle ? String(l.bookTitle).replace(/\s+/g, '').toLowerCase() : '';
+        var matchTitle = cleanBTitle && cleanLTitle && (cleanBTitle === cleanLTitle || cleanBTitle.includes(cleanLTitle) || cleanLTitle.includes(cleanBTitle));
+        var matchBookId = (b.id && l.bookId && String(b.id) === String(l.bookId));
+        var passed = (Number(l.score) >= 60 || l.pass === true);
+        return (matchTitle || matchBookId) && passed;
+      });
+
+      if (matched) {
+        b.certified = true;
+        var rawDate = matched.date || matched.submittedAt || '';
+        if (rawDate) {
+          var dMatch = rawDate.match(/(\d{4})[^\d]?(\d{1,2})[^\d]?(\d{1,2})/);
+          if (dMatch) {
+            b.certDate = parseInt(dMatch[2], 10) + '월 ' + parseInt(dMatch[3], 10) + '일';
+          } else {
+            b.certDate = rawDate.slice(0, 10);
+          }
+        } else {
+          b.certDate = '인증 완료';
+        }
+      }
+    });
+
+    // 완독 권수 및 상태 재계산
+    var completedCount = item.books.filter(isAssignmentBookCertified).length;
+    item.completedBooks = completedCount;
+    if (item.books.length > 0 && completedCount >= item.books.length) {
+      item.status = `완료 (${completedCount}/${item.books.length}권)`;
+    } else if (item.books.length > 0) {
+      item.status = `읽는 중 (${completedCount}/${item.books.length}권)`;
+    } else {
+      item.status = '배정 없음';
+    }
+  });
+}
+
 function renderStudentAssignmentTable(list) {
   var tbody = document.getElementById('studentAssignmentTableBody');
   if (!tbody) return;
@@ -4392,17 +4498,27 @@ function renderStudentAssignmentTable(list) {
     });
   }
 
+  // 학습 로그와 실시간 연동 (퀴즈 응시 완료 도서 인증일 및 완독 권수 동기화)
+  syncStudentAssignmentsWithLearningLogs(baseList);
+
   // 상단 통계 갱신
   var countEl = document.getElementById('assignStudentCount');
   if (countEl) countEl.innerText = baseList.length;
 
-  // 배정 도서 총 권수 계산
+  // 배정 도서 총 권수 및 완독률 실시간 계산
   var totalBooksSum = 0;
+  var totalCompletedSum = 0;
   baseList.forEach(function(s) {
     totalBooksSum += (s.books ? s.books.length : 0);
+    totalCompletedSum += (s.completedBooks || 0);
   });
   var totalBookEl = document.getElementById('assignTotalBookCount');
   if (totalBookEl) totalBookEl.innerText = totalBooksSum;
+
+  var rateEl = document.getElementById('assignCompletionRate');
+  if (rateEl) {
+    rateEl.innerText = totalBooksSum > 0 ? ((totalCompletedSum / totalBooksSum) * 100).toFixed(1) : '0.0';
+  }
 
   var dataList = currentFilteredStudentAssignments !== null ? currentFilteredStudentAssignments : baseList;
   if (isT && assignedClassNames && currentFilteredStudentAssignments !== null) {
@@ -4473,12 +4589,13 @@ function renderStudentAssignmentTable(list) {
     tr.innerHTML = `
       <td class="text-center"><small class="text-muted font-weight-bold">${globalIdx}</small></td>
       <td>
-        <div>
+        <div class="d-flex align-items-center flex-wrap" style="gap: 5px;">
           <strong style="font-size: 14px; color: var(--text-main);">${item.studentName}</strong>
-          <span class="text-muted font-weight-bold ml-1" style="font-size: 12.5px;">(${item.studentId})</span>
-          ${item.id === lastAddedStudentAssignId ? '<span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : ''}
+          <span class="text-muted font-weight-bold" style="font-size: 12.5px;">(${item.studentId})</span>
+          <span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size: 11px; padding: 2px 7px; border-radius: 6px;">${item.classGroup || '반미정'}</span>
+          ${item.id === lastAddedStudentAssignId ? '<span class="badge badge-warning text-dark" style="font-size:10px;">신규</span>' : ''}
         </div>
-        <small class="text-muted d-block mt-0.5">${item.school || '나노초'} ${item.grade || ''} &middot; <span class="badge-soft badge-soft-neutral">${item.classGroup || '반미정'}</span></small>
+        <small class="text-muted d-block mt-0.5" style="font-size: 11.5px;">${item.school || '나노초'} ${item.grade || ''}</small>
       </td>
       <td>
         <div class="d-flex flex-wrap align-items-center">
@@ -6788,8 +6905,8 @@ function renderAdminRankingPoster(container) {
   var top2 = list[1] || emptyEntry;
   var top3 = list[2] || emptyEntry;
 
-  // 4~8위 리더 목록
-  var leaders = list.slice(3, 8);
+  // 명예의 독서 리더 목록 (화면과 동일하게 1위부터 순서대로 A4 1장에 맞춰 최대 7명 등재)
+  var leaders = list.slice(0, 7);
   var leadersHtml = '';
   leaders.forEach(function(r) {
     leadersHtml += `
@@ -6888,10 +7005,10 @@ function renderAdminRankingPoster(container) {
           </div>
         </div>
 
-        <!-- 4~8위 우수 독서 리더 명단 -->
+        <!-- 명예의 독서 리더 명단 -->
         <div style="font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <span><i class="fa-solid fa-star text-warning mr-1"></i>우수 독서 리더 (HONOR LEADERS)</span>
-          <span style="font-size: 10.5px; color: #94a3b8;">원내 상위 우수 원생 선발</span>
+          <span><i class="fa-solid fa-star text-warning mr-1"></i>명예의 독서 리더 순위 목록 (HONOR LEADERS)</span>
+          <span style="font-size: 10.5px; color: #94a3b8;">총 ${list.length}명 등재 (${classLabel})</span>
         </div>
         <table class="poster-leaders-table">
           <thead>
@@ -8551,6 +8668,9 @@ function createAcademyBookItem(b) {
       b.series = canon.series || b.series;
       b.cover = canon.cover || b.cover;
       b.quizzes = canon.quizzes || b.quizzes;
+      if (canon.sheet !== undefined) b.sheet = canon.sheet;
+      if (canon.worksheet !== undefined) b.worksheet = canon.worksheet;
+      if (canon.pdfUrl !== undefined) b.pdfUrl = canon.pdfUrl;
     }
   }
 
@@ -8558,6 +8678,12 @@ function createAcademyBookItem(b) {
   var hasValidSeries = !!(b.series && b.series.trim() !== '' && b.series.trim() !== '단권');
   var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
   var seriesVal = isSingleBook ? '단권' : b.series.trim();
+
+  // 나노시트 보유 여부 명확한 판정: b.sheet === false인 경우 나노시트 없음
+  var hasSheet = (b.sheet !== false) && (b.sheet === true || b.hasSheet === true || !!b.worksheet || !!b.pdfUrl || b.isMyCreation === true);
+  if (b.sheet === false) {
+    hasSheet = false;
+  }
 
   return {
     id: bookId,
@@ -8584,9 +8710,10 @@ function createAcademyBookItem(b) {
     creatorType: b.creatorType || 'HQ',
     academyName: b.academyName || '본사 직속(HQ)',
     cover: normalizeBookCoverUrl(b.cover),
-    materialName: title + '_나노시트.pdf',
-    materialSize: '1.45 MB',
-    materialType: '나노 시트 (PDF)',
+    hasSheet: hasSheet,
+    materialName: hasSheet ? (b.materialName || (title + '_나노시트.pdf')) : null,
+    materialSize: hasSheet ? (b.materialSize || '1.45 MB') : null,
+    materialType: hasSheet ? '나노 시트 (PDF)' : null,
     quizStatus: (b.quizzes || 5) + '문항 완비',
     readCount: (b.quizCompletions || 0) + '회',
     answerGuide: '【나노 시트 핵심 정답 및 생각담기 가이드】\n\n' + (b.thinkInsert ? ('▶ 생각담기: ' + b.thinkInsert) : '정규 독서논술 답안'),
@@ -9063,13 +9190,13 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
 
     var coverImg = normalizeBookCoverUrl(b.cover);
     
-    // 나노시트 단독 버튼
-    var pdfBtn = b.materialName
+    // 나노시트 단독 버튼 (시트 없는 도서는 비활성화 상태로 명시)
+    var pdfBtn = (b.hasSheet && b.materialName)
       ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
-           <i class="fa-solid fa-file-pdf" style="font-size: 11px;"></i>나노시트
+           <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
          </button>`
-      : `<button type="button" class="btn-sheet-action btn-sheet-empty w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 자료 등록" style="padding: 3px 8px; font-size: 11px;">
-           <i class="fa-solid fa-arrow-up-from-bracket" style="font-size: 10px;"></i>시트등록
+      : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF)가 없는 도서입니다" style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
+           <i class="fa-regular fa-file-circle-xmark mr-1" style="font-size: 10px;"></i>시트 없음
          </button>`;
 
     // 등록처 뱃지 및 내가 올린 도서 여부 판정
@@ -9416,18 +9543,19 @@ function extractBookPdfCandidates(book) {
     }
   }
 
-  // 대표 기본 실제 서버 PDF (최종 폴백으로 추가하여 항상 유효한 실제 PDF 캔버스 렌더링 보장)
-  list.push('upload/book/9788952213778.pdf');
-  list.push('/upload/book/9788952213778.pdf');
-
+  // 타 도서 대표 PDF(거상 김만덕 등)를 엉뚱하게 fallback으로 주입하지 않고 도서 고유 경로만 유지
   return list.filter(function(item, idx) { return list.indexOf(item) === idx; });
 }
 
-// 후보 PDF 목록을 순차적으로 시도하여 첫 번째로 로드 가능한 실제 PDF를 렌더링하고, 모두 실패하면 도서 맞춤형 동적 나노시트 렌더링
+// 후보 PDF 목록을 순차적으로 시도하여 첫 번째로 로드 가능한 실제 PDF를 렌더링하고, 실패 시 타 도서 PDF로 오염시키지 않음
 function tryLoadCandidatePdfs(candidates, index, book) {
   if (!candidates || index >= candidates.length) {
-    // 실제 전용 PDF 파일이 없는 경우: 해당 도서 전용 맞춤 나노시트 렌더링
-    renderCustomNanoSheetHtml(book);
+    var loadingInd = document.getElementById('pdfLoadingIndicator');
+    if (loadingInd) loadingInd.style.display = 'none';
+    if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+      $('#contentPdfPreviewModal').modal('hide');
+    }
+    showAcademyToast(`[${(book && book.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
     return;
   }
 
@@ -9858,6 +9986,12 @@ function openContentPdfModal(bookId) {
   var b = academyBookList.find(function(item) { return item.id === bookId; });
   activeViewingBook = b || null;
 
+  // 나노시트가 없는 도서의 경우 모달을 열지 않고 정중히 안내
+  if (b && b.hasSheet === false) {
+    showAcademyToast(`[${b.title}] 해당 도서는 등록된 나노시트(PDF)가 없습니다.`);
+    return;
+  }
+
   var title = b ? b.title : '나노 도서';
   var fileName = b && b.materialName ? b.materialName : `${title}_나노시트.pdf`;
 
@@ -9934,7 +10068,11 @@ function openContentPdfModal(bookId) {
         if (candidates.length > 0) {
           tryLoadCandidatePdfs(candidates, 0, b);
         } else {
-          renderCustomNanoSheetHtml(b);
+          if (loadingInd) loadingInd.style.display = 'none';
+          if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+            $('#contentPdfPreviewModal').modal('hide');
+          }
+          showAcademyToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
         }
       }
     })
@@ -9944,7 +10082,11 @@ function openContentPdfModal(bookId) {
       if (candidates.length > 0) {
         tryLoadCandidatePdfs(candidates, 0, b);
       } else {
-        renderCustomNanoSheetHtml(b);
+        if (loadingInd) loadingInd.style.display = 'none';
+        if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+          $('#contentPdfPreviewModal').modal('hide');
+        }
+        showAcademyToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
       }
     });
 }

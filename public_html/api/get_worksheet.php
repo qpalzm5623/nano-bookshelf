@@ -136,35 +136,8 @@ if (!$matchedFile && $bookId && file_exists($uploadDir . $bookId . '.pdf')) {
     $sourceType = 'fs_book_id';
 }
 
-// 3. 만약 위 매칭이 안 된 도서일 경우: 실제 서버에 저장된 유효한 대표 나노시트 PDF 제공 (더미 HTML 대신 실제 PDF 파일 화면 렌더링 보장)
+// 3. 매칭되는 고유 PDF가 없는 도서일 경우 fallback으로 타 도서 PDF를 제공하지 않음
 $isFallback = false;
-if (!$matchedFile) {
-    // 실제 서버에 존재하는 대표 도서 PDF 목록
-    $representativePdfs = [
-        '9788952213778.pdf',
-        '9788949110851.pdf',
-        '9791185871639.pdf',
-        '9788901044873.pdf',
-        '9788900109726.pdf'
-    ];
-    foreach ($representativePdfs as $rp) {
-        if (file_exists($uploadDir . $rp)) {
-            $matchedFile = $rp;
-            $sourceType = 'representative_worksheet';
-            $isFallback = true;
-            break;
-        }
-    }
-    // 디렉토리 내 첫 번째 유효 PDF 검색
-    if (!$matchedFile && is_dir($uploadDir)) {
-        $files = glob($uploadDir . '*.pdf');
-        if (!empty($files)) {
-            $matchedFile = basename($files[0]);
-            $sourceType = 'fs_first_available';
-            $isFallback = true;
-        }
-    }
-}
 
 if ($matchedFile && file_exists($uploadDir . $matchedFile)) {
     $fullPath = $uploadDir . $matchedFile;
