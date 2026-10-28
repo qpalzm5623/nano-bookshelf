@@ -4501,25 +4501,25 @@
             <div class="col-md-4">
               <div class="stat-card">
                 <div class="text-muted" style="font-size: 13px;">이번달 포트폴리오 생성 건수</div>
-                <div class="stat-num"><span id="pfMonthIssuedCount">12</span><span
+                <div class="stat-num"><span id="pfMonthIssuedCount">0</span><span
                     style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
-                <small class="text-primary font-weight-600">이번 달 신규 생성 및 발급 리포트</small>
+                <small class="text-primary font-weight-600" id="pfMonthIssuedSub">이번 달 신규 생성 및 발급 리포트</small>
               </div>
             </div>
             <div class="col-md-4">
               <div class="stat-card">
                 <div class="text-muted" style="font-size: 13px;">누적 발급 포트폴리오 건수</div>
-                <div class="stat-num"><span id="pfTotalIssuedCount">38</span><span
+                <div class="stat-num"><span id="pfTotalIssuedCount">0</span><span
                     style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
-                <small class="text-success font-weight-600">원내 누적 포트폴리오 통합 관리 중</small>
+                <small class="text-success font-weight-600" id="pfTotalIssuedSub">원내 누적 포트폴리오 통합 관리 중</small>
               </div>
             </div>
             <div class="col-md-4">
               <div class="stat-card">
                 <div class="text-muted" style="font-size: 13px;">학부모 알림톡 발송률</div>
-                <div class="stat-num"><span>94.7</span><span
+                <div class="stat-num"><span id="pfKakaoSentRate">0</span><span
                     style="font-size: 16px; font-weight: normal; margin-left: 2px;">%</span></div>
-                <small class="text-success font-weight-600">36건 발송 완료 (열람률 91%)</small>
+                <small class="text-success font-weight-600" id="pfKakaoSentSub">0건 발송 완료</small>
               </div>
             </div>
           </div>
@@ -5967,18 +5967,21 @@
               <!-- JS 동적 렌더링 -->
             </div>
 
-            <!-- 선택된 학급 미리보기 및 안내 바 -->
+            <!-- 선택된 학급 미리보기 및 안내 바 (학급 선택 전 안내 문구 및 비활성화, 선택 시 활성화) -->
             <div id="batchClassSelectedBanner" class="p-3 mt-3 rounded d-flex justify-content-between align-items-center flex-wrap gap-2"
-              style="background: #ffffff; border: 1.5px solid #2b7a3e; box-shadow: 0 2px 8px rgba(43, 122, 62, 0.08); display: none;">
-              <div class="d-flex align-items-center">
-                <i class="fa-solid fa-circle-check text-success mr-2" style="font-size: 18px;"></i>
+              style="background: #faf8f5; border: 1.5px solid #d4c4b0; border-radius: 12px; transition: all 0.2s;">
+              <div class="d-flex align-items-center" id="batchClassBannerInfo">
+                <i class="fa-solid fa-circle-info text-warning mr-2.5" id="batchClassBannerIcon" style="font-size: 20px;"></i>
                 <div>
-                  <strong style="color: var(--text-main); font-size: 14px;" id="batchClassSelectedTitle">지혜반</strong>
-                  <span class="text-muted ml-2" style="font-size: 12px;" id="batchClassSelectedStudentCount">대상 원생: 8명</span>
-                  <div class="text-muted mt-0.5" style="font-size: 11.5px;" id="batchClassSelectedNames">소속 원생: 강태양, 김소율, 박지민 ...</div>
+                  <div class="d-flex align-items-center">
+                    <strong style="color: var(--text-main); font-size: 14px;" id="batchClassSelectedTitle">학급을 선택해 주세요.</strong>
+                    <span class="text-muted ml-2" style="font-size: 12px;" id="batchClassSelectedStudentCount"></span>
+                  </div>
+                  <div class="text-muted mt-0.5" style="font-size: 11.5px;" id="batchClassSelectedNames">상단 목록에서 도서를 일괄 배정할 학급을 클릭하여 선택해 주세요.</div>
                 </div>
               </div>
-              <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold px-3" onclick="goToBatchClassDepth2()">
+              <button type="button" class="btn btn-sm font-weight-bold px-3" id="batchClassStep2Btn" onclick="goToBatchClassDepth2()" disabled
+                style="background: #e8e2d8; color: #9c9285; border: 1px solid #d8d0c4; cursor: not-allowed; opacity: 0.7; border-radius: 8px;">
                 배정 도서 선택 단계로 이동 <i class="fa-solid fa-arrow-right ml-1"></i>
               </button>
             </div>
@@ -5989,10 +5992,7 @@
               <i class="fa-solid fa-shield-halved text-success mr-1"></i>학급 전체 학생에게 안전하게 배정되며, 기존 개인 배정 도서는 안전하게 보존됩니다.
             </small>
             <div>
-              <button type="button" class="btn btn-sm btn-outline-secondary px-3 font-weight-bold mr-2" data-dismiss="modal">취소</button>
-              <button type="button" class="btn btn-sm btn-beige-primary px-4 font-weight-bold" id="btnGoToDepth2" onclick="goToBatchClassDepth2()" disabled>
-                다음: 배정 도서 선택 <i class="fa-solid fa-chevron-right ml-1"></i>
-              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 font-weight-bold" data-dismiss="modal">취소</button>
             </div>
           </div>
         </div>
@@ -6063,10 +6063,16 @@
                       <select class="form-control form-control-sm" id="batchBookFilterGrade"
                         onchange="filterBatchBookCatalog()" style="width: 120px; font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 학년</option>
-                        <option value="초등 1~2학년">초등 1~2학년</option>
-                        <option value="초등 3~4학년">초등 3~4학년</option>
-                        <option value="초등 5~6학년">초등 5~6학년</option>
-                        <option value="중등 1~3학년">중등 1~3학년</option>
+                        <option value="미취학">미취학</option>
+                        <option value="초등 1학년">초등 1학년</option>
+                        <option value="초등 2학년">초등 2학년</option>
+                        <option value="초등 3학년">초등 3학년</option>
+                        <option value="초등 4학년">초등 4학년</option>
+                        <option value="초등 5학년">초등 5학년</option>
+                        <option value="초등 6학년">초등 6학년</option>
+                        <option value="중학교 1학년">중학교 1학년</option>
+                        <option value="중학교 2학년">중학교 2학년</option>
+                        <option value="중학교 3학년">중학교 3학년</option>
                       </select>
                       <select class="form-control form-control-sm" id="batchBookFilterOrigin"
                         onchange="filterBatchBookCatalog()" style="width: 105px; font-size: 11.5px; border-radius: 6px;">

@@ -4814,6 +4814,13 @@ function renderBatchClassCardList() {
     ];
   }
 
+  // 개설 학급 목록: 학급명 오름차순(가나다 / 알파벳) 정렬
+  classList = classList.slice().sort(function(a, b) {
+    var nameA = String((a && a.name) || '').trim();
+    var nameB = String((b && b.name) || '').trim();
+    return nameA.localeCompare(nameB, 'ko', { numeric: true, sensitivity: 'base' });
+  });
+
   classList.forEach(function(cls) {
     var classStudents = studentDataList.filter(function(s) { return s.classGroup === cls.name; });
     var studentCount = classStudents.length;
@@ -4862,25 +4869,71 @@ function selectBatchClass(className) {
 
 function updateBatchClassSelectionUI() {
   var banner = document.getElementById('batchClassSelectedBanner');
+  var bannerIcon = document.getElementById('batchClassBannerIcon');
+  var titleEl = document.getElementById('batchClassSelectedTitle');
+  var countEl = document.getElementById('batchClassSelectedStudentCount');
+  var namesEl = document.getElementById('batchClassSelectedNames');
+  var step2Btn = document.getElementById('batchClassStep2Btn');
   var nextBtn = document.getElementById('btnGoToDepth2');
 
   if (batchSelectedClassName) {
+    var classStudents = (typeof studentDataList !== 'undefined' && Array.isArray(studentDataList))
+      ? studentDataList.filter(function(s) { return s.classGroup === batchSelectedClassName; })
+      : [];
+    var previewNames = classStudents.slice(0, 8).map(function(s) { return s.name; }).join(', ');
+    if (classStudents.length > 8) previewNames += ' 외 ' + (classStudents.length - 8) + '명';
+
     if (banner) {
       banner.style.display = 'flex';
-      var classStudents = studentDataList.filter(function(s) { return s.classGroup === batchSelectedClassName; });
-      var previewNames = classStudents.slice(0, 8).map(function(s) { return s.name; }).join(', ');
-      if (classStudents.length > 8) previewNames += ` 외 ${classStudents.length - 8}명`;
-
-      var titleEl = document.getElementById('batchClassSelectedTitle');
-      if (titleEl) titleEl.innerText = batchSelectedClassName;
-      var countEl = document.getElementById('batchClassSelectedStudentCount');
-      if (countEl) countEl.innerText = `대상 원생: 총 ${classStudents.length}명`;
-      var namesEl = document.getElementById('batchClassSelectedNames');
-      if (namesEl) namesEl.innerText = `소속 원생: ${previewNames || '원생 없음'}`;
+      banner.style.background = '#f0fdf4';
+      banner.style.border = '1.5px solid #2b7a3e';
+      banner.style.boxShadow = '0 2px 8px rgba(43, 122, 62, 0.12)';
+    }
+    if (bannerIcon) {
+      bannerIcon.className = 'fa-solid fa-circle-check text-success mr-2.5';
+    }
+    if (titleEl) {
+      titleEl.innerText = batchSelectedClassName;
+      titleEl.style.color = '#1b4d27';
+    }
+    if (countEl) {
+      countEl.innerText = '대상 원생: 총 ' + classStudents.length + '명';
+    }
+    if (namesEl) {
+      namesEl.innerText = '소속 원생: ' + (previewNames || '원생 없음');
+    }
+    if (step2Btn) {
+      step2Btn.disabled = false;
+      step2Btn.className = 'btn btn-sm btn-beige-primary font-weight-bold px-3';
+      step2Btn.style.cssText = 'background: #2b7a3e; color: #fff; border: 1px solid #236533; cursor: pointer; opacity: 1; border-radius: 8px; box-shadow: 0 2px 6px rgba(43,122,62,0.25);';
     }
     if (nextBtn) nextBtn.disabled = false;
   } else {
-    if (banner) banner.style.display = 'none';
+    // 학급 선택 전: 알림 문구 표시 및 버튼 비활성화
+    if (banner) {
+      banner.style.display = 'flex';
+      banner.style.background = '#faf8f5';
+      banner.style.border = '1.5px solid #d4c4b0';
+      banner.style.boxShadow = 'none';
+    }
+    if (bannerIcon) {
+      bannerIcon.className = 'fa-solid fa-circle-info text-warning mr-2.5';
+    }
+    if (titleEl) {
+      titleEl.innerText = '학급을 선택해 주세요.';
+      titleEl.style.color = 'var(--text-main)';
+    }
+    if (countEl) {
+      countEl.innerText = '';
+    }
+    if (namesEl) {
+      namesEl.innerText = '상단 목록에서 도서를 일괄 배정할 학급을 클릭하여 선택해 주세요.';
+    }
+    if (step2Btn) {
+      step2Btn.disabled = true;
+      step2Btn.className = 'btn btn-sm font-weight-bold px-3';
+      step2Btn.style.cssText = 'background: #e8e2d8; color: #9c9285; border: 1px solid #d8d0c4; cursor: not-allowed; opacity: 0.7; border-radius: 8px;';
+    }
     if (nextBtn) nextBtn.disabled = true;
   }
 }
@@ -5009,10 +5062,7 @@ function renderBatchBookCatalog() {
 
     var matchGrade = true;
     if (gradeVal !== 'ALL') {
-      if (gradeVal === '초등 1~2학년') matchGrade = b.grade && (b.grade.includes('초1') || b.grade.includes('초2') || b.grade.includes('저학년'));
-      else if (gradeVal === '초등 3~4학년') matchGrade = b.grade && (b.grade.includes('초3') || b.grade.includes('초4') || b.grade.includes('중학년'));
-      else if (gradeVal === '초등 5~6학년') matchGrade = b.grade && (b.grade.includes('초5') || b.grade.includes('초6') || b.grade.includes('고학년'));
-      else if (gradeVal === '중등 1~3학년') matchGrade = b.grade && (b.grade.includes('중') || b.grade.includes('기본'));
+      matchGrade = bookGradeMatches(b.grade, gradeVal);
     }
 
     var matchOrigin = true;
@@ -7319,22 +7369,64 @@ function renderPortfolioTable(list) {
 
   var dataList = list || portfolioList;
 
-  // 상단 통계 카드 3종
-  var thisMonthCountEl = document.getElementById('pfThisMonthCount');
+  // 상단 통계 카드 3종 (실제 데이터 연동: 이번달 생성 건수, 누적 발급 건수, 알림톡 발송률)
+  var thisMonthCountEl = document.getElementById('pfMonthIssuedCount') || document.getElementById('pfThisMonthCount');
+  var thisMonthSubEl = document.getElementById('pfMonthIssuedSub');
   var totalIssuedCountEl = document.getElementById('pfTotalIssuedCount');
+  var totalIssuedSubEl = document.getElementById('pfTotalIssuedSub');
   var kakaoRateEl = document.getElementById('pfKakaoSentRate');
+  var kakaoSubEl = document.getElementById('pfKakaoSentSub');
 
-  if (totalIssuedCountEl) totalIssuedCountEl.innerText = portfolioList.length;
+  var listToCalc = Array.isArray(portfolioList) ? portfolioList : [];
+  var totalCount = listToCalc.length;
 
-  var currentYearMonth = new Date().toISOString().substr(0, 7).replace('-', '.');
-  var thisMonthCount = portfolioList.filter(function(p) {
-    return p.issueDate && p.issueDate.indexOf(currentYearMonth) !== -1;
+  // 1. 이번달 포트폴리오 생성 건수 계산
+  var now = new Date();
+  var curYear = now.getFullYear();
+  var curMonth = now.getMonth() + 1;
+  var ymDot = curYear + '.' + (curMonth < 10 ? '0' + curMonth : curMonth);
+  var ymDash = curYear + '-' + (curMonth < 10 ? '0' + curMonth : curMonth);
+
+  var thisMonthCount = listToCalc.filter(function(p) {
+    var d = String(p.issueDate || p.createdAt || p.date || '');
+    return d.indexOf(ymDot) !== -1 || d.indexOf(ymDash) !== -1;
   }).length;
-  if (thisMonthCountEl) thisMonthCountEl.innerText = thisMonthCount || portfolioList.length;
 
-  var kakaoSentCount = portfolioList.filter(function(p) { return p.kakaoSent === true; }).length;
-  var kakaoRate = portfolioList.length > 0 ? Math.round((kakaoSentCount / portfolioList.length) * 100) : 100;
-  if (kakaoRateEl) kakaoRateEl.innerText = kakaoRate + '%';
+  if (thisMonthCountEl) thisMonthCountEl.innerText = thisMonthCount;
+  if (thisMonthSubEl) {
+    if (thisMonthCount > 0) {
+      thisMonthSubEl.innerText = curMonth + '월 신규 생성 및 발급 리포트 (' + thisMonthCount + '건)';
+    } else {
+      thisMonthSubEl.innerText = curMonth + '월 생성 내역 없음 (0건)';
+    }
+  }
+
+  // 2. 누적 발급 포트폴리오 건수
+  if (totalIssuedCountEl) totalIssuedCountEl.innerText = totalCount;
+  if (totalIssuedSubEl) {
+    if (totalCount > 0) {
+      totalIssuedSubEl.innerText = '원내 누적 포트폴리오 ' + totalCount + '건 통합 관리 중';
+    } else {
+      totalIssuedSubEl.innerText = '발급된 누적 포트폴리오 없음 (0건)';
+    }
+  }
+
+  // 3. 학부모 알림톡 발송률 및 발송 건수
+  var kakaoSentCount = listToCalc.filter(function(p) {
+    return p.kakaoSent === true || p.status === '발송 완료';
+  }).length;
+
+  var kakaoRate = totalCount > 0 ? Math.round((kakaoSentCount / totalCount) * 100) : 0;
+  if (kakaoRateEl) kakaoRateEl.innerText = kakaoRate;
+  if (kakaoSubEl) {
+    if (totalCount === 0) {
+      kakaoSubEl.innerText = '0건 발송 완료 (발송 대상 없음)';
+    } else if (kakaoSentCount === totalCount) {
+      kakaoSubEl.innerText = kakaoSentCount + '건 전원 발송 완료 (100%)';
+    } else {
+      kakaoSubEl.innerText = kakaoSentCount + '건 발송 완료 (미발송 ' + (totalCount - kakaoSentCount) + '건)';
+    }
+  }
 
   if (dataList.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5 text-muted">일치하는 독서 포트폴리오가 없습니다.</td></tr>';
@@ -9101,26 +9193,48 @@ function filterAcademyBooks(keepPage) {
 // 개별 학년 목록으로 풀어 선택한 학년이 포함되는지 판별 (문자열 포함 비교로는 범위 표기를 놓침)
 // -------------------------------------------------------------
 function bookGradeMatches(bookGrade, selected) {
-  var text = String(bookGrade || '');
+  if (!selected || selected === 'ALL') return true;
+  var text = String(bookGrade || '').trim();
   if (!text) return false;
-  if (text.indexOf('미취학') !== -1 || text.indexOf('유아') !== -1) return selected === '미취학';
 
-  var m = selected.match(/^(초등|중등) (\d)학년$/);
+  // 1. 미취학 (유아, 유치, 유치부 등 포함)
+  if (selected === '미취학') {
+    return /미취학|유아|유치/i.test(text);
+  }
+
+  // 2. 초등 / 중등(중학교) 단일 학년 매칭
+  var m = selected.match(/^(초등|중등|중학교)\s*(\d)학년$/);
   if (!m) return text.indexOf(selected) !== -1;
-  var level = m[1];
+
+  var isTargetMiddle = (m[1] === '중등' || m[1] === '중학교');
   var num = parseInt(m[2], 10);
 
   // 해당 학교급(초등/중등) 표기가 있는 부분만 분리해 검사
   var parts = text.split(/[,\/]/);
   return parts.some(function(part) {
     var p = part.trim();
-    var isMiddle = p.indexOf('중등') !== -1 || /^중\d/.test(p);
-    var isElem = p.indexOf('초등') !== -1 || /^초\d/.test(p);
-    if (level === '중등' && !isMiddle) return false;
-    if (level === '초등' && !isElem) return false;
-    if (p.indexOf('전학년') !== -1) return level === '중등';
+    if (!p) return false;
+
+    var isMiddle = p.indexOf('중등') !== -1 || p.indexOf('중학교') !== -1 || /^중\d/.test(p) || p === '중학';
+    var isElem = p.indexOf('초등') !== -1 || /^초\d/.test(p) || p === '초등';
+
+    if (isTargetMiddle && !isMiddle) return false;
+    if (!isTargetMiddle && !isElem) return false;
+
+    // '전학년' 또는 '중학교/중등' 전체 표기인 경우
+    if (p.indexOf('전학년') !== -1 || (isTargetMiddle && (p === '중학교' || p === '중등' || p === '중학'))) {
+      return true;
+    }
+
+    // 범위 표기 (예: 1~2, 1-2, 1~3, 5~6)
     var range = p.match(/(\d)\s*[~\-]\s*(\d)/);
-    if (range) return num >= parseInt(range[1], 10) && num <= parseInt(range[2], 10);
+    if (range) {
+      var min = parseInt(range[1], 10);
+      var max = parseInt(range[2], 10);
+      return num >= min && num <= max;
+    }
+
+    // 단일 학년 표기 (예: 초1, 초등 1학년)
     var single = p.match(/(\d)/);
     return !!single && parseInt(single[1], 10) === num;
   });

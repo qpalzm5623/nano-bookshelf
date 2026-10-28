@@ -4423,40 +4423,82 @@
   </div>
 </div>
 
-<!-- 11. 권장도서 엑셀(Excel) 일괄 등록 및 삭제 모달 -->
+<!-- 11. 권장도서 엑셀(Excel) 일괄 등록 / 변경 / 삭제 모달 -->
 <div class="modal fade" id="recommendedExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content modal-content-beige">
-      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
-        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
-          <i class="fa-solid fa-file-excel mr-2 text-warning"></i>권장도서 엑셀(Excel) 일괄 등록 / 삭제
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 540px;">
+    <div class="modal-content modal-content-beige" style="border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center py-3 px-4">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px; color: #433225;">
+          <i class="fa-solid fa-file-excel mr-2 text-success"></i>권장도서 엑셀 일괄 등록 / 변경 / 삭제
         </h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #666;">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body p-4">
-        <div class="mb-3 text-right">
-          <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadRecommendedExcelTemplate()" style="border-radius: 8px; font-weight: 700; font-size: 12px;">
-            <i class="fa-solid fa-download mr-1"></i>표준 엑셀 서식 다운로드 (.csv)
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span style="font-size: 12.5px; font-weight: 600; color: #5a4b3d;">
+            <i class="fa-solid fa-circle-question mr-1 text-primary"></i>표준 서식 다운로드 후 기입하세요.
+          </span>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="downloadRecommendedExcelTemplate()" style="border-radius: 8px; font-weight: 700; font-size: 12px; padding: 5px 12px;">
+            <i class="fa-solid fa-download mr-1"></i>표준 서식 다운로드 (.csv)
           </button>
         </div>
 
         <!-- 드래그 앤 드롭 업로드 존 -->
-        <div class="p-4 rounded text-center mb-3" style="border: 2px dashed var(--border-medium); background: #faf8f5; cursor: pointer;" onclick="document.getElementById('recExcelFileInput').click()">
-          <i class="fa-solid fa-cloud-arrow-up text-warning mb-2" style="font-size: 36px;"></i>
-          <h6 class="font-weight-bold mb-1" id="recExcelFileNameText">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
-          <small class="text-muted">지원 형식: .csv (엑셀 호환 UTF-8 CSV)</small>
+        <div class="p-4 rounded text-center mb-3" style="border: 2px dashed #d4c4b0; background: #faf8f5; cursor: pointer; border-radius: 10px;" onclick="document.getElementById('recExcelFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up text-warning mb-2" style="font-size: 34px;"></i>
+          <h6 class="font-weight-bold mb-1" id="recExcelFileNameText" style="font-size: 13.5px; color: #433225;">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
+          <small class="text-muted" style="font-size: 11.5px;">지원 형식: .csv (엑셀 호환 UTF-8 CSV)</small>
           <input type="file" id="recExcelFileInput" accept=".csv,text/csv" style="display: none;" onchange="handleRecommendedExcelFileSelect(this)">
         </div>
 
-        <div class="p-3 bg-light rounded" style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
-          <div class="font-weight-bold mb-1 text-dark"><i class="fa-solid fa-circle-info mr-1 text-primary"></i>서식 작성 안내</div>
-          • <strong>1열(구분)</strong>: <code>등록</code> 또는 <code>삭제</code> 입력<br>
-          • <strong>2열(학년)</strong>: <code>미취학</code>, <code>초등 1학년</code> ~ <code>초등 6학년</code>, <code>중학교</code> 입력<br>
-          • <strong>3열(콘텐츠 넘버)</strong>: 마스터 도서 코드(예: MB-001) 입력<br>
-          • <strong>4열(도서명)</strong>: 도서명 (참고용, 비워두셔도 콘텐츠 넘버 기준으로 매칭됩니다)<br>
-          • <strong>덮어쓰기 안내</strong>: 이미 등록된 도서를 다시 '등록'으로 업로드 시 학년 정보가 덮어씌워지며, '삭제'로 업로드 시 리스트에서 자동 해제됩니다.
+        <!-- 서식 작성 안내 가이드 -->
+        <div class="p-3 rounded mb-2" style="background: #f7f4ee; border: 1px solid #ebdccb; font-size: 12px; color: #4b3e34; line-height: 1.6;">
+          <div class="font-weight-bold mb-2 d-flex align-items-center justify-content-between" style="font-size: 13px; color: #3b2f27;">
+            <span><i class="fa-solid fa-table-cells mr-1 text-primary"></i>표준 서식 기입 가이드 (A, B, C 총 3개 열)</span>
+            <span class="badge badge-secondary" style="font-size: 10.5px; font-weight: 500;">D열 불필요</span>
+          </div>
+
+          <div class="table-responsive mb-2">
+            <table class="table table-sm table-bordered bg-white text-center mb-0" style="font-size: 11.5px; border-color: #e0d5c5;">
+              <thead style="background: #eee7db; color: #433225;">
+                <tr>
+                  <th style="width: 28%; padding: 6px 4px;">A열 (구분코드)</th>
+                  <th style="width: 38%; padding: 6px 4px;">B열 (학년코드)</th>
+                  <th style="width: 34%; padding: 6px 4px;">C열 (콘텐츠넘버)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-left align-middle" style="padding: 6px;">
+                    <div class="mb-1"><span class="badge badge-primary mr-1" style="min-width: 18px;">R</span><strong>등록</strong> (추가)</div>
+                    <div class="mb-1"><span class="badge badge-warning text-dark mr-1" style="min-width: 18px;">U</span><strong>변경</strong> (수정)</div>
+                    <div><span class="badge badge-danger mr-1" style="min-width: 18px;">D</span><strong>삭제</strong> (해제)</div>
+                  </td>
+                  <td class="text-left align-middle" style="padding: 6px; font-size: 11px;">
+                    <code>0</code> : 미취학 (유아)<br>
+                    <code>1~6</code> : 초등 1학년~6학년<br>
+                    <code>7~9</code> : 중등 1학년~3학년
+                  </td>
+                  <td class="text-center align-middle" style="padding: 6px; font-size: 11px;">
+                    마스터 도서ID<br>
+                    <code style="font-size: 11.5px;">MB-001</code><br>
+                    <small class="text-muted">(정확한 코드 기입)</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="font-size: 11.5px; color: #5c4e42;">
+            <div class="mb-1">
+              <i class="fa-solid fa-check-circle text-success mr-1"></i><strong>상단 설명 행 자동 제외</strong>: 서식 2행의 <code>[설명]</code> 행은 업로드 시 <strong>자동으로 건너뛰고</strong> 실제 데이터(3행~)만 처리됩니다.
+            </div>
+            <div>
+              <i class="fa-solid fa-lightbulb text-warning mr-1"></i><strong>R(등록)</strong>은 신규 추가(기존 존재 시 학년 갱신), <strong>U(변경)</strong>은 학년 변경, <strong>D(삭제)</strong>는 권장도서 목록에서 해제됩니다.
+            </div>
+          </div>
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">

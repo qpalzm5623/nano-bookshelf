@@ -1784,6 +1784,9 @@ function renderRecommendedBooksTable() {
         if (selectedRecGrade === "미취학") {
           return bGrade === "미취학" || b.grade === "유치부" || b.grade === "유치";
         }
+        if (selectedRecGrade === "중학교" || selectedRecGrade === "중등") {
+          return bGrade === "중학교" || bGrade.includes("중등") || bGrade.includes("중학교") || bGrade.startsWith("중");
+        }
         return bGrade === selectedRecGrade || bGrade.includes(selectedRecGrade) || (b.grade && b.grade.includes(selectedRecGrade));
       });
 
@@ -2187,18 +2190,60 @@ async function deleteRecommendedBook(recId) {
 }
 
 // ------------------------------------------
-// 권장도서 엑셀(CSV) 일괄 등록 및 삭제 로직
+// 권장도서 엑셀(CSV) 일괄 등록, 변경, 삭제 로직
 // ------------------------------------------
+
+// 권장 학년 코드 정규화 함수 (0: 미취학, 1~6: 초등 1~6학년, 7~9: 중등 1~3학년)
+function normalizeRecGradeCode(raw) {
+  if (raw === undefined || raw === null) return "초등 1학년";
+  const str = String(raw).trim();
+  if (!str) return "초등 1학년";
+
+  // 단일 숫자 / 영문 코드 매핑
+  if (str === "0" || str.toLowerCase() === "a") return "미취학";
+  if (str === "1") return "초등 1학년";
+  if (str === "2") return "초등 2학년";
+  if (str === "3") return "초등 3학년";
+  if (str === "4") return "초등 4학년";
+  if (str === "5") return "초등 5학년";
+  if (str === "6") return "초등 6학년";
+  if (str === "7") return "중등 1학년";
+  if (str === "8") return "중등 2학년";
+  if (str === "9") return "중등 3학년";
+  if (str.toLowerCase() === "b" || str === "10") return "중학교";
+
+  // 한글/영문 텍스트 호환 매핑
+  if (/미취학|유아|유치/i.test(str)) return "미취학";
+  if (/^초s*1|초등s*1/i.test(str)) return "초등 1학년";
+  if (/^초s*2|초등s*2/i.test(str)) return "초등 2학년";
+  if (/^초s*3|초등s*3/i.test(str)) return "초등 3학년";
+  if (/^초s*4|초등s*4/i.test(str)) return "초등 4학년";
+  if (/^초s*5|초등s*5/i.test(str)) return "초등 5학년";
+  if (/^초s*6|초등s*6/i.test(str)) return "초등 6학년";
+  if (/중s*1|중등s*1|중학교s*1/i.test(str)) return "중등 1학년";
+  if (/중s*2|중등s*2|중학교s*2/i.test(str)) return "중등 2학년";
+  if (/중s*3|중등s*3|중학교s*3/i.test(str)) return "중등 3학년";
+  if (/중/i.test(str)) return "중학교";
+
+  return str;
+}
+
 function downloadRecommendedExcelTemplate() {
-  const headers = ["구분(등록/삭제)", "학년", "콘텐츠넘버(도서ID)", "도서명(참고용)"];
+  const headers = ["구분(R/U/D)", "학년코드(0~9)", "콘텐츠넘버(도서ID)"];
+  const guideRow = [
+    "[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)",
+    "[설명] 0:미취학, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",
+    "[설명] 콘텐츠넘버(도서ID) 기입 (예: MB-001)"
+  ];
   const sampleRows = [
-    ["등록", "초등 1학년", "MB-001", "어린 왕자"],
-    ["등록", "초등 2학년", "MB-002", "아몬드"],
-    ["등록", "미취학", "MB-003", "구름빵"],
-    ["삭제", "초등 1학년", "MB-004", "자전거 도둑"]
+    ["R", "1", "MB-001"],
+    ["U", "2", "MB-002"],
+    ["R", "0", "MB-003"],
+    ["D", "1", "MB-004"]
   ];
   const csvContent = "\uFEFF" + [
     headers.map(h => `"${h}"`).join(","),
+    guideRow.map(g => `"${g}"`).join(","),
     ...sampleRows.map(r => r.map(c => `"${c}"`).join(","))
   ].join("\r\n");
 
@@ -2206,12 +2251,12 @@ function downloadRecommendedExcelTemplate() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `나노의책장_권장도서_일괄등록삭제_양식.csv`;
+  a.download = `나노의책장_권장도서_일괄등록_양식.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showMasterToast("권장도서 일괄 등록/삭제 표준 서식이 다운로드되었습니다.");
+  showMasterToast("권장도서 일괄 등록/변경/삭제 표준 서식이 다운로드되었습니다.");
 }
 
 function openRecommendedExcelModal() {
@@ -2258,69 +2303,142 @@ async function handleRecommendedExcelUpload() {
       let updateCount = 0;
       let deleteCount = 0;
       let failCount = 0;
+      let skippedHeaderCount = 0;
 
-      dataRows.forEach(row => {
-        // CSV 파싱
-        const cols = row.split(",").map(c => c.replace(/^["']|["']$/g, '').trim());
+      for (let i = 0; i < dataRows.length; i++) {
+        const row = dataRows[i];
+        if (!row || row.startsWith("#") || row.startsWith("//")) continue;
+
+        // CSV 안전 파싱 (큰따옴표 처리)
+        let cols = [];
+        let inQuotes = false;
+        let token = "";
+        for (let c = 0; c < row.length; c++) {
+          const char = row[c];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            cols.push(token.replace(/^["']|["']$/g, '').trim());
+            token = "";
+          } else {
+            token += char;
+          }
+        }
+        cols.push(token.replace(/^["']|["']$/g, '').trim());
+
         if (cols.length < 3) {
           failCount++;
-          return;
+          continue;
         }
 
-        const modeRaw = (cols[0] || "등록").toLowerCase();
-        let gradeRaw = cols[1] || "";
-        const bookId = cols[2] || "";
-        const bookTitle = cols[3] || "";
+        const modeRaw = (cols[0] || "").trim();
+        const gradeRaw = (cols[1] || "").trim();
+        const bookId = (cols[2] || "").trim();
 
-        if (!bookId && !bookTitle) {
+        // 엑셀 상단 가이드/설명 행 또는 헤더 행 자동 제외
+        if (
+          modeRaw.includes("설명") || modeRaw.includes("[") || modeRaw.includes("구분") ||
+          gradeRaw.includes("설명") || gradeRaw.includes("[") || gradeRaw.includes("코드") ||
+          bookId.includes("설명") || bookId.includes("[") || bookId.includes("콘텐츠") || bookId.includes("도서ID")
+        ) {
+          skippedHeaderCount++;
+          continue;
+        }
+
+        // 구분 코드 (R: 등록, U: 변경, D: 삭제)
+        const modeUpper = modeRaw.toUpperCase();
+        let action = "";
+        if (modeUpper === "R" || modeUpper.includes("등록") || modeUpper.includes("ADD") || modeUpper.includes("REG")) {
+          action = "R";
+        } else if (modeUpper === "U" || modeUpper.includes("변경") || modeUpper.includes("수정") || modeUpper.includes("UPDATE") || modeUpper.includes("MOD")) {
+          action = "U";
+        } else if (modeUpper === "D" || modeUpper.includes("삭제") || modeUpper.includes("해제") || modeUpper.includes("DEL") || modeUpper.includes("REMOVE")) {
+          action = "D";
+        } else {
+          // 유효하지 않은 구분 코드 (설명 행일 가능성 포함)
+          skippedHeaderCount++;
+          continue;
+        }
+
+        if (!bookId) {
           failCount++;
-          return;
+          continue;
         }
 
-        // 학년 정규화
-        let grade = gradeRaw;
-        if (/^초\s*1|초등\s*1/i.test(gradeRaw)) grade = "초등 1학년";
-        else if (/^초\s*2|초등\s*2/i.test(gradeRaw)) grade = "초등 2학년";
-        else if (/^초\s*3|초등\s*3/i.test(gradeRaw)) grade = "초등 3학년";
-        else if (/^초\s*4|초등\s*4/i.test(gradeRaw)) grade = "초등 4학년";
-        else if (/^초\s*5|초등\s*5/i.test(gradeRaw)) grade = "초등 5학년";
-        else if (/^초\s*6|초등\s*6/i.test(gradeRaw)) grade = "초등 6학년";
-        else if (/중/i.test(gradeRaw)) grade = "중학교";
-        else if (/미취학|유아/i.test(gradeRaw)) grade = "미취학";
-        else if (!grade) grade = "초등 1학년";
+        // 학년 코드 정규화 (0: 미취학, 1~6: 초1~6, 7~9: 중1~3)
+        const grade = normalizeRecGradeCode(gradeRaw);
 
-        const isDelete = modeRaw.includes("삭제") || modeRaw.includes("del") || modeRaw.includes("remove");
+        // 마스터 도서 검색
+        const matchedBook = allMasterBooks.find(b => b.id === bookId || b.title === bookId);
 
-        if (isDelete) {
-          // 삭제 처리
+        if (action === "D") {
+          // D: 권장도서 목록에서 삭제(해제)
           const beforeLen = recList.length;
           recList = recList.filter(r => {
-            const matchId = (bookId && (r.bookId === bookId || r.id === bookId));
-            const matchTitle = (bookTitle && r.title === bookTitle);
-            if (matchId || matchTitle) {
-              if (grade && grade !== "ALL") {
-                return r.grade !== grade;
-              }
-              return false;
-            }
-            return true;
+            const matchId = (r.bookId === bookId || r.id === bookId);
+            const matchTitle = (matchedBook && r.title === matchedBook.title);
+            return !(matchId || matchTitle);
           });
+
           if (recList.length < beforeLen) {
             deleteCount += (beforeLen - recList.length);
+          } else {
+            deleteCount++;
+          }
+
+          if (matchedBook && window.NanoPortal && NanoPortal.remote) {
+            matchedBook.isRecommended = false;
+            try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
+          }
+        } else if (action === "U") {
+          // U: 기존 권장도서의 학년 변경
+          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.id === bookId || (matchedBook && r.title === matchedBook.title));
+          if (existingIdx !== -1) {
+            recList[existingIdx].grade = grade;
+            if (matchedBook) {
+              recList[existingIdx].title = matchedBook.title || recList[existingIdx].title;
+              recList[existingIdx].author = matchedBook.author || matchedBook.publisher || recList[existingIdx].author;
+              recList[existingIdx].publisher = matchedBook.publisher || recList[existingIdx].publisher;
+              recList[existingIdx].category = matchedBook.category || recList[existingIdx].category;
+              if (matchedBook.cover || matchedBook.image) recList[existingIdx].cover = matchedBook.cover || matchedBook.image;
+            }
+            updateCount++;
+          } else {
+            // 목록에 없는 경우 등록으로 안전 처리
+            const finalTitle = matchedBook ? matchedBook.title : bookId;
+            const finalAuthor = matchedBook ? (matchedBook.author || matchedBook.publisher || "작자 미상") : "작자 미상";
+            const finalPublisher = matchedBook ? (matchedBook.publisher || "출판사") : "출판사";
+            const finalCategory = matchedBook ? (matchedBook.category || "문학") : "일반";
+            const finalCover = matchedBook ? (matchedBook.cover || matchedBook.image || "") : "";
+
+            recList.unshift({
+              id: 'REC-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+              bookId: matchedBook ? matchedBook.id : bookId,
+              title: finalTitle,
+              author: finalAuthor,
+              publisher: finalPublisher,
+              category: finalCategory,
+              cover: finalCover,
+              grade: grade,
+              createdAt: new Date().toISOString().slice(0, 10)
+            });
+            updateCount++;
+          }
+
+          if (matchedBook && window.NanoPortal && NanoPortal.remote) {
+            matchedBook.isRecommended = true;
+            try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
           }
         } else {
-          // 등록 / 덮어쓰기 처리
-          const matchedBook = allMasterBooks.find(b => b.id === bookId || (bookTitle && b.title === bookTitle));
-          const finalTitle = matchedBook ? matchedBook.title : (bookTitle || bookId);
+          // R: 신규 권장도서 등록 (이미 등록된 경우 학년 갱신)
+          const finalTitle = matchedBook ? matchedBook.title : bookId;
           const finalAuthor = matchedBook ? (matchedBook.author || matchedBook.publisher || "작자 미상") : "작자 미상";
           const finalPublisher = matchedBook ? (matchedBook.publisher || "출판사") : "출판사";
           const finalCategory = matchedBook ? (matchedBook.category || "문학") : "일반";
           const finalCover = matchedBook ? (matchedBook.cover || matchedBook.image || "") : "";
 
-          // 이미 등록되어 있는지 확인
-          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.title === finalTitle);
+          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.id === bookId || (matchedBook && r.title === matchedBook.title));
           if (existingIdx !== -1) {
-            // 기존 도서 덮어쓰기
             recList[existingIdx].grade = grade;
             recList[existingIdx].title = finalTitle;
             recList[existingIdx].author = finalAuthor;
@@ -2329,7 +2447,6 @@ async function handleRecommendedExcelUpload() {
             if (finalCover) recList[existingIdx].cover = finalCover;
             updateCount++;
           } else {
-            // 신규 등록
             recList.unshift({
               id: 'REC-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
               bookId: matchedBook ? matchedBook.id : bookId,
@@ -2343,8 +2460,13 @@ async function handleRecommendedExcelUpload() {
             });
             addCount++;
           }
+
+          if (matchedBook && window.NanoPortal && NanoPortal.remote) {
+            matchedBook.isRecommended = true;
+            try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
+          }
         }
-      });
+      }
 
       saveRecommendedBooks(recList);
       renderRecommendedBooksTable();
@@ -2354,7 +2476,9 @@ async function handleRecommendedExcelUpload() {
       }
 
       curSelectedRecExcelFile = null;
-      showMasterToast(`권장도서 엑셀 일괄 처리 완료 (신규 ${addCount}건, 덮어쓰기 ${updateCount}건, 삭제 ${deleteCount}건)`);
+      let toastMsg = `권장도서 엑셀 일괄 처리 완료 (등록 ${addCount}건, 변경 ${updateCount}건, 삭제 ${deleteCount}건)`;
+      if (failCount > 0) toastMsg += `, 오류/실패 ${failCount}건`;
+      showMasterToast(toastMsg);
     } catch(err) {
       console.error(err);
       alert("엑셀 파일 파싱 중 오류가 발생했습니다: " + err.message);
