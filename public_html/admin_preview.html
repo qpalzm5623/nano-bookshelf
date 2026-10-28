@@ -9265,15 +9265,12 @@
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- SheetJS for Excel Download & Upload Parsing -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- PDF.js library for secure worksheet viewer (최신 CDN 및 로컬 fallback) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="plugin/build/pdf.js"></script>
-  <!-- Daum 우편번호 서비스 -->
-  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-  <script src="upload/banner/themes_data.js"></script>
-  <script src="migrated_real_data.js?v=20261026_stats_real"></script>
+  <!-- SheetJS for Excel Download & Upload Parsing (비동기 지연 로딩) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <!-- PDF.js library for secure worksheet viewer (비동기 지연 로딩) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <!-- Daum 우편번호 서비스 (비동기 지연 로딩) -->
+  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
   <script src="js/learning-storage.js?v=20261014_ux2"></script>
   <script src="admin_preview.js?v=20261028_clean_sheet"></script>
 

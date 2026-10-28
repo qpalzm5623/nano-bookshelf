@@ -3633,23 +3633,38 @@ function renderLearningPagination(totalCount, totalPages) {
   el.innerHTML = html;
 }
 
-// 학습 관리용 도서 표지 및 메타데이터 실시간 매칭 헬퍼
-function getLearningLogBookMeta(log) {
-  var targetBook = null;
-  var logTitleNorm = (log && log.bookTitle) ? String(log.bookTitle).replace(/\s+/g, '').toLowerCase() : '';
-  
-  if (logTitleNorm) {
-    if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
-      targetBook = academyBookList.find(function(b) {
-        return b && b.title && String(b.title).replace(/\s+/g, '').toLowerCase() === logTitleNorm;
-      });
-    }
-    if (!targetBook && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
-      targetBook = window.MIGRATED_BOOKS.find(function(b) {
-        return b && b.title && String(b.title).replace(/\s+/g, '').toLowerCase() === logTitleNorm;
-      });
+// O(1) 초고속 인덱스 맵 캐시 (도서 번호, ID, 정규화된 제목 기준)
+var _migratedBookIndexMap = null;
+function getMigratedBookFromIndex(key) {
+  if (!key) return null;
+  if (!_migratedBookIndexMap) {
+    _migratedBookIndexMap = new Map();
+    if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+      var arr = window.MIGRATED_BOOKS;
+      for (var i = 0; i < arr.length; i++) {
+        var m = arr[i];
+        if (!m) continue;
+        if (m.id) _migratedBookIndexMap.set(String(m.id), m);
+        if (m.bookNo && m.bookNo !== m.id) _migratedBookIndexMap.set(String(m.bookNo), m);
+        if (m.title) {
+          var cleanT = String(m.title).replace(/\s+/g, '').toLowerCase();
+          if (!_migratedBookIndexMap.has(cleanT)) _migratedBookIndexMap.set(cleanT, m);
+        }
+      }
     }
   }
+  var strKey = String(key);
+  var found = _migratedBookIndexMap.get(strKey);
+  if (!found) {
+    found = _migratedBookIndexMap.get(strKey.replace(/\s+/g, '').toLowerCase());
+  }
+  return found || null;
+}
+
+// 학습 관리용 도서 표지 및 메타데이터 실시간 매칭 헬퍼 (O(1) 초고속 조회)
+function getLearningLogBookMeta(log) {
+  var logTitleNorm = (log && log.bookTitle) ? String(log.bookTitle).replace(/\s+/g, '').toLowerCase() : '';
+  var targetBook = getMigratedBookFromIndex(logTitleNorm);
 
   var rawCover = (log && log.cover) || (targetBook && targetBook.cover);
   var coverUrl = (typeof normalizeBookCoverUrl === 'function') 
@@ -3949,18 +3964,9 @@ function openLearningDetailModal(id) {
     modalKakaoContainer.innerHTML = getKakaoReportBtnHtml(id, true);
   }
 
-  // 1. 도서 메타데이터 및 표지 연동
-  var targetBook = null;
-  if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
-    targetBook = academyBookList.find(function(b) {
-      return b.title === log.bookTitle || (b.title && log.bookTitle && b.title.replace(/\s+/g, '') === log.bookTitle.replace(/\s+/g, ''));
-    });
-  }
-  if (!targetBook && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
-    targetBook = window.MIGRATED_BOOKS.find(function(b) {
-      return b.title === log.bookTitle || (b.title && log.bookTitle && b.title.replace(/\s+/g, '') === log.bookTitle.replace(/\s+/g, ''));
-    });
-  }
+  // 1. 도서 메타데이터 및 표지 연동 (O(1) 인덱스 매칭)
+  var cleanTitleKey = (log.bookTitle || '').replace(/\s+/g, '').toLowerCase();
+  var targetBook = getMigratedBookFromIndex(cleanTitleKey);
 
   // 표지 경로 결정 (절대경로 슬래시 처리 및 폴백 대응)
   var coverUrl = (log && log.cover) || (targetBook && targetBook.cover) || '';
@@ -8652,13 +8658,14 @@ function createAcademyBookItem(b) {
     }
   }
 
-  // 2. MIGRATED_BOOKS 표준 데이터셋과 동기화 및 누락 정보 복원
-  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+  // 2. MIGRATED_BOOKS 표준 데이터셋과 동기화 및 누락 정보 복원 (O(1) 인덱스 맵 최적화)
+  // b가 이미 author, publisher 등 표준 필드를 갖추고 있다면 불필요한 전체 순회(3,400만 루프) 생략
+  if (isShifted || !b.publisher || !b.author) {
     var matchKey = bookId || title;
-    var canon = window.MIGRATED_BOOKS.find(function(m) { return m && (m.id === matchKey || m.bookNo === matchKey); });
-    if (canon) {
-      bookId = canon.id || canon.bookNo;
-      title = canon.title;
+    var canon = getMigratedBookFromIndex(matchKey);
+    if (canon && canon !== b) {
+      bookId = canon.id || canon.bookNo || bookId;
+      title = canon.title || title;
       b.author = canon.author || b.author;
       b.publisher = canon.publisher || b.publisher;
       b.grade = canon.grade || b.grade;

@@ -13,11 +13,11 @@ export default async function handler(req: any, res: any) {
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
     const isStudent = user.role === 'STUDENT';
-    // 학생에게는 목록에 필요한 퀴즈 개수만 보내고, 실제 문항은 퀴즈를 시작할 때 조회합니다.
-    const booksPromise = isStudent
-      ? prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { _count: { select: { quizzes: true } }, theme: true } })
-      : prisma.book.findMany({ orderBy: { bookNo: 'asc' }, include: { quizzes: { orderBy: { questionNo: 'asc' },
-          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } }, theme: true } });
+    // 목록 표시에는 퀴즈 개수(_count)만 포함하여 응답 속도를 극대화하고(15MB -> 1MB 이하), 실제 문항은 필요 시 지연 조회(/api/portal?action=quiz)합니다.
+    const booksPromise = prisma.book.findMany({
+      orderBy: { bookNo: 'asc' },
+      include: { _count: { select: { quizzes: true } }, theme: true }
+    });
     // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
     const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows] = await Promise.all([
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
@@ -72,9 +72,8 @@ export default async function handler(req: any, res: any) {
     // 초기 화면 조회는 읽기 전용으로 유지합니다. 계정 생성·역할 변경은 관리 API에서만 수행합니다.
     const directorMembers = members.filter(m => m.role === 'DIRECTOR');
 
-    // 관리자 화면은 편집에 필요한 문항을 유지하고, 학생 화면은 클릭 시 지연 조회합니다.
-    const quizzes = isStudent ? {} : Object.fromEntries(books.filter(b => b.quizzes && b.quizzes.length > 0).map(b => [b.bookNo, [{ id: 'server-' + b.id, authorName: '본사', authorType: 'master',
-      questions: b.quizzes.map((q: any) => ({ id: q.id, serverId: q.id, question: q.question, choices: q.options, options: q.options, ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE' })) }]]));
+    // 퀴즈 상세 문항은 초기 로딩 시 보내지 않고, 퀴즈 풀이 또는 편집 시 /api/portal?action=quiz로 지연 조회합니다.
+    const quizzes = {};
     const rankedMembers = members.filter(m => m.role === 'STUDENT').sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
     const academyRankings = academies.map(a => {
       const students = rankedMembers.filter(m => m.academy.code === a.code);
