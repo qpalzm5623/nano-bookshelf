@@ -204,7 +204,9 @@
                 <button type="button" class="btn btn-primary float-right" style="margin-right:10px;" onclick="writeProc()">등록</button>
                 <?php } else {?>
                 <button type="button" class="btn btn-primary float-right" style="margin-right:10px;" onclick="writeProc()">수정</button>                
+                <?php if($this->session->userdata("admin_type") != "teacher" && $this->session->userdata("admin_level") != "teacher"){ ?>
                 <button type="button" class="btn btn-warning float-right" style="margin-right:10px;" onclick="deleteProc()">삭제</button>                
+                <?php } ?>
                 <button type="button" class="btn btn-default float-right" style="margin-right:10px;" onclick="goList()">목록</button>
                 <?php } ?>
               </div>

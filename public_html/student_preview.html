@@ -4075,7 +4075,11 @@
   <div id="p-quiz" class="panel anim">
     <div id="qscreen-select">
       <div class="sec-title"><i class="fa-solid fa-pen-nib" style="color:var(--leaf);"></i> 북퀴즈 풀기</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">퀴즈를 풀 도서를 선택하세요. 완료 시 독서포인트가 지급됩니다!</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">퀴즈를 풀 도서를 선택하세요. 완료 시 독서포인트가 지급됩니다!</p>
+      <div style="background:#fefce8;border:1px solid #fef08a;border-radius:10px;padding:8px 12px;margin-bottom:14px;font-size:11.5px;color:#854d0e;display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-sparkles text-warning"></i>
+        <span><strong>포인트 정책 안내:</strong> 초등 4학년 이상 권장도서는 퀴즈 및 생각담기 완료 시 <strong>20% 가중 포인트</strong>가 부여됩니다.</span>
+      </div>
       <div class="book-row" onclick="startQuiz('1001')"><img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자"><div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리</div><span class="dbadge urgent">D-3 · 5문항</span></div><button class="act-btn start">퀴즈 시작</button></div>
       <div class="book-row" onclick="startQuiz('1002')"><img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드"><div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평</div><span class="dbadge normal">D-7 · 5문항</span></div><button class="act-btn start">퀴즈 시작</button></div>
       <div class="book-row" style="opacity:.85;"><img src="assets/covers/cover_1004.jpg" class="bcover" alt="자전거 도둑"><div class="binfo"><div class="btitle">자전거 도둑</div><div class="bauthor">박완서</div><span class="dbadge done">✓ 완료 · 100점</span></div><button class="act-btn done-btn" disabled>완료됨</button></div>
@@ -4114,20 +4118,20 @@
         <!-- [NEW] 점수 구간 + 나노프렌즈 + 도서 테마 반응형 일러스트 아트워크 배너 -->
         <div id="quizResultHeroBanner" class="quiz-result-hero-banner"></div>
 
-        <!-- 하위 호환성 및 스크린리더용 기존 텍스트 엘리먼트 (시각적으로는 일러스트 배너 내부에 통합) -->
+        <!-- 하위 호환성 및 스크린리더용 기존 텍스트 엘리먼트 (시각적으로는 상단 일러스트 배너 내부에 통합) -->
         <div class="res-emoji" id="rEmoji" style="display:none;">🎉</div>
         <div class="res-score" id="rScore" style="display:none;">100점</div>
 
-        <!-- [NEW] 점수에 따라 캐릭터가 말풍선으로 건네는 개성 맞춤 대사 -->
-        <div class="quiz-result-char-wrap" id="quizResultCharBox">
+        <!-- 하위 호환용 (상단 일러스트 배너 내부 나노의 한마디 말풍선으로 완전 통합) -->
+        <div class="quiz-result-char-wrap" id="quizResultCharBox" style="display:none !important;">
           <div class="quiz-char-avatar-box" id="quizResultCharAvatar" style="width:48px;height:48px;"></div>
           <div class="quiz-result-char-bubble" id="quizResultCharSpeech"></div>
         </div>
 
-        <div class="res-msg" id="rMsg">완벽해요!</div>
-        <div class="pt-badge" id="rPt">퀴즈 채점 결과</div>
+        <div class="res-msg" id="rMsg" style="display:none !important;">완벽해요!</div>
+        <div class="pt-badge" id="rPt" style="display:none !important;">퀴즈 채점 결과</div>
         <p id="quizSubmissionStatus" role="status" style="display:none;"></p>
-        <div style="display:flex;gap:8px;justify-content:center;">
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
           <button class="qnav sec" onclick="backToSelect()">다른 도서</button>
           <button class="qnav prim" onclick="switchPanel('home')">홈으로</button>
         </div>
@@ -4209,6 +4213,21 @@
         <div style="text-align:right;">
           <div style="font-size:11px;opacity:0.8;">이번 달 획득</div>
           <div style="font-size:15px;font-weight:800;color:#a7e3be;margin-top:2px;" id="currentMonthEarnedPoints">0 P</div>
+        </div>
+      </div>
+
+      <!-- 포인트 정책 안내 배너 (초등 4학년 이상 권장도서 20% 가중) -->
+      <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
+        <div style="width: 28px; height: 28px; border-radius: 8px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px;">
+          <i class="fa-solid fa-coins"></i>
+        </div>
+        <div style="font-size: 11.5px; color: #166534; line-height: 1.5; flex: 1;">
+          <div style="font-weight: 800; font-size: 12px; margin-bottom: 2px; color: #15803d; display: flex; align-items: center; gap: 6px;">
+            <span>나노 독서 포인트 정책</span>
+            <span style="background: #16a34a; color: #fff; font-size: 9.5px; padding: 1px 6px; border-radius: 10px; font-weight: 700;">초4 이상 20% 가중</span>
+          </div>
+          <div>• <strong>북퀴즈 인증</strong>: 기본 3 P / <strong>생각담기 작성</strong>: 기본 5 P</div>
+          <div>• <strong style="color:#047857;">초등 4학년 이상 권장도서</strong>는 퀴즈 및 생각담기 완료 시 <strong>20% 가중 포인트 부여 (퀴즈 4 P, 생각담기 6 P)</strong></div>
         </div>
       </div>
 
@@ -7639,12 +7658,22 @@ function goPreviousQuestion() {
 }
 
 // ==============================================================
-// [NEW] 북퀴즈 결과 화면 프리미엄 일러스트레이션 엔진
-// 점수 구간(100점/80~90점/60~70점/<60점) + 나노프렌즈 캐릭터(9종) + 도서 테마(6종)
+// [NEW] 북퀴즈 결과 화면 프리미엄 올인원 일러스트레이션 엔진
+// 점수 + 문항 정답 결과 + 도서 인증 및 획득 포인트 + 나노프렌즈 캐릭터 & "나노의 한마디" 말풍선 통합 렌더링
 // ==============================================================
-function generateQuizResultIllustration(score, charId, book) {
+function generateQuizResultIllustration(score, charId, book, extra) {
   charId = charId || 'nano';
   book = book || window.currentQuizBookObj || {};
+  extra = extra || {};
+
+  var tot = typeof extra.tot === 'number' ? extra.tot : 5;
+  var ok = typeof extra.ok === 'number' ? extra.ok : (score === 100 ? 5 : (score >= 80 ? 4 : (score >= 60 ? 3 : 2)));
+  var isPass = typeof extra.isPass === 'boolean' ? extra.isPass : (score >= 60);
+  var earnedPts = typeof extra.earnedPts === 'number' ? extra.earnedPts : (isPass ? 8 : 0);
+  var charName = extra.charName || '나노';
+  var charColor = extra.charColor || '#f97316';
+  var failCount = typeof extra.failCount === 'number' ? extra.failCount : 0;
+  var speechText = extra.speechText || (isPass ? '정말 대단해! 미세한 단서까지 놓치지 않고 책을 완벽히 이해했구나!' : '60점 이상이어야 인증과 포인트가 지급돼요. 조금만 더 꼼꼼히 읽고 재도전해 봐요!');
 
   // 1. 도서 테마 판별 (자연, 과학, 역사, 마음, 문학, 예술 6개 테마)
   var themeKey = 'literature';
@@ -7682,8 +7711,8 @@ function generateQuizResultIllustration(score, charId, book) {
       podiumAccent: '#10b981',
       bgGrad: '<stop offset="0%" stop-color="#064e3b"/><stop offset="50%" stop-color="#047857"/><stop offset="100%" stop-color="#10b981"/>',
       bgArt: `
-        <path d="M0,170 Q130,130 250,165 T500,160 L500,240 L0,240 Z" fill="#065f46" opacity="0.45"/>
-        <path d="M0,195 Q150,165 300,195 T500,185 L500,240 L0,240 Z" fill="#047857" opacity="0.6"/>
+        <path d="M0,230 Q130,190 250,225 T500,220 L500,320 L0,320 Z" fill="#065f46" opacity="0.45"/>
+        <path d="M0,265 Q150,235 300,265 T500,255 L500,320 L0,320 Z" fill="#047857" opacity="0.6"/>
         <path d="M30,70 C50,40 85,50 80,75 C75,100 40,95 30,70 Z" fill="#6ee7b7" opacity="0.5"/>
         <path d="M50,90 C70,65 95,75 90,95 C85,115 60,110 50,90 Z" fill="#34d399" opacity="0.65"/>
         <path d="M20,110 C40,85 75,95 65,120 C55,140 30,130 20,110 Z" fill="#a7f3d0" opacity="0.4"/>
@@ -7791,7 +7820,7 @@ function generateQuizResultIllustration(score, charId, book) {
 
   var curTheme = themeDefs[themeKey] || themeDefs.literature;
 
-  // 4. 점수 구간별 중앙 아이콘 및 캐릭터 우측 문구 배지 설정
+  // 4. 점수 구간별 중앙 아이콘 및 점수 그라디언트 설정
   var tierConfig = {
     perfect: {
       scoreGrad: '<stop offset="0%" stop-color="#fffdf0"/><stop offset="50%" stop-color="#fde047"/><stop offset="100%" stop-color="#facc15"/>',
@@ -7804,12 +7833,7 @@ function generateQuizResultIllustration(score, charId, book) {
           <rect x="9" y="27" width="12" height="4" rx="1.5" fill="#a16207"/>
           <polygon points="15,9 17,13 21,13 18,15 19,19 15,16 11,19 12,15 9,13 13,13" fill="#fef08a"/>
         </g>
-      `,
-      msgGrad: '<stop offset="0%" stop-color="#fef08a"/><stop offset="100%" stop-color="#facc15"/>',
-      msgBorder: '#fde047',
-      msgSolid: '#facc15',
-      msgColor: '#78350f',
-      msgText: '🏆 PERFECT! 모든 문제를 완벽히 맞혔어요!'
+      `
     },
     high: {
       scoreGrad: '<stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#e0f2fe"/><stop offset="100%" stop-color="#38bdf8"/>',
@@ -7818,12 +7842,7 @@ function generateQuizResultIllustration(score, charId, book) {
           <polygon points="14,0 18,9 28,10 20,17 23,26 14,21 5,26 8,17 0,10 10,9" fill="#facc15" stroke="#eab308" stroke-width="1.5"/>
           <circle cx="14" cy="13" r="4.5" fill="#fef08a"/>
         </g>
-      `,
-      msgGrad: '<stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0369a1"/>',
-      msgBorder: '#7dd3fc',
-      msgSolid: '#0284c7',
-      msgColor: '#ffffff',
-      msgText: '★ EXCELLENT! 훌륭한 독서 실력이에요!'
+      `
     },
     pass: {
       scoreGrad: '<stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#dcfce7"/><stop offset="100%" stop-color="#34d399"/>',
@@ -7832,12 +7851,7 @@ function generateQuizResultIllustration(score, charId, book) {
           <circle cx="14" cy="14" r="13" fill="#10b981" stroke="#059669" stroke-width="2"/>
           <path d="M8,14 L12,18 L20,10" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </g>
-      `,
-      msgGrad: '<stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#047857"/>',
-      msgBorder: '#6ee7b7',
-      msgSolid: '#059669',
-      msgColor: '#ffffff',
-      msgText: '✓ PASS! 도서 인증에 성공했어요!'
+      `
     },
     retry: {
       scoreGrad: '<stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#e2e8f0"/><stop offset="100%" stop-color="#94a3b8"/>',
@@ -7847,29 +7861,24 @@ function generateQuizResultIllustration(score, charId, book) {
           <line x1="19" y1="19" x2="25" y2="25" stroke="#fde047" stroke-width="3" stroke-linecap="round"/>
           <circle cx="12" cy="12" r="3.5" fill="#fef08a" opacity="0.6"/>
         </g>
-      `,
-      msgGrad: '<stop offset="0%" stop-color="#334155"/><stop offset="100%" stop-color="#1e293b"/>',
-      msgBorder: '#64748b',
-      msgSolid: '#334155',
-      msgColor: '#f8fafc',
-      msgText: '📖 다시 도전해봐요! 조금만 더 읽으면 통과해요!'
+      `
     }
   };
 
   var curTier = tierConfig[tier] || tierConfig.retry;
 
-  // 5. 나노프렌즈 캐릭터 SVG 추출 (좌측 하단 배치: x=28, y=144, size=70)
+  // 5. 나노프렌즈 캐릭터 SVG 추출 (좌측 하단 배치: x=22, y=198, size=70)
   var charSvgRaw = '';
   if (typeof getCharacterSvg === 'function') {
     charSvgRaw = getCharacterSvg(charId, 70, true);
   } else {
     charSvgRaw = '<circle cx="35" cy="35" r="32" fill="#f97316"/>';
   }
-  var charSvgPositioned = charSvgRaw.replace('<svg ', '<svg x="28" y="144" ');
+  var charSvgPositioned = charSvgRaw.replace('<svg ', '<svg x="22" y="198" ');
 
-  // 6. 전체 SVG 조합 (중앙: 점수 / 좌측 하단: 캐릭터 / 캐릭터 오른쪽: 문구)
+  // 6. 전체 SVG 조합 (상단: 테마·도서 / 중앙: 대형점수 / 중단: 정답문항·도서인증·획득포인트 / 하단: 캐릭터 + 나노의 한마디)
   var fullSvg = `
-    <svg viewBox="0 0 500 240" xmlns="http://www.w3.org/2000/svg" style="border-radius:20px;display:block;width:100%;height:auto;">
+    <svg viewBox="0 0 500 320" xmlns="http://www.w3.org/2000/svg" style="border-radius:22px;display:block;width:100%;height:auto;box-shadow:0 8px 24px rgba(0,0,0,0.12);">
       <defs>
         <linearGradient id="qrBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           ${curTheme.bgGrad}
@@ -7877,54 +7886,94 @@ function generateQuizResultIllustration(score, charId, book) {
         <linearGradient id="qrScoreGrad" x1="0%" y1="0%" x2="0%" y2="100%">
           ${curTier.scoreGrad}
         </linearGradient>
-        <linearGradient id="qrMsgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          ${curTier.msgGrad}
+        <linearGradient id="qrPointGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fffbeb"/>
+          <stop offset="40%" stop-color="#fef08a"/>
+          <stop offset="100%" stop-color="#f59e0b"/>
         </linearGradient>
         <filter id="qrDropShadow" x="-10%" y="-10%" width="120%" height="130%">
-          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.35"/>
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.32"/>
         </filter>
         <filter id="qrGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feGaussianBlur stdDeviation="5" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
 
       <!-- 1) 배경 테마 아트워크 -->
-      <rect width="500" height="240" rx="20" fill="url(#qrBgGrad)"/>
+      <rect width="500" height="320" rx="22" fill="url(#qrBgGrad)"/>
       ${curTheme.bgArt}
 
       <!-- 2) 상단 테마 & 도서명 라벨 -->
       <g>
-        <rect x="14" y="14" width="115" height="24" rx="12" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
-        <text x="24" y="30.5" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.2">${curTheme.label}</text>
+        <rect x="16" y="14" width="118" height="25" rx="12.5" fill="rgba(0,0,0,0.36)" stroke="rgba(255,255,255,0.24)" stroke-width="1"/>
+        <text x="26" y="31" font-size="11.5" font-weight="800" fill="#ffffff" letter-spacing="0.2">${curTheme.label}</text>
         
-        <rect x="330" y="14" width="156" height="24" rx="12" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
-        <text x="408" y="30" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(255,255,255,0.92)">📖 ${bookTitleDisp}</text>
+        <rect x="310" y="14" width="174" height="25" rx="12.5" fill="rgba(0,0,0,0.36)" stroke="rgba(255,255,255,0.24)" stroke-width="1"/>
+        <text x="397" y="31" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(255,255,255,0.95)">📖 ${bookTitleDisp}</text>
       </g>
 
       <!-- 3) 일러스트 중앙: 대형 점수(Score) 디스플레이 -->
       <g>
-        <circle cx="250" cy="100" r="54" fill="#ffffff" opacity="0.12" filter="url(#qrGlow)"/>
+        <circle cx="250" cy="92" r="50" fill="#ffffff" opacity="0.12" filter="url(#qrGlow)"/>
         ${curTier.topIcon}
-        <text x="250" y="118" text-anchor="middle" font-size="54" font-weight="900" fill="url(#qrScoreGrad)" letter-spacing="-1px" font-family="'Pretendard', sans-serif" filter="url(#qrDropShadow)">
-          ${score}<tspan font-size="24" font-weight="800" dx="3">점</tspan>
+        <text x="250" y="110" text-anchor="middle" font-size="52" font-weight="900" fill="url(#qrScoreGrad)" letter-spacing="-1px" font-family="'Pretendard', sans-serif" filter="url(#qrDropShadow)">
+          ${score}<tspan font-size="22" font-weight="800" dx="3">점</tspan>
         </text>
       </g>
 
-      <!-- 4) 좌측 하단: 나노프렌즈 캐릭터 & 발밑 발판 -->
+      <!-- 4) 중단: 정답 문항 수 + 도서 인증 완료 + 획득 포인트 통합 정보 바 -->
+      <g filter="url(#qrDropShadow)">
+        <rect x="18" y="128" width="464" height="40" rx="20" fill="rgba(0, 0, 0, 0.42)" stroke="rgba(255, 255, 255, 0.22)" stroke-width="1.2"/>
+        
+        <!-- 좌측: 정답 문항 & 인증 상태 -->
+        <g transform="translate(32, 140)">
+          <text x="0" y="15" font-size="12" font-weight="800" fill="#ffffff" letter-spacing="-0.2px">
+            ${isPass 
+              ? '<tspan fill="#4ade80" font-weight="900">✓</tspan> ' + tot + '문항 중 <tspan fill="#fef08a" font-weight="900">' + ok + '문항 정답!</tspan> <tspan fill="#86efac" font-weight="900">도서 인증 완료</tspan>' 
+              : '<tspan fill="#f87171" font-weight="900">✗</tspan> ' + tot + '문항 중 ' + ok + '문항 정답 <tspan fill="#fca5a5">(60점 이상 통과)</tspan>'}
+          </text>
+        </g>
+
+        <!-- 우측: 획득 포인트 캡슐 뱃지 -->
+        <g transform="translate(338, 134)">
+          ${isPass ? `
+            <rect x="0" y="0" width="134" height="28" rx="14" fill="url(#qrPointGrad)" stroke="#fde047" stroke-width="1.2"/>
+            <text x="67" y="18.5" text-anchor="middle" font-size="11.5" font-weight="900" fill="#78350f" letter-spacing="-0.2px">
+              🪙 획득 포인트 <tspan font-size="12.5" fill="#92400e">+${earnedPts} P</tspan>
+            </text>
+          ` : `
+            <rect x="0" y="0" width="134" height="28" rx="14" fill="rgba(239, 68, 68, 0.28)" stroke="#f87171" stroke-width="1"/>
+            <text x="67" y="18" text-anchor="middle" font-size="10.5" font-weight="800" fill="#fecaca">
+              포인트 미지급 (${failCount}/3회)
+            </text>
+          `}
+        </g>
+      </g>
+
+      <!-- 5) 좌측 하단: 나노프렌즈 캐릭터 & 발밑 발판 -->
       <g>
-        <ellipse cx="63" cy="217" rx="30" ry="8" fill="rgba(0,0,0,0.35)"/>
-        <ellipse cx="63" cy="216" rx="24" ry="5.5" fill="${curTheme.podiumAccent || '#38bdf8'}" opacity="0.55"/>
+        <ellipse cx="57" cy="282" rx="26" ry="6.5" fill="rgba(0,0,0,0.38)"/>
+        <ellipse cx="57" cy="280" rx="20" ry="5" fill="${curTheme.podiumAccent || '#38bdf8'}" opacity="0.6"/>
         ${charSvgPositioned}
       </g>
 
-      <!-- 5) 캐릭터 오른쪽: 축하 & 응원 문구 배지 (말풍선 포인터 포함) -->
+      <!-- 6) 우측 하단: "나노의 한마디" 프리미엄 말풍선 카드 (Excellent 텍스트 대체) -->
       <g filter="url(#qrDropShadow)">
-        <polygon points="110,186 98,188 110,176" fill="${curTier.msgSolid}" opacity="0.95"/>
-        <rect x="110" y="162" width="374" height="48" rx="24" fill="url(#qrMsgGrad)" stroke="${curTier.msgBorder}" stroke-width="1.8"/>
-        <text x="297" y="192" text-anchor="middle" font-size="14.5" font-weight="800" fill="${curTier.msgColor}" letter-spacing="-0.2px">
-          ${curTier.msgText}
-        </text>
+        <polygon points="102,246 90,242 102,234" fill="#ffffff"/>
+        <rect x="102" y="184" width="380" height="122" rx="18" fill="#ffffff" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+        <foreignObject x="106" y="186" width="372" height="118">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="height:100%;display:flex;flex-direction:column;justify-content:center;padding:10px 16px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Noto Sans KR',sans-serif;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              <span style="font-size:11.5px;font-weight:900;color:${charColor};background:${charColor}18;padding:2.5px 8px;border-radius:10px;display:inline-flex;align-items:center;gap:4.5px;">
+                <i class="fa-solid fa-comment-dots"></i> ${charName}의 한마디
+              </span>
+            </div>
+            <div style="font-size:12.5px;font-weight:700;color:#1e293b;line-height:1.48;word-break:keep-all;">
+              ${escapeStudentQuizText(speechText)}
+            </div>
+          </div>
+        </foreignObject>
       </g>
     </svg>
   `;
@@ -8057,19 +8106,29 @@ async function showResult() {
     speechText = '60점 이상이어야 인증과 포인트가 지급돼요. 조금만 더 꼼꼼히 읽고 재도전해 봐요!';
   }
 
-  // [NEW] 최상단 점수 구간 + 나노프렌즈 + 도서 테마 반응형 일러스트 아트워크 히어로 배너 렌더링
+  // [NEW] 최상단 점수 구간 + 나노프렌즈 + 도서 테마 반응형 올인원 일러스트 아트워크 히어로 배너 렌더링
   var heroBannerEl = document.getElementById('quizResultHeroBanner');
   if (heroBannerEl) {
     var activeBookObj = window.currentQuizBookObj || (typeof libData !== 'undefined' ? libData.find(function(b){ return b.id === curBook; }) : null);
-    heroBannerEl.innerHTML = generateQuizResultIllustration(score, charId, activeBookObj);
+    var failInfoObj = checkDailyQuizLimit(curBook);
+    heroBannerEl.innerHTML = generateQuizResultIllustration(score, charId, activeBookObj, {
+      tot: tot,
+      ok: ok,
+      isPass: isPass,
+      earnedPts: earnedPts,
+      speechText: speechText,
+      charName: (char && char.name ? char.name.split(' ')[0] : '나노'),
+      charColor: (char && char.themeColor ? char.themeColor : '#f97316'),
+      failCount: (failInfoObj ? failInfoObj.count : 0)
+    });
   }
 
-  // 결과 화면 캐릭터 말풍선 렌더링
+  // 결과 화면 캐릭터 말풍선 렌더링 (하위 호환성 유지)
   var resAvatarEl = document.getElementById('quizResultCharAvatar');
   var resSpeechEl = document.getElementById('quizResultCharSpeech');
   if (resAvatarEl) resAvatarEl.innerHTML = getCharacterSvg(charId, 44);
   if (resSpeechEl) {
-    resSpeechEl.innerHTML = '<strong style="color:' + char.themeColor + ';display:block;margin-bottom:2px;">' + char.name.split(' ')[0] + '의 한마디</strong>' + speechText;
+    resSpeechEl.innerHTML = '<strong style="color:' + (char ? char.themeColor : '#f97316') + ';display:block;margin-bottom:2px;">' + (char ? char.name.split(' ')[0] : '나노') + '의 한마디</strong>' + speechText;
   }
 
   // 생각 담기 작성 결과 영역
@@ -10240,8 +10299,11 @@ function openDrawerMenuItem(type) {
       '<div style="max-height:260px;overflow-y:auto;background:#faf8f5;border:1px solid var(--soft);border-radius:10px;padding:12px;font-size:11.5px;color:var(--wood-dark);line-height:1.6;margin-bottom:12px;">'
       + '<strong style="color:var(--leaf);">제1조 (목적)</strong><br>본 약관은 나노의 책장 플랫폼에서 제공하는 독서 교육, 북퀴즈 및 포인트 관리 서비스의 이용조건 및 절차를 규정함을 목적으로 합니다.<br><br>'
       + '<strong style="color:var(--leaf);">제2조 (회원의 권리와 의무)</strong><br>학생 회원은 학습 목적에 맞게 자유롭게 도서를 탐색하고 북퀴즈에 응시하여 포인트를 획득할 수 있으며, 타인의 명의나 부정한 방법으로 퀴즈에 응시해서는 안 됩니다.<br><br>'
-      + '<strong style="color:var(--leaf);">제3조 (개인정보의 보호)</strong><br>회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하며, 교육 목적으로만 안전하게 관리합니다.<br><br>'
-      + '<strong style="color:var(--leaf);">제4조 (포인트 운영)</strong><br>퀴즈 완료, 출석 등을 통해 적립된 포인트는 학원 정책 및 이벤트에 따라 보상 및 랭킹 산정에 활용됩니다.'
+      + '<strong style="color:var(--leaf);">제4조 (포인트 운영 및 적립 정책)</strong><br>'
+      + '① 북퀴즈 60점 이상 통과(도서 인증) 시 기본 3포인트, 생각담기 작성 시 기본 5포인트가 적립됩니다.<br>'
+      + '② <strong>[초등 4학년 이상 가중 정책] 도서 권장학년이 초등 4학년 이상일 경우, 북퀴즈 및 생각담기 완료 시 생성된 포인트에 20% 가중치(북퀴즈 4P, 생각담기 6P)가 부여됩니다.</strong><br>'
+      + '③ 동일 도서에 대해서는 최대 2회차까지 포인트가 지급되며, 1일 3회 이상 인증 실패 시 자정까지 재도전이 제한됩니다.<br>'
+      + '④ 적립된 포인트는 명예의 전당 랭킹 산정 및 학원 칭호 보상에 활용됩니다.'
       + '</div>'
       + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">확인 완료</button>';
   }

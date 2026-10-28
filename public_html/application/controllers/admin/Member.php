@@ -605,6 +605,15 @@ class Member extends MY_Controller {
 		if($this->session->userdata("admin_level")!="0"&&($this->session->userdata("admin_type")=="director"||$this->session->userdata("admin_type")=="teacher")){
             $admin_group_name =  $this->session->userdata("group_name");
 			$where .= "AND group_name = '{$admin_group_name}'";
+			if($this->session->userdata("admin_type") == "teacher" || $this->session->userdata("admin_level") == "teacher"){
+				$admin_seq = $this->session->userdata("admin_seq");
+				if(!empty($admin_seq)){
+					$teacherInfo = $this->user_model->getUserSeq($admin_seq);
+					if(!empty($teacherInfo['class_name'])){
+						$where .= " AND class_name = '{$teacherInfo['class_name']}'";
+					}
+				}
+			}
 		}
 		 
 		

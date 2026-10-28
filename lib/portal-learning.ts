@@ -69,11 +69,13 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
         });
 
         // 2. 생각담기는 작성만 해도 5포인트 주기. (인증 된 경우에 한해 지급)
+        // 도서가 초등학교 4학년 이상 권장도서일 경우 퀴즈 및 생각담기 완료 포인트에 20% 가중치 부여 (5 * 1.2 = 6P)
         if (data.thinkReply?.trim()) {
+          const thoughtPoints = isHighGrade ? Math.round(5 * 1.2) : 5; // 5 * 1.2 = 6P
           awards.push({
             kind: 'THOUGHT_' + roundNum,
-            amount: 5,
-            content: `${book.title} 생각담기 작성 (${roundNum}회차)`
+            amount: thoughtPoints,
+            content: `${book.title} 생각담기 작성 (${roundNum}회차${isHighGrade ? ' · 초4이상 20% 가중' : ''})`
           });
         }
       }

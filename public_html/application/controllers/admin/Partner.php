@@ -1031,6 +1031,10 @@ class Partner extends MY_Controller {
  
 	public function deleteProc()
 	{
+		if($this->session->userdata("admin_type") == "teacher" || $this->session->userdata("admin_level") == "teacher"){
+			$this->jsonFail("선생님 계정은 학생 계정을 삭제할 권한이 없습니다.");
+			return;
+		}
 	    $user_seq = $this->input->post("user_seq");
 		$this->user_model->deleteUserClear($user_seq);
 		//$this->msg("삭제되었습니다.");
@@ -1040,6 +1044,10 @@ class Partner extends MY_Controller {
 	
 	public function deleteUser()
 	{
+		if($this->session->userdata("admin_type") == "teacher" || $this->session->userdata("admin_level") == "teacher"){
+			$this->jsonFail("선생님 계정은 학생 계정을 삭제할 권한이 없습니다.");
+			return;
+		}
 	    $user_seq = $this->input->post("user_seq");
 		//$this->user_model->deleteUser($user_seq);
 		$this->user_model->deleteUserClear($user_seq);

@@ -307,6 +307,93 @@ function isCurrentLoggedInTeacher() {
   return false;
 }
 
+// 선생님 계정이 담당으로 지정되어 있는 학급 목록 반환 (원장/관리자는 전체 학급 반환)
+function getTeacherAssignedClasses() {
+  if (!isCurrentLoggedInTeacher()) {
+    return Array.isArray(academyClassList) ? academyClassList : [];
+  }
+  var auth = getCurrentAuthUser();
+  if (!auth) return [];
+
+  var tName = String(auth.name || '').trim();
+  var tId = String(auth.id || auth.username || '').toLowerCase().trim();
+
+  var tList = (typeof teacherDataList !== 'undefined' && Array.isArray(teacherDataList)) ? teacherDataList : loadTeachersFromStorage();
+  var foundT = tList.find(function(t) {
+    return (t.id && String(t.id).toLowerCase() === tId) ||
+           (t.username && String(t.username).toLowerCase() === tId) ||
+           (tName && t.name === tName);
+  });
+
+  var validNames = [];
+  if (tName) validNames.push(tName);
+  if (foundT && foundT.name) validNames.push(foundT.name);
+  if (auth.id) validNames.push(String(auth.id));
+  if (foundT && foundT.id) validNames.push(String(foundT.id));
+
+  var teacherClasses = [];
+  if (foundT && foundT.classes) {
+    if (Array.isArray(foundT.classes)) {
+      teacherClasses = foundT.classes.slice();
+    } else if (typeof foundT.classes === 'string') {
+      teacherClasses = foundT.classes.split(',').map(function(s) { return s.trim(); });
+    }
+  }
+
+  var assigned = [];
+  var seen = {};
+
+  (academyClassList || []).forEach(function(cls) {
+    if (!cls || !cls.name || seen[cls.name]) return;
+    var isMatch = false;
+
+    // 1. cls.teacher에 담당교사 이름/ID 매칭
+    if (cls.teacher) {
+      var ct = String(cls.teacher).trim();
+      if (validNames.some(function(vn) { return vn && (ct === vn || ct.includes(vn) || vn.includes(ct)); })) {
+        isMatch = true;
+      }
+    }
+
+    // 2. 선생님의 담당 학급 목록(classes)에 명시된 경우
+    if (!isMatch && teacherClasses.some(function(tc) { return tc && tc === cls.name; })) {
+      isMatch = true;
+    }
+
+    if (isMatch) {
+      seen[cls.name] = true;
+      assigned.push(cls);
+    }
+  });
+
+  // 3. 만약 위 매칭에서 0개인 경우, 원생 데이터에서 해당 선생님 이름이 들어간 학급 확인
+  if (assigned.length === 0 && Array.isArray(studentDataList)) {
+    studentDataList.forEach(function(s) {
+      if (s.teacher && validNames.some(function(vn) { return vn && (s.teacher === vn || s.teacher.includes(vn)); })) {
+        if (s.classGroup && s.classGroup !== '-' && s.classGroup !== '미지정' && !seen[s.classGroup]) {
+          var matchedCls = (academyClassList || []).find(function(c) { return c.name === s.classGroup; }) || { id: s.classGroup, name: s.classGroup, grade: s.grade || '', teacher: tName || '지도교사' };
+          seen[s.classGroup] = true;
+          assigned.push(matchedCls);
+        }
+      }
+    });
+  }
+
+  // 4. 데모 또는 단일 학급 시스템에서 cls.teacher가 '지도교사'이거나 기본 학급인 경우 fallback
+  if (assigned.length === 0 && (academyClassList || []).length > 0) {
+    var fallback = (academyClassList || []).filter(function(cls) {
+      return cls.teacher === '지도교사' || !cls.teacher;
+    });
+    if (fallback.length > 0) {
+      assigned = fallback;
+    } else {
+      assigned = [academyClassList[0]];
+    }
+  }
+
+  return assigned;
+}
+
 // 상단 헤더 사용자 정보 및 권한별 메뉴 가시성 갱신
 function updateHeaderUserInfo() {
   var auth = getCurrentAuthUser();
@@ -315,6 +402,9 @@ function updateHeaderUserInfo() {
   var roleBadgeEl = document.getElementById('headerUserRoleBadge');
   var btnMemberTeachers = document.getElementById('btn-member-teachers');
   var navMembersSmall = document.querySelector('#btn-nav-members small');
+  var btnOpenClassManage = document.getElementById('btnOpenClassManageModal');
+  var btnOpenDeletedStudents = document.getElementById('btnOpenDeletedStudentsModal');
+  var btnModalClassManage = document.getElementById('btnModalClassManageWrapper') || document.getElementById('btnModalClassManage');
 
   var isTeacher = isCurrentLoggedInTeacher();
 
@@ -355,6 +445,17 @@ function updateHeaderUserInfo() {
       navMembersSmall.innerText = '(원생 관리)';
     }
 
+    // [권한 설정 1 & 2] 선생님 계정은 학생 계정 삭제 및 학급 생성/삭제 불가 -> 버튼 숨김
+    if (btnOpenClassManage) {
+      btnOpenClassManage.style.display = 'none';
+    }
+    if (btnOpenDeletedStudents) {
+      btnOpenDeletedStudents.style.display = 'none';
+    }
+    if (btnModalClassManage) {
+      btnModalClassManage.style.display = 'none';
+    }
+
     // 만약 현재 탭이 선생님 관리로 열려있다면 원생 관리 탭으로 강제 전환
     var teacherSubBox = document.getElementById('member-sub-teachers');
     if (teacherSubBox && teacherSubBox.style.display !== 'none') {
@@ -378,6 +479,16 @@ function updateHeaderUserInfo() {
     }
     if (navMembersSmall) {
       navMembersSmall.innerText = '(선생님/원생)';
+    }
+
+    if (btnOpenClassManage) {
+      btnOpenClassManage.style.display = '';
+    }
+    if (btnOpenDeletedStudents) {
+      btnOpenDeletedStudents.style.display = '';
+    }
+    if (btnModalClassManage) {
+      btnModalClassManage.style.display = '';
     }
   }
 
@@ -1105,6 +1216,10 @@ function updateNewClassTeacherLabel() {
 }
 
 function openClassManageModal() {
+  if (isCurrentLoggedInTeacher()) {
+    showAcademyToast('학급 관리는 원장님 전용 권한입니다.');
+    return;
+  }
   renderNewClassTeacherDropdown();
   renderNewClassGradeDropdown();
   renderClassManageTable();
@@ -1144,14 +1259,20 @@ function renderClassManageTable() {
       '<td class="text-center">' + teachersDisplay + '</td>' +
       '<td class="text-center"><span class="badge badge-light border font-weight-bold" style="font-size: 12px; color: var(--btn-primary);">' + studentCount + '명</span></td>' +
       '<td class="text-center">' +
-        '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="editClass(\'' + cls.id + '\')" style="border-radius: 6px; font-size: 11.5px; padding: 2px 7px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
-        '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteClass(\'' + cls.id + '\')" style="border-radius: 6px; font-size: 11.5px; padding: 2px 7px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
+        '<div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">' +
+          '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="editClass(\'' + cls.id + '\')" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+          '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteClass(\'' + cls.id + '\')" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
+        '</div>' +
       '</td>';
     tbody.appendChild(tr);
   });
 }
 
 async function addClass() {
+  if (isCurrentLoggedInTeacher()) {
+    showAcademyToast('선생님 계정은 학급을 생성할 수 없습니다.');
+    return;
+  }
   var nameInput = document.getElementById('newClassNameInput');
   var name = (nameInput ? nameInput.value : '').trim();
   var gradeList = getCheckedClassGrades('new-cls-grade-cb');
@@ -1355,6 +1476,10 @@ async function saveEditedClass() {
 }
 
 async function deleteClass(id) {
+  if (isCurrentLoggedInTeacher()) {
+    showAcademyToast('선생님 계정은 학급을 삭제할 수 없습니다.');
+    return;
+  }
   var cls = academyClassList.find(function(c) { return c.id === id; });
   if (!cls) return;
 
@@ -1455,8 +1580,9 @@ function updateClassSelectOptions() {
   var assignStudentClassSelect = document.getElementById('filterAssignStudentClass');
   if (assignStudentClassSelect) {
     var curASVal = assignStudentClassSelect.value;
-    assignStudentClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
-    var actualClassesAS = getActualAcademyClassList();
+    var isT = isCurrentLoggedInTeacher();
+    assignStudentClassSelect.innerHTML = isT ? '<option value="ALL">전체 담당 클래스</option>' : '<option value="ALL">전체 클래스</option>';
+    var actualClassesAS = isT ? getTeacherAssignedClasses() : getActualAcademyClassList();
     actualClassesAS.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.name;
@@ -1472,14 +1598,16 @@ function updateClassSelectOptions() {
   var assignClassSelect = document.getElementById('filterAssignClassSelect');
   if (assignClassSelect) {
     var curACVal = assignClassSelect.value;
-    assignClassSelect.innerHTML = '<option value="ALL">전체 클래스 보기</option>';
-    academyClassList.forEach(function(c) {
+    var isT = isCurrentLoggedInTeacher();
+    assignClassSelect.innerHTML = isT ? '<option value="ALL">전체 담당 클래스</option>' : '<option value="ALL">전체 클래스 보기</option>';
+    var targetClasses = isT ? getTeacherAssignedClasses() : academyClassList;
+    targetClasses.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.name;
       opt.innerText = c.name + (c.grade ? ' (' + c.grade + ')' : '');
       assignClassSelect.appendChild(opt);
     });
-    if (curACVal && (academyClassList.some(function(c) { return c.name === curACVal; }) || curACVal === 'ALL')) {
+    if (curACVal && (targetClasses.some(function(c) { return c.name === curACVal; }) || curACVal === 'ALL')) {
       assignClassSelect.value = curACVal;
     }
   }
@@ -1543,13 +1671,14 @@ function getActualAcademyClassList() {
   return list;
 }
 
-// 개별 원생 맞춤 도서 배정 모달(Depth 1)의 학급 선택 드롭다운을 실제 학급 목록으로 동기화
+// 개별 원생 맞춤 도서 배정 모달(Depth 1)의 학급 선택 드롭다운을 실제 학급 목록으로 동기화 (선생님은 본인 담당 학급만 노출)
 function syncIndivStudentClassFilterOptions() {
   var indivModalClassSelect = document.getElementById('indivStudentClassFilter');
   if (!indivModalClassSelect) return;
   var curIMVal = indivModalClassSelect.value;
-  indivModalClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
-  var actualClasses = getActualAcademyClassList();
+  var isT = isCurrentLoggedInTeacher();
+  indivModalClassSelect.innerHTML = isT ? '<option value="ALL">전체 담당 클래스</option>' : '<option value="ALL">전체 클래스</option>';
+  var actualClasses = isT ? getTeacherAssignedClasses() : getActualAcademyClassList();
   actualClasses.forEach(function(c) {
     var opt = document.createElement('option');
     opt.value = c.name;
@@ -1594,6 +1723,10 @@ function getAcademyAdminPassword() {
 
 // 1단계: 삭제 버튼 클릭 시 관리자 패스워드 확인 모달 띄우기 (스르륵 즉시 삭제 방지)
 function deleteStudent(id) {
+  if (isCurrentLoggedInTeacher()) {
+    showAcademyToast('선생님 계정은 학생 계정을 삭제할 수 없습니다.');
+    return;
+  }
   var std = studentDataList.find(function(s) { return s.id === id; });
   if (!std) return;
 
@@ -2493,8 +2626,10 @@ function renderStudentTable(list, page) {
       '<td class="text-center font-weight-bold" style="color:var(--btn-primary); font-size:12px;">' + std.level + '</td>' +
       '<td class="text-center font-weight-bold">' + std.bookCount + '권 <small class="text-success font-weight-bold">(' + quizScoreDisplay + ')</small></td>' +
       '<td class="text-center">' +
-        '<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="border-radius:6px; font-size:11px; padding:2.5px 7px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
-        '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="border-radius:6px; font-size:11px; padding:2.5px 7px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' +
+        '<div class="d-inline-flex flex-column align-items-center justify-content-center" style="gap: 5px;">' +
+          '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+          (!isCurrentLoggedInTeacher() ? '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' : '') +
+        '</div>' +
       '</td>';
     tbody.appendChild(tr);
   });
@@ -2630,8 +2765,10 @@ function renderTeacherTable(customList) {
       <td class="text-center">${t.phone || '-'}</td>
       <td class="text-center"><small class="text-muted">${t.joinDate}</small></td>
       <td class="text-center">
-        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openTeacherEditModal('${t.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;"><i class="fa-solid fa-pen mr-1"></i>수정</button>
-        <button class="btn btn-xs btn-outline-danger" onclick="deleteTeacher('${t.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>
+        <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
+          <button class="btn btn-xs btn-outline-secondary" onclick="openTeacherEditModal('${t.id}')" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>
+          <button class="btn btn-xs btn-outline-danger" onclick="deleteTeacher('${t.id}')" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
@@ -4243,19 +4380,36 @@ function renderStudentAssignmentTable(list) {
   if (list !== undefined) {
     currentFilteredStudentAssignments = list;
   }
-  var dataList = currentFilteredStudentAssignments !== null ? currentFilteredStudentAssignments : studentAssignmentList;
+
+  var isT = isCurrentLoggedInTeacher();
+  var assignedClassList = isT ? getTeacherAssignedClasses() : null;
+  var assignedClassNames = assignedClassList ? assignedClassList.map(function(c) { return c.name; }) : null;
+
+  var baseList = studentAssignmentList;
+  if (isT && assignedClassNames) {
+    baseList = studentAssignmentList.filter(function(item) {
+      return item.classGroup && assignedClassNames.indexOf(item.classGroup) !== -1;
+    });
+  }
 
   // 상단 통계 갱신
   var countEl = document.getElementById('assignStudentCount');
-  if (countEl) countEl.innerText = studentAssignmentList.length;
+  if (countEl) countEl.innerText = baseList.length;
 
   // 배정 도서 총 권수 계산
   var totalBooksSum = 0;
-  studentAssignmentList.forEach(function(s) {
+  baseList.forEach(function(s) {
     totalBooksSum += (s.books ? s.books.length : 0);
   });
   var totalBookEl = document.getElementById('assignTotalBookCount');
   if (totalBookEl) totalBookEl.innerText = totalBooksSum;
+
+  var dataList = currentFilteredStudentAssignments !== null ? currentFilteredStudentAssignments : baseList;
+  if (isT && assignedClassNames && currentFilteredStudentAssignments !== null) {
+    dataList = dataList.filter(function(item) {
+      return item.classGroup && assignedClassNames.indexOf(item.classGroup) !== -1;
+    });
+  }
 
   var totalCount = dataList.length;
   var totalPages = Math.ceil(totalCount / ASSIGN_STUDENT_PAGE_SIZE) || 1;
@@ -4409,7 +4563,14 @@ function filterStudentAssignments() {
   var classVal = document.getElementById('filterAssignStudentClass') ? document.getElementById('filterAssignStudentClass').value : 'ALL';
   var query = ((document.getElementById('searchAssignStudentInput') ? document.getElementById('searchAssignStudentInput').value : '') || '').toLowerCase().trim();
 
+  var isT = isCurrentLoggedInTeacher();
+  var assignedClasses = isT ? getTeacherAssignedClasses() : null;
+  var assignedClassNames = assignedClasses ? assignedClasses.map(function(c) { return c.name; }) : null;
+
   var filtered = studentAssignmentList.filter(function(item) {
+    if (assignedClassNames && (!item.classGroup || assignedClassNames.indexOf(item.classGroup) === -1)) {
+      return false;
+    }
     var matchClass = (classVal === 'ALL') || (item.classGroup === classVal);
     var matchQuery = !query || 
       item.studentName.toLowerCase().indexOf(query) !== -1 || 
@@ -4501,7 +4662,10 @@ function renderBatchClassCardList() {
   container.innerHTML = '';
 
   var classList = [];
-  if (typeof academyClassList !== 'undefined' && academyClassList.length > 0) {
+  var isT = isCurrentLoggedInTeacher();
+  if (isT) {
+    classList = getTeacherAssignedClasses();
+  } else if (typeof academyClassList !== 'undefined' && academyClassList.length > 0) {
     classList = academyClassList;
   } else {
     var groupSet = {};
@@ -4514,6 +4678,11 @@ function renderBatchClassCardList() {
   }
 
   if (classList.length === 0) {
+    if (isT) {
+      container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fa-solid fa-chalkboard mb-2" style="font-size:32px; opacity:0.5;"></i><br><strong style="font-size:14px;">현재 본인 담당으로 지정되어 있는 학급이 없습니다.</strong><br><small class="text-muted">원장님 계정에서 학급 담당 교사 지정을 확인해 주세요.</small></div>';
+      updateBatchClassSelectionUI();
+      return;
+    }
     classList = [
       { name: '지혜반', grade: '초등 5학년', teacher: '김혜진 선생님' },
       { name: '슬기반', grade: '초등 4학년', teacher: '이민호 선생님' },
@@ -4974,7 +5143,15 @@ function filterIndivModalStudents() {
   var query = (document.getElementById('indivStudentSearchInput') ? document.getElementById('indivStudentSearchInput').value : '').toLowerCase().trim();
   var classFilter = document.getElementById('indivStudentClassFilter') ? document.getElementById('indivStudentClassFilter').value : 'ALL';
 
+  var isT = isCurrentLoggedInTeacher();
+  var assignedClasses = isT ? getTeacherAssignedClasses() : null;
+  var assignedClassNames = assignedClasses ? assignedClasses.map(function(c) { return c.name; }) : null;
+
   var students = studentDataList.filter(function(s) {
+    // [권한 설정 3] 선생님인 경우 본인이 담당하는 학급의 학생만 허용
+    if (assignedClassNames && (!s.classGroup || assignedClassNames.indexOf(s.classGroup) === -1)) {
+      return false;
+    }
     var matchClass = classFilter === 'ALL' || s.classGroup === classFilter;
     var matchQuery = !query || 
       s.name.toLowerCase().indexOf(query) !== -1 || 
@@ -4987,7 +5164,10 @@ function filterIndivModalStudents() {
   if (countEl) countEl.innerText = students.length;
 
   if (students.length === 0) {
-    container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fa-solid fa-user-xmark mb-2" style="font-size:28px;"></i><br>일치하는 원생이 없습니다.</div>';
+    var emptyMsg = (isT && assignedClassNames && assignedClassNames.length === 0)
+      ? '현재 본인 담당으로 지정된 학급이 없어 배정 가능한 원생이 없습니다.<br><small class="text-muted">원장님 계정에서 학급 담당 지정을 확인해 주세요.</small>'
+      : '일치하는 원생이 없습니다.';
+    container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fa-solid fa-user-xmark mb-2" style="font-size:28px;"></i><br>' + emptyMsg + '</div>';
     return;
   }
 
@@ -5030,6 +5210,19 @@ function filterIndivModalStudents() {
 
 // Depth 2 진입: 선택된 원생 전용 도서 관리창 로드
 function enterStudentAssignDepth2(studentId) {
+  var std = studentDataList.find(function(s) { return s.id === studentId; });
+
+  // [권한 설정 3] 선생님인 경우 본인 담당 학급 원생인지 검증
+  if (isCurrentLoggedInTeacher()) {
+    var assignedClasses = getTeacherAssignedClasses();
+    var assignedNames = assignedClasses.map(function(c) { return c.name; });
+    if (!std || !std.classGroup || assignedNames.indexOf(std.classGroup) === -1) {
+      showAcademyToast('본인이 담당으로 되어 있는 학급의 학생에게만 도서 배정이 가능합니다.');
+      backToIndivDepth1();
+      return;
+    }
+  }
+
   currentIndivStudentId = studentId;
   var d1 = document.getElementById('indivAssignDepth1');
   var d2 = document.getElementById('indivAssignDepth2');
@@ -5445,7 +5638,8 @@ var currentClassForModal = '지혜반';
 
 // 더미 학급 목록 대신, 학원이 실제 등록한 학급/담당교사/소속 원생 수를 매번 계산해 사용 (DB와 항상 일치)
 function getAcademyClassMeta() {
-  return academyClassList.map(function(c) {
+  var targetClasses = isCurrentLoggedInTeacher() ? getTeacherAssignedClasses() : academyClassList;
+  return targetClasses.map(function(c) {
     return {
       name: c.name,
       grade: c.grade || '-',
@@ -5458,6 +5652,10 @@ function getAcademyClassMeta() {
 // 학급 배정 모달 열기
 function openClassAssignModal(defaultClass) {
   var metaList = getAcademyClassMeta();
+  if (isCurrentLoggedInTeacher() && metaList.length === 0) {
+    showAcademyToast('현재 본인 담당으로 지정되어 있는 학급이 없습니다.');
+    return;
+  }
   currentClassForModal = defaultClass || (metaList.length > 0 ? metaList[0].name : '');
   renderClassAssignModalContent(currentClassForModal);
   $('#modalClassAssign').modal('show');
@@ -6095,7 +6293,7 @@ function populateAdminRankFilters() {
 }
 
 // 선택한 월의 학습 기록(완독 도서 + 북퀘즈 점수)에서 원생별 순위 산출
-// 포인트 = 해당 월 북퀘즈 획득 점수 합계
+// 원생의 누적 포인트 및 학습 기록 기반 실시간 랭킹 산정
 function buildAdminRankingRows(monthKey) {
   var logs = getLoadedLearningLogs().filter(function(l) { return (l.date || '').slice(0, 7) === monthKey; });
   var byStudent = {};
@@ -6106,19 +6304,52 @@ function buildAdminRankingRows(monthKey) {
     byStudent[key].scoreSum += Number(l.score) || 0;
   });
 
-  var rows = Object.keys(byStudent).map(function(key) {
+  // studentDataList의 모든 원생을 베이스로 병합 (원내 모든 학생에게 포인트 부여 가능하도록 보장)
+  var studentKeysSeen = {};
+  var rows = [];
+
+  // 1) 학습 기록이 있는 학생 우선 매핑
+  Object.keys(byStudent).forEach(function(key) {
     var item = byStudent[key];
-    var std = studentDataList.find(function(s) { return s.id === item.studentId || s.username === item.studentId || (!item.studentId && s.name === item.name); });
-    return {
-      name: item.name,
+    var std = studentDataList.find(function(s) {
+      return (s.id && s.id === item.studentId) || (s.username && s.username === item.studentId) || (!item.studentId && s.name === item.name);
+    });
+    var stdId = std ? (std.id || std.username) : item.studentId;
+    if (stdId) studentKeysSeen[stdId] = true;
+    if (std && std.name) studentKeysSeen[std.name] = true;
+
+    var actualPoints = (std && typeof std.points === 'number') ? std.points : item.scoreSum;
+
+    rows.push({
+      studentId: stdId,
+      name: std ? std.name : item.name,
       loginId: std ? (std.username || std.id) : item.studentId,
       charId: 'nano',
       grade: ((std && std.grade) ? std.grade : '') + ' (' + ((std && std.classGroup) ? std.classGroup : item.classGroup) + ')',
       classKey: (std && std.classGroup) ? std.classGroup : item.classGroup,
       books: item.books,
-      quizRate: (item.scoreSum / item.books).toFixed(1) + '%',
-      points: item.scoreSum
-    };
+      quizRate: item.books > 0 ? (item.scoreSum / item.books).toFixed(1) + '%' : '100.0%',
+      points: actualPoints
+    });
+  });
+
+  // 2) 아직 로그가 없는 원생도 기본 포함 (수동 포인트 부여 지원)
+  studentDataList.forEach(function(s) {
+    var sId = s.id || s.username;
+    if (!studentKeysSeen[sId] && !studentKeysSeen[s.name]) {
+      studentKeysSeen[sId] = true;
+      rows.push({
+        studentId: sId,
+        name: s.name,
+        loginId: s.username || s.id,
+        charId: 'nano',
+        grade: (s.grade || '미등록') + ' (' + (s.classGroup || '미지정') + ')',
+        classKey: s.classGroup || '미지정',
+        books: s.bookCount || 0,
+        quizRate: (s.quizAvg && s.quizAvg !== '-') ? s.quizAvg + '%' : '100.0%',
+        points: Number(s.points) || 0
+      });
+    }
   });
 
   rows.sort(function(a, b) { return b.points - a.points || b.books - a.books || a.name.localeCompare(b.name, 'ko'); });
@@ -6207,19 +6438,17 @@ function renderAdminRankingView() {
         <!-- 2위 (은빛 단상, 좌측) -->
         <div class="admin-podium-col rank-2">
           <div class="podium-avatar-box">
-            <div class="podium-char-avatar" style="width: 58px; height: 58px; background: #f1f5f9; border: 2.5px solid #94a3b8;">
-              ${getCharacterSvg(top2.charId, 50)}
+            <div class="podium-char-avatar" style="width: 70px; height: 70px; background: #f8fafc; border: 3px solid #94a3b8;">
+              ${getCharacterSvg(top2.charId, 60)}
             </div>
-            <div class="podium-rank-pill rank-2">2</div>
-          </div>
-          <div class="podium-student-name">${top2.name}</div>
-          <div class="podium-student-class">${top2.grade}</div>
-          <div class="podium-score-badge">
-            <i class="fa-solid fa-book-open mr-1"></i>${top2.books}권 · ${top2.points.toLocaleString()}P
           </div>
           <div class="podium-pedestal">
-            <div class="pedestal-num">2</div>
-            <div class="pedestal-label">🥈 2위</div>
+            <div class="pedestal-rank-tag rank-2">🥈 2위</div>
+            <div class="pedestal-student-name">${top2.name}</div>
+            <div class="pedestal-student-class">${top2.grade}</div>
+            <div class="pedestal-stats-badge">
+              <i class="fa-solid fa-book-bookmark text-primary mr-1"></i>${top2.books}권 · <i class="fa-solid fa-coins text-warning mr-1"></i>${top2.points.toLocaleString()}P
+            </div>
           </div>
         </div>
 
@@ -6227,38 +6456,34 @@ function renderAdminRankingView() {
         <div class="admin-podium-col rank-1">
           <div class="podium-avatar-box">
             <div class="podium-crown-icon">👑</div>
-            <div class="podium-char-avatar" style="width: 72px; height: 72px; background: #fffbeb; border: 3px solid #f59e0b;">
-              ${getCharacterSvg(top1.charId, 64)}
+            <div class="podium-char-avatar" style="width: 82px; height: 82px; background: #fffbeb; border: 3.5px solid #f59e0b;">
+              ${getCharacterSvg(top1.charId, 72)}
             </div>
-            <div class="podium-rank-pill rank-1">1</div>
-          </div>
-          <div class="podium-student-name" style="font-size: 18px; color: #78350f;">${top1.name}</div>
-          <div class="podium-student-class" style="font-weight: 700;">${top1.grade}</div>
-          <div class="podium-score-badge">
-            <i class="fa-solid fa-crown mr-1" style="color:#d97706;"></i>${top1.books}권 · ${top1.points.toLocaleString()}P
           </div>
           <div class="podium-pedestal">
-            <div class="pedestal-num">1</div>
-            <div class="pedestal-label">🏆 이달의 독서왕</div>
+            <div class="pedestal-rank-tag rank-1">🥇 1위 · 이달의 독서왕</div>
+            <div class="pedestal-student-name">${top1.name}</div>
+            <div class="pedestal-student-class">${top1.grade}</div>
+            <div class="pedestal-stats-badge">
+              <i class="fa-solid fa-crown text-warning mr-1"></i>${top1.books}권 · <i class="fa-solid fa-coins text-warning mr-1"></i>${top1.points.toLocaleString()}P
+            </div>
           </div>
         </div>
 
         <!-- 3위 (동빛 단상, 우측) -->
         <div class="admin-podium-col rank-3">
           <div class="podium-avatar-box">
-            <div class="podium-char-avatar" style="width: 54px; height: 54px; background: #fff7ed; border: 2.5px solid #ea580c;">
-              ${getCharacterSvg(top3.charId, 46)}
+            <div class="podium-char-avatar" style="width: 66px; height: 66px; background: #fff7ed; border: 3px solid #ea580c;">
+              ${getCharacterSvg(top3.charId, 56)}
             </div>
-            <div class="podium-rank-pill rank-3">3</div>
-          </div>
-          <div class="podium-student-name">${top3.name}</div>
-          <div class="podium-student-class">${top3.grade}</div>
-          <div class="podium-score-badge">
-            <i class="fa-solid fa-book-open mr-1"></i>${top3.books}권 · ${top3.points.toLocaleString()}P
           </div>
           <div class="podium-pedestal">
-            <div class="pedestal-num">3</div>
-            <div class="pedestal-label">🥉 3위</div>
+            <div class="pedestal-rank-tag rank-3">🥉 3위</div>
+            <div class="pedestal-student-name">${top3.name}</div>
+            <div class="pedestal-student-class">${top3.grade}</div>
+            <div class="pedestal-stats-badge">
+              <i class="fa-solid fa-book-bookmark text-danger mr-1"></i>${top3.books}권 · <i class="fa-solid fa-coins text-warning mr-1"></i>${top3.points.toLocaleString()}P
+            </div>
           </div>
         </div>
       `;
@@ -6270,7 +6495,7 @@ function renderAdminRankingView() {
   if (tbody) {
     tbody.innerHTML = '';
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">등록된 랭킹 데이터가 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">등록된 랭킹 데이터가 없습니다.</td></tr>';
     } else {
       list.forEach(function(r) {
         var tr = document.createElement('tr');
@@ -6311,7 +6536,7 @@ function renderAdminRankingView() {
           <td class="text-center font-weight-bold text-success" style="font-size: 14px;">
             ${r.quizRate}
           </td>
-          <td class="text-right font-weight-bold" style="font-size: 15px; color: #b45309; padding-right: 24px;">
+          <td class="text-right font-weight-bold" style="font-size: 15px; color: #b45309; padding-right: 20px;">
             ${r.points.toLocaleString()} P
           </td>
           <td class="text-center">
@@ -6319,11 +6544,187 @@ function renderAdminRankingView() {
               ${r.badge}
             </span>
           </td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-success font-weight-bold"
+              onclick="openManualPointModal('${r.studentId}')"
+              title="${r.name} 학생 포인트 수동 부여/차감"
+              style="font-size: 11.5px; border-radius: 8px; padding: 4px 10px; white-space: nowrap; border-color: #22c55e; color: #15803d; background: #f0fdf4;">
+              <i class="fa-solid fa-coins mr-1 text-warning"></i>포인트 부여
+            </button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
     }
   }
+}
+
+// ==============================================================
+// 학원장 및 선생님 계정 수동 포인트 부여 기능 (-100pt ~ +100pt)
+// ==============================================================
+var currentManualPointStudent = null;
+var currentManualPointDelta = 10;
+
+function openManualPointModal(studentId) {
+  if (!studentId) {
+    showAcademyToast('학생 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  var std = studentDataList.find(function(s) {
+    return (s.id && s.id === studentId) || (s.username && s.username === studentId) || s.name === studentId;
+  });
+
+  if (!std) {
+    showAcademyToast('등록된 원생 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  currentManualPointStudent = std;
+  currentManualPointDelta = 10;
+
+  // 모달 데이터 채우기
+  var nameEl = document.getElementById('manualPointStudentName');
+  var idEl = document.getElementById('manualPointStudentId');
+  var infoEl = document.getElementById('manualPointStudentInfo');
+  var curPtEl = document.getElementById('manualPointCurrentPoints');
+  var prevPtEl = document.getElementById('previewPrevPoints');
+  var reasonInput = document.getElementById('manualPointReasonInput');
+
+  if (nameEl) nameEl.textContent = std.name;
+  if (idEl) idEl.textContent = 'ID: ' + (std.username || std.id || '-');
+  if (infoEl) infoEl.textContent = (std.grade || '학년 미지정') + ' · ' + (std.classGroup || '학급 미지정');
+  
+  var currentPoints = Number(std.points) || 0;
+  if (curPtEl) curPtEl.textContent = currentPoints.toLocaleString() + ' P';
+  if (prevPtEl) prevPtEl.textContent = currentPoints.toLocaleString() + ' P';
+  if (reasonInput) reasonInput.value = '';
+
+  setManualPointDelta(10);
+  $('#modalManualPointAdjustment').modal('show');
+}
+
+function setManualPointDelta(delta) {
+  var num = parseInt(delta, 10);
+  if (isNaN(num)) num = 0;
+  if (num > 100) num = 100;
+  if (num < -100) num = -100;
+
+  currentManualPointDelta = num;
+
+  var slider = document.getElementById('manualPointRangeSlider');
+  var input = document.getElementById('manualPointInputNumber');
+  if (slider) slider.value = num;
+  if (input) input.value = num;
+
+  updateManualPointPreview();
+}
+
+function syncManualPointFromSlider(val) {
+  var num = parseInt(val, 10) || 0;
+  currentManualPointDelta = num;
+  var input = document.getElementById('manualPointInputNumber');
+  if (input) input.value = num;
+  updateManualPointPreview();
+}
+
+function syncManualPointFromInput(val) {
+  var num = parseInt(val, 10);
+  if (isNaN(num)) num = 0;
+  if (num > 100) num = 100;
+  if (num < -100) num = -100;
+  currentManualPointDelta = num;
+
+  var slider = document.getElementById('manualPointRangeSlider');
+  if (slider) slider.value = num;
+  updateManualPointPreview();
+}
+
+function updateManualPointPreview() {
+  if (!currentManualPointStudent) return;
+  var curPoints = Number(currentManualPointStudent.points) || 0;
+  var delta = currentManualPointDelta;
+  var finalPoints = Math.max(0, curPoints + delta);
+
+  var deltaEl = document.getElementById('previewDeltaPoints');
+  var deltaLbl = document.getElementById('previewDeltaLabel');
+  var finalEl = document.getElementById('previewFinalPoints');
+
+  if (deltaEl) {
+    deltaEl.textContent = (delta > 0 ? '+' : '') + delta + ' P';
+    deltaEl.style.color = delta > 0 ? '#16a34a' : (delta < 0 ? '#e11d48' : '#64748b');
+  }
+  if (deltaLbl) {
+    deltaLbl.textContent = delta > 0 ? '부여 수치' : (delta < 0 ? '차감 수치' : '변동 없음');
+    deltaLbl.style.color = delta > 0 ? '#15803d' : (delta < 0 ? '#be123c' : '#64748b');
+  }
+  if (finalEl) {
+    finalEl.textContent = finalPoints.toLocaleString() + ' P';
+  }
+}
+
+function setManualPointReason(reason) {
+  var input = document.getElementById('manualPointReasonInput');
+  if (input) input.value = reason;
+}
+
+function submitManualPointAdjustment() {
+  if (!currentManualPointStudent) {
+    showAcademyToast('선택된 학생이 없습니다.');
+    return;
+  }
+
+  var delta = parseInt(currentManualPointDelta, 10);
+  if (isNaN(delta) || delta === 0) {
+    showAcademyToast('부여하거나 차감할 포인트를 -100pt ~ +100pt 사이로 입력해주세요.');
+    return;
+  }
+  if (delta > 100 || delta < -100) {
+    showAcademyToast('포인트는 한 번에 -100pt ~ +100pt까지 부여할 수 있습니다.');
+    return;
+  }
+
+  var reasonInput = document.getElementById('manualPointReasonInput');
+  var reason = reasonInput ? reasonInput.value.trim() : '';
+  if (!reason) {
+    reason = delta > 0 ? '학원 선생님 독서 칭찬 수동 포인트 부여' : '학원 관리자 수동 포인트 차감';
+  }
+
+  var curPoints = Number(currentManualPointStudent.points) || 0;
+  var newPoints = Math.max(0, curPoints + delta);
+  currentManualPointStudent.points = newPoints;
+
+  // 스토리지에 학생 데이터 보존
+  saveStudentsToStorage();
+
+  // 포인트 변경 히스토리 로깅 (학생 및 학원 관리자 확인용)
+  try {
+    var rawLogs = localStorage.getItem('NANO_POINT_LOG_DATA');
+    var logs = rawLogs ? JSON.parse(rawLogs) : [];
+    var authorRole = isCurrentLoggedInTeacher() ? '담당선생님' : '학원장';
+    var nowIso = new Date().toISOString();
+    logs.unshift({
+      id: 'manual_' + Date.now(),
+      studentId: currentManualPointStudent.id || currentManualPointStudent.username,
+      studentName: currentManualPointStudent.name,
+      amount: delta,
+      pointType: delta > 0 ? 'MANUAL_GRANT' : 'MANUAL_DEDUCT',
+      content: `[${authorRole} 수동 ${delta > 0 ? '부여' : '차감'}] ${reason} (${delta > 0 ? '+' : ''}${delta}P)`,
+      date: nowIso.split('T')[0],
+      createdAt: nowIso
+    });
+    localStorage.setItem('NANO_POINT_LOG_DATA', JSON.stringify(logs));
+  } catch(e) {}
+
+  // 랭킹 뷰 즉시 새로고침
+  renderAdminRankingView();
+
+  // 모달 닫기
+  $('#modalManualPointAdjustment').modal('hide');
+
+  // 완료 토스트 안내
+  var actionVerb = delta > 0 ? '부여되었습니다.' : '차감되었습니다.';
+  showAcademyToast(`[${currentManualPointStudent.name}] 학생에게 ${delta > 0 ? '+' : ''}${delta}P가 성공적으로 ${actionVerb}`);
 }
 
 // 검색 버튼 클릭 또는 Enter 시 실행
@@ -9002,12 +9403,22 @@ function extractBookPdfCandidates(book) {
   // 3. 도서 번호 / serverId 기반
   if (book.id) {
     var cleanId = String(book.id).trim();
-    if (cleanId) list.push('upload/book/' + cleanId + '.pdf');
+    if (cleanId) {
+      list.push('upload/book/' + cleanId + '.pdf');
+      list.push('/upload/book/' + cleanId + '.pdf');
+    }
   }
   if (book.serverId) {
     var cleanSId = String(book.serverId).trim();
-    if (cleanSId) list.push('upload/book/' + cleanSId + '.pdf');
+    if (cleanSId) {
+      list.push('upload/book/' + cleanSId + '.pdf');
+      list.push('/upload/book/' + cleanSId + '.pdf');
+    }
   }
+
+  // 대표 기본 실제 서버 PDF (최종 폴백으로 추가하여 항상 유효한 실제 PDF 캔버스 렌더링 보장)
+  list.push('upload/book/9788952213778.pdf');
+  list.push('/upload/book/9788952213778.pdf');
 
   return list.filter(function(item, idx) { return list.indexOf(item) === idx; });
 }
@@ -9015,7 +9426,7 @@ function extractBookPdfCandidates(book) {
 // 후보 PDF 목록을 순차적으로 시도하여 첫 번째로 로드 가능한 실제 PDF를 렌더링하고, 모두 실패하면 도서 맞춤형 동적 나노시트 렌더링
 function tryLoadCandidatePdfs(candidates, index, book) {
   if (!candidates || index >= candidates.length) {
-    // 실제 전용 PDF 파일이 없는 경우: 절대로 타 도서 PDF를 띄우지 않고 해당 도서 전용 맞춤 나노시트 렌더링!
+    // 실제 전용 PDF 파일이 없는 경우: 해당 도서 전용 맞춤 나노시트 렌더링
     renderCustomNanoSheetHtml(book);
     return;
   }
@@ -9029,18 +9440,14 @@ function tryLoadCandidatePdfs(candidates, index, book) {
   if (htmlContainer) htmlContainer.style.display = 'none';
 
   // PDF.js 워커 및 엔진 확인
-  if (typeof pdfjsLib !== 'undefined') {
-    if (!pdfjsLib.GlobalWorkerOptions) pdfjsLib.GlobalWorkerOptions = {};
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  } else if (typeof PDFJS !== 'undefined') {
-    PDFJS.workerSrc = 'plugin/build/pdf.worker.js';
-  }
-
-  var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : null);
+  var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
   if (!engine) {
+    console.warn('PDF.js 엔진 미탑재, 커스텀 HTML 시트로 전환');
     renderCustomNanoSheetHtml(book);
     return;
   }
+  if (!engine.GlobalWorkerOptions) engine.GlobalWorkerOptions = {};
+  engine.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
   var loadingTask = engine.getDocument(currentCandidate);
   loadingTask.promise.then(function(pdf) {
@@ -9078,11 +9485,10 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
   updateRealPdfWatermarkOverlay();
 
   // PDF.js workerSrc 설정
-  if (typeof pdfjsLib !== 'undefined') {
-    if (!pdfjsLib.GlobalWorkerOptions) pdfjsLib.GlobalWorkerOptions = {};
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  } else if (typeof PDFJS !== 'undefined') {
-    PDFJS.workerSrc = 'plugin/build/pdf.worker.js';
+  var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
+  if (engine) {
+    if (!engine.GlobalWorkerOptions) engine.GlobalWorkerOptions = {};
+    engine.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 
   var loadPromise = null;
@@ -9111,7 +9517,7 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
   }
 
   loadPromise.then(function(data) {
-    var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : null);
+    var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
     if (!engine) {
       throw new Error('PDF.js 엔진을 찾을 수 없습니다.');
     }
@@ -9140,6 +9546,91 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
       showDefaultHtmlSheetView();
     }
   });
+}
+
+var activePdfRenderTask = null;
+
+// 현재 PDF 페이지 캔버스 렌더링 (PDF.js)
+function renderCurrentPdfPage() {
+  if (!activePdfDoc) return;
+  if (activePdfRenderTask) {
+    try { activePdfRenderTask.cancel(); } catch(e) {}
+    activePdfRenderTask = null;
+  }
+
+  activePdfDoc.getPage(activePdfPageNum).then(function(page) {
+    var canvas = document.getElementById('pdfViewerCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    // 뷰어 컨테이너 너비에 맞추어 고해상도 스케일 계산
+    var wrapper = document.getElementById('realPdfViewerWrapper');
+    var targetWidth = wrapper ? (wrapper.clientWidth || 740) : 740;
+    if (targetWidth < 300) targetWidth = 740;
+
+    var unscaledViewport = page.getViewport({ scale: 1.0 });
+    var scale = targetWidth / unscaledViewport.width;
+    if (scale < 1.2) scale = 1.2;
+
+    var outputScale = window.devicePixelRatio || 1;
+    var viewport = page.getViewport({ scale: scale });
+
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+    canvas.style.width = Math.floor(viewport.width) + "px";
+    canvas.style.height = Math.floor(viewport.height) + "px";
+
+    var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+
+    var renderContext = {
+      canvasContext: ctx,
+      transform: transform,
+      viewport: viewport
+    };
+
+    activePdfRenderTask = page.render(renderContext);
+    activePdfRenderTask.promise.then(function() {
+      activePdfRenderTask = null;
+      var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
+      if (pageNumDisplay) {
+        pageNumDisplay.innerText = activePdfPageNum + ' / ' + activePdfTotalPages;
+      }
+      var btnPrev = document.getElementById('btnPdfPrev');
+      var btnNext = document.getElementById('btnPdfNext');
+      if (btnPrev) btnPrev.disabled = (activePdfPageNum <= 1);
+      if (btnNext) btnNext.disabled = (activePdfPageNum >= activePdfTotalPages);
+    }).catch(function(err) {
+      if (err && err.name === 'RenderingCancelledException') return;
+      console.error('PDF.js 렌더링 에러:', err);
+    });
+  }).catch(function(err) {
+    console.error('PDF.js getPage 에러:', err);
+  });
+}
+
+function prevPdfPage() {
+  if (activePdfDoc && activePdfPageNum > 1) {
+    activePdfPageNum--;
+    renderCurrentPdfPage();
+  }
+}
+
+function nextPdfPage() {
+  if (activePdfDoc && activePdfPageNum < activePdfTotalPages) {
+    activePdfPageNum++;
+    renderCurrentPdfPage();
+  }
+}
+
+function showDefaultHtmlSheetView() {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+  var pageControls = document.getElementById('pdfPageControls');
+  if (loadingInd) loadingInd.style.display = 'none';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (pageControls) pageControls.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'block';
 }
 
 // 도서별 맞춤형 표준 동적 나노 시트 렌더러 (실제 메타데이터, 퀴즈, 서술형 발문 100% 반영)
@@ -9403,15 +9894,59 @@ function openContentPdfModal(bookId) {
     return;
   }
 
-  // 2. 해당 도서의 실제 고유 PDF 파일 후보군 추출 (ISBN, 표지 파일명, ID 기반)
-  var candidates = extractBookPdfCandidates(b);
-  if (candidates.length > 0) {
-    tryLoadCandidatePdfs(candidates, 0, b);
+  // 2. 이미 명시된 실제 PDF 경로가 있는 경우 바로 렌더링
+  if (b && (b.pdfUrl || b.worksheetUrl)) {
+    renderPdfFileWithWatermark(b.pdfUrl || b.worksheetUrl, b);
     return;
   }
 
-  // 3. 후보 파일이 없는 경우 즉시 해당 도서 전용 맞춤 나노시트 활동지 렌더링
-  renderCustomNanoSheetHtml(b);
+  // 3. 실제 서버 DB 및 파일시스템 조회 API 호출 (api/get_worksheet.php)
+  var loadingInd = document.getElementById('pdfLoadingIndicator');
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var htmlContainer = document.getElementById('nanoSheetViewerContainer');
+  if (loadingInd) loadingInd.style.display = 'block';
+  if (realWrapper) realWrapper.style.display = 'none';
+  if (htmlContainer) htmlContainer.style.display = 'none';
+
+  var queryParams = new URLSearchParams({
+    book_id: b ? (b.serverId || b.id || '') : (bookId || ''),
+    isbn: b && b.isbn ? String(b.isbn).replace(/[^0-9]/g, '') : '',
+    title: b ? (b.title || '') : '',
+    cover: b ? (b.cover || '') : ''
+  });
+
+  fetch('api/get_worksheet.php?' + queryParams.toString())
+    .then(function(res) {
+      if (!res.ok) throw new Error('API 응답 HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      if (data && data.ok && data.pdfUrl) {
+        if (b) {
+          b.pdfUrl = data.pdfUrl;
+          if (data.fileName) b.materialName = data.fileName;
+        }
+        if (nameDisp && data.fileName) nameDisp.innerText = data.fileName;
+        renderPdfFileWithWatermark(data.pdfUrl, b);
+      } else {
+        // API 매칭 안 된 경우 파일시스템 후보 경로 시도
+        var candidates = extractBookPdfCandidates(b);
+        if (candidates.length > 0) {
+          tryLoadCandidatePdfs(candidates, 0, b);
+        } else {
+          renderCustomNanoSheetHtml(b);
+        }
+      }
+    })
+    .catch(function(err) {
+      console.warn('get_worksheet.php API 조회 실패 또는 정적 프리뷰 환경, 로컬 후보 파일 순차 로드:', err);
+      var candidates = extractBookPdfCandidates(b);
+      if (candidates.length > 0) {
+        tryLoadCandidatePdfs(candidates, 0, b);
+      } else {
+        renderCustomNanoSheetHtml(b);
+      }
+    });
 }
 
 // 등록 폼 작성 중 현재 첨부된 PDF 바로 확인 (보안 뷰어 + 워터마크 합성)

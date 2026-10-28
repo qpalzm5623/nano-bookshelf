@@ -462,8 +462,7 @@
               type="text" 
               id="userId" 
               class="form-control" 
-              placeholder="아이디 (예: master00)" 
-              value="master00" 
+              placeholder="아이디를 입력하세요" 
               autocomplete="username"
               required
             >
@@ -480,7 +479,6 @@
               id="userPw" 
               class="form-control" 
               placeholder="비밀번호 입력" 
-              value="master00" 
               autocomplete="current-password"
               required
             >
@@ -493,7 +491,7 @@
         <!-- 옵션: 아이디 저장 -->
         <div class="form-options">
           <label class="remember-me">
-            <input type="checkbox" id="rememberMe" checked>
+            <input type="checkbox" id="rememberMe">
             <span>아이디 저장</span>
           </label>
         </div>
@@ -608,16 +606,41 @@
       }
     };
 
-    // 로드 시 초기화
+    // 로드 시 초기화 (아이디 저장 상태 정확히 동기화 및 비밀번호 하드코딩 완전 제거)
     window.addEventListener('DOMContentLoaded', () => {
       const savedId = localStorage.getItem('nano_saved_id');
+      const idInput = document.getElementById('userId');
+      const pwInput = document.getElementById('userPw');
+      const rememberChk = document.getElementById('rememberMe');
+
+      // 비밀번호는 어떤 경우에도 기본값을 채우지 않고 항상 공백 유지
+      if (pwInput) pwInput.value = '';
+
       if (savedId) {
-        document.getElementById('userId').value = savedId;
-        if (savedId === 'master00') {
-          document.getElementById('userPw').value = 'master00';
-        }
+        if (idInput) idInput.value = savedId;
+        if (rememberChk) rememberChk.checked = true;
+        if (pwInput) pwInput.focus();
+      } else {
+        if (idInput) idInput.value = '';
+        if (rememberChk) rememberChk.checked = false;
+        if (idInput) idInput.focus();
       }
-      document.getElementById('userId').focus();
+
+      // 아이디 입력창을 수정/입력할 때 비밀번호 필드 자동 비우기
+      if (idInput && pwInput) {
+        idInput.addEventListener('input', () => {
+          pwInput.value = '';
+        });
+      }
+
+      // 아이디 저장 체크박스를 해제하면 즉시 저장된 아이디 삭제
+      if (rememberChk) {
+        rememberChk.addEventListener('change', () => {
+          if (!rememberChk.checked) {
+            localStorage.removeItem('nano_saved_id');
+          }
+        });
+      }
     });
 
     // 비밀번호 보이기/숨기기 토글

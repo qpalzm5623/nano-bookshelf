@@ -1117,11 +1117,11 @@
       box-shadow: 0 2px 6px rgba(45, 106, 79, 0.35);
     }
 
-    /* 도서 목록 페이지네이션 버튼 */
+    /* 도서/원생 목록 페이지네이션 버튼 */
     .acad-page-btn {
-      min-width: 30px;
-      height: 30px;
-      padding: 0 8px;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 9px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 700;
@@ -1207,20 +1207,23 @@
 
     .podium-avatar-box {
       position: relative;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 2;
     }
 
     .podium-crown-icon {
       position: absolute;
-      top: -24px;
+      top: -28px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 26px;
-      filter: drop-shadow(0 4px 8px rgba(245, 158, 11, 0.4));
+      font-size: 32px;
+      filter: drop-shadow(0 4px 10px rgba(245, 158, 11, 0.55));
       animation: crownBounce 2.4s infinite ease-in-out;
+      z-index: 10 !important;
+      pointer-events: none;
     }
 
     @keyframes crownBounce {
@@ -1231,7 +1234,7 @@
       }
 
       50% {
-        transform: translateX(-50%) translateY(-4px) rotate(-4deg);
+        transform: translateX(-50%) translateY(-5px) rotate(-4deg);
       }
     }
 
@@ -1241,123 +1244,147 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
-      transition: transform 0.25s;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .podium-char-avatar:hover {
-      transform: scale(1.06);
+      transform: scale(1.08);
     }
 
-    .podium-rank-pill {
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 900;
-      color: #ffffff;
-      border: 2px solid #ffffff;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .podium-rank-pill.rank-1 {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    .podium-rank-pill.rank-2 {
-      background: linear-gradient(135deg, #94a3b8, #64748b);
-    }
-
-    .podium-rank-pill.rank-3 {
-      background: linear-gradient(135deg, #d97706, #b45309);
-    }
-
-    .podium-student-name {
-      font-size: 16px;
-      font-weight: 900;
-      color: #0f172a;
-      margin-bottom: 2px;
-      letter-spacing: -0.3px;
-    }
-
-    .podium-student-class {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .podium-score-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #eff6ff;
-      color: #1d4ed8;
-      font-size: 12.5px;
-      font-weight: 800;
-      padding: 3px 10px;
-      border-radius: 12px;
-      margin-bottom: 8px;
-    }
-
-    .admin-podium-col.rank-1 .podium-score-badge {
-      background: #fef3c7;
-      color: #b45309;
-    }
-
-    /* 3D 단상 박스 */
+    /* 3D 단상(Pedestal) 박스: 시상대 내부 통합 정보 UI */
     .podium-pedestal {
       width: 100%;
-      border-radius: 14px 14px 8px 8px;
+      border-radius: 16px 16px 8px 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+      justify-content: flex-start;
+      padding: 14px 10px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       position: relative;
+      box-sizing: border-box;
+      text-align: center;
     }
 
     .admin-podium-col.rank-1 .podium-pedestal {
-      height: 124px;
-      background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
-      border: 2px solid #f59e0b;
-      color: #b45309;
+      height: 184px;
+      background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 35%, #fde68a 100%);
+      border: 2.5px solid #f59e0b;
+      box-shadow: 0 10px 28px rgba(245, 158, 11, 0.22);
     }
 
     .admin-podium-col.rank-2 .podium-pedestal {
-      height: 94px;
-      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+      height: 154px;
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 100%);
       border: 2px solid #94a3b8;
-      color: #475569;
+      box-shadow: 0 8px 22px rgba(100, 116, 139, 0.15);
     }
 
     .admin-podium-col.rank-3 .podium-pedestal {
-      height: 74px;
-      background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
+      height: 134px;
+      background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 40%, #fed7aa 100%);
       border: 2px solid #ea580c;
-      color: #9a3412;
+      box-shadow: 0 8px 22px rgba(234, 88, 12, 0.15);
     }
 
-    .pedestal-num {
-      font-size: 32px;
+    /* 단상 내부 1: 순위 + 메달 태그 */
+    .pedestal-rank-tag {
+      font-size: 11.5px;
       font-weight: 900;
-      line-height: 1;
+      padding: 2.5px 10px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      letter-spacing: -0.2px;
     }
 
-    .pedestal-label {
-      font-size: 12px;
-      font-weight: 800;
+    .pedestal-rank-tag.rank-1 {
+      background: #fef08a;
+      color: #92400e;
+      border: 1px solid #facc15;
+    }
+
+    .pedestal-rank-tag.rank-2 {
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+
+    .pedestal-rank-tag.rank-3 {
+      background: #ffffff;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+    }
+
+    /* 단상 내부 2: 원생 이름 */
+    .pedestal-student-name {
+      font-weight: 900;
+      margin-bottom: 2px;
       letter-spacing: -0.3px;
-      opacity: 0.95;
-      margin-top: 4px;
+      line-height: 1.2;
+    }
+
+    .admin-podium-col.rank-1 .pedestal-student-name {
+      font-size: 18.5px;
+      color: #78350f;
+    }
+
+    .admin-podium-col.rank-2 .pedestal-student-name {
+      font-size: 16.5px;
+      color: #1e293b;
+    }
+
+    .admin-podium-col.rank-3 .pedestal-student-name {
+      font-size: 16px;
+      color: #7c2d12;
+    }
+
+    /* 단상 내부 3: 학년 / 학급 */
+    .pedestal-student-class {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .admin-podium-col.rank-1 .pedestal-student-class {
+      color: #a16207;
+    }
+
+    /* 단상 내부 4: 완독 권수 + 포인트 뱃지 */
+    .pedestal-stats-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4.5px;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 10px;
+      margin-top: auto;
+      white-space: nowrap;
+    }
+
+    .admin-podium-col.rank-1 .pedestal-stats-badge {
+      background: rgba(255, 255, 255, 0.85);
+      color: #b45309;
+      border: 1px solid #fde047;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+    }
+
+    .admin-podium-col.rank-2 .pedestal-stats-badge {
+      background: rgba(255, 255, 255, 0.9);
+      color: #1d4ed8;
+      border: 1px solid #cbd5e1;
+    }
+
+    .admin-podium-col.rank-3 .pedestal-stats-badge {
+      background: rgba(255, 255, 255, 0.9);
+      color: #c2410c;
+      border: 1px solid #fed7aa;
     }
 
     /* 포스터 미리보기 모달 */
@@ -3701,14 +3728,14 @@
               </tbody>
             </table>
 
-            <!-- 원생 목록 20명 단위 페이지네이션 바 -->
+            <!-- 원생 목록 20명 단위 페이지네이션 바 (충분한 좌우/하단 여백 확보) -->
             <div id="studentPaginationWrap"
-              class="d-flex justify-content-between align-items-center flex-wrap pt-3 mt-2 border-top"
-              style="gap: 10px;">
-              <div class="text-muted" id="studentPageInfo" style="font-size: 12px; font-weight: 600;">
+              class="d-flex justify-content-between align-items-center flex-wrap px-4 py-3 border-top"
+              style="gap: 12px; background: #ffffff;">
+              <div class="text-muted" id="studentPageInfo" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
                 원생 목록 로딩 중...
               </div>
-              <div class="d-flex align-items-center" id="studentPagination" style="gap: 4px;">
+              <div class="d-flex align-items-center" id="studentPagination" style="gap: 6px;">
                 <!-- JS 동적 생성 -->
               </div>
             </div>
@@ -3768,6 +3795,12 @@
                 <!-- JS 렌더링 -->
               </tbody>
             </table>
+            <!-- 지도교사 목록 하단 여백 및 상태 바 -->
+            <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff;">
+              <div class="text-muted" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
+                총 <b id="teacherFooterCount" style="color: var(--text-main);">4</b>명의 지도교사가 등록되어 있습니다.
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3941,14 +3974,14 @@
               </tbody>
             </table>
 
-            <!-- 도서 목록 30개 단위 페이지네이션 바 -->
+            <!-- 도서 목록 30개 단위 페이지네이션 바 (충분한 좌우/하단 여백 확보) -->
             <div id="academyBookPaginationWrap"
-              class="d-flex justify-content-between align-items-center flex-wrap pt-3 mt-2 border-top"
-              style="gap: 10px;">
-              <div class="text-muted" id="academyBookPageInfo" style="font-size: 12px; font-weight: 600;">
+              class="d-flex justify-content-between align-items-center flex-wrap px-4 py-3 border-top"
+              style="gap: 12px; background: #ffffff;">
+              <div class="text-muted" id="academyBookPageInfo" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
                 총 0권 중 0-0권 표시
               </div>
-              <div class="d-flex align-items-center" id="academyBookPagination" style="gap: 4px;">
+              <div class="d-flex align-items-center" id="academyBookPagination" style="gap: 6px;">
                 <!-- JS 동적 생성 -->
               </div>
             </div>
@@ -4436,8 +4469,8 @@
             </tbody>
           </table>
           </div>
-          <!-- 20건 단위 페이지네이션 -->
-          <div id="learningPagination" class="d-flex justify-content-center align-items-center py-3 border-top"></div>
+          <!-- 20건 단위 페이지네이션 (여백 개선) -->
+          <div id="learningPagination" class="d-flex justify-content-center align-items-center px-4 py-3 border-top" style="background: #ffffff; gap: 6px;"></div>
         </div>
       </div>
 
@@ -4714,8 +4747,8 @@
                 <!-- JS 동적 렌더링 -->
               </tbody>
             </table>
-            <!-- 20개씩 페이징 컨트롤 바 -->
-            <div id="assignStudentPaginationWrap" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #faf8f5;">
+            <!-- 20개씩 페이징 컨트롤 바 (여백 개선) -->
+            <div id="assignStudentPaginationWrap" class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="gap: 12px; background: #faf8f5;">
               <!-- JS 동적 렌더링 -->
             </div>
           </div>
@@ -4811,6 +4844,12 @@
               <!-- JS 렌더링 -->
             </tbody>
           </table>
+          <!-- 알림톡 발송 목록 하단 여백 및 상태 바 -->
+          <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff;">
+            <div class="text-muted" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
+              * 알림톡 및 문자 발송 로그는 최근 90일간 보관되며 실시간 전송 결과가 반영됩니다.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -4858,46 +4897,49 @@
               </div>
             </div>
 
-            <!-- 3개 핵심 요약 배너 -->
+            <!-- 3개 핵심 요약 배너 (프리미엄 위젯 스타일) -->
             <div class="row mt-3 pt-3 border-top" style="border-color: #e5dcce !important;">
               <div class="col-md-4 mb-2 mb-md-0">
-                <div class="d-flex align-items-center gap-3 p-2.5 rounded bg-white border"
-                  style="border-color: #ebdcca !important;">
+                <div class="d-flex align-items-center p-3 rounded-lg bg-white"
+                  style="border: 1.5px solid #ebdcca; border-radius: 14px !important; box-shadow: 0 2px 8px rgba(78, 60, 42, 0.04); transition: transform 0.2s ease;">
                   <div
-                    style="width: 38px; height: 38px; border-radius: 10px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #b45309;">
+                    style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #b45309; margin-right: 14px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.18);">
                     👑
                   </div>
-                  <div>
-                    <div style="font-size: 11px; color: #78716c; font-weight: 700;">이달의 최고 독서왕</div>
-                    <div style="font-size: 14.5px; font-weight: 800; color: #292524;" id="adminRankTopStudent">박도윤 (초등
-                      6학년 · 31권)</div>
+                  <div style="min-width: 0; flex-grow: 1;">
+                    <div style="font-size: 11.5px; color: #857567; font-weight: 700; margin-bottom: 2px;">이달의 최고 독서왕</div>
+                    <div style="font-size: 15px; font-weight: 900; color: #2e261f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="adminRankTopStudent">
+                      -
+                    </div>
                   </div>
                 </div>
               </div>
               <div class="col-md-4 mb-2 mb-md-0">
-                <div class="d-flex align-items-center gap-3 p-2.5 rounded bg-white border"
-                  style="border-color: #ebdcca !important;">
+                <div class="d-flex align-items-center p-3 rounded-lg bg-white"
+                  style="border: 1.5px solid #ebdcca; border-radius: 14px !important; box-shadow: 0 2px 8px rgba(78, 60, 42, 0.04); transition: transform 0.2s ease;">
                   <div
-                    style="width: 38px; height: 38px; border-radius: 10px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #0369a1;">
+                    style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #0284c7; margin-right: 14px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.18);">
                     📚
                   </div>
-                  <div>
-                    <div style="font-size: 11px; color: #78716c; font-weight: 700;">원내 누적 완독 도서</div>
-                    <div style="font-size: 14.5px; font-weight: 800; color: #292524;" id="adminRankTotalBooks">총 184권 완독
+                  <div style="min-width: 0; flex-grow: 1;">
+                    <div style="font-size: 11.5px; color: #857567; font-weight: 700; margin-bottom: 2px;">원내 누적 완독 도서</div>
+                    <div style="font-size: 15px; font-weight: 900; color: #2e261f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="adminRankTotalBooks">
+                      0권
                     </div>
                   </div>
                 </div>
               </div>
               <div class="col-md-4">
-                <div class="d-flex align-items-center gap-3 p-2.5 rounded bg-white border"
-                  style="border-color: #ebdcca !important;">
+                <div class="d-flex align-items-center p-3 rounded-lg bg-white"
+                  style="border: 1.5px solid #ebdcca; border-radius: 14px !important; box-shadow: 0 2px 8px rgba(78, 60, 42, 0.04); transition: transform 0.2s ease;">
                   <div
-                    style="width: 38px; height: 38px; border-radius: 10px; background: #dcfce7; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #15803d;">
+                    style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #15803d; margin-right: 14px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.18);">
                     🎯
                   </div>
-                  <div>
-                    <div style="font-size: 11px; color: #78716c; font-weight: 700;">북퀴즈 평균 정답률</div>
-                    <div style="font-size: 14.5px; font-weight: 800; color: #292524;" id="adminRankAvgQuiz">94.6% (우수)
+                  <div style="min-width: 0; flex-grow: 1;">
+                    <div style="font-size: 11.5px; color: #857567; font-weight: 700; margin-bottom: 2px;">북퀴즈 평균 정답률</div>
+                    <div style="font-size: 15px; font-weight: 900; color: #2e261f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="adminRankAvgQuiz">
+                      -
                     </div>
                   </div>
                 </div>
@@ -4981,20 +5023,27 @@
             <table class="simple-table">
               <thead>
                 <tr>
-                  <th style="width: 80px; text-align: center;">순위</th>
-                  <th style="width: 70px; text-align: center;">변동</th>
+                  <th style="width: 70px; text-align: center;">순위</th>
+                  <th style="width: 60px; text-align: center;">변동</th>
                   <th style="text-align: left;">원생 정보</th>
                   <th>학년 / 소속 학급</th>
                   <th style="text-align: center;">완독 권수</th>
                   <th style="text-align: center;">북퀴즈 정답률</th>
-                  <th style="text-align: right; padding-right: 24px;">누적 독서 포인트</th>
+                  <th style="text-align: right; padding-right: 20px;">누적 독서 포인트</th>
                   <th style="text-align: center;">수여 칭호 & 뱃지</th>
+                  <th style="width: 125px; text-align: center;">포인트 관리</th>
                 </tr>
               </thead>
               <tbody id="academyRankingTableBody">
                 <!-- JS 렌더링 -->
               </tbody>
             </table>
+            <!-- 랭킹 테이블 하단 여백 및 상태 바 -->
+            <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff;">
+              <div class="text-muted" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
+                * 랭킹은 완독 권수, 북퀴즈 정답률, 획득 포인트를 종합 집계하여 실시간 반영됩니다.
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -5464,6 +5513,12 @@
               <!-- JS 동적 렌더링 -->
             </tbody>
           </table>
+          <!-- 결제 내역 테이블 하단 여백 및 상태 바 -->
+          <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff;">
+            <div class="text-muted" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
+              * 전자세금계산서 발행 및 결제 관련 문의는 본사 고객센터(1544-0000)로 문의해 주시기 바랍니다.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -6919,8 +6974,8 @@
                       <option value="탐구반">탐구반</option>
                       <option value="미지정">미지정 (학급 없음)</option>
                     </select>
-                    <div class="input-group-append">
-                      <button type="button" class="btn btn-outline-secondary" onclick="openClassManageModal()"
+                    <div class="input-group-append" id="btnModalClassManageWrapper">
+                      <button type="button" class="btn btn-outline-secondary" id="btnModalClassManage" onclick="openClassManageModal()"
                         style="border-radius: 0 8px 8px 0; font-size: 11.5px; border-color: var(--border-medium);">
                         <i class="fa-solid fa-gear mr-1"></i>학급관리
                       </button>
@@ -9043,6 +9098,155 @@
         <div class="modal-footer py-2 px-4" style="background: #faf8f5; border-top: 1px solid var(--border-light);">
           <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal"
             style="border-radius: 8px; font-weight: 700; padding: 6px 18px;">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 원생 독서 포인트 수동 부여 / 차감 모달 (-100pt ~ +100pt) -->
+  <div class="modal fade" id="modalManualPointAdjustment" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+      <div class="modal-content border-beige shadow-lg" style="border-radius: 20px; overflow: hidden; border: 1.5px solid var(--border-medium);">
+        <!-- 헤더 -->
+        <div class="modal-header py-3 px-4 d-flex align-items-center justify-content-between"
+          style="background: linear-gradient(135deg, #fefce8 0%, #fffbeb 100%); border-bottom: 1px solid #fef08a;">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef08a; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div>
+              <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: #78350f;">
+                원생 독서 포인트 수동 관리
+              </h5>
+              <div style="font-size: 11px; color: #92400e; margin-top: 1px;">
+                학원장 및 담당 선생님 권한으로 -100pt ~ +100pt 포인트를 수동 부여/차감합니다.
+              </div>
+            </div>
+          </div>
+          <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close"
+            style="font-size: 24px; line-height: 1;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <!-- 본문 -->
+        <div class="modal-body p-4" style="background: #ffffff;">
+          <!-- 1. 원생 기본 정보 요약 박스 -->
+          <div class="d-flex align-items-center justify-content-between p-3 mb-3"
+            style="background: #faf8f5; border: 1px solid #e8e1d5; border-radius: 14px;">
+            <div class="d-flex align-items-center gap-3">
+              <div id="manualPointStudentAvatar"
+                style="width: 44px; height: 44px; border-radius: 50%; background: #ffffff; border: 1.5px solid #d4c7b5; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #2d6a4f;">
+                <i class="fa-solid fa-user-graduate"></i>
+              </div>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <strong style="font-size: 16px; color: var(--text-main);" id="manualPointStudentName">-</strong>
+                  <span class="badge badge-pill badge-light border text-muted px-2 py-0.5" style="font-size: 11px;" id="manualPointStudentId">ID: -</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" id="manualPointStudentInfo">
+                  초등 4학년 · 나노 A반
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div style="font-size: 11px; color: #64748b; font-weight: 700;">현재 보유 포인트</div>
+              <div style="font-size: 18px; font-weight: 900; color: #0284c7;" id="manualPointCurrentPoints">
+                0 P
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 포인트 부여/차감 수치 설정 -->
+          <div class="mb-3">
+            <label class="font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 13px; color: #334155;">
+              <span><i class="fa-solid fa-sliders mr-1 text-primary"></i>포인트 부여 / 차감 수치</span>
+              <span class="badge badge-pill badge-secondary font-weight-bold" style="font-size: 10px;">범위: -100 ~ +100 pt</span>
+            </label>
+
+            <!-- 빠른 원클릭 프리셋 칩 -->
+            <div class="mb-2 d-flex flex-wrap gap-1" style="gap: 5px;">
+              <span style="font-size: 11px; font-weight: 700; color: #059669; align-self: center; margin-right: 2px;">+부여:</span>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(10)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+10</button>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(30)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+30</button>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(50)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+50</button>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(100)" style="font-size: 11px; background: #10b981; color: #ffffff; border: 1px solid #059669; border-radius: 8px;">+100</button>
+              
+              <span style="font-size: 11px; font-weight: 700; color: #e11d48; align-self: center; margin-left: 8px; margin-right: 2px;">-차감:</span>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-10)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-10</button>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-30)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-30</button>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-50)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-50</button>
+              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-100)" style="font-size: 11px; background: #f43f5e; color: #ffffff; border: 1px solid #e11d48; border-radius: 8px;">-100</button>
+            </div>
+
+            <!-- 슬라이더 및 인풋 연동 -->
+            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+              <input type="range" class="custom-range flex-grow-1" id="manualPointRangeSlider"
+                min="-100" max="100" step="5" value="10" oninput="syncManualPointFromSlider(this.value)">
+              <div class="input-group input-group-sm" style="width: 130px; flex-shrink: 0;">
+                <input type="number" class="form-control text-center font-weight-bold" id="manualPointInputNumber"
+                  min="-100" max="100" step="1" value="10" oninput="syncManualPointFromInput(this.value)"
+                  style="font-size: 15px; border-radius: 8px 0 0 8px; color: #047857;">
+                <div class="input-group-append">
+                  <span class="input-group-text font-weight-bold" style="border-radius: 0 8px 8px 0; background: #e2e8f0;">pt</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 실시간 변경 예상 결과 프리뷰 -->
+          <div class="p-3 mb-3 d-flex align-items-center justify-content-around text-center"
+            style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;">
+            <div>
+              <div style="font-size: 11px; color: #64748b; font-weight: 700;">현재 포인트</div>
+              <div style="font-size: 15px; font-weight: 800; color: #334155;" id="previewPrevPoints">0 P</div>
+            </div>
+            <div style="font-size: 16px; color: #94a3b8;"><i class="fa-solid fa-arrow-right"></i></div>
+            <div>
+              <div style="font-size: 11px; font-weight: 700;" id="previewDeltaLabel">조정 수치</div>
+              <div style="font-size: 16px; font-weight: 900; color: #16a34a;" id="previewDeltaPoints">+10 P</div>
+            </div>
+            <div style="font-size: 16px; color: #94a3b8;"><i class="fa-solid fa-equals"></i></div>
+            <div>
+              <div style="font-size: 11px; color: #166534; font-weight: 800;">조정 후 포인트</div>
+              <div style="font-size: 17px; font-weight: 900; color: #15803d;" id="previewFinalPoints">10 P</div>
+            </div>
+          </div>
+
+          <!-- 4. 사유 선택 및 입력 -->
+          <div>
+            <label class="font-weight-bold" style="font-size: 13px; color: #334155; margin-bottom: 6px;">
+              <i class="fa-solid fa-file-signature mr-1 text-primary"></i>부여 / 차감 사유
+            </label>
+            <!-- 사유 추천 프리셋 -->
+            <div class="mb-2 d-flex flex-wrap gap-1" style="gap: 5px;">
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('독서 퀴즈 챌린지 성실 참여 칭찬')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">독서 챌린지 칭찬</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('독후활동(생각담기) 우수 보너스')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">생각담기 우수</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('학원 독서 행사 참여 리워드')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">학원 행사 리워드</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('과제 미제출 패널티 차감')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">과제 미제출 감점</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('시스템 오지급 포인트 정정')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">오지급 정정</button>
+            </div>
+            <input type="text" class="form-control" id="manualPointReasonInput"
+              placeholder="직접 사유를 입력하거나 위의 추천 사유를 클릭하세요"
+              style="font-size: 13px; border-radius: 10px; border-color: var(--border-medium);">
+            <small class="text-muted mt-1 d-block" style="font-size: 11px;">
+              * 학생의 포인트 적립 내역에 작성하신 사유가 투명하게 기록됩니다.
+            </small>
+          </div>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="modal-footer py-3 px-4 d-flex justify-content-between align-items-center"
+          style="background: #faf8f5; border-top: 1px solid var(--border-light);">
+          <button type="button" class="btn btn-sm btn-secondary font-weight-bold px-3 py-2" data-dismiss="modal"
+            style="border-radius: 10px; font-size: 12.5px;">
+            취소
+          </button>
+          <button type="button" class="btn btn-sm btn-success font-weight-bold px-4 py-2" onclick="submitManualPointAdjustment()"
+            id="btnConfirmManualPoint"
+            style="border-radius: 10px; font-size: 13px; background: #16a34a; border-color: #15803d; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);">
+            <i class="fa-solid fa-check mr-1"></i>포인트 적용하기
+          </button>
         </div>
       </div>
     </div>

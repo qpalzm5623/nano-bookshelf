@@ -1285,8 +1285,16 @@ class Content extends MY_Controller {
 		$whereData = array("where" => $whereData);
 		$classList = $this->user_model->getUserClassList($whereData);		
  	
-
-		if($class != "")  {
+		if($this->session->userdata("admin_type") == "teacher" || $this->session->userdata("admin_level") == "teacher"){
+			$admin_seq = $this->session->userdata("admin_seq");
+			if(!empty($admin_seq)){
+				$teacherInfo = $this->user_model->getUserSeq($admin_seq);
+				if(!empty($teacherInfo['class_name'])){
+					$where .= " AND c.class_name = '".$teacherInfo['class_name']."' ";
+					$classList = array(array("class_name" => $teacherInfo['class_name']));
+				}
+			}
+		} else if($class != "")  {
 		    // 아이디, 이름, 휴대폰번호, 소속명
 		    $where .= " AND c.class_name = '".$class."' ";   
 		}			

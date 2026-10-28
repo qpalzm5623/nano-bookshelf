@@ -1496,11 +1496,29 @@ class Manage extends MY_Controller {
             exit;
         }
 
+        // 로그인 및 권한 검증 (본사 관리자, 학원장, 선생님 허용)
+        $adminType = $this->session->userdata("admin_type");
+        $adminLevel = $this->session->userdata("admin_level");
+        $myGroup = $this->session->userdata("group_name");
+
+        if(empty($adminType)) {
+            echo json_encode(['result' => 'fail', 'msg' => '로그인이 필요한 기능입니다.']);
+            exit;
+        }
+
         // 회원 정보 조회
         $userData = $this->user_model->getUserSeq($user_seq);
         if(empty($userData)) {
             echo json_encode(['result' => 'fail', 'msg' => '회원 정보를 찾을 수 없습니다.']);
             exit;
+        }
+
+        // 학원장 또는 선생님인 경우, 본인 소속 학원 학생인지 확인
+        if($adminType != "A" && ($adminLevel == "director" || $adminLevel == "teacher")) {
+            if(!empty($myGroup) && $userData['group_name'] != $myGroup) {
+                echo json_encode(['result' => 'fail', 'msg' => '본인 소속 학원의 학생에게만 포인트를 부여할 수 있습니다.']);
+                exit;
+            }
         }
 
         // 포인트 히스토리 저장 (point_type = 'SPECIAL')
