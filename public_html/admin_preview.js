@@ -4560,19 +4560,20 @@ function renderStudentAssignmentTable(list) {
 
     var booksHtml = displayBooks.map(function(b) {
       var pubName = b.pub || b.publisher || '출판사';
-      var certText = '';
-      if (b.certDate) {
-        certText = `<span class="badge badge-success px-1.5 py-0.5 d-inline-block mt-0.5" style="font-size:10px; font-weight:700;"><i class="fa-solid fa-award mr-1"></i>인증일 : ${b.certDate}</span>`;
-      } else if (b.certified) {
-        certText = `<span class="badge badge-success px-1.5 py-0.5 d-inline-block mt-0.5" style="font-size:10px; font-weight:700;"><i class="fa-solid fa-award mr-1"></i>인증일 : 09월 12일</span>`;
-      }
+      var isCert = !!(b.certDate || b.certified);
+      var certDateStr = b.certDate || (b.certified ? '인증 완료' : '');
+      var certIcon = isCert
+        ? `<i class="fa-solid fa-circle-check text-success ml-1" title="북퀴즈 인증 완료${certDateStr ? ' (' + certDateStr + ')' : ''}" style="font-size: 11px; flex-shrink: 0;"></i>`
+        : '';
 
       return `<div class="d-inline-flex align-items-center p-1 px-2 mr-2 mb-1 rounded border shadow-xs" style="background:#ffffff; font-size:12px; border-color: var(--border-light) !important;">
-        <img src="${b.cover}" style="width:24px; height:32px; object-fit:cover; border-radius:4px; margin-right:8px; border: 1px solid #ddd; flex-shrink: 0;">
+        <img src="${b.cover}" style="width:24px; height:32px; object-fit:cover; border-radius:4px; margin-right:8px; border: 1px solid #ddd; flex-shrink: 0;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">
         <div style="line-height: 1.25;">
-          <strong style="color:var(--text-main); font-size: 12.5px; display: block;">${b.title}</strong>
+          <div class="d-flex align-items-center">
+            <strong style="color:var(--text-main); font-size: 12.5px; display: inline-block;">${b.title}</strong>
+            ${certIcon}
+          </div>
           <small class="text-muted" style="font-size: 11px;">${pubName}</small>
-          ${certText}
         </div>
       </div>`;
     }).join('');
@@ -8686,11 +8687,14 @@ function createAcademyBookItem(b) {
   var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
   var seriesVal = isSingleBook ? '단권' : b.series.trim();
 
-  // 나노시트 보유 여부 명확한 판정:
-  // 1. b.sheet === false 또는 b.hasSheet === false로 명시된 경우만 비활성화
-  // 2. 자체 등록 도서(isMyCreation === true)인데 PDF 파일이나 데이터가 전혀 없는 경우 비활성화
-  // 3. 마이그레이션된 정규 도서(5,842종) 및 일반 도서는 나노시트 정상 제공
-  var hasSheet = true;
+  // 나노시트 실제 파일 준비 여부 명확한 판정:
+  // 1. b.sheet === false 또는 b.hasSheet === false로 명시된 도서는 비활성화 (2,105권)
+  // 2. worksheetUrl, pdfUrl, worksheet가 있는 도서 및 b.sheet === true인 도서만 활성화 (3,737권)
+  // 3. 자체 등록 도서 중 PDF 파일이나 데이터가 첨부된 경우 활성화
+  var hasSheet = false;
+  if (b.worksheetUrl || b.pdfUrl || b.hasSheet === true || b.sheet === true || (b.worksheet && b.worksheet !== false)) {
+    hasSheet = true;
+  }
   if (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N') {
     hasSheet = false;
   } else if (b.isMyCreation === true && !b.pdfBlob && !b.pdfUrl && !b.pdfDataUrl && !b.worksheet && !b.materialName) {
@@ -8718,9 +8722,21 @@ function createAcademyBookItem(b) {
     tags: b.tags || [],
     detailTag: b.detailTag || '',
     awards: b.awards || '',
-    isPublic: b.isPublic || 'Y',
-    creatorType: b.creatorType || 'HQ',
-    academyName: b.academyName || '본사 직속(HQ)',
+    creatorType: (function() {
+      if (b.creatorType && b.creatorType !== 'HQ') return b.creatorType;
+      var cInfo = (typeof window !== 'undefined' && window.NANO_ACADEMY_BOOK_CREATORS && window.NANO_ACADEMY_BOOK_CREATORS[bookId]) || null;
+      return cInfo ? 'ACADEMY' : (b.creatorType || 'HQ');
+    })(),
+    academyId: (function() {
+      if (b.academyId && b.academyId !== 'HQ') return b.academyId;
+      var cInfo = (typeof window !== 'undefined' && window.NANO_ACADEMY_BOOK_CREATORS && window.NANO_ACADEMY_BOOK_CREATORS[bookId]) || null;
+      return cInfo ? cInfo[0] : (b.academyId || 'HQ');
+    })(),
+    academyName: (function() {
+      if (b.academyName && !b.academyName.includes('본사')) return b.academyName;
+      var cInfo = (typeof window !== 'undefined' && window.NANO_ACADEMY_BOOK_CREATORS && window.NANO_ACADEMY_BOOK_CREATORS[bookId]) || null;
+      return cInfo ? cInfo[1] : (b.academyName || '본사 직속(HQ)');
+    })(),
     cover: normalizeBookCoverUrl(b.cover),
     hasSheet: hasSheet,
     materialName: hasSheet ? (b.materialName || (title + '_나노시트.pdf')) : null,
@@ -9202,8 +9218,8 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
 
     var coverImg = normalizeBookCoverUrl(b.cover);
     
-    // 나노시트 단독 버튼 (시트 없는 도서는 비활성화 상태로 명시)
-    var pdfBtn = (b.hasSheet !== false)
+    // 나노시트 단독 버튼 (실제 파일 준비된 도서만 활성화, 없는 도서는 비활성화 상태로 명시)
+    var pdfBtn = (b.hasSheet === true)
       ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
            <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
          </button>`
@@ -9998,9 +10014,9 @@ function openContentPdfModal(bookId) {
   var b = academyBookList.find(function(item) { return item.id === bookId; });
   activeViewingBook = b || null;
 
-  // 나노시트가 없는 도서의 경우 모달을 열지 않고 정중히 안내
-  if (b && b.hasSheet === false) {
-    showAcademyToast(`[${b.title}] 해당 도서는 등록된 나노시트(PDF)가 없습니다.`);
+  // 나노시트가 준비되지 않은 도서는 팝업 모달을 띄우지 않고 즉시 안내 후 반환
+  if (!b || b.hasSheet !== true) {
+    showAcademyToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
     return;
   }
 
