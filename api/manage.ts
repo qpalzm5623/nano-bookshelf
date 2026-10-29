@@ -84,6 +84,18 @@ export default async function handler(req: any, res: any) {
       if (entity === 'quizzes') { need(req.query.bookId, '도서를 선택해 주세요.'); return res.json({ items: await prisma.bookQuiz.findMany({ where: { bookId: String(req.query.bookId) }, orderBy: { questionNo: 'asc' } }) }); }
       if (entity === 'dispatch') return res.json({ items: await prisma.aligoDispatchLog.findMany({ where: { academyId }, orderBy: { sentAt: 'desc' }, take: 200 }) });
       if (entity === 'portfolios') return res.json({ items: (await prisma.portalSetting.findMany({ where: { scope: 'portfolio:' + academyId }, orderBy: { updatedAt: 'desc' } })).map(p => ({ ...(p.value as any), id: p.key, revision: p.revision })) });
+      if (entity === 'ai_config') {
+        master(user);
+        const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
+        const val = ((row?.value as any) || {}) as Record<string, any>;
+        const rawKey = typeof val.apiKey === 'string' ? val.apiKey.trim() : '';
+        return res.json({
+          hasKey: Boolean(rawKey),
+          maskedKey: rawKey ? (rawKey.slice(0, 6) + '...' + rawKey.slice(-4)) : '',
+          model: val.model || 'gemini-1.5-flash',
+          updatedAt: val.updatedAt || ''
+        });
+      }
       throw new Error('Unknown collection');
     }
     need(JSON.stringify(body).length < 500000, '한 번에 등록할 수 있는 데이터 크기를 초과했습니다.', 413);
@@ -380,6 +392,26 @@ export default async function handler(req: any, res: any) {
         create: { key: 'banner_meta:' + saved.id, scope: 'banner_meta', value: meta }
       });
       return res.json({ item: { ...saved, ...meta } });
+    }
+    if (entity === 'ai_config') {
+      master(user);
+      const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
+      const prev = ((row?.value as any) || {}) as Record<string, any>;
+      const inputKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
+      const finalKey = inputKey || (prev.apiKey ? String(prev.apiKey).trim() : '');
+      const model = typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || 'gemini-1.5-flash');
+      const meta = { apiKey: finalKey, model, updatedAt: new Date().toISOString() };
+      await prisma.portalSetting.upsert({
+        where: { key: 'gemini_api_config' },
+        update: { scope: 'system_config', value: meta },
+        create: { key: 'gemini_api_config', scope: 'system_config', value: meta }
+      });
+      return res.json({
+        ok: true,
+        hasKey: Boolean(finalKey),
+        maskedKey: finalKey ? (finalKey.slice(0, 6) + '...' + finalKey.slice(-4)) : '',
+        model
+      });
     }
     need(false, '지원하지 않는 항목입니다.', 404);
   } catch (error) { return failure(res, error); }

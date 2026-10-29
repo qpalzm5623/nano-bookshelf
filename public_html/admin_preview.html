@@ -2291,18 +2291,20 @@
     .wiz-book-item {
       display: flex;
       align-items: center;
-      padding: 10px 14px;
-      border: 1px solid var(--border-light);
-      border-radius: 10px;
-      margin-bottom: 8px;
+      padding: 12px 18px;
+      border: 1.5px solid var(--border-light);
+      border-radius: 12px;
+      margin-bottom: 11px;
       background: #ffffff;
       cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
       transition: all 0.15s ease;
     }
 
     .wiz-book-item:hover {
       background: #faf8f4;
       border-color: var(--border-medium);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     }
 
     .wiz-book-item.selected {
@@ -2820,7 +2822,7 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 20px !important;
+    margin: 14mm 12mm 14mm 12mm !important;
   }
 
   body.is-printing-portfolio {
@@ -2894,7 +2896,7 @@
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 16px 16px !important;
+    padding: 6mm 8mm !important;
     background: #ffffff !important;
     border: 1.5px solid #1f8a7e !important;
     border-radius: 8px !important;
@@ -7495,33 +7497,33 @@
 
             <!-- 완독 일자 범위 먼저 선택 바 -->
             <div
-              class="p-2.5 mb-2 rounded border bg-light d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <div class="d-flex align-items-center gap-2">
-                <span class="font-weight-bold text-muted" style="font-size: 12px;">
+              class="p-3 mb-3 rounded border bg-light d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
+              <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+                <span class="font-weight-bold text-dark" style="font-size: 13px; margin-right: 4px;">
                   <i class="fa-regular fa-calendar-check mr-1 text-primary"></i>완독 일자 범위:
                 </span>
-                <input type="date" class="form-control form-control-sm" id="wizBookStartDate" value="2026-01-01"
-                  style="width: 130px; font-size: 12px; border-radius: 6px;">
-                <span class="text-muted">~</span>
+                <input type="date" class="form-control form-control-sm" id="wizBookStartDate" value=""
+                  style="width: 135px; height: 34px; font-size: 12.5px; border-radius: 6px;">
+                <span class="text-muted font-weight-bold" style="margin: 0 4px;">~</span>
                 <input type="date" class="form-control form-control-sm" id="wizBookEndDate" value=""
-                  style="width: 130px; font-size: 12px; border-radius: 6px;">
-                <button type="button" class="btn btn-xs btn-beige-primary font-weight-bold px-2 py-1"
-                  onclick="filterWizardBooksByDate()" style="border-radius: 6px;">
+                  style="width: 135px; height: 34px; font-size: 12.5px; border-radius: 6px;">
+                <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold px-3 py-1"
+                  onclick="filterWizardBooksByDate()" style="border-radius: 6px; height: 34px; margin-left: 4px;">
                   <i class="fa-solid fa-filter mr-1"></i>기간 조회
                 </button>
               </div>
-              <div class="custom-control custom-checkbox">
+              <div class="custom-control custom-checkbox" style="padding-left: 26px;">
                 <input type="checkbox" class="custom-control-input" id="wizSelectAllBooks" checked
                   onchange="onWizardSelectAllBooks(this.checked)">
                 <label class="custom-control-label font-weight-bold" for="wizSelectAllBooks"
-                  style="font-size: 12px; cursor: pointer;">
+                  style="font-size: 12.5px; cursor: pointer; user-select: none;">
                   전체 선택 / 해제
                 </label>
               </div>
             </div>
 
             <!-- 도서 체크박스 목록 컨테이너 -->
-            <div id="wizBookCheckList" style="max-height: 270px; overflow-y: auto; padding-right: 4px;">
+            <div id="wizBookCheckList" style="max-height: 320px; overflow-y: auto; padding-right: 6px;">
               <!-- JS 동적 렌더링 -->
             </div>
           </div>
@@ -7734,8 +7736,8 @@
             <div style="position: relative; width: 100%; background: #fff; overflow: hidden;">
               <canvas id="pdfViewerCanvas" style="display: block; width: 100%; height: auto; margin: 0 auto;"></canvas>
               
-              <!-- 전면 보안 워터마크 오버레이 (대각선 반복 3단 격자 패턴) -->
-              <div id="realPdfWatermarkOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-around; align-items: center; overflow: hidden; user-select: none;">
+              <!-- 전면 보안 워터마크 오버레이 (대각선 중앙 단일 워터마크 패턴) -->
+              <div id="realPdfWatermarkOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; user-select: none;">
                 <!-- 동적 워터마크 주입 -->
               </div>
             </div>

@@ -823,17 +823,18 @@
       <span>결제 내역 관리 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
     </a>
 
-    <!-- 하단 라이선스/알리고 잔여 크레딧 요약 -->
-    <div class="mt-auto pt-3 border-top" style="border-color: var(--border-light) !important;">
-      <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px;">
-        <i class="fa-solid fa-wallet text-warning mr-1"></i>알리고 잔여 캐시
-      </div>
-      <div class="d-flex justify-content-between align-items-center">
-        <span style="font-size: 14px; font-weight: 800; color: var(--text-main);" id="sidebarAligoCash">854,200원</span>
-        <button class="btn btn-xs btn-outline-secondary" onclick="openAligoChargeModal()" style="font-size: 10.5px; padding: 2px 8px; border-radius: 6px;">충전</button>
-      </div>
-      <small style="color: var(--text-soft); font-size: 10.5px; display: block; margin-top: 2px;">약 42,710건 발송 가능</small>
-    </div>
+        <div class="sidebar-section-title" style="margin-top: 20px;">시스템 설정</div>
+    <a class="nav-item-btn" id="nav-master-ai-settings" onclick="openMasterAiSettingsModal()">
+      <i class="fa-solid fa-robot text-warning"></i>
+      <span>AI 엔진 설정 <span class="badge badge-primary text-white ml-1" style="font-size: 10px; background:#1f8a7e !important;">Gemini</span></span>
+    </a>
+
+    <div class="sidebar-section-title" style="margin-top: 20px;">시스템 설정</div>
+
+    <a class="nav-item-btn" id="nav-master-ai-settings" onclick="openMasterAiSettingsModal()">
+      <i class="fa-solid fa-robot text-warning"></i>
+      <span>AI 엔진 설정 <span class="badge badge-primary text-white ml-1" style="font-size: 10px; background:#1f8a7e !important;">Gemini</span></span>
+    </a>
   </aside>
 
   <!-- 3. 메인 작업 영역 (6대 탭 컨테이너) -->
@@ -1996,6 +1997,64 @@
 </div>
 
 <!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
      MANUAL PAYMENT REGISTER MODAL (수동 결제 등록 모달)
      ======================================================== -->
 <div class="modal fade" id="manualPaymentRegisterModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -2096,6 +2155,64 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -2226,6 +2343,64 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -2393,6 +2568,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 3. 가맹점 삭제 확인 모달 (2단계 보안 강화) -->
 <div class="modal fade" id="academyDeleteConfirmModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
   <div class="modal-dialog modal-dialog-centered" role="document">
@@ -2430,6 +2663,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 3-1. 삭제된 학원 임시 보존 목록 모달 -->
 <div class="modal fade" id="deletedAcademyListModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -2450,6 +2741,64 @@
       </div>
       <div class="modal-footer modal-footer-beige">
         <button type="button" class="btn-beige-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -2546,6 +2895,64 @@
             <button type="button" class="btn-beige-secondary btn-sm" data-dismiss="modal">닫기</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -2720,6 +3127,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 5-1. 배너 이미지 확대 라이트박스 모달 -->
 <div class="modal fade" id="bannerViewModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -2742,6 +3207,64 @@
           <i class="fa-solid fa-circle-info mr-1 text-primary"></i>학생 홈 상단 롤링 배너 적용 이미지 (해상도: 16:9 와이드 배너)
         </small>
         <button type="button" class="btn-beige-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -2846,6 +3369,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 5-3. 테마별 도서 자동 매핑 목록 모달 (수동 매핑 불필요, 자동 매핑 리스트 뷰) -->
 <div class="modal fade" id="themeBooksModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
@@ -2924,6 +3505,64 @@
         </small>
         <button type="button" class="btn-beige-primary" data-dismiss="modal">
           <i class="fa-solid fa-check mr-1"></i>확인 (닫기)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
         </button>
       </div>
     </div>
@@ -3068,6 +3707,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 5-2. 시스템 공지사항 작성 및 수정 모달 -->
 <div class="modal fade" id="noticeModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -3177,6 +3874,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 5-3. 공지사항 상세 조회/미리보기 모달 -->
 <div class="modal fade" id="noticeDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -3209,6 +3964,64 @@
       </div>
       <div class="modal-footer modal-footer-beige d-flex justify-content-end p-3">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -3262,6 +4075,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 7. 알리고 캐시 충전 모달 -->
 <div class="modal fade" id="aligoChargeModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
@@ -3293,6 +4164,64 @@
             <i class="fa-solid fa-credit-card mr-1"></i>결제 및 충전 승인
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -3372,6 +4301,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 2. 학생 누적 포인트 상세 내역 모달 -->
 <div class="modal fade" id="pointDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -3422,6 +4409,64 @@
         <div class="d-flex justify-content-end mt-4 pt-3 border-top">
           <button type="button" class="btn-beige-secondary" data-dismiss="modal">닫기</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -3506,6 +4551,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 4. 중복 도서 의심 경고 모달 -->
 <div class="modal fade" id="duplicateWarningModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
   <div class="modal-dialog modal-dialog-centered" role="document">
@@ -3546,6 +4649,64 @@
             <i class="fa-solid fa-check mr-1"></i>중복 무시하고 계속 등록
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -3853,6 +5014,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- [모달] 엑셀 대량 도서 등록 모달 -->
 <div class="modal fade" id="masterBookExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
@@ -3948,6 +5167,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- [모달] 새 북퀴즈 세트 추가 (기관명 자동 선택 모달) -->
 <div class="modal fade" id="newQuizSetModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
@@ -3974,6 +5251,64 @@
             <i class="fa-solid fa-check mr-1"></i>북퀴즈 세트 생성
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -4054,6 +5389,64 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -4282,6 +5675,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 9. 마스터 관리자 신규 회원 등록 모달 -->
 <div class="modal fade" id="masterMemberAddModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -4394,6 +5845,64 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 10. 회원 명부 엑셀(Excel) 일괄 등록 모달 -->
 <div class="modal fade" id="memberExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
@@ -4434,6 +5943,64 @@
             <i class="fa-solid fa-upload mr-1"></i>엑셀 일괄 업로드 진행
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -4523,6 +6090,64 @@
             <i class="fa-solid fa-upload mr-1"></i>엑셀 일괄 처리 진행
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
       </div>
     </div>
   </div>
@@ -4656,11 +6281,185 @@
   </div>
 </div>
 
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 알림 토스트 (Non-blocking) -->
 <div id="masterToast" style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;" class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
   <div class="d-flex align-items-center">
     <i class="fa-solid fa-circle-check text-warning mr-2" style="font-size: 18px;"></i>
     <span id="masterToastText" style="font-size: 13.5px; font-weight: 600;">알림 내용</span>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 540px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트 3~4개를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================
+     [신규] Google Gemini AI 엔진 설정 모달
+     ======================================================== -->
+<div class="modal fade" id="masterAiSettingsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+    <div class="modal-content" style="border-radius: 14px; border: none; box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; padding: 18px 24px; border: none;">
+        <h5 class="modal-title font-weight-bold" style="font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-robot text-warning"></i>Google Gemini AI 엔진 설정
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; text-shadow: none;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 24px;">
+        <div class="p-3 mb-3 rounded" style="background: #f0fdf9; border: 1px solid #bbf7d0; font-size: 12.5px; line-height: 1.6; color: #166534;">
+          <strong><i class="fa-solid fa-sparkles mr-1 text-warning"></i>학부모 독서 포트폴리오 AI 연동:</strong><br>
+          학생의 북퀴즈 응시 이력과 도서 메타데이터를 5대 분석 축(다양성, 난이도, 습관, 몰입, 이해도)으로 분석하여 정성 코멘트를 자동 생성하는 데 사용됩니다.
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">Gemini API Key</label>
+          <div class="input-group">
+            <input type="password" id="masterGeminiApiKey" class="form-control" placeholder="AIzaSy... 형식의 API 키를 입력하세요" style="height: 42px; border-radius: 8px 0 0 8px; font-size: 13px;">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" onclick="toggleGeminiKeyVisibility()" style="border-radius: 0 8px 8px 0;" title="보기/숨기기">
+                <i class="fa-solid fa-eye" id="geminiEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <small class="form-text text-muted" id="masterGeminiKeyStatus" style="font-size: 11.5px; margin-top: 5px;">
+            <i class="fa-solid fa-circle-info mr-1"></i>현재 상태를 확인 중입니다...
+          </small>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="font-weight-bold text-dark" style="font-size: 13px;">기본 생성 모델 (Gemini Model)</label>
+          <select id="masterGeminiModel" class="form-control" style="height: 42px; border-radius: 8px; font-size: 13px;">
+            <option value="gemini-1.5-flash" selected>gemini-1.5-flash (권장 · 초고속 응답 & 안정성)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (최신 모델 · 고속 추론)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (심층 분석 · 정밀 문장력)</option>
+          </select>
+        </div>
+
+        <div class="p-2.5 rounded text-muted" style="background: #faf8f4; border: 1px dashed #e2ded4; font-size: 11.5px; line-height: 1.5;">
+          <i class="fa-solid fa-shield-check mr-1 text-success"></i><strong>안심 폴백(Fallback) 보장:</strong> API 키가 등록되지 않았거나 일시적 통신 지연 시에도 교육원 내장 룰베이스 AI가 100% 동일한 규칙으로 양질의 4대 코멘트를 즉시 생성합니다.
+        </div>
+      </div>
+      <div class="modal-footer" style="background: #faf8f5; border-top: 1px solid #ebe5da; padding: 14px 24px;">
+        <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold px-3 py-2" data-dismiss="modal" style="border-radius: 8px;">닫기</button>
+        <button type="button" class="btn btn-sm btn-primary font-weight-bold px-4 py-2" onclick="saveMasterAiSettings()" style="background: #1f8a7e; border-color: #1f8a7e; border-radius: 8px;">
+          <i class="fa-solid fa-check mr-1"></i>설정 저장
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 

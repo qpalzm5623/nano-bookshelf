@@ -4200,9 +4200,9 @@ function renderBannerList() {
           <strong style="font-size: 15.5px; font-weight: 700; color: var(--text-main); line-height: 1.4;">${b.title}</strong>
         </div>
         <div class="text-muted text-truncate mb-2" style="font-size: 13px; line-height: 1.4;">${b.sub || '서브 설명 없음'}</div>
-        <div class="d-flex align-items-center gap-3 text-muted" style="font-size: 12px;">
-          <span><i class="fa-regular fa-calendar-check mr-1 text-primary"></i>등록일: <strong>${regDate}</strong></span>
-          <span><i class="fa-solid fa-arrow-pointer mr-1 text-success"></i>클릭수: <strong>${clicks}회</strong></span>
+        <div class="d-flex align-items-center flex-wrap text-muted" style="font-size: 12.5px; margin-top: 3px;">
+          <span style="margin-right: 18px;"><i class="fa-regular fa-calendar-check mr-1 text-primary"></i>등록일: <strong>${regDate}</strong></span>
+          <span style="margin-right: 18px;"><i class="fa-solid fa-arrow-pointer mr-1 text-success"></i>클릭수: <strong>${clicks}회</strong></span>
           <span><i class="fa-solid fa-book-bookmark mr-1 text-warning"></i>연결 도서: <strong>${bookCount}권</strong></span>
         </div>
       </div>
@@ -6962,6 +6962,7 @@ function updateWatermarkInfo() {
 function updateRealPdfWatermarkOverlay() {
   var overlay = document.getElementById('realPdfWatermarkOverlay');
   if (!overlay) return;
+  overlay.style.justifyContent = 'center'; // 중앙 단일 배치
 
   var acadElem = document.getElementById('wmAcademyName');
   var timeElem = document.getElementById('wmPrintTime');
@@ -6972,13 +6973,14 @@ function updateRealPdfWatermarkOverlay() {
   var ip = (ipElem && ipElem.innerText) ? ipElem.innerText : '118.235.12.89';
 
   var tileHtml = 
-    '<div style="transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 35px 0;">' +
+    '<div style="transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 0;">' +
       '<div style="font-size: 21px; letter-spacing: -0.5px; color: #1e293b;">' + acad + '</div>' +
       '<div style="font-size: 14.5px; font-family: monospace; color: #334155;">' + time + ' &middot; IP: ' + ip + '</div>' +
       '<div style="font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px;">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
     '</div>';
 
-  overlay.innerHTML = tileHtml + tileHtml + tileHtml;
+  // 위아래 워터마크를 제거하고 가운데 1개만 단독 노출
+  overlay.innerHTML = tileHtml;
 }
 
 function extractBookPdfCandidates(book) {
@@ -11780,4 +11782,95 @@ async function handleMasterLogout() {
   } catch(e) {}
   sessionStorage.removeItem('nano_auth_user');
   location.href = 'index.html';
+}
+
+// ========================================================
+// [신규] Google Gemini AI 엔진 설정 모달 및 제어 로직
+// ========================================================
+function toggleGeminiKeyVisibility() {
+  var input = document.getElementById('masterGeminiApiKey');
+  var icon = document.getElementById('geminiEyeIcon');
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+  } else {
+    input.type = 'password';
+    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+  }
+}
+
+async function openMasterAiSettingsModal() {
+  var keyInput = document.getElementById('masterGeminiApiKey');
+  var modelSelect = document.getElementById('masterGeminiModel');
+  var statusElem = document.getElementById('masterGeminiKeyStatus');
+
+  if (keyInput) {
+    keyInput.value = '';
+    keyInput.placeholder = 'AIzaSy... 형식의 API 키를 입력하세요';
+  }
+  if (statusElem) {
+    statusElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>현재 상태를 확인 중입니다...';
+    statusElem.className = 'form-text text-muted';
+  }
+
+  $('#masterAiSettingsModal').modal('show');
+
+  try {
+    var res = await fetch('/api/manage?entity=ai_config');
+    if (res.ok) {
+      var data = await res.json();
+      if (modelSelect && data.model) {
+        modelSelect.value = data.model;
+      }
+      if (statusElem) {
+        if (data.hasKey) {
+          statusElem.innerHTML = '<i class="fa-solid fa-circle-check mr-1 text-success"></i><strong>API 키 등록 완료:</strong> ' + (data.maskedKey || '등록됨') + ' (정상 연동 중)';
+          statusElem.className = 'form-text text-success font-weight-bold';
+          if (keyInput) keyInput.placeholder = '새 API 키로 변경 시에만 입력하세요 (현재 키 유지됨)';
+        } else {
+          statusElem.innerHTML = '<i class="fa-solid fa-circle-exclamation mr-1 text-warning"></i><strong>API 키 미등록:</strong> 현재 교육원 내장 AI 룰베이스 엔진으로 작동 중입니다.';
+          statusElem.className = 'form-text text-warning font-weight-bold';
+        }
+      }
+    }
+  } catch(e) {
+    if (statusElem) {
+      statusElem.innerHTML = '<i class="fa-solid fa-circle-info mr-1"></i>로컬 미리보기 모드 (API 키 설정 가능)';
+    }
+  }
+}
+
+async function saveMasterAiSettings() {
+  var keyInput = document.getElementById('masterGeminiApiKey');
+  var modelSelect = document.getElementById('masterGeminiModel');
+  var apiKey = keyInput ? keyInput.value.trim() : '';
+  var model = modelSelect ? modelSelect.value : 'gemini-1.5-flash';
+
+  try {
+    var res = await fetch('/api/manage?entity=ai_config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operation: 'save',
+        data: { apiKey: apiKey, model: model }
+      })
+    });
+    if (!res.ok) {
+      var errData = await res.json().catch(function(){ return {}; });
+      throw new Error(errData.error || '저장 실패');
+    }
+    var result = await res.json();
+    showMasterToast('Google Gemini AI 설정이 성공적으로 저장되었습니다!');
+    $('#masterAiSettingsModal').modal('hide');
+  } catch(err) {
+    try {
+      localStorage.setItem('NANO_GEMINI_API_KEY', apiKey);
+      localStorage.setItem('NANO_GEMINI_MODEL', model);
+      showMasterToast('Google Gemini AI 설정이 로컬에 저장되었습니다.');
+      $('#masterAiSettingsModal').modal('hide');
+    } catch(e) {
+      alert('설정 저장 중 오류가 발생했습니다: ' + err.message);
+    }
+  }
 }
