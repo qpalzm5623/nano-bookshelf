@@ -1667,8 +1667,9 @@ function bindMasterSearchAutofillGuards() {
   });
 }
 
-// 탭 지연 렌더링(Lazy Loading) 상태 관리: 불필요한 초기 7개 탭 일괄 렌더링 차단
-const renderedMasterTabs = {
+// 탭 초기화(Dropdown 등 1회성 작업) 완료 여부 추적
+// ※ 렌더링(데이터 갱신)은 탭 전환 시마다 항상 재실행됩니다
+const initializedMasterTabs = {
   franchise: false,
   members: false,
   operations: false,
@@ -1678,18 +1679,28 @@ const renderedMasterTabs = {
   payment: false
 };
 
+// 탭 전환 시마다 항상 최신 데이터로 렌더링 (stale 데이터 방지)
 function ensureMasterTabRendered(tabName) {
-  if (renderedMasterTabs[tabName]) return;
-  renderedMasterTabs[tabName] = true;
+  // [1회성 초기화] 드롭다운 등 DOM 세팅은 처음 1번만 실행
+  if (!initializedMasterTabs[tabName]) {
+    initializedMasterTabs[tabName] = true;
+    if (tabName === "members") {
+      initMemberAcademyDropdown();
+      populateMemberAcademyFilter();
+    } else if (tabName === "dispatch") {
+      populateDispatchAcademyFilter();
+    } else if (tabName === "payment") {
+      populateMasterPaymentAcademyFilter();
+    }
+  }
 
+  // [매번 실행] 탭 전환 시마다 항상 최신 데이터를 렌더링
   if (tabName === "franchise") {
     updateFranchiseStats();
     renderFranchiseTable();
   } else if (tabName === "members") {
     updateMemberStats();
     renderMemberTable();
-    initMemberAcademyDropdown();
-    populateMemberAcademyFilter();
   } else if (tabName === "operations") {
     renderBannerList();
     renderThemeTable();
@@ -1701,10 +1712,8 @@ function ensureMasterTabRendered(tabName) {
     renderMasterContents();
   } else if (tabName === "dispatch") {
     renderDispatchTable();
-    populateDispatchAcademyFilter();
   } else if (tabName === "payment") {
     renderMasterPaymentTable();
-    populateMasterPaymentAcademyFilter();
     updatePaymentKpis();
   }
 }
@@ -1725,6 +1734,12 @@ window.addEventListener("pageshow", () => {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     purgeAutofilledSearchInputs();
+    // 브라우저 탭이 다시 활성화되면 현재 마스터 탭 데이터를 즉시 재갱신
+    const activeNavBtn = document.querySelector(".master-nav-btn.active");
+    if (activeNavBtn) {
+      const currentTab = activeNavBtn.id.replace("nav-master-", "");
+      ensureMasterTabRendered(currentTab);
+    }
   }
 });
 

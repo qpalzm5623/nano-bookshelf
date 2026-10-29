@@ -12872,6 +12872,12 @@ window.addEventListener('pageshow', function() {
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
     clearAdminSearchAutofill();
+    // 브라우저 탭이 다시 활성화되면 현재 학원 관리 탭 데이터를 즉시 재갱신
+    var activeNavBtn = document.querySelector('.nav-link.active[id^="btn-nav-"]');
+    if (activeNavBtn) {
+      var currentTab = activeNavBtn.id.replace('btn-nav-', '');
+      switchTab(currentTab);
+    }
   }
 });
 
