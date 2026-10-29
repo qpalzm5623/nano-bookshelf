@@ -152,17 +152,11 @@ test('초기 데이터 조회를 병렬화해도 사용자 범위와 기존 퀴�
     const context = { window: {}, sessionStorage: { setItem() {} } };
     vm.runInNewContext(res.data, context);
     const data = context.window;
-    if (role === 'STUDENT') {
-      assert.equal(res.data.includes('고유문항'), false);
-      assert.deepEqual(JSON.parse(JSON.stringify(data.MIGRATED_QUIZZES)), {});
-      assert.equal(data.MIGRATED_BOOKS[0].hasQuiz, true);
-      assert.equal(data.MIGRATED_BOOKS[0].quizSets.length, 0);
-    } else {
-      // 관리 화면은 문항 편집에 필요한 기존 구조를 유지합니다.
-      assert.equal(res.data.split('고유문항').length - 1, 1);
-      assert.deepEqual(JSON.parse(JSON.stringify(data.MIGRATED_BOOKS[0].quizSets)), JSON.parse(JSON.stringify(data.MIGRATED_QUIZZES.B001)));
-      assert.equal(data.MIGRATED_BOOKS[0].quizSets[0].questions[0].ans, 1);
-    }
+    // 모든 역할(학생·교사·원장·마스터)에서 초기 부트스트랩 응답 크기를 줄이기 위해 문항 본문은 지연 조회(/api/portal?action=quiz)합니다.
+    assert.equal(res.data.includes('고유문항'), false);
+    assert.deepEqual(JSON.parse(JSON.stringify(data.MIGRATED_QUIZZES)), {});
+    assert.equal(data.MIGRATED_BOOKS[0].hasQuiz, true);
+    assert.equal(data.MIGRATED_BOOKS[0].quizSets.length, 0);
   }
 });
 

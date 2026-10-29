@@ -10169,9 +10169,23 @@ function refreshStudentLearningData() {
     var logs = (window.NanoPortal && NanoPortal.remote ? NanoPortal.logs() || [] : NanoLearningStore.read(identity.academyId, window.MIGRATED_LEARNING_LOGS))
       .filter(function(log) { return String(log.studentId || '').trim().toLowerCase() === String(identity.studentId || '').trim().toLowerCase(); });
     histData = logs.map(function(log) { return { title: log.bookTitle, date: log.date, score: log.score }; });
-    readBooksMaster = logs.filter(function(log) { return Number(log.score) >= 60; }).map(function(log) {
-      var book = libData.find(function(book) { return String(book.id) === String(log.bookId); });
-      return { id: log.bookId, title: log.bookTitle || (book ? book.title : ''), score: Number(log.score) || 0, date: String(log.date || '').replace(/-/g, '.'), pub: book ? book.pub : '', series: book ? book.cat : '' };
+    // 동일 도서를 2회차 이상 반복 인증한 경우에도 완독 도서 목록은 고유 도서 기준(최신 인증 이력 우선)으로 정합성 유지
+    var seenCertifiedBookIds = new Set();
+    readBooksMaster = [];
+    logs.forEach(function(log) {
+      if (Number(log.score) < 60) return;
+      var bIdKey = String(log.bookId || '');
+      if (!bIdKey || seenCertifiedBookIds.has(bIdKey)) return;
+      seenCertifiedBookIds.add(bIdKey);
+      var book = libData.find(function(book) { return String(book.id) === bIdKey; });
+      readBooksMaster.push({
+        id: log.bookId,
+        title: log.bookTitle || (book ? book.title : ''),
+        score: Number(log.score) || 0,
+        date: String(log.date || '').replace(/-/g, '.'),
+        pub: book ? book.pub : '',
+        series: book ? book.cat : ''
+      });
     });
     var summary = window.NanoPortal && NanoPortal.remote ? NanoPortal.activity() : null;
     var assigned = summary ? summary.assignedBookIds.map(String) : NanoPreviewData.assignedBookIds(identity);

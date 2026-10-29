@@ -49,7 +49,10 @@ export default async function handler(req: any, res: any) {
       if (body.operation === 'delete') { await prisma.portalSetting.deleteMany({ where: { key: input.id, scope } }); return res.json({ ok: true }); }
       const student = await prisma.member.findFirst({ where: { id: input.memberId, academyId, role: 'STUDENT' } }); need(student, '소속 학생을 선택해 주세요.');
       const from = date(input.from, '시작'), to = date(input.to, '종료'); need(to >= from, '기간을 확인해 주세요.');
-      const logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, score: { gte: 60 }, completedAt: { gte: from, lt: new Date(+to + 86400000) } }, orderBy: { completedAt: 'desc' } });
+      // 한국 표준시(KST, UTC+9) 자정부터 종료일 23:59:59까지 포함하도록 조회 범위 보정
+      const kstFrom = new Date(+from - 9 * 3600000);
+      const kstTo = new Date(+to + 86400000);
+      const logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, score: { gte: 60 }, completedAt: { gte: kstFrom, lt: kstTo } }, orderBy: { completedAt: 'desc' } });
       const books = await prisma.book.findMany({ where: { id: { in: [...new Set(logs.map(l => l.bookId))] } }, select: { id: true, title: true, publisher: true, coverUrl: true, author: true } });
       const selectedTitles = Array.isArray(input.selectedTitles) ? input.selectedTitles.map((t: any) => String(t).trim()).filter(Boolean) : [];
       const seenBookIds = new Set<string>();
@@ -60,13 +63,15 @@ export default async function handler(req: any, res: any) {
         const bookTitle = matchedBook?.title || '삭제된 도서';
         if (selectedTitles.length > 0 && !selectedTitles.includes(bookTitle)) continue;
         seenBookIds.add(l.bookId);
+        const completedDate = l.completedAt instanceof Date ? l.completedAt : new Date(l.completedAt);
+        const kstDateStr = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
         certBooks.push({
           bookId: l.bookId,
           title: bookTitle,
           pub: matchedBook?.publisher || '',
           cover: matchedBook?.coverUrl || '',
           author: matchedBook?.author || '',
-          date: l.completedAt.toISOString().slice(0, 10),
+          date: kstDateStr,
           score: l.score,
           thought: l.thinkReply || ''
         });
@@ -222,7 +227,7 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'books') {
       if (body.operation === 'delete') { need(!await prisma.quizAttempt.count({ where: { bookId: input.id } }), '학습 기록이 있는 도서는 삭제할 수 없습니다.'); await prisma.book.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
-      const data = { bookNo: text(input.bookNo, '도서 코드', 100, true), title: text(input.title, '도서명', 300, true), author: text(input.author, '저자', 200, true), publisher: text(input.publisher, '출판사'), isbn: text(input.isbn, 'ISBN'), grade: text(input.grade, '권장 학년'), category: text(input.category, '분류'), description: text(input.description, '소개', 20000), thinkQuiz: text(input.thinkQuiz, '생각담기', 3000) };
+      const data = { bookNo: text(input.bookNo, '도서 코드', 100, true), title: text(input.title, '도서명', 300, true), author: text(input.author, '저자', 200, true), publisher: text(input.publisher, '출판사'), isbn: text(input.isbn, 'ISBN'), grade: text(input.grade, '권장 학년'), category: text(input.category, '분류'), subCategory: text(input.subCategory, '세부 분류'), description: text(input.description, '소개', 20000), thinkTitle: text(input.thinkTitle, '생각꺼내기', 3000), thinkQuiz: text(input.thinkQuiz, '생각담기', 3000) };
       need(/^[A-Za-z0-9_-]+$/.test(data.bookNo), '도서 코드는 영문·숫자·하이픈·밑줄로 입력해 주세요.');
       for (const url of [input.coverUrl,input.worksheetUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|data:application\/pdf)/i.test(url), '자료 주소 형식을 확인해 주세요.');
       if (input.themeId) need(await prisma.themeCategory.findUnique({ where: { id: input.themeId } }), '테마를 확인해 주세요.');

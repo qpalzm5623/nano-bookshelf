@@ -152,6 +152,7 @@ export default async function handler(req: any, res: any) {
             cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
             cat2: category === 'F' ? '외서' : '국내서',
             tag: b.theme ? '#' + b.theme.name : '',
+            thinkExtract: b.thinkTitle || b.description || '',
             thinkInsert: b.thinkQuiz || '',
             thinkOpen: b.thinkTitle || '',
             hasQuiz: ((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0,

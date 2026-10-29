@@ -122,12 +122,13 @@
   async function saveBook(item) {
     var tags = Array.isArray(item.tags) ? item.tags.join(',') : (item.tags || item.detailTag || '');
     var coverUrl = item.coverUrl || item.cover || '';
-    var worksheetUrl = item.worksheetUrl || '';
+    var worksheetUrl = item.worksheetUrl || item.worksheet || '';
     if (coverUrl && (/^javascript:/i.test(coverUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(coverUrl))) coverUrl = '';
     if (worksheetUrl && (/^javascript:/i.test(worksheetUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(worksheetUrl))) worksheetUrl = '';
+    var subCat = item.subCategory || (item.cat1 && item.cat1.includes('비문학') ? 'C' : (item.cat1 && item.cat1.includes('인물') ? 'B' : 'A'));
     var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.bookNo || item.id, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
-      isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), description: item.description || '',
-      thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
+      isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), subCategory: subCat, description: item.description || item.synopsis || '',
+      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
     if (result.item) item.serverId = result.item.id;
     return result.item;
   }

@@ -26,11 +26,14 @@ function publicUser(member: any) {
 function allowed(member: any) {
   return member && member.status === 'APPROVED' && member.academy?.status === 'ACTIVE' && !member.academy.deletedAt;
 }
+// 학습 이력 뷰 변환: 한국 표준시(KST, UTC+9) 기준으로 완독 일자를 산출하여 자정~오전 9시 사이 응시 건의 날짜 밀림 방지
 function logView(attempt: any, book: any) {
   const details = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
+  const completedDate = attempt.completedAt instanceof Date ? attempt.completedAt : new Date(attempt.completedAt);
+  const kstDate = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
   return { id: attempt.id, academyId: attempt.member.academy.code, studentId: attempt.member.username,
     studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정', bookId: book?.bookNo || attempt.bookId,
-    bookTitle: book?.title || '도서', date: attempt.completedAt.toISOString().slice(0, 10), submittedAt: attempt.completedAt.toISOString(),
+    bookTitle: book?.title || '도서', date: kstDate, submittedAt: completedDate.toISOString(),
     score: attempt.score, quizResults: details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
@@ -86,11 +89,18 @@ export default async function handler(req: any, res: any) {
           select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } } }
       });
       if (!book) return res.status(404).json({ error: '도서를 찾을 수 없습니다.' });
+      // 도서별 북퀴즈 지연 조회(Lazy Load): 학생 풀이 화면 및 본사·학원 북퀴즈 관리 모달에서 공용으로 사용할 수 있도록 choices와 opt1~opt5를 함께 반환
       return res.status(200).json({
         bookId: book.bookNo,
-        quizSets: book.quizzes.length ? [{ id: 'server-' + book.id, authorName: '본사', authorType: 'master',
-          questions: book.quizzes.map(q => ({ id: q.id, serverId: q.id, question: q.question, choices: q.options,
-            options: q.options, ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE' })) }] : []
+        quizSets: book.quizzes.length ? [{ id: 'server-' + book.id, authorName: '본사', authorType: 'HQ', academyName: '본사 직속 (공용)',
+          questions: book.quizzes.map(q => {
+            const opts = Array.isArray(q.options) ? q.options : [];
+            return {
+              id: q.id, serverId: q.id, question: q.question, choices: opts, options: opts,
+              opt1: opts[0] || '', opt2: opts[1] || '', opt3: opts[2] || '', opt4: opts[3] || '', opt5: opts[4] || '',
+              ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE'
+            };
+          }) }] : []
       });
     }
     if (action === 'learning' && req.method === 'GET') {

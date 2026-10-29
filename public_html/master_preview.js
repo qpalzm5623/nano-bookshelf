@@ -8402,8 +8402,8 @@ function ensureMasterQuizSets(book) {
   }
 }
 
-// 북퀴즈 모달 열기
-function openMasterQuizModal(bookId) {
+// 북퀴즈 모달 열기 (운영 서버 모드에서는 해당 도서의 실문항을 지연 조회하여 바인딩)
+async function openMasterQuizModal(bookId) {
   const book = masterBooks.find(b => b.id === bookId);
   if (!book) return;
 
@@ -8414,6 +8414,22 @@ function openMasterQuizModal(bookId) {
   document.getElementById("mqTargetBookTitle").innerText = book.title;
   document.getElementById("mqTargetBookGrade").innerText = book.grade || "권장 학년";
   document.getElementById("mqTargetBookAuthor").innerHTML = `저자: ${book.author} | 출판사: ${book.publisher} | 관리코드: <span id="mqTargetBookId">${book.id}</span>`;
+
+  // 운영 서버 환경에서 아직 문항이 로드되지 않은 경우 지연 조회(/api/portal?action=quiz) 실행
+  if (window.NANO_SERVER_DATA && (!book.quizSets || book.quizSets.length === 0) && !book._quizLoadedFromServer && window.NanoPortal && typeof NanoPortal.api === 'function') {
+    try {
+      const lookupId = book.serverId || book.bookNo || book.id || bookId;
+      const res = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupId));
+      book._quizLoadedFromServer = true;
+      if (Array.isArray(res.quizSets) && res.quizSets.length > 0) {
+        book.quizSets = res.quizSets;
+        if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+        window.MIGRATED_QUIZZES[book.id] = res.quizSets;
+      }
+    } catch (err) {
+      console.warn('마스터 북퀴즈 지연 조회 실패:', err);
+    }
+  }
 
   // 퀴즈 세트 다중 관리 초기화
   ensureMasterQuizSets(book);
@@ -8954,11 +8970,14 @@ function updateQuizMediaUI() {
 // ==============================================================
 
 function getChoicesFromQuestion(q) {
-  if (Array.isArray(q.choices) && q.choices.length >= 3) {
-    return q.choices;
+  if (Array.isArray(q.choices) && q.choices.length >= 2) {
+    return q.choices.slice(0, 5);
+  }
+  if (Array.isArray(q.options) && q.options.length >= 2) {
+    return q.options.slice(0, 5);
   }
   const list = [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(x => x !== undefined && x !== "");
-  if (list.length < 3) {
+  if (list.length < 2) {
     return [q.opt1 || "1번 선택지", q.opt2 || "2번 선택지", q.opt3 || "3번 선택지"];
   }
   return list.slice(0, 5);
@@ -8977,7 +8996,7 @@ function renderDynamicChoices(choices, ans) {
   const container = document.getElementById("mqDynamicChoicesContainer");
   if (!container) return;
 
-  if (!Array.isArray(choices) || choices.length < 3) {
+  if (!Array.isArray(choices) || choices.length < 2) {
     choices = ["1번 선택지", "2번 선택지", "3번 선택지"];
   }
   if (choices.length > 5) {
@@ -8991,7 +9010,7 @@ function renderDynamicChoices(choices, ans) {
     const num = idx + 1;
     const circle = circleNums[idx] || `${num}`;
     const isChecked = currentAns === num;
-    const canDelete = choices.length > 3;
+    const canDelete = choices.length > 2;
 
     return `
       <div class="input-group choice-option-row">

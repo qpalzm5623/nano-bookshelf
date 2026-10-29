@@ -11561,7 +11561,8 @@ function handleSaveAcademyBookOnly(event) {
 // ==============================================================
 var curQuizTargetBookId = null;
 
-function openAcademyStandaloneQuizModal(bookId = null) {
+// 학원 북퀴즈 모달 열기 (운영 서버 모드에서는 해당 도서의 실문항을 지연 조회하여 바인딩)
+async function openAcademyStandaloneQuizModal(bookId = null) {
   if (!academyBookList || academyBookList.length === 0) {
     showAcademyToast('등록된 도서가 없습니다. 먼저 새 도서를 등록해주세요.');
     return;
@@ -11584,6 +11585,22 @@ function openAcademyStandaloneQuizModal(bookId = null) {
   // 상단 도서 요약 바 갱신
   bindAcadQuizTargetBookInfo(book);
 
+  // 운영 서버 환경에서 아직 문항이 로드되지 않은 경우 지연 조회(/api/portal?action=quiz) 실행
+  if (window.NANO_SERVER_DATA && (!book.quizSets || book.quizSets.length === 0) && !book._quizLoadedFromServer && window.NanoPortal && typeof NanoPortal.api === 'function') {
+    try {
+      var lookupId = book.serverId || book.bookNo || book.id;
+      var res = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupId));
+      book._quizLoadedFromServer = true;
+      if (Array.isArray(res.quizSets) && res.quizSets.length > 0) {
+        book.quizSets = res.quizSets;
+        if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+        window.MIGRATED_QUIZZES[book.id] = res.quizSets;
+      }
+    } catch (err) {
+      console.warn('학원 북퀴즈 지연 조회 실패:', err);
+    }
+  }
+
   // 북퀴즈 데이터 다중 세트 초기화
   editingAcadQuizSets = ensureAcadBookQuizSets(book);
   currentAcadQuizSetIdx = 0;
@@ -11603,7 +11620,7 @@ function openAcademyStandaloneQuizModal(bookId = null) {
 }
 
 // 대상 도서 드롭다운 변경 핸들러
-function onSelectAcadQuizTargetBook(newBookId) {
+async function onSelectAcadQuizTargetBook(newBookId) {
   var book = academyBookList.find(function(b) { return b.id === newBookId; });
   if (!book) return;
 
@@ -11618,6 +11635,22 @@ function onSelectAcadQuizTargetBook(newBookId) {
 
   curQuizTargetBookId = book.id;
   bindAcadQuizTargetBookInfo(book);
+
+  // 운영 서버 환경에서 아직 문항이 로드되지 않은 경우 지연 조회(/api/portal?action=quiz) 실행
+  if (window.NANO_SERVER_DATA && (!book.quizSets || book.quizSets.length === 0) && !book._quizLoadedFromServer && window.NanoPortal && typeof NanoPortal.api === 'function') {
+    try {
+      var lookupId = book.serverId || book.bookNo || book.id;
+      var res = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupId));
+      book._quizLoadedFromServer = true;
+      if (Array.isArray(res.quizSets) && res.quizSets.length > 0) {
+        book.quizSets = res.quizSets;
+        if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+        window.MIGRATED_QUIZZES[book.id] = res.quizSets;
+      }
+    } catch (err) {
+      console.warn('학원 북퀴즈 지연 조회 실패:', err);
+    }
+  }
 
   editingAcadQuizSets = ensureAcadBookQuizSets(book);
   currentAcadQuizSetIdx = 0;
