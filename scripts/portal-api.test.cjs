@@ -28,8 +28,8 @@ function response() {
 function handler(user, extra = {}) {
   const db = { member: { findUnique: async () => user, update: async () => user }, portalFile: {findMany: async()=>[]}, ...extra };
   const http = load('lib/portal-http.ts', {'./prisma':{prisma:db}, './portal-auth':auth});
-  const saveAttempt = async (_db, current, book, data) => { await db.quizAttempt.create({data}); return {attempt:data,earned:0}; };
-  return load('api/portal.ts', { '../lib/prisma': { prisma: db }, '../lib/portal-auth': auth, '../lib/portal-http': http, '../lib/portal-learning': {saveAttempt} }).default;
+  const saveAttempt = async (_db, current, book, data) => { await db.quizAttempt.create({data}); return {attempt:{...data,completedAt:new Date()},earned:0,isCertified:data.score>=60}; };
+  return load('api/portal.ts', { '../lib/prisma': { prisma: db }, '../lib/portal-auth': auth, '../lib/portal-http': http, '../lib/portal-learning': {...load('lib/portal-learning.ts'),saveAttempt} }).default;
 }
 test('비밀번호 해시 검증, 세션 변조 및 만료를 거부한다', () => {
   assert.equal(auth.verifyPassword('correct-password-for-tests', hash), true);
@@ -74,9 +74,9 @@ test('서버 문항으로 채점하며 제출자가 보낸 점수·회원 ID를 
   assert.equal(res.code, 201); assert.equal(saved.score, 0); assert.equal(saved.memberId, 'member-a');
 });
 test('완료된 제출 ID로 재시도해도 중복 저장하지 않는다', async () => {
-  const run = handler(member(), { quizAttempt: { findUnique: async () => ({ memberId: 'member-a', score: 80, answers: {} }), create: async () => assert.fail('중복 저장') } });
+  const run = handler(member(), { book:{findUnique:async()=>({id:'book-id',bookNo:'BOOK1'})}, quizAttempt: { findUnique: async () => ({ id:'L_attempt123',bookId:'book-id',memberId: 'member-a', score: 80, answers: {earned:17},completedAt:new Date('2026-10-29T01:00:00Z') }), create: async () => assert.fail('중복 저장') } });
   const res = response(); await run(request('learning', { id: 'L_attempt123', studentId: 'student-a', bookId: 'BOOK1', quizResults: [] }, auth.signSession('member-a', hash)), res);
-  assert.equal(res.code, 200); assert.equal(res.data.score, 80);
+  assert.equal(res.code, 200); assert.equal(res.data.score, 80); assert.equal(res.data.earned,17); assert.equal(res.data.log.bookId,'BOOK1');
 });
 test('비밀번호를 변경한 뒤 이전 세션을 거부한다', async () => {
   const token = auth.signSession('member-a', hash);
@@ -105,7 +105,7 @@ test('학생은 선택한 도서의 퀴즈 문항만 지연 조회한다', async
   assert.equal(where.OR[0].id, 'B001');
   assert.equal(res.data.bookId, 'B001');
   assert.equal(res.data.quizSets[0].questions[0].question, '선택 문항');
-  assert.equal(res.data.quizSets[0].questions[0].ans, 2);
+  assert.equal(res.data.quizSets[0].questions[0].ans, undefined);
 });
 
 test('첨삭은 소속 학원으로 제한하고 동시 수정 충돌을 덮어쓰지 않는다', async () => {
@@ -169,4 +169,28 @@ test('인증 실패 시 초기 데이터 목록을 조회하지 않는다', asyn
   await run(request('bootstrap'), res);
   assert.equal(res.code, 401);
   assert.equal(res.data, 'window.NANO_BOOTSTRAP_FAILED = true;');
+});
+
+
+test('학생 이관 플래그와 과거 날짜로 응시 정책을 우회하지 못한다', async () => {
+  const run = handler(member(), {quizAttempt:{findUnique:async()=>null},book:{findFirst:async()=>assert.fail('이관 제출이 채점 단계로 진입함')}});
+  for (const extra of [{importing:true,sourceDate:'2020-01-01'},{sourceDate:'2020-01-01'}]) {
+    const res=response(); await run(request('learning',{id:'L_block123',studentId:'student-a',bookId:'BOOK1',quizResults:[],...extra},auth.signSession('member-a',hash)),res);
+    assert.equal(res.code,403);
+  }
+});
+
+
+test('인증 실패 답안은 학생 조회에서 제외하고 교사 조회에는 유지한다',async()=>{
+  for(const role of ['STUDENT','TEACHER']) {
+    const user=member(role), row={id:'L_fail123',bookId:'b1',score:40,completedAt:new Date('2026-10-29T00:00:00Z'),member:user,answers:{quizResults:[{question:'문제',correctChoiceText:'정답',isCorrect:false}]}};
+    const run=handler(user,{quizAttempt:{findMany:async()=>[row]},book:{findMany:async()=>[{id:'b1',bookNo:'B1'}]}});
+    const res=response();await run(request('learning',undefined,auth.signSession('member-a',hash)),res);
+    assert.equal(res.code,200);assert.equal(res.data.logs[0].quizResults.length,role==='STUDENT'?0:1);
+  }
+});
+test('문항 편집 권한의 교사에게는 정답 번호를 제공한다',async()=>{
+  const run=handler(member('TEACHER'),{book:{findFirst:async()=>({id:'b1',bookNo:'B1',quizzes:[{id:'q1',question:'문제',options:['가','나'],correctAnswer:'2',questionNo:1}]})}});
+  const req=request('quiz',undefined,auth.signSession('member-a',hash));req.query.bookId='B1';const res=response();await run(req,res);
+  assert.equal(res.data.quizSets[0].questions[0].ans,2);
 });

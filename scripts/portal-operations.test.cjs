@@ -65,7 +65,7 @@ test('동일 도서 인증 2회차까지 지급하고 동시 제출·중복 재�
   const db=ledger();
   const results=await Promise.all(['L_1','L_2','L_3'].map(id=>learning.saveAttempt(db,student,book,attempt(id,'생각',80))));
   assert.deepEqual(results.map(r=>r.earned),[17,17,0]);
-  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_1','생각',80))).earned,0);
+  assert.equal((await learning.saveAttempt(db,student,book,attempt('L_1','생각',80))).earned,17);
   assert.equal(db.member.points,34);assert.equal(db.awards.length,4);assert.equal(db.member.bookCount,1);
 });
 
@@ -155,32 +155,33 @@ test('포인트 페이지 조회는 요청자 회원으로 제한하고 다음 �
   const run=api('api/activity.ts',student,{pointHistory:{findMany:async q=>{query=q;return items;}}});const res=response();
   await run({method:'GET',query:{action:'points',cursor:'old',memberId:'other'}},res);assert.equal(query.where.memberId,'s1');assert.equal(query.skip,1);assert.equal(res.data.items.length,200);assert.equal(res.data.nextCursor,'p199');
 });
-test('학생 랭킹은 실제 학원·학급 명단 전체와 기간별 포인트·완독 수를 반환한다',async()=>{
-  let memberWhere;
+test('랭킹 DB 집계 결과와 상위권 밖 본인의 순위·캐릭터를 함께 반환한다',async()=>{
+  let parameters, sql;
   const rankingStudent={...student,classGroupId:'class-1',classGroup:{name:'실제 반'},academy:{code:'A1',name:'실제 학원'}};
-  const members=[
-    {id:'s1',name:'박진호',points:8,bookCount:1,academy:{name:'실제 학원'},classGroup:{name:'실제 반'}},
-    {id:'s2',name:'김학생',points:900,bookCount:9,academy:{name:'실제 학원'},classGroup:{name:'실제 반'}},
-    {id:'s3',name:'이학생',points:0,bookCount:0,academy:{name:'실제 학원'},classGroup:{name:'실제 반'}}
-  ];
+  const ranked=[{id:'s2',name:'김학생',rank:1n,participants:150n,amount:20n,books:2n,points:900,academyName:'실제 학원',className:'실제 반'},
+    {id:'s1',name:'박진호',rank:120n,participants:150n,amount:8n,books:1n,points:8,academyName:'실제 학원',className:'실제 반'}];
   const db={
-    member:{findMany:async q=>{memberWhere=q.where;return members;}},
-    pointHistory:{groupBy:async()=>[{memberId:'s1',_sum:{amount:8}},{memberId:'s2',_sum:{amount:20}}]},
-    quizAttempt:{findMany:async()=>[{memberId:'s2',bookId:'b1'},{memberId:'s2',bookId:'b2'},{memberId:'s1',bookId:'b3'}]}
+    $queryRaw:async(strings,...values)=>{sql=strings.join('?');parameters=values;return ranked;},
+    portalSetting:{findMany:async()=>[{key:'character:s2',value:{characterId:'booki'}}]},
+    quizAttempt:{findMany:async()=>Array.from({length:100},(_,i)=>({memberId:'s2',bookId:'b'+i})).concat([{memberId:'s1',bookId:'b0'}])},
+    book:{findMany:async()=>Array.from({length:100},(_,i)=>({id:'b'+i,theme:{name:'자연·생물'}}))}
   };
-  const res=response();
-  await api('api/activity.ts',rankingStudent,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
-  assert.equal(memberWhere.classGroupId,'class-1');
-  assert.equal(res.data.academyName,'실제 학원');assert.equal(res.data.className,'실제 반');assert.equal(res.data.hasClass,true);
-  assert.equal(res.data.participants,3);assert.equal(res.data.rows.length,3);
-  assert.deepEqual(Array.from(res.data.rows,r=>[r.name,r.pt,r.books,r.cls]),[['김학생',20,2,'실제 반'],['박진호',8,1,'실제 반'],['이학생',0,0,'실제 반']]);
+  const res=response();await api('api/activity.ts',rankingStudent,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
+  assert.equal(res.code,200);assert.equal(res.data.participants,150);assert.equal(res.data.myRank,120);assert.equal(res.data.rows.length,1);
+  assert.equal(res.data.rows[0].charId,'booki');assert.equal(res.data.rows[0].stage,2);assert.equal(res.data.myBooks,1);
+  assert.equal(res.data.academyName,'실제 학원');assert.equal(res.data.className,'실제 반');
+  assert.ok(parameters.includes('class-1'));assert.ok(parameters.includes('a1'));assert.ok(parameters.includes('s1'));
+  assert.match(sql,/ROW_NUMBER/);assert.match(sql,/rank <= 100 OR id/);assert.doesNotThrow(()=>JSON.stringify(res.data));
 });
-test('학급 미지정 학생의 우리 반 요청은 실제 소속 학원 랭킹으로 전환한다',async()=>{
-  let memberWhere;
+test('학급 미지정 학생의 요청은 학원 범위로 조회하고 전국에서는 이름을 가린다',async()=>{
+  let values;
   const noClass={...student,classGroupId:null,classGroup:null,academy:{code:'A1',name:'실제 학원'}};
-  const db={member:{findMany:async q=>{memberWhere=q.where;return [{id:'s1',name:'학생',points:0,bookCount:0,academy:{name:'실제 학원'},classGroup:null}];}},pointHistory:{groupBy:async()=>[]},quizAttempt:{findMany:async()=>[]}};
+  const db={$queryRaw:async(strings,...v)=>{values=v;return [{id:'s2',name:'김학생',rank:1n,participants:1n,amount:0n,books:0n,points:0,academyName:'실제 학원',className:null}];},
+    portalSetting:{findMany:async()=>[]},quizAttempt:{findMany:async()=>[]},book:{findMany:async()=>[]}};
   const res=response();await api('api/activity.ts',noClass,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
-  assert.equal(res.data.scope,'academy');assert.equal(res.data.hasClass,false);assert.equal('classGroupId' in memberWhere,false);assert.equal(res.data.rows.length,1);
+  assert.equal(res.data.scope,'academy');assert.equal(res.data.hasClass,false);assert.equal(values[0],false);assert.equal(values[2],true);
+  const national=response();await api('api/activity.ts',noClass,db)({method:'GET',query:{action:'rankings',scope:'national'}},national);
+  assert.equal(values[0],true);assert.equal(national.data.rows[0].name,'김**');
 });
 test('개인 설정의 다른 기기 변경은 덮어쓰지 않는다',async()=>{
   const run=api('api/activity.ts',student,{portalSetting:{updateMany:async()=>({count:0})}});const res=response();
@@ -203,4 +204,65 @@ test('배포 준비는 기존 비밀번호를 유지하며 해시로 바꾸고 �
   const members=[{id:'old',password:'legacy-existing-password'},{id:'modern',password:auth.hashPassword('already-hashed-password')}];const original=members[1].password;let updates=0;
   const db={$queryRaw:async()=>[], $executeRawUnsafe:async()=>0,$disconnect:async()=>{},member:{findMany:async()=>members,count:async()=>1,updateMany:async({where,data})=>{const m=members.find(m=>m.id===where.id&&m.password===where.password);if(!m)return {count:0};m.password=data.password;updates++;return {count:1};}}};db.$transaction=async arg=>typeof arg==='function'?arg(db):Promise.all(arg);
   try{await prepare(db);await prepare(db);assert.equal(auth.verifyPassword('legacy-existing-password',members[0].password),true);assert.equal(members[1].password,original);assert.equal(updates,1);}finally{for(const key of keys)if(before[key]===undefined)delete process.env[key];else process.env[key]=before[key];}
+});
+
+
+test('요약의 월 합계는 200건 제한과 무관하며 과거 월·다음 커서를 제공한다',async()=>{
+  let aggregateWhere;
+  const db={pointHistory:{findMany:async()=>Array.from({length:201},(_,i)=>({id:'p'+i,amount:5})),aggregate:async({where})=>{aggregateWhere=where;return {_sum:{amount:1500}};}},
+    bookAssignment:{findMany:async()=>[]},quizAttempt:{findMany:async()=>[],aggregate:async()=>({_avg:{score:80}})},$queryRaw:async()=>[{month:'2026-10'},{month:'2025-01'}]};
+  const res=response();await api('api/activity.ts',student,db)({method:'GET',query:{action:'summary'}},res);
+  assert.equal(res.code,200);assert.equal(res.data.currentMonthPoints,1500);assert.equal(res.data.pointLogs.length,200);assert.equal(res.data.pointNextCursor,'p199');
+  assert.deepEqual(Array.from(res.data.pointMonths),['2026-10','2025-01']);assert.equal(aggregateWhere.memberId,'s1');assert.ok(aggregateWhere.createdAt.gte < aggregateWhere.createdAt.lt);
+});
+test('월별 포인트 조회는 KST 경계와 본인 조건을 적용한다',async()=>{
+  let where;
+  const run=api('api/activity.ts',student,{pointHistory:{findMany:async q=>{where=q.where;return [];}}});
+  const res=response();await run({method:'GET',query:{action:'points',month:'2026-10'}},res);
+  assert.equal(res.code,200);assert.equal(where.memberId,'s1');assert.equal(where.createdAt.gte.toISOString(),'2026-09-30T15:00:00.000Z');assert.equal(where.createdAt.lt.toISOString(),'2026-10-31T15:00:00.000Z');
+  const invalid=response();await run({method:'GET',query:{action:'points',month:'2026-13'}},invalid);assert.equal(invalid.code,400);
+});
+test('과거 제출의 지급액도 원장 ID로 복원하고 다른 지급 건을 섞지 않는다',async()=>{
+  let query;
+  const earned=await learning.earnedForAttempt({pointHistory:{findMany:async q=>{query=q;return [{amount:12},{amount:5}];}}},{id:'L_old',memberId:'s1',bookId:'b1',answers:{}});
+  const {createHash}=require('node:crypto');
+  assert.equal(earned,17);assert.equal(query.where.memberId,'s1');assert.equal(query.where.id.in.length,4);
+  assert.ok(query.where.id.in.includes('award_'+createHash('sha256').update(JSON.stringify(['s1','b1','THOUGHT_1','L_old'])).digest('hex')));
+});
+test('분야 분류는 서버 테마를 기본 문학 분류보다 우선하며 고유 도서만 센다',()=>{
+  const reading=require('../public_html/js/reading-progress');
+  const counts=reading.stats([{id:'b1',themeName:'자연·생물',cat:'K / 이야기'},{id:'b1',themeName:'자연·생물'},{id:'b2',theme:{name:'학습·수학'},subject:'과학'},{id:'b3',subject:'건강·음식'}]);
+  assert.equal(counts.totalRead,3);assert.equal(counts.natureRead,1);assert.equal(counts.histRead,0);assert.equal(counts.studyRead,1);assert.equal(counts.healthRead,1);
+  for(const [id,rule] of Object.entries(reading.rules)) {
+    for(const [count,expected] of [[rule[1]-1,0],[rule[1],1],[rule[2],2],[rule[3],3]]) assert.equal(reading.stage(id,{[rule[0]]:count}),expected,id);
+  }
+});
+test('서버 캐릭터 저장은 실독서 기록으로 해금을 검증한다',async()=>{
+  let saved;let completed=49;
+  const db={quizAttempt:{findMany:async()=>Array.from({length:completed},(_,i)=>({memberId:'s1',bookId:'b'+i}))},book:{findMany:async()=>Array.from({length:completed},(_,i)=>({id:'b'+i,theme:{name:'자연·생물'}}))},
+    portalSetting:{upsert:async q=>{saved=q;},findUnique:async()=>saved?{value:saved.create.value}:null}};
+  const run=api('api/activity.ts',student,db);
+  const locked=response();await run({method:'POST',query:{action:'character'},body:{characterId:'booki',stage:3}},locked);assert.equal(locked.code,409);assert.equal(saved,undefined);
+  completed=50;const unlocked=response();await run({method:'POST',query:{action:'character'},body:{characterId:'booki',stage:3}},unlocked);assert.equal(unlocked.data.stage,1);assert.equal(saved.where.key,'character:s1');
+  const read=response();await run({method:'GET',query:{action:'character'}},read);assert.equal(read.data.characterId,'booki');
+  const invalid=response();await run({method:'POST',query:{action:'character'},body:{characterId:'constructor'}},invalid);assert.equal(invalid.code,400);
+});
+test('인기 도서는 기간별 실제 인증 수만 집계한다',async()=>{
+  const starts=[];
+  const db={quizAttempt:{groupBy:async q=>{starts.push(q.where.completedAt.gte);assert.equal(q.where.score.gte,60);return [{bookId:'b1',_count:{id:3}}];}},book:{findMany:async()=>[{id:'b1',bookNo:'B001'}]}};
+  for(const period of ['daily','weekly','monthly']) {const res=response();await api('api/activity.ts',student,db)({method:'GET',query:{action:'popular',period}},res);assert.equal(res.data.items[0].count,3);assert.equal(res.data.items[0].bookId,'B001');}
+  assert.equal(+starts[0]-+starts[1],6*86400000);assert.equal(starts[2].getUTCHours(),15);
+});
+test('문항 묶음은 먼저 검증하고 중간 저장 실패 시 전체 롤백한다',async()=>{
+  let state=[{id:'q1',question:'기존1',questionNo:1},{id:'q2',question:'기존2',questionNo:2}], transactions=0;
+  const db={book:{findUnique:async()=>({id:'b1'})},$transaction:async fn=>{
+    transactions++;const working=structuredClone(state);const tx={$queryRaw:async()=>[],bookQuiz:{findMany:async()=>working,
+      update:async({where,data})=>{if(where.id==='q2')throw new Error('저장 실패');Object.assign(working.find(q=>q.id===where.id),data);return working[0];},deleteMany:async()=>({count:0})}};
+    const result=await fn(tx);state=working;return result;
+  }};
+  const run=api('api/manage.ts',{...teacher,role:'MASTER'},db), questions=[1,2].map(n=>({question:'새문항'+n,options:['가','나'],correctAnswer:1}));
+  const invalid=response();await run({method:'POST',query:{entity:'quizzes'},body:{operation:'replace',data:{bookId:'b1',questions:[{...questions[0],options:['같음','같음']}]}}},invalid);
+  assert.equal(invalid.code,400);assert.equal(transactions,0);
+  const failed=response();await run({method:'POST',query:{entity:'quizzes'},body:{operation:'replace',data:{bookId:'b1',questions}}},failed);
+  assert.equal(failed.code,500);assert.deepEqual(state.map(q=>q.question),['기존1','기존2']);assert.equal(transactions,1);
 });

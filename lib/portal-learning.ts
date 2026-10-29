@@ -1,4 +1,24 @@
 import { createHash } from 'node:crypto';
+import Reading = require('../public_html/js/reading-progress');
+
+export async function readingProgress(db: any, memberIds: string[]) {
+  if (!memberIds.length) return new Map<string, any>();
+  const rows = await db.quizAttempt.findMany({ where: { memberId: { in: memberIds }, score: { gte: 60 } }, distinct: ['memberId', 'bookId'], select: { memberId: true, bookId: true } });
+  const books = await db.book.findMany({ where: { id: { in: [...new Set(rows.map((r: any) => r.bookId))] } }, select: { id: true, title: true, subject: true, tags: true, theme: { select: { name: true } } } });
+  const byId = new Map(books.map((b: any) => [b.id, b]));
+  const grouped = new Map<string, any[]>(memberIds.map(id => [id, []]));
+  rows.forEach((r: any) => grouped.get(r.memberId)?.push(byId.get(r.bookId) || { id: r.bookId }));
+  return new Map(memberIds.map(id => [id, Reading.stats(grouped.get(id))]));
+}
+
+// 최초 지급액을 재전송하되, 회원 포인트는 다시 적립하지 않습니다.
+export async function earnedForAttempt(db: any, attempt: any) {
+  if (typeof attempt.answers?.earned === 'number') return attempt.answers.earned;
+  const ids = ['QUIZ_PASS_1', 'THOUGHT_1', 'QUIZ_PASS_2', 'THOUGHT_2'].map(kind =>
+    'award_' + createHash('sha256').update(JSON.stringify([attempt.memberId, attempt.bookId, kind, attempt.id])).digest('hex'));
+  const points = await db.pointHistory.findMany({ where: { memberId: attempt.memberId, id: { in: ids } }, select: { amount: true } });
+  return points.reduce((sum: number, p: any) => sum + p.amount, 0);
+}
 
 // 초등학교 4학년 이상 권장도서 판정
 export function isGrade4OrAbove(gradeStr?: string | null): boolean {
@@ -22,7 +42,7 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
     const duplicate = await tx.quizAttempt.findUnique({ where: { id: data.id } });
     if (duplicate) {
       if (duplicate.memberId !== user.id) throw new Error('ATTEMPT_OWNER');
-      return { attempt: duplicate, earned: 0, isCertified: duplicate.score >= 60 };
+      return { attempt: duplicate, earned: await earnedForAttempt(tx, duplicate), isCertified: duplicate.score >= 60 };
     }
 
     // 해당 회원의 이 도서에 대한 과거 모든 응시 이력 조회
@@ -38,9 +58,6 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
     if (!importing && todayFailures >= 3) {
       throw new Error('DAILY_LIMIT_EXCEEDED');
     }
-
-    // 퀴즈 응시 기록 저장
-    const attempt = await tx.quizAttempt.create({ data });
 
     // 1. 북퀴즈 점수가 60점 이상일 경우에만 인증 완료되며, 인증된 도서에 한해서만 포인트를 지급함.
     const isCertified = data.score >= 60;
@@ -76,6 +93,7 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
       }
     }
 
+    const attempt = await tx.quizAttempt.create({ data: { ...data, answers: { ...data.answers, earned: awards.reduce((sum, award) => sum + award.amount, 0) } } });
     for (const award of awards) {
       const id = 'award_' + createHash('sha256').update(JSON.stringify([user.id, book.id, award.kind, data.id])).digest('hex');
       if (!await tx.pointHistory.findUnique({ where: { id } })) {

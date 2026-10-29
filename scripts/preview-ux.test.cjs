@@ -55,7 +55,7 @@ function context(localStorage = storage()) {
     addEventListener() {}, scrollTo() {}, toast: message => notices.push(message),
     showAcademyToast: message => notices.push(message),
     switchPanel() {}, openBookDetail() {},
-    generateQuizResultIllustration: () => '',
+    generateQuizResultIllustration: () => '', invalidateStudentRank() {}, refreshStudentLearningData() {}, popularRemoteCache: {},
     getUserCharacterId: () => 'nano', getCharacterById: () => ({ name: '나노', themeColor: '#185b45' }),
     getCharacterSvg: () => '', CHAR_QUIZ_FEEDBACKS: { nano: { perfect: '', high: '', pass: '', retry: '' } },
     getCharacterUnlockStatus: () => ({ currentStage: 1, unlocked: true }),
@@ -66,6 +66,7 @@ function context(localStorage = storage()) {
     currentAcademyInfo: { id: 'A' }, MIGRATED_LEARNING_LOGS: [], notices
   });
   ctx.window = ctx;
+  vm.runInContext(read('js/reading-progress.js'), ctx);
   vm.runInContext(read('js/learning-storage.js'), ctx);
   vm.runInContext(read('js/preview-data.js'), ctx);
   return ctx;
@@ -525,4 +526,58 @@ test('자동 저장 시각 안내는 숨기고 저장 실패만 표시하며 답
   assert.equal(ctx.saveStudentQuizDraft(), true);
   assert.equal(status.textContent, '');
   assert.equal(status.style.display, 'none');
+});
+
+
+test('서버 채점 결과는 전체 기록·요약 요청을 기다리지 않고 표시한다',async()=>{
+  const ctx=student(storage());answerAll(ctx);let applied=null;
+  ctx.NanoPortal={remote:true,request:async()=>({score:40,correctCount:2,earned:0,quizResults:[],log:{id:'saved'}}),
+    applyLearning:log=>{applied=log;},refreshLearning:()=>assert.fail('완료 화면에서 전체 이력 조회'),refreshActivity:()=>new Promise(()=>{}),logs:()=>[]};
+  await ctx.showResult();
+  assert.equal(ctx.studentQuizSubmitted,true);assert.equal(ctx.document.getElementById('rScore').innerText,'40점');assert.equal(applied.id,'saved');
+});
+test('겹치는 학습 조회는 한 번만 실행하고 조회 중 저장된 답안을 보존한다',async()=>{
+  let finish,calls=0;
+  const responseReady=new Promise(resolve=>{finish=resolve;});
+  const ctx=vm.createContext({location:{protocol:'https:',hostname:'test.example',pathname:'/index.html'},URLSearchParams,AbortSignal,
+    sessionStorage:storage(),addEventListener(){},fetch:async()=>{calls++;return {ok:true,json:()=>responseReady};}});
+  ctx.window=ctx;ctx.sessionStorage.setItem('nano_auth_user',JSON.stringify({id:'student-a',academyId:'A'}));
+  vm.runInContext(read('js/portal-client.js'),ctx);
+  const first=ctx.NanoPortal.refreshLearning(),second=ctx.NanoPortal.refreshLearning();
+  await Promise.resolve();ctx.NanoPortal.applyLearning({id:'L_new',academyId:'A',submittedAt:'2026-10-29T02:00:00Z'});
+  finish({logs:[{id:'L_old',academyId:'A',submittedAt:'2026-10-28T02:00:00Z'}],nextCursor:null});
+  await Promise.all([first,second]);assert.equal(calls,1);assert.deepEqual(Array.from(ctx.NanoPortal.logs(),l=>l.id),['L_new','L_old']);
+});
+test('포인트는 200건 이후를 추가 조회하고 월 전환의 늦은 응답을 무시한다',async()=>{
+  const ctx=context(),listeners={},pending={},calls=[];
+  ctx.URLSearchParams=URLSearchParams;ctx.curPointMonthFilter='all';ctx.studentPointLogs=[];ctx.isPointLoading=false;ctx.hasMorePointLogs=true;
+  ctx.studentWishlist=[];ctx.userInterestTags=[];ctx.getStudentStoragePrefix=()=> '_student';ctx.renderWishList=ctx.renderInterestTags=ctx.renderInterestRecommendations=ctx.updateAllCharacterAvatars=()=>{};
+  ctx.createPointLogItemHtml=p=>'<p>'+p.bookTitle+'</p>';
+  ctx.addEventListener=(name,fn)=>{listeners[name]=fn;};
+  const el=ctx.document.getElementById('pointMonthFilterChips');el.replaceChildren=()=>{};el.append=()=>{};
+  const create=ctx.document.createElement;ctx.document.createElement=()=>{const e=create();e.classList.toggle=()=>{};return e;};
+  const point=(id,title)=>({id,createdAt:'2026-10-29T00:00:00Z',amount:5,content:title||id,pointType:'THOUGHT_1'});
+  const summary={pointLogs:Array.from({length:200},(_,i)=>point('p'+i)),pointNextCursor:'p199',pointMonths:['2026-10','2026-09','2026-08'],currentMonthPoints:1500};
+  ctx.NanoPortal={remote:true,user:()=>({role:'student'}),activity:()=>summary,api:async url=>{
+    calls.push(url);if(url.includes('preferences'))return {value:{wishlist:[],interests:[]},revision:0};if(url.includes('character'))return {characterId:'nano'};
+    const q=new URL('https://test.example'+url).searchParams;
+    if(q.has('month'))return new Promise(resolve=>{pending[q.get('month')]=resolve;});
+    assert.equal(q.get('cursor'),'p199');return {items:[point('p200')],nextCursor:null};
+  }};
+  vm.runInContext(read('js/portal-extras.js'),ctx);await listeners['nano:ready']();
+  assert.equal(ctx.document.getElementById('currentMonthEarnedPoints').textContent,'+1,500 P');
+  assert.equal(calls.filter(c=>c.includes('action=points')).length,0);
+  for(let i=0;i<20;i++)await ctx.loadMorePointLogs();
+  assert.equal(ctx.studentPointLogs.length,201);assert.equal(ctx.hasMorePointLogs,false);assert.match(ctx.document.getElementById('pointLogList').innerHTML,/p200/);
+  const old=ctx.filterPointHistory('2026-09');const latest=ctx.filterPointHistory('2026-08');
+  pending['2026-08']({items:[point('aug','8월 기록')],nextCursor:null});await latest;
+  pending['2026-09']({items:[point('sep','9월 기록')],nextCursor:null});await old;
+  assert.match(ctx.document.getElementById('pointLogList').innerHTML,/8월 기록/);assert.doesNotMatch(ctx.document.getElementById('pointLogList').innerHTML,/9월 기록/);
+});
+test('성장 분야와 결과 그림이 같은 명시적 테마를 사용한다',()=>{
+  const ctx=vm.createContext({});vm.runInContext(read('js/reading-progress.js'),ctx);vm.runInContext(read('js/quiz-result-art.js'),ctx);
+  const book={id:'nature',title:'어떤 하루',themeName:'자연·생물',cat:'문학 / 이야기'};
+  assert.equal(ctx.NanoReading.stats([book]).natureRead,1);
+  const html=ctx.NanoQuizResult.render(80,'booki',book,{stage:2});
+  assert.match(html,/qr-theme-nature/);assert.match(html,/data-stage="2"/);
 });

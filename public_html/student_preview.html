@@ -3652,11 +3652,12 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261029_v2"></script>
+<script src="js/portal-client.js?v=20261029-integrity"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261014" defer></script>
 <link rel="stylesheet" href="css/quiz-result.css?v=20261029-friends3">
-<script src="js/quiz-result-art.js?v=20261029-friends3"></script>
+<script src="js/reading-progress.js?v=20261029-integrity"></script>
+<script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 </head>
 <body>
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
@@ -5629,7 +5630,12 @@ function initStudentMigratedData() {
         subtitle: subtitleStr,
         author: b.author || '작가 미상',
         pub: b.publisher || '출판사 미상',
-        cat: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
+        cat: b.subject || b.themeName || b.tag || b.cat1 || '',
+        subject: b.subject || '',
+        themeId: b.themeId || null,
+        readingGenre: b.readingGenre || NanoReading.genre(b),
+        themeName: b.themeName || b.tag || '',
+        themeTag: b.themeName || b.tag || '',
         grade: gCode,
         gradeGroup: b.grade || '초등 3학년',
         createdAt: b.date || '2026-09-01',
@@ -6304,6 +6310,7 @@ var libInfiniteScrollState = {
 };
 
 var currentPopularPeriod = 'daily';
+var popularRemoteCache = {}, popularRemotePending = {};
 
 function switchPopularPeriod(period) {
   currentPopularPeriod = period;
@@ -6316,6 +6323,11 @@ function switchPopularPeriod(period) {
 
 function getPopularSortedList() {
   var list = libData.slice();
+  if (window.NanoPortal && NanoPortal.remote) {
+    var cached = popularRemoteCache[currentPopularPeriod];
+    var counts = new Map((cached ? cached.items : []).map(function(item) { return [String(item.bookId), item.count]; }));
+    return list.filter(function(book) { return counts.has(String(book.id)); }).sort(function(a,b) { return counts.get(String(b.id)) - counts.get(String(a.id)) || String(a.id).localeCompare(String(b.id)); });
+  }
   if(currentPopularPeriod === 'daily') {
     list.sort(function(a,b){ return (b.quizCount7d/7) - (a.quizCount7d/7); });
   } else if(currentPopularPeriod === 'weekly') {
@@ -6553,6 +6565,21 @@ function filterRecLib() {
 
 // 3. 인기 도서 렌더링 (10개 초기화 + 무한스크롤)
 function renderPopularLib() {
+  if (window.NanoPortal && NanoPortal.remote) {
+    var period = currentPopularPeriod, cached = popularRemoteCache[period];
+    if (!cached || Date.now() - cached.at > 60000) {
+      if (popularRemotePending[period]) return;
+      popularRemotePending[period] = true;
+      initLibInfiniteScroll('popular', [], '<p>인기 도서를 집계하고 있어요…</p>');
+      NanoPortal.api('/api/activity?action=popular&period=' + period).then(function(result) {
+        popularRemoteCache[period] = { items: result.items, at: Date.now() };
+        if (period === currentPopularPeriod) renderPopularLib();
+      }).catch(function(e) {
+        if (period === currentPopularPeriod) initLibInfiniteScroll('popular', [], '<p>' + escapeStudentQuizText(e.message) + '</p><button onclick="renderPopularLib()">다시 시도</button>');
+      }).finally(function() { delete popularRemotePending[period]; });
+      return;
+    }
+  }
   var list = getPopularSortedList();
   initLibInfiniteScroll('popular', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-fire mr-1"></i>인기 도서 데이터가 없습니다.</div>');
 }
@@ -8010,7 +8037,7 @@ function startQuizWithSet(book, quizSet) {
       os = [mq.opt1, mq.opt2, mq.opt3, mq.opt4, mq.opt5].filter(Boolean);
     }
     if (os.length === 0) os = ['1번 보기', '2번 보기', '3번 보기'];
-    var ansIdx = parseInt(mq.ans || '1', 10) - 1;
+    var ansIdx = mq.ans == null ? -1 : parseInt(mq.ans, 10) - 1;
 
     // 질문 텍스트에서 출제 관련 말머리(예: 【우리 학원 출제】 등) 제거
     var cleanQ = (mq.question || '').replace(/^【[^】]*출제[^】]*】\s*|^\[[^\]]*출제[^\]]*\]\s*/g, '').trim();
@@ -8021,7 +8048,7 @@ function startQuizWithSet(book, quizSet) {
       mediaUrl: mq.mediaUrl || '',
       mediaCaption: mq.mediaCaption || '',
       os: os,
-      a: Math.max(0, ansIdx),
+      a: ansIdx,
       isThoughtQuestion: false
     };
   });
@@ -8355,6 +8382,17 @@ function generateQuizResultIllustration(score, charId, book, extra) {
   return NanoQuizResult.render(score, charId, book || window.currentQuizBookObj || {}, Object.assign({}, extra, { stage: stage }));
 }
 
+// 초기 기록 조회가 늦게 끝나거나 대표 캐릭터가 바뀌어도 결과 그림의 성장 단계를 맞춥니다.
+function refreshQuizResultArtwork() {
+  var view = window.activeQuizResultView;
+  if (!view || !studentQuizSubmitted || view.attemptId !== studentQuizAttemptId) return;
+  var hero = document.getElementById('quizResultHeroBanner');
+  if (!hero) return;
+  var id = getUserCharacterId(), feedback = CHAR_QUIZ_FEEDBACKS[id] || CHAR_QUIZ_FEEDBACKS.nano;
+  var tier = view.score === 100 ? 'perfect' : view.score >= 80 ? 'high' : view.score >= 60 ? 'pass' : 'retry';
+  hero.innerHTML = generateQuizResultIllustration(view.score, id, view.book, Object.assign({}, view.extra, { speechText: feedback[tier] }));
+}
+
 // 북퀴즈 제출 및 최종 채점 결과 화면 렌더링
 async function showResult() {
   if (!curData || studentQuizSubmitted) return;
@@ -8388,7 +8426,9 @@ async function showResult() {
       finalScore = result.score;
       serverResult = result;
       if (result.quizResults) result.quizResults.forEach(function(row, idx) { gradedQuestions[idx].a = gradedQuestions[idx].os.indexOf(row.correctChoiceText); });
-      await Promise.all([NanoPortal.refreshLearning(), NanoPortal.refreshActivity()]).catch(function(e) { toast('저장은 완료되었으나 목록 새로고침에 실패했습니다: ' + e.message); });
+      if (NanoPortal.applyLearning && result.log) NanoPortal.applyLearning(result.log);
+      invalidateStudentRank();
+      popularRemoteCache = {};
       var statusEl = document.getElementById('quizSubmissionStatus');
       if (statusEl) {
         statusEl.textContent = '';
@@ -8429,7 +8469,8 @@ async function showResult() {
     `;
   });
 
-  var score = tot > 0 ? Math.round((ok / tot) * 100) : 100;
+  if (serverResult && Number.isInteger(serverResult.correctCount)) ok = serverResult.correctCount;
+  var score = serverResult ? finalScore : (tot > 0 ? Math.round((ok / tot) * 100) : 100);
   document.getElementById('rScore').innerText = score + '점';
 
   var isPass = score >= 60;
@@ -8498,6 +8539,8 @@ async function showResult() {
       speechText: speechText,
       failCount: (failInfoObj ? failInfoObj.count : 0)
     });
+    window.activeQuizResultView = { attemptId: studentQuizAttemptId, score: score, book: activeBookObj,
+      extra: { tot: tot, ok: ok, earnedPts: earnedPts, failCount: failInfoObj ? failInfoObj.count : 0 } };
   }
 
   // 결과 화면 캐릭터 말풍선 렌더링 (하위 호환성 유지)
@@ -8540,6 +8583,9 @@ async function showResult() {
 
   toast((window.NanoPortal && NanoPortal.remote ? '답안을 서버에 저장했어요. ' : '답안을 이 기기에 저장했어요. ') + '퀴즈 결과는 ' + score + '점입니다.');
   window.scrollTo(0, 0);
+  if (window.NanoPortal && NanoPortal.remote) {
+    NanoPortal.refreshActivity().then(function() { refreshStudentLearningData(); }).catch(function(e) { toast('답안은 저장되었습니다. 포인트 요약 갱신 실패: ' + e.message); });
+  }
 }
 
 // 학원 관리자 학습 관리와 실시간 동기화
@@ -9157,7 +9203,7 @@ function createPointLogItemHtml(log) {
     +   '</div>'
     +   '<div class="point-log-desc">' + escapeStudentQuizText(log.activity) + '</div>'
     + '</div>'
-    + '<div class="point-log-val">+' + log.point.toLocaleString() + ' P</div>'
+    + '<div class="point-log-val">' + (log.point >= 0 ? '+' : '') + log.point.toLocaleString() + ' P</div>'
     + '</div>';
 }
 
@@ -9361,11 +9407,11 @@ var NANO_CHARACTERS = [
   {
     id: "jelly",
     name: "젤리 (Jelly)",
-    tag: "100권 완독 레전드 요정 🫧",
+    tag: "50권 완독 레전드 요정 🫧",
     themeName: "대독서가 레전드",
     themeColor: "#06b6d4",
     bgGradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
-    story: "누적 100권의 책을 정복한 진정한 대독서가의 책장에서 탄생한 무지개 마법 정령! 책 읽는 모든 순간을 꿀처럼 달콤하게 만들어줘요.",
+    story: "누적 50권의 책을 정복한 진정한 대독서가의 책장에서 탄생한 무지개 마법 정령! 책 읽는 모든 순간을 꿀처럼 달콤하게 만들어줘요.",
     reqType: "total_read",
     stage1Count: 50,
     stage2Count: 100,
@@ -9379,74 +9425,18 @@ var NANO_CHARACTERS = [
 ];
 
 // 학생 독서 활동 통계 헬퍼 (실제 인증 완료된 고유 도서 기반 실시간 집계)
+var activityStatsCache = null;
 function getStudentActivityStats() {
-  var uniqueBooks = {};
-  if (typeof readBooksMaster !== 'undefined' && Array.isArray(readBooksMaster)) {
-    readBooksMaster.forEach(function(item) {
-      if (item && item.id) {
-        uniqueBooks[String(item.id)] = item;
-      }
-    });
-  }
-
-  var counts = {
-    humanRead: 0,
-    natureRead: 0,
-    techRead: 0,
-    histRead: 0,
-    healthRead: 0,
-    studyRead: 0
-  };
-
-  var bookIds = Object.keys(uniqueBooks);
-  var totalRead = bookIds.length;
-
-  bookIds.forEach(function(bId) {
-    var b = null;
-    if (typeof libData !== 'undefined' && Array.isArray(libData)) {
-      b = libData.find(function(x) { return String(x.id) === bId || String(x.bookNo) === bId; });
-    }
-    if (!b && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
-      b = window.MIGRATED_BOOKS.find(function(x) { return String(x.id) === bId || String(x.bookNo) === bId; });
-    }
-
-    var catStr = b ? ((b.cat || '') + ' ' + (b.category || '') + ' ' + (b.subject || '') + ' ' + (b.themeTag || '') + ' ' + (b.tags ? b.tags.join(' ') : '')).toLowerCase() : '';
-
-    if (/인간|생활|가족|사회|친구|우정|성장|심리|철학/.test(catStr)) {
-      counts.humanRead++;
-    } else if (/자연|생물|환경|동물|식물|곤충|바다|생태/.test(catStr)) {
-      counts.natureRead++;
-    } else if (/기술|과학|우주|로봇|ai|컴퓨터|물리|화학|it/.test(catStr)) {
-      counts.techRead++;
-    } else if (/역사|이야기|문학|전래|신화|고전|소설|동화/.test(catStr)) {
-      counts.histRead++;
-    } else if (/건강|음식|요리|운동|식습관|보건/.test(catStr)) {
-      counts.healthRead++;
-    } else {
-      counts.studyRead++;
-    }
+  var reads = typeof readBooksMaster !== 'undefined' ? readBooksMaster : [];
+  if (activityStatsCache && activityStatsCache.reads === reads && activityStatsCache.library === libData) return activityStatsCache.stats;
+  var byId = new Map();
+  (window.MIGRATED_BOOKS || []).concat(libData || []).forEach(function(book) {
+    byId.set(String(book.id), book);
+    if (book.bookNo) byId.set(String(book.bookNo), book);
   });
-
-  var genreCounts = [
-    counts.humanRead,
-    counts.natureRead,
-    counts.techRead,
-    counts.histRead,
-    counts.healthRead,
-    counts.studyRead
-  ];
-  var allGenreMin = totalRead > 0 ? Math.min.apply(null, genreCounts) : 0;
-
-  return {
-    totalRead: totalRead,
-    humanRead: counts.humanRead,
-    natureRead: counts.natureRead,
-    techRead: counts.techRead,
-    histRead: counts.histRead,
-    healthRead: counts.healthRead,
-    studyRead: counts.studyRead,
-    allGenreMin: allGenreMin
-  };
+  var stats = NanoReading.stats(reads.map(function(read) { return byId.get(String(read.id)) || { id: read.id }; }));
+  activityStatsCache = { reads: reads, library: libData, stats: stats };
+  return stats;
 }
 
 // 캐릭터별 실시간 1, 2, 3단계 해금/진화 상태 및 남은 권수 계산
@@ -9487,9 +9477,10 @@ function getCharacterUnlockStatus(char) {
     }
   }
 
-  var s1 = (char.stage1Count !== undefined) ? char.stage1Count : (char.unlockCount || 0);
-  var s2 = (char.stage2Count !== undefined) ? char.stage2Count : (char.evolveCount || 100);
-  var s3 = (char.stage3Count !== undefined) ? char.stage3Count : (s2 * 1.5);
+  var sharedRule = NanoReading.rules[char.id];
+  var s1 = sharedRule ? sharedRule[1] : (char.stage1Count !== undefined) ? char.stage1Count : (char.unlockCount || 0);
+  var s2 = sharedRule ? sharedRule[2] : (char.stage2Count !== undefined) ? char.stage2Count : (char.evolveCount || 100);
+  var s3 = sharedRule ? sharedRule[3] : (char.stage3Count !== undefined) ? char.stage3Count : (s2 * 1.5);
 
   var currentStage = 0;
   var nextStage = 1;
@@ -9575,7 +9566,7 @@ function getStudentStoragePrefix() {
 function getUserCharacterId() {
   try {
     var key = 'NANO_STUDENT_AVATAR_ID' + getStudentStoragePrefix();
-    var saved = localStorage.getItem(key);
+    var saved = window.NanoPortal && NanoPortal.remote ? window.nanoServerCharacterId : localStorage.getItem(key);
     var candidate = saved || 'nano';
     var char = getCharacterById(candidate);
     var st = getCharacterUnlockStatus(char);
@@ -9589,13 +9580,19 @@ function getUserCharacterId() {
   }
 }
 
-function setUserCharacterId(id) {
+async function setUserCharacterId(id) {
+  if (window.NanoPortal && NanoPortal.remote) {
+    var result = await NanoPortal.api('/api/activity?action=character', { characterId: id });
+    window.nanoServerCharacterId = result.characterId;
+    invalidateStudentRank();
+  }
   try {
     var key = 'NANO_STUDENT_AVATAR_ID' + getStudentStoragePrefix();
     localStorage.setItem(key, id);
     localStorage.setItem('NANO_STUDENT_AVATAR_ID', id);
   } catch(e) {}
   updateAllCharacterAvatars();
+  refreshQuizResultArtwork();
 }
 
 function getCharacterById(id) {
@@ -9635,7 +9632,8 @@ function selectCharacterInModal(id) {
   renderCharacterSelectModal();
 }
 
-function applySelectedCharacter() {
+async function applySelectedCharacter() {
+  if (window.characterSavePending) return;
   if(!tempSelectedCharId) tempSelectedCharId = 'nano';
   var char = getCharacterById(tempSelectedCharId);
   var unlockInfo = getCharacterUnlockStatus(char);
@@ -9645,7 +9643,8 @@ function applySelectedCharacter() {
     return;
   }
 
-  setUserCharacterId(tempSelectedCharId);
+  window.characterSavePending = true;
+  try { await setUserCharacterId(tempSelectedCharId); } catch(e) { toast('캐릭터 저장 실패: ' + e.message); return; } finally { window.characterSavePending = false; }
   closeCharacterSelectModal();
   toast('🎉 내 대표 캐릭터가 [' + char.name.split(' ')[0] + '](으)로 설정되었습니다!');
   renderRank();
@@ -10083,12 +10082,13 @@ function switchRankPeriod(period) {
   renderRank();
 }
 
-var remoteRankKey = '', remoteRankResult = null, remoteRankSequence = 0;
+var remoteRankKey = '', remoteRankResult = null, remoteRankSequence = 0, remoteRankLoadedAt = 0;
+function invalidateStudentRank() { remoteRankKey = ''; remoteRankResult = null; remoteRankSequence++; remoteRankLoadedAt = 0; }
 function renderRank() {
   checkAcademyClassMode();
   if (window.NanoPortal && NanoPortal.remote) {
     var key = currentRankScope + ':' + currentRankPeriod;
-    if (remoteRankKey !== key) {
+    if (remoteRankKey !== key || (remoteRankResult && Date.now() - remoteRankLoadedAt > 30000)) {
       remoteRankKey = key; remoteRankResult = null;
       var sequence = ++remoteRankSequence;
       var list = document.getElementById('rankList'); if(list) list.textContent = '월별 포인트를 조회하고 있어요…';
@@ -10109,7 +10109,7 @@ function renderRank() {
         var resolvedScope = ['class', 'academy', 'national'].includes(result.scope) ? result.scope : currentRankScope;
         currentRankScope = resolvedScope;
         remoteRankKey = resolvedScope + ':' + currentRankPeriod;
-        remoteRankResult = result;
+        remoteRankResult = result; remoteRankLoadedAt = Date.now();
         fullRankDatabase[resolvedScope][currentRankPeriod] = result.rows || [];
         renderRank();
       }).catch(function(e) { if(sequence === remoteRankSequence) { remoteRankKey = ''; if(list) list.textContent = e.message + ' 기간을 다시 선택하면 재시도합니다.'; } });
@@ -10157,21 +10157,21 @@ function renderRank() {
 
   if(top1 && p1Avatar) {
     var cId1 = top1.charId === 'custom' ? userChar : top1.charId;
-    p1Avatar.innerHTML = getCharacterSvg(cId1, 64);
+    p1Avatar.innerHTML = getCharacterSvg(cId1, 64, top1.stage || 1);
     if(p1Name) p1Name.innerText = top1.name;
     if(p1Points) p1Points.innerText = top1.pt.toLocaleString() + 'P';
   }
 
   if(top2 && p2Avatar) {
     var cId2 = top2.charId === 'custom' ? userChar : top2.charId;
-    p2Avatar.innerHTML = getCharacterSvg(cId2, 56);
+    p2Avatar.innerHTML = getCharacterSvg(cId2, 56, top2.stage || 1);
     if(p2Name) p2Name.innerText = top2.name;
     if(p2Points) p2Points.innerText = top2.pt.toLocaleString() + 'P';
   }
 
   if(top3 && p3Avatar) {
     var cId3 = top3.charId === 'custom' ? userChar : top3.charId;
-    p3Avatar.innerHTML = getCharacterSvg(cId3, 52);
+    p3Avatar.innerHTML = getCharacterSvg(cId3, 52, top3.stage || 1);
     if(p3Name) p3Name.innerText = top3.name;
     if(p3Points) p3Points.innerText = top3.pt.toLocaleString() + 'P';
   }
@@ -10192,7 +10192,7 @@ function renderRank() {
       +   changeHtml
       + '</div>'
       + '<div class="rank-card-avatar">'
-      +   getCharacterSvg(cId, 42)
+      +   getCharacterSvg(cId, 42, r.stage || 1)
       + '</div>'
       + '<div style="flex: 1; min-width: 0;">'
       +   '<div class="rank-card-title">'
@@ -10849,6 +10849,7 @@ function refreshStudentLearningData() {
       var el = document.getElementById(item[0]); if(el) el.textContent = item[1];
     });
     if (typeof updateAllCharacterAvatars === 'function') updateAllCharacterAvatars();
+    refreshQuizResultArtwork();
     if (typeof renderReadingHistoryGrid === 'function') renderReadingHistoryGrid();
     if (typeof renderAssignedLib === 'function') renderAssignedLib();
     if (typeof renderHomeSliders === 'function') renderHomeSliders();
@@ -10861,6 +10862,6 @@ document.addEventListener('click', function(event) {
   if (window.studentSubmissionPending && event.target.closest('#qscreen-ing')) { event.preventDefault(); event.stopImmediatePropagation(); }
 }, true);
 </script>
-<script src="js/portal-extras.js"></script>
+<script src="js/portal-extras.js?v=20261029-integrity"></script>
 </body>
 </html>

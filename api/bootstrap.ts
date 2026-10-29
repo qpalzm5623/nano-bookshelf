@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import Reading = require('../public_html/js/reading-progress');
 import { readSession, passwordVersion } from '../lib/portal-auth';
 
 // 공개 JS 파일로 배포하던 회원 정보를 로그인한 사용자의 범위로만 제공합니다.
@@ -131,14 +132,9 @@ export default async function handler(req: any, res: any) {
           const dynamicCert = (certCountMap.get(finalBookId) || 0) + (certCountMap.get(b.id) || 0);
           const dynamicWish = (wishCountMap.get(finalBookId) || 0) + (wishCountMap.get(b.id) || 0);
 
-          const numSeed = parseInt(finalBookId.replace(/\D/g, '') || '1', 10);
-          const baseLikes = ((numSeed * 7) % 23) + 3;
-          const baseRecs = ((numSeed * 13) % 45) + 12;
-          const baseCerts = ((numSeed * 17) % 67) + 25;
-
-          const totalLikes = baseLikes + dynamicWish;
-          const totalRecs = baseRecs + (b.isRecommended ? 15 : 0);
-          const totalCerts = baseCerts + dynamicCert;
+          const totalLikes = dynamicWish;
+          const totalRecs = b.isRecommended ? 1 : 0;
+          const totalCerts = dynamicCert;
 
           bookMap.set(finalBookId, {
             ...b,
@@ -162,6 +158,8 @@ export default async function handler(req: any, res: any) {
             cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
             cat2: category === 'F' ? '외서' : '국내서',
             tag: b.theme ? '#' + b.theme.name : '',
+            themeName: b.theme?.name || '',
+            readingGenre: Reading.genre(b),
             description: b.description || '',
             synopsis: b.description || '',
             thinkExtract: b.thinkTitle || '',

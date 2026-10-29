@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { saveAttempt } from '../lib/portal-learning';
+import { saveAttempt, earnedForAttempt } from '../lib/portal-learning';
 import { academyScope } from '../lib/portal-http';
 import { randomUUID } from 'node:crypto';
 import { hashPassword, verifyPassword, signSession, readSession, passwordVersion } from '../lib/portal-auth';
@@ -27,14 +27,14 @@ function allowed(member: any) {
   return member && member.status === 'APPROVED' && member.academy?.status === 'ACTIVE' && !member.academy.deletedAt;
 }
 // 학습 이력 뷰 변환: 한국 표준시(KST, UTC+9) 기준으로 완독 일자를 산출하여 자정~오전 9시 사이 응시 건의 날짜 밀림 방지
-function logView(attempt: any, book: any) {
+function logView(attempt: any, book: any, studentView = false) {
   const details = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
   const completedDate = attempt.completedAt instanceof Date ? attempt.completedAt : new Date(attempt.completedAt);
   const kstDate = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
   return { id: attempt.id, academyId: attempt.member.academy.code, studentId: attempt.member.username,
     studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정', bookId: book?.bookNo || attempt.bookId,
     bookTitle: book?.title || '도서', date: kstDate, submittedAt: completedDate.toISOString(),
-    score: attempt.score, quizResults: details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
+    score: attempt.score, quizResults: studentView && attempt.score < 60 ? [] : details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
     comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
@@ -98,7 +98,7 @@ export default async function handler(req: any, res: any) {
             return {
               id: q.id, serverId: q.id, question: q.question, choices: opts, options: opts,
               opt1: opts[0] || '', opt2: opts[1] || '', opt3: opts[2] || '', opt4: opts[3] || '', opt5: opts[4] || '',
-              ans: Number(q.correctAnswer), questionNo: q.questionNo, type: 'CHOICE'
+              ...(user.role === 'STUDENT' ? {} : { ans: Number(q.correctAnswer) }), questionNo: q.questionNo, type: 'CHOICE'
             };
           }) }] : []
       });
@@ -114,14 +114,20 @@ export default async function handler(req: any, res: any) {
         prisma.book.findMany({ where: { id: { in: [...new Set(page.map(a => a.bookId))] } }, select: { id: true, title: true, bookNo: true } }),
         prisma.portalFile.findMany({ where: { attemptId: { in: page.map(a => a.id) } }, select: { id: true, name: true, attemptId: true } })
       ]);
-      return res.status(200).json({ logs: page.map(a => ({ ...logView(a, books.find(b => b.id === a.bookId)), files: files.filter(f => f.attemptId === a.id) })), nextCursor: attempts.length > 100 ? page[99].id : null });
+      return res.status(200).json({ logs: page.map(a => ({ ...logView(a, books.find(b => b.id === a.bookId), user.role === 'STUDENT'), files: files.filter(f => f.attemptId === a.id) })), nextCursor: attempts.length > 100 ? page[99].id : null });
     }
     if (action === 'learning' && req.method === 'POST') {
       if (user.role !== 'STUDENT') return res.status(403).json({ error: '학생만 답안을 제출할 수 있습니다.' });
       if (body.studentId !== user.username) return res.status(409).json({ error: '로그인 계정이 변경되었습니다. 풀이를 시작한 계정으로 다시 로그인해 주세요.' });
       if (typeof body.id !== 'string' || !/^L_[a-zA-Z0-9_-]{5,100}$/.test(body.id) || !Array.isArray(body.quizResults) || body.quizResults.length > 100 || typeof body.bookId !== 'string') return res.status(400).json({ error: '답안 형식이 올바르지 않습니다.' });
       const existing = await prisma.quizAttempt.findUnique({ where: { id: body.id } });
-      if (existing) return existing.memberId === user.id ? res.status(200).json({ score: existing.score, quizResults: (existing.answers as any)?.quizResults || [] }) : res.status(409).json({ error: '다른 제출 식별자를 사용해 주세요.' });
+      if (existing) {
+        if (existing.memberId !== user.id) return res.status(409).json({ error: '다른 제출 식별자를 사용해 주세요.' });
+        const book = await prisma.book.findUnique({ where: { id: existing.bookId } });
+        return res.status(200).json({ score: existing.score, quizResults: existing.score >= 60 ? (existing.answers as any)?.quizResults || [] : [], correctCount: existing.correctCount ?? ((existing.answers as any)?.quizResults || []).filter((q: any) => q.isCorrect).length, earned: await earnedForAttempt(prisma, existing), isCertified: existing.score >= 60, log: logView({ ...existing, member: user }, book, true) });
+      }
+      // 학생 요청의 이관 플래그로 응시 제한·작성일을 우회하지 못하게 합니다.
+      if (body.importing === true || body.sourceDate !== undefined) return res.status(403).json({ error: '학생 화면에서는 과거 기록을 이관할 수 없습니다. 관리자에게 문의해 주세요.' });
       const book = await prisma.book.findFirst({ where: { OR: [{ id: body.bookId }, { bookNo: body.bookId }] }, include: { quizzes: { orderBy: { questionNo: 'asc' } } } });
       if (!book || !book.quizzes.length || book.quizzes.length !== body.quizResults.length) return res.status(409).json({ error: '서버의 퀴즈 문항과 다릅니다. 관리자에게 도서 문항 확인을 요청해 주세요.' });
       const results = book.quizzes.map((q, i) => {
@@ -134,12 +140,9 @@ export default async function handler(req: any, res: any) {
       });
       const correctCount = results.filter(q => q.isCorrect).length;
       const score = Math.round(correctCount / results.length * 100);
-      const sourceDate = body.importing === true ? new Date(body.sourceDate) : null;
-      if (sourceDate && (!Number.isFinite(+sourceDate) || +sourceDate > Date.now() || sourceDate.getUTCFullYear() < 2000)) return res.status(400).json({ error: '이관 기록의 작성 날짜를 확인해 주세요.' });
       const saved = await saveAttempt(prisma, user, book, { id: body.id, memberId: user.id, bookId: book.id, score, correctCount, questionCount: results.length,
-        ...(sourceDate ? { completedAt: sourceDate } : {}),
-        thinkReply: String(body.thoughtAnswer || '').slice(0, 20000), answers: { quizResults: results, thoughtQuestion: book.thinkQuiz || '', ...(body.importing === true ? { importedAt: new Date().toISOString(), sourceDate: String(body.sourceDate || '').slice(0,30) } : {}) } }, body.importing === true);
-      return res.status(201).json({ score: saved.attempt.score, quizResults: results, earned: saved.earned, isCertified: saved.isCertified });
+        thinkReply: String(body.thoughtAnswer || '').slice(0, 20000), answers: { quizResults: results, thoughtQuestion: book.thinkQuiz || '' } });
+      return res.status(201).json({ score: saved.attempt.score, quizResults: saved.isCertified ? results : [], correctCount, earned: saved.earned, isCertified: saved.isCertified, log: logView({ ...saved.attempt, member: user }, book, true) });
     }
     if (action === 'review' && req.method === 'POST') {
       if (!['MASTER', 'DIRECTOR', 'TEACHER'].includes(user.role)) return res.status(403).json({ error: '지도교사와 관리자만 첨삭을 저장할 수 있습니다.' });

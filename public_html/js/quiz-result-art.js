@@ -36,6 +36,11 @@ var NanoQuizResult = (function () {
   }
 
   function themeFor(book) {
+    if (typeof NanoReading !== 'undefined') {
+      var genre = NanoReading.genre(book);
+      if (genre === 'hist') return /역사|전래|신화|전통|문화/.test([book.themeName, book.themeTag, book.subject, book.tags].join(' ')) ? 'history' : 'literature';
+      return { nature: 'nature', tech: 'science', human: 'mind', health: 'mind', study: 'art' }[genre];
+    }
     // 분류 메타데이터를 우선하고, 분류가 없거나 매칭되지 않을 때 제목을 참고합니다.
     function match(text) {
       if (/자연|생태|동물|식물|환경|숲|바다|곤충|지구|공룡|반려|나무|꽃|생물/.test(text)) return 'nature';

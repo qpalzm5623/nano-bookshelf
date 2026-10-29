@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
     const academyId = entity === 'academies' ? user.academyId : await academyScope(user, req.query.academy);
     const body = req.body || {}; const input = body.data || {};
     if (req.method === 'POST') {
-      need(['save','delete','import','restore'].includes(body.operation), '요청 작업을 확인해 주세요.');
+      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'quizzes' && body.operation === 'replace'), '요청 작업을 확인해 주세요.');
       if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
       if (body.operation === 'delete' || body.operation === 'restore') need(typeof input.id === 'string' && input.id.length > 0, '대상 항목을 선택해 주세요.');
     }
@@ -305,6 +305,28 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: input.id ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } }) : await prisma.book.create({ data: { ...data, ...extra } }) });
     }
     if (entity === 'quizzes') {
+      if (body.operation === 'replace') {
+        need(typeof input.bookId === 'string' && await prisma.book.findUnique({ where: { id: input.bookId } }), '도서를 찾을 수 없습니다.');
+        need(Array.isArray(input.questions) && input.questions.length <= 100, '최대 100문항까지 저장할 수 있습니다.');
+        const questions = input.questions.map((q: any, index: number) => {
+          const options = Array.isArray(q.options) ? q.options.map((o: any) => text(o, '보기', 1000, true)) : [];
+          need(options.length >= 2 && options.length <= 5 && new Set(options).size === options.length, '서로 다른 보기 2~5개를 입력해 주세요.');
+          const answer = Number(q.correctAnswer);
+          need(Number.isInteger(answer) && answer >= 1 && answer <= options.length, '정답 번호를 확인해 주세요.');
+          return { bookId: input.bookId, questionNo: index + 1, question: text(q.question, '문항', 5000, true), options, correctAnswer: String(answer), quizType: 'MULTIPLE_CHOICE' as const };
+        });
+        const items = await prisma.$transaction(async tx => {
+          await tx.$queryRaw`SELECT id FROM books WHERE id = ${input.bookId} FOR UPDATE`;
+          const existing = await tx.bookQuiz.findMany({ where: { bookId: input.bookId }, orderBy: { questionNo: 'asc' } });
+          const saved = [];
+          for (let i = 0; i < questions.length; i++) {
+            saved.push(existing[i] ? await tx.bookQuiz.update({ where: { id: existing[i].id }, data: questions[i] }) : await tx.bookQuiz.create({ data: questions[i] }));
+          }
+          await tx.bookQuiz.deleteMany({ where: { bookId: input.bookId, id: { in: existing.slice(questions.length).map(q => q.id) } } });
+          return saved;
+        });
+        return res.json({ items });
+      }
       if (body.operation === 'delete') { await prisma.bookQuiz.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
       need(await prisma.book.findUnique({ where: { id: input.bookId } }), '도서를 찾을 수 없습니다.');
       const options = Array.isArray(input.options) ? input.options.map((o: any) => text(o, '보기', 1000, true)) : [];

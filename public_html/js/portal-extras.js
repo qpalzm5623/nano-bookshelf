@@ -22,16 +22,71 @@
     try { const result=await NanoPortal.api('/api/activity?action=preferences',{value:next,revision}); preferences=next;revision=result.revision;applyPreferences();notice('서버에 저장했습니다.'); }
     catch(e) { notice(e.message); } finally { saving=false; }
   }
-  function renderPoints(items) {
-    studentPointLogs=(items||[]).map(p=>{const korea=new Date(+new Date(p.createdAt)+9*3600000).toISOString();return {datetime:korea.slice(0,16).replace('T',' '),month:korea.slice(0,7),point:p.amount,bookTitle:p.content||'포인트 내역',activity:p.pointType||'적립',type:'quiz',typeName:p.pointType==='THOUGHT_FIRST'?'생각담기':'포인트'};});
-    const chips=document.getElementById('pointMonthFilterChips');
-    if(chips){chips.replaceChildren();for(const month of ['all',...new Set(studentPointLogs.map(p=>p.month))]){const b=document.createElement('button');b.type='button';b.className='point-month-chip'+(month==='all'?' active':'');b.textContent=month==='all'?'전체 내역':month;b.onclick=()=>filterPointHistory(month,b);chips.append(b);}}
-    curPointMonthFilter='all';renderPointHistory(true);
+  let pointPages = new Map(), pointGeneration = 0, pointMonths = [], monthEarned = 0;
+  function pointView(p) {
+    const korea = new Date(+new Date(p.createdAt) + 9 * 3600000).toISOString();
+    const thought = /^THOUGHT_/.test(p.pointType || '');
+    return { datetime: korea.slice(0,16).replace('T',' '), month: korea.slice(0,7), point: p.amount,
+      bookTitle: p.content || '포인트 내역', activity: thought ? '생각담기 적립' : /^QUIZ_PASS_/.test(p.pointType || '') ? '북퀴즈 인증 적립' : '포인트 변동',
+      type: thought ? 'thought' : 'quiz', typeName: thought ? '생각담기' : '포인트' };
   }
-  async function points() {
-    const all=[];let cursor='';
-    do { const result=await NanoPortal.api('/api/activity?action=points'+(cursor?'&cursor='+encodeURIComponent(cursor):''));all.push(...result.items);cursor=result.nextCursor; } while(cursor);
-    renderPoints(all);
+  function acceptPointSummary(summary) {
+    pointGeneration++;
+    pointPages = new Map([['all', { items: summary.pointLogs || [], cursor: summary.pointNextCursor || null, loaded: true, visible: 10 }]]);
+    pointMonths = summary.pointMonths || []; monthEarned = summary.currentMonthPoints || 0;
+    if (curPointMonthFilter !== 'all' && !pointMonths.includes(curPointMonthFilter)) curPointMonthFilter = 'all';
+    const chips = document.getElementById('pointMonthFilterChips');
+    if (chips) {
+      chips.replaceChildren();
+      for (const month of ['all', ...pointMonths]) {
+        const b = document.createElement('button'); b.type = 'button';
+        b.className = 'point-month-chip' + (month === curPointMonthFilter ? ' active' : '');
+        b.textContent = month === 'all' ? '전체 내역' : month;
+        b.onclick = () => window.filterPointHistory(month, b); chips.append(b);
+      }
+    }
+    isPointLoading = false;
+    return renderRemotePoints(false);
+  }
+  async function renderRemotePoints(more) {
+    const month = curPointMonthFilter, generation = pointGeneration;
+    let page = pointPages.get(month);
+    if (!page) { page = { items: [], cursor: null, loaded: false, visible: 10 }; pointPages.set(month, page); }
+    if (page.loading) return;
+    const desired = more ? page.visible + 10 : page.visible;
+    const list = document.getElementById('pointLogList'), loader = document.getElementById('pointLogLoadingIndicator');
+    const end = document.getElementById('pointLogEndMessage'), earned = document.getElementById('currentMonthEarnedPoints');
+    if (earned) earned.textContent = (monthEarned >= 0 ? '+' : '') + monthEarned.toLocaleString() + ' P';
+    if (!page.loaded || (desired > page.items.length && page.cursor)) {
+      page.loading = true; isPointLoading = true;
+      if (loader) loader.style.display = 'block';
+      if (end) end.style.display = 'none';
+      if (!page.loaded && list) list.textContent = '포인트 내역을 불러오고 있어요…';
+      try {
+        const query = new URLSearchParams({ action: 'points' });
+        if (month !== 'all') query.set('month', month);
+        if (page.cursor) query.set('cursor', page.cursor);
+        const result = await NanoPortal.api('/api/activity?' + query);
+        if (generation !== pointGeneration || month !== curPointMonthFilter) return;
+        const seen = new Set(page.items.map(p => p.id));
+        page.items.push(...result.items.filter(p => !seen.has(p.id)));
+        page.cursor = result.nextCursor; page.loaded = true;
+      } catch (e) {
+        if (generation === pointGeneration && month === curPointMonthFilter) {
+          notice(e.message);
+          if (list && !page.loaded) { list.replaceChildren(); const retry = document.createElement('button'); retry.textContent = '포인트 조회 다시 시도'; retry.onclick = () => renderRemotePoints(false); list.append(retry); }
+        }
+        return;
+      } finally {
+        page.loading = false;
+        if (generation === pointGeneration && month === curPointMonthFilter) { isPointLoading = false; if (loader) loader.style.display = 'none'; }
+      }
+    }
+    page.visible = desired;
+    studentPointLogs = page.items.map(pointView);
+    hasMorePointLogs = page.items.length > desired || !!page.cursor;
+    if (list) list.innerHTML = studentPointLogs.slice(0, desired).map(createPointLogItemHtml).join('') || '<p>포인트 내역이 없습니다.</p>';
+    if (end) end.style.display = hasMorePointLogs ? 'none' : 'block';
   }
   async function showHistory() {
     try {
@@ -52,19 +107,6 @@
       search.oninput=render;render();const close=document.createElement('button');close.textContent='닫기';close.style.cssText='padding:12px 20px;margin-top:16px';close.onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();dialog.append(close);document.body.append(dialog);dialog.showModal();search.focus();
     }catch(e){notice(e.message);}
   }
-  async function importLocal() {
-    const user=NanoPortal.user();
-    try {
-      const logs=NanoLearningStore.read(user.academyId,[]).filter(l=>String(l.studentId)===user.id);
-      if(!logs.length){notice('이 브라우저에 이관할 본인 학습 기록이 없습니다.');return;}
-      download('nano-local-learning-backup.json',logs);
-      if(!confirm(logs.length+'건의 로컬 기록을 서버 문항으로 다시 채점하여 이관합니다. 기존 기록은 보존하고 이관 건에는 포인트를 새로 지급하지 않습니다. 계속하시겠습니까?'))return;
-      let count=0;const failures=[];
-      for(const log of logs){try{await NanoPortal.request('learning',{id:log.id,studentId:user.id,bookId:String(log.bookId),thoughtAnswer:log.thoughtAnswer||log.studentThoughtAnswer||'',quizResults:log.quizResults||[],importing:true,sourceDate:log.submittedAt||log.date});count++;}catch(e){failures.push({id:log.id,bookTitle:log.bookTitle,error:e.message});}}
-      await Promise.all([NanoPortal.refreshLearning(),NanoPortal.refreshActivity()]);refreshStudentLearningData();
-      notice(count+'건 처리 · '+failures.length+'건 확인 필요. 로컬 원본은 유지했습니다.');if(failures.length)download('nano-import-errors.json',failures);
-    }catch(e){notice(e.message);}
-  }
   window.addEventListener('nano:ready',async()=>{
     if(!NanoPortal.remote||started)return;started=true;
     const user=NanoPortal.user();if(!user||user.role==='master')return;
@@ -73,9 +115,25 @@
       // 기존의 성공 안내를 먼저 띄우는 로컬 토글 대신 저장 후 화면에 반영합니다.
       window.toggleWish=(id,event)=>{event?.preventDefault();event?.stopPropagation();return changePreference('wishlist',id);};
       window.toggleInterestTag=tag=>changePreference('interests',tag);
-      // 요약 응답에 포함된 포인트를 재사용해 첫 화면의 중복 포인트 조회를 없앱니다.
-      window.addEventListener('nano:activity',()=>{const summary=NanoPortal.activity();if(summary&&Array.isArray(summary.pointLogs))renderPoints(summary.pointLogs);else points().catch(e=>notice(e.message));});
-      try{const data=await NanoPortal.api('/api/activity?action=preferences');preferences=data.value;revision=data.revision;applyPreferences();const summary=NanoPortal.activity();if(summary&&Array.isArray(summary.pointLogs))renderPoints(summary.pointLogs);}
+      window.renderPointHistory = () => renderRemotePoints(false);
+      window.loadMorePointLogs = () => renderRemotePoints(true);
+      window.filterPointHistory = (month, button) => {
+        curPointMonthFilter = month; isPointLoading = false;
+        document.querySelectorAll('.point-month-chip').forEach(b => b.classList.toggle('active', b === button));
+        return renderRemotePoints(false);
+      };
+      // 월 합계는 전체 기준 서버 집계, 내역은 필요한 페이지까지만 조회합니다.
+      window.addEventListener('nano:activity',()=>{const summary=NanoPortal.activity();if(summary)acceptPointSummary(summary);});
+      NanoPortal.api('/api/activity?action=character').then(async data => {
+        // 기존 기기에서 선택한 친구는 서버 검증을 거쳐 한 번만 이전합니다.
+        let local = null;
+        try { local = localStorage.getItem('NANO_STUDENT_AVATAR_ID' + getStudentStoragePrefix()); } catch(e) { /* 기기 저장소가 차단되어도 서버 설정은 사용합니다. */ }
+        if (data.hasSelection === false && local && local !== 'nano' && Object.prototype.hasOwnProperty.call(NanoReading.rules, local)) {
+          try { data = await NanoPortal.api('/api/activity?action=character', { characterId: local }); } catch(e) { notice('기존 캐릭터 확인: ' + e.message); }
+        }
+        window.nanoServerCharacterId = data.characterId; updateAllCharacterAvatars();
+      }).catch(e => notice('캐릭터 조회 실패: ' + e.message));
+      try{const data=await NanoPortal.api('/api/activity?action=preferences');preferences=data.value;revision=data.revision;applyPreferences();const summary=NanoPortal.activity();if(summary)acceptPointSummary(summary);}
       catch(e){notice('개인 기록 조회 실패: '+e.message);}
     }
   });

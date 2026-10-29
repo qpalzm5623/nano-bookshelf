@@ -3,7 +3,8 @@
   // 로컬 체험 화면과 운영 서버의 인증 경로를 구분합니다. 운영 환경에서는 체험 비밀번호로 우회하지 않습니다.
   var remote = location.protocol !== 'file:' && !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   var memoryLogs = null;
-  var activity = null;
+  var learningRefresh = null, learningOverlay = new Map();
+  var activity = null, activitySequence = 0;
   async function api(path, body) {
     var response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: {'Content-Type':'application/json'}, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20000) });
     var data; try { data = await response.json(); } catch(e) { throw new Error('서버 응답을 확인하지 못했습니다.'); }
@@ -152,16 +153,10 @@
   async function syncQuizzes(book, questions) {
     if (!book.serverId) throw new Error('도서 정보를 새로고침한 뒤 다시 시도해 주세요.');
     if ((questions || []).some(function(question) { return question.type && question.type !== 'CHOICE'; })) throw new Error('운영 북퀴즈는 현재 객관식 문항만 저장할 수 있습니다.');
-    var current = await manageList('quizzes', { params: { bookId: book.serverId } });
-    var existing = current.items || [];
-    for (var index = 0; index < questions.length; index++) {
-      var question = questions[index];
-      var options = question.choices || question.options || [question.opt1, question.opt2, question.opt3, question.opt4].filter(Boolean);
-      var saved = await manage('quizzes', 'save', { id: question.serverId || (existing[index] && existing[index].id), bookId: book.serverId, questionNo: index + 1,
-        question: question.question, options: options, correctAnswer: Number(question.ans || question.correctAnswer) });
-      if (saved.item) question.serverId = saved.item.id;
-    }
-    for (var extra = questions.length; extra < existing.length; extra++) await manage('quizzes', 'delete', { id: existing[extra].id });
+    var result = await manage('quizzes', 'replace', { bookId: book.serverId, questions: questions.map(function(question) {
+      return { question: question.question, options: question.choices || question.options || [question.opt1, question.opt2, question.opt3, question.opt4, question.opt5].filter(Boolean), correctAnswer: Number(question.ans || question.correctAnswer) };
+    }) });
+    (result.items || []).forEach(function(item, index) { questions[index].serverId = item.id; });
   }
   async function saveOwnedBook(item, academyCode) { return manage('owned', 'save', { bookId: item.serverId }, { academy: academyCode }); }
   async function deleteOwnedBook(ownedId, academyCode) { return manage('owned', 'delete', { id: ownedId }, { academy: academyCode }); }
@@ -232,7 +227,7 @@
   }
   async function savePortfolio(data, academyCode) { return manage('portfolios', 'save', data, { academy: academyCode }); }
   async function deletePortfolio(id, academyCode) { return manage('portfolios', 'delete', { id: id }, { academy: academyCode }); }
-  async function refreshActivity() { activity = await api('/api/activity'); window.dispatchEvent(new Event('nano:activity')); return activity; }
+  async function refreshActivity() { var sequence = ++activitySequence; var result = await api('/api/activity'); if (sequence === activitySequence) { activity = result; window.dispatchEvent(new Event('nano:activity')); } return activity; }
   async function refreshAssignments() {
     var result = await api('/api/activity?action=assignments&academy=' + encodeURIComponent(academy() || ''));
     if (typeof studentAssignmentList !== 'undefined') {
@@ -269,14 +264,31 @@
     finally { clearTimeout(timer); }
   }
   function user() { try { return JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null'); } catch(e) { return null; } }
+  function applyLearning(log) {
+    if (!log) return;
+    learningOverlay.set(log.id, log);
+    memoryLogs = [log].concat((memoryLogs || []).filter(function(item) { return item.id !== log.id; }));
+  }
   async function refreshLearning() {
-    var collected = [], cursor = '', scope = academy();
-    do {
-      var result = await api('/api/portal?action=learning&academy=' + encodeURIComponent(scope || '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
-      collected = collected.concat(result.logs); cursor = result.nextCursor;
-    } while (cursor);
-    if (scope === academy()) memoryLogs = collected;
-    return collected;
+    var scope = academy();
+    if (learningRefresh && learningRefresh.scope === scope) return learningRefresh.promise;
+    var task = { scope: scope };
+    task.promise = (async function() {
+      var collected = [], cursor = '';
+      do {
+        var result = await api('/api/portal?action=learning&academy=' + encodeURIComponent(scope || '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+        collected = collected.concat(result.logs); cursor = result.nextCursor;
+      } while (cursor);
+      if (scope === academy()) {
+        // 조회 중 완료된 제출이 오래된 응답으로 사라지지 않도록 합칩니다.
+        var byId = new Map(collected.map(function(log) { return [log.id, log]; }));
+        learningOverlay.forEach(function(log, id) { if (String(log.academyId) === String(scope)) { if (!byId.has(id)) byId.set(id, log); else learningOverlay.delete(id); } });
+        memoryLogs = Array.from(byId.values()).sort(function(a,b) { return String(b.submittedAt).localeCompare(String(a.submittedAt)) || b.id.localeCompare(a.id); });
+      }
+      return memoryLogs;
+    })();
+    learningRefresh = task;
+    try { return await task.promise; } finally { if (learningRefresh === task) learningRefresh = null; }
   }
   async function logout() {
     if (remote) await request('logout', {});
@@ -288,7 +300,7 @@
     saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, saveNotice: saveNotice, deleteNotice: deleteNotice,
     saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio,
-    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, user: user, refreshLearning: refreshLearning, logout: logout,
+    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
     logs: function () { return memoryLogs; } };
   var page = location.pathname.split('/').pop().replace(/\.html$/, '');
