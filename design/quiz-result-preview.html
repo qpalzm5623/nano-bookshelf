@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>북퀴즈 완료 화면 · 디자인 미리보기</title>
+  <link rel="stylesheet" href="../public_html/css/quiz-result.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f7f8f4; color: #34443d; font-family: 'Pretendard', 'Malgun Gothic', sans-serif; }
+    .preview-toolbar { max-width: 1020px; margin: 32px auto 24px; padding: 0 24px; }
+    .preview-toolbar h1 { font-size: 22px; letter-spacing: -.04em; margin: 0 0 8px; }
+    .preview-toolbar p { color: #6e796f; font-size: 13px; line-height: 1.8; }
+    .preview-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .preview-controls label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; }
+    select, input { min-height: 42px; border: 1px solid #dce2d9; background: white; color: #34443d; padding: 8px 12px; border-radius: 9px; font: inherit; }
+    input { width: 250px; max-width: 100%; }
+    :focus-visible { outline: 3px solid #427b60; outline-offset: 3px; }
+    .preview-layout { display: grid; grid-template-columns: minmax(0, 510px) minmax(0, 1fr); gap: 36px; align-items: start; max-width: 1020px; margin: 0 auto 60px; padding: 0 24px; }
+    .preview-gallery h2 { font-size: 16px; margin: 8px 0 16px; }
+    .preview-gallery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .preview-gallery figure { background: white; border: 1px solid #e5e8df; border-radius: 16px; margin: 0; padding: 8px 8px 14px; }
+    .preview-gallery svg { width: 100%; height: auto; display: block; }
+    .preview-gallery figcaption { font-size: 12px; color: #59675c; text-align: center; }
+    @media (max-width: 760px) { .preview-layout { display: block; max-width: 558px; padding: 0 14px; } .preview-gallery { margin-top: 32px; } .preview-toolbar { max-width: 558px; padding: 0 18px; } }
+  </style>
+  <script src="../public_html/js/quiz-result-art.js"></script>
+</head>
+<body>
+  <header class="preview-toolbar">
+    <h1>한 권 더, 한 걸음 더.</h1>
+    <p>북퀴즈 완료 화면 디자인 미리보기 · 캐릭터 9종 × 테마 6종 × 점수 4구간<br>표시된 점수와 포인트는 디자인 확인용 예시입니다.</p>
+    <div class="preview-controls">
+      <label>캐릭터<select id="character"></select></label>
+      <label>도서 테마<select id="theme"></select></label>
+      <label>점수 구간<select id="score"><option value="100">100점 · 완벽한 발견</option><option value="80">80점 · 빛나는 이해</option><option value="60" selected>60점 · 차곡차곡 성장</option><option value="40">40점 · 다시, 책 속으로</option></select></label>
+      <label>도서 제목<input id="title" value="1984"></label>
+    </div>
+  </header>
+  <div class="preview-layout">
+    <main id="qscreen-result" aria-label="결과 화면 예시">
+      <div id="quizResultHeroBanner" class="quiz-result-hero-banner"></div>
+      <div id="quizResultDetailWrap">
+        <div class="qr-review-heading"><h3>차근차근 돌아보기</h3><span>문항별 결과 예시</span></div>
+        <article class="quiz-res-item is-correct"><div class="qr-question-heading"><span class="qr-question-number">01</span><h4>이곳에서 서로를 부르는 호칭은 무엇일까요?</h4><span class="qr-answer-state">정답 ✓</span></div><p class="qr-answer"><span>내 답</span><strong>1번 · 동무</strong></p></article>
+        <article class="quiz-res-item is-wrong"><div class="qr-question-heading"><span class="qr-question-number">02</span><h4>줄리아는 어디에서 초콜릿을 구했나요?</h4><span class="qr-answer-state">오답 · 복습</span></div><p class="qr-answer"><span>내 답</span><strong>3번 · 윈스턴이 주었다.</strong></p><p class="qr-answer qr-answer-correct"><span>정답</span><strong>4번 · 암시장</strong></p></article>
+      </div>
+    </main>
+    <aside class="preview-gallery"><h2>친구들의 새로운 모습</h2><div class="preview-gallery-grid" id="gallery"></div></aside>
+  </div>
+  <script>
+    const art = NanoQuizResult;
+    const character = document.getElementById('character');
+    const theme = document.getElementById('theme');
+    const score = document.getElementById('score');
+    const title = document.getElementById('title');
+    Object.entries(art.characters).forEach(([id, value]) => character.add(new Option(value.name, id)));
+    Object.entries(art.themes).forEach(([id, value]) => theme.add(new Option(value.label, id)));
+    theme.value = 'history';
+    function render() {
+      const value = Number(score.value);
+      const tier = value === 100 ? 'perfect' : value >= 80 ? 'high' : value >= 60 ? 'pass' : 'retry';
+      document.getElementById('quizResultHeroBanner').innerHTML = art.render(value, character.value, { title: title.value, cat: art.themes[theme.value].label }, { tot: 5, ok: value / 20, earnedPts: value >= 60 ? 10 : 0, failCount: 1 });
+      document.getElementById('gallery').innerHTML = Object.entries(art.characters).map(([id, value]) => '<figure>' + art.illustration(theme.value, id, tier) + '<figcaption>' + value.name + '</figcaption></figure>').join('');
+    }
+    document.querySelectorAll('select, input').forEach(el => el.addEventListener('input', render));
+    render();
+  </script>
+</body>
+</html>

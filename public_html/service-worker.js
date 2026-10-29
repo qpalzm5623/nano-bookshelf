@@ -3,7 +3,7 @@
  * PWA 오프라인 지원, 캐싱 및 빠른 로딩 처리
  */
 
-const CACHE_NAME = 'nano-bookshelf-v20261028-clean-sheet';
+const CACHE_NAME = 'nano-bookshelf-v20261029-quiz-result';
 
 // 오프라인 및 기본 캐싱 대상 핵심 리소스
 const PRECACHE_ASSETS = [
@@ -14,6 +14,8 @@ const PRECACHE_ASSETS = [
   './master_preview.html',
   './manifest.json',
   './js/pwa-install.js',
+  './js/quiz-result-art.js?v=20261029',
+  './css/quiz-result.css?v=20261029',
   './resources/images/icons/icon-192.png',
   './resources/images/icons/icon-512.png',
   './resources/images/icons/apple-touch-icon.png',
