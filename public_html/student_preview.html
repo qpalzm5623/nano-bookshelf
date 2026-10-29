@@ -3527,8 +3527,8 @@
 <script src="js/portal-client.js?v=20261014"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261014" defer></script>
-<link rel="stylesheet" href="css/quiz-result.css?v=20261029">
-<script src="js/quiz-result-art.js?v=20261029"></script>
+<link rel="stylesheet" href="css/quiz-result.css?v=20261029-friends3">
+<script src="js/quiz-result-art.js?v=20261029-friends3"></script>
 </head>
 <body>
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
@@ -3568,7 +3568,7 @@
         <i class="fa-solid fa-icons" style="color: #0d9488;"></i>
         <span style="color: #0f766e; font-weight: 800;">내 캐릭터 프로필 설정</span>
       </div>
-      <div class="drawer-nav-right"><span style="font-size: 10px; font-weight: 700; background: #00a896; color: #fff; padding: 2px 6px; border-radius: 6px;">10종</span> <i class="fa-solid fa-chevron-right ml-1"></i></div>
+      <div class="drawer-nav-right"><span style="font-size: 10px; font-weight: 700; background: #00a896; color: #fff; padding: 2px 6px; border-radius: 6px;">9종</span> <i class="fa-solid fa-chevron-right ml-1"></i></div>
     </button>
 
     <!-- 1) 내 정보 -->
@@ -4356,7 +4356,7 @@
     <div class="student-modal-header" style="background: linear-gradient(135deg, #f0fdfa, #ccfbf1); border-bottom: 1px solid #99f6e4;">
       <div>
         <div class="d-flex align-items-center gap-2 mb-1">
-          <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11px; padding: 2px 8px; background: #00a896; color: #fff;">나노 프렌즈 10종</span>
+          <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11px; padding: 2px 8px; background: #00a896; color: #fff;">나노 프렌즈 9종</span>
           <h5 class="mb-0 font-weight-bold" style="font-size: 16px; color: #0f766e;"><i class="fa-solid fa-icons mr-1"></i>내 캐릭터 프로필 설정</h5>
         </div>
         <small class="text-muted">원하는 일러스트 캐릭터를 골라 나의 프로필로 설정해보세요!</small>
@@ -4369,13 +4369,15 @@
         <!-- JS 동적 렌더링 -->
       </div>
 
+      <div id="charGrowthPreview" class="char-growth-preview" aria-label="선택한 캐릭터의 성장 모습"></div>
+
       <!-- 안내 레이블 -->
       <div style="font-size: 12.5px; font-weight: 800; color: #475569; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
         <span><i class="fa-solid fa-shapes mr-1" style="color:#00a896;"></i> 캐릭터를 터치하여 선택하세요</span>
         <span style="font-size: 11px; color: #94a3b8;">언제든 자유롭게 변경 가능</span>
       </div>
 
-      <!-- 10종 캐릭터 카드 그리드 -->
+      <!-- 9종 캐릭터 카드 그리드 -->
       <div class="char-grid" id="charSelectGrid">
         <!-- JS 동적 렌더링 -->
       </div>
@@ -7476,7 +7478,7 @@ function renderQ() {
   var char = getCharacterById(charId);
   var quizAvatarEl = document.getElementById('quizCurrentCharAvatar');
   var quizTagEl = document.getElementById('quizCurrentCharTag');
-  if (quizAvatarEl) quizAvatarEl.innerHTML = getCharacterSvg(charId, 42);
+  if (quizAvatarEl) quizAvatarEl.innerHTML = getCharacterSvg(charId, 42, getCharacterUnlockStatus(char).currentStage);
   if (quizTagEl) {
     quizTagEl.innerText = char.name.split(' ')[0] + (q.isThoughtQuestion ? '의 생각 미션' : '의 질문');
     quizTagEl.style.color = char.themeColor;
@@ -7627,7 +7629,8 @@ function goPreviousQuestion() {
 
 // 점수와 지급 결과는 기존 채점 흐름에서 전달하고, 화면 표현만 별도 렌더러에 위임합니다.
 function generateQuizResultIllustration(score, charId, book, extra) {
-  return NanoQuizResult.render(score, charId, book || window.currentQuizBookObj || {}, extra);
+  var stage = getCharacterUnlockStatus(getCharacterById(charId || 'nano')).currentStage || 1;
+  return NanoQuizResult.render(score, charId, book || window.currentQuizBookObj || {}, Object.assign({}, extra, { stage: stage }));
 }
 
 // 북퀴즈 제출 및 최종 채점 결과 화면 렌더링
@@ -7663,7 +7666,7 @@ async function showResult() {
       finalScore = result.score;
       serverResult = result;
       if (result.quizResults) result.quizResults.forEach(function(row, idx) { gradedQuestions[idx].a = gradedQuestions[idx].os.indexOf(row.correctChoiceText); });
-      Promise.all([NanoPortal.refreshLearning(), NanoPortal.refreshActivity()]).then(function() { refreshStudentLearningData(); }).catch(function(e) { toast('저장은 완료되었으나 목록 새로고침에 실패했습니다: ' + e.message); });
+      await Promise.all([NanoPortal.refreshLearning(), NanoPortal.refreshActivity()]).catch(function(e) { toast('저장은 완료되었으나 목록 새로고침에 실패했습니다: ' + e.message); });
       var statusEl = document.getElementById('quizSubmissionStatus');
       if (statusEl) {
         statusEl.textContent = '';
@@ -7724,6 +7727,9 @@ async function showResult() {
     document.getElementById('rPt').innerHTML = '<span style="color:#dc2626;font-weight:800;">✗ 인증 실패 (60점 이상 통과)</span> · 포인트 미지급 (오늘 실패 ' + failInfo.count + '/3회)';
   }
 
+  // 이번 인증으로 성장한 단계가 프로필과 결과 그림에 함께 반영되도록 먼저 갱신합니다.
+  if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
+
   // [NEW] 캐릭터 말풍선 대사 적용
   var charId = getUserCharacterId();
   var char = getCharacterById(charId);
@@ -7775,7 +7781,7 @@ async function showResult() {
   // 결과 화면 캐릭터 말풍선 렌더링 (하위 호환성 유지)
   var resAvatarEl = document.getElementById('quizResultCharAvatar');
   var resSpeechEl = document.getElementById('quizResultCharSpeech');
-  if (resAvatarEl) resAvatarEl.innerHTML = getCharacterSvg(charId, 44);
+  if (resAvatarEl) resAvatarEl.innerHTML = getCharacterSvg(charId, 44, getCharacterUnlockStatus(char).currentStage);
   if (resSpeechEl) {
     resSpeechEl.innerHTML = '<strong style="color:' + (char ? char.themeColor : '#f97316') + ';display:block;margin-bottom:2px;">' + (char ? char.name.split(' ')[0] : '나노') + '의 한마디</strong>' + speechText;
   }
@@ -7800,17 +7806,16 @@ async function showResult() {
       detailWrap.id = 'quizResultDetailWrap';
       resultBox.insertBefore(detailWrap, resultBox.lastElementChild);
     }
-    detailWrap.innerHTML = `
+    // 인증 실패 시 문항·선택 답·정답·오답을 DOM에 넣지 않습니다. 이전 결과도 함께 교체합니다.
+    detailWrap.innerHTML = (isPass ? `
       <div class="qr-review-heading">
         <h3>차근차근 돌아보기</h3>
         <span>문항별 결과 · 정답 ${ok} / ${tot}</span>
       </div>
       ${reviewItemsHtml}
-      ${thoughtSectionHtml}
-    `;
+    ` : '') + thoughtSectionHtml;
   }
 
-  if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
   toast((window.NanoPortal && NanoPortal.remote ? '답안을 서버에 저장했어요. ' : '답안을 이 기기에 저장했어요. ') + '퀴즈 결과는 ' + score + '점입니다.');
   window.scrollTo(0, 0);
 }
@@ -8445,7 +8450,7 @@ function renderMyBookshelf() {
   switchMyBookshelfMainTab(curBookshelfMainTab || 'history');
 }
 // ==============================================================
-// [NEW] 나노 프렌즈 10종 캐릭터 일러스트 & 프로필 설정 시스템
+// [NEW] 나노 프렌즈 9종 캐릭터 일러스트 & 프로필 설정 시스템
 // ==============================================================
 // [NEW] 나노 프렌즈 9종 분야별 캐릭터 & 진화 시스템
 // ==============================================================
@@ -8791,157 +8796,12 @@ function getCharacterUnlockStatus(char) {
 
 function getCharacterSvg(charId, size, stageOrEvolved, isSilhouette) {
   size = size || 60;
-  var isEvolved = (typeof stageOrEvolved === 'number') ? (stageOrEvolved >= 2) : !!stageOrEvolved;
-  var isStage3 = (typeof stageOrEvolved === 'number') ? (stageOrEvolved >= 3) : false;
-  var svgs = {
-    nano: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#f97316" stroke-width="2.5"/>'
-      + '<polygon points="26,38 18,12 40,24" fill="#f97316"/>'
-      + '<polygon points="28,34 22,17 38,25" fill="#fbcfe8"/>'
-      + '<polygon points="74,38 82,12 60,24" fill="#f97316"/>'
-      + '<polygon points="72,34 78,17 62,25" fill="#fbcfe8"/>'
-      + '<circle cx="50" cy="56" r="34" fill="#f97316"/>'
-      + '<path d="M26,56 Q50,78 74,56 Q50,90 26,56" fill="#fff"/>'
-      + '<ellipse cx="38" cy="48" rx="8" ry="7" fill="none" stroke="#78350f" stroke-width="2.5"/>'
-      + '<ellipse cx="62" cy="48" rx="8" ry="7" fill="none" stroke="#78350f" stroke-width="2.5"/>'
-      + '<line x1="46" y1="48" x2="54" y2="48" stroke="#78350f" stroke-width="2.5"/>'
-      + '<circle cx="38" cy="48" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="39.5" cy="46.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="62" cy="48" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="63.5" cy="46.5" r="1.2" fill="#fff"/>'
-      + '<ellipse cx="50" cy="62" rx="3.5" ry="2.5" fill="#1e293b"/>'
-      + '<circle cx="30" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
-      + '<circle cx="70" cy="58" r="4.5" fill="#fda4af" opacity="0.8"/>'
-      + (isEvolved ? '<polygon points="34,16 42,25 50,13 58,25 66,16 64,28 36,28" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="13" r="2.5" fill="#fef08a"/><circle cx="34" cy="16" r="2" fill="#ef4444"/><circle cx="66" cy="16" r="2" fill="#3b82f6"/>' : '')
-      + '</svg>',
-    booki: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#ccfbf1" stroke="#0d9488" stroke-width="2.5"/>'
-      + '<circle cx="50" cy="55" r="33" fill="#0d9488"/>'
-      + '<ellipse cx="50" cy="63" rx="20" ry="22" fill="#f0fdfa"/>'
-      + '<polygon points="28,34 20,20 38,28" fill="#0f766e"/>'
-      + '<polygon points="72,34 80,20 62,28" fill="#0f766e"/>'
-      + '<circle cx="38" cy="50" r="11" fill="#fff" stroke="#042f2e" stroke-width="2"/>'
-      + '<circle cx="62" cy="50" r="11" fill="#fff" stroke="#042f2e" stroke-width="2"/>'
-      + '<circle cx="38" cy="50" r="4.5" fill="#134e4a"/>'
-      + '<circle cx="40" cy="48" r="1.5" fill="#fff"/>'
-      + '<circle cx="62" cy="50" r="4.5" fill="#134e4a"/>'
-      + '<circle cx="64" cy="48" r="1.5" fill="#fff"/>'
-      + '<polygon points="46,57 54,57 50,64" fill="#f59e0b"/>'
-      + '<rect x="36" y="16" width="28" height="12" rx="2.5" fill="#b45309" stroke="#78350f" stroke-width="1.5"/>'
-      + '<rect x="38" y="18" width="24" height="2" fill="#fde68a"/>'
-      + (isEvolved ? '<polygon points="34,10 42,18 50,7 58,18 66,10 64,21 36,21" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="7" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    toto: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#fce7f3" stroke="#ec4899" stroke-width="2.5"/>'
-      + '<ellipse cx="37" cy="24" rx="8" ry="20" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
-      + '<ellipse cx="37" cy="24" rx="4.5" ry="15" fill="#f472b6"/>'
-      + '<ellipse cx="63" cy="24" rx="8" ry="20" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
-      + '<ellipse cx="63" cy="24" rx="4.5" ry="15" fill="#f472b6"/>'
-      + '<circle cx="50" cy="60" r="31" fill="#fff" stroke="#ec4899" stroke-width="2"/>'
-      + '<circle cx="40" cy="56" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="41.5" cy="54.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="60" cy="56" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="61.5" cy="54.5" r="1.2" fill="#fff"/>'
-      + '<polygon points="47,64 53,64 50,68" fill="#ec4899"/>'
-      + '<circle cx="32" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
-      + '<circle cx="68" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
-      + (isEvolved ? '<polygon points="34,16 42,25 50,13 58,25 66,16 64,28 36,28" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="13" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2.5"/>'
-      + '<circle cx="50" cy="54" r="30" fill="#fff" stroke="#8b5cf6" stroke-width="2"/>'
-      + '<path d="M30,34 Q50,18 70,34 Q65,48 50,44 Q35,48 30,34" fill="#a78bfa"/>'
-      + '<circle cx="41" cy="52" r="3.5" fill="#4c1d95"/>'
-      + '<circle cx="42.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="59" cy="52" r="3.5" fill="#4c1d95"/>'
-      + '<circle cx="60.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<path d="M47,60 Q50,63 53,60" stroke="#a78bfa" stroke-width="1.8" fill="none"/>'
-      + '<circle cx="34" cy="58" r="4" fill="#ddd6fe"/>'
-      + '<circle cx="66" cy="58" r="4" fill="#ddd6fe"/>'
-      + '<polygon points="50,12 52,18 58,20 52,22 50,28 48,22 42,20 48,18" fill="#facc15"/>'
-      + (isEvolved ? '<polygon points="34,8 42,16 50,5 58,16 66,8 64,19 36,19" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="5" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    popo: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#fef3c7" stroke="#b45309" stroke-width="2.5"/>'
-      + '<circle cx="28" cy="30" r="11" fill="#b45309"/>'
-      + '<circle cx="28" cy="30" r="6" fill="#fef3c7"/>'
-      + '<circle cx="72" cy="30" r="11" fill="#b45309"/>'
-      + '<circle cx="72" cy="30" r="6" fill="#fef3c7"/>'
-      + '<circle cx="50" cy="58" r="33" fill="#b45309"/>'
-      + '<ellipse cx="50" cy="67" rx="18" ry="14" fill="#fde68a"/>'
-      + '<circle cx="39" cy="53" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="40.5" cy="51.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="61" cy="53" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="62.5" cy="51.5" r="1.2" fill="#fff"/>'
-      + '<ellipse cx="50" cy="64" rx="5" ry="3.5" fill="#1e293b"/>'
-      + (isEvolved ? '<polygon points="34,14 42,23 50,11 58,23 66,14 64,26 36,26" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="11" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    pico: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>'
-      + '<circle cx="50" cy="54" r="33" fill="#0f172a"/>'
-      + '<ellipse cx="50" cy="59" rx="20" ry="25" fill="#fff"/>'
-      + '<circle cx="40" cy="49" r="4" fill="#0284c7"/>'
-      + '<circle cx="41.5" cy="47.5" r="1.3" fill="#fff"/>'
-      + '<circle cx="60" cy="49" r="4" fill="#0284c7"/>'
-      + '<circle cx="61.5" cy="47.5" r="1.3" fill="#fff"/>'
-      + '<polygon points="46,55 54,55 50,63" fill="#f59e0b"/>'
-      + '<ellipse cx="50" cy="54" rx="35" ry="35" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.75"/>'
-      + (isEvolved ? '<polygon points="34,14 42,23 50,11 58,23 66,14 64,26 36,26" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="11" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    chichi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#ffedd5" stroke="#ea580c" stroke-width="2.5"/>'
-      + '<polygon points="32,32 20,18 36,24" fill="#ea580c"/>'
-      + '<polygon points="68,32 80,18 64,24" fill="#ea580c"/>'
-      + '<circle cx="50" cy="56" r="31" fill="#ea580c"/>'
-      + '<ellipse cx="50" cy="64" rx="16" ry="18" fill="#fff"/>'
-      + '<circle cx="39" cy="52" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="40.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="61" cy="52" r="3.5" fill="#1e293b"/>'
-      + '<circle cx="62.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<ellipse cx="50" cy="60" rx="4" ry="3" fill="#1e293b"/>'
-      + '<rect x="47" y="63" width="6" height="5" fill="#fff" stroke="#1e293b" stroke-width="1"/>'
-      + '<circle cx="28" cy="60" r="6" fill="#fdba74"/>'
-      + '<circle cx="72" cy="60" r="6" fill="#fdba74"/>'
-      + (isEvolved ? '<polygon points="34,14 42,23 50,11 58,23 66,14 64,26 36,26" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="11" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    mir: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#d1fae5" stroke="#059669" stroke-width="2.5"/>'
-      + '<path d="M30,28 Q24,12 36,18 Q40,24 38,32" fill="#059669"/>'
-      + '<path d="M70,28 Q76,12 64,18 Q60,24 62,32" fill="#059669"/>'
-      + '<circle cx="50" cy="56" r="31" fill="#10b981"/>'
-      + '<ellipse cx="50" cy="66" rx="18" ry="16" fill="#a7f3d0"/>'
-      + '<circle cx="40" cy="50" r="4" fill="#064e3b"/>'
-      + '<circle cx="41.5" cy="48.5" r="1.3" fill="#fff"/>'
-      + '<circle cx="60" cy="50" r="4" fill="#064e3b"/>'
-      + '<circle cx="61.5" cy="48.5" r="1.3" fill="#fff"/>'
-      + '<circle cx="46" cy="60" r="1.5" fill="#064e3b"/>'
-      + '<circle cx="54" cy="60" r="1.5" fill="#064e3b"/>'
-      + '<polygon points="50,16 53,24 61,24 54,29 57,37 50,32 43,37 46,29 39,24 47,24" fill="#facc15"/>'
-      + (isEvolved ? '<polygon points="34,6 42,15 50,4 58,15 66,6 64,18 36,18" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="4" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>',
-    jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
-      + '<circle cx="50" cy="50" r="48" fill="#cffafe" stroke="#06b6d4" stroke-width="2.5"/>'
-      + '<path d="M25,58 Q22,34 50,30 Q78,34 75,58 Q72,78 50,78 Q28,78 25,58" fill="#22d3ee"/>'
-      + '<ellipse cx="50" cy="40" rx="16" ry="6" fill="#a5f3fc" opacity="0.6"/>'
-      + '<circle cx="40" cy="52" r="3.5" fill="#083344"/>'
-      + '<circle cx="41.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<circle cx="60" cy="52" r="3.5" fill="#083344"/>'
-      + '<circle cx="61.5" cy="50.5" r="1.2" fill="#fff"/>'
-      + '<path d="M46,60 Q50,65 54,60" stroke="#083344" stroke-width="2" fill="none" stroke-linecap="round"/>'
-      + '<circle cx="32" cy="58" r="4" fill="#fed7aa"/>'
-      + '<circle cx="68" cy="58" r="4" fill="#fed7aa"/>'
-      + (isEvolved ? '<polygon points="34,16 42,25 50,13 58,25 66,16 64,28 36,28" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/><circle cx="50" cy="13" r="2.5" fill="#fef08a"/>' : '')
-      + '</svg>'
-  };
-
-  var baseSvg = svgs[charId] || svgs.nano;
+  var stage = typeof stageOrEvolved === 'number' ? stageOrEvolved : (stageOrEvolved ? 2 : 1);
+  var baseSvg = NanoQuizResult.avatar(charId, size, stage);
   if (isSilhouette) {
     return '<div class="char-lock-silhouette-box" style="width:' + size + 'px;height:' + size + 'px;">'
       + '<div class="char-silhouette" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'
-      +   baseSvg
-      + '</div>'
-      + '<div class="char-lock-corner-badge"><i class="fa-solid fa-lock"></i></div>'
-      + '</div>';
+      + baseSvg + '</div></div>';
   }
   return baseSvg;
 }
@@ -9041,7 +8901,8 @@ function openCelebrationModal(charId, forceEvolved) {
   currentCelebratedCharId = charId;
   var char = getCharacterById(charId);
   var st = getCharacterUnlockStatus(char);
-  var evolved = forceEvolved !== undefined ? forceEvolved : st.isEvolved;
+  var stage = typeof forceEvolved === 'number' ? forceEvolved : (forceEvolved === true ? Math.max(2, st.currentStage) : st.currentStage || 1);
+  var evolved = stage >= 2;
 
   var modal = document.getElementById('characterCelebrationModal');
   var topEmoji = document.getElementById('celebTopEmoji');
@@ -9056,13 +8917,13 @@ function openCelebrationModal(charId, forceEvolved) {
   if(topEmoji) topEmoji.innerText = evolved ? '🌟' : '🎉';
   if(title) title.innerText = evolved ? '캐릭터 외형 진화 달성!' : '새로운 캐릭터 해금 달성!';
   if(subtitle) subtitle.innerText = evolved ? char.themeName + ' 분야의 최고 마스터로 성장했어요!' : char.unlockDesc + ' 미션을 완수했습니다!';
-  if(avatarBox) avatarBox.innerHTML = getCharacterSvg(charId, 84, evolved, false);
+  if(avatarBox) avatarBox.innerHTML = getCharacterSvg(charId, 84, stage, false);
   if(nameEl) nameEl.innerText = char.name;
   if(tagEl) {
     tagEl.innerText = char.tag;
     tagEl.style.color = char.themeColor;
   }
-  if(evolvedTag) evolvedTag.style.display = evolved ? 'inline-flex' : 'none';
+  if(evolvedTag) { evolvedTag.style.display = 'inline-flex'; evolvedTag.textContent = stage + '단계'; }
   if(quoteEl) {
     var quoteMap = {
       nano: '"탐정 돋보기가 황금빛으로 진화했어! 더 깊은 비밀도 이제 다 풀어낼 수 있어!"',
@@ -9188,6 +9049,18 @@ function renderCharacterSelectModal() {
     +   statusBannerHtml
     + '</div>';
 
+  // 미리보기는 해금 상태를 바꾸지 않으며 실제 적용은 기존 달성 조건으로 제한합니다.
+  var growthEl = document.getElementById('charGrowthPreview');
+  if (growthEl) growthEl.innerHTML = '<div class="char-growth-heading">책과 함께 자라는 우리 친구</div><div class="char-growth-stages">'
+    + [1, 2, 3].map(function(stage) {
+      var current = stage === curUnlock.currentStage;
+      var achieved = stage <= curUnlock.currentStage;
+      var requirement = stage === 1 ? cur.unlockDesc : stage === 2 ? cur.stage2Desc : cur.stage3Desc;
+      return '<figure class="char-growth-stage' + (current ? ' is-current' : '') + '">'
+        + getCharacterSvg(cur.id, 80, stage)
+        + '<figcaption><strong>' + stage + '단계</strong><span>' + (current ? '현재 모습' : achieved ? '달성 완료' : '성장 미리보기') + '</span><small>' + escapeStudentQuizText(requirement || '') + '</small></figcaption></figure>';
+    }).join('') + '</div>';
+
   // 하단 [이 캐릭터로 설정] 버튼 제어
   if (applyBtn) {
     if (curUnlock.unlocked) {
@@ -9218,7 +9091,7 @@ function renderCharacterSelectModal() {
       : '<div class="char-lock-badge" title="잠금"><i class="fa-solid fa-lock"></i></div>';
 
     // 미획득 캐릭터는 어스름한 흑백 실루엣으로 렌더링
-    var svgContent = getCharacterSvg(c.id, 50, st.currentStage, !st.unlocked);
+    var svgContent = getCharacterSvg(c.id, 76, st.currentStage, !st.unlocked);
 
     var subTagHtml = '';
     if (!st.unlocked) {
@@ -9231,15 +9104,15 @@ function renderCharacterSelectModal() {
       subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-crown"></i> 3단계</span>';
     }
 
-    return '<div class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
+    return '<button type="button" aria-pressed="' + isSel + '" class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
       + badgeIcon
-      + '<div class="char-avatar-img" style="margin:0 auto 4px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;">'
+      + '<div class="char-avatar-img" style="margin:0 auto 4px;width:78px;height:78px;display:flex;align-items:center;justify-content:center;">'
       +   svgContent
       + '</div>'
       + '<div style="font-size:12px;font-weight:800;color:' + (st.unlocked ? '#1e293b' : '#64748b') + ';margin-bottom:2px;">' + c.name.split(' ')[0] + '</div>'
       + '<div style="font-size:9.5px;color:#64748b;margin-bottom:3px;font-weight:600;">' + c.themeName + '</div>'
       + subTagHtml
-      + '</div>';
+      + '</button>';
   }).join('');
 }
 

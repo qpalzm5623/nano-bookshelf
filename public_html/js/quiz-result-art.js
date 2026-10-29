@@ -1,5 +1,5 @@
-/* 북퀴즈 결과 전용: 9명의 친구 × 6개의 책 속 세계 × 4가지 성취 장면.
-   기존 프로필 아바타와 분리해 결과 화면의 전신 일러스트만 관리합니다. */
+/* 프로필과 북퀴즈가 공유하는 나노 프렌즈 일러스트.
+   9명의 친구 × 성장 3단계. 점수는 표정·동작만 바꾸고 성장 모습은 유지합니다. */
 var NanoQuizResult = (function () {
   'use strict';
 
@@ -111,8 +111,67 @@ var NanoQuizResult = (function () {
     return scenes[key]();
   }
 
-  function mascot(id, tier) {
+  function normalizeStage(stage) {
+    return Number.isFinite(stage) ? Math.max(1, Math.min(3, Math.floor(stage))) : 1;
+  }
+
+  function growthArtwork(id, stage, c) {
+    var back = '', outfit = '', head = '';
+    if (stage === 1) return { back: back, outfit: outfit, head: head };
+    // 2단계는 각 친구의 분야를 상징하는 의상, 3단계는 그 의상의 완성형입니다.
+    var master = stage === 3;
+    var gold = '#e5bd74';
+    if (master) {
+      back = '<path d="M-30,8Q-63,27 -55,72L-29,61L0,77L29,61L55,72Q63,27 30,8Z" fill="' + c.dark + '"/><path d="M-52,65L-29,55M29,55L52,65" stroke="' + gold + '" stroke-width="3" stroke-linecap="round"/>';
+    }
+    var designs = {
+      nano: function () {
+        outfit = '<path d="M-31,12L0,23L31,12L35,61L10,68L0,51L-10,68L-35,61Z" fill="' + (master ? '#627d6b' : '#99b79a') + '"/><path d="M-16,13L0,36L16,13" fill="#fff0d5"/><circle cy="43" r="3" fill="' + gold + '"/><path d="M15,48L28,52" stroke="#f0dcb8" stroke-width="3"/>';
+        head = '<path d="M-36,-59Q-32,-87 6,-80Q31,-79 36,-59Z" fill="' + (master ? '#627d6b' : '#99b79a') + '"/><path d="M-43,-58Q0,-68 43,-58" stroke="#4f6b5a" stroke-width="7" stroke-linecap="round"/>' + (master ? star(0,-72,.65,gold) : '<path d="M-3,-79V-65" stroke="#77967e" stroke-width="3"/>');
+      },
+      toto: function () {
+        outfit = '<path d="M-27,15Q0,28 27,15L36,64Q0,80 -36,64Z" fill="' + (master ? '#c58ba9' : '#e3b3c4') + '"/><path d="M-25,20Q0,44 25,20" stroke="#fff7ed" stroke-width="6" fill="none"/><path d="M0,61C-22,47 -9,35 0,45C9,35 22,47 0,61Z" fill="#fff0db"/>';
+        head = '<g transform="translate(28 -66)"><circle cx="-8" r="8" fill="#e8b77c"/><circle cx="8" r="8" fill="#e8b77c"/><circle cy="-8" r="8" fill="#e8b77c"/><circle cy="8" r="8" fill="#e8b77c"/><circle r="6" fill="#fff5cf"/></g>' + (master ? '<path d="M-32,-57Q-12,-79 22,-64" stroke="#97ac83" stroke-width="5" fill="none"/>' + star(-22,-65,.6,gold) : '');
+      },
+      booki: function () {
+        outfit = '<path d="M-31,13L0,28L31,13L28,32L0,43L-28,32Z" fill="' + (master ? '#506c70' : '#d9bd82') + '"/><path d="M0,28V55" stroke="#f5e7bb" stroke-width="5"/>';
+        head = '<path d="M-27,-61V-75H27V-61Q0,-50 -27,-61" fill="#5e7b72"/><path d="M-45,-77L0,-94L45,-77L0,-60Z" fill="' + (master ? '#425e60' : '#8ba48c') + '"/><path d="M0,-77L32,-72V-50" stroke="' + gold + '" stroke-width="3" fill="none"/><path d="M28,-51L36,-51L38,-42L26,-42Z" fill="' + gold + '"/>' + (master ? star(0,-78,.6,gold) : '');
+      },
+      pico: function () {
+        outfit = '<path d="M-30,16Q0,29 30,16L33,63Q0,74 -33,63Z" fill="#eaf0ed" stroke="#b4c8d0" stroke-width="2"/><rect x="-18" y="30" width="36" height="23" rx="7" fill="' + (master ? '#687fa6' : '#9db6c9') + '"/><circle cx="-8" cy="41" r="4" fill="#f7cd87"/><path d="M3,38H11M3,44H11" stroke="#fff" stroke-width="2" stroke-linecap="round"/>';
+        head = '<path d="M-54,-22Q-63,-87 0,-92Q63,-87 54,-22" fill="none" stroke="' + (master ? gold : '#a7bdcc') + '" stroke-width="5"/><rect x="-62" y="-36" width="13" height="28" rx="6" fill="#b4c8d0"/><rect x="49" y="-36" width="13" height="28" rx="6" fill="#b4c8d0"/>' + (master ? star(0,-91,.7,gold) : '');
+      },
+      popo: function () {
+        outfit = '<path d="M-31,13L-9,18L0,30L9,18L31,13L34,62L11,68L0,56L-11,68L-34,62Z" fill="' + (master ? '#789282' : '#c7b38b') + '"/><path d="M-20,37H-7V50H-20M7,37H20V50H7" fill="#f4e2bd"/><path d="M-28,15L31,61" stroke="#97714f" stroke-width="6"/>';
+        head = master ? '<path d="M-28,-57L-30,-80L-14,-69L0,-87L14,-69L30,-80L28,-57Z" fill="' + gold + '"/><path d="M-28,-58H28" stroke="#bd9457" stroke-width="4"/>' + star(0,-70,.5,'#fff6db') : '<path d="M-29,-59L-24,-78H24L29,-59Z" fill="#aa9070"/><path d="M-41,-58H41" stroke="#856b52" stroke-width="7" stroke-linecap="round"/>';
+      },
+      chichi: function () {
+        outfit = '<path d="M-32,12L0,26L32,12L20,37L0,27L-20,37Z" fill="' + (master ? '#789b73' : '#dfb76f') + '"/><path d="M0,27L-9,49L5,45L13,51L9,28" fill="' + (master ? '#789b73' : '#dfb76f') + '"/><ellipse cx="0" cy="36" rx="5" ry="7" fill="#b77b50"/>';
+        head = '<path d="M-31,-61Q0,-97 31,-61Z" fill="' + (master ? '#bc9259' : '#a77a54') + '"/><path d="M-34,-61Q0,-73 34,-61" stroke="#855f42" stroke-width="6" stroke-linecap="round"/><path d="M0,-82Q-1,-96 12,-95" stroke="#7d9b69" stroke-width="5" fill="none"/>' + (master ? '<path d="M10,-92Q27,-107 30,-89Q20,-82 10,-92" fill="#8eb47c"/>' : '');
+      },
+      lumi: function () {
+        outfit = '<path d="M-24,15L0,24L24,15L40,63Q25,77 13,65Q0,80 -13,65Q-25,77 -40,63Z" fill="' + (master ? '#9c80c1' : '#d5bde8') + '"/><path d="M-22,33Q0,46 22,33" stroke="#f9e9cf" stroke-width="4" fill="none"/>' + star(0,50,.9,gold);
+        head = '<path d="M-29,-58L-23,-76L-11,-65L0,-88L11,-65L23,-76L29,-58" fill="' + (master ? gold : '#e8d2b0') + '"/>' + star(0,-76,.6,'#fff6dd');
+        if (master) back += '<path d="M-31,13Q-106,-47 -79,24Q-110,47 -37,57M31,13Q106,-47 79,24Q110,47 37,57" fill="#e5d7f5" stroke="#c0a3da" stroke-width="2"/>';
+      },
+      mir: function () {
+        outfit = '<path d="M-31,13L0,25L31,13L27,31L0,43L-27,31Z" fill="' + (master ? '#d9bb7c' : '#a6d0bd') + '"/><circle cy="38" r="11" fill="#fff2c7" stroke="' + gold + '" stroke-width="2"/>' + star(0,38,.65,'#d8b369');
+        head = '<path d="M-29,-58Q-51,-84 -40,-98M29,-58Q51,-84 40,-98" stroke="' + (master ? gold : '#d8c9a5') + '" stroke-width="8" fill="none" stroke-linecap="round"/>' + (master ? '<path d="M-38,-85L-51,-88M38,-85L51,-88" stroke="' + gold + '" stroke-width="5" stroke-linecap="round"/>' + star(0,-67,.8,gold) : '');
+      },
+      jelly: function () {
+        outfit = '<path d="M-30,13Q0,29 30,13L25,29L0,39L-25,29Z" fill="' + (master ? '#b6a1d9' : '#d2c2e7') + '"/><path d="M0,28L9,40L0,53L-9,40Z" fill="#fff1cc" stroke="#dbc38a" stroke-width="2"/>';
+        head = '<path d="M-28,-59L-31,-78L-16,-69L0,-94L16,-69L31,-78L28,-59Z" fill="' + (master ? '#c4b3e8' : '#d0e6e8') + '" stroke="' + (master ? '#9e84c6' : '#94c0c7') + '" stroke-width="2"/>' + star(0,-78,.7,'#fff3cc');
+      }
+    };
+    designs[id]();
+    if (master) outfit += '<circle cx="-23" cy="23" r="6" fill="' + gold + '"/>' + star(-23,23,.4,'#fff9e7');
+    return { back: back, outfit: outfit, head: head };
+  }
+
+  function mascot(id, tier, stage) {
+    stage = normalizeStage(stage);
     var c = characters[id];
+    var growth = growthArtwork(id, stage, c);
     var fur = c.fur, dark = c.dark, light = c.light;
     var back = '', ears = '', face = '', accessory = '';
     // 각 친구의 실루엣과 고유 소품은 유지하되, 둥근 전신 캐릭터로 다시 그립니다.
@@ -157,26 +216,36 @@ var NanoQuizResult = (function () {
     }
     var eyes = tier === 'perfect'
       ? '<path d="M-24,-28Q-18,-36 -12,-28M12,-28Q18,-36 24,-28" stroke="#3f4248" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
-      : '<ellipse cx="-18" cy="-29" rx="3.4" ry="4.5" fill="#3f4248"/><ellipse cx="18" cy="-29" rx="3.4" ry="4.5" fill="#3f4248"/><circle cx="-17" cy="-30" r="1" fill="#fff"/><circle cx="19" cy="-30" r="1" fill="#fff"/>';
+      : '<ellipse cx="-18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><ellipse cx="18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><circle cx="-16.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="19.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="-19" cy="-25" r=".8" fill="#b4c2d5"/><circle cx="17" cy="-25" r=".8" fill="#b4c2d5"/>';
     var mouth = tier === 'perfect'
       ? '<path d="M-7,-2Q0,15 7,-2Z" fill="#925f58"/><path d="M-4,3Q0,0 4,3" stroke="#e8a799" stroke-width="3"/>'
       : '<path d="M-5,-2Q0,3 5,-2" stroke="#6c5550" stroke-width="2" stroke-linecap="round" fill="none"/>';
     var leftArm = tier === 'perfect' ? 'M-31,23Q-61,7 -60,-17' : tier === 'high' ? 'M-31,23Q-56,26 -60,5' : 'M-31,23Q-48,42 -23,49';
     var rightArm = tier === 'perfect' || tier === 'high' ? 'M31,23Q57,6 58,-17' : 'M31,23Q48,42 23,49';
-    var props = tier === 'retry' ? book(0, 37, .8, dark)
+    var props = tier === 'portrait' ? '' : tier === 'retry' ? book(0, 37, .8, dark)
       : tier === 'pass' ? '<path d="M-18,41H18L14,65H-14Z" fill="#d6a081"/><path d="M0,43V19 M0,31Q-24,30 -20,13Q-2,12 0,31 M0,24Q21,20 18,5Q0,6 0,24" stroke="#6c9670" stroke-width="2" fill="#8daf80"/>'
       : tier === 'high' ? star(60,-34,1.7,'#e5bd70') + '<path d="M60,-18L55,5" stroke="#bd955e" stroke-width="3"/>'
-      : '<g transform="translate(0 -92)"><path d="M-22,2L-24,-17L-10,-8L0,-25L10,-8L24,-17L22,2Z" fill="#e6bf72"/><path d="M-22,4H22" stroke="#c89b51" stroke-width="4" stroke-linecap="round"/>' + star(0,-9,.5,'#fff2ce') + '</g>';
+      : '<g transform="translate(63 -33)"><path d="M-12,-7H12L9,9Q0,22 -9,9Z" fill="#e6bf72"/><path d="M-12,-4Q-26,-3 -13,9M12,-4Q26,-3 13,9M0,17V24M-9,26H9" stroke="#c49a59" stroke-width="3" fill="none" stroke-linecap="round"/>' + star(0,3,.6,'#fff5d7') + '</g>';
     var lift = tier === 'perfect' ? -8 : 0;
-    return '<g class="qr-mascot" transform="translate(232 ' + (157 + lift) + ')">' + back +
+    return '<g class="qr-mascot" data-friend="' + id + '" data-stage="' + stage + '" transform="translate(232 ' + (157 + lift) + ')">' + back + growth.back +
       '<ellipse cx="-20" cy="75" rx="16" ry="9" fill="' + dark + '"/><ellipse cx="20" cy="75" rx="16" ry="9" fill="' + dark + '"/>' +
-      '<path d="M-29,7Q-45,29 -36,63Q0,83 36,63Q45,29 29,7Z" fill="' + fur + '"/><ellipse cy="43" rx="25" ry="28" fill="' + light + '"/>' + ears +
+      '<path d="M-29,7Q-45,29 -36,63Q0,83 36,63Q45,29 29,7Z" fill="' + fur + '"/><ellipse cy="43" rx="25" ry="28" fill="' + light + '"/>' + growth.outfit + ears +
       '<path d="M-46,-28C-48,-78 48,-78 46,-28Q45,12 0,14Q-45,12 -46,-28Z" fill="' + fur + '"/>' + face + eyes +
-      '<ellipse cx="-31" cy="-13" rx="7" ry="4" fill="#e8a49c" opacity=".65"/><ellipse cx="31" cy="-13" rx="7" ry="4" fill="#e8a49c" opacity=".65"/>' + mouth + accessory +
+      '<ellipse cx="-31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><ellipse cx="31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><path d="M-31,-45Q-24,-53 -15,-53" stroke="#fff9ef" stroke-opacity=".35" stroke-width="5" stroke-linecap="round" fill="none"/>' + mouth + accessory + growth.head +
       '<path d="' + leftArm + ' M' + rightArm.substring(1) + '" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + props + '</g>';
   }
 
-  function illustration(themeKey, charId, tier) {
+  function avatar(charId, size, stage) {
+    charId = Object.prototype.hasOwnProperty.call(characters, charId) ? charId : 'nano';
+    size = Number.isFinite(size) ? Math.max(16, Math.min(400, size)) : 60;
+    stage = normalizeStage(stage);
+    var c = characters[charId];
+    return '<svg class="nano-friend-avatar" viewBox="112 6 240 250" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + c.name + ' ' + stage + '단계" focusable="false">' +
+      '<rect x="117" y="15" width="230" height="230" rx="85" fill="' + c.light + '" fill-opacity=".55"/><ellipse cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
+  }
+
+  function illustration(themeKey, charId, tier, stage) {
+    stage = normalizeStage(stage);
     var t = themes[themeKey];
     var decorations = tier === 'perfect'
       ? '<g fill="#d4ad6e"><path d="M152,71l-5,-9l5,-2l4,9Z M304,46l4,-9l5,2l-4,9Z M324,164l8,-5l3,5l-8,5Z"/></g>' + star(165,35,.7,'#e4bc72') + star(297,100,.8,'#e4bc72') + star(149,153,.6,t.accent)
@@ -187,7 +256,7 @@ var NanoQuizResult = (function () {
       '<path d="M33,215V124C33,3 431,3 431,124V215Z" fill="' + t.sky + '"/>' +
       '<path d="M54,76Q68,59 84,69Q91,45 116,58Q133,54 143,76Z M284,45Q296,29 310,40Q322,18 339,36Q353,30 366,45Z" fill="#fffaf1" opacity=".75"/>' +
       scenery(themeKey,t) + '<ellipse cx="232" cy="232" rx="169" ry="15" fill="' + t.accent + '" opacity=".12"/><ellipse cx="232" cy="233" rx="58" ry="9" fill="' + t.ink + '" opacity=".12"/>' +
-      decorations + mascot(charId,tier) + '</svg>';
+      decorations + mascot(charId,tier,stage) + '</svg>';
   }
 
   function icon(name) {
@@ -219,7 +288,7 @@ var NanoQuizResult = (function () {
     return '<section class="qr-card qr-theme-' + themeKey + ' qr-tier-' + tier + '" style="--qr-ink:' + t.ink + ';--qr-paper:' + t.paper + ';--qr-accent:' + t.accent + '">' +
       '<div class="qr-heading"><div class="qr-eyebrow"><span>북퀴즈 완료</span><span class="qr-theme-label">' + icon('book') + t.label + '</span></div>' +
       '<h2 class="qr-book-title">' + escape(currentBook.title || '선택 도서') + '</h2><p class="qr-headline">' + state.title + '</p></div>' +
-      '<div class="qr-artwork">' + illustration(themeKey,charId,tier) + '<div class="qr-achievement">' + icon(state.icon) + '<span>' + state.label + '</span></div></div>' +
+      '<div class="qr-artwork">' + illustration(themeKey,charId,tier,extra.stage) + '<div class="qr-achievement">' + icon(state.icon) + '<span>' + state.label + '</span></div></div>' +
       '<div class="qr-summary"><div class="qr-score"><span class="qr-label">나의 점수</span><div><strong>' + score + '</strong><span class="qr-score-unit">점 <span>/ 100</span></span></div></div>' +
       '<div class="qr-reward"><span class="qr-label">획득 포인트</span><strong>' + icon('coin') + '+' + points.toLocaleString('ko-KR') + '<small>P</small></strong><span class="qr-reward-note">' + (points > 0 ? '독서의 즐거움이 차곡차곡' : isPass ? '이번에 지급된 포인트가 없어요' : '60점 이상이면 받을 수 있어요') + '</span></div></div>' +
       '<div class="qr-progress"><div class="qr-progress-label"><span><strong>' + correct + '</strong> / ' + total + '문항 정답</span><span class="qr-certification">' + icon(isPass ? 'check' : 'book') + (isPass ? '도서 인증 완료' : '60점부터 도서 인증') + '</span></div><div class="qr-segments" aria-hidden="true">' + segments + '</div></div>' +
@@ -227,5 +296,5 @@ var NanoQuizResult = (function () {
       (!isPass ? '<p class="qr-retry-note">' + (failCount >= 3 ? '오늘은 3회 도전했어요. 자정 이후에 다시 도전할 수 있어요.' : '오늘 실패 ' + failCount + '/3회 · 책을 다시 읽고 도전해 보세요.') + '</p>' : '') + '</section>';
   }
 
-  return { render: render, illustration: illustration, themes: themes, characters: characters, tiers: tiers };
+  return { render: render, avatar: avatar, illustration: illustration, themes: themes, characters: characters, tiers: tiers };
 }());

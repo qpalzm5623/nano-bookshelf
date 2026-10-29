@@ -29,9 +29,10 @@
 <body>
   <header class="preview-toolbar">
     <h1>한 권 더, 한 걸음 더.</h1>
-    <p>북퀴즈 완료 화면 디자인 미리보기 · 캐릭터 9종 × 테마 6종 × 점수 4구간<br>표시된 점수와 포인트는 디자인 확인용 예시입니다.</p>
+    <p>프로필·북퀴즈 공통 일러스트 · 캐릭터 9종 × 성장 3단계 × 테마 6종 × 점수 4구간<br>표시된 점수와 포인트는 디자인 확인용 예시입니다.</p>
     <div class="preview-controls">
       <label>캐릭터<select id="character"></select></label>
+      <label>성장 단계<select id="stage"><option value="1">1단계 · 아기 친구</option><option value="2">2단계 · 탐험 친구</option><option value="3">3단계 · 마스터 친구</option></select></label>
       <label>도서 테마<select id="theme"></select></label>
       <label>점수 구간<select id="score"><option value="100">100점 · 완벽한 발견</option><option value="80">80점 · 빛나는 이해</option><option value="60" selected>60점 · 차곡차곡 성장</option><option value="40">40점 · 다시, 책 속으로</option></select></label>
       <label>도서 제목<input id="title" value="1984"></label>
@@ -51,6 +52,7 @@
   <script>
     const art = NanoQuizResult;
     const character = document.getElementById('character');
+    const stage = document.getElementById('stage');
     const theme = document.getElementById('theme');
     const score = document.getElementById('score');
     const title = document.getElementById('title');
@@ -60,8 +62,9 @@
     function render() {
       const value = Number(score.value);
       const tier = value === 100 ? 'perfect' : value >= 80 ? 'high' : value >= 60 ? 'pass' : 'retry';
-      document.getElementById('quizResultHeroBanner').innerHTML = art.render(value, character.value, { title: title.value, cat: art.themes[theme.value].label }, { tot: 5, ok: value / 20, earnedPts: value >= 60 ? 10 : 0, failCount: 1 });
-      document.getElementById('gallery').innerHTML = Object.entries(art.characters).map(([id, value]) => '<figure>' + art.illustration(theme.value, id, tier) + '<figcaption>' + value.name + '</figcaption></figure>').join('');
+      document.getElementById('quizResultHeroBanner').innerHTML = art.render(value, character.value, { title: title.value, cat: art.themes[theme.value].label }, { stage: Number(stage.value), tot: 5, ok: value / 20, earnedPts: value >= 60 ? 10 : 0, failCount: 1 });
+      document.getElementById('quizResultDetailWrap').hidden = value < 60;
+      document.getElementById('gallery').innerHTML = Object.entries(art.characters).map(([id, value]) => '<figure><div style="display:flex;justify-content:center">' + art.avatar(id, 80, Number(stage.value)) + '</div>' + art.illustration(theme.value, id, tier, Number(stage.value)) + '<figcaption>' + value.name + ' · ' + stage.value + '단계</figcaption></figure>').join('');
     }
     document.querySelectorAll('select, input').forEach(el => el.addEventListener('input', render));
     render();

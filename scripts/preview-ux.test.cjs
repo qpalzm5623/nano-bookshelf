@@ -58,6 +58,7 @@ function context(localStorage = storage()) {
     generateQuizResultIllustration: () => '',
     getUserCharacterId: () => 'nano', getCharacterById: () => ({ name: '나노', themeColor: '#185b45' }),
     getCharacterSvg: () => '', CHAR_QUIZ_FEEDBACKS: { nano: { perfect: '', high: '', pass: '', retry: '' } },
+    getCharacterUnlockStatus: () => ({ currentStage: 1, unlocked: true }),
     curBook: null, curData: null, curQ: 0, curSelectedQuizSet: null, anss: [],
     studentSelectedAnsMap: {}, currentStudentThoughtAnswer: '', studentQuizAttemptId: null,
     studentQuizDraftKey: null, studentQuizSignature: '', studentQuizOwner: null,
@@ -405,6 +406,31 @@ test('원생이 없는 학원은 다른 학원 원생을 가져오지 않고 저
   ctx.MIGRATED_MEMBERS.push({username:'own',role:'STUDENT',academyId:'A',name:'학생'});
   const own = ctx.loadStudentsFromStorage()[0]; assert.equal(own.gender,'미등록'); assert.equal(own.parentEmail,'');
   ctx.localStorage.setItem('students-A', '[]'); assert.equal(ctx.loadStudentsFromStorage().length,0);
+});
+
+test('60점 미만은 문항별 내역을 비우고 60점 이상에서만 다시 표시한다', async () => {
+  const ctx = student();
+  const set = { id: 'SET-REVIEW', questions: Array.from({ length: 5 }, (_, i) => ({
+    question: '검토용 문항 ' + (i + 1), options: ['정답 보기', '오답 보기'], ans: '1'
+  })) };
+  ctx.document.querySelector = selector => selector === '.result-box' ? {} : null;
+  // 성공 → 실패 → 경계 점수: 앞서 표시했던 정답이 다음 결과에 남지 않아야 합니다.
+  for (const correctCount of [5, 2, 0, 3]) {
+    ctx.startQuizWithSet(book, set);
+    ctx.studentSelectedAnsMap = Object.fromEntries(set.questions.map((_, i) => [i, i < correctCount ? 0 : 1]));
+    ctx.currentStudentThoughtAnswer = '직접 작성한 생각은 유지합니다.';
+    await ctx.showResult();
+    const html = ctx.document.getElementById('quizResultDetailWrap').innerHTML;
+    assert.equal(ctx.document.getElementById('rScore').innerText, correctCount * 20 + '점');
+    assert.ok(html.includes(ctx.currentStudentThoughtAnswer));
+    if (correctCount < 3) {
+      assert.doesNotMatch(html, /차근차근 돌아보기|문항별 결과|quiz-res-item|qr-answer|검토용 문항|정답 보기|오답 보기/);
+    } else {
+      assert.match(html, /차근차근 돌아보기/);
+      assert.equal((html.match(/quiz-res-item/g) || []).length, 5);
+      assert.match(html, /정답 보기/);
+    }
+  }
 });
 
 test('서버 저장 실패 시 완료 처리하지 않고 초안을 유지한다', async () => {
