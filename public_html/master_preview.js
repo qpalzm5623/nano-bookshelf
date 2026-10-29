@@ -8697,14 +8697,17 @@ function ensureMasterQuizSets(book) {
               hint: "도서 전반부 1장의 배경을 참고하세요."
             },
             {
-              type: "SUBJECTIVE",
-              question: `[${book.title}] 2. 주인공이 마주한 가장 중요한 핵심 갈등이나 사건의 핵심 키워드를 적어주세요.`,
+              type: "CHOICE",
+              question: `[${book.title}] 2. 작품의 전개 과정에서 가장 중요한 사건이나 핵심 내용은 무엇인가요?`,
               mediaType: "none",
               mediaUrl: "",
               mediaCaption: "",
-              subjectiveAns: "성장",
-              similarAns: "마음의 성장, 자아 성장",
-              hint: "주인공의 내면 변화를 나타내는 두 글자 단어입니다."
+              opt1: "주인공이 인내와 지혜를 발휘하여 당면한 문제를 해결해 나간다",
+              opt2: "아무런 노력 없이 저절로 문제가 해결된다",
+              opt3: "모든 인물이 도전을 포기하고 도망친다",
+              opt4: "상황이 점점 더 악화되어 비극으로 끝난다",
+              ans: "1",
+              hint: "주인공의 선택과 극복 과정을 참고하세요."
             },
             {
               type: "CHOICE",
@@ -11845,7 +11848,7 @@ async function saveMasterAiSettings() {
   var keyInput = document.getElementById('masterGeminiApiKey');
   var modelSelect = document.getElementById('masterGeminiModel');
   var apiKey = keyInput ? keyInput.value.trim() : '';
-  var model = modelSelect ? modelSelect.value : 'gemini-1.5-flash';
+  var model = modelSelect ? modelSelect.value : 'gemini-3.0-flash';
 
   try {
     var res = await fetch('/api/manage?entity=ai_config', {

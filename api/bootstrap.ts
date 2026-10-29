@@ -20,7 +20,7 @@ export default async function handler(req: any, res: any) {
       include: { _count: { select: { quizzes: true } }, theme: true }
     });
     // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
-    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows] = await Promise.all([
+    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows, charSettingRows] = await Promise.all([
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
@@ -42,12 +42,19 @@ export default async function handler(req: any, res: any) {
       isStudent ? Promise.resolve([]) : prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
-      prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta'] } }, select: { key: true, scope: true, value: true } })
+      prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta'] } }, select: { key: true, scope: true, value: true } }),
+      prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } })
     ]);
     const books: any[] = bookRows as any[];
     const noticeMetaMap = new Map<string, Record<string, any>>();
     const bannerMetaMap = new Map<string, Record<string, any>>();
     const themeMetaMap = new Map<string, Record<string, any>>();
+    const memberCharMap = new Map<string, string>();
+    for (const crow of (((charSettingRows as any[]) || []))) {
+      const mid = String(crow.key || '').replace(/^character:/, '');
+      const cid = (crow.value as any)?.characterId;
+      if (mid && cid) memberCharMap.set(mid, String(cid));
+    }
     for (const row of (noticeMetaRows || [])) {
       const val = (row.value || {}) as Record<string, any>;
       if (row.scope === 'notice_meta') noticeMetaMap.set(row.key.replace(/^notice_meta:/, ''), val);
@@ -272,6 +279,7 @@ export default async function handler(req: any, res: any) {
           academyName: m.academy.name,
           classGroupId: m.classGroup?.id || null,
           className: m.classGroup?.name || '미지정',
+          characterId: memberCharMap.get(m.id) || memberCharMap.get(m.username) || undefined,
           lastLogin,
           createdAt: m.createdAt.toISOString().slice(0, 10),
           updatedAt: m.updatedAt.toISOString()

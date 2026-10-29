@@ -149,6 +149,7 @@
     .modal-dialog {
       z-index: 1061 !important;
       position: relative;
+      overflow: hidden;
     }
 
     .modal.show {
@@ -663,6 +664,7 @@
       border-radius: 10px;
       padding: 12px 16px;
       position: relative;
+      overflow: hidden;
     }
 
     /* 2. @media print 전용 A4 최적화: 여백과 품격을 갖춘 나노의 책장 공식 리포트 */
@@ -1018,6 +1020,7 @@
       box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
       position: relative;
       overflow: hidden;
+      overflow: hidden;
     }
 
     .admin-rank-hero::after {
@@ -1195,6 +1198,7 @@
       flex-direction: column;
       align-items: center;
       position: relative;
+      overflow: hidden;
     }
 
     .admin-podium-col.rank-1 {
@@ -1212,6 +1216,7 @@
 
     .podium-avatar-box {
       position: relative;
+      overflow: hidden;
       margin-bottom: 6px;
       display: flex;
       align-items: center;
@@ -1244,11 +1249,13 @@
     }
 
     .podium-char-avatar {
+      overflow: hidden;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
+      overflow: hidden;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
       transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -1268,6 +1275,7 @@
       padding: 14px 10px 10px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
       position: relative;
+      overflow: hidden;
       box-sizing: border-box;
       text-align: center;
     }
@@ -1426,6 +1434,7 @@
       padding: 12mm 12mm 10mm 12mm;
       box-sizing: border-box;
       position: relative;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1521,6 +1530,7 @@
       flex-direction: column;
       align-items: center;
       position: relative;
+      overflow: hidden;
     }
 
     .poster-podium-col.rank-1 {
@@ -1958,6 +1968,7 @@
     /* 표지 썸네일 */
     .book-thumb-wrap {
       position: relative;
+      overflow: hidden;
       display: inline-block;
       cursor: pointer;
     }
@@ -2045,6 +2056,7 @@
       text-align: left;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       position: relative;
+      overflow: hidden;
       overflow: hidden;
     }
 
@@ -2163,6 +2175,7 @@
       border-radius: 16px;
       padding: 32px 28px;
       position: relative;
+      overflow: hidden;
     }
 
     .radar-bar {
@@ -2229,6 +2242,7 @@
       flex-direction: column;
       align-items: center;
       position: relative;
+      overflow: hidden;
       z-index: 2;
     }
 
@@ -3709,21 +3723,20 @@
           </div>
 
           <div class="simple-card" style="overflow-x: auto;">
-            <table class="simple-table" style="min-width: 1080px;">
+            <table class="simple-table" style="min-width: 1050px; width: 100%; table-layout: fixed;">
               <thead>
                 <tr>
-                  <th style="width: 55px; white-space: nowrap;" class="text-center">No.</th>
-                  <th style="width: 80px; white-space: nowrap;" class="text-center">아이디</th>
-                  <th style="width: 95px; white-space: nowrap;" class="text-center">원생 이름</th>
-                  <th style="width: 55px; white-space: nowrap;" class="text-center">성별</th>
-                  <th style="min-width: 140px; white-space: nowrap;" class="text-center">학교 / 학년</th>
-                  <th style="width: 90px; white-space: nowrap;" class="text-center">소속 학급</th>
-                  <th style="width: 80px; white-space: nowrap;" class="text-center">상태</th>
-                  <th style="min-width: 170px; white-space: nowrap;" class="text-center">학부모 정보</th>
-                  <th style="width: 100px; white-space: nowrap;" class="text-center">계정 생성일</th>
-                  <th style="width: 105px; white-space: nowrap;" class="text-center">독서 레벨</th>
-                  <th style="width: 110px; white-space: nowrap;" class="text-center">완독/평균</th>
-                  <th style="width: 120px; white-space: nowrap;" class="text-center">관리</th>
+                  <th style="width: 5%; white-space: nowrap;" class="text-center">No.</th>
+                  <th style="width: 9%; white-space: nowrap;" class="text-center">아이디</th>
+                  <th style="width: 10%; white-space: nowrap;" class="text-center">원생 이름</th>
+                  <th style="width: 6%; white-space: nowrap;" class="text-center">성별</th>
+                  <th style="width: 16%; white-space: nowrap;" class="text-center">학교 / 학년</th>
+                  <th style="width: 10%; white-space: nowrap;" class="text-center">소속 학급</th>
+                  <th style="width: 8%; white-space: nowrap;" class="text-center">상태</th>
+                  <th style="width: 15%; white-space: nowrap;" class="text-center">학부모 정보</th>
+                  <th style="width: 9%; white-space: nowrap;" class="text-center">계정 생성일</th>
+                  <th style="width: 11%; white-space: nowrap;" class="text-center">완독/평균</th>
+                  <th style="width: 8%; white-space: nowrap;" class="text-center">관리</th>
                 </tr>
               </thead>
               <tbody id="studentTableBody">
@@ -6601,8 +6614,7 @@
               id="m_std_school"></span></div>
           <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">소속 클래스</span><span
               id="m_std_class"></span></div>
-          <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">독서 레벨</span><span
-              id="m_std_level"></span></div>
+          
           <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">완독 도서</span><span
               id="m_std_books"></span></div>
           <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">퀴즈 평균</span><span
@@ -9292,6 +9304,7 @@
   <!-- Daum 우편번호 서비스 (비동기 지연 로딩) -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
   <script src="js/learning-storage.js?v=20261014_ux2"></script>
+  <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
   <script src="admin_preview.js?v=20261029_v2"></script>
 
   <!-- PWA Service Worker Registration -->

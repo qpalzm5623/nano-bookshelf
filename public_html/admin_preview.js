@@ -703,7 +703,7 @@ function loadStudentsFromStorage() {
         level: m.level || '미설정', bookCount: Number(m.bookCount) || 0, quizAvg: (m.quizAvg == null || isNaN(Number(m.quizAvg))) ? '-' : Math.round(Number(m.quizAvg)),
         parentName: m.parentName || '', phone: m.parentPhone || '', parentEmail: m.parentEmail || '',
         reportYn: m.reportYn === true, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
-        teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0 };
+        teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0, characterId: m.characterId || null };
     });
   } catch(e) { console.warn('원생 목록 조회 실패:', e); return []; }
 }
@@ -2642,7 +2642,7 @@ function renderStudentTable(list, page) {
     var emptyMessage = (studentDataList.length === 0)
       ? '<div class="py-4"><i class="fa-solid fa-user-plus text-primary mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">우측 상단의 <strong>[+ 원생 등록]</strong> 또는 <strong>[엑셀 일괄 등록]</strong>을 통해 첫 원생을 등록해 보세요.</span></div>'
       : '일치하는 원생이 없습니다.';
-    tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
     renderStudentPagination(0, 1, 1);
     return;
   }
@@ -2704,10 +2704,9 @@ function renderStudentTable(list, page) {
       '<td class="text-center">' + statusBadge + '</td>' +
       '<td class="text-center">' + parentInfo + '</td>' +
       '<td class="text-center"><small class="text-muted font-weight-bold">' + createDateStr + '</small></td>' +
-      '<td class="text-center font-weight-bold" style="color:var(--btn-primary); font-size:12px;">' + std.level + '</td>' +
       '<td class="text-center font-weight-bold">' + std.bookCount + '권 <small class="text-success font-weight-bold">(' + quizScoreDisplay + ')</small></td>' +
       '<td class="text-center">' +
-        '<div class="d-inline-flex flex-column align-items-center justify-content-center" style="gap: 5px;">' +
+        '<div class="d-inline-flex flex-row align-items-center justify-content-center" style="gap: 4px;">' +
           '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
           (!isCurrentLoggedInTeacher() ? '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' : '') +
         '</div>' +
@@ -6396,8 +6395,39 @@ function retryAcademyDispatch(id) {
 // 7. 원내 랭킹 조회 모듈 (Internal Student Ranking & Hall of Fame)
 // ==============================================================
 
-// 나노 프렌즈 10종 캐릭터 SVG 벡터 생성기
-function getCharacterSvg(charId, size) {
+// 나노 프렌즈 캐릭터 SVG 벡터 생성기 (학생 페이지 NanoQuizResult와 동일한 공식 일러스트 연동)
+var NANO_FRIEND_IDS = ['nano', 'toto', 'booki', 'pico', 'popo', 'chichi', 'lumi', 'mir', 'jelly'];
+
+function getStudentCharacterId(std) {
+  if (!std) return 'nano';
+  var candidate = std.characterId || std.charId;
+  if (candidate && NANO_FRIEND_IDS.includes(candidate)) return candidate;
+  var sId = std.username || std.id || std.studentId || '';
+  try {
+    if (sId) {
+      var saved = localStorage.getItem('NANO_STUDENT_AVATAR_ID_' + sId);
+      if (saved && NANO_FRIEND_IDS.includes(saved)) return saved;
+    }
+    if (sId === 'look1' || sId === 's1' || (std.name && std.name === '박진호')) {
+      var globalSaved = localStorage.getItem('NANO_STUDENT_AVATAR_ID');
+      if (globalSaved && NANO_FRIEND_IDS.includes(globalSaved)) return globalSaved;
+    }
+  } catch(e) {}
+  var seed = 0;
+  var str = String(sId || std.name || 'nano');
+  for (var i = 0; i < str.length; i++) {
+    seed = (seed * 31 + str.charCodeAt(i)) & 0xffffffff;
+  }
+  return NANO_FRIEND_IDS[Math.abs(seed) % NANO_FRIEND_IDS.length];
+}
+
+function getCharacterSvg(charId, size, stage) {
+  size = size || 60;
+  stage = stage || 1;
+  charId = (charId && NANO_FRIEND_IDS.includes(charId)) ? charId : 'nano';
+  if (typeof NanoQuizResult !== 'undefined' && typeof NanoQuizResult.avatar === 'function') {
+    return NanoQuizResult.avatar(charId, size, stage);
+  }
   size = size || 60;
   var svgs = {
     nano: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '">'
@@ -6621,7 +6651,8 @@ function buildAdminRankingRows(monthKey) {
       studentId: stdId,
       name: std ? std.name : item.name,
       loginId: std ? (std.username || std.id) : item.studentId,
-      charId: 'nano',
+      charId: getStudentCharacterId(std || item),
+      stage: item.books >= 15 ? 3 : item.books >= 5 ? 2 : 1,
       grade: ((std && std.grade) ? std.grade : '') + ' (' + ((std && std.classGroup) ? std.classGroup : item.classGroup) + ')',
       classKey: (std && std.classGroup) ? std.classGroup : item.classGroup,
       books: item.books,
@@ -6639,7 +6670,8 @@ function buildAdminRankingRows(monthKey) {
         studentId: sId,
         name: s.name,
         loginId: s.username || s.id,
-        charId: 'nano',
+        charId: getStudentCharacterId(s),
+        stage: (s.bookCount || 0) >= 15 ? 3 : (s.bookCount || 0) >= 5 ? 2 : 1,
         grade: (s.grade || '미등록') + ' (' + (s.classGroup || '미지정') + ')',
         classKey: s.classGroup || '미지정',
         books: s.bookCount || 0,
@@ -6736,7 +6768,7 @@ function renderAdminRankingView() {
         <div class="admin-podium-col rank-2">
           <div class="podium-avatar-box">
             <div class="podium-char-avatar" style="width: 70px; height: 70px; background: #f8fafc; border: 3px solid #94a3b8;">
-              ${getCharacterSvg(top2.charId, 60)}
+              ${getCharacterSvg(top2.charId, 70, top2.stage || 1)}
             </div>
           </div>
           <div class="podium-pedestal">
@@ -6754,7 +6786,7 @@ function renderAdminRankingView() {
           <div class="podium-avatar-box">
             <div class="podium-crown-icon">👑</div>
             <div class="podium-char-avatar" style="width: 82px; height: 82px; background: #fffbeb; border: 3.5px solid #f59e0b;">
-              ${getCharacterSvg(top1.charId, 72)}
+              ${getCharacterSvg(top1.charId, 82, top1.stage || 1)}
             </div>
           </div>
           <div class="podium-pedestal">
@@ -6771,7 +6803,7 @@ function renderAdminRankingView() {
         <div class="admin-podium-col rank-3">
           <div class="podium-avatar-box">
             <div class="podium-char-avatar" style="width: 66px; height: 66px; background: #fff7ed; border: 3px solid #ea580c;">
-              ${getCharacterSvg(top3.charId, 56)}
+              ${getCharacterSvg(top3.charId, 66, top3.stage || 1)}
             </div>
           </div>
           <div class="podium-pedestal">
@@ -6818,7 +6850,7 @@ function renderAdminRankingView() {
           <td>
             <div class="d-flex align-items-center gap-2">
               <div style="width: 38px; height: 38px; border-radius: 50%; background: #f8fafc; border: 1.5px solid #e2e8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                ${getCharacterSvg(r.charId, 32)}
+                ${getCharacterSvg(r.charId, 36, r.stage || 1)}
               </div>
               <div>
                 <strong style="color: var(--text-main); font-size: 14.5px;">${r.name}</strong>
@@ -7094,7 +7126,7 @@ function renderAdminRankingPoster(container) {
         <td class="text-center font-weight-bold" style="color: #475569; width: 48px;">${r.displayRank}위</td>
         <td style="width: 44px; text-align: center;">
           <div style="width: 28px; height: 28px; border-radius: 50%; background: #f8fafc; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center;">
-            ${getCharacterSvg(r.charId, 24)}
+            ${getCharacterSvg(r.charId, 28, r.stage || 1)}
           </div>
         </td>
         <td><strong style="color: #0f172a; font-size: 12px;">${r.name}</strong></td>
@@ -7136,7 +7168,7 @@ function renderAdminRankingPoster(container) {
           <div class="poster-podium-col rank-2">
             <div class="podium-avatar-box mb-1">
               <div class="podium-char-avatar" style="width: 56px; height: 56px; background: #f1f5f9; border: 2px solid #94a3b8;">
-                ${getCharacterSvg(top2.charId, 48)}
+                ${getCharacterSvg(top2.charId, 56, top2.stage || 1)}
               </div>
               <div class="podium-rank-pill rank-2" style="width: 22px; height: 22px; font-size: 11px; bottom: -4px;">2</div>
             </div>
@@ -7154,7 +7186,7 @@ function renderAdminRankingPoster(container) {
             <div class="podium-avatar-box mb-1">
               <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 20px;">👑</div>
               <div class="podium-char-avatar" style="width: 68px; height: 68px; background: #fffbeb; border: 2.5px solid #f59e0b;">
-                ${getCharacterSvg(top1.charId, 60)}
+                ${getCharacterSvg(top1.charId, 68, top1.stage || 1)}
               </div>
               <div class="podium-rank-pill rank-1" style="width: 24px; height: 24px; font-size: 12px; bottom: -4px;">1</div>
             </div>
@@ -7171,7 +7203,7 @@ function renderAdminRankingPoster(container) {
           <div class="poster-podium-col rank-3">
             <div class="podium-avatar-box mb-1">
               <div class="podium-char-avatar" style="width: 52px; height: 52px; background: #fff7ed; border: 2px solid #ea580c;">
-                ${getCharacterSvg(top3.charId, 44)}
+                ${getCharacterSvg(top3.charId, 52, top3.stage || 1)}
               </div>
               <div class="podium-rank-pill rank-3" style="width: 22px; height: 22px; font-size: 11px; bottom: -4px;">3</div>
             </div>

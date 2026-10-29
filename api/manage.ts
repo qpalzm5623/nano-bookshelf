@@ -92,7 +92,7 @@ export default async function handler(req: any, res: any) {
         return res.json({
           hasKey: Boolean(rawKey),
           maskedKey: rawKey ? (rawKey.slice(0, 6) + '...' + rawKey.slice(-4)) : '',
-          model: val.model || 'gemini-1.5-flash',
+          model: val.model || 'gemini-3.0-flash',
           updatedAt: val.updatedAt || ''
         });
       }
@@ -421,7 +421,7 @@ export default async function handler(req: any, res: any) {
       const prev = ((row?.value as any) || {}) as Record<string, any>;
       const inputKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
       const finalKey = inputKey || (prev.apiKey ? String(prev.apiKey).trim() : '');
-      const model = typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || 'gemini-1.5-flash');
+      const model = typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || 'gemini-3.0-flash');
       const meta = { apiKey: finalKey, model, updatedAt: new Date().toISOString() };
       await prisma.portalSetting.upsert({
         where: { key: 'gemini_api_config' },
