@@ -1752,16 +1752,59 @@
     }
 
     /* ============================================================== */
-    /* 도서관 메뉴 3종 서브탭 및 학년 칩 필터 */
+    /* 도서관 메뉴 3종 서브탭 및 학년 칩 필터 (좌우 이동 버튼 + 드래그 스크롤) */
     /* ============================================================== */
+    .lib-sub-nav-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
     .lib-sub-nav {
       display: flex;
       gap: 6px;
-      margin-bottom: 12px;
       overflow-x: auto;
       scrollbar-width: none;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      cursor: grab;
+      user-select: none;
+      padding: 4px 2px;
+      flex: 1;
+    }
+    .lib-sub-nav.dragging {
+      cursor: grabbing;
+      scroll-behavior: auto;
     }
     .lib-sub-nav::-webkit-scrollbar { display: none; }
+    .lib-nav-scroll-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1.5px solid var(--soft);
+      color: var(--wood-dark);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11.5px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      transition: all .2s;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+    .lib-nav-scroll-btn:hover {
+      background: #faf7f2;
+      border-color: var(--leaf);
+      color: var(--leaf);
+      transform: scale(1.06);
+    }
+    .lib-nav-scroll-btn:active {
+      transform: scale(0.94);
+    }
     .lib-sub-pill {
       padding: 8px 15px;
       border-radius: 20px;
@@ -1773,9 +1816,10 @@
       color: var(--muted);
       transition: all .2s;
       white-space: nowrap;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 5px;
+      flex-shrink: 0;
     }
     .lib-sub-pill.active {
       background: var(--leaf);
@@ -1936,16 +1980,96 @@
       font-weight: 600;
     }
     .theme-selected-header {
-      background: #ffffff;
-      border: 1.5px solid var(--soft);
-      border-radius: 14px;
-      padding: 14px 16px;
+      background: linear-gradient(135deg, #fdfbf7 0%, #f7f3ea 100%);
+      border: 1.5px solid #ebd9c8;
+      border-radius: 16px;
+      padding: 15px 18px;
       margin-bottom: 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
+      box-shadow: 0 3px 12px rgba(100, 70, 40, 0.04);
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'NanumSquareRound', system-ui, sans-serif;
+    }
+    .theme-selected-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      padding: 4px 2px;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'NanumSquareRound', system-ui, sans-serif;
+    }
+    .btn-theme-back {
+      background: #ffffff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1.5px solid #dcd3c5;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--wood-dark);
+      font-size: 13px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: all 0.15s ease-in-out;
+      white-space: nowrap;
+    }
+    .btn-theme-back:hover {
+      background: #fbf9f5;
+      border-color: var(--leaf);
+      color: var(--leaf);
+    }
+    .theme-bar-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 13.5px;
+      color: var(--wood-dark);
+      line-height: 1.4;
+    }
+    .theme-bar-tag {
+      font-weight: 800;
+      color: var(--leaf);
+      font-size: 15px;
+    }
+    .theme-bar-desc {
+      color: #645449;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .theme-bar-count {
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .tsh-info {
+      flex: 1;
+      min-width: 220px;
+    }
+    .tsh-title {
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #2c221e;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .tsh-sub {
+      font-size: 13px;
+      font-weight: 500;
+      color: #6e5d53;
+      line-height: 1.55;
+      margin-top: 5px;
+      letter-spacing: -0.2px;
+      word-break: keep-all;
     }
     .student-modal-overlay {
       position: fixed;
@@ -3528,7 +3652,7 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261029_cache_fix"></script>
+<script src="js/portal-client.js?v=20261029_v2"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261014" defer></script>
 <link rel="stylesheet" href="css/quiz-result.css?v=20261029-friends3">
@@ -3923,16 +4047,24 @@
 
     <!-- 2. 전체 도서관 영역 -->
     <div id="bsub-all" style="display:none;">
-      <!-- 전체 도서관 2차 서브탭: 전체 / 주제별 도서 / [마스터 등록 배너 제목 탭들] -->
-      <div class="lib-sub-nav" id="allLibSubNav">
-        <button type="button" class="lib-sub-pill active" id="allLibSubPill-all" onclick="switchAllLibSubTab('all')">
-          <i class="fa-solid fa-list-ul"></i> 전체
+      <!-- 전체 도서관 2차 서브탭: 전체 / 주제별 도서 / [마스터 등록 배너 제목 탭들] (좌우 스크롤 이동 버튼 및 드래그 스크롤 지원) -->
+      <div class="lib-sub-nav-wrapper">
+        <button type="button" class="lib-nav-scroll-btn btn-left" id="allLibScrollLeftBtn" onclick="scrollLibSubNav('left')" title="이전 탭 보기" aria-label="이전 탭 보기">
+          <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <button type="button" class="lib-sub-pill" id="allLibSubPill-themes" onclick="switchAllLibSubTab('themes')">
-          <i class="fa-solid fa-tags"></i> 주제별 도서
+        <div class="lib-sub-nav" id="allLibSubNav">
+          <button type="button" class="lib-sub-pill active" id="allLibSubPill-all" onclick="switchAllLibSubTab('all')">
+            <i class="fa-solid fa-list-ul"></i> 전체
+          </button>
+          <button type="button" class="lib-sub-pill" id="allLibSubPill-themes" onclick="switchAllLibSubTab('themes')">
+            <i class="fa-solid fa-tags"></i> 주제별 도서
+          </button>
+          <!-- 마스터에서 등록한 활성 배너들의 '배너 제목' 서브탭 버튼이 주제별 도서 우측에 동적 생성됨 -->
+          <span id="allLibBannerPills" style="display:contents;"></span>
+        </div>
+        <button type="button" class="lib-nav-scroll-btn btn-right" id="allLibScrollRightBtn" onclick="scrollLibSubNav('right')" title="다음 탭 보기" aria-label="다음 탭 보기">
+          <i class="fa-solid fa-chevron-right"></i>
         </button>
-        <!-- 마스터에서 등록한 활성 배너들의 '배너 제목' 서브탭 버튼이 주제별 도서 우측에 동적 생성됨 -->
-        <span id="allLibBannerPills" style="display:contents;"></span>
       </div>
 
       <!-- 2-1. 전체 도서 목록 컨테이너 -->
@@ -3949,15 +4081,18 @@
         <div id="libScrollSentinel" style="height:1px;"></div>
       </div>
 
-      <!-- 2-2. 주제별 도서 컨테이너 (관리자 페이지 서비스 운영관리 테마관리 등록 연동) -->
+      <!-- 2-2. 주제별 도서 컨테이너 -->
       <div id="allSubSection-themes" style="display:none;">
         <div id="themeTagBoxesSection">
-          <div style="background:#fcfbf8; border:1px solid var(--soft); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-            <div style="font-size:13.5px; font-weight:800; color:var(--wood-dark);">
-              <i class="fa-solid fa-tags mr-1" style="color:var(--leaf);"></i>주제별 큐레이션 도서
-            </div>
-            <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">
-              관리자 페이지 서비스 운영관리 [테마관리]에서 등록된 큐레이션 테마별 도서입니다.
+          <div class="theme-selected-header" style="margin-bottom:14px; padding:14px 18px;">
+            <div class="tsh-info">
+              <div class="tsh-title" style="font-size:15px;">
+                <i class="fa-solid fa-tags" style="color:var(--leaf); font-size:14px;"></i>
+                <span>주제별 큐레이션 도서</span>
+              </div>
+              <div class="tsh-sub">
+                나노의 책장에서 엄선한 큐레이션 테마별 도서입니다.
+              </div>
             </div>
           </div>
           <div class="sbar" id="themeTagSearchBar" style="margin-bottom:14px; background:#fff;">
@@ -3971,10 +4106,10 @@
         </div>
 
         <div id="themeSelectedSection" style="display:none;">
-          <div id="themeSelectedHeader" class="theme-selected-header"></div>
+          <div id="themeSelectedHeader" class="theme-selected-bar"></div>
 
           <!-- [신규] 선택된 주제 내 도서 검색바 -->
-          <div class="sbar" id="themeBookSearchBar" style="margin-top:12px; margin-bottom:14px; background:#fff;">
+          <div class="sbar" id="themeBookSearchBar" style="margin-top:8px; margin-bottom:14px; background:#fff;">
             <input type="text" id="themeBookQ" placeholder="현재 주제 내 도서명, 저자, 출판사 검색..." oninput="filterThemeBooks()" autocomplete="off">
             <button type="button" onclick="filterThemeBooks()" title="검색"><i class="fa-solid fa-search"></i></button>
             <button type="button" id="themeBookClearBtn" onclick="clearThemeBookSearch()" style="display:none; color:var(--muted); background:none; border:none; padding:0 8px; cursor:pointer;" title="검색어 지우기">
@@ -4046,13 +4181,13 @@
         <div class="dqb-text-group">
           <div class="dqb-title-row">
             <span class="dqb-title">도서 완독 미션 · 북퀴즈</span>
-            <span class="dqb-badge"><i class="fa-solid fa-bolt" style="font-size:10px;"></i> 5문항</span>
+            <span class="dqb-badge" id="detailQuizBadge"><i class="fa-solid fa-bolt" style="font-size:10px;"></i> 5문항</span>
           </div>
-          <div class="dqb-desc">책을 다 읽었나요? 퀴즈를 풀고 나만의 독서 포인트를 획득해 보세요!</div>
+          <div class="dqb-desc" id="detailQuizDesc">책을 다 읽었나요? 퀴즈를 풀고 나만의 독서 포인트를 획득해 보세요!</div>
         </div>
       </div>
-      <button type="button" class="btn-dqb-action">
-        <span>북퀴즈 도전하기</span>
+      <button type="button" class="btn-dqb-action" id="detailQuizActionBtn">
+        <span id="detailQuizActionBtnText">북퀴즈 도전하기</span>
         <i class="fa-solid fa-arrow-right"></i>
       </button>
     </div>
@@ -5705,9 +5840,11 @@ function getStudentCurrentGrade() {
 // 홈 화면 3대 슬라이더 렌더링
 // ==============================================================
 function renderHomeSliders() {
-  // 1. 최근에 추가된 도서 30권 (createdAt 역순)
+  // 1. 최근에 추가된 도서 30권 (createdAt 역순, localeCompare 대신 고속 문자열 비교)
   var recentList = libData.slice().sort(function(a,b){
-    return b.createdAt.localeCompare(a.createdAt);
+    var ca = a.createdAt || '';
+    var cb = b.createdAt || '';
+    return cb > ca ? 1 : (cb < ca ? -1 : 0);
   }).slice(0, 30);
   var recCountEl = document.getElementById('recentBooksCount');
   if(recCountEl) recCountEl.innerText = recentList.length + '권';
@@ -5892,7 +6029,36 @@ function openBookDetail(id, from) {
     }).join('');
   }
 
-  // 4. 하단 퀴즈 버튼 텍스트 업데이트
+  // 4. 북퀴즈 카드 상태 실데이터 연동 (실제 문항 수 연동 및 퀴즈 준비중 상태 정확 분기)
+  var qBadgeEl = document.getElementById('detailQuizBadge');
+  var qDescEl = document.getElementById('detailQuizDesc');
+  var qBtnTextEl = document.getElementById('detailQuizActionBtnText');
+  var hasQuiz = b.hasQuiz === true || b.hasQuiz === 'Y' || Number(b.quizCount) > 0 || (Array.isArray(b.quizSets) && b.quizSets.length > 0);
+  var qCnt = Number(b.quizCount) || 5;
+
+  if (qBadgeEl) {
+    if (hasQuiz) {
+      qBadgeEl.innerHTML = '<i class="fa-solid fa-bolt" style="font-size:10px;"></i> ' + qCnt + '문항';
+      qBadgeEl.style.background = '';
+      qBadgeEl.style.color = '';
+    } else {
+      qBadgeEl.innerHTML = '<i class="fa-regular fa-clock" style="font-size:10px;"></i> 퀴즈 준비 중';
+      qBadgeEl.style.background = '#f1ece4';
+      qBadgeEl.style.color = '#8c7e72';
+    }
+  }
+  if (qDescEl) {
+    if (hasQuiz) {
+      qDescEl.innerText = '책을 다 읽었나요? 퀴즈를 풀고 나만의 독서 포인트를 획득해 보세요!';
+    } else {
+      qDescEl.innerText = '현재 북퀴즈 문항을 준비 중인 도서입니다. 자유롭게 책을 읽어보세요!';
+    }
+  }
+  if (qBtnTextEl) {
+    qBtnTextEl.innerText = hasQuiz ? '북퀴즈 도전하기' : '퀴즈 준비 중';
+  }
+
+  // 5. 하단 퀴즈 버튼 텍스트 업데이트
   var quizBtnText = document.getElementById('detailQuizBtnText');
   if(quizBtnText) {
     // 아이콘 중복 제거: HTML 버튼에 이미 스타일 있으므로 텍스트만 표시
@@ -5985,7 +6151,12 @@ function switchAllLibSubTab(tab) {
   var isBannerTab = String(currentAllLibSubTab).indexOf('banner:') === 0;
   ['all', 'themes'].forEach(function(s){
     var pill = document.getElementById('allLibSubPill-' + s);
-    if(pill) pill.classList.toggle('active', s === currentAllLibSubTab);
+    if(pill) {
+      pill.classList.toggle('active', s === currentAllLibSubTab);
+      if (s === currentAllLibSubTab && typeof pill.scrollIntoView === 'function') {
+        try { pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e) {}
+      }
+    }
     var sec = document.getElementById('allSubSection-' + s);
     if(sec) sec.style.display = (s === currentAllLibSubTab) ? 'block' : 'none';
   });
@@ -6619,9 +6790,19 @@ function getStudentThemes() {
   return defaultStudentThemes;
 }
 
-// 학생 도서관 테마별 자동 매핑 도서 추출 헬퍼 함수
+var _themeMappedBooksCache = {};
+function clearThemeMappedBooksCache() {
+  _themeMappedBooksCache = {};
+}
+
+// 학생 도서관 테마별 자동 매핑 도서 추출 헬퍼 함수 (메모이제이션 캐싱 적용: 7.6만 회 중복 연산 방지)
 function getThemeMappedBooksForStudent(theme) {
   if(!theme || !Array.isArray(libData)) return [];
+  var cacheKey = String(theme.id || theme.code || theme.tag || '').trim();
+  if (cacheKey && _themeMappedBooksCache[cacheKey]) {
+    return _themeMappedBooksCache[cacheKey];
+  }
+
   var targetTag = (theme.tag || '').trim();
   var cleanTarget = targetTag.replace(/^#/, '');
   var subKeywords = [];
@@ -6629,7 +6810,7 @@ function getThemeMappedBooksForStudent(theme) {
     subKeywords = theme.subTag.split(/[\s,#]+/).map(function(k){ return k.trim(); }).filter(Boolean);
   }
 
-  return libData.filter(function(b){
+  var result = libData.filter(function(b){
     // 0. themeId 직접 일치 (서버 DB)
     if (theme.id && (b.themeId === theme.id || String(b.themeId) === String(theme.id))) return true;
 
@@ -6675,6 +6856,11 @@ function getThemeMappedBooksForStudent(theme) {
 
     return false;
   });
+
+  if (cacheKey) {
+    _themeMappedBooksCache[cacheKey] = result;
+  }
+  return result;
 }
 
 var currentSelectedTheme = null;
@@ -6690,10 +6876,10 @@ function clearThemeTagSearch() {
 }
 
 function filterThemeTags() {
-  renderThemeTagBoxes();
+  renderThemeTagBoxes(true);
 }
 
-function renderThemeTagBoxes() {
+function renderThemeTagBoxes(forceUpdate) {
   var grid = document.getElementById("themeTagGrid");
   if(!grid) return;
   var qInput = document.getElementById('themeTagQ');
@@ -6701,6 +6887,11 @@ function renderThemeTagBoxes() {
   var q = (qInput ? qInput.value : '').trim().toLowerCase();
 
   if(clearBtn) clearBtn.style.display = q ? 'inline-block' : 'none';
+
+  // 검색어가 없고 이미 테마 카드가 렌더링되어 있다면 재연산 없이 즉시 재사용
+  if (!q && !forceUpdate && grid.children.length > 0 && grid.dataset.rendered === "true") {
+    return;
+  }
 
   var allThemes = getStudentThemes().filter(function(t){ return t.active === 'Y'; });
   var themes = allThemes;
@@ -6753,6 +6944,7 @@ function renderThemeTagBoxes() {
       + '</div>'
       + '</div>';
   }).join('');
+  grid.dataset.rendered = "true";
 }
 
 function selectThemeTag(themeId) {
@@ -6817,16 +7009,21 @@ function filterThemeBooks() {
     : totalBookCnt + '권';
 
   if(header) {
-    header.innerHTML = '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 14px; background:#fff; border-radius:14px; border:1px solid #ebe4d8; margin-bottom:12px;">'
-      + '<button type="button" class="btn-detail-back" onclick="backToThemeTagList()" style="background:#f5f2eb; padding:8px 14px; border-radius:10px; font-weight:700; cursor:pointer; border:1px solid #e0d8cc; display:inline-flex; align-items:center; gap:6px; color:var(--wood-dark); font-size:13px;"><i class="fa-solid fa-arrow-left"></i> 전체 주제 보기</button>'
-      + '<div style="flex:1; min-width:200px;">'
-      +   '<div class="d-flex align-items-center gap-2">'
-      +     '<span class="theme-sub-badge" style="margin-bottom:0;">'+(theme.subTag || '주제별 도서')+'</span>'
-      +     '<strong style="font-size:16px; color:var(--wood-dark);">'+displayTitle+'</strong>'
-      +   '</div>'
-      +   '<div style="font-size:12px; color:var(--muted); margin-top:3px;">'+(theme.desc || '')+' (' + countText + ')</div>'
-      + '</div>'
-      + '</div>';
+    var rawTag = (theme.tag || '').trim();
+    var displayTag = rawTag ? (rawTag.startsWith('#') ? rawTag : ('#' + rawTag)) : '#주제';
+    var descText = (theme.desc && theme.desc !== '테마 설명이 없습니다.' && theme.desc !== '테마 안내글이 없습니다.')
+      ? theme.desc
+      : '';
+
+    header.innerHTML =
+      '<button type="button" class="btn-theme-back" onclick="backToThemeTagList()">' +
+        '<i class="fa-solid fa-arrow-left"></i> 전체 주제 보기' +
+      '</button>' +
+      '<div class="theme-bar-info">' +
+        '<span class="theme-bar-tag">' + displayTag + '</span>' +
+        (descText ? '<span class="theme-bar-desc">' + descText + '</span>' : '') +
+        '<span class="theme-bar-count">(' + countText + ')</span>' +
+      '</div>';
   }
 
   if(listEl) {
@@ -6902,7 +7099,8 @@ function syncStudentThemesFromServer() {
         if(currentJson !== newJson) {
           localStorage.setItem("NANO_MASTER_THEMES_TIME", (serverLatestTime || Date.now()).toString());
           localStorage.setItem("NANO_MASTER_THEMES", newJson);
-          renderThemeTagBoxes();
+          clearThemeMappedBooksCache();
+          renderThemeTagBoxes(true);
           console.log("[테마 동기화] 서버의 최신 테마 " + serverThemes.length + "개가 학생 페이지에 즉시 동기화되었습니다.");
         }
       }
@@ -7062,6 +7260,64 @@ function resolveBannerBooks(b) {
   return mappedBooks;
 }
 
+// [전체 도서관 서브탭] 좌우 화살표 버튼 스크롤 이동 함수
+function scrollLibSubNav(direction) {
+  var nav = document.getElementById("allLibSubNav");
+  if (!nav) return;
+  var scrollAmount = direction === "left" ? -240 : 240;
+  nav.scrollBy({ left: scrollAmount, behavior: "smooth" });
+}
+
+// [전체 도서관 서브탭] 마우스 및 터치 드래그 가로 스크롤 바인딩
+function bindLibSubNavDrag() {
+  var nav = document.getElementById("allLibSubNav");
+  if (!nav || nav._dragBound) return;
+  nav._dragBound = true;
+
+  var isDown = false;
+  var startX = 0;
+  var scrollLeft = 0;
+  var isDragging = false;
+
+  nav.addEventListener("mousedown", function(e) {
+    isDown = true;
+    isDragging = false;
+    nav.classList.add("dragging");
+    startX = e.pageX - nav.offsetLeft;
+    scrollLeft = nav.scrollLeft;
+  });
+
+  nav.addEventListener("mouseleave", function() {
+    isDown = false;
+    nav.classList.remove("dragging");
+  });
+
+  nav.addEventListener("mouseup", function() {
+    isDown = false;
+    nav.classList.remove("dragging");
+    setTimeout(function() { isDragging = false; }, 60);
+  });
+
+  nav.addEventListener("mousemove", function(e) {
+    if (!isDown) return;
+    e.preventDefault();
+    var x = e.pageX - nav.offsetLeft;
+    var walk = (x - startX) * 1.5;
+    if (Math.abs(walk) > 4) {
+      isDragging = true;
+    }
+    nav.scrollLeft = scrollLeft - walk;
+  });
+
+  // 드래그 중 클릭 오발동 방지
+  nav.addEventListener("click", function(e) {
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+}
+
 // [학생앱 > 전체 도서관] '주제별 도서' 우측에 활성 배너들의 '배너 제목' 서브탭 버튼 동적 생성
 function renderAllLibBannerPills() {
   var wrap = document.getElementById("allLibBannerPills");
@@ -7078,6 +7334,8 @@ function renderAllLibBannerPills() {
       + '<i class="fa-solid fa-star" style="color:#f59e0b;"></i> ' + safeTitle
       + '</button>';
   }).join('');
+
+  bindLibSubNavDrag();
 }
 
 var currentSelectedBannerId = null;
@@ -7104,11 +7362,24 @@ function renderBannerSubTabBooks(bannerId) {
   }
 
   var mappedBooks = resolveBannerBooks(b);
+
+  // 마스터 메인 롤링 배너의 '배너 서브 설명(관리 메모용)' 문구 연동
+  var subDesc = String(b.sub || b.subtitle || b.subTitle || b.description || b.subDescription || '').trim();
+  if (!subDesc) {
+    subDesc = '메인 배너에 등록된 추천 도서 목록입니다.';
+  }
+  var safeTitle = String(b.title || '배너 추천 도서').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  var safeSubDesc = subDesc.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   if (headerEl) {
     headerEl.innerHTML =
       '<div class="tsh-info">' +
-        '<div class="tsh-title"><i class="fa-solid fa-star mr-1" style="color:#f59e0b;"></i>' + (b.title || '배너 추천 도서') + ' <span class="badge-soft badge-soft-success" style="font-size:11.5px; margin-left:6px;">총 ' + mappedBooks.length + '권</span></div>' +
-        '<div class="tsh-sub">' + (b.sub || '메인 배너에 등록된 추천 도서 목록입니다.') + '</div>' +
+        '<div class="tsh-title">' +
+          '<i class="fa-solid fa-star mr-1" style="color:#f59e0b; font-size:15px;"></i>' +
+          '<span>' + safeTitle + '</span>' +
+          '<span class="badge-soft badge-soft-success" style="font-size:11.5px; margin-left:6px; padding:3px 8px; border-radius:12px; font-weight:700;">총 ' + mappedBooks.length + '권</span>' +
+        '</div>' +
+        '<div class="tsh-sub">' + safeSubDesc + '</div>' +
       '</div>';
   }
 
@@ -7367,34 +7638,49 @@ async function startQuiz(id) {
     return;
   }
 
+  var sId = String(id || '').trim();
   var book = null;
-  // 도서 정보 탐색
-  if (typeof libData !== 'undefined') {
-    book = libData.find(function(x) { return x.id === id || x.id === 'MB-' + id || id.endsWith(x.id.replace(/[^0-9]/g, '')); });
+  // 도서 정보 탐색 (ID, bookNo, serverId 정확한 고유 식별자 우선 일치)
+  if (typeof libData !== 'undefined' && Array.isArray(libData)) {
+    book = libData.find(function(x) {
+      if (!x) return false;
+      return String(x.id) === sId || String(x.bookNo || '') === sId || String(x.serverId || '') === sId || (sId.startsWith('MB-') && String(x.id) === sId.replace('MB-', ''));
+    });
   }
 
   // 마스터 도서 풀 탐색
   var mBook = null;
-  try {
-    var rawMaster = localStorage.getItem("NANO_MASTER_BOOKS");
-    if (rawMaster) {
-      var mBooks = JSON.parse(rawMaster);
-      mBook = mBooks.find(function(b) { return b.id === id || b.id === 'MB-' + id || id.endsWith(b.id.replace(/[^0-9]/g, '')); });
-    }
-  } catch(e) {}
+  if (!book && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+    mBook = window.MIGRATED_BOOKS.find(function(b) {
+      if (!b) return false;
+      return String(b.id) === sId || String(b.bookNo || '') === sId || String(b.serverId || '') === sId || (sId.startsWith('MB-') && String(b.id) === sId.replace('MB-', ''));
+    });
+  }
+  if (!book && !mBook) {
+    try {
+      var rawMaster = localStorage.getItem("NANO_MASTER_BOOKS");
+      if (rawMaster) {
+        var mBooks = JSON.parse(rawMaster);
+        mBook = mBooks.find(function(b) {
+          if (!b) return false;
+          return String(b.id) === sId || String(b.bookNo || '') === sId;
+        });
+      }
+    } catch(e) {}
+  }
 
-  var activeBook = window.NANO_SERVER_DATA ? (book || mBook || { id: id, title: '추천 도서' }) : (mBook || book || { id: id, title: '추천 도서' });
+  var activeBook = book || mBook || { id: id, title: '도서' };
 
-  // 북퀴즈 세트 목록 수집 (실데이터 quizSets 및 MIGRATED_QUIZZES 최우선 매핑)
+  // 북퀴즈 세트 목록 수집 (실데이터 quizSets 및 MIGRATED_QUIZZES 최우선 매핑 - 고유 식별자 일치)
   var quizSets = [];
   if (activeBook && activeBook.quizSets && activeBook.quizSets.length > 0) {
     quizSets = JSON.parse(JSON.stringify(activeBook.quizSets));
-  } else if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES && (window.MIGRATED_QUIZZES[id] || (activeBook && window.MIGRATED_QUIZZES[activeBook.title]) || (book && window.MIGRATED_QUIZZES[book.id]))) {
-    var rawSets = window.MIGRATED_QUIZZES[id] || (activeBook ? window.MIGRATED_QUIZZES[activeBook.title] : null) || (book ? window.MIGRATED_QUIZZES[book.id] : null);
+  } else if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES) {
+    var rawSets = window.MIGRATED_QUIZZES[id] || (activeBook ? (window.MIGRATED_QUIZZES[activeBook.id] || window.MIGRATED_QUIZZES[activeBook.bookNo] || window.MIGRATED_QUIZZES[activeBook.serverId]) : null);
     if (rawSets) quizSets = JSON.parse(JSON.stringify(rawSets));
   }
 
-  // 운영 학생 화면은 수천 권의 문항을 처음부터 받지 않고, 선택한 도서만 조회합니다.
+  // 운영 학생 화면은 수천 권의 문항을 처음부터 받지 않고, 선택한 도서만 지연 조회합니다.
   if (window.NANO_SERVER_DATA && quizSets.length === 0 && (activeBook.hasQuiz || Number(activeBook.quizCount) > 0) && window.NanoPortal) {
     try {
       var lookupBookId = activeBook.serverId || activeBook.bookNo || activeBook.id || id;
@@ -7409,7 +7695,11 @@ async function startQuiz(id) {
     }
   }
   
-  if (window.NANO_SERVER_DATA && quizSets.length === 0) { toast('등록된 문항이 없습니다. 선생님께 문의해 주세요.'); return; }
+  if (quizSets.length === 0) {
+    toast('해당 도서는 아직 북퀴즈가 준비 중입니다.');
+    alert('🦉 현재 이 도서(『' + (activeBook.title || '선택한 도서') + '』)는 북퀴즈 문항이 준비 중입니다.\n다른 추천 도서의 북퀴즈에 도전해 보세요!');
+    return;
+  }
   if (quizSets.length === 0) {
     // 기본 QB 세트 생성
     var defaultQB = (typeof QB !== 'undefined') ? (QB[id] || (activeBook ? QB[activeBook.title] : null)) : null;
@@ -9436,7 +9726,7 @@ function renderCharacterSelectModal() {
 async function handleStudentLogout() {
   if (window.studentSubmissionPending) { toast('답안을 저장 중입니다. 잠시 기다려 주세요.'); return; }
   if (!studentQuizSubmitted && curData && !saveStudentQuizDraft()) return;
-  if (!confirm('로그아웃 하시겠습니까? 작성 중인 답안은 이 기기에 보관됩니다.')) return;
+  if (!confirm('로그아웃 하시겠습니까?')) return;
   try { await NanoPortal.logout(); } catch(e) { toast(e.message); }
 }
 
@@ -9933,7 +10223,8 @@ window.addEventListener('storage', function(e) {
     renderStudentBanners();
   }
   if (e.key === 'NANO_MASTER_THEMES') {
-    renderThemeTagBoxes();
+    clearThemeMappedBooksCache();
+    renderThemeTagBoxes(true);
   }
 });
 
@@ -9967,7 +10258,7 @@ function toast(msg){
 async function handleStudentLogout() {
   if (window.studentSubmissionPending) { toast('답안을 저장 중입니다. 잠시 기다려 주세요.'); return; }
   if (!studentQuizSubmitted && curData && !saveStudentQuizDraft()) return;
-  if (!confirm('로그아웃 하시겠습니까? 작성 중인 답안은 이 기기에 보관됩니다.')) return;
+  if (!confirm('로그아웃 하시겠습니까?')) return;
   try { await NanoPortal.logout(); } catch(e) { toast(e.message); }
 }
 
@@ -10309,16 +10600,8 @@ document.addEventListener('DOMContentLoaded',function(){
   renderStudentBanners();
   syncStudentBannersFromServer();
   renderHomeSliders();
-  renderMyBookshelf();
-  renderRank();
-  renderAssignedLib();
-  renderRecLib();
-  renderPopularLib();
-  renderLib();
-  renderInterestTags();
-  renderInterestRecommendations();
-  renderThemeTagBoxes();
   syncStudentThemesFromServer();
+  if (typeof bindLibSubNavDrag === 'function') bindLibSubNavDrag();
 
   // 로그인/접속 시 본사 시스템 공지 팝업 점검 및 노출
   setTimeout(checkStudentNoticePopups, 400);

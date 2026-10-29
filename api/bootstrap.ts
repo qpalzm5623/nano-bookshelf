@@ -311,7 +311,7 @@ export default async function handler(req: any, res: any) {
           monthlyFee: a.monthlyFee,
           plan: a.plan,
           status: a.status,
-          joinDate: a.joinDate.toISOString().slice(0, 10),
+          joinDate: (a.joinDate || a.startDate).toISOString().slice(0, 10),
           startDate: a.startDate.toISOString().slice(0, 10),
           endDate: a.endDate.toISOString().slice(0, 10)
         };

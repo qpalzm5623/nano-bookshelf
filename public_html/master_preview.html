@@ -736,7 +736,7 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261029_cache_fix"></script>
+<script src="js/portal-client.js?v=20261029_v2"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261022" defer></script>
 </head>
@@ -768,10 +768,10 @@
         <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">마스터 운영자님</span>
         <small style="color: var(--text-muted); display: block; font-size: 11px;">master@nanobook.co.kr</small>
       </div>
-      <a href="index.html" class="btn btn-sm btn-outline-secondary" style="border-radius: 10px; font-size: 12.5px; padding: 5px 12px; border-color: var(--border-medium); color: var(--text-muted); font-weight: 600; display: inline-flex; align-items: center; gap: 5px;" title="로그아웃 후 로그인 화면으로 이동">
+      <button type="button" onclick="handleMasterLogout()" class="btn btn-sm btn-outline-secondary" style="border-radius: 10px; font-size: 12.5px; padding: 5px 12px; border-color: var(--border-medium); color: var(--text-muted); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;" title="로그아웃 후 로그인 화면으로 이동">
         <i class="fa-solid fa-arrow-right-from-bracket"></i>
         <span>로그아웃</span>
-      </a>
+      </button>
     </div>
   </header>
 </div>
@@ -2300,12 +2300,7 @@
               <small class="text-muted">가맹 학원 관리자 로그인용 고유 아이디입니다. (원장 계정과 실시간 연동)</small>
             </div>
             <div class="col-md-6 form-group">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="font-weight-bold mb-0" style="font-size: 13px;">비밀번호 변경</label>
-                <span style="font-size: 11px; color: var(--theme-brown); font-weight: 600;">
-                  현재 PW: <strong id="currentDirectorPwText" class="badge-soft badge-soft-neutral px-2 py-0.5" style="font-family: monospace; font-size: 11.5px; letter-spacing: 0.3px;">-</strong>
-                </span>
-              </div>
+              <label class="font-weight-bold mb-1" style="font-size: 13px;">비밀번호 변경</label>
               <div class="input-group">
                 <input type="text" id="editDirectorPw" class="form-control form-control-beige" placeholder="변경 시에만 새 비밀번호 입력 (유지 시 빈칸)">
                 <div class="input-group-append">
@@ -4677,7 +4672,7 @@
 
 
 
-<script src="master_preview.js?v=20261029_cache_fix"></script>
+<script src="master_preview.js?v=20261029_v2"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>

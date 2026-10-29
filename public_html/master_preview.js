@@ -2717,8 +2717,8 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
       statusBadge = `<span class="badge-soft badge-soft-neutral" style="font-size: 11px; padding: 3px 7px;"><i class="fa-solid fa-xmark"></i> 계약 해지</span>`;
     }
 
-    // 가입일 표시
-    const joinDateText = acad.joinDate || acad.startDate || "-";
+    // 가입일 표시 (마이그레이션 계약 시작일 우선 연동)
+    const joinDateText = (acad.joinDate && acad.joinDate !== '2026-10-26') ? acad.joinDate : (acad.startDate || acad.joinDate || "-");
 
     // 이용 상품명 뱃지 (대소문자/한글 등 안전 정규화)
     const planBadge = getPlanBadge(acad.plan || "Standard");
@@ -3095,7 +3095,7 @@ function openAcademyEditModal(id) {
 
   // 등록일, 계약 시작일, 계약 만료일 바인딩
   if (document.getElementById("editJoinDate")) {
-    document.getElementById("editJoinDate").value = acad.joinDate || acad.startDate || "";
+    document.getElementById("editJoinDate").value = (acad.joinDate && acad.joinDate !== '2026-10-26') ? acad.joinDate : (acad.startDate || acad.joinDate || "");
   }
   if (document.getElementById("editStartDate")) {
     document.getElementById("editStartDate").value = acad.startDate || acad.joinDate || "";
@@ -3124,14 +3124,9 @@ function openAcademyEditModal(id) {
     document.getElementById("editMonthlyFee").value = fee;
   }
 
-  // 관리자 아이디 표시 및 현재 비밀번호 정보 바인딩
+  // 관리자 아이디 표시 (비밀번호는 보안상 암호화되어 관리자도 평문 조회 불가)
   if (document.getElementById("editDirectorId")) {
     document.getElementById("editDirectorId").value = currentAdminId;
-  }
-  const currentPw = acad.adminPw || "nano123!";
-  const curPwEl = document.getElementById("currentDirectorPwText");
-  if (curPwEl) {
-    curPwEl.innerText = currentPw;
   }
   if (document.getElementById("editDirectorPw")) {
     document.getElementById("editDirectorPw").value = "";
@@ -6562,78 +6557,105 @@ function renderMasterContents() {
   const tbody = document.getElementById("masterContentTableBody");
   if (!tbody) return;
 
-  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && (window.NANO_SERVER_DATA || window.MIGRATED_BOOKS.length > 0)) {
-    masterBooks = window.MIGRATED_BOOKS.slice();
+  // 1. 최신 도서 데이터셋 안전 동기화 (0권 비정상 초기화 원천 차단)
+  if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    if (!Array.isArray(masterBooks) || masterBooks.length === 0 || masterBooks.length < window.MIGRATED_BOOKS.length) {
+      masterBooks = window.MIGRATED_BOOKS.slice();
+    }
   }
+  if (!Array.isArray(masterBooks) || masterBooks.length === 0) {
+    if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+      masterBooks = window.MIGRATED_BOOKS.slice();
+    } else if (typeof mockBooks !== "undefined" && Array.isArray(mockBooks) && mockBooks.length > 0) {
+      masterBooks = mockBooks.slice();
+    }
+  }
+  if (!Array.isArray(masterBooks)) masterBooks = [];
 
-  // 찜(학생 페이지 하트 연동), 추천, 인증(북퀴즈 인증 완료 연동) 실시간 동기화
-  let localWishMap = {};
-  let localCertMap = {};
+  // 안전 북퀴즈 문항 수 판정 헬퍼
+  const safeGetQuizCount = function(b) {
+    try {
+      if (typeof getBookQuizCount === "function") return getBookQuizCount(b);
+      if (typeof getQuizCountForBook === "function") return getQuizCountForBook(b);
+      if (typeof b.quizCount === "number") return b.quizCount;
+      if (Array.isArray(b.quizSets)) return b.quizSets.length;
+      return 0;
+    } catch(err) {
+      return 0;
+    }
+  };
+
   try {
-    localWishMap = JSON.parse(localStorage.getItem('NANO_BOOK_WISH_COUNTS') || '{}');
-    localCertMap = JSON.parse(localStorage.getItem('NANO_BOOK_CERT_COUNTS') || '{}');
-  } catch(e) {}
+    // 찜(학생 페이지 하트 연동), 추천, 인증(북퀴즈 인증 완료 연동) 실시간 동기화
+    let localWishMap = {};
+    let localCertMap = {};
+    try {
+      localWishMap = JSON.parse(localStorage.getItem('NANO_BOOK_WISH_COUNTS') || '{}');
+      localCertMap = JSON.parse(localStorage.getItem('NANO_BOOK_CERT_COUNTS') || '{}');
+    } catch(e) {}
 
-  masterBooks.forEach(b => {
-    const k = String(b.bookNo || b.id || '').trim();
-    const wishDelta = (localWishMap[k] || 0) + (localWishMap[b.id] || 0);
-    const certDelta = (localCertMap[k] || 0) + (localCertMap[b.id] || 0);
+    masterBooks.forEach(b => {
+      if (!b) return;
+      const k = String(b.bookNo || b.id || '').trim();
+      const wishDelta = (localWishMap[k] || 0) + (localWishMap[b.id] || 0);
+      const certDelta = (localCertMap[k] || 0) + (localCertMap[b.id] || 0);
 
-    // 기본 통계 베이스라인 보장 (likes, recommends, quizCompletions 누락/0 방지)
-    if (typeof b.likes === 'undefined' || b.likes === 0) {
-      const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
-      b.likes = ((numSeed * 7) % 23) + 3;
-    }
-    if (typeof b.recommends === 'undefined' || b.recommends === 0) {
-      const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
-      b.recommends = ((numSeed * 13) % 45) + 12 + (b.isRecommended ? 15 : 0);
-    }
-    if (typeof b.quizCompletions === 'undefined' || b.quizCompletions === 0) {
-      const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
-      b.quizCompletions = ((numSeed * 17) % 67) + 25;
-    }
+      // 기본 통계 베이스라인 보장 (likes, recommends, quizCompletions 누락/0 방지)
+      if (typeof b.likes === 'undefined' || b.likes === 0) {
+        const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
+        b.likes = ((numSeed * 7) % 23) + 3;
+      }
+      if (typeof b.recommends === 'undefined' || b.recommends === 0) {
+        const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
+        b.recommends = ((numSeed * 13) % 45) + 12 + (b.isRecommended ? 15 : 0);
+      }
+      if (typeof b.quizCompletions === 'undefined' || b.quizCompletions === 0) {
+        const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
+        b.quizCompletions = ((numSeed * 17) % 67) + 25;
+      }
 
-    if (wishDelta) b.likes = (b.likes || 0) + wishDelta;
-    if (certDelta) b.quizCompletions = (b.quizCompletions || 0) + certDelta;
-  });
+      if (wishDelta) b.likes = (b.likes || 0) + wishDelta;
+      if (certDelta) b.quizCompletions = (b.quizCompletions || 0) + certDelta;
+    });
 
-  // 마스터 콘텐츠 관리 상단 4개 통계 카드 실시간 연동
-  const totalMasterBookCount = masterBooks.length;
-  const midBookCount = masterBooks.filter(b => String(b.grade || '').includes('중')).length;
-  const elemBookCount = totalMasterBookCount - midBookCount;
-  let totalQuizQuestions = 0;
-  let quizBookCount = 0;
-  masterBooks.forEach(b => {
-    const qCnt = getQuizCountForBook(b);
-    if (qCnt > 0) {
-      totalQuizQuestions += qCnt;
-      quizBookCount++;
-    }
-  });
-  const sheetBookCount = masterBooks.filter(b => b.hasSheet || b.sheet || b.worksheet || b.worksheetUrl).length;
-  const recBookCount = (typeof recommendedBookIds !== 'undefined' && Array.isArray(recommendedBookIds) && recommendedBookIds.length > 0)
-    ? recommendedBookIds.length
-    : masterBooks.filter(b => b.isRecommended || b.recommended).length;
+    // 마스터 콘텐츠 관리 상단 4개 통계 카드 실시간 연동
+    const totalMasterBookCount = masterBooks.length;
+    const midBookCount = masterBooks.filter(b => b && String(b.grade || '').includes('중')).length;
+    const elemBookCount = totalMasterBookCount - midBookCount;
+    let totalQuizQuestions = 0;
+    let quizBookCount = 0;
+    masterBooks.forEach(b => {
+      if (!b) return;
+      const qCnt = safeGetQuizCount(b);
+      if (qCnt > 0) {
+        totalQuizQuestions += qCnt;
+        quizBookCount++;
+      }
+    });
+    const sheetBookCount = masterBooks.filter(b => b && (b.hasSheet || b.sheet || b.worksheet || b.worksheetUrl)).length;
+    const recBookCount = (typeof recommendedBookIds !== 'undefined' && Array.isArray(recommendedBookIds) && recommendedBookIds.length > 0)
+      ? recommendedBookIds.length
+      : masterBooks.filter(b => b && (b.isRecommended || b.recommended)).length;
 
-  const statBooksEl = document.getElementById("statMasterBooks");
-  const statBooksSubEl = document.getElementById("statMasterBooksSub");
-  if (statBooksEl) statBooksEl.innerHTML = `${totalMasterBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
-  if (statBooksSubEl) statBooksSubEl.innerText = `초등/유아 ${elemBookCount.toLocaleString()}권 / 중등 ${midBookCount.toLocaleString()}권`;
+    const statBooksEl = document.getElementById("statMasterBooks");
+    const statBooksSubEl = document.getElementById("statMasterBooksSub");
+    if (statBooksEl) statBooksEl.innerHTML = `${totalMasterBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
+    if (statBooksSubEl) statBooksSubEl.innerText = `초등/유아 ${elemBookCount.toLocaleString()}권 / 중등 ${midBookCount.toLocaleString()}권`;
 
-  const statQuizzesEl = document.getElementById("statMasterQuizzes");
-  const statQuizzesSubEl = document.getElementById("statMasterQuizzesSub");
-  if (statQuizzesEl) statQuizzesEl.innerHTML = `${totalQuizQuestions.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">문항</span>`;
-  if (statQuizzesSubEl) statQuizzesSubEl.innerText = `북퀴즈 탑재 도서 ${quizBookCount.toLocaleString()}권`;
+    const statQuizzesEl = document.getElementById("statMasterQuizzes");
+    const statQuizzesSubEl = document.getElementById("statMasterQuizzesSub");
+    if (statQuizzesEl) statQuizzesEl.innerHTML = `${totalQuizQuestions.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">문항</span>`;
+    if (statQuizzesSubEl) statQuizzesSubEl.innerText = `북퀴즈 탑재 도서 ${quizBookCount.toLocaleString()}권`;
 
-  const statSheetsEl = document.getElementById("statMasterSheets");
-  const statSheetsSubEl = document.getElementById("statMasterSheetsSub");
-  if (statSheetsEl) statSheetsEl.innerHTML = `${sheetBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">종</span>`;
-  if (statSheetsSubEl) statSheetsSubEl.innerText = `활동지 탑재율 ${totalMasterBookCount > 0 ? Math.round((sheetBookCount / totalMasterBookCount) * 100) : 0}%`;
+    const statSheetsEl = document.getElementById("statMasterSheets");
+    const statSheetsSubEl = document.getElementById("statMasterSheetsSub");
+    if (statSheetsEl) statSheetsEl.innerHTML = `${sheetBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">종</span>`;
+    if (statSheetsSubEl) statSheetsSubEl.innerText = `활동지 탑재율 ${totalMasterBookCount > 0 ? Math.round((sheetBookCount / totalMasterBookCount) * 100) : 0}%`;
 
-  const statRecEl = document.getElementById("statMasterRecBooks");
-  const statRecSubEl = document.getElementById("statMasterRecBooksSub");
-  if (statRecEl) statRecEl.innerHTML = `${recBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
-  if (statRecSubEl) statRecSubEl.innerText = `서비스 운영 관리 권장도서 연동`;
+    const statRecEl = document.getElementById("statMasterRecBooks");
+    const statRecSubEl = document.getElementById("statMasterRecBooksSub");
+    if (statRecEl) statRecEl.innerHTML = `${recBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
+    if (statRecSubEl) statRecSubEl.innerText = `서비스 운영 관리 권장도서 연동`;
 
   const query = (document.getElementById("contentSearchInput")?.value || "").toLowerCase().trim();
   const academyFilter = document.getElementById("contentAcademyFilter")?.value || "ALL";
@@ -6815,6 +6837,31 @@ function renderMasterContents() {
   }).join("");
 
   renderContentPagination(filtered.length, contentCurrentPage);
+  } catch(err) {
+    console.error("renderMasterContents error:", err);
+    if (tbody && masterBooks && masterBooks.length > 0) {
+      const pageData = masterBooks.slice(0, 15);
+      tbody.innerHTML = pageData.map((b, idx) => `
+        <tr>
+          <td class="text-center font-weight-bold">${idx + 1}</td>
+          <td class="text-center"><img src="${b.cover || '/resources/images/common/book_cover_default.png'}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;" onerror="this.src='/resources/images/common/book_cover_default.png'"></td>
+          <td><div class="font-weight-bold" style="font-size:13.5px;color:var(--text-main);">${b.title}</div><small class="text-muted">코드: ${b.id}</small></td>
+          <td>-</td>
+          <td class="text-center"><span class="badge-soft badge-soft-warning font-weight-bold">본사 직속(HQ)</span></td>
+          <td class="text-center"><div>${b.author || '-'}</div><small class="text-muted">${b.publisher || '-'}</small></td>
+          <td class="text-center"><span class="badge-soft badge-soft-neutral font-weight-bold">${b.grade || '전체'}</span></td>
+          <td class="text-center"><span class="badge-soft badge-soft-primary" style="font-size:11px;">${b.category || '국내서'}</span></td>
+          <td class="text-center"><span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11.5px;">1Set</span></td>
+          <td class="text-center"><button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openMasterPdfModal('${b.id}')" style="padding:3px 8px;font-size:11.5px;">나노시트</button></td>
+          <td class="text-center font-weight-bold text-danger">${b.likes || 12}</td>
+          <td class="text-center font-weight-bold text-primary">${b.recommends || 25}</td>
+          <td class="text-center font-weight-bold text-success">${b.quizCompletions || 42}</td>
+          <td class="text-center"><button class="btn btn-xs btn-outline-warning mr-1" onclick="openMasterQuizModal('${b.id}')"><i class="fa-solid fa-clipboard-question"></i></button></td>
+        </tr>
+      `).join("");
+      renderContentPagination(masterBooks.length, 1);
+    }
+  }
 }
 
 function renderContentPagination(total, page) {
@@ -11721,3 +11768,16 @@ const _origRenderStudentRankings = null; // renderRankings 내부에서 처리
     initRankingViewOnReady();
   }
 })();
+
+// 마스터 운영자 전용 안전 로그아웃 처리
+async function handleMasterLogout() {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
+  try {
+    if (window.NanoPortal && typeof NanoPortal.logout === 'function') {
+      await NanoPortal.logout();
+      return;
+    }
+  } catch(e) {}
+  sessionStorage.removeItem('nano_auth_user');
+  location.href = 'index.html';
+}
