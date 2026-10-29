@@ -79,7 +79,7 @@ function student(localStorage, account = 'student-a', academyId = 'A') {
   loadFunctions(ctx, 'student_preview.html', [
     'getStudentQuizIdentity', 'updateStudentSessionLabels', 'setQuizDraftStatus', 'escapeStudentQuizText', 'saveStudentQuizDraft',
     'startQuizWithSet', 'renderQ', 'onThoughtTextareaInput', 'selectAns', 'goNext',
-    'goPreviousQuestion', 'showResult', 'syncQuizResultToAdminLearning', 'backToSelect'
+    'goPreviousQuestion', 'showResult', 'syncQuizResultToAdminLearning', 'backToSelect', 'checkDailyQuizLimit'
   ]);
   return ctx;
 }
@@ -413,4 +413,90 @@ test('서버 저장 실패 시 완료 처리하지 않고 초안을 유지한다
   ctx.NanoPortal = { remote:true, request:async () => { throw new Error('서버 저장 실패'); } };
   await ctx.showResult(); assert.equal(ctx.studentQuizSubmitted,false);
   assert.ok(ctx.localStorage.getItem(ctx.studentQuizDraftKey)); assert.equal(ctx.studentSubmissionPending,false);
+});
+
+test('출제 말머리와 공백을 정리한 문항도 초안 복원 후 원문으로 제출해 채점을 완료한다', async () => {
+  const shared = storage();
+  const originalQuiz = { ...quiz, questions: [
+    { ...quiz.questions[0], question: '【본사 출제】 첫 문제  \r\n' },
+    { ...quiz.questions[1], question: '  둘째 문제\n' }
+  ] };
+  const first = student(shared);
+  first.startQuizWithSet(book, originalQuiz);
+  first.selectAns(1); first.goNext();
+  first.selectAns(0); first.goNext();
+  first.onThoughtTextareaInput('다음 이야기가 궁금해요.');
+  const attemptId = first.studentQuizAttemptId;
+
+  const ctx = student(shared);
+  ctx.startQuizWithSet(book, originalQuiz);
+  assert.equal(ctx.curData.qs[0].q, '첫 문제');
+  assert.equal(ctx.curData.qs[1].q, '둘째 문제');
+  assert.equal(ctx.studentQuizAttemptId, attemptId);
+  ctx.refreshStudentLearningData = () => {};
+  let submitted;
+  ctx.NanoPortal = {
+    remote: true,
+    request: async (action, payload) => {
+      assert.equal(action, 'learning');
+      submitted = payload;
+      // 실제 API와 동일하게 원문과 보기의 일치를 확인합니다.
+      payload.quizResults.forEach((answer, i) => {
+        assert.equal(answer.question, originalQuiz.questions[i].question);
+        assert.ok(originalQuiz.questions[i].options.includes(answer.userChoiceText));
+      });
+      return { score: 100, earned: 8, quizResults: payload.quizResults.map((row, i) => ({
+        ...row, correctChoiceText: originalQuiz.questions[i].options[Number(originalQuiz.questions[i].ans) - 1]
+      })) };
+    },
+    refreshLearning: async () => {}, refreshActivity: async () => {}
+  };
+  await ctx.showResult();
+  assert.equal(submitted.id, attemptId);
+  assert.equal(submitted.thoughtAnswer, '다음 이야기가 궁금해요.');
+  assert.equal(ctx.studentQuizSubmitted, true);
+  assert.equal(ctx.document.getElementById('qscreen-result').style.display, 'block');
+  assert.equal(shared.getItem(ctx.studentQuizDraftKey), null);
+});
+
+test('재도전 안내는 한국 날짜로 실패를 집계하고 학생·도서와 로컬 기록을 구분한다', () => {
+  const ctx=student();
+  class ClockDate extends Date {
+    constructor(value) { super(value === undefined ? '2026-10-28T15:30:00Z' : value); }
+    static now() { return +new Date('2026-10-28T15:30:00Z'); }
+  }
+  ctx.Date=ClockDate;
+  const rows=Array.from({length:3},(_,i)=>({id:'fail'+i,studentId:'student-a',bookId:'BOOK-1',score:40,
+    date:'2026-10-28',submittedAt:'2026-10-28T15:05:00Z'}));
+  ctx.NanoPortal={remote:true,logs:()=>rows};
+  assert.equal(ctx.checkDailyQuizLimit('BOOK-1').blocked,true);
+  assert.equal(ctx.checkDailyQuizLimit('BOOK-2').count,0);
+  rows[0].studentId='other';
+  assert.equal(ctx.checkDailyQuizLimit('BOOK-1').blocked,false);
+  rows[0].studentId='student-a';
+  rows[0].submittedAt='2026-10-28T14:59:59Z';
+  assert.equal(ctx.checkDailyQuizLimit('BOOK-1').count,2);
+  ctx.NanoPortal.remote=false;
+  ctx.NanoLearningStore.save('A',rows);
+  assert.equal(ctx.checkDailyQuizLimit('BOOK-1').count,2);
+});
+
+test('자동 저장 시각 안내는 숨기고 저장 실패만 표시하며 답안 저장은 유지한다', () => {
+  const ctx = student();
+  answerAll(ctx);
+  const status = ctx.document.getElementById('quizDraftStatus');
+  const draft = JSON.parse(ctx.localStorage.getItem(ctx.studentQuizDraftKey));
+  assert.ok(draft.updatedAt);
+  assert.equal(draft.answers[0], 1);
+  assert.equal(status.textContent, '');
+  assert.equal(status.style.display, 'none');
+  const setItem = ctx.localStorage.setItem;
+  ctx.localStorage.setItem = () => { throw new Error('저장 공간 부족'); };
+  assert.equal(ctx.saveStudentQuizDraft(), false);
+  assert.match(status.textContent, /저장 공간 부족/);
+  assert.equal(status.style.display, 'block');
+  ctx.localStorage.setItem = setItem;
+  assert.equal(ctx.saveStudentQuizDraft(), true);
+  assert.equal(status.textContent, '');
+  assert.equal(status.style.display, 'none');
 });

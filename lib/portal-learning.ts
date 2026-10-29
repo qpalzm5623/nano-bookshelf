@@ -6,11 +6,7 @@ export function isGrade4OrAbove(gradeStr?: string | null): boolean {
   const s = String(gradeStr).trim();
   if (/중|고/.test(s)) return true;
   const match = s.match(/(?:초등?\s*|초)?([1-6])/);
-  if (match) {
-    const gradeNum = parseInt(match[1], 10);
-    return gradeNum >= 4;
-  }
-  return false;
+  return !!match && parseInt(match[1], 10) >= 4;
 }
 
 // 한국 시각 기준 오늘 0시 UTC Date 객체 반환
@@ -37,7 +33,8 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
 
     // 5. 동일한 도서에 한해서 하루 3번 이상 인증 실패 시 자정이 넘어갈때 까지 재도전 불가
     const todayStart = getTodayStartUtc();
-    const todayFailures = previous.filter((a: any) => a.score < 60 && new Date(a.completedAt) >= todayStart).length;
+    const tomorrowStart = new Date(+todayStart + 24 * 3600000);
+    const todayFailures = previous.filter((a: any) => a.score < 60 && new Date(a.completedAt) >= todayStart && new Date(a.completedAt) < tomorrowStart).length;
     if (!importing && todayFailures >= 3) {
       throw new Error('DAILY_LIMIT_EXCEEDED');
     }
@@ -57,24 +54,22 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
       if (previousCertifiedCount < 2) {
         const roundNum = previousCertifiedCount + 1; // 1회차 또는 2회차
 
-        // 2. 인증 된 경우에 한해, 퀴즈당 3포인트
-        // 3. 도서가 만약 초등학교 4학년 이상 권장도서일 경우에는 퀴즈 완료후에 얻은 포인트에 1.2배수로 포인트 주기.
+        // 서버에서 채점한 정답 수 × 3P에 권장학년 가중치를 적용하고 반올림합니다.
         const isHighGrade = isGrade4OrAbove(book.grade || book.level || book.recommendGrade);
-        const quizPoints = isHighGrade ? Math.round(3 * 1.2) : 3; // 3 * 1.2 = 3.6 -> 반올림 4P
+        const multiplier = isHighGrade ? 1.2 : 1;
+        const quizPoints = Math.round(data.correctCount * 3 * multiplier);
 
         awards.push({
           kind: 'QUIZ_PASS_' + roundNum,
           amount: quizPoints,
-          content: `${book.title} 북퀴즈 인증 완료 (${roundNum}회차${isHighGrade ? ' · 초4이상 1.2배' : ''})`
+          content: `${book.title} 북퀴즈 인증 완료 (${roundNum}회차 · 정답 ${data.correctCount}개 × 3P${isHighGrade ? ' · 초4이상 20% 가중' : ''})`
         });
 
-        // 2. 생각담기는 작성만 해도 5포인트 주기. (인증 된 경우에 한해 지급)
-        // 도서가 초등학교 4학년 이상 권장도서일 경우 퀴즈 및 생각담기 완료 포인트에 20% 가중치 부여 (5 * 1.2 = 6P)
+        // 생각담기 기본 5P에도 동일한 가중치를 적용합니다.
         if (data.thinkReply?.trim()) {
-          const thoughtPoints = isHighGrade ? Math.round(5 * 1.2) : 5; // 5 * 1.2 = 6P
           awards.push({
             kind: 'THOUGHT_' + roundNum,
-            amount: thoughtPoints,
+            amount: Math.round(5 * multiplier),
             content: `${book.title} 생각담기 작성 (${roundNum}회차${isHighGrade ? ' · 초4이상 20% 가중' : ''})`
           });
         }

@@ -4056,7 +4056,7 @@
       <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">퀴즈를 풀 도서를 선택하세요. 완료 시 독서포인트가 지급됩니다!</p>
       <div style="background:#fefce8;border:1px solid #fef08a;border-radius:10px;padding:8px 12px;margin-bottom:14px;font-size:11.5px;color:#854d0e;display:flex;align-items:center;gap:6px;">
         <i class="fa-solid fa-sparkles text-warning"></i>
-        <span><strong>포인트 정책 안내:</strong> 초등 4학년 이상 권장도서는 퀴즈 및 생각담기 완료 시 <strong>20% 가중 포인트</strong>가 부여됩니다.</span>
+        <span><strong>60점 이상 인증 시</strong> 정답 수 × 3P · 생각담기 작성 +5P<br>초4 이상 권장도서는 각각 20% 가중(반올림)<br>동일 도서 인증 2회차까지 지급 · 하루 3회 인증 실패 시 다음 날 재도전</span>
       </div>
       <div class="book-row" onclick="startQuiz('1001')"><img src="assets/covers/cover_1001.jpg" class="bcover" alt="어린 왕자"><div class="binfo"><div class="btitle">어린 왕자</div><div class="bauthor">앙투안 드 생텍쥐페리</div><span class="dbadge urgent">D-3 · 5문항</span></div><button class="act-btn start">퀴즈 시작</button></div>
       <div class="book-row" onclick="startQuiz('1002')"><img src="assets/covers/cover_1002.jpg" class="bcover" alt="아몬드"><div class="binfo"><div class="btitle">아몬드</div><div class="bauthor">손원평</div><span class="dbadge normal">D-7 · 5문항</span></div><button class="act-btn start">퀴즈 시작</button></div>
@@ -4068,7 +4068,7 @@
         <span id="qLabel" style="font-size:13px;font-weight:700;color:var(--muted);">1/5</span>
       </div>
       <div class="qbar"><div class="qfill" id="qFill" style="width:20%;"></div></div>
-      <p id="quizDraftStatus" role="status" aria-live="polite" style="font-size:13px;color:var(--muted);margin:8px 0 14px;">답안은 이 기기에 자동 임시 저장됩니다.</p>
+      <p id="quizDraftStatus" role="status" aria-live="polite" style="display:none;font-size:13px;color:#b91c1c;margin:8px 0 14px;"></p>
 
       <!-- [NEW] 북퀴즈 질문 카드: 좌우 꽉 찬 흰색 박스 내부에 캐릭터 & 말풍선 배치 -->
       <div class="quiz-char-row">
@@ -4194,7 +4194,7 @@
         </div>
       </div>
 
-      <!-- 포인트 정책 안내 배너 (초등 4학년 이상 권장도서 20% 가중) -->
+      <!-- 실제 서버 지급 기준과 동일한 포인트 정책 안내 -->
       <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
         <div style="width: 28px; height: 28px; border-radius: 8px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px;">
           <i class="fa-solid fa-coins"></i>
@@ -4202,10 +4202,11 @@
         <div style="font-size: 11.5px; color: #166534; line-height: 1.5; flex: 1;">
           <div style="font-weight: 800; font-size: 12px; margin-bottom: 2px; color: #15803d; display: flex; align-items: center; gap: 6px;">
             <span>나노 독서 포인트 정책</span>
-            <span style="background: #16a34a; color: #fff; font-size: 9.5px; padding: 1px 6px; border-radius: 10px; font-weight: 700;">초4 이상 20% 가중</span>
           </div>
-          <div>• <strong>북퀴즈 인증</strong>: 기본 3 P / <strong>생각담기 작성</strong>: 기본 5 P</div>
-          <div>• <strong style="color:#047857;">초등 4학년 이상 권장도서</strong>는 퀴즈 및 생각담기 완료 시 <strong>20% 가중 포인트 부여 (퀴즈 4 P, 생각담기 6 P)</strong></div>
+          <div>• <strong>60점 이상 인증 시</strong> 정답 수 × <strong>3P</strong> · 생각담기 작성 <strong>+5P</strong></div>
+          <div>• <strong>초4 이상 권장도서</strong>: 각각 <strong>20% 가중</strong> (소수점 반올림)</div>
+          <div>• 동일 도서 <strong>인증 2회차까지</strong> 포인트 지급</div>
+          <div>• 동일 도서 하루 <strong>3회 인증 실패(60점 미만)</strong> 시 다음 날 재도전 <span style="white-space:nowrap;">(한국 시간 기준)</span></div>
         </div>
       </div>
 
@@ -6977,8 +6978,9 @@ function updateStudentSessionLabels() {
 function setQuizDraftStatus(message, isError) {
   var el = document.getElementById('quizDraftStatus');
   if (el) {
-    el.textContent = message;
-    el.style.color = isError ? '#b91c1c' : 'var(--muted)';
+    // 자동 저장은 조용히 수행하고, 사용자가 확인해야 할 오류만 표시합니다.
+    el.textContent = isError ? message : '';
+    el.style.display = isError ? 'block' : 'none';
   }
 }
 
@@ -7005,7 +7007,7 @@ function saveStudentQuizDraft() {
       thoughtAnswer: currentStudentThoughtAnswer,
       updatedAt: updatedAt
     }));
-    setQuizDraftStatus('이 기기에 임시 저장됨 · ' + new Date(updatedAt).toLocaleTimeString('ko-KR'));
+    setQuizDraftStatus('');
     return true;
   } catch(e) {
     console.warn('퀴즈 임시 저장 실패:', e);
@@ -7037,38 +7039,26 @@ function checkDailyQuizLimit(bookId) {
   var identity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
   if (!identity || !identity.studentId) return { blocked: false, count: 0 };
 
-  var now = new Date();
-  var todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  // 기기 시간대와 관계없이 서버와 동일한 한국 날짜를 사용합니다.
+  var todayStr = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
   var bIdStr = String(bookId);
-
-  var failCount = 0;
-  if (window.NanoPortal && typeof NanoPortal.logs === 'function') {
-    var sLogs = NanoPortal.logs() || [];
-    failCount = sLogs.filter(function(item) {
-      if (item.studentId !== identity.studentId) return false;
-      var matchesBook = String(item.bookId) === bIdStr || String(item.bookNo) === bIdStr;
-      if (!matchesBook) return false;
-      if (Number(item.score) >= 60) return false;
-      var logDate = (item.date || (item.completedAt && item.completedAt.slice(0, 10)) || '').slice(0, 10);
-      return logDate === todayStr;
-    }).length;
+  var logs = [];
+  if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.logs === 'function') {
+    logs = NanoPortal.logs() || [];
+  } else if (window.NanoLearningStore && identity.academyId) {
+    try { logs = NanoLearningStore.read(identity.academyId) || []; } catch(e) { /* 제출 시 저장소 오류를 안내합니다. */ }
   }
-
-  if (failCount < 3 && window.NanoLearningStore && identity.academyId) {
-    try {
-      var localLogs = window.NanoLearningStore.list(identity.academyId) || [];
-      var localFails = localLogs.filter(function(item) {
-        if (item.studentId !== identity.studentId) return false;
-        var matchesBook = String(item.bookId) === bIdStr || String(item.bookNo) === bIdStr;
-        if (!matchesBook) return false;
-        if (Number(item.score) >= 60) return false;
-        var logDate = (item.date || (item.submittedAt && item.submittedAt.slice(0, 10)) || '').slice(0, 10);
-        return logDate === todayStr;
-      }).length;
-      if (localFails > failCount) failCount = localFails;
-    } catch(e) {}
-  }
-
+  var failCount = logs.filter(function(item) {
+    if (item.studentId !== identity.studentId || Number(item.score) >= 60) return false;
+    if (String(item.bookId) !== bIdStr && String(item.bookNo) !== bIdStr) return false;
+    // 서버의 date는 UTC 날짜일 수 있으므로 제출 시각을 우선 사용합니다.
+    var timestamp = item.submittedAt || item.completedAt;
+    var date = timestamp ? new Date(timestamp) : null;
+    var logDate = date && Number.isFinite(+date)
+      ? new Date(+date + 9 * 3600000).toISOString().slice(0, 10)
+      : String(item.date || '').slice(0, 10);
+    return logDate === todayStr;
+  }).length;
   return { blocked: failCount >= 3, count: failCount };
 }
 
@@ -7664,7 +7654,12 @@ async function showResult() {
     document.getElementById('qNext').disabled = true;
     try {
       var result = await NanoPortal.request('learning', { id: studentQuizAttemptId, studentId: identity.studentId, bookId: String(curBook), thoughtAnswer: currentStudentThoughtAnswer,
-        quizResults: gradedQuestions.map(function(q, idx) { return { question: q.q, userChoiceText: q.os[studentSelectedAnsMap[idx]] }; }) });
+        quizResults: gradedQuestions.map(function(q, idx) {
+          // q.q는 화면 표시용으로 정리된 문장입니다. 서버 검증에는 받은 원문을 그대로 보냅니다.
+          var source = curSelectedQuizSet && curSelectedQuizSet.questions && curSelectedQuizSet.questions[idx];
+          return { question: source && typeof source.question === 'string' ? source.question : q.q,
+            userChoiceText: q.os[studentSelectedAnsMap[idx]] };
+        }) });
       finalScore = result.score;
       serverResult = result;
       if (result.quizResults) result.quizResults.forEach(function(row, idx) { gradedQuestions[idx].a = gradedQuestions[idx].os.indexOf(row.correctChoiceText); });
@@ -9948,9 +9943,9 @@ function openDrawerMenuItem(type) {
       + '<strong style="color:var(--leaf);">제1조 (목적)</strong><br>본 약관은 나노의 책장 플랫폼에서 제공하는 독서 교육, 북퀴즈 및 포인트 관리 서비스의 이용조건 및 절차를 규정함을 목적으로 합니다.<br><br>'
       + '<strong style="color:var(--leaf);">제2조 (회원의 권리와 의무)</strong><br>학생 회원은 학습 목적에 맞게 자유롭게 도서를 탐색하고 북퀴즈에 응시하여 포인트를 획득할 수 있으며, 타인의 명의나 부정한 방법으로 퀴즈에 응시해서는 안 됩니다.<br><br>'
       + '<strong style="color:var(--leaf);">제4조 (포인트 운영 및 적립 정책)</strong><br>'
-      + '① 북퀴즈 60점 이상 통과(도서 인증) 시 기본 3포인트, 생각담기 작성 시 기본 5포인트가 적립됩니다.<br>'
-      + '② <strong>[초등 4학년 이상 가중 정책] 도서 권장학년이 초등 4학년 이상일 경우, 북퀴즈 및 생각담기 완료 시 생성된 포인트에 20% 가중치(북퀴즈 4P, 생각담기 6P)가 부여됩니다.</strong><br>'
-      + '③ 동일 도서에 대해서는 최대 2회차까지 포인트가 지급되며, 1일 3회 이상 인증 실패 시 자정까지 재도전이 제한됩니다.<br>'
+      + '① 북퀴즈 60점 이상 인증 시 정답 수 × 3P가 적립되며, 생각담기를 작성하면 5P가 추가됩니다.<br>'
+      + '② 초등 4학년 이상 권장도서는 퀴즈·생각담기 포인트에 각각 20%를 가산하고 소수점을 반올림합니다. 동일 도서는 인증 2회차까지만 포인트가 지급됩니다.<br>'
+      + '③ 동일 도서에서 하루 3회 인증 실패(60점 미만) 시 당일 재도전이 제한되며, 한국 시간 자정 이후 다시 도전할 수 있습니다.<br>'
       + '④ 적립된 포인트는 명예의 전당 랭킹 산정 및 학원 칭호 보상에 활용됩니다.'
       + '</div>'
       + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">확인 완료</button>';
