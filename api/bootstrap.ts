@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
       include: { _count: { select: { quizzes: true } }, theme: true }
     });
     // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
-    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows] = await Promise.all([
+    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows] = await Promise.all([
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
@@ -40,9 +40,13 @@ export default async function handler(req: any, res: any) {
         : Promise.resolve([]),
       isStudent ? Promise.resolve([]) : prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
-      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } })
+      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
+      prisma.portalSetting.findMany({ where: { scope: 'notice_meta' }, select: { key: true, value: true } })
     ]);
     const books: any[] = bookRows as any[];
+    const noticeMetaMap = new Map<string, Record<string, any>>(
+      (noticeMetaRows || []).map(nm => [nm.key.replace(/^notice_meta:/, ''), (nm.value || {}) as Record<string, any>])
+    );
 
     // 학급별 담당 지도교사 매핑 복원
     const classTeacherMap = new Map<string, string>();
@@ -179,7 +183,23 @@ export default async function handler(req: any, res: any) {
         type: d.templateCode, typeName: d.templateCode, receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
       NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => ({ ...b, active: b.isActive ? 'Y' : 'N', order: b.orderNo, image: b.imageUrl || '', link: b.linkUrl || '', type: 'image' })),
       NANO_SERVER_THEMES: themes.map(t => ({ ...t, title: t.name, tag: '#' + t.name, subTag: t.description || '', active: 'Y', bookIds: books.filter(b => b.themeId === t.id).map(b => b.bookNo) })),
-      NANO_SERVER_NOTICES: notices.map(n => ({ ...n, status: '게시중', target: n.targetRole === 'STUDENT' ? '학생' : n.targetRole === 'TEACHER' ? '선생님' : n.targetRole === 'DIRECTOR' ? '원장' : n.targetRole === 'MASTER' ? '본사' : '전체', date: n.createdAt.toISOString().slice(0,10), createdAt: n.createdAt.toISOString().slice(0,10), isPopup: n.isPinned })),
+      NANO_SERVER_NOTICES: notices.map(n => {
+        const meta = noticeMetaMap.get(n.id) || {};
+        const defaultTarget = n.targetRole === 'STUDENT' ? '학생' : n.targetRole === 'TEACHER' ? '가맹 학원' : n.targetRole === 'DIRECTOR' ? '가맹 학원' : n.targetRole === 'MASTER' ? '본사' : '전체';
+        return {
+          ...n,
+          status: meta.status || '게시중',
+          category: meta.category || '일반 공지',
+          target: meta.target || defaultTarget,
+          date: n.createdAt.toISOString().slice(0, 10),
+          createdAt: n.createdAt.toISOString().slice(0, 10),
+          isPinned: typeof meta.isPinned === 'boolean' ? meta.isPinned : n.isPinned,
+          isPopup: typeof meta.isPopup === 'boolean' ? meta.isPopup : n.isPinned,
+          popupStartDate: meta.popupStartDate || '',
+          popupEndDate: meta.popupEndDate || '',
+          link: meta.link || ''
+        };
+      }),
       MIGRATED_MEMBERS: members
         .filter(m => {
           if (m.username.startsWith('director_acad')) {

@@ -35,7 +35,14 @@ export default async function handler(req: any, res: any) {
       if (entity === 'owned') return res.json({ items: await prisma.academyBook.findMany({ where: { academyId }, include: { book: { select: { bookNo: true, title: true } } } }) });
       if (entity === 'assignments') return res.json({ items: await prisma.bookAssignment.findMany({ where: { academyId }, include: { book: { select: { title: true, bookNo: true } }, member: { select: { name: true, username: true } } }, orderBy: { createdAt: 'desc' } }) });
       if (entity === 'payments') return res.json({ items: await prisma.payment.findMany({ where: { academyId }, orderBy: { createdAt: 'desc' } }) });
-      if (entity === 'notices') return res.json({ items: await prisma.notice.findMany({ orderBy: { createdAt: 'desc' } }) });
+      if (entity === 'notices') {
+        const [noticeRows, metaRows] = await Promise.all([
+          prisma.notice.findMany({ orderBy: { createdAt: 'desc' } }),
+          prisma.portalSetting.findMany({ where: { scope: 'notice_meta' } })
+        ]);
+        const metaMap = new Map(metaRows.map(m => [m.key.replace(/^notice_meta:/, ''), (m.value || {}) as Record<string, any>]));
+        return res.json({ items: noticeRows.map(n => ({ ...n, ...(metaMap.get(n.id) || {}) })) });
+      }
       if (entity === 'themes') return res.json({ items: await prisma.themeCategory.findMany({ orderBy: { name: 'asc' } }) });
       if (entity === 'banners') return res.json({ items: await prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }) });
       if (entity === 'quizzes') { need(req.query.bookId, '도서를 선택해 주세요.'); return res.json({ items: await prisma.bookQuiz.findMany({ where: { bookId: String(req.query.bookId) }, orderBy: { questionNo: 'asc' } }) }); }
@@ -52,29 +59,44 @@ export default async function handler(req: any, res: any) {
       // 한국 표준시(KST, UTC+9) 자정부터 종료일 23:59:59까지 포함하도록 조회 범위 보정
       const kstFrom = new Date(+from - 9 * 3600000);
       const kstTo = new Date(+to + 86400000);
-      const logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, score: { gte: 60 }, completedAt: { gte: kstFrom, lt: kstTo } }, orderBy: { completedAt: 'desc' } });
-      const books = await prisma.book.findMany({ where: { id: { in: [...new Set(logs.map(l => l.bookId))] } }, select: { id: true, title: true, publisher: true, coverUrl: true, author: true } });
-      const selectedTitles = Array.isArray(input.selectedTitles) ? input.selectedTitles.map((t: any) => String(t).trim()).filter(Boolean) : [];
-      const seenBookIds = new Set<string>();
-      const certBooks = [];
-      for (const l of logs) {
-        if (seenBookIds.has(l.bookId)) continue;
-        const matchedBook = books.find(b => b.id === l.bookId);
-        const bookTitle = matchedBook?.title || '삭제된 도서';
-        if (selectedTitles.length > 0 && !selectedTitles.includes(bookTitle)) continue;
-        seenBookIds.add(l.bookId);
-        const completedDate = l.completedAt instanceof Date ? l.completedAt : new Date(l.completedAt);
-        const kstDateStr = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
-        certBooks.push({
-          bookId: l.bookId,
-          title: bookTitle,
-          pub: matchedBook?.publisher || '',
-          cover: matchedBook?.coverUrl || '',
-          author: matchedBook?.author || '',
-          date: kstDateStr,
-          score: l.score,
-          thought: l.thinkReply || ''
-        });
+      let logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, score: { gte: 60 }, completedAt: { gte: kstFrom, lt: kstTo } }, orderBy: { completedAt: 'desc' } });
+      if (logs.length === 0) {
+        logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, score: { gte: 60 } }, orderBy: { completedAt: 'desc' } });
+      }
+      const logBookIds = [...new Set(logs.map(l => l.bookId))];
+      const books = logBookIds.length > 0
+        ? await prisma.book.findMany({ where: { OR: [{ id: { in: logBookIds } }, { bookNo: { in: logBookIds } }] }, select: { id: true, bookNo: true, title: true, publisher: true, coverUrl: true, author: true } })
+        : [];
+      const selectedTitlesNorm = Array.isArray(input.selectedTitles)
+        ? input.selectedTitles.map((t: any) => String(t).replace(/\s+/g, '')).filter(Boolean)
+        : [];
+      const buildCertBooks = (filterBySelected: boolean) => {
+        const seenBookIds = new Set<string>();
+        const list = [];
+        for (const l of logs) {
+          if (seenBookIds.has(l.bookId)) continue;
+          const matchedBook = books.find(b => b.id === l.bookId || b.bookNo === l.bookId);
+          const bookTitle = matchedBook?.title || '삭제된 도서';
+          if (filterBySelected && selectedTitlesNorm.length > 0 && !selectedTitlesNorm.includes(bookTitle.replace(/\s+/g, ''))) continue;
+          seenBookIds.add(l.bookId);
+          const completedDate = l.completedAt instanceof Date ? l.completedAt : new Date(l.completedAt);
+          const kstDateStr = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
+          list.push({
+            bookId: l.bookId,
+            title: bookTitle,
+            pub: matchedBook?.publisher || '',
+            cover: matchedBook?.coverUrl || '',
+            author: matchedBook?.author || '',
+            date: kstDateStr,
+            score: l.score,
+            thought: l.thinkReply || ''
+          });
+        }
+        return list;
+      };
+      let certBooks = buildCertBooks(true);
+      if (certBooks.length === 0 && logs.length > 0) {
+        certBooks = buildCertBooks(false);
       }
       const reportTitle = typeof input.title === 'string' && input.title.trim() ? text(input.title, '리포트 명칭', 200, true) : (student.name + ' 독서 포트폴리오');
       const value = { memberId: student.id, name: student.name, from: input.from, to: input.to, comment: text(input.comment, '총평', 20000),
@@ -249,9 +271,29 @@ export default async function handler(req: any, res: any) {
       }); return res.json({ item });
     }
     if (entity === 'notices') {
-      if (body.operation === 'delete') { await prisma.notice.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
+      if (body.operation === 'delete') {
+        await prisma.notice.delete({ where: { id: input.id } });
+        await prisma.portalSetting.deleteMany({ where: { key: 'notice_meta:' + input.id, scope: 'notice_meta' } });
+        return res.json({ ok: true });
+      }
       const data = { title: text(input.title, '제목', 300, true), content: text(input.content, '내용', 20000, true), isPinned: input.isPinned === true, targetRole: input.targetRole ? enumValue(input.targetRole, ['STUDENT','TEACHER','DIRECTOR','MASTER'], '대상') as any : null };
-      return res.json({ item: input.id ? await prisma.notice.update({ where: { id: input.id }, data }) : await prisma.notice.create({ data }) });
+      const saved = input.id ? await prisma.notice.update({ where: { id: input.id }, data }) : await prisma.notice.create({ data });
+      const meta = {
+        isPinned: input.isPinned === true,
+        isPopup: input.isPopup === true,
+        popupStartDate: input.isPopup === true ? text(input.popupStartDate || '', '팝업 시작일', 20) : '',
+        popupEndDate: input.isPopup === true ? text(input.popupEndDate || '', '팝업 종료일', 20) : '',
+        category: text(input.category || '일반 공지', '분류', 50),
+        status: text(input.status || '게시중', '상태', 30),
+        target: text(input.target || '전체', '대상', 50),
+        link: text(input.link || '', '링크', 2000)
+      };
+      await prisma.portalSetting.upsert({
+        where: { key: 'notice_meta:' + saved.id },
+        update: { scope: 'notice_meta', value: meta },
+        create: { key: 'notice_meta:' + saved.id, scope: 'notice_meta', value: meta }
+      });
+      return res.json({ item: { ...saved, ...meta } });
     }
     if (entity === 'themes') {
       if (body.operation === 'delete') { await prisma.themeCategory.delete({ where: { id: input.id } }); return res.json({ ok: true }); }

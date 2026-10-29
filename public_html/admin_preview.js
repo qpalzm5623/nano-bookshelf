@@ -3718,6 +3718,51 @@ function renderLearningTable() {
   var countEl = document.getElementById('learningLogCount');
   if (countEl) countEl.innerText = filtered.length;
 
+  // 상단 3개 학습 요약 통계 카드 실시간 연동 (이달 학습 건수, 북퀴즈 평균 점수, 나노 시트 첨삭 완료율)
+  var kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  var curYm = kstNow.toISOString().slice(0, 7);
+  var prevDate = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth() - 1, 1));
+  var prevYm = prevDate.toISOString().slice(0, 7);
+  var thisMonthLogs = allLogs.filter(function(l) { return String(l.date || '').slice(0, 7) === curYm; });
+  var prevMonthLogs = allLogs.filter(function(l) { return String(l.date || '').slice(0, 7) === prevYm; });
+  var statBaseLogs = filtered.length > 0 ? filtered : allLogs;
+
+  var monthlyCountEl = document.getElementById('learningStatMonthlyCount');
+  var monthlySubEl = document.getElementById('learningStatMonthlySub');
+  if (monthlyCountEl) {
+    monthlyCountEl.innerText = thisMonthLogs.length > 0 ? thisMonthLogs.length : filtered.length;
+  }
+  if (monthlySubEl) {
+    if (thisMonthLogs.length > 0) {
+      var diff = thisMonthLogs.length - prevMonthLogs.length;
+      monthlySubEl.innerText = (diff >= 0 ? '지난달 대비 +' + diff + '건 증가' : '지난달 대비 ' + diff + '건') + ' (누적 ' + allLogs.length + '건)';
+    } else {
+      monthlySubEl.innerText = '전체 누적 ' + allLogs.length + '건 (조회 ' + filtered.length + '건)';
+    }
+  }
+
+  var avgScoreEl = document.getElementById('learningStatAvgScore');
+  var passSubEl = document.getElementById('learningStatPassSub');
+  var totalScore = statBaseLogs.reduce(function(sum, l) { return sum + (Number(l.score) || 0); }, 0);
+  var avgScoreVal = statBaseLogs.length > 0 ? Math.round(totalScore / statBaseLogs.length) : 0;
+  var passCount = statBaseLogs.filter(function(l) { return (Number(l.score) || 0) >= 60; }).length;
+  var passRate = statBaseLogs.length > 0 ? Math.round((passCount / statBaseLogs.length) * 100) : 0;
+  if (avgScoreEl) avgScoreEl.innerText = avgScoreVal;
+  if (passSubEl) passSubEl.innerText = '인증 통과율 ' + passRate + '% 달성 (' + passCount + '/' + statBaseLogs.length + '건)';
+
+  var reviewRateEl = document.getElementById('learningStatReviewRate');
+  var reviewSubEl = document.getElementById('learningStatReviewSub');
+  var reviewDoneCount = statBaseLogs.filter(function(l) {
+    return (l.reviewed && String(l.reviewed).includes('완료')) || (l.comment && String(l.comment).trim().length > 0);
+  }).length;
+  var reviewRateVal = statBaseLogs.length > 0 ? Math.round((reviewDoneCount / statBaseLogs.length) * 100) : 0;
+  if (reviewRateEl) reviewRateEl.innerText = reviewRateVal;
+  if (reviewSubEl) {
+    reviewSubEl.innerText = statBaseLogs.length > 0
+      ? '담당 지도교사 첨삭 ' + reviewDoneCount + '/' + statBaseLogs.length + '건 완료'
+      : '담당 지도교사 첨삭 대기';
+  }
+
   // 필터 조합이 바뀌었으면 1페이지로 복귀
   var filterKey = [classFilter, query, startDateVal, endDateVal].join('|');
   if (filterKey !== learningLastFilterKey) {
@@ -7593,8 +7638,8 @@ function renderPortfolioDocument(studentId, pfId) {
   var docContainer = document.getElementById('portfolioPrintDoc');
   if (!docContainer) return;
 
-  var pfData = portfolioDataMap[studentId] || portfolioDataMap['S1021'];
-  var pfMeta = portfolioList.find(function(p) { return p.id === pfId; }) || portfolioList[0];
+  var pfData = (pfId && portfolioDataMap[pfId]) || portfolioDataMap[studentId] || portfolioDataMap['S1021'] || {};
+  var pfMeta = portfolioList.find(function(p) { return p.id === pfId; }) || portfolioList[0] || {};
   var std = studentDataList.find(function(s) { return s.id === studentId; });
 
   var studentName = pfData.name || (std ? std.name : '김민준');
@@ -7632,9 +7677,33 @@ function renderPortfolioDocument(studentId, pfId) {
   }
 
   var books = pfData.books || [];
+  // 포트폴리오에 저장된 도서 목록이 비어있는 경우, 원생의 실제 인증 도서 이력으로 자동 복원하여 0회 표시 현상 방지
+  if (books.length === 0 && typeof getStudentCertifiedBooksForWizard === 'function') {
+    var fallbackBooks = getStudentCertifiedBooksForWizard(studentId);
+    if (fallbackBooks && fallbackBooks.length > 0) {
+      books = fallbackBooks.map(function(fb) {
+        return {
+          title: fb.title,
+          date: fb.date,
+          score: fb.score || '100점',
+          cover: fb.cover || 'assets/covers/cover_default.jpg',
+          pub: fb.pub || '나노출판',
+          author: fb.author || '',
+          comment: fb.comment || ''
+        };
+      });
+    }
+  }
   var bookCount = books.length;
   // 7-4. 평균이해도 소수점 첫째자리 반올림
-  var quizAvg = Math.round(Number(pfData.quizAvg) || 94);
+  var rawAvg = Number(pfData.quizAvg);
+  if ((!rawAvg || isNaN(rawAvg)) && books.length > 0) {
+    rawAvg = books.reduce(function(sum, b) {
+      var num = parseFloat(String(b.score || '').replace(/[^0-9.]/g, ''));
+      return sum + (isNaN(num) ? 0 : num);
+    }, 0) / books.length;
+  }
+  var quizAvg = Math.round(rawAvg || (std && std.quizAvg && !isNaN(parseFloat(std.quizAvg)) ? parseFloat(std.quizAvg) : 0));
 
   // 5대 분석 축 정성 코멘트 4개 생성 (각 40~70자, 2문장 이내)
   var insights = generatePortfolioInsights(std, pfData);

@@ -5116,22 +5116,43 @@ const defaultSystemNotices = [
 ];
 
 function loadNoticesFromStorage() {
-  if (window.NANO_SERVER_DATA) return window.NANO_SERVER_NOTICES || [];
+  var localCached = [];
   try {
     const stored = localStorage.getItem(STORAGE_KEY_SYSTEM_NOTICES);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // '학부모' 대상 공지가 남아있다면 '전체'로 안전 마이그레이션
+      if (Array.isArray(parsed)) {
         parsed.forEach(n => {
           if (n.target === '학부모') n.target = '전체';
         });
-        return parsed;
+        localCached = parsed;
       }
     }
   } catch (e) {
-    console.warn("시스템 공지 로드 실패, 기본값 사용:", e);
+    console.warn("시스템 공지 로컬 캐시 로드 실패:", e);
   }
+
+  if (window.NANO_SERVER_DATA) {
+    var serverNotices = window.NANO_SERVER_NOTICES || [];
+    // 서버 공지에 팝업 시작/종료일 등 메타데이터가 비어있는 경우 로컬 스토리지 캐시와 병합하여 유실 방지
+    return serverNotices.map(function(sn) {
+      var matchedLocal = localCached.find(function(ln) {
+        return (ln.id && ln.id === sn.id) || (ln.title && ln.title === sn.title);
+      });
+      if (!matchedLocal) return sn;
+      return Object.assign({}, sn, {
+        popupStartDate: sn.popupStartDate || matchedLocal.popupStartDate || "",
+        popupEndDate: sn.popupEndDate || matchedLocal.popupEndDate || "",
+        isPopup: typeof sn.isPopup === "boolean" ? sn.isPopup : !!matchedLocal.isPopup,
+        isPinned: typeof sn.isPinned === "boolean" ? sn.isPinned : !!matchedLocal.isPinned,
+        category: sn.category || matchedLocal.category || "일반 공지",
+        status: sn.status || matchedLocal.status || "게시중",
+        target: (sn.target && sn.target !== '원장' && sn.target !== '선생님') ? sn.target : (matchedLocal.target || "가맹 학원"),
+        link: sn.link || matchedLocal.link || ""
+      });
+    });
+  }
+  if (localCached.length > 0) return localCached;
   return JSON.parse(JSON.stringify(defaultSystemNotices));
 }
 
@@ -5157,7 +5178,7 @@ function renderNoticeTable() {
   if (systemNoticeList.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="text-center py-5 text-muted">
+        <td colspan="8" class="text-center py-5 text-muted">
           <i class="fa-solid fa-bullhorn fa-2x mb-2" style="color: #cbd5e1;"></i><br>
           <strong style="font-size: 14px; color: var(--text-main);">등록된 시스템 공지사항이 없습니다.</strong><br>
           <span style="font-size: 12.5px;">우측 상단의 <strong>[+ 신규 공지 작성]</strong> 버튼을 눌러 첫 공지를 등록해보세요.</span>
@@ -5177,15 +5198,25 @@ function renderNoticeTable() {
   tbody.innerHTML = sortedList.map((not, idx) => {
     // 대상 뱃지 (전체 / 가맹 학원 / 학생)
     let targetBadge = '<span class="badge badge-secondary" style="font-size: 11px;">전체</span>';
-    if (not.target === '가맹 학원') {
+    if (not.target === '가맹 학원' || not.target === '원장' || not.target === '선생님') {
       targetBadge = '<span class="badge badge-primary" style="font-size: 11px; background: #3b82f6;">가맹 학원</span>';
     } else if (not.target === '학생') {
       targetBadge = '<span class="badge badge-success" style="font-size: 11px; background: #10b981;">학생</span>';
     }
 
-    // 팝업 뱃지
+    // 팝업기간 표시 (공지 제목과 대상 사이 컬럼)
+    let popupPeriodHtml = '<span class="text-muted" style="font-size: 12px;">-</span>';
+    if (not.isPopup) {
+      if (not.popupStartDate || not.popupEndDate) {
+        popupPeriodHtml = `<span class="text-dark font-weight-bold" style="font-size: 12px;"><i class="fa-regular fa-calendar-check text-primary mr-1"></i>${not.popupStartDate || '상시'} ~ ${not.popupEndDate || '상시'}</span>`;
+      } else {
+        popupPeriodHtml = `<span class="text-muted" style="font-size: 12px;">상시 노출</span>`;
+      }
+    }
+
+    // 팝업 여부 뱃지
     const popupBadge = not.isPopup
-      ? `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11px;"><i class="fa-solid fa-window-restore mr-1"></i>팝업 ON</span>${not.popupStartDate ? `<br><small class="text-muted" style="font-size: 10.5px;">${not.popupStartDate}~${not.popupEndDate || ''}</small>` : ''}`
+      ? `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11px;"><i class="fa-solid fa-window-restore mr-1"></i>팝업 ON</span>`
       : `<span class="text-muted" style="font-size: 11.5px;">일반 공지</span>`;
 
     // 분류 뱃지
@@ -5221,6 +5252,7 @@ function renderNoticeTable() {
             ${pinnedBadge}
           </div>
         </td>
+        <td class="text-center" style="white-space: nowrap;">${popupPeriodHtml}</td>
         <td class="text-center" style="white-space: nowrap;">${targetBadge}</td>
         <td class="text-center" style="white-space: nowrap;">${popupBadge}</td>
         <td class="text-center text-muted" style="font-size: 12px; white-space: nowrap;">${displayDate}</td>
@@ -5254,19 +5286,24 @@ function openNoticeModal(noticeId) {
   const contentEl = document.getElementById("noticeContent");
   const linkEl = document.getElementById("noticeLink");
 
+  const todayStr = new Date().toISOString().split("T")[0];
+  const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
   if (noticeId) {
     const not = systemNoticeList.find(n => n.id === noticeId);
     if (!not) return;
     if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2 text-warning"></i>시스템 공지사항 수정';
     if (editIdEl) editIdEl.value = not.id;
     if (titleEl) titleEl.value = not.title || "";
-    if (targetEl) targetEl.value = not.target || "전체";
+    const normTarget = (not.target === '원장' || not.target === '선생님') ? '가맹 학원' : (not.target || "전체");
+    if (targetEl) targetEl.value = normTarget;
     if (catEl) catEl.value = not.category || "일반 공지";
     if (statusEl) statusEl.value = not.status || "게시중";
     if (isPinnedEl) isPinnedEl.checked = !!not.isPinned;
     if (isPopupEl) isPopupEl.checked = !!not.isPopup;
-    if (popStartEl) popStartEl.value = not.popupStartDate || "";
-    if (popEndEl) popEndEl.value = not.popupEndDate || "";
+    const defaultStart = (not.createdAt || not.date || todayStr).slice(0, 10);
+    if (popStartEl) popStartEl.value = not.popupStartDate || (not.isPopup ? defaultStart : todayStr);
+    if (popEndEl) popEndEl.value = not.popupEndDate || (not.isPopup ? nextWeek : nextWeek);
     if (contentEl) contentEl.value = not.content || "";
     if (linkEl) linkEl.value = not.link || "";
   } else {
@@ -5279,8 +5316,6 @@ function openNoticeModal(noticeId) {
     if (isPinnedEl) isPinnedEl.checked = false;
     if (isPopupEl) isPopupEl.checked = false;
 
-    const todayStr = new Date().toISOString().split("T")[0];
-    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     if (popStartEl) popStartEl.value = todayStr;
     if (popEndEl) popEndEl.value = nextWeek;
     if (contentEl) contentEl.value = "";

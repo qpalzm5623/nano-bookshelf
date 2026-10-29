@@ -106,10 +106,13 @@
     return result.item;
   }
   async function deleteTheme(item) { return manage('themes', 'delete', { id: item.id }); }
-  function noticeTarget(value) { return ({ 학생: 'STUDENT', 선생님: 'TEACHER', 원장: 'DIRECTOR', 본사: 'MASTER', 학원: 'DIRECTOR' })[value] || null; }
+  function noticeTarget(value) { return ({ 학생: 'STUDENT', 선생님: 'TEACHER', 원장: 'DIRECTOR', 본사: 'MASTER', 학원: 'DIRECTOR', '가맹 학원': 'DIRECTOR' })[value] || null; }
   async function saveNotice(item) {
     var result = await manage('notices', 'save', { id: typeof item.id === 'string' && !/^NOT-/.test(item.id) ? item.id : undefined,
-      title: item.title, content: item.content, isPinned: item.isPinned === true || item.isPopup === true, targetRole: item.targetRole || noticeTarget(item.target) });
+      title: item.title, content: item.content, isPinned: item.isPinned === true, isPopup: item.isPopup === true,
+      popupStartDate: item.popupStartDate || '', popupEndDate: item.popupEndDate || '',
+      category: item.category || '일반 공지', status: item.status || '게시중', link: item.link || '',
+      target: item.target || '전체', targetRole: item.targetRole || noticeTarget(item.target) });
     if (result.item) item.id = result.item.id;
     return result.item;
   }
@@ -164,9 +167,24 @@
     portfolioList = (result.items || []).map(function (item) {
       var student = (global.studentDataList || []).find(function (entry) { return entry.serverId === item.memberId; });
       var studentId = student ? student.id : item.memberId;
-      var books = item.books || [];
+      var books = Array.isArray(item.books) ? item.books.slice() : [];
+      // 서버 포트폴리오에 도서 목록이 비어있을 경우 원생의 실제 인증 도서 이력으로 자동 보완
+      if (books.length === 0 && typeof global.getStudentCertifiedBooksForWizard === 'function') {
+        var fallbackCert = global.getStudentCertifiedBooksForWizard(studentId) || [];
+        books = fallbackCert.map(function (fb) {
+          return {
+            title: fb.title,
+            date: fb.date,
+            score: parseFloat(String(fb.score || '0').replace(/[^0-9.]/g, '')) || 0,
+            cover: fb.cover || '',
+            pub: fb.pub || '',
+            author: fb.author || '',
+            thought: fb.comment || ''
+          };
+        });
+      }
       var avgScore = books.length ? Math.round(books.reduce(function(sum, book) { return sum + (Number(book.score) || 0); }, 0) / books.length) : 0;
-      portfolioDataMap[studentId] = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : '', classGroup: student ? student.classGroup : '미지정',
+      var pfEntry = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : '', classGroup: student ? student.classGroup : '미지정',
         teacher: student ? student.teacher : '', level: student ? student.level : '', bookCount: books.length,
         quizAvg: avgScore,
         books: books.map(function(book) {
@@ -174,16 +192,22 @@
             if (!ab || !ab.title) return false;
             return ab.title === book.title || ab.title.replace(/\s+/g, '') === (book.title || '').replace(/\s+/g, '');
           });
+          var numScore = parseFloat(String(book.score || 0).replace(/[^0-9.]/g, '')) || 0;
           return {
             title: book.title,
             date: book.date,
-            score: (book.score || 0) + '점',
+            score: Math.round(numScore) + '점',
             cover: book.cover || (matchedBook ? matchedBook.cover : 'assets/covers/cover_default.jpg'),
             pub: book.pub || book.publisher || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '나노출판'),
             author: book.author || (matchedBook ? matchedBook.author : ''),
             comment: book.thought || book.comment || ''
           };
         }), teacherNote: item.comment || '' };
+      // 포트폴리오 고유 ID별 저장 + 원생별 최신(도서 존재 우선) 포트폴리오 유지 (과거 0권 포트폴리오가 덮어쓰는 현상 방지)
+      portfolioDataMap[item.id] = pfEntry;
+      if (!portfolioDataMap[studentId] || (portfolioDataMap[studentId].bookCount === 0 && pfEntry.bookCount > 0)) {
+        portfolioDataMap[studentId] = pfEntry;
+      }
       return { id: item.id, revision: item.revision, memberId: item.memberId, studentId: studentId, studentName: item.name, school: student ? student.school : '', grade: student ? student.grade : '',
         classGroup: student ? student.classGroup : '미지정', title: item.title, period: item.from + ' ~ ' + item.to, from: item.from, to: item.to, comment: item.comment || '',
         bookCount: books.length, booksSummary: books.length ? books[0].title + (books.length > 1 ? ' 외 ' + (books.length - 1) + '권' : '') : '완독 도서 없음',
