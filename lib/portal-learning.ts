@@ -94,7 +94,7 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
       data: {
         points: { increment: earned },
         bookCount: { increment: isFirstCertification ? 1 : 0 },
-        quizAvg: average._avg.score || 0
+        quizAvg: Math.round(average._avg.score || 0)
       }
     });
 

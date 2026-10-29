@@ -1,6 +1,97 @@
 /* 공통 캐릭터 그림과 결과 화면의 차분한 독서 기록 카드. */
-.nano-friend-avatar { display: block; flex-shrink: 0; }
-.char-growth-preview { margin-bottom: 20px; }
+.nano-friend-avatar { display: block; flex-shrink: 0; overflow: visible; }
+.qr-mascot-motion {
+  transform-origin: 0px 55px;
+  animation: nanoMascotBob 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+.qr-part-ears {
+  transform-origin: 0px -42px;
+  animation: nanoEarsTwitch 2.6s ease-in-out infinite;
+}
+.qr-part-back {
+  transform-origin: 0px 28px;
+  animation: nanoBackWag 2.2s ease-in-out infinite;
+}
+.qr-part-arms {
+  transform-origin: 0px 22px;
+  animation: nanoArmsWave 2.6s ease-in-out infinite;
+}
+.qr-part-eyes {
+  transform-origin: 0px -28px;
+  animation: nanoEyesBlink 4.2s ease-in-out infinite;
+}
+.qr-part-head {
+  transform-origin: 0px -65px;
+  animation: nanoHeadTilt 2.6s ease-in-out infinite;
+}
+.qr-mascot-shadow {
+  transform-origin: 232px 237px;
+  animation: nanoShadowPulse 2.6s ease-in-out infinite;
+}
+/* 캐릭터별 개성 있는 리듬 및 모션 변주 */
+.qr-mascot[data-friend="toto"] .qr-mascot-motion { animation: nanoMascotHop 2.2s ease-in-out infinite; }
+.qr-mascot[data-friend="toto"] .qr-part-ears { animation-duration: 1.9s; }
+.qr-mascot[data-friend="booki"] .qr-mascot-motion { animation-duration: 3.0s; animation-delay: -0.4s; }
+.qr-mascot[data-friend="pico"] .qr-mascot-motion { animation: nanoMascotWaddle 2.4s ease-in-out infinite; animation-delay: -0.8s; }
+.qr-mascot[data-friend="popo"] .qr-mascot-motion { animation-duration: 3.2s; animation-delay: -1.1s; }
+.qr-mascot[data-friend="chichi"] .qr-mascot-motion { animation: nanoMascotHop 2.0s ease-in-out infinite; animation-delay: -0.5s; }
+.qr-mascot[data-friend="chichi"] .qr-part-back { animation-duration: 1.6s; }
+.qr-mascot[data-friend="lumi"] .qr-mascot-motion,
+.qr-mascot[data-friend="jelly"] .qr-mascot-motion { animation: nanoMascotFloat 2.5s ease-in-out infinite; animation-delay: -0.7s; }
+.qr-mascot[data-friend="mir"] .qr-mascot-motion { animation: nanoMascotFloat 2.8s ease-in-out infinite; animation-delay: -1.3s; }
+.qr-mascot[data-friend="mir"] .qr-part-back { animation-duration: 1.8s; }
+#characterSelectModal .char-select-card.selected .qr-mascot-motion {
+  animation-duration: 1.9s;
+}
+@keyframes nanoMascotBob {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1, 1); }
+  25% { transform: translateY(-5px) rotate(-2.2deg) scale(1.02, 0.98); }
+  50% { transform: translateY(-1px) rotate(0deg) scale(0.99, 1.01); }
+  75% { transform: translateY(-5px) rotate(2.2deg) scale(1.02, 0.98); }
+}
+@keyframes nanoMascotHop {
+  0%, 100% { transform: translateY(0px) scale(1.02, 0.97); }
+  30% { transform: translateY(-7px) rotate(-2deg) scale(0.98, 1.03); }
+  60% { transform: translateY(-1px) scale(1.01, 0.98); }
+  80% { transform: translateY(-5px) rotate(2deg) scale(0.99, 1.02); }
+}
+@keyframes nanoMascotWaddle {
+  0%, 100% { transform: translateY(0px) rotate(-3deg); }
+  25% { transform: translateY(-4px) rotate(0deg); }
+  50% { transform: translateY(0px) rotate(3deg); }
+  75% { transform: translateY(-4px) rotate(0deg); }
+}
+@keyframes nanoMascotFloat {
+  0%, 100% { transform: translateY(1px) rotate(-1.5deg) scale(1); }
+  50% { transform: translateY(-7px) rotate(1.5deg) scale(1.03); }
+}
+@keyframes nanoEarsTwitch {
+  0%, 100% { transform: rotate(0deg) scaleY(1); }
+  30% { transform: rotate(-3.5deg) scaleY(1.04); }
+  65% { transform: rotate(3.5deg) scaleY(1.03); }
+}
+@keyframes nanoBackWag {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(5.5deg) scale(1.04); }
+}
+@keyframes nanoArmsWave {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-3.5px) rotate(-2.5deg); }
+}
+@keyframes nanoHeadTilt {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(2deg); }
+}
+@keyframes nanoEyesBlink {
+  0%, 44%, 48%, 92%, 96%, 100% { transform: scaleY(1); }
+  46%, 94% { transform: scaleY(0.12); }
+}
+@keyframes nanoShadowPulse {
+  0%, 100% { transform: scaleX(1); opacity: 0.12; }
+  50% { transform: scaleX(0.86); opacity: 0.07; }
+}
+.char-growth-preview { display: none; }
 .char-growth-heading { margin: 0 0 10px; color: #526659; font-size: 12px; font-weight: 700; }
 .char-growth-stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .char-growth-stage { min-width: 0; margin: 0; padding: 10px 4px; border: 1px solid #e5e9df; border-radius: 14px; background: #fafbf7; text-align: center; }

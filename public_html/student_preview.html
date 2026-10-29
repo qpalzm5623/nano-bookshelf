@@ -4143,7 +4143,7 @@
           <div class="bs-stat-label"><i class="fa-solid fa-circle-check mr-1" style="color:var(--leaf);"></i>완독 도서</div>
         </div>
         <div class="bs-stat-card">
-          <div class="bs-stat-num" id="statBsAvgScore" style="color:var(--leaf-mid);">94.2점</div>
+          <div class="bs-stat-num" id="statBsAvgScore" style="color:var(--leaf-mid);">0점</div>
           <div class="bs-stat-label"><i class="fa-solid fa-star mr-1" style="color:#f59e0b;"></i>평균 점수</div>
         </div>
       </div>
@@ -4368,8 +4368,6 @@
       <div id="charDetailPreview" style="background: #fafaf9; border: 2px solid #e7e5e4; border-radius: 16px; padding: 14px; margin-bottom: 14px; display: flex; gap: 14px; align-items: center;">
         <!-- JS 동적 렌더링 -->
       </div>
-
-      <div id="charGrowthPreview" class="char-growth-preview" aria-label="선택한 캐릭터의 성장 모습"></div>
 
       <!-- 안내 레이블 -->
       <div style="font-size: 12.5px; font-weight: 800; color: #475569; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
@@ -5462,7 +5460,9 @@ function initStudentMigratedData() {
       return true;
     });
     libData = dedupedBooks.map(function(b, idx) {
-      var gCode = (b.grade || '초3').replace('초등 ', '초').replace('학년', '').replace('중등 ', '중');
+      var gCode = typeof normalizeStudentGradeShort === 'function'
+        ? normalizeStudentGradeShort(b.grade || '초3')
+        : (b.grade || '초3').replace('초등 ', '초').replace('학년', '').replace('중등 ', '중');
       var tagArr = Array.isArray(b.tags) ? b.tags.map(function(t){ return t.startsWith('#')?t:'#'+t; }) : ['#이야기'];
       var subtitleStr = (b.series && b.series !== '단권') ? b.series : ((b.cat1 || '소설') + ' · ' + (b.cat2 || '국내서'));
       var qSets = b.quizSets || [];
@@ -5483,6 +5483,7 @@ function initStudentMigratedData() {
         readCount: 0,
         cover: b.cover || '',
         assigned: false,
+        isRecommended: b.isRecommended === true,
         isEditorPick: b.isRecommended === true,
         tags: tagArr,
         detailTag: b.detailTag || (b.tags ? b.tags.join(' ') : '#이야기'),
@@ -5749,8 +5750,9 @@ function renderHomeSliders() {
     }
   }
 
-  // 상단 타이틀 학년(curGr)에 정확히 일치하는 권장 도서만 필터링 (타 학년 도서 혼입 방지)
-  var gradeList = libData.filter(function(b){
+  // 마스터 [서비스 운영 관리 > 권장도서 관리]에 등록된 권장도서 중 학생 학년(curGr)과 일치하는 도서만 필터링
+  var recPool = getStudentRecommendedBookList();
+  var gradeList = recPool.filter(function(b){
     return b.grade === curGr.code || b.gradeGroup === curGr.label;
   }).slice(0, 30);
 
@@ -6229,13 +6231,100 @@ function renderAssignedLib() {
   initLibInfiniteScroll('assigned', assignedList, '<div style="text-align:center;padding:30px;color:var(--muted);">현재 배정된 도서가 없습니다.</div>');
 }
 
+// 마스터 권장도서 학년 문자열을 학생 페이지 단축 코드(미취학, 초1~초6, 중1~중3)로 정규화
+function normalizeStudentGradeShort(raw) {
+  if (raw === undefined || raw === null) return '초3';
+  var str = String(raw).trim();
+  if (!str) return '초3';
+  if (str === '0' || /미취학|유아|유치/i.test(str)) return '미취학';
+  if (str === '1' || /^초\s*1|초등\s*1/i.test(str)) return '초1';
+  if (str === '2' || /^초\s*2|초등\s*2/i.test(str)) return '초2';
+  if (str === '3' || /^초\s*3|초등\s*3/i.test(str)) return '초3';
+  if (str === '4' || /^초\s*4|초등\s*4/i.test(str)) return '초4';
+  if (str === '5' || /^초\s*5|초등\s*5/i.test(str)) return '초5';
+  if (str === '6' || /^초\s*6|초등\s*6/i.test(str)) return '초6';
+  if (str === '7' || /중\s*1|중등\s*1|중학교\s*1/i.test(str)) return '중1';
+  if (str === '8' || /중\s*2|중등\s*2|중학교\s*2/i.test(str)) return '중2';
+  if (str === '9' || /중\s*3|중등\s*3|중학교\s*3/i.test(str)) return '중3';
+  if (/중/i.test(str)) return '중1';
+  return str.replace('초등 ', '초').replace('학년', '').replace('중등 ', '중');
+}
+
+// 도서 자체의 학년 속성이 아닌, 마스터 [서비스 운영 관리 > 권장도서 관리]에서 등록한 권장도서만 반환
+function getStudentRecommendedBookList() {
+  var storedRecMap = {};
+  var storedRecList = null;
+  try {
+    var raw = localStorage.getItem('NANO_RECOMMENDED_BOOKS');
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        storedRecList = parsed;
+        parsed.forEach(function(r) {
+          var key = r.bookId || r.id;
+          if (key) storedRecMap[key] = r;
+          if (r.title) storedRecMap['TITLE:' + r.title] = r;
+        });
+      }
+    }
+  } catch (e) {}
+
+  // 서버 데이터 모드: DB(MIGRATED_BOOKS)에서 isRecommended === true로 지정된 권장도서만 추출
+  if (window.NANO_SERVER_DATA) {
+    return libData.filter(function(b) {
+      return b.isRecommended === true || b.isEditorPick === true;
+    }).map(function(b) {
+      var override = storedRecMap[b.id] || storedRecMap['TITLE:' + b.title];
+      if (override && override.grade) {
+        return Object.assign({}, b, {
+          grade: normalizeStudentGradeShort(override.grade),
+          gradeGroup: override.grade
+        });
+      }
+      return b;
+    });
+  }
+
+  // 로컬 프리뷰 모드: 마스터 권장도서 관리(NANO_RECOMMENDED_BOOKS)에 등록된 목록 우선 연동
+  if (storedRecList) {
+    var matched = [];
+    var seenIds = new Set();
+    storedRecList.forEach(function(r) {
+      var targetId = r.bookId || r.id;
+      var found = libData.find(function(b) {
+        return (targetId && b.id === targetId) || (r.title && b.title === r.title);
+      });
+      if (found) {
+        var recGradeShort = r.grade ? normalizeStudentGradeShort(r.grade) : found.grade;
+        var dedupKey = found.id + ':' + recGradeShort;
+        if (!seenIds.has(dedupKey)) {
+          seenIds.add(dedupKey);
+          matched.push(Object.assign({}, found, {
+            grade: recGradeShort,
+            gradeGroup: r.grade || found.gradeGroup,
+            isRecommended: true,
+            isEditorPick: true
+          }));
+        }
+      }
+    });
+    if (matched.length > 0) return matched;
+  }
+
+  return libData.filter(function(b) {
+    return b.isRecommended === true || b.isEditorPick === true;
+  });
+}
+
 // 2. 권장 도서 렌더링 (10개 초기화 + 무한스크롤)
 function renderRecLib(q) {
   var query = (q || (document.getElementById('recLibQ') ? document.getElementById('recLibQ').value : '') || '').toLowerCase();
-  var list = libData.slice();
+  var list = getStudentRecommendedBookList();
 
   if(currentGradeFilter && currentGradeFilter !== 'all') {
-    list = list.filter(function(b){ return b.grade === currentGradeFilter; });
+    list = list.filter(function(b){
+      return normalizeStudentGradeShort(b.grade) === currentGradeFilter || b.grade === currentGradeFilter;
+    });
   }
 
   if(query) {
@@ -8070,12 +8159,45 @@ function renderReadingHistoryGrid() {
   }
 
   var totalCount = readBooksMaster.length;
-  if(statCountEl) statCountEl.innerText = totalCount + '권';
+  var summary = (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.activity === 'function') ? NanoPortal.activity() : null;
+  var identity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  var member = (identity && Array.isArray(window.MIGRATED_MEMBERS))
+    ? window.MIGRATED_MEMBERS.find(function(m) { return String(m.username || '').toLowerCase() === String(identity.studentId || '').toLowerCase(); })
+    : null;
+  var expectedCount = (summary && Number(summary.bookCount) > 0)
+    ? Number(summary.bookCount)
+    : (member && Number(member.bookCount) > 0 ? Number(member.bookCount) : 0);
+  var expectedAvg = (summary && Number(summary.quizAvg) > 0)
+    ? Number(summary.quizAvg)
+    : (member && Number(member.quizAvg) > 0 ? Number(member.quizAvg) : 0);
+  var logsPending = !!(window.NanoPortal && NanoPortal.remote && typeof NanoPortal.logs === 'function' && NanoPortal.logs() === null);
 
-  // 평균 점수 계산 (전체 기준)
-  if(statAvgEl && totalCount > 0) {
-    var avg = readBooksMaster.reduce(function(acc, x){ return acc + x.score; }, 0) / totalCount;
-    statAvgEl.innerText = avg.toFixed(1) + '점';
+  // 완독 이력이 존재하는데 비동기 응답 순서 등으로 아직 로컬 배열이 비어 있는 경우 자동 재동기화
+  if (totalCount === 0 && window.NanoPortal && NanoPortal.remote && (logsPending || expectedCount > 0) && !window._reloadingStudentLearning && !window._studentLearningRetried) {
+    window._reloadingStudentLearning = true;
+    window._studentLearningRetried = true;
+    NanoPortal.refreshLearning().then(function() {
+      window._reloadingStudentLearning = false;
+      if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
+    }).catch(function() {
+      window._reloadingStudentLearning = false;
+    });
+  }
+
+  var uniqueMasterCount = new Set(readBooksMaster.map(function(x){ return x.id; })).size;
+  var displayCount = totalCount > 0 ? (uniqueMasterCount || totalCount) : ((logsPending || expectedCount > 0) ? expectedCount : 0);
+  if(statCountEl) statCountEl.innerText = displayCount + '권';
+
+  // 평균 점수 계산 (전체 기준, 소수점 첫째 자리 반올림)
+  if(statAvgEl) {
+    if(totalCount > 0) {
+      var avg = readBooksMaster.reduce(function(acc, x){ return acc + (Number(x.score) || 0); }, 0) / totalCount;
+      statAvgEl.innerText = Math.round(avg) + '점';
+    } else if((logsPending || expectedCount > 0) && expectedAvg > 0) {
+      statAvgEl.innerText = Math.round(expectedAvg) + '점';
+    } else {
+      statAvgEl.innerText = '0점';
+    }
   }
 
   // 검색어 필터링 적용
@@ -8083,7 +8205,7 @@ function renderReadingHistoryGrid() {
   if(q) {
     targetList = readBooksMaster.filter(function(item) {
       var b = libData.find(function(x){ return x.id === item.id; });
-      var title = (b ? b.title : ('도서 ' + item.id)).toLowerCase();
+      var title = (item.title || (b ? b.title : ('도서 ' + item.id))).toLowerCase();
       var author = (b ? (b.author || '') : '').toLowerCase();
       var pub = (item.pub || (b ? b.pub : '')).toLowerCase();
       var series = (item.series || (b ? (b.subtitle || b.cat || '') : '')).toLowerCase();
@@ -8093,9 +8215,9 @@ function renderReadingHistoryGrid() {
 
   if(countEl) {
     if(q) {
-      countEl.innerHTML = '<strong style="color:var(--leaf);">' + targetList.length + '건</strong> 검색됨 (전체 ' + totalCount + '권)';
+      countEl.innerHTML = '<strong style="color:var(--leaf);">' + targetList.length + '건</strong> 검색됨 (전체 ' + displayCount + '권)';
     } else {
-      countEl.innerText = totalCount + '권 완독';
+      countEl.innerText = displayCount + '권 완독';
     }
   }
 
@@ -8124,6 +8246,8 @@ function renderReadingHistoryGrid() {
         + '<span style="font-size:12px;">도서 제목이나 저자, 출판사를 다시 확인해보세요.</span>'
         + '<div style="margin-top:12px;"><button type="button" class="btn-detail-back" onclick="clearReadingHistorySearch()" style="background:#f5f2eb;padding:5px 12px;border-radius:8px;font-size:12px;">검색 초기화</button></div>'
         + '</div>';
+    } else if (logsPending || window._reloadingStudentLearning) {
+      container.innerHTML = '<div style="text-align:center;padding:36px;color:var(--muted);background:#fff;border-radius:14px;border:1px solid var(--soft);"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i>독서 인증 기록을 불러오는 중입니다...</div>';
     } else {
       container.innerHTML = '<div style="text-align:center;padding:36px;color:var(--muted);background:#fff;border-radius:14px;border:1px solid var(--soft);"><i class="fa-solid fa-book-open mr-1"></i>아직 완독한 도서가 없습니다.</div>';
     }
@@ -8135,7 +8259,7 @@ function renderReadingHistoryGrid() {
     var books = monthMap[mKey];
     var cardsHtml = books.map(function(item) {
       var b = libData.find(function(x){ return x.id === item.id; });
-      var title = b ? b.title : ('도서 ' + item.id);
+      var title = item.title || (b ? b.title : ('도서 ' + item.id));
       var pub = item.pub || (b ? b.pub : '나노출판');
       var series = item.series || (b ? (b.subtitle || b.cat.split('/')[0].trim()) : '나노 추천선');
       var coverHtml = b ? getBookCoverHtml(b, 'reading-thumb-img') : '<div class="reading-thumb-img" style="background:#2d6a4f;"></div>';
@@ -9048,18 +9172,6 @@ function renderCharacterSelectModal() {
     +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">' + cur.story + '</div>'
     +   statusBannerHtml
     + '</div>';
-
-  // 미리보기는 해금 상태를 바꾸지 않으며 실제 적용은 기존 달성 조건으로 제한합니다.
-  var growthEl = document.getElementById('charGrowthPreview');
-  if (growthEl) growthEl.innerHTML = '<div class="char-growth-heading">책과 함께 자라는 우리 친구</div><div class="char-growth-stages">'
-    + [1, 2, 3].map(function(stage) {
-      var current = stage === curUnlock.currentStage;
-      var achieved = stage <= curUnlock.currentStage;
-      var requirement = stage === 1 ? cur.unlockDesc : stage === 2 ? cur.stage2Desc : cur.stage3Desc;
-      return '<figure class="char-growth-stage' + (current ? ' is-current' : '') + '">'
-        + getCharacterSvg(cur.id, 80, stage)
-        + '<figcaption><strong>' + stage + '단계</strong><span>' + (current ? '현재 모습' : achieved ? '달성 완료' : '성장 미리보기') + '</span><small>' + escapeStudentQuizText(requirement || '') + '</small></figcaption></figure>';
-    }).join('') + '</div>';
 
   // 하단 [이 캐릭터로 설정] 버튼 제어
   if (applyBtn) {
@@ -10055,11 +10167,11 @@ function refreshStudentLearningData() {
     var identity = getStudentQuizIdentity();
     if (!identity) return;
     var logs = (window.NanoPortal && NanoPortal.remote ? NanoPortal.logs() || [] : NanoLearningStore.read(identity.academyId, window.MIGRATED_LEARNING_LOGS))
-      .filter(function(log) { return String(log.studentId) === String(identity.studentId); });
+      .filter(function(log) { return String(log.studentId || '').trim().toLowerCase() === String(identity.studentId || '').trim().toLowerCase(); });
     histData = logs.map(function(log) { return { title: log.bookTitle, date: log.date, score: log.score }; });
     readBooksMaster = logs.filter(function(log) { return Number(log.score) >= 60; }).map(function(log) {
       var book = libData.find(function(book) { return String(book.id) === String(log.bookId); });
-      return { id: log.bookId, score: log.score, date: log.date.replace(/-/g, '.'), pub: book ? book.pub : '', series: book ? book.cat : '' };
+      return { id: log.bookId, title: log.bookTitle || (book ? book.title : ''), score: Number(log.score) || 0, date: String(log.date || '').replace(/-/g, '.'), pub: book ? book.pub : '', series: book ? book.cat : '' };
     });
     var summary = window.NanoPortal && NanoPortal.remote ? NanoPortal.activity() : null;
     var assigned = summary ? summary.assignedBookIds.map(String) : NanoPreviewData.assignedBookIds(identity);
@@ -10067,11 +10179,15 @@ function refreshStudentLearningData() {
     var member = (window.MIGRATED_MEMBERS || []).find(function(m) { return m.username === identity.studentId && String(m.academyId) === String(identity.academyId); });
     var points = summary ? summary.totalPoints : member ? Number(member.points) || 0 : 0;
     var summaryPoints = document.getElementById('bookshelfTotalPoints'); if(summaryPoints) summaryPoints.textContent = points.toLocaleString() + ' P';
-    var count = summary ? summary.bookCount : new Set(readBooksMaster.map(function(book) { return book.id; })).size;
+    var uniqueReadCount = new Set(readBooksMaster.map(function(book) { return book.id; })).size;
+    var count = uniqueReadCount > 0 ? uniqueReadCount : (summary ? summary.bookCount : (member ? Number(member.bookCount) || 0 : 0));
     [['mainCertifiedBooksCount',count],['mainPendingBooksCount',assigned.filter(function(id) { return !readBooksMaster.some(function(b) { return String(b.id) === id; }); }).length],['mainPointsCount',points.toLocaleString()],['drawerStudentPoints',points.toLocaleString() + ' P']].forEach(function(item) {
       var el = document.getElementById(item[0]); if(el) el.textContent = item[1];
     });
     if (typeof updateAllCharacterAvatars === 'function') updateAllCharacterAvatars();
+    if (typeof renderReadingHistoryGrid === 'function') renderReadingHistoryGrid();
+    if (typeof renderAssignedLib === 'function') renderAssignedLib();
+    if (typeof renderHomeSliders === 'function') renderHomeSliders();
     if (typeof renderBookshelfHistory === 'function') renderBookshelfHistory();
   } catch(e) { toast('학습 기록 조회 실패: ' + e.message); }
 }

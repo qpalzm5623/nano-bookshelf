@@ -667,7 +667,7 @@ function loadStudentsFromStorage() {
       return { id: m.username, serverId: m.serverId, updatedAt: m.updatedAt, username: m.username, classGroupId: m.classGroupId || null, name: m.name, gender: m.gender || '미등록', password: '••••',
         school: m.school || '미등록', grade: m.grade || '미등록', classGroup: m.className || '미지정',
         status: m.status === 'APPROVED' ? '승인' : (m.status === 'WITHDRAWN' ? '퇴원' : '미승인'),
-        level: m.level || '미설정', bookCount: Number(m.bookCount) || 0, quizAvg: m.quizAvg == null ? '-' : m.quizAvg,
+        level: m.level || '미설정', bookCount: Number(m.bookCount) || 0, quizAvg: (m.quizAvg == null || isNaN(Number(m.quizAvg))) ? '-' : Math.round(Number(m.quizAvg)),
         parentName: m.parentName || '', phone: m.parentPhone || '', parentEmail: m.parentEmail || '',
         reportYn: m.reportYn === true, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
         teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0 };
@@ -2582,7 +2582,8 @@ function renderStudentTable(list, page) {
     }
 
     var rowNo = total - (startIndex + index); // 전체 기준 내림차순 번호
-    var quizScoreDisplay = (std.quizAvg === '0.0' || std.quizAvg === 0) ? '<span class="text-muted">-</span>' : std.quizAvg + '점';
+    var avgScoreNum = parseFloat(std.quizAvg);
+    var quizScoreDisplay = (std.quizAvg === '0.0' || std.quizAvg === 0 || std.quizAvg === '-' || isNaN(avgScoreNum)) ? '<span class="text-muted">-</span>' : Math.round(avgScoreNum) + '점';
 
     // 성별 뱃지
     var genderBadge = std.gender === '여' ?
@@ -2951,7 +2952,8 @@ function openStudentDetailModal(stdId) {
   document.getElementById('m_std_class').innerText = std.classGroup;
   document.getElementById('m_std_level').innerText = std.level;
   document.getElementById('m_std_books').innerText = std.bookCount + '권 완독';
-  document.getElementById('m_std_score').innerText = (std.quizAvg === '0.0' || std.quizAvg === 0) ? '-' : std.quizAvg + '점';
+  var detailAvgNum = parseFloat(std.quizAvg);
+  document.getElementById('m_std_score').innerText = (std.quizAvg === '0.0' || std.quizAvg === 0 || std.quizAvg === '-' || isNaN(detailAvgNum)) ? '-' : Math.round(detailAvgNum) + '점';
   document.getElementById('m_std_phone').innerText = std.phone;
   if (document.getElementById('m_std_teacher')) {
     document.getElementById('m_std_teacher').innerText = std.teacher || '박선혜 지도교사';
@@ -7471,7 +7473,7 @@ function renderPortfolioTable(list) {
         '<span class="font-weight-bold text-dark">' + pf.bookCount + '권</span> ' +
         '<small class="text-muted">(' + pf.booksSummary + ')</small>' +
       '</td>' +
-      '<td class="text-center text-success font-weight-bold">' + (pf.quizAvg != null ? (typeof pf.quizAvg === 'number' ? Math.round(pf.quizAvg) + '점' : (String(pf.quizAvg).indexOf('점') !== -1 ? pf.quizAvg : (isNaN(Number(pf.quizAvg)) ? pf.quizAvg : Math.round(Number(pf.quizAvg)) + '점'))) : '-') + '</td>' +
+      '<td class="text-center text-success font-weight-bold">' + (pf.quizAvg != null && !isNaN(parseFloat(String(pf.quizAvg))) ? Math.round(parseFloat(String(pf.quizAvg))) + '점' : (pf.quizAvg || '-')) + '</td>' +
       '<td class="text-center text-muted" style="font-size:12px; white-space:nowrap;">' + displayIssueDate + '</td>' +
       '<td class="text-center" style="white-space:nowrap;">' + statusCellHtml + '</td>' +
       '<td class="text-center" style="white-space:nowrap;">' +
@@ -8074,9 +8076,145 @@ function printSinglePortfolio(studentId, pfId) {
   }, 250);
 }
 
+var currentWizardFilteredBooks = [];
+
+// 원생별 인증 완료(60점 이상) 완독 도서 추출 헬퍼
+function getStudentCertifiedBooksForWizard(stdId) {
+  var std = studentDataList.find(function(s) { return s.id === stdId; });
+  var stdName = std ? std.name : '';
+
+  var loadedLogs = [];
+  try {
+    if (typeof getLoadedLearningLogs === 'function') {
+      loadedLogs = getLoadedLearningLogs();
+    }
+  } catch (e) {
+    console.warn('학습 로그 로딩 예외:', e);
+  }
+  if (!loadedLogs || loadedLogs.length === 0) {
+    loadedLogs = typeof learningLogs !== 'undefined' ? learningLogs : [];
+  }
+
+  // 학생 ID(우선) 또는 이름으로 매칭되는 인증 완료(60점 이상) 로그 필터링
+  var studentLogs = loadedLogs.filter(function(log) {
+    var idMatch = log.studentId && String(log.studentId).trim() === String(stdId).trim();
+    var nameMatch = !log.studentId && stdName && log.studentName === stdName;
+    if (!idMatch && !nameMatch) return false;
+    return log.score === undefined || Number(log.score) >= 60;
+  });
+
+  var allBooks = [];
+  if (studentLogs.length > 0) {
+    var seenKeys = {};
+    var catalog = (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList))
+      ? academyBookList
+      : (Array.isArray(window.MIGRATED_BOOKS) ? window.MIGRATED_BOOKS : []);
+
+    studentLogs.forEach(function(log) {
+      var title = log.bookTitle || log.title || '도서';
+      var dedupKey = (log.bookId ? String(log.bookId).trim() : '') || title;
+      if (!seenKeys[dedupKey] && !seenKeys[title]) {
+        seenKeys[dedupKey] = true;
+        seenKeys[title] = true;
+
+        var matchedBook = catalog.find(function(b) {
+          if (!b) return false;
+          if (log.bookId && (String(b.id) === String(log.bookId) || String(b.bookNo) === String(log.bookId))) return true;
+          return b.title === title || (b.title && b.title.replace(/\s+/g, '') === title.replace(/\s+/g, ''));
+        });
+
+        var cover = (matchedBook && matchedBook.cover) ? matchedBook.cover : (log.cover || 'resources/images/book_default.svg');
+        var pub = log.bookPub || log.pub || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '') || '나노출판';
+        var logDate = log.date || (log.submittedAt ? String(log.submittedAt).slice(0, 10) : '') || '2026.09.01';
+        var dateFormatted = logDate.split(' ')[0].replace(/-/g, '.');
+        var scoreNum = log.score !== undefined ? Math.round(Number(log.score)) : 100;
+        var scoreStr = scoreNum + '점';
+        var sheetStr = log.sheet || '작성 완료';
+        var commentStr = log.comment || log.thoughtAnswer || log.studentThoughtAnswer || log.sheetAnswer || '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 성실히 완독함.';
+
+        allBooks.push({
+          cover: cover,
+          title: title,
+          pub: pub,
+          date: dateFormatted,
+          score: scoreStr,
+          sheet: sheetStr,
+          comment: commentStr
+        });
+      }
+    });
+  }
+
+  // 학습 로그에 완독 기록이 없는 경우 기존 포트폴리오 데이터 또는 데모 기본값 참조
+  if (allBooks.length === 0) {
+    var pf = portfolioDataMap[stdId];
+    if (pf && pf.books && pf.books.length > 0) {
+      allBooks = pf.books.map(function(b) {
+        return {
+          cover: b.cover || 'resources/images/book_default.svg',
+          title: b.title || '도서',
+          pub: b.pub || b.publisher || '나노출판',
+          date: String(b.date || '2026.09.01').split(' ')[0].replace(/-/g, '.'),
+          score: typeof b.score === 'number' ? Math.round(b.score) + '점' : (b.score || '100점'),
+          sheet: b.sheet || '작성 완료',
+          comment: b.comment || b.thought || ''
+        };
+      });
+    } else if (!window.NANO_SERVER_DATA && !(window.NanoPortal && NanoPortal.remote)) {
+      allBooks = [
+        { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '100점', sheet: '제출 완료', comment: '사막여우와 장미의 의미를 문해력 높게 해석하고 논술 과제를 훌륭히 완수함.' },
+        { cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.02', score: '90점', sheet: '제출 완료', comment: '타인의 고통과 감정에 대한 공감 능력을 자신의 경험에 빗대어 설득력 있게 표현함.' },
+        { cover: 'assets/covers/cover_1004.jpg', title: '자전거 도둑', pub: '다림', date: '2026.08.28', score: '92점', sheet: '제출 완료', comment: '물질주의와 양심 사이의 갈등을 비판적 시각으로 깊이 있게 고찰함.' }
+      ];
+    }
+  }
+
+  return allBooks;
+}
+
+// 선택된 원생의 실제 완독 도서 일자가 모두 포함되도록 2단계 조회 기간 기본값 자동 동기화
+function syncWizardDateRangeForStudent(stdId) {
+  var startDateInput = document.getElementById('wizBookStartDate');
+  var endDateInput = document.getElementById('wizBookEndDate');
+  var now = new Date();
+  var yyyy = now.getFullYear();
+  var mm = String(now.getMonth() + 1).padStart(2, '0');
+  var dd = String(now.getDate()).padStart(2, '0');
+  var defaultStart = yyyy + '-01-01';
+  var defaultEnd = yyyy + '-' + mm + '-' + dd;
+
+  var certBooks = getStudentCertifiedBooksForWizard(stdId);
+  if (certBooks.length > 0) {
+    var dates = certBooks.map(function(b) {
+      return String(b.date || '').replace(/\./g, '-').slice(0, 10);
+    }).filter(function(d) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(d);
+    }).sort();
+
+    if (dates.length > 0) {
+      if (dates[0] < defaultStart) defaultStart = dates[0];
+      if (dates[dates.length - 1] > defaultEnd) defaultEnd = dates[dates.length - 1];
+    }
+  }
+
+  if (startDateInput) startDateInput.value = defaultStart;
+  if (endDateInput) endDateInput.value = defaultEnd;
+}
+
 function openPortfolioCreateWizard() {
   currentWizardStep = 1;
   wizardSelectedBooks = [];
+  currentWizardFilteredBooks = [];
+
+  // 서버 모드에서 학습 로그가 아직 로드되지 않았다면 백그라운드 동기화 수행
+  if (window.NanoPortal && NanoPortal.remote && (!NanoPortal.logs() || NanoPortal.logs().length === 0)) {
+    NanoPortal.refreshLearning().then(function() {
+      if (wizardSelectedStudentId) {
+        onWizardStudentSelect(wizardSelectedStudentId);
+        if (currentWizardStep === 2) renderWizardBookList(wizardSelectedStudentId);
+      }
+    }).catch(function() {});
+  }
 
   // 학급 필터 초기화
   var classSel = document.getElementById('wizStudentClassFilter');
@@ -8085,17 +8223,8 @@ function openPortfolioCreateWizard() {
   // 1단계: 학급 기준으로 학생 목록 채우기
   onWizardClassFilterChange('ALL');
 
-  // 2단계 날짜 기본 세팅 (최근 3개월: 2026-07-01 ~ 오늘)
-  var startDateInput = document.getElementById('wizBookStartDate');
-  var endDateInput = document.getElementById('wizBookEndDate');
-  var now = new Date();
-  var yyyy = now.getFullYear();
-  var mm = String(now.getMonth() + 1).padStart(2, '0');
-  var dd = String(now.getDate()).padStart(2, '0');
-  var todayStr = `${yyyy}-${mm}-${dd}`;
-
-  if (startDateInput && !startDateInput.value) startDateInput.value = '2026-07-01';
-  if (endDateInput && !endDateInput.value) endDateInput.value = todayStr;
+  // 2단계 날짜 기본 세팅 (선택된 원생의 인증 도서 기간 포함)
+  syncWizardDateRangeForStudent(wizardSelectedStudentId);
 
   goToWizardStep(1);
 
@@ -8240,13 +8369,24 @@ function onWizardStudentSelect(stdId) {
   var teacherEl = document.getElementById('wizProfileTeacher');
   var initEl = document.getElementById('wizProfileInitial');
 
+  var certBooks = getStudentCertifiedBooksForWizard(stdId);
+  var displayBookCount = Number(std.bookCount) || 0;
+  if (certBooks.length > displayBookCount) {
+    displayBookCount = certBooks.length;
+  }
+
+  var wizAvgNum = parseFloat(std.quizAvg);
+  var displayQuizAvg = (std.quizAvg != null && std.quizAvg !== '-' && !isNaN(wizAvgNum)) ? Math.round(wizAvgNum) : 0;
+
   if (nameEl) nameEl.innerText = std.name + ' 원생';
   if (metaEl) metaEl.innerText = std.school + ' ' + std.grade + ' · ' + std.classGroup + ' · 학번 ' + std.id;
   if (levelEl) levelEl.innerText = std.level;
-  if (bookCountEl) bookCountEl.innerText = std.bookCount + '권';
-  if (quizAvgEl) quizAvgEl.innerText = (std.quizAvg || '0.0') + '점';
+  if (bookCountEl) bookCountEl.innerText = displayBookCount + '권';
+  if (quizAvgEl) quizAvgEl.innerText = displayQuizAvg + '점';
   if (teacherEl) teacherEl.innerText = std.teacher || '박선혜 지도교사';
   if (initEl) initEl.innerText = std.name ? std.name.charAt(0) : '원';
+
+  syncWizardDateRangeForStudent(stdId);
 
   var titleInput = document.getElementById('wizReportTitle');
   if (titleInput) {
@@ -8259,8 +8399,14 @@ function onWizardStudentSelect(stdId) {
   }
 }
 
-function onWizardNext() {
+async function onWizardNext() {
   if (currentWizardStep === 1) {
+    if (window.NanoPortal && NanoPortal.remote && (!NanoPortal.logs() || NanoPortal.logs().length === 0)) {
+      try {
+        await NanoPortal.refreshLearning();
+      } catch (e) {}
+    }
+    syncWizardDateRangeForStudent(wizardSelectedStudentId);
     renderWizardBookList(wizardSelectedStudentId);
     goToWizardStep(2);
   } else if (currentWizardStep === 2) {
@@ -8291,73 +8437,7 @@ function renderWizardBookList(stdId) {
   if (!container) return;
   container.innerHTML = '';
 
-  // 7-2. 실제 학습 로그(getLoadedLearningLogs)에서 해당 학생의 완독 도서 조회
-  var std = studentDataList.find(function(s) { return s.id === stdId; });
-  var stdName = std ? std.name : '';
-
-  var loadedLogs = [];
-  try {
-    if (typeof getLoadedLearningLogs === 'function') {
-      loadedLogs = getLoadedLearningLogs();
-    }
-  } catch (e) {
-    console.warn('학습 로그 로딩 예외:', e);
-  }
-  if (!loadedLogs || loadedLogs.length === 0) {
-    loadedLogs = typeof learningLogs !== 'undefined' ? learningLogs : [];
-  }
-
-  // 학생 id 또는 이름으로 매칭되는 완독/응시 로그 필터링
-  var studentLogs = loadedLogs.filter(function(log) {
-    return (log.studentId && log.studentId === stdId) ||
-           (stdName && log.studentName === stdName);
-  });
-
-  var allBooks = [];
-  if (studentLogs.length > 0) {
-    // 중복 도서는 최신 일자로 1권씩만 매핑
-    var seenTitles = {};
-    studentLogs.forEach(function(log) {
-      var title = log.bookTitle || log.title || '도서';
-      if (!seenTitles[title]) {
-        seenTitles[title] = true;
-        // 도서 커버 매칭
-        var cover = 'assets/covers/cover_1001.jpg';
-        if (typeof bookList !== 'undefined') {
-          var matchedBook = bookList.find(function(b) { return b.title === title; });
-          if (matchedBook && matchedBook.cover) cover = matchedBook.cover;
-        }
-        var logDate = log.submittedAt || log.date || '2026.09.01';
-        var dateFormatted = logDate.split(' ')[0].replace(/-/g, '.');
-        var scoreStr = (log.score !== undefined ? log.score : 100) + '점';
-        var sheetStr = log.sheet || '작성 완료';
-        var commentStr = log.comment || log.sheetAnswer || '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 완벽히 이해함.';
-        allBooks.push({
-          cover: cover,
-          title: title,
-          pub: log.bookPub || log.pub || '출판사',
-          date: dateFormatted,
-          score: scoreStr,
-          sheet: sheetStr,
-          comment: commentStr
-        });
-      }
-    });
-  }
-
-  // 학습 로그에 완독 기록이 없는 경우 fallback (기존 pfData 또는 기본값)
-  if (allBooks.length === 0) {
-    var pf = portfolioDataMap[stdId];
-    if (pf && pf.books && pf.books.length > 0) {
-      allBooks = pf.books;
-    } else {
-      allBooks = [
-        { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '100점', sheet: '제출 완료', comment: '사막여우와 장미의 의미를 문해력 높게 해석하고 논술 과제를 훌륭히 완수함.' },
-        { cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.02', score: '90점', sheet: '제출 완료', comment: '타인의 고통과 감정에 대한 공감 능력을 자신의 경험에 빗대어 설득력 있게 표현함.' },
-        { cover: 'assets/covers/cover_1004.jpg', title: '자전거 도둑', pub: '다림', date: '2026.08.28', score: '92점', sheet: '제출 완료', comment: '물질주의와 양심 사이의 갈등을 비판적 시각으로 깊이 있게 고찰함.' }
-      ];
-    }
-  }
+  var allBooks = getStudentCertifiedBooksForWizard(stdId);
 
   var startDateVal = document.getElementById('wizBookStartDate') ? document.getElementById('wizBookStartDate').value.replace(/-/g, '.') : '';
   var endDateVal = document.getElementById('wizBookEndDate') ? document.getElementById('wizBookEndDate').value.replace(/-/g, '.') : '';
@@ -8368,6 +8448,7 @@ function renderWizardBookList(stdId) {
     return matchStart && matchEnd;
   });
 
+  currentWizardFilteredBooks = books;
   wizardSelectedBooks = [];
 
   if (books.length === 0) {
@@ -8434,10 +8515,8 @@ function onWizardSelectAllBooks(checked) {
     }
   });
 
-  if (checked) {
-    var pf = portfolioDataMap[wizardSelectedStudentId];
-    var books = pf && pf.books ? pf.books : [{title:'어린 왕자'}, {title:'아몬드'}, {title:'자전거 도둑'}];
-    wizardSelectedBooks = books.map(function(b) { return b.title; });
+  if (checked && Array.isArray(currentWizardFilteredBooks)) {
+    wizardSelectedBooks = currentWizardFilteredBooks.map(function(b) { return b.title; });
   }
 
   updateWizardBookCountBadge();
@@ -8450,8 +8529,8 @@ function updateWizardBookCountBadge() {
   }
   var allChk = document.getElementById('wizSelectAllBooks');
   var allCheckboxes = document.querySelectorAll('.wiz-book-chk');
-  if (allChk && allCheckboxes.length > 0) {
-    allChk.checked = wizardSelectedBooks.length === allCheckboxes.length;
+  if (allChk) {
+    allChk.checked = allCheckboxes.length > 0 && wizardSelectedBooks.length === allCheckboxes.length;
   }
 }
 
@@ -8488,28 +8567,39 @@ async function finishPortfolioCreate() {
 
   if (window.NanoPortal && NanoPortal.remote) {
     if (!std || !std.serverId) { showAcademyToast('학생 정보를 새로고침한 뒤 다시 시도해 주세요.'); return; }
-    var quarter = period.match(/(\d{4})년\s*([1-4])분기/);
-    var fromDate;
-    var toDate;
-    if (quarter) {
-      var year = Number(quarter[1]);
-      var startMonth = (Number(quarter[2]) - 1) * 3;
-      fromDate = new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10);
-      toDate = new Date(Date.UTC(year, startMonth + 3, 0)).toISOString().slice(0, 10);
-    } else {
-      var today = new Date();
-      fromDate = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1)).toISOString().slice(0, 10);
-      toDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).toISOString().slice(0, 10);
+    var startDateInput = document.getElementById('wizBookStartDate');
+    var endDateInput = document.getElementById('wizBookEndDate');
+    var fromDate = startDateInput && startDateInput.value ? startDateInput.value : '';
+    var toDate = endDateInput && endDateInput.value ? endDateInput.value : '';
+    if (!fromDate || !toDate) {
+      var quarter = period.match(/(\d{4})년\s*([1-4])분기/);
+      if (quarter) {
+        var year = Number(quarter[1]);
+        var startMonth = (Number(quarter[2]) - 1) * 3;
+        fromDate = new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10);
+        toDate = new Date(Date.UTC(year, startMonth + 3, 0)).toISOString().slice(0, 10);
+      } else {
+        var today = new Date();
+        fromDate = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
+        toDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).toISOString().slice(0, 10);
+      }
     }
     try {
-      await NanoPortal.savePortfolio({ memberId: std.serverId, from: fromDate, to: toDate, comment: comment }, currentAcademyInfo.id);
+      await NanoPortal.savePortfolio({
+        memberId: std.serverId,
+        from: fromDate,
+        to: toDate,
+        title: title,
+        selectedTitles: wizardSelectedBooks,
+        comment: comment
+      }, currentAcademyInfo.id);
       await NanoPortal.refreshPortfolios();
       var createdPortfolio = portfolioList.find(function(item) { return item.studentId === wizardSelectedStudentId; });
       lastCreatedPortfolioId = createdPortfolio ? createdPortfolio.id : '';
       if (document.getElementById('wizDonePfId')) document.getElementById('wizDonePfId').innerText = lastCreatedPortfolioId || '발급 완료';
       if (document.getElementById('wizDoneStudentName')) document.getElementById('wizDoneStudentName').innerText = std.name + ' (' + std.grade + ' · ' + std.classGroup + ')';
       if (document.getElementById('wizDoneReportTitle')) document.getElementById('wizDoneReportTitle').innerText = createdPortfolio ? createdPortfolio.title : title;
-      if (document.getElementById('wizDoneBookCount')) document.getElementById('wizDoneBookCount').innerText = '총 ' + (createdPortfolio ? createdPortfolio.bookCount : 0) + '권';
+      if (document.getElementById('wizDoneBookCount')) document.getElementById('wizDoneBookCount').innerText = '총 ' + (createdPortfolio ? createdPortfolio.bookCount : wizardSelectedBooks.length) + '권';
       goToWizardStep(4);
       showAcademyToast('[' + std.name + '] 학생의 포트폴리오가 서버에서 발급되었습니다.');
       return;
@@ -8541,6 +8631,8 @@ async function finishPortfolioCreate() {
   var min = String(now.getMinutes()).padStart(2, '0');
   var formattedIssueDate = now.toISOString().split('T')[0].replace(/-/g, '.') + ' ' + hh + ':' + min;
 
+  var stdAvgRounded = (std && std.quizAvg != null && std.quizAvg !== '-' && !isNaN(parseFloat(std.quizAvg))) ? Math.round(parseFloat(std.quizAvg)) : 95;
+
   // 신규 발급: 카톡 발송 전 상태 ('카톡 발송하기' 버튼 표시)
   var newPf = {
     id: newPfId,
@@ -8553,7 +8645,7 @@ async function finishPortfolioCreate() {
     period: period,
     bookCount: bookCount,
     booksSummary: booksSummary,
-    quizAvg: (std ? std.quizAvg : 95.0) + '점',
+    quizAvg: stdAvgRounded + '점',
     issueDate: formattedIssueDate,
     status: '카톡 발송하기',
     kakaoSent: false
@@ -8561,9 +8653,17 @@ async function finishPortfolioCreate() {
 
   portfolioList.unshift(newPf);
 
+  var selectedBookObjects = (currentWizardFilteredBooks || []).filter(function(b) {
+    return wizardSelectedBooks.indexOf(b.title) !== -1;
+  });
+
   // 학생별 포트폴리오 데이터 맵 갱신
   if (portfolioDataMap[wizardSelectedStudentId]) {
     portfolioDataMap[wizardSelectedStudentId].teacherNote = comment;
+    if (selectedBookObjects.length > 0) {
+      portfolioDataMap[wizardSelectedStudentId].books = selectedBookObjects;
+      portfolioDataMap[wizardSelectedStudentId].bookCount = selectedBookObjects.length;
+    }
   } else {
     portfolioDataMap[wizardSelectedStudentId] = {
       name: std ? std.name : '학생',
@@ -8572,10 +8672,10 @@ async function finishPortfolioCreate() {
       teacher: std ? std.teacher : '박선우 지도교사',
       level: std ? std.level : '초등 심화 Lv 5',
       bookCount: bookCount,
-      quizAvg: std ? std.quizAvg : 95.0,
+      quizAvg: stdAvgRounded,
       genreDist: { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 },
       tags: ['#성장소설', '#독서루틴', '#인물공감', '#지적호기심'],
-      books: [
+      books: selectedBookObjects.length > 0 ? selectedBookObjects : [
         { cover: 'assets/covers/cover_1001.jpg', title: wizardSelectedBooks[0] || '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '95점', sheet: '우수 완결', comment: '주제 의식을 바르게 파악하고 성실히 완독함.' }
       ],
       teacherNote: comment

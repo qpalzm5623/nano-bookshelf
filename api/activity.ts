@@ -26,10 +26,10 @@ export default async function handler(req: any, res: any) {
       const [points, assignments, books, average] = await Promise.all([
         prisma.pointHistory.findMany({ where: { memberId: user.id }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 200 }),
         prisma.bookAssignment.findMany({ where: { memberId: user.id, academyId: user.academyId, isCompleted: false }, include: { book: { select: { bookNo: true } } } }),
-        prisma.quizAttempt.findMany({ where: { memberId: user.id }, distinct: ['bookId'], select: { bookId: true } }),
+        prisma.quizAttempt.findMany({ where: { memberId: user.id, score: { gte: 60 } }, distinct: ['bookId'], select: { bookId: true } }),
         prisma.quizAttempt.aggregate({ where: { memberId: user.id }, _avg: { score: true } })
       ]);
-      return res.json({ totalPoints: user.points, bookCount: books.length, quizAvg: average._avg.score || 0, pointLogs: points,
+      return res.json({ totalPoints: user.points, bookCount: books.length, quizAvg: Math.round(average._avg.score || 0), pointLogs: points,
         assignedBookIds: assignments.map(a => a.book.bookNo), pointLimit: 200 });
     }
     if (action === 'rankings') {

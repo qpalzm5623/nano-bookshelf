@@ -1780,14 +1780,15 @@ function renderRecommendedBooksTable() {
   const filtered = (selectedRecGrade === "ALL")
     ? allList
     : allList.filter(b => {
-        const bGrade = (b.grade === "유치부" || b.grade === "유치") ? "미취학" : (b.grade || "");
-        if (selectedRecGrade === "미취학") {
-          return bGrade === "미취학" || b.grade === "유치부" || b.grade === "유치";
+        const normBookGrade = normalizeRecGradeCode(b.grade || "");
+        const normSelectedGrade = normalizeRecGradeCode(selectedRecGrade);
+        if (selectedRecGrade === "미취학" || normSelectedGrade === "미취학") {
+          return normBookGrade === "미취학";
         }
-        if (selectedRecGrade === "중학교" || selectedRecGrade === "중등") {
-          return bGrade === "중학교" || bGrade.includes("중등") || bGrade.includes("중학교") || bGrade.startsWith("중");
+        if (selectedRecGrade === "중학교" || selectedRecGrade === "중등" || normSelectedGrade === "중학교") {
+          return normBookGrade === "중학교" || normBookGrade.startsWith("중");
         }
-        return bGrade === selectedRecGrade || bGrade.includes(selectedRecGrade) || (b.grade && b.grade.includes(selectedRecGrade));
+        return normBookGrade === normSelectedGrade || b.grade === selectedRecGrade;
       });
 
   if (countSpan) {
@@ -1824,7 +1825,7 @@ function renderRecommendedBooksTable() {
   tbody.innerHTML = pagedList.map((b, index) => {
     const coverHtml = `<img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">`;
     const num = startIdx + index + 1;
-    const displayGrade = (b.grade === "유치부" || b.grade === "유치") ? "미취학" : (b.grade || "전체");
+    const displayGrade = b.grade ? normalizeRecGradeCode(b.grade) : "전체";
 
     let dateStr = "-";
     if (b.createdAt) {
@@ -2021,7 +2022,7 @@ function filterRecModalBooks() {
   }
 
   container.innerHTML = candidates.map(b => {
-    const isAlreadyRec = recList.some(r => (r.bookId === b.id || r.title === b.title) && r.grade === selectedGrade);
+    const isAlreadyRec = recList.some(r => (r.bookId === b.id || r.title === b.title) && normalizeRecGradeCode(r.grade) === normalizeRecGradeCode(selectedGrade));
     const coverSrc = b.cover || b.image || '';
     const coverHtml = coverSrc ? `<img src="${coverSrc}" style="width: 40px; height: 52px; object-fit: cover; border-radius: 4px;" class="mr-2">` : `<div style="width: 40px; height: 52px; background: #eee; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;" class="mr-2">도서</div>`;
     return `
@@ -2053,17 +2054,21 @@ async function addBookToRecommended(bookId) {
   if (!book) return;
 
   const list = getRecommendedBooks();
-  const exists = list.some(r => (r.bookId === bookId || r.title === book.title) && r.grade === grade);
+  const exists = list.some(r => (r.bookId === bookId || r.title === book.title) && normalizeRecGradeCode(r.grade) === normalizeRecGradeCode(grade));
   if (exists) {
     alert("이미 해당 학년의 권장도서로 등록되어 있습니다.");
     return;
   }
 
+  const previousGrade = book.grade;
+  book.grade = grade;
   if (window.NanoPortal && NanoPortal.remote) {
     const previousRecommended = book.isRecommended;
     book.isRecommended = true;
     try { await NanoPortal.saveBook(book); }
-    catch (error) { book.isRecommended = previousRecommended; showMasterToast('권장도서로 지정하지 못했습니다: ' + error.message); return; }
+    catch (error) { book.isRecommended = previousRecommended; book.grade = previousGrade; showMasterToast('권장도서로 지정하지 못했습니다: ' + error.message); return; }
+  } else {
+    book.isRecommended = true;
   }
 
   list.unshift({
@@ -2214,15 +2219,15 @@ function normalizeRecGradeCode(raw) {
 
   // 한글/영문 텍스트 호환 매핑
   if (/미취학|유아|유치/i.test(str)) return "미취학";
-  if (/^초s*1|초등s*1/i.test(str)) return "초등 1학년";
-  if (/^초s*2|초등s*2/i.test(str)) return "초등 2학년";
-  if (/^초s*3|초등s*3/i.test(str)) return "초등 3학년";
-  if (/^초s*4|초등s*4/i.test(str)) return "초등 4학년";
-  if (/^초s*5|초등s*5/i.test(str)) return "초등 5학년";
-  if (/^초s*6|초등s*6/i.test(str)) return "초등 6학년";
-  if (/중s*1|중등s*1|중학교s*1/i.test(str)) return "중등 1학년";
-  if (/중s*2|중등s*2|중학교s*2/i.test(str)) return "중등 2학년";
-  if (/중s*3|중등s*3|중학교s*3/i.test(str)) return "중등 3학년";
+  if (/^초\s*1|초등\s*1/i.test(str)) return "초등 1학년";
+  if (/^초\s*2|초등\s*2/i.test(str)) return "초등 2학년";
+  if (/^초\s*3|초등\s*3/i.test(str)) return "초등 3학년";
+  if (/^초\s*4|초등\s*4/i.test(str)) return "초등 4학년";
+  if (/^초\s*5|초등\s*5/i.test(str)) return "초등 5학년";
+  if (/^초\s*6|초등\s*6/i.test(str)) return "초등 6학년";
+  if (/중\s*1|중등\s*1|중학교\s*1/i.test(str)) return "중등 1학년";
+  if (/중\s*2|중등\s*2|중학교\s*2/i.test(str)) return "중등 2학년";
+  if (/중\s*3|중등\s*3|중학교\s*3/i.test(str)) return "중등 3학년";
   if (/중/i.test(str)) return "중학교";
 
   return str;
@@ -2425,9 +2430,12 @@ async function handleRecommendedExcelUpload() {
             updateCount++;
           }
 
-          if (matchedBook && window.NanoPortal && NanoPortal.remote) {
+          if (matchedBook) {
+            matchedBook.grade = grade;
             matchedBook.isRecommended = true;
-            try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
+            if (window.NanoPortal && NanoPortal.remote) {
+              try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
+            }
           }
         } else {
           // R: 신규 권장도서 등록 (이미 등록된 경우 학년 갱신)
@@ -2461,9 +2469,12 @@ async function handleRecommendedExcelUpload() {
             addCount++;
           }
 
-          if (matchedBook && window.NanoPortal && NanoPortal.remote) {
+          if (matchedBook) {
+            matchedBook.grade = grade;
             matchedBook.isRecommended = true;
-            try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
+            if (window.NanoPortal && NanoPortal.remote) {
+              try { await NanoPortal.saveBook(matchedBook); } catch(err) { console.warn(err); }
+            }
           }
         }
       }

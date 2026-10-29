@@ -227,12 +227,16 @@ var NanoQuizResult = (function () {
       : tier === 'high' ? star(60,-34,1.7,'#e5bd70') + '<path d="M60,-18L55,5" stroke="#bd955e" stroke-width="3"/>'
       : '<g transform="translate(63 -33)"><path d="M-12,-7H12L9,9Q0,22 -9,9Z" fill="#e6bf72"/><path d="M-12,-4Q-26,-3 -13,9M12,-4Q26,-3 13,9M0,17V24M-9,26H9" stroke="#c49a59" stroke-width="3" fill="none" stroke-linecap="round"/>' + star(0,3,.6,'#fff5d7') + '</g>';
     var lift = tier === 'perfect' ? -8 : 0;
-    return '<g class="qr-mascot" data-friend="' + id + '" data-stage="' + stage + '" transform="translate(232 ' + (157 + lift) + ')">' + back + growth.back +
+    return '<g class="qr-mascot" data-friend="' + id + '" data-stage="' + stage + '" transform="translate(232 ' + (157 + lift) + ')"><g class="qr-mascot-motion">' +
+      '<g class="qr-part-back">' + back + growth.back + '</g>' +
       '<ellipse cx="-20" cy="75" rx="16" ry="9" fill="' + dark + '"/><ellipse cx="20" cy="75" rx="16" ry="9" fill="' + dark + '"/>' +
-      '<path d="M-29,7Q-45,29 -36,63Q0,83 36,63Q45,29 29,7Z" fill="' + fur + '"/><ellipse cy="43" rx="25" ry="28" fill="' + light + '"/>' + growth.outfit + ears +
-      '<path d="M-46,-28C-48,-78 48,-78 46,-28Q45,12 0,14Q-45,12 -46,-28Z" fill="' + fur + '"/>' + face + eyes +
-      '<ellipse cx="-31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><ellipse cx="31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><path d="M-31,-45Q-24,-53 -15,-53" stroke="#fff9ef" stroke-opacity=".35" stroke-width="5" stroke-linecap="round" fill="none"/>' + mouth + accessory + growth.head +
-      '<path d="' + leftArm + ' M' + rightArm.substring(1) + '" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + props + '</g>';
+      '<path d="M-29,7Q-45,29 -36,63Q0,83 36,63Q45,29 29,7Z" fill="' + fur + '"/><ellipse cy="43" rx="25" ry="28" fill="' + light + '"/>' + growth.outfit +
+      '<g class="qr-part-ears">' + ears + '</g>' +
+      '<path d="M-46,-28C-48,-78 48,-78 46,-28Q45,12 0,14Q-45,12 -46,-28Z" fill="' + fur + '"/>' + face +
+      '<g class="qr-part-eyes">' + eyes + '</g>' +
+      '<ellipse cx="-31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><ellipse cx="31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><path d="M-31,-45Q-24,-53 -15,-53" stroke="#fff9ef" stroke-opacity=".35" stroke-width="5" stroke-linecap="round" fill="none"/>' + mouth + accessory +
+      '<g class="qr-part-head">' + growth.head + '</g>' +
+      '<g class="qr-part-arms"><path d="' + leftArm + ' M' + rightArm.substring(1) + '" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + props + '</g></g></g>';
   }
 
   function avatar(charId, size, stage) {
@@ -241,7 +245,7 @@ var NanoQuizResult = (function () {
     stage = normalizeStage(stage);
     var c = characters[charId];
     return '<svg class="nano-friend-avatar" viewBox="112 6 240 250" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + c.name + ' ' + stage + '단계" focusable="false">' +
-      '<rect x="117" y="15" width="230" height="230" rx="85" fill="' + c.light + '" fill-opacity=".55"/><ellipse cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
+      '<rect x="117" y="15" width="230" height="230" rx="85" fill="' + c.light + '" fill-opacity=".55"/><ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
   }
 
   function illustration(themeKey, charId, tier, stage) {

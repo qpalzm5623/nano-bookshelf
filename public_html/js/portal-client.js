@@ -293,6 +293,7 @@
       if (remote && page !== 'master_preview') {
         refreshLearning().then(function() {
           if (typeof renderLearningTable === 'function') renderLearningTable();
+          if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
         }).catch(function() {});
 
         if (page === 'student_preview') {

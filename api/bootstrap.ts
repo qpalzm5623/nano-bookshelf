@@ -200,6 +200,7 @@ export default async function handler(req: any, res: any) {
         }
         return {
           ...m,
+          quizAvg: m.quizAvg == null ? 0 : Math.round(Number(m.quizAvg)),
           serverId: m.id,
           id: m.legacySeq || index + 1000000,
           academyId: m.academy.code,

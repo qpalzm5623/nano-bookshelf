@@ -49,11 +49,32 @@ export default async function handler(req: any, res: any) {
       if (body.operation === 'delete') { await prisma.portalSetting.deleteMany({ where: { key: input.id, scope } }); return res.json({ ok: true }); }
       const student = await prisma.member.findFirst({ where: { id: input.memberId, academyId, role: 'STUDENT' } }); need(student, '소속 학생을 선택해 주세요.');
       const from = date(input.from, '시작'), to = date(input.to, '종료'); need(to >= from, '기간을 확인해 주세요.');
-      const logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, completedAt: { gte: from, lt: new Date(+to + 86400000) } }, orderBy: { completedAt: 'asc' } });
-      const books = await prisma.book.findMany({ where: { id: { in: logs.map(l => l.bookId) } }, select: { id: true, title: true } });
+      const logs = await prisma.quizAttempt.findMany({ where: { memberId: student.id, score: { gte: 60 }, completedAt: { gte: from, lt: new Date(+to + 86400000) } }, orderBy: { completedAt: 'desc' } });
+      const books = await prisma.book.findMany({ where: { id: { in: [...new Set(logs.map(l => l.bookId))] } }, select: { id: true, title: true, publisher: true, coverUrl: true, author: true } });
+      const selectedTitles = Array.isArray(input.selectedTitles) ? input.selectedTitles.map((t: any) => String(t).trim()).filter(Boolean) : [];
+      const seenBookIds = new Set<string>();
+      const certBooks = [];
+      for (const l of logs) {
+        if (seenBookIds.has(l.bookId)) continue;
+        const matchedBook = books.find(b => b.id === l.bookId);
+        const bookTitle = matchedBook?.title || '삭제된 도서';
+        if (selectedTitles.length > 0 && !selectedTitles.includes(bookTitle)) continue;
+        seenBookIds.add(l.bookId);
+        certBooks.push({
+          bookId: l.bookId,
+          title: bookTitle,
+          pub: matchedBook?.publisher || '',
+          cover: matchedBook?.coverUrl || '',
+          author: matchedBook?.author || '',
+          date: l.completedAt.toISOString().slice(0, 10),
+          score: l.score,
+          thought: l.thinkReply || ''
+        });
+      }
+      const reportTitle = typeof input.title === 'string' && input.title.trim() ? text(input.title, '리포트 명칭', 200, true) : (student.name + ' 독서 포트폴리오');
       const value = { memberId: student.id, name: student.name, from: input.from, to: input.to, comment: text(input.comment, '총평', 20000),
-        books: logs.map(l => ({ bookId: l.bookId, title: books.find(b => b.id === l.bookId)?.title || '삭제된 도서', date: l.completedAt.toISOString().slice(0,10), score: l.score, thought: l.thinkReply || '' })),
-        title: student.name + ' 독서 포트폴리오', createdAt: new Date().toISOString() };
+        books: certBooks,
+        title: reportTitle, createdAt: new Date().toISOString() };
       if (input.id) {
         const saved = await prisma.portalSetting.updateMany({ where: { key: input.id, scope, revision: Number(input.revision) }, data: { value, revision: { increment: 1 } } });
         need(saved.count === 1, '다른 선생님이 수정했습니다. 새로고침 후 다시 저장해 주세요.', 409);
