@@ -6511,6 +6511,11 @@ function getBookQuizCount(b) {
   return 0;
 }
 
+// getQuizCountForBook 별칭 호환성 보장
+function getQuizCountForBook(b) {
+  return getBookQuizCount(b);
+}
+
 // 도서별 출제 기관(세트) 수 산출 (몇군데서 등록했는지 기준: 1Set, 2Set, 없음=0)
 function getBookQuizSetCount(b) {
   if (!b) return 0;
@@ -6637,12 +6642,19 @@ function renderMasterContents() {
   const publicFilter = document.getElementById("contentPublicFilter")?.value || "ALL";
 
   const filtered = masterBooks.filter(b => {
+    if (!b) return false;
+    const bTitle = String(b.title || '');
+    const bAuthor = String(b.author || '');
+    const bPublisher = String(b.publisher || '');
+    const bDetailTag = String(b.detailTag || '');
+    const bSeries = String(b.series || '');
+
     const matchQuery = !query ||
-      b.title.toLowerCase().includes(query) ||
-      b.author.toLowerCase().includes(query) ||
-      b.publisher.toLowerCase().includes(query) ||
-      (b.detailTag && b.detailTag.toLowerCase().includes(query)) ||
-      (b.series && b.series.toLowerCase().includes(query));
+      bTitle.toLowerCase().includes(query) ||
+      bAuthor.toLowerCase().includes(query) ||
+      bPublisher.toLowerCase().includes(query) ||
+      bDetailTag.toLowerCase().includes(query) ||
+      bSeries.toLowerCase().includes(query);
 
     let matchAcademy = true;
     if (academyFilter === "HQ") {
@@ -6696,8 +6708,9 @@ function renderMasterContents() {
 
   tbody.innerHTML = pageData.map((b, idx) => {
     const rowNo = filtered.length - (startIndex + idx);
-    const seriesVal = (b.series && b.series !== "단권" && b.series.trim()) ? b.series.trim() : "";
-    const cleanTitle = (seriesVal && b.title.startsWith("[" + seriesVal + "]")) ? b.title.replace("[" + seriesVal + "]", "").trim() : b.title;
+    const seriesVal = (b.series && b.series !== "단권" && String(b.series).trim()) ? String(b.series).trim() : "";
+    const rawTitle = String(b.title || '');
+    const cleanTitle = (seriesVal && rawTitle.startsWith("[" + seriesVal + "]")) ? rawTitle.replace("[" + seriesVal + "]", "").trim() : rawTitle;
     const seriesColHtml = seriesVal ? `<span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size: 11.5px; color: #475569; padding: 2px 7px; border-radius: 6px;">${seriesVal}</span>` : `<span class="text-muted font-weight-bold" style="font-size: 12px;">-</span>`;
     const isHq = !b.academyId || b.academyId === "HQ";
     const academyName = b.academyName || (isHq ? "본사 직속 (공용)" : "가맹 학원");
