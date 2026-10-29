@@ -221,8 +221,9 @@ function switchTab(tab) {
   if (tab === 'dispatch') renderAcademyDispatchTable();
   if (tab === 'ranking') renderAdminRankingView();
   if (tab === 'payment') {
+    if (typeof syncCurrentAcademyPlan === 'function') syncCurrentAcademyPlan(false);
     renderAcademyPaymentTable();
-    selectPlanTier(currentSelectedTier || 'standard');
+    selectPlanTier(currentSelectedTier || (typeof currentAcademyPlan !== 'undefined' && currentAcademyPlan.tier ? currentAcademyPlan.tier : 'standard'));
   }
 
   if (typeof clearAdminSearchAutofill === 'function') {
@@ -559,10 +560,42 @@ var currentAcademyInfo = (function() {
   try { auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || '{}'); } catch(e) {}
   var id = auth.academyId || ((auth.id === 'admin01' || auth.id === 'admin') ? 'DEMO-ACADEMY' : '');
   if (auth.role === 'master') id = localStorage.getItem('NANO_CURRENT_SELECTED_ACADEMY_ID') || id;
-  var franchise = (window.MIGRATED_FRANCHISES || []).find(function(f) { return f.id === id; }) || {};
-  return { id: id, name: franchise.name || auth.academyName || (id === 'DEMO-ACADEMY' ? '체험 학원' : '학원 미선택'),
-    director: franchise.director || auth.name || '', maxStudents: Number(franchise.maxStudents) || (id === 'DEMO-ACADEMY' ? 50 : 0),
-    phone: franchise.phone || '', adminId: auth.id || '', region: franchise.region || '', isDemo: id === 'DEMO-ACADEMY' };
+  var fList = Array.isArray(window.MIGRATED_FRANCHISES) ? window.MIGRATED_FRANCHISES.slice() : [];
+  if (!window.NANO_SERVER_DATA) {
+    try {
+      var rawLocal = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+      if (rawLocal) {
+        var parsedLocal = JSON.parse(rawLocal);
+        if (Array.isArray(parsedLocal) && parsedLocal.length > 0) fList = parsedLocal;
+      }
+    } catch(e) {}
+  }
+  var franchise = fList.find(function(f) {
+    return (id && f.id === id) ||
+           (auth.academyName && f.name === auth.academyName) ||
+           (auth.id && f.adminId === auth.id);
+  }) || {};
+  return {
+    id: franchise.id || id,
+    name: franchise.name || auth.academyName || (id === 'DEMO-ACADEMY' ? '체험 학원' : '학원 미선택'),
+    director: franchise.director || auth.name || '',
+    maxStudents: Number(franchise.maxStudents) || (id === 'DEMO-ACADEMY' ? 50 : 50),
+    plan: franchise.plan || 'Standard',
+    monthlyFee: franchise.monthlyFee || '',
+    joinDate: franchise.joinDate || '',
+    startDate: franchise.startDate || franchise.contractDate || franchise.joinDate || '2025-01-01',
+    endDate: franchise.endDate || franchise.expireDate || '2026-12-31',
+    contractDate: franchise.contractDate || franchise.startDate || franchise.joinDate || '2025-01-01',
+    expireDate: franchise.expireDate || franchise.endDate || '2026-12-31',
+    bizNumber: franchise.bizNumber || '',
+    email: franchise.email || '',
+    phone: franchise.phone || '',
+    adminId: franchise.adminId || auth.id || '',
+    region: franchise.region || franchise.address || '',
+    address: franchise.address || franchise.region || '',
+    status: franchise.status || 'ACTIVE',
+    isDemo: id === 'DEMO-ACADEMY'
+  };
 })();
 
 // 운영 환경(Vercel 서버)에서는 브라우저에 남아있던 예전 로컬 스토리지 더미 캐시를 제거하여 서버 DB와 100% 일치 보장
@@ -753,10 +786,21 @@ async function switchAcademyFranchise(acadId) {
   currentAcademyInfo.id = target.id;
   currentAcademyInfo.name = target.name;
   currentAcademyInfo.director = target.director;
-  currentAcademyInfo.maxStudents = parseInt(target.maxStudents, 10) || 100;
+  currentAcademyInfo.maxStudents = parseInt(target.maxStudents, 10) || 50;
+  currentAcademyInfo.plan = target.plan || 'Standard';
+  currentAcademyInfo.monthlyFee = target.monthlyFee || '';
+  currentAcademyInfo.joinDate = target.joinDate || '';
+  currentAcademyInfo.startDate = target.startDate || target.contractDate || target.joinDate || '2025-01-01';
+  currentAcademyInfo.endDate = target.endDate || target.expireDate || '2026-12-31';
+  currentAcademyInfo.contractDate = target.contractDate || target.startDate || target.joinDate || '2025-01-01';
+  currentAcademyInfo.expireDate = target.expireDate || target.endDate || '2026-12-31';
+  currentAcademyInfo.bizNumber = target.bizNumber || '';
+  currentAcademyInfo.email = target.email || '';
   currentAcademyInfo.phone = target.phone;
   currentAcademyInfo.adminId = target.adminId;
   currentAcademyInfo.region = target.region;
+  currentAcademyInfo.address = target.address || target.region || '';
+  currentAcademyInfo.status = target.status || 'ACTIVE';
   currentAcademyInfo.isDemo = false;
 
   STORAGE_KEY_CLASSES = 'NANO_CLASSES_' + currentAcademyInfo.id;
@@ -964,7 +1008,7 @@ function updateAllStudentCounts() {
     sidebarSlotEl.innerHTML = `${currentTotal} / ${maxSlots}명 <small class="${rateClass}">(${slotRate}%)</small>`;
   }
 
-  // 4-2. 결제 관리 탭 상단 3개 구독 현황 카드 실시간 연동
+  // 4-2. 결제 관리 탭 상단 3개 구독 현황 카드 및 STEP 1·2 요금제 카드 실시간 연동
   var paySlotUsageEl = document.getElementById('paymentStatSlotUsage');
   var paySlotRemainEl = document.getElementById('paymentStatSlotRemain');
   if (paySlotUsageEl) {
@@ -975,34 +1019,8 @@ function updateAllStudentCounts() {
     var remainSlots = Math.max(0, maxSlots - currentTotal);
     paySlotRemainEl.innerHTML = `잔여 슬롯: <strong>${remainSlots}명</strong>`;
   }
-  if (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) {
-    var payPlanNameEl = document.getElementById('paymentStatPlanName');
-    var payPlanFeeEl = document.getElementById('paymentStatPlanFee');
-    var payExpireEl = document.getElementById('paymentStatExpireDday');
-    var payStartEl = document.getElementById('paymentStatStartDate');
-    var payNextEl = document.getElementById('paymentStatNextDate');
-    if (payPlanNameEl && currentAcademyInfo.plan) {
-      payPlanNameEl.innerHTML = `${currentAcademyInfo.plan} <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">이용중</span>`;
-    }
-    if (payPlanFeeEl && currentAcademyInfo.monthlyFee) {
-      payPlanFeeEl.innerHTML = `월 결제액: <strong>${Number(currentAcademyInfo.monthlyFee).toLocaleString()}원</strong> <small>(VAT 포함)</small>`;
-    }
-    if (currentAcademyInfo.endDate) {
-      var endMs = Date.parse(currentAcademyInfo.endDate);
-      if (!isNaN(endMs)) {
-        var diffDays = Math.ceil((endMs - Date.now()) / 86400000);
-        var ddayLabel = diffDays >= 0 ? ('D-' + diffDays) : ('만료 +' + Math.abs(diffDays) + '일');
-        var endFormatted = String(currentAcademyInfo.endDate).slice(0, 10).replace(/-/g, '.');
-        if (payExpireEl) {
-          payExpireEl.style.color = diffDays <= 7 ? '#dc2626' : 'var(--text-main)';
-          payExpireEl.innerHTML = `${ddayLabel} <small class="text-muted font-weight-normal" style="font-size: 14px;">(${endFormatted} 만료)</small>`;
-        }
-        if (payNextEl) payNextEl.innerText = '다음 결제일: ' + String(currentAcademyInfo.endDate).slice(0, 10);
-      }
-    }
-    if (payStartEl && currentAcademyInfo.startDate) {
-      payStartEl.innerText = '시작일: ' + String(currentAcademyInfo.startDate).slice(0, 10);
-    }
+  if (typeof syncCurrentAcademyPlan === 'function') {
+    syncCurrentAcademyPlan(false);
   }
 
   // 5. 상단 글로벌 역할 전환 바 계약 상태 갱신
@@ -11422,8 +11440,9 @@ function openAcademyBookOnlyAddModal(id = null) {
   // 9. 세부 태그 동적 입력 슬롯 초기화
   initAcadDetailTags((book && book.detailTag) ? book.detailTag : "");
 
-  // 10. 어워드, 생각꺼내기
+  // 10. 어워드, 줄거리, 생각꺼내기
   if (document.getElementById('abEditAwards')) document.getElementById('abEditAwards').value = (book && book.awards) ? book.awards : '';
+  if (document.getElementById('abEditSynopsis')) document.getElementById('abEditSynopsis').value = (book && (book.synopsis || book.description)) ? (book.synopsis || book.description) : '';
   if (document.getElementById('abEditThinkExtract')) document.getElementById('abEditThinkExtract').value = (book && book.thinkExtract) ? book.thinkExtract : '';
 
   // 11. 생각 담기
@@ -11574,6 +11593,7 @@ function handleSaveAcademyBookOnly(event) {
   var grade = document.getElementById('abEditGrade').value;
   var detailTag = getAcadDetailTagsValue();
   var awards = document.getElementById('abEditAwards') ? document.getElementById('abEditAwards').value.trim() : '';
+  var synopsis = document.getElementById('abEditSynopsis') ? document.getElementById('abEditSynopsis').value.trim() : '';
   var thinkExtract = document.getElementById('abEditThinkExtract') ? document.getElementById('abEditThinkExtract').value.trim() : '';
   var thinkInsert = document.getElementById('abEditThinkInsert') ? document.getElementById('abEditThinkInsert').value.trim() : '';
   var cover = (document.getElementById('abEditCover') ? document.getElementById('abEditCover').value.trim() : '') || 'assets/covers/cover_1001.jpg';
@@ -11623,6 +11643,8 @@ function handleSaveAcademyBookOnly(event) {
     b.tags = tags;
     b.detailTag = detailTag;
     b.awards = awards;
+    b.synopsis = synopsis;
+    b.description = synopsis;
     b.thinkExtract = thinkExtract;
     b.thinkInsert = thinkInsert;
     b.cover = cover;
@@ -11654,6 +11676,8 @@ function handleSaveAcademyBookOnly(event) {
       tags: tags,
       detailTag: detailTag,
       awards: awards,
+      synopsis: synopsis,
+      description: synopsis,
       thinkExtract: thinkExtract,
       thinkInsert: thinkInsert,
       creatorType: 'ACADEMY',
@@ -12810,8 +12834,8 @@ document.addEventListener('DOMContentLoaded', function() {
   renderAssignmentTable();
   renderAcademyDispatchTable();
   renderAdminRankingView();
+  syncCurrentAcademyPlan(true);
   renderAcademyPaymentTable();
-  selectPlanTier('standard');
 
   // 본사 시스템 공지 팝업 점검 및 상단 배지 업데이트
   updateAcademyNoticeBadge();
@@ -12855,14 +12879,19 @@ document.addEventListener('visibilitychange', function() {
 // 8. 결제 및 구독 관리 모듈 (Academy Payment & Subscription)
 // ==============================================================
 
-// 학원 현재 이용 중인 플랜 정보
+// 학원 현재 이용 중인 플랜 정보 (실제 학원 계약 데이터와 실시간 동기화)
 var currentAcademyPlan = {
   tier: 'standard',
   name: '스탠다드',
   slots: 50,
   monthlyPrice: 100000,
-  expiryDate: '2026-09-19',
-  daysRemaining: 3
+  startDate: '2025-01-01',
+  expiryDate: '2026-12-31',
+  expiryDateDot: '2026.12.31',
+  nextBillingDate: '2027-01-01',
+  nextBillingDateDot: '2027.01.01',
+  daysRemaining: 60,
+  ddayText: 'D-60'
 };
 
 var currentSelectedTier = 'standard';
@@ -12892,7 +12921,7 @@ var planTiers = {
   'premium': {
     code: 'premium',
     name: '프리미엄',
-    slots: 80,
+    slots: 100,
     monthlyPrice: 150000,
     rank: 3,
     badgeColor: 'badge-warning',
@@ -12908,6 +12937,165 @@ var planTiers = {
     desc: '대형 어학원 및 독서논술 전문 브랜드'
   }
 };
+
+// 학원 실제 계약 정보(currentAcademyInfo)를 기반으로 결제 관리 상단 카드·배너·요금제 선택 UI를 동기화
+function syncCurrentAcademyPlan(resetSelectedTier) {
+  if (typeof currentAcademyInfo === 'undefined' || !currentAcademyInfo) return;
+
+  var maxSlots = Number(currentAcademyInfo.maxStudents) || 50;
+  var rawPlan = String(currentAcademyInfo.plan || '').trim().toLowerCase();
+
+  // 계약 정원(maxSlots)과 플랜명(plan)을 함께 반영하여 실제 요금제 단계(tierCode) 산출
+  var tierCode = 'standard';
+  if (maxSlots > 100 || rawPlan === 'vip' || rawPlan === 'royal' || rawPlan === '로얄') {
+    tierCode = 'vip';
+  } else if (maxSlots >= 80 || rawPlan === 'premium' || rawPlan === '프리미엄') {
+    tierCode = 'premium';
+  } else if (maxSlots <= 35 || rawPlan === 'basic' || rawPlan === '베이직') {
+    tierCode = 'basic';
+  } else {
+    tierCode = 'standard';
+  }
+  // 단, 정원이 명확히 100명인 경우(루크러닝 등)에는 프리미엄(100명) 또는 VIP(플랜명이 VIP/Royal인 경우)로 정확히 매핑
+  if (maxSlots === 100 && tierCode !== 'vip') {
+    tierCode = 'premium';
+  } else if (maxSlots === 50) {
+    tierCode = 'standard';
+  } else if (maxSlots <= 30) {
+    tierCode = 'basic';
+  }
+
+  // 기본 슬롯 초기화 후 현재 이용 중인 요금제 슬롯을 실제 계약 정원과 일치시킴
+  planTiers.basic.slots = 30;
+  planTiers.standard.slots = 50;
+  planTiers.premium.slots = 100;
+  planTiers.vip.slots = 120;
+  planTiers[tierCode].slots = maxSlots;
+
+  var activeTier = planTiers[tierCode];
+
+  // 월 결제액 파싱 (문자열 "180,000원" 또는 숫자 모두 안전하게 처리)
+  var parsedFee = parseInt(String(currentAcademyInfo.monthlyFee || '').replace(/[^0-9]/g, ''), 10);
+  var displayMonthlyFee = (!isNaN(parsedFee) && parsedFee > 0)
+    ? parsedFee
+    : Math.round(activeTier.monthlyPrice * 1.1);
+
+  // 시작일·만료일·다음 결제일·D-Day 계산 (자정 기준 일수 계산)
+  var startStr = String(currentAcademyInfo.startDate || currentAcademyInfo.contractDate || currentAcademyInfo.joinDate || '2025-01-01').slice(0, 10);
+  var endStr = String(currentAcademyInfo.endDate || currentAcademyInfo.expireDate || '2026-12-31').slice(0, 10);
+  var endDot = endStr.replace(/-/g, '.');
+
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var endDateObj = new Date(endStr + 'T00:00:00');
+  if (isNaN(endDateObj.getTime())) {
+    endDateObj = new Date('2026-12-31T00:00:00');
+  }
+  var diffDays = Math.ceil((endDateObj.getTime() - today.getTime()) / 86400000);
+  var ddayLabel = diffDays > 0 ? ('D-' + diffDays) : (diffDays === 0 ? 'D-Day' : ('만료 +' + Math.abs(diffDays) + '일'));
+
+  var nextBillingObj = new Date(endDateObj.getTime() + 86400000);
+  var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+  var nextBillingStr = nextBillingObj.getFullYear() + '-' + pad(nextBillingObj.getMonth() + 1) + '-' + pad(nextBillingObj.getDate());
+  var nextBillingDot = nextBillingStr.replace(/-/g, '.');
+
+  currentAcademyPlan.tier = tierCode;
+  currentAcademyPlan.name = activeTier.name;
+  currentAcademyPlan.slots = maxSlots;
+  currentAcademyPlan.monthlyPrice = activeTier.monthlyPrice;
+  currentAcademyPlan.startDate = startStr;
+  currentAcademyPlan.expiryDate = endStr;
+  currentAcademyPlan.expiryDateDot = endDot;
+  currentAcademyPlan.nextBillingDate = nextBillingStr;
+  currentAcademyPlan.nextBillingDateDot = nextBillingDot;
+  currentAcademyPlan.daysRemaining = Math.max(0, diffDays);
+  currentAcademyPlan.ddayText = ddayLabel;
+
+  // 1) 상단 요약 카드 1: 현재 이용 중인 요금제
+  var payPlanNameEl = document.getElementById('paymentStatPlanName');
+  var payPlanFeeEl = document.getElementById('paymentStatPlanFee');
+  if (payPlanNameEl) {
+    payPlanNameEl.innerHTML = activeTier.name + ' (' + maxSlots + '명) <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">이용중</span>';
+  }
+  if (payPlanFeeEl) {
+    payPlanFeeEl.innerHTML = '월 결제액: <strong>' + Number(displayMonthlyFee).toLocaleString() + '원</strong> <small>(VAT 포함)</small>';
+  }
+
+  // 2) 상단 요약 카드 2: 서비스 이용 기간 및 만료일
+  var payExpireEl = document.getElementById('paymentStatExpireDday');
+  var payStartEl = document.getElementById('paymentStatStartDate');
+  var payNextEl = document.getElementById('paymentStatNextDate');
+  if (payExpireEl) {
+    payExpireEl.style.color = diffDays <= 30 ? '#dc2626' : 'var(--text-main)';
+    payExpireEl.innerHTML = ddayLabel + ' <small class="text-muted font-weight-normal" style="font-size: 14px;">(' + endDot + ' 만료)</small>';
+  }
+  if (payStartEl) {
+    payStartEl.innerText = '시작일: ' + startStr;
+  }
+  if (payNextEl) {
+    payNextEl.className = diffDays <= 30 ? 'text-danger font-weight-bold' : 'font-weight-bold';
+    payNextEl.style.color = diffDays <= 30 ? '' : 'var(--btn-primary)';
+    payNextEl.innerText = '다음 결제일: ' + endStr;
+  }
+
+  // 3) STEP 1 우측 상단 '현재 이용중: ...' 요약 라벨 및 4종 요금제 카드 배지·슬롯 갱신
+  var summaryLabelEl = document.getElementById('currentPlanSummaryLabel');
+  if (summaryLabelEl) {
+    summaryLabelEl.innerHTML = '현재 이용중: <strong>' + activeTier.name + ' (' + maxSlots + '명)</strong>';
+  }
+
+  var defaultTopBadges = {
+    basic: { cls: 'badge-soft badge-soft-neutral', text: '소규모/공부방' },
+    standard: { cls: 'badge-soft badge-soft-neutral', text: '표준 학원 플랜' },
+    premium: { cls: 'badge-soft badge-soft-neutral', text: '중대형 학원 플랜' },
+    vip: { cls: 'badge-soft badge-soft-danger', text: '대형 어학/논술학원' }
+  };
+
+  ['basic', 'standard', 'premium', 'vip'].forEach(function(code) {
+    var tObj = planTiers[code];
+    var slotEl = document.getElementById('tierSlots_' + code);
+    if (slotEl) slotEl.innerText = '최대 ' + tObj.slots + '명 슬롯';
+
+    var topBadgeEl = document.getElementById('tierBadge_' + code);
+    if (topBadgeEl) {
+      if (code === tierCode) {
+        topBadgeEl.className = 'badge badge-success';
+        topBadgeEl.innerText = '현재 이용중 (' + ddayLabel + ')';
+      } else if (tObj.rank === activeTier.rank + 1) {
+        topBadgeEl.className = 'badge badge-warning text-dark font-weight-bold';
+        topBadgeEl.innerText = '추천 업그레이드';
+      } else {
+        topBadgeEl.className = defaultTopBadges[code].cls;
+        topBadgeEl.innerText = defaultTopBadges[code].text;
+      }
+    }
+
+    var actionBadgeEl = document.getElementById('tierActionBadge_' + code);
+    if (actionBadgeEl) {
+      if (code === tierCode) {
+        actionBadgeEl.className = 'badge-soft badge-soft-success mt-1';
+        actionBadgeEl.innerText = '기존 플랜 기간 연장';
+      } else if (tObj.rank > activeTier.rank) {
+        actionBadgeEl.className = 'badge-soft badge-soft-danger mt-1';
+        actionBadgeEl.innerText = '즉시 변경 (차액 결제)';
+      } else {
+        actionBadgeEl.className = 'badge-soft badge-soft-warn mt-1';
+        actionBadgeEl.innerText = '차월 적용 (다운그레이드)';
+      }
+    }
+  });
+
+  // 4) 상단 구독 알림 배너 및 선택된 요금제 카드 동기화
+  if (typeof updateAutoRenewUI === 'function') {
+    updateAutoRenewUI();
+  }
+  if (resetSelectedTier || !currentSelectedTier) {
+    currentSelectedTier = tierCode;
+  }
+  if (typeof selectPlanTier === 'function') {
+    selectPlanTier(currentSelectedTier);
+  }
+}
 
 // 구독 기간 정의 및 할인율
 var periodDefinitions = {
@@ -12972,17 +13160,19 @@ function selectPlanTier(tierCode) {
   var targetRank = tier.rank;
   var policyBox = document.getElementById('planTierPolicyNoticeBox');
 
-  // 남은 D-3일 차액 계산 (상향 시)
+  // 남은 일수 차액 계산 (상향 시 당월 최대 30일 기준 일할 차액)
   var monthlyDiff = Math.max(0, tier.monthlyPrice - currentAcademyPlan.monthlyPrice);
-  var proratedDiffSupply = Math.round((monthlyDiff / 30) * currentAcademyPlan.daysRemaining);
+  var proratedDays = Math.min(30, Math.max(1, currentAcademyPlan.daysRemaining || 30));
+  var proratedDiffSupply = Math.round((monthlyDiff / 30) * proratedDays);
   var proratedDiffVat = Math.round(proratedDiffSupply * 0.1);
   var proratedDiffTotal = proratedDiffSupply + proratedDiffVat;
 
-  var btnSubmitSuffix = '';
+  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
+  var nextDot = currentAcademyPlan.nextBillingDateDot || String(currentAcademyPlan.nextBillingDate || '2027-01-01').replace(/-/g, '.');
+  var ddayLabel = currentAcademyPlan.ddayText || ('D-' + currentAcademyPlan.daysRemaining);
 
   if (targetRank > currentRank) {
     // [상위 요금제 업그레이드] 즉시 변경 & 차액 결제
-    btnSubmitSuffix = ' (즉시 변경 차액 결제)';
     if (policyBox) {
       policyBox.className = 'p-3 rounded mb-2 border-danger';
       policyBox.style.background = '#fff7f7';
@@ -12996,14 +13186,13 @@ function selectPlanTier(tierCode) {
             '</div>' +
             '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
               '• <strong>즉시 변경 적용</strong>: 신청 즉시 가맹 슬롯이 <strong>' + tier.slots + '명</strong>으로 즉시 확장되어 추가 원생 등록이 가능합니다.<br>' +
-              '• <strong>잔여 기간 차액 결제 방식</strong>: 현재 스탠다드 플랜의 남은 기간(D-3)에 해당하는 일할 차액(<strong>' + Number(proratedDiffTotal).toLocaleString() + '원</strong>, VAT 포함)만 결제되거나, 선택하신 구독 기간과 함께 합산 결제됩니다.' +
+              '• <strong>잔여 기간 차액 결제 방식</strong>: 현재 ' + currentAcademyPlan.name + ' 플랜의 남은 기간(' + ddayLabel + ')에 해당하는 일할 차액(<strong>' + Number(proratedDiffTotal).toLocaleString() + '원</strong>, VAT 포함)만 결제되거나, 선택하신 구독 기간과 함께 합산 결제됩니다.' +
             '</div>' +
           '</div>' +
         '</div>';
     }
   } else if (targetRank < currentRank) {
     // [하위 요금제 다운그레이드] 차월부터 적용
-    btnSubmitSuffix = ' (차월 적용 예약)';
     if (policyBox) {
       policyBox.className = 'p-3 rounded mb-2 border-warning';
       policyBox.style.background = '#fffbeb';
@@ -13016,15 +13205,14 @@ function selectPlanTier(tierCode) {
               '📅 [요금제 차월 적용 예약] 하위 요금제(' + tier.name + ' ' + tier.slots + '명)로 변경을 예약합니다.' +
             '</div>' +
             '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
-              '• <strong>당월 혜택 유지</strong>: 현재 이용권 만료일(2026.09.19)까지는 <strong>스탠다드(50명 슬롯)</strong> 혜택이 그대로 유지됩니다.<br>' +
-              '• <strong>차월 자동 적용</strong>: 지금 바로 결제되지 않으며, 차월 결제일(2026.09.20)부터 선택하신 <strong>' + tier.name + '(월 ' + Number(tier.monthlyPrice).toLocaleString() + '원)</strong>으로 자동 변경 및 정산됩니다.' +
+              '• <strong>당월 혜택 유지</strong>: 현재 이용권 만료일(' + expDot + ')까지는 <strong>' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯)</strong> 혜택이 그대로 유지됩니다.<br>' +
+              '• <strong>차월 자동 적용</strong>: 지금 바로 결제되지 않으며, 차월 결제일(' + nextDot + ')부터 선택하신 <strong>' + tier.name + '(월 ' + Number(tier.monthlyPrice).toLocaleString() + '원)</strong>으로 자동 변경 및 정산됩니다.' +
             '</div>' +
           '</div>' +
         '</div>';
     }
   } else {
     // [동일 요금제 기간 연장]
-    btnSubmitSuffix = '';
     if (policyBox) {
       policyBox.className = 'p-3 rounded mb-2 border-success';
       policyBox.style.background = '#f0fdf4';
@@ -13037,7 +13225,7 @@ function selectPlanTier(tierCode) {
               '🔄 [현재 요금제 연장] ' + tier.name + ' 요금제(' + tier.slots + '명)를 유지하며 서비스 기간을 연장합니다.' +
             '</div>' +
             '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
-              '• 만료 예정일(2026.09.19) 이후부터 선택하신 구독 기간만큼 중단 없이 서비스가 자동 연장됩니다.' +
+              '• 만료 예정일(' + expDot + ') 이후부터 선택하신 구독 기간만큼 중단 없이 서비스가 자동 연장됩니다.' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -13250,6 +13438,11 @@ function updateAutoRenewUI() {
     }
   }
 
+  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
+  var expDash = currentAcademyPlan.expiryDate || '2026-12-31';
+  var ddayLabel = currentAcademyPlan.ddayText || ('D-' + currentAcademyPlan.daysRemaining);
+  var remainDays = currentAcademyPlan.daysRemaining || 0;
+
   // 사이드바 뱃지 업데이트
   var navPaymentBadge = document.querySelector('#btn-nav-payment .badge');
   if (navPaymentBadge) {
@@ -13260,7 +13453,7 @@ function updateAutoRenewUI() {
     } else {
       navPaymentBadge.className = 'badge badge-danger text-white ml-1';
       navPaymentBadge.style.background = '#dc2626';
-      navPaymentBadge.innerText = 'D-3';
+      navPaymentBadge.innerText = ddayLabel;
     }
   }
 
@@ -13283,7 +13476,7 @@ function updateAutoRenewUI() {
       iconWrap.style.color = '#16a34a';
       iconWrap.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
     }
-    titleEl.innerHTML = '<span class="badge badge-success mr-2" style="font-size:11.5px; padding:4px 8px; background:#16a34a;">정기 구독 이용 중</span> 정기 결제 구독 중 <strong style="color:#15803d;">(자동 갱신 ON)</strong> - 3일 후(2026.09.19) 자동 갱신 결제됩니다.';
+    titleEl.innerHTML = '<span class="badge badge-success mr-2" style="font-size:11.5px; padding:4px 8px; background:#16a34a;">정기 구독 이용 중</span> 정기 결제 구독 중 <strong style="color:#15803d;">(자동 갱신 ON)</strong> - ' + remainDays + '일 후(' + expDot + ') 자동 갱신 결제됩니다.';
     descEl.innerText = '등록된 결제 수단으로 만료일에 맞춰 자동 연장되며, 모든 원생의 독서 이력 및 포트폴리오가 끊김 없이 보존됩니다.';
     if (btnWrap) {
       btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-outline-success px-3 py-2 font-weight-bold" onclick="scrollToPaymentHistory()" style="border-radius:10px; white-space:nowrap; border-width:1.5px;"><i class="fa-solid fa-receipt mr-1"></i>결제 내역 관리</button>';
@@ -13298,7 +13491,7 @@ function updateAutoRenewUI() {
       iconWrap.style.color = '#ea580c';
       iconWrap.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
     }
-    titleEl.innerHTML = '<span class="badge badge-danger mr-2" style="font-size:11.5px; padding:4px 8px;">D-3 만료 임박</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#c2410c;">3일 후</strong> 만료됩니다! (만료 예정일: 2026-09-19)';
+    titleEl.innerHTML = '<span class="badge badge-danger mr-2" style="font-size:11.5px; padding:4px 8px;">' + ddayLabel + ' 만료 안내</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#c2410c;">' + remainDays + '일 후</strong> 만료됩니다! (만료 예정일: ' + expDash + ')';
     descEl.innerText = '자동 갱신이 해제되어 있습니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.';
     if (btnWrap) {
       btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-danger px-3 py-2 font-weight-bold" onclick="scrollToPlans()" style="border-radius:10px; white-space:nowrap; box-shadow:0 2px 8px rgba(220,53,69,0.3);"><i class="fa-solid fa-bolt mr-1"></i>지금 바로 연장하기</button>';
@@ -13315,9 +13508,24 @@ function setExpireAlert(type) {
   var btnWrap = document.getElementById('paymentAlertBtnWrap');
   if (!banner || !titleEl || !descEl) return;
 
+  var expDash = currentAcademyPlan.expiryDate || '2026-12-31';
+
   if (type === 'd3') {
     isAutoRenewActive = false;
-    updateAutoRenewUI();
+    banner.style.display = 'flex';
+    banner.style.background = '#fff7ed';
+    banner.style.borderColor = '#fed7aa';
+    banner.style.color = '#9a3412';
+    if (iconWrap) {
+      iconWrap.style.background = '#ffedd5';
+      iconWrap.style.color = '#ea580c';
+      iconWrap.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    }
+    titleEl.innerHTML = '<span class="badge badge-danger mr-2" style="font-size:11.5px; padding:4px 8px;">D-3 만료 임박</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#c2410c;">3일 후</strong> 만료됩니다! (만료 예정일: ' + expDash + ')';
+    descEl.innerText = '자동 갱신이 해제되어 있습니다. 원활한 원생 학습 및 북퀴즈 서비스를 위해 이용권을 미리 연장해 주세요.';
+    if (btnWrap) {
+      btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-danger px-3 py-2 font-weight-bold" onclick="scrollToPlans()" style="border-radius:10px; white-space:nowrap; box-shadow:0 2px 8px rgba(220,53,69,0.3);"><i class="fa-solid fa-bolt mr-1"></i>지금 바로 연장하기</button>';
+    }
     showAcademyToast('만료 3일 전(D-3) 알림 상태로 시뮬레이션 전환되었습니다.');
   } else if (type === 'd7') {
     isAutoRenewActive = false;
@@ -13330,7 +13538,7 @@ function setExpireAlert(type) {
       iconWrap.style.color = '#ca8a04';
       iconWrap.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
     }
-    titleEl.innerHTML = '<span class="badge badge-warning text-dark mr-2" style="font-size:11.5px; padding:4px 8px;">D-7 만료 사전 안내</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#a16207;">7일 후</strong> 만료됩니다. (만료 예정일: 2026-09-19)';
+    titleEl.innerHTML = '<span class="badge badge-warning text-dark mr-2" style="font-size:11.5px; padding:4px 8px;">D-7 만료 사전 안내</span> 나노의 책장 서비스 이용 기간이 <strong style="color:#a16207;">7일 후</strong> 만료됩니다. (만료 예정일: ' + expDash + ')';
     descEl.innerText = '학원 정기 구독 갱신 안내 알림톡이 발송되었습니다. 미리 이용권을 연장하시면 기존 커리큘럼 및 원생 포트폴리오가 끊김 없이 보존됩니다.';
     if (btnWrap) {
       btnWrap.innerHTML = '<button type="button" class="btn btn-sm btn-warning text-dark px-3 py-2 font-weight-bold" onclick="scrollToPlans()" style="border-radius:10px; white-space:nowrap;"><i class="fa-solid fa-bolt mr-1"></i>이용권 미리 연장</button>';
@@ -13365,17 +13573,28 @@ function openCheckoutModal(periodCode) {
   var currentRank = planTiers[currentAcademyPlan.tier].rank;
   var targetRank = tier.rank;
 
+  var modalAcadEl = document.getElementById('checkoutModalAcademyName');
+  if (modalAcadEl && typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) {
+    var cleanDir = String(currentAcademyInfo.director || '').replace(/\s*원장님?$/, '');
+    modalAcadEl.innerText = (currentAcademyInfo.name || '가맹 학원') + (cleanDir ? ' (원장: ' + cleanDir + ')' : '');
+  }
+
   // 공급가액, 할인액, 부가세 계산
   var originalSupply = tier.monthlyPrice * period.periodMonths;
   var discountedSupply = Math.round(originalSupply * (1 - period.discountRate));
   var periodVat = Math.round(discountedSupply * 0.1);
   var periodTotal = discountedSupply + periodVat;
 
-  // 상위 요금제 업그레이드 시 D-3 일할 차액 계산
+  // 상위 요금제 업그레이드 시 잔여일수 일할 차액 계산
   var monthlyDiff = Math.max(0, tier.monthlyPrice - currentAcademyPlan.monthlyPrice);
-  var proratedDiffSupply = Math.round((monthlyDiff / 30) * currentAcademyPlan.daysRemaining);
+  var proratedDays = Math.min(30, Math.max(1, currentAcademyPlan.daysRemaining || 30));
+  var proratedDiffSupply = Math.round((monthlyDiff / 30) * proratedDays);
   var proratedDiffVat = Math.round(proratedDiffSupply * 0.1);
   var proratedDiffTotal = proratedDiffSupply + proratedDiffVat;
+
+  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
+  var nextDot = currentAcademyPlan.nextBillingDateDot || String(currentAcademyPlan.nextBillingDate || '2027-01-01').replace(/-/g, '.');
+  var ddayLabel = currentAcademyPlan.ddayText || ('D-' + currentAcademyPlan.daysRemaining);
 
   var displayBadge = tier.name + ' (' + tier.slots + '명) · ' + period.name;
   var badgeEl = document.getElementById('checkoutPlanBadge');
@@ -13398,7 +13617,7 @@ function openCheckoutModal(periodCode) {
       policyDescEl.innerHTML = 
         '<div class="text-danger font-weight-bold mb-1"><i class="fa-solid fa-circle-check mr-1"></i>요금제 즉시 업그레이드 정책 적용</div>' +
         '• 신청 즉시 가맹 원생 정원이 <strong>' + currentAcademyPlan.slots + '명 ➔ ' + tier.slots + '명</strong>으로 즉시 확장됩니다.<br>' +
-        '• 당월 남은 이용 기간(D-3)에 대한 일할 차액 <strong>' + Number(proratedDiffTotal).toLocaleString() + '원</strong>(공급가 ' + Number(proratedDiffSupply).toLocaleString() + '원 + VAT)이 포함되어 즉시 청구 및 변경됩니다.';
+        '• 당월 남은 이용 기간(' + ddayLabel + ')에 대한 일할 차액 <strong>' + Number(proratedDiffTotal).toLocaleString() + '원</strong>(공급가 ' + Number(proratedDiffSupply).toLocaleString() + '원 + VAT)이 포함되어 즉시 청구 및 변경됩니다.';
     }
 
     var finalSupply = discountedSupply + proratedDiffSupply;
@@ -13414,13 +13633,13 @@ function openCheckoutModal(periodCode) {
     // 2) 하위 요금제: 차월(다음 결제일)부터 적용 예약
     if (typeBadgeEl) {
       typeBadgeEl.className = 'badge-soft badge-soft-warn font-weight-bold';
-      typeBadgeEl.innerHTML = '<i class="fa-solid fa-calendar-check mr-1"></i>차월(2026.09.20)부터 적용 예약';
+      typeBadgeEl.innerHTML = '<i class="fa-solid fa-calendar-check mr-1"></i>차월(' + nextDot + ')부터 적용 예약';
     }
     if (policyDescEl) {
       policyDescEl.innerHTML = 
         '<div class="text-warning font-weight-bold mb-1" style="color: #b45309;"><i class="fa-solid fa-clock mr-1"></i>요금제 다운그레이드 차월 예약 정책</div>' +
-        '• 현재 이용권 만료일(2026.09.19)까지는 <strong>스탠다드(50명 슬롯)</strong> 혜택이 정상 유지됩니다.<br>' +
-        '• <strong>지금 결제되지 않으며</strong>, 차월 결제일(2026.09.20)부터 <strong>' + tier.name + '(' + tier.slots + '명)</strong> 요금제로 자동 전환 및 정산됩니다.';
+        '• 현재 이용권 만료일(' + expDot + ')까지는 <strong>' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯)</strong> 혜택이 정상 유지됩니다.<br>' +
+        '• <strong>지금 결제되지 않으며</strong>, 차월 결제일(' + nextDot + ')부터 <strong>' + tier.name + '(' + tier.slots + '명)</strong> 요금제로 자동 전환 및 정산됩니다.';
     }
 
     if (supplyEl) supplyEl.innerHTML = Number(discountedSupply).toLocaleString() + '원 <small class="text-muted">(차월 청구 예정)</small>';
@@ -13437,7 +13656,7 @@ function openCheckoutModal(periodCode) {
     if (policyDescEl) {
       policyDescEl.innerHTML = 
         '<div class="text-success font-weight-bold mb-1"><i class="fa-solid fa-circle-check mr-1"></i>현재 요금제 연장 정책</div>' +
-        '• 기존 만료일(2026.09.19) 이후부터 ' + period.shortName + ' 동안 서비스 중단 없이 안전하게 자동 연장됩니다.';
+        '• 기존 만료일(' + expDot + ') 이후부터 ' + period.shortName + ' 동안 서비스 중단 없이 안전하게 자동 연장됩니다.';
     }
 
     if (supplyEl) supplyEl.innerText = Number(discountedSupply).toLocaleString() + '원';
@@ -13500,10 +13719,16 @@ function submitSimulatedPayment() {
   var periodVat = Math.round(discountedSupply * 0.1);
   var periodTotal = discountedSupply + periodVat;
 
+  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
+  var nextDash = currentAcademyPlan.nextBillingDate || '2027-01-01';
+  var nextDot = currentAcademyPlan.nextBillingDateDot || nextDash.replace(/-/g, '.');
+  var ddayLabel = currentAcademyPlan.ddayText || ('D-' + currentAcademyPlan.daysRemaining);
+
   if (targetRank > currentRank) {
     // 1) 상위 요금제: 즉시 업그레이드 & 차액 결제
     var monthlyDiff = tier.monthlyPrice - currentAcademyPlan.monthlyPrice;
-    var proratedDiffSupply = Math.round((monthlyDiff / 30) * currentAcademyPlan.daysRemaining);
+    var proratedDays = Math.min(30, Math.max(1, currentAcademyPlan.daysRemaining || 30));
+    var proratedDiffSupply = Math.round((monthlyDiff / 30) * proratedDays);
     var proratedDiffVat = Math.round(proratedDiffSupply * 0.1);
     var finalSupply = discountedSupply + proratedDiffSupply;
     var finalVat = periodVat + proratedDiffVat;
@@ -13519,7 +13744,7 @@ function submitSimulatedPayment() {
       method: currentSelectedPayMethod + ' (즉시 결제)',
       date: dateStr,
       startDate: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()),
-      endDate: '2027-03-19',
+      endDate: currentAcademyPlan.expiryDate || '2027-03-19',
       status: 'paid' // 즉시 승인
     };
 
@@ -13527,22 +13752,10 @@ function submitSimulatedPayment() {
     renderAcademyPaymentTable(academyPaymentList);
 
     // 학원 현재 상태 즉시 업그레이드 반영 (원생 정원 확장 피드백)
-    currentAcademyPlan.tier = tier.code;
-    currentAcademyPlan.name = tier.name;
-    currentAcademyPlan.slots = tier.slots;
-    currentAcademyPlan.monthlyPrice = tier.monthlyPrice;
-
-    // 상단 UI 슬롯 통계 카드 즉시 갱신
-    var slotStat = document.querySelector('.col-md-4 .stat-num');
-    if (slotStat) {
-      var usagePercent = Math.round((48 / tier.slots) * 100);
-      slotStat.innerHTML = '48 <small class="text-muted font-weight-normal" style="font-size: 14px;">/ ' + tier.slots + '명</small>' +
-                           '<span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">' + usagePercent + '% 사용</span>';
-    }
-    var slotRem = document.querySelector('.col-md-4 .border-top span strong');
-    if (slotRem) {
-      slotRem.innerText = (tier.slots - 48) + '명';
-    }
+    currentAcademyInfo.maxStudents = tier.slots;
+    currentAcademyInfo.plan = tier.code === 'vip' ? 'VIP' : (tier.code === 'premium' ? 'Premium' : (tier.code === 'basic' ? 'Basic' : 'Standard'));
+    currentAcademyInfo.monthlyFee = Math.round(tier.monthlyPrice * 1.1) + '원';
+    updateAllStudentCounts();
 
     // 모달 닫기
     $('#paymentCheckoutModal').modal('hide');
@@ -13550,7 +13763,7 @@ function submitSimulatedPayment() {
     showAcademyToast('🎉 [' + tier.name + ' ' + tier.slots + '명] 즉시 변경 완료! 정원이 ' + tier.slots + '명으로 확장되었습니다.');
     alert('⚡ 요금제 즉시 변경 완료!\n\n' +
           '- 변경 요금제: ' + tier.name + ' (' + tier.slots + '명 슬롯)\n' +
-          '- 적용 방식: 즉시 변경 적용 (당월 잔여 D-3 차액 결제 완료)\n' +
+          '- 적용 방식: 즉시 변경 적용 (당월 잔여 ' + ddayLabel + ' 차액 결제 완료)\n' +
           '- 총 결제 금액: ' + Number(finalTotal).toLocaleString() + '원 (차액 ' + Number(proratedDiffSupply + proratedDiffVat).toLocaleString() + '원 포함)\n\n' +
           '원생 가맹 정원이 ' + tier.slots + '명으로 즉시 확장되어 추가 원생 등록이 가능합니다!');
 
@@ -13562,14 +13775,14 @@ function submitSimulatedPayment() {
     var newPayment = {
       id: newId,
       planType: tier.code + '_' + period.code,
-      planName: '[' + tier.name + ' ' + tier.slots + '명] ' + period.name + ' (차월 2026.09.20 변경 예약)',
+      planName: '[' + tier.name + ' ' + tier.slots + '명] ' + period.name + ' (차월 ' + nextDot + ' 변경 예약)',
       supply: discountedSupply,
       vat: periodVat,
       total: periodTotal,
       method: currentSelectedPayMethod + ' (차월 자동결제 예약)',
       date: dateStr,
-      startDate: '2026-09-20',
-      endDate: '2027-03-20',
+      startDate: nextDash,
+      endDate: currentAcademyPlan.expiryDate || '2027-03-20',
       status: 'pending' // 차월 대기
     };
 
@@ -13579,12 +13792,12 @@ function submitSimulatedPayment() {
     // 모달 닫기
     $('#paymentCheckoutModal').modal('hide');
 
-    showAcademyToast('📅 [' + tier.name + ' ' + tier.slots + '명] 차월(2026.09.20) 적용 예약이 완료되었습니다.');
+    showAcademyToast('📅 [' + tier.name + ' ' + tier.slots + '명] 차월(' + nextDot + ') 적용 예약이 완료되었습니다.');
     alert('📅 요금제 차월 적용 예약 완료!\n\n' +
           '- 예약 요금제: ' + tier.name + ' (' + tier.slots + '명 슬롯)\n' +
-          '- 적용 시작일: 2026-09-20 (차월 결제일)\n' +
+          '- 적용 시작일: ' + nextDash + ' (차월 결제일)\n' +
           '- 예정 결제액: ' + Number(periodTotal).toLocaleString() + '원 (VAT 포함)\n\n' +
-          '현재 이용 중인 스탠다드(50명 슬롯) 혜택은 만료일(2026.09.19)까지 유지되며, 차월 결제일부터 베이직 요금제로 자동 전환됩니다.');
+          '현재 이용 중인 ' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯) 혜택은 만료일(' + expDot + ')까지 유지되며, 차월 결제일부터 ' + tier.name + ' 요금제로 자동 전환됩니다.');
 
   } else {
     // 3) 동일 요금제 연장
@@ -13597,8 +13810,8 @@ function submitSimulatedPayment() {
       total: periodTotal,
       method: currentSelectedPayMethod,
       date: dateStr,
-      startDate: '2026-09-20',
-      endDate: '2027-03-20',
+      startDate: nextDash,
+      endDate: currentAcademyPlan.expiryDate || '2027-03-20',
       status: 'paid'
     };
 
@@ -13626,9 +13839,13 @@ function viewPaymentReceipt(payId) {
   var item = academyPaymentList.find(function(p) { return p.id === payId; });
   if (!item) return;
 
+  var acadDisplay = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name)
+    ? currentAcademyInfo.name + (currentAcademyInfo.director ? ' (대표: ' + String(currentAcademyInfo.director).replace(/\s*원장님?$/, '') + ')' : '')
+    : '나노 독서아카데미 본원';
+
   alert('🧾 [전자 결제 영수증 / 매출전표]\n\n' +
         '· 승인번호: ' + item.id + '\n' +
-        '· 학원명: 나노 독서아카데미 본원 (대표: 김은영)\n' +
+        '· 학원명: ' + acadDisplay + '\n' +
         '· 결제일시: ' + item.date + '\n' +
         '· 상품명: ' + item.planName + '\n' +
         '· 공급가액: ' + Number(item.supply).toLocaleString() + '원\n' +

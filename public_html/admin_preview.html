@@ -5195,7 +5195,7 @@
                   style="border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">1</span>
                 원생 정원별 요금제 선택
               </span>
-              <small class="text-muted">현재 이용중: <strong>스탠다드 (50명)</strong></small>
+              <small class="text-muted" id="currentPlanSummaryLabel">현재 이용중: <strong>스탠다드 (50명)</strong></small>
             </div>
 
             <div class="row" id="planTierSelectorRow">
@@ -5205,60 +5205,60 @@
                   onclick="selectPlanTier('basic')"
                   style="cursor: pointer; border: 2px solid var(--border-medium); border-radius: 14px; transition: all 0.2s;">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge-soft badge-soft-neutral" style="font-size: 10px;">소규모/공부방</span>
+                    <span class="badge-soft badge-soft-neutral" id="tierBadge_basic" style="font-size: 10px;">소규모/공부방</span>
                     <span class="tier-check-icon text-muted" style="font-size: 14px;"><i
                         class="fa-regular fa-circle"></i></span>
                   </div>
                   <div style="font-size: 26px; margin: 6px 0;">🌱</div>
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">베이직</h6>
-                  <div class="text-primary font-weight-bold" style="font-size: 13px;">최대 30명 슬롯</div>
+                  <div class="text-primary font-weight-bold" id="tierSlots_basic" style="font-size: 13px;">최대 30명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">70,000<span
+                    <div id="tierPrice_basic" style="font-size: 16px; font-weight: 800; color: var(--text-main);">70,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
-                    <div class="badge-soft badge-soft-warn mt-1" style="font-size: 10px;">차월 적용 (다운그레이드)</div>
+                    <div class="badge-soft badge-soft-warn mt-1" id="tierActionBadge_basic" style="font-size: 10px;">차월 적용 (다운그레이드)</div>
                   </div>
                 </div>
               </div>
 
-              <!-- TIER 2: 스탠다드 (50명 - 현재 이용중) -->
+              <!-- TIER 2: 스탠다드 (50명) -->
               <div class="col-md-3 col-6 mb-3">
                 <div class="simple-card p-3 h-100 plan-tier-card text-center active" id="cardTier_standard"
                   onclick="selectPlanTier('standard')"
                   style="cursor: pointer; border: 2px solid #5a4b3d; border-radius: 14px; transition: all 0.2s; background: #fffcf7; box-shadow: 0 4px 16px rgba(90, 75, 61, 0.12);">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge badge-success" style="font-size: 10px;">현재 이용중 (D-3)</span>
+                    <span class="badge badge-success" id="tierBadge_standard" style="font-size: 10px;">현재 이용중</span>
                     <span class="tier-check-icon text-success" style="font-size: 14px;"><i
                         class="fa-solid fa-circle-check"></i></span>
                   </div>
                   <div style="font-size: 26px; margin: 6px 0;">⚡</div>
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">스탠다드</h6>
-                  <div class="text-primary font-weight-bold" style="font-size: 13px;">최대 50명 슬롯</div>
+                  <div class="text-primary font-weight-bold" id="tierSlots_standard" style="font-size: 13px;">최대 50명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">100,000<span
+                    <div id="tierPrice_standard" style="font-size: 16px; font-weight: 800; color: var(--text-main);">100,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
-                    <div class="badge-soft badge-soft-success mt-1" style="font-size: 10px;">기존 플랜 기간 연장</div>
+                    <div class="badge-soft badge-soft-success mt-1" id="tierActionBadge_standard" style="font-size: 10px;">기존 플랜 기간 연장</div>
                   </div>
                 </div>
               </div>
 
-              <!-- TIER 3: 프리미엄 (80명) -->
+              <!-- TIER 3: 프리미엄 (100명) -->
               <div class="col-md-3 col-6 mb-3">
                 <div class="simple-card p-3 h-100 plan-tier-card text-center" id="cardTier_premium"
                   onclick="selectPlanTier('premium')"
                   style="cursor: pointer; border: 2px solid var(--border-medium); border-radius: 14px; transition: all 0.2s;">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 10px;">추천
+                    <span class="badge badge-warning text-dark font-weight-bold" id="tierBadge_premium" style="font-size: 10px;">추천
                       업그레이드</span>
                     <span class="tier-check-icon text-muted" style="font-size: 14px;"><i
                         class="fa-regular fa-circle"></i></span>
                   </div>
                   <div style="font-size: 26px; margin: 6px 0;">🚀</div>
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">프리미엄</h6>
-                  <div class="text-primary font-weight-bold" style="font-size: 13px;">최대 80명 슬롯</div>
+                  <div class="text-primary font-weight-bold" id="tierSlots_premium" style="font-size: 13px;">최대 100명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">150,000<span
+                    <div id="tierPrice_premium" style="font-size: 16px; font-weight: 800; color: var(--text-main);">150,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
-                    <div class="badge-soft badge-soft-danger mt-1" style="font-size: 10px;">즉시 변경 (차액 결제)</div>
+                    <div class="badge-soft badge-soft-danger mt-1" id="tierActionBadge_premium" style="font-size: 10px;">즉시 변경 (차액 결제)</div>
                   </div>
                 </div>
               </div>
@@ -5269,17 +5269,17 @@
                   onclick="selectPlanTier('vip')"
                   style="cursor: pointer; border: 2px solid var(--border-medium); border-radius: 14px; transition: all 0.2s;">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge-soft badge-soft-danger" style="font-size: 10px;">대형 어학/논술학원</span>
+                    <span class="badge-soft badge-soft-danger" id="tierBadge_vip" style="font-size: 10px;">대형 어학/논술학원</span>
                     <span class="tier-check-icon text-muted" style="font-size: 14px;"><i
                         class="fa-regular fa-circle"></i></span>
                   </div>
                   <div style="font-size: 26px; margin: 6px 0;">👑</div>
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">VIP 플랜</h6>
-                  <div class="text-primary font-weight-bold" style="font-size: 13px;">최대 120명 슬롯</div>
+                  <div class="text-primary font-weight-bold" id="tierSlots_vip" style="font-size: 13px;">최대 120명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--text-main);">220,000<span
+                    <div id="tierPrice_vip" style="font-size: 16px; font-weight: 800; color: var(--text-main);">220,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
-                    <div class="badge-soft badge-soft-danger mt-1" style="font-size: 10px;">즉시 변경 (차액 결제)</div>
+                    <div class="badge-soft badge-soft-danger mt-1" id="tierActionBadge_vip" style="font-size: 10px;">즉시 변경 (차액 결제)</div>
                   </div>
                 </div>
               </div>
@@ -5547,7 +5547,7 @@
                 <h5 class="modal-title font-weight-bold mb-0" style="color: var(--text-main); font-size: 16.5px;">
                   이용권 결제 신청
                 </h5>
-                <small class="text-muted" style="font-size: 12px;">나노 독서아카데미 본원 (원장: 김은영)</small>
+                <small class="text-muted" id="checkoutModalAcademyName" style="font-size: 12px;">나노 독서아카데미 본원 (원장: 김은영)</small>
               </div>
             </div>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
@@ -8061,6 +8061,13 @@
                     placeholder="예: 칼데콧 아너상 수상작, 한국어린이출판협의회 추천도서">
                 </div>
 
+                <!-- 줄거리 (도서 소개 및 읽기 포인트) -->
+                <div class="form-group">
+                  <label class="font-weight-bold" style="font-size: 13px;">줄거리 (도서 소개 및 읽기 포인트)</label>
+                  <textarea id="abEditSynopsis" class="form-control form-control-beige" rows="3"
+                    placeholder="도서의 상세 줄거리 및 핵심 독서 포인트를 입력하세요. (미입력 시 기본 안내 문구가 자동 표시됩니다.)"></textarea>
+                </div>
+
                 <!-- 생각 꺼내기 (직접 타이핑) -->
                 <div class="form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">생각 꺼내기 (도서 읽기 전 호기심 유발 질문)</label>
@@ -9279,7 +9286,7 @@
   <!-- Daum 우편번호 서비스 (비동기 지연 로딩) -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
   <script src="js/learning-storage.js?v=20261014_ux2"></script>
-  <script src="admin_preview.js?v=20261028_clean_sheet"></script>
+  <script src="admin_preview.js?v=20261029_payment_sync"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

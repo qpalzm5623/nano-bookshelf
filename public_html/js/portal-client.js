@@ -92,10 +92,20 @@
   }
   async function deleteClass(item, academyCode) { return manage('classes', 'delete', { id: item.serverId || item.id }, { academy: academyCode }); }
   async function saveBanner(item) {
+    var bookIds = Array.isArray(item.bookIds) ? item.bookIds.map(function(id) { return String(id).trim(); }).filter(Boolean) : [];
+    var rawLink = item.linkUrl || item.link || '';
+    var encodedLink = /^https?:\/\//i.test(rawLink)
+      ? rawLink
+      : ('#books=' + encodeURIComponent(bookIds.join(',')) + (item.sub ? '&sub=' + encodeURIComponent(item.sub) : ''));
     var result = await manage('banners', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined, title: item.title,
-      imageUrl: item.imageUrl || item.image || '', linkUrl: item.linkUrl || item.link || '', isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0,
-      sub: item.sub || '', bookIds: Array.isArray(item.bookIds) ? item.bookIds : [], clicks: Number(item.clicks) || 0, createdAt: item.createdAt || '' });
-    if (result.item) item.id = result.item.id;
+      imageUrl: item.imageUrl || item.image || '', linkUrl: encodedLink, isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0,
+      sub: item.sub || '', bookIds: bookIds, clicks: Number(item.clicks) || 0, createdAt: item.createdAt || '' });
+    if (result.item) {
+      item.id = result.item.id;
+      item.bookIds = Array.isArray(result.item.bookIds) && result.item.bookIds.length > 0 ? result.item.bookIds : bookIds;
+      item.linkUrl = encodedLink;
+      item.link = encodedLink;
+    }
     return result.item;
   }
   async function deleteBanner(item) { return manage('banners', 'delete', { id: item.id }); }

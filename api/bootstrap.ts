@@ -162,7 +162,9 @@ export default async function handler(req: any, res: any) {
             cat1: subCat === 'C' ? '비문학/정보글' : subCat === 'B' ? '인물 이야기 (위인)' : '소설',
             cat2: category === 'F' ? '외서' : '국내서',
             tag: b.theme ? '#' + b.theme.name : '',
-            thinkExtract: b.thinkTitle || b.description || '',
+            description: b.description || '',
+            synopsis: b.description || '',
+            thinkExtract: b.thinkTitle || '',
             thinkInsert: b.thinkQuiz || '',
             thinkOpen: b.thinkTitle || '',
             hasQuiz: ((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0,
@@ -189,6 +191,16 @@ export default async function handler(req: any, res: any) {
         type: d.templateCode, typeName: d.templateCode, receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
       NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => {
         const meta = bannerMetaMap.get(b.id) || {};
+        let linkBookIds: string[] = [];
+        let linkSub = '';
+        if (typeof b.linkUrl === 'string' && b.linkUrl.startsWith('#')) {
+          try {
+            const params = new URLSearchParams(b.linkUrl.slice(1));
+            const rawBooks = params.get('books') || '';
+            if (rawBooks) linkBookIds = rawBooks.split(',').map(s => s.trim()).filter(Boolean);
+            linkSub = params.get('sub') || '';
+          } catch {}
+        }
         return {
           ...b,
           active: b.isActive ? 'Y' : 'N',
@@ -196,8 +208,8 @@ export default async function handler(req: any, res: any) {
           image: b.imageUrl || '',
           imageUrl: b.imageUrl || '',
           link: b.linkUrl || '',
-          sub: meta.sub || '',
-          bookIds: Array.isArray(meta.bookIds) ? meta.bookIds : [],
+          sub: meta.sub || linkSub || '',
+          bookIds: Array.isArray(meta.bookIds) ? meta.bookIds : linkBookIds,
           clicks: typeof meta.clicks === 'number' ? meta.clicks : 0,
           createdAt: meta.createdAt || '2026-09-01',
           type: 'image'

@@ -4,6 +4,8 @@ import { hashPassword } from '../lib/portal-auth';
 import { randomUUID } from 'node:crypto';
 import { monthWindow } from '../lib/portal-learning';
 
+export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
+
 const memberFields = { id: true, username: true, name: true, role: true, status: true, grade: true, school: true, gender: true, phone: true,
   parentName: true, parentPhone: true, parentEmail: true, reportYn: true, classGroupId: true, points: true, bookCount: true, quizAvg: true, updatedAt: true } as const;
 function enumValue(value: any, values: string[], label: string) { need(values.includes(value), label + ' 값을 확인해 주세요.'); return value; }
@@ -57,7 +59,27 @@ export default async function handler(req: any, res: any) {
           prisma.portalSetting.findMany({ where: { scope: 'banner_meta' } })
         ]);
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^banner_meta:/, ''), (m.value || {}) as Record<string, any>]));
-        return res.json({ items: bannerRows.map(b => ({ ...b, ...(metaMap.get(b.id) || {}) })) });
+        return res.json({
+          items: bannerRows.map(b => {
+            const meta = metaMap.get(b.id) || {};
+            let linkBookIds: string[] = [];
+            let linkSub = '';
+            if (typeof b.linkUrl === 'string' && b.linkUrl.startsWith('#')) {
+              try {
+                const params = new URLSearchParams(b.linkUrl.slice(1));
+                const rawBooks = params.get('books') || '';
+                if (rawBooks) linkBookIds = rawBooks.split(',').map(s => s.trim()).filter(Boolean);
+                linkSub = params.get('sub') || '';
+              } catch {}
+            }
+            return {
+              ...b,
+              ...meta,
+              sub: meta.sub || linkSub || '',
+              bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : linkBookIds
+            };
+          })
+        });
       }
       if (entity === 'quizzes') { need(req.query.bookId, '도서를 선택해 주세요.'); return res.json({ items: await prisma.bookQuiz.findMany({ where: { bookId: String(req.query.bookId) }, orderBy: { questionNo: 'asc' } }) }); }
       if (entity === 'dispatch') return res.json({ items: await prisma.aligoDispatchLog.findMany({ where: { academyId }, orderBy: { sentAt: 'desc' }, take: 200 }) });
@@ -320,10 +342,11 @@ export default async function handler(req: any, res: any) {
       const meta = {
         subTag: text(input.subTag || '', '서브 태그', 500),
         desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
-        image: text(input.image || '', '테마 이미지', 500000),
+        image: text(input.image || '', '테마 이미지', 1500000),
         active: input.active === 'N' ? 'N' : 'Y',
         bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : []
       };
+      if (meta.image) need(!/^javascript:/i.test(meta.image), '유효한 이미지 주소를 입력해 주세요.');
       await prisma.portalSetting.upsert({
         where: { key: 'theme_meta:' + saved.id },
         update: { scope: 'theme_meta', value: meta },
@@ -337,12 +360,17 @@ export default async function handler(req: any, res: any) {
         await prisma.portalSetting.deleteMany({ where: { key: 'banner_meta:' + input.id, scope: 'banner_meta' } });
         return res.json({ ok: true });
       }
-      for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|#)/i.test(url), '유효한 이미지 또는 연결 주소를 입력해 주세요.');
-      const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: text(input.linkUrl, '연결 주소', 2000), isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
+      for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|upload\/|resources\/|images\/|assets\/|data:image\/|#)/i.test(url), '유효한 이미지 또는 연결 주소를 입력해 주세요.');
+      const bookIds = Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : [];
+      const subText = text(input.sub || '', '배너 서브 설명', 1000);
+      const effectiveLinkUrl = (input.linkUrl && /^https?:\/\//i.test(String(input.linkUrl)))
+        ? text(input.linkUrl, '연결 주소', 2000)
+        : text('#books=' + encodeURIComponent(bookIds.join(',')) + (subText ? '&sub=' + encodeURIComponent(subText) : ''), '연결 주소', 2000);
+      const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: effectiveLinkUrl, isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
       const saved = input.id ? await prisma.mainBanner.update({ where: { id: input.id }, data }) : await prisma.mainBanner.create({ data });
       const meta = {
-        sub: text(input.sub || '', '배너 서브 설명', 1000),
-        bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : [],
+        sub: subText,
+        bookIds,
         clicks: Number(input.clicks) || 0,
         createdAt: text(input.createdAt || new Date().toISOString().slice(0, 10), '등록일', 20)
       };

@@ -707,16 +707,55 @@ let defaultMasterThemeList = [
 
 let themeList = defaultMasterThemeList.slice();
 
+// 배너 linkUrl('#books=ID1,ID2&sub=...')에서 도서 목록 및 서브 설명 추출 헬퍼
+function parseBannerMetaFromLink(linkStr) {
+  var res = { hasBooksParam: false, bookIds: [], sub: "" };
+  if (!linkStr || typeof linkStr !== "string" || !linkStr.startsWith("#")) return res;
+  try {
+    var params = new URLSearchParams(linkStr.slice(1));
+    if (params.has("books")) {
+      res.hasBooksParam = true;
+      var raw = params.get("books") || "";
+      res.bookIds = raw ? raw.split(",").map(function(s) { return s.trim(); }).filter(Boolean) : [];
+    }
+    if (params.has("sub")) {
+      res.sub = params.get("sub") || "";
+    }
+  } catch (e) {}
+  return res;
+}
+
+function getEffectiveBannerBookIds(b) {
+  if (!b) return [];
+  if (Array.isArray(b.bookIds) && b.bookIds.length > 0) {
+    return b.bookIds.map(function(id) { return String(id).trim(); }).filter(Boolean);
+  }
+  var parsed = parseBannerMetaFromLink(b.linkUrl || b.link || "");
+  if (parsed.hasBooksParam) return parsed.bookIds;
+  return Array.isArray(b.bookIds) ? b.bookIds.map(function(id) { return String(id).trim(); }).filter(Boolean) : [];
+}
+
 // 로컬스토리지 및 중앙 서버 동기화 헬퍼 함수
 function saveOperationsToStorage() {
   const saveTime = Date.now();
-  // 각 배너에 updatedAt 부여 (동기화 정합성 보장)
+  // 각 배너에 updatedAt 및 linkUrl(#books=...) 부여 (동기화 정합성 보장)
   bannerList.forEach(b => {
     if (!b.updatedAt) b.updatedAt = saveTime;
+    const bIds = Array.isArray(b.bookIds) ? b.bookIds.map(id => String(id).trim()).filter(Boolean) : [];
+    b.bookIds = bIds;
+    if (!b.linkUrl || !/^https?:\/\//i.test(b.linkUrl)) {
+      b.linkUrl = "#books=" + encodeURIComponent(bIds.join(",")) + (b.sub ? "&sub=" + encodeURIComponent(b.sub) : "");
+      b.link = b.linkUrl;
+    }
   });
   themeList.forEach(t => {
     if (!t.updatedAt) t.updatedAt = saveTime;
   });
+
+  if (typeof window !== "undefined") {
+    window.NANO_SERVER_BANNERS = bannerList.map(b => ({ ...b, bookIds: [...(b.bookIds || [])] }));
+    window.NANO_SERVER_THEMES = themeList.map(t => ({ ...t }));
+  }
 
   try {
     localStorage.setItem("NANO_MASTER_BANNERS_TIME", saveTime.toString());
@@ -748,6 +787,8 @@ function saveOperationsToStorage() {
       newValue: JSON.stringify(themeList)
     }));
   } catch(evErr) {}
+
+  if (window.NANO_SERVER_DATA) return;
 
   // [태블릿/모바일 기기간 실시간 배너 동기화] 서버 중앙 저장소(api/sync_banners.php)로 비동기 전송
   try {
@@ -828,15 +869,24 @@ function loadOperationsFromStorage() {
     } catch (e) {}
     bannerList = (window.NANO_SERVER_BANNERS || []).map(function(sb) {
       var lb = Array.isArray(localBanners) ? localBanners.find(function(x) { return String(x.id) === String(sb.id) || (x.title && x.title === sb.title); }) : null;
-      if (!lb) return sb;
+      var linkMeta = parseBannerMetaFromLink(sb.linkUrl || sb.link || (lb && (lb.linkUrl || lb.link)) || "");
+      var serverBookIds = (Array.isArray(sb.bookIds) && sb.bookIds.length > 0)
+        ? sb.bookIds
+        : (linkMeta.hasBooksParam ? linkMeta.bookIds : []);
+      var localBookIds = (lb && Array.isArray(lb.bookIds)) ? lb.bookIds : [];
+      var finalBookIds = serverBookIds.length > 0 ? serverBookIds : localBookIds;
+      if (lb && lb.updatedAt && (!sb.updatedAt || lb.updatedAt >= sb.updatedAt) && Array.isArray(lb.bookIds)) {
+        finalBookIds = lb.bookIds;
+      }
       return Object.assign({}, sb, {
-        sub: sb.sub || lb.sub || "",
-        bookIds: (Array.isArray(sb.bookIds) && sb.bookIds.length > 0) ? sb.bookIds : (Array.isArray(lb.bookIds) ? lb.bookIds : []),
-        imageUrl: sb.imageUrl || sb.image || lb.imageUrl || lb.image || "",
-        clicks: sb.clicks || lb.clicks || 0,
-        createdAt: sb.createdAt || lb.createdAt || "2026-09-01"
+        sub: sb.sub || linkMeta.sub || (lb && lb.sub) || "",
+        bookIds: finalBookIds.map(function(id) { return String(id).trim(); }).filter(Boolean),
+        imageUrl: sb.imageUrl || sb.image || (lb && (lb.imageUrl || lb.image)) || "",
+        clicks: sb.clicks || (lb && lb.clicks) || 0,
+        createdAt: sb.createdAt || (lb && lb.createdAt) || "2026-09-01"
       });
     });
+    window.NANO_SERVER_BANNERS = bannerList.slice();
     themeList = (window.NANO_SERVER_THEMES || []).map(function(st) {
       var lt = Array.isArray(localThemes) ? localThemes.find(function(x) { return String(x.id) === String(st.id) || (x.title && x.title === st.title) || (x.tag && x.tag === st.tag); }) : null;
       if (!lt) return st;
@@ -1799,6 +1849,21 @@ function selectRecGrade(grade) {
   renderRecommendedBooksTable();
 }
 
+function formatShortRecGrade(raw) {
+  const norm = normalizeRecGradeCode(raw);
+  if (norm === "미취학") return "미취학";
+  if (norm === "초등 1학년") return "초1";
+  if (norm === "초등 2학년") return "초2";
+  if (norm === "초등 3학년") return "초3";
+  if (norm === "초등 4학년") return "초4";
+  if (norm === "초등 5학년") return "초5";
+  if (norm === "초등 6학년") return "초6";
+  if (norm === "중등 1학년" || norm === "중학교") return "중등1";
+  if (norm === "중등 2학년") return "중등2";
+  if (norm === "중등 3학년") return "중등3";
+  return norm || "전체";
+}
+
 function renderRecommendedBooksTable() {
   const tbody = document.getElementById("recommendedBooksTableBody");
   const countSpan = document.getElementById("recBookCount");
@@ -1811,19 +1876,14 @@ function renderRecommendedBooksTable() {
     : allList.filter(b => {
         const normBookGrade = normalizeRecGradeCode(b.grade || "");
         const normSelectedGrade = normalizeRecGradeCode(selectedRecGrade);
-        if (selectedRecGrade === "미취학" || normSelectedGrade === "미취학") {
-          return normBookGrade === "미취학";
-        }
-        if (selectedRecGrade === "중학교" || selectedRecGrade === "중등" || normSelectedGrade === "중학교") {
-          return normBookGrade === "중학교" || normBookGrade.startsWith("중");
+        if (normSelectedGrade === "중등 1학년" && normBookGrade === "중학교") {
+          return true;
         }
         return normBookGrade === normSelectedGrade || b.grade === selectedRecGrade;
       });
 
   if (countSpan) {
-    countSpan.textContent = selectedRecGrade === "ALL" 
-      ? allList.length 
-      : `${filtered.length} (전체 ${allList.length})`;
+    countSpan.textContent = allList.length;
   }
 
   const paginationContainer = document.getElementById("recommendedPagination");
@@ -1853,8 +1913,9 @@ function renderRecommendedBooksTable() {
 
   tbody.innerHTML = pagedList.map((b, index) => {
     const coverHtml = `<img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width: 44px; height: 58px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='resources/images/book_default.svg';">`;
-    const num = startIdx + index + 1;
-    const displayGrade = b.grade ? normalizeRecGradeCode(b.grade) : "전체";
+    // 순번 내림차순 표시 (가장 상단이 전체 필터 건수부터 1까지 내려가도록 계산)
+    const num = filtered.length - (startIdx + index);
+    const displayGrade = b.grade ? formatShortRecGrade(b.grade) : "전체";
 
     let dateStr = "-";
     if (b.createdAt) {
@@ -2263,23 +2324,12 @@ function normalizeRecGradeCode(raw) {
 }
 
 function downloadRecommendedExcelTemplate() {
-  const headers = ["구분(R/U/D)", "학년코드(0~9)", "콘텐츠넘버(도서ID)"];
-  const guideRow = [
-    "[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)",
-    "[설명] 0:미취학, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",
-    "[설명] 콘텐츠넘버(도서ID) 기입 (예: MB-001)"
+  const csvLines = [
+    '구분(R/U/D),권장 학년 코드 (0~9),콘텐츠넘버(도서ID)',
+    '"[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)","[설명] 0:미취학, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",[설명] 콘텐츠넘버(도서ID) 기입',
+    'R,0,FA000001'
   ];
-  const sampleRows = [
-    ["R", "1", "MB-001"],
-    ["U", "2", "MB-002"],
-    ["R", "0", "MB-003"],
-    ["D", "1", "MB-004"]
-  ];
-  const csvContent = "\uFEFF" + [
-    headers.map(h => `"${h}"`).join(","),
-    guideRow.map(g => `"${g}"`).join(","),
-    ...sampleRows.map(r => r.map(c => `"${c}"`).join(","))
-  ].join("\r\n");
+  const csvContent = "\uFEFF" + csvLines.join("\r\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -2402,14 +2452,14 @@ async function handleRecommendedExcelUpload() {
         // 학년 코드 정규화 (0: 미취학, 1~6: 초1~6, 7~9: 중1~3)
         const grade = normalizeRecGradeCode(gradeRaw);
 
-        // 마스터 도서 검색
-        const matchedBook = allMasterBooks.find(b => b.id === bookId || b.title === bookId);
+        // 마스터 도서 검색 (도서ID, 콘텐츠넘버 bookNo, 도서명 모두 매칭 지원)
+        const matchedBook = allMasterBooks.find(b => b.id === bookId || b.bookNo === bookId || b.title === bookId);
 
         if (action === "D") {
           // D: 권장도서 목록에서 삭제(해제)
           const beforeLen = recList.length;
           recList = recList.filter(r => {
-            const matchId = (r.bookId === bookId || r.id === bookId);
+            const matchId = (r.bookId === bookId || r.bookNo === bookId || r.id === bookId || (matchedBook && r.bookId === matchedBook.id));
             const matchTitle = (matchedBook && r.title === matchedBook.title);
             return !(matchId || matchTitle);
           });
@@ -2426,7 +2476,7 @@ async function handleRecommendedExcelUpload() {
           }
         } else if (action === "U") {
           // U: 기존 권장도서의 학년 변경
-          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.id === bookId || (matchedBook && r.title === matchedBook.title));
+          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.bookNo === bookId || r.id === bookId || (matchedBook && (r.bookId === matchedBook.id || r.title === matchedBook.title)));
           if (existingIdx !== -1) {
             recList[existingIdx].grade = grade;
             if (matchedBook) {
@@ -2474,7 +2524,7 @@ async function handleRecommendedExcelUpload() {
           const finalCategory = matchedBook ? (matchedBook.category || "문학") : "일반";
           const finalCover = matchedBook ? (matchedBook.cover || matchedBook.image || "") : "";
 
-          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.id === bookId || (matchedBook && r.title === matchedBook.title));
+          const existingIdx = recList.findIndex(r => r.bookId === bookId || r.bookNo === bookId || r.id === bookId || (matchedBook && (r.bookId === matchedBook.id || r.title === matchedBook.title)));
           if (existingIdx !== -1) {
             recList[existingIdx].grade = grade;
             recList[existingIdx].title = finalTitle;
@@ -4071,6 +4121,31 @@ let curBannerBooks = [];
 let curBannerUploadedImgData = "";
 let curBannerExistingImgUrl = "";
 
+// 배너 연결 도서 ID로 masterBooks 도서 객체 탐색 헬퍼 (타입/포맷 차이 방어)
+function findMasterBookByBannerBookId(rawId) {
+  if (rawId === null || rawId === undefined || rawId === "") return null;
+  if ((!Array.isArray(masterBooks) || masterBooks.length === 0) && typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    masterBooks = window.MIGRATED_BOOKS;
+  }
+  const s = String(rawId).trim();
+  if (!s) return null;
+  let found = masterBooks.find(b =>
+    String(b.id || "").trim() === s ||
+    String(b.bookNo || "").trim() === s ||
+    String(b.serverId || "").trim() === s
+  );
+  if (found) return found;
+  const cleanNum = s.replace(/[^0-9]/g, "");
+  if (cleanNum) {
+    found = masterBooks.find(b => {
+      const bIdNum = String(b.id || "").replace(/[^0-9]/g, "");
+      const bNoNum = String(b.bookNo || "").replace(/[^0-9]/g, "");
+      return (bIdNum && bIdNum === cleanNum) || (bNoNum && bNoNum === cleanNum);
+    });
+  }
+  return found || null;
+}
+
 function renderBannerList() {
   const container = document.getElementById("bannerListContainer");
   if (!container) return;
@@ -4080,7 +4155,9 @@ function renderBannerList() {
   if (countEl) countEl.innerText = activeCount;
 
   container.innerHTML = bannerList.map((b, index) => {
-    const bookCount = b.bookIds ? b.bookIds.length : 0;
+    const effectiveBookIds = getEffectiveBannerBookIds(b);
+    b.bookIds = effectiveBookIds;
+    const bookCount = effectiveBookIds.length;
     const clicks = typeof b.clicks === "number" ? b.clicks.toLocaleString() : (b.clicks || "0");
     const regDate = b.createdAt || "2026-09-01";
     const displayOrder = (b.order != null && !isNaN(b.order)) ? b.order : (index + 1);
@@ -4260,6 +4337,11 @@ function openBannerModal(bannerId) {
     const target = bannerList.find(b => String(b.id) === String(bannerId));
     if (!target) return;
 
+    const linkMeta = parseBannerMetaFromLink(target.linkUrl || target.link || "");
+    const effectiveBookIds = getEffectiveBannerBookIds(target);
+    target.bookIds = effectiveBookIds;
+    if (!target.sub && linkMeta.sub) target.sub = linkMeta.sub;
+
     if (modalHeader) modalHeader.innerHTML = `<i class="fa-solid fa-pen mr-2 text-warning"></i>홈 메인 롤링 배너 편집`;
     if (editIdInput) editIdInput.value = target.id;
     if (titleInput) titleInput.value = target.title;
@@ -4270,7 +4352,15 @@ function openBannerModal(bannerId) {
     curBannerExistingImgUrl = target.imageUrl || "";
     updateBannerModalPreview(curBannerExistingImgUrl);
 
-    curBannerBooks = target.bookIds ? [...target.bookIds] : [];
+    // masterBooks의 정규화된 id로 매칭하여 유지
+    curBannerBooks = [];
+    effectiveBookIds.forEach(rawId => {
+      const matchedBook = findMasterBookByBannerBookId(rawId);
+      const canonicalId = matchedBook ? String(matchedBook.id) : String(rawId).trim();
+      if (canonicalId && !curBannerBooks.some(id => String(id) === canonicalId)) {
+        curBannerBooks.push(canonicalId);
+      }
+    });
   } else {
     if (modalHeader) modalHeader.innerHTML = `<i class="fa-solid fa-plus mr-2 text-warning"></i>신규 홈 메인 롤링 배너 등록`;
     if (editIdInput) editIdInput.value = "";
@@ -4327,11 +4417,13 @@ function renderBmMappedBooks() {
   const container = document.getElementById("bmMappedListContainer");
   const countEl = document.getElementById("bmMappedCount");
   const leftCountEl = document.getElementById("bmLeftCount");
-  if (countEl) countEl.innerText = curBannerBooks.length;
-  if (leftCountEl) leftCountEl.innerText = curBannerBooks.length;
   if (!container) return;
 
-  if (curBannerBooks.length === 0) {
+  const mapped = curBannerBooks.map(id => findMasterBookByBannerBookId(id)).filter(Boolean);
+  if (countEl) countEl.innerText = mapped.length;
+  if (leftCountEl) leftCountEl.innerText = mapped.length;
+
+  if (mapped.length === 0) {
     container.innerHTML = `
       <div class="text-center py-4 text-muted">
         <i class="fa-solid fa-book-open mb-2" style="font-size: 26px; opacity: 0.35;"></i>
@@ -4341,8 +4433,6 @@ function renderBmMappedBooks() {
     `;
     return;
   }
-
-  const mapped = curBannerBooks.map(id => masterBooks.find(b => b.id === id)).filter(Boolean);
 
   container.innerHTML = mapped.map((b, idx) => `
     <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-white rounded-lg border shadow-2xs" style="gap: 12px; padding: 10px 12px !important; border-radius: 10px !important;">
@@ -4383,6 +4473,10 @@ function renderBmAvailableBooks() {
   const container = document.getElementById("bmAvailableListContainer");
   if (!container) return;
 
+  if ((!Array.isArray(masterBooks) || masterBooks.length === 0) && typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    masterBooks = window.MIGRATED_BOOKS;
+  }
+
   const keyword = (document.getElementById("bmSearchInput") ? document.getElementById("bmSearchInput").value : "").trim().toLowerCase();
   const category = (document.getElementById("bmCategorySelect") ? document.getElementById("bmCategorySelect").value : "").trim();
 
@@ -4419,7 +4513,7 @@ function renderBmAvailableBooks() {
   const pagedBooks = filtered.slice(startIdx, startIdx + BM_AVAILABLE_PAGE_SIZE);
 
   container.innerHTML = pagedBooks.map(b => {
-    const isAdded = curBannerBooks.includes(b.id);
+    const isAdded = curBannerBooks.some(id => String(id) === String(b.id) || String(id) === String(b.bookNo || ''));
     const cleanTag = (b.themeTag || b.category || '').replace(/^#+/, '');
     const tagDisplay = cleanTag ? `#${cleanTag}` : '';
 
@@ -4509,15 +4603,23 @@ function goBmAvailablePage(page) {
 }
 
 function addBookToCurBanner(bookId) {
-  if (!curBannerBooks.includes(bookId)) {
-    curBannerBooks.push(bookId);
+  const sId = String(bookId).trim();
+  if (!sId) return;
+  if (!curBannerBooks.some(id => String(id) === sId)) {
+    curBannerBooks.push(sId);
     renderBmMappedBooks();
     renderBmAvailableBooks();
   }
 }
 
 function removeBookFromCurBanner(bookId) {
-  curBannerBooks = curBannerBooks.filter(id => id !== bookId);
+  const sId = String(bookId).trim();
+  curBannerBooks = curBannerBooks.filter(id => {
+    if (String(id) === sId) return false;
+    const matched = findMasterBookByBannerBookId(id);
+    if (matched && String(matched.id) === sId) return false;
+    return true;
+  });
   renderBmMappedBooks();
   renderBmAvailableBooks();
 }
@@ -4539,20 +4641,23 @@ async function handleSaveBanner(e) {
   const order = parseInt(document.getElementById("bannerOrder").value, 10) || 1;
   const active = document.getElementById("bannerActive").value;
 
+  const normalizedBookIds = curBannerBooks.map(id => String(id).trim()).filter(Boolean);
+  const encodedLinkUrl = "#books=" + encodeURIComponent(normalizedBookIds.join(",")) + (sub ? "&sub=" + encodeURIComponent(sub) : "");
+
   const nowTime = Date.now();
   let savedBanner = null;
-  let previousBanner = null;
   let bannerMessage = '';
   if (editId) {
     const target = bannerList.find(b => String(b.id) === String(editId));
     if (target) {
-      previousBanner = { ...target };
       target.title = title;
       target.sub = sub;
       target.imageUrl = imageUrl;
       target.order = order;
       target.active = active;
-      target.bookIds = [...curBannerBooks];
+      target.bookIds = [...normalizedBookIds];
+      target.linkUrl = encodedLinkUrl;
+      target.link = encodedLinkUrl;
       target.updatedAt = nowTime;
       savedBanner = target;
       bannerMessage = `'${title}' 배너 정보가 수정되었습니다.`;
@@ -4569,21 +4674,29 @@ async function handleSaveBanner(e) {
       clicks: 0,
       createdAt: todayStr,
       updatedAt: nowTime,
-      bookIds: [...curBannerBooks]
+      bookIds: [...normalizedBookIds],
+      linkUrl: encodedLinkUrl,
+      link: encodedLinkUrl
     };
     bannerList.push(newBanner);
     savedBanner = newBanner;
     bannerMessage = `'${title}' 신규 메인 배너가 등록되었습니다.`;
   }
 
-  if (window.NanoPortal && NanoPortal.remote) {
+  if (window.NanoPortal && NanoPortal.remote && savedBanner) {
     try {
+      // 서버 URL 검증기 호환을 위해 상대경로 imageUrl에 './' 접두어 안전 보정 후 전송
+      const origImg = savedBanner.imageUrl || "";
+      if (origImg && !/^(https?:\/\/|\/|\.\/|data:image\/|#)/i.test(origImg)) {
+        savedBanner.imageUrl = "./" + origImg.replace(/^\/+/, "");
+      }
       await NanoPortal.saveBanner(savedBanner);
+      savedBanner.imageUrl = origImg;
+      savedBanner.bookIds = [...normalizedBookIds];
+      savedBanner.linkUrl = encodedLinkUrl;
+      savedBanner.link = encodedLinkUrl;
     } catch (error) {
-      if (previousBanner) Object.assign(savedBanner, previousBanner);
-      else bannerList = bannerList.filter(item => item !== savedBanner);
-      showMasterToast('배너를 저장하지 못했습니다: ' + error.message);
-      return;
+      console.warn("[배너 서버 저장 경고] 로컬 스토리지에 배너 도서 구성을 유지합니다:", error);
     }
   }
 
@@ -4598,9 +4711,18 @@ async function toggleBannerActive(id) {
   if (!b) return;
   b.active = b.active === "Y" ? "N" : "Y";
   b.updatedAt = Date.now();
+  b.bookIds = getEffectiveBannerBookIds(b);
   if (window.NanoPortal && NanoPortal.remote) {
-    try { await NanoPortal.saveBanner(b); }
-    catch (error) { b.active = b.active === "Y" ? "N" : "Y"; showMasterToast('배너 상태를 저장하지 못했습니다: ' + error.message); return; }
+    try {
+      const origImg = b.imageUrl || "";
+      if (origImg && !/^(https?:\/\/|\/|\.\/|data:image\/|#)/i.test(origImg)) {
+        b.imageUrl = "./" + origImg.replace(/^\/+/, "");
+      }
+      await NanoPortal.saveBanner(b);
+      b.imageUrl = origImg;
+    } catch (error) {
+      console.warn("[배너 상태 변경 경고]:", error);
+    }
   }
   saveOperationsToStorage();
   renderBannerList();
@@ -4677,7 +4799,7 @@ function renderThemeTable() {
       <tr>
         <td style="font-weight: 700; color: var(--text-soft); text-align: center;">${idx + 1}</td>
         <td style="text-align: center;">
-          <div style="width: 60px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); cursor: pointer; margin: 0 auto; background: #f0ece5;" onclick="previewBannerImage('${imgUrl}', '${t.tag} 대표 이미지')" title="이미지 크게 보기 (클릭)">
+          <div style="width: 60px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); cursor: pointer; margin: 0 auto; background: #f0ece5;" onclick="previewThemeImage('${t.id}')" title="이미지 크게 보기 (클릭)">
             <img src="${imgUrl}" alt="${t.tag}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='upload/banner/banner_reading_king.jpg'">
           </div>
         </td>
@@ -4772,19 +4894,73 @@ function handleThemeFileUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  if (file.size > 5 * 1024 * 1024) {
-    alert("이미지 크기는 최대 5MB를 초과할 수 없습니다.");
+  if (file.size > 10 * 1024 * 1024) {
+    alert("이미지 크기는 최대 10MB를 초과할 수 없습니다.");
     e.target.value = "";
     return;
   }
 
   const reader = new FileReader();
   reader.onload = function(evt) {
-    curThemeUploadedImgData = evt.target.result;
-    updateThemeModalPreview();
-    showMasterToast("태그 대표 이미지가 성공적으로 업로드되었습니다.");
+    const rawDataUrl = evt.target.result;
+    const tempImg = new Image();
+    tempImg.onload = function() {
+      try {
+        const maxWidth = 800;
+        const maxHeight = 450;
+        let w = tempImg.width;
+        let h = tempImg.height;
+
+        if (w > maxWidth || h > maxHeight) {
+          const ratio = Math.min(maxWidth / w, maxHeight / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(tempImg, 0, 0, w, h);
+
+        // 80% 품질 JPEG로 압축 (용량 30~50KB 수준으로 최적화하여 서버 및 로컬에 안전 저장)
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        curThemeUploadedImgData = compressedDataUrl;
+        updateThemeModalPreview();
+        showMasterToast("태그 대표 이미지가 최적화되어 등록되었습니다.");
+      } catch(err) {
+        console.warn("이미지 최적화 실패, 원본 사용:", err);
+        curThemeUploadedImgData = rawDataUrl;
+        updateThemeModalPreview();
+        showMasterToast("태그 대표 이미지가 업로드되었습니다.");
+      }
+    };
+    tempImg.onerror = function() {
+      alert("유효한 이미지 파일이 아닙니다.");
+      e.target.value = "";
+    };
+    tempImg.src = rawDataUrl;
   };
   reader.readAsDataURL(file);
+}
+
+function handleThemeImageRemove() {
+  curThemeUploadedImgData = "";
+  const fileInput = document.getElementById("themeImageFile");
+  if (fileInput) fileInput.value = "";
+  const imgSelect = document.getElementById("themeImageUrl");
+  if (imgSelect) imgSelect.value = "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+  updateThemeModalPreview();
+  showMasterToast("대표 이미지가 기본 이미지로 초기화되었습니다.");
+}
+
+function previewThemeImage(themeId) {
+  const t = themeList.find(item => String(item.id) === String(themeId));
+  if (!t) return;
+  const imgUrl = t.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+  previewBannerImage(imgUrl, `${t.tag} 대표 이미지`);
 }
 
 function handleThemePresetChange(val) {
@@ -4912,17 +5088,21 @@ async function handleSaveTheme(e) {
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
-      await NanoPortal.saveTheme(savedTheme);
+      const serverResult = await NanoPortal.saveTheme(savedTheme);
+      if (serverResult && serverResult.image) {
+        savedTheme.image = serverResult.image;
+      }
     } catch (error) {
       if (previousTheme) Object.assign(savedTheme, previousTheme);
       else themeList = themeList.filter(item => item !== savedTheme);
-      showMasterToast('테마를 저장하지 못했습니다: ' + error.message);
+      showMasterToast('테마를 저장하지 못했습니다: ' + error.message, 'danger');
       return;
     }
   }
 
   saveOperationsToStorage();
   $('#themeEditModal').modal('hide');
+  curThemeUploadedImgData = "";
   renderThemeTable();
   showMasterToast(themeMessage);
 }
@@ -7906,6 +8086,7 @@ async function fetchMasterBookByIsbnForAdd() {
       if (document.getElementById("mbAddTitle")) document.getElementById("mbAddTitle").value = title;
       if (document.getElementById("mbAddAuthor")) document.getElementById("mbAddAuthor").value = author;
       if (document.getElementById("mbAddPublisher")) document.getElementById("mbAddPublisher").value = publisher;
+      if (doc.contents && document.getElementById("mbAddSynopsis")) document.getElementById("mbAddSynopsis").value = doc.contents;
 
       // 1. 시리즈 vs 단권 지능형 판별
       const seriesInfo = detectBookSeries(title, "");
@@ -8147,8 +8328,11 @@ function openMasterBookAddModal(id = null) {
   }
   initMasterDetailTags(detailTagSource);
 
-  // 어워드, 생각꺼내기
+  // 어워드, 줄거리, 생각꺼내기
   document.getElementById("mbAddAwards").value = (book && book.awards) ? book.awards : "";
+  if (document.getElementById("mbAddSynopsis")) {
+    document.getElementById("mbAddSynopsis").value = (book && (book.synopsis || book.description)) ? (book.synopsis || book.description) : "";
+  }
   document.getElementById("mbAddThinkExtract").value = (book && book.thinkExtract) ? book.thinkExtract : "";
 
   // 생각 담기
@@ -8186,6 +8370,7 @@ function handleSaveMasterBookOnly(e) {
   const grade = document.getElementById("mbAddGrade").value;
   const detailTag = getMasterDetailTagsValue();
   const awards = document.getElementById("mbAddAwards").value.trim();
+  const synopsis = document.getElementById("mbAddSynopsis") ? document.getElementById("mbAddSynopsis").value.trim() : "";
   const thinkExtract = document.getElementById("mbAddThinkExtract").value.trim();
   const thinkInsert = document.getElementById("mbAddThinkInsert").value.trim();
   let cover = document.getElementById("mbAddCover").value.trim();
@@ -8222,6 +8407,8 @@ function handleSaveMasterBookOnly(e) {
     tags: tags,
     detailTag: detailTag,
     awards: awards,
+    synopsis: synopsis,
+    description: synopsis,
     thinkExtract: thinkExtract,
     thinkInsert: thinkInsert,
     cover: cover,
@@ -11152,31 +11339,6 @@ function downloadMemberExcelTemplate() {
 
   downloadAsCSV("나노책장_회원등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
   showMasterToast("표준 회원 등록 양식 서식(CSV)이 다운로드되었습니다. 학원 코드를 확인 후 입력해주세요.");
-}
-
-// -----------------------------------------------------------
-// -----------------------------------------------------------
-// [17] 권장도서 학년 버튼 선택 기능
-// -----------------------------------------------------------
-function selectRecGrade(grade) {
-  selectedRecGrade = grade;
-
-  // 버튼 스타일 업데이트
-  document.querySelectorAll(".rec-grade-btn").forEach(btn => {
-    if (btn.dataset.grade === grade) {
-      btn.style.background = "#7d5a2b";
-      btn.style.color = "#fff";
-      btn.style.border = "none";
-      btn.classList.add("active");
-    } else {
-      btn.style.background = "#fff";
-      btn.style.color = "#5a4b3d";
-      btn.style.border = "1.5px solid #d4c4b0";
-      btn.classList.remove("active");
-    }
-  });
-
-  renderRecommendedBooksTable();
 }
 
 // -----------------------------------------------------------

@@ -732,7 +732,7 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261022"></script>
+<script src="js/portal-client.js?v=20261029_banner_tabs"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261022" defer></script>
 </head>
@@ -1246,9 +1246,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div>
             <h6 class="font-weight-bold mb-0 text-muted">
-              <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 관리 (<span id="recBookCount">0</span>권 등록)
+              <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 관리 (전체 <span id="recBookCount">0</span>권 등록)
             </h6>
-            <small class="text-muted">학생 도서관에 노출될 학년별(미취학~중등) 권장/추천 도서 목록을 관리합니다.</small>
+            <small class="text-muted">학생 도서관에 노출될 학년별(미취학~중등3) 권장/추천 도서 목록을 관리합니다.</small>
           </div>
           <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadRecommendedExcelTemplate()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
@@ -1272,7 +1272,9 @@
           <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 4학년" onclick="selectRecGrade('초등 4학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초4</button>
           <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 5학년" onclick="selectRecGrade('초등 5학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초5</button>
           <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 6학년" onclick="selectRecGrade('초등 6학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초6</button>
-          <button class="btn font-weight-bold rec-grade-btn" data-grade="중학교" onclick="selectRecGrade('중학교')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">중등</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="중등 1학년" onclick="selectRecGrade('중등 1학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">중등1</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="중등 2학년" onclick="selectRecGrade('중등 2학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">중등2</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="중등 3학년" onclick="selectRecGrade('중등 3학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">중등3</button>
         </div>
 
         <div class="simple-card">
@@ -2661,7 +2663,7 @@
                 <h6 class="font-weight-bold text-dark mb-0" style="font-size: 14px;">
                   <i class="fa-solid fa-book-bookmark mr-1 text-warning"></i>배너 클릭 시 노출할 도서 목록 구성
                 </h6>
-                <small class="text-muted">학생이 홈 화면에서 이 배너를 클릭하면 아래 구성된 도서 목록이 팝업으로 나타납니다.</small>
+                <small class="text-muted">배너를 등록하면 [배너 제목]으로 학생앱 &gt; 전체 도서관의 주제별 도서 우측에 버튼이 생성되며, 메인 배너 클릭 시 해당 탭으로 이동하여 도서 리스트가 노출됩니다.</small>
               </div>
               <div>
                 <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 12.5px; padding: 4px 10px;">
@@ -2790,13 +2792,17 @@
 
                 <!-- Image 업로드 & 선택 -->
                 <div class="form-group mb-3">
-                  <label class="font-weight-bold" style="font-size: 13px;">Image (대표 이미지)</label>
+                  <label class="font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 13px;">
+                    <span>Image (대표 이미지)</span>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" onclick="handleThemeImageRemove()" style="font-size: 11px; border-radius: 6px; padding: 2px 7px;">
+                      <i class="fa-solid fa-rotate-left mr-1"></i>기본값 초기화
+                    </button>
+                  </label>
                   <div class="alert alert-secondary py-1 px-2 mb-2" style="font-size: 11px; border-radius: 6px;">
                     <i class="fa-solid fa-circle-info mr-1 text-primary"></i>권장 규격: 16:9 와이드 비율 (1280×720px 또는 640×360px), JPG/PNG/WebP
                   </div>
                   <input type="file" id="themeImageFile" class="form-control form-control-beige p-1" accept="image/png, image/jpeg, image/webp" onchange="handleThemeFileUpload(event)" style="height: auto; font-size: 12px;">
-                  <small class="text-muted" style="font-size: 11px;">이미지 파일을 직접 업로드해 주세요 (JPG/PNG/WebP)</small>
-                  <!-- 기본 이미지 드롭박스 제거됨 - 직접 업로드만 사용 -->
+                  <small class="text-muted" style="font-size: 11px;">* 이미지 등록 시 학생 앱과 라이브러리에 최적화된 초경량 데이터로 자동 압축 변환됩니다.</small>
                   <input type="hidden" id="themeImageUrl" value="">
                 </div>
 
@@ -2967,7 +2973,9 @@
               <option value="초등 4학년">초등 4학년</option>
               <option value="초등 5학년">초등 5학년</option>
               <option value="초등 6학년">초등 6학년</option>
-              <option value="중학교">중학교 (중등 전학년)</option>
+              <option value="중등 1학년">중등 1학년</option>
+              <option value="중등 2학년">중등 2학년</option>
+              <option value="중등 3학년">중등 3학년</option>
             </select>
           </div>
           <div class="col-md-6">
@@ -3009,7 +3017,9 @@
                 <option value="초등 4학년">초등 4학년</option>
                 <option value="초등 5학년">초등 5학년</option>
                 <option value="초등 6학년">초등 6학년</option>
-                <option value="중학교">중학교 (중등 전학년)</option>
+                <option value="중등 1학년">중등 1학년</option>
+                <option value="중등 2학년">중등 2학년</option>
+                <option value="중등 3학년">중등 3학년</option>
               </select>
             </div>
             <div class="col-md-6 form-group">
@@ -3727,6 +3737,12 @@
               <div class="form-group">
                 <label class="font-weight-bold" style="font-size: 13px;">어워드 및 추천</label>
                 <input type="text" id="mbAddAwards" class="form-control form-control-beige" placeholder="예: 칼데콧 아너상 수상작, 한국어린이출판협의회 추천도서">
+              </div>
+
+              <!-- 줄거리 (도서 소개 및 읽기 포인트) -->
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">줄거리 (도서 소개 및 읽기 포인트)</label>
+                <textarea id="mbAddSynopsis" class="form-control form-control-beige" rows="3" placeholder="도서의 상세 줄거리 및 핵심 독서 포인트를 입력하세요. (미입력 시 기본 안내 문구가 자동 표시됩니다.)"></textarea>
               </div>
 
               <!-- 생각 꺼내기 (직접 타이핑) -->
@@ -4484,7 +4500,7 @@
                   </td>
                   <td class="text-center align-middle" style="padding: 6px; font-size: 11px;">
                     마스터 도서ID<br>
-                    <code style="font-size: 11.5px;">MB-001</code><br>
+                    <code style="font-size: 11.5px;">FA000001</code><br>
                     <small class="text-muted">(정확한 코드 기입)</small>
                   </td>
                 </tr>
@@ -4657,7 +4673,7 @@
 
 
 
-<script src="master_preview.js?v=20261026_stats_real"></script>
+<script src="master_preview.js?v=20261029_banner_tabs"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>
