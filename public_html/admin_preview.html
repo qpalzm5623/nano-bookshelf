@@ -5118,19 +5118,19 @@
           </div>
         </div>
 
-        <!-- 2. 현재 구독 현황 카드 (3열 요약) -->
+        <!-- 2. 현재 구독 현황 카드 (3열 요약 - 학원 계약 정보 연동) -->
         <div class="row mb-4">
           <div class="col-md-4">
             <div class="stat-card" style="position: relative; overflow: hidden;">
               <div class="text-muted" style="font-size: 12.5px;">현재 이용 중인 요금제</div>
-              <div class="stat-num" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
+              <div class="stat-num" id="paymentStatPlanName" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
                 1개월 정기구독
                 <span class="badge-soft badge-soft-success ml-2"
                   style="font-size: 11px; vertical-align: middle;">이용중</span>
               </div>
               <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top"
                 style="font-size: 12px; color: var(--text-muted);">
-                <span>월 결제액: <strong>110,000원</strong> <small>(VAT 포함)</small></span>
+                <span id="paymentStatPlanFee">월 결제액: <strong>110,000원</strong> <small>(VAT 포함)</small></span>
                 <span id="autoRenewToggleContainer">
                   <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleAutoRenew()" style="border-radius: 6px; padding: 2px 8px;">
                     <i class="fa-solid fa-toggle-on mr-1"></i>자동갱신 ON
@@ -5142,27 +5142,27 @@
           <div class="col-md-4">
             <div class="stat-card">
               <div class="text-muted" style="font-size: 12.5px;">서비스 이용 기간 및 만료일</div>
-              <div class="stat-num" style="color: #dc2626; font-size: 22px; margin-top: 4px;">
+              <div class="stat-num" id="paymentStatExpireDday" style="color: #dc2626; font-size: 22px; margin-top: 4px;">
                 D-3 <small class="text-muted font-weight-normal" style="font-size: 14px;">(2026.09.19 만료)</small>
               </div>
               <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top"
                 style="font-size: 12px; color: var(--text-muted);">
-                <span>시작일: 2026-08-20</span>
-                <span class="text-danger font-weight-bold">다음 결제일: 2026-09-19</span>
+                <span id="paymentStatStartDate">시작일: 2026-08-20</span>
+                <span id="paymentStatNextDate" class="text-danger font-weight-bold">다음 결제일: 2026-09-19</span>
               </div>
             </div>
           </div>
           <div class="col-md-4">
             <div class="stat-card">
               <div class="text-muted" style="font-size: 12.5px;">가맹 계약 정원 (슬롯)</div>
-              <div class="stat-num" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
+              <div class="stat-num" id="paymentStatSlotUsage" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
                 48 <small class="text-muted font-weight-normal" style="font-size: 14px;">/ 50명</small>
                 <span class="badge-soft badge-soft-warn ml-2" style="font-size: 11px; vertical-align: middle;">96%
                   사용</span>
               </div>
               <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top"
                 style="font-size: 12px; color: var(--text-muted);">
-                <span>잔여 슬롯: <strong>2명</strong></span>
+                <span id="paymentStatSlotRemain">잔여 슬롯: <strong>2명</strong></span>
                 <span class="text-primary font-weight-bold">원생/교사 무제한 북퀴즈</span>
               </div>
             </div>

@@ -41,12 +41,18 @@ export default async function handler(req: any, res: any) {
       isStudent ? Promise.resolve([]) : prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
-      prisma.portalSetting.findMany({ where: { scope: 'notice_meta' }, select: { key: true, value: true } })
+      prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta'] } }, select: { key: true, scope: true, value: true } })
     ]);
     const books: any[] = bookRows as any[];
-    const noticeMetaMap = new Map<string, Record<string, any>>(
-      (noticeMetaRows || []).map(nm => [nm.key.replace(/^notice_meta:/, ''), (nm.value || {}) as Record<string, any>])
-    );
+    const noticeMetaMap = new Map<string, Record<string, any>>();
+    const bannerMetaMap = new Map<string, Record<string, any>>();
+    const themeMetaMap = new Map<string, Record<string, any>>();
+    for (const row of (noticeMetaRows || [])) {
+      const val = (row.value || {}) as Record<string, any>;
+      if (row.scope === 'notice_meta') noticeMetaMap.set(row.key.replace(/^notice_meta:/, ''), val);
+      else if (row.scope === 'banner_meta') bannerMetaMap.set(row.key.replace(/^banner_meta:/, ''), val);
+      else if (row.scope === 'theme_meta') themeMetaMap.set(row.key.replace(/^theme_meta:/, ''), val);
+    }
 
     // 학급별 담당 지도교사 매핑 복원
     const classTeacherMap = new Map<string, string>();
@@ -181,8 +187,36 @@ export default async function handler(req: any, res: any) {
         startDate: p.academy.startDate.toISOString().slice(0, 10), endDate: p.academy.endDate.toISOString().slice(0, 10), status: p.status.toLowerCase(), memo: '' })),
       NANO_SERVER_DISPATCH: dispatches.map(d => ({ id: d.id, datetime: d.sentAt.toISOString().replace('T', ' ').slice(0, 19), date: d.sentAt.toISOString().replace('T', ' ').slice(0, 16), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원',
         type: d.templateCode, typeName: d.templateCode, receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
-      NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => ({ ...b, active: b.isActive ? 'Y' : 'N', order: b.orderNo, image: b.imageUrl || '', link: b.linkUrl || '', type: 'image' })),
-      NANO_SERVER_THEMES: themes.map(t => ({ ...t, title: t.name, tag: '#' + t.name, subTag: t.description || '', active: 'Y', bookIds: books.filter(b => b.themeId === t.id).map(b => b.bookNo) })),
+      NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => {
+        const meta = bannerMetaMap.get(b.id) || {};
+        return {
+          ...b,
+          active: b.isActive ? 'Y' : 'N',
+          order: b.orderNo,
+          image: b.imageUrl || '',
+          imageUrl: b.imageUrl || '',
+          link: b.linkUrl || '',
+          sub: meta.sub || '',
+          bookIds: Array.isArray(meta.bookIds) ? meta.bookIds : [],
+          clicks: typeof meta.clicks === 'number' ? meta.clicks : 0,
+          createdAt: meta.createdAt || '2026-09-01',
+          type: 'image'
+        };
+      }),
+      NANO_SERVER_THEMES: themes.map(t => {
+        const meta = themeMetaMap.get(t.id) || {};
+        const autoBookIds = books.filter(b => b.themeId === t.id).map(b => b.bookNo);
+        return {
+          ...t,
+          title: t.name,
+          tag: '#' + String(t.name || '').replace(/^#/, ''),
+          subTag: meta.subTag !== undefined ? meta.subTag : '',
+          desc: meta.desc !== undefined ? meta.desc : (t.description || ''),
+          image: meta.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80',
+          active: meta.active === 'N' ? 'N' : 'Y',
+          bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : autoBookIds
+        };
+      }),
       NANO_SERVER_NOTICES: notices.map(n => {
         const meta = noticeMetaMap.get(n.id) || {};
         const defaultTarget = n.targetRole === 'STUDENT' ? '학생' : n.targetRole === 'TEACHER' ? '가맹 학원' : n.targetRole === 'DIRECTOR' ? '가맹 학원' : n.targetRole === 'MASTER' ? '본사' : '전체';

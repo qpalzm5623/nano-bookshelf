@@ -93,7 +93,8 @@
   async function deleteClass(item, academyCode) { return manage('classes', 'delete', { id: item.serverId || item.id }, { academy: academyCode }); }
   async function saveBanner(item) {
     var result = await manage('banners', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined, title: item.title,
-      imageUrl: item.imageUrl || item.image || '', linkUrl: item.linkUrl || item.link || '', isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0 });
+      imageUrl: item.imageUrl || item.image || '', linkUrl: item.linkUrl || item.link || '', isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0,
+      sub: item.sub || '', bookIds: Array.isArray(item.bookIds) ? item.bookIds : [], clicks: Number(item.clicks) || 0, createdAt: item.createdAt || '' });
     if (result.item) item.id = result.item.id;
     return result.item;
   }
@@ -101,7 +102,9 @@
   async function saveTheme(item) {
     var name = item.name || item.title || String(item.tag || '').replace(/^#/, '');
     var result = await manage('themes', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined,
-      code: item.code || ('THEME-' + String(item.id || Date.now())), name: name, description: item.description || item.desc || item.subTag || '' });
+      code: item.code || ('THEME-' + String(item.id || Date.now())), name: name, description: item.description || item.desc || item.subTag || '',
+      subTag: item.subTag || '', desc: item.desc || item.description || '', image: item.image || '', active: item.active === 'N' ? 'N' : 'Y',
+      bookIds: Array.isArray(item.bookIds) ? item.bookIds : [] });
     if (result.item) { item.id = result.item.id; item.code = result.item.code; }
     return result.item;
   }
@@ -318,7 +321,12 @@
       if (remote && page !== 'master_preview') {
         refreshLearning().then(function() {
           if (typeof renderLearningTable === 'function') renderLearningTable();
+          if (typeof updateAcademyStats === 'function') updateAcademyStats();
+          if (typeof renderStudentAssignmentTable === 'function') renderStudentAssignmentTable();
           if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
+          if (page === 'admin_preview' && typeof portfolioList !== 'undefined') {
+            refreshPortfolios().catch(function() {});
+          }
         }).catch(function() {});
 
         if (page === 'student_preview') {

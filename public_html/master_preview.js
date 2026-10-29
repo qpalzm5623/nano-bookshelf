@@ -819,7 +819,36 @@ function saveOperationsToStorage() {
 }
 
 function loadOperationsFromStorage() {
-  if (window.NANO_SERVER_DATA) { bannerList = window.NANO_SERVER_BANNERS || []; themeList = window.NANO_SERVER_THEMES || []; return; }
+  if (window.NANO_SERVER_DATA) {
+    var localBanners = [];
+    var localThemes = [];
+    try {
+      localBanners = JSON.parse(localStorage.getItem("NANO_MASTER_BANNERS") || "[]");
+      localThemes = JSON.parse(localStorage.getItem("NANO_MASTER_THEMES") || "[]");
+    } catch (e) {}
+    bannerList = (window.NANO_SERVER_BANNERS || []).map(function(sb) {
+      var lb = Array.isArray(localBanners) ? localBanners.find(function(x) { return String(x.id) === String(sb.id) || (x.title && x.title === sb.title); }) : null;
+      if (!lb) return sb;
+      return Object.assign({}, sb, {
+        sub: sb.sub || lb.sub || "",
+        bookIds: (Array.isArray(sb.bookIds) && sb.bookIds.length > 0) ? sb.bookIds : (Array.isArray(lb.bookIds) ? lb.bookIds : []),
+        imageUrl: sb.imageUrl || sb.image || lb.imageUrl || lb.image || "",
+        clicks: sb.clicks || lb.clicks || 0,
+        createdAt: sb.createdAt || lb.createdAt || "2026-09-01"
+      });
+    });
+    themeList = (window.NANO_SERVER_THEMES || []).map(function(st) {
+      var lt = Array.isArray(localThemes) ? localThemes.find(function(x) { return String(x.id) === String(st.id) || (x.title && x.title === st.title) || (x.tag && x.tag === st.tag); }) : null;
+      if (!lt) return st;
+      return Object.assign({}, st, {
+        subTag: st.subTag || lt.subTag || "",
+        desc: st.desc || lt.desc || st.description || "",
+        image: (st.image && !st.image.includes("photo-1544716278")) ? st.image : (lt.image || st.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80"),
+        active: st.active || lt.active || "Y"
+      });
+    });
+    return;
+  }
   const localTime = parseInt(localStorage.getItem("NANO_MASTER_BANNERS_TIME") || "0", 10);
   let hasLocalData = false;
 
@@ -4898,11 +4927,15 @@ async function handleSaveTheme(e) {
   showMasterToast(themeMessage);
 }
 
-function toggleThemeActive(id) {
+async function toggleThemeActive(id) {
   const t = themeList.find(item => String(item.id) === String(id));
   if (!t) return;
-  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 테마는 등록·수정·삭제로 관리되며 별도 숨김 상태는 지원하지 않습니다.'); return; }
+  const prevActive = t.active;
   t.active = t.active === "Y" ? "N" : "Y";
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.saveTheme(t); }
+    catch (error) { t.active = prevActive; showMasterToast('테마 노출 상태를 변경하지 못했습니다: ' + error.message); return; }
+  }
   saveOperationsToStorage();
   renderThemeTable();
   showMasterToast(`[${t.tag}] 노출 상태가 [${t.active === "Y" ? "노출" : "숨김"}]으로 변경되었습니다.`);
@@ -5450,13 +5483,16 @@ async function deleteNotice(noticeId) {
   showMasterToast(`[${not.title}] 공지사항이 삭제되었습니다.`);
 }
 
-function toggleNoticeStatus(noticeId) {
+async function toggleNoticeStatus(noticeId) {
   const not = systemNoticeList.find(n => n.id === noticeId);
   if (!not) return;
 
-  if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 공지는 게시 상태 대신 등록·수정·삭제로 관리됩니다.'); return; }
-
+  const prevStatus = not.status;
   not.status = (not.status === "게시중") ? "비공개" : "게시중";
+  if (window.NanoPortal && NanoPortal.remote) {
+    try { await NanoPortal.saveNotice(not); }
+    catch (error) { not.status = prevStatus; showMasterToast('공지 상태를 변경하지 못했습니다: ' + error.message); return; }
+  }
   saveNoticesToStorage();
   renderNoticeTable();
   showMasterToast(`[${not.title}] 공지 상태가 '${not.status}'(으)로 변경되었습니다.`);
@@ -6360,6 +6396,44 @@ function renderMasterContents() {
     if (wishDelta) b.likes = (b.likes || 0) + wishDelta;
     if (certDelta) b.quizCompletions = (b.quizCompletions || 0) + certDelta;
   });
+
+  // 마스터 콘텐츠 관리 상단 4개 통계 카드 실시간 연동
+  const totalMasterBookCount = masterBooks.length;
+  const midBookCount = masterBooks.filter(b => String(b.grade || '').includes('중')).length;
+  const elemBookCount = totalMasterBookCount - midBookCount;
+  let totalQuizQuestions = 0;
+  let quizBookCount = 0;
+  masterBooks.forEach(b => {
+    const qCnt = getQuizCountForBook(b);
+    if (qCnt > 0) {
+      totalQuizQuestions += qCnt;
+      quizBookCount++;
+    }
+  });
+  const sheetBookCount = masterBooks.filter(b => b.hasSheet || b.sheet || b.worksheet || b.worksheetUrl).length;
+  const recBookCount = (typeof recommendedBookIds !== 'undefined' && Array.isArray(recommendedBookIds) && recommendedBookIds.length > 0)
+    ? recommendedBookIds.length
+    : masterBooks.filter(b => b.isRecommended || b.recommended).length;
+
+  const statBooksEl = document.getElementById("statMasterBooks");
+  const statBooksSubEl = document.getElementById("statMasterBooksSub");
+  if (statBooksEl) statBooksEl.innerHTML = `${totalMasterBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
+  if (statBooksSubEl) statBooksSubEl.innerText = `초등/유아 ${elemBookCount.toLocaleString()}권 / 중등 ${midBookCount.toLocaleString()}권`;
+
+  const statQuizzesEl = document.getElementById("statMasterQuizzes");
+  const statQuizzesSubEl = document.getElementById("statMasterQuizzesSub");
+  if (statQuizzesEl) statQuizzesEl.innerHTML = `${totalQuizQuestions.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">문항</span>`;
+  if (statQuizzesSubEl) statQuizzesSubEl.innerText = `북퀴즈 탑재 도서 ${quizBookCount.toLocaleString()}권`;
+
+  const statSheetsEl = document.getElementById("statMasterSheets");
+  const statSheetsSubEl = document.getElementById("statMasterSheetsSub");
+  if (statSheetsEl) statSheetsEl.innerHTML = `${sheetBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">종</span>`;
+  if (statSheetsSubEl) statSheetsSubEl.innerText = `활동지 탑재율 ${totalMasterBookCount > 0 ? Math.round((sheetBookCount / totalMasterBookCount) * 100) : 0}%`;
+
+  const statRecEl = document.getElementById("statMasterRecBooks");
+  const statRecSubEl = document.getElementById("statMasterRecBooksSub");
+  if (statRecEl) statRecEl.innerHTML = `${recBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
+  if (statRecSubEl) statRecSubEl.innerText = `서비스 운영 관리 권장도서 연동`;
 
   const query = (document.getElementById("contentSearchInput")?.value || "").toLowerCase().trim();
   const academyFilter = document.getElementById("contentAcademyFilter")?.value || "ALL";
@@ -9654,6 +9728,25 @@ function renderDispatchTable(data = dispatchLogs) {
 
   document.getElementById("dispatchFilteredCount").innerText = data.length;
 
+  // 상단 알리고 통계 카드 실시간 연동
+  const baseLogs = Array.isArray(dispatchLogs) ? dispatchLogs : [];
+  const kstYm = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+  const monthLogs = baseLogs.filter(l => String(l.datetime || l.date || '').slice(0, 7) === kstYm);
+  const displaySentCount = monthLogs.length > 0 ? monthLogs.length : baseLogs.length;
+  const successCount = baseLogs.filter(l => l.status === "SUCCESS").length;
+  const failCount = baseLogs.length - successCount;
+  const successRate = baseLogs.length > 0 ? ((successCount / baseLogs.length) * 100).toFixed(1) : "0.0";
+
+  const sentEl = document.getElementById("statAligoTotalSent");
+  const sentSubEl = document.getElementById("statAligoTotalSentSub");
+  if (sentEl) sentEl.innerHTML = `${displaySentCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span>`;
+  if (sentSubEl) sentSubEl.innerText = `전체 누적 발송 ${baseLogs.length.toLocaleString()}건 (조회 ${data.length.toLocaleString()}건)`;
+
+  const rateEl = document.getElementById("statAligoSuccessRate");
+  const rateSubEl = document.getElementById("statAligoSuccessRateSub");
+  if (rateEl) rateEl.innerHTML = `${successRate}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">%</span>`;
+  if (rateSubEl) rateSubEl.innerText = `성공 ${successCount.toLocaleString()}건 / 실패 ${failCount.toLocaleString()}건`;
+
   if (data.length === 0) {
     tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">발송 내역이 없습니다.</td></tr>`;
     return;
@@ -10118,16 +10211,35 @@ function updatePaymentKpis() {
   const paidItems = masterPaymentList.filter(p => p.status === 'paid');
   const pendingItems = masterPaymentList.filter(p => p.status === 'pending');
 
-  const totalRevenue = paidItems.reduce((acc, cur) => acc + cur.total, 0);
+  const totalRevenue = paidItems.reduce((acc, cur) => acc + (Number(cur.total) || 0), 0);
+  const pendingAmount = pendingItems.reduce((acc, cur) => acc + (Number(cur.total) || 0), 0);
+  const monthlyPaidCount = paidItems.filter(p => String(p.planType || p.planName || '').toLowerCase().includes('month') && !String(p.planType || p.planName || '').includes('6') && !String(p.planType || p.planName || '').includes('12')).length;
+  const longTermPaidCount = paidItems.length - monthlyPaidCount;
 
   const revEl = document.getElementById("kpiMonthTotalRevenue");
   if (revEl) revEl.innerHTML = `${totalRevenue.toLocaleString()}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">원</span>`;
+  const revSubEl = document.getElementById("kpiMonthTotalRevenueSub");
+  if (revSubEl) revSubEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up mr-1"></i>정상 결제 ${paidItems.length}건 수납 합계`;
 
   const paidCountEl = document.getElementById("kpiPaidCount");
   if (paidCountEl) paidCountEl.innerHTML = `${paidItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
+  const paidSubEl = document.getElementById("kpiPaidCountSub");
+  if (paidSubEl) paidSubEl.innerText = `정기구독 ${monthlyPaidCount}건 / 장기할인 ${longTermPaidCount}건`;
 
   const pendingCountEl = document.getElementById("kpiPendingCount");
   if (pendingCountEl) pendingCountEl.innerHTML = `${pendingItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
+  const pendingSubEl = document.getElementById("kpiPendingCountSub");
+  if (pendingSubEl) pendingSubEl.innerText = `${pendingAmount.toLocaleString()}원 수동 확인 대기`;
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const limitStr = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
+  const expiringCount = (typeof franchiseList !== "undefined" && Array.isArray(franchiseList))
+    ? franchiseList.filter(a => a.status !== "TERMINATED" && a.endDate && a.endDate >= todayStr && a.endDate <= limitStr).length
+    : 0;
+  const expEl = document.getElementById("kpiExpiringCount");
+  if (expEl) expEl.innerHTML = `${expiringCount}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">곳</span>`;
+  const expSubEl = document.getElementById("kpiExpiringCountSub");
+  if (expSubEl) expSubEl.innerText = expiringCount > 0 ? `30일 이내 만료 예정 학원 ${expiringCount}곳` : `현재 만료 임박 학원 없음`;
 }
 
 // 인라인 상태 변경 핸들러 (수동 결제 건만 변경 가능)

@@ -43,8 +43,22 @@ export default async function handler(req: any, res: any) {
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^notice_meta:/, ''), (m.value || {}) as Record<string, any>]));
         return res.json({ items: noticeRows.map(n => ({ ...n, ...(metaMap.get(n.id) || {}) })) });
       }
-      if (entity === 'themes') return res.json({ items: await prisma.themeCategory.findMany({ orderBy: { name: 'asc' } }) });
-      if (entity === 'banners') return res.json({ items: await prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }) });
+      if (entity === 'themes') {
+        const [themeRows, metaRows] = await Promise.all([
+          prisma.themeCategory.findMany({ orderBy: { name: 'asc' } }),
+          prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } })
+        ]);
+        const metaMap = new Map(metaRows.map(m => [m.key.replace(/^theme_meta:/, ''), (m.value || {}) as Record<string, any>]));
+        return res.json({ items: themeRows.map(t => ({ ...t, ...(metaMap.get(t.id) || {}) })) });
+      }
+      if (entity === 'banners') {
+        const [bannerRows, metaRows] = await Promise.all([
+          prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }),
+          prisma.portalSetting.findMany({ where: { scope: 'banner_meta' } })
+        ]);
+        const metaMap = new Map(metaRows.map(m => [m.key.replace(/^banner_meta:/, ''), (m.value || {}) as Record<string, any>]));
+        return res.json({ items: bannerRows.map(b => ({ ...b, ...(metaMap.get(b.id) || {}) })) });
+      }
       if (entity === 'quizzes') { need(req.query.bookId, '도서를 선택해 주세요.'); return res.json({ items: await prisma.bookQuiz.findMany({ where: { bookId: String(req.query.bookId) }, orderBy: { questionNo: 'asc' } }) }); }
       if (entity === 'dispatch') return res.json({ items: await prisma.aligoDispatchLog.findMany({ where: { academyId }, orderBy: { sentAt: 'desc' }, take: 200 }) });
       if (entity === 'portfolios') return res.json({ items: (await prisma.portalSetting.findMany({ where: { scope: 'portfolio:' + academyId }, orderBy: { updatedAt: 'desc' } })).map(p => ({ ...(p.value as any), id: p.key, revision: p.revision })) });
@@ -296,15 +310,48 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: { ...saved, ...meta } });
     }
     if (entity === 'themes') {
-      if (body.operation === 'delete') { await prisma.themeCategory.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
+      if (body.operation === 'delete') {
+        await prisma.themeCategory.delete({ where: { id: input.id } });
+        await prisma.portalSetting.deleteMany({ where: { key: 'theme_meta:' + input.id, scope: 'theme_meta' } });
+        return res.json({ ok: true });
+      }
       const data = { code: text(input.code, '코드', 60, true), name: text(input.name, '테마명', 200, true), description: text(input.description, '설명', 3000) };
-      return res.json({ item: input.id ? await prisma.themeCategory.update({ where: { id: input.id }, data }) : await prisma.themeCategory.create({ data }) });
+      const saved = input.id ? await prisma.themeCategory.update({ where: { id: input.id }, data }) : await prisma.themeCategory.create({ data });
+      const meta = {
+        subTag: text(input.subTag || '', '서브 태그', 500),
+        desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
+        image: text(input.image || '', '테마 이미지', 500000),
+        active: input.active === 'N' ? 'N' : 'Y',
+        bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : []
+      };
+      await prisma.portalSetting.upsert({
+        where: { key: 'theme_meta:' + saved.id },
+        update: { scope: 'theme_meta', value: meta },
+        create: { key: 'theme_meta:' + saved.id, scope: 'theme_meta', value: meta }
+      });
+      return res.json({ item: { ...saved, ...meta } });
     }
     if (entity === 'banners') {
-      if (body.operation === 'delete') { await prisma.mainBanner.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
+      if (body.operation === 'delete') {
+        await prisma.mainBanner.delete({ where: { id: input.id } });
+        await prisma.portalSetting.deleteMany({ where: { key: 'banner_meta:' + input.id, scope: 'banner_meta' } });
+        return res.json({ ok: true });
+      }
       for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|#)/i.test(url), '유효한 이미지 또는 연결 주소를 입력해 주세요.');
       const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: text(input.linkUrl, '연결 주소', 2000), isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
-      return res.json({ item: input.id ? await prisma.mainBanner.update({ where: { id: input.id }, data }) : await prisma.mainBanner.create({ data }) });
+      const saved = input.id ? await prisma.mainBanner.update({ where: { id: input.id }, data }) : await prisma.mainBanner.create({ data });
+      const meta = {
+        sub: text(input.sub || '', '배너 서브 설명', 1000),
+        bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : [],
+        clicks: Number(input.clicks) || 0,
+        createdAt: text(input.createdAt || new Date().toISOString().slice(0, 10), '등록일', 20)
+      };
+      await prisma.portalSetting.upsert({
+        where: { key: 'banner_meta:' + saved.id },
+        update: { scope: 'banner_meta', value: meta },
+        create: { key: 'banner_meta:' + saved.id, scope: 'banner_meta', value: meta }
+      });
+      return res.json({ item: { ...saved, ...meta } });
     }
     need(false, '지원하지 않는 항목입니다.', 404);
   } catch (error) { return failure(res, error); }

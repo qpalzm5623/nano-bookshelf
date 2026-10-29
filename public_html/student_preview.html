@@ -9987,18 +9987,39 @@ var defaultStudentSystemNotices = [
 ];
 
 function getStudentSystemNotices() {
-  if (window.NANO_SERVER_DATA) return window.NANO_SERVER_NOTICES || [];
+  var localCached = [];
   try {
     var raw = localStorage.getItem("NANO_MASTER_SYSTEM_NOTICES");
     if(raw) {
       var parsed = JSON.parse(raw);
-      if(Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.filter(function(n){
-          return n.status === '게시중' && (n.target === '전체' || n.target === '학생');
-        });
-      }
+      if(Array.isArray(parsed)) localCached = parsed;
     }
   } catch(e) {}
+
+  if (window.NANO_SERVER_DATA) {
+    return (window.NANO_SERVER_NOTICES || [])
+      .map(function(sn) {
+        var ln = localCached.find(function(x) { return (x.id && x.id === sn.id) || (x.title && x.title === sn.title); });
+        if (!ln) return sn;
+        return Object.assign({}, sn, {
+          popupStartDate: sn.popupStartDate || ln.popupStartDate || "",
+          popupEndDate: sn.popupEndDate || ln.popupEndDate || "",
+          isPopup: typeof sn.isPopup === "boolean" ? sn.isPopup : !!ln.isPopup,
+          status: sn.status || ln.status || "게시중",
+          target: sn.target || ln.target || "전체",
+          category: sn.category || ln.category || "일반 공지",
+          link: sn.link || ln.link || ""
+        });
+      })
+      .filter(function(n) {
+        return n.status !== '비공개' && (!n.target || n.target === '전체' || n.target === '학생');
+      });
+  }
+  if (localCached.length > 0) {
+    return localCached.filter(function(n){
+      return n.status === '게시중' && (n.target === '전체' || n.target === '학생');
+    });
+  }
   return defaultStudentSystemNotices;
 }
 

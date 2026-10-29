@@ -908,7 +908,7 @@ function updateAllStudentCounts() {
     }
   }
 
-  // 3. 누적 완독 및 퀴즈 통계 갱신
+  // 3. 누적 완독 및 퀴즈 통계 갱신 (원생 목록 + 학습 기록 연동)
   var statBookEl = document.getElementById('statBookReadCount');
   var statBookDescEl = document.getElementById('statBookReadDesc');
   var statQuizEl = document.getElementById('statQuizPassRate');
@@ -917,10 +917,15 @@ function updateAllStudentCounts() {
   if (currentTotal === 0) {
     if (statBookEl) statBookEl.innerText = '0';
     if (statBookDescEl) statBookDescEl.innerText = '완독 이력 없음';
-    if (statQuizEl) statQuizEl.innerText = '0.0';
+    if (statQuizEl) statQuizEl.innerText = '0';
     if (statQuizDescEl) statQuizDescEl.innerHTML = '<span class="text-muted">북퀴즈 응시 데이터 없음</span>';
   } else {
+    var loadedLogs = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
     var totalBooks = studentDataList.reduce(function(acc, s) { return acc + (parseInt(s.bookCount, 10) || 0); }, 0);
+    if (loadedLogs.length > totalBooks) {
+      var passedLogsCount = loadedLogs.filter(function(l) { return (Number(l.score) || 0) >= 60; }).length;
+      if (passedLogsCount > totalBooks) totalBooks = passedLogsCount;
+    }
     var avgQuiz = 0;
     var quizCount = 0;
     studentDataList.forEach(function(s) {
@@ -930,21 +935,74 @@ function updateAllStudentCounts() {
         quizCount++;
       }
     });
-    var avgQuizFinal = quizCount > 0 ? (avgQuiz / quizCount).toFixed(1) : '93.6';
+    var avgQuizRounded = quizCount > 0 ? Math.round(avgQuiz / quizCount) : 0;
+    var passRateVal = quizCount > 0 ? 100 : 0;
+    if (loadedLogs.length > 0) {
+      var passedCnt = loadedLogs.filter(function(l) { return (Number(l.score) || 0) >= 60; }).length;
+      passRateVal = Math.round((passedCnt / loadedLogs.length) * 100);
+      if (avgQuizRounded === 0) {
+        avgQuizRounded = Math.round(loadedLogs.reduce(function(sum, l) { return sum + (Number(l.score) || 0); }, 0) / loadedLogs.length);
+      }
+    }
     var avgBooksPerStudent = currentTotal > 0 ? (totalBooks / currentTotal).toFixed(1) : '0.0';
 
     if (statBookEl) statBookEl.innerText = totalBooks.toLocaleString();
     if (statBookDescEl) statBookDescEl.innerText = `원생 1인당 평균 ${avgBooksPerStudent}권 완독`;
-    if (statQuizEl) statQuizEl.innerText = avgQuizFinal;
-    if (statQuizDescEl) statQuizDescEl.innerHTML = `<span class="text-success font-weight-600">평균 점수 ${avgQuizFinal}점 (통과율 93.6%)</span>`;
+    if (statQuizEl) statQuizEl.innerText = passRateVal;
+    if (statQuizDescEl) {
+      statQuizDescEl.innerHTML = (quizCount > 0 || loadedLogs.length > 0)
+        ? `<span class="text-success font-weight-600">평균 점수 ${avgQuizRounded}점 (통과율 ${passRateVal}%)</span>`
+        : `<span class="text-muted">북퀴즈 응시 대기</span>`;
+    }
   }
 
   // 4. 사이드바 하단 슬롯 카드 갱신
-  var slotRate = Math.round((currentTotal / maxSlots) * 100);
+  var slotRate = maxSlots > 0 ? Math.round((currentTotal / maxSlots) * 100) : 0;
   var sidebarSlotEl = document.getElementById('sidebarSlotStatus');
   if (sidebarSlotEl) {
     var rateClass = currentTotal >= maxSlots ? 'text-danger font-weight-bold' : 'text-success font-weight-bold';
     sidebarSlotEl.innerHTML = `${currentTotal} / ${maxSlots}명 <small class="${rateClass}">(${slotRate}%)</small>`;
+  }
+
+  // 4-2. 결제 관리 탭 상단 3개 구독 현황 카드 실시간 연동
+  var paySlotUsageEl = document.getElementById('paymentStatSlotUsage');
+  var paySlotRemainEl = document.getElementById('paymentStatSlotRemain');
+  if (paySlotUsageEl) {
+    var slotBadgeClass = slotRate >= 90 ? 'badge-soft-warn' : 'badge-soft-success';
+    paySlotUsageEl.innerHTML = `${currentTotal} <small class="text-muted font-weight-normal" style="font-size: 14px;">/ ${maxSlots}명</small> <span class="badge-soft ${slotBadgeClass} ml-2" style="font-size: 11px; vertical-align: middle;">${slotRate}% 사용</span>`;
+  }
+  if (paySlotRemainEl) {
+    var remainSlots = Math.max(0, maxSlots - currentTotal);
+    paySlotRemainEl.innerHTML = `잔여 슬롯: <strong>${remainSlots}명</strong>`;
+  }
+  if (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) {
+    var payPlanNameEl = document.getElementById('paymentStatPlanName');
+    var payPlanFeeEl = document.getElementById('paymentStatPlanFee');
+    var payExpireEl = document.getElementById('paymentStatExpireDday');
+    var payStartEl = document.getElementById('paymentStatStartDate');
+    var payNextEl = document.getElementById('paymentStatNextDate');
+    if (payPlanNameEl && currentAcademyInfo.plan) {
+      payPlanNameEl.innerHTML = `${currentAcademyInfo.plan} <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">이용중</span>`;
+    }
+    if (payPlanFeeEl && currentAcademyInfo.monthlyFee) {
+      payPlanFeeEl.innerHTML = `월 결제액: <strong>${Number(currentAcademyInfo.monthlyFee).toLocaleString()}원</strong> <small>(VAT 포함)</small>`;
+    }
+    if (currentAcademyInfo.endDate) {
+      var endMs = Date.parse(currentAcademyInfo.endDate);
+      if (!isNaN(endMs)) {
+        var diffDays = Math.ceil((endMs - Date.now()) / 86400000);
+        var ddayLabel = diffDays >= 0 ? ('D-' + diffDays) : ('만료 +' + Math.abs(diffDays) + '일');
+        var endFormatted = String(currentAcademyInfo.endDate).slice(0, 10).replace(/-/g, '.');
+        if (payExpireEl) {
+          payExpireEl.style.color = diffDays <= 7 ? '#dc2626' : 'var(--text-main)';
+          payExpireEl.innerHTML = `${ddayLabel} <small class="text-muted font-weight-normal" style="font-size: 14px;">(${endFormatted} 만료)</small>`;
+        }
+        if (payNextEl) payNextEl.innerText = '다음 결제일: ' + String(currentAcademyInfo.endDate).slice(0, 10);
+      }
+    }
+    if (payStartEl && currentAcademyInfo.startDate) {
+      payStartEl.innerText = '시작일: ' + String(currentAcademyInfo.startDate).slice(0, 10);
+    }
   }
 
   // 5. 상단 글로벌 역할 전환 바 계약 상태 갱신
@@ -13629,16 +13687,37 @@ const defaultAcademySystemNotices = [
 ];
 
 function getAcademySystemNotices() {
-  if (window.NANO_SERVER_DATA) return window.NANO_SERVER_NOTICES || [];
+  var localCached = [];
   try {
     const raw = localStorage.getItem("NANO_MASTER_SYSTEM_NOTICES");
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.filter(n => n.status === '게시중' && (n.target === '전체' || n.target === '가맹 학원'));
-      }
+      if (Array.isArray(parsed)) localCached = parsed;
     }
   } catch (e) {}
+
+  if (window.NANO_SERVER_DATA) {
+    return (window.NANO_SERVER_NOTICES || [])
+      .map(function(sn) {
+        var ln = localCached.find(function(x) { return (x.id && x.id === sn.id) || (x.title && x.title === sn.title); });
+        if (!ln) return sn;
+        return Object.assign({}, sn, {
+          popupStartDate: sn.popupStartDate || ln.popupStartDate || "",
+          popupEndDate: sn.popupEndDate || ln.popupEndDate || "",
+          isPopup: typeof sn.isPopup === "boolean" ? sn.isPopup : !!ln.isPopup,
+          status: sn.status || ln.status || "게시중",
+          target: sn.target || ln.target || "전체",
+          category: sn.category || ln.category || "일반 공지",
+          link: sn.link || ln.link || ""
+        });
+      })
+      .filter(function(n) {
+        return n.status !== '비공개' && (!n.target || n.target === '전체' || n.target === '가맹 학원' || n.target === '원장' || n.target === '선생님');
+      });
+  }
+  if (localCached.length > 0) {
+    return localCached.filter(n => n.status === '게시중' && (n.target === '전체' || n.target === '가맹 학원'));
+  }
   return defaultAcademySystemNotices;
 }
 

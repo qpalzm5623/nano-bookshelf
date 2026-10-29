@@ -1494,37 +1494,37 @@
         </div>
       </div>
 
-      <!-- 통계 카드 -->
+      <!-- 통계 카드 (마스터 도서 및 퀴즈 실데이터 연동) -->
       <div class="row mb-4">
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">총 마스터 등록 도서 <i class="fa-solid fa-book text-muted"></i></div>
-            <div class="stat-num" id="statMasterBooks">240<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
-            <div class="stat-sub">초등 180권 / 중등 60권</div>
+            <div class="stat-num" id="statMasterBooks">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
+            <div class="stat-sub" id="statMasterBooksSub">초등 0권 / 중등 0권</div>
             <i class="fa-solid fa-book-bookmark stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">보유 북퀴즈 문항 <i class="fa-solid fa-circle-question text-muted"></i></div>
-            <div class="stat-num" id="statMasterQuizzes">1,200<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">문항</span></div>
-            <div class="stat-sub">전 도서 5문항 세트 100% 완비</div>
+            <div class="stat-num" id="statMasterQuizzes">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">문항</span></div>
+            <div class="stat-sub" id="statMasterQuizzesSub">북퀴즈 탑재 도서 0권</div>
             <i class="fa-solid fa-check-double stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">나노 시트 <i class="fa-solid fa-file-lines text-muted"></i></div>
-            <div class="stat-num">180<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">종</span></div>
-            <div class="stat-sub">선생님 수업용 독서 지도안 포함</div>
+            <div class="stat-num" id="statMasterSheets">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">종</span></div>
+            <div class="stat-sub" id="statMasterSheetsSub">선생님 수업용 독서 활동지 포함</div>
             <i class="fa-solid fa-file-pdf stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
-            <div class="stat-label">이달의 추천 신간 <i class="fa-solid fa-sparkles text-warning"></i></div>
-            <div class="stat-num text-warning">12<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
-            <div class="stat-sub">9월 신규 업데이트 도서</div>
+            <div class="stat-label">권장 및 추천 도서 <i class="fa-solid fa-sparkles text-warning"></i></div>
+            <div class="stat-num text-warning" id="statMasterRecBooks">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span></div>
+            <div class="stat-sub" id="statMasterRecBooksSub">학년별 권장도서 지정 완료</div>
             <i class="fa-solid fa-certificate stat-icon-bg"></i>
           </div>
         </div>
@@ -1663,16 +1663,16 @@
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">당월 총 발송 건수 <i class="fa-solid fa-paper-plane text-muted"></i></div>
-            <div class="stat-num" id="statAligoTotalSent">1,842<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span></div>
-            <div class="stat-sub">전월 대비 +18.4% 증가</div>
+            <div class="stat-num" id="statAligoTotalSent">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span></div>
+            <div class="stat-sub" id="statAligoTotalSentSub">전체 누적 발송 0건</div>
             <i class="fa-solid fa-comments stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">전송 성공률 <i class="fa-solid fa-shield-check text-success"></i></div>
-            <div class="stat-num text-success" id="statAligoSuccessRate">99.2<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">%</span></div>
-            <div class="stat-sub">성공 1,827건 / 실패 15건</div>
+            <div class="stat-num text-success" id="statAligoSuccessRate">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">%</span></div>
+            <div class="stat-sub" id="statAligoSuccessRateSub">성공 0건 / 실패 0건</div>
             <i class="fa-solid fa-circle-check stat-icon-bg"></i>
           </div>
         </div>
@@ -1779,9 +1779,9 @@
         <div class="col-md-3 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-title">당월 총 결제 수납액</div>
-            <div class="stat-num" style="color: #962a22;" id="kpiMonthTotalRevenue">3,146,000<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">원</span></div>
-            <div class="stat-sub text-success font-weight-bold">
-              <i class="fa-solid fa-arrow-trend-up mr-1"></i>전월 대비 +18.4% 증가
+            <div class="stat-num" style="color: #962a22;" id="kpiMonthTotalRevenue">0<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">원</span></div>
+            <div class="stat-sub text-success font-weight-bold" id="kpiMonthTotalRevenueSub">
+              <i class="fa-solid fa-arrow-trend-up mr-1"></i>정상 결제 수납 합계
             </div>
             <i class="fa-solid fa-won-sign stat-icon-bg"></i>
           </div>
@@ -1789,24 +1789,24 @@
         <div class="col-md-3 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-title">정상 결제 완료</div>
-            <div class="stat-num" style="color: #2f5436;" id="kpiPaidCount">4<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
-            <div class="stat-sub text-muted">정기구독 2건 / 장기할인 2건</div>
+            <div class="stat-num" style="color: #2f5436;" id="kpiPaidCount">0<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <div class="stat-sub text-muted" id="kpiPaidCountSub">정기구독 0건 / 장기할인 0건</div>
             <i class="fa-solid fa-circle-check stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-title">결제 대기 (미수납)</div>
-            <div class="stat-num" style="color: #8c531b;" id="kpiPendingCount">1<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
-            <div class="stat-sub text-danger font-weight-bold">594,000원 수동 확인 대기</div>
+            <div class="stat-num" style="color: #8c531b;" id="kpiPendingCount">0<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <div class="stat-sub text-danger font-weight-bold" id="kpiPendingCountSub">0원 수동 확인 대기</div>
             <i class="fa-solid fa-clock stat-icon-bg"></i>
           </div>
         </div>
         <div class="col-md-3">
           <div class="stat-card">
-            <div class="stat-title">만료 임박 (D-7 이내)</div>
-            <div class="stat-num" style="color: #d97706;" id="kpiExpiringCount">2<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">곳</span></div>
-            <div class="stat-sub text-muted">만료 7일/3일 전 알림 발송 완료</div>
+            <div class="stat-title">만료 임박 (D-30 이내)</div>
+            <div class="stat-num" style="color: #d97706;" id="kpiExpiringCount">0<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">곳</span></div>
+            <div class="stat-sub text-muted" id="kpiExpiringCountSub">가맹 계약 만료 임박 학원</div>
             <i class="fa-solid fa-bell stat-icon-bg"></i>
           </div>
         </div>
