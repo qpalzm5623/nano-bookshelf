@@ -577,19 +577,20 @@
       padding: 2px 8px;
       border-radius: 6px;
     }
-    .dbadge.urgent { background: #ffeaea; color: #c53030; }
+    .dbadge.urgent { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 700; }
     .dbadge.normal { background: var(--wood-light); color: var(--wood-mid); }
     .dbadge.done { background: var(--green-lt); color: var(--green); }
     
     .pflag {
       position: absolute;
       top: -1px; left: -1px;
-      background: var(--leaf);
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #fff;
       font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
+      font-weight: 800;
+      padding: 2.5px 9px;
       border-radius: 13px 0 8px 0;
+      box-shadow: 0 2px 5px rgba(217, 119, 6, 0.25);
     }
     .act-btn {
       flex-shrink: 0;
@@ -602,17 +603,22 @@
       transition: all .2s;
     }
     .act-btn.start {
-      background: var(--leaf);
-      color: #fff;
-      box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2);
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.28);
+      letter-spacing: -0.2px;
     }
     .act-btn.start:hover {
-      background: var(--leaf-dark);
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.38);
     }
     .act-btn.done-btn {
-      background: var(--green-lt);
-      color: var(--green);
-      border: 1px solid #b7e4c7;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      font-weight: 700;
     }
     
     .qbar {
@@ -769,14 +775,14 @@
     .res-msg { font-size: 14px; color: var(--muted); margin-bottom: 20px; font-weight: 600; }
     .pt-badge {
       display: inline-block;
-      background: linear-gradient(135deg, #245738, #388e5a);
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #fff;
       border-radius: 20px;
       padding: 8px 20px;
       font-size: 14px;
       font-weight: 800;
       margin-bottom: 26px;
-      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.28);
     }
     .hist-row {
       display: flex;
@@ -2490,9 +2496,9 @@
       flex-shrink: 0;
     }
     .btn-hero-quiz-square {
-      border: 1.5px solid #a7f3d0;
-      background: linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 100%);
-      color: #065f46;
+      border: 1.5px solid #fde68a;
+      background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%);
+      color: #78350f;
       width: 92px;
       height: 98px;
       border-radius: 16px;
@@ -2503,7 +2509,7 @@
       cursor: pointer;
       transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
       flex-shrink: 0;
-      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.12);
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.15);
       padding: 8px 6px;
       box-sizing: border-box;
       text-decoration: none;
@@ -2512,8 +2518,8 @@
       width: 38px;
       height: 38px;
       border-radius: 12px;
-      background: #d1fae5;
-      color: #047857;
+      background: #fef3c7;
+      color: #d97706;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2525,15 +2531,15 @@
       font-size: 13.5px;
       font-weight: 900;
       line-height: 1.2;
-      color: #065f46;
+      color: #78350f;
       letter-spacing: -0.3px;
     }
     .btn-hero-quiz-square .bhq-sub {
       font-size: 9.5px;
       font-weight: 800;
-      color: #059669;
+      color: #b45309;
       background: #ffffff;
-      border: 1px solid #a7f3d0;
+      border: 1px solid #fde68a;
       padding: 2px 6px;
       border-radius: 7px;
       margin-top: 4px;
@@ -2545,13 +2551,13 @@
     }
     .btn-hero-quiz-square:hover {
       transform: translateY(-3px) scale(1.02);
-      background: linear-gradient(145deg, #059669 0%, #047857 100%);
-      border-color: #059669;
+      background: linear-gradient(145deg, #f59e0b 0%, #d97706 100%);
+      border-color: #f59e0b;
       color: #ffffff;
-      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.3);
+      box-shadow: 0 6px 18px rgba(217, 119, 6, 0.35);
     }
     .btn-hero-quiz-square:hover .bhq-icon-wrap {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.25);
       color: #ffffff;
       transform: scale(1.06);
     }
@@ -2655,7 +2661,7 @@
       letter-spacing: -0.2px;
     }
     .btn-dqb-action {
-      background: #1f8a7e;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #ffffff;
       border: none;
       border-radius: 26px;
@@ -2666,7 +2672,7 @@
       align-items: center;
       gap: 7px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(31, 138, 126, 0.22);
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.28);
       white-space: nowrap;
       flex-shrink: 0;
       transition: all 0.2s ease;
@@ -2676,9 +2682,9 @@
       transition: transform 0.2s ease;
     }
     .detail-quiz-banner-card:hover .btn-dqb-action {
-      background: #166e64;
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
       color: #ffffff;
-      box-shadow: 0 6px 16px rgba(31, 138, 126, 0.32);
+      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.38);
     }
     .detail-quiz-banner-card:hover .btn-dqb-action i {
       transform: translateX(3px);
