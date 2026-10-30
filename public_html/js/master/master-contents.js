@@ -359,10 +359,26 @@ function renderMasterContents() {
       ? `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-check mr-1"></i>${setCount}Set</span>`
       : `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-xmark mr-1"></i>No</span>`;
 
-    // 나노시트 단독 버튼 (학원관리자와 100% 동일: 실제 파일 준비된 도서만 활성화, 없는 도서는 비활성화 상태 명시)
+    // 나노시트 단독 버튼 (실제 배포된 검증 파일이 준비된 도서만 활성화, 없는 도서는 비활성화 상태 명시)
     let hasSheet = false;
-    if (b.worksheetUrl || b.pdfUrl || b.hasSheet === true || b.sheet === true || (b.worksheet && b.worksheet !== false)) {
+    if (b.pdfBlob || b.pdfDataUrl || (b.pdfUrl && !b.pdfUrl.startsWith('upload/')) || (b.worksheetUrl && !b.worksheetUrl.startsWith('upload/'))) {
       hasSheet = true;
+    } else if (b.sheet === true || b.hasSheet === true || b.worksheet === true) {
+      const sheetSet = (typeof window !== 'undefined' && window.AVAILABLE_NANOSHEET_SET) || null;
+      if (sheetSet) {
+        const candidatesToCheck = [];
+        if (b.id) candidatesToCheck.push(String(b.id).trim().toLowerCase());
+        if (b.bookNo) candidatesToCheck.push(String(b.bookNo).trim().toLowerCase());
+        if (b.serverId) candidatesToCheck.push(String(b.serverId).trim().toLowerCase());
+        if (b.isbn) candidatesToCheck.push(String(b.isbn).replace(/[^0-9]/g, ''));
+        if (b.cover && typeof b.cover === 'string') {
+          const m = String(b.cover).match(/([0-9]{10,13}|book_[0-9]+)/);
+          if (m && m[1]) candidatesToCheck.push(m[1].toLowerCase());
+        }
+        hasSheet = candidatesToCheck.some(k => k && sheetSet.has(k));
+      } else {
+        hasSheet = false;
+      }
     }
     if (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N') {
       hasSheet = false;

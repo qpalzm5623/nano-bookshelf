@@ -600,15 +600,6 @@ var currentAcademyInfo = (function() {
   };
 })();
 
-// 운영 환경(Vercel 서버)에서는 브라우저에 남아있던 예전 로컬 스토리지 더미 캐시를 제거하여 서버 DB와 100% 일치 보장
-if (typeof window !== "undefined" && window.location.protocol !== "file:" && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
-  try {
-    localStorage.removeItem('NANO_CLASSES_' + currentAcademyInfo.id);
-    localStorage.removeItem('NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id);
-    localStorage.removeItem('NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id);
-  } catch (e) {}
-}
-
 var STORAGE_KEY_CLASSES = 'NANO_CLASSES_' + currentAcademyInfo.id;
 var STORAGE_KEY_STUDENTS = 'NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id;
 var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id;
@@ -628,32 +619,19 @@ var defaultTeacherDataList = [];
 
 // LocalStorage 및 Neon DB 실데이터 연동 헬퍼 함수
 function loadAcademyClassesFromStorage() {
-  if (window.NANO_SERVER_DATA) {
-    var sClasses = (window.NANO_SERVER_CLASSES || []).filter(function(c) { return c.academyId === currentAcademyInfo.id; });
-    try {
-      var stored = localStorage.getItem(STORAGE_KEY_CLASSES);
-      if (stored) {
-        var localClasses = JSON.parse(stored);
-        if (Array.isArray(localClasses)) {
-          sClasses.forEach(function(sc) {
-            if (!sc.teacher) {
-              var match = localClasses.find(function(lc) { return lc.id === sc.id || lc.name === sc.name; });
-              if (match && match.teacher) sc.teacher = match.teacher;
-            }
-          });
-        }
-      }
-    } catch (e) {}
-    return sClasses;
-  }
   try {
     var stored = localStorage.getItem(STORAGE_KEY_CLASSES);
-    if (stored) {
+    if (stored !== null) {
       var parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch (e) {
     console.warn('학급 데이터 로드 실패, 기본값 사용:', e);
+  }
+
+  if (window.NANO_SERVER_DATA) {
+    var sClasses = (window.NANO_SERVER_CLASSES || []).filter(function(c) { return c.academyId === currentAcademyInfo.id; });
+    if (sClasses.length > 0) return sClasses;
   }
 
   // Neon DB 실데이터 회원들의 className에서 해당 학원의 실제 학급 목록 추출
@@ -671,7 +649,7 @@ function loadAcademyClassesFromStorage() {
     });
 
     if (classSet.length > 0) {
-      return classSet.map(function(cName, idx) {
+      var extractedClasses = classSet.map(function(cName, idx) {
         return {
           id: 'CLS' + String(idx + 1).padStart(2, '0'),
           name: cName,
@@ -680,6 +658,8 @@ function loadAcademyClassesFromStorage() {
           desc: currentAcademyInfo.name + ' ' + cName + ' 정규 독서논술반'
         };
       });
+      try { localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(extractedClasses)); } catch (e) {}
+      return extractedClasses;
     }
   }
 
@@ -695,8 +675,14 @@ function saveAcademyClassesToStorage() {
 function loadStudentsFromStorage() {
   try {
     var raw = localStorage.getItem(STORAGE_KEY_STUDENTS);
-    if (!window.NANO_SERVER_DATA && raw !== null) return NanoPreviewData.readArray(STORAGE_KEY_STUDENTS);
-    return (window.MIGRATED_MEMBERS || []).filter(function(m) {
+    if (raw !== null) {
+      try {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    // 스토리지에 저장된 원생 데이터가 없는 초기 상태일 때만 MIGRATED_MEMBERS에서 추출
+    var initialList = (window.MIGRATED_MEMBERS || []).filter(function(m) {
       return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && m.role === 'STUDENT';
     }).map(function(m) {
       return { id: m.username, serverId: m.serverId, updatedAt: m.updatedAt, username: m.username, classGroupId: m.classGroupId || null, name: m.name, gender: m.gender || '미등록', password: '••••',
@@ -707,19 +693,24 @@ function loadStudentsFromStorage() {
         reportYn: m.reportYn === true, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
         teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0, characterId: m.characterId || null };
     });
+    // 최초 1회 로컬 스토리지에 캐시 보관하여 새로고침 시에도 지속 보장
+    if (initialList.length > 0) {
+      try { localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(initialList)); } catch (e) {}
+    }
+    return initialList;
   } catch(e) { console.warn('원생 목록 조회 실패:', e); return []; }
 }
 
 function saveStudentsToStorage() {
-  if (window.NanoPortal && NanoPortal.remote) return;
   try {
     localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(studentDataList));
     syncFranchiseStudentCount(studentDataList.length);
-  } catch (e) {}
+  } catch (e) {
+    console.warn('원생 데이터 로컬 스토리지 저장 실패:', e);
+  }
 }
 
 function syncFranchiseStudentCount(count) {
-  if (window.NanoPortal && NanoPortal.remote) return;
   try {
     var rawFranchises = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
     if (rawFranchises) {
@@ -756,16 +747,24 @@ function isAcademyDirector(t) {
 
 function loadTeachersFromStorage() {
   try {
-    if (!window.NANO_SERVER_DATA && localStorage.getItem(STORAGE_KEY_TEACHERS) !== null) {
-      return NanoPreviewData.readArray(STORAGE_KEY_TEACHERS).filter(function(t) {
-        return !isAcademyDirector(t);
-      });
+    var rawTeachers = localStorage.getItem(STORAGE_KEY_TEACHERS);
+    if (rawTeachers !== null) {
+      try {
+        var parsed = JSON.parse(rawTeachers);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(function(t) { return !isAcademyDirector(t); });
+        }
+      } catch (e) {}
     }
-    return (window.MIGRATED_MEMBERS || []).filter(function(m) {
+    var initialTeachers = (window.MIGRATED_MEMBERS || []).filter(function(m) {
       return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && m.role === 'TEACHER' && !isAcademyDirector(m);
     }).map(function(m) { return { id: m.username, serverId: m.serverId, updatedAt: m.updatedAt, username: m.username, name: m.name, password: '••••',
       role: '지도교사', classes: m.className || '미지정',
       studentCount: 0, phone: m.phone || '', joinDate: m.createdAt || '-' }; });
+    if (initialTeachers.length > 0) {
+      try { localStorage.setItem(STORAGE_KEY_TEACHERS, JSON.stringify(initialTeachers)); } catch(e) {}
+    }
+    return initialTeachers;
   } catch(e) { console.warn('교사 목록 조회 실패:', e); return []; }
 }
 
@@ -2421,50 +2420,27 @@ async function importSampleExcelStudents() {
   }
   var sample1 = {
     id: 'S1027',
-    name: '이하늘',
-    gender: '여',
-    password: '123456',
-    school: '솔빛초등학교',
+    name: '홍길동',
+    gender: '남',
+    password: '••••••',
+    school: '나노 초등학교',
     grade: '초등 5학년',
-    classGroup: '지혜반',
+    classGroup: '나노반',
     status: '승인',
     level: '초등 심화 Lv 5',
     bookCount: 0,
     quizAvg: '0.0',
-    parentName: '이진우',
-    phone: '010-4421-8890',
-    parentEmail: 'sky_parent@example.com',
+    parentName: '김영희',
+    phone: '010-1234-5678',
+    parentEmail: 'nano@nano.co.kr',
     reportYn: true,
     lastDate: '2026.09.09',
     createdAt: '2026.09.09',
-    teacher: '박선혜 지도교사',
-    memo: '엑셀 일괄 등록 원생',
-    joinDate: '2026-09-09'
-  };
-  var sample2 = {
-    id: 'S1028',
-    name: '윤도현',
-    gender: '남',
-    password: '123456',
-    school: '나노초등학교',
-    grade: '초등 6학년',
-    classGroup: '마스터반',
-    status: '승인',
-    level: '초등 완성 Lv 6',
-    bookCount: 0,
-    quizAvg: '0.0',
-    parentName: '윤지훈',
-    phone: '010-8910-3345',
-    parentEmail: 'dohyun_home@example.com',
-    reportYn: true,
-    lastDate: '2026.09.09',
-    createdAt: '2026.09.09',
-    teacher: '최승현 지도교사',
-    memo: '엑셀 일괄 등록 원생',
+    teacher: '김나노',
+    memo: '메모 샘플',
     joinDate: '2026-09-09'
   };
 
-  studentDataList.unshift(sample2);
   studentDataList.unshift(sample1);
   lastAddedStudentId = 'S1027';
 
@@ -2479,41 +2455,137 @@ async function importSampleExcelStudents() {
   }
 
   filterStudents();
-  showAcademyToast('엑셀 파일에서 2명의 원생(이하늘, 윤도현)이 성공적으로 일괄 등록되었습니다.');
+  showAcademyToast('엑셀 샘플 서식의 예시 원생(홍길동)이 성공적으로 등록되었습니다.');
 }
 
 // ==============================================================
-// 3-3-B. 원생 등록 표준 엑셀 양식 다운로드 (SheetJS 있을 시 .xlsx, 없을 시 UTF-8 BOM CSV)
+// 3-3-B. 원생 등록 표준 엑셀 양식 다운로드 (SheetJS + 셀 배경 음영 + 학년코드 안내 + 단일 샘플 + 아이디 기입)
 // ==============================================================
 function downloadStudentExcelTemplate() {
-  var headers = ["원생이름", "성별", "초기비밀번호", "학교명", "학년", "클래스", "학부모이름", "학부모연락처", "학부모이메일", "담당지도교사", "메모"];
+  // 최상단 필독 안내 배너 (학년 코드 안내 및 등록 유의사항)
+  var noticeText = "★ [필독 안내] 학년코드: 0(미취학), 1(초1), 2(초2), 3(초3), 4(초4), 5(초5), 6(초6), 7(중1), 8(중2), 9(중3) (또는 '초1', '초2', '중1' 직접 기입 가능) | 아이디는 영문/숫자 조합 권장 | 클래스 및 지도교사는 학원에 등록된 실제 명칭만 기입 (교사는 '지도교사' 호칭 생략 후 이름만 기입, 미등록 시 등록 실패)";
+
+  // 컬럼 헤더 (필수 / 선택 명시 - 아이디 기입란 포함 총 12개 컬럼)
+  var headers = [
+    "원생이름(필수)",
+    "아이디(필수)",
+    "성별(필수)",
+    "초기비밀번호(필수)",
+    "학교명(필수)",
+    "학년코드(필수)",
+    "클래스(필수)",
+    "학부모이름(선택)",
+    "학부모연락처(선택)",
+    "학부모이메일(선택)",
+    "담당지도교사(선택)",
+    "메모(선택)"
+  ];
+
+  // 단일 샘플 데이터 행 (사용자 요청 1개 샘플, ex) 문구 포함)
   var sampleRows = [
-    ["이하늘", "여", "123456", "솔빛초등학교", "초등 5학년", "지혜반", "이진우", "010-4421-8890", "sky_parent@example.com", "박선혜 지도교사", "신규 입회 원생"],
-    ["윤도현", "남", "123456", "나노초등학교", "초등 6학년", "마스터반", "윤지훈", "010-8910-3345", "dohyun_home@example.com", "최승현 지도교사", "독서 레벨 6 완성"],
-    ["김민준", "남", "123456", "나노초등학교", "초등 5학년", "지혜반", "김정훈", "010-1234-5678", "minjun_p@example.com", "박선혜 지도교사", "2026 가을학기 신규"]
+    [
+      "ex) 홍길동",
+      "ex) hong1001",
+      "ex) 남",
+      "ex) 123456",
+      "ex) 나노 초등학교",
+      "ex) 5",
+      "ex) 나노반",
+      "ex) 김영희",
+      "ex) 010-1234-5678",
+      "ex) nano@nano.co.kr",
+      "ex) 김나노",
+      "ex) 메모 샘플"
+    ]
   ];
 
   var fileName = "나노_원생등록_양식_v2.xlsx";
 
-  // 1. SheetJS(XLSX) 라이브러리 사용 가능한 경우 실제 Excel(.xlsx) 파일 생성
+  // 1. SheetJS(XLSX) 라이브러리 사용 시 실제 Excel(.xlsx) 파일 생성
   if (typeof XLSX !== 'undefined') {
-    var wsData = [headers].concat(sampleRows);
+    var noticeRow = [noticeText, "", "", "", "", "", "", "", "", "", "", ""];
+    var wsData = [noticeRow, headers].concat(sampleRows);
     var ws = XLSX.utils.aoa_to_sheet(wsData);
-    
+
+    // 1행 병합 (A1:L1, 총 12개 컬럼)
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }
+    ];
+
+    // 행 높이 설정 (안내행 36pt, 헤더행 28pt, 샘플행 24pt)
+    ws['!rows'] = [
+      { hpt: 36 },
+      { hpt: 28 },
+      { hpt: 24 }
+    ];
+
     // 가독성을 위한 컬럼 너비 지정
     ws['!cols'] = [
-      { wch: 12 }, // 원생이름
-      { wch: 8 },  // 성별
-      { wch: 14 }, // 초기비밀번호
-      { wch: 16 }, // 학교명
-      { wch: 14 }, // 학년
-      { wch: 12 }, // 클래스
-      { wch: 12 }, // 학부모이름
-      { wch: 16 }, // 학부모연락처
-      { wch: 24 }, // 학부모이메일
-      { wch: 16 }, // 담당지도교사
-      { wch: 22 }  // 메모
+      { wch: 16 }, // 원생이름(필수)
+      { wch: 16 }, // 아이디(필수)
+      { wch: 12 }, // 성별(필수)
+      { wch: 18 }, // 초기비밀번호(필수)
+      { wch: 20 }, // 학교명(필수)
+      { wch: 16 }, // 학년코드(필수)
+      { wch: 16 }, // 클래스(필수)
+      { wch: 16 }, // 학부모이름(선택)
+      { wch: 20 }, // 학부모연락처(선택)
+      { wch: 24 }, // 학부모이메일(선택)
+      { wch: 18 }, // 담당지도교사(선택)
+      { wch: 24 }  // 메모(선택)
     ];
+
+    // [최상단 배경색 음영 및 디자인 서식 적용]
+    // 1. 안내행 (A1) 스타일: 부드러운 웜 크림/베이지 음영 (#F5EFE6)
+    if (ws['A1']) {
+      ws['A1'].s = {
+        fill: { fgColor: { rgb: "F5EFE6" } },
+        font: { name: "맑은 고딕", sz: 10, bold: true, color: { rgb: "4A3F35" } },
+        alignment: { vertical: "center", horizontal: "left", wrapText: true },
+        border: {
+          top: { style: "thin", color: { rgb: "D1C7B7" } },
+          bottom: { style: "thin", color: { rgb: "D1C7B7" } },
+          left: { style: "thin", color: { rgb: "D1C7B7" } },
+          right: { style: "thin", color: { rgb: "D1C7B7" } }
+        }
+      };
+    }
+
+    // 2. 컬럼 헤더행 (A2 ~ L2) 스타일: 세련된 베이지/스톤 음영 (#E8E2D8), 볼드, 중앙정렬
+    var colLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+    colLetters.forEach(function(col) {
+      var cellRef = col + '2';
+      if (ws[cellRef]) {
+        ws[cellRef].s = {
+          fill: { fgColor: { rgb: "E8E2D8" } },
+          font: { name: "맑은 고딕", sz: 11, bold: true, color: { rgb: "1E242B" } },
+          alignment: { vertical: "center", horizontal: "center" },
+          border: {
+            top: { style: "thin", color: { rgb: "C4B9A7" } },
+            bottom: { style: "medium", color: { rgb: "8C7E6A" } },
+            left: { style: "thin", color: { rgb: "C4B9A7" } },
+            right: { style: "thin", color: { rgb: "C4B9A7" } }
+          }
+        };
+      }
+    });
+
+    // 3. 샘플 데이터행 (A3 ~ L3) 스타일: 이탤릭, 은은한 그레이 텍스트
+    colLetters.forEach(function(col) {
+      var cellRef = col + '3';
+      if (ws[cellRef]) {
+        ws[cellRef].s = {
+          font: { name: "맑은 고딕", sz: 10, italic: true, color: { rgb: "64748B" } },
+          alignment: { vertical: "center", horizontal: "center" },
+          border: {
+            top: { style: "thin", color: { rgb: "E2E8F0" } },
+            bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+            left: { style: "thin", color: { rgb: "E2E8F0" } },
+            right: { style: "thin", color: { rgb: "E2E8F0" } }
+          }
+        };
+      }
+    });
 
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "원생등록양식");
@@ -2523,9 +2595,10 @@ function downloadStudentExcelTemplate() {
   }
 
   // 2. Fallback: UTF-8 BOM CSV 파일 다운로드
-  var csvContent = "\uFEFF" + headers.join(",") + "\n" +
-    sampleRows.map(function(r) { return r.join(","); }).join("\n");
-  
+  var csvContent = "\uFEFF" + '"' + noticeText.replace(/"/g, '""') + '"' + "\n" +
+    headers.map(function(h) { return '"' + h + '"'; }).join(",") + "\n" +
+    sampleRows.map(function(r) { return r.map(function(cell) { return '"' + cell + '"'; }).join(","); }).join("\n");
+
   var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -2538,7 +2611,36 @@ function downloadStudentExcelTemplate() {
   showAcademyToast("표준 원생 등록 서식 CSV 파일이 다운로드되었습니다.");
 }
 
-// 엑셀 파일 직접 선택 업로드 핸들러
+// 학년 코드 변환 헬퍼 함수 (0~9 숫자코드 및 초1~중3 단축문자 모두 지원)
+function convertGradeCodeToText(codeStr) {
+  var raw = String(codeStr || '').replace(/^ex\s*[\):]?\s*/i, '').trim();
+  if (raw === '0') return '미취학';
+  if (raw === '1') return '초등 1학년';
+  if (raw === '2') return '초등 2학년';
+  if (raw === '3') return '초등 3학년';
+  if (raw === '4') return '초등 4학년';
+  if (raw === '5') return '초등 5학년';
+  if (raw === '6') return '초등 6학년';
+  if (raw === '7') return '중등 1학년';
+  if (raw === '8') return '중등 2학년';
+  if (raw === '9') return '중등 3학년';
+
+  if (/^초[등\s]*1(?:학년)?$/.test(raw)) return '초등 1학년';
+  if (/^초[등\s]*2(?:학년)?$/.test(raw)) return '초등 2학년';
+  if (/^초[등\s]*3(?:학년)?$/.test(raw)) return '초등 3학년';
+  if (/^초[등\s]*4(?:학년)?$/.test(raw)) return '초등 4학년';
+  if (/^초[등\s]*5(?:학년)?$/.test(raw)) return '초등 5학년';
+  if (/^초[등\s]*6(?:학년)?$/.test(raw)) return '초등 6학년';
+  if (/^중[등\s]*1(?:학년)?$/.test(raw)) return '중등 1학년';
+  if (/^중[등\s]*2(?:학년)?$/.test(raw)) return '중등 2학년';
+  if (/^중[등\s]*3(?:학년)?$/.test(raw)) return '중등 3학년';
+  if (/^미취학/.test(raw) || raw === '유치부') return '미취학';
+
+  if (raw.indexOf('학년') !== -1) return raw;
+  return raw || '초등 1학년';
+}
+
+// 엑셀 파일 직접 선택 업로드 핸들러 (유효성 검사 및 정밀 안내)
 function handleStudentExcelFileSelect(input) {
   if (!input.files || input.files.length === 0) return;
   var file = input.files[0];
@@ -2547,63 +2649,270 @@ function handleStudentExcelFileSelect(input) {
     fileNameEl.innerHTML = '<span class="text-success font-weight-bold"><i class="fa-solid fa-file-excel mr-1"></i>' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)</span>';
   }
 
-  // SheetJS 지원 시 파일 파싱
+  // 값 정제 헬퍼 (ex) 접두어 제거)
+  function cleanVal(v) {
+    if (v == null) return '';
+    return String(v).replace(/^ex\s*[\):]?\s*/i, '').trim();
+  }
+
   if (typeof XLSX !== 'undefined') {
     var reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
       try {
         var data = new Uint8Array(e.target.result);
         var workbook = XLSX.read(data, { type: 'array' });
         var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         var rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-        if (rows && rows.length > 1) {
-          var count = 0;
-          for (var i = 1; i < rows.length; i++) {
-            var r = rows[i];
-            if (!r || !r[0] || String(r[0]).trim() === '') continue;
-            var newId = 'S' + (1030 + studentDataList.length + i);
-            studentDataList.unshift({
-              id: newId,
-              name: String(r[0] || '').trim(),
-              gender: String(r[1] || '남').trim(),
-              password: String(r[2] || '123456').trim(),
-              school: String(r[3] || '나노초등학교').trim(),
-              grade: String(r[4] || '초등 5학년').trim(),
-              classGroup: String(r[5] || '지혜반').trim(),
-              status: '승인',
-              level: '초등 심화 Lv 5',
-              bookCount: 0,
-              quizAvg: '0.0',
-              parentName: String(r[6] || '').trim(),
-              phone: String(r[7] || '').trim(),
-              parentEmail: String(r[8] || '').trim(),
-              reportYn: true,
-              lastDate: '2026.09.09',
-              createdAt: '2026.09.09',
-              teacher: String(r[9] || '박선혜 지도교사').trim(),
-              memo: String(r[10] || '엑셀 업로드 원생').trim(),
-              joinDate: '2026-09-09'
-            });
-            count++;
+        if (!rows || rows.length < 2) {
+          alert('업로드 실패: 엑셀 파일에 원생 데이터가 없습니다.');
+          return;
+        }
+
+        // 1. 헤더 행 동적 탐색 (안내행 유무에 관계없이 헤더 위치 자동 감지)
+        var headerRowIdx = -1;
+        for (var rIdx = 0; rIdx < Math.min(rows.length, 5); rIdx++) {
+          var r = rows[rIdx];
+          if (Array.isArray(r) && r.some(function(cell) {
+            return /원생이름|이름/.test(String(cell || ''));
+          })) {
+            headerRowIdx = rIdx;
+            break;
           }
-          if (count > 0) {
-            saveStudentsToStorage();
-            updateAllStudentCounts();
-            if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
-            if (window.jQuery && typeof $('#studentExcelModal').modal === 'function') {
-              $('#studentExcelModal').modal('hide');
-            } else {
-              hideModalVanilla('studentExcelModal');
-            }
-            filterStudents();
-            showAcademyToast('업로드한 엑셀 파일에서 ' + count + '명의 원생이 성공적으로 일괄 등록되었습니다.');
+        }
+
+        if (headerRowIdx === -1) {
+          alert('엑셀 양식 오류\n\n올바른 나노 원생 등록 양식이 아닙니다.\n[양식 다운로드] 버튼으로 표준 양식을 내려받아 작성해 주세요.');
+          return;
+        }
+
+        // 컬럼 인덱스 동적 매핑
+        var headers = rows[headerRowIdx];
+        var colMap = {
+          name: 0, id: 1, gender: 2, password: 3, school: 4, grade: 5,
+          classGroup: 6, parentName: 7, phone: 8, parentEmail: 9,
+          teacher: 10, memo: 11
+        };
+
+        headers.forEach(function(h, idx) {
+          var s = String(h || '').trim();
+          if (/원생\s*아이디|학생\s*아이디|^아이디|회원계정|^ID/i.test(s)) colMap.id = idx;
+          else if (/원생이름|이름/.test(s)) colMap.name = idx;
+          else if (/성별/.test(s)) colMap.gender = idx;
+          else if (/비밀번호|패스워드|암호/.test(s)) colMap.password = idx;
+          else if (/학교/.test(s)) colMap.school = idx;
+          else if (/학년/.test(s)) colMap.grade = idx;
+          else if (/클래스|학급|반/.test(s)) colMap.classGroup = idx;
+          else if (/학부모\s*이름|보호자\s*이름|학부모명/.test(s)) colMap.parentName = idx;
+          else if (/학부모\s*연락처|보호자\s*연락처|학부모\s*전화|연락처|전화번호/.test(s)) colMap.phone = idx;
+          else if (/이메일/.test(s)) colMap.parentEmail = idx;
+          else if (/지도교사|교사|선생님|담당/.test(s)) colMap.teacher = idx;
+          else if (/메모|비고|특이사항/.test(s)) colMap.memo = idx;
+        });
+
+        // 학원 내 유효 학급 목록 조회
+        var validClasses = (typeof academyClassList !== 'undefined' && Array.isArray(academyClassList) && academyClassList.length > 0)
+          ? academyClassList.map(function(c) { return String(c.name || '').trim(); }).filter(Boolean)
+          : ['나노반', '지혜반', '슬기반', '마스터반', '심화반', '새싹반', '탐구반'];
+
+        // 학원 내 유효 교사 목록 조회
+        var currentTeachers = (typeof teacherDataList !== 'undefined' && Array.isArray(teacherDataList) && teacherDataList.length > 0)
+          ? teacherDataList
+          : loadTeachersFromStorage();
+        var validTeacherNames = (currentTeachers || []).map(function(t) {
+          return String(t.name || '').trim();
+        }).filter(Boolean);
+
+        if (currentAcademyInfo && currentAcademyInfo.director) {
+          var dirName = String(currentAcademyInfo.director).replace(/(?:원장|지도교사|선생님|교사)/g, '').trim();
+          if (dirName && validTeacherNames.indexOf(dirName) === -1) {
+            validTeacherNames.push(dirName);
+          }
+        }
+        if (validTeacherNames.length === 0) {
+          validTeacherNames = ['박선혜', '최승현', '김나노'];
+        }
+
+        var newStudents = [];
+
+        // 2. 데이터 행 파싱 및 유효성 검사 (검증 실패 시 즉시 중단 및 원인 안내창 표시)
+        for (var i = headerRowIdx + 1; i < rows.length; i++) {
+          var r = rows[i];
+          if (!r || r.length === 0) continue;
+
+          var rawName = String(r[colMap.name] || '').trim();
+          var name = cleanVal(rawName);
+          if (!name) continue;
+
+          // 예시 샘플 행 건너뛰기 (홍길동 or 샘플 행이 엑셀에 그대로 남겨진 경우 방어)
+          if (name === '홍길동' && (cleanVal(r[colMap.school]) === '나노 초등학교' || cleanVal(r[colMap.classGroup]) === '나노반')) {
+            continue;
+          }
+
+          var rowDisplayNum = i + 1;
+
+          // [검증 1] 소속 학급(클래스) 필수 검증 및 존재 여부 검사
+          var inputClass = cleanVal(r[colMap.classGroup]);
+          if (!inputClass) {
+            alert('엑셀 일괄 등록 실패\n\n' + rowDisplayNum + '행 원생 [' + name + ']의 소속 학급(클래스)이 기입되지 않았습니다.\n\n학급은 필수 입력 항목입니다. 등록된 학급명을 기입해 주세요.');
             return;
           }
+          var classMatched = validClasses.some(function(clsName) {
+            return clsName.toLowerCase() === inputClass.toLowerCase();
+          });
+          if (!classMatched) {
+            alert('엑셀 일괄 등록 실패\n\n존재하지 않는 학급(클래스)이 기입되어 등록이 중단되었습니다.\n\n• 원생: ' + name + ' (' + rowDisplayNum + '번째 행)\n• 입력된 학급명: "' + inputClass + '"\n\n현재 학원에 등록된 학급 목록:\n[' + validClasses.join(', ') + ']\n\n※ 학원 관리자 화면의 [학급관리] 메뉴에서 학급을 먼저 생성하시거나, 올바른 학급명을 입력해 주세요.');
+            return;
+          }
+
+          // [검증 2] 담당 지도교사 유효성 검사 (입력된 경우에만 검증, '지도교사' 호칭 생략 지원)
+          var inputTeacher = cleanVal(r[colMap.teacher]);
+          var matchedTeacherName = '';
+          if (inputTeacher) {
+            var cleanTeacherSearch = inputTeacher.replace(/(?:지도)?교사|선생님/g, '').trim().toLowerCase();
+            var foundTeacher = validTeacherNames.find(function(tName) {
+              var cleanT = tName.replace(/(?:지도)?교사|선생님/g, '').trim().toLowerCase();
+              return cleanT === cleanTeacherSearch || tName.toLowerCase() === inputTeacher.toLowerCase();
+            });
+
+            if (!foundTeacher) {
+              var cleanTeacherList = validTeacherNames.map(function(n) {
+                return n.replace(/(?:지도)?교사|선생님/g, '').trim();
+              }).filter(Boolean);
+
+              alert('엑셀 일괄 등록 실패\n\n학원에 등록되지 않은 담당 지도교사 성함이 기입되어 등록이 중단되었습니다.\n\n• 원생: ' + name + ' (' + rowDisplayNum + '번째 행)\n• 입력된 교사명: "' + inputTeacher + '"\n\n현재 학원에 등록된 지도교사 목록:\n[' + cleanTeacherList.join(', ') + ']\n\n※ 담당교사는 \'지도교사\' 호칭 없이 성함만 입력하시면 됩니다.\n새로운 선생님은 [교사관리] 메뉴에서 먼저 등록하신 후 진행해 주세요.');
+              return;
+            }
+            matchedTeacherName = foundTeacher.indexOf('지도교사') === -1 ? (foundTeacher + ' 지도교사') : foundTeacher;
+          } else {
+            matchedTeacherName = '미지정';
+          }
+
+          // [검증 3] 학년 코드 변환 (0~9, 초1~중3 -> 표준 텍스트)
+          var rawGrade = cleanVal(r[colMap.grade]);
+          var grade = convertGradeCodeToText(rawGrade);
+
+          // [검증 4] 원생 아이디(ID) 설정 및 중복 검증
+          var inputId = (colMap.id !== -1 && r[colMap.id] != null) ? cleanVal(r[colMap.id]) : '';
+          var studentId = inputId;
+
+          if (!studentId) {
+            // 미입력 시 자동 생성
+            studentId = 'S' + (1030 + studentDataList.length + newStudents.length);
+          } else {
+            // 중복 아이디 여부 검사
+            var isDuplicate = studentDataList.some(function(s) {
+              return String(s.id || '').toLowerCase() === studentId.toLowerCase();
+            }) || newStudents.some(function(s) {
+              return String(s.id || '').toLowerCase() === studentId.toLowerCase();
+            });
+
+            if (isDuplicate) {
+              alert('엑셀 일괄 등록 실패\n\n이미 사용 중인 원생 아이디(ID)가 기입되어 등록이 중단되었습니다.\n\n• 원생: ' + name + ' (' + rowDisplayNum + '번째 행)\n• 중복된 아이디: "' + studentId + '"\n\n다른 고유한 원생 아이디를 기입해 주세요.');
+              return;
+            }
+          }
+
+          var gender = cleanVal(r[colMap.gender]) || '남';
+          if (gender.indexOf('여') !== -1) gender = '여';
+          else gender = '남';
+
+          var password = cleanVal(r[colMap.password]) || '123456';
+          var school = cleanVal(r[colMap.school]) || '나노초등학교';
+          var parentName = cleanVal(r[colMap.parentName]);
+          var phone = cleanVal(r[colMap.phone]);
+          var parentEmail = cleanVal(r[colMap.parentEmail]);
+          var memo = cleanVal(r[colMap.memo]) || '엑셀 일괄 등록 원생';
+
+          var todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
+
+          newStudents.push({
+            id: studentId,
+            name: name,
+            gender: gender,
+            password: password,
+            school: school,
+            grade: grade,
+            classGroup: inputClass,
+            status: '승인',
+            level: grade.indexOf('중등') !== -1 ? '중등 논술 과정' : (grade + ' 독서'),
+            bookCount: 0,
+            quizAvg: '0.0',
+            parentName: parentName,
+            phone: phone,
+            parentEmail: parentEmail,
+            reportYn: true,
+            lastDate: todayStr,
+            createdAt: todayStr,
+            teacher: matchedTeacherName,
+            memo: memo,
+            joinDate: todayStr.replace(/\./g, '-')
+          });
+        }
+
+        if (newStudents.length > 0) {
+          // 원격 포털 연동 시 서버 저장 처리
+          if (window.NanoPortal && NanoPortal.remote) {
+            for (var k = 0; k < newStudents.length; k++) {
+              try {
+                await NanoPortal.saveMember(newStudents[k], currentAcademyInfo.id);
+              } catch (saveErr) {
+                console.warn('포털 원격 저장 경고:', saveErr);
+              }
+            }
+          }
+
+          // studentDataList 최신순 추가
+          for (var j = newStudents.length - 1; j >= 0; j--) {
+            studentDataList.unshift(newStudents[j]);
+          }
+          lastAddedStudentId = newStudents[0].id;
+
+          // MIGRATED_MEMBERS 전역 데이터에도 동기화 (마스터 관리자 및 타 화면 일관성 유지)
+          if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS)) {
+            newStudents.forEach(function(st) {
+              window.MIGRATED_MEMBERS.unshift({
+                username: st.id,
+                name: st.name,
+                role: 'STUDENT',
+                academyId: currentAcademyInfo.id,
+                academyName: currentAcademyInfo.name,
+                school: st.school,
+                grade: st.grade,
+                className: st.classGroup,
+                status: 'APPROVED',
+                parentName: st.parentName,
+                parentPhone: st.phone,
+                parentEmail: st.parentEmail,
+                teacherName: st.teacher,
+                memo: st.memo,
+                bookCount: 0,
+                points: 0,
+                createdAt: st.createdAt
+              });
+            });
+          }
+
+          saveStudentsToStorage();
+          updateAllStudentCounts();
+          if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
+
+          if (window.jQuery && typeof $('#studentExcelModal').modal === 'function') {
+            $('#studentExcelModal').modal('hide');
+          } else {
+            hideModalVanilla('studentExcelModal');
+          }
+
+          filterStudents();
+          showAcademyToast('업로드한 엑셀 파일에서 ' + newStudents.length + '명의 원생이 성공적으로 일괄 등록되었습니다.');
+          return;
+        } else {
+          alert('등록할 수 있는 원생 데이터가 없습니다.\n엑셀 파일에 유효한 원생 명단이 작성되어 있는지 확인해 주세요.');
+          return;
         }
       } catch (err) {
         console.error("엑셀 파싱 오류:", err);
+        alert('엑셀 파일을 읽는 도중 오류가 발생했습니다: ' + err.message);
       }
-      importSampleExcelStudents();
     };
     reader.readAsArrayBuffer(file);
     return;
@@ -2615,8 +2924,6 @@ function handleStudentExcelFileSelect(input) {
   }, 400);
 }
 
-// ==============================================================
-// ==============================================================
 // 3-4. 원생 테이블 렌더링 & 페이징 & 필터링 (한 페이지 20명 단위)
 // ==============================================================
 var studentPageSize = 20;
@@ -2709,10 +3016,10 @@ function renderStudentTable(list, page) {
       '<td class="text-center">' + parentInfo + '</td>' +
       '<td class="text-center"><small class="text-muted font-weight-bold">' + createDateStr + '</small></td>' +
       '<td class="text-center font-weight-bold">' + std.bookCount + '권 <small class="text-success font-weight-bold">(' + quizScoreDisplay + ')</small></td>' +
-      '<td class="text-center">' +
-        '<div class="d-inline-flex flex-row align-items-center justify-content-center" style="gap: 4px;">' +
-          '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
-          (!isCurrentLoggedInTeacher() ? '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' : '') +
+      '<td class="text-center" style="white-space: nowrap;">' +
+        '<div class="d-inline-flex flex-row align-items-center justify-content-center" style="gap: 5px; width: 100%;">' +
+          '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+          (!isCurrentLoggedInTeacher() ? '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' : '') +
         '</div>' +
       '</td>';
     tbody.appendChild(tr);
@@ -9420,12 +9727,28 @@ function createAcademyBookItem(b) {
   var seriesVal = isSingleBook ? '단권' : b.series.trim();
 
   // 나노시트 실제 파일 준비 여부 명확한 판정:
-  // 1. b.sheet === false 또는 b.hasSheet === false로 명시된 도서는 비활성화 (2,105권)
-  // 2. worksheetUrl, pdfUrl, worksheet가 있는 도서 및 b.sheet === true인 도서만 활성화 (3,737권)
-  // 3. 자체 등록 도서 중 PDF 파일이나 데이터가 첨부된 경우 활성화
+  // 1. 실제 첨부된 PDF(Blob/DataUrl) 또는 외부 URL이 명시된 경우 활성화
+  // 2. 검증된 나노시트 PDF 식별자 Set(AVAILABLE_NANOSHEET_SET)에 실제 파일이 존재하는 도서만 활성화
+  // 3. 파일이 실제로 준비되지 않은 도서는 반드시 비활성화(disabled, '시트 없음') 처리
   var hasSheet = false;
-  if (b.worksheetUrl || b.pdfUrl || b.hasSheet === true || b.sheet === true || (b.worksheet && b.worksheet !== false)) {
+  if (b.pdfBlob || b.pdfDataUrl || (b.pdfUrl && !b.pdfUrl.startsWith('upload/')) || (b.worksheetUrl && !b.worksheetUrl.startsWith('upload/'))) {
     hasSheet = true;
+  } else if (b.sheet === true || b.hasSheet === true || b.worksheet === true) {
+    var sheetSet = (typeof window !== 'undefined' && window.AVAILABLE_NANOSHEET_SET) || null;
+    if (sheetSet) {
+      var candidatesToCheck = [];
+      if (b.id) candidatesToCheck.push(String(b.id).trim().toLowerCase());
+      if (b.bookNo) candidatesToCheck.push(String(b.bookNo).trim().toLowerCase());
+      if (b.serverId) candidatesToCheck.push(String(b.serverId).trim().toLowerCase());
+      if (b.isbn) candidatesToCheck.push(String(b.isbn).replace(/[^0-9]/g, ''));
+      if (b.cover && typeof b.cover === 'string') {
+        var m = String(b.cover).match(/([0-9]{10,13}|book_[0-9]+)/);
+        if (m && m[1]) candidatesToCheck.push(m[1].toLowerCase());
+      }
+      hasSheet = candidatesToCheck.some(function(k) { return k && sheetSet.has(k); });
+    } else {
+      hasSheet = false;
+    }
   }
   if (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N') {
     hasSheet = false;
@@ -10338,6 +10661,8 @@ function tryLoadCandidatePdfs(candidates, index, book) {
     if (loadingInd) loadingInd.style.display = 'none';
     if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
       $('#contentPdfPreviewModal').modal('hide');
+    } else {
+      hideModalVanilla('contentPdfPreviewModal');
     }
     showAcademyToast(`[${(book && book.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
     return;
