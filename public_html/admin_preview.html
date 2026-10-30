@@ -2846,6 +2846,116 @@
 
 /* 인쇄 미디어 쿼리 - 포트폴리오 전용 */
 /* ============================================================== */
+/* ============================================================== */
+/* [독서 포트폴리오 북 커버 갤러리 그리드] */
+/* ============================================================== */
+.pf-cover-grid-wrap {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px 14px !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+}
+
+.pf-cover-card-item {
+  width: 76px !important;
+  flex: 0 0 76px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.pf-cover-card-img-wrap {
+  width: 76px !important;
+  height: 104px !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  border: 1px solid #dfd6c8 !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08) !important;
+  background: #ffffff !important;
+  margin-bottom: 5px !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.pf-cover-card-img-wrap:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+}
+
+.pf-cover-card-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.pf-cover-card-title {
+  width: 76px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #1e242b !important;
+  line-height: 1.25 !important;
+  text-align: center !important;
+}
+
+.pf-cover-card-sub {
+  width: 76px !important;
+  font-size: 9.5px !important;
+  color: #7d756d !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  margin-top: 1px !important;
+}
+
+/* ============================================================== */
+/* [독서 이야기 4대 역량 카드 인포그래픽 그리드] */
+/* ============================================================== */
+.pf-insight-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+}
+
+.pf-insight-card {
+  background: #ffffff !important;
+  border: 1px solid #cce6e2 !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  box-shadow: 0 1px 3px rgba(31,138,126,0.04) !important;
+}
+
+.pf-insight-card-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #124e47 !important;
+}
+
+.pf-insight-card-body {
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+  color: #2c241c !important;
+  word-break: keep-all !important;
+}
+
+/* 페이지 강제 분할용 */
+.pf-page-break {
+  display: block !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* ============================================================== */
 /* [독서 포트폴리오 학생 정보 스트립: 순수 CSS 그리드] */
 /* ============================================================== */
 .pf-student-info-grid {
@@ -3182,6 +3292,76 @@
     break-inside: avoid !important;
     break-inside: avoid-page !important;
   }
+  /* [A4 2페이지 규격 분할] 1페이지 끝 강제 페이지 바꿈 */
+  body.is-printing-portfolio .pf-page-break {
+    display: block !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    clear: both !important;
+  }
+
+  /* 2페이지 시작점 강제 분할 */
+  body.is-printing-portfolio .pf-page2-section {
+    display: block !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    margin-top: 0 !important;
+    padding-top: 5mm !important;
+    clear: both !important;
+  }
+
+  /* 인쇄 시 책 커버 갤러리 가로 정렬 강제 */
+  body.is-printing-portfolio .pf-cover-grid-wrap {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px 10px !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.is-printing-portfolio .pf-cover-card-item {
+    width: 68px !important;
+    flex: 0 0 68px !important;
+    page-break-inside: avoid !important;
+  }
+
+  body.is-printing-portfolio .pf-cover-card-img-wrap {
+    width: 68px !important;
+    height: 94px !important;
+    margin-bottom: 3px !important;
+  }
+
+  body.is-printing-portfolio .pf-cover-card-title {
+    width: 68px !important;
+    font-size: 10px !important;
+  }
+
+  body.is-printing-portfolio .pf-cover-card-sub {
+    width: 68px !important;
+    font-size: 9px !important;
+  }
+
+  /* 인쇄 시 4대 역량 카드 2열 그리드 */
+  body.is-printing-portfolio .pf-insight-card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  body.is-printing-portfolio .pf-insight-card {
+    padding: 8px 10px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
 }
 
 /* ============================================================== */

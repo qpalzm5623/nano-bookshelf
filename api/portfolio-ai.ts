@@ -39,8 +39,17 @@ export default async function handler(req: any, res: any) {
     });
     const configRow = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
     const aiConfig = (configRow?.value || {}) as Record<string, any>;
-    const apiKey = typeof aiConfig.apiKey === 'string' ? aiConfig.apiKey.trim() : '';
-    const model = typeof aiConfig.model === 'string' ? aiConfig.model.trim() : '';
+    const apiKey = typeof aiConfig.apiKey === 'string' && aiConfig.apiKey.trim() ? aiConfig.apiKey.trim() : (process.env.GEMINI_API_KEY || '');
+    let rawModel = typeof aiConfig.model === 'string' && aiConfig.model.trim() ? aiConfig.model.trim() : (process.env.GEMINI_MODEL || 'gemini-2.0-flash');
+
+    // Google Gemini API 공식 유효 모델 식별자로 안전 매핑
+    let model = rawModel;
+    const modelLower = rawModel.toLowerCase();
+    if (modelLower.includes('1.5-pro')) model = 'gemini-1.5-pro';
+    else if (modelLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
+    else if (modelLower.includes('2.5') || modelLower.includes('3.0') || modelLower.includes('3.5') || modelLower.includes('2.0')) model = 'gemini-2.0-flash';
+    else if (!model.startsWith('gemini-')) model = 'gemini-2.0-flash';
+
     need(apiKey, '본사 관리자에서 Gemini API 키를 등록해 주세요.', 503);
     need(model && /^[a-zA-Z0-9._-]+$/.test(model), '본사 관리자에서 사용할 Gemini 모델을 확인해 주세요.', 503);
 
@@ -93,8 +102,8 @@ export default async function handler(req: any, res: any) {
       need(Array.isArray(generated.comments) && generated.comments.length >= 3 && generated.comments.length <= 4, 'AI 독서 이야기가 완성되지 않았습니다.');
       generated.comments = generated.comments.map((comment: any) => text(comment, 'AI 독서 이야기', 600, true));
       generated.teacherNote = text(generated.teacherNote, 'AI 총평', 3000, true);
-    } catch (_) {
-      // 제공자 응답이나 요청 헤더에는 키·내부 정보가 포함될 수 있어 노출하지 않습니다.
+    } catch (err: any) {
+      console.error('[Portfolio-AI] generation error:', err && err.message ? err.message : err);
       throw new PortalError(502, 'AI 문구를 생성하지 못했습니다. 본사 AI 키·모델 설정을 확인한 뒤 다시 시도해 주세요.');
     }
     const nextValue = {

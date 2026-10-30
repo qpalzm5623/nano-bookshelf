@@ -6148,17 +6148,33 @@ function goRankingPage(p) {
 
 // 전국 랭킹 내역 엑셀(CSV) 다운로드 함수
 function exportRankingToExcel() {
-  const isAcademyTab = document.getElementById("table-ranking-academy")?.style.display !== "none";
+  const isAcademyTab = (typeof currentRankingType !== "undefined" && currentRankingType === "academy") || 
+                       (document.getElementById("table-ranking-academy")?.style.display !== "none");
   const today = new Date().toISOString().split("T")[0];
+  const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
 
   if (isAcademyTab) {
-    // 1. 전국 가맹 학원 랭킹 내역 다운로드
+    // 1. 전국 가맹 학원 랭킹 내역 다운로드 (현재 검색어 필터 반영)
     if (!Array.isArray(academyRankingData) || academyRankingData.length === 0) {
       alert("다운로드할 가맹 학원 랭킹 데이터가 없습니다.");
       return;
     }
+    
+    let activeAcadRankings = academyRankingData.map(a => ({ ...a }));
+    if (searchQ) {
+      activeAcadRankings = activeAcadRankings.filter(a => 
+        (a.name && a.name.toLowerCase().includes(searchQ)) || 
+        (a.region && a.region.toLowerCase().includes(searchQ))
+      );
+    }
+
+    if (activeAcadRankings.length === 0) {
+      alert("검색 조건과 일치하는 가맹 학원 랭킹 내역이 없습니다.");
+      return;
+    }
+
     const headers = ["전국순위", "가맹학원명", "지역", "재원생수", "1인당평균독서량", "학습참여율", "총포인트합계", "우수가맹점뱃지"];
-    const rows = academyRankingData.map(a => [
+    const rows = activeAcadRankings.map(a => [
       a.rank,
       a.name,
       a.region || "",
@@ -6169,12 +6185,12 @@ function exportRankingToExcel() {
       a.badge || ""
     ]);
 
-    downloadAsCSV(`전국가맹학원랭킹_${today}.csv`, headers, rows);
+    downloadAsCSV(`전국 랭킹 명단 (${today}).csv`, headers, rows);
     if (typeof showMasterToast === "function") {
-      showMasterToast(`전국 가맹 학원 랭킹(총 ${rows.length}개소)이 엑셀(CSV) 파일로 다운로드되었습니다.`);
+      showMasterToast(`현재 검색된 가맹 학원 랭킹(총 ${rows.length}개소)이 엑셀(CSV) 파일로 다운로드되었습니다.`);
     }
   } else {
-    // 2. 전국 학생 개인 랭킹 내역 다운로드 (현재 필터 조건 반영)
+    // 2. 전국 학생 개인 랭킹 내역 다운로드 (현재 화면의 월·학원·검색어 필터가 적용된 순위 목록 그대로 다운로드)
     syncRankingDatasetsFromWindow();
     const monthSelect = document.getElementById("rankMonthFilter");
     const selectedMonth = monthSelect ? monthSelect.value : "";
@@ -6204,32 +6220,37 @@ function exportRankingToExcel() {
       }
     }
 
-    const acadFilter = document.getElementById("rankAcademyFilter")?.value || "ALL";
-    const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
-
-    const filtered = activeRankings.filter(s => {
-      const matchAcad = acadFilter === "ALL" || s.academy === acadFilter;
-      const matchQ = !searchQ || (s.name && s.name.toLowerCase().includes(searchQ)) || (s.id && s.id.toLowerCase().includes(searchQ));
-      return matchAcad && matchQ;
-    });
-
-    if (filtered.length === 0) {
-      alert("다운로드할 학생 랭킹 내역이 없습니다.");
-      return;
-    }
-
     // 학원 내 순위 계산 (해당 월 전체 데이터 기준)
     const academyRankMap = {};
     const groupedByAcademy = {};
     activeRankings.forEach(s => {
-      if (!groupedByAcademy[s.academy]) groupedByAcademy[s.academy] = [];
-      groupedByAcademy[s.academy].push(s);
+      const acad = s.academy || "";
+      if (!groupedByAcademy[acad]) groupedByAcademy[acad] = [];
+      groupedByAcademy[acad].push(s);
     });
     Object.entries(groupedByAcademy).forEach(([acad, members]) => {
       members.sort((a, b) => b.points - a.points);
       members.forEach((m, i) => { academyRankMap[m.id] = i + 1; });
     });
 
+    const acadFilter = document.getElementById("rankAcademyFilter")?.value || "ALL";
+
+    // 현재 화면 검색 조건(학원 필터, 검색어 필터) 완벽 반영
+    const filtered = activeRankings.filter(s => {
+      const matchAcad = acadFilter === "ALL" || s.academy === acadFilter;
+      const matchQ = !searchQ || 
+                     (s.name && s.name.toLowerCase().includes(searchQ)) || 
+                     (s.id && s.id.toLowerCase().includes(searchQ)) ||
+                     (s.academy && s.academy.toLowerCase().includes(searchQ));
+      return matchAcad && matchQ;
+    });
+
+    if (filtered.length === 0) {
+      alert("현재 검색 조건과 일치하는 학생 랭킹 내역이 없습니다.");
+      return;
+    }
+
+    // 화면 테이블에 표시되는 순서 및 컬럼 그대로 CSV 행 구성
     const headers = ["전국순위", "학원내순위", "학생명", "아이디", "소속학원", "학년", "완독권수", "퀴즈정답률", "누적포인트", "최근활동"];
     const rows = filtered.map(s => [
       s.rank,
@@ -6244,10 +6265,9 @@ function exportRankingToExcel() {
       s.recent || ""
     ]);
 
-    const monthLabel = selectedMonth ? `_${selectedMonth}` : "";
-    downloadAsCSV(`전국학생개인랭킹${monthLabel}_${today}.csv`, headers, rows);
+    downloadAsCSV(`전국 랭킹 명단 (${today}).csv`, headers, rows);
     if (typeof showMasterToast === "function") {
-      showMasterToast(`전국 학생 랭킹 내역(총 ${rows.length}명)이 엑셀(CSV) 파일로 다운로드되었습니다.`);
+      showMasterToast(`현재 화면에 검색된 전국 랭킹 명단(총 ${rows.length}명)이 엑셀(CSV) 파일로 다운로드되었습니다.`);
     }
   }
 }
@@ -6393,7 +6413,7 @@ function exportMasterBooksToExcel() {
   const a = document.createElement("a");
   const today = new Date().toISOString().slice(0, 10);
   a.href = url;
-  a.download = `나노의책장_마스터도서콘텐츠목록_${today}.csv`;
+  a.download = `도서 콘텐츠 목록 (${today}).csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -6606,18 +6626,20 @@ function renderMasterContents() {
       const wishDelta = (localWishMap[k] || 0) + (localWishMap[b.id] || 0);
       const certDelta = (localCertMap[k] || 0) + (localCertMap[b.id] || 0);
 
-      // 기본 통계 베이스라인 보장 (likes, recommends, quizCompletions 누락/0 방지)
-      if (typeof b.likes === 'undefined' || b.likes === 0) {
-        const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
-        b.likes = ((numSeed * 7) % 23) + 3;
+      // 통계 수치 정규화 (신규 등록 도서 및 실데이터 무결성 보장: 임의 가짜 난수 제거)
+      if (b.id === 'KA500161' || b.title === '그래서 학원 마케팅') {
+        b.likes = 0;
+        b.recommends = 0;
+        b.quizCompletions = 0;
       }
-      if (typeof b.recommends === 'undefined' || b.recommends === 0) {
-        const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
-        b.recommends = ((numSeed * 13) % 45) + 12 + (b.isRecommended ? 15 : 0);
+      if (typeof b.likes === 'undefined' || b.likes === null) {
+        b.likes = 0;
       }
-      if (typeof b.quizCompletions === 'undefined' || b.quizCompletions === 0) {
-        const numSeed = parseInt(k.replace(/\D/g, '') || '1', 10);
-        b.quizCompletions = ((numSeed * 17) % 67) + 25;
+      if (typeof b.recommends === 'undefined' || b.recommends === null) {
+        b.recommends = 0;
+      }
+      if (typeof b.quizCompletions === 'undefined' || b.quizCompletions === null) {
+        b.quizCompletions = 0;
       }
 
       if (wishDelta) b.likes = (b.likes || 0) + wishDelta;
@@ -7587,36 +7609,50 @@ function openBookStatsModal(bookId, statType) {
   const gradeBarsEl = document.getElementById("bookStatsGradeBars");
   
   if (gradeBarsEl) {
-    const maxVal = Math.max(1, Math.round(totalCount * 0.35));
-    let barsHtml = "";
-
-    grades.forEach(g => {
-      const isTarget = g === targetGrade;
-      const count = isTarget 
-        ? Math.round(totalCount * 0.32) 
-        : Math.max(1, Math.round(totalCount * (0.05 + Math.random() * 0.1)));
-      const pct = Math.min(100, Math.round((count / (totalCount || 1)) * 100));
-
-      barsHtml += `
+    if (totalCount === 0) {
+      gradeBarsEl.innerHTML = grades.map(g => `
         <div class="mb-2">
           <div class="d-flex justify-content-between text-muted mb-1" style="font-size: 11.5px;">
-            <span class="${isTarget ? 'font-weight-bold text-dark' : ''}">
-              ${isTarget ? '<i class="fa-solid fa-star text-warning mr-1"></i>' : ''}${g}
-            </span>
-            <span><strong>${count}명</strong> (${pct}%)</span>
+            <span>${g}</span>
+            <span><strong>0명</strong> (0%)</span>
           </div>
           <div class="progress" style="height: 7px; border-radius: 4px; background: #f0ede6;">
-            <div class="progress-bar ${isTarget ? 'bg-warning' : 'bg-secondary'}" role="progressbar" style="width: ${pct}%"></div>
+            <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%"></div>
           </div>
         </div>
-      `;
-    });
-    gradeBarsEl.innerHTML = barsHtml;
+      `).join("");
+    } else {
+      const maxVal = Math.max(1, Math.round(totalCount * 0.35));
+      let barsHtml = "";
+
+      grades.forEach(g => {
+        const isTarget = g === targetGrade;
+        const count = isTarget 
+          ? Math.round(totalCount * 0.32) 
+          : Math.max(0, Math.round(totalCount * (0.05 + Math.random() * 0.1)));
+        const pct = Math.min(100, Math.round((count / (totalCount || 1)) * 100));
+
+        barsHtml += `
+          <div class="mb-2">
+            <div class="d-flex justify-content-between text-muted mb-1" style="font-size: 11.5px;">
+              <span class="${isTarget ? 'font-weight-bold text-dark' : ''}">
+                ${isTarget ? '<i class="fa-solid fa-star text-warning mr-1"></i>' : ''}${g}
+              </span>
+              <span><strong>${count}명</strong> (${pct}%)</span>
+            </div>
+            <div class="progress" style="height: 7px; border-radius: 4px; background: #f0ede6;">
+              <div class="progress-bar ${isTarget ? 'bg-warning' : 'bg-secondary'}" role="progressbar" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      });
+      gradeBarsEl.innerHTML = barsHtml;
+    }
   }
 
-  // 성별 비율 계산 (남 45~55%, 여 55~45%)
-  const malePercent = Math.min(65, Math.max(35, 48 + (book.title.length % 7) - 3));
-  const femalePercent = 100 - malePercent;
+  // 성별 비율 계산 (totalCount === 0일 때는 0%)
+  const malePercent = totalCount === 0 ? 0 : Math.min(65, Math.max(35, 48 + (book.title.length % 7) - 3));
+  const femalePercent = totalCount === 0 ? 0 : (100 - malePercent);
   const maleCount = Math.round((totalCount * malePercent) / 100);
   const femaleCount = totalCount - maleCount;
 
@@ -9854,7 +9890,7 @@ function downloadBookExcelTemplate() {
     ["마당을 나온 암탉", "황선미", "사계절", "4", "소설", "국내서", "단권", "9788971966969", "HQ"]
   ];
 
-  downloadAsCSV("나노책장_도서대량등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
+  downloadAsCSV("콘텐츠 등록 양식.csv", headers, sampleRows);
   showMasterToast("도서 대량 등록 샘플 서식(CSV)이 다운로드되었습니다. ISBN은 수식 없이 숫자만 입력하시면 됩니다.");
 }
 
@@ -10753,7 +10789,27 @@ function handleManualPaymentSubmit(e) {
 
 // 엑셀 다운로드 안내
 function exportPaymentData() {
-  showMasterToast("전체 가맹 학원 누적 결제 내역 엑셀 파일(XLSX)이 생성되어 다운로드되었습니다.");
+  const today = new Date().toISOString().split("T")[0];
+  const listToExport = (typeof masterPaymentList !== "undefined" && Array.isArray(masterPaymentList)) ? masterPaymentList : [];
+  if (listToExport.length === 0) {
+    showMasterToast("다운로드할 결제 내역 데이터가 없습니다.");
+    return;
+  }
+  const headers = ["결제ID", "학원명", "원장명", "구독상품", "결제금액", "결제일시", "이용기간(만료일)", "결제수단", "결제상태", "메모"];
+  const rows = listToExport.map(p => [
+    p.id || "",
+    p.academyName || "",
+    p.director || "",
+    p.plan || "",
+    p.amount || "",
+    p.date || "",
+    p.expiryDate || "",
+    p.method || "자동계좌이체",
+    p.status === "COMPLETED" ? "결제완료" : p.status === "PENDING" ? "결제대기" : (p.status || ""),
+    p.memo || ""
+  ]);
+  downloadAsCSV(`결제 내역 명단 (${today}).csv`, headers, rows);
+  showMasterToast(`결제 내역 명단(총 ${rows.length}건)이 CSV 파일로 다운로드되었습니다.`);
 }
 
 // ============================================================
@@ -11384,7 +11440,8 @@ function exportFranchiseExcel() {
     a.currentStudents, a.maxStudents, a.monthlyFee, a.status
   ]);
 
-  downloadAsCSV("가맹학원명단_" + new Date().toISOString().split("T")[0] + ".csv", headers, rows);
+  const today = new Date().toISOString().split("T")[0];
+  downloadAsCSV(`가맹 학원 명단 (${today}).csv`, headers, rows);
   showMasterToast("가맹 학원 명단이 CSV 파일로 다운로드되었습니다.");
 }
 
@@ -11401,7 +11458,8 @@ function exportMemberExcel() {
     m.lastLogin || "", m.createdAt || "", m.status
   ]);
 
-  downloadAsCSV("통합회원명부_" + new Date().toISOString().split("T")[0] + ".csv", headers, rows);
+  const today = new Date().toISOString().split("T")[0];
+  downloadAsCSV(`회원 명단 (${today}).csv`, headers, rows);
   showMasterToast(`통합 회원 명부(총 ${memberList.length}명)가 CSV 파일로 다운로드되었습니다.`);
 }
 
@@ -11587,7 +11645,10 @@ function openAcademyDeleteConfirm(id) {
 
 // -----------------------------------------------------------
 // [24] handleRegisterAcademy 오버라이드 - 주소 및 메모 포함
-// ----------------
+// -----------------------------------------------------------
+const _origHandleRegisterAcademy = typeof handleRegisterAcademy === "function" ? handleRegisterAcademy : null;
+async function handleRegisterAcademy(e) {
+  if (e && e.preventDefault) e.preventDefault();
   const directorEl = document.getElementById("regDirectorName");
   const director = directorEl ? directorEl.value.trim() : "";
   const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
@@ -11849,7 +11910,7 @@ async function saveMasterAiSettings() {
   var keyInput = document.getElementById('masterGeminiApiKey');
   var modelSelect = document.getElementById('masterGeminiModel');
   var apiKey = keyInput ? keyInput.value.trim() : '';
-  var model = modelSelect ? modelSelect.value : 'gemini-3.0-flash';
+  var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
 
   try {
     var res = await fetch('/api/manage?entity=ai_config', {
@@ -11865,6 +11926,8 @@ async function saveMasterAiSettings() {
       throw new Error(errData.error || '저장 실패');
     }
     var result = await res.json();
+    if (apiKey) localStorage.setItem('NANO_GEMINI_API_KEY', apiKey);
+    localStorage.setItem('NANO_GEMINI_MODEL', model);
     showMasterToast('Google Gemini AI 설정이 성공적으로 저장되었습니다!');
     $('#masterAiSettingsModal').modal('hide');
   } catch(err) {
