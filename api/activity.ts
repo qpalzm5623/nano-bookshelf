@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { authenticate, need, failure, academyScope } from '../lib/portal-http';
+import { authenticate, need, failure, academyScope, staff } from '../lib/portal-http';
 import { monthWindow, getTodayStartUtc, readingProgress } from '../lib/portal-learning';
 import Reading = require('../public_html/js/reading-progress');
 
@@ -34,6 +34,23 @@ export default async function handler(req: any, res: any) {
       return res.json({ revision: revision + 1 });
     }
     need(req.method === 'GET', '조회 요청만 지원합니다.', 405);
+    if (action === 'characters') {
+      staff(user);
+      const academyId = await academyScope(user, req.query.academy);
+      const members = await prisma.member.findMany({ where: { academyId, role: 'STUDENT', status: 'APPROVED' }, select: { id: true } });
+      const ids = members.map(member => member.id);
+      const [settings, progress] = await Promise.all([
+        prisma.portalSetting.findMany({ where: { key: { in: ids.map(id => 'character:' + id) } }, select: { key: true, value: true } }),
+        readingProgress(prisma, ids)
+      ]);
+      const selected = new Map(settings.map(row => [row.key.slice(10), (row.value as any)?.characterId]));
+      return res.json({ items: ids.map(memberId => {
+        const candidate = selected.get(memberId) || 'nano';
+        const counts = progress.get(memberId) || {};
+        const characterId = Object.prototype.hasOwnProperty.call(Reading.rules, candidate) && Reading.stage(candidate, counts) > 0 ? candidate : 'nano';
+        return { memberId, characterId, stage: Reading.stage(characterId, counts) };
+      }) });
+    }
     if (action === 'points') {
       const month = String(req.query.month || '');
       need(!month || /^\d{4}-(0[1-9]|1[0-2])$/.test(month), '조회 월을 확인해 주세요.');

@@ -1,177 +1,176 @@
-/**
- * 나노의 책장 (Nano BookShelf) PWA 설치 유도 및 모바일 최적화 스크립트
- * - Android: beforeinstallprompt 이벤트 기반 원클릭 설치 지원
- * - iOS: Safari '홈 화면에 추가' 안내 툴팁 제공
- * - 독립형(Standalone) 앱 모드 실행 시 배너 자동 숨김
- */
-
+/** 모바일·태블릿 PWA 설치: 지원 브라우저는 설치 버튼, 그 외에는 홈 화면 추가 안내. */
 (function () {
   'use strict';
 
-  // 이미 독립 실행형(PWA 설치 모드)으로 구동 중이면 배너 미노출
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                       window.navigator.standalone === true;
-  if (isStandalone) {
-    return;
-  }
-
-  // 사용자가 24시간 내에 닫은 경우 미노출
-  const hideUntil = localStorage.getItem('nano_pwa_banner_hide_until');
-  if (hideUntil && new Date().getTime() < parseInt(hideUntil, 10)) {
-    return;
-  }
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
-
+  const ua = navigator.userAgent || '';
+  // iPadOS의 데스크톱 웹사이트 모드는 Macintosh로 보고됩니다.
+  const isIOS = /iPad|iPhone|iPod/i.test(ua) ||
+    (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  const isMobile = isIOS || /Android/i.test(ua) || navigator.userAgentData?.mobile === true;
+  const isInApp = /KAKAOTALK|NAVER\(|Instagram|FBAN|FBAV|Line\/|; wv\)/i.test(ua);
+  const displayMode = window.matchMedia('(display-mode: standalone)');
+  const hideKey = 'nano_pwa_banner_hide_until';
+  let installed = false;
+  let dismissed = false;
   let deferredPrompt = null;
+  let installing = false;
 
-  // 배너 HTML 및 스타일 생성
-  function renderInstallBanner(type) {
-    if (document.getElementById('nanoPwaInstallBanner')) return;
-
-    const banner = document.createElement('div');
-    banner.id = 'nanoPwaInstallBanner';
-    banner.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(120%);
-      width: calc(100% - 32px);
-      max-width: 440px;
-      background: #ffffff;
-      border: 1.5px solid #e5ded2;
-      border-radius: 18px;
-      box-shadow: 0 16px 36px rgba(45, 36, 30, 0.18), 0 4px 12px rgba(0,0,0,0.06);
-      padding: 14px 16px;
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', sans-serif;
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    `;
-
-    const iconHtml = `
-      <img src="resources/images/icons/icon-192.png" alt="나노의 책장"
-           style="width: 48px; height: 48px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0; background: #f8f6f0;"
-           onerror="this.src='resources/images/common/logo.png'">
-    `;
-
-    let contentHtml = '';
-    if (type === 'android') {
-      contentHtml = `
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 14px; font-weight: 700; color: #2d241e; line-height: 1.3;">나노의 책장 앱 설치</div>
-          <div style="font-size: 12px; color: #7d7165; margin-top: 2px;">홈 화면에 추가하여 앱처럼 편리하게 이용하세요!</div>
-        </div>
-        <button id="btnPwaInstallAction" style="
-          background: #2d6a4f;
-          color: #ffffff;
-          border: none;
-          padding: 8px 14px;
-          border-radius: 10px;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          flex-shrink: 0;
-          white-space: nowrap;
-        ">설치</button>
-      `;
-    } else {
-      // iOS Safari 안내
-      contentHtml = `
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 13.5px; font-weight: 700; color: #2d241e; line-height: 1.3;">홈 화면에 앱으로 추가하기</div>
-          <div style="font-size: 11.5px; color: #7d7165; margin-top: 2px; line-height: 1.4;">
-            하단 공유 <span style="display:inline-block; vertical-align:middle;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></span> 버튼 누른 후 <strong>[홈 화면에 추가]</strong>를 선택하세요.
-          </div>
-        </div>
-      `;
+  // 저장소 사용이 차단된 브라우저에서도 설치 안내는 동작합니다.
+  function isHidden() {
+    if (dismissed) return true;
+    try {
+      return Date.now() < Number(localStorage.getItem(hideKey));
+    } catch (_) {
+      return false;
     }
+  }
 
-    const closeBtn = `
-      <button id="btnPwaCloseBanner" aria-label="닫기" style="
-        background: transparent;
-        border: none;
-        color: #a09589;
-        font-size: 20px;
-        line-height: 1;
-        cursor: pointer;
-        padding: 4px;
-        margin-left: 2px;
-      ">&times;</button>
-    `;
+  function isStandalone() {
+    return installed || displayMode.matches || navigator.standalone === true;
+  }
 
-    banner.innerHTML = iconHtml + contentHtml + closeBtn;
-    document.body.appendChild(banner);
+  function removeBanner() {
+    document.getElementById('nanoPwaInstallBanner')?.remove();
+  }
 
-    // 슬라이드업 애니메이션
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        banner.style.transform = 'translateX(-50%) translateY(0)';
-      }, 100);
-    });
+  function dismissBanner() {
+    dismissed = true;
+    try {
+      localStorage.setItem(hideKey, String(Date.now() + 24 * 60 * 60 * 1000));
+    } catch (_) { /* 현재 페이지에서는 dismissed로 중복 노출을 막습니다. */ }
+    removeBanner();
+  }
 
-    // 닫기 버튼 핸들러 (24시간 동안 숨김)
-    document.getElementById('btnPwaCloseBanner').addEventListener('click', () => {
-      banner.style.transform = 'translateX(-50%) translateY(120%)';
-      setTimeout(() => banner.remove(), 400);
-      const tomorrow = new Date().getTime() + (24 * 60 * 60 * 1000);
-      localStorage.setItem('nano_pwa_banner_hide_until', tomorrow.toString());
-    });
+  function manualInstructions() {
+    if (isInApp) {
+      return isIOS
+        ? 'Safari에서 이 주소를 열어 공유 → 홈 화면에 추가를 선택하세요. 웹 앱으로 열기 옵션이 보이면 켜고 추가하세요.'
+        : '앱 메뉴에서 외부 브라우저로 열거나 주소를 Chrome에 붙여넣은 뒤, 메뉴 → 앱 설치 또는 홈 화면에 추가를 선택하세요.';
+    }
+    if (isIOS) {
+      return '공유 → 홈 화면에 추가를 선택하고, 웹 앱으로 열기 옵션이 보이면 켜고 추가하세요. 항목이 없으면 Safari에서 열어 주세요.';
+    }
+    return '브라우저 메뉴에서 앱 설치 또는 홈 화면에 추가를 선택하세요. 항목이 보이지 않으면 Chrome에서 열어 주세요.';
+  }
 
-    // Android 설치 액션 핸들러
-    if (type === 'android') {
-      const installBtn = document.getElementById('btnPwaInstallAction');
-      if (installBtn) {
-        installBtn.addEventListener('click', async () => {
-          if (!deferredPrompt) return;
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log('[PWA] User response to install prompt:', outcome);
-          deferredPrompt = null;
-          banner.style.transform = 'translateX(-50%) translateY(120%)';
-          setTimeout(() => banner.remove(), 400);
-        });
+  function updateBanner(message) {
+    const description = document.getElementById('nanoPwaInstallDescription');
+    const button = document.getElementById('btnPwaInstallAction');
+    if (!description || !button) return;
+    description.textContent = message || (deferredPrompt
+      ? '설치 후 홈 화면 아이콘을 누르면 주소창 없이 앱으로 열립니다.'
+      : manualInstructions());
+    button.hidden = !deferredPrompt;
+    button.disabled = installing;
+    button.textContent = installing ? '설치 확인 중…' : '설치';
+  }
+
+  async function installApp() {
+    if (!deferredPrompt || installing) return;
+    const prompt = deferredPrompt;
+    installing = true;
+    updateBanner();
+    try {
+      // 브라우저 설치 창은 사용자가 버튼을 누른 시점에만 열 수 있습니다.
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      deferredPrompt = null;
+      if (outcome === 'accepted') {
+        installed = true;
+        removeBanner();
+      } else {
+        dismissBanner();
       }
+    } catch (_) {
+      deferredPrompt = null;
+      updateBanner('설치 창을 열지 못했습니다. ' + manualInstructions());
+    } finally {
+      installing = false;
+      const button = document.getElementById('btnPwaInstallAction');
+      if (button) button.disabled = false;
     }
   }
 
-  // 모바일 디바이스 체크 (PC 데스크톱에서는 PWA 설치 배너 미노출)
-  function isMobileDevice() {
-    const ua = navigator.userAgent || '';
-    const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|webOS/i.test(ua);
-    const isTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    const isNarrow = window.innerWidth <= 768;
-    return isMobileUA || (isTouchScreen && isNarrow);
-  }
-
-  // Android / Chromium: beforeinstallprompt 이벤트 감지
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // PC 데스크톱 접속 시에는 앱 설치 유도 배너를 일체 띄우지 않음
-    if (!isMobileDevice()) {
+  function renderInstallBanner() {
+    if (!isMobile || !window.isSecureContext || isStandalone() || isHidden() || !document.body) return;
+    if (document.getElementById('nanoPwaInstallBanner')) {
+      updateBanner();
       return;
     }
-    e.preventDefault();
-    deferredPrompt = e;
-    renderInstallBanner('android');
-  });
 
-  // iOS Safari: 모바일 사파리 접속 시 안내
-  if (isIOS && !isStandalone && isMobileDevice()) {
-    // 페이지 로드 3초 후 은은하게 안내 배너 렌더링
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        renderInstallBanner('ios');
-      }, 2500);
+    if (!document.getElementById('nanoPwaInstallStyle')) {
+      const style = document.createElement('style');
+      style.id = 'nanoPwaInstallStyle';
+      style.textContent = `
+        #nanoPwaInstallBanner {
+          position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+          left: 50%; transform: translateX(-50%); box-sizing: border-box;
+          width: calc(100% - 32px); max-width: 460px;
+          max-height: calc(100dvh - 120px); overflow-y: auto;
+          background: #fff; color: #2d241e; border: 1.5px solid #e5ded2;
+          border-radius: 18px; box-shadow: 0 12px 32px rgba(45,36,30,.18);
+          padding: 14px; z-index: 999999; display: grid;
+          grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Pretendard Variable', sans-serif;
+          text-align: left; line-height: 1.5;
+        }
+        #nanoPwaInstallBanner img { width: 44px; height: 44px; border-radius: 10px; }
+        #nanoPwaInstallBanner h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+        #nanoPwaInstallDescription { font-size: 13px; color: #65594d; margin: 0; overflow-wrap: anywhere; }
+        #nanoPwaInstallBanner button { min-height: 44px; font: inherit; cursor: pointer; border-radius: 10px; }
+        #btnPwaInstallAction { margin-top: 10px; padding: 8px 18px; border: 0; background: #2d6a4f; color: #fff; }
+        #btnPwaInstallAction:disabled { opacity: .7; cursor: wait; }
+        #btnPwaCloseBanner { align-self: start; width: 44px; padding: 0; border: 0; background: transparent; color: #65594d; font-size: 24px !important; }
+        #nanoPwaInstallBanner button:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const banner = document.createElement('section');
+    banner.id = 'nanoPwaInstallBanner';
+    banner.setAttribute('aria-labelledby', 'nanoPwaInstallTitle');
+    banner.innerHTML = `
+      <img src="resources/images/icons/icon-192.png" alt="" width="44" height="44">
+      <div>
+        <h2 id="nanoPwaInstallTitle">나노의 책장 앱 설치</h2>
+        <p id="nanoPwaInstallDescription" aria-live="polite"></p>
+        <button type="button" id="btnPwaInstallAction" hidden>설치</button>
+      </div>
+      <button type="button" id="btnPwaCloseBanner" aria-label="설치 안내 24시간 닫기">×</button>
+    `;
+    document.body.appendChild(banner);
+    document.getElementById('btnPwaInstallAction').addEventListener('click', installApp);
+    document.getElementById('btnPwaCloseBanner').addEventListener('click', dismissBanner);
+    banner.addEventListener('keydown', event => {
+      if (event.key === 'Escape') dismissBanner();
     });
+    updateBanner();
   }
 
-  // 앱 설치 완료 감지
-  window.addEventListener('appinstalled', () => {
-    console.log('[PWA] 나노의 책장 앱이 성공적으로 설치되었습니다.');
-    const banner = document.getElementById('nanoPwaInstallBanner');
-    if (banner) banner.remove();
+  // 닫은 상태에서도 이벤트를 수신해 브라우저 기본 배너의 중복 노출을 막습니다.
+  window.addEventListener('beforeinstallprompt', event => {
+    if (!isMobile || !window.isSecureContext) return;
+    event.preventDefault();
+    deferredPrompt = event;
+    renderInstallBanner();
   });
+
+  window.addEventListener('appinstalled', () => {
+    installed = true;
+    deferredPrompt = null;
+    removeBanner();
+  });
+  displayMode.addEventListener?.('change', () => {
+    if (isStandalone()) removeBanner();
+  });
+
+  // 설치 이벤트가 없는 iOS·인앱 브라우저·Android에도 수동 설치 방법을 안내합니다.
+  function scheduleBanner() {
+    if (isMobile && window.isSecureContext) setTimeout(renderInstallBanner, 2500);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scheduleBanner, { once: true });
+  } else {
+    scheduleBanner();
+  }
 })();

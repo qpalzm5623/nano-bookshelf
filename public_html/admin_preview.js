@@ -5291,7 +5291,9 @@ function goBatchCatalogPage(p) {
   renderBatchBookCatalog();
 }
 
-function executeBatchClassAssign() {
+var batchClassAssignSaving = false;
+async function executeBatchClassAssign() {
+  if (batchClassAssignSaving) return;
   if (!batchSelectedClassName) {
     showAcademyToast('학급이 선택되지 않았습니다.');
     return;
@@ -5314,6 +5316,37 @@ function executeBatchClassAssign() {
                  + `* 이미 해당 도서를 배정받은 학생은 중복 추가되지 않고 유지되며, 미배정 학생에게만 안전하게 추가됩니다.`;
 
   if (!confirm(confirmMsg)) return;
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    var remoteClass = academyClassList.find(function(item) { return item.name === batchSelectedClassName; });
+    if (!remoteClass || !(remoteClass.serverId || remoteClass.id)) {
+      showAcademyToast('학급 정보를 새로고침한 뒤 다시 시도해 주세요.');
+      return;
+    }
+    var selectedClassName = batchSelectedClassName;
+    var saveButton = document.getElementById('btnExecuteBatchClassAssign');
+    var originalButtonHtml = saveButton ? saveButton.innerHTML : '';
+    batchClassAssignSaving = true;
+    if (saveButton) { saveButton.disabled = true; saveButton.textContent = '배정 저장 중…'; }
+    try {
+      var result = await NanoPortal.saveClassAssignments(batchSelectedBooks.slice(), remoteClass, currentAcademyInfo.id);
+      // 서버 저장이 완료된 뒤에만 모달을 닫고 목록을 다시 조회합니다.
+      $('#modalBatchClassAssign').modal('hide');
+      currentFilteredStudentAssignments = null;
+      try {
+        await NanoPortal.refreshAssignments();
+        showAcademyToast('[' + selectedClassName + '] ' + result.count + '명 배정 저장 완료 (신규 ' + result.addedCount + '건)');
+      } catch (_) {
+        showAcademyToast('배정은 저장되었습니다. 목록을 불러오지 못해 새로고침이 필요합니다.');
+      }
+    } catch (error) {
+      showAcademyToast('학급 배정 저장을 확인하지 못했습니다: ' + error.message + ' 선택한 도서를 유지했습니다. 다시 시도해 주세요.');
+    } finally {
+      batchClassAssignSaving = false;
+      if (saveButton) { saveButton.disabled = false; saveButton.innerHTML = originalButtonHtml; }
+    }
+    return;
+  }
 
   var todayDateStr = new Date().toISOString().split('T')[0];
   var todayTimeStr = todayDateStr + ' ' + new Date().toTimeString().split(' ')[0].substr(0, 5);
@@ -5359,7 +5392,7 @@ function executeBatchClassAssign() {
   });
 
   currentFilteredStudentAssignments = null;
-  syncAssignmentsData();
+  if (!syncAssignmentsData()) return;
   renderStudentAssignmentTable();
   $('#modalBatchClassAssign').modal('hide');
   showAcademyToast(`[${batchSelectedClassName}] 학급 원생 ${targetStudents.length}명에게 일괄 배정이 완료되었습니다. (신규 추가: 총 ${totalAddedCount}건)`);
@@ -6402,23 +6435,16 @@ function getStudentCharacterId(std) {
   if (!std) return 'nano';
   var candidate = std.characterId || std.charId;
   if (candidate && NANO_FRIEND_IDS.includes(candidate)) return candidate;
+  // 운영 화면에서는 관리자 브라우저에 남아 있는 다른 계정의 선택을 섞지 않습니다.
+  if (window.NanoPortal && NanoPortal.remote) return 'nano';
   var sId = std.username || std.id || std.studentId || '';
   try {
     if (sId) {
       var saved = localStorage.getItem('NANO_STUDENT_AVATAR_ID_' + sId);
       if (saved && NANO_FRIEND_IDS.includes(saved)) return saved;
     }
-    if (sId === 'look1' || sId === 's1' || (std.name && std.name === '박진호')) {
-      var globalSaved = localStorage.getItem('NANO_STUDENT_AVATAR_ID');
-      if (globalSaved && NANO_FRIEND_IDS.includes(globalSaved)) return globalSaved;
-    }
   } catch(e) {}
-  var seed = 0;
-  var str = String(sId || std.name || 'nano');
-  for (var i = 0; i < str.length; i++) {
-    seed = (seed * 31 + str.charCodeAt(i)) & 0xffffffff;
-  }
-  return NANO_FRIEND_IDS[Math.abs(seed) % NANO_FRIEND_IDS.length];
+  return 'nano';
 }
 
 function getCharacterSvg(charId, size, stage) {
@@ -6652,7 +6678,7 @@ function buildAdminRankingRows(monthKey) {
       name: std ? std.name : item.name,
       loginId: std ? (std.username || std.id) : item.studentId,
       charId: getStudentCharacterId(std || item),
-      stage: item.books >= 15 ? 3 : item.books >= 5 ? 2 : 1,
+      stage: std && std.characterStage || 1,
       grade: ((std && std.grade) ? std.grade : '') + ' (' + ((std && std.classGroup) ? std.classGroup : item.classGroup) + ')',
       classKey: (std && std.classGroup) ? std.classGroup : item.classGroup,
       books: item.books,
@@ -6671,7 +6697,7 @@ function buildAdminRankingRows(monthKey) {
         name: s.name,
         loginId: s.username || s.id,
         charId: getStudentCharacterId(s),
-        stage: (s.bookCount || 0) >= 15 ? 3 : (s.bookCount || 0) >= 5 ? 2 : 1,
+        stage: s.characterStage || 1,
         grade: (s.grade || '미등록') + ' (' + (s.classGroup || '미지정') + ')',
         classKey: s.classGroup || '미지정',
         books: s.bookCount || 0,
@@ -6713,8 +6739,57 @@ function getFilteredAdminRankingList() {
   });
 }
 
+var adminRankCharacterRequest = 0;
+async function refreshAdminRankingCharacters() {
+  var requestId = ++adminRankCharacterRequest;
+  var academyId = currentAcademyInfo.id;
+  var status = document.getElementById('adminRankCharacterStatus');
+  if (status) status.textContent = '학생이 선택한 나노프렌즈를 확인하고 있습니다…';
+  try {
+    var result = await NanoPortal.api('/api/activity?action=characters&academy=' + encodeURIComponent(academyId));
+    if (requestId !== adminRankCharacterRequest || currentAcademyInfo.id !== academyId) return;
+    var byId = new Map((result.items || []).map(function(item) { return [item.memberId, item]; }));
+    studentDataList.forEach(function(student) {
+      var selected = byId.get(student.serverId);
+      student.characterId = selected ? selected.characterId : 'nano';
+      student.characterStage = selected ? selected.stage : 1;
+    });
+    if (status) status.textContent = '';
+    renderAdminRankingView(true);
+  } catch (_) {
+    if (requestId === adminRankCharacterRequest && currentAcademyInfo.id === academyId && status) {
+      status.textContent = '최신 나노프렌즈를 불러오지 못했습니다. 랭킹 메뉴를 다시 열어 주세요.';
+    }
+  }
+}
+
+function escapeRankingText(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+  });
+}
+
+function renderAdminRankingPodium(list) {
+  if (!list.length) return '<p class="ranking-empty">아직 등록된 랭킹이 없습니다.</p>';
+  return list.slice(0, 3).map(function(student, index) {
+    var rank = index + 1;
+    return '<article class="rank-champion-card rank-' + rank + '" aria-label="' + rank + '위 ' + escapeRankingText(student.name) + '">' +
+      '<div class="champion-avatar-wrap">' +
+        (rank === 1 ? '<span class="champion-crown" aria-hidden="true"><i class="fa-solid fa-crown"></i></span>' : '') +
+        '<div class="champion-avatar">' + getCharacterSvg(student.charId, 104, student.stage || 1) + '</div>' +
+      '</div>' +
+      '<div class="champion-rank">' + rank + '위' + (rank === 1 ? '<span>이달의 독서왕</span>' : '') + '</div>' +
+      '<h3 class="champion-name">' + escapeRankingText(student.name) + '</h3>' +
+      '<p class="champion-class">' + escapeRankingText(student.grade) + '</p>' +
+      '<div class="champion-record"><strong>' + Number(student.points || 0).toLocaleString() + '<span>P</span></strong>' +
+        '<span class="champion-books"><i class="fa-solid fa-book-open" aria-hidden="true"></i> ' + Number(student.books || 0) + '권 완독</span>' +
+      '</div></article>';
+  }).join('');
+}
+
 // 화면 랭킹 뷰 메인 렌더링
-function renderAdminRankingView() {
+function renderAdminRankingView(skipCharacterRefresh) {
+  if (!skipCharacterRefresh && window.NanoPortal && NanoPortal.remote) refreshAdminRankingCharacters();
   populateAdminRankFilters();
   var list = getFilteredAdminRankingList();
   
@@ -6753,71 +6828,8 @@ function renderAdminRankingView() {
     countLabel.textContent = '총 ' + list.length + '명 등재 (' + currentClassText + ')';
   }
 
-  // 2. TOP 3 포디움 렌더링
   var podiumStage = document.getElementById('adminPodiumStage');
-  if (podiumStage) {
-    if (list.length < 3) {
-      podiumStage.innerHTML = '<div class="text-center text-muted py-5" style="width:100%;"><i class="fa-solid fa-circle-info mr-1"></i>선택된 학급의 등재 인원이 3명 미만입니다. 전체 학급을 선택해주세요.</div>';
-    } else {
-      var top1 = list[0];
-      var top2 = list[1];
-      var top3 = list[2];
-
-      podiumStage.innerHTML = `
-        <!-- 2위 (은빛 단상, 좌측) -->
-        <div class="admin-podium-col rank-2">
-          <div class="podium-avatar-box">
-            <div class="podium-char-avatar" style="width: 70px; height: 70px; background: #f8fafc; border: 3px solid #94a3b8;">
-              ${getCharacterSvg(top2.charId, 70, top2.stage || 1)}
-            </div>
-          </div>
-          <div class="podium-pedestal">
-            <div class="pedestal-rank-tag rank-2">🥈 2위</div>
-            <div class="pedestal-student-name">${top2.name}</div>
-            <div class="pedestal-student-class">${top2.grade}</div>
-            <div class="pedestal-stats-badge">
-              <i class="fa-solid fa-book-bookmark text-primary mr-1"></i>${top2.books}권 · <i class="fa-solid fa-coins text-warning mr-1"></i>${top2.points.toLocaleString()}P
-            </div>
-          </div>
-        </div>
-
-        <!-- 1위 (황금 단상, 가운데) -->
-        <div class="admin-podium-col rank-1">
-          <div class="podium-avatar-box">
-            <div class="podium-crown-icon">👑</div>
-            <div class="podium-char-avatar" style="width: 82px; height: 82px; background: #fffbeb; border: 3.5px solid #f59e0b;">
-              ${getCharacterSvg(top1.charId, 82, top1.stage || 1)}
-            </div>
-          </div>
-          <div class="podium-pedestal">
-            <div class="pedestal-rank-tag rank-1">🥇 1위 · 이달의 독서왕</div>
-            <div class="pedestal-student-name">${top1.name}</div>
-            <div class="pedestal-student-class">${top1.grade}</div>
-            <div class="pedestal-stats-badge">
-              <i class="fa-solid fa-crown text-warning mr-1"></i>${top1.books}권 · <i class="fa-solid fa-coins text-warning mr-1"></i>${top1.points.toLocaleString()}P
-            </div>
-          </div>
-        </div>
-
-        <!-- 3위 (동빛 단상, 우측) -->
-        <div class="admin-podium-col rank-3">
-          <div class="podium-avatar-box">
-            <div class="podium-char-avatar" style="width: 66px; height: 66px; background: #fff7ed; border: 3px solid #ea580c;">
-              ${getCharacterSvg(top3.charId, 66, top3.stage || 1)}
-            </div>
-          </div>
-          <div class="podium-pedestal">
-            <div class="pedestal-rank-tag rank-3">🥉 3위</div>
-            <div class="pedestal-student-name">${top3.name}</div>
-            <div class="pedestal-student-class">${top3.grade}</div>
-            <div class="pedestal-stats-badge">
-              <i class="fa-solid fa-book-bookmark text-danger mr-1"></i>${top3.books}권 · <i class="fa-solid fa-coins text-warning mr-1"></i>${top3.points.toLocaleString()}P
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  }
+  if (podiumStage) podiumStage.innerHTML = renderAdminRankingPodium(list);
 
   // 3. 전체 랭킹 테이블 렌더링
   var tbody = document.getElementById('academyRankingTableBody');
@@ -6849,7 +6861,7 @@ function renderAdminRankingView() {
           <td class="text-center">${changeHtml}</td>
           <td>
             <div class="d-flex align-items-center gap-2">
-              <div style="width: 38px; height: 38px; border-radius: 50%; background: #f8fafc; border: 1.5px solid #e2e8f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <div class="ranking-list-avatar">
                 ${getCharacterSvg(r.charId, 36, r.stage || 1)}
               </div>
               <div>
@@ -7717,109 +7729,40 @@ function showPortfolioList() {
 // 규칙: 3~4개 코멘트, 각 40~70자, 2문장 이내, 독서량 감소 언급 금지, 타인 비교 금지
 // ==============================================================
 function generatePortfolioInsights(student, pfData) {
-  var name = (student && student.name) || pfData.name || '학생';
-  var books = pfData.books || [];
-
-  // 1. 이미 서버/Gemini AI로부터 생성되어 저장된 정성 코멘트가 있는 경우 우선 적용
-  if (Array.isArray(pfData.aiComments) && pfData.aiComments.length >= 3) {
-    return pfData.aiComments.slice(0, 4);
-  }
-
-  // 2. 도서가 없는 초기 상태
-  if (books.length === 0) {
-    return [
-      name + '의 첫 독서 기록이 차곡차곡 쌓이기 시작했습니다. 앞으로 채워갈 독서 여정이 무척 기대됩니다.',
-      '스스로 흥미를 느끼는 책을 편안하게 탐색하고 있습니다. 책 읽기의 즐거운 첫걸음을 내딛는 시기입니다.',
-      '다음 분기에는 읽은 도서와 북퀴즈 성취도를 바탕으로 더욱 입체적인 독서 성장을 함께 살펴보겠습니다.'
-    ];
-  }
-
-  var count = books.length;
-  var categories = [];
-  var scores = [];
-  var authors = [];
-  books.forEach(function(b) {
-    if (b.category) categories.push(b.category);
-    if (b.pub) categories.push(b.pub);
-    if (b.author) authors.push(b.author);
-    var s = typeof b.score === 'number' ? b.score : parseFloat(String(b.score || '100').replace(/[^0-9.]/g, ''));
-    if (!isNaN(s)) scores.push(s);
-  });
-  var uniqueCats = Array.from(new Set(categories)).filter(Boolean);
-  var avgScore = scores.length ? Math.round(scores.reduce(function(a, b){ return a + b; }, 0) / scores.length) : 100;
-
-  var comments = [];
-
-  // [축 1: 다양성]
-  if (uniqueCats.length >= 3) {
-    comments.push('문학과 인문 등 다양한 분야의 도서를 고루 접했습니다. 관심의 폭이 한층 넓어지고 있는 시기입니다.');
-  } else if (uniqueCats.length === 1) {
-    comments.push(uniqueCats[0] + ' 분야의 책에 푹 빠져 재미를 붙이고 있습니다. 좋아하는 세계에 몰입하는 힘이 자라고 있습니다.');
-  } else {
-    comments.push('이야기책을 중심으로 새로운 주제의 도서를 함께 탐색하고 있습니다. 폭넓은 배경지식을 쌓아가는 중입니다.');
-  }
-
-  // [축 2: 난이도 및 이해도 정합성]
-  if (avgScore >= 85) {
-    comments.push('권장 도서의 북퀴즈 평균이 ' + avgScore + '점으로 높게 유지되고 있습니다. 줄거리와 핵심 맥락을 정확히 이해하며 읽고 있습니다.');
-  } else {
-    comments.push('스스로 다양한 난이도의 책에 능동적으로 도전하고 있습니다. 생각의 힘과 사고의 틀을 넓혀가는 소중한 과정입니다.');
-  }
-
-  // [축 3: 습관 및 리듬]
-  if (count >= 5) {
-    comments.push(count + '권의 도서를 공백 없이 꾸준히 완독했습니다. 독서가 일상 속 자연스러운 생활 리듬으로 자리 잡았습니다.');
-  } else {
-    comments.push('자기만의 속도로 한 권 한 권 정성껏 완독해 나가고 있습니다. 책 읽는 성취감을 단단히 다져가는 중입니다.');
-  }
-
-  // [축 4: 몰입]
-  var authorCounts = {};
-  authors.forEach(function(a){ authorCounts[a] = (authorCounts[a] || 0) + 1; });
-  var hasFavorite = Object.keys(authorCounts).some(function(k){ return authorCounts[k] >= 2; });
-  if (hasFavorite) {
-    comments.push('좋아하는 작가의 작품을 연속으로 탐독하며 깊은 애착을 보였습니다. 독서 몰입의 큰 즐거움을 만끽하고 있습니다.');
-  } else {
-    comments.push('등장인물의 감정과 사건 전개에 깊이 공감하며 읽고 있습니다. 상상력과 공감 능력이 풍부하게 자라는 시기입니다.');
-  }
-
-  return comments.slice(0, 4);
+  if (Array.isArray(pfData.aiComments) && pfData.aiComments.length >= 3) return pfData.aiComments.slice(0, 4);
+  return ['선택한 도서의 제목·저자·줄거리·북퀴즈 점수를 바탕으로 독서 이야기를 생성합니다.'];
 }
 
 // Gemini AI 비동기 코멘트 생성 요청 헬퍼
 async function requestGeminiPortfolioStory(studentId, pfId, pfData, std) {
-  if (!pfData || pfData._aiRequested) return;
+  if (!window.NanoPortal || !NanoPortal.remote || !pfId || !pfData || pfData.aiVersion === 1 || pfData._aiRequested) return;
   pfData._aiRequested = true;
-
+  pfData._aiPending = true;
+  pfData._aiError = '';
   try {
-    var res = await fetch('/api/portfolio-ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        studentName: pfData.name || (std ? std.name : '학생'),
-        studentGrade: (std ? std.grade : '') || '초등',
-        books: pfData.books || [],
-        period: pfData.period || '최근 분기'
-      })
-    });
-    if (res.ok) {
-      var data = await res.json();
-      if (Array.isArray(data.comments) && data.comments.length >= 3) {
-        pfData.aiComments = data.comments;
-        var storyBox = document.getElementById('pfAiStoryList');
-        if (storyBox) {
-          storyBox.innerHTML = data.comments.map(function(cmt) {
-            return (
-              '<div style="display:flex; align-items:flex-start; gap:9px; font-size:12.5px; line-height:1.65; color:#1e242b;">' +
-                '<span style="display:inline-block; width:5px; height:5px; border-radius:50%; background:#1f8a7e; margin-top:8px; flex-shrink:0;"></span>' +
-                '<div style="flex:1; word-break:keep-all;">' + cmt + '</div>' +
-              '</div>'
-            );
-          }).join('');
-        }
-      }
-    }
-  } catch(e) {}
+    await NanoPortal.generatePortfolioAI(pfId);
+    await NanoPortal.refreshPortfolios();
+  } catch (error) {
+    pfData._aiError = error.message || 'AI 분석을 생성하지 못했습니다.';
+  } finally {
+    pfData._aiPending = false;
+    // 다른 학생의 리포트로 이동한 경우 현재 화면을 덮어쓰지 않습니다.
+    if (currentViewingPortfolioId === pfId) renderPortfolioDocument(studentId, pfId);
+  }
+}
+
+function escapePortfolioText(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+  });
+}
+
+function formatPortfolioSchoolGrade(value) {
+  return String(value || '').replace(/(^|\s)(?:초등학교|초등|초|중학교|중등|중|고등학교|고등|고)\s*(?=\d\s*학년)/g, '$1').trim();
+}
+
+function formatPortfolioTeacher(value) {
+  return String(value || '').replace(/\s*(?:지도\s*교사|담당\s*교사|지정\s*교사)\s*$/, '').trim() || '미지정';
 }
 
 // ==============================================================
@@ -7843,19 +7786,26 @@ function renderPortfolioDocument(studentId, pfId) {
 
   var studentName = pfData.name || (std ? std.name : '김민준');
   var schoolGrade = pfData.school || ((std ? std.school : '나노초등학교') + ' ' + (std ? std.grade : '5학년'));
+  schoolGrade = formatPortfolioSchoolGrade(schoolGrade);
   var classGroup = pfData.classGroup || (std ? std.classGroup : '지혜반');
 
   var teacher = '';
   if (std) {
     teacher = std.teacher || std.teacherName || '';
-    if (!teacher && std.classGroup && typeof academyClassList !== 'undefined') {
+    if ((!teacher || teacher === '미지정' || teacher === '-') && std.classGroup && typeof academyClassList !== 'undefined') {
       var cls = academyClassList.find(function(c) { return c.name === std.classGroup; });
-      if (cls && cls.teacher) teacher = cls.teacher;
+      if (cls && cls.teacher && cls.teacher !== '미지정' && cls.teacher !== '-') teacher = cls.teacher;
     }
   }
-  if (!teacher) teacher = pfData.teacher || '박선우 지도교사';
-  if (!teacher.includes('지도교사') && !teacher.includes('선생님') && !teacher.includes('교사')) {
-    teacher += ' 지도교사';
+  if (!teacher) teacher = pfData.teacher || '';
+  teacher = String(teacher || '').trim();
+
+  // 미지정 또는 공백일 경우 뒤에 '지도교사' 접미사 없이 깔끔하게 '미지정'만 표시
+  if (!teacher || teacher === '미지정' || teacher === '-' || teacher === '미지정 지도교사' || teacher.indexOf('미지정') !== -1) {
+    teacher = '미지정';
+  } else {
+    // 교사명이 있을 때도 헤더가 이미 '소속 / 지도교사'이므로 중복 접미사 제거하여 성명 위주로 깔끔하게 정돈
+    teacher = formatPortfolioTeacher(teacher);
   }
 
   var period = pfMeta.period || '2026년 3분기 (7~9월)';
@@ -7925,11 +7875,11 @@ function renderPortfolioDocument(studentId, pfId) {
     var coverUrl = rawCover || 'resources/images/book_default.svg';
 
     return (
-      '<div class="col-4 col-sm-3 col-md-2 mb-3 text-center pf-cover-col">' +
-        '<div style="width:100%; aspect-ratio:3/4; max-height:100px; border-radius:6px; overflow:hidden; border:1px solid #e0d8cc; box-shadow:0 2px 6px rgba(0,0,0,0.08); background:#fff; margin:0 auto 4px; cursor:pointer;" onclick="openCoverModal(\'' + coverUrl + '\', \'' + (b.title || '').replace(/'/g, "\\'") + '\', \'' + (b.pub || '').replace(/'/g, "\\'") + '\')">' +
+      '<div class="pf-cover-card-item" title="' + (b.title || '') + '">' +
+        '<div style="width:72px; height:98px; border-radius:6px; overflow:hidden; border:1px solid #dfd6c8; box-shadow:0 2px 5px rgba(0,0,0,0.08); background:#fff; margin-bottom:5px; cursor:pointer;" onclick="openCoverModal(\'' + coverUrl + '\', \'' + (b.title || '').replace(/'/g, "\\'") + '\', \'' + (b.pub || '').replace(/'/g, "\\'") + '\')">' +
           '<img src="' + coverUrl + '" style="width:100%; height:100%; object-fit:cover; display:block;" alt="' + (b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
         '</div>' +
-        '<div class="font-weight-bold text-truncate" style="font-size:11px; color:#1e242b;" title="' + (b.title || '') + '">' + (b.title || '') + '</div>' +
+        '<div class="font-weight-bold text-truncate" style="width:72px; font-size:11px; color:#2c241c; line-height:1.25; text-align:center;">' + (b.title || '') + '</div>' +
       '</div>'
     );
   }).join('');
@@ -7956,22 +7906,12 @@ function renderPortfolioDocument(studentId, pfId) {
       ? b.author 
       : (matchedBook ? matchedBook.author : '');
 
-    var scoreText = b.score || '100점';
-    if (typeof scoreText === 'number' || (typeof scoreText === 'string' && !scoreText.includes('점'))) {
+    var scoreText = b.score == null || b.score === '' ? '기록 없음' : b.score;
+    if (typeof scoreText === 'number' || (typeof scoreText === 'string' && /^\d+(\.\d+)?$/.test(scoreText))) {
       scoreText = scoreText + '점';
     }
 
-    var commentText = b.comment || b.thought || '';
-    if (!commentText || /^[\d\s]+$/.test(commentText) || commentText.length < 5) {
-      var defaultComments = [
-        '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 완벽히 이해함.',
-        '글쓴이의 집필 의도와 인물의 심리 변화를 인과관계에 따라 논리적으로 분석함.',
-        '문맥 속 함축적 의미를 입체적으로 해석하며 깊이 있는 주제 의식을 도출함.',
-        '사회적 배경과 사건 전개 과정을 다각도로 고찰하고 핵심 교훈을 올바르게 성찰함.',
-        '등장인물의 가치관과 행동 동기를 비판적으로 검토하며 자신의 견해를 형성함.'
-      ];
-      commentText = defaultComments[idx % defaultComments.length];
-    }
+    var commentText = b.achievement || ((b.title || '도서') + (authorText ? ' · ' + authorText : '') + ' / 북퀴즈 ' + scoreText + '. AI 성취 내역 생성 전입니다.');
 
     return (
       '<div class="col-12 mb-2 pf-book-col">' +
@@ -8001,7 +7941,7 @@ function renderPortfolioDocument(studentId, pfId) {
               '</span>' +
             '</div>' +
             '<div style="font-size:11px; color:#3d342d; line-height:1.45; word-break:keep-all;">' +
-              commentText +
+              escapePortfolioText(commentText) +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -8028,14 +7968,14 @@ function renderPortfolioDocument(studentId, pfId) {
       '</div>' +
       '<div class="pf-student-info-grid mt-3">' +
         '<div class="pf-student-info-cell"><span class="pf-info-label">학생명</span><strong class="pf-info-val">' + studentName + '</strong></div>' +
-        '<div class="pf-student-info-cell"><span class="pf-info-label">학교 / 학년</span><strong class="pf-info-val">' + schoolGrade + '</strong></div>' +
-        '<div class="pf-student-info-cell"><span class="pf-info-label">소속 / 지도교사</span><strong class="pf-info-val">' + classGroup + ' · ' + teacher + '</strong></div>' +
+        '<div class="pf-student-info-cell"><span class="pf-info-label">학교 / 학년</span><strong class="pf-info-val">' + escapePortfolioText(schoolGrade) + '</strong></div>' +
+        '<div class="pf-student-info-cell"><span class="pf-info-label">소속 / 지도교사</span><strong class="pf-info-val">' + escapePortfolioText(classGroup) + ' · ' + escapePortfolioText(teacher) + '</strong></div>' +
         '<div class="pf-student-info-cell"><span class="pf-info-label">분석 대상 기간</span><strong class="pf-info-val pf-info-highlight">' + period + '</strong></div>' +
       '</div>' +
     '</div>' +
 
     '<!-- ② 기간 요약 (총 00권) -->' +
-    '<div class="mb-4">' +
+    '<div class="mb-3">' +
       '<div class="pf-section-title"><i class="fa-solid fa-chart-simple"></i>기간 독서 핵심 요약</div>' +
       '<div class="pf-stat-grid">' +
         '<div class="pf-stat-box"><div class="pf-stat-label">완독 도서수</div><div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">권</span></div><div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">목표 완독 완료</div></div>' +
@@ -8048,7 +7988,7 @@ function renderPortfolioDocument(studentId, pfId) {
     '<!-- ────────────────────────────────────────────── -->' +
     '<!-- ③ [신규 블록] 📖 나노의 독서 이야기 (정성 코멘트 3~4개) -->' +
     '<!-- ────────────────────────────────────────────── -->' +
-    '<div class="mb-4">' +
+    '<div class="mb-3">' +
       '<div class="p-3.5 rounded" style="background:#f4faf8; border:1.5px solid #b2ded9; border-radius:12px; box-shadow:0 2px 6px rgba(31,138,126,0.04); padding:16px 20px;">' +
         '<div class="d-flex align-items-center justify-content-between mb-2 pb-2" style="border-bottom:1px dashed #b2ded9;">' +
           '<h5 class="font-weight-bold mb-0" style="color:#124e47; font-size:14.5px; display:flex; align-items:center; gap:6px;">' +
@@ -8061,7 +8001,7 @@ function renderPortfolioDocument(studentId, pfId) {
             return (
               '<div style="display:flex; align-items:flex-start; gap:9px; font-size:12.5px; line-height:1.65; color:#1e242b;">' +
                 '<span style="display:inline-block; width:5px; height:5px; border-radius:50%; background:#1f8a7e; margin-top:8px; flex-shrink:0;"></span>' +
-                '<div style="flex:1; word-break:keep-all;">' + cmt + '</div>' +
+                '<div style="flex:1; word-break:keep-all;">' + escapePortfolioText(cmt) + '</div>' +
               '</div>'
             );
           }).join('') +
@@ -8072,7 +8012,7 @@ function renderPortfolioDocument(studentId, pfId) {
     '<!-- ────────────────────────────────────────────── -->' +
     '<!-- ④ 독서 취향 그래프 (카테고리별 / 주제별) -->' +
     '<!-- ────────────────────────────────────────────── -->' +
-    '<div class="mb-4">' +
+    '<div class="mb-3">' +
       '<div class="pf-section-title"><i class="fa-solid fa-pie-chart"></i>독서 취향 및 선호도 분석</div>' +
       '<div class="pf-preference-wrap">' +
         '<div class="row align-items-center pf-preference-row">' +
@@ -8111,13 +8051,13 @@ function renderPortfolioDocument(studentId, pfId) {
     '<!-- ⑤ 책 커버 그리드 (기간 내 완독 도서) -->' +
     '<!-- ────────────────────────────────────────────── -->' +
     (books.length > 0 ? (
-      '<div class="mb-4">' +
+      '<div class="mb-3">' +
         '<div class="d-flex justify-content-between align-items-center mb-2">' +
           '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-bookmark"></i>완독 도서 책 커버 컬렉션 (' + bookCount + '권)</div>' +
           '<small class="text-muted" style="font-size:11px;">표지 클릭 시 확대</small>' +
         '</div>' +
         '<div class="p-3 rounded border" style="background:#fcfbf8; border-color:#e8e2d8 !important;">' +
-          '<div class="row pf-books-grid-row" style="margin-bottom:-10px;">' +
+          '<div class="pf-cover-grid-wrap">' +
             coverGridHtml +
           '</div>' +
         '</div>' +
@@ -8141,7 +8081,7 @@ function renderPortfolioDocument(studentId, pfId) {
           '<span class="badge" style="background:#ffffff; color:#124e47; border:1px solid #b2ded9; font-size:11px; padding:3px 8px;">' + teacher + '</span>' +
         '</div>' +
         '<div id="pfTeacherNoteDisplay" style="font-size:12.5px; line-height:1.75; color:#1e242b;">' +
-          (pfData.teacherNote || (studentName + ' 학생은 정기적인 독서 루틴을 성실히 실천하며, 독서 후 퀴즈 풀이를 통해 책의 맥락을 깊이 파악하는 힘이 뛰어납니다. 스스로 생각의 지평을 넓혀가는 모습이 매우 인상적입니다.')) +
+          escapePortfolioText(pfData.teacherNote || '도서별 성취 내역과 독서 이야기를 바탕으로 AI 총평을 생성합니다.') +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -8153,6 +8093,24 @@ function renderPortfolioDocument(studentId, pfId) {
     '</div>';
 
   docContainer.innerHTML = html;
+  if (window.NanoPortal && NanoPortal.remote && pfData.aiVersion !== 1) {
+    var status = document.createElement('div');
+    status.className = 'alert alert-info d-print-none';
+    status.setAttribute('role', 'status');
+    status.textContent = pfData._aiError || '도서별 성취 내역·독서 이야기·총평을 AI로 생성하고 있습니다. 완료 후 인쇄해 주세요.';
+    if (pfData._aiError) {
+      var retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'btn btn-sm btn-outline-primary ml-2';
+      retry.textContent = 'AI 분석 다시 시도';
+      retry.addEventListener('click', function() {
+        pfData._aiRequested = false;
+        renderPortfolioDocument(studentId, pfId);
+      });
+      status.appendChild(retry);
+    }
+    docContainer.prepend(status);
+  }
 }
 // 화면 전환: 포트폴리오 상세 화면 표시
 function buildGenreDonutSvg(dist) {
@@ -8292,6 +8250,11 @@ function openPortfolioReportModal() {
 
 // 현재 보고 있는 포트폴리오 인쇄 / PDF 저장 (전역 미디어 쿼리 간섭 없는 격리 iframe 인쇄)
 function printCurrentPortfolio() {
+  var currentData = portfolioDataMap[currentViewingPortfolioId];
+  if (currentData && currentData._aiPending) {
+    showAcademyToast('AI 분석을 저장하고 있습니다. 완료 후 인쇄해 주세요.');
+    return;
+  }
   var docContainer = document.getElementById('portfolioPrintDoc');
   if (!docContainer) {
     showAcademyToast('인쇄할 포트폴리오 문서를 찾을 수 없습니다.');
@@ -8612,7 +8575,7 @@ function onWizardStudentSelect(stdId) {
   if (levelEl) levelEl.innerText = std.level;
   if (bookCountEl) bookCountEl.innerText = displayBookCount + '권';
   if (quizAvgEl) quizAvgEl.innerText = displayQuizAvg + '점';
-  if (teacherEl) teacherEl.innerText = std.teacher || '박선혜 지도교사';
+  if (teacherEl) teacherEl.innerText = formatPortfolioTeacher(std.teacher);
   if (initEl) initEl.innerText = std.name ? std.name.charAt(0) : '원';
 
   syncWizardDateRangeForStudent(stdId);
@@ -8624,7 +8587,7 @@ function onWizardStudentSelect(stdId) {
 
   var commentInput = document.getElementById('wizReportComment');
   if (commentInput) {
-    commentInput.value = std.name + ' 학생은 논리적 사고력과 문학적 감수성이 매우 뛰어난 원생입니다. 3분기 독서 과제를 성실하게 완수하였으며, 특히 등장인물의 내면 심리를 분석하는 독후 활동에서 우수한 성취도를 나타내었습니다.';
+    commentInput.value = '';
   }
 }
 
@@ -8788,7 +8751,9 @@ function applyWizardTemplate(type) {
 
 // 4단계 포트폴리오 발급 완료 및 데이터 반영
 // 카카오톡 즉시 발송 옵션 제거: 기본 상태 '카톡 발송하기' (미발송) -> 목록에서 원클릭 발송
+var portfolioCreateSaving = false;
 async function finishPortfolioCreate() {
+  if (portfolioCreateSaving) return;
   var std = studentDataList.find(function(s) { return s.id === wizardSelectedStudentId; });
   var title = (document.getElementById('wizReportTitle') ? document.getElementById('wizReportTitle').value : '').trim() || ((std ? '[' + std.name + '] ' : '') + '2026년 3분기 독서 포트폴리오');
   var period = document.getElementById('wizReportPeriod') ? document.getElementById('wizReportPeriod').value.trim() : '2026년 3분기 (7~9월)';
@@ -8813,8 +8778,13 @@ async function finishPortfolioCreate() {
         toDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).toISOString().slice(0, 10);
       }
     }
+    var createButton = document.getElementById('wizBtnNext');
+    var createButtonHtml = createButton ? createButton.innerHTML : '';
+    portfolioCreateSaving = true;
+    if (createButton) { createButton.disabled = true; createButton.textContent = '포트폴리오 저장 및 AI 분석 중…'; }
+    var savedPortfolioId = '';
     try {
-      await NanoPortal.savePortfolio({
+      var savedPortfolio = await NanoPortal.savePortfolio({
         memberId: std.serverId,
         from: fromDate,
         to: toDate,
@@ -8822,19 +8792,39 @@ async function finishPortfolioCreate() {
         selectedTitles: wizardSelectedBooks,
         comment: comment
       }, currentAcademyInfo.id);
+      savedPortfolioId = savedPortfolio.id;
+      lastCreatedPortfolioId = savedPortfolioId;
+      var aiError = '';
+      try {
+        await NanoPortal.generatePortfolioAI(savedPortfolioId);
+      } catch (error) {
+        aiError = error.message;
+      }
       await NanoPortal.refreshPortfolios();
-      var createdPortfolio = portfolioList.find(function(item) { return item.studentId === wizardSelectedStudentId; });
-      lastCreatedPortfolioId = createdPortfolio ? createdPortfolio.id : '';
+      var createdPortfolio = portfolioList.find(function(item) { return item.id === savedPortfolioId; });
+      if (aiError && portfolioDataMap[savedPortfolioId]) {
+        portfolioDataMap[savedPortfolioId]._aiRequested = true;
+        portfolioDataMap[savedPortfolioId]._aiError = aiError;
+      }
       if (document.getElementById('wizDonePfId')) document.getElementById('wizDonePfId').innerText = lastCreatedPortfolioId || '발급 완료';
       if (document.getElementById('wizDoneStudentName')) document.getElementById('wizDoneStudentName').innerText = std.name + ' (' + std.grade + ' · ' + std.classGroup + ')';
       if (document.getElementById('wizDoneReportTitle')) document.getElementById('wizDoneReportTitle').innerText = createdPortfolio ? createdPortfolio.title : title;
       if (document.getElementById('wizDoneBookCount')) document.getElementById('wizDoneBookCount').innerText = '총 ' + (createdPortfolio ? createdPortfolio.bookCount : wizardSelectedBooks.length) + '권';
       goToWizardStep(4);
-      showAcademyToast('[' + std.name + '] 학생의 포트폴리오가 서버에서 발급되었습니다.');
+      showAcademyToast(aiError ? '포트폴리오는 저장되었습니다. AI 분석은 상세 화면에서 다시 시도해 주세요: ' + aiError : '[' + std.name + '] 학생의 포트폴리오와 AI 분석이 저장되었습니다.');
       return;
     } catch (error) {
-      showAcademyToast('포트폴리오를 발급하지 못했습니다: ' + error.message);
+      if (savedPortfolioId) {
+        goToWizardStep(4);
+        if (document.getElementById('wizDonePfId')) document.getElementById('wizDonePfId').innerText = savedPortfolioId;
+        showAcademyToast('포트폴리오는 저장되었습니다. 목록을 새로고침해 주세요: ' + error.message);
+      } else {
+        showAcademyToast('포트폴리오를 발급하지 못했습니다: ' + error.message);
+      }
       return;
+    } finally {
+      portfolioCreateSaving = false;
+      if (createButton) { createButton.disabled = false; createButton.innerHTML = createButtonHtml; }
     }
   }
 

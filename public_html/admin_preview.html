@@ -1185,10 +1185,11 @@
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      gap: 16px;
-      padding-top: 36px;
-      min-height: 310px;
-      margin-bottom: 8px;
+      gap: 20px;
+      padding: 40px 0 12px;
+      margin: 0 auto;
+      max-width: 780px;
+      overflow: visible;
     }
 
     .admin-podium-col {
@@ -1216,7 +1217,7 @@
 
     .podium-avatar-box {
       position: relative;
-      overflow: hidden;
+      overflow: visible;
       margin-bottom: 6px;
       display: flex;
       align-items: center;
@@ -1251,6 +1252,7 @@
     .podium-char-avatar {
       overflow: hidden;
       border-radius: 50%;
+      clip-path: circle(50%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1258,6 +1260,65 @@
       overflow: hidden;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
       transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* 원형 마스크는 캐릭터에만 적용하고 왕관과 카드 그림자는 바깥에 둡니다. */
+    .rank-champion-card {
+      --rank-accent: #64748b;
+      --rank-tint: #f4f7fa;
+      flex: 1; min-width: 0; max-width: 240px;
+      padding: 24px 18px 0; text-align: center;
+      border: 1px solid #e2e8ee; border-radius: 24px;
+      background: #fff; box-shadow: 0 6px 18px rgba(35, 48, 55, .05);
+      overflow: visible;
+    }
+    .rank-champion-card.rank-1 {
+      order: 2; --rank-accent: #a66a12; --rank-tint: #fff8e8;
+      border-color: #ead29d; background: linear-gradient(180deg, #fffbf1, #fff 65%);
+      padding-top: 32px; margin-bottom: 14px;
+    }
+    .rank-champion-card.rank-2 { order: 1; }
+    .rank-champion-card.rank-3 { order: 3; --rank-accent: #aa714c; --rank-tint: #fcf3ec; }
+    .champion-avatar-wrap { position: relative; width: fit-content; margin: 0 auto 14px; overflow: visible; }
+    .champion-avatar, .ranking-list-avatar {
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; box-sizing: border-box; border-radius: 50%;
+      overflow: hidden; clip-path: circle(50%); isolation: isolate;
+      background: var(--rank-tint, #f4f7fa);
+    }
+    .champion-avatar { width: 96px; height: 96px; border: 3px solid #fff; box-shadow: 0 0 0 1px #e3e8ed; }
+    .rank-1 .champion-avatar { width: 108px; height: 108px; border-color: #f4dfad; }
+    .champion-avatar > svg, .ranking-list-avatar > svg, .podium-char-avatar > svg {
+      display: block; width: 100%; height: 100%; max-width: 100%; flex-shrink: 1;
+      overflow: hidden; border-radius: 50%;
+    }
+    .ranking-list-avatar { width: 38px; height: 38px; border: 1px solid #e2e8f0; }
+    .champion-crown { position: absolute; top: -23px; left: 50%; transform: translateX(-50%); color: #d6a038; font-size: 28px; line-height: 1; z-index: 2; }
+    .champion-rank { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--rank-accent); font-size: 13px; font-weight: 800; margin-bottom: 8px; }
+    .champion-rank span { padding: 3px 8px; border-radius: 20px; background: #faedcb; font-size: 10px; }
+    .champion-name { margin: 0 0 5px; font-size: 19px; font-weight: 800; color: #273c3a; overflow-wrap: anywhere; }
+    .champion-class { margin: 0; min-height: 34px; font-size: 12px; line-height: 1.45; color: #73807e; overflow-wrap: anywhere; }
+    .champion-record { margin: 16px -18px 0; padding: 12px 8px; border-radius: 0 0 23px 23px; background: var(--rank-tint); display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .champion-record strong { font-size: 21px; line-height: 1.2; color: var(--rank-accent); }
+    .champion-record strong span { font-size: 11px; margin-left: 3px; }
+    .champion-books { font-size: 11px; color: #61706e; white-space: nowrap; }
+    .ranking-empty { margin: 24px 0; color: #73807e; text-align: center; }
+    #adminRankCharacterStatus { min-height: 18px; font-size: 12px; color: #73807e; margin: 4px 8px 0; }
+    @media (max-width: 575px) {
+      .admin-podium-wrap { padding: 18px 12px 12px; }
+      .admin-podium-stage { gap: 8px; padding-top: 30px; }
+      .rank-champion-card { padding: 18px 8px 0; border-radius: 18px; }
+      .rank-champion-card.rank-1 { padding-top: 24px; margin-bottom: 10px; }
+      .champion-avatar { width: 62px; height: 62px; }
+      .rank-1 .champion-avatar { width: 72px; height: 72px; }
+      .champion-crown { font-size: 23px; top: -19px; }
+      .champion-rank { font-size: 12px; min-height: 36px; gap: 3px; }
+      .champion-rank span { font-size: 9px; padding: 2px 4px; }
+      .champion-name { font-size: 16px; }
+      .champion-class { font-size: 10px; min-height: 42px; }
+      .champion-record { margin: 12px -8px 0; gap: 5px; flex-direction: column; border-radius: 0 0 17px 17px; }
+      .champion-record strong { font-size: 18px; }
+      .champion-books { font-size: 10px; }
     }
 
     .podium-char-avatar:hover {
@@ -2552,7 +2613,7 @@
   border: 1.5px solid #dfd7cc;
   border-radius: 14px;
   box-shadow: 0 12px 36px rgba(45, 38, 33, 0.08);
-  padding: 38px 44px;
+  padding: 28px 32px;
   position: relative;
   overflow: hidden;
 }
@@ -2836,7 +2897,7 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 14mm 12mm 14mm 12mm !important;
+    margin: 10mm 10mm 10mm 10mm !important;
   }
 
   body.is-printing-portfolio {
@@ -2910,7 +2971,7 @@
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 6mm 8mm !important;
+    padding: 5mm 6mm !important;
     background: #ffffff !important;
     border: 1.5px solid #1f8a7e !important;
     border-radius: 8px !important;
@@ -5014,7 +5075,7 @@
 
           <!-- 3D 포디움 스테이지 (학생 페이지의 감성 그대로) -->
           <div class="admin-podium-wrap">
-            <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 px-2">
               <div
                 style="font-size: 15px; font-weight: 900; color: #0f172a; display: flex; align-items: center; gap: 8px;">
                 <i class="fa-solid fa-medal" style="color: #f59e0b;"></i>
@@ -5026,6 +5087,7 @@
               </span>
             </div>
 
+            <div id="adminRankCharacterStatus" role="status" aria-live="polite"></div>
             <!-- 단상 컨테이너 -->
             <div class="admin-podium-stage" id="adminPodiumStage">
               <!-- JS 렌더링 -->
@@ -7619,7 +7681,8 @@
                 </div>
               </div>
               <textarea class="form-control" id="wizReportComment" rows="3"
-                style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;">정해진 독서 계획을 성실하게 실천하며, 책 읽기에서 북퀴즈 완수까지 훌륭한 자기주도적 독서 루틴을 보여주었습니다. 스스로 생각의 지평을 넓혀가는 모습이 매우 인상적입니다.</textarea>
+                placeholder="비워 두면 선택한 도서와 북퀴즈 점수로 AI 총평을 생성합니다. 직접 작성하면 입력한 총평을 우선 수록합니다."
+                style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;"></textarea>
             </div>
 
             <!-- 카카오톡 발송 안내 박스 (즉시 발송 체크박스 제거, 목록에서 원클릭 발송 안내) -->

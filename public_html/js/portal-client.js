@@ -5,8 +5,8 @@
   var memoryLogs = null;
   var learningRefresh = null, learningOverlay = new Map();
   var activity = null, activitySequence = 0;
-  async function api(path, body) {
-    var response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: {'Content-Type':'application/json'}, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+  async function api(path, body, timeout) {
+    var response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: {'Content-Type':'application/json'}, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeout || 20000) });
     var data; try { data = await response.json(); } catch(e) { throw new Error('서버 응답을 확인하지 못했습니다.'); }
     if (!response.ok) throw new Error(data.error || '서버 요청에 실패했습니다.');
     return data;
@@ -168,6 +168,15 @@
     }, { academy: academyCode });
   }
   async function deleteAssignment(id, academyCode) { return manage('assignments', 'delete', { id: id }, { academy: academyCode }); }
+  async function saveClassAssignments(books, classGroup, academyCode) {
+    return api(manageUrl('assignments', academyCode), { operation: 'save', data: {
+      bookIds: books.map(function(book) { return book.serverId || book.id; }),
+      classGroupId: classGroup.serverId || classGroup.id
+    } }, 45000);
+  }
+  async function generatePortfolioAI(portfolioId) {
+    return api('/api/portfolio-ai', { portfolioId: portfolioId, academy: academy() }, 60000);
+  }
   async function refreshPortfolios() {
     var result = await manageList('portfolios');
     if (typeof portfolioList === 'undefined' || typeof portfolioDataMap === 'undefined') return result;
@@ -202,15 +211,18 @@
           });
           var numScore = parseFloat(String(book.score || 0).replace(/[^0-9.]/g, '')) || 0;
           return {
+            bookId: book.bookId,
             title: book.title,
             date: book.date,
             score: Math.round(numScore) + '점',
             cover: book.cover || (matchedBook ? matchedBook.cover : 'assets/covers/cover_default.jpg'),
             pub: book.pub || book.publisher || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '나노출판'),
             author: book.author || (matchedBook ? matchedBook.author : ''),
+            achievement: book.achievement || '',
             comment: book.thought || book.comment || ''
           };
-        }), teacherNote: item.comment || '' };
+        }), teacherNote: item.commentSource === 'teacher' ? (item.comment || item.aiTeacherNote || '') : (item.aiTeacherNote || item.comment || ''),
+        aiComments: item.aiComments || [], aiVersion: item.aiVersion || 0 };
       // 포트폴리오 고유 ID별 저장 + 원생별 최신(도서 존재 우선) 포트폴리오 유지 (과거 0권 포트폴리오가 덮어쓰는 현상 방지)
       portfolioDataMap[item.id] = pfEntry;
       if (!portfolioDataMap[studentId] || (portfolioDataMap[studentId].bookCount === 0 && pfEntry.bookCount > 0)) {
@@ -300,6 +312,7 @@
     saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, saveNotice: saveNotice, deleteNotice: deleteNotice,
     saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio,
+    saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,
     refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
     logs: function () { return memoryLogs; } };
