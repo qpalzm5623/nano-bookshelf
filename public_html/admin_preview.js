@@ -3759,8 +3759,62 @@ function getLearningLogBookMeta(log) {
   };
 }
 
+// 학습 완료 일시(날짜 + 24시간 형식 hh:mm) 포맷 함수
+function formatLearningDateTime(log) {
+  var dateStr = '';
+  var timeStr = '';
+
+  // 1. submittedAt(ISO 문자열 등) 우선 파싱
+  if (log && log.submittedAt) {
+    try {
+      var d = new Date(log.submittedAt);
+      if (!isNaN(d.getTime())) {
+        var yyyy = d.getFullYear();
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+        dateStr = yyyy + '-' + mm + '-' + dd;
+        var hh = String(d.getHours()).padStart(2, '0');
+        var min = String(d.getMinutes()).padStart(2, '0');
+        timeStr = '(' + hh + ':' + min + ')';
+      }
+    } catch (e) {}
+  }
+
+  // 2. date 필드 확인 (예: '2026-10-06 14:10' 또는 '2026-10-29')
+  if (log && log.date) {
+    var raw = String(log.date).trim();
+    var matchWithTime = raw.match(/^(\d{4}[-./]\d{1,2}[-./]\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if (matchWithTime) {
+      if (!dateStr) {
+        dateStr = matchWithTime[1].replace(/[./]/g, '-');
+      }
+      if (!timeStr) {
+        var hh = matchWithTime[2].padStart(2, '0');
+        var min = matchWithTime[3];
+        timeStr = '(' + hh + ':' + min + ')';
+      }
+    } else if (!dateStr) {
+      dateStr = raw.slice(0, 10).replace(/[./]/g, '-');
+    }
+  }
+
+  // 3. submittedAt이 ISO가 아닌 경우 또는 date/submittedAt에서 시간 보완
+  if (!timeStr && log) {
+    var timeSource = String(log.submittedAt || log.date || '');
+    var m = timeSource.match(/\b(\d{1,2}):(\d{2})\b/);
+    if (m) {
+      timeStr = '(' + m[1].padStart(2, '0') + ':' + m[2] + ')';
+    }
+  }
+
+  return {
+    date: dateStr || (log && log.date ? String(log.date).slice(0, 10) : '-'),
+    time: timeStr
+  };
+}
+
 // 학습 관리 테이블 렌더링
-// 컬럼 순서: 1.번호, 2.완료일, 3.완독 도서명, 4.원생명, 5.북퀴즈 결과, 6.나노 시트, 7.첨삭, 8.관리
+// 컬럼 순서: 1.번호, 2.완료일, 3.도서명, 4.학급, 5.원생명, 6.북퀴즈 결과, 7.나노 시트, 8.첨삭, 9.관리
 function renderLearningTable() {
   initLearningDateFilters();
 
@@ -3846,7 +3900,7 @@ function renderLearningTable() {
   }
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
     renderLearningPagination(0, 1);
     return;
   }
@@ -3893,10 +3947,13 @@ function renderLearningTable() {
     // 7. 관리 컬럼: 학습리포트 버튼 + 우측 카톡 발송 버튼 나란히 배치
     var kakaoBtnHtml = getKakaoReportBtnHtml(l.id, false);
 
+    var dtInfo = formatLearningDateTime(l);
+
     tr.innerHTML = `
       <td class="text-center font-weight-bold text-muted" style="font-size: 12px;">${numDesc}</td>
-      <td class="text-center" style="font-size: 12px; color: var(--text-muted); font-weight: 600; white-space: nowrap;">
-        ${l.date || '-'}
+      <td class="text-center" style="font-size: 12px; color: var(--text-muted); font-weight: 600; white-space: nowrap; line-height: 1.45;">
+        <div>${dtInfo.date}</div>
+        ${dtInfo.time ? `<div style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">${dtInfo.time}</div>` : ''}
       </td>
       <td style="padding: 9px 12px;">
         <div class="d-flex align-items-center" style="gap: 12px;">
@@ -3909,9 +3966,11 @@ function renderLearningTable() {
           </div>
         </div>
       </td>
+      <td class="text-center" style="font-size: 12.5px; color: var(--text-muted); font-weight: 500; white-space: nowrap;">
+        ${l.classGroup || '-'}
+      </td>
       <td class="text-center">
         <strong style="color: var(--text-main); font-size: 13px;">${l.studentName}</strong>
-        <div style="font-size: 11.5px; color: var(--text-muted);">${l.classGroup}</div>
       </td>
       <td class="text-center">
         <span class="badge-soft ${l.score >= 90 ? 'badge-soft-success' : 'badge-soft-warn'} font-weight-bold">${l.score}점</span>
