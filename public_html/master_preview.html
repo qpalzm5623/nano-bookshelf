@@ -399,6 +399,97 @@
       color: var(--text-main);
     }
 
+    /* 마스터 공통 엑셀/양식 다운로드 버튼 (호버 시 글자 흰색 방지 + 살짝 뜨는 모션) */
+    .btn-master-excel {
+      background: #ffffff !important;
+      color: #15803d !important;
+      border: 1.5px solid #16a34a !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      border-radius: 10px !important;
+      padding: 8px 15px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      white-space: nowrap !important;
+      cursor: pointer !important;
+      text-decoration: none !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+    .btn-master-excel:hover {
+      background: #f0fdf4 !important;
+      color: #15803d !important;
+      border-color: #15803d !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2) !important;
+    }
+    .btn-master-excel:active {
+      transform: translateY(0) !important;
+      box-shadow: none !important;
+    }
+
+    /* 마스터 삭제 내역 버튼 (연한 붉은색 틴트 + 볼드 폰트 결 통일 + 살짝 뜨는 모션) */
+    .btn-master-danger-soft {
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
+      border: 1.5px solid #fecaca !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      border-radius: 10px !important;
+      padding: 8px 14px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      white-space: nowrap !important;
+      cursor: pointer !important;
+      text-decoration: none !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+    .btn-master-danger-soft:hover {
+      background: #fee2e2 !important;
+      color: #991b1b !important;
+      border-color: #f87171 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.18) !important;
+    }
+    .btn-master-danger-soft:active {
+      transform: translateY(0) !important;
+      box-shadow: none !important;
+    }
+
+    /* 마스터 파란색 아웃라인 버튼 (엑셀 일괄 등록/삭제 등) */
+    .btn-master-blue {
+      background: #ffffff !important;
+      color: #1d4ed8 !important;
+      border: 1.5px solid #3b82f6 !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      border-radius: 10px !important;
+      padding: 8px 15px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      white-space: nowrap !important;
+      cursor: pointer !important;
+      text-decoration: none !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+    .btn-master-blue:hover {
+      background: #eff6ff !important;
+      color: #1e40af !important;
+      border-color: #1d4ed8 !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2) !important;
+    }
+    .btn-master-blue:active {
+      transform: translateY(0) !important;
+      box-shadow: none !important;
+    }
+
+
     /* 테이블 스타일 */
     .simple-table {
       width: 100%;
@@ -847,15 +938,15 @@
             전국 가맹 독서학원의 계약 기간, 학생 정원(슬롯) 제한, 월별 결제 현황을 총괄 관리합니다.
           </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" onclick="openDeletedAcademyListModal()" style="border-radius: 10px; font-size: 13px; padding: 7px 14px;">
+        <div class="d-flex align-items-center" style="gap: 10px;">
+          <button class="btn-master-danger-soft" onclick="openDeletedAcademyListModal()">
             <i class="fa-solid fa-trash-clock mr-1"></i>삭제 내역
           </button>
-          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportFranchiseExcel()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
-            <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 다운로드
+          <button class="btn-master-excel" onclick="exportFranchiseExcel()">
+            <i class="fa-solid fa-file-excel mr-1" style="color: #16a34a;"></i>엑셀 다운로드
           </button>
           <button class="btn-beige-primary" onclick="openAcademyRegisterModal()">
-            <i class="fa-solid fa-plus"></i>신규 가맹 학원 등록
+            <i class="fa-solid fa-plus mr-1"></i>신규 가맹 학원 등록
           </button>
         </div>
       </div>
@@ -978,15 +1069,15 @@
             전국 가맹 학원에서 생성된 원장님, 선생님, 학생 계정을 일괄 모니터링하고 상태를 제어합니다.
           </div>
         </div>
-        <div class="d-flex gap-2 flex-wrap align-items-center">
-          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportMemberExcel()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
-            <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 다운로드
+        <div class="d-flex flex-wrap align-items-center" style="gap: 10px;">
+          <button class="btn-master-excel" onclick="exportMemberExcel()">
+            <i class="fa-solid fa-file-excel mr-1" style="color: #16a34a;"></i>엑셀 다운로드
           </button>
           <button class="btn-beige-secondary" onclick="openMemberExcelModal()">
-            <i class="fa-solid fa-file-import"></i>엑셀 등록
+            <i class="fa-solid fa-file-import mr-1"></i>엑셀 등록
           </button>
           <button class="btn-beige-primary" onclick="openMasterMemberAddModal()">
-            <i class="fa-solid fa-user-plus"></i>회원 등록
+            <i class="fa-solid fa-user-plus mr-1"></i>회원 등록
           </button>
         </div>
       </div>
@@ -1248,12 +1339,12 @@
             </h6>
             <small class="text-muted">학생 도서관에 노출될 학년별(미취학~중등3) 권장/추천 도서 목록을 관리합니다.</small>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadRecommendedExcelTemplate()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
-              <i class="fa-solid fa-file-excel mr-1 text-success"></i>양식 다운로드
+          <div class="d-flex align-items-center" style="gap: 10px;">
+            <button class="btn-master-excel" onclick="downloadRecommendedExcelTemplate()">
+              <i class="fa-solid fa-file-excel mr-1" style="color: #16a34a;"></i>양식 다운로드
             </button>
-            <button class="btn btn-sm btn-outline-primary font-weight-bold" onclick="openRecommendedExcelModal()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
-              <i class="fa-solid fa-file-import mr-1 text-primary"></i>엑셀 일괄 등록/삭제
+            <button class="btn-master-blue" onclick="openRecommendedExcelModal()">
+              <i class="fa-solid fa-file-import mr-1" style="color: #2563eb;"></i>엑셀 일괄 등록/삭제
             </button>
             <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
               <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
@@ -1407,8 +1498,8 @@
             <button class="btn btn-sm btn-outline-secondary" onclick="resetRankingFilters()" style="border-radius: 8px; height: 38px; border-color: var(--border-medium); padding: 0 14px;">
               <i class="fa-solid fa-rotate-left mr-1"></i>초기화
             </button>
-            <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportRankingToExcel()" style="border-radius: 8px; height: 38px; padding: 0 14px; background: #fff;" title="현재 랭킹 내역을 엑셀(CSV) 파일로 다운로드합니다.">
-              <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 다운로드
+            <button class="btn-master-excel" onclick="exportRankingToExcel()" style="height: 38px;" title="현재 랭킹 내역을 엑셀(CSV) 파일로 다운로드합니다.">
+              <i class="fa-solid fa-file-excel mr-1" style="color: #16a34a;"></i>엑셀 다운로드
             </button>
           </div>
           <div class="text-muted ml-auto font-weight-bold pl-2" style="font-size: 12.5px; white-space: nowrap;">
@@ -1478,15 +1569,15 @@
             플랫폼 전체 가맹 학원에 공용 제공되는 마스터 도서, 5문항 북퀴즈, 나노 시트 PDF를 관리합니다.
           </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportMasterBooksToExcel()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
-            <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 다운로드
+        <div class="d-flex align-items-center" style="gap: 10px;">
+          <button class="btn-master-excel" onclick="exportMasterBooksToExcel()">
+            <i class="fa-solid fa-file-excel mr-1" style="color: #16a34a;"></i>엑셀 다운로드
           </button>
           <button class="btn-beige-secondary" onclick="openExcelUploadModal()">
-            <i class="fa-solid fa-file-excel"></i>엑셀 대량 도서 등록
+            <i class="fa-solid fa-file-excel mr-1"></i>엑셀 대량 도서 등록
           </button>
           <button class="btn-beige-primary" onclick="openMasterBookAddModal()">
-            <i class="fa-solid fa-plus"></i>신규 마스터 도서 등록
+            <i class="fa-solid fa-plus mr-1"></i>신규 마스터 도서 등록
           </button>
         </div>
       </div>
@@ -1637,14 +1728,6 @@
             전국 가맹 학원에서 학부모에게 발송한 독서 포트폴리오 리포트, 도서 배정 알림톡, SMS 로그를 실시간 추적합니다.
           </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn-beige-secondary" onclick="testAligoConnection()">
-            <i class="fa-solid fa-signal"></i>알리고 API 연동 상태 점검
-          </button>
-          <button class="btn-beige-primary" onclick="openAligoChargeModal()">
-            <i class="fa-solid fa-credit-card"></i>알리고 캐시 충전
-          </button>
-        </div>
       </div>
 
       <!-- 알리고 통계 카드 -->
@@ -1761,11 +1844,11 @@
             전국 가맹 독서학원의 요금제 구독 수납 내역, 결제 상태(완료/대기/취소) 및 서비스 이용 만료일을 총괄 관리합니다.
           </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportPaymentData()" style="border-radius: 8px; font-size: 13px; padding: 7px 14px; background: #fff;">
-            <i class="fa-solid fa-file-excel mr-1 text-success"></i>엑셀 다운로드
+        <div class="d-flex align-items-center" style="gap: 10px;">
+          <button class="btn-master-excel" onclick="exportPaymentData()">
+            <i class="fa-solid fa-file-excel mr-1" style="color: #16a34a;"></i>엑셀 다운로드
           </button>
-          <button class="btn btn-sm btn-beige-primary" onclick="openSimulateNewPaymentModal()" style="font-size: 12.5px; padding: 7px 14px;">
+          <button class="btn-beige-primary" onclick="openSimulateNewPaymentModal()" style="font-size: 13px; padding: 8px 16px;">
             <i class="fa-solid fa-plus mr-1"></i>수동 결제 등록
           </button>
         </div>
@@ -4727,14 +4810,14 @@
 
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
-<script src="js/master/master-core.js?v=20261030_v4"></script>
-<script src="js/master/master-franchise.js?v=20261030_v4"></script>
-<script src="js/master/master-members.js?v=20261030_v4"></script>
-<script src="js/master/master-operations.js?v=20261030_v4"></script>
-<script src="js/master/master-ranking.js?v=20261030_v4"></script>
-<script src="js/master/master-contents.js?v=20261030_v4"></script>
-<script src="js/master/master-dispatch.js?v=20261030_v4"></script>
-<script src="js/master/master-payment.js?v=20261030_v4"></script>
+<script src="js/master/master-core.js?v=20261030_v5"></script>
+<script src="js/master/master-franchise.js?v=20261030_v5"></script>
+<script src="js/master/master-members.js?v=20261030_v5"></script>
+<script src="js/master/master-operations.js?v=20261030_v5"></script>
+<script src="js/master/master-ranking.js?v=20261030_v5"></script>
+<script src="js/master/master-contents.js?v=20261030_v5"></script>
+<script src="js/master/master-dispatch.js?v=20261030_v5"></script>
+<script src="js/master/master-payment.js?v=20261030_v5"></script>
 
 <!-- PWA Service Worker Registration -->
 <script>
