@@ -8336,8 +8336,9 @@ function printSinglePortfolio(studentId, pfId) {
 }
 
 var currentWizardFilteredBooks = [];
+var wizardSelectedBookKeys = [];
 
-// 원생별 인증 완료(60점 이상) 완독 도서 추출 헬퍼
+// 원생별 인증 완료(60점 이상) 완독 도서 추출 헬퍼 (동일 도서의 여러 이력도 모두 개별 포함)
 function getStudentCertifiedBooksForWizard(stdId) {
   var std = studentDataList.find(function(s) { return s.id === stdId; });
   var stdName = std ? std.name : '';
@@ -8362,45 +8363,57 @@ function getStudentCertifiedBooksForWizard(stdId) {
     return log.score === undefined || Number(log.score) >= 60;
   });
 
+  // 최신 제출/완독일 순으로 내림차순 정렬
+  studentLogs.sort(function(a, b) {
+    var dtA = a.submittedAt || a.date || '';
+    var dtB = b.submittedAt || b.date || '';
+    return dtB.localeCompare(dtA);
+  });
+
   var allBooks = [];
   if (studentLogs.length > 0) {
-    var seenKeys = {};
     var catalog = (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList))
       ? academyBookList
       : (Array.isArray(window.MIGRATED_BOOKS) ? window.MIGRATED_BOOKS : []);
 
-    studentLogs.forEach(function(log) {
+    studentLogs.forEach(function(log, lIdx) {
       var title = log.bookTitle || log.title || '도서';
-      var dedupKey = (log.bookId ? String(log.bookId).trim() : '') || title;
-      if (!seenKeys[dedupKey] && !seenKeys[title]) {
-        seenKeys[dedupKey] = true;
-        seenKeys[title] = true;
 
-        var matchedBook = catalog.find(function(b) {
-          if (!b) return false;
-          if (log.bookId && (String(b.id) === String(log.bookId) || String(b.bookNo) === String(log.bookId))) return true;
-          return b.title === title || (b.title && b.title.replace(/\s+/g, '') === title.replace(/\s+/g, ''));
-        });
+      var matchedBook = catalog.find(function(b) {
+        if (!b) return false;
+        if (log.bookId && (String(b.id) === String(log.bookId) || String(b.bookNo) === String(log.bookId))) return true;
+        return b.title === title || (b.title && b.title.replace(/\s+/g, '') === title.replace(/\s+/g, ''));
+      });
 
-        var cover = (matchedBook && matchedBook.cover) ? matchedBook.cover : (log.cover || 'resources/images/book_default.svg');
-        var pub = log.bookPub || log.pub || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '') || '나노출판';
-        var logDate = log.date || (log.submittedAt ? String(log.submittedAt).slice(0, 10) : '') || '2026.09.01';
-        var dateFormatted = logDate.split(' ')[0].replace(/-/g, '.');
-        var scoreNum = log.score !== undefined ? Math.round(Number(log.score)) : 100;
-        var scoreStr = scoreNum + '점';
-        var sheetStr = log.sheet || '작성 완료';
-        var commentStr = log.comment || log.thoughtAnswer || log.studentThoughtAnswer || log.sheetAnswer || '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 성실히 완독함.';
+      var cover = (matchedBook && matchedBook.cover) ? matchedBook.cover : (log.cover || 'resources/images/book_default.svg');
+      var pub = log.bookPub || log.pub || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '') || '나노출판';
+      
+      // 날짜 및 제출 시간 포맷
+      var dtInfo = (typeof formatLearningDateTime === 'function') ? formatLearningDateTime(log) : null;
+      var dateFormatted = dtInfo ? dtInfo.date.replace(/-/g, '.') : ((log.date || (log.submittedAt ? String(log.submittedAt).slice(0, 10) : '') || '2026.09.01').split(' ')[0].replace(/-/g, '.'));
+      var timeFormatted = dtInfo ? dtInfo.time : '';
 
-        allBooks.push({
-          cover: cover,
-          title: title,
-          pub: pub,
-          date: dateFormatted,
-          score: scoreStr,
-          sheet: sheetStr,
-          comment: commentStr
-        });
-      }
+      var scoreNum = log.score !== undefined ? Math.round(Number(log.score)) : 100;
+      var scoreStr = scoreNum + '점';
+      var sheetStr = log.sheet || '작성 전';
+      var commentStr = log.comment || log.thoughtAnswer || log.studentThoughtAnswer || log.sheetAnswer || '작품의 주요 갈등 구조와 핵심 어휘를 바르게 파악하고 성실히 완독함.';
+
+      var uniqueKey = (log.id ? String(log.id) : '') || ('book_' + title + '_' + dateFormatted + '_' + lIdx);
+
+      allBooks.push({
+        uniqueKey: uniqueKey,
+        logId: log.id || '',
+        bookId: log.bookId || '',
+        cover: cover,
+        title: title,
+        pub: pub,
+        date: dateFormatted,
+        time: timeFormatted,
+        score: scoreStr,
+        scoreNum: scoreNum,
+        sheet: sheetStr,
+        comment: commentStr
+      });
     });
   }
 
@@ -8408,12 +8421,15 @@ function getStudentCertifiedBooksForWizard(stdId) {
   if (allBooks.length === 0) {
     var pf = portfolioDataMap[stdId];
     if (pf && pf.books && pf.books.length > 0) {
-      allBooks = pf.books.map(function(b) {
+      allBooks = pf.books.map(function(b, idx) {
         return {
+          uniqueKey: 'pf_' + (b.title || 'book') + '_' + idx,
+          logId: '',
           cover: b.cover || 'resources/images/book_default.svg',
           title: b.title || '도서',
           pub: b.pub || b.publisher || '나노출판',
           date: String(b.date || '2026.09.01').split(' ')[0].replace(/-/g, '.'),
+          time: '',
           score: typeof b.score === 'number' ? Math.round(b.score) + '점' : (b.score || '100점'),
           sheet: b.sheet || '작성 완료',
           comment: b.comment || b.thought || ''
@@ -8421,9 +8437,9 @@ function getStudentCertifiedBooksForWizard(stdId) {
       });
     } else if (!window.NANO_SERVER_DATA && !(window.NanoPortal && NanoPortal.remote)) {
       allBooks = [
-        { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '100점', sheet: '제출 완료', comment: '사막여우와 장미의 의미를 문해력 높게 해석하고 논술 과제를 훌륭히 완수함.' },
-        { cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.02', score: '90점', sheet: '제출 완료', comment: '타인의 고통과 감정에 대한 공감 능력을 자신의 경험에 빗대어 설득력 있게 표현함.' },
-        { cover: 'assets/covers/cover_1004.jpg', title: '자전거 도둑', pub: '다림', date: '2026.08.28', score: '92점', sheet: '제출 완료', comment: '물질주의와 양심 사이의 갈등을 비판적 시각으로 깊이 있게 고찰함.' }
+        { uniqueKey: 'demo_1', logId: '', cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', time: '', score: '100점', sheet: '제출 완료', comment: '사막여우와 장미의 의미를 문해력 높게 해석하고 논술 과제를 훌륭히 완수함.' },
+        { uniqueKey: 'demo_2', logId: '', cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.02', time: '', score: '90점', sheet: '제출 완료', comment: '타인의 고통과 감정에 대한 공감 능력을 자신의 경험에 빗대어 설득력 있게 표현함.' },
+        { uniqueKey: 'demo_3', logId: '', cover: 'assets/covers/cover_1004.jpg', title: '자전거 도둑', pub: '다림', date: '2026.08.28', time: '', score: '92점', sheet: '제출 완료', comment: '물질주의와 양심 사이의 갈등을 비판적 시각으로 깊이 있게 고찰함.' }
       ];
     }
   }
@@ -8455,6 +8471,7 @@ function syncWizardDateRangeForStudent(stdId) {
 function openPortfolioCreateWizard() {
   currentWizardStep = 1;
   wizardSelectedBooks = [];
+  wizardSelectedBookKeys = [];
   currentWizardFilteredBooks = [];
 
   // 서버 모드에서 학습 로그가 아직 로드되지 않았다면 백그라운드 동기화 수행
@@ -8661,7 +8678,7 @@ async function onWizardNext() {
     renderWizardBookList(wizardSelectedStudentId);
     goToWizardStep(2);
   } else if (currentWizardStep === 2) {
-    if (wizardSelectedBooks.length === 0) {
+    if (wizardSelectedBookKeys.length === 0) {
       alert('포트폴리오에 수록할 완독 도서를 최소 1권 이상 선택해 주세요.');
       return;
     }
@@ -8682,7 +8699,7 @@ function filterWizardBooksByDate() {
   renderWizardBookList(wizardSelectedStudentId);
 }
 
-// 2단계 도서 체크박스 리스트 동적 렌더링 (일자 범위 필터링 적용)
+// 2단계 도서 체크박스 리스트 동적 렌더링 (일자 범위 필터링 적용, 동일 도서 다회차 이력 모두 노출)
 function renderWizardBookList(stdId) {
   var container = document.getElementById('wizBookCheckList');
   if (!container) return;
@@ -8700,6 +8717,7 @@ function renderWizardBookList(stdId) {
   });
 
   currentWizardFilteredBooks = books;
+  wizardSelectedBookKeys = [];
   wizardSelectedBooks = [];
 
   if (books.length === 0) {
@@ -8709,19 +8727,25 @@ function renderWizardBookList(stdId) {
   }
 
   books.forEach(function(b, idx) {
+    var key = b.uniqueKey || ('book_' + idx);
+    wizardSelectedBookKeys.push(key);
     wizardSelectedBooks.push(b.title);
+
     var item = document.createElement('div');
     item.className = 'wiz-book-item selected';
     item.id = 'wizBookItem_' + idx;
+
+    var dateDisplay = b.date + (b.time ? ' <span style="font-size: 11px; color: #64748b; font-weight: 500;">' + b.time + '</span>' : '');
+
     item.innerHTML = 
       '<div class="custom-control custom-checkbox" onclick="event.stopPropagation();" style="margin-right: 14px;">' +
-        '<input type="checkbox" class="custom-control-input wiz-book-chk" id="wizBookChk_' + idx + '" checked onchange="toggleWizardBook(' + idx + ', \'' + b.title.replace(/'/g, "\\'") + '\', this.checked)">' +
+        '<input type="checkbox" class="custom-control-input wiz-book-chk" id="wizBookChk_' + idx + '" checked onchange="toggleWizardBook(' + idx + ', this.checked)">' +
         '<label class="custom-control-label" for="wizBookChk_' + idx + '"></label>' +
       '</div>' +
       '<img src="' + (b.cover || 'resources/images/book_default.svg') + '" alt="" style="width: 42px; height: 58px; border-radius: 6px; object-fit: cover; margin-right: 16px; border: 1px solid #e5e0d8; box-shadow: 0 1px 3px rgba(0,0,0,0.06);" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
       '<div style="flex: 1; min-width: 0;">' +
         '<div class="font-weight-bold text-truncate" style="font-size: 14px; color: var(--text-main); line-height: 1.4;">' + b.title + '</div>' +
-        '<div class="text-muted" style="font-size: 12px; margin-top: 3px;">' + b.pub + ' &middot; 완독일: <strong style="color: var(--text-main);">' + b.date + '</strong></div>' +
+        '<div class="text-muted" style="font-size: 12px; margin-top: 3px;">' + b.pub + ' &middot; 완독일: <strong style="color: var(--text-main);">' + dateDisplay + '</strong></div>' +
       '</div>' +
       '<div class="text-right" style="margin-left: 14px; display: flex; align-items: center; gap: 8px;">' +
         '<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 12px; padding: 4px 10px; border-radius: 6px;">' + b.score + '</span>' +
@@ -8732,7 +8756,7 @@ function renderWizardBookList(stdId) {
       var chk = document.getElementById('wizBookChk_' + idx);
       if (chk) {
         chk.checked = !chk.checked;
-        toggleWizardBook(idx, b.title, chk.checked);
+        toggleWizardBook(idx, chk.checked);
       }
     };
 
@@ -8742,21 +8766,39 @@ function renderWizardBookList(stdId) {
   updateWizardBookCountBadge();
 }
 
-function toggleWizardBook(idx, title, isChecked) {
+function toggleWizardBook(idx, isChecked) {
+  var b = currentWizardFilteredBooks[idx];
+  if (!b) return;
+  var key = b.uniqueKey || ('book_' + idx);
   var item = document.getElementById('wizBookItem_' + idx);
+
   if (isChecked) {
     if (item) item.classList.add('selected');
-    if (wizardSelectedBooks.indexOf(title) === -1) wizardSelectedBooks.push(title);
+    if (wizardSelectedBookKeys.indexOf(key) === -1) {
+      wizardSelectedBookKeys.push(key);
+    }
   } else {
     if (item) item.classList.remove('selected');
-    wizardSelectedBooks = wizardSelectedBooks.filter(function(t) { return t !== title; });
+    wizardSelectedBookKeys = wizardSelectedBookKeys.filter(function(k) { return k !== key; });
   }
+
+  // wizardSelectedBooks 동기화
+  syncWizardSelectedBooks();
   updateWizardBookCountBadge();
+}
+
+function syncWizardSelectedBooks() {
+  var selectedObjs = (currentWizardFilteredBooks || []).filter(function(b) {
+    return wizardSelectedBookKeys.indexOf(b.uniqueKey) !== -1;
+  });
+  wizardSelectedBooks = selectedObjs.map(function(b) { return b.title; });
 }
 
 function onWizardSelectAllBooks(checked) {
   var checkboxes = document.querySelectorAll('.wiz-book-chk');
+  wizardSelectedBookKeys = [];
   wizardSelectedBooks = [];
+
   checkboxes.forEach(function(chk, idx) {
     chk.checked = checked;
     var item = document.getElementById('wizBookItem_' + idx);
@@ -8767,6 +8809,7 @@ function onWizardSelectAllBooks(checked) {
   });
 
   if (checked && Array.isArray(currentWizardFilteredBooks)) {
+    wizardSelectedBookKeys = currentWizardFilteredBooks.map(function(b, idx) { return b.uniqueKey || ('book_' + idx); });
     wizardSelectedBooks = currentWizardFilteredBooks.map(function(b) { return b.title; });
   }
 
@@ -8776,12 +8819,12 @@ function onWizardSelectAllBooks(checked) {
 function updateWizardBookCountBadge() {
   var badge = document.getElementById('wizSelectedBookBadge');
   if (badge) {
-    badge.innerText = '총 ' + wizardSelectedBooks.length + '권 선택됨';
+    badge.innerText = '총 ' + wizardSelectedBookKeys.length + '권 선택됨';
   }
   var allChk = document.getElementById('wizSelectAllBooks');
   var allCheckboxes = document.querySelectorAll('.wiz-book-chk');
   if (allChk) {
-    allChk.checked = allCheckboxes.length > 0 && wizardSelectedBooks.length === allCheckboxes.length;
+    allChk.checked = allCheckboxes.length > 0 && wizardSelectedBookKeys.length === allCheckboxes.length;
   }
 }
 
@@ -8837,6 +8880,9 @@ async function finishPortfolioCreate() {
         toDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).toISOString().slice(0, 10);
       }
     }
+    var selectedBookObjects = (currentWizardFilteredBooks || []).filter(function(b) {
+      return wizardSelectedBookKeys.indexOf(b.uniqueKey) !== -1;
+    });
     var createButton = document.getElementById('wizBtnNext');
     var createButtonHtml = createButton ? createButton.innerHTML : '';
     portfolioCreateSaving = true;
@@ -8848,7 +8894,8 @@ async function finishPortfolioCreate() {
         from: fromDate,
         to: toDate,
         title: title,
-        selectedTitles: wizardSelectedBooks,
+        selectedTitles: selectedBookObjects.map(function(b) { return b.title; }),
+        selectedAttemptIds: selectedBookObjects.map(function(b) { return b.logId; }).filter(Boolean),
         comment: comment
       }, currentAcademyInfo.id);
       savedPortfolioId = savedPortfolio.id;
@@ -8899,10 +8946,14 @@ async function finishPortfolioCreate() {
   var newPfId = 'PF-2026-0' + (maxPfNum + 1);
   lastCreatedPortfolioId = newPfId;
 
-  var bookCount = wizardSelectedBooks.length;
-  var booksSummary = wizardSelectedBooks.length > 1 
-    ? wizardSelectedBooks[0] + ' 외 ' + (wizardSelectedBooks.length - 1) + '권'
-    : (wizardSelectedBooks[0] || '완독 도서');
+  var selectedBookObjects = (currentWizardFilteredBooks || []).filter(function(b) {
+    return wizardSelectedBookKeys.indexOf(b.uniqueKey) !== -1;
+  });
+
+  var bookCount = selectedBookObjects.length;
+  var booksSummary = selectedBookObjects.length > 1 
+    ? selectedBookObjects[0].title + ' 외 ' + (selectedBookObjects.length - 1) + '권'
+    : (selectedBookObjects.length === 1 ? selectedBookObjects[0].title : '완독 도서');
 
   var now = new Date();
   var hh = String(now.getHours()).padStart(2, '0');
@@ -8930,10 +8981,6 @@ async function finishPortfolioCreate() {
   };
 
   portfolioList.unshift(newPf);
-
-  var selectedBookObjects = (currentWizardFilteredBooks || []).filter(function(b) {
-    return wizardSelectedBooks.indexOf(b.title) !== -1;
-  });
 
   // 학생별 포트폴리오 데이터 맵 갱신
   if (portfolioDataMap[wizardSelectedStudentId]) {

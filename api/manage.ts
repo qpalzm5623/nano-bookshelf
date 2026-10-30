@@ -128,18 +128,25 @@ export default async function handler(req: any, res: any) {
       const selectedTitlesNorm = Array.isArray(input.selectedTitles)
         ? input.selectedTitles.map((t: any) => String(t).replace(/\s+/g, '')).filter(Boolean)
         : [];
+      const selectedAttemptIds = Array.isArray(input.selectedAttemptIds)
+        ? input.selectedAttemptIds.map((id: any) => String(id).trim()).filter(Boolean)
+        : [];
       const buildCertBooks = (filterBySelected: boolean) => {
-        const seenBookIds = new Set<string>();
         const list = [];
         for (const l of logs) {
-          if (seenBookIds.has(l.bookId)) continue;
           const matchedBook = books.find(b => b.id === l.bookId || b.bookNo === l.bookId);
           const bookTitle = matchedBook?.title || '삭제된 도서';
-          if (filterBySelected && selectedTitlesNorm.length > 0 && !selectedTitlesNorm.includes(bookTitle.replace(/\s+/g, ''))) continue;
-          seenBookIds.add(l.bookId);
+          if (filterBySelected) {
+            if (selectedAttemptIds.length > 0) {
+              if (!selectedAttemptIds.includes(String(l.id))) continue;
+            } else if (selectedTitlesNorm.length > 0) {
+              if (!selectedTitlesNorm.includes(bookTitle.replace(/\s+/g, ''))) continue;
+            }
+          }
           const completedDate = l.completedAt instanceof Date ? l.completedAt : new Date(l.completedAt);
           const kstDateStr = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
           list.push({
+            attemptId: l.id,
             bookId: l.bookId,
             title: bookTitle,
             pub: matchedBook?.publisher || '',
