@@ -448,6 +448,11 @@ function saveFranchisesToStorage() {
 
 let franchiseList = loadFranchisesFromStorage();
 
+// 가맹 학원 20개 단위 페이징 상태 변수 (TDZ 호이스팅 오류 방지를 위해 상단 선언)
+let franchiseCurrentPage = 1;
+const FRANCHISE_PAGE_SIZE = 20;
+let lastSortedFranchises = [];
+
 // 1-2. 통합 회원 데이터 (Universal Members)
 const defaultMemberList = [
   { id: 101, academyId: "ACAD-001", academyName: "나노 독서아카데미 목동본원", role: "DIRECTOR", name: "김은영", username: "director_mokdong", grade: "원장", className: "-", phone: "010-3342-9981", parentPhone: "-", points: 0, lastLogin: "2026-09-09 08:45", createdAt: "2025-03-01", status: "APPROVED" },
@@ -1718,14 +1723,22 @@ function ensureMasterTabRendered(tabName) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// 초기화 함수: DOM 로드 완료 여부에 관계없이 항상 가맹점 탭을 즉시 안전하게 렌더링
+function initMasterDashboardOnReady() {
   // [Lazy Loading] 초기 활성 탭(가맹점 관리)만 즉시 렌더링하고 나머지는 탭 클릭 시 지연 로딩
   ensureMasterTabRendered("franchise");
 
   // 검색창 속성 설정: 자동완성을 제한하되 검색값은 보존합니다.
   bindMasterSearchAutofillGuards();
   purgeAutofilledSearchInputs();
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initMasterDashboardOnReady);
+} else {
+  // 이미 문서가 준비되었거나 interactive/complete 상태인 경우 즉시 동기 실행!
+  initMasterDashboardOnReady();
+}
 
 window.addEventListener("pageshow", () => {
   purgeAutofilledSearchInputs();
@@ -2644,10 +2657,7 @@ function formatPhoneInput(input) {
   }
 }
 
-// 가맹 학원 20개 단위 페이징 상태 변수
-let franchiseCurrentPage = 1;
-const FRANCHISE_PAGE_SIZE = 20;
-let lastSortedFranchises = [];
+// (가맹 학원 페이징 변수는 파일 상단에 선언됨)
 
 // 가맹점 테이블 렌더링 (최근 가맹일/가입일 기준 최신순 정렬 + 20개씩 페이징)
 function renderFranchiseTable(data = franchiseList, keepPage = false) {
@@ -5791,7 +5801,7 @@ function populateRankingMonthFilter() {
     html += `<option value="${key}">${label}</option>`;
   }
   select.innerHTML = html;
-  if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+  if (currentVal && (select && select.options ? Array.from(select.options) : []).some(o => o.value === currentVal)) {
     select.value = currentVal;
   }
 }
@@ -5813,7 +5823,7 @@ function populateRankingAcademyFilter() {
     html += `<option value="${acad}">🏫 ${acad}</option>`;
   });
   select.innerHTML = html;
-  if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+  if (currentVal && (select && select.options ? Array.from(select.options) : []).some(o => o.value === currentVal)) {
     select.value = currentVal;
   }
 }
