@@ -593,6 +593,8 @@ var currentAcademyInfo = (function() {
     adminId: franchise.adminId || auth.id || '',
     region: franchise.region || franchise.address || '',
     address: franchise.address || franchise.region || '',
+    postcode: franchise.postcode || '',
+    addressDetail: franchise.addressDetail || '',
     status: franchise.status || 'ACTIVE',
     isDemo: id === 'DEMO-ACADEMY'
   };
@@ -800,6 +802,8 @@ async function switchAcademyFranchise(acadId) {
   currentAcademyInfo.adminId = target.adminId;
   currentAcademyInfo.region = target.region;
   currentAcademyInfo.address = target.address || target.region || '';
+  currentAcademyInfo.postcode = target.postcode || '';
+  currentAcademyInfo.addressDetail = target.addressDetail || '';
   currentAcademyInfo.status = target.status || 'ACTIVE';
   currentAcademyInfo.isDemo = false;
 
@@ -12694,6 +12698,61 @@ var myAcademyInfo = {
 };
 
 /**
+ * 관리자(마스터)가 등록한 학원 연락처, 이메일, 주소 및 사용자 저장본 조회 헬퍼
+ */
+function getAcademyContactInfo() {
+  var acadId = currentAcademyInfo.id || currentAcademyInfo.adminId || 'DEFAULT';
+
+  // 1) 원장/학원 관리자가 직접 수정한 로컬 저장본 우선 확인
+  try {
+    var savedRaw = localStorage.getItem('NANO_MY_INFO_' + acadId);
+    if (savedRaw) {
+      var saved = JSON.parse(savedRaw);
+      if (saved && (saved.phone || saved.email || saved.address)) {
+        return {
+          phone: saved.phone || '',
+          email: saved.email || '',
+          postcode: saved.postcode || '',
+          address: saved.address || '',
+          addressDetail: saved.addressDetail || ''
+        };
+      }
+    }
+  } catch(e) {}
+
+  // 2) 마스터(관리자)가 등록/설정한 currentAcademyInfo 데이터 매핑
+  var phone = (currentAcademyInfo.phone || '').trim();
+  var email = (currentAcademyInfo.email || '').trim();
+  var rawAddress = (currentAcademyInfo.address || currentAcademyInfo.region || '').trim();
+  var postcode = (currentAcademyInfo.postcode || '').trim();
+  var address = rawAddress;
+  var addressDetail = (currentAcademyInfo.addressDetail || '').trim();
+
+  // 주소 파싱 보정 (예: "서울 (서울특별시 양천구 오목로 299)" 또는 "(07997) 서울특별시...")
+  if (rawAddress) {
+    // 괄호 안의 상세 주소 추출
+    var parenMatch = rawAddress.match(/^[^(]+\(([^)]+)\)$/);
+    if (parenMatch) {
+      address = parenMatch[1].trim();
+    }
+    // 5자리 우편번호 추출
+    var postMatch = address.match(/^\(?(\d{5})\)?\s*(.*)$/);
+    if (postMatch) {
+      if (!postcode) postcode = postMatch[1];
+      address = postMatch[2].trim();
+    }
+  }
+
+  return {
+    phone: phone || myAcademyInfo.phone,
+    email: email || myAcademyInfo.email,
+    postcode: postcode || (phone ? '' : myAcademyInfo.postcode),
+    address: address || myAcademyInfo.address,
+    addressDetail: addressDetail || (phone ? '' : myAcademyInfo.addressDetail)
+  };
+}
+
+/**
  * '내 정보 관리' 모달 열기
  * - 이유: 최신 상태값을 폼에 바인딩하고, 이전 입력 중이던 비밀번호 등 민감 정보를 안전하게 초기화하기 위함
  */
@@ -12716,7 +12775,11 @@ function openMyInfoModal() {
   if (elAcad) elAcad.innerText = currentAcademyInfo.name || myAcademyInfo.academyName;
   var cleanDir = (currentAcademyInfo.director || myAcademyInfo.directorName).replace(/\s*원장님?$/, '');
   if (elDir) elDir.innerText = cleanDir;
-  if (elPlan) elPlan.innerText = '프리미엄 프랜차이즈 ' + maxCount + '인 슬롯형';
+
+  // 이용 상품: 마스터가 지정한 상품명 그대로 표시
+  var masterPlanName = currentAcademyInfo.plan || (currentAcademyInfo.isDemo ? '체험형 플랜' : 'Standard');
+  if (elPlan) elPlan.innerText = masterPlanName;
+
   if (elCDate) elCDate.innerText = currentAcademyInfo.contractDate || myAcademyInfo.contractDate;
   if (elEDate) elEDate.innerText = currentAcademyInfo.expireDate || myAcademyInfo.expireDate;
 
@@ -12732,18 +12795,20 @@ function openMyInfoModal() {
   var sideSlotEl = document.getElementById('sidebarSlotStatus');
   if (sideSlotEl) sideSlotEl.innerHTML = curCount + ' / ' + maxCount + '명 <small class="text-success font-weight-bold">(' + slotRate + '%)</small>';
 
-  // 2) 수정 가능 입력 필드 값 채우기
+  // 2) 관리자가 등록한 연락처, 이메일, 학원 주소 값 채우기
   var inputPhone = document.getElementById('myInfoPhone');
   var inputEmail = document.getElementById('myInfoEmail');
   var inputPostcode = document.getElementById('myInfoPostcode');
   var inputAddress = document.getElementById('myInfoAddress');
   var inputDetail = document.getElementById('myInfoAddressDetail');
 
-  if (inputPhone) inputPhone.value = myAcademyInfo.phone;
-  if (inputEmail) inputEmail.value = myAcademyInfo.email;
-  if (inputPostcode) inputPostcode.value = myAcademyInfo.postcode;
-  if (inputAddress) inputAddress.value = myAcademyInfo.address;
-  if (inputDetail) inputDetail.value = myAcademyInfo.addressDetail;
+  var contactInfo = getAcademyContactInfo();
+
+  if (inputPhone) inputPhone.value = contactInfo.phone;
+  if (inputEmail) inputEmail.value = contactInfo.email;
+  if (inputPostcode) inputPostcode.value = contactInfo.postcode;
+  if (inputAddress) inputAddress.value = contactInfo.address;
+  if (inputDetail) inputDetail.value = contactInfo.addressDetail;
 
   // 3) 비밀번호 변경 필드 초기화 (보안상 항상 비워둠)
   var curPw = document.getElementById('myInfoCurrentPw');
@@ -12973,12 +13038,52 @@ function saveMyInfo() {
     pwChanged = true;
   }
 
-  // 5) 데이터 모델 업데이트
+  // 5) 데이터 모델 및 학원 정보 업데이트
   myAcademyInfo.phone = phone;
   myAcademyInfo.email = email;
   myAcademyInfo.postcode = postcode;
   myAcademyInfo.address = address;
   myAcademyInfo.addressDetail = addressDetail;
+
+  currentAcademyInfo.phone = phone;
+  currentAcademyInfo.email = email;
+  currentAcademyInfo.postcode = postcode;
+  currentAcademyInfo.address = address + (addressDetail ? ' ' + addressDetail : '');
+  currentAcademyInfo.addressDetail = addressDetail;
+
+  // 학원별 LocalStorage 영구 보존
+  var acadId = currentAcademyInfo.id || currentAcademyInfo.adminId || 'DEFAULT';
+  try {
+    localStorage.setItem('NANO_MY_INFO_' + acadId, JSON.stringify({
+      phone: phone,
+      email: email,
+      postcode: postcode,
+      address: address,
+      addressDetail: addressDetail
+    }));
+  } catch(e) {}
+
+  // 마스터 가맹 학원 목록(NANO_MASTER_FRANCHISE_LIST)에도 실시간 동기화 업데이트
+  try {
+    var rawList = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+    if (rawList) {
+      var fList = JSON.parse(rawList);
+      if (Array.isArray(fList)) {
+        var targetF = fList.find(function(f) {
+          return (acadId && f.id === acadId) || (f.adminId && f.adminId === currentAcademyInfo.adminId) || (f.name && f.name === currentAcademyInfo.name);
+        });
+        if (targetF) {
+          targetF.phone = phone;
+          targetF.email = email;
+          targetF.postcode = postcode;
+          targetF.address = address;
+          targetF.addressDetail = addressDetail;
+          targetF.region = address + (addressDetail ? ' ' + addressDetail : '');
+          localStorage.setItem('NANO_MASTER_FRANCHISE_LIST', JSON.stringify(fList));
+        }
+      }
+    }
+  } catch(e) {}
 
   // 6) 모달 닫기 및 알림
   $('#myInfoModal').modal('hide');

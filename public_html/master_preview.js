@@ -3020,6 +3020,8 @@ function handleRegisterAcademy(e) {
   const email = document.getElementById("regDirectorEmail")?.value.trim() || "";
   const phone = document.getElementById("regDirectorPhone").value.trim();
   const address = document.getElementById("regAddress")?.value.trim() || "";
+  const postcode = document.getElementById("regPostcode")?.value.trim() || "";
+  const addressDetail = document.getElementById("regAddressDetail")?.value.trim() || "";
   const region = address ? address.split(" ")[0] + " " + (address.split(" ")[1] || "") : "서울";
   const adminId = document.getElementById("regDirectorId")?.value.trim() || `director_${Date.now()}`;
   const joinDate = document.getElementById("regJoinDate")?.value || document.getElementById("regStartDate")?.value;
@@ -3038,6 +3040,9 @@ function handleRegisterAcademy(e) {
     email: email,
     phone: phone,
     region: region + (address ? ` (${address})` : ""),
+    postcode: postcode,
+    address: address,
+    addressDetail: addressDetail,
     adminId: adminId,
     adminPw: document.getElementById("regDirectorPw")?.value.trim() || "nano1234!",
     plan: plan,
@@ -3177,6 +3182,7 @@ async function saveAcademyEdit(e) {
   }
   acad.phone = document.getElementById("editDirectorPhone").value.trim();
   acad.region = document.getElementById("editRegion").value.trim();
+  acad.address = acad.region;
 
   // 관리자 고유 아이디 저장 보장
   acad.adminId = document.getElementById("editDirectorId")?.value.trim() || getFranchiseAdminId(acad);
@@ -11581,12 +11587,7 @@ function openAcademyDeleteConfirm(id) {
 
 // -----------------------------------------------------------
 // [24] handleRegisterAcademy 오버라이드 - 주소 및 메모 포함
-// -----------------------------------------------------------
-const _origHandleRegisterAcademy = typeof handleRegisterAcademy === "function" ? handleRegisterAcademy : null;
-async function handleRegisterAcademy(e) {
-  e.preventDefault();
-
-  // 원장님 성함 검증 (특수문자, 숫자 금지)
+// ----------------
   const directorEl = document.getElementById("regDirectorName");
   const director = directorEl ? directorEl.value.trim() : "";
   const nameRegex = /^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]+$/;
