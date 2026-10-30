@@ -1,6 +1,11 @@
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash } from 'node:crypto';
+import { ProxyAgent } from 'undici';
+
+const fixieUrl = process.env.FIXIE_URL;
+const proxyDispatcher = fixieUrl ? new ProxyAgent(fixieUrl) : undefined;
+
 const required = ['ALIGO_API_KEY','ALIGO_USER_ID','ALIGO_SENDER_KEY','ALIGO_SENDER','ALIGO_TEMPLATE_CODE','ALIGO_REPORT_TEMPLATE'];
 function configuration() {
   const missing = required.filter(key => !process.env[key]);
@@ -37,7 +42,11 @@ export default async function handler(req: any, res: any) {
     try {
       const fields = new URLSearchParams({ apikey: process.env.ALIGO_API_KEY!, userid: process.env.ALIGO_USER_ID!, senderkey: process.env.ALIGO_SENDER_KEY!, tpl_code: process.env.ALIGO_TEMPLATE_CODE!,
         sender: process.env.ALIGO_SENDER!, receiver_1: phone, recvname_1: log.member.name, subject_1: '독서 학습 리포트', message_1: message });
-      const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) });
+      const fetchOptions: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
+      if (proxyDispatcher) {
+        fetchOptions.dispatcher = proxyDispatcher;
+      }
+      const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', fetchOptions);
       const result = await response.json();
       const status = response.ok && Number(result.code) === 0 ? 'ACCEPTED' : 'FAILED';
       await prisma.aligoDispatchLog.update({ where: { id }, data: { status } });
