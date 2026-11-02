@@ -8522,6 +8522,7 @@ function renderPortfolioDocument(studentId, pfId) {
             '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
             '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + bookDateHtml + '</span>' +
           '</div>' +
+          '<div class="pf-book-score"><span>북퀴즈</span><span>' + escapePortfolioText(scoreText) + '</span></div>' +
           '<div class="pf-book-card-top">' +
             '<button type="button" class="pf-book-cover-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
               '<img src="' + escapePortfolioText(coverUrl) + '" class="pf-book-cover-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
@@ -8529,7 +8530,6 @@ function renderPortfolioDocument(studentId, pfId) {
             '<div class="pf-book-info-block">' +
               '<div class="pf-book-title">' + escapePortfolioText(b.title || '') + '</div>' +
               '<div class="pf-book-byline">' + escapePortfolioText((pubText || '') + (authorText ? (' · ' + authorText) : '')) + '</div>' +
-              '<span class="pf-book-score">북퀴즈 ' + escapePortfolioText(scoreText) + '</span>' +
             '</div>' +
           '</div>' +
           '<div class="pf-book-achievement-block">' +
