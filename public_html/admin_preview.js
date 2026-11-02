@@ -7678,8 +7678,8 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
   var frameDoc = frameWin.document;
   // 화면에 쓰이는 스타일(외부 CSS + 인라인 <style>)을 그대로 재사용해 디자인을 동일하게 유지
   var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
-  // 포트폴리오는 매 페이지 15mm 안전 여백을 확보하고 다른 인쇄물의 규격은 유지합니다.
-  var pageRule = bodyClass === 'is-printing-portfolio' ? 'margin: 15mm !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;';
+  // 포트폴리오는 용지 여백과 각 장의 내부 상단 여백을 함께 확보합니다.
+  var pageRule = bodyClass === 'is-printing-portfolio' ? 'margin: 10mm 15mm 12mm !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;';
   var overrideCss = '@page { ' + pageRule + ' } @media print { @page { ' + pageRule + ' } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
   var removeFrame = function() { if (frame.parentNode) frame.parentNode.removeChild(frame); };
   var printStarted = false;
@@ -8507,16 +8507,22 @@ function renderPortfolioDocument(studentId, pfId) {
     }
 
     var commentText = b.achievement || ('《' + (b.title || '완독 도서') + '》의 중심 맥락과 핵심 어휘를 바르게 습득하였으며, 북퀴즈를 성실히 완수했습니다.');
+    // 연도와 월일을 분리해 왼쪽의 좁은 메타 정보 열에 정렬합니다.
+    var bookDate = String(b.date || '').trim();
+    var dateParts = bookDate.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:$|[T\s])/);
+    var bookDateHtml = dateParts
+      ? '<span class="pf-book-year">' + dateParts[1] + '</span><span class="pf-book-month-day">' + dateParts[2].padStart(2, '0') + '.' + dateParts[3].padStart(2, '0') + '</span>'
+      : escapePortfolioText(bookDate || '완독일 미등록');
 
     var coverAction = escapePortfolioText('openCoverModal(' + JSON.stringify(coverUrl) + ', ' + JSON.stringify(b.title || '') + ', ' + JSON.stringify(pubText || '') + ')');
     return (
       '<article class="pf-book-col">' +
         '<div class="pf-book-row-card">' +
+          '<div class="pf-book-meta-left">' +
+            '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
+            '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + bookDateHtml + '</span>' +
+          '</div>' +
           '<div class="pf-book-card-top">' +
-            '<div class="pf-book-meta-left">' +
-              '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
-              '<span>' + escapePortfolioText(b.date || '완독일 미등록') + '</span>' +
-            '</div>' +
             '<button type="button" class="pf-book-cover-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
               '<img src="' + escapePortfolioText(coverUrl) + '" class="pf-book-cover-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
             '</button>' +
@@ -8671,7 +8677,7 @@ function renderPortfolioDocument(studentId, pfId) {
         '</div>' +
       '</div>' +
 
-      '<!-- ⑦ 지도교사 심층 총평 및 공식 서명 날인 -->' +
+      '<!-- ⑦ 지도교사 심층 총평 및 서명 -->' +
       '<div class="mb-3">' +
         '<div class="pf-panel pf-teacher-comment-box">' +
           '<div class="pf-panel-head">' +
@@ -8685,13 +8691,12 @@ function renderPortfolioDocument(studentId, pfId) {
             '<span style="font-size:11px; color:#6b7280;">나노의 책장 독서 교육 연구소 인증 지도교사</span>' +
             '<div style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#124e47; font-size:12.5px;">' +
               '<span>' + escapePortfolioText(teacher) + '</span>' +
-              '<span style="display:inline-block; border:1.5px solid #e11d48; color:#e11d48; border-radius:50%; width:24px; height:24px; line-height:21px; text-align:center; font-size:10px; font-weight:900; transform:rotate(-10deg);">인</span>' +
             '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
 
-      '<!-- 리포트 푸터 & 공식 서명 날인 -->' +
+      '<!-- 리포트 푸터 -->' +
       '<div class="pf-footer text-muted">' +
         '<div><span class="font-weight-bold" style="color:#1f8a7e;">나노의 책장</span> · 독서 교육 연구소 공식 발급 인증서</div>' +
         '<div>아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +

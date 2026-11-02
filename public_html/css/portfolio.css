@@ -60,20 +60,22 @@
 /* 한 행에 한 권. 왼쪽 정보와 오른쪽 분석문 모두 내용에 맞춰 늘어납니다. */
 #portfolioPrintDoc .pf-books-grid-row { display: block; margin: 0; }
 #portfolioPrintDoc .pf-book-col { width: 100%; min-width: 0; margin-bottom: 12px; }
-#portfolioPrintDoc .pf-book-row-card { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr); align-items: start; gap: 18px; padding: 16px; border: 1px solid var(--pf-line); border-radius: 8px; background: #fff; }
-#portfolioPrintDoc .pf-book-card-top { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px 12px; min-width: 0; }
-#portfolioPrintDoc .pf-book-meta-left { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--pf-muted); font-size: 12px; }
+#portfolioPrintDoc .pf-book-row-card { display: grid; grid-template-columns: 46px minmax(0, 1fr) minmax(0, 1.45fr); align-items: start; gap: 12px; padding: 12px; border: 1px solid var(--pf-line); border-radius: 8px; background: #fff; }
+#portfolioPrintDoc .pf-book-card-top { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; min-width: 0; }
+#portfolioPrintDoc .pf-book-meta-left { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding-top: 2px; color: var(--pf-muted); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
+#portfolioPrintDoc .pf-book-date { line-height: 1.45; }
+#portfolioPrintDoc .pf-book-year, #portfolioPrintDoc .pf-book-month-day { display: block; white-space: nowrap; }
 #portfolioPrintDoc .pf-book-number { padding: 1px 6px; border-radius: 4px; background: #eaf5f1; color: #17675f; font-weight: 700; }
-#portfolioPrintDoc .pf-book-cover-wrap { width: 56px; height: 78px; }
+#portfolioPrintDoc .pf-book-cover-wrap { width: 48px; height: 68px; }
 #portfolioPrintDoc .pf-book-info-block { min-width: 0; }
 #portfolioPrintDoc .pf-book-title { font-size: 15px; line-height: 1.5; font-weight: 700; }
-#portfolioPrintDoc .pf-book-byline { margin: 4px 0 6px; color: var(--pf-muted); font-size: 12px; }
+#portfolioPrintDoc .pf-book-byline { margin: 3px 0 4px; color: var(--pf-muted); font-size: 12px; line-height: 1.5; }
 #portfolioPrintDoc .pf-book-score { display: inline-block; padding: 2px 7px; border-radius: 5px; background: #eaf5f1; color: #17675f; font-size: 12px; font-weight: 700; }
 #portfolioPrintDoc .pf-book-achievement-block { min-width: 0; padding-left: 18px; border-left: 1px solid var(--pf-line); }
 #portfolioPrintDoc .pf-book-achievement-title { margin-bottom: 6px; color: #17675f; font-size: 13px; font-weight: 700; }
 #portfolioPrintDoc .pf-book-achievement-text { font-size: 14px; line-height: 1.75; white-space: pre-line; }
 #portfolioPrintDoc #pfTeacherNoteDisplay { font-size: 14px; line-height: 1.85; white-space: pre-line; }
-#portfolioPrintDoc .pf-signature { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; padding-right: 4px; }
+#portfolioPrintDoc .pf-signature { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; }
 #portfolioPrintDoc .pf-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; padding-top: 12px; border-top: 1px solid var(--pf-line); font-size: 11px; }
 #portfolioPrintDoc .pf-empty { padding: 24px; color: var(--pf-muted); text-align: center; border: 1px dashed var(--pf-line); border-radius: 8px; }
 
@@ -88,8 +90,8 @@
     #portfolioPrintDoc .pf-student-info-grid, #portfolioPrintDoc .pf-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     #portfolioPrintDoc .pf-insight-card-grid { grid-template-columns: minmax(0, 1fr); }
     #portfolioPrintDoc .pf-cover-grid-wrap { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    #portfolioPrintDoc .pf-book-row-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-    #portfolioPrintDoc .pf-book-achievement-block { border-left: 0; border-top: 1px solid var(--pf-line); padding: 12px 0 0; }
+    #portfolioPrintDoc .pf-book-row-card { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; }
+    #portfolioPrintDoc .pf-book-achievement-block { grid-column: 2; border-left: 0; border-top: 1px solid var(--pf-line); padding: 10px 0 0; }
   }
   @container portfolio (max-width: 380px) {
     #portfolioPrintDoc .pf-preference-row { grid-template-columns: minmax(0, 1fr); gap: 16px; }
@@ -106,6 +108,8 @@
 @media print {
   body.is-printing-portfolio { margin: 0 !important; padding: 0 !important; background: #fff !important; }
   body.is-printing-portfolio #portfolioPrintDoc { width: 100%; max-width: none; margin: 0; padding: 0; font-size: 10pt; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* 브라우저에서 여백을 '최소'로 선택해도 두 장의 제목이 종이 끝에 붙지 않게 합니다. */
+  #portfolioPrintDoc .pf-page1-section, #portfolioPrintDoc .pf-page2-section { padding-top: 10mm; }
   #portfolioPrintDoc .pf-header-title { font-size: 18pt; }
   #portfolioPrintDoc .pf-header-meta, #portfolioPrintDoc .pf-info-label, #portfolioPrintDoc .pf-stat-label, #portfolioPrintDoc .pf-stat-sub { font-size: 8.5pt; }
   #portfolioPrintDoc .pf-info-val { font-size: 10pt; }
@@ -130,9 +134,9 @@
   #portfolioPrintDoc .pf-cover-card-title { font-size: 9pt; }
   #portfolioPrintDoc .pf-cover-card-sub, #portfolioPrintDoc .pf-book-meta-left, #portfolioPrintDoc .pf-book-byline, #portfolioPrintDoc .pf-book-score { font-size: 8.5pt; }
   #portfolioPrintDoc .pf-book-title { font-size: 11pt; }
-  #portfolioPrintDoc .pf-book-row-card { padding: 10px; gap: 14px; }
-  #portfolioPrintDoc .pf-book-achievement-block { padding-left: 14px; }
-  #portfolioPrintDoc .pf-book-col { margin-bottom: 10px; }
+  #portfolioPrintDoc .pf-book-row-card { padding: 8px 10px; gap: 10px; }
+  #portfolioPrintDoc .pf-book-achievement-block { padding-left: 10px; }
+  #portfolioPrintDoc .pf-book-col { margin-bottom: 8px; }
   #portfolioPrintDoc .pf-page-break { display: none; }
   #portfolioPrintDoc .pf-page2-section { break-before: page; }
   #portfolioPrintDoc .pf-detail-header, #portfolioPrintDoc .pf-collection-head, #portfolioPrintDoc .pf-panel-head { break-after: avoid-page; }
