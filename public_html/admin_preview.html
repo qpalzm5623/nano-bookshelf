@@ -36,6 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/book_creators.js"></script>
+  <script src="js/available_sheets.js"></script>
   <!-- PDF.js - 브라우저 기반 보안 PDF 렌더링 & 워터마크 합성 엔진 (비동기 지연 로딩) -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
@@ -3236,18 +3237,17 @@
               <!-- 1. 등록처 필터 -->
               <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">등록처 필터</label>
-                <select class="form-control form-control-sm" id="filterAcadBookOrigin"
+                <select class="form-control form-control-sm" id="filterAcadBookOrigin" onchange="filterAcademyBooks()"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="ALL" selected>전체</option>
                   <option value="HQ">본사</option>
-                  <option value="ACADEMY">자체 등록</option>
                 </select>
               </div>
 
               <!-- 2. 권장 학년 -->
               <div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 mb-2 mb-xl-0">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">권장 학년</label>
-                <select class="form-control form-control-sm" id="filterAcadBookGrade"
+                <select class="form-control form-control-sm" id="filterAcadBookGrade" onchange="filterAcademyBooks()"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="ALL" selected>전체 학년</option>
                   <option value="미취학">미취학</option>
@@ -3268,19 +3268,19 @@
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">보유 여부</label>
                 <div class="d-flex align-items-center" style="gap: 16px; height: 31px;">
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked>
+                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked onchange="filterAcademyBooks()">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterAll" style="cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;">
                       전체
                     </label>
                   </div>
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED">
+                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED" onchange="filterAcademyBooks()">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterOwned" style="cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;">
                       보유
                     </label>
                   </div>
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED">
+                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED" onchange="filterAcademyBooks()">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterUnowned" style="cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;">
                       미보유
                     </label>
@@ -3288,7 +3288,7 @@
                 </div>
               </div>
 
-              <!-- 4. 도서 검색 (버튼 클릭 또는 Enter 키로만 검색 실행) -->
+              <!-- 4. 도서 검색 (버튼 클릭 또는 Enter 키로 검색 실행) -->
               <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 mb-2 mb-xl-0">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">도서 검색</label>
                 <div class="input-group input-group-sm">
@@ -3296,7 +3296,7 @@
                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
                     data-1p-ignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAcademyBooks();}"
                     style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;"
-                    placeholder="도서명, 저자, 출판사...">
+                    placeholder="도서명, 저자, 출판사, 등록처(학원명)...">
                   <div class="input-group-append">
                     <button class="btn btn-beige-primary px-3 font-weight-bold" style="border-radius: 0 8px 8px 0;"
                       onclick="filterAcademyBooks()"><i class="fa-solid fa-search mr-1"></i>검색</button>
@@ -3305,20 +3305,9 @@
               </div>
             </div>
 
-            <!-- 필터 보조 바: 내가 올린 도서 모아보기 -->
-            <div class="row align-items-center mt-3 pt-2 border-top">
-              <div class="col-md-12 d-flex align-items-center justify-content-between flex-wrap" style="gap: 12px;">
-                <div class="d-flex align-items-center" style="gap: 20px;">
-                  <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="chkOnlyMyQuizBooks">
-                    <label class="custom-control-label font-weight-bold text-dark" for="chkOnlyMyQuizBooks"
-                      style="cursor: pointer; font-size: 13px;">
-                      <i class="fa-solid fa-filter mr-1 text-primary"></i>내가 올린 (북퀴즈 생성한) 도서 모아보기
-                    </label>
-                  </div>
-                </div>
-                <small class="text-muted" style="font-size: 11.5px;">* 검색 조건을 설정한 후 우측 '검색' 버튼을 클릭하거나 Enter를 누르면 목록이 필터링됩니다.</small>
-              </div>
+            <!-- 필터 보조 안내문 (체크박스 제거 및 검색 안내 유지) -->
+            <div class="d-flex justify-content-end align-items-center mt-2 pt-2 border-top">
+              <small class="text-muted" style="font-size: 11.5px;">* 등록처/학년/보유여부 선택 또는 상단 검색어 입력 후 '검색' 버튼(Enter)을 누르면 목록이 필터링됩니다.</small>
             </div>
           </div>
 

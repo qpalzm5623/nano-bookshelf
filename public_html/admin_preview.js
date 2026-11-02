@@ -2668,13 +2668,39 @@ function handleStudentExcelFileSelect(input) {
           return;
         }
 
-        // 1. 헤더 행 동적 탐색 (안내행 유무에 관계없이 헤더 위치 자동 감지)
+        // 1. 헤더 행 동적 탐색 (1행 안내문 배너 유무에 관계없이 2행 컬럼 헤더를 정확히 감지)
         var headerRowIdx = -1;
         for (var rIdx = 0; rIdx < Math.min(rows.length, 5); rIdx++) {
           var r = rows[rIdx];
-          if (Array.isArray(r) && r.some(function(cell) {
-            return /원생이름|이름/.test(String(cell || ''));
-          })) {
+          if (!Array.isArray(r) || r.length === 0) continue;
+
+          // 1행과 같은 긴 안내 문구(병합 배너 셀)는 컬럼 헤더가 아니므로 건너뜀
+          var firstCell = String(r[0] || '').trim();
+          if (firstCell.length > 30 || /필독|안내|코드설명|가이드/i.test(firstCell)) {
+            continue;
+          }
+
+          // 실제 컬럼 헤더 행은 복수의 셀에 컬럼명(이름, 아이디, 성별, 학년, 클래스 등)이 3개 이상 매칭됨
+          var matchCount = 0;
+          r.forEach(function(cell) {
+            var s = String(cell || '').trim();
+            if (/^(?:원생|학생)?\s*이름(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:원생|학생)?\s*아이디(?:\(필수\)|\(선택\))?$|^ID(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^성별(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:초기)?비밀번호(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^학교(?:명)?(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^학년(?:코드)?(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:클래스|학급|반)(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:학부모|보호자)(?:이름|명)?(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:학부모|보호자)?(?:연락처|전화번호)(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:학부모|보호자)?(?:이메일)(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:담당)?(?:지도)?교사(?:\(필수\)|\(선택\))?$/i.test(s) ||
+                /^(?:메모|비고)(?:\(필수\)|\(선택\))?$/i.test(s)) {
+              matchCount++;
+            }
+          });
+
+          if (matchCount >= 3) {
             headerRowIdx = rIdx;
             break;
           }
@@ -2743,7 +2769,12 @@ function handleStudentExcelFileSelect(input) {
           var name = cleanVal(rawName);
           if (!name) continue;
 
-          // 예시 샘플 행 건너뛰기 (홍길동 or 샘플 행이 엑셀에 그대로 남겨진 경우 방어)
+          // 헤더 명칭 행이거나 필수/선택 라벨이 포함된 경우 데이터 행이 아니므로 건너뜀 (안전 방어)
+          if (/^(?:원생|학생)?\s*이름$/i.test(name) || name.indexOf('(필수)') !== -1 || name.indexOf('(선택)') !== -1 || /필독|안내/.test(name)) {
+            continue;
+          }
+
+          // 예시 샘플 행 건너뛰기 (홍길동 or 템플릿 샘플 데이터가 엑셀에 그대로 남겨진 경우 방어)
           if (name === '홍길동' && (cleanVal(r[colMap.school]) === '나노 초등학교' || cleanVal(r[colMap.classGroup]) === '나노반')) {
             continue;
           }
@@ -9687,6 +9718,43 @@ function normalizeBookCoverUrl(url) {
   return trimmed;
 }
 
+// 나노시트 실제 파일 실존 여부 정밀 판정 함수 (서버 배포된 AVAILABLE_NANOSHEET_SET과 대조)
+function checkBookHasAvailableSheet(b) {
+  if (!b) return false;
+
+  // 1. 방금 직접 업로드한 실제 PDF 파일/Blob이 메모리에 있는 경우
+  if (b.pdfBlob || b.pdfDataUrl) return true;
+
+  // 2. 외부 호스팅 절대 URL(https://)이 명시된 경우
+  if ((b.pdfUrl && /^https?:\/\//i.test(b.pdfUrl)) || (b.worksheetUrl && /^https?:\/\//i.test(b.worksheetUrl))) {
+    return true;
+  }
+
+  // 3. 서버에 배포된 검증 나노시트 Set(AVAILABLE_NANOSHEET_SET) 대조
+  var sheetSet = (typeof window !== 'undefined' && window.AVAILABLE_NANOSHEET_SET) || null;
+  if (!sheetSet) {
+    // 식별자 Set이 아직 없거나 로드 전이면 서버 파일 미확인 상태이므로 안전하게 비활성화
+    return false;
+  }
+
+  var candidates = [];
+  if (b.id) candidates.push(String(b.id).trim().toLowerCase());
+  if (b.bookNo) candidates.push(String(b.bookNo).trim().toLowerCase());
+  if (b.serverId) candidates.push(String(b.serverId).trim().toLowerCase());
+  if (b.isbn) candidates.push(String(b.isbn).replace(/[^0-9]/g, ''));
+  if (b.cover && typeof b.cover === 'string') {
+    var m = String(b.cover).match(/([0-9]{10,13}|book_[0-9]+)/);
+    if (m && m[1]) candidates.push(m[1].toLowerCase());
+  }
+  var extraPath = b.pdfUrl || b.worksheetUrl || '';
+  if (extraPath) {
+    var pMatch = String(extraPath).match(/([0-9]{10,13}|book_[0-9]+)/);
+    if (pMatch && pMatch[1]) candidates.push(pMatch[1].toLowerCase());
+  }
+
+  return candidates.some(function(k) { return k && sheetSet.has(k); });
+}
+
 function createAcademyBookItem(b) {
   if (!b) return null;
 
@@ -9738,35 +9806,8 @@ function createAcademyBookItem(b) {
   var isSingleBook = (!hasValidSeries || b.isSingle === true || b.series === '단권');
   var seriesVal = isSingleBook ? '단권' : b.series.trim();
 
-  // 나노시트 실제 파일 준비 여부 명확한 판정:
-  // 1. 실제 첨부된 PDF(Blob/DataUrl) 또는 외부 URL이 명시된 경우 활성화
-  // 2. 검증된 나노시트 PDF 식별자 Set(AVAILABLE_NANOSHEET_SET)에 실제 파일이 존재하는 도서만 활성화
-  // 3. 파일이 실제로 준비되지 않은 도서는 반드시 비활성화(disabled, '시트 없음') 처리
-  var hasSheet = false;
-  if (b.pdfBlob || b.pdfDataUrl || (b.pdfUrl && !b.pdfUrl.startsWith('upload/')) || (b.worksheetUrl && !b.worksheetUrl.startsWith('upload/'))) {
-    hasSheet = true;
-  } else if (b.sheet === true || b.hasSheet === true || b.worksheet === true) {
-    var sheetSet = (typeof window !== 'undefined' && window.AVAILABLE_NANOSHEET_SET) || null;
-    if (sheetSet) {
-      var candidatesToCheck = [];
-      if (b.id) candidatesToCheck.push(String(b.id).trim().toLowerCase());
-      if (b.bookNo) candidatesToCheck.push(String(b.bookNo).trim().toLowerCase());
-      if (b.serverId) candidatesToCheck.push(String(b.serverId).trim().toLowerCase());
-      if (b.isbn) candidatesToCheck.push(String(b.isbn).replace(/[^0-9]/g, ''));
-      if (b.cover && typeof b.cover === 'string') {
-        var m = String(b.cover).match(/([0-9]{10,13}|book_[0-9]+)/);
-        if (m && m[1]) candidatesToCheck.push(m[1].toLowerCase());
-      }
-      hasSheet = candidatesToCheck.some(function(k) { return k && sheetSet.has(k); });
-    } else {
-      hasSheet = false;
-    }
-  }
-  if (b.sheet === false || b.hasSheet === false || b.sheet === 'N' || b.hasSheet === 'N') {
-    hasSheet = false;
-  } else if (b.isMyCreation === true && !b.pdfBlob && !b.pdfUrl && !b.pdfDataUrl && !b.worksheet && !b.materialName) {
-    hasSheet = false;
-  }
+  // 나노시트 실제 파일 준비 여부 명확한 판정 (서버 실존 검증)
+  var hasSheet = checkBookHasAvailableSheet(b);
 
   return {
     id: bookId,
@@ -9866,6 +9907,9 @@ function syncAcademyBooksState() {
     if (!academyBookList || academyBookList.length <= 1 || academyBookList.length !== deduped.length) {
       academyBookList = deduped;
       syncOwnedBooksState();
+      if (typeof populateAcadBookOriginFilter === 'function') {
+        populateAcadBookOriginFilter();
+      }
     }
   }
 }
@@ -10037,6 +10081,51 @@ async function toggleBookOwnership(bookId) {
 }
 
 // -------------------------------------------------------------
+// 등록처 필터 드롭다운 옵션 동적 구성
+// (1순위: 전체, 2순위: 본사, 3순위: 내 가맹점 명, 4순위부터: 가나다 오름차순 정렬)
+// -------------------------------------------------------------
+function populateAcadBookOriginFilter() {
+  var sel = document.getElementById('filterAcadBookOrigin');
+  if (!sel) return;
+
+  var currentVal = sel.value || 'ALL';
+  var myAcadName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name)
+    ? currentAcademyInfo.name.trim()
+    : '내 가맹점';
+
+  // 도서 목록 전체에서 고유 등록처(학원명) 수집
+  var originSet = new Set();
+  (academyBookList || []).forEach(function(b) {
+    var acad = (b.academyName || '').trim();
+    if (acad && !acad.includes('본사') && acad !== myAcadName) {
+      originSet.add(acad);
+    }
+  });
+
+  // 가나다 오름차순 정렬
+  var sortedOrigins = Array.from(originSet).sort(function(a, b) {
+    return a.localeCompare(b, 'ko');
+  });
+
+  var html = '<option value="ALL">전체 등록처</option>';
+  html += '<option value="HQ">본사 (본사 직속)</option>';
+  html += '<option value="MY_ACADEMY">' + myAcadName + ' (내 가맹점)</option>';
+
+  sortedOrigins.forEach(function(orig) {
+    html += '<option value="' + orig.replace(/"/g, '&quot;') + '">' + orig + '</option>';
+  });
+
+  sel.innerHTML = html;
+
+  // 기존 선택값 유지 (유효한 경우)
+  if (currentVal && Array.from(sel.options).some(function(opt) { return opt.value === currentVal; })) {
+    sel.value = currentVal;
+  } else {
+    sel.value = 'ALL';
+  }
+}
+
+// -------------------------------------------------------------
 // 학원 도서 페이징 상태 관리 (페이지당 30권)
 // -------------------------------------------------------------
 var academyBookPageSize = 30;
@@ -10047,57 +10136,64 @@ var currentAcademyFilteredBooks = [];
 function filterAcademyBooks(keepPage) {
   syncAcademyBooksState();
 
+  // 등록처 드롭다운이 아직 초기화되지 않았거나 옵션이 3개 미만이면 채우기
+  var originSel = document.getElementById('filterAcadBookOrigin');
+  if (originSel && originSel.options.length <= 3 && academyBookList && academyBookList.length > 0) {
+    populateAcadBookOriginFilter();
+  }
+
   if (!keepPage) {
     academyBookCurrentPage = 1;
   }
 
-  var originVal = document.getElementById('filterAcadBookOrigin') ? document.getElementById('filterAcadBookOrigin').value : 'ALL';
+  var originVal = originSel ? originSel.value : 'ALL';
   var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
   var sortVal = document.getElementById('sortAcadBookSelect') ? document.getElementById('sortAcadBookSelect').value : 'DATE_DESC';
   var ownedRadio = document.querySelector('input[name="filterAcadBookOwned"]:checked');
   var ownedFilter = ownedRadio ? ownedRadio.value : (document.getElementById('filterAcadBookOwned') ? document.getElementById('filterAcadBookOwned').value : 'ALL');
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
-  var onlyMyQuiz = document.getElementById('chkOnlyMyQuizBooks') ? document.getElementById('chkOnlyMyQuizBooks').checked : false;
 
   updateOwnedBookCountBadge();
+
+  var myAcadName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name)
+    ? currentAcademyInfo.name.trim()
+    : '';
 
   var filtered = academyBookList.filter(function(b) {
     // 0. 보유 여부 필터 (ALL: 전체 보기 / OWNED: 보유도서만 보기 / UNOWNED: 미보유 도서만 보기)
     if (ownedFilter === 'OWNED' && !b.isOwned) return false;
     if (ownedFilter === 'UNOWNED' && b.isOwned) return false;
 
-    // 1. 내가 올린 (북퀴즈 생성한) 도서 모아보기 필터
-    if (onlyMyQuiz) {
-      var isMyCreation = (b.creatorType === 'ACADEMY' || b.hasMyQuizSet === true || (b.academyName && !b.academyName.includes('본사')));
-      var hasQuiz = (b.quizCount && b.quizCount > 0);
-      if (!isMyCreation && !hasQuiz) return false;
-      if (!isMyCreation && b.creatorType === 'HQ') {
-        if (!b.hasMyQuizSet) return false;
-      }
-    }
-
-    // 2. 등록처 매칭 (ALL / HQ / ACADEMY)
+    // 1. 등록처 매칭 (ALL / HQ / MY_ACADEMY / 특정 가맹점명)
+    var isHqBook = !b.creatorType || b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
     var matchOrigin = true;
     if (originVal === 'HQ') {
-      matchOrigin = b.creatorType === 'HQ' || (b.academyName && b.academyName.includes('본사'));
-    } else if (originVal === 'ACADEMY') {
-      matchOrigin = b.creatorType === 'ACADEMY' || (b.academyName && !b.academyName.includes('본사'));
+      matchOrigin = isHqBook;
+    } else if (originVal === 'MY_ACADEMY') {
+      matchOrigin = isBookCreatedByMyAcademy(b);
+    } else if (originVal !== 'ALL') {
+      matchOrigin = (b.academyName && b.academyName.trim() === originVal.trim());
     }
+    if (!matchOrigin) return false;
 
-    // 3. 학년 매칭
+    // 2. 학년 매칭
     var matchGrade = true;
     if (gradeVal !== 'ALL') {
       matchGrade = bookGradeMatches(b.grade, gradeVal);
     }
+    if (!matchGrade) return false;
 
-    // 4. 검색어 매칭
+    // 3. 상단 도서 검색어 매칭 (도서명, 저자, 출판사, 도서번호, 등록처 학원명, '본사' 지원)
     var matchQuery = !query ||
-      b.title.toLowerCase().indexOf(query) !== -1 ||
-      b.author.toLowerCase().indexOf(query) !== -1 ||
-      b.publisher.toLowerCase().indexOf(query) !== -1 ||
-      (b.academyName && b.academyName.toLowerCase().indexOf(query) !== -1);
+      (b.title && b.title.toLowerCase().indexOf(query) !== -1) ||
+      (b.author && b.author.toLowerCase().indexOf(query) !== -1) ||
+      (b.publisher && b.publisher.toLowerCase().indexOf(query) !== -1) ||
+      (b.id && String(b.id).toLowerCase().indexOf(query) !== -1) ||
+      (b.bookNo && String(b.bookNo).toLowerCase().indexOf(query) !== -1) ||
+      (b.academyName && b.academyName.toLowerCase().indexOf(query) !== -1) ||
+      (isHqBook && ('본사'.indexOf(query) !== -1 || '본사 직속'.indexOf(query) !== -1));
 
-    return matchOrigin && matchGrade && matchQuery;
+    return matchQuery;
   });
 
   // 정렬 적용
@@ -10307,12 +10403,13 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
 
     var coverImg = normalizeBookCoverUrl(b.cover);
     
-    // 나노시트 단독 버튼 (실제 파일 준비된 도서만 활성화, 없는 도서는 비활성화 상태로 명시)
-    var pdfBtn = (b.hasSheet === true)
+    // 나노시트 단독 버튼 (서버에 실제 파일이 존재하는 도서만 활성화, 없는 도서는 무조건 '시트 없음' 비활성화)
+    var isSheetAvailable = checkBookHasAvailableSheet(b);
+    var pdfBtn = isSheetAvailable
       ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
            <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
          </button>`
-      : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF)가 없는 도서입니다" style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
+      : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF) 파일이 서버에 준비되지 않았습니다" style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
            <i class="fa-regular fa-file-circle-xmark mr-1" style="font-size: 10px;"></i>시트 없음
          </button>`;
 
@@ -11107,8 +11204,8 @@ function openContentPdfModal(bookId) {
   var b = academyBookList.find(function(item) { return item.id === bookId; });
   activeViewingBook = b || null;
 
-  // 나노시트가 준비되지 않은 도서는 팝업 모달을 띄우지 않고 즉시 안내 후 반환
-  if (!b || b.hasSheet !== true) {
+  // 서버에 나노시트 파일이 없는 도서는 팝업 모달을 전혀 띄우지 않고 즉시 차단
+  if (!b || !checkBookHasAvailableSheet(b)) {
     showAcademyToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
     return;
   }
