@@ -7003,10 +7003,61 @@ function getCharacterSvg(charId, size, stage) {
   return svgs[charId] || svgs.nano;
 }
 
-// 랭킹 필터 상태: 집계 월(YYYY-MM), 학급명('all' 또는 실제 학급명), 검색 키워드
-var adminRankPeriod = ''; // 비어 있으면 현재월으로 초기화
+// 랭킹 필터 상태: 3가지 조회 모드 ('MONTH' | 'ALL' | 'RANGE'), 집계 월, 시작일, 종료일, 학급명
+var adminRankMode = 'MONTH'; // 기본값: 월별 순위
+var adminRankPeriod = '';    // 기본값: 현재월
+var adminRankStartDate = '';
+var adminRankEndDate = '';
 var adminRankClass = 'all';
-var adminRankKeyword = '';
+
+// 조회 방식 3단계 전환 함수 (월별 / 전체 누적 / 기간 지정)
+function setAdminRankMode(mode) {
+  adminRankMode = mode || 'MONTH';
+
+  var btnMonth = document.getElementById('btnRankModeMonth');
+  var btnAll = document.getElementById('btnRankModeAll');
+  var btnRange = document.getElementById('btnRankModeRange');
+  var wrapMonth = document.getElementById('rankFilterMonthWrap');
+  var wrapRange = document.getElementById('rankFilterRangeWrap');
+
+  function setBtnStyle(btn, active) {
+    if (!btn) return;
+    if (active) {
+      btn.style.background = '#ffffff';
+      btn.style.color = 'var(--text-main)';
+      btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+      btn.classList.add('active');
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = '#64748b';
+      btn.style.boxShadow = 'none';
+      btn.classList.remove('active');
+    }
+  }
+
+  setBtnStyle(btnMonth, adminRankMode === 'MONTH');
+  setBtnStyle(btnAll, adminRankMode === 'ALL');
+  setBtnStyle(btnRange, adminRankMode === 'RANGE');
+
+  if (wrapMonth) wrapMonth.style.display = (adminRankMode === 'MONTH') ? 'flex' : 'none';
+  if (wrapRange) wrapRange.style.display = (adminRankMode === 'RANGE') ? 'flex' : 'none';
+
+  // 기간 지정 모드 기본 날짜 세팅 (이번 달 1일 ~ 오늘)
+  if (adminRankMode === 'RANGE') {
+    var startInput = document.getElementById('adminRankStartDate');
+    var endInput = document.getElementById('adminRankEndDate');
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    if (!adminRankStartDate) adminRankStartDate = y + '-' + m + '-01';
+    if (!adminRankEndDate) adminRankEndDate = y + '-' + m + '-' + d;
+    if (startInput && !startInput.value) startInput.value = adminRankStartDate;
+    if (endInput && !endInput.value) endInput.value = adminRankEndDate;
+  }
+
+  renderAdminRankingView();
+}
 
 // 집계 가능한 기간: 현재월 포함 최근 6개월 (상한을 두는 이유: 불필요한 장기 조회로 인한 부하 방지)
 function getAdminRankMonthOptions() {
@@ -7046,92 +7097,150 @@ function populateAdminRankFilters() {
   }
 }
 
-// 선택한 월의 학습 기록(완독 도서 + 북퀘즈 점수)에서 원생별 순위 산출
-// 원생의 누적 포인트 및 학습 기록 기반 실시간 랭킹 산정
-function buildAdminRankingRows(monthKey) {
-  var logs = getLoadedLearningLogs().filter(function(l) { return (l.date || '').slice(0, 7) === monthKey; });
+// 3가지 모드(월별 / 전체 누적 / 기간 지정)에 따른 실시간 독서 포인트 및 순위 산출
+function buildAdminRankingRows() {
+  var mode = adminRankMode || 'MONTH';
+  var pSel = document.getElementById('adminRankPeriodSelect');
+  var monthKey = (pSel && pSel.value) ? pSel.value : adminRankPeriod;
+  var startInput = document.getElementById('adminRankStartDate');
+  var endInput = document.getElementById('adminRankEndDate');
+  var startDate = (startInput && startInput.value) ? startInput.value : adminRankStartDate;
+  var endDate = (endInput && endInput.value) ? endInput.value : adminRankEndDate;
+
+  // 1. 북퀴즈 학습 로그 필터링
+  var allLogs = getLoadedLearningLogs();
+  var logs = allLogs.filter(function(l) {
+    var lDate = String(l.date || '').slice(0, 10);
+    if (mode === 'MONTH') {
+      return lDate.slice(0, 7) === monthKey;
+    } else if (mode === 'RANGE') {
+      if (startDate && lDate < startDate) return false;
+      if (endDate && lDate > endDate) return false;
+      return true;
+    }
+    // mode === 'ALL'
+    return true;
+  });
+
   var byStudent = {};
   logs.forEach(function(l) {
-    var key = String(l.studentId || l.studentName);
-    if (!byStudent[key]) byStudent[key] = { studentId: l.studentId || '', name: l.studentName || l.name || '-', classGroup: l.classGroup || '미지정', books: 0, scoreSum: 0 };
+    var key = String(l.studentId || l.studentName || '');
+    if (!byStudent[key]) {
+      byStudent[key] = {
+        studentId: l.studentId || '',
+        name: l.studentName || l.name || '-',
+        classGroup: l.classGroup || '미지정',
+        books: 0,
+        scoreSum: 0
+      };
+    }
     byStudent[key].books += 1;
     byStudent[key].scoreSum += Number(l.score) || 0;
   });
 
-  // studentDataList의 모든 원생을 베이스로 병합 (원내 모든 학생에게 포인트 부여 가능하도록 보장)
+  // 2. 학원 자체 수동 부여 포인트 (NANO_POINT_LOG_DATA) 필터링
+  // ★ 중요: 학원 내 랭킹에만 집계되고 전국 랭킹에는 반영되지 않음
+  var manualPointsByStudent = {};
+  try {
+    var rawManualLogs = localStorage.getItem('NANO_POINT_LOG_DATA');
+    var manualLogs = rawManualLogs ? JSON.parse(rawManualLogs) : [];
+    if (Array.isArray(manualLogs)) {
+      manualLogs.forEach(function(mlog) {
+        var mDate = String(mlog.date || (mlog.createdAt || '').slice(0, 10));
+        var matchDate = true;
+        if (mode === 'MONTH') {
+          matchDate = mDate.slice(0, 7) === monthKey;
+        } else if (mode === 'RANGE') {
+          if (startDate && mDate < startDate) matchDate = false;
+          if (endDate && mDate > endDate) matchDate = false;
+        }
+        if (matchDate) {
+          var mKey = String(mlog.studentId || mlog.studentName || '');
+          var amt = Number(mlog.amount) || 0;
+          manualPointsByStudent[mKey] = (manualPointsByStudent[mKey] || 0) + amt;
+          if (mlog.studentName) {
+            manualPointsByStudent[mlog.studentName] = (manualPointsByStudent[mlog.studentName] || 0) + amt;
+          }
+        }
+      });
+    }
+  } catch(e) {}
+
+  // 3. studentDataList의 모든 원생 매핑
   var studentKeysSeen = {};
   var rows = [];
 
-  // 1) 학습 기록이 있는 학생 우선 매핑
-  Object.keys(byStudent).forEach(function(key) {
-    var item = byStudent[key];
-    var std = studentDataList.find(function(s) {
-      return (s.id && s.id === item.studentId) || (s.username && s.username === item.studentId) || (!item.studentId && s.name === item.name);
-    });
-    var stdId = std ? (std.id || std.username) : item.studentId;
-    if (stdId) studentKeysSeen[stdId] = true;
-    if (std && std.name) studentKeysSeen[std.name] = true;
+  studentDataList.forEach(function(std) {
+    var stdId = std.id || std.username || '';
+    var sName = std.name || '';
+    studentKeysSeen[stdId] = true;
+    if (sName) studentKeysSeen[sName] = true;
 
-    var actualPoints = (std && typeof std.points === 'number') ? std.points : item.scoreSum;
+    var logItem = byStudent[stdId] || byStudent[sName] || null;
+    var books = logItem ? logItem.books : (mode === 'ALL' ? (std.bookCount || 0) : 0);
+    var quizScore = logItem ? logItem.scoreSum : 0;
+    var manualPts = (manualPointsByStudent[stdId] || 0) + (manualPointsByStudent[sName] || 0);
+
+    // 포인트 산출:
+    // 전체 누적(ALL) 모드: 학생 기본 누적포인트 + 기간 내 기록 합산 반영
+    // 월별/기간지정 모드: 해당 기간 내 획득한 (북퀴즈 점수 + 수동 부여 포인트)
+    var finalPoints = 0;
+    if (mode === 'ALL') {
+      var basePoints = Number(std.points) || 0;
+      finalPoints = Math.max(basePoints, quizScore + manualPts);
+    } else {
+      finalPoints = Math.max(0, quizScore + manualPts);
+    }
+
+    var quizRateStr = '-';
+    if (logItem && logItem.books > 0) {
+      quizRateStr = (logItem.scoreSum / logItem.books).toFixed(1) + '%';
+    } else if (mode === 'ALL' && std.quizAvg && std.quizAvg !== '-') {
+      quizRateStr = std.quizAvg + '%';
+    } else {
+      quizRateStr = '100.0%';
+    }
 
     rows.push({
       studentId: stdId,
-      name: std ? std.name : item.name,
-      loginId: std ? (std.username || std.id) : item.studentId,
-      charId: getStudentCharacterId(std || item),
-      stage: std && std.characterStage || 1,
-      grade: ((std && std.grade) ? std.grade : '') + ' (' + ((std && std.classGroup) ? std.classGroup : item.classGroup) + ')',
-      classKey: (std && std.classGroup) ? std.classGroup : item.classGroup,
-      books: item.books,
-      quizRate: item.books > 0 ? (item.scoreSum / item.books).toFixed(1) + '%' : '100.0%',
-      points: actualPoints
+      name: sName,
+      loginId: std.username || std.id,
+      charId: getStudentCharacterId(std),
+      stage: std.characterStage || 1,
+      grade: (std.grade || '미등록') + ' (' + (std.classGroup || '미지정') + ')',
+      classKey: std.classGroup || '미지정',
+      books: books,
+      quizRate: quizRateStr,
+      points: finalPoints
     });
   });
 
-  // 2) 아직 로그가 없는 원생도 기본 포함 (수동 포인트 부여 지원)
-  studentDataList.forEach(function(s) {
-    var sId = s.id || s.username;
-    if (!studentKeysSeen[sId] && !studentKeysSeen[s.name]) {
-      studentKeysSeen[sId] = true;
-      rows.push({
-        studentId: sId,
-        name: s.name,
-        loginId: s.username || s.id,
-        charId: getStudentCharacterId(s),
-        stage: s.characterStage || 1,
-        grade: (s.grade || '미등록') + ' (' + (s.classGroup || '미지정') + ')',
-        classKey: s.classGroup || '미지정',
-        books: s.bookCount || 0,
-        quizRate: (s.quizAvg && s.quizAvg !== '-') ? s.quizAvg + '%' : '100.0%',
-        points: Number(s.points) || 0
-      });
-    }
+  // 포인트 순 -> 완독 권수 순 -> 이름 순 정렬
+  rows.sort(function(a, b) {
+    return b.points - a.points || b.books - a.books || a.name.localeCompare(b.name, 'ko');
   });
 
-  rows.sort(function(a, b) { return b.points - a.points || b.books - a.books || a.name.localeCompare(b.name, 'ko'); });
   rows.forEach(function(r, idx) {
     r.badge = idx === 0 ? '골드 독서왕 🥇' : idx === 1 ? '실버 리더 🥈' : idx === 2 ? '브론즈 리더 🥉' : '독서가';
   });
+
   return rows;
 }
 
 // 현재 필터된 랭킹 리스트 가져오기
 function getFilteredAdminRankingList() {
-  if (!adminRankPeriod) populateAdminRankFilters();
-  var list = buildAdminRankingRows(adminRankPeriod);
+  var cSel = document.getElementById('adminRankClassSelect');
+  if (cSel) adminRankClass = cSel.value;
+  var pSel = document.getElementById('adminRankPeriodSelect');
+  if (pSel && pSel.value) adminRankPeriod = pSel.value;
+
+  var list = buildAdminRankingRows();
   if (adminRankClass !== 'all') {
     list = list.filter(function(item) {
       return item.classKey === adminRankClass;
     });
   }
-  if (adminRankKeyword && adminRankKeyword.trim()) {
-    var kw = adminRankKeyword.trim().toLowerCase();
-    list = list.filter(function(item) {
-      return (item.name && item.name.toLowerCase().indexOf(kw) !== -1) ||
-             (item.loginId && item.loginId.toLowerCase().indexOf(kw) !== -1) ||
-             (item.grade && item.grade.toLowerCase().indexOf(kw) !== -1);
-    });
-  }
+
   // 순위 재부여
   return list.map(function(item, idx) {
     var copy = Object.assign({}, item);
@@ -7206,7 +7315,16 @@ function renderAdminRankingView(skipCharacterRefresh) {
   var currentClassText = adminRankClass === 'all' ? '원내 전체' : adminRankClass;
 
   if (podiumTitle) {
-    podiumTitle.textContent = periodText + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
+    var mode = adminRankMode || 'MONTH';
+    if (mode === 'ALL') {
+      podiumTitle.textContent = '전체 누적 TOP 3 독서 챔피언 (' + currentClassText + ')';
+    } else if (mode === 'RANGE') {
+      var sDate = (document.getElementById('adminRankStartDate') && document.getElementById('adminRankStartDate').value) || adminRankStartDate;
+      var eDate = (document.getElementById('adminRankEndDate') && document.getElementById('adminRankEndDate').value) || adminRankEndDate;
+      podiumTitle.textContent = (sDate || '기간') + ' ~ ' + (eDate || '기간') + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
+    } else {
+      podiumTitle.textContent = periodText + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
+    }
   }
 
   if (list.length > 0) {
@@ -7451,6 +7569,7 @@ function submitManualPointAdjustment() {
       studentName: currentManualPointStudent.name,
       amount: delta,
       pointType: delta > 0 ? 'MANUAL_GRANT' : 'MANUAL_DEDUCT',
+      scope: 'ACADEMY_ONLY', // ★ 학원 내 랭킹 전용 (전국 랭킹 미반영)
       content: `[${authorRole} 수동 ${delta > 0 ? '부여' : '차감'}] ${reason} (${delta > 0 ? '+' : ''}${delta}P)`,
       date: nowIso.split('T')[0],
       createdAt: nowIso

@@ -4335,47 +4335,60 @@
             </div>
           </div>
 
-          <!-- 필터 툴바 (기간 & 학급 선택 및 원생 검색 + 검색 버튼) -->
-          <div class="simple-card p-3 mb-4" style="background: #ffffff; border-radius: 12px;">
-            <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap: 16px;">
-              <!-- 좌측: 기간 & 학급 조건 필터 -->
-              <div class="d-flex align-items-center flex-wrap" style="gap: 20px;">
-                <div class="d-flex align-items-center" style="flex-shrink: 0;">
-                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 8px; white-space: nowrap; flex-shrink: 0;">
-                    <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>집계 기간:
+          <!-- 필터 툴바 (3가지 랭킹 조회 모드: 월별 / 전체 누적 / 기간 지정 + 학급 선택) -->
+          <div class="simple-card p-3 mb-4" style="background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div class="d-flex flex-wrap justify-content-between align-items-center" style="gap: 14px;">
+              <!-- 좌측: 3가지 조회 방식 토글 버튼 및 상세 기간 선택기 -->
+              <div class="d-flex align-items-center flex-wrap" style="gap: 14px;">
+                <!-- 3단 모드 토글 탭 -->
+                <div class="btn-group btn-group-sm" role="group" aria-label="랭킹 조회 모드" style="background: #f1ede4; padding: 3px; border-radius: 10px;">
+                  <button type="button" class="btn font-weight-bold" id="btnRankModeMonth" onclick="setAdminRankMode('MONTH')"
+                    style="border-radius: 8px; font-size: 12.5px; padding: 5px 13px; border: none; background: #ffffff; color: var(--text-main); box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                    <i class="fa-regular fa-calendar mr-1 text-warning"></i>월별 순위
+                  </button>
+                  <button type="button" class="btn font-weight-bold" id="btnRankModeAll" onclick="setAdminRankMode('ALL')"
+                    style="border-radius: 8px; font-size: 12.5px; padding: 5px 13px; border: none; background: transparent; color: #64748b;">
+                    <i class="fa-solid fa-infinity mr-1 text-primary"></i>전체 누적 순위
+                  </button>
+                  <button type="button" class="btn font-weight-bold" id="btnRankModeRange" onclick="setAdminRankMode('RANGE')"
+                    style="border-radius: 8px; font-size: 12.5px; padding: 5px 13px; border: none; background: transparent; color: #64748b;">
+                    <i class="fa-regular fa-calendar-days mr-1 text-success"></i>기간 지정 순위
+                  </button>
+                </div>
+
+                <!-- 1) 월별 드롭다운 (MONTH 모드용) -->
+                <div class="d-flex align-items-center" id="rankFilterMonthWrap" style="flex-shrink: 0;">
+                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 6px; white-space: nowrap;">
+                    <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>월 선택:
                   </span>
-                  <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect"
-                    style="width: 190px; border-radius: 8px; flex-shrink: 0;">
+                  <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect" onchange="renderAdminRankingView()"
+                    style="width: 175px; border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                     <!-- JS 동적 생성: 현재월 포함 최근 6개월 -->
                   </select>
                 </div>
 
-                <div class="d-flex align-items-center" style="flex-shrink: 0;">
-                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 8px; white-space: nowrap; flex-shrink: 0;">
-                    <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
+                <!-- 2) 기간 범위 선택기 (RANGE 모드용) -->
+                <div class="align-items-center" id="rankFilterRangeWrap" style="display: none; gap: 6px; flex-shrink: 0;">
+                  <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px; white-space: nowrap;">
+                    <i class="fa-regular fa-clock mr-1 text-success"></i>조회 기간:
                   </span>
-                  <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect"
-                    style="width: 160px; border-radius: 8px; flex-shrink: 0;">
-                    <option value="all">원내 전체</option>
-                  </select>
+                  <input type="date" class="form-control form-control-sm font-weight-bold" id="adminRankStartDate"
+                    style="width: 135px; border-radius: 8px; border-color: var(--border-medium); font-size: 12px;" onchange="renderAdminRankingView()">
+                  <span class="text-muted font-weight-bold">~</span>
+                  <input type="date" class="form-control form-control-sm font-weight-bold" id="adminRankEndDate"
+                    style="width: 135px; border-radius: 8px; border-color: var(--border-medium); font-size: 12px;" onchange="renderAdminRankingView()">
                 </div>
               </div>
 
-              <!-- 우측: 원생 검색창 및 검색/초기화 버튼 -->
-              <div class="d-flex align-items-center ml-auto" style="gap: 8px; flex-shrink: 0;">
-                <div class="input-group input-group-sm" style="width: 240px;">
-                  <input type="search" class="form-control" id="adminRankSearchInput"
-                    placeholder="원생 이름/아이디 검색..."
-                    onkeydown="if(event.key==='Enter'){event.preventDefault();executeAdminRankingSearch();}"
-                    style="border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 13px;">
-                  <div class="input-group-append">
-                    <button class="btn btn-beige-primary px-3 font-weight-bold" style="border-radius: 0 8px 8px 0;"
-                      onclick="executeAdminRankingSearch()"><i class="fa-solid fa-search mr-1"></i>검색</button>
-                  </div>
-                </div>
-                <button class="btn btn-sm btn-outline-secondary font-weight-bold px-2.5 ml-2" onclick="resetAdminRankingSearch()" title="조건 초기화" style="border-radius: 8px; height: 31px; white-space: nowrap;">
-                  <i class="fa-solid fa-rotate-left mr-1"></i>초기화
-                </button>
+              <!-- 우측: 학급 필터 선택기 (검색바 완전 제거) -->
+              <div class="d-flex align-items-center ml-auto" style="flex-shrink: 0;">
+                <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 8px; white-space: nowrap;">
+                  <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
+                </span>
+                <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect" onchange="renderAdminRankingView()"
+                  style="width: 155px; border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
+                  <option value="all">원내 전체</option>
+                </select>
               </div>
             </div>
           </div>
@@ -4418,7 +4431,7 @@
                   <th>학년 / 소속 학급</th>
                   <th style="text-align: center;">완독 권수</th>
                   <th style="text-align: center;">북퀴즈 정답률</th>
-                  <th style="text-align: right; padding-right: 20px;">누적 독서 포인트</th>
+                  <th style="text-align: right; padding-right: 20px;">독서 포인트</th>
                   <th style="text-align: center;">수여 칭호 & 뱃지</th>
                   <th style="width: 125px; text-align: center;">포인트 관리</th>
                 </tr>
