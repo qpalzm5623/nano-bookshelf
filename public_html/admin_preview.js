@@ -7678,18 +7678,25 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
   var frameDoc = frameWin.document;
   // 화면에 쓰이는 스타일(외부 CSS + 인라인 <style>)을 그대로 재사용해 디자인을 동일하게 유지
   var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
-  // 기존 전역 숨김 규칙 무효화 및 인쇄 페이지 상하좌우 여백 20px 적용
-  var overrideCss = '@page { margin: 20px !important; size: auto; } @media print { @page { margin: 20px !important; size: auto; } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
-
-  frameDoc.open();
-  frameDoc.write('<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><base href="' + document.baseURI + '"><title>' + (title || '인쇄') + '</title>' +
-    headStyles + '<style>' + overrideCss + '</style></head><body class="' + (bodyClass || '') + '">' + innerHtml + '</body></html>');
-  frameDoc.close();
-
+  // 포트폴리오는 매 페이지 15mm 안전 여백을 확보하고 다른 인쇄물의 규격은 유지합니다.
+  var pageRule = bodyClass === 'is-printing-portfolio' ? 'margin: 15mm !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;';
+  var overrideCss = '@page { ' + pageRule + ' } @media print { @page { ' + pageRule + ' } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
   var removeFrame = function() { if (frame.parentNode) frame.parentNode.removeChild(frame); };
-  // 스타일시트/폰트 로딩이 끝난 뒤 인쇄해야 백지가 되지 않음
-  setTimeout(function() {
+  var printStarted = false;
+  var readinessTimer;
+  var startPrint = async function() {
+    if (printStarted) return;
+    printStarted = true;
+    clearTimeout(readinessTimer);
     try {
+      // 고정 700ms 대기 대신 글꼴과 표지 디코딩을 기다려 첫 인쇄의 누락을 방지합니다.
+      var assets = Array.prototype.map.call(frameDoc.images, function(img) {
+        return typeof img.decode === 'function' ? img.decode().catch(function() {}) : Promise.resolve();
+      });
+      if (frameDoc.fonts) assets.push(frameDoc.fonts.ready);
+      var assetTimer;
+      await Promise.race([Promise.all(assets), new Promise(function(resolve) { assetTimer = setTimeout(resolve, 10000); })]);
+      clearTimeout(assetTimer);
       frameWin.focus();
       frameWin.addEventListener('afterprint', removeFrame);
       frameWin.print();
@@ -7700,7 +7707,14 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
     }
     // afterprint를 지원하지 않는 브라우저 대비 안전 정리
     setTimeout(removeFrame, 120000);
-  }, 700);
+  };
+  frame.onload = startPrint;
+  // 응답하지 않는 외부 이미지가 있어도 인쇄 동작 자체가 멈추지는 않습니다.
+  readinessTimer = setTimeout(startPrint, 10000);
+  frameDoc.open();
+  frameDoc.write('<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><base href="' + document.baseURI + '"><title>' + (title || '인쇄') + '</title>' +
+    headStyles + '<style>' + overrideCss + '</style></head><body class="' + (bodyClass || '') + '">' + innerHtml + '</body></html>');
+  frameDoc.close();
 }
 
 // A4 포스터 브라우저 인쇄 실행
@@ -8364,6 +8378,7 @@ function renderPortfolioDocument(studentId, pfId) {
   }
 
   var period = pfMeta.period || '2026년 3분기 (7~9월)';
+  var periodHtml = escapePortfolioText(period).replace(/\d{4}-\d{2}-\d{2}/g, '<span class="pf-date">$&</span>');
   var issueDate = pfMeta.issueDate || '2026.09.08';
 
   var dateStr = (issueDate ? issueDate.replace(/[^0-9]/g, '') : '20261029').slice(0, 8);
@@ -8452,13 +8467,14 @@ function renderPortfolioDocument(studentId, pfId) {
     var coverUrl = rawCover || 'resources/images/book_default.svg';
     var pubText = b.pub || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '나노출판');
 
+    var coverAction = escapePortfolioText('openCoverModal(' + JSON.stringify(coverUrl) + ', ' + JSON.stringify(b.title || '') + ', ' + JSON.stringify(pubText || '') + ')');
     return (
-      '<div class="pf-cover-card-item" title="' + escapePortfolioText(b.title || '') + '">' +
-        '<div class="pf-cover-card-img-wrap" onclick="openCoverModal(\'' + coverUrl + '\', \'' + (b.title || '').replace(/'/g, "\\'") + '\', \'' + (pubText || '').replace(/'/g, "\\'") + '\')">' +
-          '<img src="' + coverUrl + '" class="pf-cover-card-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
-        '</div>' +
-        '<div class="pf-cover-card-title text-truncate">' + escapePortfolioText(b.title || '') + '</div>' +
-        '<div class="pf-cover-card-sub text-truncate">' + escapePortfolioText(pubText) + '</div>' +
+      '<div class="pf-cover-card-item">' +
+        '<button type="button" class="pf-cover-card-img-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
+          '<img src="' + escapePortfolioText(coverUrl) + '" class="pf-cover-card-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
+        '</button>' +
+        '<div class="pf-cover-card-title">' + escapePortfolioText(b.title || '') + '</div>' +
+        '<div class="pf-cover-card-sub">' + escapePortfolioText(pubText || '') + '</div>' +
       '</div>'
     );
   }).join('');
@@ -8492,39 +8508,30 @@ function renderPortfolioDocument(studentId, pfId) {
 
     var commentText = b.achievement || ('《' + (b.title || '완독 도서') + '》의 중심 맥락과 핵심 어휘를 바르게 습득하였으며, 북퀴즈를 성실히 완수했습니다.');
 
+    var coverAction = escapePortfolioText('openCoverModal(' + JSON.stringify(coverUrl) + ', ' + JSON.stringify(b.title || '') + ', ' + JSON.stringify(pubText || '') + ')');
     return (
-      '<div class="col-md-6 col-12 mb-2 pf-book-col">' +
-        '<div class="pf-book-row-card d-flex align-items-center p-2.5 rounded border" style="background:#ffffff; border-color:#e8e2d8 !important; box-shadow:0 1px 3px rgba(40,30,20,0.03); gap:10px; height:100%;">' +
-          '<div class="pf-book-card-top d-flex align-items-start" style="gap:8px; flex-shrink:0;">' +
-            '<div class="pf-book-meta-left text-center" style="min-width:44px; flex-shrink:0; border-right:1px dashed #e6ded3; padding-right:6px;">' +
-              '<span class="badge badge-soft-primary font-weight-bold" style="font-size:10.5px; padding:2px 5px; border-radius:4px;">No.' + (idx + 1) + '</span>' +
-              '<div class="text-muted mt-1" style="font-size:9.5px; font-weight:600; white-space:nowrap;">' + (b.date || '2026-08-01') + '</div>' +
+      '<article class="pf-book-col">' +
+        '<div class="pf-book-row-card">' +
+          '<div class="pf-book-card-top">' +
+            '<div class="pf-book-meta-left">' +
+              '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
+              '<span>' + escapePortfolioText(b.date || '완독일 미등록') + '</span>' +
             '</div>' +
-            '<div class="pf-book-cover-wrap" style="width:44px; height:62px; flex-shrink:0; border-radius:5px; overflow:hidden; box-shadow:0 2px 5px rgba(0,0,0,0.1); cursor:pointer;" onclick="openCoverModal(\'' + coverUrl + '\', \'' + (b.title || '').replace(/'/g, "\\'") + '\', \'' + (pubText || '').replace(/'/g, "\\'") + '\')">' +
-              '<img src="' + coverUrl + '" class="pf-book-cover-img" style="width:100%; height:100%; object-fit:cover; display:block;" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
-            '</div>' +
-            '<div class="pf-book-info-block" style="width:140px; min-width:120px; flex-shrink:0;">' +
-              '<div class="font-weight-bold text-truncate" style="font-size:12px; color:#1e242b; line-height:1.3;" title="' + escapePortfolioText(b.title || '') + '">' + escapePortfolioText(b.title || '') + '</div>' +
-              '<div class="text-muted text-truncate" style="font-size:10px; margin:2px 0 3px; line-height:1.2;">' + escapePortfolioText(pubText + (authorText ? (' · ' + authorText) : '')) + '</div>' +
-              '<div class="d-flex align-items-center">' +
-                '<span class="badge text-white" style="font-size:9px; font-weight:700; padding:2px 6px; background:#1f8a7e; border-radius:12px;">' +
-                  '<i class="fa-solid fa-check mr-1"></i>북퀴즈 ' + scoreText + ' 통과' +
-                '</span>' +
-              '</div>' +
+            '<button type="button" class="pf-book-cover-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
+              '<img src="' + escapePortfolioText(coverUrl) + '" class="pf-book-cover-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
+            '</button>' +
+            '<div class="pf-book-info-block">' +
+              '<div class="pf-book-title">' + escapePortfolioText(b.title || '') + '</div>' +
+              '<div class="pf-book-byline">' + escapePortfolioText((pubText || '') + (authorText ? (' · ' + authorText) : '')) + '</div>' +
+              '<span class="pf-book-score">북퀴즈 ' + escapePortfolioText(scoreText) + '</span>' +
             '</div>' +
           '</div>' +
-          '<div class="pf-book-achievement-block flex-grow-1" style="min-width:150px; border-left:1px dashed #e6ded3; padding-left:10px;">' +
-            '<div class="d-flex align-items-center mb-1">' +
-              '<span class="font-weight-bold" style="font-size:10.5px; color:#1f8a7e;">' +
-                '<i class="fa-solid fa-award mr-1"></i>핵심 문맥 파악 및 성취 내역' +
-              '</span>' +
-            '</div>' +
-            '<div style="font-size:11px; color:#3d342d; line-height:1.45; word-break:keep-all;">' +
-              escapePortfolioText(commentText) +
-            '</div>' +
+          '<div class="pf-book-achievement-block">' +
+            '<div class="pf-book-achievement-title"><i class="fa-solid fa-award mr-1"></i>핵심 문맥 파악 및 성취 내역</div>' +
+            '<div class="pf-book-achievement-text">' + escapePortfolioText(commentText) + '</div>' +
           '</div>' +
         '</div>' +
-      '</div>'
+      '</article>'
     );
   }).join('');
 
@@ -8539,21 +8546,21 @@ function renderPortfolioDocument(studentId, pfId) {
         '<div class="d-flex justify-content-between align-items-start mb-2 pf-header-top">' +
           '<div>' +
             '<div style="font-size:11px; font-weight:800; letter-spacing:1px; color:#1f8a7e; text-transform:uppercase;">나노의 책장 (Nano Bookshelf)</div>' +
-            '<h3 class="font-weight-bold mb-1 pf-header-title" style="color:#1e242b; font-size:22px; letter-spacing:-0.5px;">' +
+            '<h3 class="font-weight-bold mb-1 pf-header-title">' +
               '<i class="fa-solid fa-book-bookmark text-success mr-2" style="color:#1f8a7e !important;"></i>나노의 책장 독서 성장 포트폴리오' +
             '</h3>' +
             '<p class="text-muted mb-0" style="font-size:12px;">체계적인 북퀴즈 응시 이력과 다면적 독서 역량을 입체적으로 분석한 공식 성장 리포트입니다.</p>' +
           '</div>' +
           '<div class="text-right pf-header-meta">' +
-            '<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-1 d-inline-block" style="font-size:11px; background:#FEE500; color:#3C1E1E;">발급번호 ' + reportId + '</span>' +
-            '<div class="text-muted" style="font-size:11.5px;">발급일: ' + issueDate + '</div>' +
+            '<span class="pf-report-id mb-1">발급번호 ' + reportId + '</span>' +
+            '<div class="text-muted" style="font-size:11.5px;">발급일: ' + escapePortfolioText(issueDate) + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="pf-student-info-grid mt-2">' +
-          '<div class="pf-student-info-cell"><span class="pf-info-label">학생명</span><strong class="pf-info-val">' + studentName + '</strong></div>' +
+          '<div class="pf-student-info-cell"><span class="pf-info-label">학생명</span><strong class="pf-info-val">' + escapePortfolioText(studentName) + '</strong></div>' +
           '<div class="pf-student-info-cell"><span class="pf-info-label">학교 / 학년</span><strong class="pf-info-val">' + escapePortfolioText(schoolGrade) + '</strong></div>' +
           '<div class="pf-student-info-cell"><span class="pf-info-label">소속 / 지도교사</span><strong class="pf-info-val">' + escapePortfolioText(classGroup) + ' · ' + escapePortfolioText(teacher) + '</strong></div>' +
-          '<div class="pf-student-info-cell"><span class="pf-info-label">분석 대상 기간</span><strong class="pf-info-val pf-info-highlight">' + period + '</strong></div>' +
+          '<div class="pf-student-info-cell"><span class="pf-info-label">분석 대상 기간</span><strong class="pf-info-val pf-info-highlight">' + periodHtml + '</strong></div>' +
         '</div>' +
       '</div>' +
 
@@ -8570,12 +8577,12 @@ function renderPortfolioDocument(studentId, pfId) {
 
       '<!-- ③ 📖 나노의 독서 이야기 (4대 핵심 역량 인포그래픽 카드) -->' +
       '<div class="mb-3">' +
-        '<div class="p-3 rounded" style="background:#f4faf8; border:1.5px solid #b2ded9; border-radius:12px; box-shadow:0 2px 6px rgba(31,138,126,0.04);">' +
-          '<div class="d-flex align-items-center justify-content-between mb-1 pb-1" style="border-bottom:1px dashed #b2ded9;">' +
-            '<h5 class="font-weight-bold mb-0" style="color:#124e47; font-size:13.5px; display:flex; align-items:center; gap:6px;">' +
-              '<i class="fa-solid fa-book-open-reader" style="color:#1f8a7e;"></i>📖 나노의 독서 이야기 (4대 독서 핵심 역량 분석)' +
+        '<div class="pf-panel">' +
+          '<div class="pf-panel-head">' +
+            '<h5 class="pf-section-title">' +
+              '<i class="fa-solid fa-book-open-reader" style="color:#1f8a7e;"></i>나노의 독서 이야기 · 핵심 역량 분석' +
             '</h5>' +
-            '<span class="badge font-weight-bold" style="font-size:10.5px; padding:3px 8px; border-radius:10px; color:#124e47; background:#e0f2f1;">AI 다면 분석 리포트</span>' +
+            '<span class="pf-panel-badge">AI 다면 분석 리포트</span>' +
           '</div>' +
           insightGridHtml +
         '</div>' +
@@ -8626,11 +8633,11 @@ function renderPortfolioDocument(studentId, pfId) {
       '<!-- ⑤ 책 커버 갤러리 (기간 내 완독 도서 - 가로 책장 그리드) -->' +
       (books.length > 0 ? (
         '<div class="mb-2">' +
-          '<div class="d-flex justify-content-between align-items-center mb-1.5">' +
+          '<div class="pf-collection-head">' +
             '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-bookmark"></i>완독 도서 책 커버 컬렉션 (' + bookCount + '권)</div>' +
-            '<small class="text-muted" style="font-size:10.5px;">표지 클릭 시 확대</small>' +
+            '<small class="text-muted pf-print-hide">표지를 누르면 확대됩니다</small>' +
           '</div>' +
-          '<div class="p-2.5 rounded border" style="background:#fcfbf8; border-color:#e8e2d8 !important;">' +
+          '<div class="pf-collection">' +
             '<div class="pf-cover-grid-wrap">' +
               coverGridHtml +
             '</div>' +
@@ -8649,35 +8656,35 @@ function renderPortfolioDocument(studentId, pfId) {
     '<!-- ============================================================== -->' +
     '<div class="pf-page2-section">' +
       '<!-- 2페이지 미니 헤더 -->' +
-      '<div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">' +
+      '<div class="pf-detail-header">' +
         '<div style="font-size:12px; font-weight:700; color:#1f8a7e;">' +
           '<i class="fa-solid fa-book-open mr-1"></i>나노의 책장 독서 성장 포트폴리오 <span class="text-muted font-weight-normal">| 도서별 세부 성취 및 지도교사 총평</span>' +
         '</div>' +
-        '<div style="font-size:11px; color:#7d756d;">학생명: <strong class="text-dark">' + studentName + '</strong> (' + escapePortfolioText(schoolGrade) + ') · 발급번호: ' + reportId + '</div>' +
+        '<div style="font-size:11px; color:#7d756d;">학생명: <strong class="text-dark">' + escapePortfolioText(studentName) + '</strong> (' + escapePortfolioText(schoolGrade) + ') · 발급번호: ' + reportId + '</div>' +
       '</div>' +
 
       '<!-- ⑥ 북퀴즈 응시 및 성취도 이력 -->' +
       '<div class="mb-3">' +
         '<div class="pf-section-title mb-2"><i class="fa-solid fa-award"></i>도서별 북퀴즈 성취 및 심층 분석 이력</div>' +
-        '<div class="row">' +
-          booksGridHtml +
+        '<div class="pf-books-grid-row">' +
+          (booksGridHtml || '<div class="pf-empty">이 기간에 등록된 완독 도서가 없습니다.</div>') +
         '</div>' +
       '</div>' +
 
       '<!-- ⑦ 지도교사 심층 총평 및 공식 서명 날인 -->' +
       '<div class="mb-3">' +
-        '<div class="p-3 rounded" style="background:#edf7f6; border:1.5px solid #b2ded9; border-radius:10px;">' +
-          '<div class="d-flex align-items-center justify-content-between mb-2 pb-1" style="border-bottom:1px dashed #b2ded9;">' +
-            '<strong style="font-size:13.5px; color:#124e47;"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>담당 지도교사 심층 총평</strong>' +
-            '<span class="badge" style="background:#ffffff; color:#124e47; border:1px solid #b2ded9; font-size:11px; padding:3px 8px;">담당 교사: ' + teacher + '</span>' +
+        '<div class="pf-panel pf-teacher-comment-box">' +
+          '<div class="pf-panel-head">' +
+            '<strong class="pf-section-title"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>담당 지도교사 심층 총평</strong>' +
+            '<span class="pf-panel-badge">담당 교사: ' + escapePortfolioText(teacher) + '</span>' +
           '</div>' +
-          '<div id="pfTeacherNoteDisplay" style="font-size:12px; line-height:1.75; color:#1e242b; word-break:keep-all;">' +
+          '<div id="pfTeacherNoteDisplay">' +
             escapePortfolioText(pfData.teacherNote || '') +
           '</div>' +
-          '<div class="mt-3 pt-2 border-top d-flex justify-content-end align-items-center" style="border-color:#cbe6e2 !important; gap:12px;">' +
+          '<div class="pf-signature mt-3 pt-2 border-top">' +
             '<span style="font-size:11px; color:#6b7280;">나노의 책장 독서 교육 연구소 인증 지도교사</span>' +
             '<div style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#124e47; font-size:12.5px;">' +
-              '<span>' + teacher + '</span>' +
+              '<span>' + escapePortfolioText(teacher) + '</span>' +
               '<span style="display:inline-block; border:1.5px solid #e11d48; color:#e11d48; border-radius:50%; width:24px; height:24px; line-height:21px; text-align:center; font-size:10px; font-weight:900; transform:rotate(-10deg);">인</span>' +
             '</div>' +
           '</div>' +
@@ -8685,7 +8692,7 @@ function renderPortfolioDocument(studentId, pfId) {
       '</div>' +
 
       '<!-- 리포트 푸터 & 공식 서명 날인 -->' +
-      '<div class="pt-2 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted" style="font-size:11px;">' +
+      '<div class="pf-footer text-muted">' +
         '<div><span class="font-weight-bold" style="color:#1f8a7e;">나노의 책장</span> · 독서 교육 연구소 공식 발급 인증서</div>' +
         '<div>아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +
       '</div>' +

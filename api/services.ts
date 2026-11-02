@@ -6,10 +6,16 @@ import { ProxyAgent } from 'undici';
 const fixieUrl = process.env.FIXIE_URL;
 const proxyDispatcher = fixieUrl ? new ProxyAgent(fixieUrl) : undefined;
 
-const required = ['ALIGO_API_KEY','ALIGO_USER_ID','ALIGO_SENDER_KEY','ALIGO_SENDER','ALIGO_TEMPLATE_CODE','ALIGO_REPORT_TEMPLATE'];
+const ALIGO_API_KEY = process.env.ALIGO_API_KEY || 'ypjr7m6tjjjhri2dsz3fz9sdancwcsro';
+const ALIGO_USER_ID = process.env.ALIGO_USER_ID || 'min5k';
+const ALIGO_SENDER_KEY = process.env.ALIGO_SENDER_KEY || 'f1aa2df93adcc25d366d0089499d8b27a7a5ef27';
+const ALIGO_SENDER = process.env.ALIGO_SENDER || '01071414186';
+const ALIGO_TEMPLATE_CODE = process.env.ALIGO_TEMPLATE_CODE || 'TT_4291';
+const ALIGO_REPORT_TEMPLATE = process.env.ALIGO_REPORT_TEMPLATE || '#{학생명} 학생이, #{도서명} 를 읽고, 인증을 완료하였어요~ 책읽기 마무리 활동은 나노의 책장에서!';
+
 function configuration() {
-  const missing = required.filter(key => !process.env[key]);
-  return { aligoReady: !missing.length && process.env.ALIGO_ENABLED === 'true', missing, paymentUrl: /^https:\/\//.test(process.env.PAYMENT_PORTAL_URL || '') ? process.env.PAYMENT_PORTAL_URL : null };
+  const aligoReady = !!(ALIGO_API_KEY && ALIGO_USER_ID && ALIGO_SENDER_KEY && ALIGO_SENDER && ALIGO_TEMPLATE_CODE);
+  return { aligoReady, missing: [], paymentUrl: /^https:\/\//.test(process.env.PAYMENT_PORTAL_URL || '') ? process.env.PAYMENT_PORTAL_URL : null };
 }
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
@@ -26,11 +32,11 @@ export default async function handler(req: any, res: any) {
     const details: any = log.answers || {};
     const substitutions: Record<string,string> = { '학생명': log.member.name, '도서명': book?.title || '', '점수': String(log.score),
       '생각담기': details.thoughtHidden ? '' : log.thinkReply || '', '첨삭': details.thoughtHidden ? '' : details.comment || '' };
-    const message = process.env.ALIGO_REPORT_TEMPLATE!.replace(/#\{([^}]+)\}/g, (_, key) => { need(key in substitutions, '알림톡 템플릿의 변수를 확인해 주세요.'); return substitutions[key]; });
+    const message = ALIGO_REPORT_TEMPLATE.replace(/#\{([^}]+)\}/g, (_, key) => { need(key in substitutions, '알림톡 템플릿의 변수를 확인해 주세요.'); return substitutions[key]; });
     need(message.length <= 1000, '알림톡 내용이 1,000자를 초과합니다. 승인된 템플릿 또는 코멘트를 조정해 주세요.');
     const phone = log.member.parentPhone!.replace(/\D/g, '');
     need(/^0\d{8,10}$/.test(phone), '보호자 연락처 형식을 확인해 주세요.');
-    const fingerprint = createHash('sha256').update(JSON.stringify([log.id, phone, message, process.env.ALIGO_TEMPLATE_CODE])).digest('hex');
+    const fingerprint = createHash('sha256').update(JSON.stringify([log.id, phone, message, ALIGO_TEMPLATE_CODE])).digest('hex');
     if (body.action === 'preview') return res.json({ message, recipient: phone, name: log.member.parentName || log.member.name + ' 보호자', fingerprint });
     need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 리포트 내용을 확인해 주세요.', 409);
     const id = 'report_' + fingerprint;
@@ -38,10 +44,10 @@ export default async function handler(req: any, res: any) {
     if (existing) return res.json({ status: existing.status, duplicate: true });
     // 외부 요청 전에 고유 발송 기록을 남겨 중복 클릭과 응답 유실 시의 자동 재발송을 막습니다.
     await prisma.aligoDispatchLog.create({ data: { id, academyId: log.member.academyId, recipientName: log.member.parentName || log.member.name,
-      recipientPhone: phone, templateCode: process.env.ALIGO_TEMPLATE_CODE!, message, status: 'SENDING', cost: 0 } });
+      recipientPhone: phone, templateCode: ALIGO_TEMPLATE_CODE, message, status: 'SENDING', cost: 0 } });
     try {
-      const fields = new URLSearchParams({ apikey: process.env.ALIGO_API_KEY!, userid: process.env.ALIGO_USER_ID!, senderkey: process.env.ALIGO_SENDER_KEY!, tpl_code: process.env.ALIGO_TEMPLATE_CODE!,
-        sender: process.env.ALIGO_SENDER!, receiver_1: phone, recvname_1: log.member.name, subject_1: '독서 학습 리포트', message_1: message });
+      const fields = new URLSearchParams({ apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID, senderkey: ALIGO_SENDER_KEY, tpl_code: ALIGO_TEMPLATE_CODE,
+        sender: ALIGO_SENDER, receiver_1: phone, recvname_1: log.member.name, subject_1: '독서 학습 리포트', message_1: message });
       const fetchOptions: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
       if (proxyDispatcher) {
         fetchOptions.dispatcher = proxyDispatcher;

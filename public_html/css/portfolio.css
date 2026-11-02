@@ -1,0 +1,142 @@
+/* 포트폴리오 화면과 인쇄가 같은 글꼴·컴포넌트 규칙을 사용합니다. */
+#portfolioPrintDoc {
+  --pf-ink: #243b38;
+  --pf-muted: #657571;
+  --pf-accent: #187e73;
+  --pf-line: #dce6e2;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--pf-ink);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+#portfolioPrintDoc *, #portfolioPrintDoc *::before, #portfolioPrintDoc *::after { box-sizing: border-box; }
+#portfolioPrintDoc :where(h3, h5, p, button) { font-family: inherit; }
+#portfolioPrintDoc .text-muted { color: var(--pf-muted) !important; }
+#portfolioPrintDoc .pf-header-top { gap: 16px; }
+#portfolioPrintDoc .pf-header-top > div { min-width: 0; }
+#portfolioPrintDoc .pf-header-title { font-size: 24px; line-height: 1.4; letter-spacing: -0.6px; }
+#portfolioPrintDoc .pf-header-meta { flex-shrink: 0; font-size: 12px; }
+#portfolioPrintDoc .pf-report-id { display: inline-block; padding: 4px 8px; background: #eaf5f1; color: #17675f; border-radius: 5px; font-weight: 700; }
+#portfolioPrintDoc .pf-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; line-height: 1.5; font-weight: 700; color: var(--pf-ink); }
+#portfolioPrintDoc .pf-section-title i { color: var(--pf-accent); flex-shrink: 0; }
+#portfolioPrintDoc .pf-student-info-grid { display: grid; grid-template-columns: 0.8fr 1fr 1fr 1.3fr; gap: 8px; padding: 12px; border: 1px solid var(--pf-line); border-radius: 10px; background: #f5f8f6; }
+#portfolioPrintDoc .pf-student-info-cell { min-width: 0; padding: 9px 10px; border: 1px solid var(--pf-line); border-radius: 6px; background: #fff; }
+#portfolioPrintDoc .pf-info-label { display: block; margin-bottom: 4px; color: var(--pf-muted); font-size: 12px; }
+#portfolioPrintDoc .pf-info-val { display: block; font-size: 14px; line-height: 1.5; }
+#portfolioPrintDoc .pf-info-highlight { color: var(--pf-accent); }
+#portfolioPrintDoc .pf-date { display: inline-block; white-space: nowrap; }
+#portfolioPrintDoc .pf-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+#portfolioPrintDoc .pf-stat-box { padding: 16px 10px; text-align: center; border: 1px solid var(--pf-line); border-radius: 10px; background: #f8faf8; }
+#portfolioPrintDoc .pf-stat-label, #portfolioPrintDoc .pf-stat-sub { color: var(--pf-muted); font-size: 12px; }
+#portfolioPrintDoc .pf-stat-value { margin: 4px 0; font-size: 28px; font-weight: 800; line-height: 1.3; color: var(--pf-accent); font-variant-numeric: tabular-nums; }
+#portfolioPrintDoc .pf-stat-unit { margin-left: 3px; font-size: 14px; font-weight: 600; }
+#portfolioPrintDoc .pf-panel { padding: 16px; border: 1px solid #c8e2db; border-radius: 10px; background: #f3f9f6; }
+#portfolioPrintDoc .pf-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid #d5e6df; }
+#portfolioPrintDoc .pf-panel-head .pf-section-title { margin: 0; font-size: 15px; }
+#portfolioPrintDoc .pf-panel-badge { padding: 3px 8px; border-radius: 5px; color: #17675f; background: #e2f0e9; font-size: 11px; font-weight: 600; }
+#portfolioPrintDoc .pf-insight-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+#portfolioPrintDoc .pf-insight-card { min-width: 0; padding: 14px; border: 1px solid var(--pf-line); border-left: 3px solid #429b8a; border-radius: 7px; background: #fff; }
+#portfolioPrintDoc .pf-insight-card-head { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: #235c53; }
+#portfolioPrintDoc .pf-insight-card-head i { flex-shrink: 0; }
+#portfolioPrintDoc .pf-insight-card-body { font-size: 14px; line-height: 1.75; white-space: pre-line; }
+#portfolioPrintDoc .pf-preference-wrap { padding: 18px; border: 1px solid var(--pf-line); border-radius: 10px; background: #fafbf8; }
+#portfolioPrintDoc .pf-preference-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 20px; align-items: center; margin: 0; }
+#portfolioPrintDoc .pf-preference-chart-col, #portfolioPrintDoc .pf-preference-detail-col { width: auto; max-width: none; min-width: 0; padding: 0 !important; margin: 0 !important; }
+#portfolioPrintDoc .pf-preference-chart-col svg { max-width: 100%; }
+#portfolioPrintDoc .pf-tag-badge { display: inline-block; padding: 3px 8px; margin: 0 4px 6px 0; border: 1px solid var(--pf-line); border-radius: 16px; background: #fff; color: #435b55; font-size: 12px; }
+#portfolioPrintDoc .pf-collection-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+#portfolioPrintDoc .pf-cover-grid-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; padding: 16px; border: 1px solid var(--pf-line); border-radius: 10px; background: #fafbf8; }
+#portfolioPrintDoc .pf-cover-card-item { min-width: 0; text-align: center; }
+#portfolioPrintDoc .pf-cover-card-img-wrap, #portfolioPrintDoc .pf-book-cover-wrap { display: block; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+#portfolioPrintDoc .pf-cover-card-img-wrap { width: 100%; max-width: 100px; height: 140px; margin: 0 auto 10px; }
+#portfolioPrintDoc .pf-cover-card-img, #portfolioPrintDoc .pf-book-cover-img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 4px; margin: 0; }
+#portfolioPrintDoc .pf-cover-card-title { font-size: 13px; font-weight: 700; line-height: 1.5; }
+#portfolioPrintDoc .pf-cover-card-sub { margin-top: 3px; font-size: 12px; color: var(--pf-muted); }
+#portfolioPrintDoc button:focus-visible { outline: 3px solid var(--pf-accent); outline-offset: 4px; }
+#portfolioPrintDoc .pf-page-break { margin: 32px 0; border-top: 1px solid var(--pf-line); }
+#portfolioPrintDoc .pf-detail-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--pf-line); font-size: 12px; }
+/* 한 행에 한 권. 왼쪽 정보와 오른쪽 분석문 모두 내용에 맞춰 늘어납니다. */
+#portfolioPrintDoc .pf-books-grid-row { display: block; margin: 0; }
+#portfolioPrintDoc .pf-book-col { width: 100%; min-width: 0; margin-bottom: 12px; }
+#portfolioPrintDoc .pf-book-row-card { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.45fr); align-items: start; gap: 18px; padding: 16px; border: 1px solid var(--pf-line); border-radius: 8px; background: #fff; }
+#portfolioPrintDoc .pf-book-card-top { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px 12px; min-width: 0; }
+#portfolioPrintDoc .pf-book-meta-left { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--pf-muted); font-size: 12px; }
+#portfolioPrintDoc .pf-book-number { padding: 1px 6px; border-radius: 4px; background: #eaf5f1; color: #17675f; font-weight: 700; }
+#portfolioPrintDoc .pf-book-cover-wrap { width: 56px; height: 78px; }
+#portfolioPrintDoc .pf-book-info-block { min-width: 0; }
+#portfolioPrintDoc .pf-book-title { font-size: 15px; line-height: 1.5; font-weight: 700; }
+#portfolioPrintDoc .pf-book-byline { margin: 4px 0 6px; color: var(--pf-muted); font-size: 12px; }
+#portfolioPrintDoc .pf-book-score { display: inline-block; padding: 2px 7px; border-radius: 5px; background: #eaf5f1; color: #17675f; font-size: 12px; font-weight: 700; }
+#portfolioPrintDoc .pf-book-achievement-block { min-width: 0; padding-left: 18px; border-left: 1px solid var(--pf-line); }
+#portfolioPrintDoc .pf-book-achievement-title { margin-bottom: 6px; color: #17675f; font-size: 13px; font-weight: 700; }
+#portfolioPrintDoc .pf-book-achievement-text { font-size: 14px; line-height: 1.75; white-space: pre-line; }
+#portfolioPrintDoc #pfTeacherNoteDisplay { font-size: 14px; line-height: 1.85; white-space: pre-line; }
+#portfolioPrintDoc .pf-signature { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; padding-right: 4px; }
+#portfolioPrintDoc .pf-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; padding-top: 12px; border-top: 1px solid var(--pf-line); font-size: 11px; }
+#portfolioPrintDoc .pf-empty { padding: 24px; color: var(--pf-muted); text-align: center; border: 1px dashed var(--pf-line); border-radius: 8px; }
+
+/* 실제 문서 폭 기준으로 반응하므로 A4 화면과 휴대폰 목업 모두 적용됩니다. */
+@media screen {
+  #portfolioPrintDoc { container-type: inline-size; container-name: portfolio; }
+  #portfolioViewportContainer.portfolio-view-mobile .portfolio-device-frame { max-width: 100%; }
+  @container portfolio (max-width: 620px) {
+    #portfolioPrintDoc .pf-header-top { flex-direction: column; }
+    #portfolioPrintDoc .pf-header-title { font-size: 21px; }
+    #portfolioPrintDoc .pf-header-meta { text-align: left !important; }
+    #portfolioPrintDoc .pf-student-info-grid, #portfolioPrintDoc .pf-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #portfolioPrintDoc .pf-insight-card-grid { grid-template-columns: minmax(0, 1fr); }
+    #portfolioPrintDoc .pf-cover-grid-wrap { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #portfolioPrintDoc .pf-book-row-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    #portfolioPrintDoc .pf-book-achievement-block { border-left: 0; border-top: 1px solid var(--pf-line); padding: 12px 0 0; }
+  }
+  @container portfolio (max-width: 380px) {
+    #portfolioPrintDoc .pf-preference-row { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    #portfolioPrintDoc .pf-cover-grid-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; }
+    #portfolioPrintDoc .pf-student-info-grid { padding: 8px; }
+    #portfolioPrintDoc .pf-panel { padding: 12px; }
+  }
+  @media (max-width: 600px) {
+    #portfolioViewportContainer.portfolio-view-a4 .portfolio-document-paper { padding: 24px 16px; }
+  }
+}
+
+/* 페이지 여백은 격리 인쇄 문서의 @page에서 설정해 다른 보고서에 영향이 없습니다. */
+@media print {
+  body.is-printing-portfolio { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  body.is-printing-portfolio #portfolioPrintDoc { width: 100%; max-width: none; margin: 0; padding: 0; font-size: 10pt; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #portfolioPrintDoc .pf-header-title { font-size: 18pt; }
+  #portfolioPrintDoc .pf-header-meta, #portfolioPrintDoc .pf-info-label, #portfolioPrintDoc .pf-stat-label, #portfolioPrintDoc .pf-stat-sub { font-size: 8.5pt; }
+  #portfolioPrintDoc .pf-info-val { font-size: 10pt; }
+  #portfolioPrintDoc .pf-section-title { font-size: 12pt; break-after: avoid-page; }
+  #portfolioPrintDoc .pf-panel-head .pf-section-title { font-size: 11pt; }
+  #portfolioPrintDoc .pf-page1-section > .mb-3 { margin-bottom: 10px !important; }
+  #portfolioPrintDoc .pf-header-section { padding-bottom: 10px !important; }
+  #portfolioPrintDoc .pf-student-info-grid { padding: 6px; gap: 6px; }
+  #portfolioPrintDoc .pf-student-info-cell { padding: 4px 8px; }
+  #portfolioPrintDoc .pf-stat-box { padding: 8px; }
+  #portfolioPrintDoc .pf-stat-value { font-size: 19pt; }
+  #portfolioPrintDoc .pf-panel-head { padding-bottom: 6px; margin-bottom: 8px; }
+  #portfolioPrintDoc .pf-insight-card { padding: 8px; }
+  #portfolioPrintDoc .pf-insight-card-head, #portfolioPrintDoc .pf-book-achievement-title { font-size: 9pt; }
+  #portfolioPrintDoc .pf-insight-card-body { font-size: 9.5pt; line-height: 1.55; }
+  #portfolioPrintDoc .pf-book-achievement-text, #portfolioPrintDoc #pfTeacherNoteDisplay { font-size: 10pt; line-height: 1.6; }
+  #portfolioPrintDoc .pf-panel { padding: 10px; }
+  #portfolioPrintDoc .pf-preference-wrap { padding: 8px; }
+  #portfolioPrintDoc .pf-preference-chart-col svg { width: 110px !important; height: 110px !important; }
+  #portfolioPrintDoc .pf-cover-grid-wrap { padding: 8px; gap: 12px; }
+  #portfolioPrintDoc .pf-cover-card-img-wrap { max-width: 21mm; height: 28mm; }
+  #portfolioPrintDoc .pf-cover-card-title { font-size: 9pt; }
+  #portfolioPrintDoc .pf-cover-card-sub, #portfolioPrintDoc .pf-book-meta-left, #portfolioPrintDoc .pf-book-byline, #portfolioPrintDoc .pf-book-score { font-size: 8.5pt; }
+  #portfolioPrintDoc .pf-book-title { font-size: 11pt; }
+  #portfolioPrintDoc .pf-book-row-card { padding: 10px; gap: 14px; }
+  #portfolioPrintDoc .pf-book-achievement-block { padding-left: 14px; }
+  #portfolioPrintDoc .pf-book-col { margin-bottom: 10px; }
+  #portfolioPrintDoc .pf-page-break { display: none; }
+  #portfolioPrintDoc .pf-page2-section { break-before: page; }
+  #portfolioPrintDoc .pf-detail-header, #portfolioPrintDoc .pf-collection-head, #portfolioPrintDoc .pf-panel-head { break-after: avoid-page; }
+  #portfolioPrintDoc .pf-header-section, #portfolioPrintDoc .pf-stat-grid, #portfolioPrintDoc .pf-insight-card, #portfolioPrintDoc .pf-preference-wrap, #portfolioPrintDoc .pf-cover-card-item, #portfolioPrintDoc .pf-book-col, #portfolioPrintDoc .pf-teacher-comment-box, #portfolioPrintDoc .pf-footer { break-inside: avoid-page; }
+  #portfolioPrintDoc p, #portfolioPrintDoc .pf-book-achievement-text { orphans: 3; widows: 3; }
+  #portfolioPrintDoc .pf-print-hide { display: none !important; }
+}
