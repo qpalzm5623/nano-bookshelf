@@ -243,9 +243,10 @@ function renderRankings() {
   const acadFilter = document.getElementById("rankAcademyFilter")?.value || "ALL";
 
   const filtered = activeRankings.filter(s => {
+    const hasPoints = (Number(s.points) || 0) > 0;
     const matchAcad = acadFilter === "ALL" || s.academy === acadFilter;
     const matchQ = !searchQ || s.name.toLowerCase().includes(searchQ) || s.id.toLowerCase().includes(searchQ);
-    return matchAcad && matchQ;
+    return hasPoints && matchAcad && matchQ;
   });
 
   // 상단 TOP 3 명예의 전당 카드 업데이트 (학생 기준)

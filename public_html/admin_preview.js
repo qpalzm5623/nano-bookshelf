@@ -7321,18 +7321,21 @@ function buildAdminRankingRows() {
       quizRateStr = '100.0%';
     }
 
-    rows.push({
-      studentId: stdId,
-      name: sName,
-      loginId: std.username || std.id,
-      charId: getStudentCharacterId(std),
-      stage: std.characterStage || 1,
-      grade: (std.grade || '미등록') + ' (' + (std.classGroup || '미지정') + ')',
-      classKey: std.classGroup || '미지정',
-      books: books,
-      quizRate: quizRateStr,
-      points: finalPoints
-    });
+    // 독서 포인트가 0P인 학생은 랭킹 집계에서 제외
+    if (finalPoints > 0) {
+      rows.push({
+        studentId: stdId,
+        name: sName,
+        loginId: std.username || std.id,
+        charId: getStudentCharacterId(std),
+        stage: std.characterStage || 1,
+        grade: (std.grade || '미등록') + ' (' + (std.classGroup || '미지정') + ')',
+        classKey: std.classGroup || '미지정',
+        books: books,
+        quizRate: quizRateStr,
+        points: finalPoints
+      });
+    }
   });
 
   // 포인트 순 -> 완독 권수 순 -> 이름 순 정렬
@@ -7355,6 +7358,10 @@ function getFilteredAdminRankingList() {
   if (pSel && pSel.value) adminRankPeriod = pSel.value;
 
   var list = buildAdminRankingRows();
+  // 독서 포인트가 0P인 학생은 리스트에 뜨지 않도록 제외
+  list = list.filter(function(item) {
+    return Number(item.points) > 0;
+  });
   if (adminRankClass !== 'all') {
     list = list.filter(function(item) {
       return item.classKey === adminRankClass;
@@ -7400,7 +7407,7 @@ function escapeRankingText(value) {
 }
 
 function renderAdminRankingPodium(list) {
-  if (!list.length) return '<p class="ranking-empty">아직 등록된 랭킹이 없습니다.</p>';
+  if (!list.length) return '<div class="ranking-empty py-4 text-center text-muted" style="width:100%;font-size:13.5px;font-weight:700;"><i class="fa-solid fa-trophy mr-1 text-warning"></i>해당 기간에 획득한 독서 포인트(1P 이상)가 있는 원생이 없습니다.</div>';
   return list.slice(0, 3).map(function(student, index) {
     var rank = index + 1;
     return '<article class="rank-champion-card rank-' + rank + '" aria-label="' + rank + '위 ' + escapeRankingText(student.name) + '">' +
@@ -7489,7 +7496,7 @@ function renderAdminRankingView(skipCharacterRefresh) {
   if (tbody) {
     tbody.innerHTML = '';
     if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">등록된 랭킹 데이터가 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted font-weight-bold" style="font-size:13px;"><i class="fa-solid fa-circle-info mr-1"></i>해당 기간에 독서 포인트(1P 이상)를 획득한 원생이 없습니다.</td></tr>';
     } else {
       list.forEach(function(r) {
         var tr = document.createElement('tr');
