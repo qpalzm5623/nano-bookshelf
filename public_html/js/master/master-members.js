@@ -110,21 +110,24 @@ const MEMBER_PAGE_SIZE = 30;
 let lastFilteredMembers = [];
 let memberDateSortOrder = "none"; // 'none' | 'desc' | 'asc'
 
-// 등록일 오름차순/내림차순 토글 정렬
+// 등록일 3단계 토글 정렬 (none -> desc 최신순 -> asc 과거순 -> none 기본 가나다순)
 function toggleMemberDateSort() {
-  if (memberDateSortOrder === "none" || memberDateSortOrder === "asc") {
+  if (memberDateSortOrder === "none") {
     memberDateSortOrder = "desc";
-  } else {
+  } else if (memberDateSortOrder === "desc") {
     memberDateSortOrder = "asc";
+  } else {
+    memberDateSortOrder = "none";
   }
   updateMemberDateSortUI();
   filterMemberList();
 }
 
-// 등록일 정렬 화살표 버튼 UI 동기화
+// 등록일 정렬 화살표 버튼 및 헤더 셀 UI 동기화
 function updateMemberDateSortUI() {
   const icon = document.getElementById("memberDateSortIcon");
   const btn = document.getElementById("memberDateSortBtn");
+  const th = document.getElementById("memberDateSortTh");
   if (!icon || !btn) return;
 
   if (memberDateSortOrder === "desc") {
@@ -132,16 +135,28 @@ function updateMemberDateSortUI() {
     btn.style.borderColor = "#3b82f6";
     btn.style.backgroundColor = "#eff6ff";
     btn.title = "등록일 최신순(내림차순) 정렬 중 - 클릭 시 과거순(오름차순) 변경";
+    if (th) {
+      th.style.backgroundColor = "#f0f7ff";
+      th.title = "등록일 최신순(내림차순) 정렬 중 - 클릭 시 과거순(오름차순)으로 변경";
+    }
   } else if (memberDateSortOrder === "asc") {
     icon.className = "fa-solid fa-arrow-up-short-wide text-primary";
     btn.style.borderColor = "#3b82f6";
     btn.style.backgroundColor = "#eff6ff";
-    btn.title = "등록일 과거순(오름차순) 정렬 중 - 클릭 시 최신순(내림차순) 변경";
+    btn.title = "등록일 과거순(오름차순) 정렬 중 - 클릭 시 기본 가나다순 정렬로 복원";
+    if (th) {
+      th.style.backgroundColor = "#f0f7ff";
+      th.title = "등록일 과거순(오름차순) 정렬 중 - 클릭 시 기본순(소속 학원 가나다순)으로 복원";
+    }
   } else {
     icon.className = "fa-solid fa-sort text-muted";
     btn.style.borderColor = "#d1d5db";
     btn.style.backgroundColor = "#ffffff";
-    btn.title = "등록일 정렬 (클릭 시 최신순/과거순 변경)";
+    btn.title = "등록일 정렬 (클릭 시 최신순/과거순/기본순 순환)";
+    if (th) {
+      th.style.backgroundColor = "";
+      th.title = "등록일 정렬 (클릭 시 최신순/과거순 변경)";
+    }
   }
 }
 
@@ -498,20 +513,30 @@ function goToMemberPage(page) {
 function filterMemberList() {
   memberCurrentPage = 1; // 필터 시 1페이지로 리셋
   const query = (document.getElementById("memberSearchInput")?.value || "").toLowerCase().trim();
+  const cleanQueryPhone = query.replace(/[^0-9]/g, '');
 
   const acadFilter = currentSelectedAcademy;
   const roleFilter = document.getElementById("memberRoleFilter")?.value || "ALL";
   const statusFilter = document.getElementById("memberStatusFilter")?.value || "ALL";
 
   const filtered = memberList.filter(m => {
+    const rawPhone = m.phone || '';
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+    const rawParentPhone = m.parentPhone || '';
+    const cleanParentPhone = rawParentPhone.replace(/[^0-9]/g, '');
+
+    const matchPhone = (rawPhone && rawPhone.includes(query)) ||
+      (rawParentPhone && rawParentPhone.includes(query)) ||
+      (cleanQueryPhone && cleanPhone && cleanPhone.includes(cleanQueryPhone)) ||
+      (cleanQueryPhone && cleanParentPhone && cleanParentPhone.includes(cleanQueryPhone));
+
     const matchQuery = !query ||
       (m.name && m.name.toLowerCase().includes(query)) ||
       (m.username && m.username.toLowerCase().includes(query)) ||
       (m.academyName && m.academyName.toLowerCase().includes(query)) ||
       (m.grade && m.grade.toLowerCase().includes(query)) ||
       (m.className && m.className.toLowerCase().includes(query)) ||
-      (m.phone && m.phone.includes(query)) ||
-      (m.parentPhone && m.parentPhone.includes(query));
+      matchPhone;
 
     const matchAcad = acadFilter === "ALL" || m.academyName === acadFilter;
     const matchRole = roleFilter === "ALL" || m.role === roleFilter;
@@ -625,8 +650,96 @@ function openMemberExcelModal() {
   $("#memberExcelModal").modal("show");
 }
 
+// ==============================================================
+// 3-3-B. 통합 회원 등록 표준 엑셀 양식 다운로드 (학원장 서식과 100% 동일 + 학원코드 추가)
+// ==============================================================
 function downloadMemberExcelTemplate() {
-  showMasterToast("표준 회원 등록 양식 서식(template_members.xlsx)이 다운로드되었습니다.");
+  // 최상단 필독 안내 배너 (학년 코드 안내 및 등록 유의사항)
+  var noticeText = "★ [필독 안내] 학원코드: 가맹점 관리의 등록 학원코드 기입 (예: ACAD-001 또는 학원명) | 학년코드: 0(유치부), 1(초1), 2(초2), 3(초3), 4(초4), 5(초5), 6(초6), 7(중1), 8(중2), 9(중3) (또는 '유치부', '초1', '초2', '중1' 직접 기입 가능) | 아이디는 영문/숫자 조합 권장 | 클래스는 학원에 등록된 실제 명칭 기입 (미등록 시 등록 실패)";
+
+  // 컬럼 헤더 (필수 / 선택 명시 - 학원코드 포함 총 13개 컬럼)
+  var headers = [
+    "학원코드(필수)",
+    "원생이름(필수)",
+    "아이디(필수)",
+    "성별(필수)",
+    "초기비밀번호(필수)",
+    "학교명(필수)",
+    "학년코드(필수)",
+    "클래스(필수)",
+    "학부모이름(선택)",
+    "학부모연락처(선택)",
+    "학부모이메일(선택)",
+    "담당지도교사(선택)",
+    "메모(선택)"
+  ];
+
+  // 단일 샘플 데이터 행 (학원장 양식과 100% 동일)
+  var sampleRows = [
+    [
+      "ex) ACAD-001",
+      "ex) 홍길동",
+      "ex) hong1001",
+      "ex) 남",
+      "ex) 123456",
+      "ex) 나노 초등학교",
+      "ex) 5",
+      "ex) 나노반",
+      "ex) 김영희",
+      "ex) 010-1234-5678",
+      "ex) nano@nano.co.kr",
+      "ex) 김나노",
+      "ex) 메모 샘플"
+    ]
+  ];
+
+  var fileName = "나노_원생등록_양식_v2.xlsx";
+
+  // 1. SheetJS(XLSX) 라이브러리 사용 시 실제 Excel(.xlsx) 파일 생성
+  if (typeof XLSX !== 'undefined') {
+    var noticeRow = [noticeText, "", "", "", "", "", "", "", "", "", "", "", ""];
+    var wsData = [noticeRow, headers].concat(sampleRows);
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // 1행 병합 (A1:M1, 총 13개 컬럼)
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }
+    ];
+
+    // 행 높이 설정 (안내행 36pt, 헤더행 28pt, 샘플행 24pt)
+    ws['!rows'] = [
+      { hpt: 36 },
+      { hpt: 28 },
+      { hpt: 24 }
+    ];
+
+    // 가독성을 위한 컬럼 너비 지정
+    ws['!cols'] = [
+      { wch: 18 }, // 학원코드(필수)
+      { wch: 16 }, // 원생이름(필수)
+      { wch: 16 }, // 아이디(필수)
+      { wch: 12 }, // 성별(필수)
+      { wch: 18 }, // 초기비밀번호(필수)
+      { wch: 20 }, // 학교명(필수)
+      { wch: 16 }, // 학년코드(필수)
+      { wch: 16 }, // 클래스(필수)
+      { wch: 16 }, // 학부모이름(선택)
+      { wch: 18 }, // 학부모연락처(선택)
+      { wch: 22 }, // 학부모이메일(선택)
+      { wch: 18 }, // 담당지도교사(선택)
+      { wch: 24 }  // 메모(선택)
+    ];
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "원생등록양식");
+    XLSX.writeFile(wb, fileName);
+    showMasterToast("학원코드 포함 표준 원생 등록 양식(" + fileName + ")이 다운로드되었습니다.");
+    return;
+  }
+
+  // 2. CSV 대체 다운로드
+  downloadAsCSV(fileName.replace('.xlsx', '.csv'), headers, sampleRows);
+  showMasterToast("표준 원생 등록 양식(CSV)이 다운로드되었습니다. 학원코드를 확인 후 작성해 주세요.");
 }
 
 function handleExcelFileSelect(input) {
@@ -636,34 +749,179 @@ function handleExcelFileSelect(input) {
 }
 
 async function handleMemberExcelUpload() {
-  var file = document.getElementById('memberExcelFileInput').files[0];
-  if (!file || !/\.csv$/i.test(file.name)) { showMasterToast('표준 CSV 양식 파일을 선택해 주세요. XLSX는 CSV로 저장한 뒤 등록해 주세요.'); return; }
-  if (file.size > 2 * 1024 * 1024) { showMasterToast('파일은 2MB 이내로 나눠 등록해 주세요.'); return; }
+  const fileInput = document.getElementById('memberExcelFileInput');
+  const file = fileInput ? fileInput.files[0] : null;
+  if (!file) {
+    showMasterToast('등록할 엑셀(.xlsx, .csv) 파일을 선택해 주세요.');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showMasterToast('파일 크기는 10MB 이내여야 합니다.');
+    return;
+  }
+
   try {
-    var rows = NanoPreviewData.parseCSV(await file.text());
-    var headers = ['이름','아이디','비밀번호','학년','학급','학생연락처','학부모연락처','등록학원코드(예:ACAD-001)'];
-    if (!rows.length || headers.some(function(h, i) { return rows[0][i] !== h; })) throw new Error('표준 서식의 열 제목과 순서를 확인해 주세요.');
-    var academy = franchiseList.find(function(a) { return a.name === document.getElementById('excelTargetAcademy').value; });
-    if (!academy) throw new Error('등록할 학원을 선택해 주세요.');
-    var known = new Set(memberList.map(function(m) { return String(m.username).toLowerCase(); }));
-    var today = new Date().toISOString().slice(0, 10);
-    var imported = rows.slice(1).map(function(row, i) {
-      var [name, username, password, grade, className, phone, parentPhone, academyCode] = row.map(function(v) { return v.trim(); });
-      if (row.length !== 8 || !name || !/^[a-zA-Z0-9_-]{3,50}$/.test(username) || !password || password.length < 8) throw new Error((i + 2) + '행: 이름, 아이디(영문·숫자 3~50자), 비밀번호(8자 이상)를 확인해 주세요.');
-      if (row.some(function(value, index) { return index !== 2 && /[<>]/.test(value); })) throw new Error((i + 2) + '행: 텍스트에 HTML 태그를 사용할 수 없습니다.');
-      if (academyCode !== academy.id) throw new Error((i + 2) + '행: 선택한 학원과 학원 코드가 다릅니다.');
-      if (known.has(username.toLowerCase())) throw new Error((i + 2) + '행: 중복 아이디 ' + username);
-      known.add(username.toLowerCase());
-      return { id: Date.now() + i, academyId: academy.id, academyName: academy.name, role: 'STUDENT', name, username, password,
-        grade, className: className || '미지정', phone, parentPhone, points: 0, lastLogin: '-', createdAt: today, status: 'PENDING' };
+    let rows = [];
+
+    // SheetJS (XLSX) 지원
+    if (/\.(xlsx|xls)$/i.test(file.name)) {
+      if (typeof XLSX === 'undefined') {
+        throw new Error('엑셀 파싱 라이브러리(SheetJS)가 로드되지 않았습니다. CSV로 저장하여 업로드해 주세요.');
+      }
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+    } else {
+      // CSV 파싱
+      const text = await file.text();
+      if (typeof NanoPreviewData !== 'undefined' && typeof NanoPreviewData.parseCSV === 'function') {
+        rows = NanoPreviewData.parseCSV(text);
+      } else {
+        rows = text.split(/\r?\n/).filter(line => line.trim()).map(line => line.split(',').map(s => s.replace(/^"|"$/g, '').trim()));
+      }
+    }
+
+    if (!rows || rows.length < 2) {
+      throw new Error('등록할 원생 데이터 행이 존재하지 않습니다.');
+    }
+
+    // 1행이 안내문인 경우 스킵
+    let headerRowIdx = 0;
+    if (rows[0] && rows[0].length === 1 || String(rows[0][0]).includes('필독 안내') || String(rows[0][0]).includes('★')) {
+      headerRowIdx = 1;
+    }
+    const headers = rows[headerRowIdx] || [];
+    const dataRows = rows.slice(headerRowIdx + 1);
+
+    // 샘플 행(ex) 문구 포함 행) 필터링
+    const realRows = dataRows.filter(r => {
+      if (!r || r.length === 0) return false;
+      const firstVal = String(r[0] || '').trim();
+      const secondVal = String(r[1] || '').trim();
+      if (firstVal.startsWith('ex)') || secondVal.startsWith('ex)')) return false;
+      return firstVal.length > 0 || secondVal.length > 0;
     });
-    if (!imported.length) throw new Error('등록할 행이 없습니다.');
-    var next = imported.concat(memberList);
-    localStorage.setItem('NANO_MASTER_MEMBER_LIST', JSON.stringify(next));
-    memberList = next;
-    $('#memberExcelModal').modal('hide'); renderMemberTable();
-    showMasterToast(imported.length + '명의 회원을 이 브라우저에 등록했습니다. 서버 계정 생성은 별도입니다.');
-  } catch(e) { showMasterToast('등록하지 않았습니다: ' + e.message); }
+
+    if (realRows.length === 0) {
+      throw new Error('유효한 원생 등록 데이터가 없습니다. (샘플 행 제외)');
+    }
+
+    // 학년 정규화 헬퍼
+    function normalizeGradeCode(raw) {
+      const s = String(raw || '').trim();
+      if (s === '0' || s.includes('유치부') || s.includes('미취학')) return '유치부';
+      if (s === '1' || s === '초1' || s.includes('초등 1')) return '초1';
+      if (s === '2' || s === '초2' || s.includes('초등 2')) return '초2';
+      if (s === '3' || s === '초3' || s.includes('초등 3')) return '초3';
+      if (s === '4' || s === '초4' || s.includes('초등 4')) return '초4';
+      if (s === '5' || s === '초5' || s.includes('초등 5')) return '초5';
+      if (s === '6' || s === '초6' || s.includes('초등 6')) return '초6';
+      if (s === '7' || s === '중1' || s.includes('중등 1')) return '중1';
+      if (s === '8' || s === '중2' || s.includes('중등 2')) return '중2';
+      if (s === '9' || s === '중3' || s.includes('중등 3')) return '중3';
+      return s || '초1';
+    }
+
+    const knownUsernames = new Set(memberList.map(m => String(m.username).toLowerCase().trim()));
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const importedMembers = [];
+    const skippedUsernames = [];
+
+    realRows.forEach((row, idx) => {
+      let acadCode = String(row[0] || '').trim();
+      let name = String(row[1] || '').trim();
+      let username = String(row[2] || '').trim();
+      let gender = String(row[3] || '남').trim();
+      let password = String(row[4] || '123456').trim();
+      let school = String(row[5] || '').trim();
+      let grade = normalizeGradeCode(row[6]);
+      let className = String(row[7] || '미지정').trim();
+      let parentName = String(row[8] || '').trim();
+      let parentPhone = String(row[9] || '').trim();
+      let parentEmail = String(row[10] || '').trim();
+      let teacher = String(row[11] || '').trim();
+      let memo = String(row[12] || '').trim();
+
+      // 기존 8개 컬럼 레거시 CSV 호환 처리
+      if (headers.length <= 8 && headers.some(h => String(h).includes('등록학원코드'))) {
+        name = String(row[0] || '').trim();
+        username = String(row[1] || '').trim();
+        password = String(row[2] || '123456').trim();
+        grade = normalizeGradeCode(row[3]);
+        className = String(row[4] || '미지정').trim();
+        let phone = String(row[5] || '').trim();
+        parentPhone = String(row[6] || '').trim();
+        acadCode = String(row[7] || '').trim();
+      }
+
+      if (!name || !username) return;
+
+      const lowerU = username.toLowerCase();
+      if (knownUsernames.has(lowerU)) {
+        skippedUsernames.push(username);
+        return;
+      }
+      knownUsernames.add(lowerU);
+
+      // 학원 매핑
+      let matchedAcad = (typeof franchiseList !== 'undefined') ? franchiseList.find(a => 
+        (a.id && a.id.toLowerCase() === acadCode.toLowerCase()) || 
+        (a.name && a.name.toLowerCase() === acadCode.toLowerCase())
+      ) : null;
+
+      if (!matchedAcad) {
+        matchedAcad = { id: acadCode || 'ACAD-001', name: acadCode || '나노 독서아카데미 목동본원' };
+      }
+
+      importedMembers.push({
+        id: Date.now() + idx,
+        academyId: matchedAcad.id,
+        academyName: matchedAcad.name,
+        role: 'STUDENT',
+        name: name,
+        username: username,
+        gender: gender,
+        password: password,
+        school: school,
+        grade: grade,
+        className: className || '미지정',
+        parentName: parentName,
+        parentPhone: parentPhone || '-',
+        parentEmail: parentEmail,
+        phone: parentPhone || '010-0000-0000',
+        memo: memo,
+        points: 0,
+        bookCount: 0,
+        lastLogin: '-',
+        createdAt: todayStr,
+        status: 'APPROVED'
+      });
+    });
+
+    if (importedMembers.length === 0) {
+      if (skippedUsernames.length > 0) {
+        throw new Error(`모든 계정이 이미 존재하는 아이디입니다. (중복: ${skippedUsernames.slice(0, 3).join(', ')} 등 ${skippedUsernames.length}건)`);
+      }
+      throw new Error('등록할 유효한 원생 데이터가 없습니다.');
+    }
+
+    const nextList = importedMembers.concat(memberList);
+    memberList = nextList;
+    saveMembersToStorage();
+    if (typeof updateMemberStats === 'function') updateMemberStats();
+    renderMemberTable();
+
+    $('#memberExcelModal').modal('hide');
+    let msg = `성공적으로 ${importedMembers.length}명의 원생을 일괄 등록하였습니다.`;
+    if (skippedUsernames.length > 0) {
+      msg += ` (중복 아이디 ${skippedUsernames.length}건 제외)`;
+    }
+    showMasterToast(msg);
+  } catch (err) {
+    showMasterToast('엑셀 등록 실패: ' + err.message);
+  }
 }
 
 // 권한에 따른 등록 모달 UI 전환 (원장/교사 vs 학생)
@@ -927,40 +1185,72 @@ function updateClassDropdown(academyName) {
 }
 
 // -----------------------------------------------------------
-// [10] 회원 상세 모달 열기 (수정 가능 버전)
+// [10] 회원 상세 모달 열기 (학원장 관리자와 통일된 2열 표준 양식)
 // -----------------------------------------------------------
 function openMemberDetailModal(id) {
   const mem = memberList.find(m => m.id === id);
   if (!mem) return;
 
-  document.getElementById("detailMemberId").value = mem.id;
-  document.getElementById("detailMemberName").innerText = mem.name;
-  document.getElementById("detailMemberRole").innerText = mem.role === "DIRECTOR" ? "원장님" : mem.role === "TEACHER" ? "선생님" : "학생 (원생)";
+  const idEl = document.getElementById("detailMemberId");
+  if (idEl) idEl.value = mem.id;
 
-  // 수정 가능 필드 채우기
+  const titleEl = document.getElementById("detailMemberModalHeaderTitle");
+  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-user-pen mr-2 text-warning"></i>[${mem.name}] 원생 정보 수정 및 상세`;
+
+  const roleBadgeEl = document.getElementById("detailMemberRoleBadge");
+  if (roleBadgeEl) {
+    roleBadgeEl.innerText = mem.role === "DIRECTOR" ? "원장님" : (mem.role === "TEACHER" ? "선생님" : "학생 (원생)");
+  }
+
+  // 1. 소속 가맹 학원
   const acadEl = document.getElementById("detailMemberAcademy");
-  if (acadEl) acadEl.value = mem.academyName || "";
+  if (acadEl) acadEl.value = mem.academyName || "-";
 
+  // 2. 원생 이름 & 성별
+  const nameInput = document.getElementById("detailMemberNameInput");
+  if (nameInput) nameInput.value = mem.name || "";
+
+  const genderEl = document.getElementById("detailMemberGender");
+  if (genderEl) genderEl.value = mem.gender || "남";
+
+  // 3. 학번 / 원생 ID
   const usernameEl = document.getElementById("detailMemberUsername");
   if (usernameEl) usernameEl.value = mem.username || "";
 
-  const phoneEl = document.getElementById("detailMemberPhone");
-  if (phoneEl) phoneEl.value = mem.phone || "";
+  // 4. 로그인 비밀번호 입력창 초기화
+  const pwEl = document.getElementById("detailMemberPw");
+  if (pwEl) {
+    pwEl.value = "";
+    pwEl.placeholder = "비밀번호 변경 시 입력 (미입력 시 기존 비밀번호 유지)";
+  }
 
-  const parentPhoneEl = document.getElementById("detailMemberParentPhone");
-  if (parentPhoneEl) parentPhoneEl.value = mem.parentPhone || "-";
+  // 5. 학교명 & 학년
+  const schoolEl = document.getElementById("detailMemberSchool");
+  if (schoolEl) schoolEl.value = mem.school || "";
 
   const gradeEl = document.getElementById("detailMemberGrade");
-  if (gradeEl) gradeEl.value = mem.grade || "";
+  if (gradeEl) {
+    let g = (mem.grade || "").trim();
+    if (g === "미취학" || g === "유치부") g = "유치부";
+    else if (g === "초1") g = "초등 1학년";
+    else if (g === "초2") g = "초등 2학년";
+    else if (g === "초3") g = "초등 3학년";
+    else if (g === "초4") g = "초등 4학년";
+    else if (g === "초5") g = "초등 5학년";
+    else if (g === "초6") g = "초등 6학년";
+    else if (g === "중1") g = "중등 1학년";
+    else if (g === "중2") g = "중등 2학년";
+    else if (g === "중3") g = "중등 3학년";
+    gradeEl.value = g || "초등 1학년";
+  }
 
-  // 배정 학급 드롭박스: 해당 회원의 소속 학원에 등록된 학급 목록 동적 추출 및 바인딩
+  // 6. 소속 학급 (클래스) 동적 바인딩
   const classEl = document.getElementById("detailMemberClass");
   if (classEl) {
     const existingClasses = new Set();
     const acadName = mem.academyName || "";
     const acadId = mem.academyId || "";
 
-    // 1. 회원 목록에서 동일 학원의 기존 학급명 수집
     if (Array.isArray(memberList)) {
       memberList.forEach(m => {
         if ((m.academyName === acadName || (acadId && m.academyId === acadId)) && 
@@ -970,7 +1260,6 @@ function openMemberDetailModal(id) {
       });
     }
 
-    // 2. 로컬 스토리지에 저장된 학원별 학급 목록 수집
     try {
       ["NANO_CLASSES_" + acadName, "NANO_ACADEMY_CLASSES_" + acadId, "NANO_ACADEMY_CLASSES_" + acadName].forEach(k => {
         const stored = localStorage.getItem(k);
@@ -986,12 +1275,11 @@ function openMemberDetailModal(id) {
       });
     } catch (e) {}
 
-    // 3. 현재 회원의 학급도 옵션에 포함 보장
     if (mem.className && mem.className !== "-" && mem.className !== "미지정") {
       existingClasses.add(mem.className);
     }
 
-    let optionsHtml = '<option value="미지정">미지정</option>';
+    let optionsHtml = '<option value="미지정">미지정 (학급 없음)</option>';
     const classList = Array.from(existingClasses).sort((a, b) => a.localeCompare(b, 'ko'));
     classList.forEach(c => {
       optionsHtml += `<option value="${c}">${c}</option>`;
@@ -1000,9 +1288,7 @@ function openMemberDetailModal(id) {
     classEl.value = (mem.className && mem.className !== "-") ? mem.className : "미지정";
   }
 
-  const pointsEl = document.getElementById("detailMemberPoints");
-  if (pointsEl) pointsEl.value = mem.points ? mem.points.toLocaleString() + " P" : "0 P";
-
+  // 7. 계정 상태
   const statusSelect = document.getElementById("detailMemberStatus");
   if (statusSelect) {
     statusSelect.value = (mem.status === "PENDING" || mem.status === "미승인") ? "PENDING" 
@@ -1010,6 +1296,34 @@ function openMemberDetailModal(id) {
       : "APPROVED";
   }
 
+  // 8. 학부모 정보 & 본인 연락처
+  const parentNameEl = document.getElementById("detailMemberParentName");
+  if (parentNameEl) parentNameEl.value = mem.parentName || "";
+
+  const parentPhoneEl = document.getElementById("detailMemberParentPhone");
+  if (parentPhoneEl) parentPhoneEl.value = (mem.parentPhone && mem.parentPhone !== "-") ? mem.parentPhone : "";
+
+  const parentEmailEl = document.getElementById("detailMemberParentEmail");
+  if (parentEmailEl) parentEmailEl.value = mem.parentEmail || "";
+
+  const phoneEl = document.getElementById("detailMemberPhone");
+  if (phoneEl) phoneEl.value = mem.phone || "";
+
+  // 9. 누적 포인트 & 가입일
+  const pointsEl = document.getElementById("detailMemberPoints");
+  if (pointsEl) pointsEl.value = mem.points ? mem.points.toLocaleString() + " P" : "0 P";
+
+  const joinDateEl = document.getElementById("detailMemberJoinDate");
+  if (joinDateEl) {
+    const rawDate = mem.createdAt || mem.joinDate || "2026-09-01";
+    joinDateEl.value = rawDate.slice(0, 10).replace(/\./g, "-");
+  }
+
+  // 10. 지도 메모 및 특이사항
+  const memoEl = document.getElementById("detailMemberMemo");
+  if (memoEl) memoEl.value = mem.memo || "";
+
+  // 상태 토글 버튼 바인딩
   const btnToggle = document.getElementById("btnToggleMemberStatus");
   if (btnToggle) {
     if (mem.status === "PENDING" || mem.status === "미승인") {
@@ -1042,17 +1356,43 @@ async function saveMemberDetailEdit() {
   if (!mem) return;
   const previousMember = { ...mem };
 
-  const phoneEl = document.getElementById("detailMemberPhone");
-  const parentPhoneEl = document.getElementById("detailMemberParentPhone");
+  const nameInput = document.getElementById("detailMemberNameInput");
+  const genderEl = document.getElementById("detailMemberGender");
+  const pwEl = document.getElementById("detailMemberPw");
+  const schoolEl = document.getElementById("detailMemberSchool");
   const gradeEl = document.getElementById("detailMemberGrade");
   const classEl = document.getElementById("detailMemberClass");
   const statusEl = document.getElementById("detailMemberStatus");
+  const parentNameEl = document.getElementById("detailMemberParentName");
+  const parentPhoneEl = document.getElementById("detailMemberParentPhone");
+  const parentEmailEl = document.getElementById("detailMemberParentEmail");
+  const phoneEl = document.getElementById("detailMemberPhone");
+  const memoEl = document.getElementById("detailMemberMemo");
 
-  if (phoneEl) mem.phone = phoneEl.value.trim();
-  if (parentPhoneEl) mem.parentPhone = parentPhoneEl.value.trim();
-  if (gradeEl) mem.grade = gradeEl.value;
+  if (nameInput && nameInput.value.trim()) mem.name = nameInput.value.trim();
+  if (genderEl) mem.gender = genderEl.value;
+  if (pwEl && pwEl.value.trim()) mem.password = pwEl.value.trim();
+  if (schoolEl) mem.school = schoolEl.value.trim();
+  if (gradeEl) {
+    let g = gradeEl.value;
+    if (g === "초등 1학년") g = "초1";
+    else if (g === "초등 2학년") g = "초2";
+    else if (g === "초등 3학년") g = "초3";
+    else if (g === "초등 4학년") g = "초4";
+    else if (g === "초등 5학년") g = "초5";
+    else if (g === "초등 6학년") g = "초6";
+    else if (g === "중등 1학년") g = "중1";
+    else if (g === "중등 2학년") g = "중2";
+    else if (g === "중등 3학년") g = "중3";
+    mem.grade = g;
+  }
   if (classEl) mem.className = classEl.value.trim();
   if (statusEl) mem.status = statusEl.value;
+  if (parentNameEl) mem.parentName = parentNameEl.value.trim();
+  if (parentPhoneEl) mem.parentPhone = parentPhoneEl.value.trim();
+  if (parentEmailEl) mem.parentEmail = parentEmailEl.value.trim();
+  if (phoneEl) mem.phone = phoneEl.value.trim();
+  if (memoEl) mem.memo = memoEl.value.trim();
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
@@ -1137,18 +1477,7 @@ function exportMemberExcel() {
 
 // CSV 다운로드 공통 헬퍼 (엑셀 수식 보존 및 따옴표 이스케이프)
 
-// [16] 엑셀 서식 다운로드 (회원 등록 표준 서식)
-// -----------------------------------------------------------
-function downloadMemberExcelTemplate() {
-  const headers = ["이름", "아이디", "비밀번호", "학년", "학급", "학생연락처", "학부모연락처", "등록학원코드(예:ACAD-001)"];
-  const sampleRows = [
-    ["홍길동", "hong_gildong", "nano1234!", "초4", "소나무반", "010-1234-5678", "010-9876-5432", "ACAD-001"],
-    ["김영희", "younghee_k", "nano1234!", "초5", "매화반", "010-2345-6789", "010-8765-4321", "ACAD-002"]
-  ];
-
-  downloadAsCSV("나노책장_회원등록양식_" + new Date().toISOString().split("T")[0] + ".csv", headers, sampleRows);
-  showMasterToast("표준 회원 등록 양식 서식(CSV)이 다운로드되었습니다. 학원 코드를 확인 후 입력해주세요.");
-}
+// [16] 엑셀 서식 다운로드는 상단 정의된 downloadMemberExcelTemplate() 사용
 
 // -----------------------------------------------------------
 

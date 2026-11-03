@@ -15765,7 +15765,7 @@ JSON 출력 형식:
       commentInput.value = aiData.teacherCommentDraft || aiData.summary || '';
     }
 
-    showAcademyToast('Gemini 3.8 Flash 나노시트 AI 분석이 완료되었습니다! 교사 코멘트를 검토 후 저장해주세요.');
+    showAcademyToast('나노시트 첨삭 분석이 완료되었습니다! 교사 코멘트를 검토 후 저장해주세요.');
 
   } catch(err) {
     console.error('Worksheet AI Client Error:', err);

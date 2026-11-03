@@ -1109,18 +1109,34 @@ function filterFranchiseList() {
   const filtered = franchiseList.filter(item => {
     const itemJoinDate = item.joinDate || item.startDate || "";
 
+    // 가맹점 원장(대표교사) 계정 정보 및 관리자 ID 연동 (화면 렌더링 기준과 100% 일치)
+    const adminStaff = typeof getFranchiseAdminStaff === "function" ? getFranchiseAdminStaff(item) : null;
+    const adminIdText = typeof getFranchiseAdminId === "function" ? getFranchiseAdminId(item) : (item.adminId || "");
+
     const rawPhone = item.phone || '';
     const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+    const staffPhone = (adminStaff && adminStaff.phone) || '';
+    const cleanStaffPhone = staffPhone.replace(/[^0-9]/g, '');
+
+    // 원본 전화번호(010-2021-3415 등 하이픈 포함) 및 숫자(2021, 01020213415 등) 다각도 매칭
     const matchPhone = (rawPhone && rawPhone.includes(query)) ||
-      (cleanQueryPhone && cleanPhone && cleanPhone.includes(cleanQueryPhone));
+      (cleanQueryPhone && cleanPhone && cleanPhone.includes(cleanQueryPhone)) ||
+      (staffPhone && staffPhone.includes(query)) ||
+      (cleanQueryPhone && cleanStaffPhone && cleanStaffPhone.includes(cleanQueryPhone));
+
+    const staffName = (adminStaff && adminStaff.name) || '';
+    const staffEmail = (adminStaff && adminStaff.email) || '';
 
     const matchQuery = !query || 
       (item.name && item.name.toLowerCase().includes(query)) ||
       (item.director && item.director.toLowerCase().includes(query)) ||
+      (staffName && staffName.toLowerCase().includes(query)) ||
       (item.region && item.region.toLowerCase().includes(query)) ||
       (item.bizNumber && item.bizNumber.includes(query)) ||
       (item.adminId && item.adminId.toLowerCase().includes(query)) ||
+      (adminIdText && adminIdText.toLowerCase().includes(query)) ||
       (item.email && item.email.toLowerCase().includes(query)) ||
+      (staffEmail && staffEmail.toLowerCase().includes(query)) ||
       matchPhone;
 
     // 계약 만료 및 30일내 만료 임박 자동 판정 반영

@@ -440,6 +440,17 @@ function sanitizeFranchises(list) {
       f.adminId = realId;
     }
 
+    // 가맹점 원장(대표교사) 계정 정보와 전화번호 및 원장명 동기화 보강
+    const staff = getFranchiseAdminStaff(f);
+    if (staff) {
+      if ((!f.phone || f.phone === "010-0000-0000") && staff.phone && staff.phone !== "010-0000-0000") {
+        f.phone = staff.phone;
+      }
+      if ((!f.director || f.director.endsWith(" 원장") || f.director.includes("원장")) && staff.name) {
+        f.director = staff.name;
+      }
+    }
+
     f.plan = normalizePlan(f.plan);
 
     // 계약 만료 자동 판정: 계약 종료일이 오늘 이전이면 EXPIRED로 자동 설정 (단, 이미 해지된 TERMINATED는 유지)
@@ -1763,6 +1774,8 @@ function ensureMasterTabRendered(tabName) {
     if (typeof renderThemeTable === "function") renderThemeTable();
     if (typeof renderNoticeTable === "function") renderNoticeTable();
   } else if (tabName === "ranking") {
+    if (typeof populateRankingMonthFilter === "function") populateRankingMonthFilter();
+    if (typeof populateRankingAcademyFilter === "function") populateRankingAcademyFilter();
     if (typeof renderRankings === "function") renderRankings();
   } else if (tabName === "contents") {
     if (typeof populateMasterContentCategoryOptions === "function") populateMasterContentCategoryOptions();
