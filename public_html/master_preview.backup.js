@@ -1879,7 +1879,7 @@ function selectRecGrade(grade) {
 
 function formatShortRecGrade(raw) {
   const norm = normalizeRecGradeCode(raw);
-  if (norm === "미취학") return "미취학";
+  if (norm === "유치부") return "유치부";
   if (norm === "초등 1학년") return "초1";
   if (norm === "초등 2학년") return "초2";
   if (norm === "초등 3학년") return "초3";
@@ -2316,14 +2316,14 @@ async function deleteRecommendedBook(recId) {
 // 권장도서 엑셀(CSV) 일괄 등록, 변경, 삭제 로직
 // ------------------------------------------
 
-// 권장 학년 코드 정규화 함수 (0: 미취학, 1~6: 초등 1~6학년, 7~9: 중등 1~3학년)
+// 권장 학년 코드 정규화 함수 (0: 유치부, 1~6: 초등 1~6학년, 7~9: 중등 1~3학년)
 function normalizeRecGradeCode(raw) {
   if (raw === undefined || raw === null) return "초등 1학년";
   const str = String(raw).trim();
   if (!str) return "초등 1학년";
 
   // 단일 숫자 / 영문 코드 매핑
-  if (str === "0" || str.toLowerCase() === "a") return "미취학";
+  if (str === "0" || str.toLowerCase() === "a") return "유치부";
   if (str === "1") return "초등 1학년";
   if (str === "2") return "초등 2학년";
   if (str === "3") return "초등 3학년";
@@ -2336,7 +2336,7 @@ function normalizeRecGradeCode(raw) {
   if (str.toLowerCase() === "b" || str === "10") return "중학교";
 
   // 한글/영문 텍스트 호환 매핑
-  if (/미취학|유아|유치/i.test(str)) return "미취학";
+  if (/유치부|유아|유치/i.test(str)) return "유치부";
   if (/^초\s*1|초등\s*1/i.test(str)) return "초등 1학년";
   if (/^초\s*2|초등\s*2/i.test(str)) return "초등 2학년";
   if (/^초\s*3|초등\s*3/i.test(str)) return "초등 3학년";
@@ -2354,7 +2354,7 @@ function normalizeRecGradeCode(raw) {
 function downloadRecommendedExcelTemplate() {
   const csvLines = [
     '구분(R/U/D),권장 학년 코드 (0~9),콘텐츠넘버(도서ID)',
-    '"[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)","[설명] 0:미취학, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",[설명] 콘텐츠넘버(도서ID) 기입',
+    '"[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)","[설명] 0:유치부, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",[설명] 콘텐츠넘버(도서ID) 기입',
     'R,0,FA000001'
   ];
   const csvContent = "\uFEFF" + csvLines.join("\r\n");
@@ -2477,7 +2477,7 @@ async function handleRecommendedExcelUpload() {
           continue;
         }
 
-        // 학년 코드 정규화 (0: 미취학, 1~6: 초1~6, 7~9: 중1~3)
+        // 학년 코드 정규화 (0: 유치부, 1~6: 초1~6, 7~9: 중1~3)
         const grade = normalizeRecGradeCode(gradeRaw);
 
         // 마스터 도서 검색 (도서ID, 콘텐츠넘버 bookNo, 도서명 모두 매칭 지원)
@@ -7960,7 +7960,7 @@ function detectBookCategory1(doc) {
 function detectBookGrade(doc) {
   const text = `${(doc && doc.title) || ""} ${(doc && doc.contents) || ""}`;
 
-  if (/유아|그림책|보드북|미취학|[3-7]세|누리과정/.test(text)) return "미취학";
+  if (/유아|그림책|보드북|유치부|[3-7]세|누리과정/.test(text)) return "유치부";
   if (/초등\s*1|초1|초등\s*저학년|저학년용/.test(text)) return "초등 1학년";
   if (/초등\s*2|초2/.test(text)) return "초등 2학년";
   if (/초등\s*3|초3|초등\s*중학년|중학년용/.test(text)) return "초등 3학년";
@@ -8391,11 +8391,11 @@ function openMasterBookAddModal(id = null) {
     else cat2 = "국내서";
   }
 
-  // 권장 학년 정규화 (미취학, 초등 1학년 ~ 중등 3학년)
+  // 권장 학년 정규화 (유치부, 초등 1학년 ~ 중등 3학년)
   let grade = "초등 5학년";
   if (book && book.grade) {
     const rawG = String(book.grade).trim();
-    if (rawG === "유치부" || rawG === "0" || rawG === "미취학") grade = "미취학";
+    if (rawG === "유치부" || rawG === "0" || rawG === "유치부") grade = "유치부";
     else if (rawG.startsWith("초") && !rawG.includes("학년")) grade = `초등 ${rawG.replace("초", "")}학년`;
     else if (rawG.startsWith("중") && !rawG.includes("학년")) grade = `중등 ${rawG.replace("중", "")}학년`;
     else grade = rawG;
@@ -9774,13 +9774,13 @@ function openExcelUploadModal() {
   $("#masterBookExcelModal").modal("show");
 }
 
-// 권장 학년 코드/텍스트 표준 변환 헬퍼 (a:미취학, 1~6:초1~6, 7~9:중1~3, b:중등)
+// 권장 학년 코드/텍스트 표준 변환 헬퍼 (a:유치부, 1~6:초1~6, 7~9:중1~3, b:중등)
 function normalizeGradeInput(raw) {
   if (!raw) return "초등 1학년";
   let s = String(raw).trim().toLowerCase().replace(/["']/g, "");
 
   // 1. 단일 코드 매핑
-  if (s === "a" || s === "0") return "미취학";
+  if (s === "a" || s === "0") return "유치부";
   if (s === "1") return "초등 1학년";
   if (s === "2") return "초등 2학년";
   if (s === "3") return "초등 3학년";
@@ -9793,7 +9793,7 @@ function normalizeGradeInput(raw) {
   if (s === "b") return "중등";
 
   // 2. 한글 표기 유연 매핑
-  if (s.includes("미취학") || s.includes("유치")) return "미취학";
+  if (s.includes("유치부") || s.includes("유치")) return "유치부";
   if (s.includes("초1") || s.includes("초등 1") || s.includes("초등1")) return "초등 1학년";
   if (s.includes("초2") || s.includes("초등 2") || s.includes("초등2")) return "초등 2학년";
   if (s.includes("초3") || s.includes("초등 3") || s.includes("초등3")) return "초등 3학년";
@@ -9882,7 +9882,7 @@ function downloadBookExcelTemplate() {
     "도서명",
     "저자",
     "출판사",
-    "권장학년(a:미취학,1~6:초1~6,7~9:중1~3,b:중등)",
+    "권장학년(a:유치부,1~6:초1~6,7~9:중1~3,b:중등)",
     "카테고리1(소설/인물이야기/비문학)",
     "카테고리2(국내서/외서/구분없음)",
     "시리즈명",
@@ -9963,7 +9963,7 @@ function handleMasterBookExcelUpload() {
       // 권장 학년 검증 및 정규화
       const normalizedGrade = normalizeGradeInput(rawGrade);
       if (!normalizedGrade) {
-        validationErrors.push(`[${rowNum}행: ${title}] 올바르지 않은 권장학년('${rawGrade}')입니다.\n  👉 허용: a(미취학), 1~6(초등 1~6학년), 7~9(중등 1~3학년), b(중등 전체)`);
+        validationErrors.push(`[${rowNum}행: ${title}] 올바르지 않은 권장학년('${rawGrade}')입니다.\n  👉 허용: a(유치부), 1~6(초등 1~6학년), 7~9(중등 1~3학년), b(중등 전체)`);
       }
 
       // 카테고리 1 검증 (소설, 인물 이야기, 비문학/정보글 또는 A, B, C 외 입력 차단)

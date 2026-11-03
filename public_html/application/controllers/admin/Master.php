@@ -927,7 +927,7 @@ class Master extends MY_Controller {
 		{
 			switch($list[$i]['grade']) {
 			    case "0":
-			        $list[$i]['grade'] = "미취학";
+			        $list[$i]['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $list[$i]['grade'] = "초1";

@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
     const academyId = entity === 'academies' ? user.academyId : await academyScope(user, req.query.academy);
     const body = req.body || {}; const input = body.data || {};
     if (req.method === 'POST') {
-      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'quizzes' && body.operation === 'replace'), '요청 작업을 확인해 주세요.');
+      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')), '요청 작업을 확인해 주세요.');
       if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
       if (body.operation === 'delete' || body.operation === 'restore') need(typeof input.id === 'string' && input.id.length > 0, '대상 항목을 선택해 주세요.');
     }
@@ -92,7 +92,7 @@ export default async function handler(req: any, res: any) {
         return res.json({
           hasKey: Boolean(rawKey),
           maskedKey: rawKey ? (rawKey.slice(0, 6) + '...' + rawKey.slice(-4)) : '',
-          model: val.model || 'gemini-3.0-flash',
+          model: val.model || 'gemini-3.8-flash',
           updatedAt: val.updatedAt || ''
         });
       }
@@ -336,6 +336,103 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: input.id ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } }) : await prisma.book.create({ data: { ...data, ...extra } }) });
     }
     if (entity === 'quizzes') {
+      if (body.operation === 'bulk_import' || (body.operation === 'import' && Array.isArray(body.items || body.rows))) {
+        master(user);
+        let groups = body.items;
+        if (!groups && Array.isArray(body.rows)) {
+          const groupMap = new Map<string, any[]>();
+          for (const r of body.rows) {
+            const bNo = String(r.bookNo || r.code || r.도서코드 || '').trim();
+            if (!bNo) continue;
+            if (!groupMap.has(bNo)) groupMap.set(bNo, []);
+            groupMap.get(bNo)!.push(r);
+          }
+          groups = Array.from(groupMap.entries()).map(([bookNo, questions]) => ({ bookNo, questions }));
+        }
+
+        need(Array.isArray(groups) && groups.length > 0 && groups.length <= 500, '한 번에 1~500권의 도서 북퀴즈를 일괄 등록할 수 있습니다.');
+
+        const bookNos = groups.map((g: any) => String(g.bookNo || '').trim()).filter(Boolean);
+        const matchedBooks = await prisma.book.findMany({
+          where: {
+            OR: [
+              { bookNo: { in: bookNos } },
+              { id: { in: bookNos } }
+            ]
+          },
+          select: { id: true, bookNo: true, title: true }
+        });
+
+        const bookMap = new Map<string, { id: string; bookNo: string; title: string }>();
+        matchedBooks.forEach(b => {
+          bookMap.set(b.bookNo, b);
+          bookMap.set(b.id, b);
+        });
+
+        const missingCodes = bookNos.filter(code => !bookMap.has(code));
+        need(missingCodes.length === 0, `등록되지 않은 도서코드가 포함되어 있습니다: [${missingCodes.slice(0, 5).join(', ')}${missingCodes.length > 5 ? ' 외 ' + (missingCodes.length - 5) + '건' : ''}]`);
+
+        const result = await prisma.$transaction(async tx => {
+          let totalImportedQuestions = 0;
+          let affectedBookCount = 0;
+
+          for (const group of groups) {
+            const bookCode = String(group.bookNo || '').trim();
+            const book = bookMap.get(bookCode);
+            if (!book) continue;
+
+            const rawQuestions = Array.isArray(group.questions) ? group.questions : [];
+            if (rawQuestions.length === 0) continue;
+
+            const questions = rawQuestions.map((q: any, idx: number) => {
+              const qNo = Number(q.questionNo) || (idx + 1);
+              const qText = text(q.question || q.문항내용 || q.질문, '문항 내용', 5000, true);
+              const opts = Array.isArray(q.options) 
+                ? q.options.map((o: any) => text(o, '보기', 1000, true)) 
+                : [q.opt1, q.opt2, q.opt3, q.opt4].filter(Boolean).map((o: any) => text(o, '보기', 1000, true));
+              
+              const isSubjective = q.quizType === 'SHORT_ANSWER' || q.type === 'SUBJECTIVE' || opts.length === 0;
+              let correctAnswer = String(q.correctAnswer ?? q.ans ?? q.정답 ?? '').trim();
+              
+              if (!isSubjective) {
+                need(opts.length >= 2 && opts.length <= 5, `[${book.title}] 보기 개수는 2~5개여야 합니다.`);
+                const ansNum = Number(correctAnswer);
+                if (Number.isInteger(ansNum) && ansNum >= 1 && ansNum <= opts.length) {
+                  correctAnswer = String(ansNum);
+                } else {
+                  const matchIdx = opts.findIndex((o: string) => o.trim() === correctAnswer);
+                  if (matchIdx >= 0) {
+                    correctAnswer = String(matchIdx + 1);
+                  } else {
+                    need(false, `[${book.title}] ${qNo}번 문항의 정답(${correctAnswer})이 보기 범위(1~${opts.length})에 없습니다.`);
+                  }
+                }
+              }
+
+              return {
+                bookId: book.id,
+                questionNo: qNo,
+                question: qText,
+                options: isSubjective ? null : opts,
+                correctAnswer,
+                quizType: (isSubjective ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE') as any,
+                explanation: q.explanation || q.hint || q.해설 || null,
+                score: Number(q.score) || 20
+              };
+            });
+
+            await tx.bookQuiz.deleteMany({ where: { bookId: book.id } });
+            await tx.bookQuiz.createMany({ data: questions });
+
+            totalImportedQuestions += questions.length;
+            affectedBookCount++;
+          }
+
+          return { ok: true, affectedBookCount, totalImportedQuestions };
+        });
+
+        return res.json(result);
+      }
       if (body.operation === 'replace') {
         need(typeof input.bookId === 'string' && await prisma.book.findUnique({ where: { id: input.bookId } }), '도서를 찾을 수 없습니다.');
         need(Array.isArray(input.questions) && input.questions.length <= 100, '최대 100문항까지 저장할 수 있습니다.');
@@ -452,7 +549,7 @@ export default async function handler(req: any, res: any) {
       const prev = ((row?.value as any) || {}) as Record<string, any>;
       const inputKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
       const finalKey = inputKey || (prev.apiKey ? String(prev.apiKey).trim() : '');
-      const model = typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || 'gemini-3.0-flash');
+      const model = typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || 'gemini-3.8-flash');
       const meta = { apiKey: finalKey, model, updatedAt: new Date().toISOString() };
       await prisma.portalSetting.upsert({
         where: { key: 'gemini_api_config' },

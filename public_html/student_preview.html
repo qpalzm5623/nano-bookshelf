@@ -3979,7 +3979,7 @@
       <div id="mySubSection-recommended" style="display:none;">
         <div class="grade-filter-scroll" id="gradeFilterBar">
           <button type="button" class="grade-chip" data-grade="all" onclick="selectGradeFilter('all')">전체</button>
-          <button type="button" class="grade-chip" data-grade="미취학" onclick="selectGradeFilter('미취학')">미취학</button>
+          <button type="button" class="grade-chip" data-grade="유치부" onclick="selectGradeFilter('유치부')">유치부</button>
           <button type="button" class="grade-chip" data-grade="초1" onclick="selectGradeFilter('초1')">초1</button>
           <button type="button" class="grade-chip" data-grade="초2" onclick="selectGradeFilter('초2')">초2</button>
           <button type="button" class="grade-chip active" data-grade="초3" onclick="selectGradeFilter('초3')">초3</button>
@@ -4160,7 +4160,7 @@
       </div>
       <div class="detail-synopsis-subcard">
         <div class="sec-title" style="margin-bottom:8px;font-size:13.5px;">
-          <i class="fa-solid fa-feather-pointed" style="color:var(--leaf);"></i> 도서 줄거리 및 읽기 포인트
+          <i class="fa-solid fa-feather-pointed" style="color:var(--leaf);"></i> 도서 소개
         </div>
         <div class="synopsis-text" id="detailSynopsis">
           줄거리를 불러오는 중입니다.
@@ -5552,8 +5552,8 @@ var libData = [
     author: '백희나',
     pub: '한솔수북',
     cat: '유아그림책 / 상상력',
-    grade: '미취학',
-    gradeGroup: '미취학/유아',
+    grade: '유치부',
+    gradeGroup: '유치부',
     createdAt: '2026-09-17',
     quizCount7d: 142,
     readCount: 960,
@@ -5572,8 +5572,8 @@ var libData = [
     author: '백희나',
     pub: '책읽는곰',
     cat: '유아그림책 / 공감',
-    grade: '미취학',
-    gradeGroup: '미취학/유아',
+    grade: '유치부',
+    gradeGroup: '유치부',
     createdAt: '2026-09-16',
     quizCount7d: 128,
     readCount: 880,
@@ -5592,8 +5592,8 @@ var libData = [
     author: '백희나',
     pub: '책읽는곰',
     cat: '유아그림책 / 환경·자연',
-    grade: '미취학',
-    gradeGroup: '미취학/유아',
+    grade: '유치부',
+    gradeGroup: '유치부',
     createdAt: '2026-09-14',
     quizCount7d: 110,
     readCount: 750,
@@ -5649,6 +5649,9 @@ function initStudentMigratedData() {
         quizCount7d: 0,
         readCount: 0,
         cover: b.cover || '',
+        creatorType: b.creatorType || (b.academyId === 'HQ' ? 'HQ' : ((b.academyName && b.academyName.includes('본사')) ? 'HQ' : 'ACADEMY')),
+        academyId: b.academyId || 'HQ',
+        academyName: b.academyName || '본사 직속(HQ)',
         assigned: false,
         isRecommended: b.isRecommended === true,
         isEditorPick: b.isRecommended === true,
@@ -5836,7 +5839,8 @@ function getStudentCurrentGrade() {
   var label = '초등 3학년';
   var s = String(rawGrade).trim();
 
-  if (/초.*1|1학년/.test(s) && !s.includes('중')) { code = '초1'; label = '초등 1학년'; }
+  if (/유치|유아|미취학|^0$/.test(s)) { code = '유치부'; label = '유치부'; }
+  else if (/초.*1|1학년/.test(s) && !s.includes('중')) { code = '초1'; label = '초등 1학년'; }
   else if (/초.*2/.test(s)) { code = '초2'; label = '초등 2학년'; }
   else if (/초.*3/.test(s)) { code = '초3'; label = '초등 3학년'; }
   else if (/초.*4/.test(s)) { code = '초4'; label = '초등 4학년'; }
@@ -5993,17 +5997,21 @@ function openBookDetail(id, from) {
       +  '<div class="detail-title">'+b.title+'</div>'
       +  '<div class="detail-author-pub">'+b.author+' · '+b.pub+'</div>'
       +  '<div class="detail-badges">'
-      +    '<span class="detail-badge-grade"><i class="fa-solid fa-graduation-cap mr-1"></i>'+b.grade+' 권장</span>'
+      +    '<span class="detail-badge-grade"><i class="fa-solid fa-graduation-cap mr-1"></i>'+((b.grade === '미취학' || b.grade === '0') ? '유치부' : (b.grade || '유치부'))+' 권장</span>'
       +    '<span class="detail-badge-cat">'+b.cat+'</span>'
       +  '</div>'
       +  '<div class="detail-tags">'+tagsHtml+'</div>'
       +'</div>';
   }
 
-  // 2. 줄거리 주입
+  // 2. 도서 소개 주입 (100자 초과 시 '...' 처리)
   var synopsisEl = document.getElementById('detailSynopsis');
   if(synopsisEl) {
-    synopsisEl.innerText = b.synopsis || b.description || '즐거운 독서를 통해 지혜와 생각을 키워보세요.';
+    var rawSynopsis = String(b.synopsis || b.description || '즐거운 독서를 통해 지혜와 생각을 키워보세요.').trim();
+    if (rawSynopsis.length > 100) {
+      rawSynopsis = rawSynopsis.slice(0, 100) + '...';
+    }
+    synopsisEl.innerText = rawSynopsis;
   }
 
   // 2-2. 생각 꺼내기 (도서 읽기 전 호기심 유발 질문) 주입
@@ -6456,15 +6464,16 @@ function initLibInfiniteScroll(key, fullDataList, emptyHtml) {
 // 1. 배정 도서 렌더링 (10개 초기화 + 무한스크롤)
 function renderAssignedLib() {
   var assignedList = libData.filter(function(b){ return b.assigned; });
+  assignedList = sortLibraryBooksForStudent(assignedList);
   initLibInfiniteScroll('assigned', assignedList, '<div style="text-align:center;padding:30px;color:var(--muted);">현재 배정된 도서가 없습니다.</div>');
 }
 
-// 마스터 권장도서 학년 문자열을 학생 페이지 단축 코드(미취학, 초1~초6, 중1~중3)로 정규화
+// 마스터 권장도서 학년 문자열을 학생 페이지 단축 코드(유치부, 초1~초6, 중1~중3)로 정규화
 function normalizeStudentGradeShort(raw) {
   if (raw === undefined || raw === null) return '초3';
   var str = String(raw).trim();
   if (!str) return '초3';
-  if (str === '0' || /미취학|유아|유치/i.test(str)) return '미취학';
+  if (str === '0' || /유치|유아|미취학/i.test(str)) return '유치부';
   if (str === '1' || /^초\s*1|초등\s*1/i.test(str)) return '초1';
   if (str === '2' || /^초\s*2|초등\s*2/i.test(str)) return '초2';
   if (str === '3' || /^초\s*3|초등\s*3/i.test(str)) return '초3';
@@ -6477,6 +6486,112 @@ function normalizeStudentGradeShort(raw) {
   if (/중/i.test(str)) return '중1';
   return str.replace('초등 ', '초').replace('학년', '').replace('중등 ', '중');
 }
+
+// ==============================================================
+// 도서관 맞춤 도서 정렬 규칙 (전체 하위 메뉴 공통 적용)
+// 1순위: 내 학년과 같은 권장 학년, 내학년 +1 학년, 내학년 +2 학년... 내학년 -1 학년, 내학년 -2 학년...
+// 2순위: 본사에서 등록한 도서 우선 (HQ)
+// 3순위: 도서명 가나다순
+// ==============================================================
+function parseGradeToNumber(raw, fallback) {
+  if (raw === undefined || raw === null) return fallback !== undefined ? fallback : 3;
+  var s = String(raw).trim();
+  if (!s) return fallback !== undefined ? fallback : 3;
+
+  if (s === '0' || /유치|유아|미취학/i.test(s)) return 0;
+  if (/^초\s*1|초등\s*1|^1$/i.test(s)) return 1;
+  if (/^초\s*2|초등\s*2|^2$/i.test(s)) return 2;
+  if (/^초\s*3|초등\s*3|^3$/i.test(s)) return 3;
+  if (/^초\s*4|초등\s*4|^4$/i.test(s)) return 4;
+  if (/^초\s*5|초등\s*5|^5$/i.test(s)) return 5;
+  if (/^초\s*6|초등\s*6|^6$/i.test(s)) return 6;
+  if (/중\s*1|중등\s*1|중학교\s*1|^7$/i.test(s)) return 7;
+  if (/중\s*2|중등\s*2|중학교\s*2|^8$/i.test(s)) return 8;
+  if (/중\s*3|중등\s*3|중학교\s*3|^9$/i.test(s)) return 9;
+
+  if (/초등\s*1\s*~\s*2/.test(s)) return 1;
+  if (/초등\s*3\s*~\s*4/.test(s)) return 3;
+  if (/초등\s*5\s*~\s*6/.test(s)) return 5;
+  if (/중등\s*1\s*~\s*3|중등\s*전학년/.test(s)) return 7;
+
+  var m = s.match(/\d+/);
+  if (m) {
+    var n = parseInt(m[0], 10);
+    if (s.includes('중')) {
+      if (n === 1) return 7;
+      if (n === 2) return 8;
+      if (n === 3) return 9;
+    }
+    if (n >= 0 && n <= 6) return n;
+  }
+
+  return fallback !== undefined ? fallback : 999;
+}
+
+function getStudentNumericGrade() {
+  try {
+    var curGr = typeof getStudentCurrentGrade === 'function' ? getStudentCurrentGrade() : null;
+    var code = curGr && curGr.code ? String(curGr.code).trim() : '초3';
+    return parseGradeToNumber(code, 3);
+  } catch(e) {
+    return 3;
+  }
+}
+
+function isBookFromHQ(b) {
+  if (!b) return 0;
+  if (b.creatorType === 'HQ' || b.academyId === 'HQ') return 0;
+  if (b.creatorType === 'ACADEMY') return 1;
+  if (b.academyName) {
+    if (b.academyName.includes('본사') || b.academyName.includes('HQ') || b.academyName.includes('공용')) return 0;
+    return 1;
+  }
+  return 0; // 마스터 기본 도서는 본사 도서
+}
+
+function getStudentBookSortPriority(book, myGradeNum) {
+  var bookGradeNum = parseGradeToNumber(book.grade || book.gradeGroup, 999);
+  var gradeScore = 999;
+
+  if (bookGradeNum >= 0 && bookGradeNum <= 9) {
+    if (bookGradeNum >= myGradeNum) {
+      gradeScore = bookGradeNum - myGradeNum;
+    } else {
+      gradeScore = 50 + (myGradeNum - bookGradeNum);
+    }
+  }
+
+  var hqScore = isBookFromHQ(book);
+  return {
+    gradeScore: gradeScore,
+    hqScore: hqScore,
+    title: book.title || ''
+  };
+}
+
+function sortLibraryBooksForStudent(bookList) {
+  if (!Array.isArray(bookList) || bookList.length <= 1) return bookList || [];
+  var myGrade = getStudentNumericGrade();
+
+  return bookList.slice().sort(function(a, b) {
+    var pa = getStudentBookSortPriority(a, myGrade);
+    var pb = getStudentBookSortPriority(b, myGrade);
+
+    // 1순위: 학년 우선순위
+    if (pa.gradeScore !== pb.gradeScore) {
+      return pa.gradeScore - pb.gradeScore;
+    }
+
+    // 2순위: 본사 등록 도서 우선
+    if (pa.hqScore !== pb.hqScore) {
+      return pa.hqScore - pb.hqScore;
+    }
+
+    // 3순위: 가나다순
+    return pa.title.localeCompare(pb.title, 'ko');
+  });
+}
+
 
 // 도서 자체의 학년 속성이 아닌, 마스터 [서비스 운영 관리 > 권장도서 관리]에서 등록한 권장도서만 반환
 function getStudentRecommendedBookList() {
@@ -6563,6 +6678,7 @@ function renderRecLib(q) {
     });
   }
 
+  list = sortLibraryBooksForStudent(list);
   initLibInfiniteScroll('recommended', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-seedling mr-1"></i>선택한 학년의 권장 도서 또는 검색 조건에 맞는 도서가 없습니다.</div>');
 }
 
@@ -6588,6 +6704,7 @@ function renderPopularLib() {
     }
   }
   var list = getPopularSortedList();
+  list = sortLibraryBooksForStudent(list);
   initLibInfiniteScroll('popular', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-fire mr-1"></i>인기 도서 데이터가 없습니다.</div>');
 }
 
@@ -6604,6 +6721,7 @@ function renderLib(q) {
     });
   }
 
+  list = sortLibraryBooksForStudent(list);
   initLibInfiniteScroll('all', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-book mr-1"></i>조건에 맞는 도서가 없습니다.</div>');
 }
 
@@ -7178,6 +7296,7 @@ function filterThemeBooks() {
     });
   }
 
+  targetBooks = sortLibraryBooksForStudent(targetBooks);
   currentThemeFilterTargetBooks = targetBooks;
   currentThemePage = 0;
 
@@ -7580,6 +7699,7 @@ function filterBannerTabBooks() {
            (bk.pub && bk.pub.toLowerCase().includes(q));
   });
 
+  filtered = sortLibraryBooksForStudent(filtered);
   if (filtered.length === 0) {
     listEl.innerHTML = '<div class="empty-msg"><i class="fa-solid fa-book-open"></i>' +
       (q ? ('\'' + q + '\' 검색 결과가 없습니다.') : '이 배너에 연결된 도서가 없습니다. 마스터 [메인 배너 관리]에서 도서를 추가해주세요.') +
@@ -9155,6 +9275,7 @@ function renderInterestRecommendations() {
   // 3. 도서관 관심주제 맞춤 전체 리스트 렌더링 (10개 초기화 + 무한스크롤)
   var libMatchedBadge = document.getElementById('libInterestMatchedCountBadge');
   if(libMatchedBadge) libMatchedBadge.innerText = matchedBooks.length + '권';
+  matchedBooks = sortLibraryBooksForStudent(matchedBooks);
   initLibInfiniteScroll('interest', matchedBooks, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>선택한 관심 주제에 매칭된 도서가 없습니다.</div>');
 }
 
@@ -9165,6 +9286,7 @@ function renderWishList() {
   var wishBooks = libData.filter(function(b){
     return studentWishlist.indexOf(b.id) !== -1;
   });
+  wishBooks = sortLibraryBooksForStudent(wishBooks);
 
   var badge = document.getElementById('wishBadgeCount');
   if(badge) badge.innerText = wishBooks.length + '권';
@@ -10617,14 +10739,15 @@ function openDrawerMenuItem(type) {
     title.innerText = '고객센터';
     sub.innerText = '이용 중 문의사항이나 도움이 필요하시면 언제든 연락주세요.';
     contentHtml = 
-      '<div style="background:#faf8f5;border:1px solid var(--soft);border-radius:14px;padding:16px;text-align:center;margin-bottom:14px;">'
+      '<div style="background:#faf8f5;border:1px solid var(--soft);border-radius:14px;padding:20px 16px;text-align:center;margin-bottom:14px;">'
       + '<div style="font-size:36px;margin-bottom:8px;">🎧</div>'
       + '<div style="font-weight:800;font-size:15px;color:var(--wood-dark);margin-bottom:4px;">나노의 책장 학생 지원센터</div>'
-      + '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px;">도서 오류 제보, 퀴즈 문제 문의 등 무엇이든 친절하게 도와드립니다.</div>'
-      + '<div style="background:#ffffff;border-radius:10px;padding:12px;font-size:12.5px;text-align:left;border:1px solid var(--soft);">'
-      +   '<div style="margin-bottom:6px;"><strong style="color:var(--leaf);">📞 전화 문의:</strong> 1544-0000 (평일 09:00 ~ 18:00)</div>'
-      +   '<div style="margin-bottom:6px;"><strong style="color:var(--leaf);">💬 카카오톡:</strong> @나노의책장 채널 1:1 상담</div>'
-      +   '<div><strong style="color:var(--leaf);">🏫 학원 데스크:</strong> 담당 선생님께 말씀해 주셔도 해결됩니다.</div>'
+      + '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px;">도서 오류 제보, 퀴즈 문제 문의 등 무엇이든 친절하게 도와드립니다.</div>'
+      + '<div style="background:#ffffff;border-radius:12px;padding:14px;text-align:center;border:1px solid var(--soft);">'
+      +   '<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">카카오톡 채널을 통해 1:1 상담을 받으실 수 있습니다.</div>'
+      +   '<a href="http://pf.kakao.com/_sgRjG" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#FEE500;color:#191919;font-weight:800;font-size:13.5px;padding:11px 16px;border-radius:10px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,0.08);">'
+      +     '<i class="fa-solid fa-comment" style="color:#3c1e1e;font-size:15px;"></i> 카카오톡 1:1 상담 채널 바로가기'
+      +   '</a>'
       + '</div>'
       + '</div>'
       + '<button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="closeDrawerModal()" style="border-radius:10px;font-weight:700;padding:9px;">닫기</button>';

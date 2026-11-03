@@ -921,7 +921,7 @@
             <div class="sidebar-section-title" style="margin-top: 20px;">시스템 설정</div>
     <a class="nav-item-btn" id="nav-master-ai-settings" onclick="openMasterAiSettingsModal()">
       <i class="fa-solid fa-robot text-warning"></i>
-      <span>AI 엔진 설정 <span class="badge badge-primary text-white ml-1" style="font-size: 10px; background:#1f8a7e !important;">Gemini</span></span>
+      <span>AI 엔진 설정 <span class="badge badge-primary text-white ml-1" style="font-size: 10px; background:#1f8a7e !important;">Gemini 3.8 Flash</span></span>
     </a>
   </aside>
 
@@ -989,7 +989,7 @@
           <select id="franchiseStatusFilter" class="select-beige">
             <option value="ALL">전체 운영 상태</option>
             <option value="ACTIVE">정상 운영중</option>
-            <option value="EXPIRING">계약 만료 임박</option>
+            <option value="EXPIRING">계약 만료 D-30</option>
             <option value="EXPIRED">계약 만료</option>
             <option value="PAUSED">일시 정지</option>
             <option value="TERMINATED">해지 완료</option>
@@ -1015,7 +1015,7 @@
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 지역, 사업자번호 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
+          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 전화번호, 지역, 사업자번호 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
         </div>
         <!-- 검색 버튼 (버튼 클릭 또는 Enter 시에만 검색 실행) -->
         <button type="button" class="btn btn-sm font-weight-bold" onclick="filterFranchiseList()" style="border-radius: 10px; height: 38px; background: #3d342d; border: 1px solid #3d342d; color: #ffffff; white-space: nowrap; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(61,52,45,0.18); cursor: pointer;" title="설정한 조건으로 가맹 학원을 검색합니다.">
@@ -1201,7 +1201,14 @@
                 <th style="width: 125px; white-space: nowrap;" class="text-center">학부모 연락처</th>
                 <th style="width: 100px; white-space: nowrap;" class="text-center">누적 포인트</th>
                 <th style="width: 120px; white-space: nowrap;" class="text-center">최근 접속일</th>
-                <th style="width: 105px; white-space: nowrap;" class="text-center">등록일</th>
+                <th style="width: 120px; white-space: nowrap;" class="text-center">
+                  <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
+                    <span>등록일</span>
+                    <button type="button" id="memberDateSortBtn" class="btn btn-xs" onclick="toggleMemberDateSort()" title="등록일 정렬 (클릭 시 최신순/과거순 변경)" style="border: 1px solid #d1d5db; background: #ffffff; border-radius: 4px; line-height: 1; cursor: pointer; padding: 2px 5px !important; display: inline-flex; align-items: center; justify-content: center;">
+                      <i id="memberDateSortIcon" class="fa-solid fa-sort text-muted" style="font-size: 11px;"></i>
+                    </button>
+                  </div>
+                </th>
                 <th style="width: 95px; white-space: nowrap;" class="text-center">계정 상태</th>
                 <th style="width: 65px; white-space: nowrap;" class="text-center">관리</th>
               </tr>
@@ -1341,7 +1348,7 @@
             <h6 class="font-weight-bold mb-0 text-muted">
               <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 관리 (전체 <span id="recBookCount">0</span>권 등록)
             </h6>
-            <small class="text-muted">학생 도서관에 노출될 학년별(미취학~중등3) 권장/추천 도서 목록을 관리합니다.</small>
+            <small class="text-muted">학생 도서관에 노출될 학년별(유치부~중등3) 권장/추천 도서 목록을 관리합니다.</small>
           </div>
           <div class="d-flex align-items-center" style="gap: 5px;">
             <button class="btn-master-excel" onclick="downloadRecommendedExcelTemplate()">
@@ -1358,7 +1365,7 @@
         <!-- 학년별 버튼 탭 -->
         <div class="mb-3 d-flex flex-wrap gap-2" id="recGradeBtnGroup">
           <button class="btn font-weight-bold rec-grade-btn active" data-grade="ALL" onclick="selectRecGrade('ALL')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #7d5a2b; color: #fff; border: none;">전체</button>
-          <button class="btn font-weight-bold rec-grade-btn" data-grade="미취학" onclick="selectRecGrade('미취학')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">미취학</button>
+          <button class="btn font-weight-bold rec-grade-btn" data-grade="유치부" onclick="selectRecGrade('유치부')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">유치부</button>
           <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 1학년" onclick="selectRecGrade('초등 1학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초1</button>
           <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 2학년" onclick="selectRecGrade('초등 2학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초2</button>
           <button class="btn font-weight-bold rec-grade-btn" data-grade="초등 3학년" onclick="selectRecGrade('초등 3학년')" style="border-radius: 20px; padding: 6px 16px; font-size: 13px; background: #fff; color: #5a4b3d; border: 1.5px solid #d4c4b0;">초3</button>
@@ -1580,6 +1587,9 @@
           <button class="btn-beige-secondary" onclick="openExcelUploadModal()">
             <i class="fa-solid fa-file-excel mr-1"></i>엑셀 대량 도서 등록
           </button>
+          <button class="btn-beige-secondary" onclick="openQuizExcelUploadModal()" style="border-color: #f59e0b; color: #b45309; background: #fffdf5;" title="이미 등록된 도서(도서 코드)에 북퀴즈 문항을 엑셀로 일괄 등록합니다.">
+            <i class="fa-solid fa-file-circle-question mr-1" style="color: #d97706;"></i>엑셀 대량 북퀴즈 등록
+          </button>
           <button class="btn-beige-primary" onclick="openMasterBookAddModal()">
             <i class="fa-solid fa-plus mr-1"></i>신규 마스터 도서 등록
           </button>
@@ -1637,7 +1647,7 @@
         <div>
           <select id="contentGradeFilter" class="select-beige" onchange="filterMasterContentList()">
             <option value="ALL">전체 권장 학년</option>
-            <option value="미취학">미취학</option>
+            <option value="유치부">유치부</option>
             <option value="초등 1학년">초등 1학년</option>
             <option value="초등 2학년">초등 2학년</option>
             <option value="초등 3학년">초등 3학년</option>
@@ -2593,7 +2603,7 @@
           <div class="col-md-6 form-group">
             <label class="font-weight-bold" style="font-size: 12.5px;">학년</label>
             <select id="detailMemberGrade" class="select-beige w-100">
-              <option value="미취학">미취학</option>
+              <option value="유치부">유치부</option>
               <option value="초1">초1</option><option value="초2">초2</option>
               <option value="초3">초3</option><option value="초4">초4</option>
               <option value="초5">초5</option><option value="초6">초6</option>
@@ -3071,7 +3081,7 @@
           <div class="col-md-6">
             <label class="form-label font-weight-bold" style="font-size: 13px;">지정 대상 학년 <span class="text-danger">*</span></label>
             <select id="modalRecGrade" class="form-control form-control-beige" onchange="filterRecModalBooks()">
-              <option value="미취학">미취학 (유아/7세)</option>
+              <option value="유치부">유치부</option>
               <option value="초등 1학년">초등 1학년</option>
               <option value="초등 2학년">초등 2학년</option>
               <option value="초등 3학년">초등 3학년</option>
@@ -3115,7 +3125,7 @@
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
               <select id="directRecGrade" class="form-control form-control-beige" required>
-                <option value="미취학">미취학 (유아/7세)</option>
+                <option value="유치부">유치부</option>
                 <option value="초등 1학년">초등 1학년</option>
                 <option value="초등 2학년">초등 2학년</option>
                 <option value="초등 3학년">초등 3학년</option>
@@ -3808,12 +3818,12 @@
                 </div>
               </div>
 
-              <!-- 권장 학년 (미취학, 초1~중3 개별 선택) -->
+              <!-- 권장 학년 (유치부, 초1~중3 개별 선택) -->
               <div class="row">
                 <div class="col-12 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
                   <select id="mbAddGrade" class="select-beige w-100" onchange="onGradeChanged(this.value)">
-                    <option value="미취학" data-code="0">미취학</option>
+                    <option value="유치부" data-code="0">유치부</option>
                     <option value="초등 1학년" data-code="1">초등 1학년</option>
                     <option value="초등 2학년" data-code="2">초등 2학년</option>
                     <option value="초등 3학년" data-code="3">초등 3학년</option>
@@ -4010,7 +4020,7 @@
                 <tr>
                   <td class="font-weight-bold">권장학년</td>
                   <td>
-                    <span class="badge badge-secondary mr-1">a</span>미취학 &nbsp;|&nbsp;
+                    <span class="badge badge-secondary mr-1">a</span>유치부 &nbsp;|&nbsp;
                     <span class="badge badge-secondary mr-1">1~6</span>초등 1~6학년 &nbsp;|&nbsp;
                     <span class="badge badge-secondary mr-1">7~9</span>중등 1~3학년 &nbsp;|&nbsp;
                     <span class="badge badge-secondary mr-1">b</span>중등 전체<br>
@@ -4074,6 +4084,130 @@
   </div>
 </div>
 
+
+
+<!-- [모달] 엑셀 대량 북퀴즈 등록 모달 -->
+<div class="modal fade" id="masterQuizExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content modal-content-beige">
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
+        <h5 class="modal-title font-weight-bold" style="font-size: 16px;">
+          <i class="fa-solid fa-file-circle-question mr-2" style="color: #d97706;"></i>엑셀 대량 북퀴즈 등록
+        </h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body p-4" style="background: #faf8f5;">
+        <div class="mb-3 text-muted" style="font-size: 12.5px;">
+          표준 엑셀 서식에 맞추어 이미 등록된 도서(도서 관리코드 기준)에 3~5문항 북퀴즈를 한 번에 일괄 등록·갱신합니다.
+        </div>
+
+        <!-- 대량 등록 규격 안내 배너 -->
+        <div class="mb-3 p-3 rounded" style="background: #ffffff; border: 1.5px solid #e8e2d8; font-size: 12px; line-height: 1.5;">
+          <div class="font-weight-bold text-dark mb-1" style="font-size: 13px;">
+            <i class="fa-solid fa-circle-exclamation text-warning mr-1"></i>엑셀(CSV/XLSX) 작성 시 필수 규격 안내
+          </div>
+          <div class="table-responsive mt-2">
+            <table class="table table-sm table-bordered mb-0" style="font-size: 11.5px; background: #faf9f6;">
+              <thead class="thead-light">
+                <tr>
+                  <th style="width: 22%;">항목명</th>
+                  <th>입력 허용값 및 코드 규칙</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="font-weight-bold">도서코드 (필수)</td>
+                  <td>
+                    시스템에 기등록된 <strong>도서 관리코드</strong> 입력 (예: <span class="badge badge-secondary">FA000001</span>, <span class="badge badge-secondary">MB-001</span>)<br>
+                    <small class="text-danger">* 등록되지 않은 도서코드는 업로드 시 자동 검출되어 차단됩니다.</small>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">도서명 (선택)</td>
+                  <td>
+                    작성자 확인용 (예: 어린 왕자, 고양이 목욕탕)<br>
+                    <small class="text-muted">* 실제 매칭은 '도서코드'로 이루어지므로 비워두셔도 정상 등록됩니다.</small>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">문항번호 (필수)</td>
+                  <td>
+                    <span class="badge badge-light border mr-1">1</span> ~ <span class="badge badge-light border mr-1">5</span> (해당 도서 내 문항 순번)
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">문항유형</td>
+                  <td>
+                    <span class="text-primary font-weight-bold">객관식</span> (기본값, 4지선다) 또는 <span class="text-primary font-weight-bold">주관식</span> (단답형)
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">문항내용 (필수)</td>
+                  <td>
+                    문제 질문 본문 <small class="text-muted">(쉼표, 큰따옴표, 물음표, 줄바꿈 등 특수문자 자유롭게 허용)</small>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">보기1 ~ 보기4</td>
+                  <td>
+                    객관식 선택지 4개 <small class="text-danger">* 객관식인 경우 필수 입력, 주관식인 경우 공란 가능</small>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">정답 (필수)</td>
+                  <td>
+                    객관식: <span class="badge badge-success font-weight-bold">1</span> ~ <span class="badge badge-success font-weight-bold">4</span> 숫자 (또는 보기 텍스트와 정확히 일치해도 자동 인식)<br>
+                    주관식: 정답 단어 또는 문장
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">해설/힌트 (선택)</td>
+                  <td>
+                    학생이 문제를 틀렸을 때 제공할 힌트 또는 정답 해설 요약
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 서식 다운로드 -->
+        <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded border">
+          <div>
+            <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
+              <i class="fa-solid fa-file-excel text-warning mr-1"></i>표준 북퀴즈 서식 다운로드
+            </span>
+            <small class="text-muted">도서코드, 문항번호, 보기 1~4, 정답 등 실제 등록 도서 샘플 데이터 포함</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadQuizExcelTemplate('csv')" style="border-radius: 8px; font-size: 12px; padding: 5px 10px;">
+              <i class="fa-solid fa-download mr-1"></i>샘플 CSV (.csv)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning font-weight-bold" onclick="downloadQuizExcelTemplate('xlsx')" style="border-radius: 8px; font-size: 12px; padding: 5px 10px; color: #b45309; border-color: #f59e0b;">
+              <i class="fa-solid fa-file-excel mr-1"></i>샘플 엑셀 (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <!-- 파일 드래그 & 드롭 영역 -->
+        <div class="p-4 rounded text-center mb-3 bg-white" style="border: 2px dashed #f59e0b; cursor: pointer; background: #fffdfa;" onclick="document.getElementById('masterQuizExcelFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up text-warning mb-2" style="font-size: 38px;"></i>
+          <h6 class="font-weight-bold mb-1" id="masterQuizExcelFileName" style="font-size: 13.5px;">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
+          <small class="text-muted">지원 형식: .xlsx, .xls, .csv (최대 10MB)</small>
+          <input type="file" id="masterQuizExcelFileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleMasterQuizExcelFileSelect(this)">
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+          <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
+          <button type="button" class="btn-beige-primary" onclick="handleMasterQuizExcelUpload()" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-color: #d97706; color: #fff;">
+            <i class="fa-solid fa-upload mr-1"></i>북퀴즈 일괄 업로드 실행
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 <!-- [모달] 새 북퀴즈 세트 추가 (기관명 자동 선택 모달) -->
@@ -4473,7 +4607,7 @@
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학년 / 구분 <span class="text-danger">*</span></label>
               <select id="newMemGrade" class="select-beige w-100" disabled>
-                <option value="미취학">미취학 (유치원)</option>
+                <option value="유치부">유치부</option>
                 <option value="초1">초등학교 1학년</option>
                 <option value="초2">초등학교 2학년</option>
                 <option value="초3">초등학교 3학년</option>
@@ -4631,7 +4765,7 @@
                     <div><span class="badge badge-danger mr-1" style="min-width: 18px;">D</span><strong>삭제</strong> (해제)</div>
                   </td>
                   <td class="text-left align-middle" style="padding: 6px; font-size: 11px;">
-                    <code>0</code> : 미취학 (유아)<br>
+                    <code>0</code> : 유치부<br>
                     <code>1~6</code> : 초등 1학년~6학년<br>
                     <code>7~9</code> : 중등 1학년~3학년
                   </td>
@@ -4815,6 +4949,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <!-- PDF.js library for secure worksheet viewer (비동기 지연 로딩) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 
 
@@ -4880,7 +5015,7 @@
 
         <div class="form-group mb-4">
           <label style="font-size: 13px; font-weight: 700; color: #333333; margin-bottom: 6px;">기본 생성 모델 (Gemini Model)</label>
-          <input list="geminiModelOptions" id="masterGeminiModel" class="form-control" value="gemini-2.0-flash" placeholder="모델명을 선택하거나 직접 입력하세요" style="font-size: 13px; border-radius: 8px; border: 1.5px solid #dcdad5; height: 42px;">
+          <input list="geminiModelOptions" id="masterGeminiModel" class="form-control" value="gemini-3.8-flash" placeholder="모델명을 선택하거나 직접 입력하세요" style="font-size: 13px; border-radius: 8px; border: 1.5px solid #dcdad5; height: 42px;">
           <datalist id="geminiModelOptions">
             <option value="gemini-3.0-flash">gemini-3.0-flash (중간 사양 · 권장 - 3.0 표준 고속 & 균형 추론)</option>
             <option value="gemini-3.5-pro">gemini-3.5-pro (최고 사양 - 3.5 차세대 심층 추론 & 최고 정밀 문장력)</option>

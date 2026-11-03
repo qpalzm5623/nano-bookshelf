@@ -312,6 +312,49 @@ function normalizePlan(plan) {
   return "Basic";
 }
 
+// 도서 및 회원 권장 학년 표준 정규화 함수 (유치부 통일 및 초1~중3 완벽 매핑)
+function normalizeBookGrade(raw) {
+  if (raw === undefined || raw === null) return "미지정";
+  const str = String(raw).trim();
+  if (!str || str === "미지정") return "미지정";
+
+  // 1. 유치부 / 미취학 / 유아 / 0 -> 무조건 "유치부"로 통일
+  if (str === "0" || str.toLowerCase() === "a" || /미취학|유아|유치/i.test(str)) {
+    return "유치부";
+  }
+
+  // 2. 단일 숫자 코드 (1~6: 초1~6, 7~9: 중1~3)
+  if (str === "1") return "초등 1학년";
+  if (str === "2") return "초등 2학년";
+  if (str === "3") return "초등 3학년";
+  if (str === "4") return "초등 4학년";
+  if (str === "5") return "초등 5학년";
+  if (str === "6") return "초등 6학년";
+  if (str === "7") return "중등 1학년";
+  if (str === "8") return "중등 2학년";
+  if (str === "9") return "중등 3학년";
+
+  // 3. 한글 패턴 정규화 (초1, 초등 1, 초등1, 초등 1학년 등)
+  if (/^초[등\s]*1(?:학년)?$/.test(str)) return "초등 1학년";
+  if (/^초[등\s]*2(?:학년)?$/.test(str)) return "초등 2학년";
+  if (/^초[등\s]*3(?:학년)?$/.test(str)) return "초등 3학년";
+  if (/^초[등\s]*4(?:학년)?$/.test(str)) return "초등 4학년";
+  if (/^초[등\s]*5(?:학년)?$/.test(str)) return "초등 5학년";
+  if (/^초[등\s]*6(?:학년)?$/.test(str)) return "초등 6학년";
+  if (/^중[등\s]*1(?:학년)?$/.test(str)) return "중등 1학년";
+  if (/^중[등\s]*2(?:학년)?$/.test(str)) return "중등 2학년";
+  if (/^중[등\s]*3(?:학년)?$/.test(str)) return "중등 3학년";
+  if (/^고[등\s]*1(?:학년)?$/.test(str)) return "고등 1학년";
+  if (/^고[등\s]*2(?:학년)?$/.test(str)) return "고등 2학년";
+  if (/^고[등\s]*3(?:학년)?$/.test(str)) return "고등 3학년";
+
+  if (str === "초등 전학년" || str === "초등전학년") return "초등 전학년";
+  return str;
+}
+if (typeof window !== "undefined") {
+  window.normalizeBookGrade = normalizeBookGrade;
+}
+
 // 인위적으로 자동 생성된 더미 ID 패턴 검증
 function isSyntheticAdminId(id) {
   if (!id) return true;
@@ -2046,7 +2089,7 @@ async function openMasterAiSettingsModal() {
     if (res.ok) {
       var data = await res.json();
       if (modelSelect && data.model) {
-        modelSelect.value = data.model;
+        modelSelect.value = data.model || 'gemini-3.8-flash';
       }
       if (statusElem) {
         if (data.hasKey) {
@@ -2070,7 +2113,7 @@ async function saveMasterAiSettings() {
   var keyInput = document.getElementById('masterGeminiApiKey');
   var modelSelect = document.getElementById('masterGeminiModel');
   var apiKey = keyInput ? keyInput.value.trim() : '';
-  var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+  var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
 
   try {
     var res = await fetch('/api/manage?entity=ai_config', {

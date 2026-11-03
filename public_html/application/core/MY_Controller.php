@@ -106,7 +106,7 @@ class MY_Controller extends CI_Controller
           $this->CONFIG_DATA['userData']['grade_org'] = $this->CONFIG_DATA['userData']['grade'];
           switch($this->CONFIG_DATA['userData']['grade']) {
               case "0" :
-                $this->CONFIG_DATA['userData']['grade'] = "미취학";
+                $this->CONFIG_DATA['userData']['grade'] = "유치부";
               break;
               case "1" :
                 $this->CONFIG_DATA['userData']['grade'] = "초1";

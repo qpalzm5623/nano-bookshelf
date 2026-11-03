@@ -126,7 +126,7 @@ export default async function handler(req: any, res: any) {
             pub = '옐로스톤';
             category = 'F';
             subCat = 'A';
-            grade = '미취학';
+            grade = '유치부';
             cover = '/upload/book/9791187079521.jpg';
           }
 

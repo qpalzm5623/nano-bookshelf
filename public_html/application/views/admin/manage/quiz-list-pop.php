@@ -48,7 +48,7 @@
                     <div class="col-sm-8 row align-middle ml-m1">
                         <select name="grade" id="grade" class="form-control col-sm-3">
                             <option value="">전체</option>
-                            <option value="0" <?php echo @$_GET['grade']=="0"?"selected":""?>>미취학</option>
+                            <option value="0" <?php echo @$_GET['grade']=="0"?"selected":""?>>유치부</option>
                             <option value="1" <?php echo @$_GET['grade']=="1"?"selected":""?>>초1</option>
                             <option value="2" <?php echo @$_GET['grade']=="2"?"selected":""?>>초2</option>
                             <option value="3" <?php echo @$_GET['grade']=="3"?"selected":""?>>초3</option>

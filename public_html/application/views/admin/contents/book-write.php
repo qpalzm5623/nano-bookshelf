@@ -151,7 +151,7 @@ FA200001	F	A	2	00001
                       <td colspan="3">
                         <select name="recommend_class" id="recommend_class" class="form-control col-sm-3" required>
                             <option value="">선택</option>
-                            <option value="0" <?php echo @$data['recommend_class']=="0"?"selected":""?>>미취학</option>
+                            <option value="0" <?php echo @$data['recommend_class']=="0"?"selected":""?>>유치부</option>
                             <option value="1" <?php echo @$data['recommend_class']=="1"?"selected":""?>>초1</option>
                             <option value="2" <?php echo @$data['recommend_class']=="2"?"selected":""?>>초2</option>
                             <option value="3" <?php echo @$data['recommend_class']=="3"?"selected":""?>>초3</option>

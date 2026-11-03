@@ -108,6 +108,42 @@ function populateMemberAcademyFilter() {
 let memberCurrentPage = 1;
 const MEMBER_PAGE_SIZE = 30;
 let lastFilteredMembers = [];
+let memberDateSortOrder = "none"; // 'none' | 'desc' | 'asc'
+
+// 등록일 오름차순/내림차순 토글 정렬
+function toggleMemberDateSort() {
+  if (memberDateSortOrder === "none" || memberDateSortOrder === "asc") {
+    memberDateSortOrder = "desc";
+  } else {
+    memberDateSortOrder = "asc";
+  }
+  updateMemberDateSortUI();
+  filterMemberList();
+}
+
+// 등록일 정렬 화살표 버튼 UI 동기화
+function updateMemberDateSortUI() {
+  const icon = document.getElementById("memberDateSortIcon");
+  const btn = document.getElementById("memberDateSortBtn");
+  if (!icon || !btn) return;
+
+  if (memberDateSortOrder === "desc") {
+    icon.className = "fa-solid fa-arrow-down-wide-short text-primary";
+    btn.style.borderColor = "#3b82f6";
+    btn.style.backgroundColor = "#eff6ff";
+    btn.title = "등록일 최신순(내림차순) 정렬 중 - 클릭 시 과거순(오름차순) 변경";
+  } else if (memberDateSortOrder === "asc") {
+    icon.className = "fa-solid fa-arrow-up-short-wide text-primary";
+    btn.style.borderColor = "#3b82f6";
+    btn.style.backgroundColor = "#eff6ff";
+    btn.title = "등록일 과거순(오름차순) 정렬 중 - 클릭 시 최신순(내림차순) 변경";
+  } else {
+    icon.className = "fa-solid fa-sort text-muted";
+    btn.style.borderColor = "#d1d5db";
+    btn.style.backgroundColor = "#ffffff";
+    btn.title = "등록일 정렬 (클릭 시 최신순/과거순 변경)";
+  }
+}
 
 // 상단 회원 요약 카드 실제 데이터 기반 집계 함수
 function updateMemberStats() {
@@ -154,26 +190,43 @@ function renderMemberTable(data = memberList, keepPage = false) {
   const tbody = document.getElementById("memberTableBody");
   if (!tbody) return;
 
-  // 소속 학원명 기준 가나다순 오름차순 정렬 (기본 전체 목록일 경우 캐시 재활용)
+  // 정렬 처리: 등록일 정렬이 지정된 경우 등록일 기준, 그 외에는 소속 학원명 기준 가나다순
   let sortedMembers;
-  if (data === memberList) {
-    if (cachedSortedDefaultMembers && cachedMemberSourceRef === memberList) {
-      sortedMembers = cachedSortedDefaultMembers;
+  if (memberDateSortOrder === "desc") {
+    sortedMembers = [...data].sort((a, b) => {
+      const da = a.createdAt || "";
+      const db = b.createdAt || "";
+      if (db !== da) return db.localeCompare(da);
+      return (b.id || 0) - (a.id || 0);
+    });
+  } else if (memberDateSortOrder === "asc") {
+    sortedMembers = [...data].sort((a, b) => {
+      const da = a.createdAt || "";
+      const db = b.createdAt || "";
+      if (da !== db) return da.localeCompare(db);
+      return (a.id || 0) - (b.id || 0);
+    });
+  } else {
+    // 소속 학원명 기준 가나다순 오름차순 정렬 (기본 전체 목록일 경우 캐시 재활용)
+    if (data === memberList) {
+      if (cachedSortedDefaultMembers && cachedMemberSourceRef === memberList) {
+        sortedMembers = cachedSortedDefaultMembers;
+      } else {
+        sortedMembers = [...data].sort((a, b) => {
+          const cmp = koCollator.compare((a.academyName || '').trim(), (b.academyName || '').trim());
+          if (cmp !== 0) return cmp;
+          return koCollator.compare((a.name || '').trim(), (b.name || '').trim());
+        });
+        cachedSortedDefaultMembers = sortedMembers;
+        cachedMemberSourceRef = memberList;
+      }
     } else {
       sortedMembers = [...data].sort((a, b) => {
         const cmp = koCollator.compare((a.academyName || '').trim(), (b.academyName || '').trim());
         if (cmp !== 0) return cmp;
         return koCollator.compare((a.name || '').trim(), (b.name || '').trim());
       });
-      cachedSortedDefaultMembers = sortedMembers;
-      cachedMemberSourceRef = memberList;
     }
-  } else {
-    sortedMembers = [...data].sort((a, b) => {
-      const cmp = koCollator.compare((a.academyName || '').trim(), (b.academyName || '').trim());
-      if (cmp !== 0) return cmp;
-      return koCollator.compare((a.name || '').trim(), (b.name || '').trim());
-    });
   }
 
   lastFilteredMembers = sortedMembers;
@@ -483,6 +536,8 @@ function filterMemberList() {
 // 필터 초기화
 function resetMemberFilters() {
   memberCurrentPage = 1; // 초기화 시 1페이지로 리셋
+  memberDateSortOrder = "none"; // 등록일 정렬 리셋
+  updateMemberDateSortUI();
   document.getElementById("memberSearchInput").value = "";
   document.getElementById("memberRoleFilter").value = "ALL";
   document.getElementById("memberStatusFilter").value = "ALL";

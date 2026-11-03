@@ -248,7 +248,7 @@ class Content extends MY_Controller {
 			
 			switch($list[$i]['recommend_class']) {
 			    case 0 :
-			        $list[$i]['recommend_class'] = "미취학";
+			        $list[$i]['recommend_class'] = "유치부";
 			    break;
 			    case 1 :
 			        $list[$i]['recommend_class'] = "초1";
@@ -401,7 +401,7 @@ class Content extends MY_Controller {
 			//
 			//switch($list[$i]['recommend_class']) {
 			//    case 0 :
-			//        $list[$i]['recommend_class'] = "미취학";
+			//        $list[$i]['recommend_class'] = "유치부";
 			//    break;
 			//    case 1 :
 			//        $list[$i]['recommend_class'] = "초1";
@@ -1443,7 +1443,7 @@ class Content extends MY_Controller {
 		$data = $this->user_model->getUserSeq($user_seq);
 			switch($data['grade']) {
 			    case "0":
-			        $data['grade'] = "미취학";
+			        $data['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $data['grade'] = "초1";
@@ -1513,7 +1513,7 @@ class Content extends MY_Controller {
 		{
 			switch($list[$i]['grade']) {
 			    case "0":
-			        $list[$i]['grade'] = "미취학";
+			        $list[$i]['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $list[$i]['grade'] = "초1";
@@ -1644,7 +1644,7 @@ class Content extends MY_Controller {
 		$data = $this->user_model->getUserData($user_id);
 		switch($data['grade']) {
 		    case "0":
-		        $data['grade'] = "미취학";
+		        $data['grade'] = "유치부";
 		    break;
 		    case "1":
 		        $data['grade'] = "초1";
@@ -1704,7 +1704,7 @@ class Content extends MY_Controller {
 		{
 			switch($list[$i]['grade']) {
 			    case "0":
-			        $list[$i]['grade'] = "미취학";
+			        $list[$i]['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $list[$i]['grade'] = "초1";

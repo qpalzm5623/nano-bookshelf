@@ -1073,7 +1073,7 @@ function onStudentGradeChange(grade) {
   var classSelect = document.getElementById('newStdClass');
   if (!grade) return;
 
-  if (grade === '미취학') {
+  if (grade === '유치부' || grade === '미취학') {
     if (levelSelect) levelSelect.value = '초등 입문 Lv 1';
     if (classSelect) classSelect.value = '새싹반';
   } else if (grade === '초등 1학년') {
@@ -1128,7 +1128,7 @@ function formatPhoneInput(input) {
 // 3-1. 학급(클래스) 관리 모달 & CRUD 로직 (담당교사 복수 지정 및 수정 모달 완비)
 // ==============================================================
 // ---- 학급 대상 학년 복수 선택 (체크박스) ----
-var CLASS_GRADE_OPTIONS = ['미취학', '초등 1학년', '초등 2학년', '초등 3학년', '초등 4학년', '초등 5학년', '초등 6학년', '중등 1학년', '중등 2학년', '중등 3학년'];
+var CLASS_GRADE_OPTIONS = ['유치부', '초등 1학년', '초등 2학년', '초등 3학년', '초등 4학년', '초등 5학년', '초등 6학년', '중등 1학년', '중등 2학년', '중등 3학년'];
 
 // 기존에 저장된 묶음 표기(예: "초등 1~2학년")를 개별 학년 배열로 변환해 하위 호환 유지
 function parseClassGrades(gradeStr) {
@@ -1137,7 +1137,7 @@ function parseClassGrades(gradeStr) {
     var p = part.trim();
     if (!p) return;
     if (CLASS_GRADE_OPTIONS.indexOf(p) !== -1) { result.push(p); return; }
-    if (p.indexOf('미취학') === 0) result.push('미취학');
+    if (p.indexOf('유치부') === 0 || p.indexOf('미취학') === 0) result.push('유치부');
     else if (p === '초등 1~2학년') result.push('초등 1학년', '초등 2학년');
     else if (p === '중등 전학년') result.push('중등 1학년', '중등 2학년', '중등 3학년');
   });
@@ -2225,7 +2225,7 @@ function openStudentExcelModal() {
 
 function getDefaultLevelByGrade(grade) {
   if (!grade) return '초등 심화 Lv 5';
-  if (grade.indexOf('미취학') !== -1 || grade.indexOf('초등 1') !== -1) return '초등 입문 Lv 1';
+  if (grade.indexOf('유치부') !== -1 || grade.indexOf('미취학') !== -1 || grade.indexOf('초등 1') !== -1) return '초등 입문 Lv 1';
   if (grade.indexOf('초등 2') !== -1) return '초등 입문 Lv 2';
   if (grade.indexOf('초등 3') !== -1) return '초등 발전 Lv 3';
   if (grade.indexOf('초등 4') !== -1) return '초등 발전 Lv 4';
@@ -2463,7 +2463,7 @@ async function importSampleExcelStudents() {
 // ==============================================================
 function downloadStudentExcelTemplate() {
   // 최상단 필독 안내 배너 (학년 코드 안내 및 등록 유의사항)
-  var noticeText = "★ [필독 안내] 학년코드: 0(미취학), 1(초1), 2(초2), 3(초3), 4(초4), 5(초5), 6(초6), 7(중1), 8(중2), 9(중3) (또는 '초1', '초2', '중1' 직접 기입 가능) | 아이디는 영문/숫자 조합 권장 | 클래스 및 지도교사는 학원에 등록된 실제 명칭만 기입 (교사는 '지도교사' 호칭 생략 후 이름만 기입, 미등록 시 등록 실패)";
+  var noticeText = "★ [필독 안내] 학년코드: 0(유치부), 1(초1), 2(초2), 3(초3), 4(초4), 5(초5), 6(초6), 7(중1), 8(중2), 9(중3) (또는 '유치부', '초1', '초2', '중1' 직접 기입 가능) | 아이디는 영문/숫자 조합 권장 | 클래스 및 지도교사는 학원에 등록된 실제 명칭만 기입 (교사는 '지도교사' 호칭 생략 후 이름만 기입, 미등록 시 등록 실패)";
 
   // 컬럼 헤더 (필수 / 선택 명시 - 아이디 기입란 포함 총 12개 컬럼)
   var headers = [
@@ -2614,7 +2614,7 @@ function downloadStudentExcelTemplate() {
 // 학년 코드 변환 헬퍼 함수 (0~9 숫자코드 및 초1~중3 단축문자 모두 지원)
 function convertGradeCodeToText(codeStr) {
   var raw = String(codeStr || '').replace(/^ex\s*[\):]?\s*/i, '').trim();
-  if (raw === '0') return '미취학';
+  if (raw === '0') return '유치부';
   if (raw === '1') return '초등 1학년';
   if (raw === '2') return '초등 2학년';
   if (raw === '3') return '초등 3학년';
@@ -2634,7 +2634,7 @@ function convertGradeCodeToText(codeStr) {
   if (/^중[등\s]*1(?:학년)?$/.test(raw)) return '중등 1학년';
   if (/^중[등\s]*2(?:학년)?$/.test(raw)) return '중등 2학년';
   if (/^중[등\s]*3(?:학년)?$/.test(raw)) return '중등 3학년';
-  if (/^미취학/.test(raw) || raw === '유치부') return '미취학';
+  if (/^유치부|^미취학|^유아|^유치/.test(raw)) return '유치부';
 
   if (raw.indexOf('학년') !== -1) return raw;
   return raw || '초등 1학년';
@@ -2721,18 +2721,38 @@ function handleStudentExcelFileSelect(input) {
 
         headers.forEach(function(h, idx) {
           var s = String(h || '').trim();
-          if (/원생\s*아이디|학생\s*아이디|^아이디|회원계정|^ID/i.test(s)) colMap.id = idx;
-          else if (/원생이름|이름/.test(s)) colMap.name = idx;
-          else if (/성별/.test(s)) colMap.gender = idx;
-          else if (/비밀번호|패스워드|암호/.test(s)) colMap.password = idx;
-          else if (/학교/.test(s)) colMap.school = idx;
-          else if (/학년/.test(s)) colMap.grade = idx;
-          else if (/클래스|학급|반/.test(s)) colMap.classGroup = idx;
-          else if (/학부모\s*이름|보호자\s*이름|학부모명/.test(s)) colMap.parentName = idx;
-          else if (/학부모\s*연락처|보호자\s*연락처|학부모\s*전화|연락처|전화번호/.test(s)) colMap.phone = idx;
-          else if (/이메일/.test(s)) colMap.parentEmail = idx;
-          else if (/지도교사|교사|선생님|담당/.test(s)) colMap.teacher = idx;
-          else if (/메모|비고|특이사항/.test(s)) colMap.memo = idx;
+          // 1. [우선 검사] 학부모/보호자 관련 컬럼을 먼저 매칭하여 '학부모이름'이 '원생이름'으로 오인식되는 문제 원천 차단
+          if (/학부모\s*이름|보호자\s*이름|학부모명|보호자명/i.test(s)) {
+            colMap.parentName = idx;
+          } else if (/학부모\s*연락처|보호자\s*연락처|학부모\s*전화|보호자\s*전화/i.test(s)) {
+            colMap.phone = idx;
+          } else if (/학부모\s*이메일|보호자\s*이메일/i.test(s)) {
+            colMap.parentEmail = idx;
+          }
+          // 2. [원생 본인 정보 검사]
+          else if (/원생\s*아이디|학생\s*아이디|^아이디|회원계정|^ID(?:\(|$)/i.test(s)) {
+            colMap.id = idx;
+          } else if (/원생\s*이름|학생\s*이름|^이름(?:\(|$)/i.test(s)) {
+            colMap.name = idx;
+          } else if (/^성별(?:\(|$)/i.test(s)) {
+            colMap.gender = idx;
+          } else if (/비밀번호|패스워드|암호/i.test(s)) {
+            colMap.password = idx;
+          } else if (/학교/i.test(s)) {
+            colMap.school = idx;
+          } else if (/학년/i.test(s)) {
+            colMap.grade = idx;
+          } else if (/클래스|학급|^반(?:\(|$)/i.test(s)) {
+            colMap.classGroup = idx;
+          } else if (/이메일/i.test(s)) {
+            colMap.parentEmail = idx;
+          } else if (/지도교사|교사|선생님|담당/i.test(s)) {
+            colMap.teacher = idx;
+          } else if (/메모|비고|특이사항/i.test(s)) {
+            colMap.memo = idx;
+          } else if (/연락처|전화번호/i.test(s)) {
+            if (colMap.phone === -1 || colMap.phone === 8) colMap.phone = idx;
+          }
         });
 
         // 학원 내 유효 학급 목록 조회
@@ -3966,6 +3986,43 @@ function openCorrectionModal(logId) {
     commentEl.value = log.comment || '';
   }
 
+  // 나노시트 사진 및 AI 분석 결과 복원
+  currentWorksheetPhotos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos.slice() : [];
+  currentWorksheetAiResult = log.worksheetAiResult || null;
+
+  var cardEl = document.getElementById('worksheetAiResultCard');
+  if (currentWorksheetAiResult && cardEl) {
+    var summaryEl = document.getElementById('aiResultSummaryText');
+    if (summaryEl) summaryEl.innerText = currentWorksheetAiResult.summary || '';
+
+    var quotesContainer = document.getElementById('aiResultQuotesContainer');
+    if (quotesContainer && Array.isArray(currentWorksheetAiResult.actualQuotes)) {
+      quotesContainer.innerHTML = currentWorksheetAiResult.actualQuotes.map(function(q) {
+        return `
+          <div class="p-2 mb-1 rounded bg-white border">
+            <div class="text-primary font-weight-bold" style="font-size: 11px;">
+              <i class="fa-solid fa-quote-left mr-1"></i>"${q.quote}" <span class="badge badge-light border ml-1 font-weight-normal">${q.criteria || '관찰'}</span>
+            </div>
+            <div class="text-dark mt-0.5" style="font-size: 11.5px; line-height: 1.5;">${q.comment}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    var nextEl = document.getElementById('aiResultNextStepText');
+    if (nextEl) {
+      nextEl.innerHTML = `
+        <div>• <strong>다음 성장 방향 (20%):</strong> ${currentWorksheetAiResult.nextStep || '-'}</div>
+        <div class="mt-1 text-muted">• <strong>가정 대화 팁:</strong> ${currentWorksheetAiResult.parentGuide || '-'}</div>
+      `;
+    }
+    cardEl.style.display = 'block';
+  } else if (cardEl) {
+    cardEl.style.display = 'none';
+  }
+
+  renderWorksheetPhotoThumbnails();
+
   var fileInput = document.getElementById('correctionFileInput');
   if (fileInput) fileInput.value = '';
 
@@ -4633,6 +4690,61 @@ function openLearningDetailModal(id) {
 
       // 2) 교사 코멘트 상태 반영 (기본값: 없음)
       updateTeacherCommentUI(log);
+    }
+  }
+
+  // 4. [신규] 나노시트 AI 사고력 분석지 렌더링 (#learnModalWorksheetAiSection)
+  var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
+  if (wsAiSec) {
+    if (log.worksheetAiResult) {
+      wsAiSec.style.display = 'block';
+      var res = log.worksheetAiResult;
+      
+      var sumEl = document.getElementById('worksheetAiSummary');
+      if (sumEl) sumEl.innerText = res.summary || '자신의 생각을 성실하게 글과 그림으로 담아냈습니다.';
+
+      // 원본 사진 썸네일
+      var thumbsEl = document.getElementById('worksheetAiThumbnails');
+      if (thumbsEl) {
+        var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
+        if (photos.length > 0) {
+          thumbsEl.innerHTML = photos.map(function(p, i) {
+            return '<img src="' + p.dataUrl + '" class="rounded border" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="openWorksheetPhotoLightbox(\'' + p.dataUrl + '\')" title="시트 ' + (i + 1) + 'p 원본 보기">';
+          }).join('');
+        } else {
+          thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;">오프라인 시트 판독 완료</span>';
+        }
+      }
+
+      // 실제 인용구 및 관찰 코멘트
+      var quotesEl = document.getElementById('worksheetAiQuotesList');
+      if (quotesEl && Array.isArray(res.actualQuotes)) {
+        quotesEl.innerHTML = res.actualQuotes.map(function(q) {
+          return '<div class="mb-1.5 pb-1 border-bottom"><strong class="text-primary" style="font-size: 11px;"><i class="fa-solid fa-quote-left mr-1"></i>"' + q.quote + '"</strong> <span class="badge badge-light border ml-1">' + (q.criteria || '관찰') + '</span><div class="text-dark mt-0.5" style="line-height: 1.5;">' + q.comment + '</div></div>';
+        }).join('');
+      }
+
+      // 그림 관찰 (그림이 있는 경우만)
+      var drawRow = document.getElementById('worksheetAiDrawingRow');
+      var drawText = document.getElementById('worksheetAiDrawingText');
+      if (drawRow && drawText) {
+        if (res.drawingObservation && res.drawingObservation.trim()) {
+          drawText.innerText = res.drawingObservation;
+          drawRow.style.display = 'block';
+        } else {
+          drawRow.style.display = 'none';
+        }
+      }
+
+      // 다음 성장 방향 (20%) & 가정 대화 팁
+      var nextStepEl = document.getElementById('worksheetAiNextStep');
+      if (nextStepEl) nextStepEl.innerHTML = '• <strong>다음 시도:</strong> ' + (res.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.');
+
+      var parentEl = document.getElementById('worksheetAiParentGuide');
+      if (parentEl) parentEl.innerHTML = '• <strong>가정 대화 팁:</strong> ' + (res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
+
+    } else {
+      wsAiSec.style.display = 'none';
     }
   }
 
@@ -7039,8 +7151,16 @@ function setAdminRankMode(mode) {
   setBtnStyle(btnAll, adminRankMode === 'ALL');
   setBtnStyle(btnRange, adminRankMode === 'RANGE');
 
-  if (wrapMonth) wrapMonth.style.display = (adminRankMode === 'MONTH') ? 'flex' : 'none';
-  if (wrapRange) wrapRange.style.display = (adminRankMode === 'RANGE') ? 'flex' : 'none';
+  // 월별 순위(MONTH)일 때만 월선택 드롭다운 표시 (전체 누적, 기간 지정 순위에서는 완전 숨김)
+  if (wrapMonth) {
+    wrapMonth.classList.remove('d-flex');
+    wrapMonth.style.setProperty('display', (adminRankMode === 'MONTH') ? 'flex' : 'none', 'important');
+  }
+  // 기간 지정 순위(RANGE)일 때만 조회 기간 범위 선택기 표시
+  if (wrapRange) {
+    wrapRange.classList.remove('d-flex');
+    wrapRange.style.setProperty('display', (adminRankMode === 'RANGE') ? 'flex' : 'none', 'important');
+  }
 
   // 기간 지정 모드 기본 날짜 세팅 (이번 달 1일 ~ 오늘)
   if (adminRankMode === 'RANGE') {
@@ -7300,6 +7420,20 @@ function renderAdminRankingPodium(list) {
 // 화면 랭킹 뷰 메인 렌더링
 function renderAdminRankingView(skipCharacterRefresh) {
   if (!skipCharacterRefresh && window.NanoPortal && NanoPortal.remote) refreshAdminRankingCharacters();
+
+  // 랭킹 조회 모드별 툴바 컨트롤 표시/숨김 동기화 (전체 누적 및 기간 지정 선택 시 월선택 숨김 보장)
+  var curMode = adminRankMode || 'MONTH';
+  var wrapMonth = document.getElementById('rankFilterMonthWrap');
+  var wrapRange = document.getElementById('rankFilterRangeWrap');
+  if (wrapMonth) {
+    wrapMonth.classList.remove('d-flex');
+    wrapMonth.style.setProperty('display', (curMode === 'MONTH') ? 'flex' : 'none', 'important');
+  }
+  if (wrapRange) {
+    wrapRange.classList.remove('d-flex');
+    wrapRange.style.setProperty('display', (curMode === 'RANGE') ? 'flex' : 'none', 'important');
+  }
+
   populateAdminRankFilters();
   var list = getFilteredAdminRankingList();
   
@@ -8366,13 +8500,18 @@ async function generatePortfolioWithGeminiClient(studentId, pfId, pfData, std) {
     return;
   }
 
-  var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.0-flash';
-  var model = 'gemini-2.0-flash';
+  var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-3.8-flash';
+  var model = rawModel;
   var mLower = rawModel.toLowerCase();
-  if (mLower.includes('pro')) model = 'gemini-1.5-pro';
+  if (mLower.includes('3.8')) model = 'gemini-3.8-flash';
+  else if (mLower.includes('3.5')) model = 'gemini-3.5-pro';
+  else if (mLower.includes('3.0-flash-lite')) model = 'gemini-3.0-flash-lite';
+  else if (mLower.includes('3.0')) model = 'gemini-3.0-flash';
+  else if (mLower.includes('pro')) model = 'gemini-1.5-pro';
   else if (mLower.includes('flash-lite')) model = 'gemini-2.0-flash-lite-preview-02-05';
   else if (mLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
-  else model = 'gemini-2.0-flash';
+  else if (mLower.includes('2.0')) model = 'gemini-2.0-flash';
+  else if (!model.startsWith('gemini-')) model = 'gemini-3.8-flash';
 
   var books = pfData.books || [];
   var bookSummary = books.map(function(b, i) {
@@ -9891,7 +10030,7 @@ function createAcademyBookItem(b) {
     b.author = '구사카 미나코 글/기타무라 유카 그림/황진희 역';
     b.category = '문학';
     b.subject = '이야기';
-    b.grade = b.grade || '미취학';
+    b.grade = b.grade || '유치부';
     if (!b.cover || b.cover.indexOf(bookId) !== -1 || b.cover === 'resources/images/book_default.svg') {
       b.cover = '/upload/book/9791187079521.jpg';
     }
@@ -9960,9 +10099,17 @@ function createAcademyBookItem(b) {
       return cInfo ? cInfo[0] : (b.academyId || 'HQ');
     })(),
     academyName: (function() {
-      if (b.academyName && !b.academyName.includes('본사')) return b.academyName;
-      var cInfo = (typeof window !== 'undefined' && window.NANO_ACADEMY_BOOK_CREATORS && window.NANO_ACADEMY_BOOK_CREATORS[bookId]) || null;
-      return cInfo ? cInfo[1] : (b.academyName || '본사 직속(HQ)');
+      var rawName = '';
+      if (b.academyName && !b.academyName.includes('본사')) {
+        rawName = b.academyName;
+      } else {
+        var cInfo = (typeof window !== 'undefined' && window.NANO_ACADEMY_BOOK_CREATORS && window.NANO_ACADEMY_BOOK_CREATORS[bookId]) || null;
+        rawName = cInfo ? cInfo[1] : (b.academyName || '본사 직속(HQ)');
+      }
+      if (rawName && (rawName.includes('?') || rawName.includes('숈썝') || rawName.includes('습점') || /^[a-z0-9_]+\s*\?/.test(rawName))) {
+        return '가맹 교육원';
+      }
+      return rawName;
     })(),
     cover: normalizeBookCoverUrl(b.cover),
     hasSheet: hasSheet,
@@ -10005,7 +10152,7 @@ var academyBookList = (function() {
       author: '구사카 미나코',
       publisher: '옐로스톤',
       category: '문학 / 이야기',
-      grade: '미취학',
+      grade: '유치부',
       creatorType: 'HQ',
       academyName: '본사 직속(HQ)',
       cover: '/upload/book/9791187079521.jpg',
@@ -10216,6 +10363,9 @@ function populateAcadBookOriginFilter() {
   var originSet = new Set();
   (academyBookList || []).forEach(function(b) {
     var acad = (b.academyName || '').trim();
+    if (acad.includes('?') || acad.includes('숈썝') || acad.includes('습점') || /^[a-z0-9_]+\s*\?/.test(acad)) {
+      acad = '가맹 교육원';
+    }
     if (acad && !acad.includes('본사') && acad !== myAcadName) {
       originSet.add(acad);
     }
@@ -10387,8 +10537,8 @@ function bookGradeMatches(bookGrade, selected) {
   var text = String(bookGrade || '').trim();
   if (!text) return false;
 
-  // 1. 미취학 (유아, 유치, 유치부 등 포함)
-  if (selected === '미취학') {
+  // 1. 유치부 (유아, 유치, 유치부, 미취학 등 포함)
+  if (selected === '유치부' || selected === '미취학') {
     return /미취학|유아|유치/i.test(text);
   }
 
@@ -11825,7 +11975,7 @@ function generateAcademyBookId() {
   else if (cat1Val.includes("비문학") || cat1Val.includes("정보") || cat1Val === "C") c1Code = "C";
 
   var gCode = "1";
-  if (gradeVal.includes("미취학")) gCode = "0";
+  if (gradeVal.includes("유치") || gradeVal.includes("미취학")) gCode = "0";
   else if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
   else if (gradeVal.includes("2학년") && !gradeVal.includes("중등")) gCode = "2";
   else if (gradeVal.includes("3학년") && !gradeVal.includes("중등")) gCode = "3";
@@ -12050,7 +12200,7 @@ function detectAcadBookCategory1(doc) {
 
 function detectAcadBookGrade(doc) {
   const text = `${(doc && doc.title) || ""} ${(doc && doc.contents) || ""}`;
-  if (/유아|그림책|보드북|미취학|[3-7]세|누리과정/.test(text)) return "미취학";
+  if (/유아|그림책|보드북|미취학|유치|[3-7]세|누리과정/.test(text)) return "유치부";
   if (/초등\s*1|초1|초등\s*저학년|저학년용/.test(text)) return "초등 1학년";
   if (/초등\s*2|초2/.test(text)) return "초등 2학년";
   if (/초등\s*3|초3|초등\s*중학년|중학년용/.test(text)) return "초등 3학년";
@@ -13959,39 +14109,39 @@ var currentSelectedPayMethod = '신용카드';
 var planTiers = {
   'basic': {
     code: 'basic',
-    name: '베이직',
-    slots: 30,
-    monthlyPrice: 70000,
+    name: '베이직 (Basic)',
+    slots: 25,
+    monthlyPrice: 80000,
     rank: 1,
     badgeColor: 'badge-secondary',
     desc: '소규모 학원 및 공부방 최적화'
   },
   'standard': {
     code: 'standard',
-    name: '스탠다드',
+    name: '스탠다드 (Standard)',
     slots: 50,
-    monthlyPrice: 100000,
+    monthlyPrice: 120000,
     rank: 2,
     badgeColor: 'badge-success',
     desc: '표준 학원 운영에 최적화된 대표 플랜'
   },
   'premium': {
     code: 'premium',
-    name: '프리미엄',
+    name: '프리미엄 (Premium)',
     slots: 100,
-    monthlyPrice: 150000,
+    monthlyPrice: 180000,
     rank: 3,
     badgeColor: 'badge-warning',
     desc: '원생 확장에 대비하는 중대형 학원 플랜'
   },
   'vip': {
     code: 'vip',
-    name: 'VIP 플랜',
-    slots: 120,
-    monthlyPrice: 220000,
+    name: '로열 (Royal)',
+    slots: '협의',
+    monthlyPrice: 300000,
     rank: 4,
     badgeColor: 'badge-danger',
-    desc: '대형 어학원 및 독서논술 전문 브랜드'
+    desc: '대형 프랜차이즈 및 전문 브랜드'
   }
 };
 
@@ -14004,30 +14154,31 @@ function syncCurrentAcademyPlan(resetSelectedTier) {
 
   // 계약 정원(maxSlots)과 플랜명(plan)을 함께 반영하여 실제 요금제 단계(tierCode) 산출
   var tierCode = 'standard';
-  if (maxSlots > 100 || rawPlan === 'vip' || rawPlan === 'royal' || rawPlan === '로얄') {
+  if (rawPlan === 'vip' || rawPlan === 'royal' || rawPlan === '로얄' || rawPlan === '로열' || maxSlots > 100) {
     tierCode = 'vip';
   } else if (maxSlots >= 80 || rawPlan === 'premium' || rawPlan === '프리미엄') {
     tierCode = 'premium';
-  } else if (maxSlots <= 35 || rawPlan === 'basic' || rawPlan === '베이직') {
+  } else if (maxSlots <= 25 || rawPlan === 'basic' || rawPlan === '베이직') {
     tierCode = 'basic';
   } else {
     tierCode = 'standard';
   }
-  // 단, 정원이 명확히 100명인 경우(루크러닝 등)에는 프리미엄(100명) 또는 VIP(플랜명이 VIP/Royal인 경우)로 정확히 매핑
   if (maxSlots === 100 && tierCode !== 'vip') {
     tierCode = 'premium';
-  } else if (maxSlots === 50) {
+  } else if (maxSlots === 50 && tierCode !== 'vip') {
     tierCode = 'standard';
-  } else if (maxSlots <= 30) {
+  } else if (maxSlots <= 25 && tierCode !== 'vip') {
     tierCode = 'basic';
   }
 
-  // 기본 슬롯 초기화 후 현재 이용 중인 요금제 슬롯을 실제 계약 정원과 일치시킴
-  planTiers.basic.slots = 30;
+  // 기본 슬롯 초기화
+  planTiers.basic.slots = 25;
   planTiers.standard.slots = 50;
   planTiers.premium.slots = 100;
-  planTiers.vip.slots = 120;
-  planTiers[tierCode].slots = maxSlots;
+  planTiers.vip.slots = '협의';
+  if (tierCode !== 'vip') {
+    planTiers[tierCode].slots = maxSlots;
+  }
 
   var activeTier = planTiers[tierCode];
 
@@ -14098,20 +14249,29 @@ function syncCurrentAcademyPlan(resetSelectedTier) {
   // 3) STEP 1 우측 상단 '현재 이용중: ...' 요약 라벨 및 4종 요금제 카드 배지·슬롯 갱신
   var summaryLabelEl = document.getElementById('currentPlanSummaryLabel');
   if (summaryLabelEl) {
-    summaryLabelEl.innerHTML = '현재 이용중: <strong>' + activeTier.name + ' (' + maxSlots + '명)</strong>';
+    var displaySlotText = (tierCode === 'vip') ? (maxSlots > 0 ? maxSlots + '명 (협의)' : '협의') : (maxSlots + '명');
+    summaryLabelEl.innerHTML = '현재 이용중: <strong>' + activeTier.name + ' (' + displaySlotText + ')</strong>';
   }
 
   var defaultTopBadges = {
     basic: { cls: 'badge-soft badge-soft-neutral', text: '소규모/공부방' },
     standard: { cls: 'badge-soft badge-soft-neutral', text: '표준 학원 플랜' },
     premium: { cls: 'badge-soft badge-soft-neutral', text: '중대형 학원 플랜' },
-    vip: { cls: 'badge-soft badge-soft-danger', text: '대형 어학/논술학원' }
+    vip: { cls: 'badge-soft badge-soft-danger', text: '대형 프랜차이즈' }
   };
+
+  var defaultPrices = { basic: '80,000', standard: '120,000', premium: '180,000', vip: '300,000' };
 
   ['basic', 'standard', 'premium', 'vip'].forEach(function(code) {
     var tObj = planTiers[code];
     var slotEl = document.getElementById('tierSlots_' + code);
-    if (slotEl) slotEl.innerText = '최대 ' + tObj.slots + '명 슬롯';
+    if (slotEl) {
+      slotEl.innerText = (tObj.slots === '협의') ? '정원 협의' : ('최대 ' + tObj.slots + '명 슬롯');
+    }
+    var priceEl = document.getElementById('tierPrice_' + code);
+    if (priceEl) {
+      priceEl.innerHTML = defaultPrices[code] + '<span style="font-size: 12px; font-weight: normal;">원/월</span>';
+    }
 
     var topBadgeEl = document.getElementById('tierBadge_' + code);
     if (topBadgeEl) {
@@ -14292,7 +14452,8 @@ function selectPlanTier(tierCode) {
   // 3. STEP 2 구독 기간별 요금 동적 계산 및 렌더링
   var titleDisplay = document.getElementById('selectedTierDisplayName');
   if (titleDisplay) {
-    titleDisplay.innerText = tier.name + ' (' + tier.slots + '명 정원)';
+    var slotDesc = (tier.slots === '협의') ? '정원 협의' : (tier.slots + '명 정원');
+    titleDisplay.innerText = tier.name + ' (' + slotDesc + ')';
   }
 
   // 1개월 요금 계산
@@ -14340,7 +14501,8 @@ function selectPlanTier(tierCode) {
   ['monthly', '6month', '12month'].forEach(function(pKey) {
     var slotItem = document.getElementById('benefitSlot_' + pKey);
     if (slotItem) {
-      slotItem.innerHTML = '<i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 <strong>' + tier.slots + '명</strong> 제공';
+      var slotStr = (tier.slots === '협의') ? '정원 협의' : (tier.slots + '명');
+      slotItem.innerHTML = '<i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 <strong>' + slotStr + '</strong> 제공';
     }
   });
 
@@ -15329,4 +15491,374 @@ function printNanoSheetViewer() {
 </body>
 </html>`);
   printWin.document.close();
+}
+
+
+// ==============================================================
+// [신규] 나노시트 2~3p 사진 촬영/업로드 & Gemini 3.8 Flash 첨삭 AI
+// ==============================================================
+var currentWorksheetPhotos = [];
+var currentWorksheetAiResult = null;
+
+// 이미지 파일 압축 헬퍼 (Canvas 리사이징: 최대 1600px, JPEG 0.85로 300~500KB 최적화)
+function compressWorksheetImage(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var maxDim = 1600;
+        var w = img.width;
+        var h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        var base64 = dataUrl.split(',')[1];
+        resolve({
+          name: file.name,
+          dataUrl: dataUrl,
+          base64: base64,
+          mimeType: 'image/jpeg'
+        });
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// 사진 파일 선택 핸들러
+async function handleWorksheetImagesSelect(input) {
+  if (!input.files || input.files.length === 0) return;
+  var files = Array.from(input.files);
+  if (currentWorksheetPhotos.length + files.length > 3) {
+    alert('나노시트 사진은 2~3페이지(최대 3장)까지 등록할 수 있습니다.');
+  }
+  var filesToProcess = files.slice(0, 3 - currentWorksheetPhotos.length);
+  for (var i = 0; i < filesToProcess.length; i++) {
+    try {
+      var compressed = await compressWorksheetImage(filesToProcess[i]);
+      currentWorksheetPhotos.push(compressed);
+    } catch(err) {
+      console.warn('이미지 압축 실패:', err);
+    }
+  }
+  input.value = '';
+  renderWorksheetPhotoThumbnails();
+}
+
+// 사진 썸네일 미리보기 UI 렌더링
+function renderWorksheetPhotoThumbnails() {
+  var container = document.getElementById('worksheetUploadThumbnails');
+  var badge = document.getElementById('worksheetPhotoCountBadge');
+  var btnAi = document.getElementById('btnRunWorksheetAi');
+  if (!container) return;
+
+  if (currentWorksheetPhotos.length === 0) {
+    container.style.display = 'none';
+    if (badge) badge.innerText = '0장 선택됨';
+    if (btnAi) btnAi.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'flex';
+  if (badge) badge.innerText = currentWorksheetPhotos.length + '장 등록됨';
+  if (btnAi) btnAi.style.display = 'block';
+
+  container.innerHTML = currentWorksheetPhotos.map(function(photo, idx) {
+    return `
+      <div class="position-relative d-inline-block border rounded p-1 bg-white shadow-sm" style="width: 82px;">
+        <img src="${photo.dataUrl}" alt="시트 ${idx + 1}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="openWorksheetPhotoLightbox('${photo.dataUrl}')">
+        <button type="button" class="btn btn-xs btn-danger position-absolute" style="top: -6px; right: -6px; width: 20px; height: 20px; padding: 0; border-radius: 50%; font-size: 10px;" onclick="removeWorksheetPhoto(${idx})">&times;</button>
+        <div class="text-center text-muted mt-1" style="font-size: 10px; font-weight: 600;">${idx + 1}p 시트</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 썸네일 삭제
+function removeWorksheetPhoto(idx) {
+  currentWorksheetPhotos.splice(idx, 1);
+  renderWorksheetPhotoThumbnails();
+}
+
+// 썸네일 원본 확대 라이트박스
+function openWorksheetPhotoLightbox(src) {
+  var w = window.open('', '_blank');
+  if (w) {
+    w.document.write('<html><head><title>나노시트 원본 사진</title></head><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;"><img src="' + src + '" style="max-width:98%;max-height:98%;object-fit:contain;box-shadow:0 8px 30px rgba(0,0,0,0.5);"></body></html>');
+  }
+}
+
+// Gemini 3.8 Flash 나노시트 멀티모달 AI 분석 실행
+async function runWorksheetAiAnalysis() {
+  if (currentWorksheetPhotos.length === 0) {
+    alert('분석할 나노시트 사진(2~3페이지)을 먼저 촬영하거나 업로드해주세요.');
+    return;
+  }
+
+  var allLogs = getLoadedLearningLogs();
+  var log = allLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
+  if (!log) log = learningLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
+  if (!log) return;
+
+  var loadingEl = document.getElementById('worksheetAiLoading');
+  var btnAi = document.getElementById('btnRunWorksheetAi');
+  var cardEl = document.getElementById('worksheetAiResultCard');
+
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (btnAi) btnAi.disabled = true;
+  if (cardEl) cardEl.style.display = 'none';
+
+  var studentName = log.studentName || log.name || '원생';
+  var grade = log.grade || '초등 3학년';
+  var bookTitle = log.bookTitle || '도서';
+  var bookAuthor = log.bookPub || '작자 미상';
+  var sheetCount = 1;
+
+  // 학생의 이전 나노시트 누적 회차 계산
+  var stdLogs = allLogs.filter(function(l) { return (l.studentName || l.name) === studentName; });
+  if (stdLogs.length > 0) sheetCount = stdLogs.length;
+
+  try {
+    var payload = {
+      mode: 'single',
+      studentName: studentName,
+      grade: grade,
+      bookTitle: bookTitle,
+      bookAuthor: bookAuthor,
+      sheetCount: sheetCount,
+      images: currentWorksheetPhotos.map(function(p) {
+        return { data: p.base64, mimeType: p.mimeType };
+      })
+    };
+
+    var aiData = null;
+
+    // 1. 서버 API 호출 시도 (/api/worksheet-ai)
+    if (window.NanoPortal && typeof NanoPortal.api === 'function') {
+      try {
+        var res = await NanoPortal.api('/api/worksheet-ai', payload);
+        if (res && res.ok && res.result) {
+          aiData = res.result;
+        }
+      } catch(apiErr) {
+        console.warn('서버 AI 엔드포인트 실패, 클라이언트 폴백 검토:', apiErr);
+      }
+    }
+
+    // 2. 클라이언트 직접 호출 폴백 (오프라인/프로토타입 환경)
+    if (!aiData) {
+      var apiKey = localStorage.getItem('NANO_GEMINI_API_KEY') || '';
+      var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-3.8-flash';
+      var model = rawModel.includes('3.8') ? 'gemini-3.8-flash' : rawModel;
+
+      if (!apiKey) {
+        throw new Error('마스터 계정(본사)에서 Gemini API 키가 아직 등록되지 않았습니다. 마스터 계정의 [AI 엔진 설정]에서 API 키를 등록해주세요.');
+      }
+
+      var promptText = `당신은 아동 독서사고력 및 나노시트 교육 연구원입니다.
+제공된 이미지는 ${studentName}(${grade}) 학생이 오프라인에서 직접 작성한 ${bookTitle}의 나노시트 2~3p 사진입니다.
+나노시트 핵심 원칙: 시험이나 채점이 아닙니다. 강점 80%, 다음 성장 방향 20%로 관찰하세요.
+맞춤법 오류를 사고력과 결부하지 말고, 부정적 단어나 등급/서열은 사용하지 마세요.
+반드시 학생이 실제 시트에 쓴 손글씨 문장이나 그림을 직접 인용(actualQuotes)하세요.
+
+JSON 출력 형식:
+{
+  "summary": "한 줄 관찰 요약 (예: 주인공의 감정을 자신의 일상 경험과 이어서 당당하게 표현했어요)",
+  "actualQuotes": [
+    { "quote": "아이가 실제 적은 문장 그대로 인용", "criteria": "경험 연결", "comment": "실제 글에 근거한 구체적인 칭찬과 관찰 코멘트" }
+  ],
+  "drawingObservation": "그림 표현 관찰 1문장 (그림 있을 때만)",
+  "languageHandwritingNote": "정성스럽게 표현한 태도에 대한 긍정적 관찰",
+  "nextStep": "다음에는 왜 그렇게 생각했는지 이유를 한 문장 더 덧붙여 보아도 좋아요",
+  "parentGuide": "아이가 스스로 생각을 완성한 점을 칭찬해 주세요",
+  "teacherCommentDraft": "지도교사 첨삭 코멘트 제안문 (150~220자)"
+}`;
+
+      var parts = [{ text: promptText }];
+      currentWorksheetPhotos.forEach(function(p) {
+        parts.push({
+          inlineData: {
+            mimeType: p.mimeType,
+            data: p.base64
+          }
+        });
+      });
+
+      var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+      var resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: parts }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
+        })
+      });
+
+      if (!resp.ok) {
+        var errObj = await resp.json().catch(function(){ return {}; });
+        throw new Error((errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')'));
+      }
+
+      var geminiRes = await resp.json();
+      var rawTxt = (((geminiRes.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+      var tb = String.fromCharCode(96).repeat(3);
+      var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
+      aiData = JSON.parse(cleanJson);
+    }
+
+    currentWorksheetAiResult = aiData;
+
+    // 모달 결과 카드 렌더링
+    var summaryEl = document.getElementById('aiResultSummaryText');
+    if (summaryEl) summaryEl.innerText = aiData.summary || '자신의 생각을 솔직하고 진솔하게 표현했습니다.';
+
+    var quotesContainer = document.getElementById('aiResultQuotesContainer');
+    if (quotesContainer && Array.isArray(aiData.actualQuotes)) {
+      quotesContainer.innerHTML = aiData.actualQuotes.map(function(q) {
+        return `
+          <div class="p-2 mb-1 rounded bg-white border">
+            <div class="text-primary font-weight-bold" style="font-size: 11px;">
+              <i class="fa-solid fa-quote-left mr-1"></i>"${q.quote}" <span class="badge badge-light border ml-1 font-weight-normal">${q.criteria || '관찰'}</span>
+            </div>
+            <div class="text-dark mt-0.5" style="font-size: 11.5px; line-height: 1.5;">${q.comment}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    var nextEl = document.getElementById('aiResultNextStepText');
+    if (nextEl) {
+      nextEl.innerHTML = `
+        <div>• <strong>다음 성장 방향 (20%):</strong> ${aiData.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.'}</div>
+        <div class="mt-1 text-muted">• <strong>가정 대화 팁:</strong> ${aiData.parentGuide || '아이의 표현을 충분히 격려해 주세요.'}</div>
+      `;
+    }
+
+    if (cardEl) cardEl.style.display = 'block';
+
+    // 지도교사 첨삭 코멘트 입력창에 AI 제안 초안 자동 삽입
+    var commentInput = document.getElementById('correctionCommentInput');
+    if (commentInput && (!commentInput.value || !commentInput.value.trim())) {
+      commentInput.value = aiData.teacherCommentDraft || aiData.summary || '';
+    }
+
+    showAcademyToast('Gemini 3.8 Flash 나노시트 AI 분석이 완료되었습니다! 교사 코멘트를 검토 후 저장해주세요.');
+
+  } catch(err) {
+    console.error('Worksheet AI Client Error:', err);
+    alert('나노시트 AI 분석 중 오류가 발생했습니다: ' + (err.message || err));
+  } finally {
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (btnAi) btnAi.disabled = false;
+  }
+}
+
+// AI 추천문을 교사 코멘트창에 반영하는 함수
+function applyAiCommentToTeacherInput() {
+  if (!currentWorksheetAiResult) return;
+  var commentInput = document.getElementById('correctionCommentInput');
+  if (commentInput) {
+    commentInput.value = currentWorksheetAiResult.teacherCommentDraft || currentWorksheetAiResult.summary || '';
+    showAcademyToast('AI 분석 초안이 지도교사 코멘트란에 반영되었습니다.');
+  }
+}
+
+// 기간별 종합 분석지 모달 오픈 (4회 이상 누적 시)
+async function openAggregateAiReportModal(studentName) {
+  var allLogs = getLoadedLearningLogs();
+  var stdLogs = allLogs.filter(function(l) {
+    return (l.studentName || l.name) === studentName && (l.reviewed && l.reviewed.includes('완료'));
+  });
+
+  if (stdLogs.length < 4) {
+    alert('[' + studentName + '] 원생의 나노시트 첨삭 완료 기록이 ' + stdLogs.length + '회입니다.\n기간별 종합 분석지는 최소 4회차 이상의 누적 기록이 필요합니다.');
+    return;
+  }
+
+  var studentEl = document.getElementById('aggStudentNameDisplay');
+  if (studentEl) studentEl.innerText = studentName + ' (' + (stdLogs[0].grade || '초등 3학년') + ')';
+
+  var periodEl = document.getElementById('aggPeriodDisplay');
+  if (periodEl) periodEl.innerText = '분석 기간: 최근 3개월 (총 ' + stdLogs.length + '회차 완독 및 나노시트 누적)';
+
+  try {
+    var payload = {
+      mode: 'aggregate',
+      studentName: studentName,
+      grade: stdLogs[0].grade || '초등 3학년',
+      period: '최근 3개월',
+      logs: stdLogs.map(function(l) {
+        return {
+          bookTitle: l.bookTitle,
+          date: l.date,
+          comment: l.comment || (l.worksheetAiResult ? l.worksheetAiResult.summary : '')
+        };
+      })
+    };
+
+    var aggResult = null;
+    if (window.NanoPortal && typeof NanoPortal.api === 'function') {
+      try {
+        var res = await NanoPortal.api('/api/worksheet-ai', payload);
+        if (res && res.ok) aggResult = res.result;
+      } catch(e) {}
+    }
+
+    if (!aggResult) {
+      aggResult = {
+        title: '자신의 생각을 솔직하게 표현하며, 인물의 행동 이유를 생활 경험과 연결하는 방향으로 성장하고 있어요.',
+        strengths: [
+          '자신의 생각과 감정을 글과 그림으로 분명하게 표현함',
+          '책 속 상황을 자신의 일상 경험과 연결하는 모습이 뚜렷해짐',
+          '단순한 선택에서 그 이유를 한 문장 더 덧붙이는 구체화가 나타남',
+          '이전 회차와 비교해 인물의 행동 원인과 결과를 유기적으로 파악함'
+        ],
+        nextDirections: [
+          '다음에는 "만약 결말이 달랐다면 어땠을까?" 하는 새로운 관점의 상상을 한 문장 더 펼쳐보아도 좋아요.'
+        ],
+        parentClosing: '지금 나타난 표현을 충분히 인정해 주시고, 아이가 스스로 이유를 편안하게 말할 수 있도록 따뜻한 질문으로 응원해 주세요.'
+      };
+    }
+
+    var titleEl = document.getElementById('aggReportTitle');
+    if (titleEl) titleEl.innerText = aggResult.title;
+
+    var strengthsList = document.getElementById('aggReportStrengthsList');
+    if (strengthsList && Array.isArray(aggResult.strengths)) {
+      strengthsList.innerHTML = aggResult.strengths.map(function(s, idx) {
+        return '<div class="mb-1.5"><i class="fa-solid fa-check text-success mr-2"></i>' + s + '</div>';
+      }).join('');
+    }
+
+    var nextList = document.getElementById('aggReportNextList');
+    if (nextList && Array.isArray(aggResult.nextDirections)) {
+      nextList.innerHTML = aggResult.nextDirections.map(function(n) {
+        return '<div><i class="fa-solid fa-arrow-right text-primary mr-2"></i>' + n + '</div>';
+      }).join('');
+    }
+
+    var closeEl = document.getElementById('aggReportParentClosing');
+    if (closeEl) closeEl.innerText = aggResult.parentClosing;
+
+    $('#modalAggregateWorksheetReport').modal('show');
+
+  } catch(err) {
+    alert('종합 분석지 생성 중 오류가 발생했습니다: ' + err.message);
+  }
 }

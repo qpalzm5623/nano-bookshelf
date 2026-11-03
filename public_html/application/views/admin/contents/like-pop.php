@@ -64,7 +64,7 @@
                           </thead>
                           <tbody>
                               <tr>
-                                  <th class="text-center bg-lightgray">미취학</th>
+                                  <th class="text-center bg-lightgray">유치부</th>
                                   <td class="text-center"><?php echo $data['grade'][0];?></th>
                               </tr>                            
                               <tr>

@@ -81,7 +81,7 @@ class Report extends MY_Controller {
 		$data = $this->user_model->getUserSeq($user_seq);
 			switch($data['grade']) {
 			    case "0":
-			        $data['grade'] = "미취학";
+			        $data['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $data['grade'] = "초1";
@@ -145,7 +145,7 @@ class Report extends MY_Controller {
 		{
 			switch($list[$i]['grade']) {
 			    case "0":
-			        $list[$i]['grade'] = "미취학";
+			        $list[$i]['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $list[$i]['grade'] = "초1";
@@ -296,7 +296,7 @@ class Report extends MY_Controller {
 		$data = $this->user_model->getUserData($user_id);
 		switch($data['grade']) {
 		    case "0":
-		        $data['grade'] = "미취학";
+		        $data['grade'] = "유치부";
 		    break;
 		    case "1":
 		        $data['grade'] = "초1";
@@ -358,7 +358,7 @@ class Report extends MY_Controller {
 		{
 			switch($list[$i]['grade']) {
 			    case "0":
-			        $list[$i]['grade'] = "미취학";
+			        $list[$i]['grade'] = "유치부";
 			    break;
 			    case "1":
 			        $list[$i]['grade'] = "초1";

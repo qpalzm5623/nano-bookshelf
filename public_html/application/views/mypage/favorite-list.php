@@ -23,7 +23,7 @@
 							<select name="grade" id="grade" class="select">
 								<option value="" selected>학년별</option>
 								<option value="">전체</option>
-								<option value="0">미취학</option>
+								<option value="0">유치부</option>
 								<option value="1">초1</option>
 								<option value="2">초2</option>
 								<option value="3">초3</option>

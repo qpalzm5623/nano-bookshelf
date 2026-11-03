@@ -40,15 +40,19 @@ export default async function handler(req: any, res: any) {
     const configRow = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
     const aiConfig = (configRow?.value || {}) as Record<string, any>;
     const apiKey = typeof aiConfig.apiKey === 'string' && aiConfig.apiKey.trim() ? aiConfig.apiKey.trim() : (process.env.GEMINI_API_KEY || '');
-    let rawModel = typeof aiConfig.model === 'string' && aiConfig.model.trim() ? aiConfig.model.trim() : (process.env.GEMINI_MODEL || 'gemini-2.0-flash');
+    let rawModel = typeof aiConfig.model === 'string' && aiConfig.model.trim() ? aiConfig.model.trim() : (process.env.GEMINI_MODEL || 'gemini-3.8-flash');
 
-    // Google Gemini API 공식 유효 모델 식별자로 안전 매핑
+    // Google Gemini API 공식 유효 모델 식별자로 안전 매핑 (마스터 계정 설정 엔진 최우선 연동)
     let model = rawModel;
     const modelLower = rawModel.toLowerCase();
-    if (modelLower.includes('1.5-pro')) model = 'gemini-1.5-pro';
+    if (modelLower.includes('3.8-flash') || modelLower.includes('3.8')) model = 'gemini-3.8-flash';
+    else if (modelLower.includes('3.5-pro') || modelLower.includes('3.5')) model = 'gemini-3.5-pro';
+    else if (modelLower.includes('3.0-flash-lite')) model = 'gemini-3.0-flash-lite';
+    else if (modelLower.includes('3.0-flash') || modelLower.includes('3.0')) model = 'gemini-3.0-flash';
+    else if (modelLower.includes('1.5-pro')) model = 'gemini-1.5-pro';
     else if (modelLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
-    else if (modelLower.includes('2.5') || modelLower.includes('3.0') || modelLower.includes('3.5') || modelLower.includes('2.0')) model = 'gemini-2.0-flash';
-    else if (!model.startsWith('gemini-')) model = 'gemini-2.0-flash';
+    else if (modelLower.includes('2.0-flash') || modelLower.includes('2.0')) model = 'gemini-2.0-flash';
+    else if (!model.startsWith('gemini-')) model = 'gemini-3.8-flash';
 
     need(apiKey, '본사 관리자에서 Gemini API 키를 등록해 주세요.', 503);
     need(model && /^[a-zA-Z0-9._-]+$/.test(model), '본사 관리자에서 사용할 Gemini 모델을 확인해 주세요.', 503);

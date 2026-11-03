@@ -231,6 +231,13 @@ function renderMasterContents() {
       if (certDelta) b.quizCompletions = (b.quizCompletions || 0) + certDelta;
     });
 
+    // 도서 권장학년 정규화 (유치부/0 -> 유치부 통일, 초1~중3 매핑)
+    masterBooks.forEach(b => {
+      if (b && b.grade) {
+        b.grade = typeof normalizeBookGrade === "function" ? normalizeBookGrade(b.grade) : (b.grade === "미취학" || b.grade === "0" ? "유치부" : b.grade);
+      }
+    });
+
     // 마스터 콘텐츠 관리 상단 4개 통계 카드 실시간 연동
     const totalMasterBookCount = masterBooks.length;
     const midBookCount = masterBooks.filter(b => b && String(b.grade || '').includes('중')).length;
@@ -253,7 +260,7 @@ function renderMasterContents() {
     const statBooksEl = document.getElementById("statMasterBooks");
     const statBooksSubEl = document.getElementById("statMasterBooksSub");
     if (statBooksEl) statBooksEl.innerHTML = `${totalMasterBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
-    if (statBooksSubEl) statBooksSubEl.innerText = `초등/유아 ${elemBookCount.toLocaleString()}권 / 중등 ${midBookCount.toLocaleString()}권`;
+    if (statBooksSubEl) statBooksSubEl.innerText = `초등/유치부 ${elemBookCount.toLocaleString()}권 / 중등 ${midBookCount.toLocaleString()}권`;
 
     const statQuizzesEl = document.getElementById("statMasterQuizzes");
     const statQuizzesSubEl = document.getElementById("statMasterQuizzesSub");
@@ -300,7 +307,9 @@ function renderMasterContents() {
 
     let matchGrade = true;
     if (gradeFilter !== "ALL") {
-      matchGrade = b.grade === gradeFilter || (b.grade && b.grade.includes(gradeFilter.replace("초등 ", "").replace("중등 ", "")));
+      const normFilter = typeof normalizeBookGrade === "function" ? normalizeBookGrade(gradeFilter) : gradeFilter;
+      const normBookGrade = typeof normalizeBookGrade === "function" ? normalizeBookGrade(b.grade) : (b.grade === "미취학" || b.grade === "0" ? "유치부" : b.grade);
+      matchGrade = (normBookGrade === normFilter);
     }
 
     let matchCat = true;
@@ -1551,7 +1560,7 @@ function detectBookCategory1(doc) {
 function detectBookGrade(doc) {
   const text = `${(doc && doc.title) || ""} ${(doc && doc.contents) || ""}`;
 
-  if (/유아|그림책|보드북|미취학|[3-7]세|누리과정/.test(text)) return "미취학";
+  if (/유아|그림책|보드북|미취학|유치부|[3-7]세|누리과정/.test(text)) return "유치부";
   if (/초등\s*1|초1|초등\s*저학년|저학년용/.test(text)) return "초등 1학년";
   if (/초등\s*2|초2/.test(text)) return "초등 2학년";
   if (/초등\s*3|초3|초등\s*중학년|중학년용/.test(text)) return "초등 3학년";
@@ -1982,11 +1991,11 @@ function openMasterBookAddModal(id = null) {
     else cat2 = "국내서";
   }
 
-  // 권장 학년 정규화 (미취학, 초등 1학년 ~ 중등 3학년)
+  // 권장 학년 정규화 (유치부, 초등 1학년 ~ 중등 3학년)
   let grade = "초등 5학년";
   if (book && book.grade) {
     const rawG = String(book.grade).trim();
-    if (rawG === "유치부" || rawG === "0" || rawG === "미취학") grade = "미취학";
+    if (rawG === "유치부" || rawG === "0" || rawG === "미취학") grade = "유치부";
     else if (rawG.startsWith("초") && !rawG.includes("학년")) grade = `초등 ${rawG.replace("초", "")}학년`;
     else if (rawG.startsWith("중") && !rawG.includes("학년")) grade = `중등 ${rawG.replace("중", "")}학년`;
     else grade = rawG;
@@ -3365,13 +3374,13 @@ function openExcelUploadModal() {
   $("#masterBookExcelModal").modal("show");
 }
 
-// 권장 학년 코드/텍스트 표준 변환 헬퍼 (a:미취학, 1~6:초1~6, 7~9:중1~3, b:중등)
+// 권장 학년 코드/텍스트 표준 변환 헬퍼 (a:유치부, 1~6:초1~6, 7~9:중1~3, b:중등)
 function normalizeGradeInput(raw) {
   if (!raw) return "초등 1학년";
   let s = String(raw).trim().toLowerCase().replace(/["']/g, "");
 
   // 1. 단일 코드 매핑
-  if (s === "a" || s === "0") return "미취학";
+  if (s === "a" || s === "0") return "유치부";
   if (s === "1") return "초등 1학년";
   if (s === "2") return "초등 2학년";
   if (s === "3") return "초등 3학년";
@@ -3384,7 +3393,7 @@ function normalizeGradeInput(raw) {
   if (s === "b") return "중등";
 
   // 2. 한글 표기 유연 매핑
-  if (s.includes("미취학") || s.includes("유치")) return "미취학";
+  if (s.includes("미취학") || s.includes("유치")) return "유치부";
   if (s.includes("초1") || s.includes("초등 1") || s.includes("초등1")) return "초등 1학년";
   if (s.includes("초2") || s.includes("초등 2") || s.includes("초등2")) return "초등 2학년";
   if (s.includes("초3") || s.includes("초등 3") || s.includes("초등3")) return "초등 3학년";
@@ -3473,7 +3482,7 @@ function downloadBookExcelTemplate() {
     "도서명",
     "저자",
     "출판사",
-    "권장학년(a:미취학,1~6:초1~6,7~9:중1~3,b:중등)",
+    "권장학년(a:유치부,1~6:초1~6,7~9:중1~3,b:중등)",
     "카테고리1(소설/인물이야기/비문학)",
     "카테고리2(국내서/외서/구분없음)",
     "시리즈명",
@@ -3554,7 +3563,7 @@ function handleMasterBookExcelUpload() {
       // 권장 학년 검증 및 정규화
       const normalizedGrade = normalizeGradeInput(rawGrade);
       if (!normalizedGrade) {
-        validationErrors.push(`[${rowNum}행: ${title}] 올바르지 않은 권장학년('${rawGrade}')입니다.\n  👉 허용: a(미취학), 1~6(초등 1~6학년), 7~9(중등 1~3학년), b(중등 전체)`);
+        validationErrors.push(`[${rowNum}행: ${title}] 올바르지 않은 권장학년('${rawGrade}')입니다.\n  👉 허용: a(유치부), 1~6(초등 1~6학년), 7~9(중등 1~3학년), b(중등 전체)`);
       }
 
       // 카테고리 1 검증 (소설, 인물 이야기, 비문학/정보글 또는 A, B, C 외 입력 차단)
@@ -3630,3 +3639,512 @@ function handleMasterBookExcelUpload() {
 }
 
 // ==========================================
+
+// ==============================================================
+// 엑셀 대량 북퀴즈 등록 모달 & 샘플 다운로드 & 업로드
+// ==============================================================
+function openQuizExcelUploadModal() {
+  const nameEl = document.getElementById("masterQuizExcelFileName");
+  if (nameEl) nameEl.innerHTML = "클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭";
+  const fileInp = document.getElementById("masterQuizExcelFileInput");
+  if (fileInp) fileInp.value = "";
+  $("#masterQuizExcelModal").modal("show");
+}
+
+function handleMasterQuizExcelFileSelect(input) {
+  if (input.files && input.files[0]) {
+    const el = document.getElementById("masterQuizExcelFileName");
+    if (el) el.innerHTML = `<span class="text-warning font-weight-bold" style="color: #d97706 !important;"><i class="fa-solid fa-file-excel mr-1"></i>${input.files[0].name} (${Math.round(input.files[0].size / 1024)}KB)</span>`;
+  }
+}
+
+// RFC 4180 완벽 호환 다중행 CSV 파서 (쌍따옴표 내 쉼표, 큰따옴표 이스케이프 "", 줄바꿈 완벽 처리)
+function parseRobustCSV(text) {
+  const clean = text.replace(/^\uFEFF/, ""); // UTF-8 BOM 제거
+  const rows = [];
+  let curRow = [];
+  let curCell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < clean.length; i++) {
+    const c = clean[i];
+    const next = clean[i + 1];
+
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        curCell += '"';
+        i++; // 이스케이프된 쌍따옴표 스킵
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      curRow.push(curCell.trim());
+      curCell = "";
+    } else if ((c === '\r' || c === '\n') && !inQuotes) {
+      if (c === '\r' && next === '\n') i++; // CRLF 처리
+      curRow.push(curCell.trim());
+      if (curRow.some(cell => cell.length > 0)) {
+        rows.push(curRow);
+      }
+      curRow = [];
+      curCell = "";
+    } else {
+      curCell += c;
+    }
+  }
+
+  // 마지막 행 처리
+  curRow.push(curCell.trim());
+  if (curRow.some(cell => cell.length > 0)) {
+    rows.push(curRow);
+  }
+
+  return rows;
+}
+
+// 북퀴즈 엑셀 헤더 유연 인식 (공백 제거 및 별칭 매핑)
+function parseQuizHeaderIndices(headerRow) {
+  const map = {
+    bookNo: -1,
+    title: -1,
+    questionNo: -1,
+    quizType: -1,
+    question: -1,
+    opt1: -1,
+    opt2: -1,
+    opt3: -1,
+    opt4: -1,
+    ans: -1,
+    hint: -1,
+    score: -1
+  };
+
+  headerRow.forEach((col, idx) => {
+    if (!col) return;
+    const s = String(col).toLowerCase().replace(/[\s_\-()（）[\]]/g, "");
+
+    if (s.includes("도서코드") || s.includes("관리코드") || s === "bookno" || s === "code" || s === "도서번호") {
+      map.bookNo = idx;
+    } else if (s.includes("도서명") || s === "제목" || s === "booktitle" || s === "title") {
+      map.title = idx;
+    } else if (s.includes("문항번호") || s.includes("문제번호") || s === "순번" || s === "no" || s === "questionno") {
+      map.questionNo = idx;
+    } else if (s.includes("문항유형") || s.includes("문제유형") || s === "유형" || s === "quiztype" || s === "type") {
+      map.quizType = idx;
+    } else if (s.includes("문항내용") || s.includes("질문") || s === "문제" || s === "문항" || s === "question") {
+      map.question = idx;
+    } else if (s.includes("보기1") || s.includes("선택지1") || s === "opt1" || s === "option1") {
+      map.opt1 = idx;
+    } else if (s.includes("보기2") || s.includes("선택지2") || s === "opt2" || s === "option2") {
+      map.opt2 = idx;
+    } else if (s.includes("보기3") || s.includes("선택지3") || s === "opt3" || s === "option3") {
+      map.opt3 = idx;
+    } else if (s.includes("보기4") || s.includes("선택지4") || s === "opt4" || s === "option4") {
+      map.opt4 = idx;
+    } else if (s.includes("정답") || s.includes("정답번호") || s === "답" || s === "ans" || s === "answer" || s === "correctanswer") {
+      map.ans = idx;
+    } else if (s.includes("해설") || s.includes("힌트") || s === "설명" || s === "hint" || s === "explanation") {
+      map.hint = idx;
+    } else if (s.includes("배점") || s === "점수" || s === "score") {
+      map.score = idx;
+    }
+  });
+
+  return map;
+}
+
+// 북퀴즈 정답 정규화 헬퍼 (숫자 1~4, 원문자 ①~④, 보기 텍스트 일치 처리)
+function normalizeQuizAnswerVal(rawAns, options, isSubjective) {
+  if (rawAns === null || rawAns === undefined) return null;
+  const s = String(rawAns).trim();
+  if (!s) return null;
+
+  if (isSubjective) return s;
+
+  // 원문자 및 일반 표기 정규화
+  const circleMap = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5" };
+  if (circleMap[s]) return circleMap[s];
+
+  // 숫자만 추출 (예: '1번' -> '1', '보기 2' -> '2')
+  const numMatch = s.match(/^[보기\s]*([1-5])[번]?$/);
+  if (numMatch) {
+    const n = Number(numMatch[1]);
+    if (n >= 1 && n <= options.length) return String(n);
+  }
+
+  // 순수 숫자 확인
+  const pureNum = Number(s);
+  if (Number.isInteger(pureNum) && pureNum >= 1 && pureNum <= options.length) {
+    return String(pureNum);
+  }
+
+  // 보기 텍스트와 정확히 일치하는 경우 해당 보기 번호로 변환
+  const matchIdx = options.findIndex(o => o.trim() === s);
+  if (matchIdx >= 0) {
+    return String(matchIdx + 1);
+  }
+
+  return null;
+}
+
+// 표준 북퀴즈 서식 다운로드 (CSV / XLSX)
+function downloadQuizExcelTemplate(format = 'csv') {
+  // 실제 등록된 도서 2권 가져와서 도서코드 실데이터 매핑
+  const book1 = (typeof masterBooks !== 'undefined' && masterBooks[0]) || { id: "FA000001", bookNo: "FA000001", title: "고양이 목욕탕" };
+  const book2 = (typeof masterBooks !== 'undefined' && masterBooks[1]) || { id: "FA000002", bookNo: "FA000002", title: "푸른 딱지" };
+
+  const code1 = book1.bookNo || book1.id || "FA000001";
+  const title1 = book1.title || "고양이 목욕탕";
+  const code2 = book2.bookNo || book2.id || "FA000002";
+  const title2 = book2.title || "푸른 딱지";
+
+  const headers = [
+    "도서코드",
+    "도서명(참고)",
+    "문항번호",
+    "문항유형",
+    "문항내용(질문)",
+    "보기1",
+    "보기2",
+    "보기3",
+    "보기4",
+    "정답",
+    "해설/힌트",
+    "배점"
+  ];
+
+  const sampleRows = [
+    [code1, title1, 1, "객관식", "주인공이 목욕탕에 들어갈 때 가장 먼저 챙긴 애착 물건은 무엇인가요?", "노란 고무 오리 인형", "수영 모자와 물안경", "향기 나는 비누", "따뜻한 목욕 타월", "1", "친구가 선물해 준 고무 오리를 떠올려보세요.", 20],
+    [code1, title1, 2, "객관식", "고양이가 처음 물에 발을 담그려 했을 때 느꼈던 심정으로 알맞은 것은?", "너무 신나서 펄쩍 뛰었다", "두렵고 긴장되어 망설여졌다", "지루해서 하품을 했다", "화가 나서 소리를 질렀다", "2", "물을 무서워하는 고양이의 심리 묘사 참고", 20],
+    [code1, title1, 3, "객관식", "목욕을 깨끗이 마치고 난 후 고양이의 기분 변화로 가장 옳은 것은?", "개운하고 상쾌하여 뿌듯했다", "감기에 걸려 후회했다", "다시는 목욕하지 않겠다고 다짐했다", "오리가 젖어서 슬펐다", "1", "뽀송뽀송해진 털을 만지며 만족해하는 결말", 20],
+    [code2, title2, 1, "객관식", "이야기 속 '푸른 딱지'가 두 주인공 사이에서 상징하는 핵심 의미는?", "새로운 우정과 화해의 시작", "패배와 좌절의 아픔", "어른들의 규칙과 명령", "잃어버린 장난감에 대한 미련", "1", "딱지치기 시합을 통해 싹튼 진정한 우정", 20],
+    [code2, title2, 2, "주관식", "주인공이 마지막 딱지 대결에서 두려움을 이겨낼 수 있었던 핵심 마음가짐은 무엇인가요?", "", "", "", "", "용기", "두려움을 이겨낸 단답형 키워드 입력 예시", 20]
+  ];
+
+  const fileName = `마스터_북퀴즈_대량등록_서식.${format}`;
+
+  if (format === 'xlsx' && typeof XLSX !== 'undefined') {
+    const wsData = [headers, ...sampleRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // 컬럼 너비 설정
+    ws['!cols'] = [
+      { wch: 14 }, // 도서코드
+      { wch: 20 }, // 도서명
+      { wch: 10 }, // 문항번호
+      { wch: 10 }, // 문항유형
+      { wch: 45 }, // 문항내용
+      { wch: 22 }, // 보기1
+      { wch: 22 }, // 보기2
+      { wch: 22 }, // 보기3
+      { wch: 22 }, // 보기4
+      { wch: 10 }, // 정답
+      { wch: 30 }, // 해설/힌트
+      { wch: 8 }   // 배점
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "북퀴즈등록양식");
+    XLSX.writeFile(wb, fileName);
+    showMasterToast("북퀴즈 대량 등록 샘플 엑셀(.xlsx)이 다운로드되었습니다.");
+  } else {
+    // CSV 다운로드 (UTF-8 BOM 포함으로 Excel 한글 깨짐 방지)
+    const csvContent = "\uFEFF" + [headers, ...sampleRows].map(row => 
+      row.map(cell => {
+        const str = String(cell ?? "");
+        if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(",")
+    ).join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", fileName.endsWith(".csv") ? fileName : "마스터_북퀴즈_대량등록_서식.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showMasterToast("북퀴즈 대량 등록 샘플 서식(.csv)이 다운로드되었습니다. 도서코드를 확인 후 문항을 작성해주세요.");
+  }
+}
+
+// 엑셀 대량 북퀴즈 업로드 실행 핸들러
+async function handleMasterQuizExcelUpload() {
+  const fileInput = document.getElementById("masterQuizExcelFileInput");
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    alert("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const fileName = file.name;
+  const ext = fileName.split(".").pop().toLowerCase();
+
+  if (!["csv", "xlsx", "xls"].includes(ext)) {
+    alert("지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.");
+    return;
+  }
+
+  // 2차원 배열 데이터 추출 함수
+  function parseFileToRows() {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      if (ext === "csv") {
+        reader.onload = e => {
+          try {
+            const rows = parseRobustCSV(e.target.result);
+            resolve(rows);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsText(file, "UTF-8");
+      } else {
+        // xlsx, xls
+        if (typeof XLSX === "undefined") {
+          reject(new Error("엑셀 파싱 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도하거나 CSV 파일을 이용해주세요."));
+          return;
+        }
+        reader.onload = e => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+            resolve(rows);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      }
+    });
+  }
+
+  try {
+    const rawRows = await parseFileToRows();
+    if (!rawRows || rawRows.length <= 1) {
+      alert("등록할 북퀴즈 데이터 행이 존재하지 않습니다. (헤더만 있거나 빈 파일)");
+      return;
+    }
+
+    const header = rawRows[0];
+    const colMap = parseQuizHeaderIndices(header);
+
+    // 필수 헤더 검증
+    if (colMap.bookNo === -1 || colMap.question === -1 || colMap.ans === -1) {
+      alert("[엑셀 서식 헤더 오류]\n필수 컬럼이 인식되지 않았습니다.\n'도서코드', '문항내용(질문)', '정답' 컬럼명이 포함되어 있는지 확인해주세요.");
+      return;
+    }
+
+    const validationErrors = [];
+    const parsedQuestions = []; // 행 단위 문항 데이터
+
+    // 도서 매칭 맵 구축 (대소문자/트림 정규화)
+    const bookLookup = new Map();
+    if (typeof masterBooks !== "undefined" && Array.isArray(masterBooks)) {
+      masterBooks.forEach(b => {
+        if (b.bookNo) bookLookup.set(String(b.bookNo).trim().toUpperCase(), b);
+        if (b.id) bookLookup.set(String(b.id).trim().toUpperCase(), b);
+      });
+    }
+
+    // 2번째 줄(인덱스 1)부터 데이터 행 파싱
+    for (let i = 1; i < rawRows.length; i++) {
+      const row = rawRows[i];
+      const rowNum = i + 1; // 엑셀 행 번호 (1-based)
+      if (!row || !row.some(cell => String(cell).trim().length > 0)) continue;
+
+      const rawBookCode = String(row[colMap.bookNo] ?? "").trim();
+      const rawTitle = colMap.title !== -1 ? String(row[colMap.title] ?? "").trim() : "";
+      const rawQNo = colMap.questionNo !== -1 ? String(row[colMap.questionNo] ?? "").trim() : "";
+      const rawType = colMap.quizType !== -1 ? String(row[colMap.quizType] ?? "").trim() : "";
+      const rawQuestion = String(row[colMap.question] ?? "").trim();
+      const opt1 = colMap.opt1 !== -1 ? String(row[colMap.opt1] ?? "").trim() : "";
+      const opt2 = colMap.opt2 !== -1 ? String(row[colMap.opt2] ?? "").trim() : "";
+      const opt3 = colMap.opt3 !== -1 ? String(row[colMap.opt3] ?? "").trim() : "";
+      const opt4 = colMap.opt4 !== -1 ? String(row[colMap.opt4] ?? "").trim() : "";
+      const rawAns = String(row[colMap.ans] ?? "").trim();
+      const hint = colMap.hint !== -1 ? String(row[colMap.hint] ?? "").trim() : "";
+      const rawScore = colMap.score !== -1 ? String(row[colMap.score] ?? "").trim() : "";
+
+      // 1. 도서코드 필수 검증
+      if (!rawBookCode) {
+        validationErrors.push(`[${rowNum}행] 도서코드가 비어있습니다.`);
+        continue;
+      }
+
+      // 2. 도서 존재 여부 검증
+      const matchedBook = bookLookup.get(rawBookCode.toUpperCase());
+      if (!matchedBook) {
+        validationErrors.push(`[${rowNum}행] 도서코드 '${rawBookCode}'에 해당하는 등록 도서가 없습니다. (입력 도서명: ${rawTitle || '미입력'})`);
+        continue;
+      }
+
+      // 3. 문항 질문 필수 검증
+      if (!rawQuestion) {
+        validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 문항 질문(내용)이 비어있습니다.`);
+        continue;
+      }
+
+      // 4. 문제 유형 판별 (객관식 vs 주관식)
+      const options = [opt1, opt2, opt3, opt4].filter(o => o.length > 0);
+      const isExplicitSubjective = rawType.includes("주관") || rawType.toUpperCase() === "SUBJECTIVE" || rawType.toUpperCase() === "SHORT_ANSWER";
+      const isSubjective = isExplicitSubjective || options.length === 0;
+
+      // 객관식 보기 검증
+      if (!isSubjective && options.length < 2) {
+        validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 객관식 문항은 보기가 최소 2개 이상 입력되어야 합니다.`);
+        continue;
+      }
+
+      // 5. 정답 유효성 및 정규화
+      const normalizedAns = normalizeQuizAnswerVal(rawAns, options, isSubjective);
+      if (!normalizedAns) {
+        validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 유효하지 않은 정답('${rawAns}')입니다.\n  👉 객관식은 1~${options.length} 번호(또는 보기 내용), 주관식은 정답 단어를 입력해야 합니다.`);
+        continue;
+      }
+
+      const questionNo = Number(rawQNo) || (parsedQuestions.filter(q => q.bookCode === rawBookCode).length + 1);
+      const score = Number(rawScore) || 20;
+
+      parsedQuestions.push({
+        rowNum,
+        bookCode: rawBookCode,
+        matchedBook,
+        questionNo,
+        type: isSubjective ? "SUBJECTIVE" : "CHOICE",
+        quizType: isSubjective ? "SHORT_ANSWER" : "MULTIPLE_CHOICE",
+        question: rawQuestion,
+        opt1: opt1 || "",
+        opt2: opt2 || "",
+        opt3: opt3 || "",
+        opt4: opt4 || "",
+        options: isSubjective ? [] : options,
+        ans: normalizedAns,
+        subjectiveAns: isSubjective ? normalizedAns : "",
+        correctAnswer: normalizedAns,
+        hint,
+        score
+      });
+    }
+
+    // 유효성 오류 발견 시 전체 등록 중단 및 안내
+    if (validationErrors.length > 0) {
+      const errorMsg = `[북퀴즈 엑셀 업로드 유효성 검사 실패]\n총 ${validationErrors.length}건의 규격 오류가 발견되어 등록이 중단되었습니다.\n엑셀 서식을 수정한 후 다시 업로드해주세요.\n\n` +
+        validationErrors.slice(0, 6).join("\n\n") +
+        (validationErrors.length > 6 ? `\n\n... 외 ${validationErrors.length - 6}건 추가 오류` : "");
+      alert(errorMsg);
+      return;
+    }
+
+    if (parsedQuestions.length === 0) {
+      alert("등록 가능한 유효 북퀴즈 문항이 없습니다.");
+      return;
+    }
+
+    // 도서별 그룹핑
+    const groupedMap = new Map();
+    parsedQuestions.forEach(q => {
+      const key = q.matchedBook.id;
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          book: q.matchedBook,
+          bookNo: q.matchedBook.bookNo || q.matchedBook.id,
+          questions: []
+        });
+      }
+      groupedMap.get(key).questions.push(q);
+    });
+
+    const groups = Array.from(groupedMap.values());
+
+    // 1. 서버 연동 환경인 경우 백엔드 API 일괄 저장 실행 (/api/manage?entity=quizzes)
+    if (window.NanoPortal && typeof NanoPortal.api === "function" && window.NANO_SERVER_DATA) {
+      try {
+        const payload = {
+          operation: "bulk_import",
+          items: groups.map(g => ({
+            bookNo: g.bookNo,
+            questions: g.questions.map(q => ({
+              questionNo: q.questionNo,
+              question: q.question,
+              quizType: q.quizType,
+              options: q.options,
+              opt1: q.opt1,
+              opt2: q.opt2,
+              opt3: q.opt3,
+              opt4: q.opt4,
+              correctAnswer: q.ans,
+              explanation: q.hint,
+              score: q.score
+            }))
+          }))
+        };
+        await NanoPortal.api("/api/manage?entity=quizzes", payload);
+      } catch (apiErr) {
+        console.error("서버 북퀴즈 일괄 저장 오류:", apiErr);
+        alert(`[서버 북퀴즈 저장 오류]\n${apiErr.message || "서버 통신 중 오류가 발생했습니다."}`);
+        return;
+      }
+    }
+
+    // 2. 프론트엔드 캐시 및 도서 객체 상태 실시간 업데이트
+    const today = new Date().toISOString().split("T")[0];
+    if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+
+    groups.forEach(g => {
+      const book = g.book;
+      const formattedQuestions = g.questions.map(q => ({
+        type: q.type,
+        question: q.question,
+        mediaType: "none",
+        mediaUrl: "",
+        mediaCaption: "",
+        opt1: q.opt1,
+        opt2: q.opt2,
+        opt3: q.opt3,
+        opt4: q.opt4,
+        ans: q.ans,
+        subjectiveAns: q.subjectiveAns,
+        similarAns: q.subjectiveAns,
+        hint: q.hint,
+        score: q.score
+      }));
+
+      // 본사 퀴즈 세트로 구성
+      book.hasQuiz = true;
+      book.quizzes = formattedQuestions.length;
+      book.quizSets = [
+        {
+          id: `qs_hq_${book.id}`,
+          authorType: "HQ",
+          authorName: "본사",
+          academyName: "본사 직속 (공용)",
+          createdAt: today,
+          questions: formattedQuestions
+        }
+      ];
+
+      // MIGRATED_QUIZZES 동기화
+      window.MIGRATED_QUIZZES[book.id] = book.quizSets;
+      if (book.bookNo) window.MIGRATED_QUIZZES[book.bookNo] = book.quizSets;
+      if (book.serverId) window.MIGRATED_QUIZZES[book.serverId] = book.quizSets;
+    });
+
+    // 모달 닫기 및 렌더링 갱신
+    $("#masterQuizExcelModal").modal("hide");
+    if (typeof renderMasterContents === "function") {
+      renderMasterContents();
+    }
+    showMasterToast(`[${fileName}] 북퀴즈 대량 등록 완료: 총 ${groups.length}권의 도서에 ${parsedQuestions.length}문항이 성공적으로 등록되었습니다!`);
+
+  } catch (err) {
+    console.error("북퀴즈 파일 처리 오류:", err);
+    alert(`파일을 읽고 처리하는 중 오류가 발생했습니다: ${err.message || err}`);
+  }
+}

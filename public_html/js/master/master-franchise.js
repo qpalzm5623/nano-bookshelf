@@ -76,7 +76,7 @@ function selectRecGrade(grade) {
 
 function formatShortRecGrade(raw) {
   const norm = normalizeRecGradeCode(raw);
-  if (norm === "미취학") return "미취학";
+  if (norm === "유치부" || norm === "미취학") return "유치부";
   if (norm === "초등 1학년") return "초1";
   if (norm === "초등 2학년") return "초2";
   if (norm === "초등 3학년") return "초3";
@@ -513,14 +513,14 @@ async function deleteRecommendedBook(recId) {
 // 권장도서 엑셀(CSV) 일괄 등록, 변경, 삭제 로직
 // ------------------------------------------
 
-// 권장 학년 코드 정규화 함수 (0: 미취학, 1~6: 초등 1~6학년, 7~9: 중등 1~3학년)
+// 권장 학년 코드 정규화 함수 (0: 유치부, 1~6: 초등 1~6학년, 7~9: 중등 1~3학년)
 function normalizeRecGradeCode(raw) {
   if (raw === undefined || raw === null) return "초등 1학년";
   const str = String(raw).trim();
   if (!str) return "초등 1학년";
 
   // 단일 숫자 / 영문 코드 매핑
-  if (str === "0" || str.toLowerCase() === "a") return "미취학";
+  if (str === "0" || str.toLowerCase() === "a") return "유치부";
   if (str === "1") return "초등 1학년";
   if (str === "2") return "초등 2학년";
   if (str === "3") return "초등 3학년";
@@ -533,7 +533,7 @@ function normalizeRecGradeCode(raw) {
   if (str.toLowerCase() === "b" || str === "10") return "중학교";
 
   // 한글/영문 텍스트 호환 매핑
-  if (/미취학|유아|유치/i.test(str)) return "미취학";
+  if (/미취학|유아|유치/i.test(str)) return "유치부";
   if (/^초\s*1|초등\s*1/i.test(str)) return "초등 1학년";
   if (/^초\s*2|초등\s*2/i.test(str)) return "초등 2학년";
   if (/^초\s*3|초등\s*3/i.test(str)) return "초등 3학년";
@@ -551,7 +551,7 @@ function normalizeRecGradeCode(raw) {
 function downloadRecommendedExcelTemplate() {
   const csvLines = [
     '구분(R/U/D),권장 학년 코드 (0~9),콘텐츠넘버(도서ID)',
-    '"[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)","[설명] 0:미취학, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",[설명] 콘텐츠넘버(도서ID) 기입',
+    '"[설명] R:등록 / U:변경 / D:삭제 (R, U, D만 기입)","[설명] 0:유치부, 1~6:초등1~6학년, 7:중1, 8:중2, 9:중3",[설명] 콘텐츠넘버(도서ID) 기입',
     'R,0,FA000001'
   ];
   const csvContent = "\uFEFF" + csvLines.join("\r\n");
@@ -674,7 +674,7 @@ async function handleRecommendedExcelUpload() {
           continue;
         }
 
-        // 학년 코드 정규화 (0: 미취학, 1~6: 초1~6, 7~9: 중1~3)
+        // 학년 코드 정규화 (0: 유치부, 1~6: 초1~6, 7~9: 중1~3)
         const grade = normalizeRecGradeCode(gradeRaw);
 
         // 마스터 도서 검색 (도서ID, 콘텐츠넘버 bookNo, 도서명 모두 매칭 지원)
@@ -819,7 +819,7 @@ const PLAN_MAX_STUDENTS = {
   "Basic": 25,
   "Standard": 50,
   "Premium": 100,
-  "Royal": 100
+  "Royal": "협의"
 };
 
 // 이용 상품별 품격 있는 뱃지 스타일 헬퍼
@@ -1098,6 +1098,7 @@ function getDDayText(endDateStr) {
 function filterFranchiseList() {
   franchiseCurrentPage = 1; // 필터링 시 1페이지로 리셋
   const query = (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim();
+  const cleanQueryPhone = query.replace(/[^0-9]/g, '');
 
   const statusFilter = document.getElementById("franchiseStatusFilter")?.value || "ALL";
   const planFilter = document.getElementById("franchisePlanFilter")?.value || "ALL";
@@ -1108,13 +1109,19 @@ function filterFranchiseList() {
   const filtered = franchiseList.filter(item => {
     const itemJoinDate = item.joinDate || item.startDate || "";
 
+    const rawPhone = item.phone || '';
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+    const matchPhone = (rawPhone && rawPhone.includes(query)) ||
+      (cleanQueryPhone && cleanPhone && cleanPhone.includes(cleanQueryPhone));
+
     const matchQuery = !query || 
       (item.name && item.name.toLowerCase().includes(query)) ||
       (item.director && item.director.toLowerCase().includes(query)) ||
       (item.region && item.region.toLowerCase().includes(query)) ||
       (item.bizNumber && item.bizNumber.includes(query)) ||
       (item.adminId && item.adminId.toLowerCase().includes(query)) ||
-      (item.email && item.email.toLowerCase().includes(query));
+      (item.email && item.email.toLowerCase().includes(query)) ||
+      matchPhone;
 
     // 계약 만료 및 30일내 만료 임박 자동 판정 반영
     const isExpired = (item.endDate && item.endDate < todayStr && item.status !== "TERMINATED");

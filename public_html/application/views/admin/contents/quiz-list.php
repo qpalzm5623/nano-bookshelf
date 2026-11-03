@@ -115,7 +115,7 @@
                     <div class="col-sm-2 row align-middle">
                         <select name="recommendClass" id="recommendClass" class="form-control">
                             <option value="">전체</option>
-                            <option value="0" <?php echo @$_REQUEST['recommendClass']=="0"?"selected":""?>>미취학</option>
+                            <option value="0" <?php echo @$_REQUEST['recommendClass']=="0"?"selected":""?>>유치부</option>
                             <option value="1" <?php echo @$_REQUEST['recommendClass']=="1"?"selected":""?>>초1</option>
                             <option value="2" <?php echo @$_REQUEST['recommendClass']=="2"?"selected":""?>>초2</option>
                             <option value="3" <?php echo @$_REQUEST['recommendClass']=="3"?"selected":""?>>초3</option>

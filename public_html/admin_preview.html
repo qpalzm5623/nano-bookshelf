@@ -334,7 +334,9 @@
       }
 
       #learningDetailModal,
-      #learningDetailModal * {
+      #learningDetailModal *,
+      #modalAggregateWorksheetReport,
+      #modalAggregateWorksheetReport * {
         visibility: visible !important;
       }
 
@@ -3250,7 +3252,7 @@
                 <select class="form-control form-control-sm" id="filterAcadBookGrade" onchange="filterAcademyBooks()"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="ALL" selected>전체 학년</option>
-                  <option value="미취학">미취학</option>
+                  <option value="유치부">유치부</option>
                   <option value="초등 1학년">초등 1학년</option>
                   <option value="초등 2학년">초등 2학년</option>
                   <option value="초등 3학년">초등 3학년</option>
@@ -4357,7 +4359,7 @@
                 </div>
 
                 <!-- 1) 월별 드롭다운 (MONTH 모드용) -->
-                <div class="d-flex align-items-center" id="rankFilterMonthWrap" style="flex-shrink: 0;">
+                <div class="align-items-center" id="rankFilterMonthWrap" style="display: flex; gap: 6px; flex-shrink: 0;">
                   <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 6px; white-space: nowrap;">
                     <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>월 선택:
                   </span>
@@ -4612,9 +4614,9 @@
                   </div>
                   <div style="font-size: 26px; margin: 6px 0;">🌱</div>
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">베이직</h6>
-                  <div class="text-primary font-weight-bold" id="tierSlots_basic" style="font-size: 13px;">최대 30명 슬롯</div>
+                  <div class="text-primary font-weight-bold" id="tierSlots_basic" style="font-size: 13px;">최대 25명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div id="tierPrice_basic" style="font-size: 16px; font-weight: 800; color: var(--text-main);">70,000<span
+                    <div id="tierPrice_basic" style="font-size: 16px; font-weight: 800; color: var(--text-main);">80,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
                     <div class="badge-soft badge-soft-warn mt-1" id="tierActionBadge_basic" style="font-size: 10px;">차월 적용 (다운그레이드)</div>
                   </div>
@@ -4635,7 +4637,7 @@
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">스탠다드</h6>
                   <div class="text-primary font-weight-bold" id="tierSlots_standard" style="font-size: 13px;">최대 50명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div id="tierPrice_standard" style="font-size: 16px; font-weight: 800; color: var(--text-main);">100,000<span
+                    <div id="tierPrice_standard" style="font-size: 16px; font-weight: 800; color: var(--text-main);">120,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
                     <div class="badge-soft badge-soft-success mt-1" id="tierActionBadge_standard" style="font-size: 10px;">기존 플랜 기간 연장</div>
                   </div>
@@ -4657,28 +4659,28 @@
                   <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">프리미엄</h6>
                   <div class="text-primary font-weight-bold" id="tierSlots_premium" style="font-size: 13px;">최대 100명 슬롯</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div id="tierPrice_premium" style="font-size: 16px; font-weight: 800; color: var(--text-main);">150,000<span
+                    <div id="tierPrice_premium" style="font-size: 16px; font-weight: 800; color: var(--text-main);">180,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
                     <div class="badge-soft badge-soft-danger mt-1" id="tierActionBadge_premium" style="font-size: 10px;">즉시 변경 (차액 결제)</div>
                   </div>
                 </div>
               </div>
 
-              <!-- TIER 4: VIP (120명) -->
+              <!-- TIER 4: 로열 (Royal, 협의) -->
               <div class="col-md-3 col-6 mb-3">
                 <div class="simple-card p-3 h-100 plan-tier-card text-center" id="cardTier_vip"
                   onclick="selectPlanTier('vip')"
                   style="cursor: pointer; border: 2px solid var(--border-medium); border-radius: 14px; transition: all 0.2s;">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="badge-soft badge-soft-danger" id="tierBadge_vip" style="font-size: 10px;">대형 어학/논술학원</span>
+                    <span class="badge-soft badge-soft-danger" id="tierBadge_vip" style="font-size: 10px;">대형 프랜차이즈</span>
                     <span class="tier-check-icon text-muted" style="font-size: 14px;"><i
                         class="fa-regular fa-circle"></i></span>
                   </div>
                   <div style="font-size: 26px; margin: 6px 0;">👑</div>
-                  <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">VIP 플랜</h6>
-                  <div class="text-primary font-weight-bold" id="tierSlots_vip" style="font-size: 13px;">최대 120명 슬롯</div>
+                  <h6 class="font-weight-bold mb-1" style="color: var(--text-main);">로열 (Royal)</h6>
+                  <div class="text-primary font-weight-bold" id="tierSlots_vip" style="font-size: 13px;">정원 협의</div>
                   <div class="mt-2 pt-2 border-top">
-                    <div id="tierPrice_vip" style="font-size: 16px; font-weight: 800; color: var(--text-main);">220,000<span
+                    <div id="tierPrice_vip" style="font-size: 16px; font-weight: 800; color: var(--text-main);">300,000<span
                         style="font-size: 12px; font-weight: normal;">원/월</span></div>
                     <div class="badge-soft badge-soft-danger mt-1" id="tierActionBadge_vip" style="font-size: 10px;">즉시 변경 (차액 결제)</div>
                   </div>
@@ -5464,7 +5466,7 @@
                       <select class="form-control form-control-sm" id="batchBookFilterGrade"
                         onchange="filterBatchBookCatalog()" style="width: 120px; font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 학년</option>
-                        <option value="미취학">미취학</option>
+                        <option value="유치부">유치부</option>
                         <option value="초등 1학년">초등 1학년</option>
                         <option value="초등 2학년">초등 2학년</option>
                         <option value="초등 3학년">초등 3학년</option>
@@ -5749,6 +5751,68 @@
                 </div>
               </div>
 
+              <!-- [신규] 나노시트 AI 사고력 분석지 섹션 (오프라인 시트 사진 분석 결과) -->
+              <div id="learnModalWorksheetAiSection" class="mb-3" style="display: none;">
+                <div class="p-3 rounded border" style="background: #faf8f5; border-color: #e8e2d8 !important;">
+                  <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <div>
+                      <span class="badge badge-pill badge-warning text-dark font-weight-bold mr-1" style="font-size: 10.5px;">Gemini 3.8 Flash</span>
+                      <strong style="font-size: 13px; color: #1f8a7e;"><i class="fa-solid fa-seedling mr-1"></i>나노시트 사고력 분석지</strong>
+                    </div>
+                    <span class="text-muted" style="font-size: 11px;" id="worksheetSheetCountBadge">3번째 나노시트</span>
+                  </div>
+
+                  <!-- 1) 이번 활동의 한 줄 요약 -->
+                  <div class="mb-2.5 p-2.5 rounded bg-white border" style="border-left: 3px solid #1f8a7e !important;">
+                    <div class="text-muted font-weight-bold mb-1" style="font-size: 11px;">
+                      <i class="fa-solid fa-lightbulb text-warning mr-1"></i>이번 활동의 한 줄 관찰 요약
+                    </div>
+                    <div class="font-weight-bold text-dark" id="worksheetAiSummary" style="font-size: 12.5px; line-height: 1.55;">
+                      -
+                    </div>
+                  </div>
+
+                  <!-- 2) 나노시트 원본 사진 썸네일 & 실제 인용 관찰 코멘트 -->
+                  <div class="row mb-2">
+                    <div class="col-sm-5 mb-2 mb-sm-0">
+                      <div class="font-weight-bold text-muted mb-1" style="font-size: 11px;">
+                        <i class="fa-solid fa-camera mr-1"></i>작성 원본 사진 (2~3p)
+                      </div>
+                      <div id="worksheetAiThumbnails" class="d-flex gap-1.5 flex-wrap">
+                        <!-- 썸네일 동적 삽입 -->
+                      </div>
+                    </div>
+                    <div class="col-sm-7">
+                      <div class="font-weight-bold text-muted mb-1" style="font-size: 11px;">
+                        <i class="fa-solid fa-quote-left mr-1 text-primary"></i>실제 표현 인용 및 AI 관찰 코멘트
+                      </div>
+                      <div id="worksheetAiQuotesList" class="bg-white p-2 rounded border" style="font-size: 11.5px; max-height: 180px; overflow-y: auto;">
+                        <!-- 실제 인용구 동적 삽입 -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 3) 그림 관찰 (그림 있을 때만 표시) -->
+                  <div id="worksheetAiDrawingRow" class="mb-2 p-2 rounded bg-white border" style="font-size: 11.5px; display: none;">
+                    <strong class="text-primary"><i class="fa-solid fa-palette mr-1"></i>그림 표현 관찰:</strong>
+                    <span id="worksheetAiDrawingText" class="text-dark ml-1"></span>
+                  </div>
+
+                  <!-- 4) 다음 성장을 위한 발걸음 (20%) & 가정 대화 팁 -->
+                  <div class="p-2.5 rounded" style="background: #eef8f6; border: 1px solid #c7ece5; font-size: 11.5px; line-height: 1.55;">
+                    <div class="font-weight-bold mb-1" style="color: #145951;">
+                      <i class="fa-solid fa-compass mr-1"></i>다음 성장을 위한 발걸음 (20%) & 가정 칭찬 가이드
+                    </div>
+                    <div class="text-dark mb-1" id="worksheetAiNextStep">
+                      • <strong>다음 시도:</strong> -
+                    </div>
+                    <div class="text-muted" id="worksheetAiParentGuide">
+                      • <strong>가정 대화 팁:</strong> -
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- 지도교사 코멘트 영역 (디폴트: 없음, 교사 코멘트 넣기 옵션으로 직접 타이핑) -->
               <div id="learnModalCommentWrapper" class="pt-1">
                 <!-- 상단 버튼/헤더 영역 -->
@@ -5842,7 +5906,7 @@
   <!-- 3-B. 지도교사 나노 시트 첨삭 및 파일 관리 모달 -->
   <!-- ============================================================== -->
   <div class="modal fade" id="modalCorrection" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 560px;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 680px;">
       <div class="modal-content"
         style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 12px 35px rgba(0,0,0,0.15); overflow: hidden;">
         <div class="modal-header d-flex justify-content-between align-items-center"
@@ -5878,22 +5942,72 @@
               style="font-size: 11.5px;">첨삭 전</span>
           </div>
 
-          <!-- 1) 첨삭 완료 파일 업로드 -->
+          <!-- 1) 나노시트 사진(2~3페이지) 촬영 / 업로드 -->
           <div class="form-group mb-3">
-            <label class="font-weight-bold mb-1" style="font-size: 12.5px;">
-              지도교사 첨삭 파일 업로드 <small class="text-muted font-weight-normal">(스캔 이미지, PDF 등)</small>
-            </label>
-            <input type="file" id="correctionFileInput" accept=".pdf,image/*" class="form-control-file"
-              style="font-size: 12px;">
-            <small class="text-muted mt-1 d-block" style="font-size: 11px;">* 첨삭 파일을 업로드하면 상태가 [첨삭 완료]로 자동
-              변경됩니다.</small>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="font-weight-bold mb-0" style="font-size: 12.5px;">
+                <i class="fa-solid fa-camera text-primary mr-1"></i>나노시트 사진 촬영 / 업로드 <small class="text-muted font-weight-normal">(2~3페이지 최대 3장)</small>
+              </label>
+              <span class="badge badge-pill badge-light border text-muted" style="font-size: 11px;" id="worksheetPhotoCountBadge">0장 선택됨</span>
+            </div>
+            <div class="p-3 rounded text-center" style="background: #faf8f5; border: 2px dashed #d1c7bd; cursor: pointer;" onclick="document.getElementById('correctionFileInput').click()">
+              <i class="fa-solid fa-cloud-arrow-up text-muted mb-1" style="font-size: 24px;"></i>
+              <div class="font-weight-bold text-dark" style="font-size: 12.5px;">스마트폰 카메라로 촬영하거나 사진 파일 선택</div>
+              <small class="text-muted" style="font-size: 11px;">오프라인 손글씨 및 그림 시트 2~3p (JPG, PNG, WebP 지원, 자동 최적화)</small>
+              <input type="file" id="correctionFileInput" accept="image/*,.pdf" multiple class="d-none" onchange="handleWorksheetImagesSelect(this)">
+            </div>
+
+            <!-- 선택된 이미지 썸네일 미리보기 컨테이너 -->
+            <div id="worksheetUploadThumbnails" class="d-flex gap-2 mt-2 flex-wrap" style="display: none !important;">
+              <!-- 썸네일 미리보기 카드 동적 생성 -->
+            </div>
           </div>
 
-          <!-- 2) 교사 총평 및 지도 피드백 코멘트 -->
+          <!-- 2) Gemini 3.8 Flash AI 분석 실행 버튼 & 로딩 바 -->
+          <div class="mb-3">
+            <button type="button" class="btn btn-sm btn-block font-weight-bold" id="btnRunWorksheetAi" onclick="runWorksheetAiAnalysis()"
+              style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; border-radius: 8px; padding: 10px; font-size: 13px; display: none; box-shadow: 0 4px 12px rgba(31,138,126,0.25);">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-warning"></i>Gemini 3.8 Flash AI 사고력 분석 실행
+            </button>
+
+            <!-- 로딩 인디케이터 -->
+            <div id="worksheetAiLoading" style="display: none; background: #f0fdf4; border: 1.5px dashed #22c55e; border-radius: 8px; padding: 14px; text-align: center;">
+              <i class="fa-solid fa-spinner fa-spin text-success mr-2"></i>
+              <strong style="font-size: 12.5px; color: #166534;">Gemini 3.8 Flash가 나노시트의 손글씨와 그림을 관찰 중입니다...</strong>
+              <small class="text-muted d-block mt-1" style="font-size: 11px;">연령별 발달 모델(LEVEL 0~3)과 8대 관찰 지표를 적용하여 강점 80% 리포트를 생성하고 있습니다.</small>
+            </div>
+
+            <!-- AI 분석 결과 카드 (분석 완료 시 노출) -->
+            <div id="worksheetAiResultCard" style="display: none; background: #fffdfa; border: 1.5px solid #fde68a; border-radius: 10px; padding: 14px; margin-top: 10px;">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                <span class="font-weight-bold text-dark" style="font-size: 12.5px;">
+                  <i class="fa-solid fa-seedling text-success mr-1"></i>AI 분석 결과 요약 (초안)
+                </span>
+                <button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="applyAiCommentToTeacherInput()" style="font-size: 11px; border-radius: 6px;">
+                  <i class="fa-solid fa-arrow-down mr-1"></i>교사 코멘트에 반영
+                </button>
+              </div>
+              <div class="mb-2" style="font-size: 12px;">
+                <strong class="text-muted">한 줄 관찰:</strong>
+                <span id="aiResultSummaryText" class="font-weight-bold text-dark ml-1"></span>
+              </div>
+              <div class="mb-2" id="aiResultQuotesContainer" style="font-size: 11.5px;">
+                <!-- 인용구 목록 -->
+              </div>
+              <div class="p-2 rounded bg-light" style="font-size: 11px; line-height: 1.5; color: #1e293b;" id="aiResultNextStepText">
+                <!-- 다음 성장 방향 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 3) 교사 총평 및 지도 피드백 코멘트 (AI 제안 초안 기반 검토 및 수정) -->
           <div class="form-group mb-0">
-            <label class="font-weight-bold mb-1" style="font-size: 12.5px;">지도교사 첨삭 코멘트</label>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="font-weight-bold mb-0" style="font-size: 12.5px;">지도교사 첨삭 코멘트</label>
+              <small class="text-muted" style="font-size: 11px;">* 선생님이 직접 작성하시거나 AI 분석 초안을 수정하여 사용하세요.</small>
+            </div>
             <textarea id="correctionCommentInput" class="form-control form-control-beige" rows="3"
-              placeholder="원생의 생각담기 서술에 대한 지도 피드백을 입력하세요." style="font-size: 12.5px;"></textarea>
+              placeholder="원생의 생각담기 서술에 대한 지도 피드백을 입력하세요." style="font-size: 12.5px; line-height: 1.6;"></textarea>
           </div>
         </div>
 
@@ -5903,6 +6017,95 @@
             onclick="saveCorrectionFromModal()">
             <i class="fa-solid fa-check mr-1"></i>첨삭 완료 처리
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- ============================================================== -->
+  <!-- 3-C. 나노시트 기간별 종합 분석지 모달 (학부모용 성장 브리핑) -->
+  <!-- ============================================================== -->
+  <div class="modal fade" id="modalAggregateWorksheetReport" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document" style="max-width: 780px;">
+      <div class="modal-content" style="border-radius: 16px; border: 1px solid var(--border-medium);">
+        <div class="modal-header-simple d-flex justify-content-between align-items-center py-3 px-4"
+          style="background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; border-radius: 15px 15px 0 0;">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-chart-line mr-2.5 text-warning" style="font-size: 18px;"></i>
+            <div>
+              <h5 class="modal-title font-weight-bold mb-0 text-white" style="font-size: 16px;">
+                나노시트 기간별 종합 성장 분석지
+              </h5>
+              <small class="text-white-50" style="font-size: 11.5px;">
+                최소 4회차 이상 누적 나노시트 기반 학부모용 종합 성장 리포트 (강점 80% · 다음 성장 20%)
+              </small>
+            </div>
+          </div>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body p-4" style="background: #ffffff;" id="aggregateReportPrintArea">
+          <!-- 학생 및 기간 헤더 -->
+          <div class="p-3 rounded mb-3 border d-flex justify-content-between align-items-center" style="background: #f8fafc; border-color: #cbd5e1 !important;">
+            <div>
+              <div class="font-weight-bold text-dark" style="font-size: 15px;" id="aggStudentNameDisplay">학생명 (초등 3학년)</div>
+              <small class="text-muted" id="aggPeriodDisplay">분석 기간: 최근 3개월 (총 5회차 누적 완독)</small>
+            </div>
+            <span class="badge badge-pill badge-success px-3 py-2" style="font-size: 12px; background: #1f8a7e;">
+              <i class="fa-solid fa-check-double mr-1"></i>분석 완료
+            </span>
+          </div>
+
+          <!-- 이번 활동의 한 줄 요약 제목 -->
+          <div class="p-3 rounded mb-3 border" style="background: #fffdf5; border-color: #fde68a !important; border-left: 4px solid #f59e0b !important;">
+            <div class="text-muted font-weight-bold mb-1" style="font-size: 11px;">
+              <i class="fa-solid fa-award text-warning mr-1"></i>기간별 종합 성장 한 줄 요약
+            </div>
+            <div class="font-weight-bold text-dark" id="aggReportTitle" style="font-size: 14px; line-height: 1.6;">
+              -
+            </div>
+          </div>
+
+          <!-- 성장 및 강점 (80% 비중 - 블렛포인트 4~5개) -->
+          <div class="mb-3">
+            <div class="font-weight-bold mb-2 text-dark" style="font-size: 13px;">
+              <i class="fa-solid fa-circle-check text-success mr-1"></i>관찰된 성장과 강점 <small class="text-muted">(약 80%)</small>
+            </div>
+            <div class="p-3 rounded bg-light border" id="aggReportStrengthsList" style="font-size: 12.5px; line-height: 1.7;">
+              <!-- 블렛포인트 동적 삽입 -->
+            </div>
+          </div>
+
+          <!-- 다음 성장 방향 (20% 비중 - 블렛포인트 1~2개) -->
+          <div class="mb-3">
+            <div class="font-weight-bold mb-2 text-dark" style="font-size: 13px;">
+              <i class="fa-solid fa-compass text-primary mr-1"></i>다음 기간에 함께 시도할 성장 방향 <small class="text-muted">(약 20%)</small>
+            </div>
+            <div class="p-3 rounded border" id="aggReportNextList" style="background: #f0fdf4; border-color: #bbf7d0 !important; font-size: 12.5px; line-height: 1.7;">
+              <!-- 다음 방향 동적 삽입 -->
+            </div>
+          </div>
+
+          <!-- 부모용 마무리 격려 -->
+          <div class="p-3 rounded border" style="background: #faf8f5; border-color: #e8e2d8 !important; font-size: 12px; line-height: 1.6;">
+            <strong class="text-dark d-block mb-1"><i class="fa-solid fa-heart mr-1 text-danger"></i>학부모님께 드리는 응원과 대화 팁:</strong>
+            <span id="aggReportParentClosing" class="text-muted"></span>
+          </div>
+        </div>
+
+        <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between align-items-center">
+          <small class="text-muted">
+            <i class="fa-solid fa-robot mr-1 text-warning"></i>Gemini 3.8 Flash 나노시트 멀티모달 분석 엔진 적용
+          </small>
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-outline-secondary mr-2" onclick="window.print()">
+              <i class="fa-solid fa-print mr-1"></i>종합 분석지 인쇄
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary px-3" data-dismiss="modal">닫기</button>
+          </div>
         </div>
       </div>
     </div>
@@ -6353,7 +6556,7 @@
                       onchange="onStudentGradeChange(this.value)"
                       style="border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                       <option value="" selected>선택</option>
-                      <option value="미취학">미취학</option>
+                      <option value="유치부">유치부</option>
                       <option value="초등 1학년">초등 1학년</option>
                       <option value="초등 2학년">초등 2학년</option>
                       <option value="초등 3학년">초등 3학년</option>
@@ -7406,7 +7609,7 @@
                     <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span
                         class="text-danger">*</span></label>
                     <select id="abEditGrade" class="select-beige w-100" onchange="onAcadGradeChanged(this.value)">
-                      <option value="미취학" data-code="0">미취학</option>
+                      <option value="유치부" data-code="0">유치부</option>
                       <option value="초등 1학년" data-code="1">초등 1학년</option>
                       <option value="초등 2학년" data-code="2">초등 2학년</option>
                       <option value="초등 3학년" data-code="3">초등 3학년</option>

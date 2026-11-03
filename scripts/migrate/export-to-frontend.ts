@@ -155,7 +155,7 @@ async function main() {
     const category = (cat1 === '비문학/정보글') ? '비문학' : '문학';
 
     let grade = b.grade || '초등 전학년';
-    if (grade === '유치부' || grade === '0') grade = '미취학';
+    if (grade === '유치부' || grade === '0' || grade === '미취학') grade = '유치부';
     else if (grade.startsWith('초') && !grade.includes('학년')) grade = `초등 ${grade.replace('초', '')}학년`;
     else if (grade.startsWith('중') && !grade.includes('학년')) grade = `중등 ${grade.replace('중', '')}학년`;
 
