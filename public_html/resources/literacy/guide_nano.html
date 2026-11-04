@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>나노의책장 진단지 근거 안내</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --teal:#2A9D9C; --teal-dark:#1F7A79; --teal-light:#E8F5F5; --teal-pale:#F4FBFB;
+    --orange:#F58220; --orange-dark:#DC6E10; --orange-light:#FFF2E5;
+    --cream:#FFFDF7; --ink:#333; --ink-soft:#666; --ink-faint:#999; --line:#EAE6DC; --white:#fff;
+    --radius:18px; --radius-sm:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EFECE4;font-family:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;color:var(--ink);line-height:1.6}
+  .page{max-width:794px;margin:24px auto 40px;background:var(--cream);padding:40px 44px;border-radius:6px;box-shadow:0 6px 30px rgba(0,0,0,.08)}
+
+  header{border-bottom:2px solid var(--teal);padding-bottom:14px}
+  .brand{font-size:13px;color:var(--teal-dark);font-weight:700}
+  h1{margin:4px 0 0;font-size:24px;line-height:1.35}
+  .sub{font-size:13px;color:var(--ink-soft);margin-top:6px}
+
+  section{margin-top:26px}
+  h2{font-size:16px;margin:0 0 10px;color:var(--teal-dark);display:flex;align-items:center;gap:8px}
+  h2 .no{display:inline-grid;place-items:center;width:23px;height:23px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;flex:none}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;font-size:14px}
+  .card p{margin:0 0 10px}
+  .card p:last-child{margin-bottom:0}
+  .note{font-size:12px;color:var(--ink-soft);margin-top:8px}
+
+  /* 5영역 칩 */
+  .areas{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .chip{border-radius:999px;padding:6px 16px;font-size:14px;font-weight:700;background:var(--teal-light);color:var(--teal-dark);border:1.5px solid var(--teal)}
+  .chip.tool{background:var(--orange-light);color:var(--orange-dark);border-color:var(--orange)}
+  .legend{font-size:12px;color:var(--ink-soft);display:flex;gap:14px;margin-top:8px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .legend .t i{background:var(--teal)}
+  .legend .o i{background:var(--orange)}
+
+  /* 영역별 근거 카드 */
+  .why-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .wcard{background:var(--white);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:var(--radius-sm);padding:13px 16px;font-size:13.5px}
+  .wcard b.area{display:block;font-size:14.5px;color:var(--teal-dark);margin-bottom:3px}
+  .wcard.tool{border-left-color:var(--orange);background:linear-gradient(0deg,var(--orange-light) 0%,var(--white) 55%)}
+  .wcard.tool b.area{color:var(--orange-dark)}
+  .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;background:var(--orange);color:#fff;margin-left:6px;vertical-align:1px}
+  .std{font-size:12px;color:var(--ink-faint)}
+
+  /* 콜아웃 */
+  .why{background:var(--teal-pale);border-left:4px solid var(--teal);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:13px 16px;font-size:13.5px;margin-top:12px}
+  .why b{color:var(--teal-dark)}
+  .warn{background:var(--orange-light);border-left:4px solid var(--orange);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:13px 16px;font-size:13px;margin-top:12px}
+  .warn b{color:var(--orange-dark)}
+
+  /* 만들기 5단계 */
+  ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+  ol.steps li{counter-increment:s;position:relative;padding:10px 0 10px 40px;border-top:1px dashed var(--line);font-size:13.5px}
+  ol.steps li:first-child{border-top:0}
+  ol.steps li::before{content:counter(s);position:absolute;left:4px;top:11px;width:24px;height:24px;border-radius:50%;background:var(--teal-light);color:var(--teal-dark);font-weight:700;font-size:12px;display:grid;place-items:center}
+  ol.steps b{color:var(--teal-dark)}
+
+  /* 결과 표시 */
+  .level-pill{display:inline-block;background:var(--teal);color:#fff;font-weight:800;border-radius:999px;padding:4px 16px;font-size:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .mini{border-radius:var(--radius-sm);padding:12px 14px;font-size:12.5px;border:1.5px solid var(--teal);background:var(--teal-pale)}
+  .mini b{display:block;font-size:13px;color:var(--teal-dark);margin-bottom:4px}
+  .mini.tool{border-color:var(--orange);background:var(--orange-light)}
+  .mini.tool b{color:var(--orange-dark)}
+
+  /* 한계 */
+  ul.limits{margin:0;padding-left:0;list-style:none;font-size:13.5px}
+  ul.limits li{position:relative;padding:7px 0 7px 22px;border-top:1px dashed var(--line)}
+  ul.limits li:first-child{border-top:0}
+  ul.limits li::before{content:"·";position:absolute;left:6px;color:var(--orange);font-weight:900;font-size:18px;line-height:1.2}
+
+  /* 출처 */
+  .refs{font-size:11.5px;color:var(--ink-soft)}
+  .refs li{margin:3px 0}
+  footer{margin-top:26px;padding-top:12px;border-top:1px dashed var(--line);font-size:11px;color:var(--ink-faint)}
+
+  @media (max-width:640px){.page{padding:24px 16px}.two{grid-template-columns:1fr}}
+  @media print{body{background:#fff}.page{box-shadow:none;margin:0;max-width:none;padding:11mm 13mm;border-radius:0}@page{size:A4;margin:0}section{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="brand">나노의책장 · 학부모님께 드리는 안내</div>
+    <h1>나노의책장 초등 문해력 진단지,<br>어떤 근거로 만들어졌나요?</h1>
+    <div class="sub">7세(예비 초1)~초등 4학년 대상 · 모든 인용은 공개 자료 기준이며 출처는 문서 끝에 있습니다</div>
+  </header>
+
+  <!-- 1. 무엇을 보나요 -->
+  <section>
+    <h2><span class="no">1</span>이 진단지는 무엇을 보나요?</h2>
+    <div class="card">
+      <p>아이가 <b>글을 읽고 생각하는 힘</b>을 다섯 가지로 나누어 봅니다.</p>
+      <div class="areas">
+        <span class="chip">어휘이해력</span>
+        <span class="chip tool">학습도구어</span>
+        <span class="chip">요약</span>
+        <span class="chip">비교</span>
+        <span class="chip">추론</span>
+      </div>
+      <div class="legend"><span class="t"><i></i>책을 읽으며 자라는 힘</span><span class="o"><i></i>별도 훈련이 필요한 힘</span></div>
+    </div>
+    <div class="why"><b>저희가 임의로 만든 구성이 아닙니다.</b> 서울시교육청이 전국 최초로 개발해 2023년부터 매년 실시하는 '서울 학생 문해력·수리력 진단검사(S-PLAN)'도 문해력을 어휘, 탐색·확인, 통합·해석, 비판·평가의 네 영역으로 측정합니다. 읽기 평가의 표준 틀인 <b>"어휘 + 사실적 이해 + 추론적 이해"</b>를 초등 눈높이에 맞게 다듬은 것이 저희의 다섯 영역입니다.</div>
+  </section>
+
+  <!-- 2. 왜 이 다섯 가지 -->
+  <section>
+    <h2><span class="no">2</span>왜 이 다섯 가지인가요?</h2>
+    <div class="why-grid">
+      <div class="wcard"><b class="area">어휘이해력</b>낱말을 모르면 글이 안 보입니다. EBS가 이화여대 산학협력단과 개발한 문해력 지수(ERI)도 글의 난이도를 '단어·문장·배경지식'으로 분석합니다 — 어휘가 문해력의 1차 관문이라는 뜻입니다. 본 진단의 어휘 문항은 <b>국립국어원의 어휘 등급 자료</b>(기초 어휘 13,001개 등급화, 학습용 어휘 목록)에 등재된 낱말로만 출제합니다.</div>
+      <div class="wcard tool"><b class="area">학습도구어<span class="badge">본 진단만의 특징</span></b>'비교하시오', '기준', '요약' 같은 말은 모든 과목의 교과서와 시험 문제에 반복해서 나오는 <b>'공부의 언어'</b>입니다. 아이가 문제를 읽고도 무엇을 해야 할지 몰라 막히는 이유가 여기 있는 경우가 많습니다. 서울시교육청도 문해력을 '교과 지식이 아니라 여러 교과 학습의 바탕이 되는 범교과적 기초 소양'으로 규정합니다. 학습도구어를 독립 영역으로 진단하는 것은 기존 검사들에 없는 본 진단만의 특징이며, 초등 교과서·발문 자료를 근거로 선별한 <b>310개 학습도구어 데이터베이스</b>를 바탕으로 합니다.</div>
+      <div class="wcard"><b class="area">요약</b>중심 내용을 추려내는 힘은 모든 교과 공부의 기본기입니다. 2022 개정 국어과 교육과정은 초3~4 성취기준으로 "문단과 글에서 중심 생각을 파악하고 내용을 간추린다"를 명시하고 있습니다. <span class="std">[4국02-02]</span></div>
+      <div class="wcard"><b class="area">비교</b>공통점과 차이점을 찾는 것은 국어만이 아니라 수학에서도 1~2학년부터 기르도록 정한 범교과 사고 기능입니다. <span class="std">[4국02-04] 사실과 의견 구분·비교 · [2수03-05] 공통점 찾기 · [2수04-01] 기준에 따른 분류</span></div>
+      <div class="wcard"><b class="area">추론</b>글에 직접 나오지 않은 내용을 근거로 짐작하는 힘입니다. 교육과정은 초1~2 "인물의 마음이나 생각을 짐작하며 읽기"부터 초3~4 "원인과 결과를 고려한 예측"까지 단계적으로 요구합니다. <span class="std">[2국02-04] · [4국01-02]</span></div>
+    </div>
+  </section>
+
+  <!-- 3. 왜 지금 -->
+  <section>
+    <h2><span class="no">3</span>왜 지금(7세~초4) 보나요?</h2>
+    <div class="card">
+      <p>서울 학생 진단검사 결과를 분석한 보도에 따르면, 학년이 올라갈수록 문해력 점수의 상승 폭은 둔화되고 학생 간 격차는 커집니다. 즉 <b>초등 저·중학년이 문해력의 골든타임</b>입니다.</p>
+      <p>국가 기초학력 진단 체계도 초등 저학년의 기초학력을 읽기·쓰기·셈하기(3R's)로 진단하며, 읽기를 모든 교과 학습의 기초 체력으로 봅니다. 한편 7세~초2를 다루는 공신력 있는 진단 도구는 드물어, 본 진단지는 이 시기를 처음부터 설계 범위에 넣었습니다.</p>
+    </div>
+  </section>
+
+  <!-- 4. 어떻게 만들었나 -->
+  <section>
+    <h2><span class="no">4</span>어떻게 만들었나요?</h2>
+    <div class="card">
+      <ol class="steps">
+        <li><b>교육과정 근거 출제</b> — 모든 문항에 2022 개정 교육과정 성취기준(7세는 2019 개정 누리과정) 코드를 기록해 두었습니다. 어떤 문항이 어떤 교육과정 목표를 재는지 추적할 수 있습니다.</li>
+        <li><b>공공 어휘 자료 기반</b> — 어휘 선정은 국립국어원 공개 자료의 등급을 근거로 합니다.</li>
+        <li><b>지문 전부 자체 창작</b> — 교과서나 시중 문제집을 베끼지 않아, 학원·학습지 경험에 따른 유불리가 없습니다.</li>
+        <li><b>독서지도 전문가 전수 검수</b> — 모든 문항은 독서지도 전문가가 한 문항씩 검토·수정·확정합니다.</li>
+        <li><b>난이도 설계 근거</b> — 지문 길이·문장 길이는 초등 교과서 문장 길이 실측 연구 등 이독성(읽기 난이도) 연구를 참조해 학년대별로 통제했습니다.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 5. 결과 표시 -->
+  <section>
+    <h2><span class="no">5</span>결과는 어떻게 표시되나요?</h2>
+    <div class="card">
+      <p>점수나 등수 대신 <span class="level-pill">나노 레벨 ★1~10</span> 과 영역별 도달 정도로 알려 드립니다.</p>
+      <p>같은 학년 안에서도 읽기 수준은 다르기 때문에, 학년 대신 <b>아이의 현재 위치와 성장</b>을 보여 드리는 방식입니다(웅진 KRS의 K1~K12, 대교 KReaD 지수 등 최근 읽기 진단의 공통된 방향입니다). 6개월마다 재진단하면 나노 레벨의 변화로 성장을 확인할 수 있습니다.</p>
+      <div class="two">
+        <div class="mini"><b>📖 책이 키우는 영역 — 어휘이해력·요약·비교·추론</b>아이가 책을 읽으며 자연스럽게 자라는 힘이라, 이 진단으로 그 성장을 정기적으로 추적해 보여 드립니다.</div>
+        <div class="mini tool"><b>✏️ 훈련으로 키우는 영역 — 학습도구어</b>책 읽기만으로는 늘지 않아, 책 읽기와 별개로 꾸준한 훈련이 필요한 영역입니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 한계 -->
+  <section>
+    <h2><span class="no">6</span>이 진단의 한계도 알려 드립니다</h2>
+    <div class="card">
+      <ul class="limits">
+        <li>약 25문항(7세 15문항)의 <b>선별용 간이 진단</b>으로, 병원·연구기관의 공인 검사(예: KOLRA 한국어 읽기검사)를 대신하지 않습니다. 읽기 어려움이 의심되면 전문 기관 검사를 권해 드립니다.</li>
+        <li>객관식 이해 중심 검사라 소리 내어 읽기(유창성)·글쓰기는 재지 않으며, 이는 수업 중 관찰로 보완합니다.</li>
+        <li>영역별 결과는 영역당 5문항(7세 3문항)에 기반한 <b>경향 참고 자료</b>입니다.</li>
+        <li>결과는 진단 당일 컨디션의 영향을 받을 수 있습니다. 한 번의 결과보다 <b>정기 진단의 추이</b>가 더 정확합니다.</li>
+      </ul>
+    </div>
+    <div class="warn"><b>정직한 안내를 약속드립니다.</b> 이 진단지는 아이에게 무엇을 더 시키기 위한 자료가 아니라, 아이가 지금 즐겁게 읽을 수 있는 책의 범위를 찾고 그 성장을 기록하기 위한 자료입니다.</div>
+  </section>
+
+  <!-- 출처 -->
+  <section>
+    <h2><span class="no">7</span>참고 자료 (공개 출처)</h2>
+    <div class="card">
+      <ul class="refs">
+        <li>서울시교육청 '서울 학생 문해력·수리력 진단검사(S-PLAN)' 4영역 구성 — 서울신문(2024.9.9.), 서울시교육청 보도자료</li>
+        <li>국가 기초학력 진단-보정 시스템의 3R's 진단 체계 — 교육부·시도교육청 공개 자료</li>
+        <li>EBS ERI 지수(이화여대 산학협력단 공동 개발) — EBS 보도자료</li>
+        <li>2022 개정 국어과·수학과 교육과정 성취기준(교육부 고시 제2022-33호), 2019 개정 누리과정(교육부 고시 제2019-189호)</li>
+        <li>국립국어원 「2022 국어 기초 어휘 선정 및 어휘 등급화」, 「한국어 학습용 어휘 목록」(2003)</li>
+        <li>초등 교과서 문장 길이 실측 연구(정종성, 2013) 외 이독성 연구</li>
+      </ul>
+      <div class="note">문항별 성취기준 연결표 등 상세 근거 자료는 내부 자료로 보관하고 있으며, 상담 시 보여 드릴 수 있습니다.</div>
+    </div>
+  </section>
+
+  <footer>나노의책장 초등 문해력 진단지 · 학부모 안내 자료 · 나노의책장 · 2026-10</footer>
+</main>
+</body>
+</html>

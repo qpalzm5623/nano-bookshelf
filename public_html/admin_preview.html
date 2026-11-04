@@ -2936,6 +2936,11 @@
         <span>학습 관리 <small class="text-muted font-weight-normal">(리포트)</small></span>
       </a>
 
+      <a class="nav-item-btn" id="btn-nav-literacy" onclick="switchTab('literacy')">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>문해력 진단 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
+      </a>
+
       <a class="nav-item-btn" id="btn-nav-portfolio" onclick="switchTab('portfolio')">
         <i class="fa-solid fa-chart-pie"></i>
         <span>독서 포트폴리오</span>
@@ -3731,6 +3736,11 @@
           </div>
         </div>
       </div>
+
+      <!-- ============================================================== -->
+      <!-- MENU: 문해력 진단 (테스트 부여 · 결과지 · 이력) - js/literacy/literacy-admin.js 가 렌더링 -->
+      <!-- ============================================================== -->
+      <div id="view-literacy" style="display: none;"></div>
 
       <!-- ============================================================== -->
       <!-- MENU 3: 학습 관리 (원생 독서 이력, 퀴즈 결과, 리포트) -->
@@ -8907,7 +8917,10 @@
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
   <script src="js/learning-storage.js?v=20261014_ux2"></script>
   <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
-  <script src="admin_preview.js?v=20261102_portfolio2"></script>
+  <link rel="stylesheet" href="css/literacy-report.css">
+<script src="js/literacy/literacy-common.js?v=20261104"></script>
+<script src="js/literacy/literacy-admin.js?v=20261104"></script>
+<script src="admin_preview.js?v=20261102_portfolio2"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

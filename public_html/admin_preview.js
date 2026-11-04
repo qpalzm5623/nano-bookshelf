@@ -187,7 +187,7 @@ function saveAllQuizzes() {
 // 2. 7대 탭 네비게이션 제어
 // ==============================================================
 function switchTab(tab) {
-  var views = ['members', 'contents', 'learning', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  var views = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   views.forEach(function(v) {
     var el = document.getElementById('view-' + v);
     var nav = document.getElementById('btn-nav-' + v);
@@ -213,7 +213,7 @@ function switchTab(tab) {
     renderAcademyNoticeViewList();
   }
   if (tab === 'learning') renderLearningTable();
-  if (tab === 'portfolio') {
+  if (tab === 'literacy' && window.NanoLiteracyAdmin) NanoLiteracyAdmin.show();
     showPortfolioList();
     renderPortfolioTable(portfolioList);
   }

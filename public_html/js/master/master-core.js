@@ -1780,6 +1780,8 @@ function ensureMasterTabRendered(tabName) {
   } else if (tabName === "contents") {
     if (typeof populateMasterContentCategoryOptions === "function") populateMasterContentCategoryOptions();
     if (typeof renderMasterContents === "function") renderMasterContents();
+  } else if (tabName === "literacy") {
+    if (typeof renderMasterLiteracyBank === "function") renderMasterLiteracyBank();
   } else if (tabName === "dispatch") {
     if (typeof renderDispatchTable === "function") renderDispatchTable();
   } else if (tabName === "payment") {
@@ -1823,7 +1825,7 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
-  const tabs = ["franchise", "members", "operations", "ranking", "contents", "dispatch", "payment"];
+  const tabs = ["franchise", "members", "operations", "ranking", "contents", "literacy", "dispatch", "payment"];
   
   tabs.forEach(t => {
     const navBtn = document.getElementById(`nav-master-${t}`);

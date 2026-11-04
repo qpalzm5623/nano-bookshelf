@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>나노의책장 초등 문해력 진단 결과지</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/literacy-report.css">
+<style>
+  body { margin: 0; background: #efece4; font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; }
+  .bar { max-width: 794px; margin: 0 auto; padding: 16px 16px 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .bar button { border: 1.5px solid #2a9d9c; background: #fff; color: #1f7a79; font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+  .bar button.on { background: #2a9d9c; color: #fff; }
+  .msg { max-width: 560px; margin: 80px auto; text-align: center; color: #666; padding: 0 20px; }
+  @media print { body { background: #fff; } .bar { display: none; } }
+</style>
+</head>
+<body>
+<div id="viewer"><p class="msg">결과지를 불러오는 중입니다…</p></div>
+<script src="js/literacy/literacy-common.js"></script>
+<script>
+// 학부모 공유 링크 뷰어: 로그인 없이 서명된 링크(r=결과ID, t=토큰)로만 결과지를 열람합니다.
+(async function () {
+  var box = document.getElementById('viewer');
+  var q = new URLSearchParams(location.search);
+  try {
+    var data = await NanoLiteracy.api('public_report', { params: { id: q.get('r') || '', t: q.get('t') || '' } });
+    var rec = data.record, history = data.history || [];
+    function draw(mode) {
+      box.innerHTML = '<div class="bar"><span style="color:#666;font-size:14px">' + NanoLiteracy.esc(rec.student.name) + ' 학생 결과지</span><span>' +
+        '<button class="' + (mode === 'regular' ? 'on' : '') + '" data-m="regular">정기 진단용</button> ' +
+        '<button class="' + (mode === 'consult' ? 'on' : '') + '" data-m="consult">요약본</button> ' +
+        '<button onclick="window.print()">인쇄 / PDF 저장</button></span></div>' + NanoLiteracy.renderReport(rec, history, mode);
+      box.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { draw(b.getAttribute('data-m')); }; });
+    }
+    draw('regular');
+  } catch (e) {
+    box.innerHTML = '<p class="msg">' + NanoLiteracy.esc(e.message || '결과지를 열 수 없습니다.') + '<br><small>링크가 올바른지 학원에 문의해 주세요.</small></p>';
+  }
+})();
+</script>
+</body>
+</html>
+
