@@ -3058,53 +3058,55 @@
             </button>
           </div>
 
-          <!-- 검색 및 필터 바 (좌측 필터 + 우측 밀착 컴팩트 검색창) -->
+          <!-- 검색 및 필터 바 (클래스 필터, 상태, 원생 검색을 한 줄에 연속 배치) -->
           <div class="simple-card p-3 mb-4" style="border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
-            <div class="d-flex flex-wrap justify-content-between align-items-end" style="gap: 14px;">
-              <!-- 좌측: 필터 2종 (클래스, 상태) -->
-              <div class="d-flex flex-wrap align-items-center" style="gap: 12px;">
-                <div style="width: 160px;">
-                  <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">클래스 필터</label>
-                  <select class="form-control" id="filterStudentClass"
-                    style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
-                    <option value="ALL" selected>전체 클래스 보기</option>
-                    <option value="지혜반">초등 5학년 (지혜반)</option>
-                    <option value="슬기반">초등 4학년 (슬기반)</option>
-                    <option value="마스터반">초등 6학년 (마스터반)</option>
-                    <option value="심화반">중등 1학년 (심화반)</option>
-                    <option value="새싹반">초등 1~2학년 (새싹반)</option>
-                  </select>
-                </div>
-                <div style="width: 120px;">
-                  <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">상태</label>
-                  <select class="form-control" id="filterStudentStatus"
-                    style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
-                    <option value="ALL" selected>전체 상태</option>
-                    <option value="승인">승인</option>
-                    <option value="미승인">미승인</option>
-                  </select>
-                </div>
+            <div class="d-flex flex-wrap align-items-end" style="gap: 12px;">
+              <!-- 1. 클래스 필터 -->
+              <div style="width: 160px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
+                <select class="form-control" id="filterStudentClass" onchange="filterStudents()"
+                  style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                  <option value="ALL" selected>전체 클래스 보기</option>
+                  <option value="지혜반">초등 5학년 (지혜반)</option>
+                  <option value="슬기반">초등 4학년 (슬기반)</option>
+                  <option value="마스터반">초등 6학년 (마스터반)</option>
+                  <option value="심화반">중등 1학년 (심화반)</option>
+                  <option value="새싹반">초등 1~2학년 (새싹반)</option>
+                </select>
               </div>
 
-              <!-- 우측: 원생 검색 박스 (우측 밀착 & 최대 너비 290px로 컴팩트하게 제한) -->
-              <div class="ml-auto" style="width: 100%; max-width: 290px;">
-                <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">원생 검색</label>
-                <div class="input-group">
-                  <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill"
-                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
-                    data-1p-ignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudents();}"
-                    style="height: 38px; border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 12.5px;"
-                    placeholder="원생명, 아이디, 학교 등 검색...">
-                  <div class="input-group-append">
-                    <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 0 8px 8px 0; display: inline-flex; align-items: center; gap: 4px;"
-                      onclick="filterStudents()"><i class="fa-solid fa-search"></i>검색</button>
+              <!-- 2. 상태 -->
+              <div style="width: 120px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">상태</label>
+                <select class="form-control" id="filterStudentStatus" onchange="filterStudents()"
+                  style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                  <option value="ALL" selected>전체 상태</option>
+                  <option value="승인">승인</option>
+                  <option value="미승인">미승인</option>
+                </select>
+              </div>
+
+              <!-- 3. 원생 검색 (상태 박스 바로 우측에 나란히 배치) -->
+              <div style="width: 290px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">원생 검색</label>
+                <div class="d-flex align-items-center" style="gap: 4px;">
+                  <div style="position: relative; flex-grow: 1;">
+                    <input type="search" class="form-control" id="searchStudentInput" name="search_student_no_autofill"
+                      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
+                      data-1p-ignore="true" oninput="handleStudentSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudents();}"
+                      style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
+                      placeholder="원생명, 아이디, 학교 등 검색...">
+                    <button type="button" id="btnStudentSearchClear" class="btn-search-clear" onclick="clearStudentSearch()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
+                  <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
+                    onclick="filterStudents()"><i class="fa-solid fa-search mr-1"></i>검색</button>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="simple-card" style="overflow-x: auto;">
+            <div id="studentSearchActiveBadge" class="p-3 border-bottom" style="display: none; background: var(--bg-surface);"></div>
             <table class="simple-table" style="min-width: 1050px; width: 100%; table-layout: fixed;">
               <thead>
                 <tr>
@@ -3236,74 +3238,75 @@
         <!-- 도서 목록 및 통합 관리 -->
         <div id="content-sub-list">
           <div class="simple-card p-3 mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-end" style="gap: 14px;">
-              <!-- 좌측: 등록처 + 권장 학년 + 보유 여부 라디오 -->
-              <div class="d-flex flex-wrap align-items-center" style="gap: 16px;">
-                <div style="width: 140px;">
-                  <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">등록도서 필터</label>
-                  <select class="form-control" id="filterAcadBookOrigin" onchange="filterAcademyBooks()"
-                    style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
-                    <option value="ALL" selected>전체 등록처</option>
-                    <option value="HQ">본사 직속</option>
-                  </select>
-                </div>
+            <div class="d-flex flex-wrap align-items-end" style="gap: 14px;">
+              <!-- 1. 등록도서 필터 -->
+              <div style="width: 140px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">등록도서 필터</label>
+                <select class="form-control" id="filterAcadBookOrigin" onchange="filterAcademyBooks()"
+                  style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                  <option value="ALL" selected>전체 등록처</option>
+                  <option value="HQ">본사 직속</option>
+                </select>
+              </div>
 
-                <div style="width: 130px;">
-                  <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">권장 학년</label>
-                  <select class="form-control" id="filterAcadBookGrade" onchange="filterAcademyBooks()"
-                    style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
-                    <option value="ALL" selected>전체 학년</option>
-                    <option value="유치부">유치부</option>
-                    <option value="초등 1학년">초등 1학년</option>
-                    <option value="초등 2학년">초등 2학년</option>
-                    <option value="초등 3학년">초등 3학년</option>
-                    <option value="초등 4학년">초등 4학년</option>
-                    <option value="초등 5학년">초등 5학년</option>
-                    <option value="초등 6학년">초등 6학년</option>
-                    <option value="중등 1학년">중등 1학년</option>
-                    <option value="중등 2학년">중등 2학년</option>
-                    <option value="중등 3학년">중등 3학년</option>
-                  </select>
-                </div>
+              <!-- 2. 권장 학년 -->
+              <div style="width: 130px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">권장 학년</label>
+                <select class="form-control" id="filterAcadBookGrade" onchange="filterAcademyBooks()"
+                  style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                  <option value="ALL" selected>전체 학년</option>
+                  <option value="유치부">유치부</option>
+                  <option value="초등 1학년">초등 1학년</option>
+                  <option value="초등 2학년">초등 2학년</option>
+                  <option value="초등 3학년">초등 3학년</option>
+                  <option value="초등 4학년">초등 4학년</option>
+                  <option value="초등 5학년">초등 5학년</option>
+                  <option value="초등 6학년">초등 6학년</option>
+                  <option value="중등 1학년">중등 1학년</option>
+                  <option value="중등 2학년">중등 2학년</option>
+                  <option value="중등 3학년">중등 3학년</option>
+                </select>
+              </div>
 
-                <div>
-                  <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">보유 여부</label>
-                  <div class="d-flex align-items-center" style="gap: 14px; height: 38px;">
-                    <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                      <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked onchange="filterAcademyBooks()">
-                      <label class="custom-control-label font-weight-bold" for="ownedFilterAll" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
-                        전체
-                      </label>
-                    </div>
-                    <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                      <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED" onchange="filterAcademyBooks()">
-                      <label class="custom-control-label font-weight-bold" for="ownedFilterOwned" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
-                        보유
-                      </label>
-                    </div>
-                    <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                      <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED" onchange="filterAcademyBooks()">
-                      <label class="custom-control-label font-weight-bold" for="ownedFilterUnowned" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
-                        미보유
-                      </label>
-                    </div>
+              <!-- 3. 보유 여부 -->
+              <div>
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">보유 여부</label>
+                <div class="d-flex align-items-center" style="gap: 14px; height: 38px;">
+                  <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
+                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked onchange="filterAcademyBooks()">
+                    <label class="custom-control-label font-weight-bold" for="ownedFilterAll" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
+                      전체
+                    </label>
+                  </div>
+                  <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
+                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED" onchange="filterAcademyBooks()">
+                    <label class="custom-control-label font-weight-bold" for="ownedFilterOwned" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
+                      보유
+                    </label>
+                  </div>
+                  <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
+                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED" onchange="filterAcademyBooks()">
+                    <label class="custom-control-label font-weight-bold" for="ownedFilterUnowned" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
+                      미보유
+                    </label>
                   </div>
                 </div>
               </div>
 
-              <!-- 우측: 도서 검색 (우측 밀착 & 최대 너비 300px) -->
-              <div class="ml-auto" style="width: 100%; max-width: 310px;">
+              <!-- 4. 도서 검색 (보유 여부 바로 우측에 나란히 배치) -->
+              <div style="width: 310px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">도서 검색</label>
-                <div class="input-group">
-                  <input type="search" class="form-control" id="searchAcadBookInput" name="search_acad_book_no_autofill"
-                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
-                    data-1p-ignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAcademyBooks();}"
-                    style="height: 38px; border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 12.5px;"
-                    placeholder="도서명, 저자, 출판사, 등록처(학원명)...">
-                  <div class="input-group-append">
-                    <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 0 8px 8px 0; display: inline-flex; align-items: center; gap: 4px;"
-                      onclick="filterAcademyBooks()"><i class="fa-solid fa-search mr-1"></i>검색</button>
+                <div class="d-flex align-items-center" style="gap: 4px;">
+                  <div style="position: relative; flex-grow: 1;">
+                    <input type="search" class="form-control" id="searchAcadBookInput" name="search_acad_book_no_autofill"
+                      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
+                      data-1p-ignore="true" oninput="handleAcadBookSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAcademyBooks();}"
+                      style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
+                      placeholder="도서명, 저자, 출판사, 등록처(학원명)...">
+                    <button type="button" id="btnAcadBookSearchClear" class="btn-search-clear" onclick="clearAcadBookSearch()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
+                  <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
+                    onclick="filterAcademyBooks()"><i class="fa-solid fa-search mr-1"></i>검색</button>
                 </div>
               </div>
             </div>
@@ -3316,14 +3319,15 @@
 
           <div class="simple-card">
             <!-- 리스트 상단 컨트롤 바: 리스트 정렬을 우측 상단에 배치 -->
-            <div class="d-flex justify-content-between align-items-center p-3 border-bottom" style="background: var(--bg-surface);">
-              <div class="d-flex align-items-center" style="gap: 8px;">
+            <div class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2" style="background: var(--bg-surface);">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
                   <i class="fa-solid fa-book-open mr-1 text-primary"></i>도서 목록
                 </span>
                 <span class="badge-soft badge-soft-neutral" style="font-size: 11.5px; font-weight: 700;">
                   총 <strong id="acadBookTableTotalCount" class="text-dark">0</strong>권
                 </span>
+                <span id="acadBookSearchActiveBadge" style="display: none;"></span>
               </div>
               <div class="d-flex align-items-center" style="gap: 8px;">
                 <label for="sortAcadBookSelect" class="mb-0 text-muted font-weight-bold" style="font-size: 12px; white-space: nowrap;">
@@ -3771,51 +3775,52 @@
           </div>
         </div>
 
-        <!-- 필터 바: 좌측 필터/조회기간 + 우측 밀착 컴팩트 검색창 -->
+        <!-- 필터 바: 클래스 필터, 조회기간, 학습검색을 한 줄에 연속 배치 -->
         <div class="simple-card p-3 mb-4">
-          <div class="d-flex flex-wrap justify-content-between align-items-end" style="gap: 14px;">
-            <!-- 좌측: 클래스 필터 + 조회 기간 -->
-            <div class="d-flex flex-wrap align-items-center" style="gap: 16px;">
-              <div style="width: 150px;">
-                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-                <select class="form-control" id="learningClassFilter" onchange="renderLearningTable()"
-                  style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
-                  <option value="ALL" selected>전체 클래스</option>
-                  <option value="지혜반">지혜반</option>
-                  <option value="슬기반">슬기반</option>
-                  <option value="마스터반">마스터반</option>
-                  <option value="심화반">심화반</option>
-                  <option value="새싹반">새싹반</option>
-                </select>
-              </div>
-              <div>
-                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
-                  조회 기간 <small class="text-muted font-weight-normal">(현재월 1일 ~ 오늘 기본)</small>
-                </label>
-                <div class="d-flex align-items-center" style="gap: 6px;">
-                  <input type="date" class="form-control" id="learningStartDate"
-                    style="height: 38px; border-radius: 8px; font-size: 12px; width: 140px;">
-                  <span class="text-muted px-1">~</span>
-                  <input type="date" class="form-control" id="learningEndDate"
-                    style="height: 38px; border-radius: 8px; font-size: 12px; width: 140px;">
-                </div>
+          <div class="d-flex flex-wrap align-items-end" style="gap: 14px;">
+            <!-- 1. 클래스 필터 -->
+            <div style="width: 150px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
+              <select class="form-control" id="learningClassFilter" onchange="renderLearningTable()"
+                style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                <option value="ALL" selected>전체 클래스</option>
+                <option value="지혜반">지혜반</option>
+                <option value="슬기반">슬기반</option>
+                <option value="마스터반">마스터반</option>
+                <option value="심화반">심화반</option>
+                <option value="새싹반">새싹반</option>
+              </select>
+            </div>
+
+            <!-- 2. 조회 기간 -->
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                조회 기간 <small class="text-muted font-weight-normal">(현재월 1일 ~ 오늘 기본)</small>
+              </label>
+              <div class="d-flex align-items-center" style="gap: 6px;">
+                <input type="date" class="form-control" id="learningStartDate"
+                  style="height: 38px; border-radius: 8px; font-size: 12px; width: 140px;">
+                <span class="text-muted px-1">~</span>
+                <input type="date" class="form-control" id="learningEndDate"
+                  style="height: 38px; border-radius: 8px; font-size: 12px; width: 140px;">
               </div>
             </div>
 
-            <!-- 우측: 학습 검색창 (우측 밀착 & 최대 너비 290px) -->
-            <div class="ml-auto" style="width: 100%; max-width: 290px;">
+            <!-- 3. 학습 검색 (조회 기간 바로 우측에 나란히 배치) -->
+            <div style="width: 290px;">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">학습 검색</label>
-              <div class="input-group">
-                <input type="search" class="form-control" id="learningSearchInput" name="learning_search_no_autofill"
-                  autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
-                  placeholder="학생명, 도서명 검색..." style="height: 38px; border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 12.5px;"
-                  onkeydown="if(event.key==='Enter') executeLearningSearch()" onsearch="executeLearningSearch()">
-                <div class="input-group-append">
-                  <button type="button" class="btn btn-beige-primary px-3 font-weight-bold"
-                    onclick="executeLearningSearch()" style="height: 38px; border-radius: 0 8px 8px 0; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px;">
-                    <i class="fa-solid fa-search mr-1"></i>조회
-                  </button>
+              <div class="d-flex align-items-center" style="gap: 4px;">
+                <div style="position: relative; flex-grow: 1;">
+                  <input type="search" class="form-control" id="learningSearchInput" name="learning_search_no_autofill"
+                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
+                    placeholder="학생명, 도서명 검색..." style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
+                    oninput="handleLearningSearchInput(this)" onkeydown="if(event.key==='Enter') executeLearningSearch()" onsearch="executeLearningSearch()">
+                  <button type="button" id="btnLearningSearchClear" class="btn-search-clear" onclick="clearLearningSearch()" style="display: none;" title="검색어 지우기">✕</button>
                 </div>
+                <button type="button" class="btn btn-beige-primary px-3 font-weight-bold"
+                  onclick="executeLearningSearch()" style="height: 38px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                  <i class="fa-solid fa-search mr-1"></i>조회
+                </button>
               </div>
             </div>
           </div>
@@ -3824,14 +3829,15 @@
         <!-- 학습 기록 테이블: 컬럼 순서 (번호, 완료일, 도서명, 학급, 원생명, 북퀴즈 결과, 나노 시트, 첨삭, 관리) -->
         <div class="simple-card">
           <!-- 카드 상단 헤더 컨트롤 바: 위 필터 카드와 겹치지 않고 정돈된 프리미엄 바 -->
-          <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom" style="background: var(--bg-surface); min-height: 56px;">
-            <div class="d-flex align-items-center" style="gap: 10px;">
+          <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom flex-wrap gap-2" style="background: var(--bg-surface); min-height: 56px;">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
               <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
                 <i class="fa-solid fa-list-check mr-1.5 text-primary"></i>학습 기록 내역
               </span>
               <span class="badge-soft badge-soft-primary" style="font-size: 12px; font-weight: 700; padding: 4px 11px; border-radius: 20px;">
                 <i class="fa-solid fa-database mr-1" style="font-size: 10.5px;"></i>총 <strong id="learningLogCount" class="text-primary font-weight-bold">0</strong>건
               </span>
+              <span id="learningSearchActiveBadge" style="display: none;"></span>
             </div>
             <div class="d-flex align-items-center" style="gap: 12px;">
               <small class="text-muted d-none d-md-inline" style="font-size: 12px;">
@@ -3917,9 +3923,10 @@
             </div>
           </div>
 
-          <!-- 필터 및 검색 카드: 좌측 필터 + 우측 밀착 컴팩트 검색창 & 새 리포트 버튼 -->
+          <!-- 필터 및 검색 카드: 클래스 필터, 원생/리포트 검색, 새 리포트 만들기 버튼을 한 줄에 연속 배치 -->
           <div class="simple-card p-3 mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-end" style="gap: 14px;">
+            <div class="d-flex flex-wrap align-items-end" style="gap: 12px;">
+              <!-- 1. 클래스 필터 -->
               <div style="width: 160px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
                 <select class="form-control" id="filterPortfolioClass" onchange="filterPortfolioList()"
@@ -3933,35 +3940,37 @@
                 </select>
               </div>
 
-              <!-- 우측: 원생/리포트 검색창 (최대 너비 280px) + 새 리포트 만들기 버튼 -->
-              <div class="d-flex align-items-end flex-wrap ml-auto" style="gap: 12px;">
-                <div style="width: 100%; max-width: 290px;">
-                  <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">원생 / 리포트 검색</label>
-                  <div class="input-group">
+              <!-- 2. 원생/리포트 검색 (클래스 필터 바로 우측에 나란히 배치) -->
+              <div style="width: 290px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">원생 / 리포트 검색</label>
+                <div class="d-flex align-items-center" style="gap: 4px;">
+                  <div style="position: relative; flex-grow: 1;">
                     <input type="search" class="form-control" id="searchPortfolioInput"
                       name="search_portfolio_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
-                      spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterPortfolioList()"
+                      spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="handlePortfolioSearchInput(this); filterPortfolioList();"
                       onsearch="filterPortfolioList()"
-                      style="height: 38px; border-radius: 8px 0 0 8px; border-color: var(--border-medium); font-size: 12.5px;"
+                      style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
                       placeholder="원생명, 학번, 포트폴리오 명칭...">
-                    <div class="input-group-append">
-                      <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 0 8px 8px 0; display: inline-flex; align-items: center; gap: 4px;"
-                        onclick="filterPortfolioList()"><i class="fa-solid fa-search"></i></button>
-                    </div>
+                    <button type="button" id="btnPortfolioSearchClear" class="btn-search-clear" onclick="clearPortfolioSearch()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
+                  <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
+                    onclick="filterPortfolioList()"><i class="fa-solid fa-search"></i></button>
                 </div>
-                <div>
-                  <button class="btn btn-beige-primary font-weight-bold" onclick="openPortfolioCreateWizard()"
-                    style="height: 38px; border-radius: 8px; font-size: 13px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(31,138,126,0.25);">
-                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>새 리포트 만들기
-                  </button>
-                </div>
+              </div>
+
+              <!-- 3. 새 리포트 만들기 버튼 (원생/리포트 검색 바로 우측에 나란히 배치) -->
+              <div>
+                <button class="btn btn-beige-primary font-weight-bold" onclick="openPortfolioCreateWizard()"
+                  style="height: 38px; border-radius: 8px; font-size: 13px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(31,138,126,0.25); white-space: nowrap;">
+                  <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>새 리포트 만들기
+                </button>
               </div>
             </div>
           </div>
 
           <!-- 포트폴리오 리스트 테이블: No., 원생명, 학교/학년, 소속 클래스, 포트폴리오 명칭, 포함 완독 도서, 북퀴즈 평균, 발급일자(시간까지), 상태, 관리 -->
           <div class="simple-card">
+            <div id="portfolioSearchActiveBadge" class="p-3 border-bottom" style="display: none; background: var(--bg-surface);"></div>
             <table class="simple-table">
               <thead>
                 <tr>

@@ -938,6 +938,7 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     let displayDirector = (acad.director || "").replace(/\s*원장\s*원장/g, " 원장").trim();
     let displayPhone = acad.phone || "";
     if (displayPhone === "010-0000-0000") displayPhone = "";
+    if (typeof formatPhoneNumber === 'function' && displayPhone) displayPhone = formatPhoneNumber(displayPhone);
 
     if (adminStaff) {
       if (!displayDirector || displayDirector.endsWith(" 원장") || displayDirector.includes("원장")) {
@@ -1094,11 +1095,36 @@ function getDDayText(endDateStr) {
   return `D-${diff}`;
 }
 
+// 가맹점 검색창 입력 실시간 핸들러 (지우기 ✕ 버튼 토글)
+function handleFranchiseSearchInput(input) {
+  const clearBtn = document.getElementById("btnFranchiseSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 가맹점 검색어 원클릭 클리어 및 전체 복귀
+function clearFranchiseSearch() {
+  const input = document.getElementById("franchiseSearchInput");
+  if (input) input.value = "";
+  const clearBtn = document.getElementById("btnFranchiseSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const badgeEl = document.getElementById("franchiseSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  filterFranchiseList();
+}
+
 // 가맹점 필터링 (가입일 기간 2개 박스, 이용 상품명, 운영 상태, 검색어)
 function filterFranchiseList() {
   franchiseCurrentPage = 1; // 필터링 시 1페이지로 리셋
   const query = (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim();
   const cleanQueryPhone = query.replace(/[^0-9]/g, '');
+
+  // ✕ 버튼 상태 동기화
+  const clearBtn = document.getElementById("btnFranchiseSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  }
 
   const statusFilter = document.getElementById("franchiseStatusFilter")?.value || "ALL";
   const planFilter = document.getElementById("franchisePlanFilter")?.value || "ALL";
@@ -1166,6 +1192,19 @@ function filterFranchiseList() {
     return matchQuery && matchStatus && matchPlan && matchDate;
   });
 
+  // 검색어 활성 상태 뱃지 갱신
+  const badgeEl = document.getElementById("franchiseSearchActiveBadge");
+  if (badgeEl) {
+    if (query) {
+      badgeEl.style.display = "inline-flex";
+      const displayQuery = query.length > 25 ? query.substring(0, 25) + '...' : query;
+      badgeEl.innerHTML = `<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${displayQuery}" 검색 결과 ${filtered.length.toLocaleString()}개소 <span class="badge-clear-link" onclick="clearFranchiseSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>`;
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
+
   renderFranchiseTable(filtered);
 }
 
@@ -1174,6 +1213,10 @@ function resetFranchiseFilters() {
   franchiseCurrentPage = 1; // 초기화 시 1페이지로 리셋
   const q = document.getElementById("franchiseSearchInput");
   if (q) q.value = "";
+  const clearBtn = document.getElementById("btnFranchiseSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const badgeEl = document.getElementById("franchiseSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
   const st = document.getElementById("franchiseStatusFilter");
   if (st) st.value = "ALL";
   const pl = document.getElementById("franchisePlanFilter");
@@ -1326,7 +1369,7 @@ function openAcademyEditModal(id) {
   if (document.getElementById("editDirectorEmail")) {
     document.getElementById("editDirectorEmail").value = acad.email || "";
   }
-  document.getElementById("editDirectorPhone").value = acad.phone || "";
+  document.getElementById("editDirectorPhone").value = (typeof formatPhoneNumber === 'function' && acad.phone) ? formatPhoneNumber(acad.phone) : (acad.phone || "");
   document.getElementById("editRegion").value = acad.region || "";
 
   // 등록일, 계약 시작일, 계약 만료일 바인딩

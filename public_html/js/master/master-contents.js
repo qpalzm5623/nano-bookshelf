@@ -502,41 +502,58 @@ function renderMasterContents() {
   }
 }
 
+// 마스터 도서 필터링된 총 개수 캐시 (정확한 페이징 네비게이션용)
+var lastFilteredContentCount = 0;
+
+// 1~10 단위 블록 페이징 함수 (전국 랭킹 및 타 마스터 페이지와 100% 동일한 규격)
 function renderContentPagination(total, page) {
   const container = document.getElementById("contentPagination");
   const infoEl = document.getElementById("contentPageInfo");
   if (!container) return;
 
+  lastFilteredContentCount = total;
+
   const totalPages = Math.max(1, Math.ceil(total / contentPageSize));
   const start = total === 0 ? 0 : (page - 1) * contentPageSize + 1;
   const end = Math.min(page * contentPageSize, total);
 
-  if (infoEl) infoEl.innerText = `${start}-${end} / 총 ${total}권 (페이지 ${page}/${totalPages})`;
+  if (infoEl) infoEl.innerText = `${start}-${end} / 총 ${total.toLocaleString()}권 [페이지 ${page}/${totalPages}]`;
 
-  // 번호가 수백 개로 늘어나는 것을 막기 위해 10개 단위 블록(1~10, 11~20...)으로만 노출
+  // 10개 단위 블록(1~10, 11~20...)으로 페이징 버튼 구성
   const blockSize = 10;
-  const blockStart = Math.floor((page - 1) / blockSize) * blockSize + 1;
-  const blockEnd = Math.min(blockStart + blockSize - 1, totalPages);
+  const currentBlock = Math.ceil(page / blockSize);
+  const startPage = (currentBlock - 1) * blockSize + 1;
+  const endPage = Math.min(startPage + blockSize - 1, totalPages);
 
-  // 화살표는 이전/다음 블록의 첫 페이지로 이동
+  // 이전 블록(10페이지 단위) 및 이전 1페이지
+  const prevBlockPage = Math.max(1, startPage - blockSize);
+  const nextBlockPage = Math.min(totalPages, startPage + blockSize);
+
   let html = `
-    <button class="btn btn-xs btn-outline-secondary" onclick="goContentPage(${blockStart - blockSize})" ${blockStart <= 1 ? 'disabled' : ''} style="border-radius: 6px; padding: 4px 8px;">
+    <button class="btn btn-xs btn-outline-secondary" title="이전 10페이지" onclick="goContentPage(${prevBlockPage})" ${startPage <= 1 ? 'disabled style="opacity: 0.35;"' : ''} style="border-radius: 6px; padding: 4px 8px;">
+      <i class="fa-solid fa-angles-left"></i>
+    </button>
+    <button class="btn btn-xs btn-outline-secondary mr-1" title="이전 페이지" onclick="goContentPage(${page - 1})" ${page <= 1 ? 'disabled style="opacity: 0.35;"' : ''} style="border-radius: 6px; padding: 4px 8px;">
       <i class="fa-solid fa-chevron-left"></i>
     </button>
   `;
 
-  for (let i = blockStart; i <= blockEnd; i++) {
+  for (let i = startPage; i <= endPage; i++) {
     html += `
       <button class="btn btn-xs ${i === page ? 'btn-beige-primary text-white font-weight-bold' : 'btn-outline-secondary'}" 
-              onclick="goContentPage(${i})" style="border-radius: 6px; min-width: 28px; padding: 4px 8px;">
+              onclick="goContentPage(${i})" style="border-radius: 6px; min-width: 28px; padding: 4px 8px; margin: 0 1px;">
         ${i}
       </button>
     `;
   }
 
+  // 다음 1페이지 및 다음 블록(10페이지 단위)
   html += `
-    <button class="btn btn-xs btn-outline-secondary" onclick="goContentPage(${blockEnd + 1})" ${blockEnd >= totalPages ? 'disabled' : ''} style="border-radius: 6px; padding: 4px 8px;">
+    <button class="btn btn-xs btn-outline-secondary ml-1" title="다음 페이지" onclick="goContentPage(${page + 1})" ${page >= totalPages ? 'disabled style="opacity: 0.35;"' : ''} style="border-radius: 6px; padding: 4px 8px;">
       <i class="fa-solid fa-chevron-right"></i>
+    </button>
+    <button class="btn btn-xs btn-outline-secondary" title="다음 10페이지" onclick="goContentPage(${nextBlockPage})" ${endPage >= totalPages ? 'disabled style="opacity: 0.35;"' : ''} style="border-radius: 6px; padding: 4px 8px;">
+      <i class="fa-solid fa-angles-right"></i>
     </button>
   `;
 
@@ -544,7 +561,8 @@ function renderContentPagination(total, page) {
 }
 
 function goContentPage(p) {
-  const totalPages = Math.ceil(masterBooks.length / contentPageSize);
+  const total = (typeof lastFilteredContentCount === 'number' && lastFilteredContentCount >= 0) ? lastFilteredContentCount : (masterBooks ? masterBooks.length : 0);
+  const totalPages = Math.max(1, Math.ceil(total / contentPageSize));
   if (p < 1 || p > totalPages) return;
   contentCurrentPage = p;
   renderMasterContents();
@@ -3702,7 +3720,7 @@ function parseRobustCSV(text) {
   return rows;
 }
 
-// 북퀴즈 엑셀 헤더 유연 인식 (공백 제거 및 별칭 매핑)
+// 북퀴즈 엑셀 헤더 유연 인식 (공백 제거 및 별칭 매핑, 보기1~5 및 유사인정정답 지원)
 function parseQuizHeaderIndices(headerRow) {
   const map = {
     bookNo: -1,
@@ -3714,7 +3732,9 @@ function parseQuizHeaderIndices(headerRow) {
     opt2: -1,
     opt3: -1,
     opt4: -1,
+    opt5: -1,
     ans: -1,
+    similarAns: -1,
     hint: -1,
     score: -1
   };
@@ -3741,6 +3761,10 @@ function parseQuizHeaderIndices(headerRow) {
       map.opt3 = idx;
     } else if (s.includes("보기4") || s.includes("선택지4") || s === "opt4" || s === "option4") {
       map.opt4 = idx;
+    } else if (s.includes("보기5") || s.includes("선택지5") || s === "opt5" || s === "option5") {
+      map.opt5 = idx;
+    } else if (s.includes("유사인정") || s.includes("유사정답") || s.includes("인정정답") || s.includes("similarans") || s.includes("similaranswer") || s.includes("similar")) {
+      map.similarAns = idx;
     } else if (s.includes("정답") || s.includes("정답번호") || s === "답" || s === "ans" || s === "answer" || s === "correctanswer") {
       map.ans = idx;
     } else if (s.includes("해설") || s.includes("힌트") || s === "설명" || s === "hint" || s === "explanation") {
@@ -3753,19 +3777,26 @@ function parseQuizHeaderIndices(headerRow) {
   return map;
 }
 
-// 북퀴즈 정답 정규화 헬퍼 (숫자 1~4, 원문자 ①~④, 보기 텍스트 일치 처리)
+// 북퀴즈 정답 정규화 헬퍼 (숫자 1~5, 원문자 ①~⑤, 보기 텍스트 일치 처리)
 function normalizeQuizAnswerVal(rawAns, options, isSubjective) {
   if (rawAns === null || rawAns === undefined) return null;
   const s = String(rawAns).trim();
   if (!s) return null;
 
-  if (isSubjective) return s;
+  if (isSubjective) {
+    // 주관식: 쉼표로 나열된 경우 첫 번째 단어를 대표 정답으로 취급
+    const parts = s.split(/[,/|]/).map(p => p.trim()).filter(Boolean);
+    return parts[0] || s;
+  }
 
-  // 원문자 및 일반 표기 정규화
+  // 원문자 및 일반 표기 정규화 (①~⑤)
   const circleMap = { "①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5" };
-  if (circleMap[s]) return circleMap[s];
+  if (circleMap[s]) {
+    const num = Number(circleMap[s]);
+    if (num >= 1 && num <= options.length) return String(num);
+  }
 
-  // 숫자만 추출 (예: '1번' -> '1', '보기 2' -> '2')
+  // 숫자만 추출 (예: '1번' -> '1', '보기 3' -> '3')
   const numMatch = s.match(/^[보기\s]*([1-5])[번]?$/);
   if (numMatch) {
     const n = Number(numMatch[1]);
@@ -3787,7 +3818,7 @@ function normalizeQuizAnswerVal(rawAns, options, isSubjective) {
   return null;
 }
 
-// 표준 북퀴즈 서식 다운로드 (CSV / XLSX)
+// 표준 북퀴즈 서식 다운로드 (CSV / XLSX - 3~10문항, 3~5지선다, 유사인정정답 반영)
 function downloadQuizExcelTemplate(format = 'csv') {
   // 실제 등록된 도서 2권 가져와서 도서코드 실데이터 매핑
   const book1 = (typeof masterBooks !== 'undefined' && masterBooks[0]) || { id: "FA000001", bookNo: "FA000001", title: "고양이 목욕탕" };
@@ -3808,17 +3839,19 @@ function downloadQuizExcelTemplate(format = 'csv') {
     "보기2",
     "보기3",
     "보기4",
+    "보기5",
     "정답",
+    "유사인정정답",
     "해설/힌트",
     "배점"
   ];
 
   const sampleRows = [
-    [code1, title1, 1, "객관식", "주인공이 목욕탕에 들어갈 때 가장 먼저 챙긴 애착 물건은 무엇인가요?", "노란 고무 오리 인형", "수영 모자와 물안경", "향기 나는 비누", "따뜻한 목욕 타월", "1", "친구가 선물해 준 고무 오리를 떠올려보세요.", 20],
-    [code1, title1, 2, "객관식", "고양이가 처음 물에 발을 담그려 했을 때 느꼈던 심정으로 알맞은 것은?", "너무 신나서 펄쩍 뛰었다", "두렵고 긴장되어 망설여졌다", "지루해서 하품을 했다", "화가 나서 소리를 질렀다", "2", "물을 무서워하는 고양이의 심리 묘사 참고", 20],
-    [code1, title1, 3, "객관식", "목욕을 깨끗이 마치고 난 후 고양이의 기분 변화로 가장 옳은 것은?", "개운하고 상쾌하여 뿌듯했다", "감기에 걸려 후회했다", "다시는 목욕하지 않겠다고 다짐했다", "오리가 젖어서 슬펐다", "1", "뽀송뽀송해진 털을 만지며 만족해하는 결말", 20],
-    [code2, title2, 1, "객관식", "이야기 속 '푸른 딱지'가 두 주인공 사이에서 상징하는 핵심 의미는?", "새로운 우정과 화해의 시작", "패배와 좌절의 아픔", "어른들의 규칙과 명령", "잃어버린 장난감에 대한 미련", "1", "딱지치기 시합을 통해 싹튼 진정한 우정", 20],
-    [code2, title2, 2, "주관식", "주인공이 마지막 딱지 대결에서 두려움을 이겨낼 수 있었던 핵심 마음가짐은 무엇인가요?", "", "", "", "", "용기", "두려움을 이겨낸 단답형 키워드 입력 예시", 20]
+    [code1, title1, 1, "객관식", "주인공이 목욕탕에 들어갈 때 가장 먼저 챙긴 애착 물건은 무엇인가요?", "노란 고무 오리 인형", "수영 모자와 물안경", "향기 나는 비누", "따뜻한 목욕 타월", "", "1", "", "친구가 선물해 준 고무 오리를 떠올려보세요. (4지선다 예시)", 20],
+    [code1, title1, 2, "객관식", "고양이가 처음 물에 발을 담그려 했을 때 느꼈던 심정으로 알맞은 것은?", "너무 신나서 펄쩍 뛰었다", "두렵고 긴장되어 망설여졌다", "지루해서 하품을 했다", "", "", "2", "", "물을 무서워하는 고양이의 심리 묘사 참고 (3지선다 예시)", 20],
+    [code1, title1, 3, "객관식", "목욕을 깨끗이 마치고 난 후 고양이의 기분 변화로 가장 옳은 것은?", "개운하고 상쾌하여 뿌듯했다", "감기에 걸려 후회했다", "다시는 목욕하지 않겠다고 다짐했다", "오리가 젖어서 슬펐다", "친구들이 부러워했다", "1", "", "뽀송뽀송해진 털을 만지며 만족해하는 결말 (5지선다 예시)", 20],
+    [code2, title2, 1, "객관식", "이야기 속 '푸른 딱지'가 두 주인공 사이에서 상징하는 핵심 의미는?", "새로운 우정과 화해의 시작", "패배와 좌절의 아픔", "어른들의 규칙과 명령", "", "", "1", "", "딱지치기 시합을 통해 싹튼 진정한 우정 (3지선다 예시)", 20],
+    [code2, title2, 2, "주관식", "주인공이 마지막 딱지 대결에서 두려움을 이겨낼 수 있었던 핵심 마음가짐은 무엇인가요?", "", "", "", "", "", "용기", "담대함, 씩씩함, 용기있는 태도", "두려움을 이겨낸 단답형 키워드 (쉼표로 구분한 유사 인정 정답 예시)", 20]
   ];
 
   const fileName = `마스터_북퀴즈_대량등록_서식.${format}`;
@@ -3826,7 +3859,7 @@ function downloadQuizExcelTemplate(format = 'csv') {
   if (format === 'xlsx' && typeof XLSX !== 'undefined') {
     const wsData = [headers, ...sampleRows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    // 컬럼 너비 설정
+    // 컬럼 너비 설정 (보기5, 유사인정정답 추가)
     ws['!cols'] = [
       { wch: 14 }, // 도서코드
       { wch: 20 }, // 도서명
@@ -3837,7 +3870,9 @@ function downloadQuizExcelTemplate(format = 'csv') {
       { wch: 22 }, // 보기2
       { wch: 22 }, // 보기3
       { wch: 22 }, // 보기4
+      { wch: 22 }, // 보기5
       { wch: 10 }, // 정답
+      { wch: 26 }, // 유사인정정답
       { wch: 30 }, // 해설/힌트
       { wch: 8 }   // 배점
     ];
@@ -3968,7 +4003,9 @@ async function handleMasterQuizExcelUpload() {
       const opt2 = colMap.opt2 !== -1 ? String(row[colMap.opt2] ?? "").trim() : "";
       const opt3 = colMap.opt3 !== -1 ? String(row[colMap.opt3] ?? "").trim() : "";
       const opt4 = colMap.opt4 !== -1 ? String(row[colMap.opt4] ?? "").trim() : "";
+      const opt5 = colMap.opt5 !== -1 ? String(row[colMap.opt5] ?? "").trim() : "";
       const rawAns = String(row[colMap.ans] ?? "").trim();
+      const rawSimilarAns = colMap.similarAns !== -1 ? String(row[colMap.similarAns] ?? "").trim() : "";
       const hint = colMap.hint !== -1 ? String(row[colMap.hint] ?? "").trim() : "";
       const rawScore = colMap.score !== -1 ? String(row[colMap.score] ?? "").trim() : "";
 
@@ -3991,15 +4028,30 @@ async function handleMasterQuizExcelUpload() {
         continue;
       }
 
+      // 문항번호 유효성 검증 (최소 1번 ~ 최대 10번)
+      if (rawQNo) {
+        const numQNo = Number(rawQNo);
+        if (isNaN(numQNo) || numQNo < 1 || numQNo > 10) {
+          validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 문항번호는 1번부터 10번 사이여야 합니다. (입력값: '${rawQNo}')`);
+          continue;
+        }
+      }
+
       // 4. 문제 유형 판별 (객관식 vs 주관식)
-      const options = [opt1, opt2, opt3, opt4].filter(o => o.length > 0);
+      const options = [opt1, opt2, opt3, opt4, opt5].filter(o => o.length > 0);
       const isExplicitSubjective = rawType.includes("주관") || rawType.toUpperCase() === "SUBJECTIVE" || rawType.toUpperCase() === "SHORT_ANSWER";
       const isSubjective = isExplicitSubjective || options.length === 0;
 
-      // 객관식 보기 검증
-      if (!isSubjective && options.length < 2) {
-        validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 객관식 문항은 보기가 최소 2개 이상 입력되어야 합니다.`);
-        continue;
+      // 객관식 보기 검증 (최소 3개에서 최대 5개까지 설정 가능)
+      if (!isSubjective) {
+        if (options.length < 3) {
+          validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 객관식 문항은 선택지(보기)가 최소 3개 이상 입력되어야 합니다. (현재 입력된 보기: ${options.length}개)`);
+          continue;
+        }
+        if (options.length > 5) {
+          validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 객관식 문항의 선택지는 최대 5개까지만 설정할 수 있습니다. (현재 입력된 보기: ${options.length}개)`);
+          continue;
+        }
       }
 
       // 5. 정답 유효성 및 정규화
@@ -4007,6 +4059,29 @@ async function handleMasterQuizExcelUpload() {
       if (!normalizedAns) {
         validationErrors.push(`[${rowNum}행: 도서 ${matchedBook.title}] 유효하지 않은 정답('${rawAns}')입니다.\n  👉 객관식은 1~${options.length} 번호(또는 보기 내용), 주관식은 정답 단어를 입력해야 합니다.`);
         continue;
+      }
+
+      // 주관식 유사 인정 정답 통합 파싱 (쉼표 구분 복수 정답 완벽 지원)
+      let finalSimilarAns = "";
+      if (isSubjective) {
+        const similarTokens = [];
+        // 1) '정답' 컬럼에 쉼표로 나열된 단어들 수집
+        if (rawAns && rawAns.includes(",")) {
+          rawAns.split(/[,/|]/).map(s => s.trim()).forEach(token => {
+            if (token && token !== normalizedAns && !similarTokens.includes(token)) {
+              similarTokens.push(token);
+            }
+          });
+        }
+        // 2) '유사인정정답' 전용 컬럼에 작성된 단어들 수집
+        if (rawSimilarAns) {
+          rawSimilarAns.split(/[,/|]/).map(s => s.trim()).forEach(token => {
+            if (token && token !== normalizedAns && !similarTokens.includes(token)) {
+              similarTokens.push(token);
+            }
+          });
+        }
+        finalSimilarAns = similarTokens.join(", ");
       }
 
       const questionNo = Number(rawQNo) || (parsedQuestions.filter(q => q.bookCode === rawBookCode).length + 1);
@@ -4024,25 +4099,19 @@ async function handleMasterQuizExcelUpload() {
         opt2: opt2 || "",
         opt3: opt3 || "",
         opt4: opt4 || "",
+        opt5: opt5 || "",
         options: isSubjective ? [] : options,
         ans: normalizedAns,
         subjectiveAns: isSubjective ? normalizedAns : "",
+        similarAns: finalSimilarAns,
+        similarAnswers: finalSimilarAns ? finalSimilarAns.split(",").map(s => s.trim()).filter(Boolean) : [],
         correctAnswer: normalizedAns,
         hint,
         score
       });
     }
 
-    // 유효성 오류 발견 시 전체 등록 중단 및 안내
-    if (validationErrors.length > 0) {
-      const errorMsg = `[북퀴즈 엑셀 업로드 유효성 검사 실패]\n총 ${validationErrors.length}건의 규격 오류가 발견되어 등록이 중단되었습니다.\n엑셀 서식을 수정한 후 다시 업로드해주세요.\n\n` +
-        validationErrors.slice(0, 6).join("\n\n") +
-        (validationErrors.length > 6 ? `\n\n... 외 ${validationErrors.length - 6}건 추가 오류` : "");
-      alert(errorMsg);
-      return;
-    }
-
-    if (parsedQuestions.length === 0) {
+    if (parsedQuestions.length === 0 && validationErrors.length === 0) {
       alert("등록 가능한 유효 북퀴즈 문항이 없습니다.");
       return;
     }
@@ -4060,6 +4129,25 @@ async function handleMasterQuizExcelUpload() {
       }
       groupedMap.get(key).questions.push(q);
     });
+
+    // 도서당 문항 수 유효성 검증 (최소 3개에서 최대 10문항)
+    groupedMap.forEach((group) => {
+      if (group.questions.length < 3) {
+        validationErrors.push(`[도서: ${group.book.title} (${group.bookNo})] 북퀴즈 문항 수가 부족합니다. 도서당 최소 3문항 이상 등록해야 합니다. (현재: ${group.questions.length}문항)`);
+      }
+      if (group.questions.length > 10) {
+        validationErrors.push(`[도서: ${group.book.title} (${group.bookNo})] 북퀴즈 문항 수가 초과되었습니다. 도서당 최대 10문항까지만 등록할 수 있습니다. (현재: ${group.questions.length}문항)`);
+      }
+    });
+
+    // 유효성 오류 발견 시 전체 등록 중단 및 안내
+    if (validationErrors.length > 0) {
+      const errorMsg = `[북퀴즈 엑셀 업로드 유효성 검사 실패]\n총 ${validationErrors.length}건의 규격 오류가 발견되어 등록이 중단되었습니다.\n엑셀 서식을 수정한 후 다시 업로드해주세요.\n\n` +
+        validationErrors.slice(0, 6).join("\n\n") +
+        (validationErrors.length > 6 ? `\n\n... 외 ${validationErrors.length - 6}건 추가 오류` : "");
+      alert(errorMsg);
+      return;
+    }
 
     const groups = Array.from(groupedMap.values());
 
@@ -4079,7 +4167,10 @@ async function handleMasterQuizExcelUpload() {
               opt2: q.opt2,
               opt3: q.opt3,
               opt4: q.opt4,
+              opt5: q.opt5,
               correctAnswer: q.ans,
+              similarAns: q.similarAns,
+              similarAnswers: q.similarAnswers,
               explanation: q.hint,
               score: q.score
             }))
@@ -4109,9 +4200,11 @@ async function handleMasterQuizExcelUpload() {
         opt2: q.opt2,
         opt3: q.opt3,
         opt4: q.opt4,
+        opt5: q.opt5,
         ans: q.ans,
         subjectiveAns: q.subjectiveAns,
-        similarAns: q.subjectiveAns,
+        similarAns: q.similarAns,
+        similarAnswers: q.similarAnswers,
         hint: q.hint,
         score: q.score
       }));

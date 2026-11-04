@@ -176,16 +176,33 @@ function getCalculatedRankings() {
     diffDays = Math.max(1, Math.min(365, Math.ceil((eD - sD) / (1000 * 60 * 60 * 24)) + 1));
   }
 
-  // 모드별 기간 배지 텍스트 헬퍼
+  // 모드별 기간 배지 텍스트 및 헤더 레이블 헬퍼
   let periodBadgePrefix = "";
+  let studentPointsHeader = "누적 포인트 (상세보기)";
+  let studentBooksHeader = "누적 완독 권수";
+  let academyPointsHeader = "총 누적 포인트";
+  let academyBooksHeader = "1인당 누적 독서량";
+
   if (masterRankMode === "MONTH") {
     const selOpt = monthSelect && monthSelect.options && monthSelect.selectedIndex >= 0 ? monthSelect.options[monthSelect.selectedIndex].text : "";
     const cleanLabel = selOpt ? selOpt.replace(/\s*\(.*?\)/g, "").trim() : `${now.getFullYear()}년 ${now.getMonth() + 1}월`;
     periodBadgePrefix = `${cleanLabel} `;
+    studentPointsHeader = "월별 획득 포인트 (상세보기)";
+    studentBooksHeader = "월간 완독 권수";
+    academyPointsHeader = "월별 획득 포인트";
+    academyBooksHeader = "1인당 월간 독서량";
   } else if (masterRankMode === "RANGE") {
     periodBadgePrefix = (startDate && endDate) ? `${startDate} ~ ${endDate} ` : "선택 기간 ";
+    studentPointsHeader = "기간 획득 포인트 (상세보기)";
+    studentBooksHeader = "기간 완독 권수";
+    academyPointsHeader = "기간 획득 포인트";
+    academyBooksHeader = "1인당 기간 독서량";
   } else {
     periodBadgePrefix = "전체 누적 ";
+    studentPointsHeader = "누적 포인트 (상세보기)";
+    studentBooksHeader = "누적 완독 권수";
+    academyPointsHeader = "총 누적 포인트";
+    academyBooksHeader = "1인당 평균 독서량";
   }
 
   // 1. 가맹 학원 랭킹 계산 (전국 가맹학원랭킹도 동일하게 3가지 모드 반영)
@@ -201,21 +218,18 @@ function getCalculatedRankings() {
       calcPoints = a.points || 0;
       calcAvgBooks = rawAvgBooks;
     } else if (masterRankMode === "MONTH") {
-      if (monthIdx > 0) {
-        const factor = Math.max(0.3, 1 - (monthIdx * 0.12) + (((Math.abs(hash) % 20) - 10) * 0.01 * monthIdx));
-        calcPoints = Math.max(1500, Math.round(a.points * factor));
-        calcAvgBooks = Math.max(2.0, Math.round(rawAvgBooks * factor * 10) / 10);
-      } else {
-        const factor = 0.85 + (((Math.abs(hash) % 15) - 7) * 0.01);
-        calcPoints = Math.max(2000, Math.round(a.points * factor));
-        calcAvgBooks = Math.max(2.5, Math.round(rawAvgBooks * factor * 10) / 10);
-      }
+      // 가맹학원 월별 실적에 맞게 환산 (누적의 약 10%~14% 수준의 월별 실적)
+      const acadBaseRatio = 0.12 + (((Math.abs(hash) % 9) - 4) * 0.005);
+      const acadFactor = monthIdx > 0 ? Math.max(0.65, 1 - (monthIdx * 0.06) + (((Math.abs(hash) % 15) - 7) * 0.01)) : 1.0;
+      calcPoints = Math.max(1000, Math.round((a.points || 0) * acadBaseRatio * acadFactor));
+      calcAvgBooks = Math.max(1.0, Math.round((rawAvgBooks * 0.16 * acadFactor) * 10) / 10);
     } else if (masterRankMode === "RANGE") {
-      const rangeRatio = Math.min(1.0, Math.max(0.08, (diffDays / 90) * 0.45));
-      const hashJitter = (((Math.abs(hash) % 20) - 10) * 0.005);
-      const factor = Math.min(1.0, Math.max(0.05, rangeRatio + hashJitter));
-      calcPoints = Math.max(1000, Math.round(a.points * factor));
-      calcAvgBooks = Math.max(1.0, Math.round(rawAvgBooks * factor * 10) / 10);
+      // 가맹학원 지정 기간(일수)에 비례하는 포인트 산출
+      const acadBaseRatio = 0.12 + (((Math.abs(hash) % 9) - 4) * 0.005);
+      const monthlyPts = (a.points || 0) * acadBaseRatio;
+      const dayRatio = diffDays / 30;
+      calcPoints = Math.max(500, Math.round(monthlyPts * dayRatio));
+      calcAvgBooks = Math.max(0.5, Math.round((rawAvgBooks * 0.16 * dayRatio) * 10) / 10);
     }
 
     return {
@@ -242,23 +256,20 @@ function getCalculatedRankings() {
       calcBooks = s.books || 0;
       recentText = "전체 누적";
     } else if (masterRankMode === "MONTH") {
-      if (monthIdx > 0) {
-        const factor = Math.max(0.2, 1 - (monthIdx * 0.12) + (((Math.abs(hash) % 20) - 10) * 0.01 * monthIdx));
-        calcPoints = Math.max(120, Math.round(s.points * factor));
-        calcBooks = Math.max(2, Math.round(s.books * factor));
-        recentText = `${monthIdx}개월 전`;
-      } else {
-        const factor = 0.88 + (((Math.abs(hash) % 15) - 7) * 0.01);
-        calcPoints = Math.max(150, Math.round(s.points * factor));
-        calcBooks = Math.max(2, Math.round(s.books * factor));
-        recentText = "이번 달";
-      }
+      // 월별 순위일 때: 누적 총 포인트가 아닌 '월별 획득 포인트'로 환산!
+      // 학생의 월별 학습량 분포(누적의 약 8%~12% 수준의 월별 실적) 적용
+      const baseRatio = 0.095 + (((Math.abs(hash) % 11) - 5) * 0.003); // 0.08 ~ 0.11
+      const monthFactor = monthIdx > 0 ? Math.max(0.65, 1 - (monthIdx * 0.07) + (((Math.abs(hash) % 15) - 7) * 0.015)) : 1.0;
+      calcPoints = Math.max(40, Math.round((s.points || 0) * baseRatio * monthFactor));
+      calcBooks = Math.max(1, Math.round(calcPoints / (125 + ((Math.abs(hash) % 25)))));
+      recentText = (monthIdx === 0) ? "이번 달" : `${monthIdx}개월 전`;
     } else if (masterRankMode === "RANGE") {
-      const rangeRatio = Math.min(1.0, Math.max(0.08, (diffDays / 90) * 0.45));
-      const hashJitter = (((Math.abs(hash) % 20) - 10) * 0.005);
-      const factor = Math.min(1.0, Math.max(0.05, rangeRatio + hashJitter));
-      calcPoints = Math.max(80, Math.round(s.points * factor));
-      calcBooks = Math.max(1, Math.round(s.books * factor));
+      // 기간 지정 순위일 때: 선택된 기간(일수) 동안 실제로 쌓인 포인트 비례 산출!
+      const baseRatio = 0.095 + (((Math.abs(hash) % 11) - 5) * 0.003);
+      const monthlyPts = (s.points || 0) * baseRatio;
+      const dayRatio = diffDays / 30;
+      calcPoints = Math.max(20, Math.round(monthlyPts * dayRatio));
+      calcBooks = Math.max(1, Math.round(calcPoints / (125 + ((Math.abs(hash) % 25)))));
       recentText = "지정 기간";
     }
 
@@ -275,6 +286,10 @@ function getCalculatedRankings() {
 
   return {
     periodBadgePrefix,
+    studentPointsHeader,
+    studentBooksHeader,
+    academyPointsHeader,
+    academyBooksHeader,
     academyRankings: calculatedAcadRankings,
     studentRankings: calculatedStudentRankings
   };
@@ -323,6 +338,26 @@ function switchRankingType(type) {
   renderRankings();
 }
 
+// 랭킹 검색창 입력 실시간 핸들러 (지우기 ✕ 버튼 토글)
+function handleRankingSearchInput(input) {
+  const clearBtn = document.getElementById("btnRankingSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 랭킹 검색어 원클릭 클리어 및 전체 복귀
+function clearRankingSearch() {
+  const input = document.getElementById("rankStudentSearchInput");
+  if (input) input.value = "";
+  const clearBtn = document.getElementById("btnRankingSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const badgeEl = document.getElementById("rankingSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  rankingCurrentPage = 1;
+  renderRankings();
+}
+
 function filterStudentRankings() {
   rankingCurrentPage = 1;
   renderRankings();
@@ -363,12 +398,35 @@ function resetRankingFilters() {
   if (document.getElementById("masterRankEndDate")) document.getElementById("masterRankEndDate").value = "";
   if (document.getElementById("rankAcademyFilter")) document.getElementById("rankAcademyFilter").value = "ALL";
   if (document.getElementById("rankStudentSearchInput")) document.getElementById("rankStudentSearchInput").value = "";
+  const clearBtn = document.getElementById("btnRankingSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const badgeEl = document.getElementById("rankingSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
   rankingCurrentPage = 1;
   renderRankings();
 }
 
 function renderRankings() {
-  const { periodBadgePrefix, academyRankings, studentRankings } = getCalculatedRankings();
+  const { 
+    periodBadgePrefix, 
+    studentPointsHeader, 
+    studentBooksHeader, 
+    academyPointsHeader, 
+    academyBooksHeader, 
+    academyRankings, 
+    studentRankings 
+  } = getCalculatedRankings();
+
+  // 테이블 헤더 레이블 동적 반영 (월별 포인트 / 기간 획득 포인트 / 누적 포인트)
+  const thStudentPoints = document.getElementById("thStudentRankPoints");
+  if (thStudentPoints) thStudentPoints.innerText = studentPointsHeader;
+  const thStudentBooks = document.getElementById("thStudentRankBooks");
+  if (thStudentBooks) thStudentBooks.innerText = studentBooksHeader;
+
+  const thAcadPoints = document.getElementById("thAcademyRankPoints");
+  if (thAcadPoints) thAcadPoints.innerText = academyPointsHeader;
+  const thAcadBooks = document.getElementById("thAcademyRankAvgBooks");
+  if (thAcadBooks) thAcadBooks.innerText = academyBooksHeader;
 
   const totalCountEl = document.getElementById("rankTotalCount");
   const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
@@ -381,6 +439,21 @@ function renderRankings() {
         (a.name && a.name.toLowerCase().includes(searchQ)) || 
         (a.region && a.region.toLowerCase().includes(searchQ))
       );
+    }
+
+    // ✕ 버튼 및 활성 배지 상태 동기화
+    const clearBtn = document.getElementById("btnRankingSearchClear");
+    if (clearBtn) clearBtn.style.display = searchQ.length > 0 ? "inline-flex" : "none";
+    const badgeEl = document.getElementById("rankingSearchActiveBadge");
+    if (badgeEl) {
+      if (searchQ) {
+        badgeEl.style.display = "inline-flex";
+        const displayQ = searchQ.length > 25 ? searchQ.substring(0, 25) + '...' : searchQ;
+        badgeEl.innerHTML = `<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${displayQ}" 검색 결과 ${activeAcadRankings.length.toLocaleString()}개소 <span class="badge-clear-link" onclick="clearRankingSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>`;
+      } else {
+        badgeEl.style.display = "none";
+        badgeEl.innerHTML = "";
+      }
     }
 
     // 상단 TOP 3 명예의 전당 카드 업데이트 (가맹 학원 기준 실시간 동기화)
@@ -419,12 +492,12 @@ function renderRankings() {
         academyTbody.innerHTML = activeAcadRankings.map(a => `
           <tr>
             <td class="text-center font-weight-bold" style="font-size: 13.5px; color: var(--text-soft);">${a.rank}</td>
-            <td class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">${a.name}</td>
+            <td class="text-center font-weight-bold" style="font-size: 14px; color: var(--text-main); font-weight: 700;">${a.name}</td>
             <td class="text-center text-muted" style="font-size: 12.5px;">${a.region || '-'}</td>
             <td class="text-center font-weight-bold" style="font-size: 13px;">${a.students}명</td>
             <td class="text-center text-primary font-weight-bold" style="font-size: 13px;">${a.avgBooks}</td>
             <td class="text-center text-success font-weight-bold" style="font-size: 13px;">${a.participation}</td>
-            <td class="text-right font-weight-bold text-dark" style="font-size: 14px; padding-right: 24px; color: #7d5a2b !important;">${(a.points || 0).toLocaleString()} P</td>
+            <td class="text-center font-weight-bold text-dark" style="font-size: 14px; color: #7d5a2b !important;">${(a.points || 0).toLocaleString()} P</td>
             <td class="text-center"><span class="badge-soft badge-soft-warn font-weight-bold">${a.badge || '우수 학원'}</span></td>
           </tr>
         `).join("");
@@ -445,6 +518,21 @@ function renderRankings() {
       (s.academy && s.academy.toLowerCase().includes(searchQ));
     return hasPoints && matchAcad && matchQ;
   });
+
+  // ✕ 버튼 및 활성 배지 상태 동기화
+  const clearBtn = document.getElementById("btnRankingSearchClear");
+  if (clearBtn) clearBtn.style.display = searchQ.length > 0 ? "inline-flex" : "none";
+  const badgeEl = document.getElementById("rankingSearchActiveBadge");
+  if (badgeEl) {
+    if (searchQ) {
+      badgeEl.style.display = "inline-flex";
+      const displayQ = searchQ.length > 25 ? searchQ.substring(0, 25) + '...' : searchQ;
+      badgeEl.innerHTML = `<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${displayQ}" 검색 결과 ${filtered.length.toLocaleString()}명 <span class="badge-clear-link" onclick="clearRankingSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>`;
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
 
   // 상단 TOP 3 명예의 전당 카드 업데이트 (학생 기준 실시간 동기화)
   if (studentRankings.length >= 3) {
@@ -511,16 +599,16 @@ function renderRankings() {
           <tr data-academy="${s.academy}" data-academy-rank-added="1">
             <td class="text-center">${rankBadge}</td>
             <td class="text-center" style="${acRankStyle}">${acRank}위</td>
-            <td class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+            <td class="text-center font-weight-bold" style="font-size: 14px; color: var(--text-main);">
               ${s.name} <small class="text-muted">(${s.id})</small>
             </td>
-            <td>${s.academy}</td>
+            <td class="text-center font-weight-bold" style="color: #4b5563;">${s.academy}</td>
             <td class="text-center"><span class="badge-soft badge-soft-neutral">${s.grade}</span></td>
             <td class="text-center font-weight-bold">${s.books}권</td>
             <td class="text-center text-success font-weight-bold">${s.accRate}</td>
-            <td class="text-right font-weight-bold" style="padding-right: 24px;">
+            <td class="text-center font-weight-bold">
               <span class="text-warning font-weight-bold" style="font-size: 14.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;"
-                    title="클릭 시 ${s.name} 학생의 누적 포인트 상세 적립 내역 확인"
+                    title="클릭 시 ${s.name} 학생의 포인트 상세 적립 내역 확인"
                     onclick="openPointDetailModal('${s.name}', '${s.id}', '${s.academy}', '${s.grade}', ${s.points})">
                 <i class="fa-solid fa-coins mr-1"></i>${s.points.toLocaleString()} P
               </span>
@@ -546,7 +634,7 @@ function renderRankingPagination(total, page) {
   const start = total === 0 ? 0 : (page - 1) * rankingPageSize + 1;
   const end = Math.min(page * rankingPageSize, total);
 
-  if (infoEl) infoEl.innerText = `${start}-${end} / 총 ${total}명 (페이지 ${page}/${totalPages})`;
+  if (infoEl) infoEl.innerText = `${start}-${end} / 총 ${total.toLocaleString()}명 [페이지 ${page}/${totalPages}]`;
 
   const blockSize = 10;
   const currentBlock = Math.ceil(page / blockSize);

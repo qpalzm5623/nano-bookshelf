@@ -355,9 +355,9 @@ function renderMemberTable(data = memberList, keepPage = false) {
       ? `<span class="text-muted">-</span>` 
       : `<span class="badge-soft badge-soft-neutral" style="font-size: 11.5px;">${classText}</span>`;
 
-    // 6. 학생 및 학부모 연락처 분리
-    const studentPhone = mem.phone || "-";
-    const parentPhone = mem.parentPhone || "-";
+    // 6. 학생 및 학부모 연락처 분리 (하이픈 자동 포맷팅 적용)
+    const studentPhone = (typeof formatPhoneNumber === 'function') ? formatPhoneNumber(mem.phone) : (mem.phone || "-");
+    const parentPhone = (typeof formatPhoneNumber === 'function') ? formatPhoneNumber(mem.parentPhone) : (mem.parentPhone || "-");
 
     return `
       <tr>
@@ -509,10 +509,35 @@ function goToMemberPage(page) {
   }
 }
 
+// 검색어 실시간 입력 감지 -> ✕ 버튼 노출/숨김
+function handleMemberSearchInput(input) {
+  const clearBtn = document.getElementById("btnMemberSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 검색어 원클릭 클리어 및 전체 복귀
+function clearMemberSearch() {
+  const input = document.getElementById("memberSearchInput");
+  if (input) input.value = "";
+  const clearBtn = document.getElementById("btnMemberSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const badgeEl = document.getElementById("memberSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  filterMemberList();
+}
+
 // 회원 필터링 (학원, 등급 권한, 상태 3종, 통합검색어)
 function filterMemberList() {
   memberCurrentPage = 1; // 필터 시 1페이지로 리셋
   const query = (document.getElementById("memberSearchInput")?.value || "").toLowerCase().trim();
+  
+  // ✕ 버튼 상태 동기화
+  const clearBtn = document.getElementById("btnMemberSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  }
   const cleanQueryPhone = query.replace(/[^0-9]/g, '');
 
   const acadFilter = currentSelectedAcademy;
@@ -555,6 +580,19 @@ function filterMemberList() {
     return matchQuery && matchAcad && matchRole && matchStatus;
   });
 
+  // 검색어 활성 상태 뱃지 갱신
+  const badgeEl = document.getElementById("memberSearchActiveBadge");
+  if (badgeEl) {
+    if (query) {
+      badgeEl.style.display = "inline-flex";
+      const displayQuery = query.length > 25 ? query.substring(0, 25) + '...' : query;
+      badgeEl.innerHTML = `<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${displayQuery}" 검색 결과 ${filtered.length.toLocaleString()}명 <span class="badge-clear-link" onclick="clearMemberSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>`;
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
+
   renderMemberTable(filtered);
 }
 
@@ -564,6 +602,10 @@ function resetMemberFilters() {
   memberDateSortOrder = "none"; // 등록일 정렬 리셋
   updateMemberDateSortUI();
   document.getElementById("memberSearchInput").value = "";
+  const clearBtn = document.getElementById("btnMemberSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  const badgeEl = document.getElementById("memberSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
   document.getElementById("memberRoleFilter").value = "ALL";
   document.getElementById("memberStatusFilter").value = "ALL";
   currentSelectedAcademy = "ALL";

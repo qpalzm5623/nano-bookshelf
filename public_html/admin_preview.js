@@ -1978,7 +1978,7 @@ function renderDeletedStudentList() {
             <span class="mx-1">·</span>
             <span>원래 소속 학급: <strong>${std.originalClass || '미지정'}</strong></span>
             <span class="mx-1">·</span>
-            <span>학부모: ${std.parentName || '-'} (${std.phone || '-'})</span>
+            <span>학부모: ${std.parentName || '-'} (${typeof formatPhoneNumber === 'function' ? formatPhoneNumber(std.phone) : (std.phone || '-')})</span>
           </div>
           <div class="text-muted mt-1" style="font-size: 11px; color: #94a3b8 !important;">
             <i class="fa-regular fa-clock mr-1"></i>삭제일: ${std.deletedAt || '-'} / 만료일: ${std.expireAt || '-'}
@@ -3138,6 +3138,25 @@ function goStudentPage(targetPage) {
   }
 }
 
+// 원생 검색 입력 실시간 핸들러
+function handleStudentSearchInput(input) {
+  var clearBtn = document.getElementById("btnStudentSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 원생 검색어 원클릭 클리어
+function clearStudentSearch() {
+  var input = document.getElementById("searchStudentInput");
+  if (input) input.value = "";
+  var clearBtn = document.getElementById("btnStudentSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  var badgeEl = document.getElementById("studentSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  filterStudents();
+}
+
 function filterStudents(keepPage) {
   if (!keepPage) {
     studentCurrentPage = 1;
@@ -3145,6 +3164,10 @@ function filterStudents(keepPage) {
   var classVal = document.getElementById('filterStudentClass') ? document.getElementById('filterStudentClass').value : 'ALL';
   var query = (document.getElementById('searchStudentInput') ? document.getElementById('searchStudentInput').value : '').toLowerCase().trim();
   var statusVal = document.getElementById('filterStudentStatus') ? document.getElementById('filterStudentStatus').value : 'ALL';
+
+  // ✕ 버튼 상태 동기화
+  var clearBtn = document.getElementById("btnStudentSearchClear");
+  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
 
   var filtered = studentDataList.filter(function(std) {
     var matchClass = (classVal === 'ALL') || (std.classGroup === classVal);
@@ -3157,6 +3180,19 @@ function filterStudents(keepPage) {
     var matchStatus = (statusVal === 'ALL') || (stdStatus === statusVal);
     return matchClass && matchQuery && matchStatus;
   });
+
+  // 활성 검색 배지 상태 동기화
+  var badgeEl = document.getElementById("studentSearchActiveBadge");
+  if (badgeEl) {
+    if (query) {
+      badgeEl.style.display = "block";
+      var displayQ = query.length > 25 ? query.substring(0, 25) + '...' : query;
+      badgeEl.innerHTML = '<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"' + displayQ + '" 검색 결과 ' + filtered.length.toLocaleString() + '명 <span class="badge-clear-link" onclick="clearStudentSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>';
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
 
   renderStudentTable(filtered, studentCurrentPage);
 }
@@ -3204,7 +3240,7 @@ function renderTeacherTable(customList) {
       <td class="text-center"><span class="badge-soft badge-soft-neutral">지도교사</span></td>
       <td class="text-center">${classNamesStr}</td>
       <td class="text-center font-weight-bold" style="color:var(--btn-primary);">${totalStudentCount}명</td>
-      <td class="text-center">${t.phone || '-'}</td>
+      <td class="text-center">${typeof formatPhoneNumber === 'function' ? formatPhoneNumber(t.phone) : (t.phone || '-')}</td>
       <td class="text-center"><small class="text-muted">${t.joinDate}</small></td>
       <td class="text-center">
         <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
@@ -3929,6 +3965,25 @@ function initLearningDateFilters() {
   if (!endInput.value) endInput.value = todayStr;
 }
 
+// 학습 관리 검색 입력 핸들러
+function handleLearningSearchInput(input) {
+  var clearBtn = document.getElementById("btnLearningSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 학습 관리 검색어 원클릭 클리어
+function clearLearningSearch() {
+  var input = document.getElementById("learningSearchInput");
+  if (input) input.value = "";
+  var clearBtn = document.getElementById("btnLearningSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  var badgeEl = document.getElementById("learningSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  renderLearningTable();
+}
+
 // 학습 관리 '조회' 버튼 실행 (날짜 범위 체크: 최대 6개월)
 function executeLearningSearch() {
   var startInput = document.getElementById('learningStartDate');
@@ -4049,6 +4104,14 @@ async function saveCorrectionFromModal() {
     if (commentEl) {
       log.comment = commentEl.value.trim();
     }
+    // 나노시트 사진 및 AI 분석 결과 확실히 동기화 보존
+    if (Array.isArray(currentWorksheetPhotos)) {
+      log.worksheetPhotos = currentWorksheetPhotos.slice();
+    }
+    if (currentWorksheetAiResult) {
+      log.worksheetAiResult = currentWorksheetAiResult;
+    }
+
     var fileInput = document.getElementById('correctionFileInput');
     if (fileInput && fileInput.files && fileInput.files.length > 0) {
       if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('파일 첨부는 운영 서버에서 지원합니다.'); return; }
@@ -4064,11 +4127,21 @@ async function saveCorrectionFromModal() {
     if (!await saveCustomLearningLogs(allLogs)) return;
     renderLearningTable();
 
+    var targetLogId = log.id;
+
+    // 첨삭 모달을 닫고, 모달이 닫히면 곧바로 첨삭/학습 리포트 모달을 자동 실행!
     if (window.jQuery && typeof $('#modalCorrection').modal === 'function') {
+      $('#modalCorrection').one('hidden.bs.modal', function() {
+        setTimeout(function() {
+          openLearningDetailModal(targetLogId);
+        }, 120);
+      });
       $('#modalCorrection').modal('hide');
+    } else {
+      openLearningDetailModal(targetLogId);
     }
 
-    showAcademyToast(`[${(log.studentName || log.name)}] 원생의 생각담기 첨삭이 [첨삭 완료] 처리되었습니다.`);
+    showAcademyToast(`[${(log.studentName || log.name)}] 원생의 생각담기 첨삭이 완료되었습니다. 첨삭 리포트를 표시합니다.`);
   }
 }
 
@@ -4245,6 +4318,21 @@ function renderLearningTable() {
 
   var countEl = document.getElementById('learningLogCount');
   if (countEl) countEl.innerText = filtered.length;
+
+  // ✕ 버튼 및 활성 검색 배지 상태 동기화
+  var clearBtn = document.getElementById("btnLearningSearchClear");
+  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  var badgeEl = document.getElementById("learningSearchActiveBadge");
+  if (badgeEl) {
+    if (query) {
+      badgeEl.style.display = "inline-flex";
+      var displayQ = query.length > 25 ? query.substring(0, 25) + '...' : query;
+      badgeEl.innerHTML = '<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"' + displayQ + '" 검색 결과 ' + filtered.length.toLocaleString() + '건 <span class="badge-clear-link" onclick="clearLearningSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>';
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
 
   // 상단 3개 학습 요약 통계 카드 실시간 연동 (이달 학습 건수, 북퀴즈 평균 점수, 나노 시트 첨삭 완료율)
   var kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -4669,7 +4757,7 @@ function openLearningDetailModal(id) {
 
   // 3. 생각 담기 영역 (질문, 학생 답안, 숨기기/보이기 토글, 교사 코멘트 직접 타이핑)
   var thoughtSec = document.getElementById('learnModalThoughtSection');
-  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer));
+  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer || (log.comment && log.comment.trim() !== '') || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0)));
   
   if (thoughtSec) {
     if (!hasThought) {
@@ -4696,6 +4784,7 @@ function openLearningDetailModal(id) {
   // 4. [신규] 나노시트 AI 사고력 분석지 렌더링 (#learnModalWorksheetAiSection)
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
   if (wsAiSec) {
+    var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
     if (log.worksheetAiResult) {
       wsAiSec.style.display = 'block';
       var res = log.worksheetAiResult;
@@ -4706,7 +4795,6 @@ function openLearningDetailModal(id) {
       // 원본 사진 썸네일
       var thumbsEl = document.getElementById('worksheetAiThumbnails');
       if (thumbsEl) {
-        var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
         if (photos.length > 0) {
           thumbsEl.innerHTML = photos.map(function(p, i) {
             return '<img src="' + p.dataUrl + '" class="rounded border" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="openWorksheetPhotoLightbox(\'' + p.dataUrl + '\')" title="시트 ' + (i + 1) + 'p 원본 보기">';
@@ -4743,8 +4831,33 @@ function openLearningDetailModal(id) {
       var parentEl = document.getElementById('worksheetAiParentGuide');
       if (parentEl) parentEl.innerHTML = '• <strong>가정 대화 팁:</strong> ' + (res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
 
+    } else if (photos.length > 0) {
+      // AI 분석 전이지만 업로드된 나노시트 원본 사진이 있는 경우 썸네일 노출
+      wsAiSec.style.display = 'block';
+      var sumEl = document.getElementById('worksheetAiSummary');
+      if (sumEl) sumEl.innerText = '원생이 작성한 나노시트 원본 사진이 등록되어 있습니다. 하단 지도교사 첨삭 코멘트를 확인해 주세요.';
+
+      var thumbsEl = document.getElementById('worksheetAiThumbnails');
+      if (thumbsEl) {
+        thumbsEl.innerHTML = photos.map(function(p, i) {
+          return '<img src="' + p.dataUrl + '" class="rounded border" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="openWorksheetPhotoLightbox(\'' + p.dataUrl + '\')" title="시트 ' + (i + 1) + 'p 원본 보기">';
+        }).join('');
+      }
+
+      var quotesEl = document.getElementById('worksheetAiQuotesList');
+      if (quotesEl) quotesEl.innerHTML = '<div class="text-muted p-2" style="font-size: 11px;">오프라인 손글씨 시트 ' + photos.length + '장 등록 완료</div>';
+
+      var drawRow = document.getElementById('worksheetAiDrawingRow');
+      if (drawRow) drawRow.style.display = 'none';
+
+      var nextStepEl = document.getElementById('worksheetAiNextStep');
+      if (nextStepEl) nextStepEl.innerHTML = '• <strong>지도교사 첨삭 피드백:</strong> ' + (log.comment || '원생의 생각 표현을 칭찬하고 격려해 주세요.');
+
+      var parentEl = document.getElementById('worksheetAiParentGuide');
+      if (parentEl) parentEl.innerHTML = '• <strong>가정 대화 팁:</strong> 아이가 시트에 쓴 생각에 대해 칭찬하고 대화를 나누어 보세요.';
     } else {
       wsAiSec.style.display = 'none';
+    }
     }
   }
 
@@ -8371,10 +8484,33 @@ function updatePortfolioDetailKakaoButton(pfId) {
   }
 }
 
+// 포트폴리오 검색 입력 핸들러
+function handlePortfolioSearchInput(input) {
+  var clearBtn = document.getElementById("btnPortfolioSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 포트폴리오 검색어 원클릭 클리어
+function clearPortfolioSearch() {
+  var input = document.getElementById("searchPortfolioInput");
+  if (input) input.value = "";
+  var clearBtn = document.getElementById("btnPortfolioSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  var badgeEl = document.getElementById("portfolioSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  filterPortfolioList();
+}
+
 // 포트폴리오 목록 검색 및 필터링
 function filterPortfolioList() {
   var classVal = document.getElementById('filterPortfolioClass') ? document.getElementById('filterPortfolioClass').value : 'ALL';
   var query = (document.getElementById('searchPortfolioInput') ? document.getElementById('searchPortfolioInput').value : '').toLowerCase().trim();
+
+  // ✕ 버튼 상태 동기화
+  var clearBtn = document.getElementById("btnPortfolioSearchClear");
+  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
 
   var filtered = portfolioList.filter(function(pf) {
     var matchClass = (classVal === 'ALL') || (pf.classGroup.indexOf(classVal) !== -1);
@@ -8385,6 +8521,19 @@ function filterPortfolioList() {
       pf.studentId.toLowerCase().indexOf(query) !== -1;
     return matchClass && matchQuery;
   });
+
+  // 활성 검색 배지 상태 동기화
+  var badgeEl = document.getElementById("portfolioSearchActiveBadge");
+  if (badgeEl) {
+    if (query) {
+      badgeEl.style.display = "block";
+      var displayQ = query.length > 25 ? query.substring(0, 25) + '...' : query;
+      badgeEl.innerHTML = '<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"' + displayQ + '" 검색 결과 ' + filtered.length.toLocaleString() + '건 <span class="badge-clear-link" onclick="clearPortfolioSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>';
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
 
   renderPortfolioTable(filtered);
 }
@@ -10408,6 +10557,25 @@ var academyBookPageSize = 30;
 var academyBookCurrentPage = 1;
 var currentAcademyFilteredBooks = [];
 
+// 학원 도서 검색 입력 실시간 핸들러
+function handleAcadBookSearchInput(input) {
+  var clearBtn = document.getElementById("btnAcadBookSearchClear");
+  if (clearBtn) {
+    clearBtn.style.display = (input && input.value.trim().length > 0) ? "inline-flex" : "none";
+  }
+}
+
+// 학원 도서 검색어 원클릭 클리어
+function clearAcadBookSearch() {
+  var input = document.getElementById("searchAcadBookInput");
+  if (input) input.value = "";
+  var clearBtn = document.getElementById("btnAcadBookSearchClear");
+  if (clearBtn) clearBtn.style.display = "none";
+  var badgeEl = document.getElementById("acadBookSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  filterAcademyBooks();
+}
+
 // 도서 필터링 & 정렬 (기본: 보유 순 -> 도서 번호 내림차순, 30개 페이징)
 function filterAcademyBooks(keepPage) {
   syncAcademyBooksState();
@@ -10524,6 +10692,22 @@ function filterAcademyBooks(keepPage) {
 
   // 30개 단위 페이징 슬라이싱
   var total = filtered.length;
+
+  // ✕ 버튼 및 활성 검색 배지 상태 동기화
+  var clearBtn = document.getElementById("btnAcadBookSearchClear");
+  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  var badgeEl = document.getElementById("acadBookSearchActiveBadge");
+  if (badgeEl) {
+    if (query) {
+      badgeEl.style.display = "inline-flex";
+      var displayQ = query.length > 25 ? query.substring(0, 25) + '...' : query;
+      badgeEl.innerHTML = '<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"' + displayQ + '" 검색 결과 ' + total.toLocaleString() + '권 <span class="badge-clear-link" onclick="clearAcadBookSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>';
+    } else {
+      badgeEl.style.display = "none";
+      badgeEl.innerHTML = "";
+    }
+  }
+
   var totalPages = Math.ceil(total / academyBookPageSize) || 1;
   if (academyBookCurrentPage < 1) academyBookCurrentPage = 1;
   if (academyBookCurrentPage > totalPages) academyBookCurrentPage = totalPages;

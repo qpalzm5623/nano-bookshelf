@@ -318,3 +318,91 @@ document.addEventListener('DOMContentLoaded', function () {
     initHistoryGuard();
   }
 })();
+
+// ==============================================================
+// [전역 표준] 모든 연락처 섹션 하이픈 자동 포맷팅 유틸리티 & 리스너
+// ==============================================================
+(function () {
+  function formatPhoneNumber(val) {
+    if (val == null) return '-';
+    if (typeof val === 'object' && val !== null && 'value' in val) {
+      val.value = formatPhoneNumber(val.value);
+      return val.value;
+    }
+    var str = String(val).trim();
+    if (!str || str === '-' || str === 'null' || str === 'undefined') return '-';
+
+    // 이미 표준 하이픈 규격이면 그대로 반환
+    if (/^\d{2,4}-\d{3,4}-\d{4}$/.test(str)) return str;
+
+    var clean = str.replace(/[^0-9]/g, '');
+    if (!clean) return str;
+
+    // 1. 서울 지역번호 02
+    if (clean.startsWith('02')) {
+      if (clean.length === 9) {
+        return clean.slice(0, 2) + '-' + clean.slice(2, 5) + '-' + clean.slice(5);
+      } else if (clean.length === 10) {
+        return clean.slice(0, 2) + '-' + clean.slice(2, 6) + '-' + clean.slice(6);
+      } else if (clean.length < 9) {
+        return clean.length <= 2 ? clean : clean.slice(0, 2) + '-' + clean.slice(2);
+      }
+    }
+
+    // 2. 전국 대표번호 (1544, 1588, 1600 등 8자리)
+    if (clean.length === 8 && /^(15|16|18)\d{2}/.test(clean)) {
+      return clean.slice(0, 4) + '-' + clean.slice(4);
+    }
+
+    // 3. 휴대폰(010, 011 등) 및 일반 지역번호(031, 032, 051 등)
+    if (clean.length === 11) {
+      return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7);
+    } else if (clean.length === 10) {
+      return clean.slice(0, 3) + '-' + clean.slice(3, 6) + '-' + clean.slice(6);
+    } else if (clean.length === 12) {
+      return clean.slice(0, 4) + '-' + clean.slice(4, 8) + '-' + clean.slice(8);
+    } else if (clean.length > 11) {
+      return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7, 11);
+    }
+
+    // 4. 입력 중이거나 짧은 경우
+    if (clean.length < 7) return '-';
+    if (clean.length === 7) return clean.slice(0, 3) + '-' + clean.slice(3);
+    return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7);
+  }
+
+  // 전역 유틸리티 함수로 등록 (어느 JS 파일에서나 즉시 호출 가능)
+  if (typeof window !== 'undefined') {
+    window.formatPhoneNumber = formatPhoneNumber;
+    window.formatPhoneInput = function(input) {
+      if (!input) return;
+      input.value = formatPhoneNumber(input.value);
+    };
+  }
+
+  // 실시간 입력(input) 시 사이트 내 모든 전화번호 입력창 자동 하이픈 삽입
+  document.addEventListener('input', function (e) {
+    var target = e.target;
+    if (!target || target.tagName !== 'INPUT') return;
+    var id = (target.id || '').toLowerCase();
+    var name = (target.name || '').toLowerCase();
+    var type = (target.type || '').toLowerCase();
+    var placeholder = (target.placeholder || '').toLowerCase();
+
+    var isPhoneField = type === 'tel' ||
+      id.includes('phone') || id.includes('cell') || id.includes('tel') ||
+      name.includes('phone') || name.includes('cell') || name.includes('tel') ||
+      placeholder.includes('010') || placeholder.includes('연락처') || placeholder.includes('전화');
+
+    if (isPhoneField) {
+      var prevLen = target.value.length;
+      var cursor = target.selectionStart;
+      target.value = formatPhoneNumber(target.value);
+      var newLen = target.value.length;
+      if (cursor != null) {
+        var newCursor = cursor + (newLen - prevLen);
+        target.setSelectionRange(newCursor, newCursor);
+      }
+    }
+  });
+})();

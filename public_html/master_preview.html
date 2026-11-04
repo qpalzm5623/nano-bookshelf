@@ -604,6 +604,8 @@
       position: relative;
       flex: 1;
       min-width: 220px;
+      display: flex;
+      align-items: center;
     }
     .search-input-wrap i {
       position: absolute;
@@ -612,6 +614,65 @@
       transform: translateY(-50%);
       color: var(--text-soft);
       font-size: 13px;
+      pointer-events: none;
+    }
+    .btn-search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #d1d5db;
+      color: #ffffff;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transition: all 0.15s ease-in-out;
+      z-index: 5;
+    }
+    .btn-search-clear:hover {
+      background: #9ca3af;
+      color: #ffffff;
+      transform: translateY(-50%) scale(1.1);
+    }
+    .badge-search-active {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      animation: nanoFadeIn .2s ease-out;
+    }
+    .badge-search-active .badge-clear-link {
+      color: #ef4444;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      margin-left: 4px;
+      padding: 2px 7px;
+      background: #fee2e2;
+      border-radius: 12px;
+      transition: all 0.15s;
+    }
+    .badge-search-active .badge-clear-link:hover {
+      background: #fecaca;
+      color: #b91c1c;
     }
     .form-control-beige {
       border: 1px solid var(--border-medium);
@@ -619,7 +680,7 @@
       border-radius: 10px;
       font-size: 13px;
       color: var(--text-main);
-      padding: 8px 14px 8px 36px;
+      padding: 8px 32px 8px 36px;
       height: 38px;
     }
     .form-control-beige:focus {
@@ -1013,9 +1074,10 @@
           <span style="color: var(--text-muted); font-size: 13px; font-weight: 600;">~</span>
           <input type="date" id="franchiseEndDateFilter" class="form-control form-control-sm border-0 p-0 text-center" style="width: 128px; font-size: 12.5px; font-weight: 600; color: var(--text-main); background: transparent; height: 32px;" title="가입일 종료일" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
         </div>
-        <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
+        <div class="search-input-wrap flex-grow-1" style="min-width: 240px; position: relative;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 전화번호, 지역, 사업자번호 검색..." oninput="filterFranchiseList()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
+          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 전화번호, 지역, 사업자번호 검색..." oninput="handleFranchiseSearchInput(this); filterFranchiseList();" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
+          <button type="button" id="btnFranchiseSearchClear" class="btn-search-clear" onclick="clearFranchiseSearch()" style="display: none;" title="검색어 지우기">✕</button>
         </div>
         <!-- 검색 버튼 (버튼 클릭 또는 Enter 시에만 검색 실행) -->
         <button type="button" class="btn btn-sm font-weight-bold" onclick="filterFranchiseList()" style="border-radius: 10px; height: 38px; background: #3d342d; border: 1px solid #3d342d; color: #ffffff; white-space: nowrap; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(61,52,45,0.18); cursor: pointer;" title="설정한 조건으로 가맹 학원을 검색합니다.">
@@ -1028,10 +1090,13 @@
 
       <!-- 가맹점 테이블 카드 -->
       <div class="simple-card">
-        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
-          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
-            <i class="fa-solid fa-list-check mr-2 text-muted"></i>가맹 학원 목록 (<span id="franchiseFilteredCount">14</span>개소)
-          </span>
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+              <i class="fa-solid fa-list-check mr-2 text-muted"></i>가맹 학원 목록 (<span id="franchiseFilteredCount">14</span>개소)
+            </span>
+            <span id="franchiseSearchActiveBadge" style="display: none;"></span>
+          </div>
           <small class="text-muted">* 최근 가맹일(가입일) 기준으로 최신순 정렬됩니다.</small>
         </div>
         <div class="table-responsive" style="overflow-x: auto;">
@@ -1164,10 +1229,11 @@
           </select>
         </div>
 
-        <!-- 4. 통합 검색 입력 -->
-        <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
+        <!-- 4. 통합 검색 입력 (원클릭 지우기 ✕ 탑재) -->
+        <div class="search-input-wrap flex-grow-1" style="min-width: 240px; position: relative;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMemberList();}">
+          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." oninput="handleMemberSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterMemberList();}">
+          <button type="button" id="btnMemberSearchClear" class="btn-search-clear" onclick="clearMemberSearch()" style="display: none;" title="검색어 지우기">✕</button>
         </div>
 
         <!-- 5. 검색 및 초기화 버튼 -->
@@ -1181,10 +1247,14 @@
 
       <!-- 통합 회원 테이블 카드 -->
       <div class="simple-card">
-        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background: #fdfbf7;">
-          <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
-            <i class="fa-solid fa-users mr-2 text-muted"></i>회원 계정 리스트 (<span id="memberFilteredCount">0</span>명)
-          </span>
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
+              <i class="fa-solid fa-users mr-2 text-muted"></i>회원 계정 리스트 (<span id="memberFilteredCount">0</span>명)
+            </span>
+            <!-- 검색 필터 활성 뱃지 영역 -->
+            <span id="memberSearchActiveBadge" style="display: none;"></span>
+          </div>
           <small class="text-muted">* 본사 마스터 및 전국 가맹 학원에서 등록된 교직원 및 학생 통합 명부입니다.</small>
         </div>
         <div class="table-responsive" style="overflow-x: auto;">
@@ -1530,9 +1600,10 @@
               <option value="분당 서현 리딩클럽">🏫 분당 서현클럽</option>
             </select>
           </div>
-          <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0;">
+          <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0; position: relative;">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." oninput="filterStudentRankings()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentRankings();}">
+            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." oninput="handleRankingSearchInput(this); filterStudentRankings();" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentRankings();}">
+            <button type="button" id="btnRankingSearchClear" class="btn-search-clear" onclick="clearRankingSearch()" style="display: none;" title="검색어 지우기">✕</button>
           </div>
           <div class="d-flex align-items-center" style="gap: 8px;">
             <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterStudentRankings()" style="border-radius: 8px; height: 38px; padding: 0 16px; white-space: nowrap;">
@@ -1550,19 +1621,21 @@
           </div>
         </div>
 
+        <div id="rankingSearchActiveBadge" class="mt-2 mb-2" style="display: none;"></div>
+
         <div class="table-responsive">
           <table class="simple-table" id="table-ranking-student">
             <thead>
               <tr>
-                <th style="width: 80px;">전국 순위</th>
-                <th style="width: 90px;">학원 내 순위</th>
-                <th style="text-align: left;">학생 성명 (아이디)</th>
-                <th style="text-align: left;">소속 학원</th>
-                <th>학년</th>
-                <th>누적 완독 권수</th>
-                <th>퀴즈 정답률</th>
-                <th style="text-align: right; padding-right: 24px;">누적 포인트 (상세보기)</th>
-                <th>최근 활동</th>
+                <th style="width: 80px;" class="text-center">전국 순위</th>
+                <th style="width: 90px;" class="text-center">학원 내 순위</th>
+                <th class="text-center">학생 성명 (아이디)</th>
+                <th class="text-center">소속 학원</th>
+                <th class="text-center">학년</th>
+                <th id="thStudentRankBooks" class="text-center">완독 권수</th>
+                <th class="text-center">퀴즈 정답률</th>
+                <th id="thStudentRankPoints" class="text-center">포인트 (상세보기)</th>
+                <th class="text-center">최근 활동</th>
               </tr>
             </thead>
             <tbody id="studentRankingBody">
@@ -1573,14 +1646,14 @@
           <table class="simple-table" id="table-ranking-academy" style="display: none;">
             <thead>
               <tr>
-                <th style="width: 80px;">순위</th>
-                <th style="text-align: left;">가맹 학원명</th>
-                <th>지역</th>
-                <th>재원생 수</th>
-                <th>1인당 평균 독서량</th>
-                <th>학습 참여율</th>
-                <th style="text-align: right; padding-right: 24px;">총 포인트 합계</th>
-                <th>우수 가맹점 뱃지</th>
+                <th style="width: 80px;" class="text-center">순위</th>
+                <th class="text-center">가맹 학원명</th>
+                <th class="text-center">지역</th>
+                <th class="text-center">재원생 수</th>
+                <th id="thAcademyRankAvgBooks" class="text-center">1인당 평균 독서량</th>
+                <th class="text-center">학습 참여율</th>
+                <th id="thAcademyRankPoints" class="text-center">포인트 합계</th>
+                <th class="text-center">우수 가맹점 뱃지</th>
               </tr>
             </thead>
             <tbody id="academyRankingBody">
@@ -4236,7 +4309,7 @@
       </div>
       <div class="modal-body p-4" style="background: #faf8f5;">
         <div class="mb-3 text-muted" style="font-size: 12.5px;">
-          표준 엑셀 서식에 맞추어 이미 등록된 도서(도서 관리코드 기준)에 3~5문항 북퀴즈를 한 번에 일괄 등록·갱신합니다.
+          표준 엑셀 서식에 맞추어 이미 등록된 도서(도서 관리코드 기준)에 최소 3문항에서 최대 10문항의 북퀴즈를 한 번에 일괄 등록·갱신합니다.
         </div>
 
         <!-- 대량 등록 규격 안내 배너 -->
@@ -4270,13 +4343,13 @@
                 <tr>
                   <td class="font-weight-bold">문항번호 (필수)</td>
                   <td>
-                    <span class="badge badge-light border mr-1">1</span> ~ <span class="badge badge-light border mr-1">5</span> (해당 도서 내 문항 순번)
+                    <span class="badge badge-light border mr-1">1</span> ~ <span class="badge badge-light border mr-1">10</span> (해당 도서 내 문항 순번, 도서당 최소 3개 ~ 최대 10문항 작성 가능)
                   </td>
                 </tr>
                 <tr>
                   <td class="font-weight-bold">문항유형</td>
                   <td>
-                    <span class="text-primary font-weight-bold">객관식</span> (기본값, 4지선다) 또는 <span class="text-primary font-weight-bold">주관식</span> (단답형)
+                    <span class="text-primary font-weight-bold">객관식</span> (기본값, 3~5지선다) 또는 <span class="text-primary font-weight-bold">주관식</span> (단답형)
                   </td>
                 </tr>
                 <tr>
@@ -4286,16 +4359,23 @@
                   </td>
                 </tr>
                 <tr>
-                  <td class="font-weight-bold">보기1 ~ 보기4</td>
+                  <td class="font-weight-bold">보기1 ~ 보기5</td>
                   <td>
-                    객관식 선택지 4개 <small class="text-danger">* 객관식인 경우 필수 입력, 주관식인 경우 공란 가능</small>
+                    객관식 선택지 3~5개 <small class="text-danger">* 객관식은 최소 3개(보기1~보기3) 필수 입력, 보기4~보기5는 선택 (3지/4지/5지선다 지원), 주관식인 경우 공란 가능</small>
                   </td>
                 </tr>
                 <tr>
                   <td class="font-weight-bold">정답 (필수)</td>
                   <td>
-                    객관식: <span class="badge badge-success font-weight-bold">1</span> ~ <span class="badge badge-success font-weight-bold">4</span> 숫자 (또는 보기 텍스트와 정확히 일치해도 자동 인식)<br>
-                    주관식: 정답 단어 또는 문장
+                    객관식: <span class="badge badge-success font-weight-bold">1</span> ~ <span class="badge badge-success font-weight-bold">5</span> 숫자 (또는 보기 텍스트와 정확히 일치해도 자동 인식)<br>
+                    주관식: 대표 정답 단어 또는 문장
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">유사인정정답 (선택)</td>
+                  <td>
+                    주관식 유사 인정 단어들을 쉼표(,)로 구분하여 입력 (예: <span class="badge badge-light border">담대함, 씩씩함, 용기있는 태도</span>)<br>
+                    <small class="text-muted">* '정답' 컬럼에 쉼표로 함께 적어주셔도 자동으로 분리되어 유사 인정 정답으로 등록됩니다.</small>
                   </td>
                 </tr>
                 <tr>
