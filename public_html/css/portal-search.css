@@ -1,0 +1,32 @@
+/* 본사·학원 공통: 검색 조건 묶음은 오른쪽에 배치한다. */
+.portal-search-toolbar,
+.filter-bar,
+#rankingFilterBar,
+.lit-pick-toolbar {
+  justify-content: flex-end !important;
+}
+
+/* 검색창이 남는 공간 전체를 차지하지 않도록 너비를 제한한다. */
+.filter-bar > .search-input-wrap,
+#rankingFilterBar > .search-input-wrap,
+.portal-search-toolbar > .portal-search-field {
+  flex: 0 1 300px !important;
+  width: 300px;
+  max-width: 100%;
+}
+
+.portal-search-toolbar > * { max-width: 100%; }
+.portal-search-toolbar { gap: 12px; }
+#rankingFilterBar > .ml-auto { margin-left: 0 !important; }
+.lit-pick-toolbar > #litPickSearch { flex: 0 1 280px !important; }
+
+@media (max-width: 575.98px) {
+  .filter-bar > .search-input-wrap,
+  #rankingFilterBar > .search-input-wrap,
+  .portal-search-toolbar > .portal-search-field,
+  .lit-pick-toolbar > #litPickSearch {
+    flex-basis: 100% !important;
+    width: 100%;
+    min-width: 0 !important;
+  }
+}

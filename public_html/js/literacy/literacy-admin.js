@@ -31,11 +31,12 @@
       '<div class="workspace-subtitle">원생에게 초등 문해력 진단 테스트를 부여하고, 완료된 결과지를 확인·출력·카톡 발송하며 레벨 변화를 추적합니다.</div></div>' +
       '<div><button type="button" class="btn btn-beige-primary font-weight-bold" onclick="NanoLiteracyAdmin.openAssign()"><i class="fa-solid fa-paper-plane mr-1"></i>테스트 부여</button></div></div>' +
       '<div class="row mb-4" id="litStats"></div>' +
-      '<div class="simple-card p-3 mb-4"><div class="d-flex flex-wrap align-items-end" style="gap:14px">' +
+      '<div class="simple-card p-3 mb-4"><div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap:12px">' +
       '<div style="width:150px"><label class="lit-lbl">학급</label><select id="litClassFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()"><option value="ALL">전체 학급</option></select></div>' +
       '<div style="width:140px"><label class="lit-lbl">상태</label><select id="litStatusFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()">' +
       '<option value="ALL">전체 상태</option><option value="PENDING">대기</option><option value="IN_PROGRESS">진행 중</option><option value="COMPLETED">완료</option><option value="CANCELLED">취소</option></select></div>' +
-      '<div style="flex:1;min-width:200px"><label class="lit-lbl">원생 검색</label><input id="litSearch" class="form-control lit-ctl" placeholder="원생 이름, 아이디 검색..." oninput="NanoLiteracyAdmin.render()" autocomplete="off"></div>' +
+      '<div class="portal-search-field"><label class="lit-lbl" for="litSearch">원생 검색</label><input type="search" id="litSearch" class="form-control lit-ctl" placeholder="원생 이름, 아이디 검색..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();NanoLiteracyAdmin.render();}" autocomplete="off"></div>' +
+      '<button type="button" class="btn btn-beige-primary font-weight-bold" onclick="NanoLiteracyAdmin.render()" style="height:38px;white-space:nowrap"><i class="fa-solid fa-magnifying-glass mr-1"></i>검색</button>' +
       '<button type="button" class="btn btn-beige-secondary" onclick="NanoLiteracyAdmin.refresh(true)" style="height:38px"><i class="fa-solid fa-rotate-right mr-1"></i>새로고침</button></div></div>' +
       '<div class="simple-card" style="padding:0;overflow:hidden"><div class="table-responsive"><table class="simple-table" style="margin:0"><thead><tr>' +
       '<th style="width:56px">번호</th><th>배정일</th><th>원생</th><th>학년</th><th>검사지</th><th>상태</th><th>응시일</th><th>결과</th><th>마감일</th><th style="width:210px">관리</th></tr></thead>' +
