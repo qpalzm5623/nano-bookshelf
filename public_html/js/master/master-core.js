@@ -2130,6 +2130,12 @@ async function saveMasterAiSettings() {
   var apiKey = keyInput ? keyInput.value.trim() : '';
   var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
 
+  if (apiKey && apiKey.startsWith('sk-')) {
+    alert('⚠️ 입력하신 키는 OpenAI API 키(sk-...)입니다.\n\n구글 제미나이(Google Gemini) 엔진은 "AIzaSy..."로 시작하는 Google AI Studio API 키를 사용해야 합니다.\n\nGoogle AI Studio(https://aistudio.google.com)에서 발급받은 Gemini API 키를 입력해 주세요.');
+    if (keyInput) keyInput.focus();
+    return;
+  }
+
   try {
     var res = await fetch('/api/manage?entity=ai_config', {
       method: 'POST',

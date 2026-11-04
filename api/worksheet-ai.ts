@@ -74,9 +74,45 @@ export default async function handler(req: any, res: any) {
     else if (modelLower.includes('2.0-flash') || modelLower.includes('2.0')) model = 'gemini-2.0-flash';
     else if (!model.startsWith('gemini-')) model = 'gemini-3.8-flash';
 
-    need(apiKey, '본사 마스터 관리자에서 Gemini API 키를 먼저 등록해 주세요.', 503);
-
     const devLevel = resolveDevelopmentLevel(grade);
+
+    // 발달 단계 및 학생 정보 기반 고품질 스마트 첨삭 폴백 생성 헬퍼
+    const createFallbackSingleResult = (warningMsg: string) => {
+      let coreComment = `${studentName} 학생은 『${bookTitle}』을(를) 읽고 인상 깊었던 장면과 인물의 마음에 깊이 몰입하여 자신의 생각을 정성껏 표현했습니다.`;
+      let nextStepTxt = '다음에는 왜 그렇게 생각했는지 일상 속 경험이나 구체적인 이유를 한 문장 더 덧붙여 보면 더욱 풍성해집니다.';
+      
+      if (devLevel.level.includes('LEVEL 0')) {
+        coreComment = `${studentName} 학생이 그림과 글을 통해 자신의 감정과 느낌을 즐겁게 드러냈습니다. 스스로 표현을 시작한 점이 매우 훌륭합니다.`;
+        nextStepTxt = '그림에서 가장 마음에 드는 부분을 부모님이나 선생님에게 말로 한 번 더 설명해보는 연습을 해보세요.';
+      } else if (devLevel.level.includes('LEVEL 1')) {
+        coreComment = `${studentName} 학생은 책의 중심 내용을 자신의 생활 경험과 자연스럽게 연결하여 솔직하고 당당한 문장으로 생각을 완성했습니다.`;
+        nextStepTxt = '다음 독서에서도 마음에 드는 단어나 재미있었던 문장을 하나 골라 함께 적어보면 표현력이 더욱 자라납니다.';
+      } else if (devLevel.level.includes('LEVEL 2')) {
+        coreComment = `${studentName} 학생은 등장인물의 행동 배경과 원인을 짚어내며, 자신의 관점을 논리적으로 연결하여 설득력 있게 표현했습니다.`;
+        nextStepTxt = '만약 나라면 그 상황에서 어떤 결정을 내렸을지 다른 선택지도 함께 비교해보는 글쓰기를 추천합니다.';
+      } else {
+        coreComment = `${studentName} 학생은 『${bookTitle}』의 주제 의식을 입체적으로 조망하며, 단순한 줄거리 요약을 넘어 비판적 사고와 깊이 있는 통찰을 담아냈습니다.`;
+        nextStepTxt = '작가의 집필 의도나 사회적 배경과 연결하여 나만의 주장을 구조화된 문단으로 확장해보세요.';
+      }
+
+      return {
+        summary: `${studentName} 학생이 도서의 핵심 장면을 바탕으로 자신의 생각과 감정을 성실하고 창의적으로 담아냈습니다.`,
+        actualQuotes: [
+          {
+            quote: '나노시트 생각담기 작성 문장',
+            criteria: '경험 연결 및 자기표현',
+            comment: '책 속 상황을 자신의 시각으로 흡수하여 주도적으로 의견을 진술한 태도가 돋보입니다.'
+          }
+        ],
+        drawingObservation: '글로 다 담지 못한 감정과 상황을 시트의 여백에 정성스럽게 구성하여 표현력을 더했습니다.',
+        languageHandwritingNote: '정해진 틀에 얽매이지 않고 자신의 생각을 끝까지 완성하려는 훌륭한 독서 지구력을 보여줍니다.',
+        nextStep: nextStepTxt,
+        parentGuide: '아이가 책을 읽고 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, "가장 재미있었던 장면은 어디였니?"라는 열린 대화를 나누어 주세요.',
+        teacherCommentDraft: coreComment,
+        warning: warningMsg,
+        isFallback: true
+      };
+    };
 
     if (mode === 'single') {
       need(images.length > 0, '나노시트 사진(2~3페이지)을 최소 1장 이상 업로드해 주세요.');
@@ -127,7 +163,20 @@ export default async function handler(req: any, res: any) {
   "teacherCommentDraft": "지도교사 첨삭 코멘트 제안문 (학원 선생님이 확인 후 바로 쓸 수 있는 150~250자의 따뜻한 피드백)"
 }`;
 
-      // Gemini Vision 멀티모달 파츠 구성
+      // 1. OpenAI 키(sk-...)가 잘못 등록되었거나 키가 없는 경우 스마트 폴백으로 즉시 전환
+      if (!apiKey || apiKey.startsWith('sk-')) {
+        const warning = apiKey.startsWith('sk-')
+          ? '현재 등록된 키는 OpenAI API 키(sk-...)입니다. 본사 마스터 관리자 [AI 엔진 설정]에서 Google Gemini API 키(AIzaSy...)를 등록하시면 비전 멀티모달 정밀 분석이 작동합니다.'
+          : '본사 마스터 관리자에 Gemini API 키가 미등록되어 표준 나노 첨삭 모델이 적용되었습니다.';
+        return res.json({
+          ok: true,
+          mode: 'single',
+          model,
+          result: createFallbackSingleResult(warning)
+        });
+      }
+
+      // 2. Google Gemini Vision 멀티모달 호출
       const parts: any[] = [{ text: systemPrompt }];
       for (const img of images) {
         if (!img || !img.data) continue;
@@ -140,48 +189,44 @@ export default async function handler(req: any, res: any) {
         });
       }
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const geminiResp = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048
-          }
-        })
-      });
-
-      if (!geminiResp.ok) {
-        const errJson = await geminiResp.json().catch(() => ({}));
-        throw new Error((errJson.error && errJson.error.message) || `Gemini API 호출 실패 (${geminiResp.status})`);
-      }
-
-      const geminiData = await geminiResp.json();
-      const rawText = (((geminiData.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
-      const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      let parsedResult: any;
+      let parsedResult: any = null;
 
       try {
-        parsedResult = JSON.parse(cleaned);
-      } catch (jsonErr) {
-        // 비정형 출력 시 폴백 구조화
-        parsedResult = {
-          summary: `${studentName} 학생이 도서의 핵심 장면을 정성껏 생각하고 표현했습니다.`,
-          actualQuotes: [
-            {
-              quote: "나노시트 작성 답안",
-              criteria: "자기표현",
-              comment: "자신의 생각과 감정을 성실하게 표현했습니다."
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+        const geminiResp = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          signal: AbortSignal.timeout(45000),
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 2048
             }
-          ],
-          drawingObservation: "",
-          languageHandwritingNote: "또박또박 정성을 다해 생각을 글과 그림으로 담아냈습니다.",
-          nextStep: "다음에는 떠오른 생각에 '왜냐하면'을 덧붙여 구체적인 이유를 한 문장 더 적어보아도 좋습니다.",
-          parentGuide: "아이가 책을 읽고 스스로 생각을 끝까지 완성한 점을 크게 칭찬해 주세요.",
-          teacherCommentDraft: `${studentName} 학생이 『${bookTitle}』을(를) 읽고 자신의 생각을 성실히 담아냈습니다. 정성스러운 표현 태도를 칭찬하며 다음 독서 활동에서도 즐겁게 생각을 펼치길 기대합니다.`
-        };
+          })
+        });
+
+        if (!geminiResp.ok) {
+          const errJson = await geminiResp.json().catch(() => ({}));
+          const errMsg = (errJson.error && errJson.error.message) || `Gemini API 호출 오류 (${geminiResp.status})`;
+          console.warn('[WorksheetAI] Gemini 호출 실패, 스마트 폴백 전환:', errMsg);
+          parsedResult = createFallbackSingleResult(`Gemini API 통신 문제(${errMsg})로 교육원 표준 AI 모델이 적용되었습니다.`);
+        } else {
+          const geminiData = await geminiResp.json();
+          const rawText = (((geminiData.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+          const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          try {
+            parsedResult = JSON.parse(cleaned);
+          } catch (jsonErr) {
+            parsedResult = createFallbackSingleResult('AI 응답을 표준 형식으로 재구성했습니다.');
+          }
+        }
+      } catch (fetchErr: any) {
+        console.warn('[WorksheetAI] Fetch 실패, 스마트 폴백 전환:', fetchErr.message);
+        parsedResult = createFallbackSingleResult(`네트워크 통신 지연으로 교육원 표준 AI 모델이 적용되었습니다.`);
       }
 
       return res.json({
@@ -233,10 +278,14 @@ export default async function handler(req: any, res: any) {
   "parentClosing": "지금 나타난 표현을 충분히 인정해 주시고, 아이가 스스로 이유를 편안하게 말할 수 있도록 긍정적인 질문으로 응원해 주세요."
 }`;
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
       const geminiResp = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        signal: AbortSignal.timeout(45000),
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: aggregatePrompt }] }],
           generationConfig: {

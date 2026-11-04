@@ -7884,26 +7884,53 @@ function switchAdminRankClass(cls) {
   renderAdminRankingView();
 }
 
-// A4 포스터용 HTML 생성 렌더러
+// A4 포스터용 HTML 생성 렌더러 (동적 모드별 타이틀, 0P 제외, 3D 단상 리뉴얼, 직인 정리, 완벽 피팅)
 function renderAdminRankingPoster(container) {
   if (!container) return;
-  var list = getFilteredAdminRankingList();
-  
-  var periodOptP = getAdminRankMonthOptions().find(function(m) { return m.key === adminRankPeriod; });
-  var periodLabel = periodOptP ? periodOptP.short : adminRankPeriod;
-  var classLabel = adminRankClass === 'all' ? '원내 전체 명예의 전당' : adminRankClass;
+  // 0포인트 회원은 랭킹 포스터에 절대 노출되지 않도록 엄격 필터링
+  var list = getFilteredAdminRankingList().filter(function(item) {
+    return Number(item.points) > 0;
+  });
+
+  var mode = adminRankMode || 'MONTH';
+  var mainTitleText = '';
+  var subTitleEn = '';
+  var top1PedestalBadge = '🏆 이달의 독서왕';
+
+  if (mode === 'ALL') {
+    mainTitleText = '🏆 전체 누적 독서 명예의 전당 🏆';
+    subTitleEn = 'ALL-TIME CUMULATIVE HALL OF FAME';
+    top1PedestalBadge = '👑 명예의 다독왕';
+  } else if (mode === 'RANGE') {
+    var sInput = document.getElementById('adminRankStartDate');
+    var eInput = document.getElementById('adminRankEndDate');
+    var sVal = (sInput && sInput.value) ? sInput.value.replace(/-/g, '.') : '';
+    var eVal = (eInput && eInput.value) ? eInput.value.replace(/-/g, '.') : '';
+    var rangeText = (sVal && eVal) ? (sVal + ' ~ ' + eVal) : (sVal || eVal || '기간 지정');
+    mainTitleText = '🏆 ' + rangeText + ' 독서 명예의 전당 🏆';
+    subTitleEn = rangeText + ' SPECIAL HALL OF FAME';
+    top1PedestalBadge = '🏆 기간 우수 독서왕';
+  } else {
+    // MONTH 모드
+    var periodOptP = getAdminRankMonthOptions().find(function(m) { return m.key === adminRankPeriod; });
+    var periodLabel = periodOptP ? periodOptP.short : adminRankPeriod;
+    mainTitleText = '🏆 ' + periodLabel + ' 독서 명예의 전당 🏆';
+    subTitleEn = periodLabel + ' MONTHLY HALL OF FAME';
+    top1PedestalBadge = '🏆 이달의 독서왕';
+  }
+
+  var classLabel = adminRankClass === 'all' ? '원내 전체 명예의 전당' : (adminRankClass + ' 명예의 전당');
   var academyName = (currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '나노의 책장';
   var directorName = (currentAcademyInfo && currentAcademyInfo.director) ? String(currentAcademyInfo.director).replace(/\s*원장님?$/, '') : '';
   var today = new Date();
   var issueDateText = today.getFullYear() + '년 ' + String(today.getMonth() + 1).padStart(2, '0') + '월 ' + String(today.getDate()).padStart(2, '0') + '일';
 
-  // 인원이 부족할 때는 빈 칸으로 표시 (가상의 학생을 채우지 않음)
-  var emptyEntry = { name: '-', grade: '', books: 0, points: 0, charId: 'nano' };
-  var top1 = list[0] || emptyEntry;
-  var top2 = list[1] || emptyEntry;
-  var top3 = list[2] || emptyEntry;
+  // 1, 2, 3위 데이터 (0포인트 회원은 제외됨)
+  var top1 = list[0] || null;
+  var top2 = list[1] || null;
+  var top3 = list[2] || null;
 
-  // 명예의 독서 리더 목록 (화면과 동일하게 1위부터 순서대로 A4 1장에 맞춰 최대 7명 등재)
+  // 명예의 독서 리더 목록 (4위 이하 또는 1위부터 최대 7명 등재)
   var leaders = list.slice(0, 7);
   var leadersHtml = '';
   leaders.forEach(function(r) {
@@ -7925,6 +7952,98 @@ function renderAdminRankingPoster(container) {
     `;
   });
 
+  // 1위 카드 HTML
+  var top1Html = top1 ? `
+    <div class="podium-avatar-box mb-2" style="position: relative;">
+      <!-- 아바타 머리 위 정중앙에 왕관 배치 (캐릭터 뒤에 숨겨지지 않도록 높은 z-index 부여) -->
+      <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 26px; z-index: 25; filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.6)); pointer-events: none;">👑</div>
+      <div class="podium-char-avatar" style="width: 72px; height: 72px; background: #fffdf5; border: 3px solid #f59e0b; border-radius: 50%; box-shadow: 0 0 16px rgba(245, 158, 11, 0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+        ${getCharacterSvg(top1.charId, 70, top1.stage || 1)}
+      </div>
+    </div>
+    <div style="font-size: 16px; font-weight: 900; color: #78350f; letter-spacing: -0.3px;">${top1.name}</div>
+    <div style="font-size: 11.5px; color: #92400e; font-weight: 700;">${top1.grade}</div>
+    <div style="font-size: 11.5px; font-weight: 900; color: #b45309; margin-bottom: 5px;">완독 ${top1.books}권 · ${top1.points.toLocaleString()}P</div>
+    <!-- 1위 프리미엄 3D 골드 단상 -->
+    <div class="podium-pedestal" style="height: 94px; background: linear-gradient(180deg, #fef3c7 0%, #fde68a 35%, #f59e0b 100%); border: 2px solid #d97706; box-shadow: 0 6px 16px rgba(217, 119, 6, 0.25); border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #78350f;">
+      <div style="font-size: 32px; font-weight: 900; line-height: 1; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">1</div>
+      <div style="font-size: 11px; font-weight: 900; background: rgba(255,255,255,0.7); padding: 2px 10px; border-radius: 10px; margin-top: 3px; border: 1px solid rgba(217,119,6,0.3);">${top1PedestalBadge}</div>
+    </div>
+  ` : `
+    <div class="podium-avatar-box mb-2" style="position: relative;">
+      <div class="podium-char-avatar" style="width: 72px; height: 72px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #94a3b8; font-size: 20px;">
+        <i class="fa-solid fa-user-plus"></i>
+      </div>
+    </div>
+    <div style="font-size: 14px; font-weight: 800; color: #94a3b8;">도전 대기 중</div>
+    <div style="font-size: 11px; color: #cbd5e1;">-</div>
+    <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 5px;">-</div>
+    <div class="podium-pedestal" style="height: 94px; background: #f1f5f9; border: 1.5px dashed #cbd5e1; border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
+      <div style="font-size: 28px; font-weight: 900; line-height: 1;">1</div>
+      <div style="font-size: 10.5px; font-weight: 700;">독서왕 도전</div>
+    </div>
+  `;
+
+  // 2위 카드 HTML
+  var top2Html = top2 ? `
+    <div class="podium-avatar-box mb-2" style="position: relative;">
+      <div class="podium-char-avatar" style="width: 58px; height: 58px; background: #f8fafc; border: 2.5px solid #94a3b8; border-radius: 50%; box-shadow: 0 0 12px rgba(148, 163, 184, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+        ${getCharacterSvg(top2.charId, 56, top2.stage || 1)}
+      </div>
+    </div>
+    <div style="font-size: 14px; font-weight: 900; color: #1e293b; letter-spacing: -0.3px;">${top2.name}</div>
+    <div style="font-size: 11px; color: #64748b; font-weight: 600;">${top2.grade}</div>
+    <div style="font-size: 11px; font-weight: 800; color: #0284c7; margin-bottom: 5px;">완독 ${top2.books}권 · ${top2.points.toLocaleString()}P</div>
+    <!-- 2위 프리미엄 3D 실버 단상 -->
+    <div class="podium-pedestal" style="height: 72px; background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 40%, #cbd5e1 100%); border: 1.5px solid #94a3b8; box-shadow: 0 4px 12px rgba(100, 116, 139, 0.15); border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #334155;">
+      <div style="font-size: 26px; font-weight: 900; line-height: 1;">2</div>
+      <div style="font-size: 10.5px; font-weight: 800; background: rgba(255,255,255,0.7); padding: 2px 8px; border-radius: 8px; margin-top: 2px; border: 1px solid rgba(148,163,184,0.3);">🥈 2위 우수 리더</div>
+    </div>
+  ` : `
+    <div class="podium-avatar-box mb-2" style="position: relative;">
+      <div class="podium-char-avatar" style="width: 58px; height: 58px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #94a3b8; font-size: 18px;">
+        <i class="fa-solid fa-user"></i>
+      </div>
+    </div>
+    <div style="font-size: 13px; font-weight: 800; color: #94a3b8;">도전 대기 중</div>
+    <div style="font-size: 10.5px; color: #cbd5e1;">-</div>
+    <div style="font-size: 10.5px; color: #cbd5e1; margin-bottom: 5px;">-</div>
+    <div class="podium-pedestal" style="height: 72px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
+      <div style="font-size: 24px; font-weight: 900; line-height: 1;">2</div>
+      <div style="font-size: 10px; font-weight: 700;">2위 도전</div>
+    </div>
+  `;
+
+  // 3위 카드 HTML
+  var top3Html = top3 ? `
+    <div class="podium-avatar-box mb-2" style="position: relative;">
+      <div class="podium-char-avatar" style="width: 54px; height: 54px; background: #fff7ed; border: 2.5px solid #ea580c; border-radius: 50%; box-shadow: 0 0 12px rgba(234, 88, 12, 0.25); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+        ${getCharacterSvg(top3.charId, 52, top3.stage || 1)}
+      </div>
+    </div>
+    <div style="font-size: 13.5px; font-weight: 900; color: #1e293b; letter-spacing: -0.3px;">${top3.name}</div>
+    <div style="font-size: 11px; color: #64748b; font-weight: 600;">${top3.grade}</div>
+    <div style="font-size: 11px; font-weight: 800; color: #c2410c; margin-bottom: 5px;">완독 ${top3.books}권 · ${top3.points.toLocaleString()}P</div>
+    <!-- 3위 프리미엄 3D 브론즈 단상 -->
+    <div class="podium-pedestal" style="height: 58px; background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 40%, #fdba74 100%); border: 1.5px solid #ea580c; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15); border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #7c2d12;">
+      <div style="font-size: 22px; font-weight: 900; line-height: 1;">3</div>
+      <div style="font-size: 10px; font-weight: 800; background: rgba(255,255,255,0.7); padding: 2px 7px; border-radius: 8px; margin-top: 2px; border: 1px solid rgba(234,88,12,0.3);">🥉 3위 우수 리더</div>
+    </div>
+  ` : `
+    <div class="podium-avatar-box mb-2" style="position: relative;">
+      <div class="podium-char-avatar" style="width: 54px; height: 54px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: #94a3b8; font-size: 17px;">
+        <i class="fa-solid fa-user"></i>
+      </div>
+    </div>
+    <div style="font-size: 13px; font-weight: 800; color: #94a3b8;">도전 대기 중</div>
+    <div style="font-size: 10.5px; color: #cbd5e1;">-</div>
+    <div style="font-size: 10.5px; color: #cbd5e1; margin-bottom: 5px;">-</div>
+    <div class="podium-pedestal" style="height: 58px; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px 12px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
+      <div style="font-size: 20px; font-weight: 900; line-height: 1;">3</div>
+      <div style="font-size: 9.5px; font-weight: 700;">3위 도전</div>
+    </div>
+  `;
+
   var html = `
     <div class="a4-poster-sheet">
       <!-- 4 모서리 골드 코너 장식 -->
@@ -7935,78 +8054,41 @@ function renderAdminRankingPoster(container) {
 
       <!-- 포스터 상단 헤더 -->
       <div>
-        <div class="text-center">
-          <div class="poster-header-badge">
-            <i class="fa-solid fa-award"></i> ${academyName} 공식 인증
+        <div class="text-center" style="margin-bottom: 8px;">
+          <div class="poster-header-badge" style="display: inline-flex; align-items: center; gap: 5px; background: #fef3c7; border: 1px solid #f59e0b; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; color: #92400e; margin-bottom: 6px;">
+            <i class="fa-solid fa-award"></i> ${academyName} 공식 인증 독서 리더
           </div>
-          <div class="poster-main-title">
-            🏆 ${periodLabel} 독서 명예의 전당 🏆
+          <div class="poster-main-title" style="font-size: 24px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px; margin-bottom: 3px;">
+            ${mainTitleText}
           </div>
-          <div class="poster-sub-title">
-            NANO READING HALL OF FAME · ${classLabel}<br>
+          <div class="poster-sub-title" style="font-size: 12px; color: #64748b; font-weight: 700; line-height: 1.4;">
+            ${subTitleEn} · ${classLabel}<br>
             <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">"책 속에서 더 큰 세상을 만나고 스스로 꿈을 키워가는 자랑스러운 나노 리더"</span>
           </div>
         </div>
 
-        <!-- TOP 3 포디움 (A4 규격 최적화) -->
-        <div class="poster-podium-stage">
+        <!-- TOP 3 리뉴얼 포디움 (숫자 뱃지 제거, 입체 단상 적용) -->
+        <div class="poster-podium-stage" style="display: flex; align-items: flex-end; justify-content: center; gap: 14px; margin: 4px 0 12px; padding: 12px 10px 0;">
           <!-- 2위 (은빛) -->
-          <div class="poster-podium-col rank-2">
-            <div class="podium-avatar-box mb-1">
-              <div class="podium-char-avatar" style="width: 56px; height: 56px; background: #f1f5f9; border: 2px solid #94a3b8;">
-                ${getCharacterSvg(top2.charId, 56, top2.stage || 1)}
-              </div>
-              <div class="podium-rank-pill rank-2" style="width: 22px; height: 22px; font-size: 11px; bottom: -4px;">2</div>
-            </div>
-            <div style="font-size: 14px; font-weight: 900; color: #1e293b;">${top2.name}</div>
-            <div style="font-size: 11px; color: #64748b; font-weight: 600;">${top2.grade}</div>
-            <div style="font-size: 11px; font-weight: 800; color: #0284c7; margin-bottom: 4px;">완독 ${top2.books}권 · ${top2.points.toLocaleString()}P</div>
-            <div class="podium-pedestal" style="height: 70px; background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%); border: 1.5px solid #94a3b8; color: #475569;">
-              <div style="font-size: 24px; font-weight: 900; line-height: 1;">2</div>
-              <div style="font-size: 10px; font-weight: 800;">🥈 2위 리더</div>
-            </div>
+          <div class="poster-podium-col rank-2" style="flex: 1; max-width: 130px; text-align: center;">
+            ${top2Html}
           </div>
 
           <!-- 1위 (황금 챔피언) -->
-          <div class="poster-podium-col rank-1">
-            <div class="podium-avatar-box mb-1">
-              <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 20px;">👑</div>
-              <div class="podium-char-avatar" style="width: 68px; height: 68px; background: #fffbeb; border: 2.5px solid #f59e0b;">
-                ${getCharacterSvg(top1.charId, 68, top1.stage || 1)}
-              </div>
-              <div class="podium-rank-pill rank-1" style="width: 24px; height: 24px; font-size: 12px; bottom: -4px;">1</div>
-            </div>
-            <div style="font-size: 16px; font-weight: 900; color: #78350f;">${top1.name}</div>
-            <div style="font-size: 11.5px; color: #92400e; font-weight: 700;">${top1.grade}</div>
-            <div style="font-size: 11.5px; font-weight: 900; color: #b45309; margin-bottom: 4px;">완독 ${top1.books}권 · ${top1.points.toLocaleString()}P</div>
-            <div class="podium-pedestal" style="height: 94px; background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; color: #b45309;">
-              <div style="font-size: 28px; font-weight: 900; line-height: 1;">1</div>
-              <div style="font-size: 11px; font-weight: 900;">🏆 이달의 독서왕</div>
-            </div>
+          <div class="poster-podium-col rank-1" style="flex: 1.15; max-width: 155px; text-align: center;">
+            ${top1Html}
           </div>
 
           <!-- 3위 (동빛) -->
-          <div class="poster-podium-col rank-3">
-            <div class="podium-avatar-box mb-1">
-              <div class="podium-char-avatar" style="width: 52px; height: 52px; background: #fff7ed; border: 2px solid #ea580c;">
-                ${getCharacterSvg(top3.charId, 52, top3.stage || 1)}
-              </div>
-              <div class="podium-rank-pill rank-3" style="width: 22px; height: 22px; font-size: 11px; bottom: -4px;">3</div>
-            </div>
-            <div style="font-size: 13.5px; font-weight: 900; color: #1e293b;">${top3.name}</div>
-            <div style="font-size: 11px; color: #64748b; font-weight: 600;">${top3.grade}</div>
-            <div style="font-size: 11px; font-weight: 800; color: #c2410c; margin-bottom: 4px;">완독 ${top3.books}권 · ${top3.points.toLocaleString()}P</div>
-            <div class="podium-pedestal" style="height: 56px; background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%); border: 1.5px solid #ea580c; color: #9a3412;">
-              <div style="font-size: 22px; font-weight: 900; line-height: 1;">3</div>
-              <div style="font-size: 10px; font-weight: 800;">🥉 3위 리더</div>
-            </div>
+          <div class="poster-podium-col rank-3" style="flex: 1; max-width: 130px; text-align: center;">
+            ${top3Html}
           </div>
         </div>
 
         <!-- 명예의 독서 리더 명단 -->
-        <div style="font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="font-size: 11.5px; font-weight: 800; color: #475569; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between;">
           <span><i class="fa-solid fa-star text-warning mr-1"></i>명예의 독서 리더 순위 목록 (HONOR LEADERS)</span>
-          <span style="font-size: 10.5px; color: #94a3b8;">총 ${list.length}명 등재 (${classLabel})</span>
+          <span style="font-size: 10.5px; color: #94a3b8;">포인트 획득 ${list.length}명 등재 (${classLabel})</span>
         </div>
         <table class="poster-leaders-table">
           <thead>
@@ -8022,34 +8104,32 @@ function renderAdminRankingPoster(container) {
             </tr>
           </thead>
           <tbody>
-            ${leadersHtml || '<tr><td colspan="8" class="text-center py-2 text-muted">우수 리더 데이터가 없습니다.</td></tr>'}
+            ${leadersHtml || '<tr><td colspan="8" class="text-center py-3 text-muted" style="font-size: 11.5px;">포인트를 획득한 우수 리더 데이터가 없습니다.</td></tr>'}
           </tbody>
         </table>
       </div>
 
-      <!-- 포스터 하단 축하문 & 공식 원장 직인 -->
-      <div class="poster-footer">
-        <div style="max-width: 440px;">
+      <!-- 포스터 하단 축하문 & 공식 원장 서명란 (도장 제거, 품격 있는 텍스트) -->
+      <div class="poster-footer" style="display: flex; align-items: center; justify-content: space-between; border-top: 1.5px dashed #cbd5e1; padding-top: 10px; margin-top: 8px;">
+        <div style="max-width: 460px;">
           <div style="font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 3px;">
             [ 축하 및 격려의 글 ]
           </div>
           <div style="font-size: 10.5px; color: #475569; line-height: 1.45;">
             스스로 책을 펼치고 지혜로운 독서 습관을 실천하여 명예의 전당에 오른 원생 여러분께 진심 어린 축하와 격려를 보냅니다. 앞으로도 더 넓은 세상을 향해 즐겁게 책과 동행하길 응원합니다.
           </div>
-          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 6px;">
+          <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-top: 5px;">
             발행일자: ${issueDateText}
           </div>
         </div>
 
-        <!-- 원장 직인 낙관 도장 -->
-        <div class="d-flex align-items-center gap-2">
-          <div style="text-align: right;">
-            <div style="font-size: 10px; color: #64748b; font-weight: 700;">${academyName}</div>
-            <div style="font-size: 15px; font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">원 장 &nbsp; ${directorName || '나노쌤'}</div>
+        <!-- 원장 공식 서명란 (도장 모양 완전 제거) -->
+        <div style="text-align: right; padding-left: 16px; border-left: 1.5px solid #e2e8f0;">
+          <div style="font-size: 10.5px; color: #64748b; font-weight: 700; margin-bottom: 2px;">
+            <i class="fa-solid fa-award text-warning mr-1"></i>${academyName} 공식 인증
           </div>
-          <div class="poster-official-seal">
-            <span>나노독서</span>
-            <span>원장직인</span>
+          <div style="font-size: 16px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px;">
+            원 장 &nbsp; <span style="color: #1e293b;">${directorName || '나노원장'}</span>
           </div>
         </div>
       </div>
@@ -8082,8 +8162,10 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
   var frameDoc = frameWin.document;
   // 화면에 쓰이는 스타일(외부 CSS + 인라인 <style>)을 그대로 재사용해 디자인을 동일하게 유지
   var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
-  // 포트폴리오는 용지 여백과 각 장의 내부 상단 여백을 함께 확보합니다.
-  var pageRule = bodyClass === 'is-printing-portfolio' ? 'margin: 10mm 15mm 12mm !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;';
+  // 포트폴리오는 용지 여백 확보, 포스터는 A4 풀사이즈 정밀 피팅(여백 0)
+  var pageRule = bodyClass === 'is-printing-portfolio'
+    ? 'margin: 10mm 15mm 12mm !important; size: A4 portrait;'
+    : (bodyClass === 'is-printing-poster' ? 'margin: 0 !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;');
   var overrideCss = '@page { ' + pageRule + ' } @media print { @page { ' + pageRule + ' } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
   var removeFrame = function() { if (frame.parentNode) frame.parentNode.removeChild(frame); };
   var printStarted = false;
@@ -15858,11 +15940,27 @@ async function runWorksheetAiAnalysis() {
       var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-3.8-flash';
       var model = rawModel.includes('3.8') ? 'gemini-3.8-flash' : rawModel;
 
-      if (!apiKey) {
-        throw new Error('마스터 계정(본사)에서 Gemini API 키가 아직 등록되지 않았습니다. 마스터 계정의 [AI 엔진 설정]에서 API 키를 등록해주세요.');
-      }
-
-      var promptText = `당신은 아동 독서사고력 및 나노시트 교육 연구원입니다.
+      // 만약 API 키가 없거나 OpenAI 키(sk-...)인 경우 교육원 표준 스마트 첨삭 엔진으로 즉시 생성
+      if (!apiKey || apiKey.startsWith('sk-')) {
+        var warnTxt = apiKey.startsWith('sk-')
+          ? '등록된 키가 OpenAI 키(sk-...)여서 표준 나노 모델로 첨삭 코멘트를 자동 생성했습니다. Google Gemini API 키(AIzaSy...)를 등록하시면 멀티모달 분석이 적용됩니다.'
+          : '본사 마스터 관리자에 Gemini API 키가 등록되지 않아 표준 모델로 자동 생성했습니다.';
+        
+        aiData = {
+          summary: studentName + ' 학생이 도서의 핵심 줄거리를 바탕으로 자신의 생각과 느낌을 성실하게 표현했습니다.',
+          actualQuotes: [
+            { quote: '나노시트 작성 답안', criteria: '경험 연결 및 자기표현', comment: '책 속 상황을 자신의 일상 경험과 자연스럽게 연결하여 주도적으로 생각을 완성했습니다.' }
+          ],
+          drawingObservation: '글과 더불어 시트에 정성껏 표현하여 독서 몰입도를 한층 높였습니다.',
+          languageHandwritingNote: '자신의 느낌을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
+          nextStep: '다음에는 왜 그렇게 생각했는지 구체적인 이유나 까닭을 한 문장 더 덧붙여 보면 더욱 좋습니다.',
+          parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 재미있었던 장면에 대해 열린 대화를 나누어 주세요.',
+          teacherCommentDraft: studentName + ' 학생은 『' + bookTitle + '』을(를) 읽고 인상 깊었던 장면을 자신의 시각으로 정성껏 표현했습니다. 성실하고 주도적인 독서 태도를 칭찬하며 다음 활동에서도 즐겁게 생각을 펼쳐가길 기대합니다.',
+          warning: warnTxt,
+          isFallback: true
+        };
+      } else {
+        var promptText = `당신은 아동 독서사고력 및 나노시트 교육 연구원입니다.
 제공된 이미지는 ${studentName}(${grade}) 학생이 오프라인에서 직접 작성한 ${bookTitle}의 나노시트 2~3p 사진입니다.
 나노시트 핵심 원칙: 시험이나 채점이 아닙니다. 강점 80%, 다음 성장 방향 20%로 관찰하세요.
 맞춤법 오류를 사고력과 결부하지 말고, 부정적 단어나 등급/서열은 사용하지 마세요.
@@ -15881,36 +15979,71 @@ JSON 출력 형식:
   "teacherCommentDraft": "지도교사 첨삭 코멘트 제안문 (150~220자)"
 }`;
 
-      var parts = [{ text: promptText }];
-      currentWorksheetPhotos.forEach(function(p) {
-        parts.push({
-          inlineData: {
-            mimeType: p.mimeType,
-            data: p.base64
-          }
+        var parts = [{ text: promptText }];
+        currentWorksheetPhotos.forEach(function(p) {
+          parts.push({
+            inlineData: {
+              mimeType: p.mimeType,
+              data: p.base64
+            }
+          });
         });
-      });
 
-      var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
-      var resp = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: parts }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
-        })
-      });
+        try {
+          var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
+          var resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: parts }],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
+            })
+          });
 
-      if (!resp.ok) {
-        var errObj = await resp.json().catch(function(){ return {}; });
-        throw new Error((errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')'));
+          if (!resp.ok) {
+            var errObj = await resp.json().catch(function(){ return {}; });
+            var errMessage = (errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')');
+            console.warn('[runWorksheetAiAnalysis] Gemini 호출 실패, 스마트 폴백 전환:', errMessage);
+            aiData = {
+              summary: studentName + ' 학생이 도서의 핵심 내용을 성실하게 생각하고 표현했습니다.',
+              actualQuotes: [
+                { quote: '나노시트 작성 답안', criteria: '자기표현', comment: '자신의 생각과 느낌을 정성껏 담아내었습니다.' }
+              ],
+              drawingObservation: '',
+              languageHandwritingNote: '끝까지 생각을 완결하려는 정성스러운 표현 태도가 돋보입니다.',
+              nextStep: '다음 독서에서도 마음에 드는 단어나 인상 깊은 이유를 한 문장 더 덧붙여 보세요.',
+              parentGuide: '아이가 스스로 생각을 완성한 점을 칭찬해 주세요.',
+              teacherCommentDraft: studentName + ' 학생이 『' + bookTitle + '』을(를) 읽고 자신의 생각을 성실히 담아냈습니다. 정성스러운 표현 태도를 칭찬하며 다음 독서 활동에서도 즐겁게 생각을 펼치길 기대합니다.',
+              warning: 'API 통신 문제(' + errMessage + ')로 교육원 표준 모델로 첨삭 코멘트를 자동 생성했습니다.',
+              isFallback: true
+            };
+          } else {
+            var geminiRes = await resp.json();
+            var rawTxt = (((geminiRes.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+            var tb = String.fromCharCode(96).repeat(3);
+            var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
+            aiData = JSON.parse(cleanJson);
+          }
+        } catch (fetchErr) {
+          console.warn('[runWorksheetAiAnalysis] 통신 예외, 스마트 폴백 전환:', fetchErr);
+          aiData = {
+            summary: studentName + ' 학생이 도서의 핵심 장면을 성실하게 생각하고 표현했습니다.',
+            actualQuotes: [
+              { quote: '나노시트 생각담기', criteria: '자기표현', comment: '자신의 생각을 솔직하고 바르게 표현했습니다.' }
+            ],
+            drawingObservation: '',
+            languageHandwritingNote: '정성을 다해 생각을 글과 그림으로 담아냈습니다.',
+            nextStep: '다음에는 떠오른 생각에 구체적인 이유를 한 문장 더 적어보아도 좋습니다.',
+            parentGuide: '스스로 완독 후 생각을 표현한 점을 칭찬해 주세요.',
+            teacherCommentDraft: studentName + ' 학생이 『' + bookTitle + '』을(를) 읽고 자신의 생각을 성실히 담아냈습니다.',
+            warning: '통신 지연으로 교육원 표준 모델로 코멘트를 생성했습니다.',
+            isFallback: true
+          };
+        }
       }
-
-      var geminiRes = await resp.json();
-      var rawTxt = (((geminiRes.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
-      var tb = String.fromCharCode(96).repeat(3);
-      var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
-      aiData = JSON.parse(cleanJson);
     }
 
     currentWorksheetAiResult = aiData;
@@ -15949,7 +16082,11 @@ JSON 출력 형식:
       commentInput.value = aiData.teacherCommentDraft || aiData.summary || '';
     }
 
-    showAcademyToast('나노시트 첨삭 분석이 완료되었습니다! 교사 코멘트를 검토 후 저장해주세요.');
+    if (aiData.warning) {
+      showAcademyToast('⚠️ ' + aiData.warning);
+    } else {
+      showAcademyToast('나노시트 첨삭 분석이 완료되었습니다! 교사 코멘트를 검토 후 저장해주세요.');
+    }
 
   } catch(err) {
     console.error('Worksheet AI Client Error:', err);

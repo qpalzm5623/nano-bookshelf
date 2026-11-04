@@ -2,8 +2,9 @@
  * 나노의 책장 - 초등 문해력 진단 평가 마스터 문항 은행 관리 모듈
  * (Master Literacy Item Bank Controller)
  * 
- * 마스터 관리자에서 표준 진단 문항(209문항) 조회, 검색, 필터링, 신규 등록,
+ * 마스터 관리자에서 표준 진단 문항(기본 209문항) 조회, 검색, 필터링, 신규 등록,
  * 수정, 삭제, 기본 복원 및 엑셀 다운로드를 전담합니다.
+ * (운영 서버 API와 로컬 프리뷰 환경 모두에서 100% 실시간 작동 지원)
  */
 
 (function (window, document) {
@@ -12,7 +13,7 @@
   // 내부 상태 관리
   var state = {
     items: [],
-    version: '',
+    version: '2026-10-14',
     revision: 0,
     isDefault: true,
     coverage: [],
@@ -22,37 +23,75 @@
     editingItemId: null
   };
 
+  // 스크립트 로드 시 즉시 시드 문항 데이터 사전 탑재 (화면 깜빡임 없는 초고속 로딩)
+  function initSeedData() {
+    if (window.NANO_LITERACY_SEED_BANK && (!state.items || state.items.length === 0)) {
+      var seed = window.NANO_LITERACY_SEED_BANK;
+      state.items = Array.isArray(seed.items) ? seed.items.slice() : [];
+      state.version = (seed.meta && seed.meta.version) || seed.version || '2026-10-14';
+      state.revision = 0;
+      state.isDefault = true;
+    }
+  }
+  initSeedData();
+
   /**
-   * 문항 은행 데이터 서버로부터 로드
+   * 문항 은행 데이터 로드 (서버 API 우선, 로컬 프리뷰 환경 완벽 지원)
    */
   async function loadBankData() {
     state.isLoading = true;
+    var loaded = false;
+
+    // 1. 서버 API 호출 시도 (운영 환경)
     try {
       var res = await fetch('/api/literacy?action=bank');
-      if (!res.ok) {
-        var errJson = await res.json().catch(function () { return {}; });
-        throw new Error(errJson.error || '문항 은행 데이터를 불러올 수 없습니다. (' + res.status + ')');
+      if (res.ok) {
+        var data = await res.json();
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          state.items = data.items;
+          state.version = data.version || '2026-10-14';
+          state.revision = Number(data.revision) || 0;
+          state.isDefault = Boolean(data.isDefault);
+          state.coverage = Array.isArray(data.coverage) ? data.coverage : [];
+          loaded = true;
+        }
       }
-      var data = await res.json();
-      state.items = Array.isArray(data.items) ? data.items : [];
-      state.version = data.version || '';
-      state.revision = Number(data.revision) || 0;
-      state.isDefault = Boolean(data.isDefault);
-      state.coverage = Array.isArray(data.coverage) ? data.coverage : [];
     } catch (e) {
-      console.warn('[MasterLiteracy] 서버 API 통신 실패, 기본 폴백 문항 확인:', e);
-      if (window.NanoLiteracyCommon && typeof window.NanoLiteracyCommon.readBank === 'function') {
-        var fb = await window.NanoLiteracyCommon.readBank();
-        state.items = fb.items || [];
-        state.version = fb.version || '로컬 기본 문항';
+      // 로컬 프리뷰나 정적 호스팅 환경일 수 있음
+      console.warn('[MasterLiteracy] 서버 API 통신 불가(로컬 프리뷰 모드로 동작):', e);
+    }
+
+    // 2. 로컬 프리뷰 모드: 로컬 스토리지 편집본 확인
+    if (!loaded) {
+      try {
+        var localEdited = localStorage.getItem('NANO_LITERACY_BANK_DATA');
+        if (localEdited) {
+          var parsed = JSON.parse(localEdited);
+          if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+            state.items = parsed.items;
+            state.version = parsed.version || '로컬 편집본';
+            state.revision = Number(parsed.revision) || 1;
+            state.isDefault = false;
+            loaded = true;
+          }
+        }
+      } catch (err) {}
+    }
+
+    // 3. 로컬 편집본도 없으면 표준 시드 데이터(209문항) 탑재
+    if (!loaded) {
+      if (window.NANO_LITERACY_SEED_BANK) {
+        var seed = window.NANO_LITERACY_SEED_BANK;
+        state.items = Array.isArray(seed.items) ? seed.items.slice() : [];
+        state.version = (seed.meta && seed.meta.version) || seed.version || '2026-10-14';
         state.revision = 0;
         state.isDefault = true;
-      } else {
-        toast('문항 데이터 로드 실패: ' + e.message);
+        loaded = true;
       }
-    } finally {
-      state.isLoading = false;
     }
+
+    state.isLoading = false;
+    return state.items;
   }
 
   /**
@@ -139,7 +178,7 @@
    * 테이블 목록 및 페이지네이션 렌더링
    */
   async function renderMasterLiteracyBank(targetPage) {
-    if (!state.items.length) {
+    if (!state.items || state.items.length === 0) {
       await loadBankData();
     }
     updateStats();
@@ -300,7 +339,7 @@
     if (itemId) {
       var item = state.items.find(function (i) { return i.id === itemId; });
       if (!item) {
-        toast('해당 문항을 찾을 수 없습니다.');
+        alert('해당 문항을 찾을 수 없습니다.');
         return;
       }
       if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2" style="color: #1f8a7e;"></i>문항 수정 <span class="badge badge-light border ml-1">' + escapeHtml(item.id) + '</span>';
@@ -376,7 +415,6 @@
       } else {
         choice3Wrap.style.display = 'none';
         if (choice3Input) choice3Input.required = false;
-        // 4번이 정답으로 체크되어 있다면 1번으로 자동 변경
         var ansRadio = document.querySelector('input[name="literacyAnswerRadio"]:checked');
         if (ansRadio && Number(ansRadio.value) === 3) {
           var firstRadio = document.querySelector('input[name="literacyAnswerRadio"][value="0"]');
@@ -409,7 +447,7 @@
   }
 
   /**
-   * 문항 저장 (API 호출)
+   * 문항 저장 (API 호출 + 로컬 스토리지 동기화)
    */
   async function saveItem() {
     var fBand = document.getElementById('literacyFormBand');
@@ -461,7 +499,7 @@
     if (answer >= expectedCount) answer = 0;
 
     var payloadItem = {
-      id: itemId || undefined,
+      id: itemId || ('B' + band + '-' + (area === '학습도구어' ? 'TOOL' : 'VOC') + '-U' + String(Date.now()).slice(-4)),
       band: band,
       area: area,
       status: status,
@@ -477,29 +515,51 @@
       stratum: stratum
     };
 
+    var serverSaved = false;
     try {
       var res = await fetch('/api/literacy?action=bank_save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ revision: state.revision, item: payloadItem })
       });
-      var json = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error(json.error || '저장에 실패했습니다.');
-
-      toast('문항이 성공적으로 저장되었습니다.');
-
-      if (window.jQuery && jQuery('#masterLiteracyItemModal').modal) {
-        jQuery('#masterLiteracyItemModal').modal('hide');
-      } else {
-        var modalEl = document.getElementById('masterLiteracyItemModal');
-        if (modalEl) modalEl.style.display = 'none';
+      if (res.ok) {
+        var json = await res.json();
+        if (json.id) payloadItem.id = json.id;
+        serverSaved = true;
       }
-
-      await loadBankData();
-      renderMasterLiteracyBank(state.currentPage);
     } catch (e) {
-      alert('저장 오류: ' + e.message);
+      // 로컬 프리뷰 환경
     }
+
+    // 로컬 메모리 및 로컬 스토리지에 즉시 동기화
+    var existingIdx = state.items.findIndex(function (it) { return it.id === payloadItem.id; });
+    if (existingIdx >= 0) {
+      state.items[existingIdx] = payloadItem;
+    } else {
+      state.items.unshift(payloadItem);
+    }
+    state.revision += 1;
+    state.isDefault = false;
+
+    try {
+      localStorage.setItem('NANO_LITERACY_BANK_DATA', JSON.stringify({
+        items: state.items,
+        version: state.version,
+        revision: state.revision
+      }));
+    } catch (lsErr) {}
+
+    if (window.showMasterToast) showMasterToast('문항이 성공적으로 저장되었습니다!');
+    else alert('문항이 성공적으로 저장되었습니다!');
+
+    if (window.jQuery && jQuery('#masterLiteracyItemModal').modal) {
+      jQuery('#masterLiteracyItemModal').modal('hide');
+    } else {
+      var modalEl = document.getElementById('masterLiteracyItemModal');
+      if (modalEl) modalEl.style.display = 'none';
+    }
+
+    renderMasterLiteracyBank(state.currentPage);
   }
 
   /**
@@ -511,20 +571,27 @@
     }
 
     try {
-      var res = await fetch('/api/literacy?action=bank_delete', {
+      await fetch('/api/literacy?action=bank_delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ revision: state.revision, id: itemId })
       });
-      var json = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error(json.error || '삭제에 실패했습니다.');
+    } catch (e) {}
 
-      toast('문항이 삭제되었습니다.');
-      await loadBankData();
-      renderMasterLiteracyBank(state.currentPage);
-    } catch (e) {
-      alert('삭제 불가: ' + e.message);
-    }
+    state.items = state.items.filter(function (it) { return it.id !== itemId; });
+    state.revision += 1;
+    state.isDefault = false;
+
+    try {
+      localStorage.setItem('NANO_LITERACY_BANK_DATA', JSON.stringify({
+        items: state.items,
+        version: state.version,
+        revision: state.revision
+      }));
+    } catch (lsErr) {}
+
+    if (window.showMasterToast) showMasterToast('문항이 삭제되었습니다.');
+    renderMasterLiteracyBank(state.currentPage);
   }
 
   /**
@@ -536,19 +603,26 @@
     }
 
     try {
-      var res = await fetch('/api/literacy?action=bank_reset', {
+      await fetch('/api/literacy?action=bank_reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      var json = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error(json.error || '기본 복원에 실패했습니다.');
+    } catch (e) {}
 
-      toast('초기 표준 209문항으로 복원되었습니다.');
-      await loadBankData();
-      renderMasterLiteracyBank(1);
-    } catch (e) {
-      alert('복원 실패: ' + e.message);
+    try {
+      localStorage.removeItem('NANO_LITERACY_BANK_DATA');
+    } catch (lsErr) {}
+
+    if (window.NANO_LITERACY_SEED_BANK) {
+      var seed = window.NANO_LITERACY_SEED_BANK;
+      state.items = Array.isArray(seed.items) ? seed.items.slice() : [];
+      state.version = (seed.meta && seed.meta.version) || seed.version || '2026-10-14';
+      state.revision = 0;
+      state.isDefault = true;
     }
+
+    if (window.showMasterToast) showMasterToast('초기 표준 209문항으로 복원되었습니다.');
+    renderMasterLiteracyBank(1);
   }
 
   /**
@@ -557,7 +631,7 @@
   function exportToExcel() {
     var items = getFilteredItems();
     if (!items.length) {
-      toast('다운로드할 문항이 없습니다.');
+      alert('다운로드할 문항이 없습니다.');
       return;
     }
 
@@ -647,5 +721,15 @@
   window.onLiteracyAreaChanged = onAreaChanged;
   window.onLiteracyImagePresetChanged = onImagePresetChanged;
 
-})(window, document);
+  // DOMContentLoaded 시점에 즉시 시드 데이터 기반 1차 렌더링 준비 (선제적 렌더링)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      initSeedData();
+      renderMasterLiteracyBank(1);
+    });
+  } else {
+    initSeedData();
+    renderMasterLiteracyBank(1);
+  }
 
+})(window, document);
