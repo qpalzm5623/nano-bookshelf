@@ -213,7 +213,11 @@ function switchTab(tab) {
     renderAcademyNoticeViewList();
   }
   if (tab === 'learning') renderLearningTable();
-  if (tab === 'literacy' && window.NanoLiteracyAdmin) NanoLiteracyAdmin.show();
+  if (tab === 'literacy') {
+    if (window.NanoLiteracyAdmin) NanoLiteracyAdmin.show();
+    else if (targetView) targetView.innerHTML = '<div class="simple-card p-4" role="alert">문해력 진단 화면을 불러오지 못했습니다. 페이지를 새로고침해 주세요.</div>';
+  }
+  if (tab === 'portfolio') {
     showPortfolioList();
     renderPortfolioTable(portfolioList);
   }
@@ -4857,7 +4861,6 @@ function openLearningDetailModal(id) {
       if (parentEl) parentEl.innerHTML = '• <strong>가정 대화 팁:</strong> 아이가 시트에 쓴 생각에 대해 칭찬하고 대화를 나누어 보세요.';
     } else {
       wsAiSec.style.display = 'none';
-    }
     }
   }
 

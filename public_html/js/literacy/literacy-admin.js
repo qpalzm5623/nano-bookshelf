@@ -85,6 +85,7 @@
     build();
     if (state.loading) return;
     state.loading = true;
+    document.getElementById('litTableBody').innerHTML = '<tr><td colspan="10" class="text-center py-5" role="status">진단 내역을 불러오는 중입니다…</td></tr>';
     try {
       state.items = (await L.api('assignments')).items || [];
       syncClassFilter();

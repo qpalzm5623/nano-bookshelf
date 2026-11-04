@@ -125,8 +125,8 @@ async function findAssignment(id: string) {
   need(row, '배정을 찾을 수 없습니다.', 404);
   return { row, value: row.value as any };
 }
-async function saveAssignment(row: { key: string; revision: number }, value: any) {
-  const saved = await prisma.portalSetting.updateMany({ where: { key: row.key, revision: row.revision }, data: { value, revision: { increment: 1 } } });
+async function saveAssignment(row: { key: string; revision: number }, value: any, db: Pick<typeof prisma, 'portalSetting'> = prisma) {
+  const saved = await db.portalSetting.updateMany({ where: { key: row.key, revision: row.revision }, data: { value, revision: { increment: 1 } } });
   need(saved.count === 1, '다른 요청이 먼저 처리되었습니다. 새로고침 후 다시 시도해 주세요.', 409);
 }
 async function listAssignments(academyId: string, memberId?: string) {
@@ -204,6 +204,11 @@ export default async function handler(req: any, res: any) {
       need(isStudent, '원생 전용 기능입니다.', 403);
       const { row, value } = await findAssignment(body.assignmentId);
       need(value.memberId === user.id, '본인에게 배정된 테스트만 제출할 수 있습니다.', 403);
+      // 응답 유실 후 재제출해도 이미 저장된 결과를 반환한다.
+      if (value.status === 'COMPLETED' && value.summary && value.resultId) {
+        const { correct, total } = value.summary;
+        return res.json({ ok: true, correct, total, score: Math.round((correct / total) * 100) });
+      }
       need(value.status === 'IN_PROGRESS' && Array.isArray(value.itemIds), '진행 중인 테스트가 아닙니다.', 409);
       const answers = Array.isArray(body.answers) ? body.answers : [];
       need(answers.length === value.itemIds.length, '모든 문항에 답해 주세요.');
@@ -214,25 +219,27 @@ export default async function handler(req: any, res: any) {
         // 푸는 도중 마스터가 문항을 삭제한 경우: 점수 오류를 막기 위해 처음부터 다시 출제
         if (!item) { await saveAssignment(row, { ...value, status: 'PENDING', itemIds: [] }); need(false, '문항이 변경되어 테스트를 처음부터 다시 시작해야 합니다.', 409); }
         const a = answers.find((x: any) => x && x.itemId === item.id);
-        const choice = Number(a?.choice);
+        const choice = a?.choice;
         need(Number.isInteger(choice) && choice >= 0 && choice < item.choices.length, '선택한 답을 확인해 주세요.');
         responses.push({ itemId: item.id, area: item.area, choice, correct: choice === item.answer, ms: Math.min(3600000, Math.max(0, Math.round(Number(a?.ms) || 0))) });
       }
       const result = summarize(value.band, value.gradeStep, responses, value.itemIds.length);
       const finishedAt = new Date().toISOString();
       const resultId = randomUUID();
-      // 같은 배정을 두 번 제출해도 한 번만 반영되도록 배정 갱신(리비전 확인)을 먼저 한다
+      // 완료 상태와 결과 원본을 함께 저장해 결과지 누락을 방지한다.
       const summary = { level: result.level, correct: result.correct, total: result.total, category: result.category, band: value.band, gradeStep: value.gradeStep, finishedAt };
-      await saveAssignment(row, { ...value, status: 'COMPLETED', resultId, completedAt: finishedAt, summary });
-      await prisma.portalSetting.create({
-        data: {
-          key: 'literacy_result:' + resultId, scope: resultScope(user.academyId),
-          value: {
-            id: resultId, assignmentId: value.id, academyId: user.academyId, memberId: user.id,
-            student: { name: user.name, username: user.username, gradeStep: value.gradeStep, classGroup: user.classGroup?.name || '' },
-            band: value.band, startedAt: value.startedAt || finishedAt, finishedAt, itemBankVersion: bank.version, responses, result,
-          } as any,
-        },
+      await prisma.$transaction(async (tx) => {
+        await saveAssignment(row, { ...value, status: 'COMPLETED', resultId, completedAt: finishedAt, summary }, tx);
+        await tx.portalSetting.create({
+          data: {
+            key: 'literacy_result:' + resultId, scope: resultScope(user.academyId),
+            value: {
+              id: resultId, assignmentId: value.id, academyId: user.academyId, memberId: user.id,
+              student: { name: user.name, username: user.username, gradeStep: value.gradeStep, classGroup: user.classGroup?.name || '' },
+              band: value.band, startedAt: value.startedAt || finishedAt, finishedAt, itemBankVersion: bank.version, responses, result,
+            } as any,
+          },
+        });
       });
       return res.json({ ok: true, correct: result.correct, total: result.total, score: Math.round((result.correct / result.total) * 100) });
     }
@@ -331,6 +338,7 @@ export default async function handler(req: any, res: any) {
           },
         });
         created.push(m.name);
+        current.push({ memberId: m.id, status: 'PENDING' });
       }
       return res.json({ ok: true, created, skipped });
     }
