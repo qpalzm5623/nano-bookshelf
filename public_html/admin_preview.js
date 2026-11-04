@@ -4800,20 +4800,18 @@ function openLearningDetailModal(id) {
       var thumbsEl = document.getElementById('worksheetAiThumbnails');
       if (thumbsEl) {
         if (photos.length > 0) {
-          thumbsEl.innerHTML = photos.map(function(p, i) {
-            return '<img src="' + p.dataUrl + '" class="rounded border" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="openWorksheetPhotoLightbox(\'' + p.dataUrl + '\')" title="시트 ' + (i + 1) + 'p 원본 보기">';
-          }).join('');
+          thumbsEl.innerHTML = renderWorksheetReportPhotos(photos);
         } else {
-          thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;">오프라인 시트 판독 완료</span>';
+          thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;">등록된 원본 사진이 없습니다.</span>';
         }
       }
 
       // 실제 인용구 및 관찰 코멘트
       var quotesEl = document.getElementById('worksheetAiQuotesList');
-      if (quotesEl && Array.isArray(res.actualQuotes)) {
-        quotesEl.innerHTML = res.actualQuotes.map(function(q) {
-          return '<div class="mb-1.5 pb-1 border-bottom"><strong class="text-primary" style="font-size: 11px;"><i class="fa-solid fa-quote-left mr-1"></i>"' + q.quote + '"</strong> <span class="badge badge-light border ml-1">' + (q.criteria || '관찰') + '</span><div class="text-dark mt-0.5" style="line-height: 1.5;">' + q.comment + '</div></div>';
-        }).join('');
+      if (quotesEl) {
+        quotesEl.innerHTML = (Array.isArray(res.actualQuotes) ? res.actualQuotes : []).map(function(q) {
+          return '<article class="worksheet-quote"><blockquote>“' + escapePortfolioText(q.quote) + '”</blockquote><small>' + escapePortfolioText(q.criteria || '표현 살펴보기') + '</small><div>' + escapePortfolioText(q.comment) + '</div></article>';
+        }).join('') || '<div class="worksheet-quote text-muted">아직 등록된 표현별 코멘트가 없습니다.</div>';
       }
 
       // 그림 관찰 (그림이 있는 경우만)
@@ -4830,10 +4828,10 @@ function openLearningDetailModal(id) {
 
       // 다음 성장 방향 (20%) & 가정 대화 팁
       var nextStepEl = document.getElementById('worksheetAiNextStep');
-      if (nextStepEl) nextStepEl.innerHTML = '• <strong>다음 시도:</strong> ' + (res.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.');
+      if (nextStepEl) nextStepEl.innerHTML = '• <strong>이렇게 해보세요:</strong> ' + (res.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.');
 
       var parentEl = document.getElementById('worksheetAiParentGuide');
-      if (parentEl) parentEl.innerHTML = '• <strong>가정 대화 팁:</strong> ' + (res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
+      if (parentEl) parentEl.innerHTML = '• <strong>집에서 함께 나눌 이야기:</strong> ' + (res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
 
     } else if (photos.length > 0) {
       // AI 분석 전이지만 업로드된 나노시트 원본 사진이 있는 경우 썸네일 노출
@@ -4843,13 +4841,11 @@ function openLearningDetailModal(id) {
 
       var thumbsEl = document.getElementById('worksheetAiThumbnails');
       if (thumbsEl) {
-        thumbsEl.innerHTML = photos.map(function(p, i) {
-          return '<img src="' + p.dataUrl + '" class="rounded border" style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;" onclick="openWorksheetPhotoLightbox(\'' + p.dataUrl + '\')" title="시트 ' + (i + 1) + 'p 원본 보기">';
-        }).join('');
+        thumbsEl.innerHTML = renderWorksheetReportPhotos(photos);
       }
 
       var quotesEl = document.getElementById('worksheetAiQuotesList');
-      if (quotesEl) quotesEl.innerHTML = '<div class="text-muted p-2" style="font-size: 11px;">오프라인 손글씨 시트 ' + photos.length + '장 등록 완료</div>';
+      if (quotesEl) quotesEl.innerHTML = '<div class="text-muted p-2" style="font-size: 11px;">나노시트 ' + photos.length + '장이 등록되어 있습니다. 첨삭 코멘트가 준비되면 이곳에 표시됩니다.</div>';
 
       var drawRow = document.getElementById('worksheetAiDrawingRow');
       if (drawRow) drawRow.style.display = 'none';
@@ -4865,6 +4861,15 @@ function openLearningDetailModal(id) {
   }
 
   $('#learningDetailModal').modal('show');
+}
+
+// 원본을 자르지 않고 크게 표시하며 키보드로도 확대할 수 있도록 한다.
+function renderWorksheetReportPhotos(photos) {
+  return photos.map(function(photo, index) {
+    return '<button type="button" class="worksheet-photo" onclick="openWorksheetPhotoLightbox(this.querySelector(&quot;img&quot;).src)">' +
+      '<img src="' + escapePortfolioText(photo.dataUrl) + '" alt="나노시트 원본 ' + (index + 1) + '페이지">' +
+      '<span>' + (index + 1) + '페이지 · 눌러서 크게 보기</span></button>';
+  }).join('');
 }
 
 // 생각 담기 UI 동기화 함수

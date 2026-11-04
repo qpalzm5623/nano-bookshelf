@@ -1825,13 +1825,12 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
-  const tabs = ["franchise", "members", "operations", "ranking", "contents", "literacy", "dispatch", "payment"];
-  
-  tabs.forEach(t => {
-    const navBtn = document.getElementById(`nav-master-${t}`);
-    const tabSection = document.getElementById(`tab-master-${t}`);
-    if (navBtn) navBtn.classList.remove("active");
-    if (tabSection) tabSection.style.display = "none";
+  // 실제 메뉴 전체를 초기화해 새 메뉴가 추가되어도 화면과 선택 표시가 남지 않도록 한다.
+  document.querySelectorAll('.nav-item-btn[id^="nav-master-"]').forEach(navBtn => {
+    navBtn.classList.remove("active");
+  });
+  document.querySelectorAll('.master-tab-view').forEach(tabSection => {
+    tabSection.style.display = "none";
   });
 
   const activeBtn = document.getElementById(`nav-master-${tabName}`);

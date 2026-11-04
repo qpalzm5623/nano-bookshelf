@@ -43,7 +43,7 @@
 
   // HTML에서 master_preview.js 하나만 단독으로 호출했을 때도 8개 모듈이 자동 로드되도록 지원
   if (!alreadyLoaded && typeof document !== "undefined" && document.write) {
-    var version = "20261030_v4";
+    var version = "20261104_tabs";
     MODULE_FILES.forEach(function(file) {
       document.write('<script src="' + file + '?v=' + version + '"><\/script>');
     });

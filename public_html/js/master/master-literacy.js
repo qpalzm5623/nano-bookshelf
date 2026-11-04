@@ -140,10 +140,10 @@
     var isFullCoverage = (b0Sel >= 30 && b1Sel >= 30 && b2Sel >= 30);
     if (badgeEl) {
       if (isFullCoverage) {
-        badgeEl.className = 'badge badge-success px-2 py-1';
+        badgeEl.className = 'badge-soft badge-soft-success';
         badgeEl.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i>출제 규정 충족 (' + b0Sel + ' / ' + b1Sel + ' / ' + b2Sel + ')';
       } else {
-        badgeEl.className = 'badge badge-warning text-dark px-2 py-1';
+        badgeEl.className = 'badge-soft badge-soft-warn';
         badgeEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>출제 문항 부족 경고 (' + b0Sel + ' / ' + b1Sel + ' / ' + b2Sel + ')';
       }
     }
@@ -215,13 +215,13 @@
     paged.forEach(function (item, idx) {
       var rowNum = start + idx + 1;
       var bandBadge = '';
-      if (Number(item.band) === 0) bandBadge = '<span class="badge badge-light border text-success font-weight-bold">Band 0 (초1~2)</span>';
-      else if (Number(item.band) === 1) bandBadge = '<span class="badge badge-light border text-primary font-weight-bold">Band 1 (초3~4)</span>';
-      else bandBadge = '<span class="badge badge-light border text-danger font-weight-bold">Band 2 (초5~6)</span>';
+      if (Number(item.band) === 0) bandBadge = '<span class="badge-soft badge-soft-neutral">Band 0 (초1~2)</span>';
+      else if (Number(item.band) === 1) bandBadge = '<span class="badge-soft badge-soft-neutral">Band 1 (초3~4)</span>';
+      else bandBadge = '<span class="badge-soft badge-soft-neutral">Band 2 (초5~6)</span>';
 
       var statusBadge = (item.status === '선정')
-        ? '<span class="badge badge-success">출제 선정</span>'
-        : '<span class="badge badge-secondary">예비 문항</span>';
+        ? '<span class="badge-soft badge-soft-success">출제 선정</span>'
+        : '<span class="badge-soft badge-soft-neutral">예비 문항</span>';
 
       var previewText = escapeHtml(item.question || '');
       var passageSnippet = item.passage ? '<div class="text-muted small mt-1" style="font-size: 11.5px; line-height: 1.4; max-height: 38px; overflow: hidden; text-overflow: ellipsis; white-space: normal;"><i class="fa-solid fa-quote-left mr-1 opacity-50"></i>' + escapeHtml(item.passage.slice(0, 90)) + (item.passage.length > 90 ? '...' : '') + '</div>' : '';
@@ -235,22 +235,22 @@
 
       html += '<tr style="font-size: 12.5px;">' +
         '<td class="text-center text-muted">' + rowNum + '</td>' +
-        '<td class="text-center font-weight-bold font-monospace" style="color: #1f8a7e;">' + escapeHtml(item.id) + '</td>' +
+        '<td class="text-center font-weight-bold font-monospace" style="color: var(--text-main);">' + escapeHtml(item.id) + '</td>' +
         '<td class="text-center">' + bandBadge + '</td>' +
-        '<td class="text-center"><span class="badge badge-light border">' + escapeHtml(item.area) + '</span></td>' +
+        '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + escapeHtml(item.area) + '</span></td>' +
         '<td class="text-center">' + statusBadge + '</td>' +
         '<td>' +
           '<div style="font-weight: 600; color: #2c2520;">' + previewText + '</div>' +
           passageSnippet +
         '</td>' +
-        '<td class="text-center font-weight-bold" style="color: #e65100;">' + answerDisplay + '</td>' +
+        '<td class="text-center font-weight-bold" style="color: var(--text-main);">' + answerDisplay + '</td>' +
         '<td class="text-center">' + imageIcon + '</td>' +
         '<td class="text-center">' +
           '<div class="d-inline-flex gap-1">' +
-            '<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 11.5px;" onclick="openMasterLiteracyModal(\'' + escapeHtml(item.id) + '\')">' +
+            '<button type="button" class="btn btn-sm btn-beige-secondary" style="font-size: 12px; border-radius: 8px; padding: 5px 10px;" onclick="openMasterLiteracyModal(\'' + escapeHtml(item.id) + '\')">' +
               '<i class="fa-solid fa-pen mr-1"></i>수정' +
             '</button>' +
-            '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 ml-1" style="font-size: 11.5px;" onclick="deleteMasterLiteracyItem(\'' + escapeHtml(item.id) + '\')">' +
+            '<button type="button" class="btn btn-sm btn-outline-danger ml-1" aria-label="문항 삭제" title="문항 삭제" style="font-size: 12px; border-radius: 8px; padding: 5px 9px;" onclick="deleteMasterLiteracyItem(\'' + escapeHtml(item.id) + '\')">' +
               '<i class="fa-solid fa-trash"></i>' +
             '</button>' +
           '</div>' +
@@ -292,7 +292,7 @@
 
     for (var p = startP; p <= endP; p++) {
       if (p === page) {
-        html += '<button type="button" class="btn btn-sm btn-primary" style="background:#1f8a7e; border-color:#1f8a7e; font-size: 11.5px; font-weight:700; padding: 3px 9px;">' + p + '</button>';
+        html += '<button type="button" class="btn btn-sm btn-primary" style="background:var(--btn-primary); border-color:var(--btn-primary); font-size: 11.5px; font-weight:700; padding: 3px 9px;">' + p + '</button>';
       } else {
         html += '<button type="button" class="btn btn-sm btn-light border" onclick="renderMasterLiteracyBank(' + p + ')" style="font-size: 11.5px; padding: 3px 9px;">' + p + '</button>';
       }
@@ -342,7 +342,7 @@
         alert('해당 문항을 찾을 수 없습니다.');
         return;
       }
-      if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2" style="color: #1f8a7e;"></i>문항 수정 <span class="badge badge-light border ml-1">' + escapeHtml(item.id) + '</span>';
+      if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2" style="color: var(--text-main);"></i>문항 수정 <span class="badge badge-light border ml-1">' + escapeHtml(item.id) + '</span>';
       if (formId) formId.value = item.id;
       if (fBand) fBand.value = String(item.band);
       if (fArea) fArea.value = item.area;
@@ -367,7 +367,7 @@
       if (ansRadio) ansRadio.checked = true;
 
     } else {
-      if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-plus-circle mr-2" style="color: #1f8a7e;"></i>신규 문항 등록';
+      if (modalTitle) modalTitle.innerHTML = '<i class="fa-solid fa-plus-circle mr-2" style="color: var(--text-main);"></i>신규 문항 등록';
       if (formId) formId.value = '';
       if (fBand) fBand.value = '1';
       if (fArea) fArea.value = '어휘이해력';

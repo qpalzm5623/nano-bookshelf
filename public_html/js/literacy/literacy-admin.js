@@ -32,7 +32,7 @@
       '<div><button type="button" class="btn btn-beige-primary font-weight-bold" onclick="NanoLiteracyAdmin.openAssign()"><i class="fa-solid fa-paper-plane mr-1"></i>테스트 부여</button></div></div>' +
       '<div class="row mb-4" id="litStats"></div>' +
       '<div class="simple-card p-3 mb-4"><div class="d-flex flex-wrap align-items-end" style="gap:14px">' +
-      '<div style="width:150px"><label class="lit-lbl">클래스</label><select id="litClassFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()"><option value="ALL">전체 클래스</option></select></div>' +
+      '<div style="width:150px"><label class="lit-lbl">학급</label><select id="litClassFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()"><option value="ALL">전체 학급</option></select></div>' +
       '<div style="width:140px"><label class="lit-lbl">상태</label><select id="litStatusFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()">' +
       '<option value="ALL">전체 상태</option><option value="PENDING">대기</option><option value="IN_PROGRESS">진행 중</option><option value="COMPLETED">완료</option><option value="CANCELLED">취소</option></select></div>' +
       '<div style="flex:1;min-width:200px"><label class="lit-lbl">원생 검색</label><input id="litSearch" class="form-control lit-ctl" placeholder="원생 이름, 아이디 검색..." oninput="NanoLiteracyAdmin.render()" autocomplete="off"></div>' +
@@ -44,23 +44,32 @@
       '.lit-pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}' +
       '.lit-act{border-radius:6px;font-size:11.5px;padding:4px 9px;margin:0 2px;white-space:nowrap}' +
       '#litReportModal .modal-dialog{max-width:900px}#litReportBody{background:#efece4;padding:8px 0 24px;max-height:68vh;overflow:auto}' +
-      '.lit-pick-row{display:grid;grid-template-columns:28px 1fr 150px 150px;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border-light);font-size:13px}' +
-      '.lit-pick-row.disabled{opacity:.5}</style>';
+      '#litAssignModal .modal-dialog{max-width:1040px}#litAssignModal .modal-content{border:1px solid var(--border-medium);border-radius:18px;overflow:hidden}' +
+      '#litAssignModal .modal-header,#litAssignModal .modal-footer{background:#fbf9f5;padding:18px 24px;border-color:var(--border-light)}#litAssignModal .modal-title{font-size:18px;color:var(--text-main)}' +
+      '#litAssignModal .modal-body{padding:24px;background:#fff}#litAssignModal .lit-ctl{height:40px;border-radius:10px;background:#fdfcf9}' +
+      '.lit-pick-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px;background:#faf8f5;border:1px solid var(--border-light);border-radius:12px;margin:16px 0}' +
+      '.lit-pick-table{overflow:auto;max-height:380px;border:1px solid var(--border-light);border-radius:12px}.lit-pick-row{display:grid;grid-template-columns:24px 120px minmax(200px,1fr) 150px 200px;min-width:880px;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border-light);font-size:13px}' +
+      '.lit-pick-head{position:sticky;top:0;z-index:1;background:#fbf9f5;font-size:12px;font-weight:700;color:var(--text-muted)}.lit-pick-row:last-child{border-bottom:0}.lit-pick-row:not(.lit-pick-head):hover{background:#fdfbf7}' +
+      '.lit-pick-row select{height:38px;border-radius:10px;border-color:var(--border-medium);background:#fdfcf9;font-size:12.5px}.lit-pick-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--btn-primary)}' +
+      '.lit-pick-class{overflow-wrap:anywhere;color:var(--text-muted)}.lit-pick-name{overflow-wrap:anywhere}.lit-pick-name small{display:block;margin-top:4px}.lit-pick-id{font-size:12px;color:var(--text-muted);font-weight:400}' +
+      '.lit-pick-row.disabled{opacity:.6}@media(max-width:575.98px){#litAssignModal .modal-body{padding:16px}#litAssignModal .modal-header,#litAssignModal .modal-footer{padding:16px}}</style>';
   }
 
   function ensureModals() {
     if (document.getElementById('litAssignModal')) return;
     document.body.insertAdjacentHTML('beforeend',
       // 테스트 부여 모달
-      '<div class="modal fade" id="litAssignModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content" style="border-radius:14px">' +
-      '<div class="modal-header"><h5 class="modal-title font-weight-bold"><i class="fa-solid fa-paper-plane mr-2"></i>문해력 진단 테스트 부여</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>' +
+      '<div class="modal fade" id="litAssignModal" tabindex="-1" aria-labelledby="litAssignTitle"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">' +
+      '<div class="modal-header"><h5 class="modal-title font-weight-bold" id="litAssignTitle"><i class="fa-solid fa-paper-plane mr-2"></i>문해력 진단 테스트 부여</h5><button type="button" class="close" data-dismiss="modal" aria-label="닫기">&times;</button></div>' +
       '<div class="modal-body"><div class="text-muted mb-2" style="font-size:12.5px">검사지(밴드)는 등록된 학년으로 자동 추천됩니다. 필요하면 학생별로 한 단계 위/아래 검사지로 바꿀 수 있어요.</div>' +
-      '<div class="d-flex flex-wrap mb-2" style="gap:8px"><input id="litPickSearch" class="form-control lit-ctl" style="max-width:200px" placeholder="이름·아이디 검색" oninput="NanoLiteracyAdmin.renderPick()">' +
-      '<select id="litPickClass" class="form-control lit-ctl" style="max-width:160px" onchange="NanoLiteracyAdmin.renderPick()"><option value="ALL">전체 클래스</option></select>' +
+      '<div class="lit-pick-toolbar"><select id="litPickClass" class="form-control lit-ctl" style="max-width:160px" aria-label="학급 필터" onchange="NanoLiteracyAdmin.renderPick()"><option value="ALL">전체 학급</option></select>' +
+      '<input id="litPickSearch" class="form-control lit-ctl" style="flex:1;min-width:180px" aria-label="원생 이름 또는 아이디 검색" placeholder="이름·아이디 검색" onkeydown="if(event.key===\'Enter\'){event.preventDefault();NanoLiteracyAdmin.renderPick();}">' +
+      '<button type="button" class="btn btn-beige-primary" onclick="NanoLiteracyAdmin.renderPick()" style="height:40px;white-space:nowrap"><i class="fa-solid fa-magnifying-glass mr-1"></i>검색</button></div>' +
+      '<div class="d-flex align-items-center mb-3" style="gap:12px">' +
       '<label class="mb-0 d-flex align-items-center" style="font-size:12.5px;gap:5px"><input type="checkbox" id="litPickAll" onchange="NanoLiteracyAdmin.pickAll(this.checked)"> 현재 목록 전체 선택</label>' +
       '<span class="ml-auto text-muted align-self-center" id="litPickCount" style="font-size:12.5px"></span></div>' +
-      '<div class="lit-pick-row font-weight-bold" style="background:var(--bg-subtle)"><span></span><span>원생</span><span>학년(진단 기준)</span><span>검사지</span></div>' +
-      '<div id="litPickList" style="max-height:340px;overflow:auto;border:1px solid var(--border-light);border-top:0"></div>' +
+      '<div class="lit-pick-table"><div class="lit-pick-row lit-pick-head"><span></span><span>학급</span><span>원생명 (아이디)</span><span>학년 · 진단 기준</span><span>검사지</span></div>' +
+      '<div id="litPickList"></div></div>' +
       '<div class="row mt-3"><div class="col-sm-4"><label class="lit-lbl">마감일(선택)</label><input type="date" id="litDue" class="form-control lit-ctl"></div>' +
       '<div class="col-sm-8"><label class="lit-lbl">메모(선택)</label><input id="litMemo" maxlength="200" class="form-control lit-ctl" placeholder="예: 6개월 정기 진단"></div></div></div>' +
       '<div class="modal-footer"><button type="button" class="btn btn-beige-secondary" data-dismiss="modal">닫기</button><button type="button" class="btn btn-beige-primary font-weight-bold" id="litAssignBtn" onclick="NanoLiteracyAdmin.submitAssign()">테스트 부여</button></div></div></div></div>' +
@@ -99,7 +108,7 @@
   function syncClassFilter() {
     var sel = document.getElementById('litClassFilter'), cur = sel.value;
     var names = Array.from(new Set(state.items.map(function (a) { return a.classGroup; }).filter(Boolean))).sort();
-    sel.innerHTML = '<option value="ALL">전체 클래스</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    sel.innerHTML = '<option value="ALL">전체 학급</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
     sel.value = names.indexOf(cur) >= 0 ? cur : 'ALL';
   }
   function filtered() {
@@ -163,7 +172,7 @@
     if (memberId && pick[memberId]) { pick[memberId].checked = true; if (band !== undefined && band !== null) pick[memberId].band = Number(band); }
     var sel = document.getElementById('litPickClass');
     var names = Array.from(new Set(state.students.map(function (s) { return s.classGroup; }))).sort();
-    sel.innerHTML = '<option value="ALL">전체 클래스</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    sel.innerHTML = '<option value="ALL">전체 학급</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
     document.getElementById('litPickSearch').value = ''; document.getElementById('litMemo').value = ''; document.getElementById('litDue').value = '';
     document.getElementById('litPickAll').checked = false;
     renderPick();
@@ -178,14 +187,15 @@
     if (!list.length) box.innerHTML = '<div class="text-center text-muted py-4" style="font-size:13px">조건에 맞는 원생이 없습니다.</div>';
     else box.innerHTML = list.map(function (s) {
       var p = pick[s.id];
-      var gradeSel = '<select class="form-control form-control-sm" ' + (s.hasActive ? 'disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'gradeStep\',this.value)">' +
+      var gradeSel = '<select class="form-control form-control-sm" aria-label="' + esc(s.name) + ' 진단 기준 학년" ' + (s.hasActive ? 'disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'gradeStep\',this.value)">' +
         (p.gradeStep === null ? '<option value="">학년 선택</option>' : '') +
         [0, 1, 2, 3, 4].map(function (g) { return '<option value="' + g + '"' + (p.gradeStep === g ? ' selected' : '') + '>' + L.GRADE_LABEL[g] + '</option>'; }).join('') + '</select>';
-      var bandSel = '<select class="form-control form-control-sm" ' + (s.hasActive ? 'disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'band\',this.value)">' +
+      var bandSel = '<select class="form-control form-control-sm" aria-label="' + esc(s.name) + ' 검사지" ' + (s.hasActive ? 'disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'band\',this.value)">' +
         (p.band === null ? '<option value="">밴드 선택</option>' : '') +
         [0, 1, 2].map(function (b) { return '<option value="' + b + '"' + (p.band === b ? ' selected' : '') + '>' + L.BAND_LABEL[b] + '</option>'; }).join('') + '</select>';
-      return '<div class="lit-pick-row' + (s.hasActive ? ' disabled' : '') + '"><input type="checkbox" ' + (p.checked ? 'checked' : '') + (s.hasActive ? ' disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'checked\',this.checked)">' +
-        '<span><b>' + esc(s.name) + '</b> <small class="text-muted">' + esc(s.classGroup) + ' · ' + esc(s.grade || '학년 미등록') + '</small>' + (s.hasActive ? ' <span class="lit-pill" style="color:#b45309;background:#fef3c7">진행 대기 중</span>' : '') + '</span>' + gradeSel + bandSel + '</div>';
+      return '<div class="lit-pick-row' + (s.hasActive ? ' disabled' : '') + '"><input type="checkbox" aria-label="' + esc(s.name) + ' 선택" ' + (p.checked ? 'checked' : '') + (s.hasActive ? ' disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'checked\',this.checked)">' +
+        '<span class="lit-pick-class">' + esc(s.classGroup || '미지정') + '</span>' +
+        '<span class="lit-pick-name"><b>' + esc(s.name) + '</b> <span class="lit-pick-id">(' + esc(s.username || '아이디 없음') + ')</span><small class="text-muted">' + esc(s.grade || '학년 미등록') + '</small>' + (s.hasActive ? ' <span class="lit-pill" style="color:#b45309;background:#fef3c7">이미 배정됨</span>' : '') + '</span>' + gradeSel + bandSel + '</div>';
     }).join('');
     updatePickCount();
   }
