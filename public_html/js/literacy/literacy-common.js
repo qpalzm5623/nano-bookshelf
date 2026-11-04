@@ -161,21 +161,21 @@
 
   /* ---------- SVG ---------- */
   function rulerSvg(level, grade) {
-    var r = EXPECTED_RANGE[grade], x = function (lv) { return 52 + 66 * (lv - 1); };
-    var rectX = x(r[0]) - 24, rectW = x(r[1]) - x(r[0]) + 48, s = '';
+    var r = EXPECTED_RANGE[grade], x = function (lv) { return 45 + 67 * (lv - 1); };
+    var rectX = x(r[0]) - 20, rectW = x(r[1]) - x(r[0]) + 40, s = '';
     for (var i = 0; i < 10; i++) {
-      s += '<text x="' + x(i + 1) + '" y="50" fill="' + (i < level ? '#1F8A7E' : '#D8D2C4') + '" font-size="28" text-anchor="middle">★</text>';
+      s += '<text x="' + x(i + 1) + '" y="42" fill="' + (i < level ? '#1F8A7E' : '#D1D5DB') + '" font-size="24" text-anchor="middle">★</text>';
     }
     var nums = '';
-    for (var j = 0; j < 10; j++) nums += '<text x="' + x(j + 1) + '" y="72" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="middle">' + (j + 1) + '</text>';
-    return '<svg viewBox="0 0 700 82" role="img" aria-label="' + esc(BRAND.levelName + ' ' + level) + '">' +
-      '<rect x="' + rectX + '" y="22" width="' + rectW + '" height="36" rx="8" fill="#FFF7ED" stroke="#FDBA74" stroke-width="1.2"/>' +
-      '<text x="' + (rectX + rectW / 2) + '" y="16" font-size="11" font-weight="700" fill="#EA580C" text-anchor="middle">' + gradeName(grade) + ' 기대 구간</text>' +
-      s + nums + '<circle cx="' + x(level) + '" cy="40" r="22" fill="none" stroke="#F58220" stroke-width="2.5"/></svg>';
+    for (var j = 0; j < 10; j++) nums += '<text x="' + x(j + 1) + '" y="59" font-size="10.5" font-weight="600" fill="#94A3B8" text-anchor="middle">' + (j + 1) + '</text>';
+    return '<svg viewBox="0 0 680 66" role="img" aria-label="' + esc(BRAND.levelName + ' ' + level) + '">' +
+      '<rect x="' + rectX + '" y="18" width="' + rectW + '" height="30" rx="6" fill="#F0FDFA" stroke="#5EEAD4" stroke-width="1.2"/>' +
+      '<text x="' + (rectX + rectW / 2) + '" y="13" font-size="10.5" font-weight="700" fill="#0D9488" text-anchor="middle">' + gradeName(grade) + ' 기대 구간</text>' +
+      s + nums + '<circle cx="' + x(level) + '" cy="34" r="18" fill="none" stroke="#EA580C" stroke-width="2.2"/></svg>';
   }
 
   function radarSvg(areas) {
-    var cx = 140, cy = 130, R = 85;
+    var cx = 135, cy = 115, R = 75;
     var angle = function (i) { return ((i * 72 - 90) * Math.PI) / 180; };
     var pt = function (i, r) { return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))]; };
     var ring = function (r) { return AREAS.map(function (_, i) { return pt(i, r).map(function (v) { return v.toFixed(1); }).join(','); }).join(' '); };
@@ -183,42 +183,42 @@
       var f = areas.filter(function (x) { return x.area === a; })[0];
       return pt(i, Math.max((f ? f.correct / f.total : 0) * R, 5));
     });
-    var labels = [{ x: 140, y: 28 }, { x: 248, y: 95, tool: 1 }, { x: 204, y: 222 }, { x: 76, y: 222 }, { x: 32, y: 95 }];
+    var labels = [{ x: 135, y: 22 }, { x: 236, y: 84, tool: 1 }, { x: 195, y: 198 }, { x: 75, y: 198 }, { x: 34, y: 84 }];
     var g = [R, R * 0.75, R * 0.5, R * 0.25].map(function (r) { return '<polygon points="' + ring(r) + '"/>'; }).join('') +
       AREAS.map(function (_, i) { var p = pt(i, R); return '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0] + '" y2="' + p[1] + '"/>'; }).join('');
-    return '<svg viewBox="0 0 280 250" role="img" aria-label="다섯 영역 레이더 차트"><g fill="none" stroke="#E2E8F0">' + g + '</g>' +
-      '<polygon points="' + data.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="rgba(31,138,126,.18)" stroke="#1F8A7E" stroke-width="2.5"/>' +
-      data.map(function (p, i) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === 1 ? 4.5 : 3.5) + '" fill="#fff" stroke="' + (i === 1 ? '#F58220' : '#1F8A7E') + '" stroke-width="' + (i === 1 ? 2.5 : 2) + '"/>'; }).join('') +
-      '<g font-size="12" font-weight="700" text-anchor="middle">' + AREAS.map(function (a, i) { return '<text x="' + labels[i].x + '" y="' + labels[i].y + '" fill="' + (labels[i].tool ? '#EA580C' : '#334155') + '">' + a + '</text>'; }).join('') + '</g></svg>';
+    return '<svg viewBox="0 0 270 215" role="img" aria-label="다섯 영역 레이더 차트"><g fill="none" stroke="#E2E8F0">' + g + '</g>' +
+      '<polygon points="' + data.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="rgba(31,138,126,.14)" stroke="#1F8A7E" stroke-width="2.2"/>' +
+      data.map(function (p, i) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === 1 ? 4 : 3) + '" fill="#fff" stroke="' + (i === 1 ? '#EA580C' : '#1F8A7E') + '" stroke-width="' + (i === 1 ? 2.2 : 1.8) + '"/>'; }).join('') +
+      '<g font-size="11.5" font-weight="700" text-anchor="middle">' + AREAS.map(function (a, i) { return '<text x="' + labels[i].x + '" y="' + labels[i].y + '" fill="' + (labels[i].tool ? '#EA580C' : '#334155') + '">' + a + '</text>'; }).join('') + '</g></svg>';
   }
 
   // 레벨 변화 꺾은선 (같은 학생 기록 2개 이상일 때). history: [{id, finishedAt, level}] 오래된 순
   function trendSvg(history, grade) {
     var shown = history.slice(-5), n = shown.length;
-    var x = function (i) { return n === 1 ? 375 : 110 + (i * 540) / (n - 1); };
-    var y = function (lv) { return 135 - ((lv - 1) * 105) / 9; };
+    var x = function (i) { return n === 1 ? 350 : 90 + (i * 520) / (n - 1); };
+    var y = function (lv) { return 95 - ((lv - 1) * 75) / 9; };
     var expected = EXPECTED_RANGE[grade][1];
-    var s = '<svg viewBox="0 0 700 150" role="img" aria-label="진단 회차별 ' + BRAND.levelName + ' 변화">';
-    s += '<g font-size="12" fill="#999" text-anchor="end">' + [9, 7, 5, 3].map(function (lv) { return '<text x="58" y="' + (y(lv) + 4) + '">★' + lv + '</text>'; }).join('') + '</g>';
-    s += '<g stroke="#EAE6DC">' + [9, 7, 5, 3].map(function (lv) { return '<line x1="70" y1="' + y(lv) + '" x2="680" y2="' + y(lv) + '"/>'; }).join('') + '</g>';
-    s += '<line x1="70" y1="' + y(expected) + '" x2="680" y2="' + y(expected) + '" stroke="#F58220" stroke-dasharray="5 5" stroke-width="1.5"/>';
-    s += '<text x="676" y="' + (y(expected) - 7) + '" font-size="11" fill="#DC6E10" text-anchor="end">지금 학년 기대</text>';
-    if (n > 1) s += '<polyline points="' + shown.map(function (r, i) { return x(i) + ',' + y(r.level); }).join(' ') + '" fill="none" stroke="#2A9D9C" stroke-width="3"/>';
-    s += '<g fill="#fff" stroke="#2A9D9C" stroke-width="3">' + shown.map(function (r, i) { return '<circle cx="' + x(i) + '" cy="' + y(r.level) + '" r="7"/>'; }).join('') + '</g>';
-    s += '<g font-size="12" fill="#666" text-anchor="middle">' + shown.map(function (r, i) {
-      return '<text x="' + x(i) + '" y="' + Math.min(y(r.level) + 24, 146) + '">' + (i + 1) + '회 · ' + fmtMonth(r.finishedAt) + ' · ★' + r.level + '</text>';
+    var s = '<svg viewBox="0 0 680 115" role="img" aria-label="진단 회차별 ' + BRAND.levelName + ' 변화">';
+    s += '<g font-size="11" fill="#94A3B8" text-anchor="end">' + [9, 7, 5, 3].map(function (lv) { return '<text x="50" y="' + (y(lv) + 4) + '">★' + lv + '</text>'; }).join('') + '</g>';
+    s += '<g stroke="#E2E8F0">' + [9, 7, 5, 3].map(function (lv) { return '<line x1="60" y1="' + y(lv) + '" x2="660" y2="' + y(lv) + '"/>'; }).join('') + '</g>';
+    s += '<line x1="60" y1="' + y(expected) + '" x2="660" y2="' + y(expected) + '" stroke="#EA580C" stroke-dasharray="4 4" stroke-width="1.2"/>';
+    s += '<text x="656" y="' + (y(expected) - 6) + '" font-size="10" font-weight="600" fill="#EA580C" text-anchor="end">지금 학년 기대</text>';
+    if (n > 1) s += '<polyline points="' + shown.map(function (r, i) { return x(i) + ',' + y(r.level); }).join(' ') + '" fill="none" stroke="#1F8A7E" stroke-width="2.5"/>';
+    s += '<g fill="#fff" stroke="#1F8A7E" stroke-width="2.5">' + shown.map(function (r, i) { return '<circle cx="' + x(i) + '" cy="' + y(r.level) + '" r="5"/>'; }).join('') + '</g>';
+    s += '<g font-size="11" font-weight="600" fill="#475569" text-anchor="middle">' + shown.map(function (r, i) {
+      return '<text x="' + x(i) + '" y="' + Math.min(y(r.level) + 18, 110) + '">' + (i + 1) + '회 · ' + fmtMonth(r.finishedAt) + ' · ★' + r.level + '</text>';
     }).join('') + '</g></svg>';
     return s;
   }
 
   /* ---------- 결과지 블록 ---------- */
   function areasBlock(a) {
-    var s = '<div class="areas"><div class="grouphead">📖 책이 키우는 영역 — <span>책을 읽으며 자연스럽게 자라는 힘이에요. ' + josa(BRAND.org, '은', '는') + ' 이 성장을 6개월마다 기록합니다.</span></div>';
+    var s = '<div class="areas"><div class="grouphead">📖 책이 키우는 영역 — <span>독서 활동을 통해 자연스럽게 자라는 영역입니다.</span></div>';
     a.bookAreas.forEach(function (x) {
       s += '<div class="area"><div><h3>' + x.area + '</h3></div><div class="desc">' + AREA_DESC[x.area] + '<span class="pcount">' + x.total + '문항 중 ' + x.correct + '개</span></div>' +
         '<span class="rpill ' + PILL_CLASS[x.judgement] + '">' + x.judgement + '</span></div>';
     });
-    s += '<div class="grouphead tool">✏️ 훈련으로 키우는 영역 — <span>책 읽기만으로는 늘지 않아, 따로 꾸준한 훈련이 필요한 영역이에요.</span></div>' +
+    s += '<div class="grouphead tool">✏️ 훈련으로 키우는 영역 — <span>책 읽기만으로는 늘지 않아 별도 학습 훈련이 필요한 영역입니다.</span></div>' +
       '<div class="area tool"><div><h3>학습도구어</h3></div><div class="desc">' + AREA_DESC['학습도구어'] + '<span class="pcount">' + a.toolArea.total + '문항 중 ' + a.toolArea.correct + '개</span></div>' +
       '<span class="rpill">' + a.toolArea.judgement + '</span></div></div>';
     return s;
@@ -248,7 +248,7 @@
       '<p><b>알아두세요</b> — 본 결과는 ' + total + '문항 선별용 간이 진단의 참고 자료로, 공인 검사를 대신하지 않습니다. 유창성(소리 내어 읽기)·쓰기는 수업 중 관찰로 보완합니다.</p></footer>';
   };
 
-  // 정기 진단용 결과지 (1쪽). history = 같은 학생 완료 기록(오래된 순)
+  // 정기 진단용 결과지 (A4 2장 규격). history = 같은 학생 완료 기록(오래된 순)
   function renderRegular(rec, history, opts) {
     var st = rec.student, res = rec.result;
     var round = Math.max(1, history.map(function (h) { return h.id; }).indexOf(rec.id) + 1);
@@ -259,47 +259,55 @@
     var next = kst(rec.finishedAt); next.setUTCMonth(next.getUTCMonth() + 6);
     var nextIso = new Date(+next - 9 * 3600000).toISOString();
 
-    var h = '<main class="page"><header><div><div class="brand">' + BRAND.org + '</div><h1>' + BRAND.reportTitle + '</h1></div>' +
-      '<div class="meta"><b>' + esc(st.name) + '</b> · ' + GRADE_LABEL[st.gradeStep] + '<br>진단일 ' + fmtDate(rec.finishedAt) + ' · ' + round + '회차<br>' + res.total + '문항 · 약 ' + minutesOf(rec) + '분</div></header>';
-    h += '<div class="about"><p><b>문해력이란?</b> 글을 읽고 뜻을 이해하고, 생각을 끌어내는 힘입니다. 이 진단은 문해력을 <b>어휘이해력·학습도구어·요약·비교·추론</b> 다섯 영역으로 나누어 봅니다 — 서울시교육청 문해력 진단 등 공적 검사의 표준 틀을 초등 눈높이로 다듬은 구성입니다.</p></div>';
-    h += '<section><h2><span class="no">1</span>우리 아이의 ' + BRAND.levelName + '</h2><div class="rcard"><div class="hero"><div class="level"><small>' + BRAND.levelFull + '</small><strong>★ ' + res.level + '</strong><span class="badge">' + badgeText(rec) + '</span></div>' +
-      '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(summaryText(rec, an.strengths, an.growths)) + '</p></div></div><div class="ruler">' + rulerSvg(res.level, st.gradeStep) + '</div>' + retakeBox(rec, opts) + '</div></section>';
-    h += '<section><h2><span class="no">2</span>다섯 영역, 어디가 강하고 어디를 키울까요?</h2><div class="rcard"><div class="profile"><div class="radar">' + radarSvg(res.areas) + '</div>' + areasBlock(an) + '</div>' +
-      '<div class="rnote">영역별 결과는 영역당 ' + an.toolArea.total + '문항에 기반한 경향 참고 자료입니다. 책이 키우는 영역은 강한 것부터 적었습니다.</div></div></section>';
-    // [인쇄 최적화] 1페이지(레벨 + 5대영역 레이더) 완료 후 깔끔하게 2페이지로 분할
-    h += '<div class="lit-page-break"></div>';
-    h += '<section><h2><span class="no">3</span>잘하는 것부터 볼게요</h2><div class="cols"><div class="col"><h3>👍 ' + esc(st.name) + '의 강점</h3><ul>' +
+    var h = '<main class="page">' +
+      // [A4 제1장: 나노 레벨 및 5대 영역 종합 진단]
+      '<div class="lit-sheet lit-sheet-1">' +
+      '<header><div><div class="brand">' + BRAND.org + '</div><h1>' + BRAND.reportTitle + '</h1></div>' +
+      '<div class="meta"><b>' + esc(st.name) + '</b> · ' + GRADE_LABEL[st.gradeStep] + '<br>진단일 ' + fmtDate(rec.finishedAt) + ' · ' + round + '회차<br>' + res.total + '문항 · 약 ' + minutesOf(rec) + '분</div></header>' +
+      '<div class="about"><p><b>문해력이란?</b> 글을 읽고 뜻을 이해하며 생각을 끌어내는 힘입니다. 이 진단은 문해력을 <b>어휘이해력·학습도구어·요약·비교·추론</b> 다섯 영역으로 나누어 진단하며, 서울시교육청 등 공적 표준 검사 틀을 초등 눈높이로 다듬은 체계적인 구성입니다.</p></div>' +
+      '<section class="sec-level"><h2><span class="no">1</span>우리 아이의 ' + BRAND.levelName + '</h2><div class="rcard"><div class="hero"><div class="level"><small>' + BRAND.levelFull + '</small><strong>★ ' + res.level + '</strong><span class="badge">' + badgeText(rec) + '</span></div>' +
+      '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(summaryText(rec, an.strengths, an.growths)) + '</p></div></div><div class="ruler">' + rulerSvg(res.level, st.gradeStep) + '</div>' + retakeBox(rec, opts) + '</div></section>' +
+      '<section class="sec-profile"><h2><span class="no">2</span>다섯 영역, 어디가 강하고 어디를 키울까요?</h2><div class="rcard"><div class="profile"><div class="radar">' + radarSvg(res.areas) + '</div>' + areasBlock(an) + '</div>' +
+      '<div class="rnote">영역별 결과는 영역당 ' + an.toolArea.total + '문항에 기반한 경향 참고 자료입니다. 책이 키우는 영역은 강한 순서로 표시됩니다.</div></div></section>' +
+      '</div>' + // end lit-sheet-1
+
+      // [A4 제2장: 강점/보완 처방, 가정 독서 팁, 레벨 성장 추이]
+      '<div class="lit-sheet lit-sheet-2">' +
+      '<section class="sec-strengths"><h2><span class="no">3</span>잘하는 것부터 볼게요</h2><div class="cols"><div class="col"><h3>👍 ' + esc(st.name) + '의 강점</h3><ul>' +
       an.strengths.slice(0, 3).map(function (a) { return '<li><b>' + a.area + '</b> — ' + (strong(a) ? STRENGTH[a.area] : '다섯 영역 가운데 가장 잘한 영역이에요. 여기서 얻는 자신감이 다른 영역을 키우는 힘이 돼요.') + '</li>'; }).join('') +
       '</ul></div><div class="col focus"><h3>🌱 함께 키울 부분</h3><ul>' +
       (strong(an.growths[0]) ? '<li>다섯 영역이 고르게 자라 있어요 — 지금보다 한 뼘 어려운 책으로 넓혀 가면 더 자랄 거예요.</li>'
         : an.growths.filter(function (a) { return !strong(a); }).slice(0, 3).map(function (a) { return '<li><b>' + a.area + '</b> — ' + GROWTH[a.area] + '</li>'; }).join('')) +
-      '</ul></div></div></section>';
-    h += '<section><h2><span class="no">4</span>이렇게 도와주세요</h2><div class="tips">' + tips.map(function (t) { return '<div class="tip"><b>' + t.title + '</b>' + t.body + '</div>'; }).join('') + '</div>' +
-      '<div class="classbox"><b>' + josa(BRAND.org, '은', '는') + '</b> 아이가 <b>직접 고른 책</b>을 읽는 것을 중요하게 생각합니다. 어휘·요약·추론 같은 힘이 책 속에서 자라는 모습을 다음 진단에서 함께 확인해 주세요. 학습도구어는 책 읽기와 별개로 <b>꾸준한 훈련</b>을 해야 실력이 늘 수 있으니, 이 점도 참고해 주세요.</div></section>';
-    h += '<section class="trend"><h2><span class="no">5</span>' + BRAND.levelName + ' 변화</h2><div class="rcard">' +
-      (history.length > 1 ? trendSvg(history, st.gradeStep) : '<p style="margin:0;font-size:13.5px">첫 진단이에요. 6개월마다 다시 진단하면 이 자리에 별이 쌓여요.</p>') +
-      '<div class="rnote">6개월마다 다시 진단하면 별이 쌓입니다. 다음 진단 추천일: <b>' + fmtDate(nextIso) + '</b></div></div></section>';
-    return h + FOOTER_REGULAR(res.total) + '</main>';
+      '</ul></div></div></section>' +
+      '<section class="sec-tips"><h2><span class="no">4</span>이렇게 도와주세요</h2><div class="tips">' + tips.map(function (t) { return '<div class="tip"><b>' + t.title + '</b>' + t.body + '</div>'; }).join('') + '</div>' +
+      '<div class="classbox"><b>' + josa(BRAND.org, '은', '는') + '</b> 아이가 <b>직접 고른 책</b>을 읽는 것을 중요하게 생각합니다. 어휘·요약·추론 같은 힘이 책 속에서 자라는 모습을 다음 진단에서 함께 확인해 주세요. 학습도구어는 책 읽기와 별개로 <b>꾸준한 훈련</b>을 해야 실력이 늘 수 있으니, 이 점도 참고해 주세요.</div></section>' +
+      '<section class="trend sec-trend"><h2><span class="no">5</span>' + BRAND.levelName + ' 변화</h2><div class="rcard">' +
+      (history.length > 1 ? trendSvg(history, st.gradeStep) : '<p style="margin:0;font-size:12.5px;color:#64748b">첫 진단이에요. 6개월마다 다시 진단하면 이 자리에 별이 쌓여요.</p>') +
+      '<div class="rnote">6개월마다 다시 진단하면 별이 쌓입니다. 다음 진단 추천일: <b>' + fmtDate(nextIso) + '</b></div></div></section>' +
+      FOOTER_REGULAR(res.total) +
+      '</div>' + // end lit-sheet-2
+      '</main>';
+    return h;
   }
 
   // 신규 상담용 결과지 (1장 요약 + 6개월 로드맵)
   function renderConsult(rec, opts) {
     var st = rec.student, res = rec.result, an = analyze(res.areas), range = EXPECTED_RANGE[st.gradeStep];
     var inRange = res.category === 'at' || res.category === 'above', name = esc(st.name);
-    var h = '<main class="page compact"><header><div><div class="brand">' + BRAND.org + '</div><h1>' + BRAND.consultTitle + '</h1></div>' +
+    var h = '<main class="page compact"><div class="lit-sheet lit-sheet-1"><header><div><div class="brand">' + BRAND.org + '</div><h1>' + BRAND.consultTitle + '</h1></div>' +
       '<div class="meta"><b>' + name + '</b> · ' + GRADE_LABEL[st.gradeStep] + '<br>진단일 ' + fmtDate(rec.finishedAt) + ' · 신규 상담<br>' + res.total + '문항 · 약 ' + minutesOf(rec) + '분</div></header>' +
-      '<div class="about"><p><b>이 진단은 평가가 아니라, 아이의 현재를 가늠하기 위한 자료입니다.</b> 지금 위치를 알면 아이가 즐겁게 읽을 수 있는 책의 범위가 보입니다.</p></div>';
-    h += '<section><h2><span class="no">1</span>지금 위치</h2><div class="rcard"><div class="hero"><div class="level"><small>' + BRAND.levelFull + '</small><strong>★ ' + res.level + '</strong><span class="badge">' + badgeText(rec) + '</span></div>' +
-      '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(consultText(rec, an.strengths, an.growths)) + '</p></div></div>' + retakeBox(rec, opts) + '</div></section>';
-    h += '<section><h2><span class="no">2</span>영역별 한눈에</h2>' + areasBlock(an) + '</section>';
-    h += '<section><h2><span class="no">3</span>앞으로의 6개월, 아이는 이렇게 자랍니다</h2><div class="roadmap">' +
+      '<div class="about"><p><b>이 진단은 평가가 아니라, 아이의 현재를 가늠하기 위한 자료입니다.</b> 지금 위치를 알면 아이가 즐겁게 읽을 수 있는 책의 범위가 보입니다.</p></div>' +
+      '<section><h2><span class="no">1</span>지금 위치</h2><div class="rcard"><div class="hero"><div class="level"><small>' + BRAND.levelFull + '</small><strong>★ ' + res.level + '</strong><span class="badge">' + badgeText(rec) + '</span></div>' +
+      '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(consultText(rec, an.strengths, an.growths)) + '</p></div></div>' + retakeBox(rec, opts) + '</div></section>' +
+      '<section><h2><span class="no">2</span>영역별 한눈에</h2>' + areasBlock(an) + '</section>' +
+      '<section><h2><span class="no">3</span>앞으로의 6개월, 아이는 이렇게 자랍니다</h2><div class="roadmap">' +
       '<div class="rstep now"><b>지금 · ★' + res.level + '</b>현재 위치를 확인했어요 — ' + josa(name, '이가', '가') + ' 즐겁게 읽을 수 있는 책의 범위가 보여요</div>' +
       '<div class="rstep"><b>다니는 동안 · 책 읽기</b>아이가 <b>직접 책을 고르고</b>, ' + josa(BRAND.org, '은', '는') + ' 수준에 맞는 범위를 안내해요. 읽는 즐거움이 어휘·요약·추론을 키워요</div>' +
       '<div class="rstep"><b>틈틈이 · 학습도구어</b>책 읽기만으로는 늘지 않는 공부의 언어예요. 책 읽기와 별개로 꾸준한 훈련이 필요해요</div>' +
       '<div class="rstep"><b>6개월 후 · 재진단</b>책이 키운 성장을 기록으로 확인해요 — ' + (inRange ? '다음 목표는 한 단계 위, 다음 학년 기대 구간이에요' : '목표는 기대 구간(★' + range[0] + '~' + range[1] + ') 진입 — 충분히 가능해요') + '</div></div>' +
-      '<div class="classbox"><b>' + josa(BRAND.org, '은', '는') + '</b> 아이가 <b>직접 고른 책</b>을 읽는 것을 중요하게 생각합니다. 다음 상담에서 ' + josa(name, '이가', '가') + ' 즐겁게 읽을 만한 책의 범위를 보여 드릴게요.</div></section>';
-    h += '<footer><p><b>이 진단의 근거</b> — 전 문항 2022 개정 교육과정 성취기준(7세는 누리과정) 기반 · 국립국어원 어휘 등급 자료 · 지문 전부 자체 창작 · 독서지도 전문가 전수 검수. <a href="' + BRAND.guideHref + '" target="_blank" rel="noreferrer">상세 안내문 보기</a></p>' +
-      '<p><b>알아두세요</b> — 본 결과는 선별용 간이 진단의 참고 자료이며 공인 검사를 대신하지 않습니다.</p></footer></main>';
+      '<div class="classbox"><b>' + josa(BRAND.org, '은', '는') + '</b> 아이가 <b>직접 고른 책</b>을 읽는 것을 중요하게 생각합니다. 다음 상담에서 ' + josa(name, '이가', '가') + ' 즐겁게 읽을 만한 책의 범위를 보여 드릴게요.</div></section>' +
+      '<footer><p><b>이 진단의 근거</b> — 전 문항 2022 개정 교육과정 성취기준(7세는 누리과정) 기반 · 국립국어원 어휘 등급 자료 · 지문 전부 자체 창작 · 독서지도 전문가 전수 검수. <a href="' + BRAND.guideHref + '" target="_blank" rel="noreferrer">상세 안내문 보기</a></p>' +
+      '<p><b>알아두세요</b> — 본 결과는 선별용 간이 진단의 참고 자료이며 공인 검사를 대신하지 않습니다.</p></footer></div></main>';
     return h;
   }
 
@@ -313,12 +321,22 @@
     var w = window.open('', '_blank');
     if (!w) { alert('팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 시도해 주세요.'); return; }
     var base = location.origin + '/';
+    var ts = Date.now();
     w.document.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><base href="' + base + '"><title>' + BRAND.reportTitle + '</title>' +
       '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">' +
-      '<link rel="stylesheet" href="css/literacy-report.css"></head><body style="margin:0;background:#fff">' + html + '</body></html>');
+      '<link rel="stylesheet" href="css/literacy-report.css?v=' + ts + '">' +
+      '<style>@page { size: A4 portrait; margin: 0; } body { margin: 0; padding: 0; background: #ffffff !important; }</style>' +
+      '</head><body style="margin:0;padding:0;background:#fff">' + html + '</body></html>');
     w.document.close();
-    // 스타일/폰트 로딩을 잠시 기다린 뒤 인쇄 대화상자를 연다
-    w.onload = function () { setTimeout(function () { w.focus(); w.print(); }, 400); };
+    var printed = false;
+    function triggerPrint() {
+      if (printed) return;
+      printed = true;
+      w.focus();
+      w.print();
+    }
+    w.onload = function () { setTimeout(triggerPrint, 350); };
+    setTimeout(triggerPrint, 800);
   }
 
   global.NanoLiteracy = {

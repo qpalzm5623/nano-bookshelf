@@ -37,6 +37,8 @@ function logView(attempt: any, book: any, studentView = false) {
     score: attempt.score, quizResults: studentView && attempt.score < 60 ? [] : details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
+    worksheetAiResult: details.worksheetAiResult || null,
+    worksheetPhotos: Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [],
     comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
 }
 export default async function handler(req: any, res: any) {
@@ -152,7 +154,7 @@ export default async function handler(req: any, res: any) {
       const previous: any = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
       if ((previous.reviewRevision || '') !== (body.reviewRevision || '')) return res.status(409).json({ error: '다른 선생님이 수정한 내용이 있습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.' });
       const reviewRevision = randomUUID();
-      const answers = { ...previous, comment: body.comment, reviewed: body.reviewed, sheet: body.sheet, thoughtHidden: body.thoughtHidden, reviewRevision };
+      const answers = { ...previous, comment: body.comment, reviewed: body.reviewed, sheet: body.sheet, thoughtHidden: body.thoughtHidden, worksheetAiResult: body.worksheetAiResult !== undefined ? body.worksheetAiResult : (previous.worksheetAiResult || null), worksheetPhotos: Array.isArray(body.worksheetPhotos) ? body.worksheetPhotos : (previous.worksheetPhotos || []), reviewRevision };
       const saved = await prisma.quizAttempt.updateMany({ where: { id: attempt.id, answers: { equals: attempt.answers as any } }, data: { answers } });
       if (saved.count !== 1) return res.status(409).json({ error: '첨삭 내용이 변경되었습니다. 새로고침 후 다시 저장해 주세요.' });
       return res.status(200).json({ reviewRevision });

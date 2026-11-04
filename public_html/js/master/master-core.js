@@ -1,3 +1,26 @@
+
+// [새로고침 시 머무르던 탭 유지] URL 해시 또는 세션 스토리지에서 활성 탭 복원
+function restoreMasterActiveTab() {
+  const validTabs = ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
+  const hash = (window.location.hash || '').replace('#', '').trim();
+  let saved = '';
+  try { saved = sessionStorage.getItem('nano_master_active_tab') || ''; } catch(e) {}
+  const target = (validTabs.includes(hash)) ? hash : (validTabs.includes(saved) ? saved : 'franchise');
+  if (target && target !== 'franchise') {
+    switchMasterTab(target);
+  }
+}
+window.addEventListener('hashchange', function() {
+  const validTabs = ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
+  const hash = (window.location.hash || '').replace('#', '').trim();
+  if (validTabs.includes(hash)) {
+    switchMasterTab(hash);
+  }
+});
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(restoreMasterActiveTab, 50);
+});
+
 /**
  * [Nano BookShelf B2B Master] Core Module
  * - Global State & Storage Key
@@ -1825,6 +1848,12 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
+  try {
+    sessionStorage.setItem('nano_master_active_tab', tabName);
+    if (window.location.hash !== '#' + tabName) {
+      history.replaceState(null, '', '#' + tabName);
+    }
+  } catch(e) {}
   // 실제 메뉴 전체를 초기화해 새 메뉴가 추가되어도 화면과 선택 표시가 남지 않도록 한다.
   document.querySelectorAll('.nav-item-btn[id^="nav-master-"]').forEach(navBtn => {
     navBtn.classList.remove("active");

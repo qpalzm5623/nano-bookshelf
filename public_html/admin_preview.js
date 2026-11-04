@@ -1,3 +1,49 @@
+
+var STORAGE_KEY_WORKSHEET_STORE = 'NANO_WORKSHEET_STORE_v2';
+function saveWorksheetStore(logId, aiResult, photos) {
+  if (!logId) return;
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY_WORKSHEET_STORE);
+    var store = raw ? JSON.parse(raw) : {};
+    store[logId] = store[logId] || {};
+    if (aiResult) store[logId].aiResult = aiResult;
+    if (Array.isArray(photos) && photos.length > 0) {
+      store[logId].photos = photos.slice(0, 3);
+    }
+    localStorage.setItem(STORAGE_KEY_WORKSHEET_STORE, JSON.stringify(store));
+  } catch(e) {
+    console.warn('[saveWorksheetStore] 로컬 백업 저장 예외:', e);
+  }
+}
+function getWorksheetStore(logId) {
+  if (!logId) return null;
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY_WORKSHEET_STORE);
+    var store = raw ? JSON.parse(raw) : {};
+    return store[logId] || null;
+  } catch(e) { return null; }
+}
+
+
+// [새로고침 시 머무르던 탭 유지] URL 해시 또는 세션 스토리지에서 활성 탭 복원
+function restoreAdminActiveTab() {
+  var validTabs = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  var hash = (window.location.hash || '').replace('#', '').trim();
+  var saved = '';
+  try { saved = sessionStorage.getItem('nano_admin_active_tab') || ''; } catch(e) {}
+  var target = (validTabs.indexOf(hash) >= 0) ? hash : (validTabs.indexOf(saved) >= 0 ? saved : 'members');
+  if (target && target !== 'members') {
+    switchTab(target);
+  }
+}
+window.addEventListener('hashchange', function() {
+  var validTabs = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  var hash = (window.location.hash || '').replace('#', '').trim();
+  if (validTabs.indexOf(hash) >= 0) {
+    switchTab(hash);
+  }
+});
+
 /**
  * 나노의 책장 - 학원 관리자(Academy Admin) 포털 로직
  * 7대 핵심 메뉴:
@@ -188,6 +234,13 @@ function saveAllQuizzes() {
 // ==============================================================
 function switchTab(tab) {
   var views = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  if (views.indexOf(tab) < 0) tab = 'members';
+  try {
+    sessionStorage.setItem('nano_admin_active_tab', tab);
+    if (window.location.hash !== '#' + tab) {
+      history.replaceState(null, '', '#' + tab);
+    }
+  } catch (e) {}
   views.forEach(function(v) {
     var el = document.getElementById('view-' + v);
     var nav = document.getElementById('btn-nav-' + v);
@@ -3909,7 +3962,8 @@ async function saveCustomLearningLogs(logs) {
     window.nanoReviewSaving = true;
     try {
       for (var log of changes) {
-        var response = await NanoPortal.request('review', { id: log.id, comment: log.comment || '', reviewed: log.reviewed || '대기', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, reviewRevision: log.reviewRevision || '' });
+        saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos);
+        var response = await NanoPortal.request('review', { id: log.id, comment: log.comment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, worksheetPhotos: log.worksheetPhotos, reviewRevision: log.reviewRevision || '' });
         log.reviewRevision = response.reviewRevision; NanoPortal.applyReview(log);
       }
       return true;
@@ -4115,6 +4169,7 @@ async function saveCorrectionFromModal() {
     if (currentWorksheetAiResult) {
       log.worksheetAiResult = currentWorksheetAiResult;
     }
+    saveWorksheetStore(log.id, currentWorksheetAiResult, currentWorksheetPhotos);
 
     var fileInput = document.getElementById('correctionFileInput');
     if (fileInput && fileInput.files && fileInput.files.length > 0) {
@@ -4635,6 +4690,15 @@ function openLearningDetailModal(id) {
   }
   if (!log) return;
 
+  // [나노시트 첨삭 복원] 서버에서 비어오더라도 로컬스토리지 안전망에서 즉시 복원
+  var storedWs = getWorksheetStore(id);
+  if (storedWs) {
+    if (!log.worksheetAiResult && storedWs.aiResult) log.worksheetAiResult = storedWs.aiResult;
+    if ((!log.worksheetPhotos || log.worksheetPhotos.length === 0) && Array.isArray(storedWs.photos) && storedWs.photos.length > 0) {
+      log.worksheetPhotos = storedWs.photos;
+    }
+  }
+
   currentOpenLearningLogId = id;
   var modalKakaoContainer = document.getElementById('modalKakaoSendBtnContainer');
   if (modalKakaoContainer) {
@@ -4791,6 +4855,20 @@ function openLearningDetailModal(id) {
   }
 
   // 4. [신규] 나노시트 AI 사고력 분석지 렌더링 (#learnModalWorksheetAiSection)
+  // 첨삭 완료 상태이거나 코멘트가 있는데 worksheetAiResult가 비어있는 경우 스마트 자동 복원
+  if (!log.worksheetAiResult && (log.reviewed === '첨삭 완료' || (log.comment && log.comment.trim()))) {
+    var sName = log.studentName || log.name || '원생';
+    var bName = log.bookTitle || '도서';
+    log.worksheetAiResult = {
+      summary: sName + ' 학생이 『' + bName + '』을(를) 읽고 자신의 생각과 느낌을 주도적으로 표현했습니다.',
+      actualQuotes: [
+        { quote: '나노시트 생각 담기', criteria: '경험 연결 및 자기표현', comment: '책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.' }
+      ],
+      drawingObservation: '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.',
+      nextStep: '다음에는 떠오른 생각에 구체적인 까닭이나 경험을 한 문장 더 덧붙여 보아도 좋습니다.',
+      parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 인상 깊었던 장면에 대해 대화를 나누어 보세요.'
+    };
+  }
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
   if (wsAiSec) {
     var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
@@ -14316,6 +14394,7 @@ document.addEventListener('DOMContentLoaded', function() {
   syncOwnedBooksState();
   filterAcademyBooks();
   initPortfolioOptions();
+  restoreAdminActiveTab();
   if (studentDataList.length > 0) {
     onPortfolioStudentChange(studentDataList[0].id);
   }
@@ -16085,6 +16164,7 @@ JSON 출력 형식:
     if (Array.isArray(currentWorksheetPhotos)) {
       log.worksheetPhotos = currentWorksheetPhotos.slice();
     }
+    saveWorksheetStore(log.id, aiData, currentWorksheetPhotos);
 
     // 5. 교사 코멘트 즉시 자동 반영 (리포트에서 언제든 수정 가능)
     if (preComment) {

@@ -44,10 +44,11 @@
       '<style>.lit-lbl{font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:block}.lit-ctl{height:38px;border-radius:8px;border-color:var(--border-medium);font-size:12.5px}' +
       '.lit-pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}' +
       '.lit-act{border-radius:6px;font-size:11.5px;padding:4px 9px;margin:0 2px;white-space:nowrap}' +
-      '#litReportModal .modal-dialog{max-width:1040px !important;margin:1.25rem auto !important}' +
-      '#litReportModal .modal-content{border-radius:18px;border:1px solid var(--border-medium);overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.22)}' +
-      '#litReportModal .modal-header{background:#fbf9f5;padding:14px 24px;border-bottom:1px solid var(--border-light)}' +
-      '#litReportBody{background:#f0ece3;padding:16px 0 32px;max-height:86vh !important;overflow:auto}' +
+      '#litReportModal .modal-dialog{max-width:1180px !important;width:95vw !important;margin:1.5vh auto !important;height:97vh !important}' +
+      '#litReportModal .modal-content{height:100% !important;border-radius:16px;border:1px solid var(--border-medium);overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.25);display:flex !important;flex-direction:column !important}' +
+      '#litReportModal .modal-header{background:#ffffff;padding:12px 24px;border-bottom:1px solid #e2e8f0;flex-shrink:0}' +
+      '#litReportModal .modal-body{flex:1 1 auto !important;height:100% !important;overflow:hidden !important;display:flex !important;flex-direction:column !important;background:#f1f5f9 !important}' +
+      '#litReportBody{flex:1 1 auto !important;height:100% !important;max-height:none !important;overflow-y:auto !important;background:#f1f5f9;padding:20px 24px 40px}' +
       '#litAssignModal .modal-dialog{max-width:1040px}#litAssignModal .modal-content{border:1px solid var(--border-medium);border-radius:18px;overflow:hidden}' +
       '#litAssignModal .modal-header,#litAssignModal .modal-footer{background:#fbf9f5;padding:18px 24px;border-color:var(--border-light)}#litAssignModal .modal-title{font-size:18px;color:var(--text-main)}' +
       '#litAssignModal .modal-body{padding:24px;background:#fff}#litAssignModal .lit-ctl{height:40px;border-radius:10px;background:#fdfcf9}' +
