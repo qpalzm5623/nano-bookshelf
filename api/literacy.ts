@@ -59,7 +59,7 @@ function assertCoverage(items: LiteracyItem[]) {
 }
 
 const clean = (v: any, max: number) => String(v ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, max);
-const IMAGE_PATH = /^(resources\/literacy\/[\w./-]+|https:\/\/[^\s<>"']+)$/;
+const IMAGE_PATH = /^(resources\/literacy\/[\w./-]+|https:\/\/[^\s<>"']+|\/api\/literacy\?action=image&id=[a-f0-9]{64})$/;
 const AREA_CODE: Record<string, string> = { 어휘이해력: 'VOC', 학습도구어: 'TOOL', 요약: 'SUM', 비교: 'CMP', 추론: 'INF' };
 
 /** 마스터가 보낸 문항을 검증·정리한다 (밴드0·1 = 3보기, 밴드2 = 4보기 규격 유지) */
@@ -165,6 +165,32 @@ export default async function handler(req: any, res: any) {
 
     const user = await authenticate(req);
     const isStudent = user.role === 'STUDENT';
+
+    // 문항 이미지는 기존 JSON 저장소에 보관하며 로그인한 사용자에게 제공한다.
+    if (action === 'image' && req.method === 'GET') {
+      const id = String(req.query.id || '');
+      need(/^[a-f0-9]{64}$/.test(id), '이미지를 확인해 주세요.');
+      const row = await prisma.portalSetting.findUnique({ where: { key: 'literacy_image:' + id } });
+      need(row, '이미지를 찾을 수 없습니다.', 404);
+      const image = row.value as any;
+      res.setHeader('Content-Type', image.mime);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      return res.status(200).send(Buffer.from(image.base64, 'base64'));
+    }
+    if (action === 'image_upload' && req.method === 'POST') {
+      master(user);
+      need(typeof body.base64 === 'string' && body.base64.length <= 700000 && /^[A-Za-z0-9+/]+={0,2}$/.test(body.base64), '이미지는 500KB 이하로 올려 주세요.', 413);
+      const bytes = Buffer.from(body.base64, 'base64');
+      need(bytes.length >= 12 && bytes.length <= 500 * 1024, '이미지는 500KB 이하로 올려 주세요.', 413);
+      const mime = bytes.subarray(0, 8).toString('hex') === '89504e470d0a1a0a' ? 'image/png'
+        : bytes.subarray(0, 3).toString('hex') === 'ffd8ff' ? 'image/jpeg'
+        : bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP' ? 'image/webp' : '';
+      need(mime && mime === body.mime, 'PNG, JPG, WEBP 이미지 파일만 사용할 수 있습니다.');
+      const id = createHash('sha256').update(bytes).digest('hex');
+      await prisma.portalSetting.upsert({ where: { key: 'literacy_image:' + id }, update: {},
+        create: { key: 'literacy_image:' + id, scope: 'literacy_image', value: { mime, base64: bytes.toString('base64') } } });
+      return res.json({ url: '/api/literacy?action=image&id=' + id });
+    }
 
     // ================= 학생 =================
     if (action === 'my' && req.method === 'GET') {

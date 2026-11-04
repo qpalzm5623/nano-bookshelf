@@ -59,6 +59,10 @@ function fixture() {
   const db = {
     member: { findMany: async () => [student] },
     portalSetting: {
+      upsert: async ({ where, create }) => {
+        if (!rows.has(where.key)) rows.set(where.key, { revision: 1, ...structuredClone(create) });
+        return rows.get(where.key);
+      },
       findUnique: async ({ where }) => structuredClone(rows.get(where.key) || null),
       findMany: async ({ where }) => [...rows.values()].filter(r => r.scope === where.scope && (!where.value || r.value.memberId === where.value.equals)),
       create: async ({ data }) => {
@@ -80,7 +84,7 @@ function fixture() {
     student, as(role, academyId = 'academy-a') { user = { ...student, role, academyId, academy: { code: 'A' } }; },
     failResult(on) { failResult = on; },
     async call(action, body, params = {}) {
-      const res = { code: 200, setHeader() {}, status(code) { this.code = code; return this; }, json(data) { this.data = data; return this; } };
+      const res = { code: 200, setHeader() {}, status(code) { this.code = code; return this; }, json(data) { this.data = data; return this; }, send(data) { this.data = data; return this; } };
       await handler({ query: { action, ...params }, body, method: body ? 'POST' : 'GET', headers: { host: 'test.example' } }, res);
       return res;
     }
@@ -124,6 +128,27 @@ test('배정 → 학생 출제 → 채점 → 관리자 결과지·공유 링크
   f.as('DIRECTOR', 'other-academy');
   assert.equal((await f.call('assignments')).data.items.length, 0);
   assert.equal((await f.call('result', undefined, { id: record.resultId })).code, 403);
+});
+
+test('이미지 업로드 권한·형식 검증과 신규 문항 저장 후 이미지 조회', async () => {
+  const f = fixture();
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII=';
+  const body = { mime: 'image/png', base64: png };
+  assert.equal((await f.call('image_upload', body)).code, 403);
+  f.as('MASTER');
+  assert.equal((await f.call('image_upload', { ...body, base64: Buffer.from('<svg>invalid</svg>').toString('base64') })).code, 400);
+  assert.equal((await f.call('image_upload', { ...body, base64: 'a'.repeat(700001) })).code, 413);
+  const uploaded = await f.call('image_upload', body);
+  assert.equal(uploaded.code, 200);
+  const item = { ...seed.items[0], id: undefined, image: uploaded.data.url };
+  const saved = await f.call('bank_save', { revision: 0, item });
+  assert.equal(saved.code, 200);
+  assert.ok((await f.call('bank')).data.items.some(i => i.id === saved.data.id && i.image === uploaded.data.url));
+  f.as('STUDENT');
+  const id = new URL(uploaded.data.url, 'https://test.example').searchParams.get('id');
+  const image = await f.call('image', undefined, { id });
+  assert.equal(image.code, 200);
+  assert.equal(image.data.toString('base64'), png);
 });
 
 test('문항 이미지와 화면 연결 자산이 존재한다', () => {

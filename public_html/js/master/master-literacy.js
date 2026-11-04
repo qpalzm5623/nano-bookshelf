@@ -149,14 +149,39 @@
     }
   }
 
+  // 원칙 준수: 검색바에서는 항상 '검색' 버튼이나 Enter를 눌러야 선택한 조건이 적용되어 검색됨
+  var appliedCriteria = {
+    band: 'ALL',
+    area: 'ALL',
+    status: 'ALL',
+    keyword: ''
+  };
+
   /**
-   * 필터링된 문항 목록 산출
+   * '검색' 버튼 클릭 또는 검색창 엔터 시 호출되어 앞서 선택한 조건들을 확정 반영하여 결과 조회
+   */
+  function searchMasterLiteracyBank() {
+    var bandEl = document.getElementById('masterLiteracyBandFilter');
+    var areaEl = document.getElementById('masterLiteracyAreaFilter');
+    var statusEl = document.getElementById('masterLiteracyStatusFilter');
+    var searchEl = document.getElementById('masterLiteracySearchInput');
+
+    appliedCriteria.band = (bandEl && bandEl.value) ? bandEl.value : 'ALL';
+    appliedCriteria.area = (areaEl && areaEl.value) ? areaEl.value : 'ALL';
+    appliedCriteria.status = (statusEl && statusEl.value) ? statusEl.value : 'ALL';
+    appliedCriteria.keyword = (searchEl && searchEl.value) ? searchEl.value.trim().toLowerCase() : '';
+
+    renderMasterLiteracyBank(1);
+  }
+
+  /**
+   * 필터링된 문항 목록 산출 (현재 확정 적용된 appliedCriteria 기준)
    */
   function getFilteredItems() {
-    var bandVal = (document.getElementById('masterLiteracyBandFilter') || {}).value || 'ALL';
-    var areaVal = (document.getElementById('masterLiteracyAreaFilter') || {}).value || 'ALL';
-    var statusVal = (document.getElementById('masterLiteracyStatusFilter') || {}).value || 'ALL';
-    var searchVal = ((document.getElementById('masterLiteracySearchInput') || {}).value || '').trim().toLowerCase();
+    var bandVal = appliedCriteria.band;
+    var areaVal = appliedCriteria.area;
+    var statusVal = appliedCriteria.status;
+    var searchVal = appliedCriteria.keyword;
 
     return state.items.filter(function (it) {
       if (bandVal !== 'ALL' && String(it.band) !== bandVal) return false;
@@ -313,6 +338,12 @@
     var a = document.getElementById('masterLiteracyAreaFilter'); if (a) a.value = 'ALL';
     var s = document.getElementById('masterLiteracyStatusFilter'); if (s) s.value = 'ALL';
     var q = document.getElementById('masterLiteracySearchInput'); if (q) q.value = '';
+
+    appliedCriteria.band = 'ALL';
+    appliedCriteria.area = 'ALL';
+    appliedCriteria.status = 'ALL';
+    appliedCriteria.keyword = '';
+
     renderMasterLiteracyBank(1);
   }
 
@@ -332,7 +363,6 @@
     var fPassage = document.getElementById('literacyFormPassage');
     var fQuestion = document.getElementById('literacyFormQuestion');
     var fImage = document.getElementById('literacyFormImage');
-    var fImagePreset = document.getElementById('literacyFormImagePreset');
     var fImageDesc = document.getElementById('literacyFormImageDesc');
     var fRationale = document.getElementById('literacyFormRationale');
 
@@ -353,7 +383,6 @@
       if (fPassage) fPassage.value = item.passage || '';
       if (fQuestion) fQuestion.value = item.question || '';
       if (fImage) fImage.value = item.image || '';
-      if (fImagePreset) fImagePreset.value = item.image || '';
       if (fImageDesc) fImageDesc.value = item.imageDesc || '';
       if (fRationale) fRationale.value = item.rationale || '';
 
@@ -378,7 +407,6 @@
       if (fPassage) fPassage.value = '';
       if (fQuestion) fQuestion.value = '';
       if (fImage) fImage.value = '';
-      if (fImagePreset) fImagePreset.value = '';
       if (fImageDesc) fImageDesc.value = '';
       if (fRationale) fRationale.value = '';
 
@@ -390,6 +418,8 @@
       if (defRadio) defRadio.checked = true;
     }
 
+    document.getElementById('literacyImageFile').value = '';
+    previewImage();
     onBandChanged();
     onAreaChanged();
 
@@ -436,20 +466,61 @@
   }
 
   /**
-   * 이미지 프리셋 선택
+   * 이미지 주소 미리보기와 파일 업로드
    */
-  function onImagePresetChanged() {
-    var sel = document.getElementById('literacyFormImagePreset');
-    var inp = document.getElementById('literacyFormImage');
-    if (sel && inp && sel.value) {
-      inp.value = sel.value;
+  var uploadingImage = false;
+  var imageRequest = 0;
+  function previewImage() {
+    imageRequest++;
+    var url = document.getElementById('literacyFormImage').value.trim();
+    var img = document.getElementById('literacyImagePreview');
+    var allowed = /^(https:\/\/|resources\/literacy\/|\/api\/literacy\?action=image&id=)/.test(url);
+    img.style.display = url && allowed ? 'block' : 'none';
+    if (url && allowed) img.src = url; else img.removeAttribute('src');
+    document.getElementById('literacyImageStatus').textContent = url && !allowed ? 'https 이미지 주소를 입력해 주세요.' : 'PNG · JPG · WEBP / 최대 500KB';
+  }
+  function clearImage() {
+    document.getElementById('literacyFormImage').value = '';
+    document.getElementById('literacyImageFile').value = '';
+    previewImage();
+  }
+  async function uploadImage(input) {
+    var file = input.files && input.files[0];
+    if (!file || uploadingImage) return;
+    var status = document.getElementById('literacyImageStatus');
+    if (!['image/png','image/jpeg','image/webp'].includes(file.type) || file.size > 500 * 1024) {
+      status.textContent = 'PNG, JPG, WEBP 이미지를 500KB 이하로 선택해 주세요.';
+      input.value = ''; return;
     }
+    var request = ++imageRequest;
+    uploadingImage = true; input.disabled = true;
+    status.textContent = '이미지를 업로드하고 있습니다…';
+    try {
+      var data = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(String(reader.result).split(',')[1]); };
+        reader.onerror = function() { reject(new Error('파일을 읽지 못했습니다. 다시 선택해 주세요.')); };
+        reader.readAsDataURL(file);
+      });
+      var response = await fetch('/api/literacy?action=image_upload', {
+        method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({mime:file.type,base64:data})
+      });
+      var result = await response.json();
+      if (!response.ok) throw new Error(result.error || '업로드하지 못했습니다.');
+      if (request !== imageRequest) return;
+      document.getElementById('literacyFormImage').value = result.url;
+      previewImage();
+      status.textContent = '업로드 완료 · 문항을 저장하면 이미지가 연결됩니다.';
+    } catch(e) { if (request === imageRequest) status.textContent = e.message || '업로드하지 못했습니다. 다시 시도해 주세요.'; }
+    finally { uploadingImage = false; input.disabled = false; input.value = ''; }
   }
 
   /**
    * 문항 저장 (API 호출 + 로컬 스토리지 동기화)
    */
   async function saveItem() {
+    if (uploadingImage) { alert('이미지 업로드가 끝난 뒤 저장해 주세요.'); return; }
     var fBand = document.getElementById('literacyFormBand');
     var fArea = document.getElementById('literacyFormArea');
     var fStatus = document.getElementById('literacyFormStatus');
@@ -498,8 +569,10 @@
     var answer = checkedRadio ? Number(checkedRadio.value) : 0;
     if (answer >= expectedCount) answer = 0;
 
+    var existingItem = state.items.find(function(it) { return it.id === itemId; });
     var payloadItem = {
-      id: itemId || ('B' + band + '-' + (area === '학습도구어' ? 'TOOL' : 'VOC') + '-U' + String(Date.now()).slice(-4)),
+      choiceImages: existingItem ? existingItem.choiceImages : undefined,
+      id: itemId || undefined,
       band: band,
       area: area,
       status: status,
@@ -515,20 +588,17 @@
       stratum: stratum
     };
 
-    var serverSaved = false;
     try {
       var res = await fetch('/api/literacy?action=bank_save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ revision: state.revision, item: payloadItem })
       });
-      if (res.ok) {
-        var json = await res.json();
-        if (json.id) payloadItem.id = json.id;
-        serverSaved = true;
-      }
+      var json = await res.json();
+      if (!res.ok) throw new Error(json.error || '문항을 저장하지 못했습니다.');
+      if (json.id) payloadItem.id = json.id;
     } catch (e) {
-      // 로컬 프리뷰 환경
+      alert(e.message || '서버에 연결하지 못했습니다. 다시 시도해 주세요.');
+      return;
     }
 
     // 로컬 메모리 및 로컬 스토리지에 즉시 동기화
@@ -698,6 +768,7 @@
   window.NanoMasterLiteracy = {
     loadBankData: loadBankData,
     renderMasterLiteracyBank: renderMasterLiteracyBank,
+    searchMasterLiteracyBank: searchMasterLiteracyBank,
     openModal: openModal,
     saveItem: saveItem,
     deleteItem: deleteItem,
@@ -706,11 +777,12 @@
     exportToExcel: exportToExcel,
     onBandChanged: onBandChanged,
     onAreaChanged: onAreaChanged,
-    onImagePresetChanged: onImagePresetChanged
+    previewImage: previewImage, uploadImage: uploadImage, clearImage: clearImage
   };
 
   // HTML 인라인 이벤트용 글로벌 래퍼
   window.renderMasterLiteracyBank = renderMasterLiteracyBank;
+  window.searchMasterLiteracyBank = searchMasterLiteracyBank;
   window.openMasterLiteracyModal = openModal;
   window.saveMasterLiteracyItem = saveItem;
   window.deleteMasterLiteracyItem = deleteItem;
@@ -719,7 +791,9 @@
   window.exportMasterLiteracyToExcel = exportToExcel;
   window.onLiteracyBandChanged = onBandChanged;
   window.onLiteracyAreaChanged = onAreaChanged;
-  window.onLiteracyImagePresetChanged = onImagePresetChanged;
+  window.previewLiteracyImage = previewImage;
+  window.uploadLiteracyImage = uploadImage;
+  window.clearLiteracyImage = clearImage;
 
   // DOMContentLoaded 시점에 즉시 시드 데이터 기반 1차 렌더링 준비 (선제적 렌더링)
   if (document.readyState === 'loading') {

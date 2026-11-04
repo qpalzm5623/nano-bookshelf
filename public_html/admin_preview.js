@@ -4425,15 +4425,20 @@ function renderLearningTable() {
            작성 전
          </button>`;
 
-    // 6. 첨삭 컬럼 (업로드 버튼 제거, '첨삭 전' 또는 '첨삭 완료' 클릭 시 첨삭 모달 연결)
+    // 6. 첨삭 컬럼 (백그라운드 첨삭 중 스피너 표시 및 모달 연결)
+    var isReviewProcessing = (l.reviewed === '첨삭 중');
     var isReviewDone = (l.reviewed && l.reviewed.includes('완료'));
-    var reviewBtnHtml = isReviewDone
-      ? `<button type="button" class="btn btn-xs btn-success font-weight-bold" onclick="openCorrectionModal('${l.id}')" title="첨삭 내용 확인 및 수정" style="font-size:11px; padding:3px 9px; border-radius:6px;">
-           <i class="fa-solid fa-circle-check mr-1"></i>첨삭 완료
+    var reviewBtnHtml = isReviewProcessing
+      ? `<button type="button" class="btn btn-xs btn-outline-info font-weight-bold" disabled style="font-size:11px; padding:3px 9px; border-radius:6px; background:#f0fdfa; border-color:#99f6e4; color:#0f766e;">
+           <i class="fa-solid fa-spinner fa-spin mr-1"></i>첨삭 중...
          </button>`
-      : `<button type="button" class="btn btn-xs btn-outline-warning text-dark font-weight-bold" onclick="openCorrectionModal('${l.id}')" title="클릭 시 첨삭 모달 열기" style="font-size:11px; padding:3px 9px; border-radius:6px; background:#fff7ed; border-color:#fed7aa;">
-           <i class="fa-solid fa-pen mr-1 text-warning"></i>첨삭 전
-         </button>`;
+      : isReviewDone
+        ? `<button type="button" class="btn btn-xs btn-success font-weight-bold" onclick="openCorrectionModal('${l.id}')" title="첨삭 내용 확인 및 수정" style="font-size:11px; padding:3px 9px; border-radius:6px;">
+             <i class="fa-solid fa-circle-check mr-1"></i>첨삭 완료
+           </button>`
+        : `<button type="button" class="btn btn-xs btn-outline-warning text-dark font-weight-bold" onclick="openCorrectionModal('${l.id}')" title="클릭 시 첨삭 모달 열기" style="font-size:11px; padding:3px 9px; border-radius:6px; background:#fff7ed; border-color:#fed7aa;">
+             <i class="fa-solid fa-pen mr-1 text-warning"></i>첨삭 전
+           </button>`;
 
     // 7. 관리 컬럼: 학습리포트 버튼 + 우측 카톡 발송 버튼 나란히 배치
     var kakaoBtnHtml = getKakaoReportBtnHtml(l.id, false);
@@ -4728,16 +4733,16 @@ function openLearningDetailModal(id) {
 
       var choiceBox = q.isCorrect
         ? `<div class="report-choice-box correct">
-             <div class="report-choice-label"><i class="fa-solid fa-check mr-1"></i>학생 선택 답안</div>
-             <div class="report-choice-val">${q.userChoiceText}</div>
+             <div class="report-choice-label"><i class="fa-solid fa-check mr-1.5 text-success"></i>학생 선택 답안</div>
+             <div class="report-choice-val">${escapePortfolioText(q.userChoiceText)}</div>
            </div>`
         : `<div class="report-choice-box wrong mb-1.5">
-             <div class="report-choice-label"><i class="fa-solid fa-xmark mr-1"></i>선택한 오답</div>
-             <div class="report-choice-val strike">${q.userChoiceText}</div>
+             <div class="report-choice-label"><i class="fa-solid fa-xmark mr-1.5 text-danger"></i>학생 선택 오답</div>
+             <div class="report-choice-val strike">${escapePortfolioText(q.userChoiceText)}</div>
            </div>
            <div class="report-choice-box actual">
-             <div class="report-choice-label"><i class="fa-solid fa-key mr-1"></i>실제 정답</div>
-             <div class="report-choice-val font-weight-bold">${q.correctChoiceText}</div>
+             <div class="report-choice-label"><i class="fa-solid fa-key mr-1.5 text-success"></i>실제 정답</div>
+             <div class="report-choice-val font-weight-bold text-success">${escapePortfolioText(q.correctChoiceText)}</div>
            </div>`;
 
       return `
@@ -4751,7 +4756,7 @@ function openLearningDetailModal(id) {
             ${statusBadge}
           </div>
           <div class="report-quiz-question">
-            <span>${q.question}</span>
+            <span>${escapePortfolioText(q.question)}</span>
           </div>
           ${choiceBox}
         </div>
@@ -4810,7 +4815,11 @@ function openLearningDetailModal(id) {
       var quotesEl = document.getElementById('worksheetAiQuotesList');
       if (quotesEl) {
         quotesEl.innerHTML = (Array.isArray(res.actualQuotes) ? res.actualQuotes : []).map(function(q) {
-          return '<article class="worksheet-quote"><blockquote>“' + escapePortfolioText(q.quote) + '”</blockquote><small>' + escapePortfolioText(q.criteria || '표현 살펴보기') + '</small><div>' + escapePortfolioText(q.comment) + '</div></article>';
+          return '<article class="worksheet-quote">' +
+            '<blockquote><i class="fa-solid fa-quote-left mr-1.5" style="opacity: 0.65; font-size: 11px;"></i>“' + escapePortfolioText(q.quote) + '”</blockquote>' +
+            '<div class="mb-1"><small><i class="fa-solid fa-tag mr-1" style="font-size: 9.5px;"></i>' + escapePortfolioText(q.criteria || '표현 살펴보기') + '</small></div>' +
+            '<div style="color: #334155; line-height: 1.65; font-size: 11.5px;">' + escapePortfolioText(q.comment) + '</div>' +
+            '</article>';
         }).join('') || '<div class="worksheet-quote text-muted">아직 등록된 표현별 코멘트가 없습니다.</div>';
       }
 
@@ -15885,7 +15894,7 @@ function openWorksheetPhotoLightbox(src) {
   }
 }
 
-// Gemini 3.8 Flash 나노시트 멀티모달 AI 분석 실행
+// Gemini 3.8 Flash 나노시트 멀티모달 AI 분석 실행 (원클릭 백그라운드 비동기 및 교사코멘트 즉시 반영)
 async function runWorksheetAiAnalysis() {
   if (currentWorksheetPhotos.length === 0) {
     alert('분석할 나노시트 사진(2~3페이지)을 먼저 촬영하거나 업로드해주세요.');
@@ -15897,19 +15906,36 @@ async function runWorksheetAiAnalysis() {
   if (!log) log = learningLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
   if (!log) return;
 
-  var loadingEl = document.getElementById('worksheetAiLoading');
-  var btnAi = document.getElementById('btnRunWorksheetAi');
-  var cardEl = document.getElementById('worksheetAiResultCard');
-
-  if (loadingEl) loadingEl.style.display = 'block';
-  if (btnAi) btnAi.disabled = true;
-  if (cardEl) cardEl.style.display = 'none';
-
   var studentName = log.studentName || log.name || '원생';
   var grade = log.grade || '초등 3학년';
   var bookTitle = log.bookTitle || '도서';
   var bookAuthor = log.bookPub || '작자 미상';
   var sheetCount = 1;
+
+  // 1. 첨삭 실행 전 확인 알림창
+  var confirmMsg = `[${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭을 실행하시겠습니까?\n\n'확인'을 누르면 창이 닫히며 백그라운드에서 AI 분석이 자동으로 진행되고,\n완료 즉시 교사 코멘트와 함께 첨삭 완료 처리됩니다.`;
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  // 2. 모달창 즉시 닫기 (백그라운드 비동기 전환)
+  if (window.jQuery && typeof $('#modalCorrection').modal === 'function') {
+    $('#modalCorrection').modal('hide');
+  }
+
+  // 3. 교사가 입력창에 미리 적어둔 코멘트가 있다면 보존
+  var commentEl = document.getElementById('correctionCommentInput');
+  var preComment = (commentEl && commentEl.value) ? commentEl.value.trim() : (log.comment || '');
+
+  // 4. 테이블에 즉시 '첨삭 중' 상태 표시
+  log.reviewed = '첨삭 중';
+  log.sheet = '작성 완료';
+  log.manualSheetDone = true;
+  if (Array.isArray(currentWorksheetPhotos)) {
+    log.worksheetPhotos = currentWorksheetPhotos.slice();
+  }
+  renderLearningTable();
+  showAcademyToast(`[${studentName}] 원생의 나노시트 AI 첨삭이 백그라운드에서 시작되었습니다. 완료 시 자동으로 반영됩니다.`);
 
   // 학생의 이전 나노시트 누적 회차 계산
   var stdLogs = allLogs.filter(function(l) { return (l.studentName || l.name) === studentName; });
@@ -16055,53 +16081,38 @@ JSON 출력 형식:
     }
 
     currentWorksheetAiResult = aiData;
-
-    // 모달 결과 카드 렌더링
-    var summaryEl = document.getElementById('aiResultSummaryText');
-    if (summaryEl) summaryEl.innerText = aiData.summary || '자신의 생각을 솔직하고 진솔하게 표현했습니다.';
-
-    var quotesContainer = document.getElementById('aiResultQuotesContainer');
-    if (quotesContainer && Array.isArray(aiData.actualQuotes)) {
-      quotesContainer.innerHTML = aiData.actualQuotes.map(function(q) {
-        return `
-          <div class="p-2 mb-1 rounded bg-white border">
-            <div class="text-primary font-weight-bold" style="font-size: 11px;">
-              <i class="fa-solid fa-quote-left mr-1"></i>"${q.quote}" <span class="badge badge-light border ml-1 font-weight-normal">${q.criteria || '관찰'}</span>
-            </div>
-            <div class="text-dark mt-0.5" style="font-size: 11.5px; line-height: 1.5;">${q.comment}</div>
-          </div>
-        `;
-      }).join('');
+    log.worksheetAiResult = aiData;
+    if (Array.isArray(currentWorksheetPhotos)) {
+      log.worksheetPhotos = currentWorksheetPhotos.slice();
     }
 
-    var nextEl = document.getElementById('aiResultNextStepText');
-    if (nextEl) {
-      nextEl.innerHTML = `
-        <div>• <strong>다음 성장 방향 (20%):</strong> ${aiData.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.'}</div>
-        <div class="mt-1 text-muted">• <strong>가정 대화 팁:</strong> ${aiData.parentGuide || '아이의 표현을 충분히 격려해 주세요.'}</div>
-      `;
-    }
-
-    if (cardEl) cardEl.style.display = 'block';
-
-    // 지도교사 첨삭 코멘트 입력창에 AI 제안 초안 자동 삽입
-    var commentInput = document.getElementById('correctionCommentInput');
-    if (commentInput && (!commentInput.value || !commentInput.value.trim())) {
-      commentInput.value = aiData.teacherCommentDraft || aiData.summary || '';
-    }
-
-    if (aiData.warning) {
-      showAcademyToast('⚠️ ' + aiData.warning);
+    // 5. 교사 코멘트 즉시 자동 반영 (리포트에서 언제든 수정 가능)
+    if (preComment) {
+      log.comment = preComment;
     } else {
-      showAcademyToast('나노시트 첨삭 분석이 완료되었습니다! 교사 코멘트를 검토 후 저장해주세요.');
+      log.comment = aiData.teacherCommentDraft || aiData.summary || '';
+    }
+
+    // 6. 첨삭 완료 처리 확정 및 저장
+    log.reviewed = '첨삭 완료';
+    log.sheet = '작성 완료';
+    log.manualSheetDone = true;
+
+    await saveCustomLearningLogs(allLogs);
+    renderLearningTable();
+
+    // 7. 완료 안내 토스트 알림
+    if (aiData.warning) {
+      showAcademyToast(`🎉 [${studentName}] 원생의 첨삭이 완료되었습니다! (${aiData.warning})`);
+    } else {
+      showAcademyToast(`🎉 [${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭이 완료되었습니다! 학습리포트에서 확인 및 수정할 수 있습니다.`);
     }
 
   } catch(err) {
     console.error('Worksheet AI Client Error:', err);
-    alert('나노시트 AI 분석 중 오류가 발생했습니다: ' + (err.message || err));
-  } finally {
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (btnAi) btnAi.disabled = false;
+    log.reviewed = '첨삭 전';
+    renderLearningTable();
+    showAcademyToast(`⚠️ 나노시트 AI 첨삭 중 오류가 발생했습니다: ${(err.message || err)}`);
   }
 }
 

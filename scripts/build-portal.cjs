@@ -10,7 +10,7 @@ if (fs.existsSync(output)) {
   fs.rmSync(output, { recursive: true });
 }
 fs.mkdirSync(output);
-const assets = new Set(['assets', 'css', 'font', 'images', 'js', 'plugin', 'resources', 'upload']);
+const assets = new Set(['assets', 'css', 'font', 'images', 'js', 'modals', 'plugin', 'resources', 'upload']);
 const files = new Set(['index.html', 'admin_preview.html', 'admin_preview.js', 'master_preview.html', 'master_preview.js', 'student_preview.html', 'literacy_report.html', 'manifest.json', 'service-worker.js']);
 function copy(from, to) {
   // 기존 PHP 화면의 원생 사진·제출 첨부는 공개 정적 배포에서 제외합니다.

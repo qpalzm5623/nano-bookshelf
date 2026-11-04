@@ -1,4 +1,17 @@
 /* 본사·학원 공통: 검색 조건 묶음은 오른쪽에 배치한다. */
+/* 검색 전용 바깥 카드만 제거하고 목록·통계 카드와 입력창은 유지한다. */
+.simple-card:has(> .portal-search-toolbar),
+.filter-bar,
+.lit-pick-toolbar,
+#rankingFilterBar {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+#rankingFilterBar { margin: 16px 20px; }
+
 .portal-search-toolbar,
 .filter-bar,
 #rankingFilterBar,
