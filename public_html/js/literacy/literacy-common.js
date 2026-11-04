@@ -164,32 +164,32 @@
     var r = EXPECTED_RANGE[grade], x = function (lv) { return 52 + 66 * (lv - 1); };
     var rectX = x(r[0]) - 24, rectW = x(r[1]) - x(r[0]) + 48, s = '';
     for (var i = 0; i < 10; i++) {
-      s += '<text x="' + x(i + 1) + '" y="56" fill="' + (i < level ? '#2A9D9C' : '#D8D2C4') + '" font-size="30" text-anchor="middle">★</text>';
+      s += '<text x="' + x(i + 1) + '" y="50" fill="' + (i < level ? '#1F8A7E' : '#D8D2C4') + '" font-size="28" text-anchor="middle">★</text>';
     }
     var nums = '';
-    for (var j = 0; j < 10; j++) nums += '<text x="' + x(j + 1) + '" y="82" font-size="11" fill="#999" text-anchor="middle">' + (j + 1) + '</text>';
-    return '<svg viewBox="0 0 700 92" role="img" aria-label="' + esc(BRAND.levelName + ' ' + level) + '">' +
-      '<rect x="' + rectX + '" y="26" width="' + rectW + '" height="40" rx="10" fill="#FFF2E5"/>' +
-      '<text x="' + (rectX + rectW / 2) + '" y="18" font-size="12" font-weight="700" fill="#DC6E10" text-anchor="middle">' + gradeName(grade) + ' 기대 구간</text>' +
-      s + nums + '<circle cx="' + x(level) + '" cy="46" r="24" fill="none" stroke="#F58220" stroke-width="3"/></svg>';
+    for (var j = 0; j < 10; j++) nums += '<text x="' + x(j + 1) + '" y="72" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="middle">' + (j + 1) + '</text>';
+    return '<svg viewBox="0 0 700 82" role="img" aria-label="' + esc(BRAND.levelName + ' ' + level) + '">' +
+      '<rect x="' + rectX + '" y="22" width="' + rectW + '" height="36" rx="8" fill="#FFF7ED" stroke="#FDBA74" stroke-width="1.2"/>' +
+      '<text x="' + (rectX + rectW / 2) + '" y="16" font-size="11" font-weight="700" fill="#EA580C" text-anchor="middle">' + gradeName(grade) + ' 기대 구간</text>' +
+      s + nums + '<circle cx="' + x(level) + '" cy="40" r="22" fill="none" stroke="#F58220" stroke-width="2.5"/></svg>';
   }
 
   function radarSvg(areas) {
-    var cx = 150, cy = 150, R = 100;
+    var cx = 140, cy = 130, R = 85;
     var angle = function (i) { return ((i * 72 - 90) * Math.PI) / 180; };
     var pt = function (i, r) { return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))]; };
     var ring = function (r) { return AREAS.map(function (_, i) { return pt(i, r).map(function (v) { return v.toFixed(1); }).join(','); }).join(' '); };
     var data = AREAS.map(function (a, i) {
       var f = areas.filter(function (x) { return x.area === a; })[0];
-      return pt(i, Math.max((f ? f.correct / f.total : 0) * R, 6));
+      return pt(i, Math.max((f ? f.correct / f.total : 0) * R, 5));
     });
-    var labels = [{ x: 150, y: 36 }, { x: 272, y: 110, tool: 1 }, { x: 222, y: 254 }, { x: 78, y: 254 }, { x: 28, y: 110 }];
+    var labels = [{ x: 140, y: 28 }, { x: 248, y: 95, tool: 1 }, { x: 204, y: 222 }, { x: 76, y: 222 }, { x: 32, y: 95 }];
     var g = [R, R * 0.75, R * 0.5, R * 0.25].map(function (r) { return '<polygon points="' + ring(r) + '"/>'; }).join('') +
       AREAS.map(function (_, i) { var p = pt(i, R); return '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0] + '" y2="' + p[1] + '"/>'; }).join('');
-    return '<svg viewBox="0 0 300 290" role="img" aria-label="다섯 영역 레이더 차트"><g fill="none" stroke="#EAE6DC">' + g + '</g>' +
-      '<polygon points="' + data.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="rgba(42,157,156,.25)" stroke="#2A9D9C" stroke-width="2.5"/>' +
-      data.map(function (p, i) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === 1 ? 4.5 : 4) + '" fill="#fff" stroke="' + (i === 1 ? '#F58220' : '#2A9D9C') + '" stroke-width="' + (i === 1 ? 3 : 2.5) + '"/>'; }).join('') +
-      '<g font-size="13" font-weight="700" text-anchor="middle">' + AREAS.map(function (a, i) { return '<text x="' + labels[i].x + '" y="' + labels[i].y + '" fill="' + (labels[i].tool ? '#DC6E10' : '#333') + '">' + a + '</text>'; }).join('') + '</g></svg>';
+    return '<svg viewBox="0 0 280 250" role="img" aria-label="다섯 영역 레이더 차트"><g fill="none" stroke="#E2E8F0">' + g + '</g>' +
+      '<polygon points="' + data.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="rgba(31,138,126,.18)" stroke="#1F8A7E" stroke-width="2.5"/>' +
+      data.map(function (p, i) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i === 1 ? 4.5 : 3.5) + '" fill="#fff" stroke="' + (i === 1 ? '#F58220' : '#1F8A7E') + '" stroke-width="' + (i === 1 ? 2.5 : 2) + '"/>'; }).join('') +
+      '<g font-size="12" font-weight="700" text-anchor="middle">' + AREAS.map(function (a, i) { return '<text x="' + labels[i].x + '" y="' + labels[i].y + '" fill="' + (labels[i].tool ? '#EA580C' : '#334155') + '">' + a + '</text>'; }).join('') + '</g></svg>';
   }
 
   // 레벨 변화 꺾은선 (같은 학생 기록 2개 이상일 때). history: [{id, finishedAt, level}] 오래된 순
@@ -266,6 +266,8 @@
       '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(summaryText(rec, an.strengths, an.growths)) + '</p></div></div><div class="ruler">' + rulerSvg(res.level, st.gradeStep) + '</div>' + retakeBox(rec, opts) + '</div></section>';
     h += '<section><h2><span class="no">2</span>다섯 영역, 어디가 강하고 어디를 키울까요?</h2><div class="rcard"><div class="profile"><div class="radar">' + radarSvg(res.areas) + '</div>' + areasBlock(an) + '</div>' +
       '<div class="rnote">영역별 결과는 영역당 ' + an.toolArea.total + '문항에 기반한 경향 참고 자료입니다. 책이 키우는 영역은 강한 것부터 적었습니다.</div></div></section>';
+    // [인쇄 최적화] 1페이지(레벨 + 5대영역 레이더) 완료 후 깔끔하게 2페이지로 분할
+    h += '<div class="lit-page-break"></div>';
     h += '<section><h2><span class="no">3</span>잘하는 것부터 볼게요</h2><div class="cols"><div class="col"><h3>👍 ' + esc(st.name) + '의 강점</h3><ul>' +
       an.strengths.slice(0, 3).map(function (a) { return '<li><b>' + a.area + '</b> — ' + (strong(a) ? STRENGTH[a.area] : '다섯 영역 가운데 가장 잘한 영역이에요. 여기서 얻는 자신감이 다른 영역을 키우는 힘이 돼요.') + '</li>'; }).join('') +
       '</ul></div><div class="col focus"><h3>🌱 함께 키울 부분</h3><ul>' +
