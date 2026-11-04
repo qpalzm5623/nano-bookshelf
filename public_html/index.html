@@ -5,6 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>나노의 책장 - 통합 관리자 로그인</title>
   
+  <!-- [뒤로가기 시 로그인 풀림 방어] 유효 세션 감지 시 작업 화면으로 즉시 자동 복귀 -->
+  <script>
+    (function checkExistingSessionOnBack() {
+      try {
+        var authUserStr = sessionStorage.getItem('nano_auth_user');
+        if (!authUserStr) return;
+        var authUser = JSON.parse(authUserStr);
+        if (!authUser || !authUser.role) return;
+
+        var params = new URLSearchParams(window.location.search);
+        // 직접 로그아웃을 통해 온 경우 세션 비우기
+        if (params.get('logout') === 'true' || window.location.hash === '#logout') {
+          sessionStorage.removeItem('nano_auth_user');
+          return;
+        }
+
+        // 유효 세션이 남아있는 상태에서 뒤로가기 등으로 진입한 경우 작업 화면으로 즉시 자동 복귀
+        var targetUrl = 'student_preview.html';
+        if (authUser.role === 'master') {
+          targetUrl = 'master_preview.html';
+        } else if (authUser.role === 'admin' || authUser.role === 'director' || authUser.role === 'teacher') {
+          targetUrl = 'admin_preview.html';
+        }
+        window.location.replace(targetUrl);
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- PWA & Mobile Web App Settings -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#3d342d">

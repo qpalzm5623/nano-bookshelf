@@ -429,39 +429,48 @@
       background: #ffffff;
       border-radius: 12px;
       border: 1.5px solid var(--soft);
-      padding: 8px 10px;
+      padding: 10px 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 5px;
       box-shadow: 0 2px 6px rgba(58, 46, 38, 0.03);
-      transition: transform .15s, box-shadow .15s;
-      min-height: 52px;
+      transition: all .15s ease-in-out;
+      min-height: 48px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .stat-mini:hover {
+      border-color: var(--leaf);
+      background: #fafdfa;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(31, 138, 126, 0.08);
     }
     .stat-mini:active {
       transform: scale(0.98);
     }
     .stat-mini .stat-icon {
-      font-size: 19px;
+      font-size: 15px;
       flex-shrink: 0;
       line-height: 1;
     }
-    .stat-mini .stat-info {
-      text-align: left;
-      min-width: 0;
-    }
-    .stat-mini .val {
-      font-size: 16px;
-      font-weight: 900;
-      line-height: 1.1;
-      color: var(--leaf);
-    }
     .stat-mini .lbl {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--text-main);
       font-weight: 700;
       white-space: nowrap;
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .stat-mini .val {
+      font-size: 13.5px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--leaf);
+      white-space: nowrap;
+      margin-left: 2px;
     }
     /* 상단 로그아웃 아이콘 전용 버튼 (시인성 극대화) */
     .btn-student-logout {
@@ -3873,26 +3882,25 @@
     </div>
 
     <div class="stat-grid">
-      <div class="stat-mini">
-        <div class="stat-icon">📖</div>
-        <div class="stat-info">
-          <div class="val" id="mainCertifiedBooksCount">451</div>
-          <div class="lbl">인증 도서</div>
-        </div>
+      <!-- 1. 인증도서: 아이콘 텍스트 숫자 한 줄 배치 (클릭 시 내 책장 - 독서 기록 이동) -->
+      <div class="stat-mini" onclick="goToCertifiedBooksTab()" style="cursor: pointer;" title="내 책장 - 독서 기록으로 이동">
+        <span class="stat-icon">📖</span>
+        <span class="lbl">인증도서</span>
+        <span class="val" id="mainCertifiedBooksCount">0</span>
       </div>
+
+      <!-- 2. 대기도서: 아이콘 텍스트 숫자 한 줄 배치 (클릭 시 도서관 - 배정도서 목록 이동) -->
       <div class="stat-mini" onclick="goToAssignedBooksTab()" style="cursor: pointer;" title="배정 도서 목록으로 바로가기">
-        <div class="stat-icon">⏳</div>
-        <div class="stat-info">
-          <div class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">3</div>
-          <div class="lbl">대기 도서 <i class="fa-solid fa-chevron-right" style="font-size:8.5px;opacity:0.7;"></i></div>
-        </div>
+        <span class="stat-icon">⏳</span>
+        <span class="lbl">대기도서 <i class="fa-solid fa-chevron-right" style="font-size:8px;opacity:0.7;"></i></span>
+        <span class="val" style="color:var(--leaf-mid);" id="mainPendingBooksCount">0</span>
       </div>
-      <div class="stat-mini">
-        <div class="stat-icon">🏆</div>
-        <div class="stat-info">
-          <div class="val" style="color:var(--wood-dark);" id="mainPointsCount">36,064</div>
-          <div class="lbl">누적 포인트</div>
-        </div>
+
+      <!-- 3. 누적포인트: 아이콘 텍스트 숫자 한 줄 배치 (클릭 시 내 책장 - 포인트 내역 이동) -->
+      <div class="stat-mini" onclick="goToPointsTab()" style="cursor: pointer;" title="내 책장 - 포인트 내역으로 이동">
+        <span class="stat-icon">🏆</span>
+        <span class="lbl">누적포인트</span>
+        <span class="val" style="color:var(--wood-dark);" id="mainPointsCount">0</span>
       </div>
     </div>
     <!-- 1. 최근에 추가된 도서 (30권 가로 슬라이더) -->
@@ -5703,8 +5711,53 @@ var currentDetailBookId = null;
 var currentLibSubTab = 'recommended';
 var currentGradeFilter = '초3';
 
-// 패널 전환 함수
-function switchPanel(n){
+// ==============================================================
+// 뒤로가기 시 로그인 풀림 방지 & SPA 패널 내비게이션 연동
+// ==============================================================
+var _isPopStateNavigating = false;
+
+function initSpaHistoryNavigation() {
+  if (!history.state || !history.state.panel) {
+    history.replaceState({ panel: 'home' }, '', '#home');
+  }
+
+  window.addEventListener('popstate', function(event) {
+    if (event.state && event.state.panel) {
+      _isPopStateNavigating = true;
+      if (event.state.panel === 'book-detail' && event.state.bookId) {
+        openBookDetail(event.state.bookId, event.state.from || 'home');
+      } else {
+        switchPanel(event.state.panel, false);
+      }
+      _isPopStateNavigating = false;
+    } else {
+      // 히스토리 첫 진입점에서 뒤로가기를 눌러 index.html로 튕기는 것 방어
+      history.pushState({ panel: 'home' }, '', '#home');
+      switchPanel('home', false);
+    }
+  });
+}
+
+// [신규] 인증도서 클릭 -> 내 책장 (독서 기록) 이동
+function goToCertifiedBooksTab() {
+  switchPanel('history');
+  if (typeof switchMyBookshelfMainTab === 'function') {
+    switchMyBookshelfMainTab('history');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// [신규] 누적 포인트 클릭 -> 내 책장 (포인트 내역) 이동
+function goToPointsTab() {
+  switchPanel('history');
+  if (typeof switchMyBookshelfMainTab === 'function') {
+    switchMyBookshelfMainTab('points');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 패널 전환 함수 (pushHistory 지원)
+function switchPanel(n, pushHistory){
   // 1. 모든 패널을 완벽하게 비활성화 및 숨김
   document.querySelectorAll('.panel').forEach(function(el){
     el.classList.remove('active');
@@ -5720,6 +5773,13 @@ function switchPanel(n){
     prevPanel = n;
   }
   curActivePanel = n;
+
+  // SPA 브라우저 히스토리 스택 기록 (뒤로가기 시 index.html로 튕김 방지)
+  if (pushHistory !== false && !_isPopStateNavigating) {
+    if (!history.state || history.state.panel !== n) {
+      history.pushState({ panel: n }, '', '#' + n);
+    }
+  }
 
   // 3. 대상 패널 활성화
   var t = document.getElementById('p-' + n);
@@ -11052,7 +11112,7 @@ function refreshStudentLearningData() {
     if (typeof renderBookshelfHistory === 'function') renderBookshelfHistory();
   } catch(e) { toast('학습 기록 조회 실패: ' + e.message); }
 }
-window.addEventListener('DOMContentLoaded', refreshStudentLearningData);
+window.addEventListener('DOMContentLoaded', function() { initSpaHistoryNavigation(); refreshStudentLearningData(); });
 window.addEventListener('storage', function(event) { if(event.key && /^(NANO_LEARNING_LOGS_|NANO_ASSIGNMENTS_)/.test(event.key)) refreshStudentLearningData(); });
 document.addEventListener('click', function(event) {
   if (window.studentSubmissionPending && event.target.closest('#qscreen-ing')) { event.preventDefault(); event.stopImmediatePropagation(); }

@@ -31,3 +31,290 @@ document.addEventListener('DOMContentLoaded', function () {
     link.addEventListener('click', function (event) { event.preventDefault(); NanoPortal.logout().catch(function(e) { alert(e.message); }); });
   });
 });
+
+// ==============================================================
+// 15분 미활동 자동 로그아웃 확인 모달 & 뒤로가기 세션 유지 공통 모듈
+// ==============================================================
+(function () {
+  // 15분 = 900초 = 900,000ms
+  var INACTIVITY_LIMIT = 15 * 60 * 1000;
+  // 카운트다운 대기 시간 = 60초
+  var COUNTDOWN_TOTAL = 60;
+
+  var lastActivity = Date.now();
+  var checkInterval = null;
+  var countdownInterval = null;
+  var countdownRemaining = COUNTDOWN_TOTAL;
+  var isModalVisible = false;
+
+  // 세션 타임아웃 확인 모달 동적 생성 및 주입
+  function createTimeoutModal() {
+    if (document.getElementById('nanoSessionModalOverlay')) return;
+
+    var style = document.createElement('style');
+    style.id = 'nanoSessionModalStyle';
+    style.textContent = `
+      #nanoSessionModalOverlay {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(35, 27, 21, 0.65);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 9999999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+        animation: nanoFadeIn .2s ease-out;
+      }
+      @keyframes nanoFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      #nanoSessionModalCard {
+        background: #ffffff;
+        border-radius: 22px;
+        max-width: 430px;
+        width: 100%;
+        padding: 28px 24px;
+        box-shadow: 0 25px 60px -10px rgba(45, 35, 25, 0.35);
+        border: 1.5px solid #ece4d8;
+        text-align: center;
+        box-sizing: border-box;
+        font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        animation: nanoPopUp .25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes nanoPopUp {
+        from { transform: scale(0.92); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+      .nano-session-icon {
+        width: 58px;
+        height: 58px;
+        background: #fff4eb;
+        border: 2px solid #fed7aa;
+        color: #e06d53;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        margin-bottom: 16px;
+      }
+      .nano-session-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: #2b231d;
+        margin-bottom: 8px;
+        letter-spacing: -0.3px;
+      }
+      .nano-session-desc {
+        font-size: 13.5px;
+        color: #6e6259;
+        line-height: 1.55;
+        margin-bottom: 18px;
+      }
+      .nano-session-timer-box {
+        background: #fdfaf6;
+        border: 1.5px dashed #f59e0b;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 22px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #b45309;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .nano-session-timer-num {
+        font-size: 20px;
+        font-weight: 900;
+        color: #dc2626;
+        min-width: 28px;
+        display: inline-block;
+      }
+      .nano-session-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.3fr;
+        gap: 10px;
+      }
+      .nano-session-btn {
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all .15s ease-in-out;
+      }
+      .nano-session-btn-logout {
+        background: #f5f2eb;
+        color: #786d63;
+        border: 1px solid #dfd7cc;
+      }
+      .nano-session-btn-logout:hover {
+        background: #eae5dc;
+        color: #3d342d;
+      }
+      .nano-session-btn-stay {
+        background: #1f8a7e;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(31, 138, 126, 0.25);
+      }
+      .nano-session-btn-stay:hover {
+        background: #176f65;
+        box-shadow: 0 6px 16px rgba(31, 138, 126, 0.35);
+      }
+    `;
+    document.head.appendChild(style);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'nanoSessionModalOverlay';
+    overlay.innerHTML = `
+      <div id="nanoSessionModalCard" role="dialog" aria-modal="true" aria-labelledby="nanoSessionTitle">
+        <div class="nano-session-icon">⏳</div>
+        <div class="nano-session-title" id="nanoSessionTitle">로그인을 유지하시겠습니까?</div>
+        <div class="nano-session-desc">
+          15분 동안 활동이 감지되지 않아 안내해 드립니다.<br>
+          계속 이용하시려면 아래 <strong>[로그인 유지]</strong> 버튼을 눌러주세요.
+        </div>
+        <div class="nano-session-timer-box">
+          <i class="fa-solid fa-clock"></i>
+          <span><span class="nano-session-timer-num" id="nanoSessionCountdown">60</span>초 후 자동으로 로그아웃됩니다.</span>
+        </div>
+        <div class="nano-session-actions">
+          <button type="button" class="nano-session-btn nano-session-btn-logout" id="nanoSessionBtnLogout">
+            로그아웃
+          </button>
+          <button type="button" class="nano-session-btn nano-session-btn-stay" id="nanoSessionBtnStay">
+            로그인 유지
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // 이벤트 리스너 연결
+    document.getElementById('nanoSessionBtnLogout').addEventListener('click', function () {
+      executeSafeLogout();
+    });
+
+    document.getElementById('nanoSessionBtnStay').addEventListener('click', function () {
+      keepSessionAlive();
+    });
+  }
+
+  // 안전 로그아웃 실행 (사용자 확인 미응답 또는 [로그아웃] 클릭 시)
+  function executeSafeLogout() {
+    isModalVisible = false;
+    if (countdownInterval) clearInterval(countdownInterval);
+    if (checkInterval) clearInterval(checkInterval);
+
+    var overlay = document.getElementById('nanoSessionModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+
+    if (window.NanoPortal && typeof window.NanoPortal.logout === 'function') {
+      window.NanoPortal.logout().catch(function () {
+        sessionStorage.removeItem('nano_auth_user');
+        window.location.href = 'index.html';
+      });
+    } else {
+      sessionStorage.removeItem('nano_auth_user');
+      window.location.href = 'index.html';
+    }
+  }
+
+  // 로그인 유지 (확인) 처리
+  function keepSessionAlive() {
+    isModalVisible = false;
+    if (countdownInterval) clearInterval(countdownInterval);
+    lastActivity = Date.now();
+
+    var overlay = document.getElementById('nanoSessionModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // 토스트 안내 지원
+    if (typeof window.toast === 'function') {
+      window.toast('로그인 상태가 15분 연장되었습니다.');
+    } else if (typeof window.showToast === 'function') {
+      window.showToast('로그인 상태가 15분 연장되었습니다.');
+    }
+  }
+
+  // 타임아웃 경고 모달 표시 (15분 미활동 도달 시)
+  function showTimeoutModal() {
+    if (isModalVisible) return;
+    createTimeoutModal();
+
+    isModalVisible = true;
+    countdownRemaining = COUNTDOWN_TOTAL;
+
+    var numEl = document.getElementById('nanoSessionCountdown');
+    if (numEl) numEl.textContent = String(countdownRemaining);
+
+    var overlay = document.getElementById('nanoSessionModalOverlay');
+    if (overlay) overlay.style.display = 'flex';
+
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(function () {
+      countdownRemaining--;
+      if (numEl) numEl.textContent = String(countdownRemaining);
+
+      if (countdownRemaining <= 0) {
+        clearInterval(countdownInterval);
+        executeSafeLogout();
+      }
+    }, 1000);
+  }
+
+  // 사용자 활동 감지 리스너 (모달이 떠있지 않을 때만 타이머 갱신)
+  var activityThrottle = 0;
+  function registerActivity() {
+    if (isModalVisible) return; // 모달이 뜬 상태에서는 반드시 확인 버튼을 눌러야 연장됨
+    var now = Date.now();
+    if (now - activityThrottle > 1000) {
+      activityThrottle = now;
+      lastActivity = now;
+    }
+  }
+
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function (eventName) {
+    window.addEventListener(eventName, registerActivity, { passive: true });
+  });
+
+  // 15분 경과 여부 주기적 체크 (5초마다 점검)
+  checkInterval = setInterval(function () {
+    if (isModalVisible) return;
+    if (Date.now() - lastActivity >= INACTIVITY_LIMIT) {
+      showTimeoutModal();
+    }
+  }, 5000);
+
+  // 뒤로가기 시 로그인 풀림 방지 (히스토리 가드)
+  function initHistoryGuard() {
+    try {
+      if (!history.state || !history.state.nanoSessionGuard) {
+        history.pushState({ nanoSessionGuard: true }, '', location.href);
+      }
+      window.addEventListener('popstate', function (event) {
+        var pathname = window.location.pathname.toLowerCase();
+        // student_preview.html은 자체 SPA 패널 히스토리 관리에서 유연하게 처리
+        if (pathname.includes('student_preview')) return;
+
+        // admin_preview 및 master_preview에서 뒤로가기 시 index.html로의 실수 이탈 방지
+        history.pushState({ nanoSessionGuard: true }, '', location.href);
+      });
+    } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      initHistoryGuard();
+    });
+  } else {
+    initHistoryGuard();
+  }
+})();
