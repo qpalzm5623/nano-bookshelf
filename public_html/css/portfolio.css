@@ -3,6 +3,9 @@
   --pf-ink: #243b38;
   --pf-muted: #657571;
   --pf-accent: #187e73;
+  --pf-yellow: #f6c344;
+  --pf-yellow-soft: #fff8df;
+  --pf-yellow-ink: #805418;
   --pf-line: #dce6e2;
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
   font-size: 14px;
@@ -18,7 +21,7 @@
 #portfolioPrintDoc .pf-header-top > div { min-width: 0; }
 #portfolioPrintDoc .pf-header-title { font-size: 24px; line-height: 1.4; letter-spacing: -0.6px; }
 #portfolioPrintDoc .pf-header-meta { flex-shrink: 0; font-size: 12px; }
-#portfolioPrintDoc .pf-report-id { display: inline-block; padding: 4px 8px; background: #eaf5f1; color: #17675f; border-radius: 5px; font-weight: 700; }
+#portfolioPrintDoc .pf-report-id { display: inline-block; padding: 4px 8px; background: var(--pf-yellow-soft); color: var(--pf-yellow-ink); border: 1px solid #eed99a; border-radius: 5px; font-weight: 700; }
 #portfolioPrintDoc .pf-section-title { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 16px; line-height: 1.5; font-weight: 700; color: var(--pf-ink); }
 #portfolioPrintDoc .pf-section-title i { color: var(--pf-accent); flex-shrink: 0; }
 #portfolioPrintDoc .pf-student-info-grid { display: grid; grid-template-columns: 0.8fr 1fr 1fr 1.3fr; gap: 8px; padding: 12px; border: 1px solid var(--pf-line); border-radius: 10px; background: #f5f8f6; }
@@ -29,6 +32,8 @@
 #portfolioPrintDoc .pf-date { display: inline-block; white-space: nowrap; }
 #portfolioPrintDoc .pf-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 #portfolioPrintDoc .pf-stat-box { padding: 16px 10px; text-align: center; border: 1px solid var(--pf-line); border-radius: 10px; background: #f8faf8; }
+#portfolioPrintDoc .pf-stat-box:nth-child(even) { background: var(--pf-yellow-soft); border-color: #eed99a; }
+#portfolioPrintDoc .pf-stat-box:nth-child(even) .pf-stat-value { color: var(--pf-yellow-ink); }
 #portfolioPrintDoc .pf-stat-label, #portfolioPrintDoc .pf-stat-sub { color: var(--pf-muted); font-size: 12px; }
 #portfolioPrintDoc .pf-stat-value { margin: 4px 0; font-size: 28px; font-weight: 800; line-height: 1.3; color: var(--pf-accent); font-variant-numeric: tabular-nums; }
 #portfolioPrintDoc .pf-stat-unit { margin-left: 3px; font-size: 14px; font-weight: 600; }
@@ -38,6 +43,8 @@
 #portfolioPrintDoc .pf-panel-badge { padding: 3px 8px; border-radius: 5px; color: #17675f; background: #e2f0e9; font-size: 11px; font-weight: 600; }
 #portfolioPrintDoc .pf-insight-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 #portfolioPrintDoc .pf-insight-card { min-width: 0; padding: 14px; border: 1px solid var(--pf-line); border-left: 3px solid #429b8a; border-radius: 7px; background: #fff; }
+#portfolioPrintDoc .pf-insight-card:nth-child(even) { border-left-color: var(--pf-yellow); background: #fffdf6; }
+#portfolioPrintDoc .pf-insight-card:nth-child(even) .pf-insight-card-head { color: var(--pf-yellow-ink); }
 #portfolioPrintDoc .pf-insight-card-head { display: flex; align-items: baseline; gap: 7px; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: #235c53; }
 #portfolioPrintDoc .pf-insight-card-head i { flex-shrink: 0; }
 #portfolioPrintDoc .pf-insight-card-body { font-size: 14px; line-height: 1.75; white-space: pre-line; }
@@ -47,7 +54,7 @@
 #portfolioPrintDoc .pf-preference-chart-col svg { max-width: 100%; }
 #portfolioPrintDoc .pf-tag-badge { display: inline-block; padding: 3px 8px; margin: 0 4px 6px 0; border: 1px solid var(--pf-line); border-radius: 16px; background: #fff; color: #435b55; font-size: 12px; }
 #portfolioPrintDoc .pf-collection-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-#portfolioPrintDoc .pf-cover-grid-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; padding: 16px; border: 1px solid var(--pf-line); border-radius: 10px; background: #fafbf8; }
+#portfolioPrintDoc .pf-cover-grid-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; padding: 16px; border: 1px solid #eed99a; border-radius: 10px; background: #fffdf6; }
 #portfolioPrintDoc .pf-cover-card-item { min-width: 0; text-align: center; }
 #portfolioPrintDoc .pf-cover-card-img-wrap, #portfolioPrintDoc .pf-book-cover-wrap { display: block; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
 #portfolioPrintDoc .pf-cover-card-img-wrap { width: 100%; max-width: 100px; height: 140px; margin: 0 auto 10px; }
@@ -55,7 +62,7 @@
 #portfolioPrintDoc .pf-cover-card-title { font-size: 13px; font-weight: 700; line-height: 1.5; }
 #portfolioPrintDoc .pf-cover-card-sub { margin-top: 3px; font-size: 12px; color: var(--pf-muted); }
 #portfolioPrintDoc button:focus-visible { outline: 3px solid var(--pf-accent); outline-offset: 4px; }
-#portfolioPrintDoc .pf-page-break { margin: 32px 0; border-top: 1px solid var(--pf-line); }
+#portfolioPrintDoc .pf-page-break { margin: 20px 0; border-top: 2px solid var(--pf-yellow); }
 #portfolioPrintDoc .pf-detail-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--pf-line); font-size: 12px; }
 /* 한 행에 한 권. 왼쪽 정보와 오른쪽 분석문 모두 내용에 맞춰 늘어납니다. */
 #portfolioPrintDoc .pf-books-grid-row { display: block; margin: 0; }
@@ -65,7 +72,7 @@
 #portfolioPrintDoc .pf-book-meta-left { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding-top: 2px; color: var(--pf-muted); font-size: 12px; text-align: center; font-variant-numeric: tabular-nums; }
 #portfolioPrintDoc .pf-book-date { line-height: 1.45; }
 #portfolioPrintDoc .pf-book-year, #portfolioPrintDoc .pf-book-month-day { display: block; white-space: nowrap; }
-#portfolioPrintDoc .pf-book-number { padding: 1px 6px; border-radius: 4px; background: #eaf5f1; color: #17675f; font-weight: 700; }
+#portfolioPrintDoc .pf-book-number { padding: 1px 6px; border-radius: 4px; background: var(--pf-yellow-soft); color: var(--pf-yellow-ink); font-weight: 700; }
 #portfolioPrintDoc .pf-book-cover-wrap { width: 48px; height: 68px; }
 #portfolioPrintDoc .pf-book-info-block { min-width: 0; overflow-wrap: anywhere; }
 #portfolioPrintDoc .pf-book-title { font-size: 15px; line-height: 1.5; font-weight: 700; }
@@ -75,6 +82,9 @@
 #portfolioPrintDoc .pf-book-achievement-title { margin-bottom: 6px; color: #17675f; font-size: 13px; font-weight: 700; }
 #portfolioPrintDoc .pf-book-achievement-text { font-size: 14px; line-height: 1.75; white-space: pre-line; }
 #portfolioPrintDoc #pfTeacherNoteDisplay { font-size: 14px; line-height: 1.85; white-space: pre-line; }
+#portfolioPrintDoc .pf-teacher-comment-box { background: var(--pf-yellow-soft); border-color: #eed99a; }
+#portfolioPrintDoc .pf-teacher-comment-box .pf-panel-head { border-bottom-color: #eed99a; }
+#portfolioPrintDoc .pf-teacher-comment-box .pf-panel-badge { background: #f9e7ad; color: var(--pf-yellow-ink); }
 #portfolioPrintDoc .pf-signature { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; }
 #portfolioPrintDoc .pf-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; padding-top: 12px; border-top: 1px solid var(--pf-line); font-size: 11px; }
 #portfolioPrintDoc .pf-empty { padding: 24px; color: var(--pf-muted); text-align: center; border: 1px dashed var(--pf-line); border-radius: 8px; }
@@ -92,11 +102,32 @@
     #portfolioPrintDoc .pf-cover-grid-wrap { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     #portfolioPrintDoc .pf-book-row-card { grid-template-columns: 42px 54px minmax(0, 1fr); gap: 10px; }
     #portfolioPrintDoc .pf-book-achievement-block { grid-column: 2 / -1; border-left: 0; border-top: 1px solid var(--pf-line); padding: 10px 0 0; }
+    /* 모바일은 요약 정보를 먼저 훑고 분석 본문으로 이어 읽을 수 있도록 간격을 줄입니다. */
+    #portfolioPrintDoc .pf-header-top { gap: 8px; }
+    #portfolioPrintDoc .pf-header-section { padding-bottom: 10px !important; margin-bottom: 12px !important; }
+    #portfolioPrintDoc .pf-header-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+    #portfolioPrintDoc .pf-report-id { margin-bottom: 0 !important; padding: 2px 6px; font-size: 11px; }
+    #portfolioPrintDoc .pf-student-info-grid { padding: 6px; gap: 6px; }
+    #portfolioPrintDoc .pf-student-info-cell { padding: 7px 8px; }
+    #portfolioPrintDoc .pf-info-label { margin-bottom: 2px; font-size: 11px; }
+    #portfolioPrintDoc .pf-info-val { font-size: 13px; line-height: 1.45; }
+    #portfolioPrintDoc .pf-stat-grid { gap: 8px; }
+    #portfolioPrintDoc .pf-stat-box { padding: 9px 8px; }
+    #portfolioPrintDoc .pf-stat-label, #portfolioPrintDoc .pf-stat-sub { font-size: 11px; line-height: 1.4; }
+    #portfolioPrintDoc .pf-stat-value { margin: 2px 0; font-size: 24px; line-height: 1.2; }
+    #portfolioPrintDoc .pf-stat-unit { font-size: 12px; }
+    #portfolioPrintDoc .pf-section-title { margin-bottom: 8px; font-size: 15px; }
+    #portfolioPrintDoc .pf-page1-section > .mb-3 { margin-bottom: 12px !important; }
+    #portfolioPrintDoc .pf-panel, #portfolioPrintDoc .pf-preference-wrap { padding: 12px; }
+    #portfolioPrintDoc .pf-insight-card { padding: 10px 12px; }
+    #portfolioPrintDoc .pf-panel-head { padding-bottom: 7px; margin-bottom: 8px; }
+    #portfolioPrintDoc .pf-page-break { margin: 16px 0; }
+    #portfolioPrintDoc .pf-detail-header { gap: 4px; margin-bottom: 12px; padding-bottom: 8px; }
   }
   @container portfolio (max-width: 380px) {
     #portfolioPrintDoc .pf-preference-row { grid-template-columns: minmax(0, 1fr); gap: 16px; }
     #portfolioPrintDoc .pf-cover-grid-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; }
-    #portfolioPrintDoc .pf-student-info-grid { padding: 8px; }
+    #portfolioPrintDoc .pf-student-info-grid { padding: 6px; }
     #portfolioPrintDoc .pf-panel { padding: 12px; }
   }
   @media (max-width: 600px) {
@@ -108,8 +139,8 @@
 @media print {
   body.is-printing-portfolio { margin: 0 !important; padding: 0 !important; background: #fff !important; }
   body.is-printing-portfolio #portfolioPrintDoc { width: 100%; max-width: none; margin: 0; padding: 0; font-size: 10pt; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  /* 브라우저에서 여백을 '최소'로 선택해도 두 장의 제목이 종이 끝에 붙지 않게 합니다. */
-  #portfolioPrintDoc .pf-page1-section, #portfolioPrintDoc .pf-page2-section { padding-top: 10mm; }
+  /* 용지 여백은 @page에 맡기고 상세 이력도 남은 공간부터 자연스럽게 이어집니다. */
+  #portfolioPrintDoc .pf-page1-section, #portfolioPrintDoc .pf-page2-section { padding-top: 0; break-inside: auto; }
   #portfolioPrintDoc .pf-header-title { font-size: 18pt; }
   #portfolioPrintDoc .pf-header-meta, #portfolioPrintDoc .pf-info-label, #portfolioPrintDoc .pf-stat-label, #portfolioPrintDoc .pf-stat-sub { font-size: 8.5pt; }
   #portfolioPrintDoc .pf-info-val { font-size: 10pt; }
@@ -138,9 +169,11 @@
   #portfolioPrintDoc .pf-book-achievement-block { padding-left: 10px; }
   #portfolioPrintDoc .pf-book-col { margin-bottom: 8px; }
   #portfolioPrintDoc .pf-page-break { display: none; }
-  #portfolioPrintDoc .pf-page2-section { break-before: page; }
+  #portfolioPrintDoc .pf-page2-section { break-before: auto; page-break-before: auto; }
+  #portfolioPrintDoc .pf-detail-header { margin-top: 14px; margin-bottom: 10px; padding-top: 10px; border-top: 2px solid var(--pf-yellow); }
+  #portfolioPrintDoc .pf-books-grid-row { break-inside: auto; }
   #portfolioPrintDoc .pf-detail-header, #portfolioPrintDoc .pf-collection-head, #portfolioPrintDoc .pf-panel-head { break-after: avoid-page; }
-  #portfolioPrintDoc .pf-header-section, #portfolioPrintDoc .pf-stat-grid, #portfolioPrintDoc .pf-insight-card, #portfolioPrintDoc .pf-preference-wrap, #portfolioPrintDoc .pf-cover-card-item, #portfolioPrintDoc .pf-book-col, #portfolioPrintDoc .pf-teacher-comment-box, #portfolioPrintDoc .pf-footer { break-inside: avoid-page; }
+  #portfolioPrintDoc .pf-header-section, #portfolioPrintDoc .pf-stat-grid, #portfolioPrintDoc .pf-insight-card, #portfolioPrintDoc .pf-preference-wrap, #portfolioPrintDoc .pf-cover-card-item, #portfolioPrintDoc .pf-book-col, #portfolioPrintDoc .pf-teacher-comment-box, #portfolioPrintDoc .pf-footer { break-inside: avoid-page; page-break-inside: avoid; }
   #portfolioPrintDoc p, #portfolioPrintDoc .pf-book-achievement-text { orphans: 3; widows: 3; }
   #portfolioPrintDoc .pf-print-hide { display: none !important; }
 }

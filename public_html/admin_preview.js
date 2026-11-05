@@ -9158,10 +9158,10 @@ function renderPortfolioDocument(studentId, pfId) {
     );
   }).join('');
 
-  // 전체 포트폴리오 문서 조립: 1페이지 종합 분석 + 2페이지 성취 내역 및 지도교사 총평
+  // 전체 포트폴리오 문서 조립: 종합 분석에서 도서별 성취 내역과 지도교사 총평으로 이어집니다.
   var html = 
     '<!-- ============================================================== -->' +
-    '<!-- [A4 1페이지: 포트폴리오 종합 대시보드] -->' +
+    '<!-- [포트폴리오 종합 대시보드] -->' +
     '<!-- ============================================================== -->' +
     '<div class="pf-page1-section">' +
       '<!-- ① 학생 정보 헤더 -->' +
@@ -9233,7 +9233,7 @@ function renderPortfolioDocument(studentId, pfId) {
               '</div>' +
               '<div>' +
                 '<div class="font-weight-bold mb-1.5 text-dark" style="font-size:12px;">카테고리 구성 비율</div>' +
-                distKeys.map(function(k) {
+                distKeys.map(function(k, index) {
                   var val = dist[k];
                   return (
                     '<div class="mb-1" style="font-size:11.5px;">' +
@@ -9242,7 +9242,7 @@ function renderPortfolioDocument(studentId, pfId) {
                         '<span class="font-weight-bold text-success" style="color:#1f8a7e !important;">' + val + '%</span>' +
                       '</div>' +
                       '<div class="progress" style="height:5px; background:#ece5d9; border-radius:3px;">' +
-                        '<div class="progress-bar" style="width:' + val + '%; background:#1f8a7e; border-radius:3px;"></div>' +
+                        '<div class="progress-bar" style="width:' + val + '%; background:' + ['#1f8a7e', '#f6c344', '#e89936', '#72aaa1'][index % 4] + '; border-radius:3px;"></div>' +
                       '</div>' +
                     '</div>'
                   );
@@ -9270,15 +9270,15 @@ function renderPortfolioDocument(studentId, pfId) {
     '</div>' +
 
     '<!-- ────────────────────────────────────────────── -->' +
-    '<!-- [A4 인쇄 강제 페이지 분할 구분자] -->' +
+    '<!-- [요약과 도서별 상세 이력 구분선] -->' +
     '<!-- ────────────────────────────────────────────── -->' +
     '<div class="pf-page-break"></div>' +
 
     '<!-- ============================================================== -->' +
-    '<!-- [A4 2페이지: 북퀴즈 상세 이력 & 지도교사 심층 총평] -->' +
+    '<!-- [북퀴즈 상세 이력 & 지도교사 심층 총평: 도서 카드 단위로 이어서 인쇄] -->' +
     '<!-- ============================================================== -->' +
     '<div class="pf-page2-section">' +
-      '<!-- 2페이지 미니 헤더 -->' +
+      '<!-- 상세 이력 안내 -->' +
       '<div class="pf-detail-header">' +
         '<div style="font-size:12px; font-weight:700; color:#1f8a7e;">' +
           '<i class="fa-solid fa-book-open mr-1"></i>나노의 책장 독서 성장 포트폴리오 <span class="text-muted font-weight-normal">| 도서별 세부 성취 및 지도교사 총평</span>' +
@@ -9328,7 +9328,7 @@ function buildGenreDonutSvg(dist) {
   for (var k in dist) total += dist[k];
   if (total === 0) total = 100;
 
-  var colors = ['#1f8a7e', '#3ab3a4', '#e67828', '#f59e0b'];
+  var colors = ['#1f8a7e', '#f6c344', '#e89936', '#72aaa1'];
   var accumulatedPercent = 0;
   var paths = [];
 
