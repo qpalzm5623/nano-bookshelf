@@ -6,8 +6,8 @@ function saveWorksheetStore(logId, aiResult, photos) {
     var raw = localStorage.getItem(STORAGE_KEY_WORKSHEET_STORE);
     var store = raw ? JSON.parse(raw) : {};
     store[logId] = store[logId] || {};
-    if (aiResult) store[logId].aiResult = aiResult;
-    if (Array.isArray(photos) && photos.length > 0) {
+    if (aiResult !== undefined) store[logId].aiResult = aiResult;
+    if (Array.isArray(photos)) {
       store[logId].photos = photos.slice(0, 3);
     }
     localStorage.setItem(STORAGE_KEY_WORKSHEET_STORE, JSON.stringify(store));
@@ -32,9 +32,7 @@ function restoreAdminActiveTab() {
   var saved = '';
   try { saved = sessionStorage.getItem('nano_admin_active_tab') || ''; } catch(e) {}
   var target = (validTabs.indexOf(hash) >= 0) ? hash : (validTabs.indexOf(saved) >= 0 ? saved : 'members');
-  if (target && target !== 'members') {
-    switchTab(target);
-  }
+  switchTab(target);
 }
 window.addEventListener('hashchange', function() {
   var validTabs = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
@@ -235,8 +233,9 @@ function saveAllQuizzes() {
 function switchTab(tab) {
   var views = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   if (views.indexOf(tab) < 0) tab = 'members';
+  // 저장소가 차단되어도 URL에는 현재 메뉴를 남깁니다.
+  try { sessionStorage.setItem('nano_admin_active_tab', tab); } catch (e) {}
   try {
-    sessionStorage.setItem('nano_admin_active_tab', tab);
     if (window.location.hash !== '#' + tab) {
       history.replaceState(null, '', '#' + tab);
     }
@@ -3962,9 +3961,9 @@ async function saveCustomLearningLogs(logs) {
     window.nanoReviewSaving = true;
     try {
       for (var log of changes) {
-        saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos);
         var response = await NanoPortal.request('review', { id: log.id, comment: log.comment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, worksheetPhotos: log.worksheetPhotos, reviewRevision: log.reviewRevision || '' });
         log.reviewRevision = response.reviewRevision; NanoPortal.applyReview(log);
+        saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos);
       }
       return true;
     } catch(e) { showAcademyToast('첨삭 저장 실패: ' + e.message); return false; }
@@ -3972,6 +3971,7 @@ async function saveCustomLearningLogs(logs) {
   }
   try {
     window.NanoLearningStore.save(getLearningAcademyId(), logs);
+    logs.forEach(function(log) { saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos); });
     return true;
   } catch(e) {
     console.error('학습 기록 저장 실패:', e);
@@ -4066,141 +4066,147 @@ function executeLearningSearch() {
   renderLearningTable();
 }
 
+// 첨삭 결과는 원본과 분리된 편집본으로 다뤄 저장 실패 시에도 입력을 유지합니다.
+var currentWorksheetCorrectionDone = false;
+var currentWorksheetReviewRevision = '';
+var worksheetCorrectionSaving = false;
+var worksheetAnalysisJobs = new Set();
+var worksheetEditableFields = [
+  ['summary', '한 줄 관찰', 2],
+  ['drawingObservation', '그림 표현 관찰', 3],
+  ['languageHandwritingNote', '글과 표현 방식 관찰', 3],
+  ['nextStep', '다음 성장 방향', 4],
+  ['parentGuide', '가정 대화 팁', 4]
+];
+
+function worksheetEditorField(id, label, value, rows) {
+  return '<div class="form-group mb-3"><label class="font-weight-bold" for="' + id + '" style="font-size:13px;">' + escapePortfolioText(label) + '</label>' +
+    '<textarea id="' + id + '" class="form-control form-control-beige" rows="' + rows + '" maxlength="5000" style="font-size:13px;line-height:1.7;resize:vertical;">' + escapePortfolioText(value || '') + '</textarea></div>';
+}
+
+function renderWorksheetCorrectionEditor() {
+  var result = currentWorksheetAiResult || {};
+  var html = worksheetEditorField('worksheetEdit-summary', '한 줄 관찰', result.summary, 2);
+  var quotes = Array.isArray(result.actualQuotes) ? result.actualQuotes : [];
+  html += quotes.map(function(q, i) {
+    return '<fieldset class="border rounded p-3 mb-3"><legend class="w-auto px-2 font-weight-bold" style="font-size:13px;">표현 관찰 ' + (i + 1) + '</legend>' +
+      worksheetEditorField('worksheetQuote-' + i + '-quote', '아이의 표현 · 인용문', q.quote, 2) +
+      worksheetEditorField('worksheetQuote-' + i + '-criteria', '관찰 영역', q.criteria, 1) +
+      worksheetEditorField('worksheetQuote-' + i + '-comment', '관찰 내용', q.comment, 3) + '</fieldset>';
+  }).join('');
+  worksheetEditableFields.slice(1).forEach(function(field) {
+    var growth = field[0] === 'nextStep' || field[0] === 'parentGuide';
+    html += '<div class="' + (growth ? 'p-3 mb-3 rounded' : '') + '"' + (growth ? ' style="background:#f0f8f6;border:1px solid #bddbd4;"' : '') + '>' +
+      (growth ? '<p class="text-muted mb-2" style="font-size:12px;">' + (field[0] === 'nextStep' ? '다음 독서에서 시도할 작은 활동과 구체적인 실천 방법을 안내해 주세요.' : '아이의 표현을 바탕으로 칭찬 한마디와 함께 나눌 열린 질문을 적어 주세요.') + '</p>' : '') +
+      worksheetEditorField('worksheetEdit-' + field[0], field[1], result[field[0]], field[2]) + '</div>';
+  });
+  document.getElementById('worksheetAiEditor').innerHTML = html;
+}
+
+function readWorksheetCorrectionEditor() {
+  var result = JSON.parse(JSON.stringify(currentWorksheetAiResult || {}));
+  worksheetEditableFields.forEach(function(field) {
+    result[field[0]] = document.getElementById('worksheetEdit-' + field[0]).value.trim();
+  });
+  result.actualQuotes = (Array.isArray(result.actualQuotes) ? result.actualQuotes : []).map(function(q, i) {
+    var edited = Object.assign({}, q);
+    ['quote', 'criteria', 'comment'].forEach(function(key) { edited[key] = document.getElementById('worksheetQuote-' + i + '-' + key).value.trim(); });
+    return edited;
+  });
+  return result;
+}
+
+function syncWorksheetCorrectionActions() {
+  var done = currentWorksheetCorrectionDone;
+  var processing = worksheetAnalysisJobs.has(currentOpenCorrectionLogId);
+  document.getElementById('worksheetUploadSection').style.display = done ? 'none' : 'block';
+  document.getElementById('worksheetAiResultCard').style.display = done ? 'block' : 'none';
+  var run = document.getElementById('btnRunWorksheetAi');
+  run.style.display = done ? 'none' : 'inline-block';
+  run.disabled = processing || worksheetCorrectionSaving || !currentWorksheetPhotos.length;
+  run.textContent = processing ? '첨삭 중…' : '나노 시트 첨삭 실행';
+  ['btnSaveWorksheetCorrection', 'btnDeleteWorksheetCorrection'].forEach(function(id) {
+    var button = document.getElementById(id);
+    button.style.display = done ? 'inline-block' : 'none';
+    button.disabled = worksheetCorrectionSaving || processing;
+  });
+}
+
 // 첨삭 모달 열기
 function openCorrectionModal(logId) {
-  var allLogs = getLoadedLearningLogs();
-  var log = allLogs.find(function(l) { return l.id === logId; });
-  if (!log) {
-    log = learningLogs.find(function(l) { return l.id === logId; });
-  }
+  var log = getLoadedLearningLogs().find(function(l) { return l.id === logId; });
   if (!log) return;
-
   currentOpenCorrectionLogId = logId;
-
-  var studentEl = document.getElementById('modalCorrectionStudent');
-  if (studentEl) {
-    studentEl.innerText = `${(log.studentName || log.name)} (${log.classGroup})`;
-  }
-
-  var bookEl = document.getElementById('modalCorrectionBook');
-  if (bookEl) {
-    bookEl.innerText = `${log.bookTitle} · ${log.date}`;
-  }
-
-  var isReviewDone = (log.reviewed && log.reviewed.includes('완료'));
-  var badgeEl = document.getElementById('modalCorrectionBadge');
-  if (badgeEl) {
-    badgeEl.className = 'badge-soft ' + (isReviewDone ? 'badge-soft-success' : 'badge-soft-warn') + ' font-weight-bold';
-    badgeEl.innerText = isReviewDone ? '첨삭 완료' : '첨삭 전';
-  }
-
-  var commentEl = document.getElementById('correctionCommentInput');
-  if (commentEl) {
-    commentEl.value = log.comment || '';
-  }
-
-  // 나노시트 사진 및 AI 분석 결과 복원
+  currentWorksheetReviewRevision = log.reviewRevision || '';
   currentWorksheetPhotos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos.slice() : [];
-  currentWorksheetAiResult = log.worksheetAiResult || null;
-
-  var cardEl = document.getElementById('worksheetAiResultCard');
-  if (currentWorksheetAiResult && cardEl) {
-    var summaryEl = document.getElementById('aiResultSummaryText');
-    if (summaryEl) summaryEl.innerText = currentWorksheetAiResult.summary || '';
-
-    var quotesContainer = document.getElementById('aiResultQuotesContainer');
-    if (quotesContainer && Array.isArray(currentWorksheetAiResult.actualQuotes)) {
-      quotesContainer.innerHTML = currentWorksheetAiResult.actualQuotes.map(function(q) {
-        return `
-          <div class="p-2 mb-1 rounded bg-white border">
-            <div class="text-primary font-weight-bold" style="font-size: 11px;">
-              <i class="fa-solid fa-quote-left mr-1"></i>"${q.quote}" <span class="badge badge-light border ml-1 font-weight-normal">${q.criteria || '관찰'}</span>
-            </div>
-            <div class="text-dark mt-0.5" style="font-size: 11.5px; line-height: 1.5;">${q.comment}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    var nextEl = document.getElementById('aiResultNextStepText');
-    if (nextEl) {
-      nextEl.innerHTML = `
-        <div>• <strong>다음 성장 방향 (20%):</strong> ${currentWorksheetAiResult.nextStep || '-'}</div>
-        <div class="mt-1 text-muted">• <strong>가정 대화 팁:</strong> ${currentWorksheetAiResult.parentGuide || '-'}</div>
-      `;
-    }
-    cardEl.style.display = 'block';
-  } else if (cardEl) {
-    cardEl.style.display = 'none';
-  }
-
+  currentWorksheetAiResult = log.worksheetAiResult ? JSON.parse(JSON.stringify(log.worksheetAiResult)) : null;
+  currentWorksheetCorrectionDone = !!currentWorksheetAiResult || String(log.reviewed || '').includes('완료');
+  document.getElementById('modalCorrectionStudent').innerText = (log.studentName || log.name) + ' (' + (log.classGroup || '-') + ')';
+  document.getElementById('modalCorrectionBook').innerText = log.bookTitle + ' · ' + log.date;
+  var badge = document.getElementById('modalCorrectionBadge');
+  badge.className = 'badge-soft ' + (currentWorksheetCorrectionDone ? 'badge-soft-success' : 'badge-soft-warn') + ' font-weight-bold';
+  badge.innerText = currentWorksheetCorrectionDone ? '첨삭 완료' : '첨삭 전';
+  if (currentWorksheetCorrectionDone) renderWorksheetCorrectionEditor();
   renderWorksheetPhotoThumbnails();
+  syncWorksheetCorrectionActions();
+  document.getElementById('correctionFileInput').value = '';
+  if (window.jQuery) $('#modalCorrection').modal('show');
+}
 
-  var fileInput = document.getElementById('correctionFileInput');
-  if (fileInput) fileInput.value = '';
-
-  if (window.jQuery && typeof $('#modalCorrection').modal === 'function') {
-    $('#modalCorrection').modal('show');
+async function saveCorrectionFromModal() {
+  if (!currentOpenCorrectionLogId || !currentWorksheetCorrectionDone || worksheetCorrectionSaving) return;
+  var targetId = currentOpenCorrectionLogId;
+  var logs = getLoadedLearningLogs();
+  var log = logs.find(function(l) { return l.id === targetId; });
+  if (!log) return;
+  log.worksheetAiResult = readWorksheetCorrectionEditor();
+  log.reviewRevision = currentWorksheetReviewRevision;
+  log.reviewed = '첨삭 완료';
+  log.sheet = '작성 완료';
+  log.manualSheetDone = true;
+  worksheetCorrectionSaving = true;
+  syncWorksheetCorrectionActions();
+  try {
+    if (!await saveCustomLearningLogs(logs)) return;
+    renderLearningTable();
+    if (currentOpenCorrectionLogId === targetId) {
+      currentWorksheetAiResult = JSON.parse(JSON.stringify(log.worksheetAiResult));
+      currentWorksheetReviewRevision = log.reviewRevision || '';
+      if (window.jQuery) $('#modalCorrection').modal('hide');
+    }
+    showAcademyToast('수정한 나노 시트 첨삭 결과가 저장되었습니다.');
+  } finally {
+    worksheetCorrectionSaving = false;
+    syncWorksheetCorrectionActions();
   }
 }
 
-// 첨삭 모달에서 첨삭 완료 저장 처리
-async function saveCorrectionFromModal() {
-  if (!currentOpenCorrectionLogId) return;
-
-  var allLogs = getLoadedLearningLogs();
-  var log = allLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
-  if (!log) {
-    log = learningLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
-  }
-
-  if (log) {
-    log.reviewed = '첨삭 완료';
-    log.sheet = '작성 완료';
-    log.manualSheetDone = true;
-    var commentEl = document.getElementById('correctionCommentInput');
-    if (commentEl) {
-      log.comment = commentEl.value.trim();
-    }
-    // 나노시트 사진 및 AI 분석 결과 확실히 동기화 보존
-    if (Array.isArray(currentWorksheetPhotos)) {
-      log.worksheetPhotos = currentWorksheetPhotos.slice();
-    }
-    if (currentWorksheetAiResult) {
-      log.worksheetAiResult = currentWorksheetAiResult;
-    }
-    saveWorksheetStore(log.id, currentWorksheetAiResult, currentWorksheetPhotos);
-
-    var fileInput = document.getElementById('correctionFileInput');
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
-      if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('파일 첨부는 운영 서버에서 지원합니다.'); return; }
-      try {
-        var file = fileInput.files[0]; if (file.size > 2 * 1024 * 1024) throw new Error('첨부파일은 2MB 이하로 선택해 주세요.');
-        var base64 = await new Promise(function(resolve,reject) { var reader = new FileReader(); reader.onload = function() { resolve(reader.result.split(',')[1]); }; reader.onerror = reject; reader.readAsDataURL(file); });
-        var uploaded = await NanoPortal.api('/api/files', { attemptId: log.id, name: file.name, base64: base64 });
-        log.files = (log.files || []).concat(uploaded.file); fileInput.value = '';
-        showAcademyToast('첨부파일이 저장되었습니다. 첨삭 내용을 저장합니다.');
-      } catch(e) { showAcademyToast(e.message || '파일을 읽을 수 없습니다.'); return; }
-    }
-
-    if (!await saveCustomLearningLogs(allLogs)) return;
+async function deleteCorrectionFromModal() {
+  if (!currentOpenCorrectionLogId || worksheetCorrectionSaving || worksheetAnalysisJobs.has(currentOpenCorrectionLogId)) return;
+  if (!confirm('기존 첨삭 내역을 삭제하시겠습니까? AI 분석 결과와 교사 코멘트가 삭제됩니다. 원본 사진과 북퀴즈 학습 기록은 보존됩니다.')) return;
+  var targetId = currentOpenCorrectionLogId;
+  var logs = getLoadedLearningLogs();
+  var log = logs.find(function(l) { return l.id === targetId; });
+  if (!log) return;
+  log.worksheetAiResult = null;
+  log.reviewRevision = currentWorksheetReviewRevision;
+  log.comment = '';
+  log.reviewed = '첨삭 전';
+  worksheetCorrectionSaving = true;
+  syncWorksheetCorrectionActions();
+  try {
+    if (!await saveCustomLearningLogs(logs)) return;
     renderLearningTable();
-
-    var targetLogId = log.id;
-
-    // 첨삭 모달을 닫고, 모달이 닫히면 곧바로 첨삭/학습 리포트 모달을 자동 실행!
-    if (window.jQuery && typeof $('#modalCorrection').modal === 'function') {
-      $('#modalCorrection').one('hidden.bs.modal', function() {
-        setTimeout(function() {
-          openLearningDetailModal(targetLogId);
-        }, 120);
-      });
-      $('#modalCorrection').modal('hide');
-    } else {
-      openLearningDetailModal(targetLogId);
+    if (currentOpenCorrectionLogId === targetId) {
+      currentWorksheetAiResult = null;
+      currentWorksheetReviewRevision = log.reviewRevision || '';
+      currentWorksheetCorrectionDone = false;
+      if (window.jQuery) $('#modalCorrection').modal('hide');
     }
-
-    showAcademyToast(`[${(log.studentName || log.name)}] 원생의 생각담기 첨삭이 완료되었습니다. 첨삭 리포트를 표시합니다.`);
+    showAcademyToast('첨삭 내역이 삭제되었습니다.');
+  } finally {
+    worksheetCorrectionSaving = false;
+    syncWorksheetCorrectionActions();
   }
 }
 
@@ -4446,7 +4452,7 @@ function renderLearningTable() {
   }
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">일치하는 학습 기록이 없습니다.</td></tr>';
     renderLearningPagination(0, 1);
     return;
   }
@@ -4470,18 +4476,8 @@ function renderLearningTable() {
     // 도서 표지 및 출판사 메타데이터 조회
     var bookMeta = getLearningLogBookMeta(l);
 
-    // 5. 나노 시트 상태 토글 버튼
-    var isSheetDone = (l.sheet === '작성 완료');
-    var sheetBtnHtml = isSheetDone
-      ? `<button type="button" class="btn btn-xs btn-success" onclick="toggleNanoSheetStatus('${l.id}')" title="클릭 시 '작성 전'으로 변경" style="font-size:11px; padding:3px 9px; border-radius:6px;">
-           <i class="fa-solid fa-check mr-1"></i>작성 완료
-         </button>`
-      : `<button type="button" class="btn btn-xs btn-outline-secondary" onclick="toggleNanoSheetStatus('${l.id}')" title="클릭 시 '작성 완료'로 변경" style="font-size:11px; padding:3px 9px; border-radius:6px; background: #fff;">
-           작성 전
-         </button>`;
-
     // 6. 첨삭 컬럼 (백그라운드 첨삭 중 스피너 표시 및 모달 연결)
-    var isReviewProcessing = (l.reviewed === '첨삭 중');
+    var isReviewProcessing = worksheetAnalysisJobs.has(l.id) || (l.reviewed === '첨삭 중');
     var isReviewDone = (l.reviewed && l.reviewed.includes('완료'));
     var reviewBtnHtml = isReviewProcessing
       ? `<button type="button" class="btn btn-xs btn-outline-info font-weight-bold" disabled style="font-size:11px; padding:3px 9px; border-radius:6px; background:#f0fdfa; border-color:#99f6e4; color:#0f766e;">
@@ -4526,7 +4522,6 @@ function renderLearningTable() {
       <td class="text-center">
         <span class="badge-soft ${l.score >= 90 ? 'badge-soft-success' : 'badge-soft-warn'} font-weight-bold">${l.score}점</span>
       </td>
-      <td class="text-center">${sheetBtnHtml}</td>
       <td class="text-center">${reviewBtnHtml}</td>
       <td class="text-center">
         <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
@@ -4690,10 +4685,10 @@ function openLearningDetailModal(id) {
   }
   if (!log) return;
 
-  // [나노시트 첨삭 복원] 서버에서 비어오더라도 로컬스토리지 안전망에서 즉시 복원
+  // 운영 서버의 삭제 상태를 우선하고, 구형 로컬 기록에 한해서만 분석 사본을 복원합니다.
   var storedWs = getWorksheetStore(id);
   if (storedWs) {
-    if (!log.worksheetAiResult && storedWs.aiResult) log.worksheetAiResult = storedWs.aiResult;
+    if (!(window.NanoPortal && NanoPortal.remote) && log.worksheetAiResult === undefined && storedWs.aiResult) log.worksheetAiResult = storedWs.aiResult;
     if ((!log.worksheetPhotos || log.worksheetPhotos.length === 0) && Array.isArray(storedWs.photos) && storedWs.photos.length > 0) {
       log.worksheetPhotos = storedWs.photos;
     }
@@ -4915,10 +4910,10 @@ function openLearningDetailModal(id) {
 
       // 다음 성장 방향 (20%) & 가정 대화 팁
       var nextStepEl = document.getElementById('worksheetAiNextStep');
-      if (nextStepEl) nextStepEl.innerHTML = '• <strong>이렇게 해보세요:</strong> ' + (res.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.');
+      if (nextStepEl) nextStepEl.innerHTML = '• <strong>이렇게 해보세요:</strong> ' + escapePortfolioText(res.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.');
 
       var parentEl = document.getElementById('worksheetAiParentGuide');
-      if (parentEl) parentEl.innerHTML = '• <strong>집에서 함께 나눌 이야기:</strong> ' + (res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
+      if (parentEl) parentEl.innerHTML = '• <strong>집에서 함께 나눌 이야기:</strong> ' + escapePortfolioText(res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
 
     } else if (photos.length > 0) {
       // AI 분석 전이지만 업로드된 나노시트 원본 사진이 있는 경우 썸네일 노출
@@ -14394,7 +14389,6 @@ document.addEventListener('DOMContentLoaded', function() {
   syncOwnedBooksState();
   filterAcademyBooks();
   initPortfolioOptions();
-  restoreAdminActiveTab();
   if (studentDataList.length > 0) {
     onPortfolioStudentChange(studentDataList[0].id);
   }
@@ -14414,6 +14408,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // 검색창 자동완성을 제한하되 정상적인 계정명 검색은 허용합니다.
   clearAdminSearchAutofill();
 });
+
+// 다른 화면의 초기화 오류가 메뉴 복원을 막지 않도록 별도로 실행합니다.
+document.addEventListener('DOMContentLoaded', restoreAdminActiveTab);
 
 // 기존 함수 호출을 유지하면서 검색창 속성만 설정합니다.
 function clearAdminSearchAutofill() {
@@ -15934,19 +15931,19 @@ async function handleWorksheetImagesSelect(input) {
 function renderWorksheetPhotoThumbnails() {
   var container = document.getElementById('worksheetUploadThumbnails');
   var badge = document.getElementById('worksheetPhotoCountBadge');
-  var btnAi = document.getElementById('btnRunWorksheetAi');
+  syncWorksheetCorrectionActions();
   if (!container) return;
 
   if (currentWorksheetPhotos.length === 0) {
     container.style.display = 'none';
     if (badge) badge.innerText = '0장 선택됨';
-    if (btnAi) btnAi.style.display = 'none';
+
     return;
   }
 
   container.style.display = 'flex';
   if (badge) badge.innerText = currentWorksheetPhotos.length + '장 등록됨';
-  if (btnAi) btnAi.style.display = 'block';
+
 
   container.innerHTML = currentWorksheetPhotos.map(function(photo, idx) {
     return `
@@ -15973,8 +15970,9 @@ function openWorksheetPhotoLightbox(src) {
   }
 }
 
-// Gemini 3.8 Flash 나노시트 멀티모달 AI 분석 실행 (원클릭 백그라운드 비동기 및 교사코멘트 즉시 반영)
+// 나노시트 분석은 백그라운드에서 저장하고 완료 화면에서 항목별로 수정합니다.
 async function runWorksheetAiAnalysis() {
+  if (currentWorksheetCorrectionDone || worksheetCorrectionSaving || worksheetAnalysisJobs.has(currentOpenCorrectionLogId)) return;
   if (currentWorksheetPhotos.length === 0) {
     alert('분석할 나노시트 사진(2~3페이지)을 먼저 촬영하거나 업로드해주세요.');
     return;
@@ -15982,7 +15980,6 @@ async function runWorksheetAiAnalysis() {
 
   var allLogs = getLoadedLearningLogs();
   var log = allLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
-  if (!log) log = learningLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
   if (!log) return;
 
   var studentName = log.studentName || log.name || '원생';
@@ -15992,7 +15989,7 @@ async function runWorksheetAiAnalysis() {
   var sheetCount = 1;
 
   // 1. 첨삭 실행 전 확인 알림창
-  var confirmMsg = `[${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭을 실행하시겠습니까?\n\n'확인'을 누르면 창이 닫히며 백그라운드에서 AI 분석이 자동으로 진행되고,\n완료 즉시 교사 코멘트와 함께 첨삭 완료 처리됩니다.`;
+  var confirmMsg = `[${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭을 실행하시겠습니까?\n\n'확인'을 누르면 창이 닫히며 백그라운드에서 AI 분석이 자동으로 진행되고,\n완료된 분석 결과는 첨삭 완료 화면에서 항목별로 수정할 수 있습니다.`;
   if (!confirm(confirmMsg)) {
     return;
   }
@@ -16002,19 +15999,12 @@ async function runWorksheetAiAnalysis() {
     $('#modalCorrection').modal('hide');
   }
 
-  // 3. 교사가 입력창에 미리 적어둔 코멘트가 있다면 보존
-  var commentEl = document.getElementById('correctionCommentInput');
-  var preComment = (commentEl && commentEl.value) ? commentEl.value.trim() : (log.comment || '');
-
-  // 4. 테이블에 즉시 '첨삭 중' 상태 표시
-  log.reviewed = '첨삭 중';
-  log.sheet = '작성 완료';
-  log.manualSheetDone = true;
-  if (Array.isArray(currentWorksheetPhotos)) {
-    log.worksheetPhotos = currentWorksheetPhotos.slice();
-  }
+  // 분석 시작 시 사진과 대상 기록을 고정해 다른 학생 모달과 섞이지 않도록 합니다.
+  var analysisPhotos = currentWorksheetPhotos.slice();
+  worksheetAnalysisJobs.add(log.id);
+  syncWorksheetCorrectionActions();
   renderLearningTable();
-  showAcademyToast(`[${studentName}] 원생의 나노시트 AI 첨삭이 백그라운드에서 시작되었습니다. 완료 시 자동으로 반영됩니다.`);
+  showAcademyToast('[' + studentName + '] 나노 시트 첨삭을 시작했습니다. 완료 시 자동으로 저장됩니다.');
 
   // 학생의 이전 나노시트 누적 회차 계산
   var stdLogs = allLogs.filter(function(l) { return (l.studentName || l.name) === studentName; });
@@ -16028,7 +16018,7 @@ async function runWorksheetAiAnalysis() {
       bookTitle: bookTitle,
       bookAuthor: bookAuthor,
       sheetCount: sheetCount,
-      images: currentWorksheetPhotos.map(function(p) {
+      images: analysisPhotos.map(function(p) {
         return { data: p.base64, mimeType: p.mimeType };
       })
     };
@@ -16087,13 +16077,13 @@ JSON 출력 형식:
   ],
   "drawingObservation": "그림 표현 관찰 1문장 (그림 있을 때만)",
   "languageHandwritingNote": "정성스럽게 표현한 태도에 대한 긍정적 관찰",
-  "nextStep": "다음에는 왜 그렇게 생각했는지 이유를 한 문장 더 덧붙여 보아도 좋아요",
-  "parentGuide": "아이가 스스로 생각을 완성한 점을 칭찬해 주세요",
+  "nextStep": "실제 표현과 연결한 다음 독서 활동 1가지, 실행 예시, 스스로 확인할 점을 연령에 맞게 2~3문장으로 안내",
+  "parentGuide": "아이의 실제 표현에 근거한 칭찬 한마디, 부모가 그대로 쓸 수 있는 열린 질문 1~2개와 후속 대화를 2~3문장으로 안내",
   "teacherCommentDraft": "지도교사 첨삭 코멘트 제안문 (150~220자)"
 }`;
 
         var parts = [{ text: promptText }];
-        currentWorksheetPhotos.forEach(function(p) {
+        analysisPhotos.forEach(function(p) {
           parts.push({
             inlineData: {
               mimeType: p.mimeType,
@@ -16159,50 +16149,43 @@ JSON 출력 형식:
       }
     }
 
-    currentWorksheetAiResult = aiData;
-    log.worksheetAiResult = aiData;
-    if (Array.isArray(currentWorksheetPhotos)) {
-      log.worksheetPhotos = currentWorksheetPhotos.slice();
+    // 최신 목록의 다른 기록을 유지하되 시작 시점의 리비전으로 충돌을 검사합니다.
+    var latestLogs = getLoadedLearningLogs();
+    var updated = latestLogs.find(function(item) { return item.id === log.id; });
+    if (!updated) throw new Error('학습 기록을 찾을 수 없습니다.');
+    updated.worksheetAiResult = aiData;
+    updated.worksheetPhotos = analysisPhotos;
+    updated.reviewed = '첨삭 완료';
+    updated.sheet = '작성 완료';
+    updated.manualSheetDone = true;
+    updated.reviewRevision = log.reviewRevision || '';
+    if (!await saveCustomLearningLogs(latestLogs)) throw new Error('분석 결과를 저장하지 못했습니다. 다시 시도해 주세요.');
+    if (currentOpenCorrectionLogId === log.id) {
+      currentWorksheetAiResult = JSON.parse(JSON.stringify(aiData));
+      currentWorksheetReviewRevision = updated.reviewRevision || '';
+      currentWorksheetCorrectionDone = true;
+      renderWorksheetCorrectionEditor();
+      var badge = document.getElementById('modalCorrectionBadge');
+      badge.innerText = '첨삭 완료';
+      badge.className = 'badge-soft badge-soft-success font-weight-bold';
     }
-    saveWorksheetStore(log.id, aiData, currentWorksheetPhotos);
-
-    // 5. 교사 코멘트 즉시 자동 반영 (리포트에서 언제든 수정 가능)
-    if (preComment) {
-      log.comment = preComment;
-    } else {
-      log.comment = aiData.teacherCommentDraft || aiData.summary || '';
-    }
-
-    // 6. 첨삭 완료 처리 확정 및 저장
-    log.reviewed = '첨삭 완료';
-    log.sheet = '작성 완료';
-    log.manualSheetDone = true;
-
-    await saveCustomLearningLogs(allLogs);
-    renderLearningTable();
 
     // 7. 완료 안내 토스트 알림
     if (aiData.warning) {
       showAcademyToast(`🎉 [${studentName}] 원생의 첨삭이 완료되었습니다! (${aiData.warning})`);
     } else {
-      showAcademyToast(`🎉 [${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭이 완료되었습니다! 학습리포트에서 확인 및 수정할 수 있습니다.`);
+      showAcademyToast(`🎉 [${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭이 완료되었습니다! 첨삭 완료 버튼을 눌러 항목별로 확인하고 수정할 수 있습니다.`);
     }
 
   } catch(err) {
     console.error('Worksheet AI Client Error:', err);
-    log.reviewed = '첨삭 전';
+
     renderLearningTable();
     showAcademyToast(`⚠️ 나노시트 AI 첨삭 중 오류가 발생했습니다: ${(err.message || err)}`);
-  }
-}
-
-// AI 추천문을 교사 코멘트창에 반영하는 함수
-function applyAiCommentToTeacherInput() {
-  if (!currentWorksheetAiResult) return;
-  var commentInput = document.getElementById('correctionCommentInput');
-  if (commentInput) {
-    commentInput.value = currentWorksheetAiResult.teacherCommentDraft || currentWorksheetAiResult.summary || '';
-    showAcademyToast('AI 분석 초안이 지도교사 코멘트란에 반영되었습니다.');
+  } finally {
+    worksheetAnalysisJobs.delete(log.id);
+    syncWorksheetCorrectionActions();
+    renderLearningTable();
   }
 }
 

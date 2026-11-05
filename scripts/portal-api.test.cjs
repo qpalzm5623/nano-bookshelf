@@ -116,6 +116,34 @@ test('첨삭은 소속 학원으로 제한하고 동시 수정 충돌을 덮어�
   assert.equal(where.member.academyId, 'academy-a'); assert.equal(res.code, 409);
 });
 
+test('AI 첨삭 편집·삭제는 퀴즈와 원본 사진을 보존하고 잘못된 입력을 거부한다', async () => {
+  let answers = { quizResults: [{ isCorrect: true }], worksheetPhotos: [{ dataUrl: 'original' }], reviewRevision: '' };
+  let updates = 0;
+  const run = handler(member('TEACHER'), { quizAttempt: {
+    findFirst: async () => ({ id: 'L_attempt123', answers }),
+    updateMany: async ({ data }) => { answers = data.answers; updates++; return { count: 1 }; }
+  } });
+  const body = { id: 'L_attempt123', comment: '', sheet: '작성 완료', reviewed: '첨삭 완료', thoughtHidden: false, reviewRevision: '' };
+  const edited = { summary: '수정한 관찰', actualQuotes: [{ quote: '표현', criteria: '관찰', comment: '수정' }], drawingObservation: '', languageHandwritingNote: '표현 방식', nextStep: '구체적인 활동', parentGuide: '열린 질문' };
+  let res = response();
+  await run(request('review', { ...body, worksheetAiResult: edited }, auth.signSession('member-a', hash)), res);
+  assert.equal(res.code, 200);
+  assert.equal(answers.worksheetAiResult.nextStep, edited.nextStep);
+  const revision = answers.reviewRevision;
+  for (const invalid of [[], { summary: 123 }, { actualQuotes: [null] }, { parentGuide: 'x'.repeat(10001) }]) {
+    res = response();
+    await run(request('review', { ...body, reviewRevision: revision, worksheetAiResult: invalid }, auth.signSession('member-a', hash)), res);
+    assert.equal(res.code, 400);
+  }
+  assert.equal(updates, 1);
+  res = response();
+  await run(request('review', { ...body, reviewed: '첨삭 전', reviewRevision: revision, worksheetAiResult: null }, auth.signSession('member-a', hash)), res);
+  assert.equal(res.code, 200);
+  assert.equal(answers.worksheetAiResult, null);
+  assert.equal(answers.worksheetPhotos[0].dataUrl, 'original');
+  assert.equal(answers.quizResults[0].isCorrect, true);
+});
+
 test('초기 데이터 조회를 병렬화해도 사용자 범위와 기존 퀴즈 구조를 유지한다', async () => {
   for (const role of ['MASTER', 'DIRECTOR', 'TEACHER', 'STUDENT']) {
     const user = member(role);

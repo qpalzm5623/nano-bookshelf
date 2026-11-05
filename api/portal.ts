@@ -149,6 +149,16 @@ export default async function handler(req: any, res: any) {
     if (action === 'review' && req.method === 'POST') {
       if (!['MASTER', 'DIRECTOR', 'TEACHER'].includes(user.role)) return res.status(403).json({ error: '지도교사와 관리자만 첨삭을 저장할 수 있습니다.' });
       if (typeof body.id !== 'string' || typeof body.comment !== 'string' || body.comment.length > 20000 || typeof body.thoughtHidden !== 'boolean' || !['대기', '첨삭 전', '첨삭 완료'].includes(body.reviewed) || !['작성 전', '작성 완료'].includes(body.sheet)) return res.status(400).json({ error: '첨삭 내용을 확인해 주세요.' });
+      // 관리자 편집 결과도 외부 입력이므로 형식과 길이를 서버에서 확인합니다. null은 첨삭 결과 삭제입니다.
+      const worksheet = body.worksheetAiResult;
+      if (worksheet !== undefined && worksheet !== null) {
+        const fields = ['summary', 'drawingObservation', 'languageHandwritingNote', 'nextStep', 'parentGuide', 'teacherCommentDraft'];
+        const valid = typeof worksheet === 'object' && !Array.isArray(worksheet) && JSON.stringify(worksheet).length <= 60000 &&
+          fields.every(key => worksheet[key] === undefined || (typeof worksheet[key] === 'string' && worksheet[key].length <= 10000)) &&
+          (worksheet.actualQuotes === undefined || (Array.isArray(worksheet.actualQuotes) && worksheet.actualQuotes.length <= 20 && worksheet.actualQuotes.every((quote: any) =>
+            quote && typeof quote === 'object' && !Array.isArray(quote) && ['quote', 'criteria', 'comment'].every(key => quote[key] === undefined || (typeof quote[key] === 'string' && quote[key].length <= 5000)))));
+        if (!valid) return res.status(400).json({ error: 'AI 첨삭 결과의 형식 또는 글자 수를 확인해 주세요.' });
+      }
       const attempt = await prisma.quizAttempt.findFirst({ where: { id: body.id, ...(user.role === 'MASTER' ? {} : { member: { academyId: user.academyId } }) } });
       if (!attempt) return res.status(404).json({ error: '소속 학원의 학습 기록을 찾을 수 없습니다.' });
       const previous: any = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};

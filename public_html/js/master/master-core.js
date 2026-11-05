@@ -6,9 +6,7 @@ function restoreMasterActiveTab() {
   let saved = '';
   try { saved = sessionStorage.getItem('nano_master_active_tab') || ''; } catch(e) {}
   const target = (validTabs.includes(hash)) ? hash : (validTabs.includes(saved) ? saved : 'franchise');
-  if (target && target !== 'franchise') {
-    switchMasterTab(target);
-  }
+  switchMasterTab(target);
 }
 window.addEventListener('hashchange', function() {
   const validTabs = ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
@@ -16,9 +14,6 @@ window.addEventListener('hashchange', function() {
   if (validTabs.includes(hash)) {
     switchMasterTab(hash);
   }
-});
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(restoreMasterActiveTab, 50);
 });
 
 /**
@@ -1813,10 +1808,9 @@ function ensureMasterTabRendered(tabName) {
   }
 }
 
-// 초기화 함수: DOM 로드 완료 여부에 관계없이 항상 가맹점 탭을 즉시 안전하게 렌더링
+// 초기화 시 저장된 메뉴를 먼저 복원하고 해당 화면만 렌더링합니다.
 function initMasterDashboardOnReady() {
-  // [Lazy Loading] 초기 활성 탭(가맹점 관리)만 즉시 렌더링하고 나머지는 탭 클릭 시 지연 로딩
-  ensureMasterTabRendered("franchise");
+  restoreMasterActiveTab();
 
   // 검색창 속성 설정: 자동완성을 제한하되 검색값은 보존합니다.
   bindMasterSearchAutofillGuards();
@@ -1848,8 +1842,10 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
+  if (!document.getElementById('tab-master-' + tabName) || !document.getElementById('nav-master-' + tabName)) tabName = 'franchise';
+  // 저장소가 차단되어도 URL에는 현재 메뉴를 남깁니다.
+  try { sessionStorage.setItem('nano_master_active_tab', tabName); } catch(e) {}
   try {
-    sessionStorage.setItem('nano_master_active_tab', tabName);
     if (window.location.hash !== '#' + tabName) {
       history.replaceState(null, '', '#' + tabName);
     }

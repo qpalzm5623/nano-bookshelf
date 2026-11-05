@@ -1,535 +1,179 @@
-/* 나노의 책장 - 초등 문해력 진단 결과지 스타일
- * 완전 순백색(#ffffff) 바탕 + 세련된 라인 & 포인트 컬러 디자인
- * A4 용지 2장으로 완벽하게 수납되는 듀얼 시트(.lit-sheet-1, .lit-sheet-2) 구조
- */
+/* 문해력 결과지: 정기진단 2장 · 신규상담 1장, 화면과 인쇄에 같은 읽기 흐름을 적용합니다. */
 .lit-report {
-  --teal: #1f8a7e; 
-  --teal-dark: #145951; 
-  --teal-light: #e6f7f4; 
-  --teal-pale: #f0fdf9;
-  --orange: #ea580c; 
-  --orange-dark: #c2410c; 
-  --orange-light: #fff7ed;
-  --cream: #ffffff;
-  --ink: #0f172a; 
-  --ink-soft: #475569; 
-  --ink-faint: #94a3b8; 
-  --line: #e2e8f0; 
-  --line-strong: #cbd5e1;
-  --white: #ffffff;
-  --radius: 10px; 
-  --radius-sm: 6px;
-  font-family: Pretendard, -apple-system, 'Malgun Gothic', sans-serif; 
-  color: var(--ink); 
-  line-height: 1.45;
+  --teal: #187d73;
+  --teal-dark: #145951;
+  --teal-pale: #f0f8f6;
+  --orange: #c2692d;
+  --orange-dark: #9a4b1d;
+  --ink: #182c37;
+  --ink-soft: #4b606b;
+  --line: #d9e3e7;
+  font: 14px/1.65 Pretendard, -apple-system, 'Malgun Gothic', sans-serif;
+  color: var(--ink);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
 }
-
-.lit-report * { box-sizing: border-box; }
-
-/* 리포트 페이퍼: 화면 모달에서는 깔끔한 A4 종이 카드 느낌 */
-.lit-report .page { 
-  max-width: 860px; 
-  margin: 0 auto; 
-  background: #ffffff; 
-  padding: 30px 36px 36px; 
-  border-radius: 12px; 
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06); 
-}
-
-/* 화면에서 1장과 2장 사이 구분 */
-.lit-report .lit-sheet-1 {
-  position: relative;
-}
-.lit-report .lit-sheet-2 {
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1.5px dashed #cbd5e1;
-  position: relative;
-}
-.lit-report .lit-sheet-2::before {
-  content: "A4 제2장";
-  position: absolute;
-  top: -11px;
-  right: 0;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #94a3b8;
-  background: #ffffff;
-  padding: 0 8px;
-}
-
-/* 헤더: 시그니처 딥 틸 포인트 바 */
-.lit-report .page header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start; 
-  border-bottom: 2px solid var(--teal); 
-  padding-bottom: 8px; 
-}
-
-.lit-report .page .brand { 
-  font-size: 12px; 
-  color: var(--teal); 
-  font-weight: 800; 
-  letter-spacing: .02em; 
-}
-
-.lit-report .page h1 { 
-  margin: 1px 0 0; 
-  font-size: 21px; 
-  font-weight: 800;
-  letter-spacing: -.02em; 
-  color: #0f172a;
-}
-
-.lit-report .page .meta { 
-  text-align: right; 
-  font-size: 11.5px; 
-  color: var(--ink-soft); 
-  line-height: 1.4;
-}
-
-.lit-report .page .meta b { 
-  color: var(--ink); 
-  font-size: 14.5px; 
-}
-
-/* 문해력이란? 안내 박스: 순백색 바탕 + 틸 포인트 바 */
-.lit-report .page .about { 
-  margin-top: 8px; 
-  background: #ffffff; 
-  border: 1px solid #ccfbf1; 
-  border-left: 3.5px solid var(--teal); 
-  border-radius: var(--radius-sm); 
-  padding: 6px 12px; 
-  font-size: 11.5px; 
-  line-height: 1.45;
-  color: #334155;
-}
-
-.lit-report .page .about b { 
-  color: var(--teal-dark); 
-}
-
-.lit-report .page .about p { 
-  margin: 0; 
-}
-
-/* 섹션 타이틀 */
-.lit-report .page section { 
-  margin-top: 10px; 
-}
-
-.lit-report .page h2 { 
-  font-size: 13.5px; 
-  font-weight: 800;
-  margin: 0 0 6px; 
-  color: #0f172a; 
-  display: flex; 
-  align-items: center; 
-  gap: 6px; 
-}
-
-.lit-report .page h2 .no { 
-  display: inline-grid; 
-  place-items: center; 
-  width: 19px; 
-  height: 19px; 
-  border-radius: 50%; 
-  background: var(--teal); 
-  color: #fff; 
-  font-size: 10.5px; 
-  font-weight: 900;
-}
-
-/* 공통 카드: 순백색 + 1px 정돈된 라인 */
-.lit-report .rcard { 
-  background: #ffffff; 
-  border: 1px solid var(--line); 
-  border-radius: var(--radius); 
-  padding: 10px 14px; 
-}
-
-/* 1. 레벨 히어로 카드: 콤팩트 2분할 */
-.lit-report .hero { 
-  display: grid; 
-  grid-template-columns: 170px 1fr; 
-  gap: 12px; 
-  align-items: center; 
-}
-
-.lit-report .level { 
-  background: var(--teal); 
-  color: #fff; 
-  border-radius: var(--radius-sm); 
-  padding: 8px 10px; 
-  text-align: center; 
-}
-
-.lit-report .level small { 
-  display: block; 
-  font-size: 10.5px; 
-  opacity: .92; 
-  font-weight: 600;
-}
-
-.lit-report .level strong { 
-  display: block; 
-  font-size: 25px; 
-  line-height: 1.1; 
-  margin: 2px 0; 
-  font-weight: 900;
-}
-
-.lit-report .badge { 
-  display: inline-block; 
-  background: #ffffff; 
-  color: var(--orange-dark); 
-  border: 1px solid #fed7aa;
-  font-weight: 700; 
-  font-size: 10.5px; 
-  border-radius: 999px; 
-  padding: 1.5px 8px; 
-}
-
-.lit-report .summary { 
-  font-size: 12.5px; 
-  line-height: 1.45;
-}
-
-.lit-report .summary b {
-  font-size: 13px;
-  color: #0f172a;
-}
-
-.lit-report .summary p { 
-  margin: 3px 0 0; 
-  color: #334155;
-}
-
-.lit-report .ruler { 
-  margin-top: 6px; 
-}
-
-.lit-report .ruler svg, .lit-report .radar svg, .lit-report .trend svg { 
-  width: 100%; 
-  height: auto; 
-  display: block; 
-}
-
-/* 재응시 권장 박스 */
-.lit-report .retake { 
-  margin-top: 6px; 
-  background: #ffffff; 
-  border: 1.5px dashed var(--orange); 
-  border-radius: var(--radius-sm); 
-  padding: 6px 10px; 
-  font-size: 11.5px; 
-}
-
-.lit-report .retake b { 
-  color: var(--orange-dark); 
-}
-
-.lit-report .retake-btn { 
-  display: block; 
-  margin-top: 4px; 
-  border: 0; 
-  border-radius: 999px; 
-  padding: 4px 11px; 
-  font-weight: 700; 
-  font-size: 11px; 
-  background: var(--orange); 
-  color: #fff; 
-  cursor: pointer; 
-}
-
-/* 2. 레이더 차트 프로필 (2열: 차트 210px + 5대 영역 목록) */
-.lit-report .profile { 
-  display: grid; 
-  grid-template-columns: 215px 1fr; 
-  gap: 12px; 
-  align-items: center; 
-}
-
-.lit-report .areas { 
-  display: grid; 
-  grid-template-columns: 1fr; 
-  gap: 4px; 
-}
-
-.lit-report .area { 
-  display: grid; 
-  grid-template-columns: 76px 1fr auto; 
-  gap: 8px; 
-  align-items: center; 
-  background: #ffffff; 
-  border: 1px solid var(--line); 
-  border-radius: var(--radius-sm); 
-  padding: 5px 10px; 
-  font-size: 11.5px; 
-}
-
-.lit-report .area h3 { 
-  margin: 0; 
-  font-size: 12px; 
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.lit-report .area .desc { 
-  color: var(--ink-soft); 
-  font-size: 10.5px; 
-}
-
-.lit-report .rpill { 
-  font-size: 10px; 
-  font-weight: 700; 
-  border-radius: 999px; 
-  padding: 2px 7px; 
-  white-space: nowrap; 
-}
-
-.lit-report .rpill.top { background: var(--teal); color: #fff; }
-.lit-report .rpill.ok { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.lit-report .rpill.near { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
-.lit-report .rpill.low { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-
-.lit-report .pcount { 
-  font-size: 10px; 
-  color: var(--ink-faint); 
-  margin-left: 4px; 
-}
-
-.lit-report .grouphead { 
-  font-size: 10.5px; 
-  font-weight: 700; 
-  color: var(--teal-dark); 
-  margin: 0; 
-}
-
-.lit-report .grouphead span { 
-  font-weight: 400; 
-  color: var(--ink-soft); 
-}
-
-.lit-report .grouphead.tool { 
-  color: var(--orange-dark); 
-  margin-top: 3px; 
-  padding-top: 3px; 
-  border-top: 1px dashed var(--line); 
-}
-
-/* 학습도구어: 흰색 바탕 + 주황 라인 */
-.lit-report .area.tool { 
-  background: #ffffff; 
-  border: 1.5px solid var(--orange); 
-}
-
-.lit-report .area.tool .rpill { 
-  background: #fff7ed; 
-  color: var(--orange-dark); 
-  border: 1px solid #fed7aa;
-}
-
-.lit-report .rnote { 
-  font-size: 10px; 
-  color: var(--ink-faint); 
-  margin-top: 4px; 
-}
-
-/* 3. 강점 vs 보완 (2열 카드) */
-.lit-report .cols { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: 10px; 
-}
-
-.lit-report .col { 
-  background: #ffffff; 
-  border: 1px solid var(--line); 
-  border-top: 3px solid var(--teal);
-  border-radius: var(--radius-sm); 
-  padding: 8px 11px; 
-  font-size: 11.5px; 
-}
-
-.lit-report .col h3 { 
-  margin: 0 0 4px; 
-  font-size: 12.5px; 
-  font-weight: 800;
-  color: var(--teal); 
-}
-
-.lit-report .col.focus {
-  border-top: 3px solid var(--orange);
-}
-
-.lit-report .col.focus h3 { 
-  color: var(--orange-dark); 
-}
-
-.lit-report .col ul { 
-  margin: 0; 
-  padding-left: 14px; 
-}
-
-.lit-report .col li { 
-  margin: 2px 0; 
-  line-height: 1.4;
-}
-
-/* 4. 실천 팁 (2열 카드): 순백색 + 주황 바 */
-.lit-report .tips { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: 6px; 
-}
-
-.lit-report .tip { 
-  background: #ffffff; 
+.lit-report *, .lit-report *::before, .lit-report *::after { box-sizing: border-box; }
+.lit-report .page { max-width: 794px; margin: 24px auto; }
+.lit-report .lit-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 1123px;
+  padding: 40px 42px 32px;
+  background: #fff;
   border: 1px solid var(--line);
-  border-left: 3px solid var(--orange);
-  border-radius: var(--radius-sm); 
-  padding: 6px 10px; 
-  font-size: 11px; 
-  line-height: 1.4;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px #182c370c;
 }
-
-.lit-report .tip b { 
-  display: block; 
-  color: var(--orange-dark); 
-  font-size: 11.5px; 
-  margin-bottom: 1.5px; 
+.lit-report .lit-sheet-2 { margin-top: 24px; }
+.lit-report .page header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--teal);
 }
-
-.lit-report .classbox { 
-  margin-top: 6px; 
-  background: #ffffff; 
-  border: 1px solid #ccfbf1; 
-  border-left: 3.5px solid var(--teal); 
-  border-radius: var(--radius-sm); 
-  padding: 7px 11px; 
-  font-size: 11.5px; 
-  line-height: 1.45;
-  color: #334155;
+.lit-report .brand { font-size: 12px; font-weight: 800; letter-spacing: .04em; color: var(--teal); }
+.lit-report .report-kind { display: inline-block; margin-left: 10px; padding-left: 10px; border-left: 1px solid var(--line); color: var(--ink-soft); font-weight: 500; }
+.lit-report .page h1 { margin: 7px 0 0; font-size: 25px; line-height: 1.35; letter-spacing: -.045em; font-weight: 800; color: var(--ink); }
+.lit-report .meta { flex-shrink: 0; text-align: right; font-size: 12px; line-height: 1.7; color: var(--ink-soft); }
+.lit-report .meta b { font-size: 17px; color: var(--ink); }
+.lit-report .about, .lit-report .classbox {
+  padding: 12px 15px;
+  border-radius: 8px;
+  background: var(--teal-pale);
+  border-left: 3px solid var(--teal);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-soft);
 }
-
-.lit-report .classbox b { 
-  color: var(--teal-dark); 
+.lit-report .about { margin-top: 18px; }
+.lit-report .about p { margin: 0; }
+.lit-report .about b, .lit-report .classbox b { color: var(--teal-dark); }
+.lit-report .page section { margin-top: 20px; }
+.lit-report .page h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; font-size: 17px; line-height: 1.45; font-weight: 800; letter-spacing: -.025em; color: var(--ink); }
+.lit-report .no { display: inline-grid; place-items: center; flex: 0 0 25px; height: 25px; border-radius: 8px; background: var(--teal); color: #fff; font-size: 12px; }
+.lit-report .rcard { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.lit-report .hero { display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: 20px; align-items: center; }
+.lit-report .level { padding: 10px; border-radius: 8px; text-align: center; color: var(--teal-dark); background: var(--teal-pale); border: 1px solid #bddbd4; }
+.lit-report .level small { display: block; font-size: 12px; font-weight: 700; }
+.lit-report .level strong { display: block; margin: 8px 0 10px; font-size: 38px; line-height: 1; font-weight: 800; letter-spacing: -.04em; }
+.lit-report .badge { display: inline-block; max-width: 100%; white-space: normal; font-size: 11px; line-height: 1.5; padding: 5px 8px; border-radius: 6px; color: var(--teal-dark); background: #fff; border: 1px solid #bddbd4; }
+.lit-report .summary { font-size: 14px; line-height: 1.75; }
+.lit-report .summary b { display: block; font-size: 17px; line-height: 1.5; }
+.lit-report .summary p { margin: 9px 0 0; color: var(--ink-soft); }
+.lit-report .ruler { margin-top: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+.lit-report .ruler svg, .lit-report .radar svg, .lit-report .trend svg { display: block; width: 100%; height: auto; }
+.lit-report .retake { margin-top: 14px; padding: 10px 12px; border: 1px solid #e9c8ad; border-left: 3px solid var(--orange); border-radius: 6px; background: #fffbf7; font-size: 12px; line-height: 1.65; color: var(--ink-soft); }
+.lit-report .retake b { color: var(--orange-dark); }
+.lit-report .retake-btn { display: block; margin-top: 8px; padding: 8px 12px; border: 0; border-radius: 6px; background: var(--orange-dark); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.lit-report .profile { display: grid; grid-template-columns: 215px minmax(0, 1fr); gap: 18px; align-items: center; }
+.lit-report .radar { min-width: 0; }
+.lit-report .areas { display: grid; gap: 7px; }
+.lit-report .grouphead { margin: 0 0 2px; font-size: 12px; font-weight: 800; color: var(--teal-dark); }
+.lit-report .grouphead span { font-weight: 400; color: var(--ink-soft); }
+.lit-report .grouphead.tool { margin-top: 7px; color: var(--orange-dark); }
+.lit-report .area { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+.lit-report .area h3 { margin: 0; font-size: 13px; line-height: 1.5; font-weight: 800; color: var(--ink); }
+.lit-report .desc { font-size: 12px; line-height: 1.55; color: var(--ink-soft); }
+.lit-report .pcount { display: block; font-size: 11px; color: var(--ink-soft); }
+.lit-report .rpill { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 700; white-space: nowrap; line-height: 1.5; }
+.lit-report .rpill.top { background: #e5f3ee; color: #155c46; border: 1px solid #b9d8cc; }
+.lit-report .rpill.ok { background: #eef4fb; color: #315b8b; border: 1px solid #cbdbee; }
+.lit-report .rpill.near { background: #fff6e9; color: #8e5418; border: 1px solid #eed7b6; }
+.lit-report .rpill.low { background: #fff1ee; color: #a04235; border: 1px solid #efccc5; }
+.lit-report .area.tool { border-color: #e4c6ac; background: #fffcf8; }
+.lit-report .area.tool .rpill { color: var(--orange-dark); background: #fff2e2; border: 1px solid #e4c6ac; }
+/* 차트 옆 좁은 목록은 제목/상태와 설명을 두 줄로 분리합니다. */
+.lit-report .profile .area { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 6px 10px; }
+.lit-report .profile .areas { gap: 5px; }
+.lit-report .profile .desc { font-size: 11.5px; line-height: 1.45; }
+.lit-report .profile .rpill { padding: 2px 7px; font-size: 10.5px; }
+.lit-report .profile .grouphead { font-size: 11.5px; line-height: 1.5; }
+.lit-report .profile .area .desc { grid-row: 2; grid-column: 1 / -1; }
+.lit-report .profile .area .rpill { grid-row: 1; grid-column: 2; }
+.lit-report .profile .pcount { display: inline; margin-left: 5px; }
+.lit-report .rnote { margin-top: 12px; color: var(--ink-soft); font-size: 11px; line-height: 1.6; }
+.lit-report .cols, .lit-report .tips, .lit-report .roadmap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.lit-report .col { padding: 14px; border: 1px solid var(--line); border-top: 3px solid var(--teal); border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.lit-report .col h3 { margin: 0 0 10px; font-size: 15px; color: var(--teal-dark); }
+.lit-report .col.focus { border-top-color: var(--orange); }
+.lit-report .col.focus h3 { color: var(--orange-dark); }
+.lit-report .col ul { margin: 0; padding-left: 17px; }
+.lit-report .col li + li { margin-top: 9px; }
+.lit-report .tip { padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fcfdfd; font-size: 13px; line-height: 1.6; }
+.lit-report .tip b { display: block; margin-bottom: 6px; color: var(--teal-dark); font-size: 14px; }
+.lit-report .classbox { margin-top: 12px; }
+.lit-report .roadmap { counter-reset: roadmap; }
+.lit-report .rstep { position: relative; padding: 14px 15px 14px 44px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; line-height: 1.65; }
+.lit-report .rstep::before { counter-increment: roadmap; content: counter(roadmap, decimal-leading-zero); position: absolute; top: 15px; left: 13px; color: var(--teal); font-size: 12px; font-weight: 800; }
+.lit-report .rstep > b:first-child { display: block; margin-bottom: 5px; font-size: 13px; color: var(--teal-dark); }
+.lit-report .rstep.now { background: var(--teal-pale); border-color: #bddbd4; }
+.lit-report .page footer { margin-top: auto; padding-top: 20px; font-size: 10.5px; line-height: 1.65; color: var(--ink-soft); }
+.lit-report .page footer p { margin: 4px 0 0; }
+.lit-report .page footer p:first-child { border-top: 1px solid var(--line); padding-top: 12px; }
+.lit-report .sheet-end { display: flex; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 24px; font-size: 11px; color: var(--ink-soft); }
+.lit-report a { color: var(--teal-dark); text-decoration: underline; text-underline-offset: 3px; }
+.lit-report .page.compact section { margin-top: 16px; }
+.lit-report .compact header { padding-bottom: 12px; }
+.lit-report .compact h1 { font-size: 23px; }
+.lit-report .compact .meta { font-size: 11.5px; }
+.lit-report .compact .area { padding: 6px 10px; }
+.lit-report .compact .areas { gap: 5px; }
+.lit-report .compact .grouphead { font-size: 11.5px; line-height: 1.55; }
+.lit-report .compact .grouphead.tool { margin-top: 3px; }
+.lit-report .compact .rpill { font-size: 10.5px; padding: 2px 7px; }
+.lit-report .compact .desc { font-size: 11.5px; }
+.lit-report .compact .pcount { display: inline; margin-left: 8px; }
+.lit-report .compact .hero { grid-template-columns: 160px minmax(0, 1fr); }
+.lit-report .compact .level { padding: 10px 8px; }
+.lit-report .compact .level strong { font-size: 32px; margin: 4px 0 5px; }
+.lit-report .compact .badge { font-size: 10.5px; padding: 3px 6px; }
+.lit-report .compact .summary { font-size: 13px; }
+.lit-report .compact .summary b { font-size: 16px; }
+.lit-report .compact .about, .lit-report .compact .classbox { padding: 8px 12px; font-size: 11.5px; line-height: 1.55; }
+.lit-report .compact .rcard { padding: 12px; }
+.lit-report .compact .retake { margin-top: 10px; padding: 8px 10px; font-size: 11.5px; line-height: 1.55; }
+.lit-report .compact h2 { font-size: 16px; margin-bottom: 8px; }
+.lit-report .compact .roadmap { gap: 8px; }
+.lit-report .compact .rstep { padding: 9px 12px 9px 36px; font-size: 11.5px; line-height: 1.5; }
+.lit-report .compact .rstep::before { top: 11px; left: 11px; }
+.lit-report .compact .rstep > b:first-child { font-size: 12px; margin-bottom: 4px; }
+.lit-report .compact footer { padding-top: 16px; font-size: 9.5px; line-height: 1.55; }
+@media screen and (max-width: 640px) {
+  .lit-report .page { margin: 12px auto; }
+  .lit-report .lit-sheet { min-height: 0; padding: 24px 18px; border-radius: 8px; }
+  .lit-report .page header { flex-direction: column; gap: 12px; }
+  .lit-report .page h1 { font-size: 23px; }
+  .lit-report .meta { text-align: left; }
+  .lit-report .hero, .lit-report .compact .hero, .lit-report .profile, .lit-report .cols, .lit-report .tips, .lit-report .roadmap { grid-template-columns: 1fr; }
+  .lit-report .radar { width: 260px; max-width: 100%; margin: 0 auto; }
+  .lit-report .area { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; }
+  .lit-report .area .desc { grid-row: 2; grid-column: 1 / -1; }
+  .lit-report .area .rpill { grid-row: 1; grid-column: 2; }
+  .lit-report .rcard { padding: 14px; }
+  .lit-report .page footer { margin-top: 12px; }
+  .lit-report .compact .about, .lit-report .compact .classbox, .lit-report .compact .retake,
+  .lit-report .compact .desc, .lit-report .compact .grouphead { font-size: 12.5px; line-height: 1.65; }
+  .lit-report .compact .rstep { font-size: 13px; line-height: 1.65; padding-top: 12px; padding-bottom: 12px; }
+  .lit-report .compact .rstep > b:first-child { font-size: 14px; }
+  .lit-report .compact footer { font-size: 11px; }
 }
-
-/* 5. 로드맵 (신규 상담용) */
-.lit-report .page.compact .hero { grid-template-columns: 155px 1fr; }
-.lit-report .roadmap { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; }
-.lit-report .rstep { flex: 1; min-width: 120px; background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 7px 9px; font-size: 11.5px; }
-.lit-report .rstep > b:first-child { display: block; font-size: 12px; color: var(--teal-dark); margin-bottom: 2px; }
-.lit-report .rstep.now { background: #f0fdf9; border-color: var(--teal); }
-
-/* 푸터 */
-.lit-report .page footer { 
-  margin-top: 8px; 
-  padding-top: 5px; 
-  border-top: 1px dashed var(--line); 
-  font-size: 9.5px; 
-  color: var(--ink-faint); 
-  line-height: 1.35;
-}
-
-.lit-report .page footer p { 
-  margin: 1px 0; 
-}
-
-.lit-report a { color: var(--teal); text-decoration: none; }
-.lit-report a:hover { text-decoration: underline; }
-
-@media (max-width: 640px) {
-  .lit-report .page { padding: 18px 12px; }
-  .lit-report .hero, .lit-report .profile, .lit-report .cols, .lit-report .tips, .lit-report .page.compact .hero { grid-template-columns: 1fr; }
-  .lit-report .page header { flex-direction: column; gap: 5px; }
-  .lit-report .page .meta { text-align: left; }
-}
-
-/* =========================================================
- * 인쇄 최적화 (Print Style): 
- * 순백색(#ffffff) 바탕 + 정확한 A4 2장 분할 보장
- * ========================================================= */
+@page { size: A4 portrait; margin: 12mm 14mm; }
 @media print {
-  @page { 
-    size: A4 portrait; 
-    margin: 6mm 10mm 6mm 10mm; 
-  }
-
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-  }
-
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .lit-report { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .lit-report .page { width: 100%; max-width: none; margin: 0; }
+  .lit-report .lit-sheet { min-height: 272mm; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+  .lit-report .lit-sheet-2 { margin-top: 0; break-before: page; page-break-before: always; }
+  .lit-report .page:not(.compact) .about { margin-top: 14px; }
+  .lit-report .page:not(.compact) section { margin-top: 18px; }
+  .lit-report .profile .area { padding-top: 5px; padding-bottom: 5px; }
+  .lit-report .rnote { margin-top: 8px; }
+  .lit-report .sheet-end { padding-top: 16px; }
   .lit-report .retake-btn { display: none !important; }
-  
-  .lit-report .page { 
-    box-shadow: none !important; 
-    margin: 0 !important; 
-    max-width: none !important; 
-    width: 100% !important;
-    padding: 0 !important; 
-    border: none !important;
-    border-radius: 0 !important; 
-    background: #ffffff !important;
-  }
-
-  /* 듀얼 시트 인쇄 분할 */
-  .lit-sheet {
-    box-sizing: border-box !important;
-  }
-
-  .lit-sheet-1 {
-    page-break-after: always !important;
-    break-after: page !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    margin: 0 0 0 0 !important;
-    padding: 0 0 0 0 !important;
-  }
-
-  .lit-sheet-2 {
-    page-break-before: always !important;
-    break-before: page !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    border-top: none !important;
-  }
-
-  .lit-sheet-2::before {
-    display: none !important;
-  }
-
-  .lit-report .page section {
-    margin-top: 6px !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .lit-report .rcard, .lit-report .col, .lit-report .tip, .lit-report .area {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .lit-report .hero {
-    grid-template-columns: 160px 1fr !important;
-  }
-
-  .lit-report .profile {
-    grid-template-columns: 200px 1fr !important;
-  }
+  .lit-report .page header, .lit-report .page section, .lit-report footer, .lit-report .sheet-end { break-inside: avoid; page-break-inside: avoid; }
+  .lit-report .page h2 { break-after: avoid; }
 }

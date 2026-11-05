@@ -32,6 +32,50 @@ function loadFunctions(context, file, names) {
   }
 }
 
+test('본사·학원 메뉴는 저장소가 차단되어도 URL로 새로고침 후 복원된다', () => {
+  for (const [file, switchName, restoreName, tabs] of [
+    ['js/master/master-core.js', 'switchMasterTab', 'restoreMasterActiveTab', ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment']],
+    ['admin_preview.js', 'switchTab', 'restoreAdminActiveTab', ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment']]
+  ]) {
+    const ctx = context();
+    ctx.location = { hash: '' };
+    ctx.history = { replaceState: (_, __, hash) => { ctx.location.hash = hash; } };
+    ctx.sessionStorage = { getItem() { throw Error('blocked'); }, setItem() { throw Error('blocked'); } };
+    for (const name of ['ensureMasterTabRendered', 'purgeAutofilledSearchInputs', 'renderAcademyNoticeViewList', 'renderLearningTable', 'showPortfolioList', 'renderPortfolioTable', 'renderAssignmentTable', 'renderAcademyDispatchTable', 'renderAdminRankingView', 'renderAcademyPaymentTable', 'selectPlanTier']) ctx[name] = () => {};
+    ctx.portfolioList = [];
+    ctx.currentSelectedTier = 'standard';
+    loadFunctions(ctx, file, [switchName, restoreName]);
+    const switchMenu = ctx[switchName];
+    for (const tab of tabs) {
+      switchMenu(tab);
+      assert.equal(ctx.location.hash, '#' + tab);
+      let restored;
+      ctx[switchName] = target => { restored = target; };
+      ctx[restoreName]();
+      assert.equal(restored, tab);
+    }
+    ctx.location.hash = '#invalid';
+    let restored;
+    ctx[switchName] = target => { restored = target; };
+    ctx[restoreName]();
+    assert.equal(restored, tabs[0]);
+  }
+});
+
+test('학생 새로고침은 URL 메뉴를 복원하고 히스토리를 추가하지 않는다', () => {
+  for (const panel of ['home', 'books', 'history', 'literacy', 'ranking', 'invalid']) {
+    const ctx = context();
+    ctx.location = { hash: '#' + panel };
+    let restored;
+    ctx.switchPanel = (target, push) => { restored = target; assert.equal(push, false); };
+    ctx.history = { state: null, replaceState(state, _, hash) { this.state = state; ctx.location.hash = hash; } };
+    loadFunctions(ctx, 'student_preview.html', ['initSpaHistoryNavigation']);
+    ctx.initSpaHistoryNavigation();
+    assert.equal(restored, panel === 'invalid' ? 'home' : panel);
+    assert.equal(ctx.history.state.panel, restored);
+  }
+});
+
 function context(localStorage = storage()) {
   const elements = new Map();
   const notices = [];

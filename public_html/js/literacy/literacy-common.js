@@ -212,6 +212,11 @@
   }
 
   /* ---------- 결과지 블록 ---------- */
+  function reportHeader(rec, kind, title, detail) {
+    return '<header><div><div class="brand">' + BRAND.org + '<span class="report-kind">' + kind + '</span></div><h1>' + title + '</h1></div>' +
+      '<div class="meta"><b>' + esc(rec.student.name) + '</b> · ' + GRADE_LABEL[rec.student.gradeStep] + '<br>진단일 ' + fmtDate(rec.finishedAt) + '<br>' + detail + '</div></header>';
+  }
+
   function areasBlock(a) {
     var s = '<div class="areas"><div class="grouphead">📖 책이 키우는 영역 — <span>독서 활동을 통해 자연스럽게 자라는 영역입니다.</span></div>';
     a.bookAreas.forEach(function (x) {
@@ -262,17 +267,17 @@
     var h = '<main class="page">' +
       // [A4 제1장: 나노 레벨 및 5대 영역 종합 진단]
       '<div class="lit-sheet lit-sheet-1">' +
-      '<header><div><div class="brand">' + BRAND.org + '</div><h1>' + BRAND.reportTitle + '</h1></div>' +
-      '<div class="meta"><b>' + esc(st.name) + '</b> · ' + GRADE_LABEL[st.gradeStep] + '<br>진단일 ' + fmtDate(rec.finishedAt) + ' · ' + round + '회차<br>' + res.total + '문항 · 약 ' + minutesOf(rec) + '분</div></header>' +
+      reportHeader(rec, '정기진단 · 1 / 2', '초등 문해력 진단 결과', round + '회차 · ' + res.total + '문항 · 약 ' + minutesOf(rec) + '분') +
       '<div class="about"><p><b>문해력이란?</b> 글을 읽고 뜻을 이해하며 생각을 끌어내는 힘입니다. 이 진단은 문해력을 <b>어휘이해력·학습도구어·요약·비교·추론</b> 다섯 영역으로 나누어 진단하며, 서울시교육청 등 공적 표준 검사 틀을 초등 눈높이로 다듬은 체계적인 구성입니다.</p></div>' +
       '<section class="sec-level"><h2><span class="no">1</span>우리 아이의 ' + BRAND.levelName + '</h2><div class="rcard"><div class="hero"><div class="level"><small>' + BRAND.levelFull + '</small><strong>★ ' + res.level + '</strong><span class="badge">' + badgeText(rec) + '</span></div>' +
       '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(summaryText(rec, an.strengths, an.growths)) + '</p></div></div><div class="ruler">' + rulerSvg(res.level, st.gradeStep) + '</div>' + retakeBox(rec, opts) + '</div></section>' +
       '<section class="sec-profile"><h2><span class="no">2</span>다섯 영역, 어디가 강하고 어디를 키울까요?</h2><div class="rcard"><div class="profile"><div class="radar">' + radarSvg(res.areas) + '</div>' + areasBlock(an) + '</div>' +
       '<div class="rnote">영역별 결과는 영역당 ' + an.toolArea.total + '문항에 기반한 경향 참고 자료입니다. 책이 키우는 영역은 강한 순서로 표시됩니다.</div></div></section>' +
-      '</div>' + // end lit-sheet-1
+      '<div class="sheet-end"><span>다음 장에서 강점과 독서 실천 방법을 확인하세요.</span><span>01 / 02</span></div></div>' + // end lit-sheet-1
 
       // [A4 제2장: 강점/보완 처방, 가정 독서 팁, 레벨 성장 추이]
       '<div class="lit-sheet lit-sheet-2">' +
+      reportHeader(rec, '정기진단 · 2 / 2', '아이의 성장을 돕는 독서 가이드', round + '회차 · 강점과 실천 방법') +
       '<section class="sec-strengths"><h2><span class="no">3</span>잘하는 것부터 볼게요</h2><div class="cols"><div class="col"><h3>👍 ' + esc(st.name) + '의 강점</h3><ul>' +
       an.strengths.slice(0, 3).map(function (a) { return '<li><b>' + a.area + '</b> — ' + (strong(a) ? STRENGTH[a.area] : '다섯 영역 가운데 가장 잘한 영역이에요. 여기서 얻는 자신감이 다른 영역을 키우는 힘이 돼요.') + '</li>'; }).join('') +
       '</ul></div><div class="col focus"><h3>🌱 함께 키울 부분</h3><ul>' +
@@ -294,8 +299,8 @@
   function renderConsult(rec, opts) {
     var st = rec.student, res = rec.result, an = analyze(res.areas), range = EXPECTED_RANGE[st.gradeStep];
     var inRange = res.category === 'at' || res.category === 'above', name = esc(st.name);
-    var h = '<main class="page compact"><div class="lit-sheet lit-sheet-1"><header><div><div class="brand">' + BRAND.org + '</div><h1>' + BRAND.consultTitle + '</h1></div>' +
-      '<div class="meta"><b>' + name + '</b> · ' + GRADE_LABEL[st.gradeStep] + '<br>진단일 ' + fmtDate(rec.finishedAt) + ' · 신규 상담<br>' + res.total + '문항 · 약 ' + minutesOf(rec) + '분</div></header>' +
+    var h = '<main class="page compact"><div class="lit-sheet lit-sheet-1">' +
+      reportHeader(rec, '신규상담 · 1 / 1', '초등 문해력 진단 결과', res.total + '문항 · 약 ' + minutesOf(rec) + '분') +
       '<div class="about"><p><b>이 진단은 평가가 아니라, 아이의 현재를 가늠하기 위한 자료입니다.</b> 지금 위치를 알면 아이가 즐겁게 읽을 수 있는 책의 범위가 보입니다.</p></div>' +
       '<section><h2><span class="no">1</span>지금 위치</h2><div class="rcard"><div class="hero"><div class="level"><small>' + BRAND.levelFull + '</small><strong>★ ' + res.level + '</strong><span class="badge">' + badgeText(rec) + '</span></div>' +
       '<div class="summary"><b>' + levelDesc(res.level) + '</b><p>' + esc(consultText(rec, an.strengths, an.growths)) + '</p></div></div>' + retakeBox(rec, opts) + '</div></section>' +
@@ -325,7 +330,7 @@
     w.document.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><base href="' + base + '"><title>' + BRAND.reportTitle + '</title>' +
       '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">' +
       '<link rel="stylesheet" href="css/literacy-report.css?v=' + ts + '">' +
-      '<style>@page { size: A4 portrait; margin: 0; } body { margin: 0; padding: 0; background: #ffffff !important; }</style>' +
+      '<style>body { margin: 0; padding: 0; background: #ffffff !important; }</style>' +
       '</head><body style="margin:0;padding:0;background:#fff">' + html + '</body></html>');
     w.document.close();
     var printed = false;

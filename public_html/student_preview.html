@@ -23,7 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="css/literacy-report.css">
+  <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
   <!-- 배너 및 테마 동기화 데이터 스크립트 (file:// 및 웹 환경 공통) -->
   <script src="upload/banner/banners_data.js"></script>
   <script src="upload/banner/themes_data.js"></script>
@@ -5722,9 +5722,14 @@ var currentGradeFilter = '초3';
 var _isPopStateNavigating = false;
 
 function initSpaHistoryNavigation() {
-  if (!history.state || !history.state.panel) {
-    history.replaceState({ panel: 'home' }, '', '#home');
-  }
+  // 새로고침 후에도 URL에 기록된 대메뉴를 복원합니다.
+  var menuPanels = ['home', 'books', 'history', 'literacy', 'ranking'];
+  var hashPanel = window.location.hash.slice(1);
+  var savedPanel = history.state && history.state.panel;
+  var targetPanel = menuPanels.indexOf(hashPanel) >= 0 ? hashPanel
+    : (menuPanels.indexOf(savedPanel) >= 0 ? savedPanel : 'home');
+  history.replaceState({ panel: targetPanel }, '', '#' + targetPanel);
+  switchPanel(targetPanel, false);
 
   window.addEventListener('popstate', function(event) {
     if (event.state && event.state.panel) {
@@ -11126,7 +11131,7 @@ document.addEventListener('click', function(event) {
 </script>
 <script src="js/portal-extras.js?v=20261029-integrity"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_finish_art"></script>
-<script src="js/literacy/literacy-common.js?v=20261104_finish_art"></script>
+<script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-student.js?v=20261104_finish_art"></script>
 </body>
 </html>
