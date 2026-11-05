@@ -383,7 +383,7 @@
         <!-- 4. 통합 검색 입력 (원클릭 지우기 ✕ 탑재) -->
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px; position: relative;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." oninput="handleMemberSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterMemberList();}">
+          <input type="search" id="memberSearchInput" name="search_member_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="이름, 회원계정, 학년, 학급, 연락처 검색..." oninput="handleMemberSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();}">
           <button type="button" id="btnMemberSearchClear" class="btn-search-clear" onclick="clearMemberSearch()" style="display: none;" title="검색어 지우기">✕</button>
         </div>
 

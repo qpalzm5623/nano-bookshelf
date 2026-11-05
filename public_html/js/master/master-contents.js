@@ -482,7 +482,7 @@ function renderMasterContents() {
       tbody.innerHTML = pageData.map((b, idx) => `
         <tr>
           <td class="text-center font-weight-bold">${idx + 1}</td>
-          <td class="text-center"><img src="${b.cover || '/resources/images/common/book_cover_default.png'}" style="width:36px;height:48px;object-fit:cover;border-radius:4px;" onerror="this.src='/resources/images/common/book_cover_default.png'"></td>
+          <td class="text-center"><img src="${b.cover || 'resources/images/book_default.svg'}" alt="" style="width:36px;height:48px;object-fit:cover;border-radius:4px;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';"></td>
           <td><div class="font-weight-bold" style="font-size:13.5px;color:var(--text-main);">${b.title}</div><small class="text-muted">코드: ${b.id}</small></td>
           <td>-</td>
           <td class="text-center"><span class="badge-soft badge-soft-warning font-weight-bold">본사 직속(HQ)</span></td>

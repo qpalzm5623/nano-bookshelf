@@ -18,8 +18,17 @@ public_html/test_*.html
 .DS_Store
 Thumbs.db
 
-# 4. 미디어 업로드 및 대용량 파일 (GitHub 100MB 초과 및 용량 폭발 방지)
-public_html/upload/
+# 4. 업로드 자료는 제외하되, 모든 화면에서 사용하는 도서 표지는 배포에 포함
+public_html/upload/*
+!public_html/upload/book/
+public_html/upload/book/*
+!public_html/upload/book/*.[jJ][pP][gG]
+!public_html/upload/book/*.[jJ][pP][eE][gG]
+!public_html/upload/book/*.[jJ][fF][iI][fF]
+!public_html/upload/book/*.[pP][nN][gG]
+!public_html/upload/book/*.[gG][iI][fF]
+!public_html/upload/book/*.[wW][eE][bB][pP]
+!public_html/upload/book/*.[sS][vV][gG]
 public_html/export_db_dump.php
 backups/
 *.sql

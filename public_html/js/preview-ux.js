@@ -389,6 +389,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var type = (target.type || '').toLowerCase();
     var placeholder = (target.placeholder || '').toLowerCase();
 
+    // 통합 검색창은 연락처도 검색하지만 전화번호 입력란은 아닙니다.
+    if (type === 'search' || id.includes('search') || name.includes('search') || placeholder.includes('검색') || e.isComposing) return;
+
     var isPhoneField = type === 'tel' ||
       id.includes('phone') || id.includes('cell') || id.includes('tel') ||
       name.includes('phone') || name.includes('cell') || name.includes('tel') ||

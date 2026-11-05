@@ -19,7 +19,7 @@ function copy(from, to) {
   if (fs.statSync(from).isDirectory()) {
     fs.mkdirSync(to, { recursive: true });
     for (const name of fs.readdirSync(from)) copy(path.join(from, name), path.join(to, name));
-  } else if (/\.(?:css|js|html|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|eot|pdf|bcmap|pfb|wasm|mp3|mp4)$/i.test(from) || path.basename(from) === 'manifest.json') {
+  } else if (/\.(?:css|js|html|png|jpe?g|jfif|gif|webp|svg|ico|woff2?|ttf|otf|eot|pdf|bcmap|pfb|wasm|mp3|mp4)$/i.test(from) || path.basename(from) === 'manifest.json') {
     fs.copyFileSync(from, to);
   }
 }

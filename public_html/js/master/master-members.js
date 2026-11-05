@@ -97,7 +97,7 @@ function selectMemberAcademy(acadName) {
   if (searchInp) searchInp.value = "";
   renderAcademyDropdownList("");
 
-  filterMemberList();
+  // 선택한 조건은 검색 버튼을 눌렀을 때만 회원 목록에 적용합니다.
 }
 
 function populateMemberAcademyFilter() {
@@ -120,7 +120,7 @@ function toggleMemberDateSort() {
     memberDateSortOrder = "none";
   }
   updateMemberDateSortUI();
-  filterMemberList();
+  renderMemberTable(lastFilteredMembers, true);
 }
 
 // 등록일 정렬 화살표 버튼 및 헤더 셀 UI 동기화
@@ -517,15 +517,12 @@ function handleMemberSearchInput(input) {
   }
 }
 
-// 검색어 원클릭 클리어 및 전체 복귀
+// 입력만 지웁니다. 적용된 검색 결과는 검색 또는 초기화 버튼으로 변경합니다.
 function clearMemberSearch() {
   const input = document.getElementById("memberSearchInput");
   if (input) input.value = "";
   const clearBtn = document.getElementById("btnMemberSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
-  const badgeEl = document.getElementById("memberSearchActiveBadge");
-  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterMemberList();
 }
 
 // 회원 필터링 (학원, 등급 권한, 상태 3종, 통합검색어)
@@ -586,7 +583,7 @@ function filterMemberList() {
     if (query) {
       badgeEl.style.display = "inline-flex";
       const displayQuery = query.length > 25 ? query.substring(0, 25) + '...' : query;
-      badgeEl.innerHTML = `<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${displayQuery}" 검색 결과 ${filtered.length.toLocaleString()}명 <span class="badge-clear-link" onclick="clearMemberSearch()" title="검색 필터 해제">✕ 검색 해제</span></span>`;
+      badgeEl.innerHTML = `<span class="badge-search-active"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${displayQuery}" 검색 결과 ${filtered.length.toLocaleString()}명 <span class="badge-clear-link" onclick="resetMemberFilters()" title="검색 필터 해제">✕ 검색 해제</span></span>`;
     } else {
       badgeEl.style.display = "none";
       badgeEl.innerHTML = "";
