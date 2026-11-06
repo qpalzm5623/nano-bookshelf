@@ -977,6 +977,7 @@ async function handleSaveTheme(e) {
   let savedTheme = null;
   let previousTheme = null;
   let themeMessage = '';
+  ensureThemeOrders();
   if (editId) {
     const target = themeList.find(item => String(item.id) === String(editId));
     if (target) {
@@ -988,6 +989,7 @@ async function handleSaveTheme(e) {
       target.image = finalImage;
       target.order = orderVal;
       target.active = active;
+      target.updatedAt = Date.now();
       savedTheme = target;
       themeMessage = `'${formattedTag}' 태그 정보가 수정되었습니다.`;
     }
@@ -1003,13 +1005,22 @@ async function handleSaveTheme(e) {
       order: orderVal,
       bookIds: [],
       active: active,
-      createdAt: todayStr
+      createdAt: todayStr,
+      updatedAt: Date.now()
     };
     themeList.push(newTheme);
     savedTheme = newTheme;
     themeMessage = `'${formattedTag}' 신규 태그가 등록되었습니다.`;
   }
-  ensureThemeOrders();
+
+  // 모달에서 지정한 노출 순서(orderVal) 위치로 이동 후 1..N 연속 정규화
+  if (savedTheme) {
+    const curIdx = themeList.indexOf(savedTheme);
+    if (curIdx !== -1) themeList.splice(curIdx, 1);
+    const insertIdx = Math.max(0, Math.min(themeList.length, orderVal - 1));
+    themeList.splice(insertIdx, 0, savedTheme);
+  }
+  themeList.forEach((t, i) => { t.order = i + 1; t.updatedAt = Date.now(); });
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
@@ -1017,9 +1028,15 @@ async function handleSaveTheme(e) {
       if (serverResult && serverResult.image) {
         savedTheme.image = serverResult.image;
       }
+      if (typeof NanoPortal.reorderThemes === 'function') {
+        await NanoPortal.reorderThemes(themeList);
+      } else {
+        await Promise.all(themeList.map(t => NanoPortal.saveTheme(t)));
+      }
     } catch (error) {
       if (previousTheme) Object.assign(savedTheme, previousTheme);
       else themeList = themeList.filter(item => item !== savedTheme);
+      ensureThemeOrders();
       showMasterToast('테마를 저장하지 못했습니다: ' + error.message, 'danger');
       return;
     }
@@ -1037,6 +1054,7 @@ async function toggleThemeActive(id) {
   if (!t) return;
   const prevActive = t.active;
   t.active = t.active === "Y" ? "N" : "Y";
+  t.updatedAt = Date.now();
   if (window.NanoPortal && NanoPortal.remote) {
     try { await NanoPortal.saveTheme(t); }
     catch (error) { t.active = prevActive; showMasterToast('테마 노출 상태를 변경하지 못했습니다: ' + error.message); return; }
@@ -1055,7 +1073,11 @@ async function deleteTheme(themeId) {
       try { await NanoPortal.deleteTheme(target); }
       catch (error) { showMasterToast('테마를 삭제하지 못했습니다: ' + error.message); return; }
     }
-    themeList = themeList.filter(item => item.id !== themeId);
+    themeList = themeList.filter(item => String(item.id) !== String(themeId));
+    themeList.forEach((t, i) => { t.order = i + 1; t.updatedAt = Date.now(); });
+    if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.reorderThemes === 'function') {
+      NanoPortal.reorderThemes(themeList).catch(() => {});
+    }
     saveOperationsToStorage();
     renderThemeTable();
     showMasterToast("태그가 삭제되었습니다.");
@@ -1693,25 +1715,24 @@ async function moveBannerOrder(id, direction) {
 // -----------------------------------------------------------
 
 // --- [Theme Order Reordering] ---
-async function moveThemeOrder(id, direction) {
+let _themeReorderSyncTimer = null;
+let _themeReorderSnapshot = null;
+
+function moveThemeOrder(id, direction) {
   ensureThemeOrders();
   const idx = themeList.findIndex(t => String(t.id) === String(id));
   if (idx === -1) return;
-  const beforeOrder = themeList.map(t => ({ id: t.id, order: t.order }));
+  if (!_themeReorderSnapshot) {
+    _themeReorderSnapshot = themeList.map(t => ({ id: t.id, order: t.order }));
+  }
 
   if (direction === "up" && idx > 0) {
     const prevIdx = idx - 1;
-    const temp = themeList[idx].order;
-    themeList[idx].order = themeList[prevIdx].order;
-    themeList[prevIdx].order = temp;
     const tempTheme = themeList[idx];
     themeList[idx] = themeList[prevIdx];
     themeList[prevIdx] = tempTheme;
   } else if (direction === "down" && idx < themeList.length - 1) {
     const nextIdx = idx + 1;
-    const temp = themeList[idx].order;
-    themeList[idx].order = themeList[nextIdx].order;
-    themeList[nextIdx].order = temp;
     const tempTheme = themeList[idx];
     themeList[idx] = themeList[nextIdx];
     themeList[nextIdx] = tempTheme;
@@ -1719,24 +1740,43 @@ async function moveThemeOrder(id, direction) {
     return;
   }
 
-  // 순서 정규화 (1부터 N까지 연속 부여)
-  themeList.forEach((t, i) => { t.order = i + 1; });
-
-  if (window.NanoPortal && NanoPortal.remote) {
-    try {
-      await Promise.all(themeList.map(t => NanoPortal.saveTheme(t)));
-    } catch (error) {
-      beforeOrder.forEach(prev => {
-        const theme = themeList.find(t => String(t.id) === String(prev.id));
-        if (theme) theme.order = prev.order;
-      });
-      themeList.sort((a, b) => (a.order || 0) - (b.order || 0));
-      showMasterToast('테마 순서를 저장하지 못했습니다: ' + error.message, 'danger');
-      renderThemeTable();
-      return;
-    }
-  }
+  // 순서 정규화 (1부터 N까지 연속 부여) 및 즉시 화면 반영
+  const now = Date.now();
+  themeList.forEach((t, i) => {
+    t.order = i + 1;
+    t.updatedAt = now;
+  });
   saveOperationsToStorage();
   renderThemeTable();
-  showMasterToast('테마 노출 순서가 변경되었습니다.');
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    if (_themeReorderSyncTimer) clearTimeout(_themeReorderSyncTimer);
+    _themeReorderSyncTimer = setTimeout(async () => {
+      const snapshot = _themeReorderSnapshot;
+      _themeReorderSnapshot = null;
+      _themeReorderSyncTimer = null;
+      try {
+        if (typeof NanoPortal.reorderThemes === 'function') {
+          await NanoPortal.reorderThemes(themeList);
+        } else {
+          await Promise.all(themeList.map(t => NanoPortal.saveTheme(t)));
+        }
+        showMasterToast('테마 노출 순서가 저장되었습니다.');
+      } catch (error) {
+        if (snapshot) {
+          snapshot.forEach(prev => {
+            const theme = themeList.find(t => String(t.id) === String(prev.id));
+            if (theme) theme.order = prev.order;
+          });
+          themeList.sort((a, b) => (a.order || 0) - (b.order || 0));
+          saveOperationsToStorage();
+          renderThemeTable();
+        }
+        showMasterToast('테마 순서를 저장하지 못했습니다: ' + error.message, 'danger');
+      }
+    }, 250);
+  } else {
+    _themeReorderSnapshot = null;
+    showMasterToast('테마 노출 순서가 변경되었습니다.');
+  }
 }

@@ -120,6 +120,17 @@
     return result.item;
   }
   async function deleteTheme(item) { return manage('themes', 'delete', { id: item.id }); }
+  async function reorderThemes(items) {
+    var orders = (items || []).filter(function (t) { return t && typeof t.id === 'string' && !/^\d+$/.test(t.id); }).map(function (t, idx) {
+      return { id: t.id, order: typeof t.order === 'number' && !isNaN(t.order) ? t.order : (idx + 1) };
+    });
+    if (!orders.length) return { ok: true };
+    return manage('themes', 'reorder', { orders: orders });
+  }
+  async function fetchThemes(since) {
+    var qs = since && Number(since) > 0 ? '&since=' + encodeURIComponent(String(since)) : '';
+    return api('/api/activity?action=themes' + qs);
+  }
   function noticeTarget(value) { return ({ 학생: 'STUDENT', 선생님: 'TEACHER', 원장: 'DIRECTOR', 본사: 'MASTER', 학원: 'DIRECTOR', '가맹 학원': 'DIRECTOR' })[value] || null; }
   async function saveNotice(item) {
     var result = await manage('notices', 'save', { id: typeof item.id === 'string' && !/^NOT-/.test(item.id) ? item.id : undefined,
@@ -145,7 +156,8 @@
     var subCat = item.subCategory || (item.cat1 && item.cat1.includes('비문학') ? 'C' : (item.cat1 && item.cat1.includes('인물') ? 'B' : 'A'));
     var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.bookNo || item.id, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
       isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), subCategory: subCat, description: item.description || item.synopsis || '',
-      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
+      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '',
+      awards: item.awards || item.award || '', themeTag: item.themeTag || item.tag || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
     if (result.item) item.serverId = result.item.id;
     return result.item;
   }
@@ -286,10 +298,18 @@
     if (learningRefresh && learningRefresh.scope === scope) return learningRefresh.promise;
     var task = { scope: scope };
     task.promise = (async function() {
-      var collected = [], cursor = '';
+      var collected = [], cursor = '', isFirstPage = true;
       do {
-        var result = await api('/api/portal?action=learning&academy=' + encodeURIComponent(scope || '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+        var result = await api('/api/portal?action=learning&limit=500&academy=' + encodeURIComponent(scope || '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
         collected = collected.concat(result.logs); cursor = result.nextCursor;
+        if (isFirstPage && cursor && scope === academy()) {
+          isFirstPage = false;
+          var firstById = new Map(collected.map(function(log) { return [log.id, log]; }));
+          learningOverlay.forEach(function(log, id) { if (String(log.academyId) === String(scope) && !firstById.has(id)) firstById.set(id, log); });
+          memoryLogs = Array.from(firstById.values()).sort(function(a,b) { return String(b.submittedAt).localeCompare(String(a.submittedAt)) || b.id.localeCompare(a.id); });
+          if (typeof renderLearningTable === 'function') renderLearningTable();
+          if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
+        }
       } while (cursor);
       if (scope === academy()) {
         // 조회 중 완료된 제출이 오래된 응답으로 사라지지 않도록 합칩니다.
@@ -309,7 +329,7 @@
   }
   global.NanoPortal = { remote: remote, request: request, api: api, manage: manage, manageList: manageList, academy: academy,
     saveMember: saveMember, deleteMember: deleteMember, saveAcademy: saveAcademy, deleteAcademy: deleteAcademy, restoreAcademy: restoreAcademy, saveClass: saveClass, deleteClass: deleteClass,
-    saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, saveNotice: saveNotice, deleteNotice: deleteNotice,
+    saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
     saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,

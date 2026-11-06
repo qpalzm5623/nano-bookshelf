@@ -4,6 +4,20 @@ import { hashPassword } from '../lib/portal-auth';
 import { randomUUID } from 'node:crypto';
 import { monthWindow } from '../lib/portal-learning';
 
+let quizAuthorMap: Record<string, any> = {};
+try { quizAuthorMap = require('../lib/quiz-authors.json'); } catch {}
+
+// 학원 고유 ID를 음수 정수(legacyQuizSeq)로 결정론적 변환하여 본사/레거시 양수 시퀀스와 충돌 없이 학원별 출제 세트를 격리
+function computeAcademyQuizSeq(acadKey: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < acadKey.length; i++) {
+    hash ^= acadKey.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const positive = Math.abs(hash | 0) % 1800000000;
+  return -(100000 + positive);
+}
+
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 
 const memberFields = { id: true, username: true, name: true, role: true, status: true, grade: true, school: true, gender: true, phone: true,
@@ -19,7 +33,7 @@ export default async function handler(req: any, res: any) {
     const academyId = entity === 'academies' ? user.academyId : await academyScope(user, req.query.academy);
     const body = req.body || {}; const input = body.data || {};
     if (req.method === 'POST') {
-      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')), '요청 작업을 확인해 주세요.');
+      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'themes' && body.operation === 'reorder') || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')), '요청 작업을 확인해 주세요.');
       if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
       if (body.operation === 'delete' || body.operation === 'restore') need(typeof input.id === 'string' && input.id.length > 0, '대상 항목을 선택해 주세요.');
     }
@@ -51,7 +65,16 @@ export default async function handler(req: any, res: any) {
           prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } })
         ]);
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^theme_meta:/, ''), (m.value || {}) as Record<string, any>]));
-        return res.json({ items: themeRows.map(t => ({ ...t, ...(metaMap.get(t.id) || {}) })) });
+        const items = themeRows.map(t => {
+          const meta = metaMap.get(t.id) || {};
+          const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);
+          return { ...t, ...meta, order: parsedOrder };
+        }).sort((a, b) => {
+          const oa = a.order != null ? a.order : 9999;
+          const ob = b.order != null ? b.order : 9999;
+          return oa !== ob ? oa - ob : String(a.id).localeCompare(String(b.id));
+        });
+        return res.json({ items });
       }
       if (entity === 'banners') {
         const [bannerRows, metaRows] = await Promise.all([
@@ -332,12 +355,47 @@ export default async function handler(req: any, res: any) {
       need(/^[A-Za-z0-9_-]+$/.test(data.bookNo), '도서 코드는 영문·숫자·하이픈·밑줄로 입력해 주세요.');
       for (const url of [input.coverUrl,input.worksheetUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|data:application\/pdf)/i.test(url), '자료 주소 형식을 확인해 주세요.');
       if (input.themeId) need(await prisma.themeCategory.findUnique({ where: { id: input.themeId } }), '테마를 확인해 주세요.');
-      const extra = { themeId: input.themeId || null, isRecommended: input.isRecommended === true, coverUrl: text(input.coverUrl, '표지 주소', 2000), worksheetUrl: text(input.worksheetUrl, '학습지 주소', 2000), tags: text(input.tags, '태그', 2000), series: text(input.series, '시리즈') };
-      return res.json({ item: input.id ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } }) : await prisma.book.create({ data: { ...data, ...extra } }) });
+      const rawSubject = String(input.subject || input.themeTag || '').replace(/^#/, '').trim();
+      const extra = {
+        themeId: input.themeId || null,
+        isRecommended: input.isRecommended === true,
+        coverUrl: text(input.coverUrl, '표지 주소', 2000),
+        worksheetUrl: text(input.worksheetUrl, '학습지 주소', 2000),
+        tags: text(input.tags, '태그', 2000),
+        series: text(input.series, '시리즈'),
+        award: text(input.award || input.awards, '어워드', 1000),
+        subject: text(rawSubject, '주제', 100)
+      };
+      const savedBook = input.id
+        ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } })
+        : await prisma.book.create({ data: { ...data, ...extra } });
+      if (!input.id && user.role !== 'MASTER' && prisma.portalSetting) {
+        const acad = await prisma.academy.findUnique({ where: { id: academyId }, select: { id: true, code: true, name: true } });
+        if (acad) {
+          const creatorKey = `book_creator:${savedBook.bookNo}`;
+          await prisma.portalSetting.upsert({
+            where: { key: creatorKey },
+            update: { scope: 'book_creator', value: { academyId: acad.id, academyCode: acad.code, academyName: acad.name } },
+            create: { key: creatorKey, scope: 'book_creator', value: { academyId: acad.id, academyCode: acad.code, academyName: acad.name } }
+          });
+        }
+      }
+      return res.json({ item: savedBook });
     }
     if (entity === 'quizzes') {
       if (body.operation === 'bulk_import' || (body.operation === 'import' && Array.isArray(body.items || body.rows))) {
-        master(user);
+        // 본사(MASTER) 및 학원 관리자/교사(DIRECTOR, TEACHER) 모두 북퀴즈 대량 등록 가능 (상단 staff(user) 검증 완료)
+        const isMasterUser = user.role === 'MASTER';
+        let academyQuizSeq: number | null = null;
+        let academyMeta: { academyId: string; academyCode: string; academyName: string } | null = null;
+
+        if (!isMasterUser) {
+          const acad = await prisma.academy.findUnique({ where: { id: academyId }, select: { id: true, code: true, name: true } });
+          need(!!acad, '소속 학원 정보를 확인할 수 없습니다.');
+          academyQuizSeq = computeAcademyQuizSeq(acad!.code || acad!.id);
+          academyMeta = { academyId: acad!.id, academyCode: acad!.code, academyName: acad!.name };
+        }
+
         let groups = body.items;
         if (!groups && Array.isArray(body.rows)) {
           const groupMap = new Map<string, any[]>();
@@ -365,12 +423,30 @@ export default async function handler(req: any, res: any) {
 
         const bookMap = new Map<string, { id: string; bookNo: string; title: string }>();
         matchedBooks.forEach(b => {
+          bookMap.set(b.bookNo.toUpperCase(), b);
           bookMap.set(b.bookNo, b);
+          bookMap.set(b.id.toUpperCase(), b);
           bookMap.set(b.id, b);
         });
 
-        const missingCodes = bookNos.filter(code => !bookMap.has(code));
+        const missingCodes = bookNos.filter(code => !bookMap.has(code) && !bookMap.has(code.toUpperCase()));
         need(missingCodes.length === 0, `등록되지 않은 도서코드가 포함되어 있습니다: [${missingCodes.slice(0, 5).join(', ')}${missingCodes.length > 5 ? ' 외 ' + (missingCodes.length - 5) + '건' : ''}]`);
+
+        if (!isMasterUser && academyQuizSeq !== null && academyMeta && prisma.portalSetting) {
+          const seqKey = `quiz_seq:${academyQuizSeq}`;
+          const seqVal = {
+            authorType: 'ACADEMY',
+            authorName: academyMeta.academyName,
+            academyName: academyMeta.academyName,
+            academyCode: academyMeta.academyCode,
+            academyId: academyMeta.academyId
+          };
+          await prisma.portalSetting.upsert({
+            where: { key: seqKey },
+            update: { scope: 'quiz_author_seq', value: seqVal },
+            create: { key: seqKey, scope: 'quiz_author_seq', value: seqVal }
+          });
+        }
 
         const result = await prisma.$transaction(async tx => {
           let totalImportedQuestions = 0;
@@ -378,7 +454,7 @@ export default async function handler(req: any, res: any) {
 
           for (const group of groups) {
             const bookCode = String(group.bookNo || '').trim();
-            const book = bookMap.get(bookCode);
+            const book = bookMap.get(bookCode) || bookMap.get(bookCode.toUpperCase());
             if (!book) continue;
 
             const rawQuestions = Array.isArray(group.questions) ? group.questions : [];
@@ -389,10 +465,11 @@ export default async function handler(req: any, res: any) {
               const qText = text(q.question || q.문항내용 || q.질문, '문항 내용', 5000, true);
               const opts = Array.isArray(q.options) 
                 ? q.options.map((o: any) => text(o, '보기', 1000, true)) 
-                : [q.opt1, q.opt2, q.opt3, q.opt4].filter(Boolean).map((o: any) => text(o, '보기', 1000, true));
+                : [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(Boolean).map((o: any) => text(o, '보기', 1000, true));
               
               const isSubjective = q.quizType === 'SHORT_ANSWER' || q.type === 'SUBJECTIVE' || opts.length === 0;
               let correctAnswer = String(q.correctAnswer ?? q.ans ?? q.정답 ?? '').trim();
+              need(correctAnswer.length > 0, `[${book.title}] ${qNo}번 문항의 정답이 비어 있습니다.`);
               
               if (!isSubjective) {
                 need(opts.length >= 2 && opts.length <= 5, `[${book.title}] 보기 개수는 2~5개여야 합니다.`);
@@ -409,26 +486,64 @@ export default async function handler(req: any, res: any) {
                 }
               }
 
+              const rawHint = String(q.explanation || q.hint || q.해설 || '').trim();
+              const rawSimilar = isSubjective
+                ? (Array.isArray(q.similarAnswers) && q.similarAnswers.length > 0
+                    ? q.similarAnswers.map((s: any) => String(s).trim()).filter(Boolean).join(', ')
+                    : String(q.similarAns || q.유사인정정답 || '').trim())
+                : '';
+              const combinedExplanation = rawSimilar
+                ? (rawHint ? `[SIMILAR:${rawSimilar}] ${rawHint}` : `[SIMILAR:${rawSimilar}]`)
+                : (rawHint || null);
+
               return {
                 bookId: book.id,
+                legacyQuizSeq: isMasterUser ? 0 : academyQuizSeq,
                 questionNo: qNo,
                 question: qText,
                 options: isSubjective ? null : opts,
                 correctAnswer,
                 quizType: (isSubjective ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE') as any,
-                explanation: q.explanation || q.hint || q.해설 || null,
+                explanation: combinedExplanation,
                 score: Number(q.score) || 20
               };
             });
 
-            await tx.bookQuiz.deleteMany({ where: { bookId: book.id } });
+            if (isMasterUser) {
+              // 본사 업로드 시 학원 전용 세트(음수 시퀀스 및 레거시 학원 출제 세트)는 보존하고 본사 세트만 교체
+              const existingRows = await tx.bookQuiz.findMany({
+                where: { bookId: book.id },
+                select: { id: true, legacyQuizSeq: true }
+              });
+              const hqIdsToDelete = existingRows
+                .filter(r => {
+                  if (r.legacyQuizSeq === null || r.legacyQuizSeq === 0) return true;
+                  if (r.legacyQuizSeq < 0) return false;
+                  const meta = quizAuthorMap[String(r.legacyQuizSeq)];
+                  return !meta || meta.authorType !== 'ACADEMY';
+                })
+                .map(r => r.id);
+              if (hqIdsToDelete.length > 0) {
+                await tx.bookQuiz.deleteMany({ where: { id: { in: hqIdsToDelete } } });
+              }
+            } else {
+              // 학원 업로드 시 해당 학원이 출제한 세트(academyQuizSeq)만 안전하게 교체 (본사 및 타 학원 세트 완벽 보존)
+              await tx.bookQuiz.deleteMany({ where: { bookId: book.id, legacyQuizSeq: academyQuizSeq } });
+            }
+
             await tx.bookQuiz.createMany({ data: questions });
 
             totalImportedQuestions += questions.length;
             affectedBookCount++;
           }
 
-          return { ok: true, affectedBookCount, totalImportedQuestions };
+          return {
+            ok: true,
+            affectedBookCount,
+            totalImportedQuestions,
+            authorType: isMasterUser ? 'HQ' : 'ACADEMY',
+            academyName: isMasterUser ? '본사 직속 (공용)' : (academyMeta?.academyName || '')
+          };
         });
 
         return res.json(result);
@@ -499,13 +614,42 @@ export default async function handler(req: any, res: any) {
         await prisma.portalSetting.deleteMany({ where: { key: 'theme_meta:' + input.id, scope: 'theme_meta' } });
         return res.json({ ok: true });
       }
+      if (body.operation === 'reorder') {
+        const orders = Array.isArray(input.orders) ? input.orders : [];
+        need(orders.length > 0 && orders.length <= 200, '변경할 테마 노출 순서 정보를 확인해 주세요.');
+        const existingRows = await prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } });
+        const existingMap = new Map<string, Record<string, any>>(
+          existingRows.map(r => [r.key.replace(/^theme_meta:/, ''), (r.value || {}) as Record<string, any>])
+        );
+        await prisma.$transaction(
+          orders.map((entry: any, idx: number) => {
+            const themeId = text(entry?.id, '테마 ID', 100, true);
+            const nextOrder = typeof entry?.order === 'number' && Number.isFinite(entry.order)
+              ? entry.order
+              : (parseInt(entry?.order, 10) || (idx + 1));
+            const prevMeta = existingMap.get(themeId) || {};
+            const nextMeta = { ...prevMeta, order: nextOrder, active: prevMeta.active === 'N' ? 'N' : 'Y' };
+            return prisma.portalSetting.upsert({
+              where: { key: 'theme_meta:' + themeId },
+              update: { scope: 'theme_meta', value: nextMeta },
+              create: { key: 'theme_meta:' + themeId, scope: 'theme_meta', value: nextMeta }
+            });
+          })
+        );
+        return res.json({ ok: true });
+      }
       const data = { code: text(input.code, '코드', 60, true), name: text(input.name, '테마명', 200, true), description: text(input.description, '설명', 3000) };
       const saved = input.id ? await prisma.themeCategory.update({ where: { id: input.id }, data }) : await prisma.themeCategory.create({ data });
+      const prevMetaRow = await prisma.portalSetting.findUnique({ where: { key: 'theme_meta:' + saved.id } });
+      const prevMeta = ((prevMetaRow?.value as any) || {}) as Record<string, any>;
+      const parsedOrder = typeof input.order === 'number' && Number.isFinite(input.order)
+        ? input.order
+        : (parseInt(input.order, 10) || (typeof prevMeta.order === 'number' ? prevMeta.order : null));
       const meta = {
         subTag: text(input.subTag || '', '서브 태그', 500),
         desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
         image: text(input.image || '', '테마 이미지', 1500000),
-        order: typeof input.order === 'number' ? input.order : (parseInt(input.order, 10) || null),
+        order: parsedOrder,
         active: input.active === 'N' ? 'N' : 'Y',
         bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : []
       };

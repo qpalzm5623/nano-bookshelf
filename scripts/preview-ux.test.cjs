@@ -124,7 +124,7 @@ function student(localStorage, account = 'student-a', academyId = 'A') {
   }));
   loadFunctions(ctx, 'student_preview.html', [
     'getStudentQuizIdentity', 'updateStudentSessionLabels', 'setQuizDraftStatus', 'escapeStudentQuizText', 'saveStudentQuizDraft',
-    'startQuizWithSet', 'renderQ', 'onThoughtTextareaInput', 'selectAns', 'goNext',
+    'shuffleQuizOptions', 'startQuizWithSet', 'renderQ', 'onThoughtTextareaInput', 'selectAns', 'goNext',
     'goPreviousQuestion', 'showResult', 'syncQuizResultToAdminLearning', 'backToSelect', 'checkDailyQuizLimit'
   ]);
   return ctx;

@@ -97,31 +97,37 @@ async function main() {
 
   console.log(`✅ 통합 회원 추출 완료: ${members.length}명 (완독 권수 및 평균점수 실데이터 반영)`);
 
-  // 3. 덤프 원본 실데이터 찜(tb_favorite_history), 추천(tb_recommend_history), 퀴즈완료(tb_quiz_history) 집계
-  console.log('📊 덤프 원본에서 도서별 찜/추천/인증 실데이터 집계 중...');
-  const dumpHistory = await loadTables(['tb_favorite_history', 'tb_recommend_history', 'tb_quiz_history']);
+  // 3. Neon DB의 legacy_book_social_stats 및 실데이터 집계 로드 (ISBN 중복 통폐합 도서까지 100% 반영)
+  console.log('📊 Neon DB에서 도서별 찜/추천/인증 통합 실데이터 로드 중...');
+  const socialSetting = await prisma.portalSetting.findUnique({ where: { key: 'legacy_book_social_stats' } });
+  const socialVal = (socialSetting?.value || {}) as {
+    baseLikes?: Record<string, number>;
+    allLikes?: Record<string, number>;
+    recommends?: Record<string, number>;
+    legacyCerts?: Record<string, number>;
+  };
 
   const bookFavMap = new Map<string, number>();
-  for (const f of dumpHistory.tb_favorite_history) {
-    const bNo = String(f.book_no).trim();
-    bookFavMap.set(bNo, (bookFavMap.get(bNo) || 0) + 1);
+  for (const [bNo, cnt] of Object.entries(socialVal.allLikes || {})) {
+    bookFavMap.set(bNo, Number(cnt) || 0);
   }
 
   const bookRecMap = new Map<string, number>();
-  for (const r of dumpHistory.tb_recommend_history) {
-    const bNo = String(r.book_no).trim();
-    bookRecMap.set(bNo, (bookRecMap.get(bNo) || 0) + 1);
+  for (const [bNo, cnt] of Object.entries(socialVal.recommends || {})) {
+    bookRecMap.set(bNo, Number(cnt) || 0);
   }
 
-  const bookQuizHistMap = new Map<string, number>();
-  for (const q of dumpHistory.tb_quiz_history) {
-    const bNo = String(q.book_no).trim();
-    bookQuizHistMap.set(bNo, (bookQuizHistMap.get(bNo) || 0) + 1);
+  const bookCertStats = await prisma.quizAttempt.groupBy({
+    by: ['bookId'],
+    where: { score: { gte: 60 } },
+    _count: { id: true },
+  });
+  const bookCertById = new Map<string, number>();
+  for (const row of bookCertStats) {
+    bookCertById.set(row.bookId, row._count.id);
   }
 
-  console.log(`   ✅ 찜 실데이터: ${dumpHistory.tb_favorite_history.length}건 (도서 ${bookFavMap.size}종)`);
-  console.log(`   ✅ 추천 실데이터: ${dumpHistory.tb_recommend_history.length}건 (도서 ${bookRecMap.size}종)`);
-  console.log(`   ✅ 인증(퀴즈완료) 실데이터: ${dumpHistory.tb_quiz_history.length}건 (도서 ${bookQuizHistMap.size}종)`);
+  console.log(`   ✅ 찜 보유 도서: ${bookFavMap.size}종 / 추천 보유 도서: ${bookRecMap.size}종`);
 
   const bookQuizStats = await prisma.quizAttempt.groupBy({
     by: ['bookId'],
@@ -186,11 +192,11 @@ async function main() {
       ? tagArray.map((t) => `#${t.replace(/^#/, '')}`).join(' ')
       : `#${subjName}`;
 
-    const bStat = bookStatsMap.get(b.id);
-    const dbCompletions = bStat?.count || 0;
-    const realCompletions = bookQuizHistMap.get(b.bookNo) || dbCompletions;
+    const dbCerts = bookCertById.get(b.id) || 0;
+    const legacyCerts = Number(socialVal.legacyCerts?.[b.bookNo] || 0);
+    const realCompletions = dbCerts + legacyCerts;
     const realLikes = bookFavMap.get(b.bookNo) || 0;
-    const realRecommends = bookRecMap.get(b.bookNo) || 0;
+    const realRecommends = bookRecMap.get(b.bookNo) || (b.isRecommended ? 1 : 0);
 
     return {
       id: b.bookNo,
@@ -325,10 +331,9 @@ async function main() {
     });
   console.log(`✅ 가맹 학원 랭킹 집계 완료: TOP ${academyRankings.length}개소`);
 
-  // 6. 기존 파일에서 MIGRATED_QUIZZES 와 MIGRATED_LEARNING_LOGS 보존 읽기
+  // 6. 기존 파일에서 MIGRATED_QUIZZES 보존 + 최신 실제 북퀴즈 학습리포트 300건 추출
   const outputPath = path.join(process.cwd(), 'public_html', 'migrated_real_data.js');
   let existingQuizzesBlock = 'window.MIGRATED_QUIZZES = {};';
-  let existingLogsBlock = 'window.MIGRATED_LEARNING_LOGS = [];';
 
   if (fs.existsSync(outputPath)) {
     const existingContent = fs.readFileSync(outputPath, 'utf-8');
@@ -337,12 +342,45 @@ async function main() {
       existingQuizzesBlock = quizMatch[1];
       console.log('📦 기존 MIGRATED_QUIZZES 데이터셋 보존 완료');
     }
-    const logMatch = existingContent.match(/(window\.MIGRATED_LEARNING_LOGS\s*=\s*\[[\s\S]*?\n\];)/);
-    if (logMatch) {
-      existingLogsBlock = logMatch[1];
-      console.log('📦 기존 MIGRATED_LEARNING_LOGS 데이터셋 보존 완료');
-    }
   }
+
+  const rawBookById = new Map(rawBooks.map((b) => [b.id, b]));
+  const recentAttempts = await prisma.quizAttempt.findMany({
+    orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
+    take: 300,
+    include: {
+      member: { include: { academy: true, classGroup: true } },
+    },
+  });
+
+  const migratedLogs = recentAttempts.map((a) => {
+    const bk = rawBookById.get(a.bookId);
+    const details = (a.answers && !Array.isArray(a.answers) ? a.answers : {}) as Record<string, any>;
+    const kstDate = new Date(+a.completedAt + 9 * 3600000).toISOString().slice(0, 10);
+    return {
+      id: a.id,
+      academyId: a.member.academy?.code || 'HQ',
+      studentId: a.member.username,
+      studentName: a.member.name,
+      classGroup: a.member.classGroup?.name || '미지정',
+      school: [a.member.school, a.member.grade].filter(Boolean).join(' ') || a.member.academy?.name || '',
+      bookId: bk?.bookNo || a.bookId,
+      bookTitle: bk?.title || '도서',
+      bookPub: [bk?.publisher, bk?.author].filter(Boolean).join(' · '),
+      date: kstDate,
+      submittedAt: a.completedAt.toISOString(),
+      score: a.score,
+      sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
+      reviewed: details.reviewed || '대기',
+      comment: details.comment || '',
+      thoughtQuestion: details.thoughtQuestion || '',
+      thoughtAnswer: a.thinkReply || '',
+      studentThoughtAnswer: a.thinkReply || '',
+      quizResults: Array.isArray(details.quizResults) ? details.quizResults : [],
+    };
+  });
+  const existingLogsBlock = `window.MIGRATED_LEARNING_LOGS = ${JSON.stringify(migratedLogs, null, 2)};`;
+  console.log(`✅ 최신 북퀴즈 완료 내역 및 학습리포트 추출 완료: ${migratedLogs.length}건`);
 
   const fileContent = `/**
  * 나노의 책장 - Neon PostgreSQL 실데이터 동기화 데이터셋

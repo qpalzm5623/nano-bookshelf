@@ -1,9 +1,16 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
+import { pathToFileURL } from 'url';
 import { prisma } from '../lib/prisma';
+import { DUMP_PATH } from './migrate/legacy-dump';
 
-async function main() {
-  console.log('Building quiz authors map from backup SQL...');
+export async function extractQuizAuthors(dumpFilePath: string = DUMP_PATH): Promise<number> {
+  if (!fs.existsSync(dumpFilePath)) {
+    console.warn(`⚠️ 덤프 파일을 찾을 수 없어 quiz-authors 추출을 건너뜁니다: ${dumpFilePath}`);
+    return 0;
+  }
+
+  console.log(`🔍 백업 SQL에서 북퀴즈 출제기관 매핑 추출 중... (${dumpFilePath})`);
 
   const members = await prisma.member.findMany({
     select: {
@@ -27,7 +34,7 @@ async function main() {
   }
 
   const rl = readline.createInterface({
-    input: fs.createReadStream('backups/nanobook_backup_20261026_140403.sql'),
+    input: fs.createReadStream(dumpFilePath),
     crlfDelay: Infinity
   });
 
@@ -40,7 +47,7 @@ async function main() {
       continue;
     }
     if (inTbQuiz) {
-      if (line.includes("UNLOCK TABLES") || line.includes("INSERT INTO `") || line.includes("CREATE TABLE `")) {
+      if (line.includes('UNLOCK TABLES') || line.includes('INSERT INTO `') || line.includes('CREATE TABLE `')) {
         inTbQuiz = false;
         break;
       }
@@ -49,11 +56,10 @@ async function main() {
       if (!seqMatch) continue;
       const quizSeq = parseInt(seqMatch[1], 10);
 
-      // Matches: ..., NULL, 'katelee00', '2024-08-21 14:26:31'
       const userMatch = line.match(/(?:,\s*|',\s*)'([a-zA-Z0-9_-]+)',\s*'(?:202[0-9]-[0-9]{2}-[0-9]{2})/);
       const userId = userMatch ? userMatch[1].toLowerCase() : 'admin';
 
-      if (userId === 'admin' || userId === 'master') {
+      if (userId === 'admin' || userId === 'master' || memberMap.get(userId)?.role === 'MASTER') {
         quizAuthorMap[quizSeq] = {
           authorType: 'HQ',
           authorName: '본사',
@@ -75,9 +81,17 @@ async function main() {
   }
 
   const count = Object.keys(quizAuthorMap).length;
-  console.log(`Extracted ${count} tb_quiz author mappings.`);
   fs.writeFileSync('lib/quiz-authors.json', JSON.stringify(quizAuthorMap, null, 2));
-  console.log('Saved to lib/quiz-authors.json');
+  console.log(`   ✅ 북퀴즈 출제기관 매핑 ${count.toLocaleString()}건 저장 완료 (lib/quiz-authors.json)`);
+  return count;
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  extractQuizAuthors()
+    .catch((e) => {
+      console.error('❌ 출제기관 매핑 추출 오류:', e);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}

@@ -42,9 +42,9 @@ export default async function handler(req: any, res: any) {
       isStudent ? Promise.resolve([]) : prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
-      prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta'] } }, select: { key: true, scope: true, value: true } }),
+      prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta', 'book_creator', 'system'] } }, select: { key: true, scope: true, value: true, updatedAt: true } }),
       prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
-      prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] })
+      prisma.bookQuiz ? prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] }) : Promise.resolve([])
     ]);
     const books: any[] = bookRows as any[];
     const quizSetCountMap = new Map<string, number>();
@@ -55,7 +55,14 @@ export default async function handler(req: any, res: any) {
     const noticeMetaMap = new Map<string, Record<string, any>>();
     const bannerMetaMap = new Map<string, Record<string, any>>();
     const themeMetaMap = new Map<string, Record<string, any>>();
+    const bookCreatorMap = new Map<string, Record<string, any>>();
     const memberCharMap = new Map<string, string>();
+    let socialStats: {
+      baseLikes?: Record<string, number>;
+      allLikes?: Record<string, number>;
+      recommends?: Record<string, number>;
+      legacyCerts?: Record<string, number>;
+    } = {};
     for (const crow of (((charSettingRows as any[]) || []))) {
       const mid = String(crow.key || '').replace(/^character:/, '');
       const cid = (crow.value as any)?.characterId;
@@ -65,7 +72,9 @@ export default async function handler(req: any, res: any) {
       const val = (row.value || {}) as Record<string, any>;
       if (row.scope === 'notice_meta') noticeMetaMap.set(row.key.replace(/^notice_meta:/, ''), val);
       else if (row.scope === 'banner_meta') bannerMetaMap.set(row.key.replace(/^banner_meta:/, ''), val);
-      else if (row.scope === 'theme_meta') themeMetaMap.set(row.key.replace(/^theme_meta:/, ''), val);
+      else if (row.scope === 'theme_meta') themeMetaMap.set(row.key.replace(/^theme_meta:/, ''), { ...val, _updatedAt: (row as any).updatedAt ? +new Date((row as any).updatedAt) : 0 });
+      else if (row.scope === 'book_creator') bookCreatorMap.set(row.key.replace(/^book_creator:/, ''), val);
+      else if (row.key === 'legacy_book_social_stats') socialStats = val;
     }
 
     // 학급별 담당 지도교사 매핑 복원
@@ -145,10 +154,13 @@ export default async function handler(req: any, res: any) {
           const dynamicCert = (certCountMap.get(finalBookId) || 0) + (certCountMap.get(b.id) || 0);
           const dynamicWish = (wishCountMap.get(finalBookId) || 0) + (wishCountMap.get(b.id) || 0);
 
-          const totalLikes = dynamicWish;
-          const totalRecs = b.isRecommended ? 1 : 0;
-          const totalCerts = dynamicCert;
+          const totalLikes = isStudent
+            ? (socialStats.allLikes?.[finalBookId] || 0)
+            : ((socialStats.baseLikes?.[finalBookId] || 0) + dynamicWish);
+          const totalRecs = (socialStats.recommends?.[finalBookId] || 0) || (b.isRecommended ? 1 : 0);
+          const totalCerts = (socialStats.legacyCerts?.[finalBookId] || 0) + dynamicCert;
 
+          const creatorMeta = bookCreatorMap.get(finalBookId);
           bookMap.set(finalBookId, {
             ...b,
             serverId: b.id,
@@ -160,6 +172,11 @@ export default async function handler(req: any, res: any) {
             grade: grade,
             pub: pub,
             cover: cover,
+            ...(creatorMeta ? {
+              creatorType: 'ACADEMY',
+              academyId: creatorMeta.academyCode || creatorMeta.academyId || '',
+              academyName: creatorMeta.academyName || '가맹 학원'
+            } : {}),
             sheet: !!b.worksheetUrl,
             hasSheet: !!b.worksheetUrl,
             worksheet: b.worksheetUrl || null,
@@ -181,6 +198,7 @@ export default async function handler(req: any, res: any) {
             hasQuiz: ((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0,
             quizCount: (b.quizzes && b.quizzes.length) || b._count?.quizzes || 0,
             quizSetCount: quizSetCountMap.get(b.id) || (((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0 ? 1 : 0),
+            quizSets: [],
             likes: totalLikes,
             recommends: totalRecs,
             quizCompletions: totalCerts,
@@ -230,6 +248,7 @@ export default async function handler(req: any, res: any) {
       NANO_SERVER_THEMES: themes.map(t => {
         const meta = themeMetaMap.get(t.id) || {};
         const autoBookIds = books.filter(b => b.themeId === t.id).map(b => b.bookNo);
+        const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);
         return {
           ...t,
           title: t.name,
@@ -237,10 +256,15 @@ export default async function handler(req: any, res: any) {
           subTag: meta.subTag !== undefined ? meta.subTag : '',
           desc: meta.desc !== undefined ? meta.desc : (t.description || ''),
           image: meta.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80',
-          order: typeof meta.order === 'number' ? meta.order : (parseInt(meta.order, 10) || null),
+          order: parsedOrder,
           active: meta.active === 'N' ? 'N' : 'Y',
-          bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : autoBookIds
+          bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : autoBookIds,
+          updatedAt: meta._updatedAt || 0
         };
+      }).sort((a, b) => {
+        const oa = a.order != null ? a.order : 9999;
+        const ob = b.order != null ? b.order : 9999;
+        return oa !== ob ? oa - ob : String(a.id).localeCompare(String(b.id));
       }),
       NANO_SERVER_NOTICES: notices.map(n => {
         const meta = noticeMetaMap.get(n.id) || {};

@@ -117,6 +117,41 @@ export default async function handler(req: any, res: any) {
         rows, myRank: own ? Number(own.rank) : null, participants: Number(ranked[0]?.participants || 0),
         myPoints: Number(own?.amount || 0), myTotalPoints: own?.points ?? user.points, myBooks: progress.get(user.id)?.totalRead || 0 });
     }
+    if (action === 'themes') {
+      const since = Number(req.query.since) || 0;
+      const metaRows = await prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } });
+      const latestUpdatedAt = metaRows.reduce((max, r: any) => Math.max(max, r.updatedAt ? +new Date(r.updatedAt) : 0), 0);
+      if (since > 0 && latestUpdatedAt > 0 && latestUpdatedAt <= since) {
+        return res.json({ unchanged: true, latestUpdatedAt });
+      }
+      const [themes, themeBooks] = await Promise.all([
+        prisma.themeCategory.findMany(),
+        prisma.book.findMany({ where: { themeId: { not: null } }, select: { themeId: true, bookNo: true } })
+      ]);
+      const metaMap = new Map<string, any>(metaRows.map((r: any) => [String(r.key || '').replace(/^theme_meta:/, ''), { ...(r.value || {}), _updatedAt: r.updatedAt ? +new Date(r.updatedAt) : 0 }]));
+      const items = themes.map(t => {
+        const meta = metaMap.get(t.id) || {};
+        const autoBookIds = themeBooks.filter(b => b.themeId === t.id).map(b => b.bookNo);
+        const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);
+        return {
+          ...t,
+          title: t.name,
+          tag: '#' + String(t.name || '').replace(/^#/, ''),
+          subTag: meta.subTag !== undefined ? meta.subTag : '',
+          desc: meta.desc !== undefined ? meta.desc : (t.description || ''),
+          image: meta.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80',
+          order: parsedOrder,
+          active: meta.active === 'N' ? 'N' : 'Y',
+          bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : autoBookIds,
+          updatedAt: meta._updatedAt || latestUpdatedAt
+        };
+      }).sort((a, b) => {
+        const oa = a.order != null ? a.order : 9999;
+        const ob = b.order != null ? b.order : 9999;
+        return oa !== ob ? oa - ob : String(a.id).localeCompare(String(b.id));
+      });
+      return res.json({ unchanged: false, latestUpdatedAt, items });
+    }
     if (action === 'popular') {
       const period = String(req.query.period || 'daily');
       need(['daily', 'weekly', 'monthly'].includes(period), '조회 기간을 확인해 주세요.');

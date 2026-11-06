@@ -35,9 +35,13 @@ function logView(attempt: any, book: any, studentView = false) {
   const details = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
   const completedDate = attempt.completedAt instanceof Date ? attempt.completedAt : new Date(attempt.completedAt);
   const kstDate = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
+  const schoolInfo = [attempt.member?.school, attempt.member?.grade].filter(Boolean).join(' ') || attempt.member?.academy?.name || '';
+  const bookPubInfo = [book?.publisher, book?.author].filter(Boolean).join(' · ') || '';
   return { id: attempt.id, academyId: attempt.member.academy.code, studentId: attempt.member.username,
-    studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정', bookId: book?.bookNo || attempt.bookId,
-    bookTitle: book?.title || '도서', date: kstDate, submittedAt: completedDate.toISOString(),
+    studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정',
+    school: schoolInfo, bookId: book?.bookNo || attempt.bookId,
+    bookTitle: book?.title || '도서', bookPub: bookPubInfo, cover: book?.coverUrl || '', grade: book?.grade || '',
+    date: kstDate, submittedAt: completedDate.toISOString(),
     score: attempt.score, quizResults: studentView && attempt.score < 60 ? [] : details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
@@ -92,7 +96,7 @@ export default async function handler(req: any, res: any) {
       const book = await prisma.book.findFirst({
         where: { OR: [{ id: bookId }, { bookNo: bookId }] },
         select: { id: true, bookNo: true, quizzes: { orderBy: [{ legacyQuizSeq: 'asc' }, { questionNo: 'asc' }],
-          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true, legacyQuizSeq: true } } }
+          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true, legacyQuizSeq: true, quizType: true, explanation: true } } }
       });
       if (!book) return res.status(404).json({ error: '도서를 찾을 수 없습니다.' });
 
@@ -104,24 +108,68 @@ export default async function handler(req: any, res: any) {
         setsMap.get(seq)!.push(q);
       }
 
-      const quizSets = Array.from(setsMap.entries()).map(([seq, qList], idx) => {
-        const authorInfo = (quizAuthorMap as any)[seq] || {
-          authorType: 'HQ',
-          authorName: '본사',
-          academyName: '본사 직속 (공용)'
+      // 학원 자체 대량 업로드 세트(음수 legacyQuizSeq)의 출제 기관 메타 조회
+      const negSeqs = Array.from(setsMap.keys()).filter(s => s < 0);
+      const dynamicAuthorMap = new Map<number, any>();
+      if (negSeqs.length > 0 && prisma.portalSetting) {
+        const rows = await prisma.portalSetting.findMany({
+          where: { key: { in: negSeqs.map(s => `quiz_seq:${s}`) } },
+          select: { key: true, value: true }
+        });
+        for (const r of rows) {
+          const seqNum = Number(String(r.key).replace(/^quiz_seq:/, ''));
+          if (!Number.isNaN(seqNum) && r.value) dynamicAuthorMap.set(seqNum, r.value);
+        }
+      }
+
+      // 본사(HQ) 세트가 항상 첫 번째 탭에 오도록 정렬 (양수/0 우선, 음수 학원 세트 후순위)
+      const orderedEntries = Array.from(setsMap.entries()).sort((a, b) => {
+        const aNeg = a[0] < 0 ? 1 : 0;
+        const bNeg = b[0] < 0 ? 1 : 0;
+        if (aNeg !== bNeg) return aNeg - bNeg;
+        return a[0] - b[0];
+      });
+
+      const quizSets = orderedEntries.map(([seq, qList], idx) => {
+        const authorInfo = (seq < 0 ? dynamicAuthorMap.get(seq) : (quizAuthorMap as any)[seq]) || {
+          authorType: seq < 0 ? 'ACADEMY' : 'HQ',
+          authorName: seq < 0 ? '가맹 학원' : '본사',
+          academyName: seq < 0 ? '가맹 학원' : '본사 직속 (공용)'
         };
+        const isMyAcademySet = authorInfo.authorType === 'ACADEMY' && !!(
+          (authorInfo.academyCode && user.academy?.code === authorInfo.academyCode) ||
+          (authorInfo.academyId && user.academyId === authorInfo.academyId)
+        );
         return {
           id: `server-${book.id}-${seq || idx}`,
           authorType: authorInfo.authorType || 'HQ',
           authorName: authorInfo.authorName || '본사',
           academyName: authorInfo.academyName || '본사 직속 (공용)',
+          ...(authorInfo.academyCode ? { academyId: authorInfo.academyCode } : {}),
+          ...(isMyAcademySet ? { isMine: true } : {}),
           isPublic: 'Y',
           questions: qList.map(q => {
             const opts = Array.isArray(q.options) ? q.options : [];
+            const isSubj = q.quizType === 'SHORT_ANSWER';
+            let similarAns = '';
+            let cleanHint = q.explanation || '';
+            const simMatch = typeof cleanHint === 'string' ? cleanHint.match(/^\[SIMILAR:([^\]]*)\]\s*(.*)$/s) : null;
+            if (simMatch) {
+              similarAns = simMatch[1].trim();
+              cleanHint = simMatch[2].trim();
+            }
             return {
               id: q.id, serverId: q.id, question: q.question, choices: opts, options: opts,
               opt1: opts[0] || '', opt2: opts[1] || '', opt3: opts[2] || '', opt4: opts[3] || '', opt5: opts[4] || '',
-              ...(user.role === 'STUDENT' ? {} : { ans: Number(q.correctAnswer) }), questionNo: q.questionNo, type: 'CHOICE'
+              ...(user.role === 'STUDENT'
+                ? {}
+                : {
+                    ans: isSubj ? String(q.correctAnswer || '') : Number(q.correctAnswer),
+                    ...(isSubj ? { subjectiveAns: String(q.correctAnswer || ''), subjectiveAnswer: String(q.correctAnswer || ''), similarAns } : {}),
+                    ...(cleanHint ? { hint: cleanHint } : {})
+                  }),
+              questionNo: q.questionNo,
+              type: isSubj ? 'SUBJECTIVE' : 'CHOICE'
             };
           })
         };
@@ -135,15 +183,16 @@ export default async function handler(req: any, res: any) {
     if (action === 'learning' && req.method === 'GET') {
       // 학생은 자신의 기록만, 교사·원장은 소속 학원의 기록만 조회합니다.
       const academyId = await academyScope(user, req.query.academy);
+      const limit = Math.min(Math.max(Number(req.query?.limit) || 100, 1), 500);
       const attempts = await prisma.quizAttempt.findMany({ where: { member: { academyId }, ...(user.role === 'STUDENT' ? { memberId: user.id } : {}) },
-        include: { member: { include: { academy: true, classGroup: true } } }, orderBy: [{ completedAt: 'desc' }, { id: 'desc' }], take: 101, ...(typeof req.query.cursor === 'string' ? { cursor: { id: req.query.cursor }, skip: 1 } : {}) });
-      const page = attempts.slice(0, 100);
+        include: { member: { include: { academy: true, classGroup: true } } }, orderBy: [{ completedAt: 'desc' }, { id: 'desc' }], take: limit + 1, ...(typeof req.query.cursor === 'string' ? { cursor: { id: req.query.cursor }, skip: 1 } : {}) });
+      const page = attempts.slice(0, limit);
       // 현재 페이지의 도서·첨부 목록은 서로 독립적이므로 동시에 조회합니다.
       const [books, files] = await Promise.all([
-        prisma.book.findMany({ where: { id: { in: [...new Set(page.map(a => a.bookId))] } }, select: { id: true, title: true, bookNo: true } }),
-        prisma.portalFile.findMany({ where: { attemptId: { in: page.map(a => a.id) } }, select: { id: true, name: true, attemptId: true } })
+        prisma.book.findMany({ where: { id: { in: [...new Set(page.map(a => a.bookId))] } }, select: { id: true, title: true, bookNo: true, publisher: true, author: true, coverUrl: true, grade: true } }),
+        prisma.portalFile ? prisma.portalFile.findMany({ where: { attemptId: { in: page.map(a => a.id) } }, select: { id: true, name: true, attemptId: true } }) : Promise.resolve([])
       ]);
-      return res.status(200).json({ logs: page.map(a => ({ ...logView(a, books.find(b => b.id === a.bookId), user.role === 'STUDENT'), files: files.filter(f => f.attemptId === a.id) })), nextCursor: attempts.length > 100 ? page[99].id : null });
+      return res.status(200).json({ logs: page.map(a => ({ ...logView(a, books.find(b => b.id === a.bookId), user.role === 'STUDENT'), files: files.filter(f => f.attemptId === a.id) })), nextCursor: attempts.length > limit ? page[limit - 1].id : null });
     }
     if (action === 'learning' && req.method === 'POST') {
       if (user.role !== 'STUDENT') return res.status(403).json({ error: '학생만 답안을 제출할 수 있습니다.' });
@@ -157,11 +206,35 @@ export default async function handler(req: any, res: any) {
       }
       // 학생 요청의 이관 플래그로 응시 제한·작성일을 우회하지 못하게 합니다.
       if (body.importing === true || body.sourceDate !== undefined) return res.status(403).json({ error: '학생 화면에서는 과거 기록을 이관할 수 없습니다. 관리자에게 문의해 주세요.' });
-      const book = await prisma.book.findFirst({ where: { OR: [{ id: body.bookId }, { bookNo: body.bookId }] }, include: { quizzes: { orderBy: { questionNo: 'asc' } } } });
-      if (!book || !book.quizzes.length || book.quizzes.length !== body.quizResults.length) return res.status(409).json({ error: '서버의 퀴즈 문항과 다릅니다. 관리자에게 도서 문항 확인을 요청해 주세요.' });
-      const results = book.quizzes.map((q, i) => {
+      const book = await prisma.book.findFirst({ where: { OR: [{ id: body.bookId }, { bookNo: body.bookId }] }, include: { quizzes: { orderBy: [{ legacyQuizSeq: 'asc' }, { questionNo: 'asc' }] } } });
+      if (!book || !book.quizzes.length) return res.status(409).json({ error: '서버의 퀴즈 문항과 다릅니다. 관리자에게 도서 문항 확인을 요청해 주세요.' });
+      const quizGroups = new Map<number, any[]>();
+      for (const q of book.quizzes) {
+        const seq = q.legacyQuizSeq || 0;
+        if (!quizGroups.has(seq)) quizGroups.set(seq, []);
+        quizGroups.get(seq)!.push(q);
+      }
+      let targetQuizzes = book.quizzes;
+      if (quizGroups.size > 1) {
+        const matchedSet = Array.from(quizGroups.values()).find(
+          setQs => setQs.length === body.quizResults.length && setQs.every((q, idx) => body.quizResults[idx]?.question === q.question)
+        );
+        if (matchedSet) targetQuizzes = matchedSet;
+      }
+      if (targetQuizzes.length !== body.quizResults.length) return res.status(409).json({ error: '서버의 퀴즈 문항과 다릅니다. 관리자에게 도서 문항 확인을 요청해 주세요.' });
+      const results = targetQuizzes.map((q, i) => {
         const answer = body.quizResults[i];
-        if (!answer || answer.question !== q.question || q.quizType !== 'MULTIPLE_CHOICE') throw new Error('QUIZ_MISMATCH');
+        if (!answer || answer.question !== q.question) throw new Error('QUIZ_MISMATCH');
+        if (q.quizType === 'SHORT_ANSWER') {
+          const userAns = String(answer.userChoiceText ?? '').trim();
+          const primaryAns = String(q.correctAnswer ?? '').trim();
+          const simMatch = typeof q.explanation === 'string' ? q.explanation.match(/^\[SIMILAR:([^\]]*)\]/) : null;
+          const accepted = [primaryAns, ...(simMatch ? simMatch[1].split(',').map((s: string) => s.trim()) : [])].filter(Boolean);
+          const norm = (s: string) => s.replace(/\s+/g, '').toLowerCase();
+          const isCorrect = userAns.length > 0 && accepted.some(acc => norm(acc) === norm(userAns));
+          return { qNum: i + 1, question: q.question, userChoiceText: userAns, correctChoiceText: primaryAns, isCorrect };
+        }
+        if (q.quizType && q.quizType !== 'MULTIPLE_CHOICE') throw new Error('QUIZ_MISMATCH');
         const options = Array.isArray(q.options) ? q.options : [];
         const correct = options[Number(q.correctAnswer) - 1];
         if (typeof correct !== 'string' || !options.includes(answer.userChoiceText)) throw new Error('QUIZ_MISMATCH');

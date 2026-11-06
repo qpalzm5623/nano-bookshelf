@@ -835,7 +835,7 @@ function saveOperationsToStorage() {
     }
   });
   themeList.forEach(t => {
-    if (!t.updatedAt) t.updatedAt = saveTime;
+    t.updatedAt = saveTime;
   });
 
   if (typeof window !== "undefined") {
@@ -973,14 +973,18 @@ function loadOperationsFromStorage() {
       });
     });
     window.NANO_SERVER_BANNERS = bannerList.slice();
+    var hadUnsyncedLocalOrder = false;
     themeList = (window.NANO_SERVER_THEMES || []).map(function(st) {
       var lt = Array.isArray(localThemes) ? localThemes.find(function(x) { return String(x.id) === String(st.id) || (x.title && x.title === st.title) || (x.tag && x.tag === st.tag); }) : null;
-      if (!lt) return Object.assign({}, st, { order: typeof st.order === 'number' ? st.order : (parseInt(st.order, 10) || null) });
+      var stOrder = typeof st.order === 'number' && !isNaN(st.order) ? st.order : (parseInt(st.order, 10) || null);
+      if (!lt) return Object.assign({}, st, { order: stOrder });
+      var ltOrder = typeof lt.order === 'number' && !isNaN(lt.order) ? lt.order : (parseInt(lt.order, 10) || null);
+      if (stOrder == null && ltOrder != null) hadUnsyncedLocalOrder = true;
       return Object.assign({}, st, {
         subTag: st.subTag || lt.subTag || "",
         desc: st.desc || lt.desc || st.description || "",
         image: (st.image && !st.image.includes("photo-1544716278")) ? st.image : (lt.image || st.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80"),
-        order: typeof lt.order === 'number' ? lt.order : (typeof st.order === 'number' ? st.order : null),
+        order: stOrder != null ? stOrder : ltOrder,
         active: st.active || lt.active || "Y"
       });
     });
@@ -988,6 +992,11 @@ function loadOperationsFromStorage() {
       if (t.order == null || isNaN(t.order)) t.order = idx + 1;
     });
     themeList.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+    themeList.forEach(function(t, idx) { t.order = idx + 1; });
+    window.NANO_SERVER_THEMES = themeList.slice();
+    if (hadUnsyncedLocalOrder && window.NanoPortal && NanoPortal.remote && typeof NanoPortal.reorderThemes === 'function') {
+      NanoPortal.reorderThemes(themeList).catch(function() {});
+    }
     return;
   }
   const localTime = parseInt(localStorage.getItem("NANO_MASTER_BANNERS_TIME") || "0", 10);

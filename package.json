@@ -13,7 +13,10 @@
     "build": "node scripts/prepare-portal.cjs && node scripts/build-portal.cjs",
     "test:ux": "node --test scripts/preview-ux.test.cjs scripts/portal-api.test.cjs scripts/portal-operations.test.cjs scripts/portfolio-workflow.test.cjs scripts/ranking-ui.test.cjs",
     "portal:password": "tsx scripts/set-portal-password.ts",
-    "typecheck:portal": "tsc -p tsconfig.portal.json"
+    "typecheck:portal": "tsc -p tsconfig.portal.json",
+    "migrate:dry-run": "tsx scripts/migrate/full-safe-migration.ts --dry-run",
+    "migrate:all": "tsx scripts/migrate/full-safe-migration.ts",
+    "migrate:verify": "tsx scripts/migrate/verify-migration-integrity.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

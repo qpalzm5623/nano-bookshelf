@@ -4056,7 +4056,7 @@ async function toggleNanoSheetStatus(logId) {
 
 var currentOpenCorrectionLogId = null;
 
-// 학습 관리 날짜 필터 초기화 (Default: 현재월 1일 ~ 오늘 날짜 기본 세팅)
+// 학습 관리 날짜 필터 초기화 (Default: 최근 90일 ~ 오늘 날짜 기본 세팅하여 이전 달 및 이관 학습내역 즉시 노출)
 function initLearningDateFilters() {
   var startInput = document.getElementById('learningStartDate');
   var endInput = document.getElementById('learningEndDate');
@@ -4067,9 +4067,14 @@ function initLearningDateFilters() {
   var mm = String(now.getMonth() + 1).padStart(2, '0');
   var dd = String(now.getDate()).padStart(2, '0');
   var todayStr = `${yyyy}-${mm}-${dd}`;
-  var firstDayStr = `${yyyy}-${mm}-01`;
 
-  if (!startInput.value) startInput.value = firstDayStr;
+  var past90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  var sY = past90.getFullYear();
+  var sM = String(past90.getMonth() + 1).padStart(2, '0');
+  var sD = String(past90.getDate()).padStart(2, '0');
+  var defaultStartStr = `${sY}-${sM}-${sD}`;
+
+  if (!startInput.value) startInput.value = defaultStartStr;
   if (!endInput.value) endInput.value = todayStr;
 }
 
@@ -4808,12 +4813,15 @@ function openLearningDetailModal(id) {
 
   var passBadge = document.getElementById('learnModalPassBadge');
   if (passBadge) {
-    if (log.score >= 90) {
+    if (log.score >= 80) {
       passBadge.className = 'badge-soft badge-soft-success font-weight-bold';
-      passBadge.innerText = '1차 응시 합격';
+      passBadge.innerText = '우수 완독 인증';
+    } else if (log.score >= 60) {
+      passBadge.className = 'badge-soft badge-soft-success font-weight-bold';
+      passBadge.innerText = '완독 인증 통과';
     } else {
       passBadge.className = 'badge-soft badge-soft-warn font-weight-bold';
-      passBadge.innerText = '재응시 권장 (통과)';
+      passBadge.innerText = '미통과 (재도전 권장)';
     }
   }
 
@@ -4823,7 +4831,8 @@ function openLearningDetailModal(id) {
     var quizzes = log.quizResults || [];
     var correctCount = quizzes.filter(function(q) { return q.isCorrect; }).length;
     var totalCount = quizzes.length;
-    var rate = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 100;
+    var rate = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : (Number(log.score) || 0);
+    var ptPerQ = totalCount > 0 ? Math.round(100 / totalCount) : 20;
 
     var summaryEl = document.getElementById('learnModalQuizSummary');
     if (summaryEl) {
@@ -4834,7 +4843,7 @@ function openLearningDetailModal(id) {
       var qNumStr = String(q.qNum).padStart(2, '0');
       var statusBadge = q.isCorrect
         ? `<span class="report-quiz-badge correct">
-             <i class="fa-solid fa-circle-check mr-1"></i>정답 (+20점)
+             <i class="fa-solid fa-circle-check mr-1"></i>정답 (+${ptPerQ}점)
            </span>`
         : `<span class="report-quiz-badge wrong">
              <i class="fa-solid fa-circle-xmark mr-1"></i>오답 (0점)
@@ -11236,7 +11245,7 @@ var selectedBulkBookFile = null;
 function openBulkModal() {
   selectedBulkBookFile = null;
   var nameEl = document.getElementById('acadBulkFileNameDisplay');
-  if (nameEl) nameEl.innerHTML = '파일을 드래그하여 놓거나 클릭하여 선택하세요';
+  if (nameEl) nameEl.innerHTML = '클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭';
   var inputEl = document.getElementById('acadBulkExcelFileInput');
   if (inputEl) inputEl.value = '';
 
@@ -11458,60 +11467,1081 @@ function exportAcademyBooksToExcel() {
   showAcademyToast("도서 콘텐츠 전체 " + booksToExport.length + "권이 엑셀(CSV)로 성공적으로 다운로드되었습니다.");
 }
 
-// 대량 엑셀 일괄 등록 실행
-function executeBulkBookUpload() {
-  // 샘플 데이터 2권 자동 추가 시뮬레이션 및 실제 반영
-  var sampleNewBooks = [
-    {
-      id: "NB-" + Math.floor(100000 + Math.random() * 900000),
-      isbn: "9791165341909",
-      title: "달러구트 꿈 백화점",
-      author: "이미예",
-      publisher: "팩토리나인",
-      grade: "중등 1~3학년",
-      category: "한국문학 / 성장",
-      cover: "assets/covers/cover_1001.jpg",
-      creatorType: "ACADEMY",
-      academyName: "나노 독서아카데미 본원",
-      isOwned: false,
-      readCount: "0회",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "NB-" + Math.floor(100000 + Math.random() * 900000),
-      isbn: "9788954678186",
-      title: "긴긴밤",
-      author: "루리",
-      publisher: "문학동네",
-      grade: "초등 5~6학년",
-      category: "한국문학 / 성장",
-      cover: "assets/covers/cover_1002.jpg",
-      creatorType: "ACADEMY",
-      academyName: "나노 독서아카데미 본원",
-      isOwned: false,
-      readCount: "0회",
-      createdAt: new Date().toISOString()
+// ==============================================================
+// 공통 엑셀/CSV 파서 및 도서·북퀴즈 대량 등록 실행 모듈 (본사 관리자와 동일 규격)
+// ==============================================================
+var ACAD_THINK_PROMPTS_7_PRESETS = [
+  "주인공이 옆에 있다면 하고 싶은 이야기를 적어주세요.",
+  "이 책을 읽고 가장 많이 떠오른 내 주변의 사람은 누구이며 그 이유는 무엇인가요?",
+  "이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는 지 상상해서 이야기를 만들어주세요.",
+  "기억나는 장면이나 문장을 적어보세요.",
+  "이 책에서 얻은 교훈이 있다면?",
+  "가장 기억에 남는 등장인물은 누구이며 그 이유는 무엇인가요?",
+  "이 책을 친구에게 추천한다면, 뭐라고 소개하고 싶은가요?"
+];
+
+// RFC 4180 호환 다중행 CSV 파서 (쌍따옴표 내 쉼표, 큰따옴표 이스케이프 "", 줄바꿈 처리)
+function parseAcadRobustCSV(text) {
+  var clean = String(text || '').replace(/^\uFEFF/, '');
+  var rows = [];
+  var curRow = [];
+  var curCell = '';
+  var inQuotes = false;
+
+  for (var i = 0; i < clean.length; i++) {
+    var c = clean[i];
+    var next = clean[i + 1];
+
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        curCell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      curRow.push(curCell.trim());
+      curCell = '';
+    } else if ((c === '\r' || c === '\n') && !inQuotes) {
+      if (c === '\r' && next === '\n') i++;
+      curRow.push(curCell.trim());
+      if (curRow.some(function(cell) { return cell.length > 0; })) {
+        rows.push(curRow);
+      }
+      curRow = [];
+      curCell = '';
+    } else {
+      curCell += c;
     }
-  ];
-
-  sampleNewBooks.forEach(function(nb) {
-    nb.isMyCreation = true;
-    nb.academyName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '우리 학원';
-    nb.academyId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'MY_ACAD';
-    academyBookList.unshift(nb);
-    markBookAsMyCreation(nb.id);
-  });
-
-  saveCustomAcademyBooks(academyBookList);
-  filterAcademyBooks();
-
-  if (window.jQuery && typeof $('#acadBookExcelModal').modal === 'function') {
-    $('#acadBookExcelModal').modal('hide');
-  } else {
-    hideModalVanilla('acadBookExcelModal');
   }
 
-  showAcademyToast(`대량 도서 파일이 정상 분석되어 총 ${sampleNewBooks.length}권의 도서가 새로 등록되었습니다. (기본: 미보유)`);
+  curRow.push(curCell.trim());
+  if (curRow.some(function(cell) { return cell.length > 0; })) {
+    rows.push(curRow);
+  }
+  return rows;
+}
+
+// 업로드된 파일(.csv / .xlsx / .xls)을 2차원 배열로 안전 변환
+function parseAcadSpreadsheetFileToRows(file) {
+  return new Promise(function(resolve, reject) {
+    var ext = String(file.name || '').split('.').pop().toLowerCase();
+    var reader = new FileReader();
+
+    if (ext === 'csv') {
+      reader.onload = function(e) {
+        try {
+          resolve(parseAcadRobustCSV(e.target.result));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsText(file, 'UTF-8');
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      if (typeof XLSX === 'undefined') {
+        reject(new Error('엑셀 파싱 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도하거나 CSV 파일을 이용해주세요.'));
+        return;
+      }
+      reader.onload = function(e) {
+        try {
+          var data = new Uint8Array(e.target.result);
+          var workbook = XLSX.read(data, { type: 'array' });
+          var firstSheetName = workbook.SheetNames[0];
+          var worksheet = workbook.Sheets[firstSheetName];
+          var rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+          resolve(rows);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    } else {
+      reject(new Error('지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.'));
+    }
+  });
+}
+
+// ISBN 정제 헬퍼 (엑셀 수식 ="978..." 및 하이픈/공백 제거, 13자리 우선 추출)
+function sanitizeAcadIsbnString(raw) {
+  if (raw === null || raw === undefined) return '';
+  var s = String(raw).trim().replace(/^="?|"?$/g, '');
+  var tokens = s.split(/[\s,/|]+/).map(function(t) { return t.replace(/[^0-9Xx]/g, ''); }).filter(Boolean);
+  var isbn13 = tokens.find(function(t) { return t.length === 13; });
+  if (isbn13) return isbn13;
+  var isbn10 = tokens.find(function(t) { return t.length === 10; });
+  if (isbn10) return isbn10;
+  var digits = s.replace(/[^0-9Xx]/g, '');
+  return (digits.length === 10 || digits.length === 13) ? digits : '';
+}
+
+// 생각 담기 코드(1~7, 0, 직접입력) 해석 헬퍼
+function resolveAcadThinkInsertValue(rawVal) {
+  if (rawVal === null || rawVal === undefined) return '';
+  var s = String(rawVal).trim();
+  if (!s || s === '0' || s === '없음' || s.toUpperCase() === 'NONE') return '';
+  var codeNum = parseInt(s, 10);
+  if (String(codeNum) === s && codeNum >= 1 && codeNum <= 7) {
+    return ACAD_THINK_PROMPTS_7_PRESETS[codeNum - 1];
+  }
+  return s;
+}
+
+// 카카오 도서 검색 비동기 헬퍼 (대량 등록 전용)
+async function fetchAcadKakaoBookMetadata(isbn) {
+  if (!isbn) return null;
+  var kakaoApiKey = '11d75cc8189f15ddf547b5538827d04d';
+  var apiUrl = 'https://dapi.kakao.com/v3/search/book?target=isbn&query=' + encodeURIComponent(isbn);
+  try {
+    var res = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { 'Authorization': 'KakaoAK ' + kakaoApiKey }
+    });
+    if (!res.ok) return null;
+    var data = await res.json();
+    if (data && Array.isArray(data.documents) && data.documents.length > 0) {
+      return data.documents[0];
+    }
+  } catch (err) {
+    console.warn('Kakao book fetch failed for ISBN ' + isbn, err);
+  }
+  return null;
+}
+
+// 학원 대량 등록용 고유 도서 관리 코드(KA300001 규격) 채번 헬퍼
+function generateNextAcadBookCode(cat1Val, cat2Val, gradeVal, reservedSet) {
+  var c2Code = 'K';
+  if (cat2Val && (cat2Val.indexOf('외서') !== -1 || cat2Val === 'F')) c2Code = 'F';
+  else if (cat2Val && (cat2Val.indexOf('구분') !== -1 || cat2Val === 'N')) c2Code = 'N';
+
+  var c1Code = 'A';
+  if (cat1Val && (cat1Val.indexOf('인물') !== -1 || cat1Val.indexOf('위인') !== -1 || cat1Val === 'B')) c1Code = 'B';
+  else if (cat1Val && (cat1Val.indexOf('비문학') !== -1 || cat1Val.indexOf('정보') !== -1 || cat1Val === 'C')) c1Code = 'C';
+
+  var gCode = '3';
+  var gStr = String(gradeVal || '');
+  if (gStr.indexOf('유치') !== -1 || gStr.indexOf('미취학') !== -1) gCode = '0';
+  else if (gStr.indexOf('중등 1') !== -1 || gStr.indexOf('중1') !== -1) gCode = '7';
+  else if (gStr.indexOf('중등 2') !== -1 || gStr.indexOf('중2') !== -1) gCode = '8';
+  else if (gStr.indexOf('중등 3') !== -1 || gStr.indexOf('중3') !== -1) gCode = '9';
+  else {
+    var gm = gStr.match(/([1-6])/);
+    if (gm) gCode = gm[1];
+  }
+
+  var prefix = c2Code + c1Code + gCode;
+  var maxSeq = 0;
+
+  var allBooks = (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) ? academyBookList : [];
+  allBooks.forEach(function(b) {
+    var code = String((b && (b.bookNo || b.id)) || '');
+    if (code.indexOf(prefix) === 0) {
+      var num = parseInt(code.slice(prefix.length), 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
+    }
+  });
+
+  if (reservedSet) {
+    reservedSet.forEach(function(code) {
+      if (code.indexOf(prefix) === 0) {
+        var num = parseInt(code.slice(prefix.length), 10);
+        if (!isNaN(num) && num > maxSeq) maxSeq = num;
+      }
+    });
+  }
+
+  var candidate = prefix + String(maxSeq + 1).padStart(5, '0');
+  while (reservedSet && reservedSet.has(candidate)) {
+    maxSeq++;
+    candidate = prefix + String(maxSeq + 1).padStart(5, '0');
+  }
+  if (reservedSet) reservedSet.add(candidate);
+  return candidate;
+}
+
+// 대량 엑셀 도서 일괄 등록 실행
+async function executeBulkBookUpload() {
+  var inputEl = document.getElementById('acadBulkExcelFileInput');
+  var file = selectedBulkBookFile || (inputEl && inputEl.files && inputEl.files[0]) || null;
+  if (!file) {
+    alert('업로드할 엑셀/CSV 파일을 먼저 선택해주세요.');
+    return;
+  }
+
+  var fileName = file.name;
+  var progressEl = document.getElementById('acadBulkFileNameDisplay');
+  var btnEl = document.getElementById('btnExecuteBulkUpload');
+  if (btnEl) btnEl.disabled = true;
+
+  try {
+    var rawRows = await parseAcadSpreadsheetFileToRows(file);
+    if (!rawRows || rawRows.length <= 1) {
+      alert('등록할 도서 데이터 행이 존재하지 않습니다. (헤더만 있거나 빈 파일)');
+      return;
+    }
+
+    var firstHeader = rawRows[0].map(function(c) { return String(c || '').toLowerCase(); }).join(',');
+    var isNewFormat = firstHeader.indexOf('isbn') !== -1 && firstHeader.indexOf('도서명') === -1;
+
+    var parsedRows = [];
+    var validationErrors = [];
+
+    for (var i = 1; i < rawRows.length; i++) {
+      var row = rawRows[i];
+      var rowNum = i + 1;
+      if (!row || !row.some(function(cell) { return String(cell ?? '').trim().length > 0; })) continue;
+
+      if (isNewFormat) {
+        var rawIsbn = String(row[0] ?? '').trim();
+        var rawThemeTag = String(row[1] ?? '').trim();
+        var detail1 = String(row[2] ?? '').trim();
+        var detail2 = String(row[3] ?? '').trim();
+        var detail3 = String(row[4] ?? '').trim();
+        var detail4 = String(row[5] ?? '').trim();
+        var detail5 = String(row[6] ?? '').trim();
+        var awards = String(row[7] ?? '').trim();
+        var thinkExtract = String(row[8] ?? '').trim();
+        var rawThinkInsert = String(row[9] ?? '').trim();
+
+        var cleanIsbn = sanitizeAcadIsbnString(rawIsbn);
+        if (!cleanIsbn) {
+          validationErrors.push('[' + rowNum + '행] ISBN이 비어있거나 올바른 10/13자리 형식이 아닙니다.');
+          continue;
+        }
+        if (!rawThemeTag) {
+          validationErrors.push('[' + rowNum + '행: ISBN ' + cleanIsbn + '] 주제 분류 태그가 비어있습니다. (필수 입력 항목)');
+          continue;
+        }
+
+        var themeTag = rawThemeTag.indexOf('#') === 0 ? rawThemeTag : ('#' + rawThemeTag);
+        var detailList = [detail1, detail2, detail3, detail4, detail5]
+          .filter(function(t) { return t.length > 0; })
+          .map(function(t) { return t.indexOf('#') === 0 ? t : ('#' + t); });
+
+        parsedRows.push({
+          isNew: true,
+          isbn: cleanIsbn,
+          themeTag: themeTag,
+          detailList: detailList,
+          detailTag: detailList.join(' '),
+          awards: awards,
+          thinkExtract: thinkExtract,
+          thinkInsert: resolveAcadThinkInsertValue(rawThinkInsert),
+          rowNum: rowNum
+        });
+      } else {
+        var title = String(row[0] ?? '').trim();
+        var author = String(row[1] ?? '').trim();
+        var publisher = String(row[2] ?? '').trim();
+        var rawGrade = String(row[3] ?? '').trim();
+        var rawCat1 = String(row[4] ?? '').trim();
+        var rawCat2 = String(row[5] ?? '').trim();
+        var series = String(row[6] ?? '').trim();
+        var legacyIsbn = sanitizeAcadIsbnString(row[7] ?? '');
+
+        if (!title) {
+          validationErrors.push('[' + rowNum + '행] 도서명(제목)이 비어있습니다.');
+          continue;
+        }
+
+        parsedRows.push({
+          isNew: false,
+          title: title,
+          author: author || '작자 미상',
+          publisher: publisher || '출판사 미상',
+          grade: rawGrade || '초등 3학년',
+          cat1: rawCat1 || '소설',
+          cat2: rawCat2 || '국내서',
+          series: series || '단권',
+          isbn: legacyIsbn,
+          rowNum: rowNum
+        });
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      var errorMsg = '[엑셀 업로드 유효성 검사 실패]\n총 ' + validationErrors.length + '건의 규격 오류가 발견되었습니다.\n\n' +
+        validationErrors.slice(0, 6).join('\n\n') +
+        (validationErrors.length > 6 ? '\n\n... 외 ' + (validationErrors.length - 6) + '건 추가 오류' : '');
+      alert(errorMsg);
+      return;
+    }
+
+    if (parsedRows.length === 0) {
+      alert('등록 가능한 유효 도서 데이터 행이 없습니다.');
+      return;
+    }
+
+    var acadName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '우리 학원';
+    var acadId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'MY_ACAD';
+    var reservedCodes = new Set();
+    var finalBooks = [];
+    var skippedDuplicates = 0;
+
+    for (var idx = 0; idx < parsedRows.length; idx++) {
+      var item = parsedRows[idx];
+      if (progressEl) {
+        progressEl.innerHTML = '<span class="text-primary font-weight-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>[' + (idx + 1) + '/' + parsedRows.length + '] ISBN(' + (item.isbn || item.title) + ') 도서 정보 자동 수집 중...</span>';
+      }
+
+      if (item.isNew) {
+        var existingByIsbn = (Array.isArray(academyBookList) ? academyBookList : []).find(function(b) {
+          return b && b.isbn && sanitizeAcadIsbnString(b.isbn) === item.isbn;
+        });
+
+        var matchedLocal = existingByIsbn;
+        if (!matchedLocal && typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+          matchedLocal = window.MIGRATED_BOOKS.find(function(b) {
+            return b && b.isbn && sanitizeAcadIsbnString(b.isbn) === item.isbn;
+          });
+        }
+
+        // 운영 서버에 이미 동일 ISBN 도서가 등록되어 있는 경우 중복 생성 방지
+        if (existingByIsbn && window.NanoPortal && NanoPortal.remote && existingByIsbn.serverId) {
+          skippedDuplicates++;
+          continue;
+        }
+
+        var doc = matchedLocal ? null : await fetchAcadKakaoBookMetadata(item.isbn);
+        var bTitle = '';
+        var bAuthor = '작자 미상';
+        var bPub = '출판사 미상';
+        var bCover = 'upload/banner/banner_reading_king.jpg';
+        var bSynopsis = '';
+        var bCat1 = '소설';
+        var bCat2 = (item.isbn.indexOf('97889') === 0 || item.isbn.indexOf('97911') === 0) ? '국내서' : '외서';
+        var bGrade = '초등 3학년';
+        var bSeries = '단권';
+        var bIsSingle = true;
+
+        if (matchedLocal) {
+          bTitle = matchedLocal.title || '';
+          bAuthor = matchedLocal.author || bAuthor;
+          bPub = matchedLocal.publisher || matchedLocal.pub || bPub;
+          bCover = matchedLocal.cover || matchedLocal.coverUrl || bCover;
+          bSynopsis = matchedLocal.synopsis || matchedLocal.description || '';
+          bCat1 = matchedLocal.cat1 || bCat1;
+          bCat2 = matchedLocal.cat2 || bCat2;
+          bGrade = matchedLocal.grade || bGrade;
+          bSeries = matchedLocal.series || bSeries;
+          bIsSingle = matchedLocal.isSingle !== false;
+        } else if (doc) {
+          bTitle = doc.title || '';
+          bAuthor = Array.isArray(doc.authors) && doc.authors.length > 0 ? doc.authors.join(', ') : (doc.authors || bAuthor);
+          bPub = doc.publisher || bPub;
+          if (doc.thumbnail) {
+            bCover = doc.thumbnail.indexOf('R120x174') !== -1 ? doc.thumbnail.replace('R120x174', 'R300x0') : doc.thumbnail;
+          }
+          bSynopsis = doc.contents || '';
+        } else {
+          bTitle = '신규 등록 도서 (ISBN: ' + item.isbn + ')';
+        }
+
+        var isNonfiction = (bCat1.indexOf('비문학') !== -1 || bCat1 === 'C');
+        var newBookId = generateNextAcadBookCode(bCat1, bCat2, bGrade, reservedCodes);
+        var tags = [item.themeTag].concat(item.detailList || []);
+
+        finalBooks.push({
+          id: newBookId,
+          bookNo: newBookId,
+          isbn: item.isbn,
+          title: bTitle,
+          subtitle: bSeries && bSeries !== '단권' ? bSeries : '학원 등록 도서',
+          author: bAuthor,
+          publisher: bPub,
+          pub: bPub,
+          grade: bGrade,
+          cat1: bCat1,
+          cat2: bCat2,
+          category: (bCat2 === '외서' ? 'F' : 'K') + ' / ' + item.themeTag.replace(/^#/, ''),
+          series: bSeries,
+          isSingle: bIsSingle,
+          themeTag: item.themeTag,
+          tags: tags,
+          detailTag: item.detailTag,
+          awards: item.awards || '',
+          thinkExtract: item.thinkExtract || '',
+          thinkInsert: item.thinkInsert || '',
+          synopsis: bSynopsis,
+          description: bSynopsis,
+          cover: bCover,
+          coverUrl: bCover,
+          isPublic: 'Y',
+          creatorType: 'ACADEMY',
+          academyName: acadName,
+          academyId: acadId,
+          isMyCreation: true,
+          isOwned: false,
+          hasQuiz: false,
+          quizStatus: '미출제',
+          readCount: '0회',
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        var legBookId = generateNextAcadBookCode(item.cat1, item.cat2, item.grade, reservedCodes);
+        finalBooks.push({
+          id: legBookId,
+          bookNo: legBookId,
+          isbn: item.isbn || '',
+          title: item.title,
+          subtitle: item.series && item.series !== '단권' ? item.series : '학원 등록 도서',
+          author: item.author,
+          publisher: item.publisher,
+          pub: item.publisher,
+          grade: item.grade,
+          cat1: item.cat1,
+          cat2: item.cat2,
+          category: item.cat1 || '문학',
+          series: item.series,
+          isSingle: !item.series || item.series === '단권',
+          themeTag: '#이야기',
+          tags: ['#이야기'],
+          detailTag: '',
+          awards: '',
+          thinkExtract: '',
+          thinkInsert: '',
+          synopsis: '',
+          description: '',
+          cover: 'upload/banner/banner_reading_king.jpg',
+          coverUrl: 'upload/banner/banner_reading_king.jpg',
+          isPublic: 'Y',
+          creatorType: 'ACADEMY',
+          academyName: acadName,
+          academyId: acadId,
+          isMyCreation: true,
+          isOwned: false,
+          hasQuiz: false,
+          quizStatus: '미출제',
+          readCount: '0회',
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    if (finalBooks.length === 0 && skippedDuplicates > 0) {
+      alert('업로드하신 파일의 모든 도서(' + skippedDuplicates + '권)가 이미 라이브러리에 등록되어 있습니다.');
+      return;
+    }
+
+    // 운영 서버 연동 시 백엔드 DB에 실제 도서 저장
+    if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.saveBook === 'function') {
+      var savedServerBooks = [];
+      var serverErrors = [];
+      for (var sIdx = 0; sIdx < finalBooks.length; sIdx++) {
+        var targetBook = finalBooks[sIdx];
+        if (progressEl) {
+          progressEl.innerHTML = '<span class="text-success font-weight-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>[' + (sIdx + 1) + '/' + finalBooks.length + '] 서버 DB 저장 중: ' + targetBook.title + '</span>';
+        }
+        try {
+          await NanoPortal.saveBook(targetBook);
+          savedServerBooks.push(targetBook);
+        } catch (saveErr) {
+          console.error('도서 서버 저장 실패:', targetBook.title, saveErr);
+          serverErrors.push('[' + targetBook.title + '] ' + (saveErr.message || '저장 실패'));
+        }
+      }
+      if (savedServerBooks.length === 0 && serverErrors.length > 0) {
+        alert('[도서 일괄 서버 저장 오류]\n' + serverErrors.slice(0, 5).join('\n'));
+        return;
+      }
+      finalBooks = savedServerBooks;
+    }
+
+    for (var k = finalBooks.length - 1; k >= 0; k--) {
+      var nb = finalBooks[k];
+      academyBookList.unshift(nb);
+      if (typeof markBookAsMyCreation === 'function') markBookAsMyCreation(nb.id);
+      if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+        window.MIGRATED_BOOKS.unshift(nb);
+      }
+    }
+
+    if (typeof saveCustomAcademyBooks === 'function') saveCustomAcademyBooks(academyBookList);
+    filterAcademyBooks();
+
+    selectedBulkBookFile = null;
+    if (inputEl) inputEl.value = '';
+    if (progressEl) progressEl.innerHTML = '클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭';
+
+    if (window.jQuery && typeof $('#acadBookExcelModal').modal === 'function') {
+      $('#acadBookExcelModal').modal('hide');
+    } else {
+      hideModalVanilla('acadBookExcelModal');
+    }
+
+    var dupNote = skippedDuplicates > 0 ? ' (기등록 중복 ' + skippedDuplicates + '권 제외)' : '';
+    showAcademyToast('[' + fileName + '] 총 ' + finalBooks.length + '권의 도서가 ISBN 자동 채우기와 함께 등록되었습니다!' + dupNote);
+  } catch (err) {
+    console.error('대량 도서 업로드 오류:', err);
+    alert('파일을 읽고 처리하는 중 오류가 발생했습니다: ' + (err.message || err));
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
+}
+
+// ==============================================================
+// 학원 관리자 엑셀 대량 북퀴즈 등록 모달 & 샘플 다운로드 & 일괄 업로드
+// ==============================================================
+var selectedBulkQuizFile = null;
+
+function openAcadQuizExcelModal() {
+  selectedBulkQuizFile = null;
+  var nameEl = document.getElementById('acadQuizExcelFileName');
+  if (nameEl) nameEl.innerHTML = '클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭';
+  var fileInp = document.getElementById('acadQuizExcelFileInput');
+  if (fileInp) fileInp.value = '';
+
+  if (window.jQuery && typeof $('#acadQuizExcelModal').modal === 'function') {
+    $('#acadQuizExcelModal').modal('show');
+  } else {
+    showModalVanilla('acadQuizExcelModal');
+  }
+}
+
+function handleAcadQuizExcelFileSelect(input) {
+  if (!input.files || !input.files[0]) return;
+  selectedBulkQuizFile = input.files[0];
+  var el = document.getElementById('acadQuizExcelFileName');
+  if (el) {
+    el.innerHTML = '<span class="text-warning font-weight-bold" style="color: #d97706 !important;"><i class="fa-solid fa-file-excel mr-1"></i>' +
+      selectedBulkQuizFile.name + ' (' + Math.max(1, Math.round(selectedBulkQuizFile.size / 1024)) + 'KB)</span>';
+  }
+}
+
+function handleAcadQuizExcelFileDrop(e) {
+  e.preventDefault();
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+    selectedBulkQuizFile = e.dataTransfer.files[0];
+    var el = document.getElementById('acadQuizExcelFileName');
+    if (el) {
+      el.innerHTML = '<span class="text-warning font-weight-bold" style="color: #d97706 !important;"><i class="fa-solid fa-file-excel mr-1"></i>' +
+        selectedBulkQuizFile.name + ' (' + Math.max(1, Math.round(selectedBulkQuizFile.size / 1024)) + 'KB)</span>';
+    }
+  }
+}
+
+// 북퀴즈 엑셀 헤더 유연 인식 (본사 마스터와 100% 동일 규격)
+function parseAcadQuizHeaderIndices(headerRow) {
+  var map = {
+    bookNo: -1,
+    title: -1,
+    questionNo: -1,
+    quizType: -1,
+    question: -1,
+    opt1: -1,
+    opt2: -1,
+    opt3: -1,
+    opt4: -1,
+    opt5: -1,
+    ans: -1,
+    similarAns: -1,
+    hint: -1,
+    score: -1
+  };
+
+  headerRow.forEach(function(col, idx) {
+    if (!col) return;
+    var s = String(col).toLowerCase().replace(/[\s_\-()（）[\]]/g, '');
+
+    if (s.indexOf('도서코드') !== -1 || s.indexOf('관리코드') !== -1 || s === 'bookno' || s === 'code' || s === '도서번호') {
+      map.bookNo = idx;
+    } else if (s.indexOf('도서명') !== -1 || s === '제목' || s === 'booktitle' || s === 'title') {
+      map.title = idx;
+    } else if (s.indexOf('문항번호') !== -1 || s.indexOf('문제번호') !== -1 || s === '순번' || s === 'no' || s === 'questionno') {
+      map.questionNo = idx;
+    } else if (s.indexOf('문항유형') !== -1 || s.indexOf('문제유형') !== -1 || s === '유형' || s === 'quiztype' || s === 'type') {
+      map.quizType = idx;
+    } else if (s.indexOf('문항내용') !== -1 || s.indexOf('질문') !== -1 || s === '문제' || s === '문항' || s === 'question') {
+      map.question = idx;
+    } else if (s.indexOf('보기1') !== -1 || s.indexOf('선택지1') !== -1 || s === 'opt1' || s === 'option1') {
+      map.opt1 = idx;
+    } else if (s.indexOf('보기2') !== -1 || s.indexOf('선택지2') !== -1 || s === 'opt2' || s === 'option2') {
+      map.opt2 = idx;
+    } else if (s.indexOf('보기3') !== -1 || s.indexOf('선택지3') !== -1 || s === 'opt3' || s === 'option3') {
+      map.opt3 = idx;
+    } else if (s.indexOf('보기4') !== -1 || s.indexOf('선택지4') !== -1 || s === 'opt4' || s === 'option4') {
+      map.opt4 = idx;
+    } else if (s.indexOf('보기5') !== -1 || s.indexOf('선택지5') !== -1 || s === 'opt5' || s === 'option5') {
+      map.opt5 = idx;
+    } else if (s.indexOf('유사인정') !== -1 || s.indexOf('유사정답') !== -1 || s.indexOf('인정정답') !== -1 || s.indexOf('similarans') !== -1 || s.indexOf('similaranswer') !== -1 || s.indexOf('similar') !== -1) {
+      map.similarAns = idx;
+    } else if (s.indexOf('정답') !== -1 || s.indexOf('정답번호') !== -1 || s === '답' || s === 'ans' || s === 'answer' || s === 'correctanswer') {
+      map.ans = idx;
+    } else if (s.indexOf('해설') !== -1 || s.indexOf('힌트') !== -1 || s === '설명' || s === 'hint' || s === 'explanation') {
+      map.hint = idx;
+    } else if (s.indexOf('배점') !== -1 || s === '점수' || s === 'score') {
+      map.score = idx;
+    }
+  });
+
+  return map;
+}
+
+// 북퀴즈 정답 정규화 헬퍼 (숫자 1~5, 원문자 ①~⑤, 보기 텍스트 일치 처리)
+function normalizeAcadQuizAnswerVal(rawAns, options, isSubjective) {
+  if (rawAns === null || rawAns === undefined) return null;
+  var s = String(rawAns).trim();
+  if (!s) return null;
+
+  if (isSubjective) {
+    var parts = s.split(/[,/|]/).map(function(p) { return p.trim(); }).filter(Boolean);
+    return parts[0] || s;
+  }
+
+  var circleMap = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5' };
+  if (circleMap[s]) {
+    var cNum = Number(circleMap[s]);
+    if (cNum >= 1 && cNum <= options.length) return String(cNum);
+  }
+
+  var numMatch = s.match(/^[보기\s]*([1-5])[번]?$/);
+  if (numMatch) {
+    var n = Number(numMatch[1]);
+    if (n >= 1 && n <= options.length) return String(n);
+  }
+
+  var pureNum = Number(s);
+  if (Number.isInteger(pureNum) && pureNum >= 1 && pureNum <= options.length) {
+    return String(pureNum);
+  }
+
+  var matchIdx = options.findIndex(function(o) { return o.trim() === s; });
+  if (matchIdx >= 0) {
+    return String(matchIdx + 1);
+  }
+
+  return null;
+}
+
+// 표준 북퀴즈 서식 다운로드 (CSV / XLSX - 실제 등록된 학원 도서코드 샘플 매핑)
+function downloadAcadQuizExcelTemplate(format) {
+  var fmt = format || 'csv';
+  var sourceBooks = (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList) && academyBookList.length > 0)
+    ? academyBookList
+    : ((typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) ? window.MIGRATED_BOOKS : []);
+
+  var book1 = sourceBooks[0] || { id: 'FA000001', bookNo: 'FA000001', title: '고양이 목욕탕' };
+  var book2 = sourceBooks[1] || { id: 'FA000002', bookNo: 'FA000002', title: '푸른 딱지' };
+
+  var code1 = book1.bookNo || book1.id || 'FA000001';
+  var title1 = book1.title || '고양이 목욕탕';
+  var code2 = book2.bookNo || book2.id || 'FA000002';
+  var title2 = book2.title || '푸른 딱지';
+
+  var headers = [
+    '도서코드',
+    '도서명(참고)',
+    '문항번호',
+    '문항유형',
+    '문항내용(질문)',
+    '보기1',
+    '보기2',
+    '보기3',
+    '보기4',
+    '보기5',
+    '정답',
+    '유사인정정답'
+  ];
+
+  // 도서당 최소 3문항 규격에 맞추어 두 샘플 도서 모두 3문항씩 구성
+  var sampleRows = [
+    [code1, title1, 1, '객관식', '주인공이 목욕탕에 들어갈 때 가장 먼저 챙긴 애착 물건은 무엇인가요?', '노란 고무 오리 인형', '수영 모자와 물안경', '향기 나는 비누', '따뜻한 목욕 타월', '', '1', ''],
+    [code1, title1, 2, '객관식', '고양이가 처음 물에 발을 담그려 했을 때 느꼈던 심정으로 알맞은 것은?', '너무 신나서 펄쩍 뛰었다', '두렵고 긴장되어 망설여졌다', '지루해서 하품을 했다', '', '', '2', ''],
+    [code1, title1, 3, '객관식', '목욕을 깨끗이 마치고 난 후 고양이의 기분 변화로 가장 옳은 것은?', '개운하고 상쾌하여 뿌듯했다', '감기에 걸려 후회했다', '다시는 목욕하지 않겠다고 다짐했다', '오리가 젖어서 슬펐다', '친구들이 부러워했다', '1', ''],
+    [code2, title2, 1, '객관식', "이야기 속 '푸른 딱지'가 두 주인공 사이에서 상징하는 핵심 의미는?", '새로운 우정과 화해의 시작', '패배와 좌절의 아픔', '어른들의 규칙과 명령', '', '', '1', ''],
+    [code2, title2, 2, '객관식', '주인공이 친구에게 먼저 손을 내밀었을 때 친구가 보인 반응은 무엇인가요?', '환하게 웃으며 딱지를 건넸다', '뒤돌아서 집으로 달려갔다', '모른 척하며 고개를 돌렸다', '선생님께 도움을 요청했다', '', '1', ''],
+    [code2, title2, 3, '주관식', '주인공이 마지막 딱지 대결에서 두려움을 이겨낼 수 있었던 핵심 마음가짐은 무엇인가요?', '', '', '', '', '', '용기', '담대함, 씩씩함, 용기있는 태도']
+  ];
+
+  if (fmt === 'xlsx' && typeof XLSX !== 'undefined') {
+    var wsData = [headers].concat(sampleRows);
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 46 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 10 },
+      { wch: 26 }
+    ];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '북퀴즈등록양식');
+    XLSX.writeFile(wb, '북퀴즈_대량등록_서식.xlsx');
+    showAcademyToast('북퀴즈 대량 등록 샘플 엑셀(.xlsx)이 다운로드되었습니다.');
+  } else {
+    var csvContent = '\uFEFF' + [headers].concat(sampleRows).map(function(row) {
+      return row.map(function(cell) {
+        var str = String(cell ?? '');
+        if (str.indexOf(',') !== -1 || str.indexOf('"') !== -1 || str.indexOf('\n') !== -1 || str.indexOf('\r') !== -1) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      }).join(',');
+    }).join('\r\n');
+
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute('download', '북퀴즈_대량등록_서식.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showAcademyToast('북퀴즈 대량 등록 샘플 서식(.csv)이 다운로드되었습니다. 도서코드를 확인 후 문항을 작성해주세요.');
+  }
+}
+
+// 학원 관리자 북퀴즈 대량 업로드 실행 핸들러
+async function executeAcadBulkQuizUpload() {
+  var fileInput = document.getElementById('acadQuizExcelFileInput');
+  var file = selectedBulkQuizFile || (fileInput && fileInput.files && fileInput.files[0]) || null;
+  if (!file) {
+    alert('업로드할 엑셀/CSV 파일을 먼저 선택해주세요.');
+    return;
+  }
+
+  var fileName = file.name;
+  var ext = String(fileName || '').split('.').pop().toLowerCase();
+  if (['csv', 'xlsx', 'xls'].indexOf(ext) === -1) {
+    alert('지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.');
+    return;
+  }
+
+  var btnEl = document.getElementById('btnExecuteAcadBulkQuizUpload');
+  var progressEl = document.getElementById('acadQuizExcelFileName');
+  if (btnEl) btnEl.disabled = true;
+
+  try {
+    var rawRows = await parseAcadSpreadsheetFileToRows(file);
+    if (!rawRows || rawRows.length <= 1) {
+      alert('등록할 북퀴즈 데이터 행이 존재하지 않습니다. (헤더만 있거나 빈 파일)');
+      return;
+    }
+
+    var header = rawRows[0];
+    var colMap = parseAcadQuizHeaderIndices(header);
+
+    if (colMap.bookNo === -1 || colMap.question === -1 || colMap.ans === -1) {
+      alert("[엑셀 서식 헤더 오류]\n필수 컬럼이 인식되지 않았습니다.\n'도서코드', '문항내용(질문)', '정답' 컬럼명이 포함되어 있는지 확인해주세요.");
+      return;
+    }
+
+    var validationErrors = [];
+    var parsedQuestions = [];
+
+    // 도서 매칭 맵 구축 (학원 도서 목록 + 서버 부트스트랩 도서 목록 통합)
+    var bookLookup = new Map();
+    if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+      window.MIGRATED_BOOKS.forEach(function(b) {
+        if (!b) return;
+        if (b.bookNo) bookLookup.set(String(b.bookNo).trim().toUpperCase(), b);
+        if (b.id) bookLookup.set(String(b.id).trim().toUpperCase(), b);
+      });
+    }
+    if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
+      academyBookList.forEach(function(b) {
+        if (!b) return;
+        if (b.bookNo) bookLookup.set(String(b.bookNo).trim().toUpperCase(), b);
+        if (b.id) bookLookup.set(String(b.id).trim().toUpperCase(), b);
+      });
+    }
+
+    for (var i = 1; i < rawRows.length; i++) {
+      var row = rawRows[i];
+      var rowNum = i + 1;
+      if (!row || !row.some(function(cell) { return String(cell ?? '').trim().length > 0; })) continue;
+
+      var rawBookCode = String(row[colMap.bookNo] ?? '').trim();
+      var rawTitle = colMap.title !== -1 ? String(row[colMap.title] ?? '').trim() : '';
+      var rawQNo = colMap.questionNo !== -1 ? String(row[colMap.questionNo] ?? '').trim() : '';
+      var rawType = colMap.quizType !== -1 ? String(row[colMap.quizType] ?? '').trim() : '';
+      var rawQuestion = String(row[colMap.question] ?? '').trim();
+      var opt1 = colMap.opt1 !== -1 ? String(row[colMap.opt1] ?? '').trim() : '';
+      var opt2 = colMap.opt2 !== -1 ? String(row[colMap.opt2] ?? '').trim() : '';
+      var opt3 = colMap.opt3 !== -1 ? String(row[colMap.opt3] ?? '').trim() : '';
+      var opt4 = colMap.opt4 !== -1 ? String(row[colMap.opt4] ?? '').trim() : '';
+      var opt5 = colMap.opt5 !== -1 ? String(row[colMap.opt5] ?? '').trim() : '';
+      var rawAns = String(row[colMap.ans] ?? '').trim();
+      var rawSimilarAns = colMap.similarAns !== -1 ? String(row[colMap.similarAns] ?? '').trim() : '';
+      var hint = colMap.hint !== -1 ? String(row[colMap.hint] ?? '').trim() : '';
+      var rawScore = colMap.score !== -1 ? String(row[colMap.score] ?? '').trim() : '';
+
+      if (!rawBookCode) {
+        validationErrors.push('[' + rowNum + '행] 도서코드가 비어있습니다.');
+        continue;
+      }
+
+      var matchedBook = bookLookup.get(rawBookCode.toUpperCase());
+      if (!matchedBook) {
+        validationErrors.push('[' + rowNum + "행] 도서코드 '" + rawBookCode + "'에 해당하는 등록 도서가 없습니다. (입력 도서명: " + (rawTitle || '미입력') + ')');
+        continue;
+      }
+
+      if (!rawQuestion) {
+        validationErrors.push('[' + rowNum + '행: 도서 ' + matchedBook.title + '] 문항 질문(내용)이 비어있습니다.');
+        continue;
+      }
+
+      if (rawQNo) {
+        var numQNo = Number(rawQNo);
+        if (isNaN(numQNo) || numQNo < 1 || numQNo > 10) {
+          validationErrors.push('[' + rowNum + '행: 도서 ' + matchedBook.title + "] 문항번호는 1번부터 10번 사이여야 합니다. (입력값: '" + rawQNo + "')");
+          continue;
+        }
+      }
+
+      var options = [opt1, opt2, opt3, opt4, opt5].filter(function(o) { return o.length > 0; });
+      var isExplicitSubjective = rawType.indexOf('주관') !== -1 || rawType.toUpperCase() === 'SUBJECTIVE' || rawType.toUpperCase() === 'SHORT_ANSWER';
+      var isSubjective = isExplicitSubjective || options.length === 0;
+
+      if (!isSubjective) {
+        if (options.length < 3) {
+          validationErrors.push('[' + rowNum + '행: 도서 ' + matchedBook.title + '] 객관식 문항은 선택지(보기)가 최소 3개 이상 입력되어야 합니다. (현재 입력된 보기: ' + options.length + '개)');
+          continue;
+        }
+        if (options.length > 5) {
+          validationErrors.push('[' + rowNum + '행: 도서 ' + matchedBook.title + '] 객관식 문항의 선택지는 최대 5개까지만 설정할 수 있습니다. (현재 입력된 보기: ' + options.length + '개)');
+          continue;
+        }
+      }
+
+      var normalizedAns = normalizeAcadQuizAnswerVal(rawAns, options, isSubjective);
+      if (!normalizedAns) {
+        validationErrors.push('[' + rowNum + '행: 도서 ' + matchedBook.title + "] 유효하지 않은 정답('" + rawAns + "')입니다.\n  👉 객관식은 1~" + options.length + ' 번호(또는 보기 내용), 주관식은 정답 단어를 입력해야 합니다.');
+        continue;
+      }
+
+      var finalSimilarAns = '';
+      if (isSubjective) {
+        var similarTokens = [];
+        if (rawAns && rawAns.indexOf(',') !== -1) {
+          rawAns.split(/[,/|]/).map(function(s) { return s.trim(); }).forEach(function(token) {
+            if (token && token !== normalizedAns && similarTokens.indexOf(token) === -1) {
+              similarTokens.push(token);
+            }
+          });
+        }
+        if (rawSimilarAns) {
+          rawSimilarAns.split(/[,/|]/).map(function(s) { return s.trim(); }).forEach(function(token) {
+            if (token && token !== normalizedAns && similarTokens.indexOf(token) === -1) {
+              similarTokens.push(token);
+            }
+          });
+        }
+        finalSimilarAns = similarTokens.join(', ');
+      }
+
+      var questionNo = Number(rawQNo) || (parsedQuestions.filter(function(q) { return q.bookCode.toUpperCase() === rawBookCode.toUpperCase(); }).length + 1);
+      var score = Number(rawScore) || 20;
+
+      parsedQuestions.push({
+        rowNum: rowNum,
+        bookCode: rawBookCode,
+        matchedBook: matchedBook,
+        questionNo: questionNo,
+        type: isSubjective ? 'SUBJECTIVE' : 'CHOICE',
+        quizType: isSubjective ? 'SHORT_ANSWER' : 'MULTIPLE_CHOICE',
+        question: rawQuestion,
+        opt1: opt1 || '',
+        opt2: opt2 || '',
+        opt3: opt3 || '',
+        opt4: opt4 || '',
+        opt5: opt5 || '',
+        options: isSubjective ? [] : options,
+        ans: normalizedAns,
+        subjectiveAns: isSubjective ? normalizedAns : '',
+        similarAns: finalSimilarAns,
+        similarAnswers: finalSimilarAns ? finalSimilarAns.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [],
+        correctAnswer: normalizedAns,
+        hint: hint || '',
+        score: score
+      });
+    }
+
+    if (parsedQuestions.length === 0 && validationErrors.length === 0) {
+      alert('등록 가능한 유효 북퀴즈 문항이 없습니다.');
+      return;
+    }
+
+    var groupedMap = new Map();
+    parsedQuestions.forEach(function(q) {
+      var key = q.matchedBook.id || q.matchedBook.bookNo;
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          book: q.matchedBook,
+          bookNo: q.matchedBook.bookNo || q.matchedBook.id,
+          questions: []
+        });
+      }
+      groupedMap.get(key).questions.push(q);
+    });
+
+    groupedMap.forEach(function(group) {
+      if (group.questions.length < 3) {
+        validationErrors.push('[도서: ' + group.book.title + ' (' + group.bookNo + ')] 북퀴즈 문항 수가 부족합니다. 도서당 최소 3문항 이상 등록해야 합니다. (현재: ' + group.questions.length + '문항)');
+      }
+      if (group.questions.length > 10) {
+        validationErrors.push('[도서: ' + group.book.title + ' (' + group.bookNo + ')] 북퀴즈 문항 수가 초과되었습니다. 도서당 최대 10문항까지만 등록할 수 있습니다. (현재: ' + group.questions.length + '문항)');
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      var errorMsg = '[북퀴즈 엑셀 업로드 유효성 검사 실패]\n총 ' + validationErrors.length + '건의 규격 오류가 발견되어 등록이 중단되었습니다.\n엑셀 서식을 수정한 후 다시 업로드해주세요.\n\n' +
+        validationErrors.slice(0, 6).join('\n\n') +
+        (validationErrors.length > 6 ? '\n\n... 외 ' + (validationErrors.length - 6) + '건 추가 오류' : '');
+      alert(errorMsg);
+      return;
+    }
+
+    var groups = Array.from(groupedMap.values());
+
+    // 1. 운영 서버 연동 시 백엔드 API(/api/manage?entity=quizzes)로 학원 전용 세트 일괄 저장
+    if (window.NanoPortal && typeof NanoPortal.api === 'function' && window.NANO_SERVER_DATA) {
+      if (progressEl) {
+        progressEl.innerHTML = '<span class="text-warning font-weight-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>서버에 북퀴즈 ' + parsedQuestions.length + '문항 일괄 저장 중...</span>';
+      }
+      try {
+        var payload = {
+          operation: 'bulk_import',
+          items: groups.map(function(g) {
+            return {
+              bookNo: g.bookNo,
+              questions: g.questions.map(function(q) {
+                return {
+                  questionNo: q.questionNo,
+                  question: q.question,
+                  quizType: q.quizType,
+                  options: q.options,
+                  opt1: q.opt1,
+                  opt2: q.opt2,
+                  opt3: q.opt3,
+                  opt4: q.opt4,
+                  opt5: q.opt5,
+                  correctAnswer: q.ans,
+                  similarAns: q.similarAns,
+                  similarAnswers: q.similarAnswers,
+                  explanation: q.hint,
+                  score: q.score
+                };
+              })
+            };
+          })
+        };
+        await NanoPortal.api('/api/manage?entity=quizzes', payload);
+      } catch (apiErr) {
+        console.error('학원 북퀴즈 일괄 서버 저장 오류:', apiErr);
+        alert('[서버 북퀴즈 저장 오류]\n' + (apiErr.message || '서버 통신 중 오류가 발생했습니다.'));
+        return;
+      }
+    }
+
+    // 2. 프론트엔드 학원 도서 목록 및 다중 출제 기관(quizSets) 실시간 동기화
+    var today = new Date().toISOString().split('T')[0];
+    var acadName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '우리 학원';
+    var acadId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'MY_ACAD';
+    if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+
+    groups.forEach(function(g) {
+      var book = g.book;
+      var formattedQuestions = g.questions.map(function(q) {
+        return {
+          type: q.type,
+          optionCount: q.type === 'SUBJECTIVE' ? 3 : Math.max(3, q.options.length),
+          question: q.question,
+          mediaType: 'none',
+          mediaUrl: '',
+          mediaCaption: '',
+          opt1: q.opt1,
+          opt2: q.opt2,
+          opt3: q.opt3,
+          opt4: q.opt4,
+          opt5: q.opt5,
+          ans: q.ans,
+          subjectiveAns: q.subjectiveAns,
+          subjectiveAnswer: q.subjectiveAns,
+          similarAns: q.similarAns,
+          similarAnswers: q.similarAnswers,
+          hint: q.hint,
+          score: q.score
+        };
+      });
+
+      var newAcadSet = {
+        id: 'qs_acad_' + acadId + '_' + (book.id || book.bookNo),
+        authorType: 'ACADEMY',
+        authorName: acadName,
+        academyName: acadName,
+        academyId: acadId,
+        isMine: true,
+        isPublic: 'Y',
+        createdAt: today,
+        questions: formattedQuestions
+      };
+
+      // 기존 본사(HQ) 및 타 학원 세트는 보존하고 우리 학원 세트만 교체·추가
+      var existingSets = Array.isArray(book.quizSets) ? book.quizSets.filter(function(s) {
+        return !(s && (s.isMine || (s.authorType === 'ACADEMY' && (s.academyId === acadId || s.academyName === acadName))));
+      }) : [];
+      existingSets.push(newAcadSet);
+
+      book.quizSets = existingSets;
+      book.quizList = formattedQuestions;
+      book.hasQuiz = true;
+      book.quizzes = formattedQuestions.length;
+      book.quizCount = formattedQuestions.length;
+      book.quizSetCount = existingSets.length;
+      book.quizStatus = formattedQuestions.length + '문항 완비';
+      // 다음 모달 오픈 시 최신 서버 문항 세트를 다시 조회할 수 있도록 플래그 리셋
+      book._quizLoadedFromServer = false;
+
+      // academyBookList 내 동일 도서 객체에도 동기화
+      if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
+        var listMatch = academyBookList.find(function(ab) {
+          return ab && (ab.id === book.id || ab.bookNo === book.bookNo);
+        });
+        if (listMatch && listMatch !== book) {
+          listMatch.quizSets = existingSets;
+          listMatch.quizList = formattedQuestions;
+          listMatch.hasQuiz = true;
+          listMatch.quizzes = formattedQuestions.length;
+          listMatch.quizCount = formattedQuestions.length;
+          listMatch.quizSetCount = existingSets.length;
+          listMatch.quizStatus = formattedQuestions.length + '문항 완비';
+          listMatch._quizLoadedFromServer = false;
+        }
+      }
+
+      if (book.id) window.MIGRATED_QUIZZES[book.id] = existingSets;
+      if (book.bookNo) window.MIGRATED_QUIZZES[book.bookNo] = existingSets;
+      if (book.serverId) window.MIGRATED_QUIZZES[book.serverId] = existingSets;
+    });
+
+    selectedBulkQuizFile = null;
+    if (fileInput) fileInput.value = '';
+    if (progressEl) progressEl.innerHTML = '클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭';
+
+    if (window.jQuery && typeof $('#acadQuizExcelModal').modal === 'function') {
+      $('#acadQuizExcelModal').modal('hide');
+    } else {
+      hideModalVanilla('acadQuizExcelModal');
+    }
+
+    filterAcademyBooks(true);
+    showAcademyToast('[' + fileName + '] 북퀴즈 대량 등록 완료: 총 ' + groups.length + '권의 도서에 ' + parsedQuestions.length + '문항이 성공적으로 등록되었습니다!');
+  } catch (err) {
+    console.error('학원 북퀴즈 파일 처리 오류:', err);
+    alert('파일을 읽고 처리하는 중 오류가 발생했습니다: ' + (err.message || err));
+  } finally {
+    if (btnEl) btnEl.disabled = false;
+  }
 }
 
 // 퀴즈 미디어 토글
