@@ -110,7 +110,6 @@ export async function runFullSafeMigration(options: { dryRun?: boolean; runDedup
     'tb_quiz',
     'tb_user',
     'tb_book_list',
-    'tb_point_history',
   ]);
   const activeLegacyUsers = T.tb_user.filter((r) => r.user_status === 'Y');
   const allLegacyDirectors = T.tb_user.filter((r) => r.user_type === 'director');
@@ -219,7 +218,10 @@ export async function runFullSafeMigration(options: { dryRun?: boolean; runDedup
   // STEP 4. 도서(Book) 비파괴 적재 + 컬럼 밀림 자가 치유 + 중복 도서 통폐합
   // --------------------------------------------------------------
   console.log('📖 [4/8] 도서(Book) 비파괴 증분 적재 및 정합성 보정 중...');
-  const currentBooks = await prisma.book.findMany({ select: { id: true, bookNo: true, isbn: true, themeId: true, subject: true } });
+  const currentBooks = await prisma.book.findMany({
+    select: { id: true, bookNo: true, isbn: true, themeId: true, subject: true, coverUrl: true, worksheetUrl: true }
+  });
+  const existingBookByNo = new Map(currentBooks.map(b => [b.bookNo.trim(), b]));
   const existingBookNos = new Set(currentBooks.map(b => b.bookNo.trim()));
   const existingIsbns = new Set(
     currentBooks
@@ -228,6 +230,7 @@ export async function runFullSafeMigration(options: { dryRun?: boolean; runDedup
   );
 
   const newBooksToCreate: any[] = [];
+  let backfilledMediaCount = 0;
   for (const b of T.tb_book) {
     let bNo = String(b.book_no ?? '').trim();
     let title = String(b.book_name ?? '제목 없음').trim();
@@ -253,13 +256,29 @@ export async function runFullSafeMigration(options: { dryRun?: boolean; runDedup
     }
     if (!bNo) continue;
 
-    // 이미 등록된 bookNo이거나 동일 ISBN으로 통폐합 완료된 도서는 재삽입 스킵 (중복 재생성 방지!)
+    const ws = b.worksheet ? `/upload/book/${b.worksheet}` : null;
+
+    // 이미 등록된 도서라도 구 서버에서 새로 추가된 표지/나노시트가 있으면 비파괴 보완!
+    if (existingBookNos.has(bNo)) {
+      const prevBook = existingBookByNo.get(bNo);
+      if (prevBook && ((!prevBook.coverUrl && cover) || (!prevBook.worksheetUrl && ws))) {
+        await prisma.book.update({
+          where: { id: prevBook.id },
+          data: {
+            coverUrl: prevBook.coverUrl || cover,
+            worksheetUrl: prevBook.worksheetUrl || ws,
+          }
+        });
+        backfilledMediaCount++;
+      }
+      continue;
+    }
+
+    // 동일 ISBN으로 이미 통폐합 완료된 도서는 재삽입 스킵 (중복 재생성 방지!)
     const cleanIsbn = String(b.isbn ?? '').replace(/[^0-9Xx]/g, '');
-    if (existingBookNos.has(bNo)) continue;
     if (cleanIsbn.length >= 10 && existingIsbns.has(cleanIsbn)) continue;
 
     const series = !rawSeries || rawSeries === '단권' ? '단권' : rawSeries;
-    const ws = b.worksheet ? `/upload/book/${b.worksheet}` : null;
     const subj = b.subject ? String(b.subject).trim() : null;
     const themeId = subj && themeMap.has(subj) ? themeMap.get(subj)! : null;
 
@@ -329,7 +348,7 @@ export async function runFullSafeMigration(options: { dryRun?: boolean; runDedup
       data: { themeId: thId }
     });
   }
-  console.log(`   ✅ 신규 도서 ${newBooksToCreate.length}권 추가 적재 및 테마 매핑 보정 완료.`);
+  console.log(`   ✅ 신규 도서 ${newBooksToCreate.length}권 추가 적재, 기존 도서 표지/시트 보완 ${backfilledMediaCount}권 및 테마 매핑 보정 완료.`);
 
   if (runDeduplicate && newBooksToCreate.length > 0) {
     console.log('   - 신규 유입 도서에 대한 ISBN 중복 통폐합 점검 실행 중...');
@@ -783,34 +802,7 @@ export async function runFullSafeMigration(options: { dryRun?: boolean; runDedup
   for (const batch of chunk(acadBooksData, 500)) {
     await prisma.academyBook.createMany({ data: batch, skipDuplicates: true });
   }
-
-  // 전체 포인트 이력(tb_point_history) 증분 적재 (legacyPhSeq unique 기반 중복 자동 스킵)
-  const pointsData: Array<{
-    memberId: string;
-    amount: number;
-    pointType: string | null;
-    content: string | null;
-    createdAt: Date;
-    legacyPhSeq: number;
-  }> = [];
-  for (const ph of T.tb_point_history) {
-    const uId = String(ph.user_id ?? '').trim().toLowerCase();
-    const memberId = memberIdByUsername.get(uId);
-    const phSeq = Number(ph.ph_seq);
-    if (!memberId || !phSeq) continue;
-    pointsData.push({
-      memberId,
-      amount: Number(ph.point) || 0,
-      pointType: ph.point_type ? String(ph.point_type) : 'QUIZ',
-      content: ph.content ? String(ph.content) : '북퀴즈 풀이 적립',
-      createdAt: parseKstDate(ph.reg_date, new Date())!,
-      legacyPhSeq: phSeq,
-    });
-  }
-  for (const batch of chunk(pointsData, 1000)) {
-    await prisma.pointHistory.createMany({ data: batch, skipDuplicates: true });
-  }
-  console.log(`   ✅ 신규 북퀴즈 문항 ${newQuizzesData.length}건 / 보유도서 ${acadBooksData.length.toLocaleString()}건 / 포인트내역 ${pointsData.length.toLocaleString()}건 동기화 완료.\n`);
+  console.log(`   ✅ 신규 북퀴즈 문항 ${newQuizzesData.length}건 / 보유도서 ${acadBooksData.length.toLocaleString()}건 동기화 완료 (포인트 내역은 STEP 7에서 현행 적립 기준으로 정밀 재산정됩니다).\n`);
 
   // --------------------------------------------------------------
   // STEP 7. 도서 찜/추천 + 전 기간 북퀴즈 완료 내역 + 단권 [학습리포트] + 고유 완독권수 동기화

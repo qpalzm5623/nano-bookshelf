@@ -20,6 +20,26 @@ export async function earnedForAttempt(db: any, attempt: any) {
   return points.reduce((sum: number, p: any) => sum + p.amount, 0);
 }
 
+// 로그 뷰 반환 시 DB 추가 조회 없이 현행 정책 기준 획득 포인트를 즉시 반환합니다.
+export function estimateAttemptPoints(attempt: any, book?: any): number {
+  const details = attempt?.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
+  if (typeof details.earned === 'number') return details.earned;
+  const score = Number(attempt?.score) || 0;
+  if (score < 60) return 0;
+  const isHighGrade = isGrade4OrAbove(book?.grade || book?.level || book?.recommendGrade);
+  const multiplier = isHighGrade ? 1.2 : 1;
+  const qrList = Array.isArray(details.quizResults) ? details.quizResults : [];
+  const fallbackCorrect = qrList.length > 0
+    ? qrList.filter((r: any) => r && r.isCorrect).length
+    : Math.round((score / 100) * (Number(attempt?.questionCount) || 5));
+  const correctCount = (typeof attempt?.correctCount === 'number' && attempt.correctCount > 0)
+    ? attempt.correctCount
+    : fallbackCorrect;
+  const quizPts = Math.round(correctCount * 3 * multiplier);
+  const thoughtPts = attempt?.thinkReply && String(attempt.thinkReply).trim() ? Math.round(5 * multiplier) : 0;
+  return quizPts + thoughtPts;
+}
+
 // 초등학교 4학년 이상 권장도서 판정
 export function isGrade4OrAbove(gradeStr?: string | null): boolean {
   if (!gradeStr) return false;
@@ -93,11 +113,12 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
       }
     }
 
+    const completedAtDate = data.completedAt ? new Date(data.completedAt) : new Date();
     const attempt = await tx.quizAttempt.create({ data: { ...data, answers: { ...data.answers, earned: awards.reduce((sum, award) => sum + award.amount, 0) } } });
     for (const award of awards) {
       const id = 'award_' + createHash('sha256').update(JSON.stringify([user.id, book.id, award.kind, data.id])).digest('hex');
       if (!await tx.pointHistory.findUnique({ where: { id } })) {
-        await tx.pointHistory.create({ data: { id, memberId: user.id, amount: award.amount, pointType: award.kind, content: award.content } });
+        await tx.pointHistory.create({ data: { id, memberId: user.id, amount: award.amount, pointType: award.kind, content: award.content, createdAt: completedAtDate } });
         earned += award.amount;
       }
     }
@@ -129,6 +150,15 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
 }
 
 export function monthWindow(period: string, now = new Date()) {
+  const ymMatch = String(period || '').trim().match(/^(\d{4})-(0[1-9]|1[0-2])$/);
+  if (ymMatch) {
+    const year = Number(ymMatch[1]);
+    const monthIdx = Number(ymMatch[2]) - 1;
+    return {
+      gte: new Date(Date.UTC(year, monthIdx, 1) - 9 * 3600000),
+      lt: new Date(Date.UTC(year, monthIdx + 1, 1) - 9 * 3600000)
+    };
+  }
   const korea = new Date(+now + 9 * 3600000);
   const offset = period === 'lastMonth' ? -1 : 0;
   return { gte: new Date(Date.UTC(korea.getUTCFullYear(), korea.getUTCMonth() + offset, 1) - 9 * 3600000),

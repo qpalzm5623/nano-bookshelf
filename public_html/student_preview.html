@@ -8636,6 +8636,19 @@ var CHAR_QUIZ_FEEDBACKS = {
   }
 };
 
+// 추천하기(따봉) 클릭 시 모든 나노프렌즈 9종 기쁨의 반응 대사
+var CHAR_RECOMMEND_REACTIONS = {
+  nano: "야호!! 따봉 고마워! 네가 추천한 이 멋진 책이 친구들의 마음도 반짝이게 할 거야! 🦊👍✨",
+  toto: "깡충깡충!! 우와아~ 정말 재밌는 책이었구나! 나도 귀가 쫑긋할 만큼 신나! 🐰💖",
+  booki: "부우웅~ 훌륭한 안목이구나! 네 따뜻한 추천 한 표가 지식의 숲을 더 환하게 밝혔단다! 🦉🌟",
+  pico: "뒤뚱뒤뚱 신난다!! 친구들에게 꼭 읽어보라고 나도 같이 소문낼게! 최고야! 🐧👍",
+  popo: "으하하! 마음이 포근해지는 멋진 추천이야! 좋은 책을 나누는 건 정말 행복한 일이지! 🐻🍯",
+  chichi: "찍찍!! 도토리 백 개 찾은 것보다 더 기뻐!! 네 추천 덕분에 책장이 북적북적 신나겠어! 🐿️🎉",
+  lumi: "반짝반짝~★ 네가 보낸 따봉 별빛이 온 우주로 퍼져나가고 있어! 정말 고마워! ⭐💛",
+  mir: "크하하! 대독서가다운 호탕한 추천이로다! 푸른 용의 기운으로 널리 알리겠다! 🐲🔥",
+  jelly: "말랑통통~ 우와아! 달콤한 추천 고마워요! 구름 위를 둥실둥실 날아갈 것처럼 기뻐요! 🫧🍭"
+};
+
 // 문항 렌더링: 정답 즉시 노출 X, 캐릭터 말풍선 속에 문제 디스플레이
 function renderQ() {
   var q = curData.qs[curQ];
@@ -8800,10 +8813,149 @@ function goPreviousQuestion() {
   window.scrollTo(0, 0);
 }
 
+// 학생의 도서 추천 완료 여부 조회 (서버 부트스트랩 + 로컬 캐시 통합)
+function getStudentRecommendCacheKey() {
+  var ident = (typeof getStudentQuizIdentity === 'function' && getStudentQuizIdentity()) || null;
+  var sid = (ident && ident.studentId) || (window.NANO_BOOTSTRAP_MEMBER_ID) || 'guest';
+  return 'NANO_USER_RECOMMENDED_BOOKS:' + sid;
+}
+
+function isBookRecommendedByStudent(bookOrId) {
+  var bKey = '';
+  var altId = '';
+  if (bookOrId && typeof bookOrId === 'object') {
+    bKey = String(bookOrId.bookNo || bookOrId.id || '').trim();
+    altId = String(bookOrId.serverId || bookOrId.id || '').trim();
+  } else {
+    bKey = String(bookOrId || '').trim();
+  }
+  if (!bKey && !altId) return false;
+  if (Array.isArray(window.NANO_USER_RECOMMENDS)) {
+    if ((bKey && window.NANO_USER_RECOMMENDS.indexOf(bKey) !== -1) || (altId && window.NANO_USER_RECOMMENDS.indexOf(altId) !== -1)) {
+      return true;
+    }
+  }
+  try {
+    var localList = JSON.parse(localStorage.getItem(getStudentRecommendCacheKey()) || '[]');
+    if (Array.isArray(localList)) {
+      return (bKey && localList.indexOf(bKey) !== -1) || (altId && localList.indexOf(altId) !== -1);
+    }
+  } catch (e) {}
+  return false;
+}
+
+function syncRecommendedBookCountInMemory(bookKey, exactTotal) {
+  if (!bookKey) return;
+  var applyToList = function(arr) {
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function(item) {
+      if (!item) return;
+      if (String(item.bookNo || item.id) === bookKey || String(item.id) === bookKey) {
+        if (typeof exactTotal === 'number') item.recommends = exactTotal;
+        else item.recommends = (Number(item.recommends) || 0) + 1;
+      }
+    });
+  };
+  if (typeof libData !== 'undefined') applyToList(libData);
+  if (Array.isArray(window.MIGRATED_BOOKS)) applyToList(window.MIGRATED_BOOKS);
+}
+
+// 북퀴즈 결과 화면 우측 상단 [추천하기] 따봉 버튼 핸들러 (60점 이상 전용 + 전 캐릭터 기쁨 모션)
+async function handleQuizBookRecommend(btn) {
+  var view = window.activeQuizResultView;
+  var score = view && Number.isFinite(view.score) ? view.score : 0;
+  if (score < 60) {
+    toast('60점 이상 도서 인증을 통과하면 추천할 수 있어요!');
+    return;
+  }
+  var targetBook = (view && view.book) || window.currentQuizBookObj || null;
+  var bKey = String((btn && btn.getAttribute('data-book-id')) || (targetBook && (targetBook.bookNo || targetBook.id)) || curBook || '').trim();
+  if (!bKey) return;
+
+  // 1. 모든 나노프렌즈 기뻐하는 축하 모션 즉시 재생 (재클릭 시에도 신나게 다시 점프!)
+  var card = (btn && btn.closest('.qr-card')) || document.querySelector('#quizResultHeroBanner .qr-card');
+  if (card) {
+    card.classList.remove('is-celebrating');
+    void card.offsetWidth;
+    card.classList.add('is-celebrating');
+    if (window._quizRecommendJoyTimer) clearTimeout(window._quizRecommendJoyTimer);
+    window._quizRecommendJoyTimer = setTimeout(function() {
+      if (card) card.classList.remove('is-celebrating');
+    }, 2600);
+  }
+
+  var charId = typeof getUserCharacterId === 'function' ? getUserCharacterId() : 'nano';
+  var joyLine = CHAR_RECOMMEND_REACTIONS[charId] || CHAR_RECOMMEND_REACTIONS.nano;
+  var msgP = card ? card.querySelector('.qr-message p') : null;
+  if (msgP) msgP.textContent = joyLine;
+
+  var already = isBookRecommendedByStudent(targetBook || bKey);
+  if (btn) {
+    btn.classList.add('is-recommended');
+    var txtEl = btn.querySelector('.qr-rec-text');
+    if (txtEl) txtEl.textContent = '추천 완료';
+    btn.title = '이미 추천한 도서예요! 누르면 나노프렌즈가 다시 기뻐해요';
+  }
+  if (view && view.extra) view.extra.isRecommended = true;
+
+  if (already) {
+    toast('👍 이미 추천한 도서예요! 나노프렌즈가 기뻐하며 화답해요!');
+    return;
+  }
+
+  if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.api === 'function') {
+    if (window._recommendRequestPending) return;
+    window._recommendRequestPending = true;
+    try {
+      var res = await NanoPortal.api('/api/activity?action=recommend', { bookId: bKey });
+      var savedNo = String((res && res.bookNo) || bKey);
+      if (!Array.isArray(window.NANO_USER_RECOMMENDS)) window.NANO_USER_RECOMMENDS = [];
+      if (window.NANO_USER_RECOMMENDS.indexOf(savedNo) === -1) window.NANO_USER_RECOMMENDS.push(savedNo);
+      try {
+        localStorage.setItem(getStudentRecommendCacheKey(), JSON.stringify(window.NANO_USER_RECOMMENDS));
+      } catch (e) {}
+      if (res && typeof res.recommends === 'number') {
+        syncRecommendedBookCountInMemory(savedNo, res.recommends);
+      } else if (!res || !res.alreadyRecommended) {
+        syncRecommendedBookCountInMemory(savedNo);
+      }
+      toast(res && res.alreadyRecommended
+        ? '👍 이미 추천한 도서예요! 나노프렌즈가 기뻐하며 화답해요!'
+        : '👍 이 책을 추천했어요! 마스터 콘텐츠 추천 수에 반영되었습니다!');
+    } catch (err) {
+      toast((err && err.message) || '추천 저장 중 오류가 발생했습니다.');
+    } finally {
+      window._recommendRequestPending = false;
+    }
+    return;
+  }
+
+  // 오프라인/로컬 프리뷰 모드: 학생별 중복 추천 방지 후 추천 카운트 누적 보존
+  try {
+    var cacheKey = getStudentRecommendCacheKey();
+    var myList = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+    if (!Array.isArray(myList)) myList = [];
+    if (myList.indexOf(bKey) === -1) {
+      myList.push(bKey);
+      localStorage.setItem(cacheKey, JSON.stringify(myList));
+      var recMap = JSON.parse(localStorage.getItem('NANO_BOOK_RECOMMEND_COUNTS') || '{}');
+      recMap[bKey] = (Number(recMap[bKey]) || 0) + 1;
+      localStorage.setItem('NANO_BOOK_RECOMMEND_COUNTS', JSON.stringify(recMap));
+      syncRecommendedBookCountInMemory(bKey);
+    }
+    toast('👍 이 책을 추천했어요! 나노프렌즈가 무척 기뻐해요!');
+  } catch (e) {}
+}
+
 // 점수와 지급 결과는 기존 채점 흐름에서 전달하고, 화면 표현만 별도 렌더러에 위임합니다.
 function generateQuizResultIllustration(score, charId, book, extra) {
   var stage = getCharacterUnlockStatus(getCharacterById(charId || 'nano')).currentStage || 1;
-  return NanoQuizResult.render(score, charId, book || window.currentQuizBookObj || {}, Object.assign({}, extra, { stage: stage }));
+  var targetBook = book || window.currentQuizBookObj || {};
+  var mergedExtra = Object.assign({}, extra, { stage: stage });
+  if (typeof mergedExtra.isRecommended !== 'boolean') {
+    mergedExtra.isRecommended = isBookRecommendedByStudent(targetBook);
+  }
+  return NanoQuizResult.render(score, charId, targetBook, mergedExtra);
 }
 
 // 초기 기록 조회가 늦게 끝나거나 대표 캐릭터가 바뀌어도 결과 그림의 성장 단계를 맞춥니다.

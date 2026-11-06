@@ -108,9 +108,167 @@
 #qscreen-result .quiz-result-hero-banner { margin: 0; border-radius: 0; overflow: visible; background: transparent; box-shadow: none; line-height: 1.5; animation: none; }
 .qr-card { overflow: hidden; background: #fff; border: 1px solid #e9e9e2; border-radius: 26px; box-shadow: 0 12px 40px #35443b06; }
 .qr-heading { padding: 26px 28px 0; }
-.qr-eyebrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: #68736e; font-size: 12px; font-weight: 650; letter-spacing: .02em; }
+.qr-eyebrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: #68736e; font-size: 12px; font-weight: 650; letter-spacing: .02em; flex-wrap: wrap; }
+.qr-eyebrow-actions { display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
 .qr-theme-label { display: inline-flex; align-items: center; gap: 5px; color: var(--qr-ink); background: var(--qr-paper); padding: 5px 9px; border-radius: 7px; }
 #qscreen-result .qr-theme-label svg { width: 14px; height: 14px; }
+/* 북퀴즈 결과 우측 상단 따봉 추천하기 버튼 */
+.qr-recommend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1.5px solid #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.16);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.qr-recommend-btn .qr-rec-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: 35% 75%;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#qscreen-result .qr-recommend-btn svg,
+.qr-recommend-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.1;
+}
+.qr-recommend-btn:not(:disabled):not(.is-disabled):hover {
+  transform: translateY(-1.5px) scale(1.03);
+  box-shadow: 0 5px 14px rgba(245, 158, 11, 0.28);
+  border-color: #d97706;
+}
+.qr-recommend-btn:not(:disabled):not(.is-disabled):hover .qr-rec-icon {
+  transform: rotate(-14deg) scale(1.15);
+}
+.qr-recommend-btn:not(:disabled):not(.is-disabled):active {
+  transform: translateY(0) scale(0.96);
+}
+.qr-recommend-btn.is-recommended {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  border-color: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.28);
+}
+.qr-recommend-btn.is-recommended svg {
+  fill: rgba(255, 255, 255, 0.26);
+}
+.qr-recommend-btn:disabled,
+.qr-recommend-btn.is-disabled {
+  background: #f3f4f2;
+  border-color: #dde0da;
+  color: #a1a9a3;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+/* 모든 나노프렌즈 공통 기뻐하는 축하 모션 (.qr-card.is-celebrating) */
+.qr-card.is-celebrating .qr-recommend-btn .qr-rec-icon {
+  animation: nanoThumbPop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 2;
+}
+.qr-card.is-celebrating .qr-eyes-normal,
+.qr-card.is-celebrating .qr-mouth-normal,
+.qr-card.is-celebrating .qr-arms-normal {
+  opacity: 0 !important;
+}
+.qr-card.is-celebrating .qr-eyes-joy,
+.qr-card.is-celebrating .qr-mouth-joy,
+.qr-card.is-celebrating .qr-cheeks-joy,
+.qr-card.is-celebrating .qr-arms-joy {
+  opacity: 1 !important;
+}
+.qr-card.is-celebrating .qr-mascot .qr-mascot-motion,
+.qr-card.is-celebrating .qr-mascot[data-friend] .qr-mascot-motion {
+  animation: nanoMascotJoyCelebrate 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) 4 !important;
+}
+.qr-card.is-celebrating .qr-mascot .qr-part-ears,
+.qr-card.is-celebrating .qr-mascot[data-friend] .qr-part-ears {
+  animation: nanoEarsJoy 0.36s ease-in-out 7 !important;
+}
+.qr-card.is-celebrating .qr-mascot .qr-part-back,
+.qr-card.is-celebrating .qr-mascot[data-friend] .qr-part-back {
+  animation: nanoBackJoy 0.31s ease-in-out 8 !important;
+}
+.qr-card.is-celebrating .qr-mascot .qr-part-arms {
+  animation: nanoArmsJoy 0.42s ease-in-out 6 !important;
+}
+.qr-card.is-celebrating .qr-mascot .qr-part-eyes {
+  animation: none !important;
+}
+.qr-card.is-celebrating .qr-mascot-shadow {
+  animation: nanoShadowJoy 0.62s ease-in-out 4 !important;
+}
+.qr-card.is-celebrating .qr-joy-burst {
+  opacity: 1;
+}
+.qr-card.is-celebrating .qr-joy-pop-1 {
+  transform-origin: 135px 88px;
+  animation: nanoJoyBurstFloat 1.25s cubic-bezier(0.22, 1, 0.36, 1) 2;
+}
+.qr-card.is-celebrating .qr-joy-pop-2 {
+  transform-origin: 332px 84px;
+  animation: nanoJoyBurstFloat 1.25s cubic-bezier(0.22, 1, 0.36, 1) 0.12s 2;
+}
+.qr-card.is-celebrating .qr-joy-pop-3 {
+  transform-origin: 232px 32px;
+  animation: nanoJoyBurstFloat 1.25s cubic-bezier(0.22, 1, 0.36, 1) 0.22s 2;
+}
+.qr-card.is-celebrating .qr-joy-thumb-badge {
+  animation: nanoJoyBadgePop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) 3;
+}
+.qr-card.is-celebrating .qr-message {
+  background: linear-gradient(90deg, rgba(254, 243, 199, 0.45), rgba(255, 255, 255, 0));
+  border-radius: 12px;
+  padding: 14px 14px 4px;
+  transition: background 0.3s ease;
+}
+@keyframes nanoThumbPop {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  35% { transform: rotate(-22deg) scale(1.32); }
+  70% { transform: rotate(8deg) scale(1.1); }
+}
+@keyframes nanoMascotJoyCelebrate {
+  0%, 100% { transform: translateY(0px) rotate(0deg) scale(1.05, 0.94); }
+  30% { transform: translateY(-20px) rotate(-5.5deg) scale(0.95, 1.07); }
+  55% { transform: translateY(-24px) rotate(5.5deg) scale(1.03, 1.03); }
+  80% { transform: translateY(-8px) rotate(-2.5deg) scale(1.01, 0.99); }
+}
+@keyframes nanoEarsJoy {
+  0%, 100% { transform: rotate(0deg) scaleY(1); }
+  50% { transform: rotate(-9deg) scaleY(1.1); }
+}
+@keyframes nanoBackJoy {
+  0%, 100% { transform: rotate(-6deg) scale(1); }
+  50% { transform: rotate(12deg) scale(1.1); }
+}
+@keyframes nanoArmsJoy {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(4deg); }
+}
+@keyframes nanoShadowJoy {
+  0%, 100% { transform: scaleX(1.04); opacity: 0.14; }
+  45% { transform: scaleX(0.68); opacity: 0.05; }
+}
+@keyframes nanoJoyBurstFloat {
+  0% { opacity: 0; transform: translateY(14px) scale(0.5); }
+  35% { opacity: 1; transform: translateY(-6px) scale(1.12); }
+  80% { opacity: 0.95; transform: translateY(-16px) scale(1); }
+  100% { opacity: 0; transform: translateY(-22px) scale(0.85); }
+}
+@keyframes nanoJoyBadgePop {
+  0%, 100% { transform: translate(318px, 148px) scale(1) rotate(0deg); }
+  40% { transform: translate(318px, 140px) scale(1.2) rotate(-10deg); }
+  75% { transform: translate(318px, 145px) scale(1.05) rotate(6deg); }
+}
 .qr-book-title { margin: 19px 0 7px; color: #293a35; font-size: clamp(24px, 5.6vw, 32px); line-height: 1.3; letter-spacing: -.055em; font-weight: 800; word-break: keep-all; overflow-wrap: anywhere; }
 .qr-headline { margin: 0; color: #6b746f; font-size: 14px; line-height: 1.6; word-break: keep-all; }
 .qr-artwork { position: relative; margin: 6px 16px 0; }

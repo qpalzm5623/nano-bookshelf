@@ -24,15 +24,26 @@ async function main() {
     },
   });
 
-  // 학원별 원장 계정 찾기
-  const directors = await prisma.member.findMany({
-    where: { role: Role.DIRECTOR },
-    select: { academyId: true, username: true, name: true, phone: true },
+  // 학원별 원장/교사 대표 계정 찾기 (원장 우선, 없으면 교사, 가상 ID 지양)
+  const staffMembers = await prisma.member.findMany({
+    where: { role: { in: [Role.DIRECTOR, Role.TEACHER] } },
+    select: { academyId: true, username: true, name: true, phone: true, role: true },
   });
   const dirMap = new Map<string, { username: string; name: string; phone: string }>();
-  for (const d of directors) {
-    dirMap.set(d.academyId, d);
+  for (const s of staffMembers) {
+    const isSynthetic = /^(director_acad|admin_acad|acad-)/i.test(s.username);
+    const existing = dirMap.get(s.academyId);
+    if (!existing) {
+      dirMap.set(s.academyId, { username: isSynthetic ? '' : s.username, name: s.name, phone: s.phone || '' });
+    } else if (s.role === Role.DIRECTOR && !isSynthetic) {
+      dirMap.set(s.academyId, { username: s.username, name: s.name, phone: s.phone || '' });
+    }
   }
+
+  const formatDirectorLabel = (rawName?: string | null): string => {
+    const cleaned = String(rawName || '').trim().replace(/(\s*원장)+$/g, '').trim();
+    return cleaned ? `${cleaned} 원장` : '원장 미지정';
+  };
 
   const franchises = rawAcademies.map((ac) => {
     const dir = dirMap.get(ac.id);
@@ -43,11 +54,11 @@ async function main() {
       id: ac.code,
       name: ac.name,
       bizNumber: ac.bizNo || '미등록',
-      director: ac.directorName ? `${ac.directorName} 원장` : (dir?.name ? `${dir.name} 원장` : '원장 미지정'),
+      director: ac.directorName ? formatDirectorLabel(ac.directorName) : (dir?.name ? formatDirectorLabel(dir.name) : '원장 미지정'),
       email: ac.email || `${ac.code.toLowerCase()}@nanobook.co.kr`,
-      phone: ac.phone || dir?.phone || '010-0000-0000',
+      phone: (ac.phone && ac.phone !== '010-0000-0000') ? ac.phone : (dir?.phone || ac.phone || '010-0000-0000'),
       region: ac.address || '전국',
-      adminId: dir?.username || ac.code.toLowerCase(),
+      adminId: ac.code === 'ACAD-HQ' ? '' : (dir?.username || ''),
       adminPw: 'nano123!',
       plan: planStr,
       joinDate: ac.joinDate.toISOString().slice(0, 10),
@@ -115,6 +126,18 @@ async function main() {
   const bookRecMap = new Map<string, number>();
   for (const [bNo, cnt] of Object.entries(socialVal.recommends || {})) {
     bookRecMap.set(bNo, Number(cnt) || 0);
+  }
+  // 신규 포털에서 학생이 추천하기(60점 이상 인증 도서) 누른 내역도 기존 추천 수 위에 누적 보존
+  const portalRecRows = await prisma.portalSetting.findMany({
+    where: { scope: 'book_recommend' },
+    select: { value: true },
+  });
+  for (const row of portalRecRows) {
+    const booksList = Array.isArray((row.value as any)?.books) ? (row.value as any).books : [];
+    for (const rawId of booksList) {
+      const k = String(rawId || '').trim();
+      if (k) bookRecMap.set(k, (bookRecMap.get(k) || 0) + 1);
+    }
   }
 
   const bookCertStats = await prisma.quizAttempt.groupBy({
@@ -370,6 +393,9 @@ async function main() {
       date: kstDate,
       submittedAt: a.completedAt.toISOString(),
       score: a.score,
+      earnedPoints: typeof details.earned === 'number' ? details.earned : 0,
+      correctCount: a.correctCount ?? 0,
+      isCertified: a.score >= 60,
       sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
       reviewed: details.reviewed || '대기',
       comment: details.comment || '',

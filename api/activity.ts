@@ -33,6 +33,64 @@ export default async function handler(req: any, res: any) {
       else { const result = await prisma.portalSetting.updateMany({ where: { key, scope: user.id, revision }, data: { value: { wishlist: value.wishlist, interests: value.interests }, revision: { increment: 1 } } }); need(result.count === 1, '다른 기기에서 목록이 변경되었습니다. 새로고침해 주세요.', 409); }
       return res.json({ revision: revision + 1 });
     }
+    if (action === 'recommend') {
+      const key = 'recommends:' + user.id;
+      if (req.method === 'GET') {
+        const row = await prisma.portalSetting.findUnique({ where: { key } });
+        const books = Array.isArray((row?.value as any)?.books) ? (row!.value as any).books : [];
+        return res.json({ books });
+      }
+      need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
+      const rawBookId = String(req.body?.bookId || '').trim();
+      need(/^[A-Za-z0-9_-]{1,100}$/.test(rawBookId), '추천할 도서 정보를 확인해 주세요.');
+      const book = await prisma.book.findFirst({
+        where: { OR: [{ bookNo: rawBookId }, { id: rawBookId }] },
+        select: { id: true, bookNo: true, isRecommended: true },
+      });
+      need(book, '도서를 찾을 수 없습니다.', 404);
+      // 60점 이상 인증 통과한 도서만 추천 가능하도록 서버에서도 검증
+      const passed = await prisma.quizAttempt.findFirst({
+        where: { memberId: user.id, bookId: book.id, score: { gte: 60 } },
+        select: { id: true },
+      });
+      need(passed, '60점 이상 인증 완료한 도서만 추천할 수 있습니다.', 403);
+
+      const canonicalNo = String(book.bookNo || book.id);
+      const existingRow = await prisma.portalSetting.findUnique({ where: { key } });
+      const prevBooks = Array.isArray((existingRow?.value as any)?.books)
+        ? ((existingRow!.value as any).books as any[]).map((b) => String(b).trim()).filter(Boolean)
+        : [];
+      const alreadyRecommended = prevBooks.includes(canonicalNo) || prevBooks.includes(book.id);
+      const nextBooks = alreadyRecommended ? prevBooks : Array.from(new Set([...prevBooks, canonicalNo]));
+
+      if (!alreadyRecommended) {
+        await prisma.portalSetting.upsert({
+          where: { key },
+          create: { key, scope: 'book_recommend', value: { books: nextBooks } },
+          update: { scope: 'book_recommend', value: { books: nextBooks }, revision: { increment: 1 } },
+        });
+      }
+
+      const [socialSetting, allRecRows] = await Promise.all([
+        prisma.portalSetting.findUnique({ where: { key: 'legacy_book_social_stats' } }),
+        prisma.portalSetting.findMany({ where: { scope: 'book_recommend' }, select: { value: true } }),
+      ]);
+      const socialVal = (socialSetting?.value || {}) as { recommends?: Record<string, number> };
+      const baseRecs = (socialVal.recommends?.[canonicalNo] || 0) || (book.isRecommended ? 1 : 0);
+      let dynamicRecs = 0;
+      for (const r of allRecRows) {
+        const list = Array.isArray((r.value as any)?.books) ? (r.value as any).books : [];
+        if (list.includes(canonicalNo) || (canonicalNo !== book.id && list.includes(book.id))) {
+          dynamicRecs += 1;
+        }
+      }
+      return res.json({
+        ok: true,
+        alreadyRecommended,
+        bookNo: canonicalNo,
+        recommends: baseRecs + dynamicRecs,
+      });
+    }
     need(req.method === 'GET', '조회 요청만 지원합니다.', 405);
     if (action === 'characters') {
       staff(user);
@@ -87,7 +145,7 @@ export default async function handler(req: any, res: any) {
             AND (${scope !== 'class'} OR m."classGroupId" = ${user.classGroupId || ''})
         ), points AS (
           SELECT p."memberId", SUM(p.amount) AS amount FROM point_histories p JOIN eligible e ON e.id = p."memberId"
-          WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} GROUP BY p."memberId"
+          WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%') GROUP BY p."memberId"
         ), books AS (
           SELECT q."memberId", COUNT(DISTINCT q."bookId") AS count FROM quiz_attempts q JOIN eligible e ON e.id = q."memberId"
           WHERE q.score >= 60 AND q."completedAt" >= ${periodWindow.gte} AND q."completedAt" < ${periodWindow.lt} GROUP BY q."memberId"

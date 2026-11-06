@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { saveAttempt, earnedForAttempt } from '../lib/portal-learning';
+import { saveAttempt, earnedForAttempt, estimateAttemptPoints } from '../lib/portal-learning';
 import { academyScope } from '../lib/portal-http';
 import { randomUUID } from 'node:crypto';
 import { hashPassword, verifyPassword, signSession, readSession, passwordVersion } from '../lib/portal-auth';
@@ -42,7 +42,9 @@ function logView(attempt: any, book: any, studentView = false) {
     school: schoolInfo, bookId: book?.bookNo || attempt.bookId,
     bookTitle: book?.title || '도서', bookPub: bookPubInfo, cover: book?.coverUrl || '', grade: book?.grade || '',
     date: kstDate, submittedAt: completedDate.toISOString(),
-    score: attempt.score, quizResults: studentView && attempt.score < 60 ? [] : details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
+    score: attempt.score, earnedPoints: estimateAttemptPoints(attempt, book),
+    correctCount: attempt.correctCount ?? 0, isCertified: attempt.score >= 60,
+    quizResults: studentView && attempt.score < 60 ? [] : details.quizResults || [], thoughtQuestion: details.thoughtQuestion || '',
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
     worksheetAiResult: details.worksheetAiResult || null,

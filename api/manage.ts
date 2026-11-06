@@ -39,10 +39,172 @@ export default async function handler(req: any, res: any) {
     }
     if (req.method === 'GET') {
       if (entity === 'rankings') {
-        const totals = await prisma.pointHistory.groupBy({ by: ['memberId'], where: { createdAt: monthWindow(String(req.query.period)), member: { academyId, role: 'STUDENT', status: 'APPROVED' } }, _sum: { amount: true } });
-        totals.sort((a,b) => (b._sum.amount || 0) - (a._sum.amount || 0) || a.memberId.localeCompare(b.memberId));
-        const members = await prisma.member.findMany({ where: { id: { in: totals.map(t => t.memberId) } }, select: { id: true, name: true, username: true } });
-        return res.json({ items: totals.map((t,index) => ({ id: t.memberId, rank: index + 1, name: members.find(m => m.id === t.memberId)?.name || '', username: members.find(m => m.id === t.memberId)?.username, points: t._sum.amount || 0 })) });
+        const mode = req.query.mode ? String(req.query.mode).toUpperCase() : '';
+        if (!mode) {
+          const totals = await prisma.pointHistory.groupBy({ by: ['memberId'], where: { createdAt: monthWindow(String(req.query.period)), member: { academyId, role: 'STUDENT', status: 'APPROVED' } }, _sum: { amount: true } });
+          totals.sort((a,b) => (b._sum.amount || 0) - (a._sum.amount || 0) || a.memberId.localeCompare(b.memberId));
+          const members = await prisma.member.findMany({ where: { id: { in: totals.map(t => t.memberId) } }, select: { id: true, name: true, username: true } });
+          return res.json({ items: totals.map((t,index) => ({ id: t.memberId, rank: index + 1, name: members.find(m => m.id === t.memberId)?.name || '', username: members.find(m => m.id === t.memberId)?.username, points: t._sum.amount || 0 })) });
+        }
+
+        // 확장 랭킹 조회 (MONTH / RANGE / ALL) - 학원 관리자 및 본사 마스터 전국 랭킹 실데이터 엔진
+        need(['MONTH', 'RANGE', 'ALL'].includes(mode), '랭킹 조회 모드를 확인해 주세요.');
+        const isGlobal = String(req.query.scope || '') === 'global';
+        if (isGlobal) master(user);
+
+        let gteDate: Date | null = null;
+        let ltDate: Date | null = null;
+        if (mode === 'MONTH') {
+          const mw = monthWindow(String(req.query.month || req.query.period || 'month'));
+          gteDate = mw.gte;
+          ltDate = mw.lt;
+        } else if (mode === 'RANGE') {
+          const sMatch = String(req.query.startDate || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          const eMatch = String(req.query.endDate || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (sMatch) gteDate = new Date(Date.UTC(Number(sMatch[1]), Number(sMatch[2]) - 1, Number(sMatch[3])) - 9 * 3600000);
+          if (eMatch) ltDate = new Date(Date.UTC(Number(eMatch[1]), Number(eMatch[2]) - 1, Number(eMatch[3]) + 1) - 9 * 3600000);
+          if (gteDate && ltDate) need(ltDate > gteDate, '조회 시작일과 종료일을 확인해 주세요.');
+        }
+
+        const hasLower = gteDate !== null;
+        const hasUpper = ltDate !== null;
+        const lowerBound = gteDate || new Date(0);
+        const upperBound = ltDate || new Date('2100-01-01T00:00:00Z');
+
+        const studentRows = await prisma.$queryRaw<Array<any>>`
+          WITH eligible AS (
+            SELECT m.id, m.username, m.name, m.grade, m."academyId",
+                   a.code AS "academyCode", a.name AS "academyName", a.address AS "academyRegion",
+                   c.name AS "className"
+            FROM members m
+            JOIN academies a ON a.id = m."academyId"
+            LEFT JOIN class_groups c ON c.id = m."classGroupId"
+            WHERE m.role = 'STUDENT' AND m.status = 'APPROVED'
+              AND a.status = 'ACTIVE' AND a."deletedAt" IS NULL
+              AND (${isGlobal} OR m."academyId" = ${academyId})
+          ),
+          pt_agg AS (
+            SELECT p."memberId", GREATEST(0, COALESCE(SUM(p.amount), 0))::int AS points
+            FROM point_histories p
+            JOIN eligible e ON e.id = p."memberId"
+            WHERE (${!hasLower} OR p."createdAt" >= ${lowerBound})
+              AND (${!hasUpper} OR p."createdAt" < ${upperBound})
+              AND (${!isGlobal} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%')
+            GROUP BY p."memberId"
+          ),
+          qa_agg AS (
+            SELECT q."memberId",
+                   COUNT(DISTINCT CASE WHEN q.score >= 60 THEN q."bookId" END)::int AS books,
+                   ROUND(AVG(q.score)::numeric, 1)::float AS "quizAvg",
+                   MAX(q."completedAt") AS "lastCompletedAt"
+            FROM quiz_attempts q
+            JOIN eligible e ON e.id = q."memberId"
+            WHERE (${!hasLower} OR q."completedAt" >= ${lowerBound})
+              AND (${!hasUpper} OR q."completedAt" < ${upperBound})
+            GROUP BY q."memberId"
+          )
+          SELECT e.id, e.username, e.name, e.grade, e."academyCode", e."academyName", e."academyRegion", e."className",
+                 COALESCE(p.points, 0)::int AS points,
+                 COALESCE(qa.books, 0)::int AS books,
+                 qa."quizAvg",
+                 qa."lastCompletedAt"
+          FROM eligible e
+          LEFT JOIN pt_agg p ON p."memberId" = e.id
+          LEFT JOIN qa_agg qa ON qa."memberId" = e.id
+          ORDER BY COALESCE(p.points, 0) DESC, COALESCE(qa.books, 0) DESC, e.name ASC, e.id ASC
+        `;
+
+        const monthsRows = await prisma.$queryRaw<Array<{ month: string }>>`
+          SELECT DISTINCT to_char(p."createdAt" + interval '9 hours', 'YYYY-MM') AS month
+          FROM point_histories p
+          JOIN members m ON m.id = p."memberId"
+          WHERE m.role = 'STUDENT' AND (${isGlobal} OR m."academyId" = ${academyId})
+          ORDER BY month DESC
+          LIMIT 24
+        `;
+
+        let academyItems: any[] = [];
+        if (isGlobal) {
+          const acadMap = new Map<string, { code: string; name: string; region: string; students: number; activeStudents: number; points: number; books: number }>();
+          for (const r of studentRows) {
+            if (r.academyCode === 'ACAD-HQ') continue;
+            const key = r.academyCode || r.academyName;
+            const cur = acadMap.get(key) || {
+              code: r.academyCode || '',
+              name: r.academyName || '소속 미상',
+              region: String(r.academyRegion || '').split(' ').slice(0, 2).join(' ') || '전국',
+              students: 0,
+              activeStudents: 0,
+              points: 0,
+              books: 0,
+            };
+            cur.students += 1;
+            const pts = Number(r.points) || 0;
+            const bks = Number(r.books) || 0;
+            if (pts > 0 || bks > 0) cur.activeStudents += 1;
+            cur.points += pts;
+            cur.books += bks;
+            acadMap.set(key, cur);
+          }
+          academyItems = Array.from(acadMap.values())
+            .filter((ac) => ac.points > 0 || mode === 'ALL')
+            .sort((a, b) => b.points - a.points || b.books - a.books || a.name.localeCompare(b.name, 'ko'))
+            .map((ac, idx) => ({
+              rank: idx + 1,
+              code: ac.code,
+              name: ac.name,
+              region: ac.region,
+              students: ac.students,
+              avgBooks: (ac.students > 0 ? (ac.books / ac.students).toFixed(1) : '0.0') + '권',
+              participation: (ac.students > 0 ? Math.min(100, Math.round((ac.activeStudents / ac.students) * 100)) : 0) + '%',
+              points: ac.points,
+              badge: idx === 0 ? '최우수 가맹점' : idx < 3 ? '우수 가맹점' : '일반 가맹점',
+            }));
+        }
+
+        const activeStudents = studentRows.filter((r) => Number(r.points) > 0);
+        const topStudents = (isGlobal ? activeStudents.slice(0, 500) : activeStudents).map((r, idx) => ({
+          id: r.username,
+          serverId: r.id,
+          username: r.username,
+          rank: idx + 1,
+          name: r.name,
+          academy: r.academyName,
+          academyCode: r.academyCode,
+          className: r.className || '미지정',
+          grade: r.grade || '미등록',
+          books: Number(r.books) || 0,
+          quizAvg: r.quizAvg != null ? Number(r.quizAvg) : null,
+          accRate: r.quizAvg != null ? `${Math.round(Number(r.quizAvg))}%` : '-',
+          points: Number(r.points) || 0,
+          lastCompletedAt: r.lastCompletedAt ? new Date(r.lastCompletedAt).toISOString() : null,
+        }));
+
+        return res.json({
+          mode,
+          months: monthsRows.map((m) => m.month).filter(Boolean),
+          items: topStudents,
+          academyItems,
+        });
+      }
+      if (entity === 'point_logs') {
+        const targetKey = String(req.query.memberId || req.query.username || '').trim();
+        need(targetKey.length > 0, '조회할 원생을 선택해 주세요.');
+        const student = await prisma.member.findFirst({
+          where: {
+            role: 'STUDENT',
+            ...(user.role === 'MASTER' ? {} : { academyId }),
+            OR: [{ id: targetKey }, { username: targetKey }],
+          },
+          select: { id: true, username: true, name: true, points: true },
+        });
+        need(student, '해당 원생 정보를 찾을 수 없습니다.', 404);
+        const logs = await prisma.pointHistory.findMany({
+          where: { memberId: student!.id },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 100,
+        });
+        return res.json({ student, items: logs });
       }
       if (entity === 'members') return res.json({ items: await prisma.member.findMany({ where: { academyId }, select: memberFields, orderBy: { name: 'asc' } }) });
       if (entity === 'classes') return res.json({ items: await prisma.classGroup.findMany({ where: { academyId }, orderBy: { name: 'asc' } }) });
@@ -299,6 +461,37 @@ export default async function handler(req: any, res: any) {
         }
         return added;
       }, { timeout: 30000 }); return res.json({ ok: true, count: members.length, addedCount });
+    }
+    if (entity === 'points') {
+      const targetKey = String(input.memberId || input.studentId || '').trim();
+      need(targetKey.length > 0, '포인트를 조정할 원생을 선택해 주세요.');
+      const delta = Number(input.amount);
+      need(Number.isInteger(delta) && delta !== 0 && delta >= -100 && delta <= 100, '포인트는 한 번에 -100P ~ +100P 사이의 정수로 입력해 주세요.');
+      const rawReason = text(input.content || input.reason, '사유', 500) || (delta > 0 ? '학원 선생님 독서 칭찬 수동 포인트 부여' : '학원 관리자 수동 포인트 차감');
+      const roleLabel = user.role === 'TEACHER' ? '담당선생님' : '학원장';
+      const content = rawReason.startsWith('[') ? rawReason : `[${roleLabel} 수동 ${delta > 0 ? '부여' : '차감'}] ${rawReason} (${delta > 0 ? '+' : ''}${delta}P)`;
+      const saved = await prisma.$transaction(async (tx) => {
+        const student = await tx.member.findFirst({
+          where: { academyId, role: 'STUDENT', OR: [{ id: targetKey }, { username: targetKey }] },
+          select: { id: true, points: true },
+        });
+        need(student, '소속 학원의 원생을 찾을 수 없습니다.', 404);
+        await tx.$queryRaw`SELECT id FROM members WHERE id = ${student!.id} FOR UPDATE`;
+        const current = await tx.member.findUniqueOrThrow({ where: { id: student!.id }, select: { id: true, points: true } });
+        const nextPoints = Math.max(0, (current.points || 0) + delta);
+        const logItem = await tx.pointHistory.create({
+          data: {
+            id: 'manual_' + randomUUID(),
+            memberId: current.id,
+            amount: delta,
+            pointType: delta > 0 ? 'MANUAL_GRANT' : 'MANUAL_DEDUCT',
+            content,
+          },
+        });
+        await tx.member.update({ where: { id: current.id }, data: { points: nextPoints } });
+        return { points: nextPoints, item: logItem };
+      });
+      return res.json({ ok: true, ...saved });
     }
     if (entity === 'payments') {
       master(user);

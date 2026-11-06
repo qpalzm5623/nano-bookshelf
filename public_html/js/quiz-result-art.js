@@ -219,18 +219,23 @@ var NanoQuizResult = (function () {
       ears = '<path d="M-10,-60Q-25,-91 -1,-89Q18,-87 11,-61" fill="' + fur + '"/>';
       accessory = '<path d="M-29,-47Q-22,-56 -14,-54" stroke="#f4ffff" stroke-width="6" stroke-linecap="round" fill="none"/>' + star(23,-52,.65,'#fff5ca');
     }
-    var eyes = tier === 'perfect'
+    var eyes = '<g class="qr-eyes-normal">' + (tier === 'perfect'
       ? '<path d="M-24,-28Q-18,-36 -12,-28M12,-28Q18,-36 24,-28" stroke="#3f4248" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
-      : '<ellipse cx="-18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><ellipse cx="18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><circle cx="-16.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="19.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="-19" cy="-25" r=".8" fill="#b4c2d5"/><circle cx="17" cy="-25" r=".8" fill="#b4c2d5"/>';
-    var mouth = tier === 'perfect'
+      : '<ellipse cx="-18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><ellipse cx="18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><circle cx="-16.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="19.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="-19" cy="-25" r=".8" fill="#b4c2d5"/><circle cx="17" cy="-25" r=".8" fill="#b4c2d5"/>') + '</g>' +
+      (tier !== 'portrait' ? '<g class="qr-eyes-joy" opacity="0"><path d="M-25,-27Q-18,-38 -11,-27M11,-27Q18,-38 25,-27" stroke="#3f4248" stroke-width="3.8" fill="none" stroke-linecap="round"/></g>' : '');
+    var mouth = '<g class="qr-mouth-normal">' + (tier === 'perfect'
       ? '<path d="M-7,-2Q0,15 7,-2Z" fill="#925f58"/><path d="M-4,3Q0,0 4,3" stroke="#e8a799" stroke-width="3"/>'
-      : '<path d="M-5,-2Q0,3 5,-2" stroke="#6c5550" stroke-width="2" stroke-linecap="round" fill="none"/>';
+      : '<path d="M-5,-2Q0,3 5,-2" stroke="#6c5550" stroke-width="2" stroke-linecap="round" fill="none"/>') + '</g>' +
+      (tier !== 'portrait' ? '<g class="qr-mouth-joy" opacity="0"><path d="M-9,-3Q0,18 9,-3Z" fill="#925f58"/><path d="M-5,4Q0,0 5,4" stroke="#f0a899" stroke-width="3.2" stroke-linecap="round"/></g><g class="qr-cheeks-joy" opacity="0"><ellipse cx="-32" cy="-12" rx="10" ry="6" fill="#f472b6" opacity=".6"/><ellipse cx="32" cy="-12" rx="10" ry="6" fill="#f472b6" opacity=".6"/></g>' : '');
     var leftArm = tier === 'perfect' ? 'M-31,23Q-61,7 -60,-17' : tier === 'high' ? 'M-31,23Q-56,26 -60,5' : 'M-31,23Q-48,42 -23,49';
     var rightArm = tier === 'perfect' || tier === 'high' ? 'M31,23Q57,6 58,-17' : 'M31,23Q48,42 23,49';
     var props = tier === 'portrait' ? '' : tier === 'retry' ? book(0, 37, .8, dark)
       : tier === 'pass' ? '<path d="M-18,41H18L14,65H-14Z" fill="#d6a081"/><path d="M0,43V19 M0,31Q-24,30 -20,13Q-2,12 0,31 M0,24Q21,20 18,5Q0,6 0,24" stroke="#6c9670" stroke-width="2" fill="#8daf80"/>'
       : tier === 'high' ? star(60,-34,1.7,'#e5bd70') + '<path d="M60,-18L55,5" stroke="#bd955e" stroke-width="3"/>'
       : '<g transform="translate(63 -33)"><path d="M-12,-7H12L9,9Q0,22 -9,9Z" fill="#e6bf72"/><path d="M-12,-4Q-26,-3 -13,9M12,-4Q26,-3 13,9M0,17V24M-9,26H9" stroke="#c49a59" stroke-width="3" fill="none" stroke-linecap="round"/>' + star(0,3,.6,'#fff5d7') + '</g>';
+    var joyArms = tier !== 'portrait'
+      ? '<g class="qr-arms-joy" opacity="0"><path d="M-31,23Q-63,2 -62,-24 M31,23Q63,2 62,-24" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + star(-63,-36,1.1,'#f59e0b') + star(63,-36,1.1,'#f59e0b') + '</g>'
+      : '';
     var lift = tier === 'perfect' ? -8 : 0;
     return '<g class="qr-mascot" data-friend="' + id + '" data-stage="' + stage + '" transform="translate(232 ' + (157 + lift) + ')"><g class="qr-mascot-motion">' +
       '<g class="qr-part-back">' + back + growth.back + '</g>' +
@@ -241,7 +246,7 @@ var NanoQuizResult = (function () {
       '<g class="qr-part-eyes">' + eyes + '</g>' +
       '<ellipse cx="-31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><ellipse cx="31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><path d="M-31,-45Q-24,-53 -15,-53" stroke="#fff9ef" stroke-opacity=".35" stroke-width="5" stroke-linecap="round" fill="none"/>' + mouth + accessory +
       '<g class="qr-part-head">' + growth.head + '</g>' +
-      '<g class="qr-part-arms"><path d="' + leftArm + ' M' + rightArm.substring(1) + '" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + props + '</g></g></g>';
+      '<g class="qr-part-arms"><g class="qr-arms-normal"><path d="' + leftArm + ' M' + rightArm.substring(1) + '" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + props + '</g>' + joyArms + '</g></g></g>';
   }
 
   function avatar(charId, size, stage) {
@@ -253,6 +258,10 @@ var NanoQuizResult = (function () {
       '<rect x="117" y="15" width="230" height="230" rx="85" fill="' + c.light + '" fill-opacity=".55"/><ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
   }
 
+  function heart(x, y, s, fill) {
+    return '<path transform="translate(' + x + ' ' + y + ') scale(' + s + ')" d="M0,6C-6,0 -12,-3 -12,-8A6,6 0 0,1 0,-9A6,6 0 0,1 12,-8C12,-3 6,0 0,6Z" fill="' + fill + '"/>';
+  }
+
   function illustration(themeKey, charId, tier, stage) {
     stage = normalizeStage(stage);
     var t = themes[themeKey];
@@ -261,11 +270,18 @@ var NanoQuizResult = (function () {
       : tier === 'high' ? star(155,88,.8,'#d4ad6e') + star(299,59,.6,t.accent)
       : tier === 'pass' ? '<path d="M154,176Q138,160 151,150Q164,161 154,176 M304,181Q320,166 312,155Q295,163 304,181" fill="' + t.accent + '"/>'
       : '<path d="M143,93Q152,86 161,93 M303,92Q312,85 321,92" fill="none" stroke="' + t.accent + '" stroke-width="2" stroke-linecap="round"/>';
+    // 추천하기 버튼 클릭 시 모든 나노프렌즈 주변에 터지는 기쁨의 하트·별·따봉 이펙트
+    var joyBurst = '<g class="qr-joy-burst" opacity="0" aria-hidden="true">' +
+      '<g class="qr-joy-pop qr-joy-pop-1">' + heart(142, 68, 0.95, '#fb7185') + star(124, 108, 0.95, '#fbbf24') + '</g>' +
+      '<g class="qr-joy-pop qr-joy-pop-2">' + heart(324, 62, 1.05, '#f43f5e') + star(342, 105, 1.0, '#f59e0b') + '</g>' +
+      '<g class="qr-joy-pop qr-joy-pop-3">' + heart(232, 26, 0.85, '#ec4899') + star(182, 34, 0.8, '#fcd34d') + star(284, 34, 0.8, '#34d399') + '</g>' +
+      '<g class="qr-joy-thumb-badge" transform="translate(318 148)"><circle r="18" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.2"/><g transform="translate(-10 -10) scale(0.84)" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></g></g>' +
+      '</g>';
     return '<svg class="qr-scene" viewBox="0 0 464 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" data-character="' + charId + '" data-tier="' + tier + '">' +
       '<path d="M33,215V124C33,3 431,3 431,124V215Z" fill="' + t.sky + '"/>' +
       '<path d="M54,76Q68,59 84,69Q91,45 116,58Q133,54 143,76Z M284,45Q296,29 310,40Q322,18 339,36Q353,30 366,45Z" fill="#fffaf1" opacity=".75"/>' +
-      scenery(themeKey,t) + '<ellipse cx="232" cy="232" rx="169" ry="15" fill="' + t.accent + '" opacity=".12"/><ellipse cx="232" cy="233" rx="58" ry="9" fill="' + t.ink + '" opacity=".12"/>' +
-      decorations + mascot(charId,tier,stage) + '</svg>';
+      scenery(themeKey,t) + '<ellipse cx="232" cy="232" rx="169" ry="15" fill="' + t.accent + '" opacity=".12"/><ellipse class="qr-mascot-shadow" cx="232" cy="233" rx="58" ry="9" fill="' + t.ink + '" opacity=".12"/>' +
+      decorations + mascot(charId,tier,stage) + joyBurst + '</svg>';
   }
 
   function icon(name) {
@@ -274,7 +290,8 @@ var NanoQuizResult = (function () {
       star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
       check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
       book: '<path d="M12 6Q7 2 3 5v14q4-3 9 0 5-3 9 0V5q-4-3-9 1Zm0 0v13"/>',
-      coin: '<circle cx="12" cy="12" r="9"/><path d="M10 17V7h3a3 3 0 0 1 0 6h-3"/>'
+      coin: '<circle cx="12" cy="12" r="9"/><path d="M10 17V7h3a3 3 0 0 1 0 6h-3"/>',
+      thumb: '<path d="M7 10v11M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>'
     };
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + paths[name] + '</svg>';
   }
@@ -287,6 +304,8 @@ var NanoQuizResult = (function () {
     var tier = score === 100 ? 'perfect' : score >= 80 ? 'high' : score >= 60 ? 'pass' : 'retry';
     var themeKey = themeFor(currentBook), t = themes[themeKey], state = tiers[tier];
     var isPass = typeof extra.isPass === 'boolean' ? extra.isPass : score >= 60;
+    var isRecommended = extra.isRecommended === true;
+    var bookIdAttr = escape(currentBook.bookNo || currentBook.id || '');
     var total = Number.isFinite(extra.tot) ? Math.max(0, Math.floor(extra.tot)) : 5;
     var correct = Number.isFinite(extra.ok) ? Math.max(0, Math.min(total, Math.floor(extra.ok))) : Math.round(total * score / 100);
     var points = Number.isFinite(extra.earnedPts) ? Math.max(0, extra.earnedPts) : 0;
@@ -294,8 +313,20 @@ var NanoQuizResult = (function () {
     var name = characters[charId].name;
     var speech = extra.speechText || (isPass ? '오늘 발견한 이야기가 내일의 너를 더 자라게 할 거야.' : '서두르지 않아도 괜찮아. 책을 다시 펼치고 함께 찾아보자!');
     var segments = Array.from({ length: total }, function (_, i) { return '<span class="' + (i < correct ? 'is-filled' : '') + '"></span>'; }).join('');
+    var recBtnTitle = isPass
+      ? (isRecommended ? '이미 추천한 도서예요! 누르면 나노프렌즈가 다시 기뻐해요' : '재미있게 읽었다면 따봉을 눌러 친구들에게 추천해 보세요!')
+      : '60점 이상 도서 인증 완료 시 추천할 수 있어요';
+    var recBtnHtml = '<button type="button" id="btnQuizRecommend" class="qr-recommend-btn' +
+      (isRecommended ? ' is-recommended' : '') +
+      (!isPass ? ' is-disabled' : '') +
+      '" data-book-id="' + bookIdAttr + '"' +
+      (isPass ? ' onclick="handleQuizBookRecommend(this)"' : ' disabled aria-disabled="true"') +
+      ' title="' + recBtnTitle + '">' +
+      '<span class="qr-rec-icon">' + icon('thumb') + '</span>' +
+      '<span class="qr-rec-text">' + (isRecommended ? '추천 완료' : '추천하기') + '</span>' +
+      '</button>';
     return '<section class="qr-card qr-theme-' + themeKey + ' qr-tier-' + tier + '" style="--qr-ink:' + t.ink + ';--qr-paper:' + t.paper + ';--qr-accent:' + t.accent + '">' +
-      '<div class="qr-heading"><div class="qr-eyebrow"><span>북퀴즈 완료</span><span class="qr-theme-label">' + icon('book') + t.label + '</span></div>' +
+      '<div class="qr-heading"><div class="qr-eyebrow"><span>북퀴즈 완료</span><div class="qr-eyebrow-actions"><span class="qr-theme-label">' + icon('book') + t.label + '</span>' + recBtnHtml + '</div></div>' +
       '<h2 class="qr-book-title">' + escape(currentBook.title || '선택 도서') + '</h2><p class="qr-headline">' + state.title + '</p></div>' +
       '<div class="qr-artwork">' + illustration(themeKey,charId,tier,extra.stage) + '<div class="qr-achievement">' + icon(state.icon) + '<span>' + state.label + '</span></div></div>' +
       '<div class="qr-summary"><div class="qr-score"><span class="qr-label">나의 점수</span><div><strong>' + score + '</strong><span class="qr-score-unit">점 <span>/ 100</span></span></div></div>' +

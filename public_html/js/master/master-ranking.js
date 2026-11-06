@@ -41,25 +41,45 @@ function syncRankingDatasetsFromWindow() {
   }
 }
 
-// 최근 6개월 드롭다운 생성 (현월, 전월, 전전월 등 최대 6개월)
+// 서버 실시간 랭킹 캐시 (모드·월·기간별 Neon PostgreSQL 실데이터 동기화)
+const masterRemoteRankCache = {};
+let masterRemoteRankReqSeq = 0;
+let masterServerAvailableMonths = [];
+
+// 최근 12개월 + 서버 실데이터 보유 과거 월 전체 드롭다운 생성 (선택값 보존)
 function populateRankingMonthFilter() {
   const select = document.getElementById("rankMonthFilter");
   if (!select) return;
   const currentVal = select.value;
 
   const now = new Date();
-  let html = "";
-  for (let i = 0; i < 6; i++) {
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const prev1 = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prev1Ym = `${prev1.getFullYear()}-${String(prev1.getMonth() + 1).padStart(2, '0')}`;
+  const prev2 = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  const prev2Ym = `${prev2.getFullYear()}-${String(prev2.getMonth() + 1).padStart(2, '0')}`;
+
+  const monthSet = new Set();
+  for (let i = 0; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const key = `${y}-${String(m).padStart(2, '0')}`;
-    let label = `${y}년 ${m}월`;
-    if (i === 0) label += " (현월)";
-    else if (i === 1) label += " (전월)";
-    else if (i === 2) label += " (전전월)";
-    html += `<option value="${key}">${label}</option>`;
+    monthSet.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   }
+  if (Array.isArray(masterServerAvailableMonths)) {
+    masterServerAvailableMonths.forEach(ym => {
+      if (/^\d{4}-(0[1-9]|1[0-2])$/.test(String(ym || ''))) monthSet.add(ym);
+    });
+  }
+
+  const sortedMonths = Array.from(monthSet).sort((a, b) => b.localeCompare(a));
+  let html = "";
+  sortedMonths.forEach(key => {
+    const [yStr, mStr] = key.split("-");
+    let label = `${Number(yStr)}년 ${Number(mStr)}월`;
+    if (key === currentYm) label += " (현월)";
+    else if (key === prev1Ym) label += " (전월)";
+    else if (key === prev2Ym) label += " (전전월)";
+    html += `<option value="${key}">${label}</option>`;
+  });
   select.innerHTML = html;
   if (currentVal && (select && select.options ? Array.from(select.options) : []).some(o => o.value === currentVal)) {
     select.value = currentVal;
@@ -146,35 +166,97 @@ function setMasterRankMode(mode) {
   renderRankings();
 }
 
+function formatMasterRecentActivity(isoStr, fallbackLabel) {
+  if (!isoStr) return fallbackLabel || "-";
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return fallbackLabel || "-";
+  const kst = new Date(+d + 9 * 3600000);
+  return kst.toISOString().slice(0, 10);
+}
+
+async function fetchMasterRemoteRankings(cacheKey, mode, selectedMonth, startDate, endDate) {
+  if (!(typeof window !== "undefined" && window.NanoPortal && NanoPortal.remote)) return;
+  const cached = masterRemoteRankCache[cacheKey];
+  if (cached && (cached.loading || Date.now() - cached.loadedAt < 20000)) return;
+
+  masterRemoteRankCache[cacheKey] = { ...(cached || {}), loading: true };
+  const reqSeq = ++masterRemoteRankReqSeq;
+  try {
+    let url = `/api/manage?entity=rankings&scope=global&mode=${encodeURIComponent(mode)}`;
+    if (mode === "MONTH" && selectedMonth) url += `&month=${encodeURIComponent(selectedMonth)}`;
+    if (mode === "RANGE") {
+      if (startDate) url += `&startDate=${encodeURIComponent(startDate)}`;
+      if (endDate) url += `&endDate=${encodeURIComponent(endDate)}`;
+    }
+    const res = await NanoPortal.api(url);
+    const fallbackRecent = mode === "ALL" ? "전체 누적" : (mode === "RANGE" ? "지정 기간" : (selectedMonth || "해당 월"));
+    const students = (res.items || []).map((s, idx) => ({
+      rank: idx + 1,
+      name: s.name,
+      id: s.username || s.id,
+      serverId: s.serverId,
+      academy: s.academy || "소속 미상",
+      grade: s.grade || "초등 전학년",
+      books: Number(s.books) || 0,
+      accRate: s.accRate || "-",
+      points: Number(s.points) || 0,
+      recent: formatMasterRecentActivity(s.lastCompletedAt, fallbackRecent),
+    }));
+    const academies = (res.academyItems || []).map((a, idx) => ({
+      rank: idx + 1,
+      name: a.name,
+      region: a.region || "전국",
+      students: Number(a.students) || 0,
+      avgBooks: a.avgBooks || "0.0권",
+      participation: a.participation || "0%",
+      points: Number(a.points) || 0,
+      badge: a.badge || "일반 가맹점",
+    }));
+
+    masterRemoteRankCache[cacheKey] = {
+      loading: false,
+      loadedAt: Date.now(),
+      studentRankings: students,
+      academyRankings: academies,
+    };
+
+    if (Array.isArray(res.months) && res.months.length > 0) {
+      const prevLen = masterServerAvailableMonths.length;
+      masterServerAvailableMonths = res.months;
+      if (res.months.length !== prevLen) populateRankingMonthFilter();
+    }
+
+    if (reqSeq === masterRemoteRankReqSeq) {
+      const select = document.getElementById("rankAcademyFilter");
+      if (select) {
+        const prevAcad = select.value || "ALL";
+        const acadSet = new Set();
+        allStudentRankings.forEach(s => { if (s.academy) acadSet.add(s.academy); });
+        students.forEach(s => { if (s.academy) acadSet.add(s.academy); });
+        const sortedAcademies = Array.from(acadSet).sort((a, b) => a.localeCompare(b, 'ko'));
+        select.innerHTML = `<option value="ALL">전체 가맹 학원 (${sortedAcademies.length}곳)</option>` +
+          sortedAcademies.map(acad => `<option value="${acad}">🏫 ${acad}</option>`).join("");
+        if (Array.from(select.options).some(o => o.value === prevAcad)) select.value = prevAcad;
+      }
+      renderRankings(true);
+    }
+  } catch (_) {
+    if (masterRemoteRankCache[cacheKey]) masterRemoteRankCache[cacheKey].loading = false;
+  }
+}
+
 // 3가지 모드(월별 / 전체 누적 / 기간 지정)에 따른 학생 및 가맹학원 순위/포인트 실시간 산출 헬퍼
-function getCalculatedRankings() {
+function getCalculatedRankings(skipRemoteFetch) {
   syncRankingDatasetsFromWindow();
 
   const monthSelect = document.getElementById("rankMonthFilter");
-  const selectedMonth = monthSelect ? monthSelect.value : "";
+  const now = new Date();
+  const defaultYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const selectedMonth = (monthSelect && monthSelect.value) ? monthSelect.value : defaultYm;
   const startInput = document.getElementById("masterRankStartDate");
   const endInput = document.getElementById("masterRankEndDate");
   const startDate = (startInput && startInput.value) ? startInput.value : masterRankStartDate;
   const endDate = (endInput && endInput.value) ? endInput.value : masterRankEndDate;
-
-  // 최근 6개월 키 리스트
-  const months = [];
-  const now = new Date();
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    months.push(`${y}-${m}`);
-  }
-  const monthIdx = selectedMonth ? months.indexOf(selectedMonth) : 0;
-
-  // 기간 지정 일수 계산 (기본 30일)
-  let diffDays = 30;
-  if (startDate && endDate) {
-    const sD = new Date(startDate);
-    const eD = new Date(endDate);
-    diffDays = Math.max(1, Math.min(365, Math.ceil((eD - sD) / (1000 * 60 * 60 * 24)) + 1));
-  }
 
   // 모드별 기간 배지 텍스트 및 헤더 레이블 헬퍼
   let periodBadgePrefix = "";
@@ -205,82 +287,56 @@ function getCalculatedRankings() {
     academyBooksHeader = "1인당 평균 독서량";
   }
 
-  // 1. 가맹 학원 랭킹 계산 (전국 가맹학원랭킹도 동일하게 3가지 모드 반영)
-  let calculatedAcadRankings = academyRankingData.map(a => {
-    let hash = 0;
-    for (let i = 0; i < (a.name || '').length; i++) hash = ((hash << 5) - hash) + a.name.charCodeAt(i);
-
-    let calcPoints = a.points || 0;
-    let rawAvgBooks = parseFloat(a.avgBooks) || 15.0;
-    let calcAvgBooks = rawAvgBooks;
-
-    if (masterRankMode === "ALL") {
-      calcPoints = a.points || 0;
-      calcAvgBooks = rawAvgBooks;
-    } else if (masterRankMode === "MONTH") {
-      // 가맹학원 월별 실적에 맞게 환산 (누적의 약 10%~14% 수준의 월별 실적)
-      const acadBaseRatio = 0.12 + (((Math.abs(hash) % 9) - 4) * 0.005);
-      const acadFactor = monthIdx > 0 ? Math.max(0.65, 1 - (monthIdx * 0.06) + (((Math.abs(hash) % 15) - 7) * 0.01)) : 1.0;
-      calcPoints = Math.max(1000, Math.round((a.points || 0) * acadBaseRatio * acadFactor));
-      calcAvgBooks = Math.max(1.0, Math.round((rawAvgBooks * 0.16 * acadFactor) * 10) / 10);
-    } else if (masterRankMode === "RANGE") {
-      // 가맹학원 지정 기간(일수)에 비례하는 포인트 산출
-      const acadBaseRatio = 0.12 + (((Math.abs(hash) % 9) - 4) * 0.005);
-      const monthlyPts = (a.points || 0) * acadBaseRatio;
-      const dayRatio = diffDays / 30;
-      calcPoints = Math.max(500, Math.round(monthlyPts * dayRatio));
-      calcAvgBooks = Math.max(0.5, Math.round((rawAvgBooks * 0.16 * dayRatio) * 10) / 10);
+  // 운영 서버 연결 시: 임의 비율 추정이 아닌 Neon DB PointHistory + QuizAttempt 100% 실데이터 반환
+  if (typeof window !== "undefined" && window.NanoPortal && NanoPortal.remote) {
+    const cacheKey = masterRankMode === "MONTH"
+      ? `MONTH:${selectedMonth}`
+      : (masterRankMode === "RANGE" ? `RANGE:${startDate}:${endDate}` : "ALL");
+    const cached = masterRemoteRankCache[cacheKey];
+    if (!skipRemoteFetch && (!cached || (!cached.loading && Date.now() - (cached.loadedAt || 0) > 20000))) {
+      fetchMasterRemoteRankings(cacheKey, masterRankMode, selectedMonth, startDate, endDate);
     }
+    if (cached && Array.isArray(cached.studentRankings)) {
+      return {
+        periodBadgePrefix,
+        studentPointsHeader,
+        studentBooksHeader,
+        academyPointsHeader,
+        academyBooksHeader,
+        academyRankings: cached.academyRankings || [],
+        studentRankings: cached.studentRankings || [],
+      };
+    }
+    // 최초 응답 대기 중에는 ALL 모드는 정적 실데이터 스냅샷, 월별/기간은 빈 배열 대기 처리
+    if (masterRankMode !== "ALL") {
+      return {
+        periodBadgePrefix,
+        studentPointsHeader,
+        studentBooksHeader,
+        academyPointsHeader,
+        academyBooksHeader,
+        academyRankings: [],
+        studentRankings: [],
+      };
+    }
+  }
 
-    return {
-      ...a,
-      points: calcPoints,
-      avgBooks: `${calcAvgBooks.toFixed(1)}권`
-    };
-  });
-
+  // 오프라인 정적 프리뷰 폴백
+  let calculatedAcadRankings = academyRankingData.map((a, idx) => ({
+    ...a,
+    rank: idx + 1,
+    points: masterRankMode === "ALL" ? (a.points || 0) : 0,
+    avgBooks: masterRankMode === "ALL" ? (a.avgBooks || "0.0권") : "0.0권"
+  })).filter(a => a.points > 0 || masterRankMode === "ALL");
   calculatedAcadRankings.sort((a, b) => b.points - a.points);
   calculatedAcadRankings.forEach((a, i) => { a.rank = i + 1; });
 
-  // 2. 학생 개인 랭킹 계산
-  let calculatedStudentRankings = allStudentRankings.map(s => {
-    let hash = 0;
-    for (let i = 0; i < (s.id || '').length; i++) hash = ((hash << 5) - hash) + s.id.charCodeAt(i);
-
-    let calcPoints = s.points || 0;
-    let calcBooks = s.books || 0;
-    let recentText = s.recent || "최근";
-
-    if (masterRankMode === "ALL") {
-      calcPoints = s.points || 0;
-      calcBooks = s.books || 0;
-      recentText = "전체 누적";
-    } else if (masterRankMode === "MONTH") {
-      // 월별 순위일 때: 누적 총 포인트가 아닌 '월별 획득 포인트'로 환산!
-      // 학생의 월별 학습량 분포(누적의 약 8%~12% 수준의 월별 실적) 적용
-      const baseRatio = 0.095 + (((Math.abs(hash) % 11) - 5) * 0.003); // 0.08 ~ 0.11
-      const monthFactor = monthIdx > 0 ? Math.max(0.65, 1 - (monthIdx * 0.07) + (((Math.abs(hash) % 15) - 7) * 0.015)) : 1.0;
-      calcPoints = Math.max(40, Math.round((s.points || 0) * baseRatio * monthFactor));
-      calcBooks = Math.max(1, Math.round(calcPoints / (125 + ((Math.abs(hash) % 25)))));
-      recentText = (monthIdx === 0) ? "이번 달" : `${monthIdx}개월 전`;
-    } else if (masterRankMode === "RANGE") {
-      // 기간 지정 순위일 때: 선택된 기간(일수) 동안 실제로 쌓인 포인트 비례 산출!
-      const baseRatio = 0.095 + (((Math.abs(hash) % 11) - 5) * 0.003);
-      const monthlyPts = (s.points || 0) * baseRatio;
-      const dayRatio = diffDays / 30;
-      calcPoints = Math.max(20, Math.round(monthlyPts * dayRatio));
-      calcBooks = Math.max(1, Math.round(calcPoints / (125 + ((Math.abs(hash) % 25)))));
-      recentText = "지정 기간";
-    }
-
-    return {
-      ...s,
-      points: calcPoints,
-      books: calcBooks,
-      recent: recentText
-    };
-  });
-
+  let calculatedStudentRankings = allStudentRankings.map(s => ({
+    ...s,
+    points: masterRankMode === "ALL" ? (s.points || 0) : 0,
+    books: masterRankMode === "ALL" ? (s.books || 0) : 0,
+    recent: masterRankMode === "ALL" ? (s.recent || "전체 누적") : "-"
+  })).filter(s => s.points > 0);
   calculatedStudentRankings.sort((a, b) => b.points - a.points);
   calculatedStudentRankings.forEach((s, i) => { s.rank = i + 1; });
 
@@ -406,7 +462,9 @@ function resetRankingFilters() {
   renderRankings();
 }
 
-function renderRankings() {
+let lastFilteredRankingTotal = 0;
+
+function renderRankings(skipRemoteFetch) {
   const { 
     periodBadgePrefix, 
     studentPointsHeader, 
@@ -415,7 +473,7 @@ function renderRankings() {
     academyBooksHeader, 
     academyRankings, 
     studentRankings 
-  } = getCalculatedRankings();
+  } = getCalculatedRankings(skipRemoteFetch);
 
   // 테이블 헤더 레이블 동적 반영 (월별 포인트 / 기간 획득 포인트 / 누적 포인트)
   const thStudentPoints = document.getElementById("thStudentRankPoints");
@@ -626,6 +684,7 @@ function renderRankings() {
 
 // 1~10 단위 블록 페이징 함수 (우측 화살표 시 11~20 등으로 변경)
 function renderRankingPagination(total, page) {
+  lastFilteredRankingTotal = total;
   const container = document.getElementById("rankingPagination");
   const infoEl = document.getElementById("rankingPageInfo");
   if (!container) return;
@@ -677,11 +736,12 @@ function renderRankingPagination(total, page) {
 }
 
 function goRankingPage(p) {
-  const totalPages = Math.max(1, Math.ceil(allStudentRankings.length / rankingPageSize));
+  const baseTotal = lastFilteredRankingTotal > 0 ? lastFilteredRankingTotal : allStudentRankings.length;
+  const totalPages = Math.max(1, Math.ceil(baseTotal / rankingPageSize));
   if (p < 1) p = 1;
   if (p > totalPages) p = totalPages;
   rankingCurrentPage = p;
-  renderRankings();
+  renderRankings(true);
 }
 
 // 전국 랭킹 내역 엑셀(CSV) 다운로드 함수
@@ -781,7 +841,7 @@ function openPointPolicyModal() {
   $('#pointPolicyModal').modal('show');
 }
 
-// 2. 누적 포인트 상세 내역 모달
+// 2. 누적 포인트 상세 내역 모달 (운영 서버 연결 시 실제 PointHistory 적립 내역 실시간 조회)
 function openPointDetailModal(name, id, academy, grade, points) {
   document.getElementById("pointDetailStudentName").innerText = name;
   document.getElementById("pointDetailStudentGrade").innerText = grade;
@@ -789,60 +849,51 @@ function openPointDetailModal(name, id, academy, grade, points) {
   document.getElementById("pointDetailAcademy").innerText = academy;
   document.getElementById("pointDetailTotalPoints").innerText = `${Number(points).toLocaleString()} P`;
 
-  // 학생별 실제 데이터 기반 맞춤형 최근 적립 내역 생성
-  const student = allStudentRankings.find(s => s.id === id);
-  const booksCount = student ? student.books : Math.max(1, Math.round(points / 80));
-
-  const sampleBooks = [
-    { title: "어린 왕자", author: "생텍쥐페리", date: "2026-09-24 16:30" },
-    { title: "아몬드", author: "손원평", date: "2026-09-21 17:10" },
-    { title: "용선생의 시끌벅적 한국사", author: "사회평론", date: "2026-09-18 19:40" },
-    { title: "마당을 나온 암탉", author: "황선미", date: "2026-09-14 15:20" },
-    { title: "자전거 도둑", author: "박완서", date: "2026-09-10 18:05" },
-    { title: "해리포터와 마법사의 돌", author: "J.K. 롤링", date: "2026-09-06 20:15" },
-    { title: "시간을 파는 상점", author: "김선영", date: "2026-09-02 14:50" }
-  ];
-
-  const historyData = [];
-  sampleBooks.forEach((sb, idx) => {
-    historyData.push({
-      date: sb.date,
-      book: sb.title,
-      type: "📖 완독 기본 점수",
-      point: "+100 P",
-      status: "적립완료"
-    });
-    historyData.push({
-      date: sb.date.replace(/:\d\d$/, ":35"),
-      book: sb.title,
-      type: "🎯 북퀴즈 5문항 풀이 (정답률 100%)",
-      point: "+15 P",
-      status: "적립완료"
-    });
-    if (idx % 2 === 0) {
-      historyData.push({
-        date: sb.date.replace(/:\d\d$/, ":42"),
-        book: sb.title,
-        type: "💡 생각 담기 작성 제출",
-        point: "+5 P",
-        status: "적립완료"
-      });
-    }
-  });
-
   const tbody = document.getElementById("pointDetailHistoryBody");
-  if (tbody) {
-    tbody.innerHTML = historyData.map(h => `
-      <tr>
-        <td class="text-center"><small class="text-muted">${h.date}</small></td>
-        <td class="font-weight-bold" style="color: var(--text-main);">${h.book}</td>
-        <td><span class="badge-soft badge-soft-neutral">${h.type}</span></td>
-        <td class="text-right font-weight-bold text-warning" style="padding-right: 20px;">${h.point}</td>
-        <td class="text-center"><span class="badge-soft badge-soft-success">${h.status}</span></td>
-      </tr>
-    `).join("");
+  if (typeof window !== "undefined" && window.NanoPortal && NanoPortal.remote) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted font-weight-bold">실제 포인트 적립 내역을 불러오고 있습니다...</td></tr>`;
+    }
+    $('#pointDetailModal').modal('show');
+
+    NanoPortal.api(`/api/manage?entity=point_logs&username=${encodeURIComponent(id)}`).then(res => {
+      if (!tbody) return;
+      const items = res.items || [];
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">포인트 적립 내역이 없습니다.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = items.map(item => {
+        const dt = item.createdAt ? new Date(+new Date(item.createdAt) + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16) : '-';
+        const rawContent = String(item.content || '');
+        const pType = String(item.pointType || '');
+        let typeLabel = '🎯 북퀴즈 인증 적립';
+        if (pType.startsWith('THOUGHT')) typeLabel = '💡 생각담기 작성';
+        else if (pType.startsWith('MANUAL')) typeLabel = '🏅 학원 수동 조정';
+        const amt = Number(item.amount) || 0;
+        const signPt = (amt > 0 ? '+' : '') + amt.toLocaleString() + ' P';
+        return `
+          <tr>
+            <td class="text-center"><small class="text-muted">${dt}</small></td>
+            <td class="font-weight-bold" style="color: var(--text-main);">${rawContent.replace(/</g, '&lt;')}</td>
+            <td><span class="badge-soft badge-soft-neutral">${typeLabel}</span></td>
+            <td class="text-right font-weight-bold text-warning" style="padding-right: 20px;">${signPt}</td>
+            <td class="text-center"><span class="badge-soft badge-soft-success">${amt >= 0 ? '적립완료' : '차감완료'}</span></td>
+          </tr>
+        `;
+      }).join("");
+    }).catch(err => {
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">${(err && err.message) || '포인트 내역을 불러오지 못했습니다.'}</td></tr>`;
+      }
+    });
+    return;
   }
 
+  // 오프라인 정적 프리뷰 폴백
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">서버 연결 시 상세 적립 내역이 표시됩니다.</td></tr>`;
+  }
   $('#pointDetailModal').modal('show');
 }
 

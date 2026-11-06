@@ -92,14 +92,110 @@
     return result.item;
   }
   async function deleteClass(item, academyCode) { return manage('classes', 'delete', { id: item.serverId || item.id }, { academy: academyCode }); }
+  function dataUrlToBlob(dataUrl) {
+    var parts = String(dataUrl || '').split(',');
+    if (parts.length < 2) return null;
+    var mimeMatch = parts[0].match(/data:([^;]+);base64/i);
+    var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    var binary = atob(parts[1]);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var res = String(reader.result || '');
+        resolve(res.replace(/^data:[^;]+;base64,/, ''));
+      };
+      reader.onerror = function () { reject(new Error('파일을 읽지 못했습니다.')); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // 도서 표지·나노시트(PDF)·배너·테마 이미지를 Cloudflare R2(또는 DB 안전 폴백)로 업로드 후 영구 URL 반환
+  async function uploadMedia(source, options) {
+    if (!source) return '';
+    var opts = options || {};
+    var blob = null;
+    var fileName = opts.fileName || 'upload';
+
+    if (typeof Blob !== 'undefined' && source instanceof Blob) {
+      blob = source;
+      if (source.name && !opts.fileName) fileName = source.name;
+    } else if (typeof source === 'string' && /^data:(image\/|application\/pdf)/i.test(source)) {
+      blob = dataUrlToBlob(source);
+    } else if (typeof source === 'string') {
+      return source;
+    }
+    if (!blob || !blob.size) return '';
+
+    var contentType = (blob.type || opts.contentType || '').toLowerCase();
+    if (!contentType) {
+      contentType = /\.pdf$/i.test(fileName) ? 'application/pdf' : 'image/jpeg';
+    }
+
+    // 1차 시도: Cloudflare R2 서명 PUT URL 발급 -> 브라우저에서 직접 R2 업로드 (대용량 PDF 25MB 지원)
+    try {
+      var presigned = await api('/api/files', {
+        scope: 'media',
+        operation: 'presign',
+        category: opts.category || 'book-cover',
+        keyHint: opts.keyHint || '',
+        fileName: fileName,
+        contentType: contentType,
+        fileSize: blob.size
+      }, 20000);
+
+      if (presigned && presigned.configured && presigned.uploadUrl) {
+        try {
+          var putRes = await fetch(presigned.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': presigned.contentType || contentType },
+            body: blob
+          });
+          if (putRes.ok && presigned.publicUrl) {
+            return presigned.publicUrl;
+          }
+        } catch (corsOrNetErr) {
+          // R2 버킷에 아직 CORS가 열려 있지 않고 3MB 이하인 경우 아래 서버 경유 모드로 자동 전환
+        }
+      }
+    } catch (presignErr) {
+      if (blob.size > 3 * 1024 * 1024) throw presignErr;
+    }
+
+    // 2차 시도 (서버 경유 R2 업로드 또는 R2 미설정 시 DB 안전 저장, 최대 3MB)
+    if (blob.size > 3 * 1024 * 1024) {
+      throw new Error('3MB 초과 대용량 파일은 Cloudflare R2 환경변수 연결 후 업로드할 수 있습니다.');
+    }
+    var base64 = await blobToBase64(blob);
+    var uploaded = await api('/api/files', {
+      scope: 'media',
+      operation: 'upload',
+      category: opts.category || 'book-cover',
+      keyHint: opts.keyHint || '',
+      fileName: fileName,
+      base64: base64
+    }, 45000);
+    return (uploaded && uploaded.publicUrl) || '';
+  }
+
   async function saveBanner(item) {
+    var imgCandidate = item.imageUrl || item.image || '';
+    if (/^data:image\//i.test(imgCandidate)) {
+      imgCandidate = await uploadMedia(imgCandidate, { category: 'banner', fileName: (item.title || 'banner') + '.jpg' });
+      item.imageUrl = imgCandidate;
+    }
     var bookIds = Array.isArray(item.bookIds) ? item.bookIds.map(function(id) { return String(id).trim(); }).filter(Boolean) : [];
     var rawLink = item.linkUrl || item.link || '';
     var encodedLink = /^https?:\/\//i.test(rawLink)
       ? rawLink
       : ('#books=' + encodeURIComponent(bookIds.join(',')) + (item.sub ? '&sub=' + encodeURIComponent(item.sub) : ''));
     var result = await manage('banners', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined, title: item.title,
-      imageUrl: item.imageUrl || item.image || '', linkUrl: encodedLink, isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0,
+      imageUrl: imgCandidate, linkUrl: encodedLink, isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0,
       sub: item.sub || '', bookIds: bookIds, clicks: Number(item.clicks) || 0, createdAt: item.createdAt || '' });
     if (result.item) {
       item.id = result.item.id;
@@ -112,9 +208,14 @@
   async function deleteBanner(item) { return manage('banners', 'delete', { id: item.id }); }
   async function saveTheme(item) {
     var name = item.name || item.title || String(item.tag || '').replace(/^#/, '');
+    var themeImg = item.image || '';
+    if (/^data:image\//i.test(themeImg)) {
+      themeImg = await uploadMedia(themeImg, { category: 'theme', fileName: (name || 'theme') + '.png' });
+      item.image = themeImg;
+    }
     var result = await manage('themes', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined,
       code: item.code || ('THEME-' + String(item.id || Date.now())), name: name, description: item.description || item.desc || item.subTag || '',
-      subTag: item.subTag || '', desc: item.desc || item.description || '', image: item.image || '', order: typeof item.order === 'number' ? item.order : (parseInt(item.order, 10) || null), active: item.active === 'N' ? 'N' : 'Y',
+      subTag: item.subTag || '', desc: item.desc || item.description || '', image: themeImg, order: typeof item.order === 'number' ? item.order : (parseInt(item.order, 10) || null), active: item.active === 'N' ? 'N' : 'Y',
       bookIds: Array.isArray(item.bookIds) ? item.bookIds : [] });
     if (result.item) { item.id = result.item.id; item.code = result.item.code; }
     return result.item;
@@ -149,8 +250,28 @@
   }
   async function saveBook(item) {
     var tags = Array.isArray(item.tags) ? item.tags.join(',') : (item.tags || item.detailTag || '');
+    var keyHint = String(item.isbn || item.bookNo || item.id || '').replace(/[^A-Za-z0-9_-]/g, '');
+
+    // 1) 표지 이미지 파일 또는 DataURL이 첨부된 경우 클라우드(R2)/서버 업로드 후 URL 확보
     var coverUrl = item.coverUrl || item.cover || '';
-    var worksheetUrl = item.worksheetUrl || item.worksheet || '';
+    if (item.coverFile) {
+      coverUrl = await uploadMedia(item.coverFile, { category: 'book-cover', keyHint: keyHint, fileName: item.coverFile.name || (keyHint + '.jpg') });
+    } else if (/^data:image\//i.test(coverUrl)) {
+      coverUrl = await uploadMedia(coverUrl, { category: 'book-cover', keyHint: keyHint, fileName: (keyHint || 'cover') + '.jpg' });
+    }
+
+    // 2) 나노시트 PDF 파일 또는 DataURL이 첨부된 경우 클라우드(R2)/서버 업로드 후 URL 확보
+    var rawWs = (typeof item.worksheetUrl === 'string' ? item.worksheetUrl : '') || (typeof item.worksheet === 'string' ? item.worksheet : '') || (typeof item.pdfUrl === 'string' ? item.pdfUrl : '');
+    var sheetBlob = item.pdfBlob || (item.sheetFile && (item.sheetFile.file || item.sheetFile.blob || item.sheetFile.pdfBlob)) || null;
+    var sheetDataUrl = item.pdfDataUrl || (item.sheetFile && item.sheetFile.dataUrl) || '';
+    var worksheetUrl = rawWs;
+    if (sheetBlob) {
+      var sName = (item.sheetFile && item.sheetFile.name) || item.materialName || ((keyHint || 'sheet') + '.pdf');
+      worksheetUrl = await uploadMedia(sheetBlob, { category: 'nano-sheet', keyHint: keyHint, fileName: sName, contentType: 'application/pdf' });
+    } else if (/^data:application\/pdf/i.test(sheetDataUrl || worksheetUrl)) {
+      worksheetUrl = await uploadMedia(sheetDataUrl || worksheetUrl, { category: 'nano-sheet', keyHint: keyHint, fileName: (keyHint || 'sheet') + '.pdf', contentType: 'application/pdf' });
+    }
+
     if (coverUrl && (/^javascript:/i.test(coverUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(coverUrl))) coverUrl = '';
     if (worksheetUrl && (/^javascript:/i.test(worksheetUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(worksheetUrl))) worksheetUrl = '';
     var subCat = item.subCategory || (item.cat1 && item.cat1.includes('비문학') ? 'C' : (item.cat1 && item.cat1.includes('인물') ? 'B' : 'A'));
@@ -158,7 +279,12 @@
       isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), subCategory: subCat, description: item.description || item.synopsis || '',
       thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '',
       awards: item.awards || item.award || '', themeTag: item.themeTag || item.tag || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
-    if (result.item) item.serverId = result.item.id;
+    if (result.item) {
+      item.serverId = result.item.id;
+      if (result.item.coverUrl) { item.cover = result.item.coverUrl; item.coverUrl = result.item.coverUrl; }
+      if (result.item.worksheetUrl) { item.worksheetUrl = result.item.worksheetUrl; item.pdfUrl = result.item.worksheetUrl; item.hasSheet = true; item.sheet = true; }
+      delete item.coverFile;
+    }
     return result.item;
   }
   async function deleteBook(item) { return manage('books', 'delete', { id: item.serverId }); }
@@ -251,6 +377,7 @@
   }
   async function savePortfolio(data, academyCode) { return manage('portfolios', 'save', data, { academy: academyCode }); }
   async function deletePortfolio(id, academyCode) { return manage('portfolios', 'delete', { id: id }, { academy: academyCode }); }
+  async function saveManualPoint(data, academyCode) { return manage('points', 'save', data, { academy: academyCode }); }
   async function refreshActivity() { var sequence = ++activitySequence; var result = await api('/api/activity'); if (sequence === activitySequence) { activity = result; window.dispatchEvent(new Event('nano:activity')); } return activity; }
   async function refreshAssignments() {
     var result = await api('/api/activity?action=assignments&academy=' + encodeURIComponent(academy() || ''));
@@ -308,6 +435,7 @@
           learningOverlay.forEach(function(log, id) { if (String(log.academyId) === String(scope) && !firstById.has(id)) firstById.set(id, log); });
           memoryLogs = Array.from(firstById.values()).sort(function(a,b) { return String(b.submittedAt).localeCompare(String(a.submittedAt)) || b.id.localeCompare(a.id); });
           if (typeof renderLearningTable === 'function') renderLearningTable();
+          if (typeof renderAdminRankingView === 'function') renderAdminRankingView(true);
           if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();
         }
       } while (cursor);
@@ -327,11 +455,11 @@
     sessionStorage.removeItem('nano_auth_user');
     location.href = 'index.html';
   }
-  global.NanoPortal = { remote: remote, request: request, api: api, manage: manage, manageList: manageList, academy: academy,
+  global.NanoPortal = { remote: remote, request: request, api: api, manage: manage, manageList: manageList, academy: academy, uploadMedia: uploadMedia,
     saveMember: saveMember, deleteMember: deleteMember, saveAcademy: saveAcademy, deleteAcademy: deleteAcademy, restoreAcademy: restoreAcademy, saveClass: saveClass, deleteClass: deleteClass,
     saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
     saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
-    refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio,
+    refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,
     refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
@@ -376,6 +504,7 @@
       if (remote && page !== 'master_preview') {
         refreshLearning().then(function() {
           if (typeof renderLearningTable === 'function') renderLearningTable();
+          if (typeof renderAdminRankingView === 'function') renderAdminRankingView(true);
           if (typeof updateAcademyStats === 'function') updateAcademyStats();
           if (typeof renderStudentAssignmentTable === 'function') renderStudentAssignmentTable();
           if (typeof refreshStudentLearningData === 'function') refreshStudentLearningData();

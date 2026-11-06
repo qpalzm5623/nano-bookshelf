@@ -234,21 +234,26 @@ function renderMasterContents() {
   };
 
   try {
-    // 찜(학생 페이지 하트 연동), 추천, 인증(북퀴즈 인증 완료 연동) 실시간 동기화
+    // 찜(학생 페이지 하트 연동), 추천(북퀴즈 60점 이상 따봉 추천 연동), 인증(북퀴즈 인증 완료 연동) 실시간 동기화
     let localWishMap = {};
+    let localRecMap = {};
     let localCertMap = {};
     let localCustomSheets = {};
     try {
       localWishMap = JSON.parse(localStorage.getItem('NANO_BOOK_WISH_COUNTS') || '{}');
+      localRecMap = JSON.parse(localStorage.getItem('NANO_BOOK_RECOMMEND_COUNTS') || '{}');
       localCertMap = JSON.parse(localStorage.getItem('NANO_BOOK_CERT_COUNTS') || '{}');
       localCustomSheets = JSON.parse(localStorage.getItem('NANO_CUSTOM_MASTER_SHEETS') || '{}');
     } catch(e) {}
 
+    const isServerMode = typeof window !== 'undefined' && window.NANO_SERVER_DATA === true;
+
     masterBooks.forEach(b => {
       if (!b) return;
       const k = String(b.bookNo || b.id || '').trim();
-      const wishDelta = (localWishMap[k] || 0) + (localWishMap[b.id] || 0);
-      const certDelta = (localCertMap[k] || 0) + (localCertMap[b.id] || 0);
+      const wishDelta = isServerMode ? 0 : ((localWishMap[k] || 0) + (k !== String(b.id) ? (localWishMap[b.id] || 0) : 0));
+      const recDelta = isServerMode ? 0 : ((localRecMap[k] || 0) + (k !== String(b.id) ? (localRecMap[b.id] || 0) : 0));
+      const certDelta = isServerMode ? 0 : ((localCertMap[k] || 0) + (k !== String(b.id) ? (localCertMap[b.id] || 0) : 0));
 
       // 사용자가 업로드한 커스텀 나노시트 실시간 복원
       const sheetInfo = localCustomSheets[k] || (b.isbn && localCustomSheets[b.isbn]) || (b.id && localCustomSheets[b.id]);
@@ -278,8 +283,16 @@ function renderMasterContents() {
         b.quizCompletions = 0;
       }
 
-      if (wishDelta) b.likes = (b.likes || 0) + wishDelta;
-      if (certDelta) b.quizCompletions = (b.quizCompletions || 0) + certDelta;
+      // 탭 재진입 시 로컬 증분 중복 합산 방지 (기준값 보존 후 합산)
+      if (typeof b._baseLikes !== 'number') b._baseLikes = Number(b.likes) || 0;
+      if (typeof b._baseRecommends !== 'number') b._baseRecommends = Number(b.recommends) || 0;
+      if (typeof b._baseCerts !== 'number') b._baseCerts = Number(b.quizCompletions) || 0;
+
+      if (!isServerMode) {
+        b.likes = b._baseLikes + wishDelta;
+        b.recommends = b._baseRecommends + recDelta;
+        b.quizCompletions = b._baseCerts + certDelta;
+      }
     });
 
     // 도서 권장학년 정규화 (유치부/0 -> 유치부 통일, 초1~중3 매핑)
@@ -709,39 +722,35 @@ function updateRealPdfWatermarkOverlay() {
 function extractBookPdfCandidates(book) {
   if (!book) return [];
   var list = [];
+  var mediaBase = (typeof window !== 'undefined' && window.NANO_MEDIA_BASE_URL) ? String(window.NANO_MEDIA_BASE_URL).replace(/\/+$/, '') : '';
+  var pushRelAndCloud = function(stem) {
+    if (!stem) return;
+    if (mediaBase) list.push(mediaBase + '/upload/book/' + stem + '.pdf');
+    list.push('upload/book/' + stem + '.pdf');
+    list.push('/upload/book/' + stem + '.pdf');
+  };
+
   if (book.pdfUrl) list.push(book.pdfUrl);
   if (book.worksheetUrl) list.push(book.worksheetUrl);
 
   if (book.cover && typeof book.cover === 'string') {
     var coverClean = String(book.cover).split('?')[0];
     var match = coverClean.match(/([0-9]{10,13}|book_[0-9]+)/);
-    if (match && match[1]) {
-      list.push('upload/book/' + match[1] + '.pdf');
-      list.push('/upload/book/' + match[1] + '.pdf');
-    }
+    if (match && match[1]) pushRelAndCloud(match[1]);
   }
 
   if (book.isbn) {
     var cleanIsbn = String(book.isbn).replace(/[^0-9]/g, '');
-    if (cleanIsbn) {
-      list.push('upload/book/' + cleanIsbn + '.pdf');
-      list.push('/upload/book/' + cleanIsbn + '.pdf');
-    }
+    if (cleanIsbn) pushRelAndCloud(cleanIsbn);
   }
 
   if (book.id) {
     var cleanId = String(book.id).trim();
-    if (cleanId) {
-      list.push('upload/book/' + cleanId + '.pdf');
-      list.push('/upload/book/' + cleanId + '.pdf');
-    }
+    if (cleanId) pushRelAndCloud(cleanId);
   }
   if (book.serverId) {
     var cleanSId = String(book.serverId).trim();
-    if (cleanSId) {
-      list.push('upload/book/' + cleanSId + '.pdf');
-      list.push('/upload/book/' + cleanSId + '.pdf');
-    }
+    if (cleanSId) pushRelAndCloud(cleanSId);
   }
 
   return list.filter(function(item, idx) { return list.indexOf(item) === idx; });
@@ -1821,9 +1830,12 @@ function updateAddCoverPreview(url) {
   img.src = (url && url.trim()) ? url : "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80";
 }
 
+var editingBookCoverAddFile = null;
+
 function handleAddCoverFileUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
+  editingBookCoverAddFile = file;
 
   const reader = new FileReader();
   reader.onload = function(evt) {
@@ -1832,7 +1844,7 @@ function handleAddCoverFileUpload(e) {
     updateAddCoverPreview(dataUrl);
     const label = document.getElementById("mbAddCoverFileLabel");
     if (label) label.innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-    showMasterToast(`[${file.name}] 표지 이미지가 업로드되었습니다.`);
+    showMasterToast(`[${file.name}] 표지 이미지가 준비되었습니다. 저장 시 클라우드에 업로드됩니다.`);
   };
   reader.readAsDataURL(file);
 }
@@ -2166,6 +2178,7 @@ function openMasterBookAddModal(id = null) {
   }
 
   // 표지
+  editingBookCoverAddFile = null;
   const coverUrl = (book && book.cover) ? book.cover : "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=150&q=80";
   document.getElementById("mbAddCover").value = (book && book.cover) ? book.cover : "";
   updateAddCoverPreview(coverUrl);
@@ -2261,12 +2274,14 @@ function handleSaveMasterBookOnly(e) {
     thinkExtract: thinkExtract,
     thinkInsert: thinkInsert,
     cover: cover,
+    coverFile: editingBookCoverAddFile || null,
     academyId: "HQ",
     academyName: "본사 직속 (공용)",
     creatorType: "HQ",
     sheet: hasSheetFile,
     hasSheet: hasSheetFile,
-    worksheet: hasSheetFile,
+    worksheet: editingBookSheetAddFile && editingBookSheetAddFile.existingUrl ? editingBookSheetAddFile.existingUrl : null,
+    worksheetUrl: editingBookSheetAddFile && editingBookSheetAddFile.existingUrl ? editingBookSheetAddFile.existingUrl : null,
     hasCustomSheet: hasSheetFile,
     materialName: hasSheetFile ? sheetFileName : null,
     materialSize: hasSheetFile ? sheetFileSize : null,
@@ -2315,7 +2330,13 @@ async function saveBookDataDirectly(bookData) {
     editIndex = masterBooks.findIndex(b => b.id === originalEditingBookIdForAdd);
     if (editIndex !== -1) {
       const prevBook = masterBooks[editIndex];
-      nextBook = { ...prevBook, ...bookData, id: originalEditingBookIdForAdd };
+      nextBook = {
+        ...prevBook,
+        ...bookData,
+        id: originalEditingBookIdForAdd,
+        worksheetUrl: bookData.worksheetUrl || prevBook.worksheetUrl || null,
+        worksheet: bookData.worksheetUrl || prevBook.worksheetUrl || null
+      };
       // 사용자가 새 시트 파일을 올리지 않았더라도 기존에 시트가 있던 도서라면 기존 시트 파일 정보 보존
       if (!bookData.pdfBlob && prevBook.pdfBlob && editingBookSheetAddFile) {
         nextBook.pdfBlob = prevBook.pdfBlob;

@@ -68,6 +68,33 @@ test('랭킹은 월별 독서량으로 캐릭터 단계를 변경하지 않는�
   assert.equal(ctx.buildAdminRankingRows('2026-10')[0].stage, 3);
   assert.equal(ctx.buildAdminRankingRows('2026-09')[0].stage, 3);
 });
+test('지난달·지지난달 드롭다운 변경 시 선택 월이 초기화되지 않고 현행 포인트 적립 기준으로 정확히 합산한다', () => {
+  const periodSel = { value: '2026-09', options: [{ value: '2026-11' }, { value: '2026-10' }, { value: '2026-09' }], innerHTML: '' };
+  const classSel = { value: 'all', options: [{ value: 'all' }], innerHTML: '' };
+  const ctx = ui(['getAdminRankMonthOptions', 'populateAdminRankFilters', 'getStudentCharacterId', 'buildAdminRankingRows'], {
+    adminRankMode: 'MONTH', adminRankPeriod: '2026-11', adminRankClass: 'all', academyClassList: [],
+    document: { getElementById: id => id === 'adminRankPeriodSelect' ? periodSel : (id === 'adminRankClassSelect' ? classSel : null) },
+    getLoadedLearningLogs: () => [
+      { id: '1', studentId: 'u1', bookId: 'B1', grade: '초등 4학년', date: '2026-09-10', submittedAt: '2026-09-10T05:00:00Z', score: 100, correctCount: 5, thoughtAnswer: '재미있었다' }, // (5*3*1.2=18) + (5*1.2=6) = 24P
+      { id: '2', studentId: 'u1', bookId: 'B1', grade: '초등 4학년', date: '2026-09-12', submittedAt: '2026-09-12T05:00:00Z', score: 80, correctCount: 4, thoughtAnswer: '' },             // 2회차: round(4*3*1.2)=14P
+      { id: '3', studentId: 'u1', bookId: 'B1', grade: '초등 4학년', date: '2026-09-15', submittedAt: '2026-09-15T05:00:00Z', score: 100, correctCount: 5, thoughtAnswer: '세번째' },        // 3회차 초과: 0P
+      { id: '4', studentId: 'u1', bookId: 'B2', grade: '초등 2학년', date: '2026-09-20', submittedAt: '2026-09-20T05:00:00Z', score: 40, correctCount: 2, thoughtAnswer: '미통과' },         // 60점 미만: 0P
+      { id: '5', studentId: 'u1', bookId: 'B3', grade: '초등 2학년', date: '2026-10-05', submittedAt: '2026-10-05T05:00:00Z', score: 80, correctCount: 4, thoughtAnswer: '생각' }            // 지난달(10월): 4*3 + 5 = 17P
+    ],
+    studentDataList: [{ id: 'u1', username: 'u1', name: '김나노', characterId: 'nano', characterStage: 2, grade: '초등 4학년', classGroup: 'A반' }]
+  });
+  ctx.populateAdminRankFilters();
+  assert.equal(ctx.adminRankPeriod, '2026-09');
+  assert.equal(periodSel.value, '2026-09');
+
+  const sepRows = ctx.buildAdminRankingRows();
+  assert.equal(sepRows[0].points, 38); // 24P + 14P + 0P + 0P = 38P
+  assert.equal(sepRows[0].books, 1);   // 고유 인증 도서 B1 1권
+
+  const octRows = ctx.buildAdminRankingRows('2026-10');
+  assert.equal(octRows[0].points, 17); // 12P + 5P = 17P
+  assert.equal(octRows[0].books, 1);   // 고유 인증 도서 B3 1권
+});
 
 function load(file, deps) {
   const exports = {};
@@ -94,4 +121,115 @@ test('캐릭터 API는 소속 학생의 선택만 조회하고 학생 화면과 
   assert.equal(res.data.items[1].characterId, 'nano'); assert.equal(res.data.items[1].stage, 2);
   const denied = response(); await run({ ...req, query: { ...req.query, academy: 'OTHER' } }, denied); assert.equal(denied.code, 403);
   user = { ...user, role: 'STUDENT' }; const student = response(); await run(req, student); assert.equal(student.code, 403); assert.equal(lookups, 1);
+});
+
+test('북퀴즈 결과 우측 상단 따봉 추천 버튼은 60점 이상에서만 활성화되고 모든 9종 나노프렌즈 기쁨 모션을 포함한다', () => {
+  const artCtx = {};
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'public_html/js/reading-progress.js'), 'utf8'), artCtx);
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'public_html/js/quiz-result-art.js'), 'utf8'), artCtx);
+  const NanoQuizResult = artCtx.NanoQuizResult;
+  const book = { id: 'FA000003', bookNo: 'FA000003', title: '오즈의 마법사', readingGenre: 'fiction' };
+
+  // 1) 60점 미만(0, 40, 59점)에서는 비활성화(disabled)
+  for (const lowScore of [0, 40, 59]) {
+    const html = NanoQuizResult.render(lowScore, 'nano', book, { stage: 1 });
+    assert.ok(html.includes('id="btnQuizRecommend"'), `${lowScore}점 추천 버튼 렌더링 확인`);
+    assert.ok(html.includes('is-disabled') && html.includes('disabled aria-disabled="true"'), `${lowScore}점은 비활성화되어야 함`);
+    assert.ok(!html.includes('onclick="handleQuizBookRecommend(this)"'), `${lowScore}점은 클릭 핸들러가 없어야 함`);
+  }
+
+  // 2) 60점 이상(60, 80, 100점)에서는 활성화
+  for (const passScore of [60, 80, 100]) {
+    const html = NanoQuizResult.render(passScore, 'nano', book, { stage: 2 });
+    assert.ok(html.includes('id="btnQuizRecommend"'), `${passScore}점 추천 버튼 렌더링 확인`);
+    assert.ok(!html.includes('disabled aria-disabled="true"'), `${passScore}점은 활성화되어야 함`);
+    assert.ok(html.includes('onclick="handleQuizBookRecommend(this)"'), `${passScore}점은 클릭 핸들러가 있어야 함`);
+  }
+
+  // 3) 이미 추천 완료한 도서는 추천 완료 상태 표시
+  const recHtml = NanoQuizResult.render(80, 'nano', book, { stage: 2, isRecommended: true });
+  assert.ok(recHtml.includes('is-recommended') && recHtml.includes('추천 완료'));
+
+  // 4) 모든 9종 나노프렌즈(nano, toto, booki, pico, popo, chichi, lumi, mir, jelly) × 3단계 모두 기쁨 모션 파츠 포함
+  const allFriends = ['nano', 'toto', 'booki', 'pico', 'popo', 'chichi', 'lumi', 'mir', 'jelly'];
+  assert.deepEqual(Object.keys(NanoQuizResult.characters), allFriends);
+  const studentHtml = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
+  const quizCss = fs.readFileSync(path.join(root, 'public_html/css/quiz-result.css'), 'utf8');
+  assert.ok(quizCss.includes('.qr-card.is-celebrating .qr-mascot[data-friend] .qr-mascot-motion'));
+
+  for (const fid of allFriends) {
+    assert.ok(new RegExp(`\\b${fid}\\s*:`).test(studentHtml.split('CHAR_RECOMMEND_REACTIONS')[1]), `${fid} 추천 기쁨 대사 존재 확인`);
+    for (const stg of [1, 2, 3]) {
+      const rendered = NanoQuizResult.render(80, fid, book, { stage: stg });
+      assert.ok(rendered.includes(`data-friend="${fid}"`), `${fid} 캐릭터 식별자 확인`);
+      assert.ok(rendered.includes('class="qr-eyes-joy"'), `${fid} ${stg}단계 반달 눈웃음 파츠 확인`);
+      assert.ok(rendered.includes('class="qr-mouth-joy"'), `${fid} ${stg}단계 함박웃음 파츠 확인`);
+      assert.ok(rendered.includes('class="qr-arms-joy"'), `${fid} ${stg}단계 만세 팔 파츠 확인`);
+      assert.ok(rendered.includes('class="qr-joy-burst"'), `${fid} ${stg}단계 하트·별·따봉 폭죽 확인`);
+    }
+  }
+});
+
+test('추천 API는 60점 이상 인증 도서만 허용하며 기존 마스터 추천 수 위에 중복 없이 누적한다', async () => {
+  const http = load('lib/portal-http.ts', { './prisma': {}, './portal-auth': {} });
+  const user = { id: 'stu-1', role: 'STUDENT', academyId: 'a1' };
+  const store = new Map([
+    ['legacy_book_social_stats', { key: 'legacy_book_social_stats', scope: 'system', value: { recommends: { FA000003: 39, FA000001: 20 } } }]
+  ]);
+  let passAttempt = null;
+
+  const db = {
+    book: {
+      findFirst: async ({ where }) => {
+        const q = where.OR[0].bookNo;
+        if (q === 'FA000003') return { id: 'book-uuid-3', bookNo: 'FA000003', isRecommended: false };
+        return null;
+      }
+    },
+    quizAttempt: {
+      findFirst: async ({ where }) => {
+        assert.equal(where.memberId, 'stu-1');
+        assert.equal(where.score.gte, 60);
+        return passAttempt;
+      }
+    },
+    portalSetting: {
+      findUnique: async ({ where }) => store.get(where.key) || null,
+      findMany: async ({ where }) => Array.from(store.values()).filter(r => r.scope === where.scope),
+      upsert: async ({ where, create, update }) => {
+        const prev = store.get(where.key);
+        const next = prev ? { ...prev, scope: update.scope, value: update.value } : { ...create };
+        store.set(where.key, next);
+        return next;
+      }
+    }
+  };
+
+  const run = load('api/activity.ts', {
+    '../lib/prisma': { prisma: db },
+    '../lib/portal-http': { ...http, authenticate: async () => user },
+    '../lib/portal-learning': {}
+  }).default;
+  const response = () => ({ code: 200, setHeader() {}, status(code) { this.code = code; return this; }, json(data) { this.data = data; } });
+
+  // 1) 60점 이상 인증 이력이 없는 경우(예: 40점) -> 403 차단 및 기존 추천 수(39) 변동 없음
+  const denied = response();
+  await run({ method: 'POST', query: { action: 'recommend' }, body: { bookId: 'FA000003' } }, denied);
+  assert.equal(denied.code, 403);
+
+  // 2) 60점 이상 인증 통과 후 추천 클릭 -> 기존 39 + 신규 1 = 40으로 누적!
+  passAttempt = { id: 'att-pass-1' };
+  const ok1 = response();
+  await run({ method: 'POST', query: { action: 'recommend' }, body: { bookId: 'FA000003' } }, ok1);
+  assert.equal(ok1.code, 200);
+  assert.equal(ok1.data.alreadyRecommended, false);
+  assert.equal(ok1.data.recommends, 40);
+  assert.equal(store.get('legacy_book_social_stats').value.recommends.FA000003, 39); // 기존 마이그레이션 원본 훼손 없음
+
+  // 3) 같은 학생이 또 눌러도 중복 증가 없이 40 유지
+  const ok2 = response();
+  await run({ method: 'POST', query: { action: 'recommend' }, body: { bookId: 'FA000003' } }, ok2);
+  assert.equal(ok2.code, 200);
+  assert.equal(ok2.data.alreadyRecommended, true);
+  assert.equal(ok2.data.recommends, 40);
 });

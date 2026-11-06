@@ -16,7 +16,10 @@
     "typecheck:portal": "tsc -p tsconfig.portal.json",
     "migrate:dry-run": "tsx scripts/migrate/full-safe-migration.ts --dry-run",
     "migrate:all": "tsx scripts/migrate/full-safe-migration.ts",
-    "migrate:verify": "tsx scripts/migrate/verify-migration-integrity.ts"
+    "migrate:verify": "tsx scripts/migrate/verify-migration-integrity.ts",
+    "points:recalc": "tsx scripts/recalculate_points_by_policy.ts",
+    "r2:dry-run": "tsx scripts/r2/sync-media-to-r2.ts --dry-run",
+    "r2:sync": "tsx scripts/r2/sync-media-to-r2.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -157,25 +157,41 @@ export async function verifyMigrationIntegrity(): Promise<boolean> {
     detail: `전체 응시 내역 ${totalAttempts.toLocaleString()}건 / 최근 샘플 ${recentSample.length}건 중 리포트 유효 ${validReportCount}건`
   });
 
-  // 9. 학생 누적 고유 완독 권수(bookCount = 60점 이상 고유 도서 수) 정합성 대조
-  const mismatchRows = await prisma.$queryRawUnsafe<Array<{ cnt: number }>>(`
-    WITH actual AS (
-      SELECT m.id, m."bookCount",
-             COUNT(DISTINCT CASE WHEN qa.score >= 60 THEN qa."bookId" END)::int AS real_cnt
-      FROM members m
-      LEFT JOIN quiz_attempts qa ON qa."memberId" = m.id
-      WHERE m.role = 'STUDENT'
-      GROUP BY m.id, m."bookCount"
-    )
-    SELECT COUNT(*)::int AS cnt FROM actual WHERE "bookCount" <> real_cnt
-  `);
+  // 9. 학생 누적 고유 완독 권수(bookCount) 및 현행 적립 기준 월별·누적 포인트(PointHistory = Member.points) 정합성 대조
+  const [mismatchRows, pointHistoryCount, staleLegacyPointCount, pointMismatchRows] = await Promise.all([
+    prisma.$queryRawUnsafe<Array<{ cnt: number }>>(`
+      WITH actual AS (
+        SELECT m.id, m."bookCount",
+               COUNT(DISTINCT CASE WHEN qa.score >= 60 THEN qa."bookId" END)::int AS real_cnt
+        FROM members m
+        LEFT JOIN quiz_attempts qa ON qa."memberId" = m.id
+        WHERE m.role = 'STUDENT'
+        GROUP BY m.id, m."bookCount"
+      )
+      SELECT COUNT(*)::int AS cnt FROM actual WHERE "bookCount" <> real_cnt
+    `),
+    prisma.pointHistory.count(),
+    prisma.pointHistory.count({ where: { legacyPhSeq: { not: null } } }),
+    prisma.$queryRawUnsafe<Array<{ cnt: number }>>(`
+      WITH pt_actual AS (
+        SELECT m.id, m.points,
+               GREATEST(0, COALESCE(SUM(ph.amount), 0))::int AS real_pts
+        FROM members m
+        LEFT JOIN point_histories ph ON ph."memberId" = m.id
+        WHERE m.role = 'STUDENT'
+        GROUP BY m.id, m.points
+      )
+      SELECT COUNT(*)::int AS cnt FROM pt_actual WHERE points <> real_pts
+    `),
+  ]);
   const mismatchCount = mismatchRows[0]?.cnt ?? 0;
+  const pointMismatchCount = pointMismatchRows[0]?.cnt ?? 0;
 
   results.push({
     no: 9,
-    title: '학생 누적 완독 권수(60점 이상 고유 도서 기준, 나노프렌즈 연동) 정합성',
-    passed: mismatchCount === 0,
-    detail: `완독 권수 불일치 학생 ${mismatchCount}명`
+    title: '학생 누적 완독 권수 및 현행 기준 월별·누적 포인트(PointHistory) 정합성',
+    passed: mismatchCount === 0 && pointHistoryCount > 0 && staleLegacyPointCount === 0 && pointMismatchCount === 0,
+    detail: `완독 권수 불일치 ${mismatchCount}명 / 현행 포인트 내역 ${pointHistoryCount.toLocaleString()}건 / 구형 미전환 ${staleLegacyPointCount}건 / 보유 포인트 불일치 ${pointMismatchCount}명`
   });
 
   // 10. 정적 폴백 데이터 번들(public_html/migrated_real_data.js) 존재 검증

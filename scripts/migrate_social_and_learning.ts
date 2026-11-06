@@ -12,6 +12,7 @@
 import { prisma } from '../lib/prisma';
 import { loadTables, type LegacyRow } from './migrate/legacy-dump';
 import { tryPhpUnserialize } from './migrate/php-unserialize';
+import { recalculatePointsByCurrentPolicy } from './recalculate_points_by_policy';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -363,7 +364,10 @@ async function main() {
     }
 
     const questionCount = quizResults.length || Number(qh.quiz_cnt) || 5;
-    const correctCount = Number(qh.correct_cnt) ?? quizResults.filter((r) => r.isCorrect).length;
+    const rawCorrectCnt = Number(qh.correct_cnt);
+    const correctCount = Number.isFinite(rawCorrectCnt) && rawCorrectCnt > 0
+      ? rawCorrectCnt
+      : quizResults.filter((r) => r.isCorrect).length;
     const thinkReply = qh.think_reply && String(qh.think_reply).trim() ? String(qh.think_reply).trim() : null;
     const thinkReplyFile = qh.think_reply_file && String(qh.think_reply_file).trim() ? String(qh.think_reply_file).trim() : null;
     const thoughtQuestion =
@@ -530,7 +534,10 @@ async function main() {
       )
   `);
 
-  console.log('\n🎉 모든 찜/추천 데이터, 전체 북퀴즈 완료 내역, 단권 학습리포트 이관이 완벽히 완료되었습니다!');
+  // 5-5. 전 기간(지난달·지지난달·과거 전체 포함) 북퀴즈 이력을 현행 포인트 적립 기준으로 일괄 산정·반영
+  await recalculatePointsByCurrentPolicy({ dryRun: DRY_RUN });
+
+  console.log('\n🎉 모든 찜/추천 데이터, 전체 북퀴즈 완료 내역, 단권 학습리포트 및 현행 기준 포인트 산정이 완벽히 완료되었습니다!');
 }
 
 main()

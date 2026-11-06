@@ -20,7 +20,7 @@ export default async function handler(req: any, res: any) {
       include: { _count: { select: { quizzes: true } }, theme: true }
     });
     // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
-    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows, charSettingRows, quizSetRows] = await Promise.all([
+    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows, charSettingRows, quizSetRows, recSettingRows] = await Promise.all([
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
@@ -44,7 +44,8 @@ export default async function handler(req: any, res: any) {
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
       prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta', 'book_creator', 'system'] } }, select: { key: true, scope: true, value: true, updatedAt: true } }),
       prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
-      prisma.bookQuiz ? prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] }) : Promise.resolve([])
+      prisma.bookQuiz ? prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] }) : Promise.resolve([]),
+      prisma.portalSetting.findMany({ where: { scope: 'book_recommend' }, select: { key: true, value: true } })
     ]);
     const books: any[] = bookRows as any[];
     const quizSetCountMap = new Map<string, number>();
@@ -101,6 +102,17 @@ export default async function handler(req: any, res: any) {
         }
       }
     }
+    const recCountMap = new Map<string, number>();
+    let myRecommends: string[] = [];
+    const myRecKey = 'recommends:' + user.id;
+    for (const rRow of (((recSettingRows as any[]) || []))) {
+      const list = Array.isArray((rRow.value as any)?.books) ? (rRow.value as any).books : [];
+      const cleanList = list.map((x: any) => String(x || '').trim()).filter(Boolean);
+      if (rRow.key === myRecKey) myRecommends = cleanList;
+      for (const k of Array.from(new Set<string>(cleanList))) {
+        recCountMap.set(k, (recCountMap.get(k) || 0) + 1);
+      }
+    }
 
     // 초기 화면 조회는 읽기 전용으로 유지합니다. 계정 생성·역할 변경은 관리 API에서만 수행합니다.
     const directorMembers = members.filter(m => m.role === 'DIRECTOR');
@@ -115,9 +127,22 @@ export default async function handler(req: any, res: any) {
         avgBooks: students.length ? (students.reduce((sum, member) => sum + member.bookCount, 0) / students.length).toFixed(1) : '0.0',
         participation: students.length ? Math.round(students.filter(member => member.bookCount > 0).length / students.length * 100) + '%' : '0%', points };
     }).sort((a, b) => b.points - a.points).map((academy, index) => ({ ...academy, rank: index + 1, badge: index < 3 ? '우수 학원' : '운영 중' }));
+    const r2PublicBase = (process.env.R2_PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
+    const resolveMediaUrl = (rawUrl?: string | null, isPdf = false): string => {
+      const clean = String(rawUrl || '').trim();
+      if (!clean) return '';
+      if (/^(https?:\/\/|data:|\/api\/files\?)/i.test(clean)) return clean;
+      if (r2PublicBase && isPdf && /^\/?upload\/book\//i.test(clean)) {
+        return `${r2PublicBase}/${clean.replace(/^\/+/, '')}`;
+      }
+      return clean;
+    };
+
     const data = {
       NANO_SERVER_DATA: true,
       NANO_BOOTSTRAP_MEMBER_ID: user.id,
+      NANO_MEDIA_BASE_URL: r2PublicBase,
+      NANO_USER_RECOMMENDS: myRecommends,
       MIGRATED_BOOKS: (() => {
         const bookMap = new Map<string, any>();
         for (const b of books) {
@@ -153,11 +178,13 @@ export default async function handler(req: any, res: any) {
 
           const dynamicCert = (certCountMap.get(finalBookId) || 0) + (certCountMap.get(b.id) || 0);
           const dynamicWish = (wishCountMap.get(finalBookId) || 0) + (wishCountMap.get(b.id) || 0);
+          const dynamicRec = (recCountMap.get(finalBookId) || 0) + (finalBookId !== b.id ? (recCountMap.get(b.id) || 0) : 0);
 
           const totalLikes = isStudent
             ? (socialStats.allLikes?.[finalBookId] || 0)
             : ((socialStats.baseLikes?.[finalBookId] || 0) + dynamicWish);
-          const totalRecs = (socialStats.recommends?.[finalBookId] || 0) || (b.isRecommended ? 1 : 0);
+          const baseRecs = (socialStats.recommends?.[finalBookId] || 0) || (b.isRecommended ? 1 : 0);
+          const totalRecs = baseRecs + dynamicRec;
           const totalCerts = (socialStats.legacyCerts?.[finalBookId] || 0) + dynamicCert;
 
           const creatorMeta = bookCreatorMap.get(finalBookId);
@@ -171,7 +198,7 @@ export default async function handler(req: any, res: any) {
             publisher: pub,
             grade: grade,
             pub: pub,
-            cover: cover,
+            cover: resolveMediaUrl(cover, false),
             ...(creatorMeta ? {
               creatorType: 'ACADEMY',
               academyId: creatorMeta.academyCode || creatorMeta.academyId || '',
@@ -179,8 +206,8 @@ export default async function handler(req: any, res: any) {
             } : {}),
             sheet: !!b.worksheetUrl,
             hasSheet: !!b.worksheetUrl,
-            worksheet: b.worksheetUrl || null,
-            worksheetUrl: b.worksheetUrl || null,
+            worksheet: resolveMediaUrl(b.worksheetUrl, true) || null,
+            worksheetUrl: resolveMediaUrl(b.worksheetUrl, true) || null,
             cat: series,
             series: series,
             single: !series || series === '단권',
