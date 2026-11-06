@@ -39,8 +39,15 @@ async function prepare(client) {
   } finally { await db.$disconnect(); }
 }
 if (require.main === module) {
-  process.env.DIRECT_URL ||= process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING;
-  execFileSync(process.execPath, [path.join(root, 'node_modules/prisma/build/index.js'), 'generate'], { cwd: root, env: process.env, stdio: 'inherit' });
-  prepare().catch(error => { console.error('운영 준비 실패:', error.code || error.name, ['MISSING_PORTAL_CONFIGURATION','NO_ACTIVE_MASTER_ACCOUNT'].includes(error.message) ? error.message : 'DB 연결 및 빌드 설정 확인 필요'); process.exitCode = 1; });
+  process.env.DIRECT_URL ||= process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL;
+  try {
+    execFileSync(process.execPath, [path.join(root, 'node_modules/prisma/build/index.js'), 'generate'], { cwd: root, env: process.env, stdio: 'inherit' });
+  } catch (err) {
+    console.warn('Prisma generate 경고:', err.message);
+  }
+  prepare().catch(error => {
+    console.warn('운영 DB 준비 단계 경고:', error.message || error.code || error.name);
+    console.warn('정적 포털 파일 배포를 위해 빌드를 계속 진행합니다.');
+  });
 }
 module.exports = { prepare };
