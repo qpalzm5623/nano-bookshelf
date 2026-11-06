@@ -3717,6 +3717,15 @@
       <div class="drawer-nav-right"><span style="font-size: 10px; font-weight: 700; background: #00a896; color: #fff; padding: 2px 6px; border-radius: 6px;">9종</span> <i class="fa-solid fa-chevron-right ml-1"></i></div>
     </button>
 
+    <!-- [신규 이동] 문해력 테스트 -->
+    <button type="button" class="drawer-nav-item" id="btnDrawerNav_literacy" onclick="closeStudentDrawer(); switchPanel('literacy');">
+      <div class="drawer-nav-left">
+        <i class="fa-solid fa-clipboard-check" style="color: #0d9488;"></i>
+        <span>문해력 테스트</span>
+      </div>
+      <div class="drawer-nav-right"><i class="fa-solid fa-chevron-right"></i></div>
+    </button>
+
     <!-- 1) 내 정보 -->
     <button type="button" class="drawer-nav-item" id="btnDrawerNav_myinfo" onclick="openDrawerMenuItem('myinfo')">
       <div class="drawer-nav-left">
@@ -3959,13 +3968,13 @@
 
     <!-- 1. 내 도서관 영역 -->
     <div id="bsub-my">
-      <!-- 내 도서관 2차 서브탭: 배정 도서 / 권장 도서 / 인기 도서 / 관심 도서 -->
+      <!-- 내 도서관 2차 서브탭: 배정 도서 / 추천 도서 / 인기 도서 / 관심 도서 -->
       <div class="lib-sub-nav">
         <button type="button" class="lib-sub-pill active" id="myLibSubPill-assigned" onclick="switchMyLibSubTab('assigned')">
           <i class="fa-solid fa-thumbtack"></i> 배정 도서
         </button>
         <button type="button" class="lib-sub-pill" id="myLibSubPill-recommended" onclick="switchMyLibSubTab('recommended')">
-          <i class="fa-solid fa-seedling"></i> 권장 도서
+          <i class="fa-solid fa-seedling"></i> 추천 도서
         </button>
         <button type="button" class="lib-sub-pill" id="myLibSubPill-popular" onclick="switchMyLibSubTab('popular')">
           <i class="fa-solid fa-fire"></i> 인기 도서
@@ -3984,7 +3993,7 @@
         <div id="assignedSentinel" class="lib-sentinel"></div>
       </div>
 
-      <!-- 1-2. 권장 도서 컨테이너 (학년 필터 바 + 검색바 + 목록) -->
+      <!-- 1-2. 추천 도서 컨테이너 (학년 필터 바 + 검색바 + 목록) -->
       <div id="mySubSection-recommended" style="display:none;">
         <div class="grade-filter-scroll" id="gradeFilterBar">
           <button type="button" class="grade-chip" data-grade="all" onclick="selectGradeFilter('all')">전체</button>
@@ -4000,12 +4009,12 @@
           <button type="button" class="grade-chip" data-grade="중3" onclick="selectGradeFilter('중3')">중3</button>
         </div>
         <div class="sbar" id="recSearchBar" style="margin-bottom:12px;">
-          <input type="text" id="recLibQ" placeholder="권장 도서명, 저자, 출판사 검색..." oninput="filterRecLib()">
+          <input type="text" id="recLibQ" placeholder="추천 도서명, 저자, 출판사 검색..." oninput="filterRecLib()">
           <button onclick="filterRecLib()"><i class="fa-solid fa-search"></i></button>
         </div>
         <div id="recLibList"></div>
         <div id="recLoading" class="lib-infinite-loader">
-          <i class="fa-solid fa-circle-notch fa-spin mr-1"></i>권장 도서 불러오는 중...
+          <i class="fa-solid fa-circle-notch fa-spin mr-1"></i>추천 도서 불러오는 중...
         </div>
         <div id="recSentinel" class="lib-sentinel"></div>
       </div>
@@ -4086,6 +4095,20 @@
 
       <!-- 2-1. 전체 도서 목록 컨테이너 -->
       <div id="allSubSection-all">
+        <!-- [신규] 전체 도서관 권장 학년 필터 바 -->
+        <div class="grade-filter-scroll" id="allLibGradeFilterBar" style="margin-bottom:12px;">
+          <button type="button" class="grade-chip active" data-grade="all" onclick="selectAllLibGradeFilter('all')">전체</button>
+          <button type="button" class="grade-chip" data-grade="유치부" onclick="selectAllLibGradeFilter('유치부')">유치부</button>
+          <button type="button" class="grade-chip" data-grade="초1" onclick="selectAllLibGradeFilter('초1')">초1</button>
+          <button type="button" class="grade-chip" data-grade="초2" onclick="selectAllLibGradeFilter('초2')">초2</button>
+          <button type="button" class="grade-chip" data-grade="초3" onclick="selectAllLibGradeFilter('초3')">초3</button>
+          <button type="button" class="grade-chip" data-grade="초4" onclick="selectAllLibGradeFilter('초4')">초4</button>
+          <button type="button" class="grade-chip" data-grade="초5" onclick="selectAllLibGradeFilter('초5')">초5</button>
+          <button type="button" class="grade-chip" data-grade="초6" onclick="selectAllLibGradeFilter('초6')">초6</button>
+          <button type="button" class="grade-chip" data-grade="중1" onclick="selectAllLibGradeFilter('중1')">중1</button>
+          <button type="button" class="grade-chip" data-grade="중2" onclick="selectAllLibGradeFilter('중2')">중2</button>
+          <button type="button" class="grade-chip" data-grade="중3" onclick="selectAllLibGradeFilter('중3')">중3</button>
+        </div>
         <div class="sbar" id="libSearchBar" style="margin-bottom:12px;">
           <input type="text" id="libQ" placeholder="전체 도서관 도서명, 저자, 출판사 검색..." oninput="filterLib()">
           <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
@@ -4125,8 +4148,23 @@
         <div id="themeSelectedSection" style="display:none;">
           <div id="themeSelectedHeader" class="theme-selected-bar"></div>
 
+          <!-- [신규] 선택된 주제 내 권장 학년 필터 바 -->
+          <div class="grade-filter-scroll" id="themeGradeFilterBar" style="margin-top:10px; margin-bottom:10px;">
+            <button type="button" class="grade-chip active" data-grade="all" onclick="selectThemeGradeFilter('all')">전체</button>
+            <button type="button" class="grade-chip" data-grade="유치부" onclick="selectThemeGradeFilter('유치부')">유치부</button>
+            <button type="button" class="grade-chip" data-grade="초1" onclick="selectThemeGradeFilter('초1')">초1</button>
+            <button type="button" class="grade-chip" data-grade="초2" onclick="selectThemeGradeFilter('초2')">초2</button>
+            <button type="button" class="grade-chip" data-grade="초3" onclick="selectThemeGradeFilter('초3')">초3</button>
+            <button type="button" class="grade-chip" data-grade="초4" onclick="selectThemeGradeFilter('초4')">초4</button>
+            <button type="button" class="grade-chip" data-grade="초5" onclick="selectThemeGradeFilter('초5')">초5</button>
+            <button type="button" class="grade-chip" data-grade="초6" onclick="selectThemeGradeFilter('초6')">초6</button>
+            <button type="button" class="grade-chip" data-grade="중1" onclick="selectThemeGradeFilter('중1')">중1</button>
+            <button type="button" class="grade-chip" data-grade="중2" onclick="selectThemeGradeFilter('중2')">중2</button>
+            <button type="button" class="grade-chip" data-grade="중3" onclick="selectThemeGradeFilter('중3')">중3</button>
+          </div>
+
           <!-- [신규] 선택된 주제 내 도서 검색바 -->
-          <div class="sbar" id="themeBookSearchBar" style="margin-top:8px; margin-bottom:14px; background:#fff;">
+          <div class="sbar" id="themeBookSearchBar" style="margin-top:4px; margin-bottom:14px; background:#fff;">
             <input type="text" id="themeBookQ" placeholder="현재 주제 내 도서명, 저자, 출판사 검색..." oninput="filterThemeBooks()" autocomplete="off">
             <button type="button" onclick="filterThemeBooks()" title="검색"><i class="fa-solid fa-search"></i></button>
             <button type="button" id="themeBookClearBtn" onclick="clearThemeBookSearch()" style="display:none; color:var(--muted); background:none; border:none; padding:0 8px; cursor:pointer;" title="검색어 지우기">
@@ -4521,7 +4559,6 @@
   <button class="bnav-btn active" id="nav-home" onclick="switchPanel('home')"><i class="fa-solid fa-house"></i><span>홈</span></button>
   <button class="bnav-btn" id="nav-books" onclick="switchPanel('books')"><i class="fa-solid fa-book"></i><span>도서관</span></button>
   <button class="bnav-btn" id="nav-history" onclick="switchPanel('history')"><i class="fa-solid fa-book-bookmark"></i><span>내 책장</span></button>
-  <button class="bnav-btn" id="nav-literacy" onclick="switchPanel('literacy')"><i class="fa-solid fa-clipboard-check"></i><span>테스트</span></button>
   <button class="bnav-btn" id="nav-ranking" onclick="switchPanel('ranking')"><i class="fa-solid fa-trophy"></i><span>랭킹</span></button>
   <button class="bnav-btn" id="nav-quiz" onclick="switchPanel('quiz')" style="display:none;"><i class="fa-solid fa-pen-nib"></i><span>북퀴즈</span></button>
 </nav>
@@ -6540,10 +6577,10 @@ function renderAssignedLib() {
 }
 
 // 마스터 권장도서 학년 문자열을 학생 페이지 단축 코드(유치부, 초1~초6, 중1~중3)로 정규화
-function normalizeStudentGradeShort(raw) {
-  if (raw === undefined || raw === null) return '초3';
+function normalizeStudentGradeShort(raw, fallback) {
+  if (raw === undefined || raw === null) return fallback || '';
   var str = String(raw).trim();
-  if (!str) return '초3';
+  if (!str) return fallback || '';
   if (str === '0' || /유치|유아|미취학/i.test(str)) return '유치부';
   if (str === '1' || /^초\s*1|초등\s*1/i.test(str)) return '초1';
   if (str === '2' || /^초\s*2|초등\s*2/i.test(str)) return '초2';
@@ -6730,7 +6767,7 @@ function getStudentRecommendedBookList() {
   });
 }
 
-// 2. 권장 도서 렌더링 (10개 초기화 + 무한스크롤)
+// 2. 추천 도서 렌더링 (10개 초기화 + 무한스크롤)
 function renderRecLib(q) {
   var query = (q || (document.getElementById('recLibQ') ? document.getElementById('recLibQ').value : '') || '').toLowerCase();
   var list = getStudentRecommendedBookList();
@@ -6750,7 +6787,7 @@ function renderRecLib(q) {
   }
 
   list = sortLibraryBooksForStudent(list);
-  initLibInfiniteScroll('recommended', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-seedling mr-1"></i>선택한 학년의 권장 도서 또는 검색 조건에 맞는 도서가 없습니다.</div>');
+  initLibInfiniteScroll('recommended', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-seedling mr-1"></i>선택한 학년의 추천 도서 또는 검색 조건에 맞는 도서가 없습니다.</div>');
 }
 
 function filterRecLib() {
@@ -6780,9 +6817,27 @@ function renderPopularLib() {
 }
 
 // 4. 전체 도서관 렌더링 (10개 초기화 + 무한스크롤)
+var currentAllLibGradeFilter = 'all';
+
+function selectAllLibGradeFilter(grade) {
+  currentAllLibGradeFilter = grade;
+  document.querySelectorAll('#allLibGradeFilterBar .grade-chip').forEach(function(chip){
+    var g = chip.getAttribute('data-grade');
+    chip.classList.toggle('active', g === grade);
+  });
+  renderLib();
+}
+
 function renderLib(q) {
   var query = (q || (document.getElementById('libQ') ? document.getElementById('libQ').value : '') || '').toLowerCase();
   var list = libData.slice();
+
+  // 권장 학년 필터 적용
+  if(currentAllLibGradeFilter && currentAllLibGradeFilter !== 'all') {
+    list = list.filter(function(b){
+      return normalizeStudentGradeShort(b.grade) === currentAllLibGradeFilter || b.grade === currentAllLibGradeFilter;
+    });
+  }
 
   if(query) {
     list = list.filter(function(b){
@@ -6793,7 +6848,7 @@ function renderLib(q) {
   }
 
   list = sortLibraryBooksForStudent(list);
-  initLibInfiniteScroll('all', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-book mr-1"></i>조건에 맞는 도서가 없습니다.</div>');
+  initLibInfiniteScroll('all', list, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-book mr-1"></i>선택한 학년의 도서 또는 검색 조건에 맞는 도서가 없습니다.</div>');
 }
 
 function filterLib() {
@@ -6992,25 +7047,38 @@ var defaultStudentThemes = [
 ];
 
 function getStudentThemes() {
-  if (window.NANO_SERVER_DATA) return window.NANO_SERVER_THEMES || [];
-  try {
-    var raw = localStorage.getItem("NANO_MASTER_THEMES");
-    if(raw) {
-      var parsed = JSON.parse(raw);
-      if(Array.isArray(parsed) && parsed.length > 0) {
-        // 기존 4개 구버전 더미 데이터가 남아있는 경우 13개 신규 표준 테마로 안전 교체
-        if(parsed.length === 4 && parsed.some(function(item){ return item.tag === "#이달의나노북클럽"; })) {
-          localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(defaultStudentThemes));
-          return defaultStudentThemes;
+  var list = defaultStudentThemes;
+  if (window.NANO_SERVER_DATA && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+    list = window.NANO_SERVER_THEMES;
+  } else {
+    try {
+      var raw = localStorage.getItem("NANO_MASTER_THEMES");
+      if(raw) {
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length > 0) {
+          if(parsed.length === 4 && parsed.some(function(item){ return item.tag === "#이달의나노북클럽"; })) {
+            localStorage.setItem("NANO_MASTER_THEMES", JSON.stringify(defaultStudentThemes));
+            list = defaultStudentThemes;
+          } else {
+            list = parsed;
+          }
         }
-        return parsed;
+      } else if(window.NANO_SERVER_THEMES && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+        list = window.NANO_SERVER_THEMES;
+      }
+    } catch(e) {
+      if(window.NANO_SERVER_THEMES && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+        list = window.NANO_SERVER_THEMES;
       }
     }
-  } catch(e) {}
-  if(window.NANO_SERVER_THEMES && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
-    return window.NANO_SERVER_THEMES;
   }
-  return defaultStudentThemes;
+
+  // 지정된 노출 순서(order) 오름차순으로 안정적 정렬 보장
+  return list.slice().sort(function(a, b) {
+    var orderA = (a && a.order != null && !isNaN(a.order)) ? Number(a.order) : 9999;
+    var orderB = (b && b.order != null && !isNaN(b.order)) ? Number(b.order) : 9999;
+    return orderA - orderB;
+  });
 }
 
 var _themeMappedBooksCache = {};
@@ -7245,6 +7313,17 @@ function renderThemeTagBoxes(forceUpdate) {
   grid.dataset.rendered = "true";
 }
 
+var currentThemeGradeFilter = 'all';
+
+function selectThemeGradeFilter(grade) {
+  currentThemeGradeFilter = grade;
+  document.querySelectorAll('#themeGradeFilterBar .grade-chip').forEach(function(chip){
+    var g = chip.getAttribute('data-grade');
+    chip.classList.toggle('active', g === grade);
+  });
+  filterThemeBooks();
+}
+
 function selectThemeTag(themeId) {
   var themes = getStudentThemes();
   var theme = themes.find(function(t){ return String(t.id) === String(themeId); });
@@ -7252,6 +7331,12 @@ function selectThemeTag(themeId) {
 
   currentSelectedTheme = theme;
   currentThemeMappedBooks = getThemeMappedBooksForStudent(theme);
+
+  // 주제 선택 시 권장 학년 필터 '전체'로 초기화
+  currentThemeGradeFilter = 'all';
+  document.querySelectorAll('#themeGradeFilterBar .grade-chip').forEach(function(chip){
+    chip.classList.toggle('active', chip.getAttribute('data-grade') === 'all');
+  });
 
   var tagBoxSec = document.getElementById('themeTagBoxesSection');
   var selSec = document.getElementById('themeSelectedSection');
@@ -7355,8 +7440,15 @@ function filterThemeBooks() {
   var totalBookCnt = currentThemeMappedBooks.length;
   var targetBooks = currentThemeMappedBooks;
 
+  // 권장 학년 필터 적용
+  if(currentThemeGradeFilter && currentThemeGradeFilter !== 'all') {
+    targetBooks = targetBooks.filter(function(b){
+      return normalizeStudentGradeShort(b.grade) === currentThemeGradeFilter || b.grade === currentThemeGradeFilter;
+    });
+  }
+
   if(q) {
-    targetBooks = currentThemeMappedBooks.filter(function(b){
+    targetBooks = targetBooks.filter(function(b){
       var title = (b.title || '').toLowerCase();
       var author = (b.author || '').toLowerCase();
       var pub = (b.pub || '').toLowerCase();
@@ -7372,7 +7464,8 @@ function filterThemeBooks() {
   currentThemePage = 0;
 
   var displayTitle = theme.title ? (theme.tag.includes(theme.title) ? theme.tag : (theme.tag + ' ' + theme.title)) : theme.tag;
-  var countText = q
+  var isFiltered = (currentThemeGradeFilter && currentThemeGradeFilter !== 'all') || q;
+  var countText = isFiltered
     ? '<strong style="color:var(--leaf);">' + targetBooks.length + '권</strong> 검색됨 (전체 ' + totalBookCnt + '권)'
     : totalBookCnt + '권';
 
@@ -7420,6 +7513,10 @@ function filterThemeBooks() {
 }
 
 function backToThemeTagList() {
+  currentThemeGradeFilter = 'all';
+  document.querySelectorAll('#themeGradeFilterBar .grade-chip').forEach(function(chip){
+    chip.classList.toggle('active', chip.getAttribute('data-grade') === 'all');
+  });
   var tagBoxSec = document.getElementById('themeTagBoxesSection');
   var selSec = document.getElementById('themeSelectedSection');
   var qInput = document.getElementById('themeBookQ');
@@ -7865,6 +7962,10 @@ function getStudentQuizIdentity() {
   });
   var isDemo = auth.id === 'student01';
   var rawGrade = auth.grade || (member && member.grade) || '';
+  var rawGender = auth.gender || (member && member.gender) || '';
+  var rawSchool = auth.school || (member && member.school) || '';
+  var points = typeof auth.points === 'number' ? auth.points : (member && typeof member.points === 'number' ? member.points : 0);
+  var bookCount = typeof auth.bookCount === 'number' ? auth.bookCount : (member && typeof member.bookCount === 'number' ? member.bookCount : 0);
   return {
     studentId: String(auth.studentId || auth.id),
     studentName: auth.studentName || (member && member.name) ||
@@ -7872,7 +7973,11 @@ function getStudentQuizIdentity() {
     academyId: auth.academyId || (member && member.academyId) || (isDemo ? 'DEMO-ACADEMY' : ''),
     academyName: auth.academyName || (member && member.academyName) || (isDemo ? '체험 학원' : ''),
     classGroup: auth.classGroup || (member && member.className) || (isDemo ? '체험반' : '미지정'),
-    grade: rawGrade
+    grade: rawGrade,
+    gender: rawGender,
+    school: rawSchool,
+    points: points,
+    bookCount: bookCount
   };
 }
 
@@ -7936,6 +8041,7 @@ function saveStudentQuizDraft() {
       questionIndex: curQ,
       answers: studentSelectedAnsMap,
       thoughtAnswer: currentStudentThoughtAnswer,
+      mappedQs: curData ? curData.qs : null,
       updatedAt: updatedAt
     }));
     setQuizDraftStatus('');
@@ -8105,6 +8211,13 @@ async function startQuiz(id) {
     });
   }
 
+  // ★ 공개 상태인 퀴즈 세트만 학생에게 제공 (비공개 세트 제외)
+  quizSets = quizSets.filter(function(s) { return s.isPublic !== 'N'; });
+  if (quizSets.length === 0) {
+    toast('해당 도서의 공개된 북퀴즈 문항이 준비 중입니다.');
+    return;
+  }
+
   // ★ 3. 같은 도서에 북퀴즈가 여러 개 등록된 경우 (내부 정렬 기준: 본사 -> 우리 학원 -> 등록일 순)
   quizSets.sort(function(a, b) {
     var scoreA = 0;
@@ -8193,6 +8306,38 @@ function selectQuizSetAndStart(idx) {
   }
 }
 
+// 북퀴즈 보기 순서 랜덤 셔플 함수 (학생 풀이 시 항상 보기 순서가 무작위로 나오도록 처리, 정답 인덱스 완벽 동기화)
+function shuffleQuizOptions(options, originalCorrectIdx) {
+  if (!Array.isArray(options) || options.length <= 1) {
+    return { options: options ? options.slice() : [], correctIdx: originalCorrectIdx };
+  }
+
+  // 보기 원본과 정답 여부 매핑
+  var items = options.map(function(optText, idx) {
+    return {
+      text: optText,
+      isCorrect: (idx === originalCorrectIdx)
+    };
+  });
+
+  // Fisher-Yates 셔플 알고리즘으로 무작위 재배치
+  for (var i = items.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = items[i];
+    items[i] = items[j];
+    items[j] = tmp;
+  }
+
+  var shuffledOptions = items.map(function(it) { return it.text; });
+  var newCorrectIdx = items.findIndex(function(it) { return it.isCorrect; });
+  if (newCorrectIdx === -1 && originalCorrectIdx >= 0) newCorrectIdx = 0;
+
+  return {
+    options: shuffledOptions,
+    correctIdx: newCorrectIdx
+  };
+}
+
 // 선택된 퀴즈 세트로 실제 퀴즈 풀이 시작
 function startQuizWithSet(book, quizSet) {
   var identity;
@@ -8220,28 +8365,31 @@ function startQuizWithSet(book, quizSet) {
   anss = [];
   curQ = 0;
 
-  // 1. 객관식 문항들 매핑
+  // 1. 객관식 문항들 매핑 (보기 순서 항상 랜덤 셔플)
   var mappedQs = (quizSet.questions || []).map(function(mq) {
     var isSubj = mq.type === 'SUBJECTIVE';
     var os = [];
     if (mq.options && Array.isArray(mq.options)) {
-      os = mq.options;
+      os = mq.options.slice();
     } else {
       os = [mq.opt1, mq.opt2, mq.opt3, mq.opt4, mq.opt5].filter(Boolean);
     }
-    if (os.length === 0) os = ['1번 보기', '2번 보기', '3번 보기'];
+    if (os.length === 0) os = ['1번 선택지', '2번 선택지', '3번 선택지'];
     var ansIdx = mq.ans == null ? -1 : parseInt(mq.ans, 10) - 1;
 
     // 질문 텍스트에서 출제 관련 말머리(예: 【우리 학원 출제】 등) 제거
     var cleanQ = (mq.question || '').replace(/^【[^】]*출제[^】]*】\s*|^\[[^\]]*출제[^\]]*\]\s*/g, '').trim();
+
+    // ★ 학생 풀이 시 항상 보기 순서가 랜덤으로 나오도록 셔플
+    var shuffled = shuffleQuizOptions(os, ansIdx);
 
     return {
       q: cleanQ,
       mediaType: mq.mediaType || 'none',
       mediaUrl: mq.mediaUrl || '',
       mediaCaption: mq.mediaCaption || '',
-      os: os,
-      a: ansIdx,
+      os: shuffled.options,
+      a: shuffled.correctIdx,
       isThoughtQuestion: false
     };
   });
@@ -8284,6 +8432,10 @@ function startQuizWithSet(book, quizSet) {
     } catch(e) { /* 제출 시 저장소 오류를 다시 확인합니다. */ }
     if (!alreadySaved) {
       studentQuizAttemptId = draft.attemptId;
+      if (draft.mappedQs && Array.isArray(draft.mappedQs) && draft.mappedQs.length === mappedQs.length) {
+        mappedQs = draft.mappedQs;
+        if (curData) curData.qs = mappedQs;
+      }
       var savedAnswers = draft.answers || {};
       mappedQs.forEach(function(q, idx) {
         var value = savedAnswers[idx];
@@ -9659,16 +9811,16 @@ var NANO_CHARACTERS = [
     themeName: "모든 분야 마스터",
     themeColor: "#059669",
     bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    story: "6개 모든 학문의 영역을 골고루 섭렵한 자만이 깨울 수 있는 전설의 푸른 영물! 편식 없는 균형 독서의 수호신이에요.",
+    story: "모든 학문의 영역을 골고루 섭렵한 자만이 깨울 수 있는 전설의 푸른 영물! 편식 없는 균형 독서의 수호신이에요.",
     reqType: "all_genres",
-    stage1Count: 15,
-    stage2Count: 30,
-    stage3Count: 50,
-    unlockCount: 15,
-    evolveCount: 30,
-    unlockDesc: "모든 6개 분야 각 15권 이상 완독",
-    stage2Desc: "모든 6개 분야 각 30권 이상 완독",
-    stage3Desc: "모든 6개 분야 각 50권 이상 완독"
+    stage1Count: 75,
+    stage2Count: 150,
+    stage3Count: 250,
+    unlockCount: 75,
+    evolveCount: 150,
+    unlockDesc: "전 분야 75권 완독 (분야별 각 15권)",
+    stage2Desc: "전 분야 150권 완독 (분야별 각 30권)",
+    stage3Desc: "전 분야 250권 완독 (분야별 각 50권)"
   },
   {
     id: "jelly",
@@ -9684,9 +9836,9 @@ var NANO_CHARACTERS = [
     stage3Count: 200,
     unlockCount: 50,
     evolveCount: 100,
-    unlockDesc: "전체 완독 50권 돌파 (고유 도서 기준)",
-    stage2Desc: "전체 완독 100권 돌파",
-    stage3Desc: "전체 완독 200권 돌파"
+    unlockDesc: "50권 완독 돌파",
+    stage2Desc: "100권 완독 돌파",
+    stage3Desc: "200권 완독 돌파"
   }
 ];
 
@@ -9733,7 +9885,15 @@ function getCharacterUnlockStatus(char) {
         current = stats.studyRead;
         break;
       case 'all_genres':
-        current = stats.allGenreMin;
+        if (typeof stats.mirTotal === 'number') {
+          current = stats.mirTotal;
+        } else {
+          var h = stats.humanRead || 0, n = stats.natureRead || 0, t = stats.techRead || 0, hi = stats.histRead || 0, he = stats.healthRead || 0;
+          var m1 = Math.min(15, h) + Math.min(15, n) + Math.min(15, t) + Math.min(15, hi) + Math.min(15, he);
+          var m2 = Math.min(30, h) + Math.min(30, n) + Math.min(30, t) + Math.min(30, hi) + Math.min(30, he);
+          var m3 = Math.min(50, h) + Math.min(50, n) + Math.min(50, t) + Math.min(50, hi) + Math.min(50, he);
+          current = m1 < 75 ? m1 : (m2 < 150 ? m2 : Math.min(250, m3));
+        }
         break;
       case 'total_read':
         current = stats.totalRead;
@@ -10731,10 +10891,143 @@ function openDrawerMenuItem(type) {
   if(type === 'myinfo') {
     cat.innerText = '회원 정보';
     title.innerText = '내 정보';
-    sub.innerText = '회원님의 기본 학습 정보입니다.';
+    sub.innerText = '회원님의 기본 학습 정보 및 독서 현황입니다.';
     var identity = getStudentQuizIdentity() || {};
-    var profileRows = [['이름',identity.studentName],['아이디',identity.studentId],['소속 학원',identity.academyName],['소속 학급',identity.classGroup]];
-    contentHtml = '<dl style="padding:16px;line-height:1.8">' + profileRows.map(function(row) { return '<dt>' + row[0] + '</dt><dd>' + escapeStudentQuizText(row[1] || '미등록') + '</dd>'; }).join('') + '</dl>';
+
+    // 1. 성별 포맷팅
+    var rawGender = (identity.gender || '').trim();
+    var isMale = /^(남|M|MALE|남자)/i.test(rawGender);
+    var isFemale = /^(여|F|FEMALE|여자)/i.test(rawGender);
+    var genderLabel = isMale ? '남학생' : (isFemale ? '여학생' : (rawGender || '미등록'));
+    var genderBadgeStyle = isMale
+      ? 'background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;'
+      : (isFemale ? 'background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8;' : 'background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;');
+    var genderIcon = isMale ? 'fa-mars' : (isFemale ? 'fa-venus' : 'fa-child');
+
+    // 2. 학년 포맷팅
+    var curGr = (typeof getStudentCurrentGrade === 'function') ? getStudentCurrentGrade() : null;
+    var rawGrade = identity.grade || (curGr ? curGr.label : '');
+    var gradeLabel = '초등 3학년';
+    if (rawGrade) {
+      var s = String(rawGrade).trim();
+      if (/유치|유아|미취학|^0$/.test(s)) gradeLabel = '유치부';
+      else if (/초.*1|1학년/.test(s) && !s.includes('중')) gradeLabel = '초등 1학년';
+      else if (/초.*2/.test(s)) gradeLabel = '초등 2학년';
+      else if (/초.*3/.test(s)) gradeLabel = '초등 3학년';
+      else if (/초.*4/.test(s)) gradeLabel = '초등 4학년';
+      else if (/초.*5/.test(s)) gradeLabel = '초등 5학년';
+      else if (/초.*6/.test(s)) gradeLabel = '초등 6학년';
+      else if (/중.*1/.test(s)) gradeLabel = '중등 1학년';
+      else if (/중.*2/.test(s)) gradeLabel = '중등 2학년';
+      else if (/중.*3/.test(s)) gradeLabel = '중등 3학년';
+      else gradeLabel = s;
+    } else if (curGr && curGr.label) {
+      gradeLabel = curGr.label;
+    }
+
+    // 3. 캐릭터 아바타
+    var charId = (typeof getUserCharacterId === 'function') ? getUserCharacterId() : 'nano';
+    var char = (typeof getCharacterById === 'function') ? getCharacterById(charId) : { name: '나노', themeColor: '#00a896', bgGradient: 'linear-gradient(135deg, #00a896, #028090)' };
+    var st = (typeof getCharacterUnlockStatus === 'function') ? getCharacterUnlockStatus(char) : { currentStage: 1 };
+    var currentStage = st.currentStage || 1;
+    var avatarSvg = (typeof getCharacterSvg === 'function') ? getCharacterSvg(charId, 68, currentStage) : '';
+
+    // 4. 포인트 및 독서 권수
+    var pointsVal = (typeof identity.points === 'number' && identity.points > 0) ? identity.points : 0;
+    var pEl = document.getElementById('drawerStudentPoints') || document.getElementById('mainPointsCount');
+    if (pEl && pEl.textContent) {
+      var pm = pEl.textContent.replace(/[^0-9]/g, '');
+      if (pm) pointsVal = parseInt(pm, 10);
+    }
+    var bookCountVal = (typeof identity.bookCount === 'number' && identity.bookCount > 0) ? identity.bookCount : 0;
+    var bEl = document.getElementById('mainCertifiedBooksCount');
+    if (bEl && bEl.textContent) {
+      var bm = bEl.textContent.replace(/[^0-9]/g, '');
+      if (bm) bookCountVal = parseInt(bm, 10);
+    }
+
+    contentHtml =
+      '<div style="display:flex;flex-direction:column;gap:14px;padding:4px 2px;">'
+      + '  <!-- 1. 프로필 히어로 카드 -->'
+      + '  <div style="background:linear-gradient(135deg, #f0fdfa 0%, #e6fffa 50%, #fef3c7 100%);border:1.5px solid #99f6e4;border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 12px rgba(0,168,150,0.08);">'
+      + '    <div style="width:72px;height:72px;border-radius:50%;background:#ffffff;border:3px solid #ffffff;box-shadow:0 4px 10px rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;cursor:pointer;" onclick="closeDrawerModal();openCharacterSelectModal();" title="캐릭터 변경하기">'
+      +        avatarSvg
+      + '      <div style="position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;background:#00a896;color:#ffffff;border-radius:50%;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;font-size:10px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>'
+      + '    </div>'
+      + '    <div style="flex:1;min-width:0;">'
+      + '      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">'
+      + '        <span style="font-size:19px;font-weight:900;color:#134e4a;letter-spacing:-0.3px;">' + escapeStudentQuizText(identity.studentName) + '</span>'
+      + '        <span style="' + genderBadgeStyle + 'padding:2.5px 8px;border-radius:7px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid ' + genderIcon + '"></i>' + genderLabel + '</span>'
+      + '        <span style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;padding:2.5px 8px;border-radius:7px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-graduation-cap"></i>' + gradeLabel + '</span>'
+      + '      </div>'
+      + '      <div style="font-size:12.5px;color:#475569;display:flex;align-items:center;gap:6px;font-weight:600;">'
+      + '        <span style="color:#64748b;"><i class="fa-solid fa-id-badge mr-1" style="color:#94a3b8;"></i>아이디</span>'
+      + '        <span style="font-family:monospace;background:rgba(255,255,255,0.7);padding:1px 6px;border-radius:4px;border:1px solid #cbd5e1;color:#0f172a;font-weight:700;">' + escapeStudentQuizText(identity.studentId) + '</span>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
+
+      + '  <!-- 2. 독서 활동 미니 통계 -->'
+      + '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      + '    <div style="background:#fffbeb;border:1.5px solid #fef08a;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(245,158,11,0.06);">'
+      + '      <div style="width:40px;height:40px;border-radius:12px;background:#fef3c7;display:flex;align-items:center;justify-content:center;color:#d97706;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-coins"></i></div>'
+      + '      <div style="min-width:0;">'
+      + '        <div style="font-size:11px;color:#854d0e;font-weight:700;">리딩 포인트</div>'
+      + '        <div style="font-size:16px;font-weight:900;color:#78350f;">' + pointsVal.toLocaleString() + ' <span style="font-size:11.5px;font-weight:700;">P</span></div>'
+      + '      </div>'
+      + '    </div>'
+      + '    <div style="background:#ecfdf5;border:1.5px solid #a7f3d0;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(16,185,129,0.06);">'
+      + '      <div style="width:40px;height:40px;border-radius:12px;background:#ccfbf1;display:flex;align-items:center;justify-content:center;color:#0d9488;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-book-bookmark"></i></div>'
+      + '      <div style="min-width:0;">'
+      + '        <div style="font-size:11px;color:#065f46;font-weight:700;">완독 인증 도서</div>'
+      + '        <div style="font-size:16px;font-weight:900;color:#064e3b;">' + bookCountVal.toLocaleString() + ' <span style="font-size:11.5px;font-weight:700;">권</span></div>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
+
+      + '  <!-- 3. 상세 정보 인포 카드 그리드 -->'
+      + '  <div style="background:#faf8f5;border:1.5px solid var(--soft);border-radius:16px;padding:14px 16px;">'
+      + '    <div style="font-size:12px;font-weight:800;color:var(--wood-dark);margin-bottom:12px;display:flex;align-items:center;gap:6px;">'
+      + '      <i class="fa-solid fa-address-card" style="color:var(--leaf);"></i> 기본 학습 소속 정보'
+      + '    </div>'
+      + '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-school" style="color:#6366f1;font-size:11px;"></i>소속 학원</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);word-break:keep-all;">' + escapeStudentQuizText(identity.academyName || '체험 학원') + '</div>'
+      + '      </div>'
+      + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-chalkboard-user" style="color:#0ea5e9;font-size:11px;"></i>소속 학급</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);">' + escapeStudentQuizText(identity.classGroup || '미지정') + '</div>'
+      + '      </div>'
+      + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-graduation-cap" style="color:#10b981;font-size:11px;"></i>학년</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);">' + escapeStudentQuizText(gradeLabel) + '</div>'
+      + '      </div>'
+      + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-venus-mars" style="color:#f59e0b;font-size:11px;"></i>성별</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);">' + escapeStudentQuizText(genderLabel) + '</div>'
+      + '      </div>'
+      + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-building-columns" style="color:#8b5cf6;font-size:11px;"></i>재학 학교</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);">' + escapeStudentQuizText(identity.school || '미등록') + '</div>'
+      + '      </div>'
+      + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-circle-check" style="color:#0d9488;font-size:11px;"></i>학습 상태</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:#0d9488;">정상 이용 중</div>'
+      + '      </div>'
+      + '    </div>'
+      + '  </div>'
+
+      + '  <!-- 4. 하단 빠른 메뉴 버튼 -->'
+      + '  <div style="display:flex;gap:10px;margin-top:2px;">'
+      + '    <button type="button" class="btn flex-1" onclick="closeDrawerModal();openCharacterSelectModal();" style="background:#f0fdfa;color:#0d9488;border:1.5px solid #99f6e4;border-radius:12px;font-weight:800;font-size:12.5px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">'
+      + '      <i class="fa-solid fa-wand-magic-sparkles" style="color:#00a896;"></i> 캐릭터 변경'
+      + '    </button>'
+      + '    <button type="button" class="btn flex-1" onclick="openDrawerMenuItem(\'password\');" style="background:#faf8f5;color:var(--wood-dark);border:1.5px solid var(--soft);border-radius:12px;font-weight:800;font-size:12.5px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">'
+      + '      <i class="fa-solid fa-key" style="color:var(--muted);"></i> 비밀번호 변경'
+      + '    </button>'
+      + '  </div>'
+      + '</div>';
   }
   else if(type === 'password') {
     cat.innerText = '보안 설정';

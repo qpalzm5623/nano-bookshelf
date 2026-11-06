@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -227,7 +227,7 @@
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px; position: relative;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 전화번호, 지역, 사업자번호 검색..." oninput="handleFranchiseSearchInput(this); filterFranchiseList();" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
+          <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 전화번호, 지역, 사업자번호 검색..." oninput="handleFranchiseSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
           <button type="button" id="btnFranchiseSearchClear" class="btn-search-clear" onclick="clearFranchiseSearch()" style="display: none;" title="검색어 지우기">✕</button>
         </div>
         <!-- 검색 버튼 (버튼 클릭 또는 Enter 시에만 검색 실행) -->
@@ -244,11 +244,21 @@
         <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7;">
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
-              <i class="fa-solid fa-list-check mr-2 text-muted"></i>가맹 학원 목록 (<span id="franchiseFilteredCount">14</span>개소)
+              <i class="fa-solid fa-list-check mr-2 text-muted"></i>가맹 학원 목록 (<span id="franchiseFilteredCount">14개소</span>)
             </span>
             <span id="franchiseSearchActiveBadge" style="display: none;"></span>
           </div>
-          <small class="text-muted">* 최근 가맹일(가입일) 기준으로 최신순 정렬됩니다.</small>
+          <div class="d-flex align-items-center" style="gap: 6px;">
+            <i class="fa-solid fa-arrow-down-wide-short text-muted" style="font-size: 12.5px;"></i>
+            <select id="franchiseSortSelect" class="select-beige" onchange="handleFranchiseSortChange()" aria-label="가맹점 정렬 방식" style="height: 34px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; background: #ffffff; border-radius: 8px; cursor: pointer;">
+              <option value="joinDate_desc" selected>가입일 내림차순</option>
+              <option value="joinDate_asc">가입일 오름차순</option>
+              <option value="name_asc">학원명 오름차순</option>
+              <option value="name_desc">학원명 내림차순</option>
+              <option value="director_asc">원장명 오름차순</option>
+              <option value="director_desc">원장명 내림차순</option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive" style="overflow-x: auto;">
           <table class="simple-table" style="min-width: 1050px; width: 100%;">
@@ -513,6 +523,7 @@
               <thead>
                 <tr>
                   <th style="width: 70px;">번호</th>
+                  <th style="width: 100px; text-align: center;">노출 순서</th>
                   <th style="width: 120px;">이미지</th>
                   <th>태그</th>
                   <th style="width: 140px;">등록된 도서 수</th>
@@ -608,7 +619,7 @@
                   <th style="text-align: left; padding-left: 20px;">도서명</th>
                   <th style="width: 150px;">저자 / 출판사</th>
                   <th style="width: 120px;">권장 학년</th>
-                  <th style="width: 120px;">카테고리</th>
+                  <th style="width: 130px;">테마</th>
                   <th style="width: 110px;">등록일자</th>
                   <th style="width: 100px;">관리</th>
                 </tr>
@@ -920,13 +931,6 @@
             <option value="ALL">전체 주제 (전체 태그)</option>
           </select>
         </div>
-        <div>
-          <select id="contentPublicFilter" class="select-beige" onchange="filterMasterContentList()">
-            <option value="ALL">공개 여부 (전체)</option>
-            <option value="Y">공개</option>
-            <option value="N">비공개</option>
-          </select>
-        </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="search" id="contentSearchInput" name="search_content_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMasterContentList();}">
@@ -963,9 +967,15 @@
                 <th>주제 분류</th>
                 <th style="width: 105px; text-align: center; white-space: nowrap;">퀴즈 등록 여부</th>
                 <th style="width: 88px; text-align: center; white-space: nowrap;">나노시트</th>
-                <th style="width: 42px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">찜</th>
-                <th style="width: 42px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">추천</th>
-                <th style="width: 46px; text-align: center; padding-left: 4px; padding-right: 4px; white-space: nowrap;" title="클릭 시 학년/성별 통계">인증</th>
+                <th style="width: 48px; text-align: center; padding-left: 2px; padding-right: 2px; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortLikes" onclick="toggleMasterBookSort('likes')" title="클릭 시 찜 많은 순으로 정렬">
+                  <span class="d-inline-flex align-items-center justify-content-center">찜<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconLikes" style="font-size: 10px;"></i></span>
+                </th>
+                <th style="width: 48px; text-align: center; padding-left: 2px; padding-right: 2px; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortRecommends" onclick="toggleMasterBookSort('recommends')" title="클릭 시 추천 많은 순으로 정렬">
+                  <span class="d-inline-flex align-items-center justify-content-center">추천<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconRecommends" style="font-size: 10px;"></i></span>
+                </th>
+                <th style="width: 48px; text-align: center; padding-left: 2px; padding-right: 2px; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortQuiz" onclick="toggleMasterBookSort('quiz')" title="클릭 시 인증(완료) 많은 순으로 정렬">
+                  <span class="d-inline-flex align-items-center justify-content-center">인증<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconQuiz" style="font-size: 10px;"></i></span>
+                </th>
                 <th style="width: 155px; text-align: center; white-space: nowrap;">관리</th>
               </tr>
             </thead>
@@ -1421,12 +1431,12 @@
 
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
-<script src="js/master/master-core.js?v=20261105_restore_menu"></script>
-<script src="js/master/master-franchise.js?v=20261030_v5"></script>
+<script src="js/master/master-core.js?v=20261106_theme_order"></script>
+<script src="js/master/master-franchise.js?v=20261106_rec_modal_paging"></script>
 <script src="js/master/master-members.js?v=20261103_sort"></script>
-<script src="js/master/master-operations.js?v=20261030_v5"></script>
-<script src="js/master/master-ranking.js?v=20261030_v5"></script>
-<script src="js/master/master-contents.js?v=20261030_v5"></script>
+<script src="js/master/master-operations.js?v=20261106_theme_order"></script>
+<script src="js/master/master-ranking.js?v=20261106_csv_export"></script>
+<script src="js/master/master-contents.js?v=20261106_direct_quiz_add"></script>
 <script src="js/master/master-dispatch.js?v=20261030_v5"></script>
 <script src="js/master/master-payment.js?v=20261030_v5"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
@@ -1452,7 +1462,7 @@
 <script>
   (function() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'modals/master_modals.html?v=20261104', true);
+    xhr.open('GET', 'modals/master_modals.html?v=20261106_bulk_template', true);
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 0)) {
         var container = document.getElementById('masterModalsContainer');

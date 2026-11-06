@@ -7,7 +7,7 @@
     nano: ['totalRead', 0, 30, 100], toto: ['humanRead', 50, 100, 150],
     booki: ['natureRead', 50, 100, 150], pico: ['techRead', 50, 100, 150],
     popo: ['histRead', 50, 100, 150], chichi: ['healthRead', 50, 100, 150],
-    lumi: ['studyRead', 50, 100, 150], mir: ['allGenreMin', 15, 30, 50],
+    lumi: ['studyRead', 50, 100, 150], mir: ['mirTotal', 75, 150, 250],
     jelly: ['totalRead', 50, 100, 200]
   };
   function match(value) {
@@ -29,7 +29,7 @@
       || match(book.title) || 'study';
   }
   function stats(books) {
-    var result = { totalRead: 0, humanRead: 0, natureRead: 0, techRead: 0, histRead: 0, healthRead: 0, studyRead: 0, allGenreMin: 0 };
+    var result = { totalRead: 0, humanRead: 0, natureRead: 0, techRead: 0, histRead: 0, healthRead: 0, studyRead: 0, allGenreMin: 0, mirTotal: 0 };
     var seen = new Set();
     (books || []).forEach(function (book) {
       var id = String(book.id || book.bookNo || '');
@@ -37,6 +37,11 @@
       seen.add(id); result.totalRead++; result[genre(book) + 'Read']++;
     });
     result.allGenreMin = Math.min(result.humanRead, result.natureRead, result.techRead, result.histRead, result.healthRead, result.studyRead);
+    // 미르: 5개 핵심 분야별 각 최대 15/30/50권 균형 누적 합산 (1단계 기준 75권)
+    var m1 = Math.min(15, result.humanRead) + Math.min(15, result.natureRead) + Math.min(15, result.techRead) + Math.min(15, result.histRead) + Math.min(15, result.healthRead);
+    var m2 = Math.min(30, result.humanRead) + Math.min(30, result.natureRead) + Math.min(30, result.techRead) + Math.min(30, result.histRead) + Math.min(30, result.healthRead);
+    var m3 = Math.min(50, result.humanRead) + Math.min(50, result.natureRead) + Math.min(50, result.techRead) + Math.min(50, result.histRead) + Math.min(50, result.healthRead);
+    result.mirTotal = m1 < 75 ? m1 : (m2 < 150 ? m2 : Math.min(250, m3));
     return result;
   }
   function stage(id, counts) {

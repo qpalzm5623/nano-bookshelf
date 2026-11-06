@@ -1,4 +1,4 @@
-﻿<!-- ========================================================
+<!-- ========================================================
      PAYMENT DETAIL MODAL (마스터 결제 상세 및 상태 변경 모달)
      ======================================================== -->
 <div class="modal fade" id="masterPaymentDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1034,13 +1034,23 @@
                   <input type="hidden" id="themeImageUrl" value="">
                 </div>
 
-                <!-- 노출 여부 -->
-                <div class="form-group mb-0">
-                  <label class="font-weight-bold" style="font-size: 13px;">노출 여부</label>
-                  <select id="themeActive" class="select-beige w-100" onchange="updateThemeModalPreview()">
-                    <option value="Y">노출 (학생 앱 [주제별 도서] 박스 노출)</option>
-                    <option value="N">숨김 (비노출 / 보관)</option>
-                  </select>
+                <div class="row">
+                  <div class="col-6">
+                    <div class="form-group mb-0">
+                      <label class="font-weight-bold" style="font-size: 13px;">노출 순서 (우선순위)</label>
+                      <input type="number" id="themeOrder" class="form-control form-control-beige" min="1" max="999" value="1" placeholder="예: 1">
+                      <small class="text-muted" style="font-size: 11px;">* 숫자가 작을수록 학생 화면 앞쪽에 노출</small>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="form-group mb-0">
+                      <label class="font-weight-bold" style="font-size: 13px;">노출 여부</label>
+                      <select id="themeActive" class="select-beige w-100" onchange="updateThemeModalPreview()">
+                        <option value="Y">노출 (학생 앱 박스 노출)</option>
+                        <option value="N">숨김 (비노출 / 보관)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1169,35 +1179,31 @@
     <div class="modal-content modal-content-beige" style="border-radius: 16px;">
       <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center">
         <h5 class="modal-title font-weight-bold" style="font-size: 16.5px;">
-          <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 등록
+          <i class="fa-solid fa-star mr-2 text-warning"></i>권장도서 추가
         </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
 
-      <!-- 모달 내부 탭 (라이브러리 도서 선택 vs 신규 도서 직접 등록) -->
-      <div class="px-4 pt-3 border-bottom bg-light">
-        <ul class="nav nav-pills" id="recModalTab" style="gap: 8px;">
-          <li class="nav-item">
-            <button class="nav-link active font-weight-bold py-1 px-3" id="rec-tab-lib-btn" onclick="switchRecModalTab('library')" style="border-radius: 8px; font-size: 13px;">
-              <i class="fa-solid fa-book-bookmark mr-1"></i>라이브러리에서 선택 추가
-            </button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link font-weight-bold py-1 px-3" id="rec-tab-direct-btn" onclick="switchRecModalTab('direct')" style="border-radius: 8px; font-size: 13px; color: #5a4b3d; background: transparent;">
-              <i class="fa-solid fa-plus-circle mr-1"></i>신규 권장도서 직접 등록
-            </button>
-          </li>
-        </ul>
-      </div>
-
-      <!-- 탭 1: 라이브러리 도서 선택 -->
-      <div id="recModalViewLibrary" class="modal-body p-4">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label class="form-label font-weight-bold" style="font-size: 13px;">지정 대상 학년 <span class="text-danger">*</span></label>
-            <select id="modalRecGrade" class="form-control form-control-beige" onchange="filterRecModalBooks()">
+      <div class="modal-body p-4">
+        <!-- 상단 필터: 지정 대상 학년 안내 뱃지 + 도서 권장학년 셀렉트 + 도서 검색창 -->
+        <div class="row align-items-end mb-3">
+          <div class="col-md-3">
+            <label class="form-label font-weight-bold" style="font-size: 13px; margin-bottom: 6px;">
+              <i class="fa-solid fa-thumbtack text-danger mr-1"></i>지정 대상 학년
+            </label>
+            <div id="modalRecTargetGradeBadge" class="d-flex align-items-center justify-content-center font-weight-bold" style="height: 38px; background: #f5ede2; color: #7d5a2b; border: 1.5px solid #d4c4b0; border-radius: 8px; font-size: 13.5px;">
+              초등 1학년
+            </div>
+            <input type="hidden" id="modalRecGrade" value="초등 1학년">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label font-weight-bold" style="font-size: 13px; margin-bottom: 6px;">
+              <i class="fa-solid fa-graduation-cap text-primary mr-1"></i>도서 권장학년
+            </label>
+            <select id="modalRecBookGradeFilter" class="form-control form-control-beige" onchange="handleRecModalFilterChange()" style="height: 38px; font-size: 13px;">
+              <option value="ALL">전체 권장학년</option>
               <option value="유치부">유치부</option>
               <option value="초등 1학년">초등 1학년</option>
               <option value="초등 2학년">초등 2학년</option>
@@ -1210,89 +1216,36 @@
               <option value="중등 3학년">중등 3학년</option>
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label font-weight-bold" style="font-size: 13px;">도서 검색</label>
+          <div class="col-md-5">
+            <label class="form-label font-weight-bold" style="font-size: 13px; margin-bottom: 6px;">
+              <i class="fa-solid fa-magnifying-glass text-muted mr-1"></i>도서 검색
+            </label>
             <div class="input-group">
-              <input type="text" id="modalRecBookSearch" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="filterRecModalBooks()">
+              <input type="text" id="modalRecBookSearch" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사 검색..." oninput="handleRecModalSearchInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();handleRecModalFilterChange();}" style="height: 38px; font-size: 13px;">
               <div class="input-group-append">
-                <span class="input-group-text bg-white"><i class="fa-solid fa-search text-muted"></i></span>
+                <button type="button" class="btn btn-beige-secondary px-3" onclick="handleRecModalFilterChange()" title="검색">
+                  <i class="fa-solid fa-search"></i>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-2 pt-2 border-top">
           <span class="font-weight-bold" style="font-size: 13px; color: var(--text-main);">
-            마스터 도서 라이브러리 목록 (<span id="modalRecBookCandidateCount">0</span>권 검색됨)
+            마스터 도서 라이브러리 (<span id="modalRecBookCandidateCount">0</span>권 검색됨 · 30권씩 표시)
           </span>
-          <small class="text-muted">원하는 도서의 [권장도서 추가] 버튼을 클릭하세요.</small>
+          <small class="text-muted"><span id="modalRecPaginationSummary" class="font-weight-bold text-dark mr-1">1 / 1 페이지</span> 원하는 도서의 [권장도서 추가] 클릭</small>
         </div>
-        <div class="border rounded p-2" style="max-height: 380px; overflow-y: auto; background: #fff;" id="modalRecBookCandidateList">
+
+        <!-- 30권씩 페이징 렌더링 컨테이너 -->
+        <div class="border rounded p-2" style="max-height: 400px; min-height: 280px; overflow-y: auto; background: #fff;" id="modalRecBookCandidateList">
           <!-- JS 렌더링 -->
         </div>
-      </div>
 
-      <!-- 탭 2: 신규 권장도서 직접 등록 -->
-      <div id="recModalViewDirect" class="modal-body p-4" style="display: none;">
-        <form onsubmit="saveDirectRecommendedBook(event)">
-          <div class="alert alert-info py-2 px-3 mb-3" style="font-size: 12.5px; border-radius: 8px;">
-            <i class="fa-solid fa-circle-info mr-1"></i>라이브러리에 없는 새로운 도서를 해당 학년의 권장도서로 즉시 등록합니다.
-          </div>
-          <div class="row">
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">권장 학년 <span class="text-danger">*</span></label>
-              <select id="directRecGrade" class="form-control form-control-beige" required>
-                <option value="유치부">유치부</option>
-                <option value="초등 1학년">초등 1학년</option>
-                <option value="초등 2학년">초등 2학년</option>
-                <option value="초등 3학년">초등 3학년</option>
-                <option value="초등 4학년">초등 4학년</option>
-                <option value="초등 5학년">초등 5학년</option>
-                <option value="초등 6학년">초등 6학년</option>
-                <option value="중등 1학년">중등 1학년</option>
-                <option value="중등 2학년">중등 2학년</option>
-                <option value="중등 3학년">중등 3학년</option>
-              </select>
-            </div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">카테고리 분류 <span class="text-danger">*</span></label>
-              <select id="directRecCategory" class="form-control form-control-beige">
-                <option value="문학">문학</option>
-                <option value="과학">과학</option>
-                <option value="역사">역사</option>
-                <option value="사회">사회</option>
-                <option value="인문">인문</option>
-                <option value="예술">예술</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group mb-3">
-            <label class="font-weight-bold" style="font-size: 13px;">도서명 <span class="text-danger">*</span></label>
-            <input type="text" id="directRecTitle" class="form-control form-control-beige" placeholder="예: 해리 포터와 마법사의 돌" required>
-          </div>
-          <div class="row">
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">저자 <span class="text-danger">*</span></label>
-              <input type="text" id="directRecAuthor" class="form-control form-control-beige" placeholder="예: J.K. 롤링" required>
-            </div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">출판사 <span class="text-danger">*</span></label>
-              <input type="text" id="directRecPublisher" class="form-control form-control-beige" placeholder="예: 문학수첩" required>
-            </div>
-          </div>
-          <div class="form-group mb-3">
-            <label class="font-weight-bold" style="font-size: 13px;">표지 이미지 URL <small class="text-muted">(선택)</small></label>
-            <input type="url" id="directRecCover" class="form-control form-control-beige" placeholder="https://... (미입력 시 기본 추천 표지가 자동 적용됩니다)">
-          </div>
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
-            <button type="submit" class="btn-beige-primary">
-              <i class="fa-solid fa-plus-circle mr-1"></i>권장도서 신규 등록
-            </button>
-          </div>
-        </form>
+        <!-- 모달 내부 30권 단위 페이지네이션 바 -->
+        <div id="modalRecPaginationContainer" class="d-flex justify-content-center align-items-center mt-3 pt-2" style="gap: 5px;"></div>
       </div>
-
       <div class="modal-footer modal-footer-beige d-flex justify-content-between">
         <small class="text-muted"><i class="fa-solid fa-circle-check text-success mr-1"></i>등록된 권장도서는 학생 페이지 학년별 추천 도서관에 즉시 반영됩니다.</small>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
@@ -1565,46 +1518,37 @@
           <table class="table table-sm table-bordered bg-white mb-0 text-center" style="font-size: 12.5px;">
             <thead class="thead-light">
               <tr>
-                <th>활동 구분</th>
-                <th>지급 포인트</th>
+                <th style="width: 28%;">활동 구분</th>
+                <th style="width: 24%;">지급 포인트</th>
                 <th>세부 조건 및 기준</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td class="font-weight-bold text-left pl-3">📖 완독 기본 점수</td>
-                <td class="text-success font-weight-bold">+100 P</td>
-                <td class="text-muted">도서 마지막 페이지까지 열람 완료 시</td>
-              </tr>
               <tr style="background: #fffcf5;">
-                <td class="font-weight-bold text-left pl-3">🎯 객관식 문제 풀이</td>
-                <td class="text-warning font-weight-bold" style="color: #b36b00 !important;">1개당 3 P</td>
-                <td class="text-muted">4지선다형 정답 문항당 즉시 지급</td>
-              </tr>
-              <tr style="background: #fffcf5;">
-                <td class="font-weight-bold text-left pl-3">✍️ 주관식 문제 풀이</td>
-                <td class="text-warning font-weight-bold" style="color: #b36b00 !important;">1개당 3 P</td>
-                <td class="text-muted">단답/키워드 일치 및 담당교사 채점 완료 시</td>
+                <td class="font-weight-bold text-left pl-3">🎯 북퀴즈 문제 풀이</td>
+                <td class="text-warning font-weight-bold" style="color: #b36b00 !important;">정답당 3 P</td>
+                <td class="text-muted text-left pl-2">북퀴즈 60점 이상 인증 시 정답 문항당 즉시 지급</td>
               </tr>
               <tr style="background: #fbf5ff;">
                 <td class="font-weight-bold text-left pl-3">💡 생각 담기 작성</td>
-                <td class="text-primary font-weight-bold" style="color: #6f42c1 !important;">5 P</td>
-                <td class="text-muted">자신의 생각 및 느낀점 30자 이상 제출 시</td>
+                <td class="text-primary font-weight-bold" style="color: #6f42c1 !important;">+5 P</td>
+                <td class="text-muted text-left pl-2">나만의 생각 및 독서 소감 작성 제출 시 추가 지급</td>
               </tr>
-              <tr>
-                <td class="font-weight-bold text-left pl-3">🌟 퀴즈 만점 보너스</td>
-                <td class="text-info font-weight-bold">+20 P</td>
-                <td class="text-muted">5문항 전원 정답 시 추가 가산점</td>
+              <tr style="background: #f0fdf4;">
+                <td class="font-weight-bold text-left pl-3">📈 고학년 도서 가산</td>
+                <td class="text-success font-weight-bold" style="color: #16a34a !important;">각각 20% 가중</td>
+                <td class="text-muted text-left pl-2">초등 4학년 이상 권장도서 (소수점 반올림)</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 12px; color: var(--text-muted);">
-          <div class="font-weight-bold text-dark mb-1"><i class="fa-solid fa-medal text-warning mr-1"></i>전국 랭킹 집계 기준</div>
-          • 전국 랭킹은 매일 자정에 최근 30일 및 누적 포인트 합계를 기준으로 집계됩니다.<br>
-          • 월간 누적 1,000P 이상 달성 시 [이달의 독서왕] 명예가 학생 프로필에 자동 수여됩니다.<br>
-          • 획득한 포인트는 학원별 포인트몰 및 나노 리포트 인증서에 반영됩니다.
+        <div class="p-3 rounded" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 12px; color: var(--text-muted); line-height: 1.7;">
+          <div class="font-weight-bold text-dark mb-1"><i class="fa-solid fa-circle-info text-info mr-1"></i>포인트 지급 및 인증 운영 기준</div>
+          • <strong>인증 기준:</strong> 북퀴즈 <strong>60점 이상</strong> 획득 시 정식 독서 인증 및 포인트 지급<br>
+          • <strong>지급 횟수:</strong> 동일 도서는 <strong>인증 2회차까지</strong> 포인트 지급<br>
+          • <strong>재도전 제한:</strong> 동일 도서 하루 <strong>3회 인증 실패(60점 미만)</strong> 시 다음 날 재도전 (한국 시간 기준)<br>
+          • <strong>랭킹 집계:</strong> 매일 자정에 최근 30일 및 누적 포인트 합계를 기준으로 전국 랭킹/명예의 전당 집계
         </div>
 
         <div class="mt-4 text-center">
@@ -1841,7 +1785,7 @@
             <div class="col-md-8">
               <!-- 도서 관리 코드 (직접 입력 + 자동생성 버튼) & 도서명 -->
               <div class="row">
-                <div class="col-md-6 form-group">
+                <div class="col-md-12 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">
                     도서 관리 코드 (ID) <span class="text-danger">*</span>
                   </label>
@@ -1854,25 +1798,6 @@
                     </div>
                   </div>
                   <small class="text-muted" style="font-size: 11px;">직접 입력 또는 자동 생성 가능</small>
-                </div>
-                <div class="col-md-6 form-group">
-                  <label class="font-weight-bold" style="font-size: 13px;">
-                    공개 여부 설정 <span class="text-danger">*</span>
-                  </label>
-                  <div class="d-flex align-items-center gap-3 mt-2">
-                    <div class="custom-control custom-radio">
-                      <input type="radio" id="mbAddPublicY" name="mbAddIsPublic" class="custom-control-input" value="Y" checked>
-                      <label class="custom-control-label font-weight-bold text-success" for="mbAddPublicY" style="font-size: 13px; cursor: pointer;">
-                        공개 <small class="text-muted">(전체 가맹점)</small>
-                      </label>
-                    </div>
-                    <div class="custom-control custom-radio">
-                      <input type="radio" id="mbAddPublicN" name="mbAddIsPublic" class="custom-control-input" value="N">
-                      <label class="custom-control-label font-weight-bold text-secondary" for="mbAddPublicN" style="font-size: 13px; cursor: pointer;">
-                        비공개 <small class="text-muted">(전체 숨김)</small>
-                      </label>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -2123,50 +2048,64 @@
         <!-- 대량 등록 규격 안내 배너 -->
         <div class="mb-3 p-3 rounded" style="background: #ffffff; border: 1.5px solid #e8e2d8; font-size: 12px; line-height: 1.5;">
           <div class="font-weight-bold text-dark mb-1" style="font-size: 13px;">
-            <i class="fa-solid fa-circle-exclamation text-warning mr-1"></i>엑셀(CSV) 작성 시 필수 규격 안내
+            <i class="fa-solid fa-circle-exclamation text-warning mr-1"></i>콘텐츠 대량 등록 신규 서식 규격 안내
           </div>
           <div class="table-responsive mt-2">
             <table class="table table-sm table-bordered mb-0" style="font-size: 11.5px; background: #faf9f6;">
               <thead class="thead-light">
                 <tr>
                   <th style="width: 25%;">항목명</th>
-                  <th>입력 허용값 및 코드 규칙</th>
+                  <th>입력 허용값 및 자동 연동 규칙</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td class="font-weight-bold">권장학년</td>
+                  <td class="font-weight-bold text-danger">1. ISBN (필수)</td>
                   <td>
-                    <span class="badge badge-secondary mr-1">a</span>유치부 &nbsp;|&nbsp;
-                    <span class="badge badge-secondary mr-1">1~6</span>초등 1~6학년 &nbsp;|&nbsp;
-                    <span class="badge badge-secondary mr-1">7~9</span>중등 1~3학년 &nbsp;|&nbsp;
-                    <span class="badge badge-secondary mr-1">b</span>중등 전체<br>
-                    <small class="text-muted">* 간편 코드(1, 2, 7, a, b 등) 또는 기존 한글(초등 4학년 등) 모두 자동 인식됩니다.</small>
+                    13자리 또는 10자리 도서 번호 <span class="badge badge-success font-weight-bold ml-1">자동 채우기</span><br>
+                    <small class="text-primary font-weight-bold">* ISBN만 입력하시면 도서명, 저자, 출판사, 시리즈명, 표지 이미지, 카테고리, 권장학년이 카카오 API를 통해 자동으로 수집·등록됩니다.</small>
                   </td>
                 </tr>
                 <tr>
-                  <td class="font-weight-bold">카테고리 1 (필수)</td>
+                  <td class="font-weight-bold text-danger">2. 주제 분류 태그 (필수)</td>
                   <td>
-                    <span class="text-danger font-weight-bold">소설</span> (또는 A), &nbsp;
-                    <span class="text-danger font-weight-bold">인물 이야기</span> (또는 B), &nbsp;
-                    <span class="text-danger font-weight-bold">비문학/정보글</span> (또는 C)
-                    <small class="text-danger d-block mt-0.5">* 정해진 항목 외의 값이 입력되면 업로드가 차단됩니다.</small>
+                    <span class="badge badge-info">#이야기</span> <span class="badge badge-info">#학습</span> <span class="badge badge-info">#수학</span> <span class="badge badge-info">#자연</span> <span class="badge badge-info">#인간</span> <span class="badge badge-info">#건강</span> <span class="badge badge-info">#과학</span> <span class="badge badge-info">#생활</span> <span class="badge badge-info">#역사</span> <span class="badge badge-info">#예술</span> <span class="badge badge-info">#사회</span> <span class="badge badge-info">#감정</span> <span class="badge badge-info">#환경</span> 등<br>
+                    <small class="text-muted">* 도서 정보의 주제 분류 태그(테마)입니다. # 기호 생략 시에도 자동 보정됩니다.</small>
                   </td>
                 </tr>
                 <tr>
-                  <td class="font-weight-bold">카테고리 2 (필수)</td>
+                  <td class="font-weight-bold">3. 세부 태그 (1~5) (선택)</td>
                   <td>
-                    <span class="text-danger font-weight-bold">국내서</span> (또는 K), &nbsp;
-                    <span class="text-danger font-weight-bold">외서</span> (또는 F), &nbsp;
-                    <span class="text-danger font-weight-bold">구분 없음</span> (또는 N)
-                    <small class="text-danger d-block mt-0.5">* 정해진 항목 외의 값이 입력되면 업로드가 차단됩니다.</small>
+                    세부태그1 ~ 세부태그5 컬럼에 각각 원하는 세부 검색 태그 입력 (최대 5개)
                   </td>
                 </tr>
                 <tr>
-                  <td class="font-weight-bold">ISBN</td>
+                  <td class="font-weight-bold">4. 어워드 및 추천 (선택)</td>
                   <td>
-                    13자리 또는 10자리 번호 <span class="badge badge-success font-weight-bold ml-1" style="font-size: 11px;">숫자만 입력</span>
-                    <small class="text-muted d-block mt-0.5">* 하이픈(-)이나 수식 없이 순수 숫자만 입력하시면 자동 정제되어 등록됩니다. (예: 9788932902708)</small>
+                    도서 수상 이력 또는 기관 추천사 문구 (예: 르몽드 선정 20세기 최고의 책)
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">5. 생각 꺼내기 (선택)</td>
+                  <td>
+                    독서 전/중 학생의 호기심과 배경지식을 일깨우는 사전 발문 문장
+                  </td>
+                </tr>
+                <tr>
+                  <td class="font-weight-bold">6. 생각 담기 (선택)</td>
+                  <td>
+                    <div class="mb-1"><strong>간편 코드 입력 (1~7)</strong> 또는 <strong>0 (생각 담기 없음)</strong> 또는 <strong>직접 질문 문장 입력</strong></div>
+                    <div class="p-2 rounded border bg-white" style="font-size: 11px; line-height: 1.45;">
+                      <strong>[제시문 7가지 코드]</strong><br>
+                      • <span class="badge badge-secondary">1</span> 주인공이 옆에 있다면 하고 싶은 이야기를 적어주세요.<br>
+                      • <span class="badge badge-secondary">2</span> 이 책을 읽고 가장 많이 떠오른 내 주변의 사람은 누구이며 그 이유는 무엇인가요?<br>
+                      • <span class="badge badge-secondary">3</span> 이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는 지 상상해서 이야기를 만들어주세요.<br>
+                      • <span class="badge badge-secondary">4</span> 기억나는 장면이나 문장을 적어보세요.<br>
+                      • <span class="badge badge-secondary">5</span> 이 책에서 얻은 교훈이 있다면?<br>
+                      • <span class="badge badge-secondary">6</span> 가장 기억에 남는 등장인물은 누구이며 그 이유는 무엇인가요?<br>
+                      • <span class="badge badge-secondary">7</span> 이 책을 친구에게 추천한다면, 뭐라고 소개하고 싶은가요?<br>
+                      • <span class="badge badge-dark">0</span> (또는 없음) 생각 담기 과제 없음
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -2176,9 +2115,9 @@
         <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded border">
           <div>
             <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
-              <i class="fa-solid fa-file-csv text-success mr-1.5"></i>표준 도서 등록 서식 다운로드
+              <i class="fa-solid fa-file-csv text-success mr-1.5"></i>새로운 표준 도서 등록 서식 다운로드
             </span>
-            <small class="text-muted">도서명, 저자, 출판사, 권장학년, 카테고리 등 필수 규격 포함</small>
+            <small class="text-muted">ISBN, 주제 분류 태그, 세부 태그(1~5), 어워드, 생각 꺼내기, 생각 담기 규격 완비</small>
           </div>
           <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadBookExcelTemplate()" style="border-radius: 8px; font-size: 12px; padding: 5px 12px;">
             <i class="fa-solid fa-download mr-1"></i>샘플 다운로드 (.csv)
@@ -2284,12 +2223,6 @@
                     <small class="text-muted">* '정답' 컬럼에 쉼표로 함께 적어주셔도 자동으로 분리되어 유사 인정 정답으로 등록됩니다.</small>
                   </td>
                 </tr>
-                <tr>
-                  <td class="font-weight-bold">해설/힌트 (선택)</td>
-                  <td>
-                    학생이 문제를 틀렸을 때 제공할 힌트 또는 정답 해설 요약
-                  </td>
-                </tr>
               </tbody>
             </table>
           </div>
@@ -2299,16 +2232,13 @@
         <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded border">
           <div>
             <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
-              <i class="fa-solid fa-file-excel text-warning mr-1"></i>표준 북퀴즈 서식 다운로드
+              <i class="fa-solid fa-file-csv text-success mr-1"></i>표준 북퀴즈 서식 다운로드
             </span>
             <small class="text-muted">도서코드, 문항번호, 보기 1~4, 정답 등 실제 등록 도서 샘플 데이터 포함</small>
           </div>
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadQuizExcelTemplate('csv')" style="border-radius: 8px; font-size: 12px; padding: 5px 10px;">
+            <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadQuizExcelTemplate('csv')" style="border-radius: 8px; font-size: 12px; padding: 6px 14px;">
               <i class="fa-solid fa-download mr-1"></i>샘플 CSV (.csv)
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-warning font-weight-bold" onclick="downloadQuizExcelTemplate('xlsx')" style="border-radius: 8px; font-size: 12px; padding: 5px 10px; color: #b45309; border-color: #f59e0b;">
-              <i class="fa-solid fa-file-excel mr-1"></i>샘플 엑셀 (.xlsx)
             </button>
           </div>
         </div>
@@ -2494,7 +2424,25 @@
               <!-- JS 동적 생성: [본사 5] [A 학원] 등 -->
             </div>
           </div>
-          <div class="d-flex align-items-center" style="gap: 8px;">
+          <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+            <!-- 북퀴즈 세트 공개/비공개 설정 (본사 전용 제어) -->
+            <div class="d-flex align-items-center p-1 px-2.5 rounded border" id="mqQuizSetPublicWrap" style="background: #f8fafc; border-color: #cbd5e1; gap: 8px;">
+              <span class="font-weight-bold" style="font-size: 12px; color: #475569;">
+                <i class="fa-solid fa-eye text-primary mr-1"></i>퀴즈 공개 설정:
+              </span>
+              <div class="custom-control custom-radio custom-control-inline mb-0 mr-1">
+                <input type="radio" id="mqSetPublicY" name="mqSetIsPublic" class="custom-control-input" value="Y" checked onchange="onMasterQuizSetPublicChanged('Y')">
+                <label class="custom-control-label font-weight-bold text-success" for="mqSetPublicY" style="font-size: 12px; cursor: pointer;">
+                  공개 <small class="text-muted">(전체 공유/응시)</small>
+                </label>
+              </div>
+              <div class="custom-control custom-radio custom-control-inline mb-0">
+                <input type="radio" id="mqSetPublicN" name="mqSetIsPublic" class="custom-control-input" value="N" onchange="onMasterQuizSetPublicChanged('N')">
+                <label class="custom-control-label font-weight-bold text-secondary" for="mqSetPublicN" style="font-size: 12px; cursor: pointer;">
+                  비공개 <small class="text-muted">(출제처 전용/숨김)</small>
+                </label>
+              </div>
+            </div>
             <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteQuizSet" onclick="deleteCurQuizSet()" style="border-radius: 8px; font-size: 11.5px; padding: 5px 10px; display: none;">
               <i class="fa-solid fa-trash mr-1"></i>선택 퀴즈 세트 삭제
             </button>
@@ -2596,7 +2544,7 @@
               </div>
             </div>
             <!-- 질문 입력창 height 2.5배 확대 -->
-            <textarea id="mqQuestionText" class="form-control form-control-beige" rows="5" style="min-height: 130px; font-size: 13px; line-height: 1.6;" placeholder="도서 내용을 바탕으로 독해력/이해도를 측정할 질문이나 지문을 입력하세요." onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
+            <textarea id="mqQuestionText" class="form-control form-control-beige" rows="5" style="min-height: 130px; font-size: 13px; line-height: 1.6;" placeholder="문제를 입력해주세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
             <!-- 첨부된 미디어 정보 요약 칩 (등록 시 노출) -->
             <div id="mqMediaSummaryBox" class="mt-2 p-2 rounded bg-light border align-items-center justify-content-between" style="display: none; border-color: #cbd5e1 !important;">
               <div class="d-flex align-items-center gap-2">
@@ -2647,12 +2595,6 @@
               <input type="text" id="mqSubjectiveSimilar" class="form-control form-control-beige" placeholder="예: 바오밥나무, 바오밥 나무" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()">
               <small class="text-muted">학생이 띄어쓰기나 유사 단어를 입력했을 때 정답 처리할 키워드 목록</small>
             </div>
-          </div>
-
-          <!-- 해설 / 힌트 -->
-          <div class="form-group mb-0 mt-3 pt-2 border-top">
-            <label class="font-weight-bold" style="font-size: 12.5px;">해설 또는 힌트 <small class="text-muted">(선택)</small></label>
-            <input type="text" id="mqQuizHint" class="form-control form-control-beige" placeholder="학생 오답 시 지도용 힌트나 본문 페이지 등을 입력하세요." onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()">
           </div>
         </div>
 

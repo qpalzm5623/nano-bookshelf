@@ -669,9 +669,20 @@ function getThemeAutoMappedBooks(theme) {
   });
 }
 
+function ensureThemeOrders() {
+  themeList.forEach((t, idx) => {
+    if (t.order == null || isNaN(t.order)) {
+      t.order = idx + 1;
+    }
+  });
+  themeList.sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
 function renderThemeTable() {
   const tbody = document.getElementById("themeTableBody");
   if (!tbody) return;
+
+  ensureThemeOrders();
 
   const countEl = document.getElementById("themeCount");
   if (countEl) countEl.innerText = themeList.length;
@@ -679,7 +690,7 @@ function renderThemeTable() {
   if (themeList.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center py-4 text-muted">등록된 테마(태그)가 없습니다.</td>
+        <td colspan="7" class="text-center py-4 text-muted">등록된 테마(태그)가 없습니다.</td>
       </tr>
     `;
     return;
@@ -689,10 +700,22 @@ function renderThemeTable() {
     const autoMappedBooks = getThemeAutoMappedBooks(t);
     const bookCount = autoMappedBooks.length;
     const imgUrl = t.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+    const displayOrder = (t.order != null && !isNaN(t.order)) ? t.order : (idx + 1);
+    const isFirst = idx === 0;
+    const isLast = idx === themeList.length - 1;
 
     return `
       <tr>
         <td style="font-weight: 700; color: var(--text-soft); text-align: center;">${idx + 1}</td>
+        <td style="text-align: center;">
+          <div class="d-flex align-items-center justify-content-center gap-1">
+            <span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size: 12px; min-width: 28px; padding: 3px 6px; border-radius: 6px;">#${displayOrder}</span>
+            <div class="btn-group-vertical ml-1">
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="moveThemeOrder('${t.id}', 'up')" title="순서 위로 올리기" style="border-radius: 4px; padding: 1px 6px; font-size: 10px; line-height: 1.1;" ${isFirst ? 'disabled style="opacity:0.3; cursor:not-allowed; border-radius: 4px; padding: 1px 6px; font-size: 10px;"' : ''}>▲</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="moveThemeOrder('${t.id}', 'down')" title="순서 아래로 내리기" style="border-radius: 4px; padding: 1px 6px; font-size: 10px; line-height: 1.1; margin-top: 2px;" ${isLast ? 'disabled style="opacity:0.3; cursor:not-allowed; border-radius: 4px; padding: 1px 6px; font-size: 10px; margin-top: 2px;"' : ''}>▼</button>
+            </div>
+          </div>
+        </td>
         <td style="text-align: center;">
           <div style="width: 60px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-medium); cursor: pointer; margin: 0 auto; background: #f0ece5;" onclick="previewThemeImage('${t.id}')" title="이미지 크게 보기 (클릭)">
             <img src="${imgUrl}" alt="${t.tag}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='upload/banner/banner_reading_king.jpg'">
@@ -906,6 +929,7 @@ function openThemeModal(themeId) {
   const descInput = document.getElementById("themeDesc");
   const imgSelect = document.getElementById("themeImageUrl");
   const activeSelect = document.getElementById("themeActive");
+  const orderInput = document.getElementById("themeOrder");
 
   if (themeId) {
     const target = themeList.find(item => String(item.id) === String(themeId));
@@ -916,6 +940,7 @@ function openThemeModal(themeId) {
     if (subTagInput) subTagInput.value = target.subTag || "";
     if (descInput) descInput.value = target.desc || "";
     if (imgSelect) imgSelect.value = target.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+    if (orderInput) orderInput.value = (target.order != null && !isNaN(target.order)) ? target.order : 1;
     if (activeSelect) activeSelect.value = target.active || "Y";
   } else {
     if (modalHeader) modalHeader.innerHTML = `<i class="fa-solid fa-tags mr-2 text-warning"></i>신규 테마(태그) 등록`;
@@ -924,6 +949,7 @@ function openThemeModal(themeId) {
     if (subTagInput) subTagInput.value = "";
     if (descInput) descInput.value = "";
     if (imgSelect) imgSelect.value = "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
+    if (orderInput) orderInput.value = themeList.length + 1;
     if (activeSelect) activeSelect.value = "Y";
   }
 
@@ -940,6 +966,7 @@ async function handleSaveTheme(e) {
   const presetImg = document.getElementById("themeImageUrl") ? document.getElementById("themeImageUrl").value : "";
   const finalImage = curThemeUploadedImgData || presetImg || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80";
   const active = document.getElementById("themeActive").value;
+  const orderVal = parseInt(document.getElementById("themeOrder")?.value || "1", 10) || 1;
 
   // 태그 포맷팅 (# 붙이기)
   let formattedTag = tagTitle;
@@ -959,6 +986,7 @@ async function handleSaveTheme(e) {
       target.subTag = subTag;
       target.desc = desc;
       target.image = finalImage;
+      target.order = orderVal;
       target.active = active;
       savedTheme = target;
       themeMessage = `'${formattedTag}' 태그 정보가 수정되었습니다.`;
@@ -972,6 +1000,7 @@ async function handleSaveTheme(e) {
       subTag: subTag,
       desc: desc,
       image: finalImage,
+      order: orderVal,
       bookIds: [],
       active: active,
       createdAt: todayStr
@@ -980,6 +1009,7 @@ async function handleSaveTheme(e) {
     savedTheme = newTheme;
     themeMessage = `'${formattedTag}' 신규 태그가 등록되었습니다.`;
   }
+  ensureThemeOrders();
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
@@ -1661,3 +1691,52 @@ async function moveBannerOrder(id, direction) {
 }
 
 // -----------------------------------------------------------
+
+// --- [Theme Order Reordering] ---
+async function moveThemeOrder(id, direction) {
+  ensureThemeOrders();
+  const idx = themeList.findIndex(t => String(t.id) === String(id));
+  if (idx === -1) return;
+  const beforeOrder = themeList.map(t => ({ id: t.id, order: t.order }));
+
+  if (direction === "up" && idx > 0) {
+    const prevIdx = idx - 1;
+    const temp = themeList[idx].order;
+    themeList[idx].order = themeList[prevIdx].order;
+    themeList[prevIdx].order = temp;
+    const tempTheme = themeList[idx];
+    themeList[idx] = themeList[prevIdx];
+    themeList[prevIdx] = tempTheme;
+  } else if (direction === "down" && idx < themeList.length - 1) {
+    const nextIdx = idx + 1;
+    const temp = themeList[idx].order;
+    themeList[idx].order = themeList[nextIdx].order;
+    themeList[nextIdx].order = temp;
+    const tempTheme = themeList[idx];
+    themeList[idx] = themeList[nextIdx];
+    themeList[nextIdx] = tempTheme;
+  } else {
+    return;
+  }
+
+  // 순서 정규화 (1부터 N까지 연속 부여)
+  themeList.forEach((t, i) => { t.order = i + 1; });
+
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      await Promise.all(themeList.map(t => NanoPortal.saveTheme(t)));
+    } catch (error) {
+      beforeOrder.forEach(prev => {
+        const theme = themeList.find(t => String(t.id) === String(prev.id));
+        if (theme) theme.order = prev.order;
+      });
+      themeList.sort((a, b) => (a.order || 0) - (b.order || 0));
+      showMasterToast('테마 순서를 저장하지 못했습니다: ' + error.message, 'danger');
+      renderThemeTable();
+      return;
+    }
+  }
+  saveOperationsToStorage();
+  renderThemeTable();
+  showMasterToast('테마 노출 순서가 변경되었습니다.');
+}

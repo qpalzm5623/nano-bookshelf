@@ -3378,6 +3378,10 @@
           </div>
           <!-- 대량 엑셀 업로드 및 새 도서 등록 버튼: 검색 영역 상단 우측에 배치 (보유도서 권수 뱃지 삭제) -->
           <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+            <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportAcademyBooksToExcel()"
+              style="padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; background: #ffffff; border-color: #16a34a; color: #16a34a;" title="현재 학원 도서 콘텐츠 전체 목록을 엑셀(CSV) 파일로 다운로드합니다.">
+              <i class="fa-solid fa-file-excel mr-1"></i>엑셀 다운로드
+            </button>
             <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()"
               style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap;">
               <i class="fa-solid fa-arrow-up-from-bracket mr-1"></i>대량 엑셀 업로드
@@ -3496,6 +3500,10 @@
                   <option value="TITLE_ASC">도서명 순</option>
                   <option value="GRADE_ASC">권장 학년 순</option>
                 </select>
+                <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportAcademyBooksToExcel()"
+                  style="padding: 4px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap; background: #ffffff; border-color: #16a34a; color: #16a34a; height: 31px;" title="현재 학원 도서 콘텐츠 전체 목록을 엑셀(CSV) 파일로 다운로드합니다.">
+                  <i class="fa-solid fa-file-excel mr-1"></i>엑셀 다운로드
+                </button>
               </div>
             </div>
 
@@ -7632,9 +7640,9 @@
             <div class="row">
               <!-- 좌측 서지 입력 컬럼 (8열) -->
               <div class="col-md-8">
-                <!-- 도서 관리 코드 (직접 입력 + 자동생성 버튼) & 공개 여부 -->
+                <!-- 도서 관리 코드 (자동 채번) -->
                 <div class="row">
-                  <div class="col-md-6 form-group">
+                  <div class="col-md-12 form-group">
                     <label class="font-weight-bold" style="font-size: 13px;">
                       도서 관리 코드 (자동 채번) <span class="text-danger">*</span>
                     </label>
@@ -7645,29 +7653,6 @@
                     </div>
                     <small class="text-muted" style="font-size: 11px;"><i
                         class="fa-solid fa-lock mr-1 text-muted"></i>도서 관리 코드는 시스템에서 자동 관리되며 직접 수정 불가합니다.</small>
-                  </div>
-                  <div class="col-md-6 form-group">
-                    <label class="font-weight-bold" style="font-size: 13px;">
-                      공개 여부 설정 <span class="text-danger">*</span>
-                    </label>
-                    <div class="d-flex align-items-center gap-3 mt-2">
-                      <div class="custom-control custom-radio">
-                        <input type="radio" id="abEditPublicY" name="abEditIsPublic" class="custom-control-input"
-                          value="Y" checked>
-                        <label class="custom-control-label font-weight-bold text-success" for="abEditPublicY"
-                          style="font-size: 13px; cursor: pointer;">
-                          공개 <small class="text-muted">(학원생 전체)</small>
-                        </label>
-                      </div>
-                      <div class="custom-control custom-radio">
-                        <input type="radio" id="abEditPublicN" name="abEditIsPublic" class="custom-control-input"
-                          value="N">
-                        <label class="custom-control-label font-weight-bold text-secondary" for="abEditPublicN"
-                          style="font-size: 13px; cursor: pointer;">
-                          비공개 <small class="text-muted">(준비중)</small>
-                        </label>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -8100,7 +8085,33 @@
                   <!-- JS 동적 생성 -->
                 </div>
               </div>
-              <div class="d-flex align-items-center" style="gap: 8px;">
+              <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                <!-- 선택된 북퀴즈 세트 공개/비공개 설정 (출제 가맹점 전용 제어) -->
+                <div class="d-flex align-items-center p-1 px-2.5 rounded border" id="abQuizSetPublicWrap"
+                  style="background: #ffffff; border-color: #d8cec0; gap: 8px;">
+                  <span class="font-weight-bold" style="font-size: 12px; color: #473a2f;">
+                    <i class="fa-solid fa-eye text-primary mr-1"></i>퀴즈 공개 설정:
+                  </span>
+                  <div class="custom-control custom-radio custom-control-inline mb-0 mr-1">
+                    <input type="radio" id="abSetPublicY" name="abSetIsPublic" class="custom-control-input" value="Y" checked
+                      onchange="onAcadQuizSetPublicChanged('Y')">
+                    <label class="custom-control-label font-weight-bold text-success" for="abSetPublicY"
+                      style="font-size: 12px; cursor: pointer;">
+                      공개 <small class="text-muted">(전체 공유/응시)</small>
+                    </label>
+                  </div>
+                  <div class="custom-control custom-radio custom-control-inline mb-0">
+                    <input type="radio" id="abSetPublicN" name="abSetIsPublic" class="custom-control-input" value="N"
+                      onchange="onAcadQuizSetPublicChanged('N')">
+                    <label class="custom-control-label font-weight-bold text-secondary" for="abSetPublicN"
+                      style="font-size: 12px; cursor: pointer;">
+                      비공개 <small class="text-muted">(출제처 전용/숨김)</small>
+                    </label>
+                  </div>
+                  <small id="abSetPublicLockNotice" class="text-muted ml-1" style="font-size: 11px; display: none;">
+                    <i class="fa-solid fa-lock text-muted mr-0.5"></i>출제 기관만 변경 가능
+                  </small>
+                </div>
                 <button type="button" class="btn btn-xs btn-outline-danger" id="btnDeleteAcadQuizSet"
                   onclick="deleteCurAcadQuizSet()"
                   style="border-radius: 8px; font-size: 11.5px; font-weight: 600; padding: 5px 10px; display: none;">
@@ -8243,7 +8254,7 @@
                 </div>
                 <textarea id="abQuizQuestion" class="form-control" rows="5"
                   style="border-radius: 10px; border: 1.5px solid #d8cec0; padding: 14px 16px; font-size: 14px; line-height: 1.65; background: #faf8f5; min-height: 115px; font-weight: 500; color: #1e293b;"
-                  placeholder="도서 내용을 바탕으로 독해력/이해도를 측정할 질문이나 지문을 입력하세요." onfocus="setCurAcadQuizInput(this)"
+                  placeholder="문제를 입력해주세요" onfocus="setCurAcadQuizInput(this)"
                   oninput="saveCurrentAcadQuizDraft()"></textarea>
               </div>
 
@@ -8382,7 +8393,7 @@
                         style="font-size: 13px; cursor: pointer;">①번</label>
                     </div>
                   </div>
-                  <input type="text" id="abOpt1" class="form-control border-0" placeholder="1번 보기 내용"
+                  <input type="text" id="abOpt1" class="form-control border-0" placeholder="1번 선택지를 입력해주세요"
                     style="font-size: 13.5px; font-weight: 500; height: 40px; padding: 8px 14px; background: transparent;"
                     onfocus="setCurAcadQuizInput(this)" oninput="saveCurrentAcadQuizDraft()">
                 </div>
@@ -8399,7 +8410,7 @@
                         style="font-size: 13px; cursor: pointer;">②번</label>
                     </div>
                   </div>
-                  <input type="text" id="abOpt2" class="form-control border-0" placeholder="2번 보기 내용"
+                  <input type="text" id="abOpt2" class="form-control border-0" placeholder="2번 선택지를 입력해주세요"
                     style="font-size: 13.5px; font-weight: 500; height: 40px; padding: 8px 14px; background: transparent;"
                     onfocus="setCurAcadQuizInput(this)" oninput="saveCurrentAcadQuizDraft()">
                 </div>
@@ -8416,7 +8427,7 @@
                         style="font-size: 13px; cursor: pointer;">③번</label>
                     </div>
                   </div>
-                  <input type="text" id="abOpt3" class="form-control border-0" placeholder="3번 보기 내용"
+                  <input type="text" id="abOpt3" class="form-control border-0" placeholder="3번 선택지를 입력해주세요"
                     style="font-size: 13.5px; font-weight: 500; height: 40px; padding: 8px 14px; background: transparent;"
                     onfocus="setCurAcadQuizInput(this)" oninput="saveCurrentAcadQuizDraft()">
                 </div>
@@ -8433,7 +8444,7 @@
                         style="font-size: 13px; cursor: pointer;">④번</label>
                     </div>
                   </div>
-                  <input type="text" id="abOpt4" class="form-control border-0" placeholder="4번 보기 내용"
+                  <input type="text" id="abOpt4" class="form-control border-0" placeholder="4번 선택지를 입력해주세요"
                     style="font-size: 13.5px; font-weight: 500; height: 40px; padding: 8px 14px; background: transparent;"
                     onfocus="setCurAcadQuizInput(this)" oninput="saveCurrentAcadQuizDraft()">
                 </div>
@@ -8450,7 +8461,7 @@
                         style="font-size: 13px; cursor: pointer;">⑤번</label>
                     </div>
                   </div>
-                  <input type="text" id="abOpt5" class="form-control border-0" placeholder="5번 보기 내용"
+                  <input type="text" id="abOpt5" class="form-control border-0" placeholder="5번 선택지를 입력해주세요"
                     style="font-size: 13.5px; font-weight: 500; height: 40px; padding: 8px 14px; background: transparent;"
                     onfocus="setCurAcadQuizInput(this)" oninput="saveCurrentAcadQuizDraft()">
                 </div>
@@ -8464,16 +8475,6 @@
                   style="border-radius: 10px; border: 1.5px solid #d8cec0; padding: 12px 14px; font-size: 13.5px; line-height: 1.6; background: #faf8f5;"
                   placeholder="정답으로 인정할 핵심 단어 또는 모범 문장을 입력하세요. (쉼표로 유사 정답 구분 가능)" onfocus="setCurAcadQuizInput(this)"
                   oninput="saveCurrentAcadQuizDraft()"></textarea>
-              </div>
-
-              <!-- 해설 및 힌트 -->
-              <div class="form-group mb-0">
-                <label class="font-weight-bold" style="font-size: 13px; color: #2d261e;">해설 또는 힌트 <small
-                    class="text-muted">(선택)</small></label>
-                <input type="text" id="abQuizHint" class="form-control"
-                  style="height: 40px; border-radius: 10px; border: 1.5px solid #d8cec0; padding: 0 14px; font-size: 13px; background: #faf8f5;"
-                  placeholder="학생 오답 시 지도용 힌트나 본문 페이지 등을 입력하세요." onfocus="setCurAcadQuizInput(this)"
-                  oninput="saveCurrentAcadQuizDraft()">
               </div>
             </div>
 
@@ -9029,7 +9030,7 @@
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
-<script src="admin_preview.js?v=20261105_portfolio_flow"></script>
+<script src="admin_preview.js?v=20261106_direct_quiz_add"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>

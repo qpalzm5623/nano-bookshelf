@@ -1,3 +1,93 @@
+
+// 권장도서 목록 및 마스터 도서에서 '주제 분류 태그 선택'에 지정된 테마(#이야기, #인간 등) 추출
+function getBookThemeTagDisplay(b) {
+  if (!b) return '-';
+
+  // 1) b 자체에 themeTag가 있는 경우
+  if (b.themeTag && typeof b.themeTag === 'string' && b.themeTag.trim()) {
+    const clean = b.themeTag.trim();
+    return clean.startsWith('#') ? clean : '#' + clean;
+  }
+
+  // 2) b.tag 또는 b.themeName이 있는 경우
+  if (b.themeName && typeof b.themeName === 'string' && b.themeName.trim()) {
+    const clean = b.themeName.trim();
+    return clean.startsWith('#') ? clean : '#' + clean;
+  }
+  if (b.tag && typeof b.tag === 'string' && b.tag.trim() && !b.tag.startsWith('권장')) {
+    const clean = b.tag.trim();
+    return clean.startsWith('#') ? clean : '#' + clean;
+  }
+
+  // 3) masterBooks 또는 window.MIGRATED_BOOKS에서 원본 도서 조회
+  const allMaster = (typeof masterBooks !== 'undefined' && Array.isArray(masterBooks) && masterBooks.length > 0)
+    ? masterBooks
+    : ((typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) ? window.MIGRATED_BOOKS : []);
+
+  if (allMaster.length > 0) {
+    const matched = allMaster.find(mb => {
+      if (b.bookId && (String(mb.id) === String(b.bookId) || String(mb.bookNo) === String(b.bookId))) return true;
+      if (b.id && (String(mb.id) === String(b.id) || String(mb.bookNo) === String(b.id))) return true;
+      if (b.title && mb.title && mb.title.trim() === b.title.trim()) return true;
+      return false;
+    });
+
+    if (matched) {
+      if (matched.themeTag && typeof matched.themeTag === 'string' && matched.themeTag.trim()) {
+        const clean = matched.themeTag.trim();
+        return clean.startsWith('#') ? clean : '#' + clean;
+      }
+      if (matched.themeName && typeof matched.themeName === 'string' && matched.themeName.trim()) {
+        const clean = matched.themeName.trim();
+        return clean.startsWith('#') ? clean : '#' + clean;
+      }
+      if (matched.tag && typeof matched.tag === 'string' && matched.tag.trim() && !matched.tag.startsWith('권장')) {
+        const clean = matched.tag.trim();
+        return clean.startsWith('#') ? clean : '#' + clean;
+      }
+      if (matched.subject && typeof matched.subject === 'string' && matched.subject.trim()) {
+        const clean = matched.subject.trim();
+        return clean.startsWith('#') ? clean : '#' + clean;
+      }
+      if (Array.isArray(matched.tags) && matched.tags.length > 0) {
+        const hashTag = matched.tags.find(t => typeof t === 'string' && t.startsWith('#'));
+        if (hashTag) return hashTag.trim();
+      }
+    }
+  }
+
+  // 4) b.subject 확인
+  if (b.subject && typeof b.subject === 'string' && b.subject.trim()) {
+    const clean = b.subject.trim();
+    return clean.startsWith('#') ? clean : '#' + clean;
+  }
+
+  // 5) b.tags 배열 내 해시태그 확인
+  if (Array.isArray(b.tags) && b.tags.length > 0) {
+    const hashTag = b.tags.find(t => typeof t === 'string' && t.startsWith('#'));
+    if (hashTag) return hashTag.trim();
+  }
+
+  // 6) b.detailTag 내 해시태그 파싱
+  if (b.detailTag && typeof b.detailTag === 'string') {
+    const match = b.detailTag.match(/#[^s,#]+/);
+    if (match) return match[0];
+  }
+
+  // 7) themeList와 자동 매핑 여부 확인
+  if (typeof themeList !== 'undefined' && Array.isArray(themeList) && themeList.length > 0) {
+    for (const t of themeList) {
+      if (t.bookIds && Array.isArray(t.bookIds)) {
+        if (t.bookIds.includes(b.bookId) || t.bookIds.includes(b.id)) {
+          return t.tag || ('#' + t.title);
+        }
+      }
+    }
+  }
+
+  return '-';
+}
+
 /**
  * [Nano BookShelf B2B Master] Franchise Management Module
  * - Franchise Academy List Table Rendering & Pagination
@@ -177,7 +267,13 @@ function renderRecommendedBooksTable() {
           </span>
         </td>
         <td class="text-center">
-          <span class="badge-soft badge-soft-info" style="font-size: 11.5px;">${b.category || '일반'}</span>
+          ${(() => {
+            const themeTag = getBookThemeTagDisplay(b);
+            if (themeTag && themeTag !== '-') {
+              return `<span class="badge-soft badge-soft-warning font-weight-bold" style="font-size: 11.5px; padding: 4px 8px; border-radius: 6px;"><i class="fa-solid fa-tag mr-1" style="font-size: 10px;"></i>${themeTag}</span>`;
+            }
+            return `<span class="text-muted" style="font-size: 11.5px;">-</span>`;
+          })()}
         </td>
         <td class="text-center text-muted" style="font-size: 12px; white-space: nowrap;">${dateStr}</td>
         <td class="text-center">
@@ -258,130 +354,253 @@ function goToRecommendedPage(page) {
   }
 }
 
+// 권장도서 추가 모달 페이징 및 필터 상태
+let recModalCurrentPage = 1;
+const REC_MODAL_PAGE_SIZE = 30;
+let recModalSearchDebounceTimer = null;
+
+// 권장도서 추가 모달 열기 (선택된 학년 고정 + 도서 리스트 초기화)
 function openAddRecommendedBookModal() {
-  const modalGrade = document.getElementById("modalRecGrade");
-  const directGrade = document.getElementById("directRecGrade");
+  // 메인 화면에서 선택된 학년(selectedRecGrade) 반영 (전체 선택 상태이면 '초등 1학년' 기본값)
   const targetGrade = (selectedRecGrade && selectedRecGrade !== "ALL") ? selectedRecGrade : "초등 1학년";
-  if (modalGrade) modalGrade.value = targetGrade;
-  if (directGrade) directGrade.value = targetGrade;
+
+  const hiddenGradeInput = document.getElementById("modalRecGrade");
+  if (hiddenGradeInput) hiddenGradeInput.value = targetGrade;
+
+  const badgeEl = document.getElementById("modalRecTargetGradeBadge");
+  if (badgeEl) {
+    badgeEl.innerText = targetGrade;
+  }
+
+  // 모달 내 도서 권장학년 셀렉트는 기본 'ALL'(전체 권장학년)으로 설정하여 도서 탐색 편의 제공
+  const bookGradeSelect = document.getElementById("modalRecBookGradeGradeFilter") || document.getElementById("modalRecBookGradeFilter");
+  if (bookGradeSelect) bookGradeSelect.value = "ALL";
 
   const searchInput = document.getElementById("modalRecBookSearch");
   if (searchInput) searchInput.value = "";
 
-  switchRecModalTab('library');
-  filterRecModalBooks();
+  recModalCurrentPage = 1;
+  filterRecModalBooks(true);
 
   if (window.jQuery && typeof $('#recommendedBookModal').modal === 'function') {
     $('#recommendedBookModal').modal('show');
   }
 }
 
+// 탭 전환 호환성 유지용 (구버전 호환)
 function switchRecModalTab(tab) {
-  const libTabBtn = document.getElementById("rec-tab-lib-btn");
-  const directTabBtn = document.getElementById("rec-tab-direct-btn");
-  const libView = document.getElementById("recModalViewLibrary");
-  const directView = document.getElementById("recModalViewDirect");
-
-  if (tab === 'library') {
-    if (libTabBtn) {
-      libTabBtn.className = "nav-link active font-weight-bold py-1 px-3";
-      libTabBtn.style.color = "";
-      libTabBtn.style.background = "";
-    }
-    if (directTabBtn) {
-      directTabBtn.className = "nav-link font-weight-bold py-1 px-3";
-      directTabBtn.style.color = "#5a4b3d";
-      directTabBtn.style.background = "transparent";
-    }
-    if (libView) libView.style.display = "block";
-    if (directView) directView.style.display = "none";
-    filterRecModalBooks();
-  } else {
-    if (libTabBtn) {
-      libTabBtn.className = "nav-link font-weight-bold py-1 px-3";
-      libTabBtn.style.color = "#5a4b3d";
-      libTabBtn.style.background = "transparent";
-    }
-    if (directTabBtn) {
-      directTabBtn.className = "nav-link active font-weight-bold py-1 px-3";
-      directTabBtn.style.color = "";
-      directTabBtn.style.background = "";
-    }
-    if (libView) libView.style.display = "none";
-    if (directView) directView.style.display = "block";
-  }
+  // 직접 등록 탭이 제거되었으므로 항상 라이브러리 모드로 동작
+  filterRecModalBooks();
 }
 
-function filterRecModalBooks() {
+// 모달 검색 입력 디바운스 (타이핑 렉 방지)
+function handleRecModalSearchInput() {
+  clearTimeout(recModalSearchDebounceTimer);
+  recModalSearchDebounceTimer = setTimeout(() => {
+    recModalCurrentPage = 1;
+    filterRecModalBooks();
+  }, 250);
+}
+
+// 모달 필터 변경 (권장학년 드롭박스 변경 또는 엔터/검색버튼 클릭)
+function handleRecModalFilterChange() {
+  recModalCurrentPage = 1;
+  filterRecModalBooks(true);
+}
+
+// 모달 내 도서 검색 및 30권씩 페이징 렌더링
+function filterRecModalBooks(resetPage = false) {
+  if (resetPage) recModalCurrentPage = 1;
+
   const container = document.getElementById("modalRecBookCandidateList");
   const countSpan = document.getElementById("modalRecBookCandidateCount");
+  const pageSummary = document.getElementById("modalRecPaginationSummary");
+  const paginationContainer = document.getElementById("modalRecPaginationContainer");
   const searchInput = document.getElementById("modalRecBookSearch");
   const query = (searchInput ? searchInput.value.trim().toLowerCase() : "");
 
-  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0) ? masterBooks : (typeof mockBooks !== 'undefined' ? mockBooks : []);
-  const recList = getRecommendedBooks();
-  const selectedGrade = document.getElementById("modalRecGrade") ? document.getElementById("modalRecGrade").value : "초등 1학년";
+  const bookGradeFilter = document.getElementById("modalRecBookGradeFilter")?.value || "ALL";
+  const targetGrade = document.getElementById("modalRecGrade")?.value || "초등 1학년";
 
+  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0)
+    ? masterBooks
+    : ((typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) ? window.MIGRATED_BOOKS : (typeof mockBooks !== 'undefined' ? mockBooks : []));
+
+  const recList = getRecommendedBooks();
+
+  // 필터링: 도서 권장학년 + 도서명/저자/출판사 검색
   const candidates = allMasterBooks.filter(b => {
+    // 1. 도서 권장학년 필터
+    if (bookGradeFilter !== "ALL") {
+      const normBookGrade = typeof normalizeBookGrade === 'function' ? normalizeBookGrade(b.grade) : normalizeRecGradeCode(b.grade);
+      const normFilterGrade = typeof normalizeBookGrade === 'function' ? normalizeBookGrade(bookGradeFilter) : normalizeRecGradeCode(bookGradeFilter);
+      if (normBookGrade !== normFilterGrade) return false;
+    }
+
+    // 2. 검색어 필터
     if (!query) return true;
     return (b.title && b.title.toLowerCase().includes(query)) ||
            (b.author && b.author.toLowerCase().includes(query)) ||
            (b.publisher && b.publisher.toLowerCase().includes(query));
   });
 
-  if (countSpan) countSpan.textContent = candidates.length;
+  const totalCount = candidates.length;
+  if (countSpan) countSpan.textContent = totalCount.toLocaleString();
 
-  if (candidates.length === 0) {
-    container.innerHTML = `<div class="p-4 text-center text-muted">검색된 도서가 없습니다. [신규 권장도서 직접 등록] 탭을 이용해 직접 추가할 수 있습니다.</div>`;
+  if (totalCount === 0) {
+    if (container) {
+      container.innerHTML = `<div class="p-4 text-center text-muted" style="font-size: 13px;">
+        <i class="fa-solid fa-book-open mb-2" style="font-size: 26px; opacity: 0.4;"></i>
+        <div>일치하는 도서가 없습니다.</div>
+      </div>`;
+    }
+    if (pageSummary) pageSummary.innerText = "0 / 0 페이지";
+    if (paginationContainer) paginationContainer.innerHTML = "";
     return;
   }
 
-  container.innerHTML = candidates.map(b => {
-    const isAlreadyRec = recList.some(r => (r.bookId === b.id || r.title === b.title) && normalizeRecGradeCode(r.grade) === normalizeRecGradeCode(selectedGrade));
-    const coverSrc = b.cover || b.image || '';
-    const coverHtml = coverSrc ? `<img src="${coverSrc}" style="width: 40px; height: 52px; object-fit: cover; border-radius: 4px;" class="mr-2">` : `<div style="width: 40px; height: 52px; background: #eee; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;" class="mr-2">도서</div>`;
-    return `
-      <div class="d-flex align-items-center justify-content-between p-2 border-bottom hover-bg">
-        <div class="d-flex align-items-center">
-          ${coverHtml}
-          <div>
-            <div class="font-weight-bold" style="font-size: 13px;">${b.title}</div>
-            <small class="text-muted">${b.author || '-'} | ${b.publisher || '-'}</small>
+  // 30권씩 페이징 계산
+  const totalPages = Math.ceil(totalCount / REC_MODAL_PAGE_SIZE) || 1;
+  if (recModalCurrentPage > totalPages) recModalCurrentPage = totalPages;
+  if (recModalCurrentPage < 1) recModalCurrentPage = 1;
+
+  if (pageSummary) pageSummary.innerText = `${recModalCurrentPage} / ${totalPages} 페이지`;
+
+  const startIdx = (recModalCurrentPage - 1) * REC_MODAL_PAGE_SIZE;
+  const pagedList = candidates.slice(startIdx, startIdx + REC_MODAL_PAGE_SIZE);
+
+  if (container) {
+    container.innerHTML = pagedList.map(b => {
+      // 현재 지정 대상 학년에 이미 등록되어 있는지 체크
+      const isAlreadyRec = recList.some(r =>
+        (String(r.bookId) === String(b.id) || String(r.id) === String(b.id) || r.title === b.title) &&
+        normalizeRecGradeCode(r.grade) === normalizeRecGradeCode(targetGrade)
+      );
+
+      const coverSrc = b.cover || b.image || '';
+      const coverHtml = coverSrc
+        ? `<img src="${coverSrc}" style="width: 42px; height: 56px; object-fit: cover; border-radius: 4px; border: 1px solid #e2dad0;" onerror="this.onerror=null; this.src='resources/images/book_default.svg';" class="mr-2 flex-shrink-0">`
+        : `<div style="width: 42px; height: 56px; background: #ece7e1; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #8c7355;" class="mr-2 flex-shrink-0">도서</div>`;
+
+      const bookGradeDisplay = b.grade ? formatShortRecGrade(b.grade) : '전체';
+      const themeTag = typeof getBookThemeTagDisplay === 'function' ? getBookThemeTagDisplay(b) : '';
+
+      return `
+        <div class="d-flex align-items-center justify-content-between p-2 border-bottom" style="gap: 10px; transition: background 0.15s ease;">
+          <div class="d-flex align-items-center" style="min-width: 0; flex: 1;">
+            ${coverHtml}
+            <div style="min-width: 0;">
+              <div class="d-flex align-items-center gap-1 flex-wrap mb-1">
+                <span class="badge-soft badge-soft-master" style="font-size: 11px; padding: 2px 6px; border-radius: 4px;">${bookGradeDisplay}</span>
+                ${themeTag && themeTag !== '-' ? `<span class="badge-soft badge-soft-warning font-weight-bold" style="font-size: 11px; padding: 2px 6px; border-radius: 4px;">${themeTag}</span>` : ''}
+                <strong class="text-truncate font-weight-bold" style="font-size: 13.5px; color: var(--text-main);" title="${b.title}">${b.title}</strong>
+              </div>
+              <div class="text-muted text-truncate" style="font-size: 12px;">${b.author || '-'} · ${b.publisher || '-'}</div>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            ${isAlreadyRec
+              ? `<button class="btn btn-sm btn-secondary disabled" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px; cursor: not-allowed;" disabled><i class="fa-solid fa-check mr-1"></i>이미 등록됨</button>`
+              : `<button class="btn btn-sm btn-beige-primary" style="font-size: 11.5px; padding: 4px 12px; border-radius: 6px; font-weight: 700;" onclick="addBookToRecommended('${b.id}')">
+                  <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+                 </button>`
+            }
           </div>
         </div>
-        <div>
-          ${isAlreadyRec
-            ? `<button class="btn btn-sm btn-secondary disabled" style="font-size: 11px; border-radius: 6px;" disabled><i class="fa-solid fa-check mr-1"></i>이미 지정됨</button>`
-            : `<button class="btn btn-sm btn-beige-primary" style="font-size: 11px; padding: 4px 10px; border-radius: 6px;" onclick="addBookToRecommended('${b.id}')">
-                <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
-               </button>`
-          }
-        </div>
-      </div>
-    `;
-  }).join("");
+      `;
+    }).join("");
+  }
+
+  renderRecModalPagination(totalPages, recModalCurrentPage);
 }
 
+// 모달 내부 30권 단위 페이지네이션 바 렌더링
+function renderRecModalPagination(totalPages, curPage) {
+  const container = document.getElementById("modalRecPaginationContainer");
+  if (!container) return;
+
+  if (totalPages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+
+  let html = "";
+  const isFirst = curPage === 1;
+  html += `
+    <button type="button" class="btn btn-sm" onclick="goToRecModalPage(${curPage - 1})" ${isFirst ? 'disabled style="opacity: 0.35; cursor: not-allowed; background: #fff; border: 1px solid #e0d8cc; color: #888; font-size: 11px; padding: 3px 8px; border-radius: 5px;"' : 'style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 11px; padding: 3px 8px; border-radius: 5px;"'}>
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+  `;
+
+  let startP = Math.max(1, curPage - 2);
+  let endP = Math.min(totalPages, startP + 4);
+  if (endP - startP < 4) {
+    startP = Math.max(1, endP - 4);
+  }
+
+  if (startP > 1) {
+    html += `<button type="button" class="btn btn-sm" onclick="goToRecModalPage(1)" style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 11px; padding: 3px 8px; border-radius: 5px;">1</button>`;
+    if (startP > 2) html += `<span style="color: var(--text-muted); font-size: 11px; padding: 0 2px;">...</span>`;
+  }
+
+  for (let p = startP; p <= endP; p++) {
+    const isActive = p === curPage;
+    html += `
+      <button type="button" class="btn btn-sm" onclick="goToRecModalPage(${p})" style="${isActive ? 'background: #7d5a2b; color: #fff; font-weight: 700; border: 1px solid #7d5a2b;' : 'background: #fff; border: 1px solid #d8cebf; color: var(--text-main);'} font-size: 11px; padding: 3px 8px; border-radius: 5px;">
+        ${p}
+      </button>
+    `;
+  }
+
+  if (endP < totalPages) {
+    if (endP < totalPages - 1) html += `<span style="color: var(--text-muted); font-size: 11px; padding: 0 2px;">...</span>`;
+    html += `<button type="button" class="btn btn-sm" onclick="goToRecModalPage(${totalPages})" style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 11px; padding: 3px 8px; border-radius: 5px;">${totalPages}</button>`;
+  }
+
+  const isLast = curPage === totalPages;
+  html += `
+    <button type="button" class="btn btn-sm" onclick="goToRecModalPage(${curPage + 1})" ${isLast ? 'disabled style="opacity: 0.35; cursor: not-allowed; background: #fff; border: 1px solid #e0d8cc; color: #888; font-size: 11px; padding: 3px 8px; border-radius: 5px;"' : 'style="background: #fff; border: 1px solid #d8cebf; color: var(--text-main); font-size: 11px; padding: 3px 8px; border-radius: 5px;"'}>
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  `;
+
+  container.innerHTML = html;
+}
+
+function goToRecModalPage(page) {
+  recModalCurrentPage = page;
+  filterRecModalBooks(false);
+  const listEl = document.getElementById("modalRecBookCandidateList");
+  if (listEl) listEl.scrollTop = 0;
+}
+
+// 라이브러리에서 권장도서로 추가 (지정 대상 학년에 등록)
 async function addBookToRecommended(bookId) {
   const grade = document.getElementById("modalRecGrade") ? document.getElementById("modalRecGrade").value : "초등 1학년";
-  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0) ? masterBooks : (typeof mockBooks !== 'undefined' ? mockBooks : []);
-  const book = allMasterBooks.find(b => b.id === bookId);
+  const allMasterBooks = (typeof masterBooks !== 'undefined' && masterBooks.length > 0)
+    ? masterBooks
+    : ((typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) ? window.MIGRATED_BOOKS : (typeof mockBooks !== 'undefined' ? mockBooks : []));
+
+  const book = allMasterBooks.find(b => String(b.id) === String(bookId));
   if (!book) return;
 
   const list = getRecommendedBooks();
-  const exists = list.some(r => (r.bookId === bookId || r.title === book.title) && normalizeRecGradeCode(r.grade) === normalizeRecGradeCode(grade));
+  const exists = list.some(r => (String(r.bookId) === String(bookId) || String(r.id) === String(bookId) || r.title === book.title) && normalizeRecGradeCode(r.grade) === normalizeRecGradeCode(grade));
   if (exists) {
-    alert("이미 해당 학년의 권장도서로 등록되어 있습니다.");
+    alert(`이미 [${grade}]의 권장도서로 등록되어 있습니다.`);
     return;
   }
 
-  const previousGrade = book.grade;
-  book.grade = grade;
   if (window.NanoPortal && NanoPortal.remote) {
     const previousRecommended = book.isRecommended;
     book.isRecommended = true;
-    try { await NanoPortal.saveBook(book); }
-    catch (error) { book.isRecommended = previousRecommended; book.grade = previousGrade; showMasterToast('권장도서로 지정하지 못했습니다: ' + error.message); return; }
+    try {
+      await NanoPortal.saveBook(book);
+    } catch (error) {
+      book.isRecommended = previousRecommended;
+      showMasterToast('권장도서로 지정하지 못했습니다: ' + error.message, 'danger');
+      return;
+    }
   } else {
     book.isRecommended = true;
   }
@@ -399,9 +618,9 @@ async function addBookToRecommended(bookId) {
   });
 
   saveRecommendedBooks(list);
-  filterRecModalBooks();
+  filterRecModalBooks(false);
   renderRecommendedBooksTable();
-  showMasterToast(`[${book.title}] 도서가 [${grade}] 권장도서로 성공적으로 등록되었습니다.`);
+  showMasterToast(`[${book.title}] 도서가 [${grade}] 권장도서로 등록되었습니다.`);
 }
 
 async function saveDirectRecommendedBook(event) {
@@ -856,18 +1075,93 @@ function formatPhoneInput(input) {
 }
 
 // (가맹 학원 페이징 변수는 파일 상단에 선언됨)
+const franchiseKoCollator = new Intl.Collator('ko', { numeric: true, sensitivity: 'base' });
+let currentFilteredFranchises = null;
 
-// 가맹점 테이블 렌더링 (최근 가맹일/가입일 기준 최신순 정렬 + 20개씩 페이징)
+// 화면 표시 기준과 100% 일치하는 실질 가입일 추출 (마이그레이션 일자 폴백 반영)
+function getEffectiveFranchiseJoinDate(acad) {
+  if (!acad) return "";
+  const raw = (acad.joinDate && acad.joinDate !== '2026-10-26')
+    ? acad.joinDate
+    : (acad.startDate || acad.joinDate || "");
+  const trimmed = String(raw || "").trim();
+  return trimmed === "-" ? "" : trimmed;
+}
+
+// 화면 표시 기준과 100% 일치하는 실질 원장명 추출 (대표교사 계정 이름 연동 반영)
+function getEffectiveFranchiseDirectorName(acad) {
+  if (!acad) return "";
+  const adminStaff = typeof getFranchiseAdminStaff === "function" ? getFranchiseAdminStaff(acad) : null;
+  let displayDirector = (acad.director || "").replace(/\s*원장\s*원장/g, " 원장").trim();
+  if (adminStaff) {
+    if (!displayDirector || displayDirector.endsWith(" 원장") || displayDirector.includes("원장")) {
+      displayDirector = adminStaff.name || displayDirector;
+    }
+  }
+  const trimmed = String(displayDirector || "").trim();
+  return trimmed === "-" ? "" : trimmed;
+}
+
+// 6종 정렬 옵션(가입일 오름/내림, 학원명 오름/내림, 원장명 오름/내림)에 따른 정렬 처리
+function sortFranchiseListByMode(data, sortMode) {
+  const mode = sortMode || "joinDate_desc";
+  return [...data].sort((a, b) => {
+    const nameA = (a.name || "").trim();
+    const nameB = (b.name || "").trim();
+
+    if (mode === "joinDate_desc" || mode === "joinDate_asc") {
+      const dateA = getEffectiveFranchiseJoinDate(a);
+      const dateB = getEffectiveFranchiseJoinDate(b);
+      // 가입일이 비어 있는 항목은 오름/내림차순 모두 하단으로 배치
+      if (!dateA && !dateB) return franchiseKoCollator.compare(nameA, nameB);
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      if (dateA !== dateB) {
+        return mode === "joinDate_desc" ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
+      }
+      return franchiseKoCollator.compare(nameA, nameB);
+    }
+
+    if (mode === "director_asc" || mode === "director_desc") {
+      const dirA = getEffectiveFranchiseDirectorName(a);
+      const dirB = getEffectiveFranchiseDirectorName(b);
+      // 원장명이 비어 있는 항목은 오름/내림차순 모두 하단으로 배치
+      if (!dirA && !dirB) return franchiseKoCollator.compare(nameA, nameB);
+      if (!dirA) return 1;
+      if (!dirB) return -1;
+      const cmp = franchiseKoCollator.compare(dirA, dirB);
+      if (cmp !== 0) return mode === "director_desc" ? -cmp : cmp;
+      return franchiseKoCollator.compare(nameA, nameB);
+    }
+
+    // name_asc / name_desc (학원명 오름차순 / 내림차순)
+    if (!nameA && !nameB) return 0;
+    if (!nameA) return 1;
+    if (!nameB) return -1;
+    const cmp = franchiseKoCollator.compare(nameA, nameB);
+    if (cmp !== 0) return mode === "name_desc" ? -cmp : cmp;
+    return getEffectiveFranchiseJoinDate(b).localeCompare(getEffectiveFranchiseJoinDate(a));
+  });
+}
+
+// 정렬 드롭박스 변경 시 현재 조회된 목록을 즉시 재정렬하고 1페이지로 이동
+function handleFranchiseSortChange() {
+  franchiseCurrentPage = 1;
+  const targetData = Array.isArray(currentFilteredFranchises) ? currentFilteredFranchises : franchiseList;
+  renderFranchiseTable(targetData, false);
+}
+
+// 가맹점 테이블 렌더링 (선택된 정렬 방식 반영 + 20개씩 페이징)
 function renderFranchiseTable(data = franchiseList, keepPage = false) {
   const tbody = document.getElementById("franchiseTableBody");
   if (!tbody) return;
 
-  // 가맹 학원명(name) 기준 한글 ㄱㄴㄷ 오름차순 (가나다순) 정렬
-  const sortedData = [...data].sort((a, b) => {
-    const nameA = (a.name || '').trim();
-    const nameB = (b.name || '').trim();
-    return nameA.localeCompare(nameB, 'ko');
-  });
+  if (data === franchiseList) {
+    currentFilteredFranchises = null;
+  }
+
+  const sortMode = document.getElementById("franchiseSortSelect")?.value || "joinDate_desc";
+  const sortedData = sortFranchiseListByMode(data, sortMode);
 
   lastSortedFranchises = sortedData;
   const totalCount = sortedData.length;
@@ -880,7 +1174,7 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
 
   const countEl = document.getElementById("franchiseFilteredCount");
   if (countEl) {
-    countEl.innerText = `${totalCount}개소 (${franchiseCurrentPage} / ${totalPages} 페이지)`;
+    countEl.innerText = `${totalCount}개소 · ${franchiseCurrentPage} / ${totalPages} 페이지`;
   }
 
   if (totalCount === 0) {
@@ -1205,12 +1499,14 @@ function filterFranchiseList() {
     }
   }
 
+  currentFilteredFranchises = filtered;
   renderFranchiseTable(filtered);
 }
 
 // 가맹점 필터 초기화
 function resetFranchiseFilters() {
   franchiseCurrentPage = 1; // 초기화 시 1페이지로 리셋
+  currentFilteredFranchises = null;
   const q = document.getElementById("franchiseSearchInput");
   if (q) q.value = "";
   const clearBtn = document.getElementById("btnFranchiseSearchClear");
@@ -1225,6 +1521,8 @@ function resetFranchiseFilters() {
   if (sDate) sDate.value = "";
   const eDate = document.getElementById("franchiseEndDateFilter");
   if (eDate) eDate.value = "";
+  const sortEl = document.getElementById("franchiseSortSelect");
+  if (sortEl) sortEl.value = "joinDate_desc";
   renderFranchiseTable();
 }
 
@@ -1821,10 +2119,27 @@ async function restoreDeletedAcademy(idx) {
 // -----------------------------------------------------------
 function exportFranchiseExcel() {
   const headers = ["학원ID", "학원명", "사업자번호", "원장명", "이메일", "연락처", "지역", "관리자ID", "이용상품", "가맹일", "계약시작", "계약만료", "현재원생", "최대원생", "월결제금액", "상태"];
-  const rows = franchiseList.map(a => [
-    a.id, a.name, a.bizNumber || "", a.director, a.email || "", a.phone,
-    a.region, a.adminId, a.plan, a.joinDate, a.startDate, a.endDate,
-    a.currentStudents, a.maxStudents, a.monthlyFee, a.status
+  // 현재 검색 필터 및 정렬 순서가 적용된 목록 우선 다운로드
+  const targetList = Array.isArray(lastSortedFranchises) && (Array.isArray(currentFilteredFranchises) || lastSortedFranchises.length > 0)
+    ? lastSortedFranchises
+    : franchiseList;
+  const rows = targetList.map(a => [
+    a.id,
+    a.name,
+    a.bizNumber || "",
+    getEffectiveFranchiseDirectorName(a) || a.director || "",
+    a.email || "",
+    a.phone,
+    a.region,
+    a.adminId,
+    a.plan,
+    getEffectiveFranchiseJoinDate(a) || a.joinDate || "",
+    a.startDate,
+    a.endDate,
+    a.currentStudents,
+    a.maxStudents,
+    a.monthlyFee,
+    a.status
   ]);
 
   const today = new Date().toISOString().split("T")[0];

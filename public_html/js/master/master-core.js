@@ -975,14 +975,19 @@ function loadOperationsFromStorage() {
     window.NANO_SERVER_BANNERS = bannerList.slice();
     themeList = (window.NANO_SERVER_THEMES || []).map(function(st) {
       var lt = Array.isArray(localThemes) ? localThemes.find(function(x) { return String(x.id) === String(st.id) || (x.title && x.title === st.title) || (x.tag && x.tag === st.tag); }) : null;
-      if (!lt) return st;
+      if (!lt) return Object.assign({}, st, { order: typeof st.order === 'number' ? st.order : (parseInt(st.order, 10) || null) });
       return Object.assign({}, st, {
         subTag: st.subTag || lt.subTag || "",
         desc: st.desc || lt.desc || st.description || "",
         image: (st.image && !st.image.includes("photo-1544716278")) ? st.image : (lt.image || st.image || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80"),
+        order: typeof lt.order === 'number' ? lt.order : (typeof st.order === 'number' ? st.order : null),
         active: st.active || lt.active || "Y"
       });
     });
+    themeList.forEach(function(t, idx) {
+      if (t.order == null || isNaN(t.order)) t.order = idx + 1;
+    });
+    themeList.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
     return;
   }
   const localTime = parseInt(localStorage.getItem("NANO_MASTER_BANNERS_TIME") || "0", 10);
@@ -1865,6 +1870,25 @@ function switchMasterTab(tabName) {
 
   // 대상 탭 지연 렌더링(Lazy Loading) 실행
   ensureMasterTabRendered(tabName);
+
+  // 탭 이동 시 검색/필터 상태 초기화 (메뉴 간 이동 후 복귀 시 초기화된 기본 상태로 표시)
+  if (tabName === "members" && typeof resetMemberFilters === "function") {
+    resetMemberFilters();
+  } else if (tabName === "franchise" && typeof resetFranchiseFilters === "function") {
+    resetFranchiseFilters();
+  } else if (tabName === "contents" && typeof resetContentFilters === "function") {
+    resetContentFilters();
+  } else if (tabName === "ranking" && typeof resetRankingFilters === "function") {
+    resetRankingFilters();
+  } else if (tabName === "dispatch" && typeof resetDispatchFilters === "function") {
+    resetDispatchFilters();
+  } else if (tabName === "payment") {
+    if (document.getElementById("masterPaymentAcademyFilter")) document.getElementById("masterPaymentAcademyFilter").value = "ALL";
+    if (document.getElementById("masterPaymentPlanFilter")) document.getElementById("masterPaymentPlanFilter").value = "ALL";
+    if (document.getElementById("masterPaymentStatusFilter")) document.getElementById("masterPaymentStatusFilter").value = "ALL";
+    if (document.getElementById("masterPaymentSearchInput")) document.getElementById("masterPaymentSearchInput").value = "";
+    if (typeof renderMasterPaymentTable === "function") renderMasterPaymentTable(typeof masterPaymentList !== "undefined" ? masterPaymentList : []);
+  }
 
   const mainEl = document.querySelector('.main-workspace');
   if (mainEl) mainEl.scrollTop = 0;

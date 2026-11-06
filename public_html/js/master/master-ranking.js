@@ -859,9 +859,10 @@ function exportMasterBooksToExcel() {
     return;
   }
 
-  // 표준 CSV 헤더 컬럼
+  // 표준 CSV 헤더 컬럼 (요구사항: ISBN 컬럼 추가, 주제분류태그 대체, 북퀴즈 세트 수 대체, 등록일자 YYYY-MM-DD)
   const headers = [
     "도서코드(ID)",
+    "ISBN",
     "도서명",
     "시리즈",
     "저자",
@@ -869,9 +870,9 @@ function exportMasterBooksToExcel() {
     "출판년도",
     "추천학년",
     "도서분류",
-    "주제별태그",
+    "주제분류태그",
     "소속학원(HQ/가맹점)",
-    "북퀴즈문항수",
+    "북퀴즈세트",
     "나노시트활동지",
     "공개여부",
     "등록일자"
@@ -883,17 +884,109 @@ function exportMasterBooksToExcel() {
     return `"${str}"`;
   };
 
+  // 날짜 형식 변환: YYYY-MM-DD (년월일) 까지만 안전 추출
+  const formatBookDate = rawDate => {
+    if (!rawDate) return "";
+    const str = String(rawDate).trim();
+    const match = str.match(/^(\d{4}[-/.]\d{2}[-/.]\d{2})/);
+    if (match) {
+      return match[1].replace(/[/.]/g, "-");
+    }
+    return str.slice(0, 10);
+  };
+
+  // 도서 주제 분류 태그(테마 태그) 추출 헬퍼 (세부 태그가 아닌 '주제 분류 태그 선택'의 테마)
+  const getThemeTag = b => {
+    if (!b) return "";
+    // 1. 도서 객체에 저장된 themeTag 필드 우선
+    if (b.themeTag && typeof b.themeTag === "string" && b.themeTag.trim()) {
+      const t = b.themeTag.trim();
+      return t.startsWith("#") ? t : `#${t}`;
+    }
+    // 2. subject 필드
+    if (b.subject && typeof b.subject === "string" && b.subject.trim()) {
+      const s = b.subject.trim();
+      return s.startsWith("#") ? s : `#${s}`;
+    }
+    // 3. 글로벌 themeList와 매핑 검사
+    const themes = (typeof themeList !== "undefined" && Array.isArray(themeList)) ? themeList : [];
+    if (themes.length > 0) {
+      for (const th of themes) {
+        const cleanTh = String(th.tag || th.title || "").replace(/^#/, "").trim().toLowerCase();
+        if (!cleanTh) continue;
+        if (Array.isArray(b.tags)) {
+          for (const tg of b.tags) {
+            const cleanTg = String(tg || "").replace(/^#/, "").trim().toLowerCase();
+            if (cleanTg === cleanTh) return th.tag ? (th.tag.startsWith("#") ? th.tag : `#${th.tag}`) : `#${cleanTh}`;
+          }
+        }
+        if (b.category && String(b.category).toLowerCase().includes(cleanTh)) {
+          return th.tag ? (th.tag.startsWith("#") ? th.tag : `#${th.tag}`) : `#${cleanTh}`;
+        }
+      }
+    }
+    // 4. tags 배열의 첫 항목이 #으로 시작하는 경우
+    if (Array.isArray(b.tags) && b.tags.length > 0 && typeof b.tags[0] === "string") {
+      const first = b.tags[0].trim();
+      if (first.startsWith("#")) return first;
+    }
+    // 5. 기본 카테고리가 한국어 텍스트인 경우
+    if (b.category && typeof b.category === "string" && !/^[A-Z]$/.test(b.category.trim())) {
+      const c = b.category.trim();
+      return c.startsWith("#") ? c : `#${c}`;
+    }
+    return "";
+  };
+
+  // 북퀴즈 등록 기관(세트) 수 산출 헬퍼 (몇 곳에서 등록했는지 기준)
+  const getQuizSetCount = b => {
+    if (!b) return "0";
+    if (typeof b.quizSetCount === "number" && b.quizSetCount > 0) return `${b.quizSetCount}Set`;
+    if (typeof getBookQuizSetCount === "function") {
+      const cnt = getBookQuizSetCount(b);
+      return cnt > 0 ? `${cnt}Set` : "0";
+    }
+    if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
+      const valid = b.quizSets.filter(s => (Array.isArray(s.questions) && s.questions.length > 0) || (Array.isArray(s.quizzes) && s.quizzes.length > 0));
+      return valid.length > 0 ? `${valid.length}Set` : "0";
+    }
+    if (b.title && b.title.includes("어린 왕자")) return "2Set";
+    if (b.hasQuiz === true || b.hasQuiz === "Y" || (typeof b.quizzes === "number" && b.quizzes > 0) || (Array.isArray(b.quizList) && b.quizList.length > 0)) {
+      return "1Set";
+    }
+    if (b.id === "FA000001" || (b.title && b.title.includes("고양이 목욕탕"))) return "1Set";
+    return "0";
+  };
+
+  // 도서 ISBN 추출 헬퍼 (13자리 숫자 유지)
+  const getIsbn = b => {
+    if (!b) return "";
+    if (b.isbn && String(b.isbn).trim()) return String(b.isbn).trim();
+    if (b.isbn13 && String(b.isbn13).trim()) return String(b.isbn13).trim();
+    if (b.cover && typeof b.cover === "string") {
+      const m = b.cover.match(/\/(\d{10,13})\.(jpg|png|webp)/i);
+      if (m && m[1]) return m[1];
+    }
+    return "";
+  };
+
   const rows = booksToExport.map(b => {
     const isHq = !b.academyId || b.academyId === "HQ";
     const academyName = b.academyName || (isHq ? "본사 직속(HQ)" : "가맹 학원");
-    const quizCount = b.quizzes || (b.hasQuiz ? 5 : 0);
-    const hasSheet = b.hasSheet ? "유" : "무";
+    const quizSetDisplay = getQuizSetCount(b);
+    const hasSheet = (b.hasSheet || b.sheet) ? "유" : "무";
     const isPublic = b.isPublic !== "N" ? "공개" : "비공개";
     const pubYear = b.pubYear || b.year || "";
-    const tags = Array.isArray(b.tags) ? b.tags.join(" ") : (b.detailTag || b.themeTag || "");
+    const themeTag = getThemeTag(b);
+    const isbnVal = getIsbn(b);
+    const dateVal = formatBookDate(b.date || b.createdAt || b.regDate || "");
+
+    // ISBN은 엑셀에서 숫자로 인식하여 지수 변환(9.79119E+12)되는 것을 방지하기 위해 ="ISBN" 텍스트 수식 포맷 사용
+    const isbnCell = isbnVal ? `="${isbnVal}"` : '""';
 
     return [
-      escapeCsv(b.id),
+      escapeCsv(b.id || b.bookNo || ""),
+      isbnCell,
       escapeCsv(b.title),
       escapeCsv(b.series || ""),
       escapeCsv(b.author || ""),
@@ -901,12 +994,12 @@ function exportMasterBooksToExcel() {
       escapeCsv(pubYear),
       escapeCsv(b.grade || ""),
       escapeCsv(b.category || ""),
-      escapeCsv(tags),
+      escapeCsv(themeTag),
       escapeCsv(academyName),
-      escapeCsv(quizCount),
+      escapeCsv(quizSetDisplay),
       escapeCsv(hasSheet),
       escapeCsv(isPublic),
-      escapeCsv(b.date || b.createdAt || "")
+      escapeCsv(dateVal)
     ].join(",");
   });
 

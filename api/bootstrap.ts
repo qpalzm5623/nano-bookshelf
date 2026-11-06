@@ -20,7 +20,7 @@ export default async function handler(req: any, res: any) {
       include: { _count: { select: { quizzes: true } }, theme: true }
     });
     // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
-    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows, charSettingRows] = await Promise.all([
+    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows, charSettingRows, quizSetRows] = await Promise.all([
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
@@ -43,9 +43,15 @@ export default async function handler(req: any, res: any) {
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
       prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta'] } }, select: { key: true, scope: true, value: true } }),
-      prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } })
+      prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
+      prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] })
     ]);
     const books: any[] = bookRows as any[];
+    const quizSetCountMap = new Map<string, number>();
+    for (const qsr of ((quizSetRows as any[]) || [])) {
+      quizSetCountMap.set(qsr.bookId, (quizSetCountMap.get(qsr.bookId) || 0) + 1);
+    }
+
     const noticeMetaMap = new Map<string, Record<string, any>>();
     const bannerMetaMap = new Map<string, Record<string, any>>();
     const themeMetaMap = new Map<string, Record<string, any>>();
@@ -174,6 +180,7 @@ export default async function handler(req: any, res: any) {
             thinkOpen: b.thinkTitle || '',
             hasQuiz: ((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0,
             quizCount: (b.quizzes && b.quizzes.length) || b._count?.quizzes || 0,
+            quizSetCount: quizSetCountMap.get(b.id) || (((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0 ? 1 : 0),
             likes: totalLikes,
             recommends: totalRecs,
             quizCompletions: totalCerts,
@@ -230,6 +237,7 @@ export default async function handler(req: any, res: any) {
           subTag: meta.subTag !== undefined ? meta.subTag : '',
           desc: meta.desc !== undefined ? meta.desc : (t.description || ''),
           image: meta.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80',
+          order: typeof meta.order === 'number' ? meta.order : (parseInt(meta.order, 10) || null),
           active: meta.active === 'N' ? 'N' : 'Y',
           bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : autoBookIds
         };

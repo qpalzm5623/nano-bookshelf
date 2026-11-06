@@ -81,6 +81,8 @@ async function main() {
       name: m.name,
       username: m.username,
       grade: m.grade || (m.role === 'DIRECTOR' ? '원장' : m.role === 'TEACHER' ? '교사' : '학생'),
+      gender: m.gender || '',
+      school: m.school || '',
       className: m.classGroup?.name || '-',
       phone: m.phone || '-',
       parentPhone: m.parentPhone || '-',
@@ -129,6 +131,15 @@ async function main() {
   const bookStatsMap = new Map<string, { count: number; avgScore: number }>();
   for (const bs of bookQuizStats) {
     bookStatsMap.set(bs.bookId, { count: bs._count.id, avgScore: Math.round(bs._avg.score || 0) });
+  }
+
+  // 도서별 출제 기관/세트 수(legacyQuizSeq 기준) 집계
+  const quizSetStats = await prisma.bookQuiz.groupBy({
+    by: ['bookId', 'legacyQuizSeq'],
+  });
+  const bookQuizSetCountMap = new Map<string, number>();
+  for (const q of quizSetStats) {
+    bookQuizSetCountMap.set(q.bookId, (bookQuizSetCountMap.get(q.bookId) || 0) + 1);
   }
 
   // 3. 도서 목록 추출 (전체 도서 추출)
@@ -183,6 +194,7 @@ async function main() {
 
     return {
       id: b.bookNo,
+      isbn: b.isbn || '',
       title: b.title,
       author: b.author,
       publisher: b.publisher || '출판사 미지정',
@@ -203,6 +215,7 @@ async function main() {
       isPublic: 'Y',
       hasQuiz: b._count.quizzes > 0,
       quizzes: b._count.quizzes,
+      quizSetCount: bookQuizSetCountMap.get(b.id) || (b._count.quizzes > 0 ? 1 : 0),
       likes: realLikes,
       recommends: realRecommends,
       quizCompletions: realCompletions,

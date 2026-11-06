@@ -4,6 +4,9 @@ import { academyScope } from '../lib/portal-http';
 import { randomUUID } from 'node:crypto';
 import { hashPassword, verifyPassword, signSession, readSession, passwordVersion } from '../lib/portal-auth';
 
+let quizAuthorMap: Record<string, any> = {};
+try { quizAuthorMap = require('../lib/quiz-authors.json'); } catch {}
+
 // Vercel Node 함수. 사용자/학원 ID는 요청 본문이 아니라 검증된 세션에서 가져옵니다.
 const cookieName = 'nano_portal';
 // 함수 인스턴스 안에서의 반복 로그인을 제한합니다. 운영 배포에는 Vercel Firewall 제한도 적용합니다.
@@ -21,7 +24,8 @@ function cookie(value: string, age = 28800) { return `${cookieName}=${value}; Pa
 function publicUser(member: any) {
   return { id: member.username, memberId: member.id, role: member.role === 'MASTER' ? 'master' : member.role === 'STUDENT' ? 'student' : member.role === 'TEACHER' ? 'teacher' : 'admin',
     name: member.name, studentName: member.name, studentId: member.username, academyId: member.academy.code,
-    academyName: member.academy.name, classGroup: member.classGroup?.name || '미지정', server: true };
+    academyName: member.academy.name, classGroup: member.classGroup?.name || '미지정',
+    grade: member.grade || '', gender: member.gender || '', school: member.school || '', server: true };
 }
 function allowed(member: any) {
   return member && member.status === 'APPROVED' && member.academy?.status === 'ACTIVE' && !member.academy.deletedAt;
@@ -87,22 +91,45 @@ export default async function handler(req: any, res: any) {
       if (!bookId || bookId.length > 100 || !/^[A-Za-z0-9_-]+$/.test(bookId)) return res.status(400).json({ error: '도서 정보를 확인해 주세요.' });
       const book = await prisma.book.findFirst({
         where: { OR: [{ id: bookId }, { bookNo: bookId }] },
-        select: { id: true, bookNo: true, quizzes: { orderBy: { questionNo: 'asc' },
-          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true } } }
+        select: { id: true, bookNo: true, quizzes: { orderBy: [{ legacyQuizSeq: 'asc' }, { questionNo: 'asc' }],
+          select: { id: true, question: true, options: true, correctAnswer: true, questionNo: true, legacyQuizSeq: true } } }
       });
       if (!book) return res.status(404).json({ error: '도서를 찾을 수 없습니다.' });
-      // 도서별 북퀴즈 지연 조회(Lazy Load): 학생 풀이 화면 및 본사·학원 북퀴즈 관리 모달에서 공용으로 사용할 수 있도록 choices와 opt1~opt5를 함께 반환
-      return res.status(200).json({
-        bookId: book.bookNo,
-        quizSets: book.quizzes.length ? [{ id: 'server-' + book.id, authorName: '본사', authorType: 'HQ', academyName: '본사 직속 (공용)',
-          questions: book.quizzes.map(q => {
+
+      // 출제 기관별(legacyQuizSeq) 북퀴즈 세트 분리 (본사 및 가맹점)
+      const setsMap = new Map<number, any[]>();
+      for (const q of book.quizzes) {
+        const seq = q.legacyQuizSeq || 0;
+        if (!setsMap.has(seq)) setsMap.set(seq, []);
+        setsMap.get(seq)!.push(q);
+      }
+
+      const quizSets = Array.from(setsMap.entries()).map(([seq, qList], idx) => {
+        const authorInfo = (quizAuthorMap as any)[seq] || {
+          authorType: 'HQ',
+          authorName: '본사',
+          academyName: '본사 직속 (공용)'
+        };
+        return {
+          id: `server-${book.id}-${seq || idx}`,
+          authorType: authorInfo.authorType || 'HQ',
+          authorName: authorInfo.authorName || '본사',
+          academyName: authorInfo.academyName || '본사 직속 (공용)',
+          isPublic: 'Y',
+          questions: qList.map(q => {
             const opts = Array.isArray(q.options) ? q.options : [];
             return {
               id: q.id, serverId: q.id, question: q.question, choices: opts, options: opts,
               opt1: opts[0] || '', opt2: opts[1] || '', opt3: opts[2] || '', opt4: opts[3] || '', opt5: opts[4] || '',
               ...(user.role === 'STUDENT' ? {} : { ans: Number(q.correctAnswer) }), questionNo: q.questionNo, type: 'CHOICE'
             };
-          }) }] : []
+          })
+        };
+      });
+
+      return res.status(200).json({
+        bookId: book.bookNo,
+        quizSets
       });
     }
     if (action === 'learning' && req.method === 'GET') {

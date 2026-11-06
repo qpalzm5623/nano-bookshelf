@@ -505,6 +505,7 @@ export default async function handler(req: any, res: any) {
         subTag: text(input.subTag || '', '서브 태그', 500),
         desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
         image: text(input.image || '', '테마 이미지', 1500000),
+        order: typeof input.order === 'number' ? input.order : (parseInt(input.order, 10) || null),
         active: input.active === 'N' ? 'N' : 'Y',
         bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : []
       };

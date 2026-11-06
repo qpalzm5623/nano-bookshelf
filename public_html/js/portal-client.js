@@ -114,7 +114,7 @@
     var name = item.name || item.title || String(item.tag || '').replace(/^#/, '');
     var result = await manage('themes', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined,
       code: item.code || ('THEME-' + String(item.id || Date.now())), name: name, description: item.description || item.desc || item.subTag || '',
-      subTag: item.subTag || '', desc: item.desc || item.description || '', image: item.image || '', active: item.active === 'N' ? 'N' : 'Y',
+      subTag: item.subTag || '', desc: item.desc || item.description || '', image: item.image || '', order: typeof item.order === 'number' ? item.order : (parseInt(item.order, 10) || null), active: item.active === 'N' ? 'N' : 'Y',
       bookIds: Array.isArray(item.bookIds) ? item.bookIds : [] });
     if (result.item) { item.id = result.item.id; item.code = result.item.code; }
     return result.item;
