@@ -3,6 +3,119 @@ import Reading = require('../public_html/js/reading-progress');
 import { readSession, passwordVersion } from '../lib/portal-auth';
 
 // 공개 JS 파일로 배포하던 회원 정보를 로그인한 사용자의 범위로만 제공합니다.
+interface CachedCatalog {
+  cachedAt: number;
+  books: any[];
+  banners: any[];
+  themes: any[];
+  certCountMap: Map<string, number>;
+  wishCountMap: Map<string, number>;
+  globalRecCountMap: Map<string, number>;
+  allRecRows: any[];
+  quizSetCountMap: Map<string, number>;
+  noticeMetaMap: Map<string, Record<string, any>>;
+  bannerMetaMap: Map<string, Record<string, any>>;
+  themeMetaMap: Map<string, Record<string, any>>;
+  bookCreatorMap: Map<string, Record<string, any>>;
+  socialStats: Record<string, any>;
+}
+
+let catalogCache: CachedCatalog | null = null;
+let catalogPromise: Promise<CachedCatalog> | null = null;
+
+async function getCachedCatalog(): Promise<CachedCatalog> {
+  const now = Date.now();
+  if (catalogCache && now - catalogCache.cachedAt < 5 * 60 * 1000) {
+    return catalogCache;
+  }
+  if (catalogPromise) return catalogPromise;
+
+  catalogPromise = (async () => {
+    try {
+      const [bookRows, banners, themes, certAttempts, prefRows, settingRows, quizSetRows, recSettingRows] = await Promise.all([
+        prisma.book.findMany({
+          orderBy: { bookNo: 'asc' },
+          include: { _count: { select: { quizzes: true } }, theme: true }
+        }),
+        prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }),
+        prisma.themeCategory.findMany(),
+        prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
+        prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
+        prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta', 'book_creator', 'system'] } }, select: { key: true, scope: true, value: true, updatedAt: true } }),
+        prisma.bookQuiz ? prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] }) : Promise.resolve([]),
+        prisma.portalSetting.findMany({ where: { scope: 'book_recommend' }, select: { key: true, value: true } })
+      ]);
+
+      const quizSetCountMap = new Map<string, number>();
+      for (const qsr of ((quizSetRows as any[]) || [])) {
+        quizSetCountMap.set(qsr.bookId, (quizSetCountMap.get(qsr.bookId) || 0) + 1);
+      }
+
+      const noticeMetaMap = new Map<string, Record<string, any>>();
+      const bannerMetaMap = new Map<string, Record<string, any>>();
+      const themeMetaMap = new Map<string, Record<string, any>>();
+      const bookCreatorMap = new Map<string, Record<string, any>>();
+      let socialStats: Record<string, any> = {};
+
+      for (const row of (settingRows || [])) {
+        const val = (row.value || {}) as Record<string, any>;
+        if (row.scope === 'notice_meta') noticeMetaMap.set(row.key.replace(/^notice_meta:/, ''), val);
+        else if (row.scope === 'banner_meta') bannerMetaMap.set(row.key.replace(/^banner_meta:/, ''), val);
+        else if (row.scope === 'theme_meta') themeMetaMap.set(row.key.replace(/^theme_meta:/, ''), { ...val, _updatedAt: (row as any).updatedAt ? +new Date((row as any).updatedAt) : 0 });
+        else if (row.scope === 'book_creator') bookCreatorMap.set(row.key.replace(/^book_creator:/, ''), val);
+        else if (row.key === 'legacy_book_social_stats') socialStats = val;
+      }
+
+      const certCountMap = new Map<string, number>();
+      for (const ca of certAttempts) {
+        certCountMap.set(ca.bookId, ca._count.id);
+      }
+
+      const wishCountMap = new Map<string, number>();
+      for (const row of prefRows) {
+        const v: any = row.value;
+        if (v?.wishlist && Array.isArray(v.wishlist)) {
+          for (const bId of v.wishlist) {
+            const k = String(bId).trim();
+            wishCountMap.set(k, (wishCountMap.get(k) || 0) + 1);
+          }
+        }
+      }
+
+      const globalRecCountMap = new Map<string, number>();
+      for (const rRow of (((recSettingRows as any[]) || []))) {
+        const list = Array.isArray((rRow.value as any)?.books) ? (rRow.value as any).books : [];
+        const cleanList = list.map((x: any) => String(x || '').trim()).filter(Boolean);
+        for (const k of Array.from(new Set<string>(cleanList))) {
+          globalRecCountMap.set(k, (globalRecCountMap.get(k) || 0) + 1);
+        }
+      }
+
+      catalogCache = {
+        cachedAt: Date.now(),
+        books: bookRows as any[],
+        banners,
+        themes,
+        certCountMap,
+        wishCountMap,
+        globalRecCountMap,
+        allRecRows: recSettingRows || [],
+        quizSetCountMap,
+        noticeMetaMap,
+        bannerMetaMap,
+        themeMetaMap,
+        bookCreatorMap,
+        socialStats
+      };
+      return catalogCache;
+    } finally {
+      catalogPromise = null;
+    }
+  })();
+
+  return catalogPromise;
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
@@ -14,13 +127,10 @@ export default async function handler(req: any, res: any) {
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
     const isStudent = user.role === 'STUDENT';
-    // 목록 표시에는 퀴즈 개수(_count)만 포함하여 응답 속도를 극대화하고(15MB -> 1MB 이하), 실제 문항은 필요 시 지연 조회(/api/portal?action=quiz)합니다.
-    const booksPromise = prisma.book.findMany({
-      orderBy: { bookNo: 'asc' },
-      include: { _count: { select: { quizzes: true } }, theme: true }
-    });
-    // 인증 이후 서로 독립적인 조회는 함께 시작해 순차 대기를 줄입니다.
-    const [members, academies, bookRows, classes, banners, themes, notices, owned, payments, dispatches, certAttempts, prefRows, classMetaRows, noticeMetaRows, charSettingRows, quizSetRows, recSettingRows] = await Promise.all([
+
+    // 공통 도서 카탈로그는 인메모리 SWR 캐시에서 즉시 조회(0ms), 사용자별 고유 데이터만 병렬 조회하여 응답 속도 극대화
+    const [catalog, members, academies, classes, notices, owned, payments, dispatches, classMetaRows, charSettingRows] = await Promise.all([
+      getCachedCatalog(),
       prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
@@ -28,9 +138,7 @@ export default async function handler(req: any, res: any) {
       prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { id: user.academyId }) },
       select: { id: true, code: true, name: true, bizNo: true, directorName: true, phone: true, email: true, maxStudents: true, monthlyFee: true, plan: true, address: true, memo: true, joinDate: true, status: true, startDate: true, endDate: true,
         _count: { select: { members: { where: { role: 'STUDENT', status: 'APPROVED' } } } } } }),
-      booksPromise,
       prisma.classGroup.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: { select: { code: true } } } }),
-      prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }), prisma.themeCategory.findMany(),
       prisma.notice.findMany({ where: user.role === 'MASTER' ? {} : { OR: [{ targetRole: null }, { targetRole: user.role }] }, orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }] }),
       prisma.academyBook.findMany({ where: { academyId: user.academyId }, include: { book: { select: { bookNo: true } } } }),
       user.role === 'MASTER' || user.role === 'DIRECTOR'
@@ -39,43 +147,28 @@ export default async function handler(req: any, res: any) {
       user.role === 'MASTER' || user.role === 'DIRECTOR' || user.role === 'TEACHER'
         ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
-      isStudent ? Promise.resolve([]) : prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
-      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
-      prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'banner_meta', 'theme_meta', 'book_creator', 'system'] } }, select: { key: true, scope: true, value: true, updatedAt: true } }),
-      prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
-      prisma.bookQuiz ? prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] }) : Promise.resolve([]),
-      prisma.portalSetting.findMany({ where: { scope: 'book_recommend' }, select: { key: true, value: true } })
+      prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } })
     ]);
-    const books: any[] = bookRows as any[];
-    const quizSetCountMap = new Map<string, number>();
-    for (const qsr of ((quizSetRows as any[]) || [])) {
-      quizSetCountMap.set(qsr.bookId, (quizSetCountMap.get(qsr.bookId) || 0) + 1);
-    }
 
-    const noticeMetaMap = new Map<string, Record<string, any>>();
-    const bannerMetaMap = new Map<string, Record<string, any>>();
-    const themeMetaMap = new Map<string, Record<string, any>>();
-    const bookCreatorMap = new Map<string, Record<string, any>>();
+    const books = catalog.books;
+    const quizSetCountMap = catalog.quizSetCountMap;
+    const noticeMetaMap = catalog.noticeMetaMap;
+    const bannerMetaMap = catalog.bannerMetaMap;
+    const themeMetaMap = catalog.themeMetaMap;
+    const bookCreatorMap = catalog.bookCreatorMap;
+    const certCountMap = catalog.certCountMap;
+    const wishCountMap = catalog.wishCountMap;
+    const recCountMap = catalog.globalRecCountMap;
+    const socialStats = catalog.socialStats;
+    const banners = catalog.banners;
+    const themes = catalog.themes;
+
     const memberCharMap = new Map<string, string>();
-    let socialStats: {
-      baseLikes?: Record<string, number>;
-      allLikes?: Record<string, number>;
-      recommends?: Record<string, number>;
-      legacyCerts?: Record<string, number>;
-    } = {};
     for (const crow of (((charSettingRows as any[]) || []))) {
       const mid = String(crow.key || '').replace(/^character:/, '');
       const cid = (crow.value as any)?.characterId;
       if (mid && cid) memberCharMap.set(mid, String(cid));
-    }
-    for (const row of (noticeMetaRows || [])) {
-      const val = (row.value || {}) as Record<string, any>;
-      if (row.scope === 'notice_meta') noticeMetaMap.set(row.key.replace(/^notice_meta:/, ''), val);
-      else if (row.scope === 'banner_meta') bannerMetaMap.set(row.key.replace(/^banner_meta:/, ''), val);
-      else if (row.scope === 'theme_meta') themeMetaMap.set(row.key.replace(/^theme_meta:/, ''), { ...val, _updatedAt: (row as any).updatedAt ? +new Date((row as any).updatedAt) : 0 });
-      else if (row.scope === 'book_creator') bookCreatorMap.set(row.key.replace(/^book_creator:/, ''), val);
-      else if (row.key === 'legacy_book_social_stats') socialStats = val;
     }
 
     // 학급별 담당 지도교사 매핑 복원
@@ -87,30 +180,13 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    // 도서별 북퀴즈 인증 완료(score >= 60) 횟수 및 학생 찜(Wishlist) 집계
-    const certCountMap = new Map<string, number>();
-    for (const ca of certAttempts) {
-      certCountMap.set(ca.bookId, ca._count.id);
-    }
-    const wishCountMap = new Map<string, number>();
-    for (const row of prefRows) {
-      const v: any = row.value;
-      if (v?.wishlist && Array.isArray(v.wishlist)) {
-        for (const bId of v.wishlist) {
-          const k = String(bId).trim();
-          wishCountMap.set(k, (wishCountMap.get(k) || 0) + 1);
-        }
-      }
-    }
-    const recCountMap = new Map<string, number>();
     let myRecommends: string[] = [];
     const myRecKey = 'recommends:' + user.id;
-    for (const rRow of (((recSettingRows as any[]) || []))) {
-      const list = Array.isArray((rRow.value as any)?.books) ? (rRow.value as any).books : [];
-      const cleanList = list.map((x: any) => String(x || '').trim()).filter(Boolean);
-      if (rRow.key === myRecKey) myRecommends = cleanList;
-      for (const k of Array.from(new Set<string>(cleanList))) {
-        recCountMap.set(k, (recCountMap.get(k) || 0) + 1);
+    for (const rRow of catalog.allRecRows) {
+      if (rRow.key === myRecKey) {
+        const list = Array.isArray((rRow.value as any)?.books) ? (rRow.value as any).books : [];
+        myRecommends = list.map((x: any) => String(x || '').trim()).filter(Boolean);
+        break;
       }
     }
 

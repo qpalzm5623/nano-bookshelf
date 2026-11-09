@@ -188,6 +188,7 @@ model BookQuiz {
   score         Int      @default(20) // 배점
 
   @@index([bookId, questionNo])
+  @@index([bookId, legacyQuizSeq])
   @@map("book_quizzes")
 }
 
@@ -211,6 +212,7 @@ model QuizAttempt {
 
   @@index([memberId])
   @@index([bookId])
+  @@index([bookId, score]) // 도서별 북퀴즈 인증 완료(score >= 60) 집계 가속 인덱스
   @@index([memberId, bookId, completedAt]) // 동일 도서 일일 실패 제한(3회) 및 회차별 인증 판정 인덱스
   @@index([memberId, completedAt]) // 학생별 최신 응시 이력 페이징 정렬 및 포트폴리오 기간 조회 인덱스
   @@index([completedAt, score]) // 월간 랭킹 및 기간별 완독(60점 이상) 집계 인덱스
