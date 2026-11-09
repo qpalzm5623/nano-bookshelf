@@ -115,26 +115,95 @@
     });
   }
 
+  // 브라우저 캔버스를 이용해 이미지 Blob/DataURL을 WebP(품질 85%, 최대 폭 1200px)로 즉시 자동 변환
+  async function convertImageToWebP(source) {
+    if (!source) return source;
+    // PDF나 이미 WebP인 경우 변환 없이 그대로 반환
+    if (typeof Blob !== 'undefined' && source instanceof Blob) {
+      if (source.type === 'application/pdf' || source.type === 'image/webp') return source;
+      if (!source.type.startsWith('image/')) return source;
+    } else if (typeof source === 'string') {
+      if (/^data:application\/pdf/i.test(source) || /^data:image\/webp/i.test(source)) return source;
+      if (!/^data:image\//i.test(source)) return source;
+    }
+
+    return new Promise(function(resolve) {
+      var img = new Image();
+      img.onload = function() {
+        try {
+          var maxW = 1200;
+          var w = img.width || 0;
+          var h = img.height || 0;
+          if (w > maxW && w > 0) {
+            h = Math.round((h * maxW) / w);
+            w = maxW;
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w || 400;
+          canvas.height = h || 600;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          if (typeof canvas.toBlob === 'function') {
+            canvas.toBlob(function(webpBlob) {
+              if (webpBlob && webpBlob.size > 0) {
+                resolve(webpBlob);
+              } else {
+                resolve(source); // 브라우저가 webp 미지원 시 원본 폴백
+              }
+            }, 'image/webp', 0.85);
+          } else {
+            resolve(canvas.toDataURL('image/webp', 0.85));
+          }
+        } catch (e) {
+          resolve(source);
+        }
+      };
+      img.onerror = function() { resolve(source); };
+      if (typeof Blob !== 'undefined' && source instanceof Blob) {
+        img.src = URL.createObjectURL(source);
+      } else {
+        img.src = source;
+      }
+    });
+  }
+
   // 도서 표지·나노시트(PDF)·배너·테마 이미지를 Cloudflare R2(또는 DB 안전 폴백)로 업로드 후 영구 URL 반환
   async function uploadMedia(source, options) {
     if (!source) return '';
     var opts = options || {};
+    var processedSource = source;
+
+    // 이미지는 업로드 전 클라이언트 브라우저에서 100% WebP로 자동 압축 변환
+    var isPdf = (opts.contentType === 'application/pdf') ||
+                (typeof Blob !== 'undefined' && source instanceof Blob && source.type === 'application/pdf') ||
+                (typeof source === 'string' && (/^data:application\/pdf/i.test(source) || /\.pdf$/i.test(opts.fileName || '')));
+    if (!isPdf) {
+      try {
+        processedSource = await convertImageToWebP(source);
+      } catch (convErr) {}
+    }
+
     var blob = null;
     var fileName = opts.fileName || 'upload';
 
-    if (typeof Blob !== 'undefined' && source instanceof Blob) {
-      blob = source;
-      if (source.name && !opts.fileName) fileName = source.name;
-    } else if (typeof source === 'string' && /^data:(image\/|application\/pdf)/i.test(source)) {
-      blob = dataUrlToBlob(source);
-    } else if (typeof source === 'string') {
-      return source;
+    if (typeof Blob !== 'undefined' && processedSource instanceof Blob) {
+      blob = processedSource;
+      if (processedSource.name && !opts.fileName) fileName = processedSource.name;
+    } else if (typeof processedSource === 'string' && /^data:(image\/|application\/pdf)/i.test(processedSource)) {
+      blob = dataUrlToBlob(processedSource);
+    } else if (typeof processedSource === 'string') {
+      return processedSource;
     }
     if (!blob || !blob.size) return '';
 
     var contentType = (blob.type || opts.contentType || '').toLowerCase();
     if (!contentType) {
-      contentType = /\.pdf$/i.test(fileName) ? 'application/pdf' : 'image/jpeg';
+      contentType = isPdf ? 'application/pdf' : 'image/webp';
+    }
+
+    if (!isPdf && !/\.webp$/i.test(fileName)) {
+      fileName = fileName.replace(/\.[^.]+$/, '') + '.webp';
     }
 
     // 1차 시도: Cloudflare R2 서명 PUT URL 발급 -> 브라우저에서 직접 R2 업로드 (대용량 PDF 25MB 지원)

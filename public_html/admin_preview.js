@@ -17370,13 +17370,25 @@ function compressWorksheetImage(file) {
         canvas.height = h;
         var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        // 나노시트 첨삭 사진을 WebP(품질 0.85)로 변환 (미지원 브라우저는 JPEG 폴백)
+        var dataUrl = '';
+        var mimeType = 'image/webp';
+        try {
+          dataUrl = canvas.toDataURL('image/webp', 0.85);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            mimeType = 'image/jpeg';
+          }
+        } catch(e) {
+          dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          mimeType = 'image/jpeg';
+        }
         var base64 = dataUrl.split(',')[1];
         resolve({
-          name: file.name,
+          name: file.name.replace(/\.[^.]+$/, '') + (mimeType === 'image/webp' ? '.webp' : '.jpg'),
           dataUrl: dataUrl,
           base64: base64,
-          mimeType: 'image/jpeg'
+          mimeType: mimeType
         });
       };
       img.onerror = reject;

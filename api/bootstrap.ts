@@ -135,6 +135,11 @@ export default async function handler(req: any, res: any) {
       if (r2PublicBase && isPdf && /^\/?upload\/book\//i.test(clean)) {
         return `${r2PublicBase}/${clean.replace(/^\/+/, '')}`;
       }
+      if (r2PublicBase && !isPdf && /^\/?upload\/book\//i.test(clean)) {
+        // .jpg/.jpeg/.png 도서 표지 이미지는 경량화된 .webp 주소로 우선 제공
+        const webpCandidate = clean.replace(/\.(jpe?g|png|jfif)$/i, '.webp').replace(/^\/+/, '');
+        return `${r2PublicBase}/${webpCandidate}`;
+      }
       return clean;
     };
 
