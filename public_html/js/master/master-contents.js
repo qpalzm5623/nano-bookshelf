@@ -825,6 +825,8 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
   }
 
   var loadPromise = null;
+  // 나노시트 PDF 로딩 초고속화: 단일 스트림 버퍼링 및 브라우저 메모리 캐시 (Range 요청 지연 원천 차단)
+  var pdfDataCache = window._nanoPdfBufferCache || (window._nanoPdfBufferCache = new Map());
   if (pdfSource instanceof Blob || pdfSource instanceof File) {
     loadPromise = new Promise(function(resolve, reject) {
       var reader = new FileReader();
@@ -844,6 +846,29 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
       loadPromise = Promise.resolve(bytes);
     } catch(e) {
       loadPromise = Promise.resolve(pdfSource);
+    }
+  } else if (typeof pdfSource === 'string' && (/^https?:\/\//i.test(pdfSource) || pdfSource.startsWith('/upload/'))) {
+    if (pdfDataCache.has(pdfSource)) {
+      loadPromise = Promise.resolve(pdfDataCache.get(pdfSource));
+    } else {
+      loadPromise = fetch(pdfSource)
+        .then(function(res) {
+          if (!res.ok) throw new Error('PDF 다운로드 실패 HTTP ' + res.status);
+          return res.arrayBuffer();
+        })
+        .then(function(buf) {
+          var bytes = new Uint8Array(buf);
+          if (pdfDataCache.size > 20) {
+            var firstKey = pdfDataCache.keys().next().value;
+            pdfDataCache.delete(firstKey);
+          }
+          pdfDataCache.set(pdfSource, bytes);
+          return bytes;
+        })
+        .catch(function(err) {
+          console.warn('[PDF] 단일 스트림 다운로드 실패, PDF.js 직접 로드로 폴백:', err);
+          return pdfSource;
+        });
     }
   } else {
     loadPromise = Promise.resolve(pdfSource);

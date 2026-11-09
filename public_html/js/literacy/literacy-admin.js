@@ -277,10 +277,10 @@
     var d = state.current; if (!d) return;
     try {
       var pv = await L.api('kakao', { body: { id: d.record.id, preview: true } });
-      var ok = global.confirm('[알림톡 발송 미리보기]\n받는 분: ' + pv.name + ' (' + pv.recipient + ')\n\n' + pv.message + '\n\n이 내용으로 발송할까요?');
+      var ok = global.confirm('[문해력 진단 결과 알림톡 발송 미리보기]\n\n받는 분: ' + pv.name + ' (' + pv.recipient + ')\n\n' + pv.message + '\n\n연결 링크: ' + pv.targetUrl + '\n\n학부모님께 이 내용으로 발송할까요?');
       if (!ok) return;
       var res = await L.api('kakao', { body: { id: d.record.id, fingerprint: pv.fingerprint } });
-      toast(res.duplicate ? '이미 같은 내용이 발송되었습니다. (' + res.status + ')' : res.status === 'ACCEPTED' ? '알림톡 발송이 접수되었습니다.' : '발송에 실패했습니다. 카톡 발송 내역을 확인해 주세요.', res.status === 'FAILED');
+      toast(res.duplicate ? '이미 같은 내용이 발송되었습니다. (' + res.status + ')' : res.status === 'ACCEPTED' ? '🎉 문해력 결과지 알림톡 발송이 성공적으로 접수되었습니다!' : '발송에 실패했습니다. 카톡 발송 내역을 확인해 주세요.', res.status === 'FAILED');
     } catch (e) { fail(e); }
   }
 

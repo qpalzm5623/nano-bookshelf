@@ -4666,10 +4666,15 @@ async function sendLearningReportKakao(logId, event) {
   if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('운영 서버에서만 발송할 수 있습니다.'); return; }
   var button = event && event.currentTarget; if(button) button.disabled = true;
   try {
-    var preview = await NanoPortal.api('/api/services', { action: 'preview', logId: logId });
-    if (!confirm(preview.name + ' (' + preview.recipient + ')\n\n' + preview.message + '\n\n이 내용으로 알림톡을 발송하시겠습니까?')) return;
-    var result = await NanoPortal.api('/api/services', { action: 'send', logId: logId, fingerprint: preview.fingerprint });
-    showAcademyToast(result.status === 'ACCEPTED' ? '알림톡 발송 요청이 접수되었습니다. 최종 수신 결과는 알리고에서 확인해 주세요.' : '발송 상태: ' + result.status + '. 운영 관리의 알림톡 내역을 확인해 주세요.');
+    var preview = await NanoPortal.api('/api/services', { type: 'quiz', action: 'preview', logId: logId });
+    var confirmMsg = '[북퀴즈 완료 알림톡 발송 미리보기]\n\n' +
+      '받는 분: ' + preview.name + ' (' + preview.recipient + ')\n\n' +
+      preview.message + '\n\n' +
+      '연결 링크: ' + preview.targetUrl + '\n\n' +
+      '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
+    if (!confirm(confirmMsg)) return;
+    var result = await NanoPortal.api('/api/services', { type: 'quiz', action: 'send', logId: logId, fingerprint: preview.fingerprint });
+    showAcademyToast(result.status === 'ACCEPTED' ? '🎉 학부모님께 북퀴즈 결과 알림톡이 성공적으로 발송되었습니다!' : '발송 상태: ' + result.status + '. 알림톡 발송 내역을 확인해 주세요.');
   } catch(e) { showAcademyToast(e.message); } finally { if(button) button.disabled = false; }
 }
 
@@ -8824,7 +8829,7 @@ function renderPortfolioTable(list) {
 }
 
 // 카카오톡 알림톡 즉시 발송 함수
-function sendPortfolioKakaoDirect(pfId, event) {
+async function sendPortfolioKakaoDirect(pfId, event) {
   if (event) {
     event.stopPropagation();
     event.preventDefault();
@@ -8832,20 +8837,44 @@ function sendPortfolioKakaoDirect(pfId, event) {
   var pf = portfolioList.find(function(p) { return p.id === pfId; });
   if (!pf) return;
 
-  pf.kakaoSent = true;
-  pf.status = '발송 완료';
+  var button = event && event.currentTarget;
+  if (button) button.disabled = true;
 
-  var now = new Date();
-  var month = ('0' + (now.getMonth() + 1)).slice(-2);
-  var day = ('0' + now.getDate()).slice(-2);
-  var hours = ('0' + now.getHours()).slice(-2);
-  var mins = ('0' + now.getMinutes()).slice(-2);
-  pf.issueDate = now.getFullYear() + '.' + month + '.' + day + ' ' + hours + ':' + mins;
+  try {
+    if (window.NanoPortal && NanoPortal.remote) {
+      var preview = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'preview', pfId: pfId });
+      var confirmMsg = '[독서 포트폴리오 알림톡 발송 미리보기]\n\n' +
+        '받는 분: ' + preview.name + ' (' + preview.recipient + ')\n\n' +
+        preview.message + '\n\n' +
+        '연결 링크: ' + preview.targetUrl + '\n\n' +
+        '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
+      if (!confirm(confirmMsg)) return;
 
-  renderPortfolioTable();
-  updatePortfolioDetailKakaoButton(pf.id);
+      var result = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'send', pfId: pfId, fingerprint: preview.fingerprint });
+      if (result.status !== 'ACCEPTED' && result.status !== 'SENDING') {
+        throw new Error('알림톡 발송 상태: ' + result.status);
+      }
+    }
 
-  showAcademyToast('[' + pf.studentName + '] 학부모님께 포트폴리오 카카오톡 알림톡이 성공적으로 발송되었습니다.');
+    pf.kakaoSent = true;
+    pf.status = '발송 완료';
+
+    var now = new Date();
+    var month = ('0' + (now.getMonth() + 1)).slice(-2);
+    var day = ('0' + now.getDate()).slice(-2);
+    var hours = ('0' + now.getHours()).slice(-2);
+    var mins = ('0' + now.getMinutes()).slice(-2);
+    pf.issueDate = now.getFullYear() + '.' + month + '.' + day + ' ' + hours + ':' + mins;
+
+    renderPortfolioTable();
+    updatePortfolioDetailKakaoButton(pf.id);
+
+    showAcademyToast('🎉 [' + pf.studentName + '] 학부모님께 포트폴리오 카카오톡 알림톡이 성공적으로 발송되었습니다!');
+  } catch(e) {
+    showAcademyToast('알림톡 발송 실패: ' + e.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 // 상세 페이지 상단의 카톡 액션 버튼 업데이트
@@ -12885,6 +12914,8 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
   }
 
   var loadPromise = null;
+  // 나노시트 PDF 로딩 초고속화: 단일 스트림 버퍼링 및 브라우저 메모리 캐시 (Range 요청 지연 원천 차단)
+  var pdfDataCache = window._nanoPdfBufferCache || (window._nanoPdfBufferCache = new Map());
   if (pdfSource instanceof Blob || pdfSource instanceof File) {
     loadPromise = new Promise(function(resolve, reject) {
       var reader = new FileReader();
@@ -12904,6 +12935,29 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
       loadPromise = Promise.resolve(bytes);
     } catch(e) {
       loadPromise = Promise.resolve(pdfSource);
+    }
+  } else if (typeof pdfSource === 'string' && (/^https?:\/\//i.test(pdfSource) || pdfSource.startsWith('/upload/'))) {
+    if (pdfDataCache.has(pdfSource)) {
+      loadPromise = Promise.resolve(pdfDataCache.get(pdfSource));
+    } else {
+      loadPromise = fetch(pdfSource)
+        .then(function(res) {
+          if (!res.ok) throw new Error('PDF 다운로드 실패 HTTP ' + res.status);
+          return res.arrayBuffer();
+        })
+        .then(function(buf) {
+          var bytes = new Uint8Array(buf);
+          if (pdfDataCache.size > 20) {
+            var firstKey = pdfDataCache.keys().next().value;
+            pdfDataCache.delete(firstKey);
+          }
+          pdfDataCache.set(pdfSource, bytes);
+          return bytes;
+        })
+        .catch(function(err) {
+          console.warn('[PDF] 단일 스트림 다운로드 실패, PDF.js 직접 로드로 폴백:', err);
+          return pdfSource;
+        });
     }
   } else {
     loadPromise = Promise.resolve(pdfSource);

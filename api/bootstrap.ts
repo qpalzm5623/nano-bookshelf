@@ -127,7 +127,7 @@ export default async function handler(req: any, res: any) {
         avgBooks: students.length ? (students.reduce((sum, member) => sum + member.bookCount, 0) / students.length).toFixed(1) : '0.0',
         participation: students.length ? Math.round(students.filter(member => member.bookCount > 0).length / students.length * 100) + '%' : '0%', points };
     }).sort((a, b) => b.points - a.points).map((academy, index) => ({ ...academy, rank: index + 1, badge: index < 3 ? '우수 학원' : '운영 중' }));
-    const r2PublicBase = (process.env.R2_PUBLIC_BASE_URL || '').trim().replace(/\/+$/, '');
+    const r2PublicBase = (process.env.R2_PUBLIC_BASE_URL || 'https://media.nanosbook.co.kr').trim().replace(/\/+$/, '');
     const resolveMediaUrl = (rawUrl?: string | null, isPdf = false): string => {
       const clean = String(rawUrl || '').trim();
       if (!clean) return '';

@@ -112,8 +112,11 @@ function tokenOk(resultId: string, token: string) {
   } catch { return false; }
 }
 function shareUrl(req: any, resultId: string) {
-  const proto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0];
-  return `${proto}://${req.headers.host}/literacy_report.html?r=${encodeURIComponent(resultId)}&t=${shareToken(resultId)}`;
+  const host = String(req.headers.host || '').trim();
+  const base = host.includes('nanosbook.co.kr') || host.includes('vercel.app')
+    ? 'https://nanosbook.co.kr'
+    : `${String(req.headers['x-forwarded-proto'] || 'https').split(',')[0]}://${host || 'nanosbook.co.kr'}`;
+  return `${base}/literacy_report.html?r=${encodeURIComponent(resultId)}&t=${shareToken(resultId)}`;
 }
 
 // ---------- 배정/결과 조회 헬퍼 ----------
@@ -399,31 +402,72 @@ function publicRecord(record: any) {
   return { id: record.id, student: record.student, band: record.band, finishedAt: record.finishedAt, result: record.result, minutes };
 }
 
+// 24시간 형식 날짜시간 포맷터: "2026년 11월 09일 14:30"
+function formatKstDateTime24(dateInput: any): string {
+  if (!dateInput) return '';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return String(dateInput);
+  const kst = new Date(d.getTime() + 9 * 3600000);
+  const yyyy = kst.getUTCFullYear();
+  const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(kst.getUTCDate()).padStart(2, '0');
+  const hh = String(kst.getUTCHours()).padStart(2, '0');
+  const min = String(kst.getUTCMinutes()).padStart(2, '0');
+  return `${yyyy}년 ${mm}월 ${dd}일 ${hh}:${min}`;
+}
+
+const DEFAULT_LITERACY_TEMPLATE =
+  '#{학생명} 학생이\n#{진단일}에 문해력 진단을 완료했어요!\n\n우리 아이의 글 읽기와 이해 능력은 어느 정도일까요?\n진단 결과를 확인해보세요~\n\n[진단 결과 확인]';
+
 /** 학부모 알림톡: 결과지 링크가 담긴 승인 템플릿으로 발송 (미리보기 → 확인 후 발송, 중복 발송 방지) */
 async function sendKakao(req: any, res: any, academyId: string, record: any, preview: boolean, fingerprintIn: string) {
   const apiKey = process.env.ALIGO_API_KEY, userId = process.env.ALIGO_USER_ID, senderKey = process.env.ALIGO_SENDER_KEY, sender = process.env.ALIGO_SENDER;
-  const tplCode = process.env.ALIGO_LITERACY_TEMPLATE_CODE, tpl = process.env.ALIGO_LITERACY_TEMPLATE;
-  need(apiKey && userId && senderKey && sender && tplCode && tpl,
-    '문해력 결과지 알림톡 템플릿 승인·설정(ALIGO_LITERACY_TEMPLATE_CODE / ALIGO_LITERACY_TEMPLATE)이 아직 완료되지 않았습니다. 우선 "링크 복사"로 학부모에게 공유해 주세요.', 503);
+  const tplCode = process.env.ALIGO_LITERACY_TEMPLATE_CODE || 'TT_4292';
+  const tpl = process.env.ALIGO_LITERACY_TEMPLATE || DEFAULT_LITERACY_TEMPLATE;
+  need(apiKey && userId && senderKey && sender,
+    '문해력 결과지 알림톡 설정(ALIGO_API_KEY 등)이 아직 완료되지 않았습니다. 우선 "링크 복사"로 학부모에게 공유해 주세요.', 503);
   const member = await prisma.member.findFirst({ where: { id: record.memberId, academyId } });
   need(member, '원생 정보를 찾을 수 없습니다.', 404);
   need(member.reportYn && member.parentPhone, '보호자 연락처와 리포트 발송 동의를 확인해 주세요.');
   const phone = member.parentPhone!.replace(/\D/g, '');
   need(/^0\d{8,10}$/.test(phone), '보호자 연락처 형식을 확인해 주세요.');
-  const d = new Date(+new Date(record.finishedAt) + 9 * 3600000).toISOString().slice(0, 10);
-  const subs: Record<string, string> = { 학생명: member.name, 진단일: d, 레벨: String(record.result.level), 링크: shareUrl(req, record.id) };
-  const message = tpl!.replace(/#\{([^}]+)\}/g, (_, key) => { need(key in subs, '알림톡 템플릿의 변수를 확인해 주세요.'); return subs[key]; });
+  const targetUrl = shareUrl(req, record.id);
+  const diagDate = formatKstDateTime24(record.finishedAt);
+  const subs: Record<string, string> = { 학생명: member.name, 진단일: diagDate, 레벨: String(record.result.level), 링크: targetUrl };
+  const message = tpl.replace(/#\{([^}]+)\}/g, (_, key) => subs[key] || '');
   need(message.length <= 1000, '알림톡 내용이 1,000자를 초과합니다.');
+  const buttonJson = JSON.stringify({
+    button: [
+      {
+        name: '진단 결과 확인',
+        linkType: 'WL',
+        linkTypeName: '웹링크',
+        linkM: targetUrl,
+        linkP: targetUrl,
+      },
+    ],
+  });
   const fingerprint = createHash('sha256').update(JSON.stringify([record.id, phone, message, tplCode])).digest('hex');
-  if (preview) return res.json({ message, recipient: phone, name: member.parentName || member.name + ' 보호자', fingerprint });
+  if (preview) return res.json({ message, recipient: phone, name: member.parentName || member.name + ' 보호자', targetUrl, fingerprint });
   need(fingerprint === fingerprintIn, '발송 전 최신 결과지 내용을 확인해 주세요.', 409);
   const logId = 'literacy_' + fingerprint;
   const existing = await prisma.aligoDispatchLog.findUnique({ where: { id: logId } });
   if (existing) return res.json({ status: existing.status, duplicate: true });
   // 외부 요청 전에 발송 기록을 먼저 남겨, 더블클릭이나 응답 유실로 인한 중복 발송을 막는다
-  await prisma.aligoDispatchLog.create({ data: { id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode!, message, status: 'SENDING', cost: 0 } });
+  await prisma.aligoDispatchLog.create({ data: { id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message, status: 'SENDING', cost: 0 } });
   try {
-    const fields = new URLSearchParams({ apikey: apiKey!, userid: userId!, senderkey: senderKey!, tpl_code: tplCode!, sender: sender!, receiver_1: phone, recvname_1: member.name, subject_1: '문해력 진단 결과지', message_1: message });
+    const fields = new URLSearchParams({
+      apikey: apiKey!,
+      userid: userId!,
+      senderkey: senderKey!,
+      tpl_code: tplCode,
+      sender: sender!,
+      receiver_1: phone,
+      recvname_1: member.name,
+      subject_1: '문해력 진단 결과지',
+      message_1: message,
+      button_1: buttonJson,
+    });
     const options: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
     if (proxyDispatcher) options.dispatcher = proxyDispatcher;
     const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', options);

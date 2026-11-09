@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>나노의책장 북퀴즈 완료 결과 리포트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/quiz-result.css">
+<style>
+  :root {
+    --bg-page: #f8fafc;
+    --leaf: #1f8a7e;
+    --leaf-dark: #145951;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-page);
+    font-family: Pretendard, -apple-system, sans-serif;
+    color: var(--text-main);
+  }
+  .report-topbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--leaf-dark);
+  }
+  .brand-logo img { height: 26px; }
+  .btn-print {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .report-container {
+    max-width: 680px;
+    margin: 20px auto 40px;
+    padding: 0 16px;
+  }
+  .parent-notice-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1.5px solid #a7f3d0;
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .parent-notice-card h1 {
+    font-size: 17px;
+    font-weight: 800;
+    color: #065f46;
+    margin: 0 0 6px;
+  }
+  .parent-notice-card p {
+    font-size: 13.5px;
+    color: #047857;
+    margin: 0;
+    line-height: 1.6;
+  }
+  .meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .meta-pill {
+    background: #ffffff;
+    border: 1px solid #d1fae5;
+    color: #065f46;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .teacher-comment-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  }
+  .teacher-comment-box h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--leaf-dark);
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .teacher-comment-box p {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #334155;
+    margin: 0;
+    white-space: pre-wrap;
+  }
+  .msg-center {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-muted);
+  }
+  @media print {
+    .report-topbar { display: none !important; }
+    body { background: #fff !important; }
+    .report-container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="report-topbar">
+  <div class="brand-logo">
+    <i class="fa-solid fa-book-open"></i>
+    <span>나노의책장 독서 리포트</span>
+  </div>
+  <button type="button" class="btn-print" onclick="window.print()">
+    <i class="fa-solid fa-print mr-1"></i>인쇄하기
+  </button>
+</div>
+
+<main class="report-container" id="reportView">
+  <div class="msg-center">
+    <i class="fa-solid fa-spinner fa-spin fa-2x mb-3" style="color:var(--leaf);"></i>
+    <p>북퀴즈 결과 리포트를 불러오는 중입니다...</p>
+  </div>
+</main>
+
+<script src="js/reading-progress.js"></script>
+<script src="js/quiz-result-art.js"></script>
+<script>
+(async function() {
+  var view = document.getElementById('reportView');
+  var params = new URLSearchParams(location.search);
+  var logId = params.get('id') || '';
+  var token = params.get('t') || '';
+
+  if (!logId) {
+    view.innerHTML = '<div class="msg-center"><h3>결과지 정보가 없습니다.</h3><p>알림톡의 링크를 다시 확인해 주세요.</p></div>';
+    return;
+  }
+
+  try {
+    var res = await fetch('/api/services?action=public_quiz_result&id=' + encodeURIComponent(logId) + '&t=' + encodeURIComponent(token));
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || '리포트를 불러올 수 없습니다.');
+
+    var attempt = data.attempt || {};
+    var book = data.book || {};
+    var student = data.student || {};
+    var teacherComment = data.comment || '';
+    var thoughtAnswer = data.thoughtAnswer || '';
+    var thoughtQuestion = data.thoughtQuestion || '';
+
+    var cardHtml = NanoQuizResult.render(attempt.score || 0, attempt.characterId || 'nano', book, {
+      tot: attempt.totalQuestions || 5,
+      ok: attempt.correctCount || 0,
+      isPass: (attempt.score || 0) >= 60,
+      earnedPts: attempt.earnedPoints || 0,
+      stage: attempt.characterStage || 1,
+      speechText: attempt.speechText || ''
+    });
+
+    var dateStr = attempt.completedDate || '';
+
+    var html = `
+      <section class="parent-notice-card">
+        <h1>🎉 ${escapeHtml(student.name || '원생')} 학생의 북퀴즈 결과</h1>
+        <p>『${escapeHtml(book.title || '도서')}』을(를) 읽고 성실하게 북퀴즈를 완료하였습니다.</p>
+        <div class="meta-pills">
+          <span class="meta-pill"><i class="fa-regular fa-calendar-check mr-1"></i>완료일: ${escapeHtml(dateStr)}</span>
+          <span class="meta-pill"><i class="fa-solid fa-school mr-1"></i>${escapeHtml(student.academyName || '나노의책장')}</span>
+          <span class="meta-pill"><i class="fa-solid fa-award mr-1"></i>점수: ${attempt.score}점</span>
+        </div>
+      </section>
+
+      <div>${cardHtml}</div>
+    `;
+
+    if (thoughtAnswer) {
+      html += `
+        <div class="teacher-comment-box" style="margin-top:20px;border-color:#cbd5e1;">
+          <h3><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i>나노시트 생각 담기 (원생 작성 답안)</h3>
+          ${thoughtQuestion ? '<div style="font-size:12.5px;color:#64748b;margin-bottom:8px;">' + escapeHtml(thoughtQuestion) + '</div>' : ''}
+          <p style="background:#f8fafc;padding:12px;border-radius:10px;border:1px solid #e2e8f0;">${escapeHtml(thoughtAnswer)}</p>
+        </div>
+      `;
+    }
+
+    if (teacherComment) {
+      html += `
+        <div class="teacher-comment-box">
+          <h3><i class="fa-solid fa-comment-dots"></i>지도교사 코멘트 & 독서 피드백</h3>
+          <p>${escapeHtml(teacherComment)}</p>
+        </div>
+      `;
+    }
+
+    view.innerHTML = html;
+  } catch(err) {
+    view.innerHTML = '<div class="msg-center"><h3 style="color:#ef4444;">결과지를 불러오지 못했습니다</h3><p>' + escapeHtml(err.message) + '<br><small>링크가 만료되었거나 올바르지 않습니다. 학원에 문의해 주세요.</small></p></div>';
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, function(m) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+    });
+  }
+})();
+</script>
+</body>
+</html>
+
