@@ -212,7 +212,7 @@ export default async function handler(req: any, res: any) {
       if (entity === 'books') return res.json({ items: await prisma.book.findMany({ orderBy: { bookNo: 'asc' }, take: 1000, where: req.query.search ? { title: { contains: String(req.query.search), mode: 'insensitive' } } : {} }) });
       if (entity === 'owned') return res.json({ items: await prisma.academyBook.findMany({ where: { academyId }, include: { book: { select: { bookNo: true, title: true } } } }) });
       if (entity === 'assignments') return res.json({ items: await prisma.bookAssignment.findMany({ where: { academyId }, include: { book: { select: { title: true, bookNo: true } }, member: { select: { name: true, username: true } } }, orderBy: { createdAt: 'desc' } }) });
-      if (entity === 'payments') return res.json({ items: await prisma.payment.findMany({ where: { academyId }, orderBy: { createdAt: 'desc' } }) });
+      if (entity === 'payments') return res.json({ items: await prisma.payment.findMany({ where: { academyId, deletedAt: null }, orderBy: { createdAt: 'desc' } }) });
       if (entity === 'notices') {
         const [noticeRows, metaRows] = await Promise.all([
           prisma.notice.findMany({ orderBy: { createdAt: 'desc' } }),
@@ -494,15 +494,7 @@ export default async function handler(req: any, res: any) {
       return res.json({ ok: true, ...saved });
     }
     if (entity === 'payments') {
-      master(user);
-      need(typeof input.requestId === 'string' && /^[a-zA-Z0-9-]{20,80}$/.test(input.requestId), '입금 등록을 다시 시작해 주세요.');
-      const previous = await prisma.payment.findUnique({ where: { payCode: 'MANUAL-' + input.requestId } });
-      if (previous) { need(previous.academyId === academyId, '이미 사용한 등록 번호입니다.', 409); return res.json({ item: previous }); }
-      const amount = Number(input.amount); need(Number.isSafeInteger(amount) && amount > 0, '입금액을 확인해 주세요.');
-      need(Number.isSafeInteger(Number(input.slotCount)) && Number(input.slotCount) > 0, '계약 정원을 확인해 주세요.');
-      const payment = await prisma.payment.create({ data: { academyId, payCode: 'MANUAL-' + input.requestId, amount, plan: enumValue(input.plan || 'STANDARD', ['BASIC','STANDARD','PREMIUM','VIP','ROYAL'], '요금제') as any,
-        slotCount: Number(input.slotCount) || 50, payMethod: 'TRANSFER', status: 'PAID', paidAt: date(input.paidAt, '입금 확인') } });
-      return res.json({ item: payment });
+      need(false, '결제 관리 화면에서 상품과 입금 정보를 확인한 뒤 등록해 주세요.');
     }
     master(user);
     if (entity === 'academies') {

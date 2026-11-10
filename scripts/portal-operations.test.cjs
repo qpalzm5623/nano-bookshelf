@@ -5,6 +5,11 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const path = require('node:path');
 function load(file, deps = {}, extra = {}) {
+  if (file === 'api/services.ts') {
+    const policy = load('lib/billing-policy.ts');
+    deps = { '../lib/dispatch-view': load('lib/dispatch-view.ts'), '../lib/billing-policy': policy,
+      '../lib/kakao-wallet': load('lib/kakao-wallet.ts', { './prisma': deps['../lib/prisma'], './portal-http': deps['../lib/portal-http'], './billing-policy': policy }, extra), ...deps };
+  }
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(code,{exports,require:name=>deps[name]||require(name),Buffer,process,console,URL,URLSearchParams,AbortSignal,Date,...extra});return exports;
@@ -143,10 +148,14 @@ test('외부 서비스 설정이 없으면 발송 요청을 보내지 않는다'
 test('동일 리포트 재발송 및 결과 불명 상태를 자동 재시도하지 않는다',async()=>{
   let count=0,record=null;
   const env={ALIGO_ENABLED:'true',ALIGO_API_KEY:'test',ALIGO_USER_ID:'test',ALIGO_SENDER_KEY:'test',ALIGO_SENDER:'01000000000',ALIGO_TEMPLATE_CODE:'test',ALIGO_REPORT_TEMPLATE:'#{학생명} #{점수}'};
-  const db={quizAttempt:{findFirst:async()=>({id:'attempt',score:80,bookId:'b1',member:{name:'학생',parentPhone:'01011112222',reportYn:true,academyId:'a1'}})},book:{findUnique:async()=>book},aligoDispatchLog:{findUnique:async()=>record,create:async({data})=>{record=data;return record;},update:async({data})=>Object.assign(record,data)}};
+  const db={quizAttempt:{findFirst:async()=>({id:'attempt',score:80,bookId:'b1',member:{name:'학생',parentPhone:'01011112222',reportYn:true,academyId:'a1'}})},book:{findFirst:async()=>book},aligoDispatchLog:{findUnique:async()=>record,create:async({data})=>{record=data;return record;},update:async({data})=>Object.assign(record,data)}};
+  db.$transaction=fn=>fn(db);
+  db.academy={updateMany:async()=>({count:1})};
+  db.kakaoLedger={create:async()=>({})};
+  db.aligoDispatchLog.updateMany=async({data})=>{Object.assign(record,data);return {count:1};};
   const run=api('api/services.ts',teacher,db,{process:{env},fetch:async()=>{count++;throw new Error('timeout');}});
-  const preview=response();await run({method:'POST',query:{},body:{action:'preview',logId:'attempt'}},preview);
-  const req={method:'POST',query:{},body:{action:'send',logId:'attempt',fingerprint:preview.data.fingerprint}};
+  const preview=response();await run({method:'POST',headers:{host:'test.local'},query:{},body:{action:'preview',logId:'attempt'}},preview);
+  const req={method:'POST',headers:{host:'test.local'},query:{},body:{action:'send',logId:'attempt',fingerprint:preview.data.fingerprint}};
   const first=response();await run(req,first);assert.equal(first.code,502);assert.equal(record.status,'UNKNOWN');
   const second=response();await run(req,second);assert.equal(second.data.duplicate,true);assert.equal(count,1);
 });

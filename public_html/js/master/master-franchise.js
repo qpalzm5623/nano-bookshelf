@@ -1711,6 +1711,10 @@ function openAcademyEditModal(id) {
 
   document.getElementById("editStatus").value = acad.status || "ACTIVE";
 
+  var walletEl = document.getElementById('editAcademyKakaoCount');
+  if (!walletEl) { walletEl = document.createElement('div'); walletEl.id = 'editAcademyKakaoCount'; walletEl.className = 'alert alert-light border'; document.querySelector('#academyEditModal .modal-body').prepend(walletEl); }
+  walletEl.textContent = '카카오톡 충전 횟수: ' + Number(acad.kakaoCount || 0).toLocaleString() + '건 · 잔액 ' + Number(acad.kakaoBalance || 0).toLocaleString() + '원';
+  if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.wallet(acad.id);
   $('#academyEditModal').modal('show');
 }
 

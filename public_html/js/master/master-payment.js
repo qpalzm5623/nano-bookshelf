@@ -161,6 +161,7 @@ if (window.NANO_SERVER_DATA) masterPaymentList = window.NANO_SERVER_PAYMENTS || 
 
 // 마스터 결제 테이블 렌더링
 function renderMasterPaymentTable(data = masterPaymentList) {
+  if (window.NanoBilling && window.NanoPortal?.remote) return NanoBilling.renderPayments(data);
   const tbody = document.getElementById("masterPaymentTableBody");
   if (!tbody) return;
 
@@ -325,6 +326,7 @@ function resetMasterPaymentFilters() {
 
 // 통계 KPI 업데이트
 function updatePaymentKpis() {
+  if (window.NanoBilling && window.NanoPortal?.remote) return;
   const paidItems = masterPaymentList.filter(p => p.status === 'paid');
   const pendingItems = masterPaymentList.filter(p => p.status === 'pending');
 
@@ -463,6 +465,7 @@ const PLAN_PRICE_TABLE = {
 
 // 수동 결제 등록 모달 열기
 function openSimulateNewPaymentModal() {
+  if (window.NanoBilling) return NanoBilling.edit();
   if (window.NanoPortal && NanoPortal.remote) { showMasterToast('운영 결제 시뮬레이션은 비활성화되어 있습니다.'); return; }
   const select = document.getElementById("manualPayAcademy");
   if (select && Array.isArray(franchiseList)) {

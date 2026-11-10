@@ -1,3 +1,4 @@
+import { paymentView } from '../lib/payment-view';
 import { prisma } from '../lib/prisma';
 import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import Reading = require('../public_html/js/reading-progress');
@@ -137,13 +138,13 @@ export default async function handler(req: any, res: any) {
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
         lastLoginAt: true, createdAt: true, updatedAt: true, academy: { select: { code: true, name: true } }, classGroup: { select: { id: true, name: true } } } }),
       prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { id: user.academyId }) },
-      select: { id: true, code: true, name: true, bizNo: true, directorName: true, phone: true, email: true, maxStudents: true, monthlyFee: true, plan: true, address: true, memo: true, joinDate: true, status: true, startDate: true, endDate: true,
+      select: { id: true, code: true, name: true, bizNo: true, directorName: true, phone: true, email: true, maxStudents: true, monthlyFee: true, kakaoBalance: true, plan: true, address: true, memo: true, joinDate: true, status: true, startDate: true, endDate: true,
         _count: { select: { members: { where: { role: 'STUDENT', status: 'APPROVED' } } } } } }),
       prisma.classGroup.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: { select: { code: true } } } }),
       prisma.notice.findMany({ where: user.role === 'MASTER' ? {} : { OR: [{ targetRole: null }, { targetRole: user.role }] }, orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }] }),
       prisma.academyBook.findMany({ where: { academyId: user.academyId }, include: { book: { select: { bookNo: true } } } }),
       user.role === 'MASTER' || user.role === 'DIRECTOR'
-        ? prisma.payment.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 })
+        ? prisma.payment.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
       user.role === 'MASTER' || user.role === 'DIRECTOR' || user.role === 'TEACHER'
         ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
@@ -325,12 +326,9 @@ export default async function handler(req: any, res: any) {
       NANO_SERVER_CLASSES: classes.map(c => ({ id: c.id, serverId: c.id, name: c.name, grade: c.targetGrade || '', teacher: classTeacherMap.get(c.id) || '', academyId: c.academy.code })),
       NANO_SERVER_OWNED: owned.map(b => b.book.bookNo),
       NANO_SERVER_OWNED_RECORDS: Object.fromEntries(owned.map(b => [b.book.bookNo, b.id])),
-      NANO_SERVER_PAYMENTS: payments.map(p => ({ id: p.id, academyId: p.academy.code, academyName: p.academy.name, director: p.academy.directorName, phone: p.academy.phone, bizNumber: p.academy.bizNo || '',
-        planType: p.plan.toLowerCase(), planName: p.plan, supply: Math.round(p.amount / 1.1), vat: p.amount - Math.round(p.amount / 1.1), total: p.amount,
-        method: p.payMethod === 'CARD' ? '신용카드' : p.payMethod === 'TRANSFER' ? '무통장 입금 (현금)' : p.payMethod, date: p.createdAt.toISOString().replace('T', ' ').slice(0, 19),
-        startDate: p.academy.startDate.toISOString().slice(0, 10), endDate: p.academy.endDate.toISOString().slice(0, 10), status: p.status.toLowerCase(), memo: '' })),
+      NANO_SERVER_PAYMENTS: payments.map(paymentView),
       NANO_SERVER_DISPATCH: dispatches.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원',
-        ...dispatchTemplate(d.id, d.templateCode), receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
+        ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', resultMessage: d.resultMessage || '', receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
       NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => {
         const meta = bannerMetaMap.get(b.id) || {};
         let linkBookIds: string[] = [];
@@ -457,6 +455,7 @@ export default async function handler(req: any, res: any) {
           memo: a.memo || '',
           adminId: realAdminId,
           maxStudents: a.maxStudents,
+          kakaoBalance: a.kakaoBalance / 10, kakaoCount: Math.floor(a.kakaoBalance / 85),
           currentStudents: a._count.members,
           monthlyFee: a.monthlyFee,
           plan: a.plan,

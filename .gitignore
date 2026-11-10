@@ -32,6 +32,7 @@ public_html/upload/book/*
 public_html/export_db_dump.php
 backups/
 *.sql
+!prisma/kakao-billing-upgrade.sql
 
 # 5. Node & 환경변수 (.env)
 node_modules/

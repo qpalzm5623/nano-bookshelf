@@ -1,4 +1,7 @@
+import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import { prisma } from '../lib/prisma';
+import { reserveDispatch, settleDispatch, reconcileDispatches } from '../lib/kakao-wallet';
+import { KAKAO_UNIT } from '../lib/billing-policy';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { ProxyAgent } from 'undici';
@@ -162,17 +165,21 @@ export default async function handler(req: any, res: any) {
     const user = await authenticate(req);
     staff(user);
 
-    const aligoReady = Boolean(ALIGO_API_KEY && ALIGO_USER_ID && ALIGO_SENDER_KEY && ALIGO_SENDER);
+    const aligoReady = Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER_KEY && process.env.ALIGO_SENDER);
     if (req.method === 'GET') {
       if (action === 'dispatch_stats') {
+        await reconcileDispatches(user.role === 'MASTER' ? undefined : user.academyId, { apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID });
+        const wallet = await prisma.academy.findUnique({ where: { id: user.academyId } });
         const where = user.role === 'MASTER' ? {} : { academyId: user.academyId };
         const month = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
         const [total, monthly, success, failed] = await Promise.all([
           prisma.aligoDispatchLog.count({ where }),
           prisma.aligoDispatchLog.count({ where: { ...where, sentAt: { gte: new Date(month + '-01T00:00:00+09:00') } } }),
-          prisma.aligoDispatchLog.count({ where: { ...where, status: 'SUCCESS' } }),
+          prisma.aligoDispatchLog.count({ where: { ...where, status: { in: ['SUCCESS', 'SMS_FALLBACK'] } } }),
           prisma.aligoDispatchLog.count({ where: { ...where, status: 'FAILED' } }),
         ]);
+        const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: true }, orderBy: { sentAt: 'desc' } });
+        const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, code: d.resultCode || '', resultMessage: d.resultMessage || '', canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
         let connected = false;
         let remainingCount: number | null = null;
         try {
@@ -184,7 +191,7 @@ export default async function handler(req: any, res: any) {
           const raw = result.list?.ALT_CNT ?? result.ALT_CNT;
           if (user.role === 'MASTER' && connected && raw != null && Number.isSafeInteger(Number(raw)) && Number(raw) >= 0) remainingCount = Number(raw);
         } catch { /* 조회 실패 시 임의의 잔액을 표시하지 않습니다. */ }
-        return res.json({ total, monthly, success, failed, pending: total - success - failed, connected,
+        return res.json({ items, total, monthly, success, failed, pending: total - success - failed, connected, balance: (wallet?.kakaoBalance || 0) / 10, walletCount: Math.floor((wallet?.kakaoBalance || 0) / KAKAO_UNIT),
           ...(user.role === 'MASTER' ? { remainingCount, estimatedCash: remainingCount == null ? null : remainingCount * 6.5, unitCost: 6.5 } : {}) });
       }
       return res.json({ aligoReady });
@@ -192,6 +199,17 @@ export default async function handler(req: any, res: any) {
 
     need(aligoReady, '알림톡 운영 설정(API Key, 발신번호 등)이 완료되지 않았습니다.', 503);
     const body = req.body || {};
+    if (body.action === 'retry') {
+      const previous = await prisma.aligoDispatchLog.findFirst({ where: { id: String(body.id || ''), ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) } });
+      need(previous && previous.status === 'FAILED' && previous.memberId && previous.payload, '재발송 가능한 실패 이력이 아닙니다.', 409);
+      const member = await prisma.member.findFirst({ where: { id: previous.memberId, academyId: previous.academyId!, status: 'APPROVED' } });
+      need(member && member.reportYn && member.parentPhone?.replace(/\D/g, '') === previous.recipientPhone.replace(/\D/g, ''), '현재 보호자 연락처와 발송 동의를 확인해 주세요.');
+      const payload = previous.payload as any;
+      const id = 'retry_' + createHash('sha256').update(previous.id).digest('hex');
+      const reserved = await reserveDispatch({ id, academyId: previous.academyId, recipientName: previous.recipientName, recipientPhone: previous.recipientPhone, templateCode: previous.templateCode, message: previous.message }, member, payload, previous.id);
+      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
+      return dispatchAligo(id, previous.recipientPhone, member.name, payload.subject, previous.message, previous.templateCode, payload.buttonJson, res);
+    }
     const type = String(body.type || 'quiz'); // 'quiz' | 'portfolio' | 'literacy'
 
     const baseHost = getBaseHost(req);
@@ -256,18 +274,8 @@ export default async function handler(req: any, res: any) {
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
       if (existing) return res.json({ status: existing.status, duplicate: true });
 
-      await prisma.aligoDispatchLog.create({
-        data: {
-          id,
-          academyId: log.member.academyId,
-          recipientName: log.member.parentName || log.member.name,
-          recipientPhone: phone,
-          templateCode: ALIGO_QUIZ_TEMPLATE_CODE,
-          message,
-          status: 'SENDING',
-          cost: 0,
-        },
-      });
+      const reserved = await reserveDispatch({ id, academyId: log.member.academyId, recipientName: log.member.parentName || log.member.name, recipientPhone: phone, templateCode: ALIGO_QUIZ_TEMPLATE_CODE, message }, log.member, { buttonJson, subject: '북퀴즈 결과 리포트' });
+      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
 
       return await dispatchAligo(id, phone, log.member.name, '북퀴즈 결과 리포트', message, ALIGO_QUIZ_TEMPLATE_CODE, buttonJson, res);
     }
@@ -335,18 +343,8 @@ export default async function handler(req: any, res: any) {
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
       if (existing) return res.json({ status: existing.status, duplicate: true });
 
-      await prisma.aligoDispatchLog.create({
-        data: {
-          id,
-          academyId: student.academyId,
-          recipientName: student.parentName || student.name,
-          recipientPhone: phone,
-          templateCode: ALIGO_PORTFOLIO_TEMPLATE_CODE,
-          message,
-          status: 'SENDING',
-          cost: 0,
-        },
-      });
+      const reserved = await reserveDispatch({ id, academyId: student.academyId, recipientName: student.parentName || student.name, recipientPhone: phone, templateCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, message }, student, { buttonJson, subject: '독서 성장 포트폴리오' });
+      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
 
       return await dispatchAligo(id, phone, student.name, '독서 성장 포트폴리오', message, ALIGO_PORTFOLIO_TEMPLATE_CODE, buttonJson, res);
     }
@@ -413,18 +411,8 @@ export default async function handler(req: any, res: any) {
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
       if (existing) return res.json({ status: existing.status, duplicate: true });
 
-      await prisma.aligoDispatchLog.create({
-        data: {
-          id,
-          academyId: member.academyId,
-          recipientName: member.parentName || member.name,
-          recipientPhone: phone,
-          templateCode: ALIGO_LITERACY_TEMPLATE_CODE,
-          message,
-          status: 'SENDING',
-          cost: 0,
-        },
-      });
+      const reserved = await reserveDispatch({ id, academyId: member.academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: ALIGO_LITERACY_TEMPLATE_CODE, message }, member, { buttonJson, subject: '문해력 진단 결과지' });
+      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
 
       return await dispatchAligo(id, phone, member.name, '문해력 진단 결과지', message, ALIGO_LITERACY_TEMPLATE_CODE, buttonJson, res);
     }
@@ -464,11 +452,13 @@ async function dispatchAligo(
 
     const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', fetchOptions);
     const result: any = await response.json();
-    const status = response.ok && Number(result.code) === 0 ? 'ACCEPTED' : 'FAILED';
-    await prisma.aligoDispatchLog.update({ where: { id: logId }, data: { status } });
-    return res.json({ status, result });
+    const accepted = response.ok && result.code != null && Number(result.code) === 0;
+    const rejected = response.ok && result.code != null && Number.isFinite(Number(result.code)) && Number(result.code) < 0;
+    const status = accepted ? 'ACCEPTED' : rejected ? 'FAILED' : 'UNKNOWN';
+    await settleDispatch(logId, status, { providerId: accepted && result.info?.mid ? String(result.info.mid) : null, resultCode: String(result.code ?? ''), resultMessage: String(result.message || '').slice(0, 1000) });
+    return res.json({ status });
   } catch (err) {
-    await prisma.aligoDispatchLog.update({ where: { id: logId }, data: { status: 'UNKNOWN' } });
+    await prisma.aligoDispatchLog.updateMany({ where: { id: logId, status: 'SENDING' }, data: { status: 'UNKNOWN' } });
     return res.status(502).json({
       error: '발송 결과를 확인하지 못했습니다. 중복 발송을 막기 위해 재전송하지 않았습니다. 알리고 관리자 화면에서 확인해 주세요.',
     });

@@ -18,7 +18,7 @@ function renderDispatchTable(data = dispatchLogs) {
   const kstYm = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
   const monthLogs = baseLogs.filter(l => String(l.datetime || l.date || '').slice(0, 7) === kstYm);
   const displaySentCount = monthLogs.length;
-  const successCount = baseLogs.filter(l => l.status === "SUCCESS").length;
+  const successCount = baseLogs.filter(l => ["SUCCESS", "SMS_FALLBACK"].includes(l.status)).length;
   const failCount = baseLogs.filter(l => l.status === "FAILED").length;
   const successRate = baseLogs.length > 0 ? ((successCount / baseLogs.length) * 100).toFixed(1) : "0.0";
 
@@ -42,8 +42,8 @@ function renderDispatchTable(data = dispatchLogs) {
     if (log.type === "PORTFOLIO") typeBadge = `<span class="badge-soft badge-soft-warn"><i class="fa-solid fa-chart-pie mr-1"></i>포트폴리오</span>`;
     else if (log.type === "ASSIGN") typeBadge = `<span class="badge-soft badge-soft-success"><i class="fa-solid fa-book-bookmark mr-1"></i>도서배정</span>`;
 
-    const statusBadge = log.status === "SUCCESS"
-      ? `<span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>성공</span>`
+    const statusBadge = ["SUCCESS", "SMS_FALLBACK"].includes(log.status)
+      ? `<span class="badge-soft badge-soft-success">${log.status === "SMS_FALLBACK" ? "문자 대체 발송" : "성공"}</span>`
       : log.status === 'FAILED' ? `<span class="badge-soft badge-soft-danger">실패</span>`
       : `<span class="badge-soft badge-soft-neutral">${log.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}</span>`;
 
@@ -63,7 +63,7 @@ function renderDispatchTable(data = dispatchLogs) {
           <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openDispatchDetailModal('${log.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
             전문보기
           </button>
-          ${log.status === "FAILED" ? `
+          ${log.status === "FAILED" && log.canRetry !== false ? `
             <button class="btn btn-xs btn-outline-danger" onclick="retryDispatch('${log.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
               재발송
             </button>
@@ -74,35 +74,7 @@ function renderDispatchTable(data = dispatchLogs) {
   }).join("");
 }
 
-let dispatchStatsRequest = null;
-let dispatchStatsCache = null;
-let dispatchStatsLoadedAt = 0;
-async function refreshMasterDispatchStats() {
-  if (!window.NanoPortal || !NanoPortal.remote) return;
-  if (dispatchStatsRequest) return;
-  if (!dispatchStatsCache || Date.now() - dispatchStatsLoadedAt > 30000) {
-    try {
-      dispatchStatsRequest = NanoPortal.api('/api/services?action=dispatch_stats');
-      dispatchStatsCache = await dispatchStatsRequest;
-      dispatchStatsLoadedAt = Date.now();
-    } catch {
-      const state = document.getElementById('statAligoConnection');
-      if (state) state.textContent = '조회 실패';
-      return;
-    } finally { dispatchStatsRequest = null; }
-  }
-  // 목록 검색과 관계없이 전체 서버 이력으로 집계합니다.
-  await Promise.resolve();
-  const s = dispatchStatsCache;
-  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-  set('statAligoCash', s.estimatedCash == null ? '조회 불가' : s.estimatedCash.toLocaleString() + '원 (환산)');
-  set('statAligoCashSub', s.remainingCount == null ? '알리고 잔여 건수를 확인할 수 없습니다.' : s.remainingCount.toLocaleString() + '건 가능 · 건당 6.5원 환산');
-  set('statAligoConnection', s.connected ? '정상' : '연결 확인 필요');
-  set('statAligoTotalSent', s.monthly.toLocaleString() + '건');
-  set('statAligoTotalSentSub', '전체 누적 발송 ' + s.total.toLocaleString() + '건');
-  set('statAligoSuccessRate', (s.total ? (s.success / s.total * 100).toFixed(1) : '0.0') + '%');
-  set('statAligoSuccessRateSub', '성공 ' + s.success + '건 / 실패 ' + s.failed + '건 / 확인 중 ' + s.pending + '건');
-}
+function refreshMasterDispatchStats() { if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.dispatch(); }
 
 function populateDispatchAcademyFilter() {
   const select = document.getElementById("dispatchAcademyFilter");
@@ -171,7 +143,7 @@ function previewDispatchLink() {
   showMasterToast("학부모 알림톡 내의 포트폴리오 리포트 모바일 링크가 정상 호출되었습니다.");
 }
 
-function retryDispatch() { showMasterToast('발송 서버가 연결되지 않아 재발송하지 않았습니다.'); }
+function retryDispatch(id) { if (window.NanoBilling) return NanoBilling.retry(id); }
 
 async function testAligoConnection() { if (!NanoPortal.remote) { showMasterToast('운영 서버에서 설정을 확인해 주세요.'); return; } try { var config = await NanoPortal.api('/api/services'); showMasterToast(config.aligoReady ? '알림톡 설정이 준비되었습니다. 실제 발송은 리포트에서 수신자와 내용을 확인한 후 진행하세요.' : '알림톡 비활성: ' + (config.missing.join(', ') || 'ALIGO_ENABLED=true 설정 필요')); } catch(e) { showMasterToast(e.message); } }
 

@@ -40,6 +40,8 @@ model Academy {
   members         Member[]
   classes         ClassGroup[]
   payments        Payment[]
+  kakaoBalance    Int @default(0) // 0.1원 단위 정수 (1건 = 85)
+  kakaoLedger     KakaoLedger[]
   dispatchLogs    AligoDispatchLog[]
   academyBooks    AcademyBook[]
   bookAssignments BookAssignment[]
@@ -123,6 +125,16 @@ model Payment {
   payMethod  String        @default("CARD") // CARD, TRANSFER, VIRTUAL
   status     PaymentStatus @default(PAID) // PAID, PENDING, OVERDUE, CANCELLED
   receiptUrl String? // 영수증 / 세금계산서 URL
+  productCode String?
+  productName String?
+  supplyAmount Int?
+  vatAmount Int?
+  serviceStart DateTime?
+  serviceEnd DateTime?
+  taxInvoiceIssued Boolean @default(false)
+  memo String? @db.Text
+  revision Int @default(1)
+  deletedAt DateTime?
   paidAt     DateTime?
   createdAt  DateTime      @default(now())
 
@@ -362,9 +374,35 @@ model AligoDispatchLog {
   cost           Int      @default(20) // 차감 캐시 (원)
   status         String   @default("SUCCESS")
   sentAt         DateTime @default(now())
+  memberId       String?
+  className      String?
+  studentName    String?
+  providerId     String?
+  retryOf        String? @unique
+  payload        Json?
+  debitAmount    Int @default(0)
+  refundedAt     DateTime?
+  resultCode     String?
+  resultMessage  String?
+  fallbackId     String?
+  checkedAt      DateTime?
 
   @@index([academyId, sentAt]) // 학원별 알림톡 발송 이력 최신순 조회 인덱스
+  @@index([status, checkedAt])
   @@map("aligo_dispatch_logs")
+}
+
+model KakaoLedger {
+  id String @id
+  academyId String
+  academy Academy @relation(fields: [academyId], references: [id])
+  amount Int // 0.1원 단위, 충전/환급은 양수, 사용/취소는 음수
+  kind String
+  referenceId String
+  createdAt DateTime @default(now())
+
+  @@index([academyId, createdAt])
+  @@map("kakao_ledger")
 }
 
 // --------------------------------------------------------------

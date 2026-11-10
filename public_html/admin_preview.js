@@ -327,6 +327,7 @@ function switchTab(tab) {
   if (tab === 'dispatch') renderAcademyDispatchTable();
   if (tab === 'ranking') renderAdminRankingView();
   if (tab === 'payment') {
+    if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load();
     if (typeof syncCurrentAcademyPlan === 'function') syncCurrentAcademyPlan(false);
     renderAcademyPaymentTable();
     selectPlanTier(currentSelectedTier || (typeof currentAcademyPlan !== 'undefined' && currentAcademyPlan.tier ? currentAcademyPlan.tier : 'standard'));
@@ -7165,6 +7166,7 @@ var academyDispatchLogs = [
 if (window.NANO_SERVER_DATA) academyDispatchLogs = (window.NANO_SERVER_DISPATCH || []).filter(function(item) { return item.academyId === currentAcademyInfo.id; });
 
 function renderAcademyDispatchTable() {
+  if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.dispatch();
   var tbody = document.getElementById('academyDispatchTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -7194,12 +7196,12 @@ function renderAcademyDispatchTable() {
       <td>${escapeRankingText(l.receiverPhone || '—')}</td>
       <td class="text-center">
         <span class="badge-soft ${l.status === 'SUCCESS' ? 'badge-soft-success' : l.status === 'FAILED' ? 'badge-soft-danger' : 'badge-soft-neutral'}">
-          ${l.status === 'SUCCESS' ? '발송 성공' : l.status === 'FAILED' ? '발송 실패' : l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}
+          ${l.status === 'SMS_FALLBACK' ? '문자 대체 발송' : l.status === 'SUCCESS' ? '발송 성공' : l.status === 'FAILED' ? '발송 실패' : l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}
         </span>
       </td>
       <td class="text-center">
         <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openAcademyDispatchDetailModal('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">전문</button>
-        ${l.status === 'FAILED' ? `<button class="btn btn-xs btn-outline-danger" onclick="retryAcademyDispatch('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">재발송</button>` : ''}
+        ${l.status === 'FAILED' && l.canRetry !== false ? `<button class="btn btn-xs btn-outline-danger" onclick="retryAcademyDispatch('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">재발송</button>` : ''}
       </td>
     `;
     tbody.appendChild(tr);
@@ -7207,6 +7209,7 @@ function renderAcademyDispatchTable() {
 }
 
 function retryAcademyDispatch(id) {
+  if (window.NanoBilling) return NanoBilling.retry(id);
   if (window.NanoPortal && NanoPortal.remote) { showAcademyToast('재발송 및 충전 차감 연동이 준비되지 않아 발송하지 않았습니다.'); return; }
   var l = academyDispatchLogs.find(item => item.id === id);
   if (l) {

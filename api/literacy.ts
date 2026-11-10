@@ -1,3 +1,4 @@
+import { reserveDispatch, settleDispatch } from '../lib/kakao-wallet';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, master, need, failure, academyScope } from '../lib/portal-http';
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -454,7 +455,8 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
   const existing = await prisma.aligoDispatchLog.findUnique({ where: { id: logId } });
   if (existing) return res.json({ status: existing.status, duplicate: true });
   // 외부 요청 전에 발송 기록을 먼저 남겨, 더블클릭이나 응답 유실로 인한 중복 발송을 막는다
-  await prisma.aligoDispatchLog.create({ data: { id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message, status: 'SENDING', cost: 0 } });
+  const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, subject: '문해력 진단 결과지' });
+  if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
   try {
     const fields = new URLSearchParams({
       apikey: apiKey!,
@@ -472,11 +474,13 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
     if (proxyDispatcher) options.dispatcher = proxyDispatcher;
     const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', options);
     const result: any = await response.json();
-    const status = response.ok && Number(result.code) === 0 ? 'ACCEPTED' : 'FAILED';
-    await prisma.aligoDispatchLog.update({ where: { id: logId }, data: { status } });
+    const accepted = response.ok && result.code != null && Number(result.code) === 0;
+    const rejected = response.ok && result.code != null && Number.isFinite(Number(result.code)) && Number(result.code) < 0;
+    const status = accepted ? 'ACCEPTED' : rejected ? 'FAILED' : 'UNKNOWN';
+    await settleDispatch(logId, status, { providerId: accepted && result.info?.mid ? String(result.info.mid) : null, resultCode: String(result.code ?? ''), resultMessage: String(result.message || '').slice(0, 1000) });
     return res.json({ status });
   } catch {
-    await prisma.aligoDispatchLog.update({ where: { id: logId }, data: { status: 'UNKNOWN' } });
+    await prisma.aligoDispatchLog.updateMany({ where: { id: logId, status: 'SENDING' }, data: { status: 'UNKNOWN' } });
     return res.status(502).json({ error: '발송 결과를 확인하지 못했습니다. 중복 발송을 막기 위해 재전송하지 않았습니다. 카톡 발송 내역에서 확인해 주세요.' });
   }
 }

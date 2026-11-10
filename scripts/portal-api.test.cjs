@@ -7,6 +7,10 @@ const path = require('node:path');
 process.env.PORTAL_AUTH_SECRET = 'test-only-secret-with-more-than-32-characters';
 process.env.DATABASE_URL = 'postgresql://test.invalid/test';
 function load(file, dependencies = {}) {
+  if (file === 'api/bootstrap.ts') {
+    const dispatchView = load('lib/dispatch-view.ts');
+    dependencies = { '../lib/dispatch-view': dispatchView, '../lib/payment-view': load('lib/payment-view.ts', { './dispatch-view': dispatchView, './billing-policy': load('lib/billing-policy.ts') }), ...dependencies };
+  }
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require: name => dependencies[name] || require(name), Buffer, process, console, URL, Date });

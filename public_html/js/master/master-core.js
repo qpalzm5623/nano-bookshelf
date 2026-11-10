@@ -1819,6 +1819,7 @@ function ensureMasterTabRendered(tabName) {
   } else if (tabName === "payment") {
     if (typeof renderMasterPaymentTable === "function") renderMasterPaymentTable();
     if (typeof updatePaymentKpis === "function") updatePaymentKpis();
+    if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load();
   }
 }
 

@@ -4396,10 +4396,10 @@
           </button>
         </div>
 
-        <div class="d-flex flex-wrap mb-3" style="gap:8px;" role="search" aria-label="카카오톡 발송 내역 검색">
+        <div class="row mb-4"><div class="col-md-3 col-sm-6 mb-3"><div class="stat-card"><div class="stat-label">알리고 잔여 캐시</div><div class="stat-num" id="academyAligoCash">조회 대기</div><div class="stat-sub" id="academyAligoCashSub">내 학원 충전 잔액</div></div></div><div class="col-md-3 col-sm-6 mb-3"><div class="stat-card"><div class="stat-label">당월 총 발송 건수</div><div class="stat-num" id="academyAligoTotalSent">조회 대기</div><div class="stat-sub" id="academyAligoTotalSentSub"></div></div></div><div class="col-md-3 col-sm-6 mb-3"><div class="stat-card"><div class="stat-label">전송 성공률</div><div class="stat-num" id="academyAligoSuccessRate">조회 대기</div><div class="stat-sub" id="academyAligoSuccessRateSub"></div></div></div><div class="col-md-3 col-sm-6 mb-3"><div class="stat-card"><div class="stat-label">알리고 연동 상태</div><div class="stat-num" id="academyAligoConnection">조회 대기</div><div class="stat-sub" id="academyAligoConnectionSub"></div></div></div></div><button class="btn btn-sm btn-outline-secondary mb-3" onclick="NanoBilling.dispatch(true)">전송 결과 새로고침</button><div class="d-flex flex-wrap mb-3" style="gap:8px;" role="search" aria-label="카카오톡 발송 내역 검색">
 <input id="academyDispatchSearch" type="search" class="form-control" style="max-width:260px" placeholder="수신자, 수신 번호, 학급 검색" aria-label="수신자, 수신 번호, 학급" oninput="renderAcademyDispatchTable()">
 <select id="academyDispatchTemplate" class="select-beige" aria-label="템플릿" onchange="renderAcademyDispatchTable()"><option value="ALL">전체</option><option value="QUIZ">학습 리포트</option><option value="PORTFOLIO">포트폴리오</option><option value="LITERACY">문해력 테스트</option></select>
-<select id="academyDispatchStatus" class="select-beige" aria-label="발송 결과" onchange="renderAcademyDispatchTable()"><option value="ALL">전체 결과</option><option value="SUCCESS">성공</option><option value="FAILED">실패</option><option value="ACCEPTED">전송 중</option><option value="UNKNOWN">결과 확인 중</option></select>
+<select id="academyDispatchStatus" class="select-beige" aria-label="발송 결과" onchange="renderAcademyDispatchTable()"><option value="ALL">전체 결과</option><option value="SUCCESS">성공</option><option value="FAILED">실패</option><option value="SMS_FALLBACK">문자 대체 발송</option><option value="ACCEPTED">전송 중</option><option value="UNKNOWN">결과 확인 중</option></select>
 <input id="academyDispatchFrom" type="date" class="select-beige" aria-label="발송 시작일" onchange="renderAcademyDispatchTable()">
 <input id="academyDispatchTo" type="date" class="select-beige" aria-label="발송 종료일" onchange="renderAcademyDispatchTable()">
 <button class="btn btn-beige-secondary" onclick="renderAcademyDispatchTable()">검색</button></div>
@@ -4411,7 +4411,7 @@
             </h6>
             <small class="text-muted">발송 시 1회 차감되며, 최종 실패 시 반환됩니다. 문자 대체 발송은 반환 대상에서 제외됩니다.</small>
           </div>
-          <table class="simple-table">
+          <div class="table-responsive"><table class="simple-table">
             <thead>
               <tr>
                 <th style="width: 60px;">번호</th>
@@ -4427,7 +4427,7 @@
             <tbody id="academyDispatchTableBody">
               <!-- JS 렌더링 -->
             </tbody>
-          </table>
+          </table></div>
           <!-- 알림톡 발송 목록 하단 여백 및 상태 바 -->
           <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff;">
             <div class="text-muted" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
@@ -4717,7 +4717,7 @@
 
         <!-- 2. 현재 구독 현황 카드 (3열 요약 - 학원 계약 정보 연동) -->
         <div class="row mb-4">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="stat-card" style="position: relative; overflow: hidden;">
               <div class="text-muted" style="font-size: 12.5px;">현재 이용 중인 요금제</div>
               <div class="stat-num" id="paymentStatPlanName" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
@@ -4736,7 +4736,7 @@
               </div>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="stat-card">
               <div class="text-muted" style="font-size: 12.5px;">서비스 이용 기간 및 만료일</div>
               <div class="stat-num" id="paymentStatExpireDday" style="color: #dc2626; font-size: 22px; margin-top: 4px;">
@@ -4749,7 +4749,7 @@
               </div>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="stat-card">
               <div class="text-muted" style="font-size: 12.5px;">가맹 계약 정원 (슬롯)</div>
               <div class="stat-num" id="paymentStatSlotUsage" style="color: var(--text-main); font-size: 22px; margin-top: 4px;">
@@ -4764,7 +4764,7 @@
               </div>
             </div>
           </div>
-        </div>
+        <div class="col-md-3"><div class="stat-card"><div class="stat-label">카카오톡 알림</div><div class="stat-num" id="paymentKakaoBalance">조회 대기</div><div class="stat-sub" id="paymentKakaoCount">건당 8.5원</div><button class="btn btn-beige-primary mt-2" onclick="NanoBilling.topup()">5,500원 단위 구매</button><div class="stat-sub mt-2">부가세 포함 · 5,000원 적립</div></div></div></div>
 
         <!-- 3. 요금제 선택 & 기간 선택 2단계 시스템 -->
         <div id="sectionPaymentPlans" class="mb-5">
@@ -9207,7 +9207,7 @@
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
-<script src="admin_preview.js?v=20261110_speed_v3"></script>
+<script src="admin_preview.js?v=20261110_kakao_v1"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>
@@ -9223,6 +9223,7 @@
   <script src="js/pwa-install.js"></script>
 
 <script src="js/portal-extras.js?v=20261029-integrity"></script>
+<script src="js/billing-ui.js?v=20261110_kakao_v1"></script>
 </body>
 
 </html>

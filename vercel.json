@@ -3,6 +3,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "crons": [{ "path": "/api/dispatch-reconcile", "schedule": "0 0 * * *" }],
+  "functions": { "api/dispatch-reconcile.ts": { "maxDuration": 300 } },
   "headers": [
     {
       "source": "/(.*)\\.(css|js|png|jpg|jpeg|jfif|gif|ico|webp|svg|woff2|ttf|pdf)",
