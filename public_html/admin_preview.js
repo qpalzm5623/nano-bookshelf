@@ -7169,21 +7169,32 @@ function renderAcademyDispatchTable() {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  document.getElementById('academyDispatchCount').innerText = academyDispatchLogs.length;
+  var query = (document.getElementById('academyDispatchSearch')?.value || '').trim().toLowerCase();
+  var type = document.getElementById('academyDispatchTemplate')?.value || 'ALL';
+  var status = document.getElementById('academyDispatchStatus')?.value || 'ALL';
+  var from = document.getElementById('academyDispatchFrom')?.value || '';
+  var to = document.getElementById('academyDispatchTo')?.value || '';
+  var filtered = academyDispatchLogs.filter(function(l) {
+    var day = String(l.date || l.datetime || '').slice(0, 10);
+    return (type === 'ALL' || l.type === type) && (status === 'ALL' || l.status === status) &&
+      (!from || day >= from) && (!to || day <= to) &&
+      (!query || [l.receiver, l.receiverName, l.receiverPhone, l.className].join(' ').toLowerCase().includes(query));
+  });
+  document.getElementById('academyDispatchCount').innerText = filtered.length;
+  if (!filtered.length) tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">발송 내역이 없습니다.</td></tr>';
 
-  academyDispatchLogs.forEach(function(l, idx) {
+  filtered.forEach(function(l, idx) {
     var tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
       <td class="text-center"><small class="text-muted">${l.date}</small></td>
-      <td class="text-center"><span class="badge-soft badge-soft-neutral">${l.type}</span></td>
-      <td><strong>${l.receiver}</strong></td>
-      <td style="max-width:280px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">
-        <small class="text-dark">${l.summary}</small>
-      </td>
+      <td class="text-center">${escapeRankingText(l.className || '—')}</td>
+      <td class="text-center"><span class="badge-soft badge-soft-neutral">${escapeRankingText(l.typeName || l.type)}</span></td>
+      <td><strong>${escapeRankingText(l.receiverName || l.receiver || '—')}</strong></td>
+      <td>${escapeRankingText(l.receiverPhone || '—')}</td>
       <td class="text-center">
-        <span class="badge-soft ${l.status === 'SUCCESS' ? 'badge-soft-success' : 'badge-soft-danger'}">
-          ${l.status === 'SUCCESS' ? '<i class="fa-solid fa-check mr-1"></i>발송성공' : '<i class="fa-solid fa-xmark mr-1"></i>발송실패'}
+        <span class="badge-soft ${l.status === 'SUCCESS' ? 'badge-soft-success' : l.status === 'FAILED' ? 'badge-soft-danger' : 'badge-soft-neutral'}">
+          ${l.status === 'SUCCESS' ? '발송 성공' : l.status === 'FAILED' ? '발송 실패' : l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}
         </span>
       </td>
       <td class="text-center">
@@ -7196,6 +7207,7 @@ function renderAcademyDispatchTable() {
 }
 
 function retryAcademyDispatch(id) {
+  if (window.NanoPortal && NanoPortal.remote) { showAcademyToast('재발송 및 충전 차감 연동이 준비되지 않아 발송하지 않았습니다.'); return; }
   var l = academyDispatchLogs.find(item => item.id === id);
   if (l) {
     l.status = 'SUCCESS';
@@ -10539,6 +10551,12 @@ function normalizeBookCoverUrl(url) {
   if (trimmed.includes('book_default.svg') || trimmed.includes('book_default.png')) {
     return DEFAULT_BOOK_COVER;
   }
+  if (/^https?:\/\/pub-[a-z0-9]+\.r2\.dev/i.test(trimmed)) {
+    trimmed = trimmed.replace(/^https?:\/\/pub-[a-z0-9]+\.r2\.dev/i, 'https://media.nanosbook.co.kr');
+  }
+  if (/\/upload\/book\/[^?]+\.(jpe?g|png|jfif)$/i.test(trimmed)) {
+    trimmed = trimmed.replace(/\.(jpe?g|png|jfif)$/i, '.webp');
+  }
   if (/^(https?:)?\/\//.test(trimmed) || trimmed.indexOf('data:') === 0) return trimmed;
   if (trimmed.startsWith('/upload/') || trimmed.startsWith('upload/')) {
     return trimmed.startsWith('/') ? trimmed : ('/' + trimmed);
@@ -10635,6 +10653,7 @@ function createAcademyBookItem(b) {
       b.quizzes = canon.quizzes || b.quizzes;
       if (canon.sheet !== undefined) b.sheet = canon.sheet;
       if (canon.worksheet !== undefined) b.worksheet = canon.worksheet;
+      if (canon.worksheetUrl !== undefined) b.worksheetUrl = canon.worksheetUrl;
       if (canon.pdfUrl !== undefined) b.pdfUrl = canon.pdfUrl;
     }
   }
@@ -10693,6 +10712,8 @@ function createAcademyBookItem(b) {
     })(),
     cover: normalizeBookCoverUrl(b.cover),
     hasSheet: hasSheet,
+    worksheetUrl: b.worksheetUrl || b.pdfUrl || (typeof b.worksheet === 'string' ? b.worksheet : null) || null,
+    pdfUrl: b.pdfUrl || b.worksheetUrl || (typeof b.worksheet === 'string' ? b.worksheet : null) || null,
     materialName: hasSheet ? (b.materialName || (title + '_나노시트.pdf')) : null,
     materialSize: hasSheet ? (b.materialSize || '1.45 MB') : null,
     materialType: hasSheet ? '나노 시트 (PDF)' : null,
@@ -12798,7 +12819,8 @@ var activeViewingBook = null;
 function extractBookPdfCandidates(book) {
   if (!book) return [];
   var list = [];
-  var mediaBase = (typeof window !== 'undefined' && window.NANO_MEDIA_BASE_URL) ? String(window.NANO_MEDIA_BASE_URL).replace(/\/+$/, '') : '';
+  var rawBase = (typeof window !== 'undefined' && window.NANO_MEDIA_BASE_URL) ? String(window.NANO_MEDIA_BASE_URL).replace(/\/+$/, '') : 'https://media.nanosbook.co.kr';
+  var mediaBase = rawBase.replace(/^https?:\/\/pub-[a-z0-9]+\.r2\.dev/i, 'https://media.nanosbook.co.kr');
   var pushRelAndCloud = function(stem) {
     if (!stem) return;
     if (mediaBase) list.push(mediaBase + '/upload/book/' + stem + '.pdf');
@@ -12854,6 +12876,10 @@ function tryLoadCandidatePdfs(candidates, index, book) {
   }
 
   var currentCandidate = candidates[index];
+  if (typeof currentCandidate === 'string' && currentCandidate.includes('r2.dev')) {
+    currentCandidate = currentCandidate.replace(/https?:\/\/pub-[a-z0-9]+\.r2\.dev/i, 'https://media.nanosbook.co.kr');
+  }
+
   var loadingInd = document.getElementById('pdfLoadingIndicator');
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
@@ -12861,18 +12887,38 @@ function tryLoadCandidatePdfs(candidates, index, book) {
   if (realWrapper) realWrapper.style.display = 'none';
   if (htmlContainer) htmlContainer.style.display = 'none';
 
-  // PDF.js 워커 및 엔진 확인
-  var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
-  if (!engine) {
-    console.warn('PDF.js 엔진 미탑재, 커스텀 HTML 시트로 전환');
-    renderCustomNanoSheetHtml(book);
-    return;
+  var pdfDataCache = window._nanoPdfBufferCache || (window._nanoPdfBufferCache = new Map());
+  var fetchPromise;
+  if (pdfDataCache.has(currentCandidate)) {
+    fetchPromise = Promise.resolve(pdfDataCache.get(currentCandidate));
+  } else if (typeof currentCandidate === 'string' && (/^https?:\/\//i.test(currentCandidate) || currentCandidate.startsWith('/upload/'))) {
+    fetchPromise = fetch(currentCandidate)
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.arrayBuffer();
+      })
+      .then(function(buf) {
+        var bytes = new Uint8Array(buf);
+        pdfDataCache.set(currentCandidate, bytes);
+        return bytes;
+      });
+  } else {
+    fetchPromise = Promise.resolve(currentCandidate);
   }
-  if (!engine.GlobalWorkerOptions) engine.GlobalWorkerOptions = {};
-  engine.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  var loadingTask = engine.getDocument(currentCandidate);
-  loadingTask.promise.then(function(pdf) {
+  fetchPromise.then(function(data) {
+    var engine = (typeof pdfjsLib !== 'undefined') ? pdfjsLib : ((typeof PDFJS !== 'undefined') ? PDFJS : (window.pdfjsLib || null));
+    if (!engine) {
+      console.warn('PDF.js 엔진 미탑재, 커스텀 HTML 시트로 전환');
+      renderCustomNanoSheetHtml(book);
+      return;
+    }
+    if (!engine.GlobalWorkerOptions) engine.GlobalWorkerOptions = {};
+    engine.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    var loadingTask = (data instanceof Uint8Array) ? engine.getDocument({ data: data }) : engine.getDocument(data);
+    return loadingTask.promise;
+  }).then(function(pdf) {
     activePdfDoc = pdf;
     activePdfTotalPages = pdf.numPages;
     activePdfPageNum = 1;
@@ -12895,6 +12941,9 @@ function tryLoadCandidatePdfs(candidates, index, book) {
 
 // 실제 PDF 파일 읽어와서 캔버스 렌더링 + 워터마크 합성
 function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
+  if (typeof pdfSource === 'string' && pdfSource.includes('r2.dev')) {
+    pdfSource = pdfSource.replace(/https?:\/\/pub-[a-z0-9]+\.r2\.dev/i, 'https://media.nanosbook.co.kr');
+  }
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
   var pageControls = document.getElementById('pdfPageControls');
@@ -13360,6 +13409,23 @@ function openContentPdfModal(bookId) {
   if (loadingInd) loadingInd.style.display = 'block';
   if (realWrapper) realWrapper.style.display = 'none';
   if (htmlContainer) htmlContainer.style.display = 'none';
+
+  // Vercel/Node 운영 환경에서는 레거시 PHP API(get_worksheet.php) 404 대기 없이 즉시 R2 CDN 후보 로드
+  if (typeof window !== 'undefined' && window.NANO_SERVER_DATA) {
+    var directCandidates = extractBookPdfCandidates(b);
+    if (directCandidates.length > 0) {
+      tryLoadCandidatePdfs(directCandidates, 0, b);
+    } else {
+      if (loadingInd) loadingInd.style.display = 'none';
+      if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {
+        $('#contentPdfPreviewModal').modal('hide');
+      } else {
+        hideModalVanilla('contentPdfPreviewModal');
+      }
+      showAcademyToast(`[${(b && b.title) || '해당 도서'}] 등록된 나노시트(PDF) 파일이 준비되지 않았습니다.`);
+    }
+    return;
+  }
 
   var queryParams = new URLSearchParams({
     book_id: b ? (b.serverId || b.id || '') : (bookId || ''),

@@ -1161,8 +1161,8 @@
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">알리고 잔여 캐시 <i class="fa-solid fa-coins text-warning"></i></div>
-            <div class="stat-num text-warning" id="statAligoCash">854,200<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">원</span></div>
-            <div class="stat-sub">건당 약 20원 기준 (42,710건 가능)</div>
+            <div class="stat-num text-warning" id="statAligoCash">조회 대기</div>
+            <div class="stat-sub" id="statAligoCashSub">알리고 잔여 건수 × 6.5원 환산 금액</div>
             <i class="fa-solid fa-wallet stat-icon-bg"></i>
           </div>
         </div>
@@ -1185,8 +1185,8 @@
         <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">알리고 연동 상태 <i class="fa-solid fa-server text-success"></i></div>
-            <div class="stat-num text-success" style="font-size: 22px; margin-top: 4px;">정상 (LIVE)</div>
-            <div class="stat-sub">API Key: nano_aligo_live_****</div>
+            <div class="stat-num" id="statAligoConnection" style="font-size: 22px; margin-top: 4px;">조회 대기</div>
+            <div class="stat-sub">알리고 API 응답 기준</div>
             <i class="fa-solid fa-network-wired stat-icon-bg"></i>
           </div>
         </div>
@@ -1202,14 +1202,17 @@
         </div>
         <div>
           <select id="dispatchTemplateFilter" class="select-beige" onchange="filterDispatchList()">
-            <option value="ALL">전체 템플릿</option>
-            <option value="PORTFOLIO">독서 포트폴리오 리포트</option>
-            <option value="ASSIGN">도서 배정 알림</option>
-            <option value="ENCOURAGE">독서 격려 알림톡</option>
-            <option value="AUTH">인증번호 발송</option>
+            <option value="ALL">전체</option>
+            <option value="QUIZ">학습 리포트</option>
+            <option value="PORTFOLIO">포트폴리오</option>
+            <option value="LITERACY">문해력 테스트</option>
           </select>
         </div>
         <div>
+          <label class="sr-only" for="dispatchDateFrom">발송 시작일</label>
+          <input type="date" id="dispatchDateFrom" class="select-beige" onchange="filterDispatchList()">
+          <label class="sr-only" for="dispatchDateTo">발송 종료일</label>
+          <input type="date" id="dispatchDateTo" class="select-beige" onchange="filterDispatchList()">
           <select id="dispatchStatusFilter" class="select-beige" onchange="filterDispatchList()">
             <option value="ALL">전체 전송 결과</option>
             <option value="SUCCESS">전송 성공</option>
@@ -1243,10 +1246,10 @@
                 <th style="width: 70px;">번호</th>
                 <th>발송 일시</th>
                 <th style="text-align: left;">발송 학원</th>
-                <th>메시지 유형</th>
+                <th>학급</th>
+                <th>템플릿</th>
                 <th style="text-align: left;">수신자 (학생/학부모)</th>
                 <th>수신 번호</th>
-                <th style="text-align: left;">메시지 내용 요약</th>
                 <th>결과</th>
                 <th style="width: 130px;">관리</th>
               </tr>
@@ -1331,7 +1334,7 @@
         </div>
         <div>
           <select id="masterPaymentPlanFilter" class="select-beige" onchange="filterMasterPaymentList()">
-            <option value="ALL">전체 요금제 구분</option>
+            <option value="ALL">전체 상품명</option>
             <option value="monthly">1개월 정기구독권 (10만)</option>
             <option value="6month">6개월 이용권 (54만, 10%할인)</option>
             <option value="12month">12개월 연간권 (96만, 20%할인)</option>
@@ -1375,9 +1378,10 @@
           <table class="simple-table">
             <thead>
               <tr>
-                <th style="width: 80px;">결제번호</th>
-                <th style="text-align: left;">가맹 학원명 (원장)</th>
-                <th>신청 요금제</th>
+                <th style="width: 80px;">번호</th>
+                <th style="text-align: left;">가맹학원명</th>
+                <th>원장명</th>
+                <th>상품명</th>
                 <th>공급가액</th>
                 <th>부가세</th>
                 <th style="font-weight: 800;">총 결제금액</th>
@@ -1436,7 +1440,7 @@
 <script src="js/master/master-members.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-operations.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-ranking.js?v=20261109_speed_v2"></script>
-<script src="js/master/master-contents.js?v=20261109_speed_v2"></script>
+<script src="js/master/master-contents.js?v=20261110_speed_v3"></script>
 <script src="js/master/master-dispatch.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-payment.js?v=20261109_speed_v2"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>

@@ -7,6 +7,7 @@
 // 8. 카톡 발송 내역 모듈 (Aligo Dispatch)
 // ==========================================
 function renderDispatchTable(data = dispatchLogs) {
+  refreshMasterDispatchStats();
   const tbody = document.getElementById("dispatchTableBody");
   if (!tbody) return;
 
@@ -16,9 +17,9 @@ function renderDispatchTable(data = dispatchLogs) {
   const baseLogs = Array.isArray(dispatchLogs) ? dispatchLogs : [];
   const kstYm = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
   const monthLogs = baseLogs.filter(l => String(l.datetime || l.date || '').slice(0, 7) === kstYm);
-  const displaySentCount = monthLogs.length > 0 ? monthLogs.length : baseLogs.length;
+  const displaySentCount = monthLogs.length;
   const successCount = baseLogs.filter(l => l.status === "SUCCESS").length;
-  const failCount = baseLogs.length - successCount;
+  const failCount = baseLogs.filter(l => l.status === "FAILED").length;
   const successRate = baseLogs.length > 0 ? ((successCount / baseLogs.length) * 100).toFixed(1) : "0.0";
 
   const sentEl = document.getElementById("statAligoTotalSent");
@@ -43,21 +44,20 @@ function renderDispatchTable(data = dispatchLogs) {
 
     const statusBadge = log.status === "SUCCESS"
       ? `<span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>성공</span>`
-      : `<span class="badge-soft badge-soft-danger"><i class="fa-solid fa-xmark mr-1"></i>실패</span>`;
+      : log.status === 'FAILED' ? `<span class="badge-soft badge-soft-danger">실패</span>`
+      : `<span class="badge-soft badge-soft-neutral">${log.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}</span>`;
 
     return `
       <tr>
         <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
         <td class="text-center"><small class="text-muted">${log.datetime}</small></td>
         <td class="font-weight-bold">${log.academyName}</td>
+        <td class="text-center">${log.className || '—'}</td>
         <td class="text-center">${typeBadge}</td>
         <td>
           <div class="font-weight-bold">${log.receiverName}</div>
         </td>
         <td class="text-center"><small>${log.receiverPhone}</small></td>
-        <td style="max-width: 280px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
-          <small class="text-dark">${log.summary}</small>
-        </td>
         <td class="text-center">${statusBadge}</td>
         <td class="text-center">
           <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openDispatchDetailModal('${log.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
@@ -74,6 +74,36 @@ function renderDispatchTable(data = dispatchLogs) {
   }).join("");
 }
 
+let dispatchStatsRequest = null;
+let dispatchStatsCache = null;
+let dispatchStatsLoadedAt = 0;
+async function refreshMasterDispatchStats() {
+  if (!window.NanoPortal || !NanoPortal.remote) return;
+  if (dispatchStatsRequest) return;
+  if (!dispatchStatsCache || Date.now() - dispatchStatsLoadedAt > 30000) {
+    try {
+      dispatchStatsRequest = NanoPortal.api('/api/services?action=dispatch_stats');
+      dispatchStatsCache = await dispatchStatsRequest;
+      dispatchStatsLoadedAt = Date.now();
+    } catch {
+      const state = document.getElementById('statAligoConnection');
+      if (state) state.textContent = '조회 실패';
+      return;
+    } finally { dispatchStatsRequest = null; }
+  }
+  // 목록 검색과 관계없이 전체 서버 이력으로 집계합니다.
+  await Promise.resolve();
+  const s = dispatchStatsCache;
+  const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  set('statAligoCash', s.estimatedCash == null ? '조회 불가' : s.estimatedCash.toLocaleString() + '원 (환산)');
+  set('statAligoCashSub', s.remainingCount == null ? '알리고 잔여 건수를 확인할 수 없습니다.' : s.remainingCount.toLocaleString() + '건 가능 · 건당 6.5원 환산');
+  set('statAligoConnection', s.connected ? '정상' : '연결 확인 필요');
+  set('statAligoTotalSent', s.monthly.toLocaleString() + '건');
+  set('statAligoTotalSentSub', '전체 누적 발송 ' + s.total.toLocaleString() + '건');
+  set('statAligoSuccessRate', (s.total ? (s.success / s.total * 100).toFixed(1) : '0.0') + '%');
+  set('statAligoSuccessRateSub', '성공 ' + s.success + '건 / 실패 ' + s.failed + '건 / 확인 중 ' + s.pending + '건');
+}
+
 function populateDispatchAcademyFilter() {
   const select = document.getElementById("dispatchAcademyFilter");
   if (!select) return;
@@ -87,6 +117,8 @@ function filterDispatchList() {
   const acadFilter = document.getElementById("dispatchAcademyFilter")?.value || "ALL";
   const typeFilter = document.getElementById("dispatchTemplateFilter")?.value || "ALL";
   const statusFilter = document.getElementById("dispatchStatusFilter")?.value || "ALL";
+  const from = document.getElementById('dispatchDateFrom')?.value || '';
+  const to = document.getElementById('dispatchDateTo')?.value || '';
 
   const filtered = dispatchLogs.filter(log => {
     const matchQuery = !query ||
@@ -99,13 +131,15 @@ function filterDispatchList() {
     const matchType = typeFilter === "ALL" || log.type === typeFilter;
     const matchStatus = statusFilter === "ALL" || log.status === statusFilter;
 
-    return matchQuery && matchAcad && matchType && matchStatus;
+    const day = String(log.datetime || log.date || '').slice(0, 10);
+    return matchQuery && matchAcad && matchType && matchStatus && (!from || day >= from) && (!to || day <= to);
   });
 
   renderDispatchTable(filtered);
 }
 
 function resetDispatchFilters() {
+  ['dispatchDateFrom', 'dispatchDateTo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById("dispatchSearchInput").value = "";
   document.getElementById("dispatchAcademyFilter").value = "ALL";
   document.getElementById("dispatchTemplateFilter").value = "ALL";

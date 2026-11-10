@@ -168,11 +168,11 @@ function renderMasterPaymentTable(data = masterPaymentList) {
   if (countEl) countEl.innerText = data.length;
 
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted">일치하는 결제 내역이 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center py-5 text-muted">일치하는 결제 내역이 없습니다.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = data.map(item => {
+  tbody.innerHTML = data.map((item, index) => {
     const isCard = isCardPayment(item.method);
     let statusHtml = "";
 
@@ -238,11 +238,11 @@ function renderMasterPaymentTable(data = masterPaymentList) {
 
     return `
       <tr style="font-size: 13px;">
-        <td class="text-center font-weight-bold text-muted" style="font-size: 11.5px; white-space: nowrap;">${item.id}</td>
+        <td class="text-center font-weight-bold text-muted" style="font-size: 11.5px; white-space: nowrap;">${index + 1}</td>
         <td style="white-space: nowrap;">
           <div class="font-weight-bold" style="color: var(--text-main); font-size: 13.5px;">${item.academyName}</div>
-          <small class="text-muted"><i class="fa-solid fa-user-tie mr-1"></i>${item.director} (${item.phone})</small>
         </td>
+        <td class="text-center">${item.director}</td>
         <td class="text-center" style="white-space: nowrap;">
           <span class="badge-soft badge-soft-neutral font-weight-bold">${item.planName}</span>
         </td>
@@ -269,7 +269,7 @@ function populateMasterPaymentAcademyFilter() {
   if (!select) return;
 
   const currentVal = select.value;
-  const academies = [...new Set(masterPaymentList.map(p => p.academyName))];
+  const academies = [...new Set(franchiseList.map(p => p.name))];
 
   select.innerHTML = `<option value="ALL">전체 가맹 학원 (${academies.length}곳)</option>` + 
     academies.map(name => {
@@ -277,7 +277,14 @@ function populateMasterPaymentAcademyFilter() {
       return `<option value="${name}">${name} (누적 ${count}건)</option>`;
     }).join("");
 
-  select.value = currentVal;
+  select.value = academies.includes(currentVal) ? currentVal : 'ALL';
+  const products = document.getElementById('masterPaymentPlanFilter');
+  if (products && typeof PLAN_MONTHLY_FEES !== 'undefined') {
+    const selected = products.value;
+    products.innerHTML = '<option value="ALL">전체 상품명</option>' + Object.keys(PLAN_MONTHLY_FEES).map(name =>
+      `<option value="${name.toLowerCase()}">${name}</option>`).join('');
+    products.value = Array.from(products.options).some(option => option.value === selected) ? selected : 'ALL';
+  }
 }
 
 // 필터링 적용
@@ -289,7 +296,7 @@ function filterMasterPaymentList() {
 
   let filtered = masterPaymentList.filter(item => {
     if (acadFilter !== "ALL" && item.academyName !== acadFilter) return false;
-    if (planFilter !== "ALL" && item.planType !== planFilter) return false;
+    if (planFilter !== "ALL" && (item.planType === 'vip' ? 'royal' : item.planType) !== planFilter) return false;
     if (statusFilter !== "ALL" && item.status !== statusFilter) return false;
 
     if (keyword) {

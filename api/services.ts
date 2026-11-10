@@ -164,6 +164,29 @@ export default async function handler(req: any, res: any) {
 
     const aligoReady = Boolean(ALIGO_API_KEY && ALIGO_USER_ID && ALIGO_SENDER_KEY && ALIGO_SENDER);
     if (req.method === 'GET') {
+      if (action === 'dispatch_stats') {
+        const where = user.role === 'MASTER' ? {} : { academyId: user.academyId };
+        const month = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+        const [total, monthly, success, failed] = await Promise.all([
+          prisma.aligoDispatchLog.count({ where }),
+          prisma.aligoDispatchLog.count({ where: { ...where, sentAt: { gte: new Date(month + '-01T00:00:00+09:00') } } }),
+          prisma.aligoDispatchLog.count({ where: { ...where, status: 'SUCCESS' } }),
+          prisma.aligoDispatchLog.count({ where: { ...where, status: 'FAILED' } }),
+        ]);
+        let connected = false;
+        let remainingCount: number | null = null;
+        try {
+          const options: any = { method: 'POST', body: new URLSearchParams({ apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID }), signal: AbortSignal.timeout(8000) };
+          if (proxyDispatcher) options.dispatcher = proxyDispatcher;
+          const response = await fetch('https://kakaoapi.aligo.in/akv10/heartinfo/', options);
+          const result: any = await response.json();
+          connected = response.ok && Number(result.code ?? result.result_code ?? -1) >= 0;
+          const raw = result.list?.ALT_CNT ?? result.ALT_CNT;
+          if (user.role === 'MASTER' && connected && raw != null && Number.isSafeInteger(Number(raw)) && Number(raw) >= 0) remainingCount = Number(raw);
+        } catch { /* 조회 실패 시 임의의 잔액을 표시하지 않습니다. */ }
+        return res.json({ total, monthly, success, failed, pending: total - success - failed, connected,
+          ...(user.role === 'MASTER' ? { remainingCount, estimatedCash: remainingCount == null ? null : remainingCount * 6.5, unitCost: 6.5 } : {}) });
+      }
       return res.json({ aligoReady });
     }
 

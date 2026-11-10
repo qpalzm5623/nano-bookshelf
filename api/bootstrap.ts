@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import Reading = require('../public_html/js/reading-progress');
 import { readSession, passwordVersion } from '../lib/portal-auth';
 
@@ -205,16 +206,19 @@ export default async function handler(req: any, res: any) {
     }).sort((a, b) => b.points - a.points).map((academy, index) => ({ ...academy, rank: index + 1, badge: index < 3 ? '우수 학원' : '운영 중' }));
     const r2PublicBase = (process.env.R2_PUBLIC_BASE_URL || 'https://media.nanosbook.co.kr').trim().replace(/\/+$/, '');
     const resolveMediaUrl = (rawUrl?: string | null, isPdf = false): string => {
-      const clean = String(rawUrl || '').trim();
+      let clean = String(rawUrl || '').trim();
       if (!clean) return '';
-      if (/^(https?:\/\/|data:|\/api\/files\?)/i.test(clean)) return clean;
-      if (r2PublicBase && isPdf && /^\/?upload\/book\//i.test(clean)) {
-        return `${r2PublicBase}/${clean.replace(/^\/+/, '')}`;
+      // 혹시 남아있는 예전 r2.dev 임시 도메인이 있다면 초고속 커스텀 도메인으로 자동 치환
+      if (/^https?:\/\/pub-[a-z0-9]+\.r2\.dev/i.test(clean)) {
+        clean = clean.replace(/^https?:\/\/pub-[a-z0-9]+\.r2\.dev/i, r2PublicBase);
       }
-      if (r2PublicBase && !isPdf && /^\/?upload\/book\//i.test(clean)) {
-        // .jpg/.jpeg/.png 도서 표지 이미지는 경량화된 .webp 주소로 우선 제공
-        const webpCandidate = clean.replace(/\.(jpe?g|png|jfif)$/i, '.webp').replace(/^\/+/, '');
-        return `${r2PublicBase}/${webpCandidate}`;
+      // 절대 경로(https://...)든 상대 경로(/upload/book/...)든 도서 표지 이미지는 경량화된 .webp로 우선 변환
+      if (!isPdf && /\/upload\/book\/[^?]+\.(jpe?g|png|jfif)$/i.test(clean)) {
+        clean = clean.replace(/\.(jpe?g|png|jfif)$/i, '.webp');
+      }
+      if (/^(https?:\/\/|data:|\/api\/files\?)/i.test(clean)) return clean;
+      if (r2PublicBase && /^\/?upload\/book\//i.test(clean)) {
+        return `${r2PublicBase}/${clean.replace(/^\/+/, '')}`;
       }
       return clean;
     };
@@ -325,8 +329,8 @@ export default async function handler(req: any, res: any) {
         planType: p.plan.toLowerCase(), planName: p.plan, supply: Math.round(p.amount / 1.1), vat: p.amount - Math.round(p.amount / 1.1), total: p.amount,
         method: p.payMethod === 'CARD' ? '신용카드' : p.payMethod === 'TRANSFER' ? '무통장 입금 (현금)' : p.payMethod, date: p.createdAt.toISOString().replace('T', ' ').slice(0, 19),
         startDate: p.academy.startDate.toISOString().slice(0, 10), endDate: p.academy.endDate.toISOString().slice(0, 10), status: p.status.toLowerCase(), memo: '' })),
-      NANO_SERVER_DISPATCH: dispatches.map(d => ({ id: d.id, datetime: d.sentAt.toISOString().replace('T', ' ').slice(0, 19), date: d.sentAt.toISOString().replace('T', ' ').slice(0, 16), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원',
-        type: d.templateCode, typeName: d.templateCode, receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
+      NANO_SERVER_DISPATCH: dispatches.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원',
+        ...dispatchTemplate(d.id, d.templateCode), receiver: `${d.recipientName} (${d.recipientPhone})`, receiverName: d.recipientName, receiverPhone: d.recipientPhone, summary: d.message, status: d.status, code: '' })),
       NANO_SERVER_BANNERS: banners.filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= new Date()) && (!b.endDate || b.endDate >= new Date()))).map(b => {
         const meta = bannerMetaMap.get(b.id) || {};
         let linkBookIds: string[] = [];

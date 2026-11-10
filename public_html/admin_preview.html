@@ -418,7 +418,7 @@
     /* ============================================================== */
     /* [개선] 학습 리포트: A4 공식 리포트 프리미엄 디자인 & 인쇄 스타일 */
     /* ============================================================== */
-    
+
     /* 1. 화면(모달) 및 인쇄 공통 리포트 컴포넌트 스타일 */
     .report-print-container {
       font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif;
@@ -4388,7 +4388,7 @@
               <i class="fa-solid fa-comment-dots"></i>카톡 발송 내역 (알리고)
             </div>
             <div class="workspace-subtitle">
-              우리 학원에서 학부모 및 학생에게 발송한 독서 리포트, 배정 알림톡 발송 현황을 추적합니다.
+              학습 리포트, 포트폴리오, 문해력 테스트 발송 현황을 확인합니다.
             </div>
           </div>
           <button class="btn btn-beige-secondary" onclick="showAcademyToast('알리고 알림톡 즉시 발송 창이 열립니다.')">
@@ -4396,22 +4396,30 @@
           </button>
         </div>
 
-        <div class="simple-card">
+        <div class="d-flex flex-wrap mb-3" style="gap:8px;" role="search" aria-label="카카오톡 발송 내역 검색">
+<input id="academyDispatchSearch" type="search" class="form-control" style="max-width:260px" placeholder="수신자, 수신 번호, 학급 검색" aria-label="수신자, 수신 번호, 학급" oninput="renderAcademyDispatchTable()">
+<select id="academyDispatchTemplate" class="select-beige" aria-label="템플릿" onchange="renderAcademyDispatchTable()"><option value="ALL">전체</option><option value="QUIZ">학습 리포트</option><option value="PORTFOLIO">포트폴리오</option><option value="LITERACY">문해력 테스트</option></select>
+<select id="academyDispatchStatus" class="select-beige" aria-label="발송 결과" onchange="renderAcademyDispatchTable()"><option value="ALL">전체 결과</option><option value="SUCCESS">성공</option><option value="FAILED">실패</option><option value="ACCEPTED">전송 중</option><option value="UNKNOWN">결과 확인 중</option></select>
+<input id="academyDispatchFrom" type="date" class="select-beige" aria-label="발송 시작일" onchange="renderAcademyDispatchTable()">
+<input id="academyDispatchTo" type="date" class="select-beige" aria-label="발송 종료일" onchange="renderAcademyDispatchTable()">
+<button class="btn btn-beige-secondary" onclick="renderAcademyDispatchTable()">검색</button></div>
+<div class="simple-card">
           <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
             <h6 class="font-weight-bold mb-0" style="color: var(--text-main);">
               <i class="fa-solid fa-paper-plane mr-2 text-muted"></i>원내 알림톡/문자 발송 로그 (<span
                 id="academyDispatchCount">0</span>건)
             </h6>
-            <small class="text-muted">* 실패 건은 1회 무료 재발송이 가능합니다.</small>
+            <small class="text-muted">발송 시 1회 차감되며, 최종 실패 시 반환됩니다. 문자 대체 발송은 반환 대상에서 제외됩니다.</small>
           </div>
           <table class="simple-table">
             <thead>
               <tr>
                 <th style="width: 60px;">번호</th>
                 <th>발송 일시</th>
-                <th>메시지 종류</th>
-                <th style="text-align: left;">수신자 정보</th>
-                <th style="text-align: left;">내용 요약</th>
+                <th>학급</th>
+                <th>템플릿</th>
+                <th style="text-align: left;">수신자 (학생/학부모)</th>
+                <th>수신 번호</th>
                 <th>발송 결과</th>
                 <th style="width: 120px;">관리</th>
               </tr>
@@ -4890,7 +4898,7 @@
                 구독 기간 선택 & 요금 계산 (<span id="selectedTierDisplayName" class="text-primary font-weight-bold">스탠다드
                   요금제</span> 기준)
               </span>
-              <span class="text-muted" style="font-size: 12px;">기간이 길수록 더 큰 할인 혜택이 적용됩니다.</span>
+              <span class="text-muted" style="font-size: 12px;">모든 요금제의 기능은 동일하며 이용 인원만 다릅니다.</span>
             </div>
 
             <div class="row">
@@ -4906,9 +4914,7 @@
                   </div>
 
                   <h4 class="font-weight-bold mt-2 mb-1" style="color: var(--text-main);">1개월 구독권</h4>
-                  <p class="text-muted" style="font-size: 12.5px; min-height: 36px;">
-                    부담 없이 매월 단위로 유연하게 이용하는 표준 정기구독 플랜입니다.
-                  </p>
+
 
                   <!-- 가격 영역 -->
                   <div class="p-3 my-3 rounded" style="background: #fbf9f5; border: 1px solid var(--border-light);">
@@ -4925,16 +4931,8 @@
                   </div>
 
                   <!-- 혜택 리스트 -->
-                  <ul class="list-unstyled mb-4" style="font-size: 13px; line-height: 2;">
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>매달 자동 결제</strong>로 서비스 중단 방지
-                    </li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>만료 7일 전 · 3일 전</strong>
-                      알림톡/SMS 사전 안내</li>
-                    <li id="benefitSlot_monthly"><i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 50명
-                      제공</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i>초·중등 북퀴즈 & 나노 생각담기 전체 열람</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i>언제든지 위약금 없이 해지 가능</li>
-                  </ul>
+                  <ul class="list-unstyled mb-4"><li id="benefitSlot_monthly"><i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 50명
+                      제공</li></ul>
 
                   <!-- 신청 버튼 -->
                   <div class="mt-auto">
@@ -4966,9 +4964,7 @@
                   </div>
 
                   <h4 class="font-weight-bold mt-2 mb-1" style="color: var(--text-main);">6개월 이용권</h4>
-                  <p class="text-muted" style="font-size: 12.5px; min-height: 36px;">
-                    1학기(6개월) 동안 10% 할인을 적용받고 안정적으로 커리큘럼을 운영합니다.
-                  </p>
+
 
                   <!-- 가격 영역 -->
                   <div class="p-3 my-3 rounded" style="background: #faf6f0; border: 1.5px solid #d8cebf;">
@@ -4986,15 +4982,8 @@
                   </div>
 
                   <!-- 혜택 리스트 -->
-                  <ul class="list-unstyled mb-4" style="font-size: 13px; line-height: 2;">
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>10% 할인 혜택</strong> 적용</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>만료 7일 전 · 3일 전</strong> 갱신 알림
-                      및 안내 발송</li>
-                    <li id="benefitSlot_6month"><i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 50명
-                      제공</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i>신규 출제 도서 및 북퀴즈 우선 동기화</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i>전체 가맹 학원 독서 랭킹 시스템 풀 지원</li>
-                  </ul>
+                  <ul class="list-unstyled mb-4"><li id="benefitSlot_6month"><i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 50명
+                      제공</li></ul>
 
                   <!-- 신청 버튼 -->
                   <div class="mt-auto">
@@ -5020,9 +5009,7 @@
                   </div>
 
                   <h4 class="font-weight-bold mt-2 mb-1" style="color: var(--text-main);">12개월 연간권</h4>
-                  <p class="text-muted" style="font-size: 12.5px; min-height: 36px;">
-                    1년 동안 20% 최대 할인을 받으며 학원 독서논술 정규 브랜딩을 완성합니다.
-                  </p>
+
 
                   <!-- 가격 영역 -->
                   <div class="p-3 my-3 rounded" style="background: #fbf9f5; border: 1px solid var(--border-light);">
@@ -5040,15 +5027,8 @@
                   </div>
 
                   <!-- 혜택 리스트 -->
-                  <ul class="list-unstyled mb-4" style="font-size: 13px; line-height: 2;">
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>20% 최대 할인</strong> 혜택 제공</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i><strong>만료 7일 전 · 3일 전</strong> 정기 갱신
-                      사전 안내</li>
-                    <li id="benefitSlot_12month"><i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 50명
-                      제공</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i>카카오 알림톡 기본 무료 크레딧 1,000건 제공</li>
-                    <li><i class="fa-solid fa-circle-check text-success mr-2"></i>본사 1:1 전담 원격 기술 및 커리큘럼 컨설팅</li>
-                  </ul>
+                  <ul class="list-unstyled mb-4"><li id="benefitSlot_12month"><i class="fa-solid fa-circle-check text-success mr-2"></i>원생 슬롯 기본 50명
+                      제공</li></ul>
 
                   <!-- 신청 버튼 -->
                   <div class="mt-auto">
@@ -6168,7 +6148,7 @@
     </div>
   </div>
 
-  
+
   <!-- ============================================================== -->
   <!-- 3-C. 나노시트 기간별 종합 분석지 모달 (학부모용 성장 브리핑) -->
   <!-- ============================================================== -->
@@ -6345,7 +6325,7 @@
               id="m_std_school"></span></div>
           <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">소속 클래스</span><span
               id="m_std_class"></span></div>
-          
+
           <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">완독 도서</span><span
               id="m_std_books"></span></div>
           <div class="d-flex justify-content-between py-1 border-bottom"><span class="text-muted">퀴즈 평균</span><span
@@ -7479,7 +7459,7 @@
           <div id="realPdfViewerWrapper" style="display: none; position: relative; max-width: 740px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.12); border-radius: 8px; overflow: hidden; background: #fff; padding: 0; margin-bottom: 12px;">
             <div style="position: relative; width: 100%; background: #fff; overflow: hidden;">
               <canvas id="pdfViewerCanvas" style="display: block; width: 100%; height: auto; margin: 0 auto;"></canvas>
-              
+
               <!-- 전면 보안 워터마크 오버레이 (대각선 중앙 단일 워터마크 패턴) -->
               <div id="realPdfWatermarkOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; user-select: none;">
                 <!-- 동적 워터마크 주입 -->
@@ -9121,7 +9101,7 @@
               <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(30)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+30</button>
               <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(50)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+50</button>
               <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(100)" style="font-size: 11px; background: #10b981; color: #ffffff; border: 1px solid #059669; border-radius: 8px;">+100</button>
-              
+
               <span style="font-size: 11px; font-weight: 700; color: #e11d48; align-self: center; margin-left: 8px; margin-right: 2px;">-차감:</span>
               <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-10)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-10</button>
               <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-30)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-30</button>
@@ -9227,7 +9207,7 @@
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
-<script src="admin_preview.js?v=20261109_speed_v2"></script>
+<script src="admin_preview.js?v=20261110_speed_v3"></script>
 
   <!-- PWA Service Worker Registration -->
   <script>
