@@ -1,7 +1,14 @@
 /* 본사·학원 공통 결제/충전 화면. 금액과 권한은 서버에서 다시 검증합니다. */
 (function (global) {
   'use strict';
-  const state = { products: [], payments: [], busy: false, dispatchBusy: false, dispatchAt: 0 };
+  const DEFAULT_PRODUCTS = [
+    { code: 'BASIC', name: '베이직 (Basic)', price: 88000, slots: 25 },
+    { code: 'STANDARD', name: '스탠다드 (Standard)', price: 132000, slots: 50 },
+    { code: 'PREMIUM', name: '프리미엄 (Premium)', price: 198000, slots: 100 },
+    { code: 'ROYAL', name: '로열 (Royal)', price: 330000, slots: 0 },
+    { code: 'KAKAO', name: '카카오톡 알림', price: 5500, slots: 0 }
+  ];
+  const state = { products: DEFAULT_PRODUCTS.slice(), payments: [], busy: false, dispatchBusy: false, dispatchAt: 0 };
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const money = value => Number(value || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 });
   const master = () => !!document.getElementById('tab-master-payment');
@@ -19,15 +26,24 @@
   const today = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0,10);
   const statuses = { SUCCESS:'성공', FAILED:'실패', ACCEPTED:'전송 중', SENDING:'접수 중', UNKNOWN:'결과 확인 중', SMS_FALLBACK:'문자 대체 발송' };
   const methods = { CARD:'신용카드', TRANSFER:'현금/계좌이체', CASH:'현금/계좌이체', OTHER:'기타' };
+  // 가맹점의 이용 상품(plan)을 결제 상품 코드(BASIC/STANDARD/PREMIUM/ROYAL)로 매핑
+  const mapAcademyPlanToProductCode = plan => {
+    const p = String(plan || '').trim().toUpperCase();
+    if (p === 'VIP' || p === 'ROYAL' || p.includes('로열') || p.includes('로얄')) return 'ROYAL';
+    if (p === 'PREMIUM' || p.includes('프리미엄')) return 'PREMIUM';
+    if (p === 'STANDARD' || p.includes('스탠다드')) return 'STANDARD';
+    return 'BASIC';
+  };
 
   async function load() {
     if (state.busy) return;
     state.busy = true;
     try {
       const data = await api('/api/billing');
-      state.products = data.products; state.payments = data.items;
+      state.products = (Array.isArray(data.products) && data.products.length) ? data.products : DEFAULT_PRODUCTS.slice();
+      state.payments = data.items || [];
       if (master()) {
-        masterPaymentList = data.items;
+        masterPaymentList = state.payments;
         if (typeof syncFranchiseAutoUnapprove === 'function') {
           syncFranchiseAutoUnapprove(masterPaymentList);
           if (typeof renderFranchiseTable === 'function') renderFranchiseTable(franchiseList, true);
@@ -35,17 +51,13 @@
         }
         populateMasterPaymentAcademyFilter();
         const select = document.getElementById('masterPaymentPlanFilter');
-        const selected = select.value;
-        select.innerHTML = '<option value="ALL">전체 상품명</option>' + data.products.map(p => `<option value="${esc(p.code.toLowerCase())}">${esc(p.name)}</option>`).join('');
-        select.value = Array.from(select.options).some(o => o.value === selected) ? selected : 'ALL';
+        if (select) {
+          const selected = select.value;
+          select.innerHTML = '<option value="ALL">전체 상품명</option>' + state.products.map(p => `<option value="${esc(p.code.toLowerCase())}">${esc(p.name)}</option>`).join('');
+          select.value = Array.from(select.options).some(o => o.value === selected) ? selected : 'ALL';
+        }
+        // filterMasterPaymentList 내부에서 승인 가맹점 필터 + 16일 00:00 자동 결제 대기 반영 + 상단 3개 KPI 카드 업데이트를 일괄 수행합니다.
         filterMasterPaymentList();
-        numUnit('kpiMonthTotalRevenue', money(data.stats.monthRevenue), '원');
-        text('kpiMonthTotalRevenueSub', '이번 달 입금 완료 금액');
-        numUnit('kpiPaidCount', data.stats.paidCount, '건');
-        text('kpiPaidCountSub', '전체 결제 완료 내역');
-        numUnit('kpiPendingCount', data.stats.pendingCount, '건');
-        text('kpiPendingCountSub', money(data.stats.pendingAmount) + '원 입금 확인 대기');
-        numUnit('kpiExpiringCount', data.stats.expiring, '곳');
       } else {
         academyPaymentList = data.items;
         filterAcademyPaymentTable();
@@ -59,7 +71,20 @@
     const body = document.getElementById('masterPaymentTableBody');
     if (!body) return;
     text('masterPaymentFilteredCount', items.length);
-    body.innerHTML = items.map((p,i) => `<tr><td>${i+1}</td><td>${esc(p.academyName)}</td><td>${esc(p.director)}</td><td>${esc(p.planName)}</td><td>${money(p.supply)}원</td><td>${money(p.vat)}원</td><td>${money(p.total)}원</td><td>${esc(methods[p.method] || p.method)}</td><td>${esc(p.date)}</td><td>${p.startDate ? esc(p.startDate + ' ~ ' + p.endDate) : '—'}</td><td>${esc(({paid:'결제 완료',pending:'입금 대기',cancelled:'취소',overdue:'미납'})[p.status] || p.status)}${p.taxInvoiceIssued ? '<br><small>세금계산서 발행</small>' : ''}</td><td>${p.manual ? `<button type="button" class="btn btn-sm btn-outline-secondary" data-payment-edit="${esc(p.id)}">수정</button> <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}">삭제</button>` : '결제사 관리'}</td></tr>`).join('') || '<tr><td colspan="12" class="text-center p-4">결제 내역이 없습니다.</td></tr>';
+    body.innerHTML = items.map((p,i) => {
+      const statusLabel = ({paid:'결제 완료',pending:'결제 대기',cancelled:'취소',overdue:'미납'})[p.status] || p.status;
+      const statusHtml = (p.isAutoPending || p.status === 'pending')
+        ? `<span class="badge px-2 py-1 font-weight-bold" style="background:#fff8e6;color:#b45309;border:1px solid #fcd34d;font-size:11.5px;"><i class="fa-solid fa-clock mr-1"></i>${esc(statusLabel)}</span>`
+        : p.status === 'paid'
+          ? `<span class="badge px-2 py-1 font-weight-bold" style="background:#eaf5ec;color:#1e6b35;border:1px solid #b7dfbe;font-size:11.5px;"><i class="fa-solid fa-check mr-1"></i>${esc(statusLabel)}</span>${p.taxInvoiceIssued ? '<br><small>세금계산서 발행</small>' : ''}`
+          : esc(statusLabel);
+      const manageHtml = (p.isAutoPending || p.status === 'pending')
+        ? `<button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" data-payment-register-academy="${esc(p.academyId)}" style="border-radius:8px;font-size:11.5px;padding:4px 10px;white-space:nowrap;"><i class="fa-solid fa-plus mr-1"></i>결제 등록</button>${p.manual && !p.isAutoPending ? ` <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}" style="font-size:11px;padding:3px 7px;">삭제</button>` : ''}`
+        : p.manual
+          ? `<button type="button" class="btn btn-sm btn-outline-secondary" data-payment-edit="${esc(p.id)}">수정</button> <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}">삭제</button>`
+          : '결제사 관리';
+      return `<tr><td>${i+1}</td><td class="font-weight-bold">${esc(p.academyName)}</td><td>${esc(p.director)}</td><td>${esc(p.planName)}</td><td>${money(p.supply)}원</td><td>${money(p.vat)}원</td><td class="font-weight-bold" style="color:#962a22;">${money(p.total)}원</td><td>${esc(methods[p.method] || p.method)}</td><td>${esc(p.date)}</td><td>${p.startDate ? esc(p.startDate + ' ~ ' + p.endDate) : '—'}</td><td>${statusHtml}</td><td>${manageHtml}</td></tr>`;
+    }).join('') || '<tr><td colspan="12" class="text-center p-4">결제 내역이 없습니다.</td></tr>';
   }
 
   function dialog(title, html, submitText = '저장') {
@@ -97,15 +122,20 @@
   const field = (label, control, req = false) => `<div class="mb-3"><label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">${esc(label)}${req ? ' <span class="text-danger">*</span>' : ''}</label>${control}</div>`;
   const input = (name, value, type = 'text', extra = '') => `<input class="form-control billing-input" name="${name}" type="${type}" value="${esc(value)}" ${extra}>`;
 
-  async function edit(id) {
-    await load();
-    if (!state.products.length) return;
+  async function edit(id, preselectedAcademyId) {
+    if (global.NanoPortal && NanoPortal.remote) await load();
+    if (!state.products.length) state.products = DEFAULT_PRODUCTS.slice();
     const p = id ? state.payments.find(x => x.id === id) : null;
     if (id && !p) return toast('결제 내역을 새로고침해 주세요.');
     const requestId = crypto.randomUUID();
     const initialMethod = p?.method === 'CARD' ? 'CARD' : 'TRANSFER';
-    const academies = Array.isArray(franchiseList) ? franchiseList : [];
-    const currentAcademy = academies.find(a => a.id === p?.academyId) || academies[0] || { id: '', name: '가맹 학원 선택', director: '' };
+    const rawAcademies = Array.isArray(franchiseList) ? franchiseList : [];
+    const approvedAcademies = typeof getApprovedFranchiseList === 'function' ? getApprovedFranchiseList() : rawAcademies;
+    const academies = approvedAcademies.length ? approvedAcademies : rawAcademies;
+    const targetAcadId = p?.academyId || preselectedAcademyId || '';
+    const currentAcademy = academies.find(a => a.id === targetAcadId || a.name === targetAcadId) || rawAcademies.find(a => a.id === targetAcadId || a.name === targetAcadId) || academies[0] || { id: '', name: '가맹 학원 선택', director: '', plan: 'BASIC' };
+    const initialProductCode = p?.productCode || mapAcademyPlanToProductCode(currentAcademy.plan);
+    const initialProduct = state.products.find(x => x.code === initialProductCode) || state.products[0];
     const formatAcademyLabel = a => a && a.id ? `${a.name}${a.director ? ' · ' + a.director : ''}` : '가맹 학원을 선택해 주세요';
 
     const el = dialog(
@@ -145,11 +175,11 @@
       <div class="row mb-2">
         <div class="col-sm-6 mb-2 mb-sm-0">
           <label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">상품명 <span class="text-danger">*</span></label>
-          <select class="select-beige w-100 font-weight-bold" name="productCode">${state.products.map(x => `<option value="${x.code}" ${p?.productCode === x.code ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+          <select class="select-beige w-100 font-weight-bold" name="productCode">${state.products.map(x => `<option value="${x.code}" ${initialProduct.code === x.code ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
         </div>
         <div class="col-sm-6">
           <label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">총 결제 금액 (부가세 포함) <span class="text-danger">*</span></label>
-          ${input('amount', p?.total || state.products[0].price, 'number', 'required min="1" max="100000000" step="1" style="font-weight:700;color:#962a22;"')}
+          ${input('amount', p?.total || initialProduct.price, 'number', 'required min="1" max="100000000" step="1" style="font-weight:700;color:#962a22;"')}
         </div>
       </div>
       <div id="billingAmounts" class="px-3 py-2 mb-3 rounded" style="background:#fdfbf7;border:1px solid #ece6dc;font-size:12px;"></div>
@@ -231,6 +261,14 @@
           if (picked) {
             form.elements.academyId.value = picked.id;
             selectedText.textContent = formatAcademyLabel(picked);
+            // 가맹학원을 선택하면 해당 가맹점의 상품명 및 금액이 아래에 즉시 적용됨
+            const code = mapAcademyPlanToProductCode(picked.plan);
+            const matchedProduct = state.products.find(x => x.code === code) || state.products[0];
+            if (matchedProduct) {
+              form.elements.productCode.value = matchedProduct.code;
+              form.elements.amount.value = matchedProduct.price;
+              calculate();
+            }
           }
           dropdownMenu.hidden = true;
         };
@@ -379,9 +417,12 @@
   }
 
   document.addEventListener('click',event=>{
-    const editButton=event.target.closest('[data-payment-edit]'), deleteButton=event.target.closest('[data-payment-delete]');
+    const editButton=event.target.closest('[data-payment-edit]');
+    const deleteButton=event.target.closest('[data-payment-delete]');
+    const registerButton=event.target.closest('[data-payment-register-academy]');
     if(editButton) edit(editButton.dataset.paymentEdit);
     if(deleteButton) remove(deleteButton.dataset.paymentDelete);
+    if(registerButton) edit(null, registerButton.dataset.paymentRegisterAcademy);
   });
   global.NanoBilling={load,renderPayments,edit,topup,dispatch,retry,wallet};
 })(window);

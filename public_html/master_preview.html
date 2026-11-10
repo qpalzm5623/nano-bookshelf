@@ -1287,9 +1287,9 @@
         </div>
       </div>
 
-      <!-- KPI 통계 카드 (4열) -->
+      <!-- KPI 통계 카드 (3열) -->
       <div class="row mb-4">
-        <div class="col-md-3 mb-3 mb-md-0">
+        <div class="col-md-4 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">당월 총 결제 수납액 <i class="fa-solid fa-won-sign text-muted"></i></div>
             <div class="stat-num" style="color: #962a22;" id="kpiMonthTotalRevenue">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">원</span></div>
@@ -1299,7 +1299,7 @@
             <i class="fa-solid fa-won-sign stat-icon-bg"></i>
           </div>
         </div>
-        <div class="col-md-3 mb-3 mb-md-0">
+        <div class="col-md-4 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">정상 결제 완료 <i class="fa-solid fa-circle-check text-success"></i></div>
             <div class="stat-num" style="color: #2f5436;" id="kpiPaidCount">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span></div>
@@ -1307,7 +1307,7 @@
             <i class="fa-solid fa-circle-check stat-icon-bg"></i>
           </div>
         </div>
-        <div class="col-md-3 mb-3 mb-md-0">
+        <div class="col-md-4 mb-3 mb-md-0">
           <div class="stat-card">
             <div class="stat-label">결제 대기 (미수납) <i class="fa-solid fa-clock text-warning"></i></div>
             <div class="stat-num" style="color: #8c531b;" id="kpiPendingCount">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span></div>
@@ -1315,7 +1315,7 @@
             <i class="fa-solid fa-clock stat-icon-bg"></i>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 d-none">
           <div class="stat-card">
             <div class="stat-label">만료 임박 (D-30 이내) <i class="fa-solid fa-bell text-warning"></i></div>
             <div class="stat-num" style="color: #d97706;" id="kpiExpiringCount">0<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">곳</span></div>
@@ -1328,7 +1328,7 @@
       <!-- 검색 & 필터 바 -->
       <div class="filter-bar">
         <div>
-          <select id="masterPaymentAcademyFilter" class="select-beige" onchange="filterMasterPaymentList()">
+          <select id="masterPaymentMonthFilter" class="select-beige" onchange="filterMasterPaymentList()" aria-label="결제 월별 조회"><option value="ALL">전체 기간 (월별 선택)</option></select></div><div><select id="masterPaymentAcademyFilter" class="select-beige" onchange="filterMasterPaymentList()">
             <option value="ALL">전체 가맹 학원</option>
             <!-- JS 동적 옵션 -->
           </select>
@@ -1436,14 +1436,14 @@
 
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
-<script src="js/master/master-core.js?v=20261110_kakao_v1"></script>
+<script src="js/master/master-core.js?v=20261110_payment_routine"></script>
 <script src="js/master/master-franchise.js?v=20261110_auto_unapprove"></script>
 <script src="js/master/master-members.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-operations.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-ranking.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-contents.js?v=20261110_speed_v3"></script>
 <script src="js/master/master-dispatch.js?v=20261110_kakao_v1"></script>
-<script src="js/master/master-payment.js?v=20261110_card_font"></script>
+<script src="js/master/master-payment.js?v=20261110_payment_routine"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/master/master-literacy.js?v=20261104_search_rule"></script>
@@ -1481,6 +1481,6 @@
 </script>
 
 
-<script src="js/billing-ui.js?v=20261110_auto_unapprove"></script>
+<script src="js/billing-ui.js?v=20261110_payment_routine"></script>
 </body>
 </html>

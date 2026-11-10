@@ -1817,8 +1817,8 @@ function ensureMasterTabRendered(tabName) {
   } else if (tabName === "dispatch") {
     if (typeof renderDispatchTable === "function") renderDispatchTable();
   } else if (tabName === "payment") {
-    if (typeof renderMasterPaymentTable === "function") renderMasterPaymentTable();
-    if (typeof updatePaymentKpis === "function") updatePaymentKpis();
+    if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
+    if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
     if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load();
   }
 }
@@ -1893,11 +1893,13 @@ function switchMasterTab(tabName) {
   } else if (tabName === "dispatch" && typeof resetDispatchFilters === "function") {
     resetDispatchFilters();
   } else if (tabName === "payment") {
+    if (document.getElementById("masterPaymentMonthFilter")) document.getElementById("masterPaymentMonthFilter").value = "ALL";
     if (document.getElementById("masterPaymentAcademyFilter")) document.getElementById("masterPaymentAcademyFilter").value = "ALL";
     if (document.getElementById("masterPaymentPlanFilter")) document.getElementById("masterPaymentPlanFilter").value = "ALL";
     if (document.getElementById("masterPaymentStatusFilter")) document.getElementById("masterPaymentStatusFilter").value = "ALL";
     if (document.getElementById("masterPaymentSearchInput")) document.getElementById("masterPaymentSearchInput").value = "";
-    if (typeof renderMasterPaymentTable === "function") renderMasterPaymentTable(typeof masterPaymentList !== "undefined" ? masterPaymentList : []);
+    if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
+    if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
   }
 
   const mainEl = document.querySelector('.main-workspace');
