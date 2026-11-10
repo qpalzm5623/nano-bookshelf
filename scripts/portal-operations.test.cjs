@@ -10,6 +10,9 @@ function load(file, deps = {}, extra = {}) {
     deps = { '../lib/dispatch-view': load('lib/dispatch-view.ts'), '../lib/billing-policy': policy,
       '../lib/kakao-wallet': load('lib/kakao-wallet.ts', { './prisma': deps['../lib/prisma'], './portal-http': deps['../lib/portal-http'], './billing-policy': policy }, extra), ...deps };
   }
+  if (file === 'api/files.ts') {
+    deps = { '../lib/r2-storage': load('lib/r2-storage.ts'), ...deps };
+  }
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(code,{exports,require:name=>deps[name]||require(name),Buffer,process,console,URL,URLSearchParams,AbortSignal,Date,...extra});return exports;
