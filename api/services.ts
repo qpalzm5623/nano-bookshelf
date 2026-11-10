@@ -4,10 +4,11 @@ import { reserveDispatch, settleDispatch, reconcileDispatches } from '../lib/kak
 import { KAKAO_UNIT } from '../lib/billing-policy';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { ProxyAgent } from 'undici';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 const fixieUrl = process.env.FIXIE_URL;
 const proxyDispatcher = fixieUrl ? new ProxyAgent(fixieUrl) : undefined;
+const aligoFetch: typeof fetch = proxyDispatcher && typeof undiciFetch === 'function' ? (undiciFetch as unknown as typeof fetch) : fetch;
 
 const ALIGO_API_KEY = process.env.ALIGO_API_KEY || 'ypjr7m6tjjjhri2dsz3fz9sdancwcsro';
 const ALIGO_USER_ID = process.env.ALIGO_USER_ID || 'min5k';
@@ -182,16 +183,21 @@ export default async function handler(req: any, res: any) {
         const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, code: d.resultCode || '', resultMessage: d.resultMessage || '', canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
         let connected = false;
         let remainingCount: number | null = null;
+        let aligoMessage = '';
         try {
           const options: any = { method: 'POST', body: new URLSearchParams({ apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID }), signal: AbortSignal.timeout(8000) };
           if (proxyDispatcher) options.dispatcher = proxyDispatcher;
-          const response = await fetch('https://kakaoapi.aligo.in/akv10/heartinfo/', options);
+          const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/heartinfo/', options);
           const result: any = await response.json();
           connected = response.ok && Number(result.code ?? result.result_code ?? -1) >= 0;
+          aligoMessage = String(result.message || '').trim();
           const raw = result.list?.ALT_CNT ?? result.ALT_CNT;
           if (user.role === 'MASTER' && connected && raw != null && Number.isSafeInteger(Number(raw)) && Number(raw) >= 0) remainingCount = Number(raw);
-        } catch { /* 조회 실패 시 임의의 잔액을 표시하지 않습니다. */ }
-        return res.json({ items, total, monthly, success, failed, pending: total - success - failed, connected, balance: (wallet?.kakaoBalance || 0) / 10, walletCount: Math.floor((wallet?.kakaoBalance || 0) / KAKAO_UNIT),
+        } catch (err: any) {
+          /* 조회 실패 시 임의의 잔액을 표시하지 않고 오류 사유만 기록합니다. */
+          aligoMessage = String(err?.cause?.message || err?.message || '알리고 API 통신 실패').slice(0, 120);
+        }
+        return res.json({ items, total, monthly, success, failed, pending: total - success - failed, connected, aligoMessage, balance: (wallet?.kakaoBalance || 0) / 10, walletCount: Math.floor((wallet?.kakaoBalance || 0) / KAKAO_UNIT),
           ...(user.role === 'MASTER' ? { remainingCount, estimatedCash: remainingCount == null ? null : remainingCount * 6.5, unitCost: 6.5 } : {}) });
       }
       return res.json({ aligoReady });
@@ -450,7 +456,7 @@ async function dispatchAligo(
     const fetchOptions: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
     if (proxyDispatcher) fetchOptions.dispatcher = proxyDispatcher;
 
-    const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', fetchOptions);
+    const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', fetchOptions);
     const result: any = await response.json();
     const accepted = response.ok && result.code != null && Number(result.code) === 0;
     const rejected = response.ok && result.code != null && Number.isFinite(Number(result.code)) && Number(result.code) < 0;

@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import { need } from './portal-http';
 import { KAKAO_UNIT, deliveryOutcome } from './billing-policy';
-import { ProxyAgent } from 'undici';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 
 // 모든 잔액 변경은 원장 기록과 같은 트랜잭션에서 수행합니다.
 export async function changeBalance(tx: any, academyId: string, amount: number, id: string, kind: string, referenceId: string) {
@@ -41,8 +41,10 @@ export async function aligoRequest(path: string, fields: Record<string, string>,
   const auth = credentials || { apikey: process.env.ALIGO_API_KEY || '', userid: process.env.ALIGO_USER_ID || '' };
   need(auth.apikey && auth.userid, '알리고 연동 설정을 확인해 주세요.', 503);
   const options: any = { method: 'POST', body: new URLSearchParams({ ...auth, ...fields }), signal: AbortSignal.timeout(10000) };
-  if (process.env.FIXIE_URL) options.dispatcher = new ProxyAgent(process.env.FIXIE_URL);
-  const response = await fetch('https://kakaoapi.aligo.in/akv10/' + path + '/', options);
+  const useProxy = Boolean(process.env.FIXIE_URL);
+  if (useProxy) options.dispatcher = new ProxyAgent(process.env.FIXIE_URL!);
+  const requestFetch: typeof fetch = useProxy && typeof undiciFetch === 'function' ? (undiciFetch as unknown as typeof fetch) : fetch;
+  const response = await requestFetch('https://kakaoapi.aligo.in/akv10/' + path + '/', options);
   need(response.ok, '알리고 조회에 실패했습니다.', 502);
   return response.json() as Promise<any>;
 }
