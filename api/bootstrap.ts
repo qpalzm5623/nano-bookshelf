@@ -149,7 +149,7 @@ export default async function handler(req: any, res: any) {
       user.role === 'MASTER' || user.role === 'DIRECTOR' || user.role === 'TEACHER'
         ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
-      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { key: { startsWith: 'class_meta:' } }, select: { key: true, value: true } }),
+      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { OR: [{ key: { startsWith: 'class_meta:' } }, { key: { startsWith: 'academy_meta:' } }] }, select: { key: true, value: true } }),
       prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } })
     ]);
 
@@ -174,11 +174,11 @@ export default async function handler(req: any, res: any) {
     }
 
     // 학급별 담당 지도교사 매핑 복원
-    const classTeacherMap = new Map<string, string>();
+    const classTeacherMap = new Map<string, string>(); const academyMetaMap = new Map<string, Record<string, any>>();
     for (const cm of (classMetaRows || [])) {
       const v: any = cm.value;
-      if (v?.teacher) {
-        classTeacherMap.set(cm.key.replace('class_meta:', ''), String(v.teacher));
+      if (cm.key.startsWith('class_meta:') && v?.teacher) { classTeacherMap.set(cm.key.replace('class_meta:', ''), String(v.teacher)); } else if (cm.key.startsWith('academy_meta:') && v && typeof v === 'object') { academyMetaMap.set(cm.key.replace('academy_meta:', ''), v); }
+      if (false) {
       }
     }
 
@@ -459,7 +459,7 @@ export default async function handler(req: any, res: any) {
           currentStudents: a._count.members,
           monthlyFee: a.monthlyFee,
           plan: a.plan,
-          status: a.status,
+          status: academyMetaMap.get(a.id)?.uiStatus || a.status, autoUnapprove: academyMetaMap.get(a.id)?.autoUnapprove === true,
           joinDate: (a.joinDate || a.startDate).toISOString().slice(0, 10),
           startDate: a.startDate.toISOString().slice(0, 10),
           endDate: a.endDate.toISOString().slice(0, 10)

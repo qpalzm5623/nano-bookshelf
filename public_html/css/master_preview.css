@@ -1,4 +1,4 @@
-﻿    :root {
+    :root {
       /* 심플 & 웜 베이지 테마 토큰 */
       --bg-base: #f7f4ee;           /* 부드러운 린넨 베이지 배경 */
       --bg-surface: #ffffff;        /* 깔끔한 화이트 카드 */
@@ -523,7 +523,8 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 14px rgba(60, 50, 40, 0.05);
     }
-    .stat-label {
+    .stat-label,
+    .stat-title {
       font-size: 12px;
       font-weight: 700;
       color: var(--text-muted);
@@ -695,6 +696,28 @@
       color: var(--text-main);
       border-bottom: 1px solid var(--border-light);
       padding: 16px 24px;
+    }
+    #billingDialog::backdrop {
+      background: rgba(35, 28, 22, 0.48);
+      backdrop-filter: blur(2px);
+    }
+    #billingDialog .billing-input {
+      border: 1px solid var(--border-medium, #d8cebf);
+      background: #fdfcf9;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-main, #3d342d);
+      padding: 6px 12px;
+      height: 38px;
+      width: 100%;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    #billingDialog .billing-input:focus,
+    #billingDialog .select-beige:focus {
+      background: #ffffff;
+      border-color: #8c765c;
+      box-shadow: 0 0 0 3px rgba(140, 118, 92, 0.15);
+      outline: none;
     }
 
     /* 카카오 알림톡 프리뷰 박스 */

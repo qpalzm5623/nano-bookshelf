@@ -72,6 +72,7 @@
   function academyPayload(item) {
     return { id: item.serverId || undefined, code: item.id, name: item.name, bizNo: item.bizNumber || '', directorName: item.director || '', phone: item.phone || '', email: item.email || '',
       address: item.address || item.region || '', memo: item.memo || '', maxStudents: Number(item.maxStudents) || 50, monthlyFee: money(item.monthlyFee), plan: plan(item.plan), status: item.status || 'ACTIVE',
+      autoUnapprove: item.autoUnapprove === true,
       joinDate: item.joinDate || item.startDate, startDate: item.startDate, endDate: item.endDate,
       adminId: item.adminId || item.username || '', adminPw: item.adminPw || item.password || '' };
   }

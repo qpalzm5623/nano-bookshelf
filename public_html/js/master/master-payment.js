@@ -326,6 +326,11 @@ function resetMasterPaymentFilters() {
 
 // 통계 KPI 업데이트
 function updatePaymentKpis() {
+  if (typeof syncFranchiseAutoUnapprove === 'function') {
+    syncFranchiseAutoUnapprove(masterPaymentList);
+    if (typeof renderFranchiseTable === 'function') renderFranchiseTable(franchiseList, true);
+    if (typeof updateFranchiseStats === 'function') updateFranchiseStats();
+  }
   if (window.NanoBilling && window.NanoPortal?.remote) return;
   const paidItems = masterPaymentList.filter(p => p.status === 'paid');
   const pendingItems = masterPaymentList.filter(p => p.status === 'pending');
@@ -336,17 +341,17 @@ function updatePaymentKpis() {
   const longTermPaidCount = paidItems.length - monthlyPaidCount;
 
   const revEl = document.getElementById("kpiMonthTotalRevenue");
-  if (revEl) revEl.innerHTML = `${totalRevenue.toLocaleString()}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">원</span>`;
+  if (revEl) revEl.innerHTML = `${totalRevenue.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">원</span>`;
   const revSubEl = document.getElementById("kpiMonthTotalRevenueSub");
-  if (revSubEl) revSubEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up mr-1"></i>정상 결제 ${paidItems.length}건 수납 합계`;
+  if (revSubEl) revSubEl.innerText = `정상 결제 ${paidItems.length}건 수납 합계`;
 
   const paidCountEl = document.getElementById("kpiPaidCount");
-  if (paidCountEl) paidCountEl.innerHTML = `${paidItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
+  if (paidCountEl) paidCountEl.innerHTML = `${paidItems.length}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span>`;
   const paidSubEl = document.getElementById("kpiPaidCountSub");
   if (paidSubEl) paidSubEl.innerText = `정기구독 ${monthlyPaidCount}건 / 장기할인 ${longTermPaidCount}건`;
 
   const pendingCountEl = document.getElementById("kpiPendingCount");
-  if (pendingCountEl) pendingCountEl.innerHTML = `${pendingItems.length}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span>`;
+  if (pendingCountEl) pendingCountEl.innerHTML = `${pendingItems.length}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">건</span>`;
   const pendingSubEl = document.getElementById("kpiPendingCountSub");
   if (pendingSubEl) pendingSubEl.innerText = `${pendingAmount.toLocaleString()}원 수동 확인 대기`;
 
@@ -356,7 +361,7 @@ function updatePaymentKpis() {
     ? franchiseList.filter(a => a.status !== "TERMINATED" && a.endDate && a.endDate >= todayStr && a.endDate <= limitStr).length
     : 0;
   const expEl = document.getElementById("kpiExpiringCount");
-  if (expEl) expEl.innerHTML = `${expiringCount}<span style="font-size: 16px; font-weight: normal; margin-left: 2px;">곳</span>`;
+  if (expEl) expEl.innerHTML = `${expiringCount}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">곳</span>`;
   const expSubEl = document.getElementById("kpiExpiringCountSub");
   if (expSubEl) expSubEl.innerText = expiringCount > 0 ? `30일 이내 만료 예정 학원 ${expiringCount}곳` : `현재 만료 임박 학원 없음`;
 }

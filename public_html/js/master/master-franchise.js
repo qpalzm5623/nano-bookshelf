@@ -1151,8 +1151,108 @@ function handleFranchiseSortChange() {
   renderFranchiseTable(targetData, false);
 }
 
+// 가맹점별 '미 결제 시 자동 미승인 반영' ON/OFF 토글 버튼 UI 헬퍼
+function applyAutoUnapproveToggleUI(inputId, btnOnId, btnOffId, isOn) {
+  const val = Boolean(isOn);
+  const hiddenEl = document.getElementById(inputId);
+  if (hiddenEl) hiddenEl.value = val ? "true" : "false";
+  const btnOn = document.getElementById(btnOnId);
+  const btnOff = document.getElementById(btnOffId);
+  if (btnOn) {
+    btnOn.style.background = val ? "#3d342d" : "transparent";
+    btnOn.style.color = val ? "#ffffff" : "#8c7e72";
+    btnOn.style.boxShadow = val ? "0 2px 5px rgba(61,52,45,0.22)" : "none";
+  }
+  if (btnOff) {
+    btnOff.style.background = !val ? "#ffffff" : "transparent";
+    btnOff.style.color = !val ? "#3d342d" : "#8c7e72";
+    btnOff.style.boxShadow = !val ? "0 1px 3px rgba(61,52,45,0.12)" : "none";
+  }
+}
+
+function setEditAutoUnapprove(isOn) {
+  applyAutoUnapproveToggleUI("editAutoUnapprove", "btnEditAutoUnapproveOn", "btnEditAutoUnapproveOff", isOn);
+}
+
+function setRegAutoUnapprove(isOn) {
+  applyAutoUnapproveToggleUI("regAutoUnapprove", "btnRegAutoUnapproveOn", "btnRegAutoUnapproveOff", isOn);
+}
+
+// 매월 말일까지 결제내역 관리에서 해당 가맹점의 결제 완료(PAID)가 확인되었는지 검사
+function isAcademyPaymentConfirmedForMonthEnd(acad, payments) {
+  const kstNow = new Date(Date.now() + 9 * 3600000);
+  const curYear = kstNow.getUTCFullYear();
+  const curMonth = kstNow.getUTCMonth() + 1;
+  const curDay = kstNow.getUTCDate();
+  const lastDayOfCurMonth = new Date(Date.UTC(curYear, curMonth, 0)).getUTCDate();
+  const pad = n => (n < 10 ? "0" + n : String(n));
+  const currentYm = `${curYear}-${pad(curMonth)}`;
+
+  // 당월 말일이면 당월(currentYm)을 검사하고, 말일 이전이면 가장 최근 도래한 말일(직전월 말일) 기준으로 검사
+  let targetYm = currentYm;
+  let targetMonthEnd = `${currentYm}-${pad(lastDayOfCurMonth)}`;
+  if (curDay < lastDayOfCurMonth) {
+    const prevDate = new Date(Date.UTC(curYear, curMonth - 1, 0));
+    const pYear = prevDate.getUTCFullYear();
+    const pMonth = prevDate.getUTCMonth() + 1;
+    const pLastDay = prevDate.getUTCDate();
+    targetYm = `${pYear}-${pad(pMonth)}`;
+    targetMonthEnd = `${targetYm}-${pad(pLastDay)}`;
+  }
+  const targetMonthStart = `${targetYm}-01`;
+
+  // 학원 가입일/계약시작일이 검사 대상 월의 말일 이후(당월 신규 가입 후 아직 첫 말일 도래 전)이면 유예
+  const acadStart = String(acad.startDate || acad.joinDate || "").slice(0, 10);
+  if (acadStart && acadStart > targetMonthEnd) {
+    return true;
+  }
+
+  const list = Array.isArray(payments)
+    ? payments
+    : (typeof masterPaymentList !== "undefined" && Array.isArray(masterPaymentList) ? masterPaymentList : []);
+
+  return list.some(p => {
+    if (!p) return false;
+    const matchAcad = (p.academyId && p.academyId === acad.id) || (p.academyName && p.academyName === acad.name);
+    if (!matchAcad) return false;
+    if (String(p.productCode || p.planType || "").toUpperCase() === "KAKAO") return false;
+    const isPaid = String(p.status || "").toLowerCase() === "paid";
+    if (!isPaid) return false;
+
+    const payYm = String(p.date || p.paidAt || "").slice(0, 7);
+    if (payYm >= targetYm) return true;
+
+    const sDate = String(p.startDate || "").slice(0, 10);
+    const eDate = String(p.endDate || "").slice(0, 10);
+    if (sDate && eDate && sDate <= targetMonthEnd && eDate >= targetMonthStart) return true;
+    return false;
+  });
+}
+
+// '미 결제 시 자동 미승인 반영' ON 가맹점의 상태를 결제내역 기준으로 실시간 동기화
+function syncFranchiseAutoUnapprove(payments) {
+  if (typeof franchiseList === "undefined" || !Array.isArray(franchiseList)) return;
+  franchiseList.forEach(acad => {
+    if (!acad || acad.status === "TERMINATED" || acad.status === "PAUSED") return;
+    if (acad.autoUnapprove === true) {
+      const confirmed = isAcademyPaymentConfirmedForMonthEnd(acad, payments);
+      if (!confirmed) {
+        acad.status = "UNAPPROVED";
+        acad._autoUnapproved = true;
+      } else if (acad.status === "UNAPPROVED") {
+        acad.status = "ACTIVE";
+        acad._autoUnapproved = false;
+      }
+    } else if (acad._autoUnapproved && acad.status === "UNAPPROVED") {
+      acad.status = "ACTIVE";
+      acad._autoUnapproved = false;
+    }
+  });
+}
+
 // 가맹점 테이블 렌더링 (선택된 정렬 방식 반영 + 20개씩 페이징)
 function renderFranchiseTable(data = franchiseList, keepPage = false) {
+  syncFranchiseAutoUnapprove();
   const tbody = document.getElementById("franchiseTableBody");
   if (!tbody) return;
 
@@ -1195,11 +1295,11 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     if (slotRate >= 95) progressClass = "danger";
     else if (slotRate >= 80) progressClass = "warn";
 
-    // 가맹 상태 뱃지 (계약 만료 및 30일내 만료 임박 포함)
+    // 가맹 상태 뱃지 (계약 만료, 30일내 만료 임박, 미결제 자동 미승인 포함)
     const todayStr = new Date().toISOString().slice(0, 10);
-    const isExpired = (acad.endDate && acad.endDate < todayStr && acad.status !== "TERMINATED");
+    const isExpired = (acad.endDate && acad.endDate < todayStr && acad.status !== "TERMINATED" && acad.status !== "UNAPPROVED");
     let effStatus = isExpired ? "EXPIRED" : acad.status;
-    if (!isExpired && acad.status !== "TERMINATED" && acad.status !== "PAUSED" && acad.endDate) {
+    if (!isExpired && acad.status !== "TERMINATED" && acad.status !== "PAUSED" && acad.status !== "UNAPPROVED" && acad.endDate) {
       const end = new Date(acad.endDate);
       const now = new Date();
       const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
@@ -1209,7 +1309,9 @@ function renderFranchiseTable(data = franchiseList, keepPage = false) {
     }
 
     let statusBadge = `<span class="badge-soft badge-soft-success" style="font-size: 11px; padding: 3px 7px;"><i class="fa-solid fa-circle-check"></i> 정상 운영</span>`;
-    if (effStatus === "EXPIRED") {
+    if (effStatus === "UNAPPROVED") {
+      statusBadge = `<span class="badge-soft badge-soft-danger" style="font-size: 11px; padding: 3px 7px;"><i class="fa-solid fa-circle-exclamation"></i> 미승인</span>`;
+    } else if (effStatus === "EXPIRED") {
       statusBadge = `<span class="badge-soft badge-soft-danger" style="font-size: 11px; padding: 3px 7px;"><i class="fa-solid fa-calendar-xmark"></i> 계약 만료</span>`;
     } else if (effStatus === "EXPIRING") {
       statusBadge = `<span class="badge-soft badge-soft-warn" style="font-size: 11px; padding: 3px 7px;"><i class="fa-solid fa-clock"></i> 만료 임박</span>`;
@@ -1459,10 +1561,10 @@ function filterFranchiseList() {
       (staffEmail && staffEmail.toLowerCase().includes(query)) ||
       matchPhone;
 
-    // 계약 만료 및 30일내 만료 임박 자동 판정 반영
-    const isExpired = (item.endDate && item.endDate < todayStr && item.status !== "TERMINATED");
+    // 계약 만료, 30일내 만료 임박 및 자동 미승인 판정 반영
+    const isExpired = (item.endDate && item.endDate < todayStr && item.status !== "TERMINATED" && item.status !== "UNAPPROVED");
     let effStatus = isExpired ? "EXPIRED" : item.status;
-    if (!isExpired && item.status !== "TERMINATED" && item.status !== "PAUSED" && item.endDate) {
+    if (!isExpired && item.status !== "TERMINATED" && item.status !== "PAUSED" && item.status !== "UNAPPROVED" && item.endDate) {
       const end = new Date(item.endDate);
       const now = new Date();
       const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
@@ -1579,6 +1681,7 @@ function openAcademyRegisterModal() {
   if (document.getElementById("regPlan")) document.getElementById("regPlan").value = "Standard";
   if (document.getElementById("regMonthlyFee")) document.getElementById("regMonthlyFee").value = PLAN_MONTHLY_FEES["Standard"] || "120,000원";
   if (document.getElementById("regMaxStudents")) document.getElementById("regMaxStudents").value = PLAN_MAX_STUDENTS["Standard"] || 50;
+  setRegAutoUnapprove(false);
 
   $('#academyRegisterModal').modal('show');
 }
@@ -1710,6 +1813,7 @@ function openAcademyEditModal(id) {
   }
 
   document.getElementById("editStatus").value = acad.status || "ACTIVE";
+  setEditAutoUnapprove(Boolean(acad.autoUnapprove));
 
   var walletEl = document.getElementById('editAcademyKakaoCount');
   if (!walletEl) { walletEl = document.createElement('div'); walletEl.id = 'editAcademyKakaoCount'; walletEl.className = 'alert alert-light border'; document.querySelector('#academyEditModal .modal-body').prepend(walletEl); }
@@ -1835,6 +1939,17 @@ async function saveAcademyEdit(e) {
   }
 
   acad.status = document.getElementById("editStatus").value;
+  const editAutoUnapproveEl = document.getElementById("editAutoUnapprove");
+  if (editAutoUnapproveEl) {
+    const prevAuto = Boolean(acad.autoUnapprove);
+    acad.autoUnapprove = editAutoUnapproveEl.value === "true";
+    // OFF로 변경 시 기존에 자동 미승인 처리되었던 상태를 정상 운영으로 복원
+    if (prevAuto && !acad.autoUnapprove && acad.status === "UNAPPROVED") {
+      acad.status = "ACTIVE";
+      acad._autoUnapproved = false;
+    }
+  }
+  syncFranchiseAutoUnapprove();
 
   // 학원명이 변경된 경우, 연계된 회원 및 발송 내역의 학원명도 자동 동기화
   if (oldName !== newName) {
@@ -2283,10 +2398,15 @@ async function handleRegisterAcademy(e) {
     currentStudents: 0,
     maxStudents: maxStudents,
     monthlyFee: monthlyFee,
+    autoUnapprove: document.getElementById("regAutoUnapprove")?.value === "true",
     paymentStatus: "PAID",
     status: "ACTIVE",
     memo: memo
   };
+  if (newAcad.autoUnapprove && !isAcademyPaymentConfirmedForMonthEnd(newAcad)) {
+    newAcad.status = "UNAPPROVED";
+    newAcad._autoUnapproved = true;
+  }
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {

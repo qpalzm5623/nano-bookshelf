@@ -501,12 +501,23 @@ export default async function handler(req: any, res: any) {
       const existing = input.id && await prisma.academy.findUnique({ where: { id: input.id } }); need(!input.id || existing, '학원을 찾을 수 없습니다.', 404);
       if (body.operation === 'delete') { need(existing.id !== user.academyId, '본사 계정의 소속 학원은 삭제할 수 없습니다.'); await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: new Date(), status: 'SUSPENDED' } }); return res.json({ ok: true }); }
       if (body.operation === 'restore') { need(existing.deletedAt, '삭제된 학원이 아닙니다.'); return res.json({ item: await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: null, status: 'ACTIVE' } }) }); }
+      const rawUiStatus = String(input.status || 'ACTIVE').toUpperCase();
+      need(['ACTIVE', 'UNAPPROVED', 'EXPIRING', 'EXPIRED', 'PAUSED', 'SUSPENDED', 'TERMINATED'].includes(rawUiStatus), '학원 상태 값을 확인해 주세요.');
+      const dbStatus = rawUiStatus === 'TERMINATED' ? 'TERMINATED' : (rawUiStatus === 'PAUSED' || rawUiStatus === 'SUSPENDED') ? 'SUSPENDED' : 'ACTIVE';
       const data = { code: text(input.code, '학원 코드', 60, true), name: text(input.name, '학원명', 200, true), bizNo: text(input.bizNo, '사업자등록번호', 50), directorName: text(input.directorName, '원장 이름', 100, true), phone: text(input.phone, '연락처', 30), email: text(input.email, '이메일', 200), address: text(input.address, '주소', 500), memo: text(input.memo, '메모', 20000), joinDate: date(input.joinDate || input.startDate, '등록'),
         maxStudents: Number(input.maxStudents), monthlyFee: Number(input.monthlyFee) || 0, plan: enumValue(input.plan || 'STANDARD', ['BASIC','STANDARD','PREMIUM','VIP','ROYAL'], '요금제') as any,
-        status: enumValue(input.status || 'ACTIVE', ['ACTIVE','SUSPENDED','TERMINATED'], '학원 상태') as any, startDate: date(input.startDate, '시작'), endDate: date(input.endDate, '종료') };
+        status: dbStatus as any, startDate: date(input.startDate, '시작'), endDate: date(input.endDate, '종료') };
       need(Number.isSafeInteger(data.maxStudents) && data.maxStudents > 0 && Number.isSafeInteger(data.monthlyFee) && data.monthlyFee >= 0 && data.endDate > data.startDate, '정원과 계약 기간·이용료를 확인해 주세요.');
       if (existing) need(data.maxStudents >= await prisma.member.count({ where: { academyId: existing.id, role: 'STUDENT', status: 'APPROVED' } }), '재원생 수보다 정원을 줄일 수 없습니다.');
       const academy = existing ? await prisma.academy.update({ where: { id: existing.id }, data }) : await prisma.academy.create({ data });
+      if (prisma.portalSetting) {
+        const acadMeta = { autoUnapprove: input.autoUnapprove === true, uiStatus: rawUiStatus };
+        await prisma.portalSetting.upsert({
+          where: { key: 'academy_meta:' + academy.id },
+          update: { scope: 'academy_meta', value: acadMeta },
+          create: { key: 'academy_meta:' + academy.id, scope: 'academy_meta', value: acadMeta }
+        });
+      }
       const adminUsername = input.adminId || input.username;
       if (adminUsername) {
         const cleanUsername = String(adminUsername).trim();

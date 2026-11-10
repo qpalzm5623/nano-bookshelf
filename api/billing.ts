@@ -42,10 +42,10 @@ export default async function handler(req: any, res: any) {
       if (!input.id && prior) { need(prior.academyId === academyId, '등록 번호가 이미 사용되었습니다.', 409); return prior; }
       if (input.id) {
         need(prior && !prior.deletedAt && prior.academyId === academyId, '결제 내역을 찾을 수 없습니다.', 404);
-        need(prior.payMethod !== 'CARD' && (prior.payCode.startsWith('MANUAL-') || prior.payCode.startsWith('TOPUP-')), '결제사 승인 내역은 수동으로 변경할 수 없습니다.');
+        need(prior.payCode.startsWith('MANUAL-') || prior.payCode.startsWith('TOPUP-'), '결제사 승인 내역은 수동으로 변경할 수 없습니다.');
         need(prior.revision === Number(input.revision), '다른 관리자가 수정했습니다. 새로고침해 주세요.', 409);
       }
-      const status = operation === 'delete' ? 'CANCELLED' : operation === 'topup' ? 'PENDING' : String(input.status || '').toUpperCase();
+      const status = operation === 'delete' ? 'CANCELLED' : operation === 'topup' ? 'PENDING' : String(input.status || 'PAID').toUpperCase();
       need(['PAID', 'PENDING', 'CANCELLED'].includes(status), '결제 상태를 확인해 주세요.');
       let data: any;
       if (operation === 'delete') data = { deletedAt: new Date(), status };
@@ -58,7 +58,7 @@ export default async function handler(req: any, res: any) {
         const paidAt = status === 'PAID' ? new Date(String(input.paidAt || new Date().toISOString())) : null;
         need(!paidAt || Number.isFinite(+paidAt), '결제 일시를 확인해 주세요.');
         const payMethod = operation === 'topup' ? 'TRANSFER' : String(input.method);
-        need(['TRANSFER', 'CASH', 'OTHER'].includes(payMethod), '수동 결제 수단을 확인해 주세요.');
+        need(['TRANSFER', 'CASH', 'CARD', 'OTHER'].includes(payMethod), '수동 결제 수단을 확인해 주세요.');
         data = { productCode: product!.code, productName: product!.name, amount: Number(input.amount), supplyAmount: amounts!.supply, vatAmount: amounts!.vat,
           plan: product!.code === 'KAKAO' ? 'STANDARD' : product!.code, slotCount: product!.slots, serviceStart: start, serviceEnd: end,
           taxInvoiceIssued: operation !== 'topup' && input.taxInvoiceIssued === true, memo: text(input.memo, '메모', 2000), status, paidAt, payMethod };

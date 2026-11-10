@@ -7,13 +7,18 @@
   const master = () => !!document.getElementById('tab-master-payment');
   const toast = message => master() ? showMasterToast(message) : showAcademyToast(message);
   const text = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  // 상단 요약 카드(카톡 발송 내역·결제 내역 관리)의 숫자+단위 폰트 규격을 동일하게 렌더링하는 헬퍼
+  const numUnit = (id, value, unit) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `${esc(value)}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">${esc(unit)}</span>`;
+  };
   const api = (path, data) => {
     if (!global.NanoPortal || !NanoPortal.remote) return Promise.reject(new Error('운영 서버에 로그인한 뒤 이용해 주세요.'));
     return NanoPortal.api(path, data, 45000);
   };
   const today = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0,10);
   const statuses = { SUCCESS:'성공', FAILED:'실패', ACCEPTED:'전송 중', SENDING:'접수 중', UNKNOWN:'결과 확인 중', SMS_FALLBACK:'문자 대체 발송' };
-  const methods = { CARD:'신용카드', TRANSFER:'계좌이체', CASH:'현금', OTHER:'기타' };
+  const methods = { CARD:'신용카드', TRANSFER:'현금/계좌이체', CASH:'현금/계좌이체', OTHER:'기타' };
 
   async function load() {
     if (state.busy) return;
@@ -23,19 +28,24 @@
       state.products = data.products; state.payments = data.items;
       if (master()) {
         masterPaymentList = data.items;
+        if (typeof syncFranchiseAutoUnapprove === 'function') {
+          syncFranchiseAutoUnapprove(masterPaymentList);
+          if (typeof renderFranchiseTable === 'function') renderFranchiseTable(franchiseList, true);
+          if (typeof updateFranchiseStats === 'function') updateFranchiseStats();
+        }
         populateMasterPaymentAcademyFilter();
         const select = document.getElementById('masterPaymentPlanFilter');
         const selected = select.value;
         select.innerHTML = '<option value="ALL">전체 상품명</option>' + data.products.map(p => `<option value="${esc(p.code.toLowerCase())}">${esc(p.name)}</option>`).join('');
         select.value = Array.from(select.options).some(o => o.value === selected) ? selected : 'ALL';
         filterMasterPaymentList();
-        text('kpiMonthTotalRevenue', money(data.stats.monthRevenue) + '원');
+        numUnit('kpiMonthTotalRevenue', money(data.stats.monthRevenue), '원');
         text('kpiMonthTotalRevenueSub', '이번 달 입금 완료 금액');
-        text('kpiPaidCount', data.stats.paidCount + '건');
+        numUnit('kpiPaidCount', data.stats.paidCount, '건');
         text('kpiPaidCountSub', '전체 결제 완료 내역');
-        text('kpiPendingCount', data.stats.pendingCount + '건');
+        numUnit('kpiPendingCount', data.stats.pendingCount, '건');
         text('kpiPendingCountSub', money(data.stats.pendingAmount) + '원 입금 확인 대기');
-        text('kpiExpiringCount', data.stats.expiring + '곳');
+        numUnit('kpiExpiringCount', data.stats.expiring, '곳');
       } else {
         academyPaymentList = data.items;
         filterAcademyPaymentTable();
@@ -52,16 +62,40 @@
     body.innerHTML = items.map((p,i) => `<tr><td>${i+1}</td><td>${esc(p.academyName)}</td><td>${esc(p.director)}</td><td>${esc(p.planName)}</td><td>${money(p.supply)}원</td><td>${money(p.vat)}원</td><td>${money(p.total)}원</td><td>${esc(methods[p.method] || p.method)}</td><td>${esc(p.date)}</td><td>${p.startDate ? esc(p.startDate + ' ~ ' + p.endDate) : '—'}</td><td>${esc(({paid:'결제 완료',pending:'입금 대기',cancelled:'취소',overdue:'미납'})[p.status] || p.status)}${p.taxInvoiceIssued ? '<br><small>세금계산서 발행</small>' : ''}</td><td>${p.manual ? `<button type="button" class="btn btn-sm btn-outline-secondary" data-payment-edit="${esc(p.id)}">수정</button> <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}">삭제</button>` : '결제사 관리'}</td></tr>`).join('') || '<tr><td colspan="12" class="text-center p-4">결제 내역이 없습니다.</td></tr>';
   }
 
-  function dialog(title, html) {
+  function dialog(title, html, submitText = '저장') {
     document.getElementById('billingDialog')?.remove();
-    const el = document.createElement('dialog'); el.id = 'billingDialog';
-    el.style.cssText = 'border:1px solid #d8cebf;border-radius:16px;padding:24px;width:min(620px,94vw);max-height:90vh;overflow:auto;color:#3d342d;';
-    el.setAttribute('aria-labelledby','billingDialogTitle');
-    el.innerHTML = `<h5 id="billingDialogTitle">${esc(title)}</h5><form id="billingForm">${html}<p id="billingError" role="alert" class="text-danger mt-3"></p><div class="d-flex justify-content-end mt-3" style="gap:8px"><button type="button" class="btn btn-outline-secondary" data-close>닫기</button><button type="submit" class="btn btn-beige-primary">저장</button></div></form>`;
-    document.body.appendChild(el); el.querySelector('[data-close]').onclick = () => el.close(); el.showModal(); return el;
+    const el = document.createElement('dialog');
+    el.id = 'billingDialog';
+    el.className = 'modal-content-beige';
+    el.style.cssText = 'border:1px solid #d8cebf;border-radius:18px;padding:0;width:min(580px,94vw);max-height:92vh;overflow:hidden;color:#3d342d;background:#ffffff;box-shadow:0 18px 45px rgba(40,30,20,0.22);font-family:inherit;';
+    el.setAttribute('aria-labelledby', 'billingDialogTitle');
+    el.innerHTML = `
+      <div class="modal-header modal-header-beige d-flex justify-content-between align-items-center" style="background:#fbf9f5;border-bottom:1px solid #ece6dc;padding:16px 24px;">
+        <h5 id="billingDialogTitle" class="modal-title font-weight-bold mb-0" style="font-size:16.5px;color:#3d342d;">
+          <i class="fa-solid fa-hand-holding-dollar mr-2 text-warning"></i>${esc(title)}
+        </h5>
+        <button type="button" class="close" data-close aria-label="닫기" style="font-size:22px;color:#7a6e63;opacity:0.8;background:none;border:none;line-height:1;padding:0;cursor:pointer;">&times;</button>
+      </div>
+      <form id="billingForm" class="mb-0">
+        <div class="modal-body" style="padding:20px 24px;max-height:calc(92vh - 132px);overflow-y:auto;">
+          ${html}
+          <p id="billingError" role="alert" class="text-danger font-weight-bold mt-2 mb-0" style="font-size:12.5px;min-height:18px;"></p>
+        </div>
+        <div class="modal-footer d-flex justify-content-between align-items-center" style="background:#fbf9f5;border-top:1px solid #ece6dc;padding:14px 24px;">
+          <button type="button" class="btn-beige-secondary" data-close style="border-radius:10px;padding:8px 18px;font-size:13px;font-weight:600;">취소</button>
+          <button type="submit" class="btn-beige-primary font-weight-bold" style="border-radius:10px;padding:8px 20px;font-size:13px;">
+            <i class="fa-solid fa-check mr-1"></i>${esc(submitText)}
+          </button>
+        </div>
+      </form>`;
+    document.body.appendChild(el);
+    el.querySelectorAll('[data-close]').forEach(btn => { btn.onclick = () => el.close(); });
+    el.addEventListener('click', e => { if (e.target === el) el.close(); });
+    el.showModal();
+    return el;
   }
-  const field = (label, input) => `<label class="d-block mt-3">${esc(label)}${input}</label>`;
-  const input = (name, value, type='text', extra='') => `<input class="form-control" name="${name}" type="${type}" value="${esc(value)}" ${extra}>`;
+  const field = (label, control, req = false) => `<div class="mb-3"><label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">${esc(label)}${req ? ' <span class="text-danger">*</span>' : ''}</label>${control}</div>`;
+  const input = (name, value, type = 'text', extra = '') => `<input class="form-control billing-input" name="${name}" type="${type}" value="${esc(value)}" ${extra}>`;
 
   async function edit(id) {
     await load();
@@ -69,35 +103,203 @@
     const p = id ? state.payments.find(x => x.id === id) : null;
     if (id && !p) return toast('결제 내역을 새로고침해 주세요.');
     const requestId = crypto.randomUUID();
-    const academyOptions = franchiseList.map(a => `<option value="${esc(a.id)}" ${p?.academyId === a.id ? 'selected' : ''}>${esc(a.name + ' · ' + a.director)}</option>`).join('');
-    const el = dialog(p ? '수동 결제 수정' : '수동 결제 등록',
-      field('가맹학원', `<select class="form-control" name="academyId" ${p ? 'disabled' : ''}>${academyOptions}</select>`) +
-      field('상품명', `<select class="form-control" name="productCode">${state.products.map(x => `<option value="${x.code}" ${p?.productCode === x.code ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`) +
-      field('총 결제 금액 (부가세 포함)',input('amount',p?.total || state.products[0].price,'number','required min="1" max="100000000" step="1"')) + '<p id="billingAmounts" class="text-muted mt-2"></p>' +
-      field('결제 수단',`<select class="form-control" name="method">${['TRANSFER','CASH','OTHER'].map(x=>`<option value="${x}" ${p?.method === x?'selected':''}>${methods[x]}</option>`).join('')}</select>`) +
-      field('결제 상태',`<select class="form-control" name="status">${['PAID','PENDING','CANCELLED'].map(x=>`<option value="${x}" ${p?.status === x.toLowerCase()?'selected':''}>${({PAID:'결제 완료 (입금 확인)',PENDING:'입금 대기',CANCELLED:'취소'})[x]}</option>`).join('')}</select>`) +
-      field('결제 일시 (한국시간)',input('paidAt', p?.paidAt ? new Date(new Date(p.paidAt).getTime()+9*3600000).toISOString().slice(0,16) : today()+'T09:00','datetime-local')) +
-      '<div id="billingPeriod">'+field('서비스 시작일',input('startDate',p?.startDate || today(),'date')) +field('서비스 종료일',input('endDate',p?.endDate || today(),'date'))+'</div>' +
-      `<label class="d-block mt-3"><input type="checkbox" name="taxInvoiceIssued" ${p?.taxInvoiceIssued?'checked':''}> 세금계산서 발행 완료</label>` +field('수납 메모',input('memo',p?.memo || '', 'text','maxlength="2000"')));
-    const form=el.querySelector('form');
-    const calculate = () => {
-      const amount=Number(form.elements.amount.value), kakao=form.elements.productCode.value==='KAKAO';
-      const supply=kakao ? amount/5500*5000 : Math.round(amount/1.1);
-      text('billingAmounts','공급가액 '+money(supply)+'원 · 부가세 '+money(amount-supply)+'원'+(kakao?' · 5,500원 단위 구매':''));
-      el.querySelector('#billingPeriod').hidden=kakao;
-      form.elements.startDate.required=!kakao; form.elements.endDate.required=!kakao;
-      form.elements.amount.step=kakao?'5500':'1'; form.elements.amount.min=kakao?'5500':'1';
+    const initialMethod = p?.method === 'CARD' ? 'CARD' : 'TRANSFER';
+    const academies = Array.isArray(franchiseList) ? franchiseList : [];
+    const currentAcademy = academies.find(a => a.id === p?.academyId) || academies[0] || { id: '', name: '가맹 학원 선택', director: '' };
+    const formatAcademyLabel = a => a && a.id ? `${a.name}${a.director ? ' · ' + a.director : ''}` : '가맹 학원을 선택해 주세요';
+
+    const el = dialog(
+      p ? '수동 결제 내역 수정' : '수동 결제 등록',
+      `<!-- 상단 결제 수단 선택 버튼 (현금/계좌이체 vs 신용카드) -->
+      <div class="d-flex mb-3 p-1" style="background:#f3ede2;border:1px solid #d8cebf;border-radius:12px;gap:6px;" role="tablist" aria-label="결제 수단 선택">
+        <button type="button" data-pay-tab="TRANSFER" class="flex-fill font-weight-bold" style="height:38px;border-radius:9px;border:none;font-size:13px;cursor:pointer;transition:all 0.15s ease;">
+          <i class="fa-solid fa-money-bill-transfer mr-1"></i>현금 / 계좌이체
+        </button>
+        <button type="button" data-pay-tab="CARD" class="flex-fill font-weight-bold" style="height:38px;border-radius:9px;border:none;font-size:13px;cursor:pointer;transition:all 0.15s ease;">
+          <i class="fa-solid fa-credit-card mr-1"></i>신용카드
+        </button>
+      </div>
+      <input type="hidden" name="method" value="${esc(initialMethod)}">
+      <input type="hidden" name="status" value="${esc((p?.status || 'paid').toUpperCase())}">
+
+      <!-- 1. 학원 선택 드롭 박스 (검색 지원) -->
+      <div class="mb-3" id="billingAcademyDropdown" style="position:relative;">
+        <label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">가맹 학원 <span class="text-danger">*</span></label>
+        <input type="hidden" name="academyId" value="${esc(currentAcademy.id)}">
+        <button type="button" id="billingAcademyBtn" class="select-beige w-100 font-weight-bold d-flex justify-content-between align-items-center" ${p ? 'disabled' : ''} style="text-align:left;cursor:${p ? 'not-allowed' : 'pointer'};background:#fdfcf9;">
+          <span id="billingAcademySelectedText" class="text-truncate">${esc(formatAcademyLabel(currentAcademy))}</span>
+          <i class="fa-solid fa-chevron-down text-muted ml-2" style="font-size:11px;"></i>
+        </button>
+        <div id="billingAcademyMenu" hidden style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:#ffffff;border:1px solid #d8cebf;border-radius:12px;box-shadow:0 12px 30px rgba(40,30,20,0.18);z-index:60;overflow:hidden;">
+          <div class="p-2 border-bottom" style="background:#fbf9f5;border-color:#ece6dc !important;">
+            <div style="position:relative;">
+              <i class="fa-solid fa-magnifying-glass text-muted" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;"></i>
+              <input type="search" id="billingAcademySearch" class="form-control billing-input" placeholder="학원명 또는 원장명 검색..." autocomplete="off" style="padding-left:32px;height:34px;font-size:12.5px;background:#ffffff;">
+            </div>
+          </div>
+          <div id="billingAcademyList" style="max-height:200px;overflow-y:auto;padding:4px 0;"></div>
+        </div>
+      </div>
+
+      <!-- 2. 상품명 & 3. 총 결제 금액 -->
+      <div class="row mb-2">
+        <div class="col-sm-6 mb-2 mb-sm-0">
+          <label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">상품명 <span class="text-danger">*</span></label>
+          <select class="select-beige w-100 font-weight-bold" name="productCode">${state.products.map(x => `<option value="${x.code}" ${p?.productCode === x.code ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+        </div>
+        <div class="col-sm-6">
+          <label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">총 결제 금액 (부가세 포함) <span class="text-danger">*</span></label>
+          ${input('amount', p?.total || state.products[0].price, 'number', 'required min="1" max="100000000" step="1" style="font-weight:700;color:#962a22;"')}
+        </div>
+      </div>
+      <div id="billingAmounts" class="px-3 py-2 mb-3 rounded" style="background:#fdfbf7;border:1px solid #ece6dc;font-size:12px;"></div>
+
+      <!-- 4. 결제 일시 -->
+      ${field('결제 일시 (한국시간)', input('paidAt', p?.paidAt ? new Date(new Date(p.paidAt).getTime() + 9 * 3600000).toISOString().slice(0, 16) : today() + 'T09:00', 'datetime-local', 'required'), true)}
+
+      <!-- 5. 서비스 이용기간 -->
+      <div id="billingPeriod" class="mb-3">
+        <label class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">서비스 이용기간 <span class="text-danger">*</span></label>
+        <div class="d-flex align-items-center" style="gap:8px;">
+          <div class="flex-fill">${input('startDate', p?.startDate || today(), 'date', 'aria-label="서비스 시작일"')}</div>
+          <span class="text-muted font-weight-bold">~</span>
+          <div class="flex-fill">${input('endDate', p?.endDate || today(), 'date', 'aria-label="서비스 종료일"')}</div>
+        </div>
+      </div>
+
+      <!-- 6. 현금영수증/메모칸 (현금/계좌이체) 또는 카드 결제 승인 ID (신용카드) -->
+      <div class="mb-1">
+        <label id="billingMemoLabel" class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">현금영수증 / 메모</label>
+        ${input('memo', p?.memo || '', 'text', 'id="billingMemoInput" maxlength="2000" placeholder="현금영수증 발행번호 또는 입금자명·수납 메모 입력"')}
+      </div>`,
+      p ? '수정 내용 저장' : '수동 결제 등록'
+    );
+
+    const form = el.querySelector('form');
+
+    // 상단 탭(현금/계좌이체 vs 신용카드) 전환 처리
+    const setPayMethodTab = method => {
+      form.elements.method.value = method;
+      el.querySelectorAll('[data-pay-tab]').forEach(btn => {
+        const active = btn.dataset.payTab === method;
+        btn.style.background = active ? '#3d342d' : 'transparent';
+        btn.style.color = active ? '#ffffff' : '#7a6e63';
+        btn.style.boxShadow = active ? '0 2px 6px rgba(61,52,45,0.22)' : 'none';
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      const memoLabel = el.querySelector('#billingMemoLabel');
+      const memoInput = el.querySelector('#billingMemoInput');
+      if (method === 'CARD') {
+        if (memoLabel) memoLabel.innerHTML = '<i class="fa-solid fa-hashtag mr-1 text-muted"></i>카드 결제 승인 ID';
+        if (memoInput) memoInput.placeholder = 'PG사 카드 승인번호 또는 거래 ID 입력';
+      } else {
+        if (memoLabel) memoLabel.innerHTML = '<i class="fa-solid fa-receipt mr-1 text-muted"></i>현금영수증 / 메모';
+        if (memoInput) memoInput.placeholder = '현금영수증 발행번호 또는 입금자명·수납 메모 입력';
+      }
     };
-    form.elements.productCode.onchange=()=>{ form.elements.amount.value=state.products.find(x=>x.code===form.elements.productCode.value).price; calculate(); };
-    form.elements.amount.oninput=calculate; calculate();
-    form.onsubmit=async event=>{
-      event.preventDefault(); const button=form.querySelector('[type=submit]'); button.disabled=true;
+    el.querySelectorAll('[data-pay-tab]').forEach(btn => {
+      btn.onclick = () => setPayMethodTab(btn.dataset.payTab);
+    });
+    setPayMethodTab(initialMethod);
+
+    // 학원 검색 드롭다운 렌더링 및 동작
+    const dropdownWrap = el.querySelector('#billingAcademyDropdown');
+    const dropdownBtn = el.querySelector('#billingAcademyBtn');
+    const dropdownMenu = el.querySelector('#billingAcademyMenu');
+    const searchInput = el.querySelector('#billingAcademySearch');
+    const listContainer = el.querySelector('#billingAcademyList');
+    const selectedText = el.querySelector('#billingAcademySelectedText');
+
+    const renderAcademyOptions = (query = '') => {
+      const q = query.trim().toLowerCase();
+      const filtered = academies.filter(a => !q || String(a.name || '').toLowerCase().includes(q) || String(a.director || '').toLowerCase().includes(q) || String(a.id || '').toLowerCase().includes(q));
+      if (!filtered.length) {
+        listContainer.innerHTML = `<div class="text-center text-muted py-3" style="font-size:12px;">일치하는 가맹 학원이 없습니다.</div>`;
+        return;
+      }
+      const curVal = form.elements.academyId.value;
+      listContainer.innerHTML = filtered.map(a => {
+        const isSelected = a.id === curVal;
+        return `<button type="button" data-acad-id="${esc(a.id)}" class="w-100 text-left px-3 py-2 border-0 d-flex justify-content-between align-items-center" style="background:${isSelected ? '#f5efe6' : 'transparent'};color:#3d342d;font-size:12.5px;font-weight:${isSelected ? '700' : '500'};cursor:pointer;">
+          <span class="text-truncate">${esc(a.name)} <small class="text-muted">· ${esc(a.director || '')}</small></span>
+          ${isSelected ? '<i class="fa-solid fa-check text-warning ml-2" style="font-size:11px;"></i>' : ''}
+        </button>`;
+      }).join('');
+      listContainer.querySelectorAll('[data-acad-id]').forEach(itemBtn => {
+        itemBtn.onclick = () => {
+          const picked = academies.find(a => a.id === itemBtn.dataset.acadId);
+          if (picked) {
+            form.elements.academyId.value = picked.id;
+            selectedText.textContent = formatAcademyLabel(picked);
+          }
+          dropdownMenu.hidden = true;
+        };
+      });
+    };
+
+    if (!p && dropdownBtn) {
+      dropdownBtn.onclick = () => {
+        dropdownMenu.hidden = !dropdownMenu.hidden;
+        if (!dropdownMenu.hidden) {
+          searchInput.value = '';
+          renderAcademyOptions('');
+          setTimeout(() => searchInput.focus(), 10);
+        }
+      };
+      searchInput.oninput = () => renderAcademyOptions(searchInput.value);
+      el.addEventListener('click', e => {
+        if (!dropdownMenu.hidden && dropdownWrap && !dropdownWrap.contains(e.target)) {
+          dropdownMenu.hidden = true;
+        }
+      });
+    }
+
+    const calculate = () => {
+      const amount = Number(form.elements.amount.value) || 0;
+      const kakao = form.elements.productCode.value === 'KAKAO';
+      const supply = kakao ? Math.round((amount / 5500) * 5000) : Math.round(amount / 1.1);
+      const vat = amount - supply;
+      const amountsEl = el.querySelector('#billingAmounts');
+      if (amountsEl) {
+        amountsEl.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">공급가액 <strong style="color:#3d342d;">${money(supply)}원</strong> · 부가세 <strong style="color:#3d342d;">${money(vat)}원</strong>${kakao ? ' <span class="text-muted">(5,500원 단위)</span>' : ''}</span>
+            <strong style="color:#962a22;font-size:13.5px;">합계 ${money(amount)}원</strong>
+          </div>`;
+      }
+      el.querySelector('#billingPeriod').hidden = kakao;
+      form.elements.startDate.required = !kakao;
+      form.elements.endDate.required = !kakao;
+      form.elements.amount.step = kakao ? '5500' : '1';
+      form.elements.amount.min = kakao ? '5500' : '1';
+    };
+    form.elements.productCode.onchange = () => { form.elements.amount.value = state.products.find(x => x.code === form.elements.productCode.value).price; calculate(); };
+    form.elements.amount.oninput = calculate;
+    calculate();
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const button = form.querySelector('[type=submit]');
+      button.disabled = true;
       try {
-        const data=Object.fromEntries(new FormData(form));
-        await api('/api/billing',{...data, operation:'save', requestId, id:p?.id, revision:p?.revision, academyId:p?.academyId || data.academyId,
-          paidAt:data.paidAt ? data.paidAt+':00+09:00' : undefined, taxInvoiceIssued:form.elements.taxInvoiceIssued.checked });
-        el.close(); await load(); toast('결제 내역을 저장했습니다.');
-      } catch(e) { text('billingError',e.message); } finally { button.disabled=false; }
+        const data = Object.fromEntries(new FormData(form));
+        await api('/api/billing', {
+          ...data,
+          operation: 'save',
+          requestId,
+          id: p?.id,
+          revision: p?.revision,
+          academyId: p?.academyId || data.academyId,
+          status: data.status || 'PAID',
+          paidAt: data.paidAt ? data.paidAt + ':00+09:00' : undefined
+        });
+        el.close();
+        await load();
+        toast('결제 내역을 저장했습니다.');
+      } catch (e) {
+        text('billingError', e.message);
+      } finally {
+        button.disabled = false;
+      }
     };
   }
 
@@ -108,13 +310,36 @@
   }
 
   function topup() {
-    const requestId=crypto.randomUUID();
-    const el=dialog('카카오톡 알림 구매', '<p>5,500원(부가세 포함)마다 5,000원 적립 · 건당 8.5원 차감</p>'+field('구매 수량',input('quantity',1,'number','min="1" max="10000" step="1" required'))+'<p id="topupTotal" class="mt-3">총 결제액 5,500원</p><p>계좌이체 구매 신청 후 본사에서 입금을 확인하면 충전됩니다. 입금 계좌는 본사에 확인해 주세요.</p>');
-    const form=el.querySelector('form'); form.querySelector('[type=submit]').textContent='계좌이체 구매 신청';
-    form.elements.quantity.oninput=()=>text('topupTotal','총 결제액 '+money(Number(form.elements.quantity.value)*5500)+'원');
-    form.onsubmit=async event=>{ event.preventDefault(); const button=form.querySelector('[type=submit]'); button.disabled=true;
-      try { await api('/api/billing',{operation:'topup',amount:Number(form.elements.quantity.value)*5500,requestId}); el.close(); await load(); toast('구매 신청되었습니다. 입금 확인 후 충전됩니다.'); }
-      catch(e) { text('billingError',e.message); } finally { button.disabled=false; }
+    const requestId = crypto.randomUUID();
+    const el = dialog(
+      '카카오톡 알림 충전 신청',
+      `<div class="py-2 px-3 mb-3" style="font-size:12px;background:#fdfbf7;border:1px solid #ebdcc9;border-radius:10px;color:#5c5046;line-height:1.5;">
+        <i class="fa-solid fa-comment-dots text-warning mr-1"></i>
+        <strong>5,500원(부가세 포함)</strong>마다 5,000원이 적립되며, 발송 시 건당 8.5원이 차감됩니다.<br>계좌이체 구매 신청 후 본사에서 입금을 확인하면 즉시 충전됩니다.
+      </div>` +
+      field('구매 수량 (1구좌 = 5,500원)', input('quantity', 1, 'number', 'min="1" max="10000" step="1" required'), true) +
+      `<div class="p-3 mb-1 rounded d-flex justify-content-between align-items-center" style="background:#fdfbf7;border:1px solid #ece6dc;font-size:13.5px;">
+        <span class="font-weight-bold" style="color:#3d342d;">총 결제 금액 (VAT 포함)</span>
+        <strong id="topupTotal" style="color:#962a22;font-size:16px;">5,500원</strong>
+      </div>`,
+      '계좌이체 구매 신청'
+    );
+    const form = el.querySelector('form');
+    form.elements.quantity.oninput = () => text('topupTotal', money(Number(form.elements.quantity.value) * 5500) + '원');
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const button = form.querySelector('[type=submit]');
+      button.disabled = true;
+      try {
+        await api('/api/billing', { operation: 'topup', amount: Number(form.elements.quantity.value) * 5500, requestId });
+        el.close();
+        await load();
+        toast('구매 신청되었습니다. 입금 확인 후 충전됩니다.');
+      } catch (e) {
+        text('billingError', e.message);
+      } finally {
+        button.disabled = false;
+      }
     };
   }
 
@@ -129,8 +354,8 @@
       const prefix=master()?'statAligo':'academyAligo';
       text(prefix+'Cash',master() ? s.estimatedCash==null?'조회 불가':money(s.estimatedCash)+'원 (환산)' : money(s.balance)+'원');
       text(prefix+'CashSub',master() ? s.remainingCount==null?'잔여 건수 조회 불가':money(s.remainingCount)+'건 · 건당 6.5원 환산' : money(s.walletCount)+'건 가능 · 건당 8.5원');
-      text(prefix+'TotalSent',money(s.monthly)+'건'); text(prefix+'TotalSentSub','전체 누적 '+money(s.total)+'건');
-      text(prefix+'SuccessRate',(s.total?(s.success/s.total*100).toFixed(1):'0.0')+'%');
+      numUnit(prefix+'TotalSent',money(s.monthly),'건'); text(prefix+'TotalSentSub','전체 누적 '+money(s.total)+'건');
+      numUnit(prefix+'SuccessRate',(s.total?(s.success/s.total*100).toFixed(1):'0.0'),'%');
       text(prefix+'SuccessRateSub','성공/문자 '+s.success+'건 · 실패 '+s.failed+'건 · 확인 중 '+s.pending+'건');
       text(prefix+'Connection',s.connected?'정상':'연결 확인 필요');
       if (master()) text('statAligoConnectionSub',s.connected?'알리고 API 정상 연결됨':(s.aligoMessage||'알리고 API 응답 기준'));

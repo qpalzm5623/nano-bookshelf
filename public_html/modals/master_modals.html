@@ -327,6 +327,17 @@
               <small class="text-muted">해당 상품에 청구될 B2B 월 구독료입니다.</small>
             </div>
           </div>
+          <div class="row">
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">미 결제 시 자동 '미승인 반영'</label>
+              <div class="d-flex p-1" style="background: #f3ede2; border: 1px solid var(--border-medium); border-radius: 10px; gap: 6px; height: 38px;">
+                <button type="button" id="btnRegAutoUnapproveOn" onclick="setRegAutoUnapprove(true)" class="flex-fill font-weight-bold border-0" style="border-radius: 7px; font-size: 12.5px; cursor: pointer; transition: all 0.15s;">ON</button>
+                <button type="button" id="btnRegAutoUnapproveOff" onclick="setRegAutoUnapprove(false)" class="flex-fill font-weight-bold border-0" style="border-radius: 7px; font-size: 12.5px; cursor: pointer; transition: all 0.15s; background: #ffffff; color: #3d342d; box-shadow: 0 1px 3px rgba(61,52,45,0.1);">OFF</button>
+              </div>
+              <input type="hidden" id="regAutoUnapprove" value="false">
+              <small class="text-muted">ON 시 매월 말일까지 결제가 확인되지 않으면 '미승인' 상태로 자동 전환됩니다.</small>
+            </div>
+          </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4">
             <button type="button" class="btn-beige-secondary" data-dismiss="modal">취소</button>
@@ -454,6 +465,7 @@
               <label class="font-weight-bold" style="font-size: 13px;">가맹 운영 상태 <span class="text-danger">*</span></label>
               <select id="editStatus" class="select-beige w-100">
                 <option value="ACTIVE">정상 운영</option>
+                <option value="UNAPPROVED">미승인</option>
                 <option value="EXPIRING">만료 임박</option>
                 <option value="EXPIRED">계약 만료</option>
                 <option value="PAUSED">일시 정지</option>
@@ -481,7 +493,7 @@
             </div>
           </div>
 
-          <!-- 4. 이용 상품 아래 신설: 월 결제 금액 -->
+          <!-- 4. 이용 상품 아래 신설: 월 결제 금액 & 미 결제 시 자동 '미승인 반영' -->
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">월 결제 금액 <span class="text-danger">*</span></label>
@@ -489,6 +501,15 @@
                 <input type="text" id="editMonthlyFee" class="form-control form-control-beige font-weight-bold text-right" placeholder="예: 770,000원" required>
               </div>
               <small class="text-muted">이용 상품 변경 시 표준 금액이 자동 반영되며 직접 수정도 가능합니다.</small>
+            </div>
+            <div class="col-md-6 form-group">
+              <label class="font-weight-bold" style="font-size: 13px;">미 결제 시 자동 '미승인 반영'</label>
+              <div class="d-flex p-1" style="background: #f3ede2; border: 1px solid var(--border-medium); border-radius: 10px; gap: 6px; height: 38px;">
+                <button type="button" id="btnEditAutoUnapproveOn" onclick="setEditAutoUnapprove(true)" class="flex-fill font-weight-bold border-0" style="border-radius: 7px; font-size: 12.5px; cursor: pointer; transition: all 0.15s;">ON</button>
+                <button type="button" id="btnEditAutoUnapproveOff" onclick="setEditAutoUnapprove(false)" class="flex-fill font-weight-bold border-0" style="border-radius: 7px; font-size: 12.5px; cursor: pointer; transition: all 0.15s; background: #ffffff; color: #3d342d; box-shadow: 0 1px 3px rgba(61,52,45,0.1);">OFF</button>
+              </div>
+              <input type="hidden" id="editAutoUnapprove" value="false">
+              <small class="text-muted">ON 시 매월 말일까지 결제가 확인되지 않으면 '미승인'으로 변경됩니다. (OFF 시 변동 없음)</small>
             </div>
           </div>
 
