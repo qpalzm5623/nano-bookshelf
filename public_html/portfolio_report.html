@@ -7,7 +7,7 @@
 <title>나노의책장 독서 포트폴리오 리포트</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="css/portfolio-print.css">
+
 <style>
   :root {
     --bg-page: #f1f5f9;
@@ -214,6 +214,7 @@
     .doc-sheet { box-shadow: none !important; border: none !important; padding: 0 !important; }
   }
 </style>
+<link rel="stylesheet" href="css/portfolio-public.css?v=20261111-editorial">
 </head>
 <body>
 <div class="report-topbar">
@@ -253,14 +254,21 @@
     var pf = data.portfolio || {};
     var books = pf.books || [];
     var insights = pf.aiInsights || pf.insights || [];
-    var teacherNote = pf.comment || pf.teacherNote || '';
+    var teacherNote = pf.comment || pf.aiTeacherNote || pf.teacherNote || '';
+    if (!insights.length && Array.isArray(pf.aiComments)) {
+      insights = pf.aiComments.map(function(comment, index) { return { category: ['문해력과 이해', '공감과 정서', '비판적 사고', '표현과 독서 태도'][index] || '독서 관찰', comment: comment }; });
+    }
+    var scores = books.map(function(book) { return book.score == null || book.score === '' ? NaN : Number(String(book.score).replace(/점$/, '')); }).filter(Number.isFinite);
+    var average = pf.quizAvg != null ? Number(pf.quizAvg) : (scores.length ? scores.reduce(function(a, b) { return a + b; }, 0) / scores.length : NaN);
 
     var booksHtml = books.map(function(b) {
       return `
         <div class="book-item-card">
-          <img src="${b.cover || 'assets/covers/cover_default.jpg'}" alt="${escapeHtml(b.title)}" onerror="this.src='upload/book/book_default.jpg'">
+          <img src="${escapeHtml(b.cover || 'resources/images/book_default.svg')}" alt="${escapeHtml(b.title)}" onerror="this.onerror=null;this.src='resources/images/book_default.svg'">
           <div class="b-title">${escapeHtml(b.title)}</div>
-          <div class="b-score">${escapeHtml(String(b.score || '100점'))}</div>
+          <div class="b-score">${b.score == null || b.score === '' ? '기록 없음' : escapeHtml(String(b.score).replace(/점$/, '')) + '점'}</div>
+          <div class="book-byline">${escapeHtml([b.author, b.pub || b.publisher].filter(Boolean).join(' · '))}</div>
+          ${b.achievement ? `<div class="book-achievement">${escapeHtml(b.achievement)}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -268,7 +276,7 @@
     var insightsHtml = insights.map(function(ins) {
       return `
         <div class="insight-card">
-          <div class="cat"><i class="${ins.icon || 'fa-solid fa-star'} mr-1"></i>${escapeHtml(ins.category || '독서 역량')}</div>
+          <div class="cat"><i class="${escapeHtml(ins.icon || 'fa-solid fa-star')} mr-1"></i>${escapeHtml(ins.category || '독서 역량')}</div>
           <p class="txt">${escapeHtml(ins.comment || '')}</p>
         </div>
       `;
@@ -298,7 +306,7 @@
           </div>
           <div class="pf-meta-item">
             <small>북퀴즈 평균</small>
-            <strong>${Math.round(pf.quizAvg || 85)}점</strong>
+            <strong>${Number.isFinite(average) ? Math.round(average) + '점' : '기록 없음'}</strong>
           </div>
           <div class="pf-meta-item">
             <small>학년 / 학급</small>
@@ -312,19 +320,19 @@
 
         ${insights.length > 0 ? `
           <div class="pf-section">
-            <h2><i class="fa-solid fa-brain"></i>4대 핵심 독서 역량 분석</h2>
+            <h2><i class="fa-solid fa-brain"></i>독서에서 발견한 성장</h2>
             <div class="insight-grid">${insightsHtml}</div>
           </div>
         ` : ''}
 
-        <div class="pf-section">
+        <div class="pf-section pf-record-section">
           <h2><i class="fa-solid fa-book"></i>기간 내 완독 도서 (${books.length}권)</h2>
-          <div class="book-grid">${booksHtml}</div>
+          <div class="book-grid">${booksHtml || '<div class="portfolio-empty">이 기간에 등록된 완독 도서가 없습니다.</div>'}</div>
         </div>
 
         ${teacherNote ? `
           <div class="pf-section">
-            <h2><i class="fa-solid fa-heart"></i>지도교사 총평</h2>
+            <h2><i class="fa-solid fa-heart"></i>선생님의 한마디</h2>
             <div class="teacher-total-note">${escapeHtml(teacherNote)}</div>
           </div>
         ` : ''}

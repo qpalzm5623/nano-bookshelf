@@ -152,10 +152,11 @@ export default async function handler(req: any, res: any) {
           from: val.from || '',
           to: val.to || '',
           bookCount: Array.isArray(val.books) ? val.books.length : (val.bookCount || 0),
-          quizAvg: val.quizAvg || 85,
+          quizAvg: val.quizAvg ?? null,
           books: val.books || [],
           aiInsights: val.aiInsights || val.insights || [],
-          comment: val.comment || val.teacherNote || '',
+          aiComments: val.aiComments || [],
+          comment: val.comment || val.aiTeacherNote || val.teacherNote || '',
         },
       });
     }

@@ -3058,7 +3058,7 @@
 <script src="js/portal-client.js?v=20261106_acad_bulk_v1"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
-<link rel="stylesheet" href="css/portfolio.css?v=20261105_yellow_flow">
+<link rel="stylesheet" href="css/portfolio.css?v=20261111-editorial">
   <style>
     /* 첨삭 리포트: 에디토리얼 카드 스타일 (원본과 코멘트를 나란히 읽는 프리미엄 구성) */
     .worksheet-review { padding: 18px 20px; background: #fbfdfc; border: 1.5px solid #d1fae5; border-radius: 14px; }
@@ -3083,6 +3083,7 @@
   </style>
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
+<link rel="stylesheet" href="css/learning-report.css?v=20261111-layout">
 </head>
 
 <body>
@@ -5814,7 +5815,7 @@
               <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: var(--text-main);">
                 학습 리포트
               </h5>
-              <small class="text-muted" style="font-size: 11.5px;">북퀴즈 문항별 채점 결과 및 나노 시트 지도교사 첨삭 피드백</small>
+              <small class="text-muted" style="font-size: 11.5px;">읽고 이해한 내용부터 나의 생각까지</small>
             </div>
           </div>
           <div class="d-flex align-items-center" style="gap: 10px;">
@@ -5836,11 +5837,6 @@
         </div>
 
         <div class="modal-body p-4" id="learningReportModalBody" style="background: #faf8f5; max-height: 80vh; overflow-y: auto;">
-
-          <!-- 카톡 모바일 뷰 열람 시 안내 배너 -->
-          <div id="kakaoPreviewBanner" class="p-2.5 mb-3 rounded d-print-none" style="display: none; background: #fef9c3; border: 1px solid #fde047; color: #854d0e; font-size: 12px; text-align: center;">
-            <i class="fa-solid fa-comment-dots mr-1.5 text-warning"></i><strong>학부모 카카오톡 알림톡 열람 화면 미리보기</strong> (모바일 규격 1열 자동 최적화)
-          </div>
 
           <!-- [인쇄 전용 공식 헤더: 나노의 책장 프리미엄 아이덴티티 적용] -->
           <div class="report-print-header d-none"
@@ -5959,9 +5955,9 @@
 
           <!-- 2) 북퀴즈 문항별 상세 채점 결과 (한 줄에 2문항씩 2열 그리드) -->
           <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+            <div class="report-section-heading d-flex justify-content-between align-items-center mb-2 px-1">
               <h6 class="font-weight-bold mb-0 d-flex align-items-center" style="font-size: 14px; color: #0f172a; gap: 8px;">
-                <i class="fa-solid fa-list-check text-primary"></i><span>북퀴즈 문항별 응시 및 정답 상세</span>
+                <i class="fa-solid fa-list-check text-primary"></i><span>북퀴즈 문항별 결과</span>
               </h6>
               <span class="text-muted font-weight-700" style="font-size: 12px;" id="learnModalQuizSummary">
                 총 5문항 중 <strong class="text-success">5문항</strong> 정답 (정답률 100%)
@@ -5974,16 +5970,13 @@
             </div>
           </div>
 
-          <!-- 인쇄 시 북퀴즈 후 페이지 분할 -->
-          <div class="report-page-break"></div>
-
           <!-- 3) 생각 담기 (도서 질문 + 학생 주관식 작성 답안 + 교사 코멘트 직접 입력) -->
           <div id="learnModalThoughtSection" class="report-thought-card mb-2"
             style="transition: all 0.2s ease;">
             <div class="d-flex justify-content-between align-items-center mb-2.5">
               <div class="d-flex align-items-center" style="gap: 8px;">
                 <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: #0f172a;">
-                  <i class="fa-solid fa-pen-nib mr-1.5 text-warning"></i>생각 담기 (서술형 독서논술)
+                  <i class="fa-solid fa-pen-nib mr-1.5 text-warning"></i>생각 담기
                 </h6>
                 <span id="thoughtStatusBadge" class="badge-soft badge-soft-success" style="font-size: 10.5px; border-radius: 20px;">
                   <i class="fa-solid fa-eye mr-1"></i>리포트 포함
@@ -6017,7 +6010,7 @@
             <!-- 생각 담기 본문 (숨기기 시 접힘/숨김) -->
             <div id="learnModalThoughtBody">
               <!-- [상단 영역] 생각 담기: 좌측(논제/질문 + 학생답안) vs 우측(나노시트 생각담기 관찰 피드백) -->
-              <div class="row no-gutters mb-3" style="gap: 14px; display: flex; flex-wrap: wrap;">
+              <div class="row no-gutters mb-3 report-thought-layout" style="gap: 14px; display: flex; flex-wrap: wrap;">
                 <!-- 좌측 컬럼: 논제 질문 & 학생 작성 답안 -->
                 <div style="flex: 1 1 360px; min-width: 300px;">
                   <!-- 도서의 생각담기 논제/질문 -->
@@ -6049,7 +6042,7 @@
                   <div class="h-100 p-3 rounded" style="background: #fbfdfc; border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 10px;">
                     <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom" style="border-color: #d1fae5 !important;">
                       <span class="font-weight-bold" style="font-size: 12px; color: #065f46;">
-                        <i class="fa-solid fa-quote-left mr-1 text-success"></i>나노시트 생각 담기 관찰 피드백
+                        <i class="fa-solid fa-quote-left mr-1 text-success"></i>선생님의 관찰 피드백
                       </span>
                       <span class="badge badge-pill badge-light text-success border border-success" style="font-size: 10px; padding: 1px 7px;">생각담기 분석</span>
                     </div>
@@ -6076,7 +6069,7 @@
                   </div>
 
                   <!-- 좌: 원본 사진 썸네일 / 우: 2개 카드 (돋보인 점 & 다음 성장을 위한 발걸음) -->
-                  <div class="row no-gutters" style="gap: 14px; display: flex; flex-wrap: wrap;">
+                  <div class="row no-gutters report-worksheet-layout" style="gap: 14px; display: flex; flex-wrap: wrap;">
                     <!-- 좌측: 아이가 작성한 나노시트 원본 사진 -->
                     <div style="flex: 1 1 260px; min-width: 240px; max-width: 320px;">
                       <div class="font-weight-bold text-muted mb-1.5" style="font-size: 11px;">

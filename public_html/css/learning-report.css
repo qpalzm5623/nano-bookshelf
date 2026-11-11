@@ -1,0 +1,103 @@
+/* 학습 리포트: 상단 요약과 학습 기록을 분리하고 문서 폭에 맞춰 재배치합니다. */
+#learningReportModalDialog { color: #243b38; }
+#learningReportModalDialog *, #learningReportModalDialog *::before, #learningReportModalDialog *::after { box-sizing: border-box; }
+#learningReportModalDialog .modal-header { background: #fff !important; padding: 22px 26px !important; gap: 16px; border-bottom: 1px solid #dce7e3 !important; }
+#learningReportModalDialog .modal-header > div { min-width: 0; }
+#learningReportModalDialog .modal-header > div:last-child { flex-shrink: 0; }
+#learningReportModalDialog .modal-header .modal-title { font-size: 23px !important; letter-spacing: -.6px; color: #164f47 !important; }
+#learningReportModalDialog .modal-header > div:first-child > div:first-child { background: #e8f4ef !important; color: #187e73 !important; flex-shrink: 0; width: 44px !important; height: 44px !important; }
+#learningReportModalDialog .modal-header small { display: block; margin-top: 4px; }
+#learningReportModalDialog .modal-header button { min-height: 36px; white-space: nowrap; }
+#learningReportModalDialog .close { min-width: 32px; }
+#learningReportModalBody { background: #f5f7f6 !important; overflow-wrap: anywhere; word-break: keep-all; container-type: inline-size; container-name: learning-report; }
+#learningReportModalBody .report-overview-card { background: #edf5f1; border: 1px solid #cddfd6; border-top: 4px solid #187e73; border-radius: 14px; padding: 22px; margin-bottom: 28px; box-shadow: none; }
+#learningReportModalBody .report-overview-split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; }
+#learningReportModalBody .report-overview-split > *, #learningReportModalBody .report-meta-grid > *, #learningReportModalBody .report-quiz-grid > * { min-width: 0; }
+#learningReportModalBody .report-overview-left { min-width: 0; background: transparent; border: 0; padding: 0; gap: 18px; }
+#learningReportModalBody .report-cover-wrapper { width: 88px; height: 122px; }
+#learningReportModalBody #learnModalBook { font-size: 22px !important; }
+#learningReportModalBody :is(#learnModalBook, #learnModalBookPub, #learnModalStudent, #learnModalStudentSchool) { white-space: normal !important; overflow: visible; text-overflow: clip; }
+#learningReportModalBody .report-sub-card { border: 0; background: #ffffffb3; padding: 12px 14px; height: auto; }
+#learningReportModalBody .report-sub-card.highlight { background: #fff; border: 1px solid #d3e5dc; }
+#learningReportModalBody #learnModalScore { font-size: 32px !important; letter-spacing: -1px; }
+#learningReportModalBody .report-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#learningReportModalBody .report-section-heading { gap: 8px 16px; flex-wrap: wrap; margin-bottom: 14px !important; }
+#learningReportModalBody .report-section-heading h6 { font-size: 17px !important; }
+#learningReportModalBody .report-quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#learningReportModalBody .report-quiz-card { border-width: 1px; padding: 16px; box-shadow: none; justify-content: flex-start; }
+#learningReportModalBody .report-quiz-header { gap: 8px; flex-wrap: wrap; }
+#learningReportModalBody .report-quiz-question { font-size: 14px; line-height: 1.65; min-height: 0; margin: 4px 0 14px; }
+#learningReportModalBody .report-choice-box { gap: 6px 12px; flex-wrap: wrap; padding: 8px 10px; }
+#learningReportModalBody .report-choice-val { min-width: 0; margin-left: auto; text-align: right; font-size: 13px; }
+#learningReportModalBody .report-choice-label { flex-shrink: 0; }
+#learningReportModalBody .report-thought-card { background: #fff; border: 1px solid #dce7e3; border-radius: 14px; box-shadow: none; padding: 22px; margin-top: 24px; }
+#learningReportModalBody .report-thought-card > div:first-child { gap: 10px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid #e6eeea; margin-bottom: 18px !important; }
+#learningReportModalBody .report-thought-card h6 { font-size: 18px !important; }
+#learningReportModalBody .report-thought-layout, #learningReportModalBody .report-worksheet-layout { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px !important; }
+#learningReportModalBody .report-thought-layout > *, #learningReportModalBody .report-worksheet-layout > * { min-width: 0 !important; max-width: none !important; width: auto; }
+#learningReportModalBody .report-question-box { background: #f4f7fa !important; border: 0 !important; padding: 16px !important; }
+#learningReportModalBody .report-answer-box { background: #fffaf0 !important; border: 1px solid #ede2c8 !important; padding: 16px !important; }
+#learningReportModalBody :is(#learnModalThoughtQuestion, #learnModalSheetAnswer, #worksheetAiSummary, #worksheetAiNextStep, #worksheetAiParentGuide, #worksheetAiDrawingText) { font-size: 14px !important; line-height: 1.8 !important; }
+#learningReportModalBody #learnModalThoughtFeedbackCol > div { background: #f3f8f5 !important; border: 0 !important; border-radius: 10px !important; height: auto !important; }
+#learningReportModalBody #learnModalThoughtFeedbackCol .d-flex { flex-wrap: wrap; gap: 6px; }
+#learningReportModalBody .worksheet-review { background: transparent !important; border: 0 !important; border-top: 1px solid #dce7e3 !important; box-shadow: none !important; border-radius: 0 !important; padding: 22px 0 0 !important; margin-top: 22px; }
+#learningReportModalBody .report-worksheet-layout > div:last-child > div { background: #f3f8f5 !important; border: 0 !important; border-radius: 10px !important; padding: 16px !important; }
+#learningReportModalBody .report-worksheet-layout > div:last-child > div:last-child { background: #f4f6fa !important; }
+#learningReportModalBody .worksheet-photos img { max-width: 100%; object-fit: contain; }
+@media screen {
+  #learningReportModalDialog.view-mode-kakao .modal-header { flex-wrap: wrap; padding: 16px !important; gap: 12px; }
+  #learningReportModalDialog.view-mode-kakao .modal-header > div:last-child { width: 100%; justify-content: space-between; }
+  #learningReportModalDialog.view-mode-kakao .modal-title { font-size: 20px !important; }
+  #learningReportModalDialog.view-mode-kakao #learningReportModalBody .report-overview-split { grid-template-columns: minmax(0, 1fr) !important; }
+  #learningReportModalDialog.view-mode-kakao #learningReportModalBody .report-overview-left { padding: 0 !important; }
+  #learningReportModalDialog.view-mode-kakao #learningReportModalBody .report-thought-layout,
+  #learningReportModalDialog.view-mode-kakao #learningReportModalBody .report-worksheet-layout { display: grid !important; grid-template-columns: minmax(0, 1fr); }
+  #learningReportModalDialog.view-mode-kakao #learningReportModalBody .row.no-gutters > * { min-width: 0 !important; max-width: 100% !important; flex-basis: auto !important; }
+  @container learning-report (max-width: 600px) {
+    #learningReportModalBody .report-overview-split, #learningReportModalBody .report-quiz-grid, #learningReportModalBody .report-thought-layout, #learningReportModalBody .report-worksheet-layout { grid-template-columns: minmax(0, 1fr) !important; }
+    #learningReportModalBody .report-overview-card, #learningReportModalBody .report-thought-card { padding: 14px !important; }
+    #learningReportModalBody .report-overview-left { flex-direction: row !important; text-align: left !important; }
+    #learningReportModalBody .report-cover-wrapper { width: 60px; height: 84px; min-width: 60px; }
+    #learningReportModalBody #learnModalBook { font-size: 18px !important; }
+    #learningReportModalBody .report-quiz-question { font-size: 14px !important; }
+    #learningReportModalBody .report-choice-box { align-items: flex-start; }
+    #learningReportModalBody .report-choice-val { flex-basis: 100%; margin-left: 0; text-align: left; }
+  }
+  @media (max-width: 600px) {
+    #learningReportModalDialog .modal-header { flex-wrap: wrap; padding: 16px !important; }
+    #learningReportModalDialog .modal-header > div:last-child { width: 100%; justify-content: space-between; }
+    #learningReportModalBody { padding: 14px !important; }
+  }
+}
+/* 전체 첨삭 영역을 묶지 않고 내용 순서대로 흐르게 하여 큰 빈 페이지를 방지합니다. */
+@media print {
+  #learningReportModalBody { container-type: normal; }
+  body.is-printing-report #learningReportModalDialog { width: 100% !important; max-width: none !important; }
+  body.is-printing-report #learningDetailModal .modal-content { border: 0 !important; border-radius: 0 !important; overflow: visible !important; }
+  body.is-printing-report #learningReportModalBody { padding: 0 !important; }
+  body.is-printing-report #learningReportModalBody .report-print-header h2 { font-size: 24px !important; }
+  body.is-printing-report #learningReportModalBody .report-overview-card { background: #edf5f1 !important; border: 1px solid #cddfd6 !important; border-top: 3px solid #187e73 !important; }
+  body.is-printing-report #learningReportModalBody .report-overview-split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) !important; }
+  body.is-printing-report #learningReportModalBody #learnModalBook { font-size: 16px !important; }
+  body.is-printing-report #learningReportModalBody #learnModalScore { font-size: 26px !important; }
+  body.is-printing-report #learningReportModalBody .report-quiz-grid { display: block !important; }
+  body.is-printing-report #learningReportModalBody .report-quiz-card { margin-bottom: 8px; padding: 10px 12px !important; break-inside: avoid; }
+  body.is-printing-report #learningReportModalBody .report-quiz-question { font-size: 10pt !important; line-height: 1.5 !important; min-height: 0 !important; }
+  body.is-printing-report #learningReportModalBody .report-choice-val { font-size: 10pt !important; }
+  body.is-printing-report #learningReportModalBody .report-choice-label { font-size: 9pt !important; }
+  body.is-printing-report #learningReportModalBody .report-page-break { display: none !important; }
+  body.is-printing-report #learningReportModalBody .report-thought-card,
+  body.is-printing-report #learningReportModalBody .worksheet-review,
+  body.is-printing-report #learningReportModalBody .report-thought-layout,
+  body.is-printing-report #learningReportModalBody .report-worksheet-layout { break-before: auto !important; page-break-before: auto !important; break-inside: auto !important; page-break-inside: auto !important; }
+  body.is-printing-report #learningReportModalBody .report-thought-layout,
+  body.is-printing-report #learningReportModalBody .report-worksheet-layout { display: block !important; }
+  body.is-printing-report #learningReportModalBody .report-thought-layout > *,
+  body.is-printing-report #learningReportModalBody .report-worksheet-layout > * { margin-bottom: 10px; }
+  body.is-printing-report #learningReportModalBody .report-thought-card { margin-top: 16px; }
+  body.is-printing-report #learningReportModalBody :is(#learnModalThoughtQuestion, #learnModalSheetAnswer, #worksheetAiSummary, #worksheetAiNextStep, #worksheetAiParentGuide, #worksheetAiDrawingText) { font-size: 10pt !important; line-height: 1.6 !important; }
+  body.is-printing-report #learningReportModalBody .report-section-heading,
+  body.is-printing-report #learningReportModalBody .report-thought-card > div:first-child,
+  body.is-printing-report #learningReportModalBody .worksheet-review > div:first-child { break-after: avoid; }
+  body.is-printing-report #learningReportModalBody p { orphans: 3; widows: 3; }
+}

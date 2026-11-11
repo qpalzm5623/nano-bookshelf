@@ -13,7 +13,7 @@ test('학습 리포트 모달: HTML 구조 및 PC/카톡 뷰 토글 버튼 검�
   assert.ok(html.includes('id="learningReportModalDialog"'), 'learningReportModalDialog ID가 존재해야 합니다.');
   assert.ok(html.includes('id="btnReportViewPc"'), 'PC 리포트 뷰 토글 버튼이 존재해야 합니다.');
   assert.ok(html.includes('id="btnReportViewKakao"'), '카톡 화면 뷰 토글 버튼이 존재해야 합니다.');
-  assert.ok(html.includes('id="kakaoPreviewBanner"'), '카톡 미리보기 안내 배너가 존재해야 합니다.');
+  assert.ok(!html.includes('id="kakaoPreviewBanner"'), '카톡 미리보기 안내 배너는 표시하지 않습니다.');
 
   // 2. 모달 푸터가 modal-content 내부에 정상 위치하는지 태그 계층 검증
   // learningDetailModal 내부의 modal-footer 바로 뒤에 modal-content, modal-dialog, learningDetailModal 닫힘이 이어져야 함

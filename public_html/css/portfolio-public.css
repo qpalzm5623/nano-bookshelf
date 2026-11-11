@@ -1,0 +1,55 @@
+/* 학부모가 알림톡 링크로 여는 독서 기록. 화면에서는 읽기, 인쇄에서는 기록에 집중합니다. */
+body { background: #f4f7f6; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
+.report-topbar { gap: 12px; padding: 12px 20px; }
+.brand-logo { font-size: 14px; }
+.btn-print { min-height: 44px; flex-shrink: 0; background: #fff; }
+.btn-print:focus-visible { outline: 3px solid #187e73; outline-offset: 3px; }
+.portfolio-wrapper { max-width: 900px; }
+.doc-sheet { border: 1px solid #dce6e2; border-radius: 16px; padding: 40px; box-shadow: 0 8px 28px #243b3808; }
+.pf-hero-badge { padding: 0; background: none; border: 0; border-radius: 0; color: #187e73; font-size: 12px; letter-spacing: .04em; }
+.pf-title-row { border-bottom: 1px solid #dce6e2; padding-bottom: 24px; }
+.pf-title-row h1 { font-size: 30px; line-height: 1.35; color: #243b38; }
+.pf-meta-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 20px; background: #f3f8f6; }
+.pf-meta-item { min-width: 0; }
+.pf-meta-item small { font-size: 12px; }
+.pf-meta-item strong { font-size: 16px; }
+.pf-meta-item:nth-child(-n+2) strong { font-size: 26px; color: #187e73; }
+.pf-section { margin: 32px 0 0; }
+.pf-section h2 { font-size: 18px; color: #243b38; }
+.insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.insight-card { min-width: 0; border: 0; background: #f5f8f7; padding: 18px; }
+.insight-card .cat { font-size: 14px; margin-bottom: 8px; }
+.insight-card .txt { font-size: 15px; line-height: 1.8; white-space: pre-line; }
+.book-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.book-item-card { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: start; gap: 8px 14px; padding: 16px; text-align: left; border-color: #dce6e2; }
+.book-item-card img { width: 54px; height: 76px; object-fit: contain; background: #f5f8f7; border-radius: 4px; grid-row: 1 / 3; }
+.book-item-card .b-title { display: block; overflow: visible; margin: 0; font-size: 16px; line-height: 1.5; }
+.book-item-card .b-score { padding: 3px 8px; background: #edf6f2; border-radius: 6px; font-size: 12px; white-space: nowrap; }
+.book-byline { grid-column: 2 / -1; font-size: 12px; color: #657571; }
+.book-achievement { grid-column: 1 / -1; border-top: 1px solid #edf1ef; padding-top: 12px; font-size: 15px; line-height: 1.8; white-space: pre-line; }
+.teacher-total-note { background: #fff9e9; border: 1px solid #efe3bf; color: #3d493f; font-size: 15px; line-height: 1.9; }
+.portfolio-empty { color: #657571; padding: 20px; border: 1px dashed #dce6e2; border-radius: 10px; text-align: center; }
+@media screen and (max-width: 600px) {
+  .report-topbar { padding: 8px 16px; }
+  .brand-logo { font-size: 12px; }
+  .btn-print { padding: 6px 10px; font-size: 12px; }
+  .portfolio-wrapper { padding: 0; margin: 0; }
+  .doc-sheet { border: 0; border-radius: 0; box-shadow: none; padding: 26px 20px 40px; }
+  .pf-title-row { flex-direction: column; gap: 12px; margin-bottom: 20px; }
+  .pf-title-row h1 { font-size: 26px; }
+  .pf-title-row > div:last-child { text-align: left !important; }
+  .pf-meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; }
+  .insight-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .pf-section h2 { font-size: 17px; }
+  .book-item-card { padding: 14px; gap: 8px 10px; }
+  .teacher-total-note { padding: 18px; }
+}
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .doc-sheet { border-radius: 0; }
+  .pf-record-section { break-before: page; }
+  .pf-section h2 { break-after: avoid; }
+  .insight-card, .book-item-card, .teacher-total-note, .pf-meta-grid { break-inside: avoid; }
+  .insight-card .txt, .book-achievement, .teacher-total-note { font-size: 10pt; line-height: 1.6; }
+  * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

@@ -1944,11 +1944,9 @@ function switchReportViewMode(mode) {
   var dialog = document.getElementById('learningReportModalDialog');
   var btnPc = document.getElementById('btnReportViewPc');
   var btnKakao = document.getElementById('btnReportViewKakao');
-  var banner = document.getElementById('kakaoPreviewBanner');
 
   if (currentReportViewMode === 'kakao') {
     if (dialog) dialog.classList.add('view-mode-kakao');
-    if (banner) banner.style.display = 'block';
     if (btnKakao) {
       btnKakao.classList.add('active');
       btnKakao.style.background = '#ffffff';
@@ -1963,7 +1961,6 @@ function switchReportViewMode(mode) {
     }
   } else {
     if (dialog) dialog.classList.remove('view-mode-kakao');
-    if (banner) banner.style.display = 'none';
     if (btnPc) {
       btnPc.classList.add('active');
       btnPc.style.background = '#ffffff';
@@ -6255,11 +6252,11 @@ function showPortfolioList() {
 // 4대 핵심 역량 (문해력, 정서/공감, 비판적사고, 독서태도)
 // ==============================================================
 function generatePortfolioInsights(student, pfData) {
-  if (Array.isArray(pfData.aiInsights) && pfData.aiInsights.length >= 4) {
-    return pfData.aiInsights.slice(0, 4);
+  if (Array.isArray(pfData.aiInsights) && pfData.aiInsights.length > 0) {
+    return pfData.aiInsights;
   }
-  if (Array.isArray(pfData.aiComments) && pfData.aiComments.length >= 4) {
-    return pfData.aiComments.slice(0, 4);
+  if (Array.isArray(pfData.aiComments) && pfData.aiComments.length > 0) {
+    return pfData.aiComments;
   }
   
   // 지능형 스마트 기본 4대 역량 코멘트 (학생 완독 도서 데이터 기반)
@@ -6677,7 +6674,7 @@ function renderPortfolioDocument(studentId, pfId) {
             '</div>' +
           '</div>' +
           '<div class="pf-book-achievement-block">' +
-            '<div class="pf-book-achievement-title"><i class="fa-solid fa-award mr-1"></i>핵심 문맥 파악 및 성취 내역</div>' +
+            '<div class="pf-book-achievement-title"><i class="fa-solid fa-award mr-1"></i>독서 관찰</div>' +
             '<div class="pf-book-achievement-text">' + escapePortfolioText(commentText) + '</div>' +
           '</div>' +
         '</div>' +
@@ -6697,9 +6694,9 @@ function renderPortfolioDocument(studentId, pfId) {
           '<div>' +
             '<div style="font-size:11px; font-weight:800; letter-spacing:1px; color:#1f8a7e; text-transform:uppercase;">나노의 책장 (Nano Bookshelf)</div>' +
             '<h3 class="font-weight-bold mb-1 pf-header-title">' +
-              '<i class="fa-solid fa-book-bookmark text-success mr-2" style="color:#1f8a7e !important;"></i>나노의 책장 독서 성장 포트폴리오' +
+              '<i class="fa-solid fa-book-bookmark text-success mr-2" style="color:#1f8a7e !important;"></i>독서 성장 포트폴리오' +
             '</h3>' +
-            '<p class="text-muted mb-0" style="font-size:12px;">체계적인 북퀴즈 응시 이력과 다면적 독서 역량을 입체적으로 분석한 공식 성장 리포트입니다.</p>' +
+            '<p class="text-muted mb-0" style="font-size:12px;">읽고, 생각하고, 성장한 기록을 한눈에 살펴보세요.</p>' +
           '</div>' +
           '<div class="text-right pf-header-meta">' +
             '<span class="pf-report-id mb-1">발급번호 ' + reportId + '</span>' +
@@ -6716,7 +6713,7 @@ function renderPortfolioDocument(studentId, pfId) {
 
       '<!-- ② 기간 요약 통계 (총 00권) -->' +
       '<div class="mb-3">' +
-        '<div class="pf-section-title mb-2"><i class="fa-solid fa-chart-simple"></i>기간 독서 핵심 요약</div>' +
+        '<div class="pf-section-title mb-2"><i class="fa-solid fa-chart-simple"></i>이번 기간의 독서</div>' +
         '<div class="pf-stat-grid">' +
           '<div class="pf-stat-box"><div class="pf-stat-label">완독 도서수</div><div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">권</span></div><div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">목표 완독 완료</div></div>' +
           '<div class="pf-stat-box"><div class="pf-stat-label">북퀴즈 완료</div><div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">회</span></div><div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">응시율 100%</div></div>' +
@@ -6730,9 +6727,9 @@ function renderPortfolioDocument(studentId, pfId) {
         '<div class="pf-panel">' +
           '<div class="pf-panel-head">' +
             '<h5 class="pf-section-title">' +
-              '<i class="fa-solid fa-book-open-reader" style="color:#1f8a7e;"></i>나노의 독서 이야기 · 핵심 역량 분석' +
+              '<i class="fa-solid fa-book-open-reader" style="color:#1f8a7e;"></i>독서에서 발견한 성장' +
             '</h5>' +
-            '<span class="pf-panel-badge">AI 다면 분석 리포트</span>' +
+            '<span class="pf-panel-badge">AI 분석</span>' +
           '</div>' +
           insightGridHtml +
         '</div>' +
@@ -6740,7 +6737,7 @@ function renderPortfolioDocument(studentId, pfId) {
 
       '<!-- ④ 독서 취향 그래프 (카테고리별 / 주제별) -->' +
       '<div class="mb-3">' +
-        '<div class="pf-section-title mb-2"><i class="fa-solid fa-pie-chart"></i>독서 취향 및 선호도 분석</div>' +
+        '<div class="pf-section-title mb-2"><i class="fa-solid fa-pie-chart"></i>나의 독서 취향</div>' +
         '<div class="pf-preference-wrap">' +
           '<div class="row align-items-center pf-preference-row">' +
             '<div class="col-md-5 text-center mb-3 mb-md-0 border-right-md pf-preference-chart-col">' +
@@ -6784,7 +6781,7 @@ function renderPortfolioDocument(studentId, pfId) {
       (books.length > 0 ? (
         '<div class="mb-2">' +
           '<div class="pf-collection-head">' +
-            '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-bookmark"></i>완독 도서 책 커버 컬렉션 (' + bookCount + '권)</div>' +
+            '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-bookmark"></i>함께 읽은 책 (' + bookCount + '권)</div>' +
             '<small class="text-muted pf-print-hide">표지를 누르면 확대됩니다</small>' +
           '</div>' +
           '<div class="pf-collection">' +
@@ -6815,7 +6812,7 @@ function renderPortfolioDocument(studentId, pfId) {
 
       '<!-- ⑥ 북퀴즈 응시 및 성취도 이력 -->' +
       '<div class="mb-3">' +
-        '<div class="pf-section-title mb-2"><i class="fa-solid fa-award"></i>도서별 북퀴즈 성취 및 심층 분석 이력</div>' +
+        '<div class="pf-section-title mb-2"><i class="fa-solid fa-award"></i>책마다 쌓인 성장 기록</div>' +
         '<div class="pf-books-grid-row">' +
           (booksGridHtml || '<div class="pf-empty">이 기간에 등록된 완독 도서가 없습니다.</div>') +
         '</div>' +
@@ -6825,7 +6822,7 @@ function renderPortfolioDocument(studentId, pfId) {
       '<div class="mb-3">' +
         '<div class="pf-panel pf-teacher-comment-box">' +
           '<div class="pf-panel-head">' +
-            '<strong class="pf-section-title"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>담당 지도교사 심층 총평</strong>' +
+            '<strong class="pf-section-title"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>선생님의 한마디</strong>' +
             '<span class="pf-panel-badge">담당 교사: ' + escapePortfolioText(teacher) + '</span>' +
           '</div>' +
           '<div id="pfTeacherNoteDisplay">' +
