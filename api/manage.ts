@@ -369,7 +369,8 @@ export default async function handler(req: any, res: any) {
         await tx.$queryRaw`SELECT id FROM academies WHERE id = ${academyId} FOR UPDATE`;
         const saved = [];
         for (const row of rows) {
-          const existing = row.id ? await tx.member.findFirst({ where: { id: String(row.id), academyId } }) : null;
+          const existing = (row.id ? await tx.member.findFirst({ where: { id: String(row.id), academyId } }) : null)
+            || (row.username ? await tx.member.findFirst({ where: { username: String(row.username), academyId } }) : null);
           need(!row.id || existing, '해당 학원의 회원을 찾을 수 없습니다.', 404);
           need(existing?.role !== 'MASTER', '본사 계정 변경은 계정 설정에서 진행해 주세요.', 403);
           need(existing?.id !== user.id || body.operation !== 'delete', '본인 계정은 삭제할 수 없습니다.');
@@ -401,10 +402,15 @@ export default async function handler(req: any, res: any) {
           }
           need(existing || data.password, '신규 회원의 비밀번호를 입력해 주세요.');
           if (existing) {
-            need(row.updatedAt === existing.updatedAt.toISOString(), '다른 관리자가 수정한 회원입니다. 새로고침 후 다시 저장해 주세요.', 409);
-            const result = await tx.member.updateMany({ where: { id: existing.id, updatedAt: existing.updatedAt }, data });
-            need(result.count === 1, '회원 정보가 변경되었습니다.', 409);
-            saved.push(await tx.member.findUnique({ where: { id: existing.id }, select: memberFields }));
+            if (row.updatedAt && !row.force) {
+              const clientDate = new Date(row.updatedAt);
+              const serverDate = existing.updatedAt;
+              const isSameTime = !isNaN(clientDate.getTime()) && Math.abs(clientDate.getTime() - serverDate.getTime()) < 2000;
+              const isSameIso = String(row.updatedAt).trim() === serverDate.toISOString();
+              need(isSameTime || isSameIso, '다른 관리자가 수정한 회원입니다. 새로고침 후 다시 저장해 주세요.', 409);
+            }
+            const updated = await tx.member.update({ where: { id: existing.id }, data, select: memberFields });
+            saved.push(updated);
           } else saved.push(await tx.member.create({ data, select: memberFields }));
         }
         return saved;

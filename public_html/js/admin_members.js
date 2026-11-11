@@ -1864,7 +1864,12 @@ async function saveNewStudent() {
   var savedStudent = editId ? existingStd : newStudent;
   if (window.NanoPortal && NanoPortal.remote) {
     try {
-      await NanoPortal.saveMember(savedStudent, currentAcademyInfo.id);
+      var savedResult = await NanoPortal.saveMember(savedStudent, currentAcademyInfo.id);
+      if (savedResult) {
+        savedStudent.serverId = savedResult.id || savedStudent.serverId;
+        savedStudent.updatedAt = savedResult.updatedAt || savedStudent.updatedAt;
+        if (savedResult.classGroupId) savedStudent.classGroupId = savedResult.classGroupId;
+      }
     } catch (error) {
       if (editId && previousStudent) Object.assign(existingStd, previousStudent);
       if (!editId) studentDataList = studentDataList.filter(function(student) { return student !== newStudent; });
@@ -2854,7 +2859,11 @@ async function handleSaveTeacher(e) {
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
-      await NanoPortal.saveMember(savedTeacher, currentAcademyInfo.id);
+      var savedTeacherResult = await NanoPortal.saveMember(savedTeacher, currentAcademyInfo.id);
+      if (savedTeacherResult) {
+        savedTeacher.serverId = savedTeacherResult.id || savedTeacher.serverId;
+        savedTeacher.updatedAt = savedTeacherResult.updatedAt || savedTeacher.updatedAt;
+      }
     } catch (error) {
       if (previousTeacher) Object.assign(savedTeacher, previousTeacher);
       else teacherDataList = teacherDataList.filter(function(teacher) { return teacher !== savedTeacher; });

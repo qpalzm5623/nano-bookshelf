@@ -28,6 +28,18 @@ function loadFunctions(context, file, names) {
       }
     }
   }
+  if (file === 'master_preview.js') {
+    const extraModules = [
+      'js/master/master-core.js', 'js/master/master-members.js', 'js/master/master-franchise.js',
+      'js/master/master-operations.js', 'js/master/master-ranking.js', 'js/master/master-contents.js',
+      'js/master/master-literacy.js', 'js/master/master-dispatch.js', 'js/master/master-payment.js'
+    ];
+    for (const mod of extraModules) {
+      if (fs.existsSync(path.join(root, mod))) {
+        source += '\n' + read(mod);
+      }
+    }
+  }
   if (file.endsWith('.html')) {
     source = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
       .map(match => match[1]).join('\n');

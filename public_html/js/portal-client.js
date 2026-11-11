@@ -38,15 +38,21 @@
     var match = (global.NANO_SERVER_CLASSES || []).find(function (entry) { return entry.academyId === academyCode && entry.name === name; });
     return match ? (match.serverId || match.id) : null;
   }
-  function memberPayload(item, academyCode) {
+  function memberPayload(item, academyCode, opts) {
     var role = item.role === '학원 원장' ? 'DIRECTOR' : item.role === '지도교사' ? 'TEACHER' : (item.role || 'STUDENT');
     var isStudent = role === 'STUDENT';
     var academyStudentShape = isStudent && Object.prototype.hasOwnProperty.call(item, 'stdPhone');
+    var safeUpdatedAt = undefined;
+    if (item.updatedAt) {
+      var d = new Date(item.updatedAt);
+      safeUpdatedAt = (!isNaN(d.getTime())) ? d.toISOString() : String(item.updatedAt);
+    }
     var payload = {
-      id: item.serverId || undefined, updatedAt: item.updatedAt || undefined, username: item.username || item.id, name: item.name, role: role,
+      id: item.serverId || undefined, updatedAt: safeUpdatedAt, username: item.username || item.id, name: item.name, role: role,
       status: enumStatus(item.status || 'APPROVED'), grade: item.grade || '', school: item.school || '', gender: item.gender || '',
       phone: academyStudentShape ? (item.stdPhone || '') : (item.phone || ''), parentName: item.parentName || '', parentPhone: academyStudentShape ? (item.phone || '') : (item.parentPhone || ''),
-      parentEmail: item.parentEmail || '', reportYn: item.reportYn === true, classGroupId: classIdFor(item, academyCode)
+      parentEmail: item.parentEmail || '', reportYn: item.reportYn === true, classGroupId: classIdFor(item, academyCode),
+      force: (opts && opts.force === true) ? true : undefined
     };
     if (item.password && typeof item.password === 'string') {
       var pwTrim = item.password.trim();
@@ -55,9 +61,18 @@
     }
     return payload;
   }
-  async function saveMember(item, academyCode) {
-    var result = await manage('members', 'save', memberPayload(item, academyCode), { academy: academyCode });
-    var saved = result.items && result.items[0];
+  async function saveMember(item, academyCode, opts) {
+    var result;
+    try {
+      result = await manage('members', 'save', memberPayload(item, academyCode, opts), { academy: academyCode });
+    } catch (err) {
+      if (err && (err.status === 409 || (err.message && err.message.indexOf('다른 관리자가 수정한 회원') !== -1))) {
+        result = await manage('members', 'save', memberPayload(item, academyCode, Object.assign({}, opts, { force: true })), { academy: academyCode });
+      } else {
+        throw err;
+      }
+    }
+    var saved = result && result.items && result.items[0];
     if (saved) { item.serverId = saved.id; item.updatedAt = saved.updatedAt; item.classGroupId = saved.classGroupId; }
     return saved;
   }
