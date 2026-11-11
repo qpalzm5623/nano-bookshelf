@@ -400,15 +400,22 @@
       color: #166534;
     }
 
-    /* 하단 푸터 */
+    /* 하단 푸터 및 사업자·약관 안내 */
     .login-footer {
       position: relative;
       z-index: 1;
+      width: 100%;
+      max-width: 780px;
       text-align: center;
       font-size: 12px;
       color: var(--text-muted);
-      margin-top: 24px;
-      line-height: 1.6;
+      margin-top: 28px;
+      padding: 18px 20px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(229, 222, 211, 0.85);
+      border-radius: 18px;
+      backdrop-filter: blur(8px);
+      line-height: 1.65;
     }
     .login-footer a {
       color: var(--text-muted);
@@ -418,6 +425,202 @@
     .login-footer a:hover {
       color: var(--primary-brown);
       text-decoration: underline;
+    }
+    .legal-links-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+    .legal-link-btn {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main) !important;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.18s ease;
+      text-decoration: none !important;
+    }
+    .legal-link-btn:hover {
+      background: #f5efe4;
+      border-color: #c8bba6;
+      transform: translateY(-1px);
+    }
+    .legal-link-btn.privacy-highlight {
+      color: #0f766e !important;
+      border-color: #99f6e4;
+      background: #f0fdfa;
+    }
+    .legal-link-btn.refund-highlight {
+      color: #9a3412 !important;
+      border-color: #fed7aa;
+      background: #fff7ed;
+    }
+    .biz-info-lines {
+      font-size: 11.5px;
+      color: #6b6057;
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+    .biz-info-lines .sep {
+      margin: 0 5px;
+      color: #cfc5b7;
+    }
+    .ftc-verify-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 7px;
+      margin-left: 4px;
+      border-radius: 5px;
+      background: #3d342d;
+      color: #ffffff !important;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-decoration: none !important;
+    }
+    .ftc-verify-badge:hover {
+      background: #27211c;
+    }
+
+    /* 약관·개인정보처리방침·환불정책 모달 */
+    .legal-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(24, 20, 17, 0.58);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 14px;
+    }
+    .legal-modal-backdrop.open {
+      display: flex;
+    }
+    .legal-modal-dialog {
+      width: 100%;
+      max-width: 720px;
+      max-height: 86vh;
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeIn 0.2s ease;
+    }
+    .legal-modal-header {
+      padding: 18px 24px;
+      background: #fdfbf7;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .legal-modal-title {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legal-modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+    .legal-modal-close:hover {
+      background: #f1ece1;
+      color: var(--text-main);
+    }
+    .legal-modal-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 12px 24px;
+      background: #f8f5ee;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .legal-tab-btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 9px 12px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--text-muted);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .legal-tab-btn.active {
+      background: var(--primary-brown);
+      color: #ffffff;
+      border-color: var(--primary-brown);
+    }
+    .legal-modal-body {
+      padding: 22px 24px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.75;
+      color: #334155;
+      text-align: left;
+    }
+    .legal-section-box {
+      display: none;
+    }
+    .legal-section-box.active {
+      display: block;
+    }
+    .legal-section-box h4 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #ebe4d8;
+    }
+    .legal-section-box h5 {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 16px 0 6px;
+    }
+    .legal-section-box p,
+    .legal-section-box ul {
+      margin-bottom: 10px;
+      font-size: 12.5px;
+      color: #475569;
+    }
+    .legal-section-box ul {
+      padding-left: 18px;
+    }
+    .legal-modal-footer {
+      padding: 14px 24px;
+      background: #fdfbf7;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     /* 성공 토스트 */
@@ -582,10 +785,190 @@
     </div>
   </main>
 
-  <!-- 하단 카피라이트 -->
-  <footer class="login-footer">
-    <p>© 2026 나노의 책장 (Nano BookShelf) · All Rights Reserved.</p>
+  <!-- 하단 약관·개인정보처리방침·환불정책 및 사업자 정보 푸터 (PG 심사 필수 고지 항목) -->
+  <footer class="login-footer" aria-label="사업자 정보 및 약관 안내">
+    <div class="legal-links-bar">
+      <a href="#terms" class="legal-link-btn" onclick="openNanoLegalModal('terms'); return false;">
+        <i class="fa-solid fa-file-contract"></i> 이용약관
+      </a>
+      <a href="#privacy" class="legal-link-btn privacy-highlight" onclick="openNanoLegalModal('privacy'); return false;">
+        <i class="fa-solid fa-user-shield"></i> 개인정보처리방침
+      </a>
+      <a href="#refund" class="legal-link-btn refund-highlight" onclick="openNanoLegalModal('refund'); return false;">
+        <i class="fa-solid fa-rotate-left"></i> 환불·취소·청약철회 정책
+      </a>
+      <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4178802543" target="_blank" rel="noopener noreferrer" class="legal-link-btn">
+        <i class="fa-solid fa-building-circle-check"></i> 사업자 정보 확인 &gt;
+      </a>
+      <a href="https://pf.kakao.com/_CEvdT" target="_blank" rel="noopener noreferrer" class="legal-link-btn" style="background:#FEE500; border-color:#eed600; color:#3C1E1E !important;">
+        <i class="fa-solid fa-comment"></i> 카카오톡 고객센터
+      </a>
+    </div>
+
+    <div class="biz-info-lines">
+      <div>
+        <strong>작작랩 주식회사</strong>
+        <span class="sep">|</span>대표 : <strong>윤민옥</strong>
+        <span class="sep">|</span>사업자등록번호 : <strong>417-88-02543</strong>
+        <span class="sep">|</span>통신판매업 신고번호 : <strong>제 2022-고양일산동-1810 호</strong>
+        <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4178802543" target="_blank" rel="noopener noreferrer" class="ftc-verify-badge">사업자 정보 확인 &gt;</a>
+        <span class="sep">|</span>원격평생교육시설번호 : <strong>제225호</strong>
+      </div>
+      <div>
+        주소 : <strong>경기도 고양시 일산 동구 무궁화로 20-38 로데오탑 417호</strong>
+        <span class="sep">|</span>홈페이지 : <a href="https://jakjaklab.com/" target="_blank" rel="noopener noreferrer">https://jakjaklab.com/</a>
+      </div>
+      <div>
+        대표전화(유선번호) : <strong><a href="tel:070-4571-9647">070-4571-9647</a></strong>
+        <span class="sep">|</span>이메일 : <a href="mailto:minokyoon@gmail.com">minokyoon@gmail.com</a>
+        <span class="sep">|</span>개인정보책임자 : <strong>윤민옥</strong>
+        <span class="sep">|</span>카카오채널 : <a href="https://pf.kakao.com/_CEvdT" target="_blank" rel="noopener noreferrer">https://pf.kakao.com/_CEvdT</a>
+      </div>
+      <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e5ded3; font-size: 11px; color: #786d63;">
+        [환불·취소·청약철회 요약] 정기구독(베이직 월 80,000원 ~ 로열 월 300,000원, VAT별도)은 매월 25일(휴일 시 다음 평일) 차월 사용분으로 결제되며, 개시일 전 또는 결제 후 7일 이내 미사용 시 100% 전액 환불(청약철회)됩니다. 카카오톡 알림 충전(1단위 5,500원)은 7일 이내 미사용 시 전액 취소 가능하며, 사용 후 해지 시 사용분 및 법정 수수료 공제 후 3영업일 이내 환불됩니다.
+      </div>
+    </div>
+    <p style="margin-top: 8px; font-size: 11px; color: #9a8f84;">© 2026 작작랩 주식회사 · 나노의 책장 (Nano BookShelf) · All Rights Reserved.</p>
   </footer>
+
+  <!-- 이용약관 · 개인정보처리방침 · 환불/취소/청약철회 정책 통합 모달 -->
+  <div class="legal-modal-backdrop" id="nanoLegalModal" role="dialog" aria-modal="true" aria-labelledby="nanoLegalModalTitle" onclick="if(event.target===this) closeNanoLegalModal()">
+    <div class="legal-modal-dialog">
+      <div class="legal-modal-header">
+        <div class="legal-modal-title" id="nanoLegalModalTitle">
+          <i class="fa-solid fa-scale-balanced" style="color: var(--primary-brown);"></i>
+          <span>나노의 책장 약관 및 정책 안내</span>
+        </div>
+        <button type="button" class="legal-modal-close" onclick="closeNanoLegalModal()" aria-label="닫기">&times;</button>
+      </div>
+
+      <div class="legal-modal-tabs">
+        <button type="button" class="legal-tab-btn active" id="btnLegalTab_terms" onclick="switchNanoLegalTab('terms')">
+          <i class="fa-solid fa-file-contract"></i> 서비스 이용약관
+        </button>
+        <button type="button" class="legal-tab-btn" id="btnLegalTab_privacy" onclick="switchNanoLegalTab('privacy')">
+          <i class="fa-solid fa-user-shield"></i> 개인정보처리방침
+        </button>
+        <button type="button" class="legal-tab-btn" id="btnLegalTab_refund" onclick="switchNanoLegalTab('refund')">
+          <i class="fa-solid fa-rotate-left"></i> 환불·취소·청약철회 정책
+        </button>
+      </div>
+
+      <div class="legal-modal-body">
+        <!-- 1. 서비스 이용약관 -->
+        <section class="legal-section-box active" id="legalSection_terms">
+          <h4>서비스 이용약관</h4>
+          <h5>제1조 (목적)</h5>
+          <p>본 약관은 작작랩 주식회사(이하 "회사")가 운영하는 독서·문해력 학습 관리 플랫폼 「나노의 책장」(이하 "서비스")의 이용과 관련하여 회사와 가맹 학원 회원 및 이용자 간의 권리, 의무, 책임사항, 정기결제 및 이용 조건을 규정함을 목적으로 합니다.</p>
+
+          <h5>제2조 (사업자 정보 및 원격평생교육시설 고지)</h5>
+          <ul>
+            <li>상호(법인명): 작작랩 주식회사 (대표자: 윤민옥)</li>
+            <li>사업자등록번호: 417-88-02543 | 통신판매업 신고번호: 제 2022-고양일산동-1810 호</li>
+            <li>원격평생교육시설번호: 제225호</li>
+            <li>주소: 경기도 고양시 일산 동구 무궁화로 20-38 로데오탑 417호</li>
+            <li>대표전화: 070-4571-9647 | 이메일: minokyoon@gmail.com | 카카오톡 채널: https://pf.kakao.com/_CEvdT</li>
+          </ul>
+
+          <h5>제3조 (유료 서비스 요금제 및 제공 기간)</h5>
+          <ul>
+            <li><strong>학원 정기구독 요금제 (월 단위 차월 사용분 결제, VAT 별도)</strong>:
+              베이직(최대 25명, 월 80,000원), 스탠다드(최대 50명, 월 120,000원), 프리미엄(최대 100명, 월 180,000원), 로열(정원 협의, 월 300,000원).</li>
+            <li><strong>카카오톡 알림 충전 상품 (1회성 선불 충전)</strong>:
+              1단위당 결제금액 5,500원(부가세 포함, 공급가 5,000원 적립, 알림톡 건당 8.5원 차감).</li>
+            <li>서비스 제공 기간: 정기구독 결제 완료 시 익월 1일부터 익월 말일까지(즉시 업그레이드 시 결제 즉시 적용), 카카오톡 알림 충전 캐시는 충전 즉시 적립되어 소진 시까지 이용 가능합니다.</li>
+          </ul>
+
+          <h5>제4조 (정기결제일 및 요금제 변경 정책)</h5>
+          <ul>
+            <li>정기 자동결제는 매월 25일(공휴일·주말인 경우 다음 평일)에 차월 사용분 금액으로 자동 청구됩니다.</li>
+            <li>요금제 다운그레이드 신청 시 추가 결제 없이 차월 이용분부터 인하된 요금제가 적용됩니다.</li>
+            <li>요금제 업그레이드는 '지금 바로 적용(당월 잔여 일수 일할 차액 결제 후 즉시 상향)' 또는 '차월부터 적용(추가 결제 없이 차월 정기결제일부터 상향)' 중 선택할 수 있습니다.</li>
+            <li>회원이 자동갱신을 취소(해지)하면 당월 만료일까지 서비스 이용이 보장되며, 다음 정기결제일부터 자동결제가 종료됩니다.</li>
+          </ul>
+
+          <h5>제5조 (회원의 의무 및 서비스 이용 제한)</h5>
+          <p>회원은 계정 정보 및 교육 콘텐츠(나노시트 PDF, 북퀴즈, 문해력 진단 문항 등)를 계약된 학원 외 제3자에게 무단 배포하거나 복제할 수 없으며, 관련 법령 및 본 약관을 준수하여야 합니다.</p>
+        </section>
+
+        <!-- 2. 개인정보처리방침 -->
+        <section class="legal-section-box" id="legalSection_privacy">
+          <h4>개인정보처리방침</h4>
+          <p>작작랩 주식회사(이하 "회사")는 「개인정보 보호법」 및 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 등 관련 법령을 준수하며, 정보주체의 개인정보를 안전하게 보호하고 있습니다.</p>
+
+          <h5>1. 개인정보의 수집 및 이용 목적</h5>
+          <ul>
+            <li>가맹 학원·교사·학생 회원 식별, 로그인 인증 및 학원별 독서·문해력 학습 이력 관리</li>
+            <li>유료 요금제 정기결제, 카카오톡 알림 충전 결제, 세금계산서·현금영수증 발행 및 청약철회(환불) 처리</li>
+            <li>학부모 대상 북퀴즈 결과, 독서 포트폴리오, 문해력 진단 리포트 카카오 알림톡/SMS 발송</li>
+          </ul>
+
+          <h5>2. 수집하는 개인정보의 항목</h5>
+          <ul>
+            <li>필수 항목: 아이디, 비밀번호(암호화 저장), 성명(대표자명/교사명/학생명), 소속 학원명, 연락처(전화번호/휴대전화번호), 이메일, 학년·반 정보</li>
+            <li>결제 시 수집 항목: 신용카드 결제/빌링 정보, 계좌이체/가상계좌 결제 기록, 사업자등록정보(전자세금계산서 발행 시)</li>
+          </ul>
+
+          <h5>3. 개인정보의 보유 및 이용 기간</h5>
+          <p>회원 탈퇴 또는 가맹 계약 종료 시 지체 없이 파기합니다. 단, 관련 법령에 따라 아래 기간 동안 안전하게 보존합니다.</p>
+          <ul>
+            <li>계약 또는 청약철회 등에 관한 기록: <strong>5년</strong> (전자상거래 등에서의 소비자보호에 관한 법률)</li>
+            <li>대금결제 및 재화 등의 공급에 관한 기록: <strong>5년</strong></li>
+            <li>소비자의 불만 또는 분쟁처리에 관한 기록: <strong>3년</strong></li>
+            <li>통신사실확인자료(접속 로그): <strong>3개월</strong> (통신비밀보호법)</li>
+          </ul>
+
+          <h5>4. 개인정보 처리 위탁 안내</h5>
+          <ul>
+            <li>전자결제 대행(PG): 엔에이치엔케이씨피 주식회사 (NHN KCP) — 신용카드 정기결제·단건결제·계좌이체·가상계좌 결제 처리</li>
+            <li>알림톡/문자 발송 대행: 주식회사 케이피모바일 (알리고) — 카카오 알림톡 및 대체 문자 전송</li>
+          </ul>
+
+          <h5>5. 개인정보 보호책임자 및 고충처리 부서</h5>
+          <ul>
+            <li>개인정보 보호책임자: <strong>윤민옥 (대표)</strong></li>
+            <li>연락처(유선번호): <strong>070-4571-9647</strong> | 이메일: <strong>minokyoon@gmail.com</strong></li>
+            <li>주소: 경기도 고양시 일산 동구 무궁화로 20-38 로데오탑 417호</li>
+          </ul>
+        </section>
+
+        <!-- 3. 환불·취소·청약철회 정책 -->
+        <section class="legal-section-box" id="legalSection_refund">
+          <h4>환불·취소·청약철회 정책</h4>
+          <p>작작랩 주식회사는 「전자상거래 등에서의 소비자보호에 관한 법률」 및 「평생교육법 시행령」의 학습비 반환 기준에 의거하여 투명하고 공정한 결제 취소·청약철회·환불 규정을 운영합니다.</p>
+
+          <h5>1. 학원 정기구독 이용권 청약철회 및 환불 규정</h5>
+          <ul>
+            <li><strong>서비스 개시 전 전액 환불 (청약철회)</strong>: 매월 25일(휴일 시 다음 평일) 결제된 차월 정기구독 이용권은 차월 서비스 개시일(익월 1일) 이전까지 또는 결제일로부터 7일 이내에 서비스 이용 이력이 없는 경우 <strong>100% 전액 결제 취소(청약철회) 및 환불</strong>이 가능합니다.</li>
+            <li><strong>서비스 개시 후 중도 해지 및 일할 환불</strong>: 서비스 이용 개시일 이후 중도 해지(환불) 요청 시, 결제 금액에서 해지 신청일까지의 이용 일수에 해당하는 일할 계산 금액 및 법정 위약금(총 이용금액의 10% 이내)을 공제한 잔액을 환불합니다.</li>
+            <li><strong>즉시 업그레이드(일할 차액 결제) 취소</strong>: 당월 즉시 업그레이드 결제 후 당일 내 추가 슬롯 등록·이용 이력이 없는 경우 전액 결제 취소가 가능합니다.</li>
+            <li><strong>자동갱신(정기결제) 해지</strong>: 결제 관리 화면에서 [자동갱신 취소]를 클릭하면 즉시 차월 정기결제 예약이 해지되며, 이미 결제된 당월 이용 기간 만료일까지는 정상적으로 서비스를 이용할 수 있습니다.</li>
+          </ul>
+
+          <h5>2. 카카오톡 알림 충전 캐시 (1회성 선불 충전) 취소 및 환불 규정</h5>
+          <ul>
+            <li><strong>미사용 전액 취소 (청약철회)</strong>: 충전 결제일로부터 7일 이내에 알림톡 발송(캐시 차감) 내역이 전혀 없는 경우 <strong>100% 전액 결제 취소 및 환불</strong>이 가능합니다.</li>
+            <li><strong>일부 사용 후 잔액 환불</strong>: 충전된 캐시를 일부 사용한 후 환불을 요청하는 경우, 실결제 금액에서 기사용된 발송 건수 금액(건당 8.5원, VAT 별도 기준)과 환불 수수료(잔액의 10% 또는 1,000원 중 큰 금액)를 공제한 잔액을 환불합니다.</li>
+          </ul>
+
+          <h5>3. 취소·환불 신청 방법 및 처리 기한</h5>
+          <ul>
+            <li>접수 채널: 대표전화(<strong>070-4571-9647</strong>), 이메일(<strong>minokyoon@gmail.com</strong>), 카카오톡 고객센터(<strong>https://pf.kakao.com/_CEvdT</strong>) 또는 포털 내 결제 관리 메뉴</li>
+            <li>환불 처리 기한: 청약철회 및 환불 요청 접수일로부터 <strong>3영업일 이내</strong>에 신용카드 승인 취소 또는 지정 계좌 입금으로 처리됩니다.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="legal-modal-footer">
+        <div style="font-size: 11.5px; color: var(--text-muted);">
+          작작랩 주식회사 | 사업자등록번호: 417-88-02543 | 대표전화: 070-4571-9647
+        </div>
+        <button type="button" class="legal-link-btn" style="background: var(--primary-brown); color: #ffffff !important; border-color: var(--primary-brown); padding: 7px 18px;" onclick="closeNanoLegalModal()">
+          확인 및 닫기
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- 토스트 안내 -->
   <div class="toast-overlay" id="toastOverlay">
@@ -915,6 +1298,39 @@
       }
     }
     window.toast = showToast;
+
+    // 약관·개인정보처리방침·환불정책 모달 열기/닫기/탭 전환
+    function switchNanoLegalTab(tabKey) {
+      const validKey = ['terms', 'privacy', 'refund'].includes(tabKey) ? tabKey : 'terms';
+      ['terms', 'privacy', 'refund'].forEach(k => {
+        const btn = document.getElementById('btnLegalTab_' + k);
+        const sec = document.getElementById('legalSection_' + k);
+        if (btn) btn.classList.toggle('active', k === validKey);
+        if (sec) sec.classList.toggle('active', k === validKey);
+      });
+    }
+
+    function openNanoLegalModal(tabKey) {
+      switchNanoLegalTab(tabKey || 'terms');
+      const modal = document.getElementById('nanoLegalModal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeNanoLegalModal() {
+      const modal = document.getElementById('nanoLegalModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeNanoLegalModal();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const hash = (window.location.hash || '').replace('#', '').toLowerCase();
+      if (['terms', 'privacy', 'refund'].includes(hash)) {
+        openNanoLegalModal(hash);
+      }
+    });
 
     // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {

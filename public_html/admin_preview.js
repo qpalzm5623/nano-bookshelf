@@ -17355,6 +17355,36 @@ function viewPaymentReceipt(payId) {
         '· 결제상태: 정상 승인 (VAT 매입세액공제 가능)');
 }
 
+// 이용약관 · 개인정보처리방침 · 환불/취소/청약철회 정책 모달 열기 및 탭 전환
+function switchAdminLegalTab(tabKey) {
+  var validKey = ['terms', 'privacy', 'refund'].indexOf(tabKey) !== -1 ? tabKey : 'terms';
+  ['terms', 'privacy', 'refund'].forEach(function(k) {
+    var btn = document.getElementById('btnAdminLegalTab_' + k);
+    var sec = document.getElementById('adminLegalSection_' + k);
+    if (btn) {
+      if (k === validKey) {
+        btn.style.background = 'var(--btn-primary)';
+        btn.style.color = '#ffffff';
+        btn.style.border = '1px solid var(--btn-primary)';
+      } else {
+        btn.style.background = '#ffffff';
+        btn.style.color = 'var(--text-main)';
+        btn.style.border = '1px solid var(--border-medium)';
+      }
+    }
+    if (sec) {
+      sec.style.display = (k === validKey) ? 'block' : 'none';
+    }
+  });
+}
+
+function openNanoLegalModal(tabKey) {
+  switchAdminLegalTab(tabKey || 'terms');
+  if (typeof $ !== 'undefined' && $('#adminLegalPolicyModal').length) {
+    $('#adminLegalPolicyModal').modal('show');
+  }
+}
+
 // ==============================================================
 // 본사 시스템 공지사항 연동 및 관리자 로그인/접속 팝업 모듈
 // ==============================================================
