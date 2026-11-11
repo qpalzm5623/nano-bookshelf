@@ -99,3 +99,21 @@ test('분석 도중 다른 원생 모달을 열어도 원래 사진과 결과가
   assert.equal(f.ctx.currentOpenCorrectionLogId,'b');
   assert.equal(f.ctx.worksheetAnalysisJobs.size,0);
 });
+
+test('첨삭 관리 탭에서는 원본 사진, 이번 활동에서 돋보인 점, 다음 성장을 위한 발걸음만 화면에 표시된다', () => {
+  const f = setup();
+  f.ctx.openCorrectionModal('a');
+
+  // 1. 원본 사진 영역 노출 검증
+  assert.equal(f.get('worksheetDonePhotosPreview').style.display, 'block');
+  assert.match(f.get('worksheetDonePhotosPreview').innerHTML, /아이가 작성한 나노시트 원본/);
+
+  // 2. 화면 노출 헤더: 돋보인 점 & 다음 성장만 포함
+  const editorHtml = f.get('worksheetAiEditor').innerHTML;
+  assert.match(editorHtml, /이번 활동에서 돋보인 점/);
+  assert.match(editorHtml, /다음 성장을 위한 발걸음/);
+
+  // 3. 복잡했던 생각담기 인용구/관찰 영역은 display:none 내부에 숨김 처리
+  assert.match(editorHtml, /<div style="display:none;" aria-hidden="true">/);
+  assert.ok(editorHtml.includes('type="hidden" id="worksheetQuote-0-quote"'));
+});

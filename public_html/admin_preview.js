@@ -1244,50 +1244,33 @@ function renderWorksheetCorrectionEditor() {
   html += '<div class="p-3 mb-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 10px;">' +
     '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #d1fae5 !important;">' +
     '<i class="fa-solid fa-lightbulb text-warning mr-1.5" style="font-size: 14px;"></i>' +
-    '<strong style="font-size: 13px; color: #065f46;">1. 이번 활동에서 돋보인 점</strong>' +
-    '<small class="text-muted ml-2 font-weight-normal">(리포트 메인 강점 요약)</small>' +
+    '<strong style="font-size: 13px; color: #065f46;">이번 활동에서 돋보인 점</strong>' +
+    '<small class="text-muted ml-2 font-weight-normal">(리포트 메인 강점 피드백)</small>' +
     '</div>' +
-    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약', result.summary, 2) +
+    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약 및 칭찬 피드백', result.summary, 3) +
     '</div>';
 
-  // [카드 2] 나노시트 생각담기 관찰 피드백 (블루/슬레이트 테마)
-  html += '<div class="p-3 mb-3 rounded" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 4px solid #3b82f6; border-radius: 10px;">' +
-    '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #e2e8f0 !important;">' +
-    '<i class="fa-solid fa-quote-left text-primary mr-1.5" style="font-size: 13px;"></i>' +
-    '<strong style="font-size: 13px; color: #1e3a8a;">2. 나노시트 생각담기 피드백</strong>' +
-    '<small class="text-muted ml-2 font-weight-normal">(학생 작성 답안 옆에 노출)</small>' +
-    '</div>';
-
-  quotes.forEach(function(q, i) {
-    html += '<div class="row no-gutters mb-2" style="gap: 8px;">' +
-      '<div style="flex: 1 1 55%; min-width: 220px;">' +
-      worksheetEditorField('worksheetQuote-' + i + '-quote', '학생 답안 인용문', q.quote, 2) +
-      '</div>' +
-      '<div style="flex: 1 1 40%; min-width: 180px;">' +
-      '<div class="form-group mb-2.5"><label class="font-weight-bold text-dark mb-1" for="worksheetQuote-' + i + '-criteria" style="font-size:12px;">관찰 영역</label>' +
-      '<input type="text" id="worksheetQuote-' + i + '-criteria" class="form-control form-control-beige form-control-sm" style="font-size:12px;border-radius:8px;height:38px;" value="' + escapePortfolioText(q.criteria || '경험 연결 및 자기표현') + '">' +
-      '</div></div></div>' +
-      worksheetEditorField('worksheetQuote-' + i + '-comment', '생각담기 관찰 및 칭찬 피드백', q.comment, 3);
-  });
-
-  // 그림 표현 관찰 (선택 입력)
-  html += '<div class="mt-2 pt-2 border-top" style="border-color: #e2e8f0 !important;">' +
-    worksheetEditorField('worksheetEdit-drawingObservation', '그림에 담긴 생각 (선택 입력)', result.drawingObservation, 2) +
-    '</div></div>';
-
-  // [카드 3] 다음 성장을 위한 발걸음 (틸/민트 테마)
+  // [카드 2] 다음 성장을 위한 발걸음 (틸/민트 테마)
   html += '<div class="p-3 mb-2 rounded" style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-left: 4px solid #0d9488; border-radius: 10px;">' +
     '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #ccfbf1 !important;">' +
     '<i class="fa-solid fa-compass text-info mr-1.5" style="font-size: 14px;"></i>' +
-    '<strong style="font-size: 13px; color: #0f766e;">3. 다음 성장을 위한 발걸음</strong>' +
+    '<strong style="font-size: 13px; color: #0f766e;">다음 성장을 위한 발걸음</strong>' +
     '<small class="text-muted ml-2 font-weight-normal">(다음 독서 방향 및 가정 대화)</small>' +
     '</div>' +
     worksheetEditorField('worksheetEdit-nextStep', '• 이렇게 해보세요 (다음 독서 실천 방향)', result.nextStep, 2) +
     worksheetEditorField('worksheetEdit-parentGuide', '• 집에서 함께 나눌 이야기 (가정 대화 팁)', result.parentGuide, 2) +
     '</div>';
 
-  // 보조 호환 필드 (숨김 input으로 호환성 유지)
-  html += '<input type="hidden" id="worksheetEdit-languageHandwritingNote" value="' + escapePortfolioText(result.languageHandwritingNote || '') + '">';
+  // [숨김 영역: 데이터 정합성 및 백엔드/테스트 호환성 유지용]
+  html += '<div style="display:none;" aria-hidden="true">';
+  quotes.forEach(function(q, i) {
+    html += '<input type="hidden" id="worksheetQuote-' + i + '-quote" value="' + escapePortfolioText(q.quote || '') + '">' +
+      '<input type="hidden" id="worksheetQuote-' + i + '-criteria" value="' + escapePortfolioText(q.criteria || '경험 연결 및 자기표현') + '">' +
+      '<input type="hidden" id="worksheetQuote-' + i + '-comment" value="' + escapePortfolioText(q.comment || '') + '">';
+  });
+  html += '<input type="hidden" id="worksheetEdit-drawingObservation" value="' + escapePortfolioText(result.drawingObservation || '') + '">' +
+    '<input type="hidden" id="worksheetEdit-languageHandwritingNote" value="' + escapePortfolioText(result.languageHandwritingNote || '') + '">' +
+    '</div>';
 
   document.getElementById('worksheetAiEditor').innerHTML = html;
 }
@@ -1380,16 +1363,30 @@ function openCorrectionModal(logId) {
 
   var donePhotosBox = document.getElementById('worksheetDonePhotosPreview');
   if (donePhotosBox) {
-    if (currentWorksheetCorrectionDone && currentWorksheetPhotos.length > 0) {
+    if (currentWorksheetCorrectionDone) {
       donePhotosBox.style.display = 'block';
-      donePhotosBox.innerHTML = '<div class="p-2.5 px-3 rounded border" style="background:#faf8f5; border-color:#e5dccb !important;">' +
-        '<div class="font-weight-bold mb-1.5" style="font-size:12px; color:var(--text-main);"><i class="fa-solid fa-images text-primary mr-1"></i>업로드된 나노시트 원본 이미지 (' + currentWorksheetPhotos.length + '장)</div>' +
-        '<div class="d-flex flex-wrap" style="gap:8px;">' +
-        currentWorksheetPhotos.map(function(p, idx) {
-          var src = escapePortfolioText((p && (p.dataUrl || p.url)) || '');
-          return src ? '<img src="' + src + '" alt="시트 ' + (idx + 1) + '" style="width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid #d8cebf;cursor:pointer;" onclick="openWorksheetPhotoLightbox(\'' + src + '\')">' : '';
-        }).join('') +
-        '</div></div>';
+      if (currentWorksheetPhotos.length > 0) {
+        donePhotosBox.innerHTML = '<div class="p-3 mb-3 rounded" style="background:#fbf9f5; border: 1.5px solid #e8e0d5; border-radius: 10px;">' +
+          '<div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom" style="border-color:#ece4d8 !important;">' +
+          '<div class="font-weight-bold" style="font-size:12.5px; color:#3d342d;">' +
+          '<i class="fa-solid fa-camera text-primary mr-1.5"></i><strong>아이가 작성한 나노시트 원본</strong>' +
+          '</div>' +
+          '<span class="badge badge-pill badge-light border text-muted" style="font-size:11px;">총 ' + currentWorksheetPhotos.length + '장 · 눌러서 크게 보기</span>' +
+          '</div>' +
+          '<div class="d-flex flex-wrap" style="gap:10px;">' +
+          currentWorksheetPhotos.map(function(p, idx) {
+            var src = escapePortfolioText((p && (p.dataUrl || p.url)) || '');
+            return src ? '<div class="position-relative" style="cursor:pointer;" onclick="openWorksheetPhotoLightbox(\'' + src + '\')" title="클릭하여 원본 크게 보기">' +
+              '<img src="' + src + '" alt="나노시트 ' + (idx + 1) + '페이지" style="width:84px;height:112px;object-fit:cover;border-radius:8px;border:1.5px solid #d8cebf;box-shadow:0 2px 6px rgba(0,0,0,0.08);">' +
+              '<span class="badge badge-dark position-absolute" style="bottom:4px;right:4px;font-size:10px;opacity:0.85;padding:2px 5px;">' + (idx + 1) + 'p</span>' +
+              '</div>' : '';
+          }).join('') +
+          '</div></div>';
+      } else {
+        donePhotosBox.innerHTML = '<div class="p-3 mb-3 rounded text-center" style="background:#f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px; color:#64748b; font-size:12px;">' +
+          '<i class="fa-solid fa-camera mr-1 text-muted"></i>등록된 나노시트 원본 사진이 없습니다.' +
+          '</div>';
+      }
     } else {
       donePhotosBox.style.display = 'none';
       donePhotosBox.innerHTML = '';
@@ -1939,6 +1936,49 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// 학습 리포트 모달 뷰 모드 전환 (PC 와이드 뷰 vs 카카오톡 모바일 뷰)
+var currentReportViewMode = 'pc';
+
+function switchReportViewMode(mode) {
+  currentReportViewMode = (mode === 'kakao') ? 'kakao' : 'pc';
+  var dialog = document.getElementById('learningReportModalDialog');
+  var btnPc = document.getElementById('btnReportViewPc');
+  var btnKakao = document.getElementById('btnReportViewKakao');
+  var banner = document.getElementById('kakaoPreviewBanner');
+
+  if (currentReportViewMode === 'kakao') {
+    if (dialog) dialog.classList.add('view-mode-kakao');
+    if (banner) banner.style.display = 'block';
+    if (btnKakao) {
+      btnKakao.classList.add('active');
+      btnKakao.style.background = '#ffffff';
+      btnKakao.style.color = '#1e293b';
+      btnKakao.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+    }
+    if (btnPc) {
+      btnPc.classList.remove('active');
+      btnPc.style.background = 'transparent';
+      btnPc.style.color = '#555';
+      btnPc.style.boxShadow = 'none';
+    }
+  } else {
+    if (dialog) dialog.classList.remove('view-mode-kakao');
+    if (banner) banner.style.display = 'none';
+    if (btnPc) {
+      btnPc.classList.add('active');
+      btnPc.style.background = '#ffffff';
+      btnPc.style.color = '#1e293b';
+      btnPc.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+    }
+    if (btnKakao) {
+      btnKakao.classList.remove('active');
+      btnKakao.style.background = 'transparent';
+      btnKakao.style.color = '#555';
+      btnKakao.style.boxShadow = 'none';
+    }
+  }
+}
+
 // 상세 학습리포트 모달 열기 및 문항별 채점 결과 상세 렌더링
 function openLearningDetailModal(id) {
   var allLogs = getLoadedLearningLogs();
@@ -1947,6 +1987,9 @@ function openLearningDetailModal(id) {
     log = learningLogs.find(function(l) { return l.id === id; });
   }
   if (!log) return;
+
+  // 모달 오픈 시 기본 뷰 모드는 항상 쾌적한 PC 리포트(와이드)로 초기화
+  switchReportViewMode('pc');
 
   // 운영 서버의 삭제 상태를 우선하고, 구형 로컬 기록에 한해서만 분석 사본을 복원합니다.
   var storedWs = getWorksheetStore(id);
