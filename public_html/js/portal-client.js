@@ -9,9 +9,21 @@
   function handleConcurrentLogout(errorMsg) {
     if (isRedirectingToLogin) return;
     isRedirectingToLogin = true;
-    try { sessionStorage.removeItem('nano_auth_user'); } catch (e) {}
-    alert(errorMsg || '다른 기기에서 로그인하여 현재 접속이 종료되었습니다. 다시 로그인해 주세요.');
-    location.href = 'index.html';
+    var msg = errorMsg || '다른 기기에서 로그인하여 현재 접속이 종료되었습니다. 다시 로그인해 주세요.';
+    try {
+      sessionStorage.clear();
+      sessionStorage.setItem('nano_login_notice', msg);
+      localStorage.removeItem('nano_auth_user');
+      localStorage.removeItem('nano_user');
+    } catch (e) {}
+    try {
+      alert(msg);
+    } catch (e) {}
+    try {
+      location.replace('index.html');
+    } catch (e) {
+      location.href = 'index.html';
+    }
   }
 
   async function api(path, body, timeout) {
@@ -20,7 +32,10 @@
     if (!response.ok) {
       if (response.status === 401 && data && (data.concurrentLoggedOut || (typeof data.error === 'string' && data.error.indexOf('다른 기기에서 로그인하여') !== -1))) {
         handleConcurrentLogout(data.error);
-        return;
+        var concurrentErr = new Error(data.error);
+        concurrentErr.status = 401;
+        concurrentErr.concurrentLoggedOut = true;
+        throw concurrentErr;
       }
       var err = new Error(data.error || '서버 요청에 실패했습니다.');
       err.status = response.status;
@@ -514,6 +529,13 @@
       var data;
       try { data = await response.json(); } catch(e) { throw new Error('운영 서버에 연결할 수 없습니다.'); }
       if (!response.ok) {
+        if (response.status === 401 && data && (data.concurrentLoggedOut || (typeof data.error === 'string' && data.error.indexOf('다른 기기에서 로그인하여') !== -1))) {
+          handleConcurrentLogout(data.error);
+          var concurrentErr = new Error(data.error);
+          concurrentErr.status = 401;
+          concurrentErr.concurrentLoggedOut = true;
+          throw concurrentErr;
+        }
         var err = new Error(data.error || '서버 요청에 실패했습니다.');
         err.status = response.status;
         err.conflict = data.conflict;
@@ -571,7 +593,7 @@
     saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,
-    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout,
+    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout, handleConcurrentLogout: handleConcurrentLogout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
     logs: function () { return memoryLogs; } };
   var page = location.pathname.split('/').pop().replace(/\.html$/, '');
@@ -610,9 +632,12 @@
         }
       } catch (e) {}
     }
-    sessionWatcherTimer = setInterval(checkConcurrentSession, 25000);
+    sessionWatcherTimer = setInterval(checkConcurrentSession, 5000);
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'visible') checkConcurrentSession();
+    });
+    window.addEventListener('focus', function() {
+      checkConcurrentSession();
     });
   }
 

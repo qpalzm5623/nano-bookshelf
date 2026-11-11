@@ -11225,6 +11225,21 @@ setInterval(function() {
 
 var toastT;
 function toast(msg){
+  if (typeof msg === 'string' && msg.indexOf('다른 기기에서 로그인하여') !== -1) {
+    if (window.NanoPortal && typeof NanoPortal.handleConcurrentLogout === 'function') {
+      NanoPortal.handleConcurrentLogout(msg);
+      return;
+    }
+    try {
+      sessionStorage.clear();
+      sessionStorage.setItem('nano_login_notice', msg);
+      localStorage.removeItem('nano_auth_user');
+      localStorage.removeItem('nano_user');
+    } catch(e) {}
+    try { alert(msg); } catch(e) {}
+    try { location.replace('index.html'); } catch(e) { location.href = 'index.html'; }
+    return;
+  }
   var el=document.getElementById('studentToast');
   if(!el) return;
   el.innerHTML='<i class="fa-solid fa-circle-check mr-2" style="color:#4ade80;"></i>'+msg;

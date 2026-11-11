@@ -56,6 +56,7 @@ export default async function handler(req: any, res: any) {
     const bookAuthor = text(body.bookAuthor, '저자', 200, false) || '작자 미상';
     const sheetCount = Number(body.sheetCount) || 1;
     const images = Array.isArray(body.images) ? body.images : [];
+    const thoughtAnswer = text(body.thoughtAnswer || body.studentThoughtAnswer, '생각담기 답안', 1000, false) || '';
 
     // 마스터 계정 등록 Gemini API Key 및 Model 조회
     const configRow = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
@@ -76,39 +77,54 @@ export default async function handler(req: any, res: any) {
 
     const devLevel = resolveDevelopmentLevel(grade);
 
-    // 발달 단계 및 학생 정보 기반 고품질 스마트 첨삭 폴백 생성 헬퍼
+    // 도서 및 학생 맞춤형 동적 폴백 피드백 생성기 (정형화된 기계적 문구 완전 배제)
     const createFallbackSingleResult = (warningMsg: string) => {
-      let coreComment = `${studentName} 학생은 『${bookTitle}』을(를) 읽고 인상 깊었던 장면과 인물의 마음에 깊이 몰입하여 자신의 생각을 정성껏 표현했습니다.`;
-      let nextStepTxt = '다음에는 왜 그렇게 생각했는지 일상 속 경험이나 구체적인 이유를 한 문장 더 덧붙여 보면 더욱 풍성해집니다.';
-      
+      const ansTrim = thoughtAnswer.trim();
+      const quoteText = ansTrim && ansTrim.length > 2 ? ansTrim : `『${bookTitle}』 나노시트 활동`;
+
+      // 도서명 및 학생 특성에 맞춘 다채로운 관찰 요약 구성
+      let summaryText = '';
+      let nextStepTxt = '';
+      let parentGuideTxt = '';
+
       if (devLevel.level.includes('LEVEL 0')) {
-        coreComment = `${studentName} 학생이 그림과 글을 통해 자신의 감정과 느낌을 즐겁게 드러냈습니다. 스스로 표현을 시작한 점이 매우 훌륭합니다.`;
-        nextStepTxt = '그림에서 가장 마음에 드는 부분을 부모님이나 선생님에게 말로 한 번 더 설명해보는 연습을 해보세요.';
+        summaryText = `『${bookTitle}』을(를) 읽고 인물의 표정과 상황을 자신만의 상상력으로 생생하게 시트에 펼쳐냈습니다. 글과 그림을 자유롭게 넘나들며 책 속 이야기를 자신의 언어로 즐겁게 재구성한 표현력이 돋보입니다.`;
+        nextStepTxt = `다음 책을 읽을 때는 책 속에서 가장 마음에 드는 단어나 인물의 재미있는 행동을 하나 골라, 시트 여백에 말풍선으로 적어보세요. 글과 그림이 어우러져 표현의 폭이 한층 넓어집니다.`;
+        parentGuideTxt = `"${studentName}이가 『${bookTitle}』을 읽고 인물의 마음을 멋진 상상력으로 표현한 점이 정말 자랑스러워!"라고 칭찬해 주세요. 이어서 "주인공이 다음 날 아침에는 무엇을 했을까?"라는 기발한 상상 질문으로 대화를 이어가시면 좋습니다.`;
       } else if (devLevel.level.includes('LEVEL 1')) {
-        coreComment = `${studentName} 학생은 책의 중심 내용을 자신의 생활 경험과 자연스럽게 연결하여 솔직하고 당당한 문장으로 생각을 완성했습니다.`;
-        nextStepTxt = '다음 독서에서도 마음에 드는 단어나 재미있었던 문장을 하나 골라 함께 적어보면 표현력이 더욱 자라납니다.';
+        summaryText = ansTrim
+          ? `『${bookTitle}』의 핵심 사건을 접하고 "${ansTrim.slice(0, 30)}${ansTrim.length > 30 ? '...' : ''}"라는 생각을 솔직하게 풀어냈습니다. 책 속 상황을 자신의 일상 경험과 자연스럽게 연결 지어 당당하게 의견을 완성한 점이 인상적입니다.`
+          : `『${bookTitle}』의 주요 갈등과 인물의 선택에 깊이 몰입하여 자신의 느낌을 구체적인 언어로 풀어냈습니다. 책의 중심 메시지를 놓치지 않고 자신의 경험과 연결 지으려는 주도적인 태도가 돋보입니다.`;
+        nextStepTxt = `이번 활동처럼 마음에 남는 장면을 발견했을 때, "만약 나라면 다른 결정을 내렸을까?"라는 짧은 메모를 덧붙여 보세요. 인물의 입장과 나의 입장을 비교해보며 깊이 있는 사고 습관이 길러집니다.`;
+        parentGuideTxt = `아이의 솔직하고 개성 있는 생각 표현을 충분히 지지해 주시고, "『${bookTitle}』에서 가장 인상 깊었던 장면을 엄마/아빠에게 들려줄래?"라는 열린 질문으로 아이의 성취감을 북돋워 주세요.`;
       } else if (devLevel.level.includes('LEVEL 2')) {
-        coreComment = `${studentName} 학생은 등장인물의 행동 배경과 원인을 짚어내며, 자신의 관점을 논리적으로 연결하여 설득력 있게 표현했습니다.`;
-        nextStepTxt = '만약 나라면 그 상황에서 어떤 결정을 내렸을지 다른 선택지도 함께 비교해보는 글쓰기를 추천합니다.';
+        summaryText = ansTrim
+          ? `『${bookTitle}』의 주제 의식을 짚어내며 "${ansTrim.slice(0, 35)}${ansTrim.length > 35 ? '...' : ''}"라는 주관 뚜렷한 생각을 논리적으로 서술했습니다. 인물의 행동 배경을 다각도로 관찰하고 원인과 결과를 짚어낸 분석력이 돋보입니다.`
+          : `『${bookTitle}』의 이야기 구조와 등장인물의 심리 변화를 입체적으로 조망하며 생각을 논리적으로 완성했습니다. 단순한 줄거리 요약을 넘어 사건의 원인과 결과를 자신의 시선으로 짚어낸 점이 뛰어납니다.`;
+        nextStepTxt = `다음 독서에서는 주인공뿐만 아니라 주변 인물의 처지에서도 사건을 바라보며, '숨겨진 마음 지도'나 '비교 마인드맵'을 작성해 보세요. 다각적 시각과 논리적 문제 해결력이 더욱 정교해집니다.`;
+        parentGuideTxt = `"${studentName}이가 『${bookTitle}』 속 상황을 그냥 지나치지 않고 자기만의 가치관으로 깊이 고민해본 모습이 무척 기특해!"라고 격려해 주세요. "인물이 그런 선택을 한 진짜 이유는 무엇이었을까?"라는 질문으로 깊이 있는 대화를 나누어 보세요.`;
       } else {
-        coreComment = `${studentName} 학생은 『${bookTitle}』의 주제 의식을 입체적으로 조망하며, 단순한 줄거리 요약을 넘어 비판적 사고와 깊이 있는 통찰을 담아냈습니다.`;
-        nextStepTxt = '작가의 집필 의도나 사회적 배경과 연결하여 나만의 주장을 구조화된 문단으로 확장해보세요.';
+        summaryText = ansTrim
+          ? `『${bookTitle}』의 갈등 구조와 시대적·사회적 맥락을 비판적으로 탐색하며 "${ansTrim.slice(0, 40)}${ansTrim.length > 40 ? '...' : ''}"라는 통찰력 있는 관점을 구조화된 문장으로 서술했습니다.`
+          : `『${bookTitle}』의 숨은 메시지와 작가의 집필 의도를 심도 있게 추론하며 완성도 높은 사고력을 보여주었습니다. 표면적인 사건을 넘어 인간과 사회에 대한 깊이 있는 질문을 스스로 던진 지적 탐구력이 훌륭합니다.`;
+        nextStepTxt = `책의 결말 이후 펼쳐질 뒷이야기나, 작가의 주장에 대한 나의 찬반 입장을 한 편의 완성된 칼럼 형식으로 발전시켜 보세요. 비판적 문해력과 논술 구성력이 한 단계 도약합니다.`;
+        parentGuideTxt = `스스로 문제를 제기하고 논거를 세운 높은 사고 수준을 크게 칭찬해 주세요. "이 책이 오늘날 우리 사회에 던지는 교훈은 무엇일까?"라는 심도 있는 화두를 식탁에서 함께 나누면 논리적 표현력이 더욱 깊어집니다.`;
       }
 
       return {
-        summary: `${studentName} 학생이 도서의 핵심 장면을 바탕으로 자신의 생각과 감정을 성실하고 창의적으로 담아냈습니다.`,
+        summary: summaryText,
         actualQuotes: [
           {
-            quote: '나노시트 생각담기 작성 문장',
+            quote: quoteText,
             criteria: '경험 연결 및 자기표현',
-            comment: '책 속 상황을 자신의 시각으로 흡수하여 주도적으로 의견을 진술한 태도가 돋보입니다.'
+            comment: `『${bookTitle}』의 핵심 맥락을 자신의 시각으로 흡수하여 주도적으로 의견을 진술한 태도가 돋보입니다.`
           }
         ],
-        drawingObservation: '글로 다 담지 못한 감정과 상황을 시트의 여백에 정성스럽게 구성하여 표현력을 더했습니다.',
-        languageHandwritingNote: '정해진 틀에 얽매이지 않고 자신의 생각을 끝까지 완성하려는 훌륭한 독서 지구력을 보여줍니다.',
+        drawingObservation: `『${bookTitle}』에서 느낀 감정과 장면의 분위기를 시트 여백에 정성스럽게 구성하여 표현력을 한층 더했습니다.`,
+        languageHandwritingNote: '정해진 틀에 얽매이지 않고 자신의 생각을 정성껏 완결하려는 우수한 독서 지구력을 보여줍니다.',
         nextStep: nextStepTxt,
-        parentGuide: '아이가 책을 읽고 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, "가장 재미있었던 장면은 어디였니?"라는 열린 대화를 나누어 주세요.',
-        teacherCommentDraft: coreComment,
+        parentGuide: parentGuideTxt,
+        teacherCommentDraft: summaryText,
         warning: warningMsg,
         isFallback: true
       };
@@ -118,23 +134,27 @@ export default async function handler(req: any, res: any) {
       need(images.length > 0, '나노시트 사진(2~3페이지)을 최소 1장 이상 업로드해 주세요.');
       need(images.length <= 5, '나노시트 사진은 한 번에 최대 5장까지 분석할 수 있습니다.');
 
-      const systemPrompt = `당신은 대한민국 최고 수준의 아동 독서사고력 및 나노시트 교육 전문 연구원입니다.
+      const systemPrompt = `당신은 대한민국 최고 수준의 아동 독서사고력 및 나노시트(독서활동지) 전문 첨삭 연구원입니다.
 제공된 이미지는 학생이 오프라인에서 직접 손글씨와 그림으로 작성한 "나노시트 2~3페이지" 사진입니다.
 
 [분석 대상자 정보]
 - 학생명: ${studentName}
-- 학년/연령: ${grade} -> 발달 모델: ${devLevel.level} (핵심 질문: ${devLevel.coreQuestion} / ${devLevel.direction})
-- 도서명: ${bookTitle} (저자: ${bookAuthor})
+- 학년/연령: ${grade} (발달 모델: ${devLevel.level} - 핵심 질문: ${devLevel.coreQuestion} / ${devLevel.direction})
+- 도서명: 『${bookTitle}』 (저자: ${bookAuthor})
 - 누적 회차: ${sheetCount}번째 나노시트
+${thoughtAnswer ? `- 학생이 시스템에 입력한 생각담기 답안 텍스트 참고: "${thoughtAnswer}"` : ''}
 
-[나노시트 분석 핵심 정의 & 절대 금기 원칙]
-1. 나노시트 AI는 아이의 독서능력을 시험하거나 채점하는 AI가 절대 아닙니다.
-2. 짧은 답변 자체를 낮은 수준으로 보지 마세요.
-3. 그림 중심 표현을 글 중심 표현보다 낮게 평가하지 마세요.
-4. 맞춤법·띄어쓰기 오류를 사고력 부족으로 연결하지 마세요.
-5. 부정적 단어, 등급, 서열, 점수, 오답 처리, 타인/또래 비교는 단 하나도 쓰지 마세요.
-6. 관찰된 강점 80%, 자연스러운 다음 성장 방향 20%의 황금 비율을 엄격히 지키세요.
-7. 반드시 학생이 실제로 작성한 손글씨 문장이나 그림 속 요소를 "직접 인용(actualQuotes)"하여 사실에 근거해 작성하세요. (글씨가 흐려 판독이 어려우면 알아볼 수 있는 단어와 그림 맥락을 중심으로 관찰)
+[★ 가장 중요한 작성 지침: 상투적이고 정형화된 매크로 멘트 전면 금지 ★]
+1. 절대 금지 표현 (다음과 같은 뻔하고 추상적인 문장은 절대 쓰지 마세요):
+   - "도서의 핵심 줄거리를 바탕으로 자신의 생각과 느낌을 성실하게 표현했습니다" (절대 금지)
+   - "다음에는 왜 그렇게 생각했는지 구체적인 이유나 까닭을 한 문장 더 덧붙여 보면 더욱 좋습니다" (절대 금지)
+   - "아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 재미있었던 장면에 대해 열린 대화를 나누어 보세요" (절대 금지)
+   - "자신의 생각과 느낌을 주도적으로 표현했습니다" (절대 금지)
+2. 반드시 지켜야 할 작성 원칙:
+   - 『${bookTitle}』의 구체적인 장면, 인물(주인공, 주변 인물 등), 사건, 갈등, 혹은 도서의 핵심 주제를 직접 언급해야 합니다.
+   - 학생이 시트에 쓴 실제 손글씨 문장이나 단어, 그린 그림 속 요소(표정, 사물 등)를 구체적으로 짚어내어 칭찬하세요.
+   - 학부모가 읽었을 때 "아! 우리 아이가 『${bookTitle}』을 읽고 이 부분을 이렇게 느꼈구나! 지도교사가 정말 꼼꼼하게 관찰했구나!"라는 감동을 주는 전문적이고 따뜻한 문장이어야 합니다.
+   - 짧은 답변이나 맞춤법 오류를 지적하지 말고, 관찰된 강점 80%, 자연스러운 다음 성장 방향 20%의 황금 비율을 지키세요.
 
 [8대 핵심 Observation Criteria]
 - 자기표현: 자신의 생각·감정·선호·의견을 표현하는가
@@ -148,7 +168,7 @@ export default async function handler(req: any, res: any) {
 
 [반드시 아래 JSON 형식으로만 응답하세요 (마크다운 코드블록이나 백틱 없이 순수 JSON)]:
 {
-  "summary": "한 줄 요약 (예: '주인공의 감정을 자신의 일상 경험과 이어서 당당하게 표현했어요')",
+  "summary": "『${bookTitle}』의 구체적인 이야기 맥락 속에서 아이가 보인 독창적인 시선, 감정 이입, 인상 깊었던 선택, 또는 일상 경험과의 연결점을 콕 집어 관찰 요약한 2~3문장의 메인 강점 피드백 (뻔한 상투 문구 절대 금지)",
   "actualQuotes": [
     {
       "quote": "아이가 시트에 실제로 적은 문장 그대로 인용 (손글씨 판독)",
@@ -156,10 +176,10 @@ export default async function handler(req: any, res: any) {
       "comment": "실제 글에 근거한 구체적인 칭찬과 관찰 코멘트 (1~2문장)"
     }
   ],
-  "drawingObservation": "그림이 있는 경우만 작성 (예: '글에 다 담지 못한 인물의 표정을 그림의 눈매로 표현했어요'). 그림이 없으면 빈 문자열",
+  "drawingObservation": "그림이 있는 경우만 구체적으로 작성 (예: '『${bookTitle}』 속 인물의 표정과 상황을 시트 여백에 그림으로 생생하게 담아냈어요'). 그림이 없으면 빈 문자열",
   "languageHandwritingNote": "가독성 및 문장 표현의 특징에 대한 긍정적 관찰 1문장 (맞춤법 지적 금지)",
-  "nextStep": "실제 시트에서 관찰한 표현과 연결해 다음 독서에서 시도할 작은 활동 1가지, 구체적인 실행 예시, 스스로 확인할 점을 2~3문장으로 안내. 부족함 지적이나 막연한 격려 대신 연령에 맞는 실천 방법을 제시",
-  "parentGuide": "실제 표현에 근거한 칭찬 한마디, 부모가 그대로 사용할 수 있는 열린 질문 1~2개, 아이의 답에 이어 나눌 후속 대화를 2~3문장으로 안내. 답을 유도하거나 아이를 평가하지 않음",
+  "nextStep": "『${bookTitle}』의 주제와 연결하여, 다음 독서에서 시도해볼 구체적인 생각 놀이나 활동 미션을 친절하고 실천 가능하게 제시한 2~3문장 ('이유를 한 문장 더 써보세요' 같은 뻔한 조언 절대 금지)",
+  "parentGuide": "부모님이 식사 시간이나 잠들기 전 아이에게 바로 건넬 수 있는 『${bookTitle}』 맞춤형 실제 대화 질문 1~2개와 따뜻한 대화 팁을 담은 2~3문장 ('칭찬해 주시고 대화를 나누어 보세요' 같은 뻔한 조언 절대 금지)",
   "teacherCommentDraft": "지도교사 첨삭 코멘트 제안문 (학원 선생님이 확인 후 바로 쓸 수 있는 150~250자의 따뜻한 피드백)"
 }`;
 
@@ -199,12 +219,12 @@ export default async function handler(req: any, res: any) {
             'Content-Type': 'application/json',
             'x-goog-api-key': apiKey
           },
-          signal: AbortSignal.timeout(45000),
+          signal: AbortSignal.timeout(55000),
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
             generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 2048
+              temperature: 0.7,
+              maxOutputTokens: 2500
             }
           })
         });

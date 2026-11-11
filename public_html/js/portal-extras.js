@@ -3,7 +3,24 @@
   'use strict';
   let started = false;
   let preferences = { wishlist: [], interests: [] }, revision = 0, saving = false;
-  const notice = message => typeof toast === 'function' ? toast(message) : typeof showAcademyToast === 'function' ? showAcademyToast(message) : alert(message);
+  const notice = message => {
+    if (typeof message === 'string' && message.indexOf('다른 기기에서 로그인하여') !== -1) {
+      if (window.NanoPortal && typeof NanoPortal.handleConcurrentLogout === 'function') {
+        NanoPortal.handleConcurrentLogout(message);
+        return;
+      }
+      try {
+        sessionStorage.clear();
+        sessionStorage.setItem('nano_login_notice', message);
+        localStorage.removeItem('nano_auth_user');
+        localStorage.removeItem('nano_user');
+      } catch(e) {}
+      try { alert(message); } catch(e) {}
+      try { location.replace('index.html'); } catch(e) { location.href = 'index.html'; }
+      return;
+    }
+    return typeof toast === 'function' ? toast(message) : typeof showAcademyToast === 'function' ? showAcademyToast(message) : alert(message);
+  };
   function download(name, data) {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}));
     const a = document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);

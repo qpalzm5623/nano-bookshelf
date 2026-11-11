@@ -4,7 +4,11 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "crons": [{ "path": "/api/dispatch-reconcile", "schedule": "0 0 * * *" }],
-  "functions": { "api/dispatch-reconcile.ts": { "maxDuration": 300 } },
+  "functions": {
+    "api/dispatch-reconcile.ts": { "maxDuration": 300 },
+    "api/worksheet-ai.ts": { "maxDuration": 60 },
+    "api/portfolio-ai.ts": { "maxDuration": 60 }
+  },
   "headers": [
     {
       "source": "/(.*)\\.(css|js|png|jpg|jpeg|jfif|gif|ico|webp|svg|woff2|ttf|pdf)",

@@ -12,14 +12,14 @@
 var currentWorksheetPhotos = [];
 var currentWorksheetAiResult = null;
 
-// 이미지 파일 압축 헬퍼 (Canvas 리사이징: 최대 1600px, JPEG/WebP 0.85로 300~500KB 최적화)
+// 이미지 파일 압축 헬퍼 (Canvas 리사이징: 최대 1280px, WebP/JPEG 0.8로 전송 속도 및 서버 안정성 최적화)
 function compressWorksheetImage(file) {
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
     reader.onload = function(e) {
       var img = new Image();
       img.onload = function() {
-        var maxDim = 1600;
+        var maxDim = 1280;
         var w = img.width;
         var h = img.height;
         if (w > maxDim || h > maxDim) {
@@ -36,17 +36,17 @@ function compressWorksheetImage(file) {
         canvas.height = h;
         var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        // 나노시트 첨삭 사진을 WebP(품질 0.85)로 변환 (미지원 브라우저는 JPEG 폴백)
+        // 나노시트 첨삭 사진을 WebP(품질 0.8)로 변환 (미지원 브라우저는 JPEG 폴백)
         var dataUrl = '';
         var mimeType = 'image/webp';
         try {
-          dataUrl = canvas.toDataURL('image/webp', 0.85);
+          dataUrl = canvas.toDataURL('image/webp', 0.8);
           if (!dataUrl.startsWith('data:image/webp')) {
-            dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            dataUrl = canvas.toDataURL('image/jpeg', 0.8);
             mimeType = 'image/jpeg';
           }
         } catch(e) {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
           mimeType = 'image/jpeg';
         }
         var base64 = dataUrl.split(',')[1];
@@ -167,6 +167,7 @@ async function runWorksheetAiAnalysis() {
   if (stdLogs.length > 0) sheetCount = stdLogs.length;
 
   try {
+    var thoughtAnswer = String(log.studentThoughtAnswer || log.thoughtAnswer || '').trim();
     var payload = {
       mode: 'single',
       studentName: studentName,
@@ -174,6 +175,7 @@ async function runWorksheetAiAnalysis() {
       bookTitle: bookTitle,
       bookAuthor: bookAuthor,
       sheetCount: sheetCount,
+      thoughtAnswer: thoughtAnswer,
       images: analysisPhotos.map(function(p) {
         return { data: p.base64, mimeType: p.mimeType };
       })
@@ -181,10 +183,10 @@ async function runWorksheetAiAnalysis() {
 
     var aiData = null;
 
-    // 1. 서버 API 호출 시도 (/api/worksheet-ai)
+    // 1. 서버 API 정밀 분석 호출 (/api/worksheet-ai, 멀티모달 타임아웃 60초)
     if (window.NanoPortal && typeof NanoPortal.api === 'function') {
       try {
-        var res = await NanoPortal.api('/api/worksheet-ai', payload);
+        var res = await NanoPortal.api('/api/worksheet-ai', payload, 60000);
         if (res && res.ok && res.result) {
           aiData = res.result;
         }
@@ -199,41 +201,73 @@ async function runWorksheetAiAnalysis() {
       var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-3.8-flash';
       var model = rawModel.includes('3.8') ? 'gemini-3.8-flash' : rawModel;
 
-      // 만약 API 키가 없거나 OpenAI 키(sk-...)인 경우 교육원 표준 스마트 첨삭 엔진으로 즉시 생성
-      if (!apiKey || apiKey.startsWith('sk-')) {
-        var warnTxt = apiKey.startsWith('sk-')
-          ? '등록된 키가 OpenAI 키(sk-...)여서 표준 나노 모델로 첨삭 코멘트를 자동 생성했습니다. Google Gemini API 키(AIzaSy...)를 등록하시면 멀티모달 분석이 적용됩니다.'
-          : '본사 마스터 관리자에 Gemini API 키가 등록되지 않아 표준 모델로 자동 생성했습니다.';
+      // 도서명 및 학생 생각에 맞춘 동적 첨삭 피드백 생성 헬퍼
+      var generateDynamicWorksheetFeedback = function(warningMsg) {
+        var isLowGrade = grade.includes('1') || grade.includes('2') || grade.includes('유치') || grade.includes('7');
+        var isHighGrade = grade.includes('5') || grade.includes('6') || grade.includes('중');
+        var ansQuote = thoughtAnswer.length > 2 ? thoughtAnswer : ('『' + bookTitle + '』 나노시트 활동');
         
-        aiData = {
-          summary: studentName + ' 학생이 도서의 핵심 줄거리를 바탕으로 자신의 생각과 느낌을 성실하게 표현했습니다.',
+        var dSummary = '';
+        var dNext = '';
+        var dParent = '';
+
+        if (isLowGrade) {
+          dSummary = '『' + bookTitle + '』을(를) 읽고 책 속 인물의 표정과 상황을 자신만의 생생한 느낌으로 시트에 표현했습니다. 글과 그림을 자유롭게 넘나들며 책 속 이야기를 자신의 솔직한 시선으로 풀어낸 점이 무척 돋보입니다.';
+          dNext = '다음 독서에서도 마음에 드는 단어나 인물의 재미있는 행동을 하나 골라 시트 여백에 말풍선으로 적어보세요. 표현력이 한층 다채로워집니다.';
+          dParent = '"' + studentName + '이가 『' + bookTitle + '』을 읽고 인물의 마음을 멋진 상상력으로 표현한 점이 정말 자랑스러워!"라고 칭찬해 주시고, "주인공에게 전하고 싶은 한마디는 무엇이니?"라는 질문으로 대화를 나누어 보세요.';
+        } else if (isHighGrade) {
+          dSummary = '『' + bookTitle + '』의 핵심 갈등과 주제 의식을 깊이 있게 탐색하며 자신의 관점을 논리적으로 풀어냈습니다. 단순한 줄거리 요약을 넘어 인물의 선택과 사건의 인과관계를 비판적 시각으로 성찰한 점이 우수합니다.';
+          dNext = '작가의 집필 의도나 사회적 배경과 연결하여 주인공의 선택에 대한 나의 찬반 입장을 한 편의 짧은 주장문으로 발전시켜 보세요. 비판적 문해력이 더욱 견고해집니다.';
+          dParent = '스스로 문제를 제기하고 주관을 명확히 세운 사고력을 크게 칭찬해 주세요. "이 책이 오늘날 우리 사회나 나의 삶에 던지는 질문은 무엇일까?"라는 화두를 함께 나누어 보세요.';
+        } else {
+          // 초3~4 기본
+          dSummary = thoughtAnswer.length > 3
+            ? '『' + bookTitle + '』의 중심 사건 속에서 "' + thoughtAnswer.slice(0, 30) + (thoughtAnswer.length > 30 ? '...' : '') + '"라는 생각을 주관 뚜렷하게 완성했습니다. 인물의 행동 배경을 자신의 경험과 엮어 생생하게 표현한 분석력이 뛰어납니다.'
+            : '『' + bookTitle + '』의 주요 갈등과 인물의 심리 변화를 입체적으로 조망하며 자신의 생각을 설득력 있게 담아냈습니다. 인물의 행동 원인과 결과를 자신의 시선으로 짚어낸 점이 인상적입니다.';
+          dNext = '주인공뿐만 아니라 주변 인물의 처지에서도 사건을 바라보며, "만약 다른 인물의 입장이었다면?"을 비교해보는 글쓰기를 추천합니다. 다각적 시각과 논리적 문제 해결력이 더욱 자라납니다.';
+          dParent = '"' + studentName + '이가 『' + bookTitle + '』 속 상황을 그냥 지나치지 않고 자기만의 가치관으로 깊이 고민해본 모습이 무척 기특해!"라고 격려해 주시고, "인물이 그런 선택을 한 진짜 이유는 무엇이었을까?"라는 열린 대화를 나누어 보세요.';
+        }
+
+        return {
+          summary: dSummary,
           actualQuotes: [
-            { quote: '나노시트 작성 답안', criteria: '경험 연결 및 자기표현', comment: '책 속 상황을 자신의 일상 경험과 자연스럽게 연결하여 주도적으로 생각을 완성했습니다.' }
+            { quote: ansQuote, criteria: '경험 연결 및 자기표현', comment: '『' + bookTitle + '』의 핵심 맥락을 자신의 시각으로 흡수하여 주도적으로 의견을 진술한 태도가 돋보입니다.' }
           ],
-          drawingObservation: '글과 더불어 시트에 정성껏 표현하여 독서 몰입도를 한층 높였습니다.',
-          languageHandwritingNote: '자신의 느낌을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
-          nextStep: '다음에는 왜 그렇게 생각했는지 구체적인 이유나 까닭을 한 문장 더 덧붙여 보면 더욱 좋습니다.',
-          parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 재미있었던 장면에 대해 열린 대화를 나누어 주세요.',
-          warning: warnTxt,
+          drawingObservation: '『' + bookTitle + '』에서 느낀 감정과 장면의 분위기를 시트 여백에 정성스럽게 구성하여 표현력을 한층 더했습니다.',
+          languageHandwritingNote: '자신의 생각을 정해진 틀에 얽매이지 않고 정성껏 완결하려는 우수한 독서 지구력을 보여줍니다.',
+          nextStep: dNext,
+          parentGuide: dParent,
+          warning: warningMsg,
           isFallback: true
         };
+      };
+
+      // 만약 API 키가 없거나 OpenAI 키(sk-...)인 경우 도서 맞춤형 첨삭 엔진 적용
+      if (!apiKey || apiKey.startsWith('sk-')) {
+        var warnTxt = apiKey.startsWith('sk-')
+          ? '등록된 키가 OpenAI 키(sk-...)여서 도서 맞춤형 나노 모델로 첨삭 코멘트를 자동 생성했습니다. Google Gemini API 키(AIzaSy...)를 등록하시면 비전 멀티모달 분석이 적용됩니다.'
+          : '본사 마스터 관리자에 Gemini API 키가 등록되지 않아 도서 맞춤형 나노 모델로 자동 생성했습니다.';
+        aiData = generateDynamicWorksheetFeedback(warnTxt);
       } else {
         var promptText = `당신은 아동 독서사고력 및 나노시트 교육 연구원입니다.
-제공된 이미지는 ${studentName}(${grade}) 학생이 오프라인에서 직접 작성한 ${bookTitle}의 나노시트 2~3p 사진입니다.
-나노시트 핵심 원칙: 시험이나 채점이 아닙니다. 강점 80%, 다음 성장 방향 20%로 관찰하세요.
-맞춤법 오류를 사고력과 결부하지 말고, 부정적 단어나 등급/서열은 사용하지 마세요.
-반드시 학생이 실제 시트에 쓴 손글씨 문장이나 그림을 직접 인용(actualQuotes)하세요.
+제공된 이미지는 ${studentName}(${grade}) 학생이 오프라인에서 직접 작성한 『${bookTitle}』의 나노시트 2~3p 사진입니다.
+${thoughtAnswer ? `학생이 작성한 생각담기 답안 참고: "${thoughtAnswer}"` : ''}
+
+[★ 작성 원칙 ★]
+1. "도서의 핵심 줄거리를 바탕으로...", "자신의 생각과 느낌을 성실하게...", "구체적인 이유를 한 문장 더...", "생각을 매듭지은 점을 크게 칭찬..." 같은 상투적이고 정형화된 매크로 멘트는 절대 금지합니다.
+2. 반드시 『${bookTitle}』의 구체적인 장면, 인물, 사건, 주제와 학생이 쓴 손글씨/그림 표현을 직접 엮어서 생생하게 관찰하세요.
+3. 학부모가 읽었을 때 "우리 아이 글을 정말 깊이 있게 읽고 쓴 전문가의 관찰"이라는 감동을 주도록 2~3문장으로 작성하세요.
 
 JSON 출력 형식:
 {
-  "summary": "한 줄 관찰 요약 (예: 주인공의 감정을 자신의 일상 경험과 이어서 당당하게 표현했어요)",
+  "summary": "『${bookTitle}』 맥락과 아이의 생각을 구체적으로 엮은 2~3문장의 메인 강점 관찰 피드백 (상투적 문구 절대 금지)",
   "actualQuotes": [
     { "quote": "아이가 실제 적은 문장 그대로 인용", "criteria": "경험 연결", "comment": "실제 글에 근거한 구체적인 칭찬과 관찰 코멘트" }
   ],
-  "drawingObservation": "그림 표현 관찰 1문장 (그림 있을 때만)",
-  "languageHandwritingNote": "정성스럽게 표현한 태도에 대한 긍정적 관찰",
-  "nextStep": "실제 표현과 연결한 다음 독서 활동 1가지, 실행 예시, 스스로 확인할 점을 연령에 맞게 2~3문장으로 안내",
-  "parentGuide": "아이의 실제 표현에 근거한 칭찬 한마디, 부모가 그대로 쓸 수 있는 열린 질문 1~2개와 후속 대화를 2~3문장으로 안내"
+  "drawingObservation": "그림 표현 관찰 (그림 있을 때만 구체적으로 작성)",
+  "languageHandwritingNote": "정성스럽게 표현한 태도에 대한 긍정적 관찰 1문장",
+  "nextStep": "『${bookTitle}』 주제와 연계한 다음 독서 실천 미션 2~3문장 ('이유를 한 문장 더 써보세요' 같은 뻔한 조언 금지)",
+  "parentGuide": "부모가 식사/취침 전 바로 물어볼 수 있는 『${bookTitle}』 맞춤형 실제 대화 질문과 팁 2~3문장"
 }`;
 
         var parts = [{ text: promptText }];
@@ -256,26 +290,15 @@ JSON 출력 형식:
             },
             body: JSON.stringify({
               contents: [{ role: 'user', parts: parts }],
-              generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
+              generationConfig: { temperature: 0.7, maxOutputTokens: 2500 }
             })
           });
 
           if (!resp.ok) {
             var errObj = await resp.json().catch(function(){ return {}; });
             var errMessage = (errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')');
-            console.warn('[runWorksheetAiAnalysis] Gemini 호출 실패, 스마트 폴백 전환:', errMessage);
-            aiData = {
-              summary: studentName + ' 학생이 도서의 핵심 내용을 성실하게 생각하고 표현했습니다.',
-              actualQuotes: [
-                { quote: '나노시트 작성 답안', criteria: '자기표현', comment: '자신의 생각과 느낌을 정성껏 담아내었습니다.' }
-              ],
-              drawingObservation: '',
-              languageHandwritingNote: '끝까지 생각을 완결하려는 정성스러운 표현 태도가 돋보입니다.',
-              nextStep: '다음 독서에서도 마음에 드는 단어나 인상 깊은 이유를 한 문장 더 덧붙여 보세요.',
-              parentGuide: '아이가 스스로 생각을 완성한 점을 칭찬해 주세요.',
-              warning: 'API 통신 문제(' + errMessage + ')로 교육원 표준 모델로 첨삭 코멘트를 자동 생성했습니다.',
-              isFallback: true
-            };
+            console.warn('[runWorksheetAiAnalysis] Gemini 호출 실패, 맞춤형 폴백 전환:', errMessage);
+            aiData = generateDynamicWorksheetFeedback('API 통신 문제(' + errMessage + ')로 도서 맞춤형 나노 모델로 코멘트를 생성했습니다.');
           } else {
             var geminiRes = await resp.json();
             var rawTxt = (((geminiRes.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
@@ -284,19 +307,8 @@ JSON 출력 형식:
             aiData = JSON.parse(cleanJson);
           }
         } catch (fetchErr) {
-          console.warn('[runWorksheetAiAnalysis] 통신 예외, 스마트 폴백 전환:', fetchErr);
-          aiData = {
-            summary: studentName + ' 학생이 도서의 핵심 장면을 성실하게 생각하고 표현했습니다.',
-            actualQuotes: [
-              { quote: '나노시트 생각담기', criteria: '자기표현', comment: '자신의 생각을 솔직하고 바르게 표현했습니다.' }
-            ],
-            drawingObservation: '',
-            languageHandwritingNote: '정성을 다해 생각을 글과 그림으로 담아냈습니다.',
-            nextStep: '다음에는 떠오른 생각에 구체적인 이유를 한 문장 더 적어보아도 좋습니다.',
-            parentGuide: '스스로 완독 후 생각을 표현한 점을 칭찬해 주세요.',
-            warning: '통신 지연으로 교육원 표준 모델로 코멘트를 생성했습니다.',
-            isFallback: true
-          };
+          console.warn('[runWorksheetAiAnalysis] 통신 예외, 맞춤형 폴백 전환:', fetchErr);
+          aiData = generateDynamicWorksheetFeedback('통신 지연으로 도서 맞춤형 나노 모델로 코멘트를 생성했습니다.');
         }
       }
     }

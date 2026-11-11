@@ -1337,19 +1337,24 @@ function openCorrectionModal(logId) {
     var existingComment = String(log.comment || '').trim();
     var studentAns = String(log.studentThoughtAnswer || log.thoughtAnswer || log.sheetAnswer || '').trim();
     if (!currentWorksheetAiResult || typeof currentWorksheetAiResult !== 'object') {
+      var defaultSummary = existingComment || (studentAns.length > 3
+        ? ('『' + bName + '』의 핵심 사건을 접하고 "' + studentAns.slice(0, 30) + (studentAns.length > 30 ? '...' : '') + '"라는 생각을 솔직하게 풀어냈습니다. 책 속 상황을 자신의 일상 경험과 자연스럽게 연결 지어 주도적으로 생각을 완성했습니다.')
+        : ('『' + bName + '』을(를) 읽고 인물의 심리와 이야기 전개를 자신만의 시선으로 생생하게 시트에 담아냈습니다. 책의 중심 메시지를 놓치지 않고 자신의 느낌을 솔직하게 풀어낸 표현력이 돋보입니다.'));
+      var defaultNext = '이번 활동처럼 마음에 남는 장면을 발견했을 때, "만약 나라면 다른 결정을 내렸을까?"라는 짧은 메모를 덧붙여 보세요. 인물의 입장과 나의 입장을 비교해보며 깊이 있는 사고 습관이 길러집니다.';
+      var defaultParent = '"' + sName + '이가 『' + bName + '』을 읽고 자기만의 가치관으로 깊이 고민해본 모습이 무척 기특해!"라고 칭찬해 주시고, "인물이 그런 선택을 한 진짜 이유는 무엇이었을까?"라는 질문으로 대화를 나누어 보세요.';
       currentWorksheetAiResult = {
-        summary: existingComment || (sName + ' 학생이 『' + bName + '』을(를) 읽고 자신의 생각과 느낌을 주도적으로 표현했습니다.'),
+        summary: defaultSummary,
         actualQuotes: [
           {
-            quote: studentAns || '나노시트 생각 담기',
+            quote: studentAns || ('『' + bName + '』 나노시트 생각 담기'),
             criteria: '경험 연결 및 자기표현',
-            comment: existingComment || '책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.'
+            comment: existingComment || ('책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.')
           }
         ],
-        drawingObservation: '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.',
+        drawingObservation: '『' + bName + '』에서 느낀 감정과 장면의 분위기를 시트 여백에 정성스럽게 구성하여 표현력을 한층 더했습니다.',
         languageHandwritingNote: '자신의 느낌과 생각을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
-        nextStep: '다음에는 왜 그렇게 생각했는지 구체적인 이유나 일상 경험을 한 문장 더 덧붙여 보면 더욱 좋습니다.',
-        parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 인상 깊었던 장면에 대해 열린 대화를 나누어 보세요.'
+        nextStep: defaultNext,
+        parentGuide: defaultParent
       };
     } else {
       if (currentWorksheetAiResult.drawingObservation === undefined) {

@@ -150,6 +150,11 @@
       width: 100%;
       max-width: 440px;
       margin: auto 0;
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px 16px;
     }
 
     /* 카드 */
@@ -400,7 +405,42 @@
       color: #166534;
     }
 
-    /* 하단 푸터 및 사업자·약관 안내 (화면 최하단 전폭 바 형태) */
+    /* 로그인 카드 내 약관·개인정보처리방침 링크 (로그인 버튼 바로 아래) */
+    .login-legal-links {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .login-legal-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .login-legal-links a:hover {
+      color: var(--primary-brown);
+      text-decoration: underline;
+    }
+    .login-legal-links .privacy-link {
+      color: #0f766e;
+      font-weight: 700;
+    }
+    .login-legal-links .privacy-link:hover {
+      color: #047857;
+    }
+    .login-legal-links .sep {
+      color: #d8cebf;
+      font-size: 11px;
+    }
+
+    /* 하단 푸터 및 사업자 안내 (화면 최하단 바닥 밀착 전폭 바 형태) */
     .login-footer {
       position: relative;
       z-index: 1;
@@ -409,9 +449,10 @@
       font-size: 11.5px;
       color: var(--text-muted);
       margin-top: auto;
-      padding: 18px 24px 22px;
-      background: rgba(255, 255, 255, 0.78);
-      border-top: 1px solid rgba(229, 222, 211, 0.9);
+      margin-bottom: 0;
+      padding: 16px 24px 20px;
+      background: rgba(255, 255, 255, 0.88);
+      border-top: 1px solid rgba(229, 222, 211, 0.95);
       border-left: 0;
       border-right: 0;
       border-bottom: 0;
@@ -739,6 +780,17 @@
           <i class="fa-solid fa-right-to-bracket"></i>
           <span>로그인</span>
         </button>
+
+        <!-- 약관 및 개인정보처리방침 (로그인 버튼 바로 아래 배치) -->
+        <div class="login-legal-links">
+          <a href="#terms" onclick="openNanoLegalModal('terms'); return false;">
+            <i class="fa-solid fa-file-contract"></i> 이용약관
+          </a>
+          <span class="sep">|</span>
+          <a href="#privacy" class="privacy-link" onclick="openNanoLegalModal('privacy'); return false;">
+            <i class="fa-solid fa-user-shield"></i> 개인정보처리방침
+          </a>
+        </div>
       </form>
 
       <!-- 퀵 데모 테스트 계정 선택 바 -->
@@ -792,18 +844,9 @@
     </div>
   </main>
 
-  <!-- 하단 약관·개인정보처리방침 및 사업자 정보 푸터 (화면 최하단 전폭 배치) -->
-  <footer class="login-footer" aria-label="사업자 정보 및 약관 안내">
+  <!-- 하단 사업자 정보 푸터 (화면 최하단 바닥 밀착 배치) -->
+  <footer class="login-footer" aria-label="사업자 정보 안내">
     <div class="login-footer-inner">
-      <div class="legal-links-bar">
-        <a href="#terms" class="legal-link-btn" onclick="openNanoLegalModal('terms'); return false;">
-          <i class="fa-solid fa-file-contract"></i> 이용약관
-        </a>
-        <a href="#privacy" class="legal-link-btn privacy-highlight" onclick="openNanoLegalModal('privacy'); return false;">
-          <i class="fa-solid fa-user-shield"></i> 개인정보처리방침
-        </a>
-      </div>
-
       <div class="biz-info-lines">
         <div>
           <strong>작작랩 주식회사</strong>

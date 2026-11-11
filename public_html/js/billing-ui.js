@@ -395,12 +395,23 @@
       if (master()) { dispatchLogs=s.items; filterDispatchList(); }
       else { academyDispatchLogs=s.items; renderAcademyDispatchTable(); }
       const prefix=master()?'statAligo':'academyAligo';
-      text(prefix+'Cash',master() ? s.estimatedCash==null?'조회 불가':money(s.estimatedCash)+'원 (환산)' : money(s.balance)+'원');
-      text(prefix+'CashSub',master() ? s.remainingCount==null?'잔여 건수 조회 불가':money(s.remainingCount)+'건 · 건당 6.5원 환산' : money(s.walletCount)+'건 가능 · 건당 8.5원');
+      if (master()) {
+        text(prefix+'Cash', s.estimatedCash==null?'조회 불가':money(s.estimatedCash)+'원 (환산)');
+      } else {
+        numUnit(prefix+'Cash', money(s.balance), '원');
+      }
+      text(prefix+'CashSub',master() ? (s.remainingCount==null?'잔여 건수 조회 불가':money(s.remainingCount)+'건 · 건당 6.5원 환산') : (money(s.walletCount)+'건 가능 · 건당 8.5원'));
       numUnit(prefix+'TotalSent',money(s.monthly),'건'); text(prefix+'TotalSentSub','전체 누적 '+money(s.total)+'건');
       numUnit(prefix+'SuccessRate',(s.total?(s.success/s.total*100).toFixed(1):'0.0'),'%');
-      text(prefix+'SuccessRateSub','성공/문자 '+s.success+'건 · 실패 '+s.failed+'건 · 확인 중 '+s.pending+'건');
-      text(prefix+'Connection',s.connected?'정상':'연결 확인 필요');
+      text(prefix+'SuccessRateSub','성공 '+s.success+'건 · 실패 '+s.failed+'건 · 전송 중 '+s.pending+'건');
+      const connEl = document.getElementById(prefix+'Connection');
+      if (connEl) {
+        if (s.connected) {
+          connEl.innerHTML = '<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 13.5px; padding: 5px 12px; border-radius: 6px;"><i class="fa-solid fa-circle-check mr-1"></i>정상 연결</span>';
+        } else {
+          connEl.innerHTML = '<span class="badge-soft badge-soft-danger font-weight-bold" style="font-size: 13.5px; padding: 5px 12px; border-radius: 6px;"><i class="fa-solid fa-triangle-exclamation mr-1"></i>연결 확인 필요</span>';
+        }
+      }
       if (master()) text('statAligoConnectionSub',s.connected?'알리고 API 정상 연결됨':(s.aligoMessage||'알리고 API 응답 기준'));
     } catch(e) { text(master()?'statAligoConnection':'academyAligoConnection','조회 실패'); toast(e.message); }
     finally { state.dispatchBusy=false; }

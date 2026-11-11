@@ -2376,6 +2376,33 @@
       font-size: 26px;
       font-weight: 900;
       color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    .stat-label,
+    .stat-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stat-sub {
+      font-size: 11.5px;
+      color: var(--text-soft);
+      margin-top: 6px;
+    }
+
+    .stat-icon-bg {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      font-size: 38px;
+      color: rgba(60, 50, 40, 0.05);
+      pointer-events: none;
     }
 
     /* 원생 링크 */
@@ -4489,20 +4516,20 @@
       <!-- MENU 6: 카톡 발송 내역 (알리고 연동) -->
       <!-- ============================================================== -->
       <div id="view-dispatch" style="display: none;">
-        <div class="workspace-header">
+        <div class="workspace-header mb-3">
           <div>
             <div class="workspace-title">
-              <i class="fa-solid fa-comment-dots"></i>카톡 발송 내역 (알리고)
+              <i class="fa-solid fa-comment-dots mr-2" style="color: var(--primary);"></i>카톡 발송 내역 <small class="text-muted font-weight-normal" style="font-size: 14px;">(알리고)</small>
             </div>
             <div class="workspace-subtitle">
               학습 리포트, 포트폴리오, 문해력 진단 결과표의 학부모 알림톡 및 문자 발송 현황을 실시간 확인합니다.
             </div>
           </div>
-          <div class="d-flex align-items-center" style="gap: 8px;">
-            <button type="button" class="btn btn-beige-secondary" onclick="NanoBilling.dispatch(true)">
+          <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+            <button type="button" class="btn btn-sm btn-beige-secondary font-weight-bold" onclick="NanoBilling.dispatch(true)" style="height: 38px; padding: 0 14px; border-radius: 8px; font-size: 12.5px;">
               <i class="fa-solid fa-rotate mr-1"></i>전송 결과 새로고침
             </button>
-            <button type="button" class="btn btn-beige-primary" onclick="showAcademyToast('알리고 알림톡 즉시 발송 창이 열립니다.')">
+            <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" onclick="showAcademyToast('알리고 알림톡 즉시 발송 창이 열립니다.')" style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 12.5px; box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2);">
               <i class="fa-solid fa-paper-plane mr-1"></i>알림톡 즉시 발송
             </button>
           </div>
@@ -4516,8 +4543,8 @@
                 <span>알리고 잔여 캐시</span>
                 <i class="fa-solid fa-coins text-warning"></i>
               </div>
-              <div class="stat-num" id="academyAligoCash" style="color: #d97706;">조회 대기</div>
-              <div class="stat-sub" id="academyAligoCashSub">내 학원 충전 잔액</div>
+              <div class="stat-num" id="academyAligoCash" style="color: #d97706;">0<span style="font-size: 15px; font-weight: 600; margin-left: 2px;">원</span></div>
+              <div class="stat-sub text-muted" id="academyAligoCashSub">0건 가능 · 건당 8.5원</div>
               <i class="fa-solid fa-wallet stat-icon-bg"></i>
             </div>
           </div>
@@ -4527,8 +4554,8 @@
                 <span>당월 총 발송 건수</span>
                 <i class="fa-solid fa-paper-plane text-muted"></i>
               </div>
-              <div class="stat-num" id="academyAligoTotalSent">조회 대기</div>
-              <div class="stat-sub text-success font-weight-bold" id="academyAligoTotalSentSub">전체 누적 발송 집계</div>
+              <div class="stat-num" id="academyAligoTotalSent">0<span style="font-size: 15px; font-weight: 600; margin-left: 2px;">건</span></div>
+              <div class="stat-sub text-muted" id="academyAligoTotalSentSub">전체 누적 0건</div>
               <i class="fa-solid fa-comments stat-icon-bg"></i>
             </div>
           </div>
@@ -4538,8 +4565,8 @@
                 <span>전송 성공률</span>
                 <i class="fa-solid fa-shield-check text-success"></i>
               </div>
-              <div class="stat-num" id="academyAligoSuccessRate" style="color: var(--success);">조회 대기</div>
-              <div class="stat-sub text-muted" id="academyAligoSuccessRateSub">성공 / 실패 건수 집계</div>
+              <div class="stat-num" id="academyAligoSuccessRate" style="color: var(--success);">0.0<span style="font-size: 15px; font-weight: 600; margin-left: 2px;">%</span></div>
+              <div class="stat-sub text-muted" id="academyAligoSuccessRateSub">성공 0건 · 실패 0건 · 전송 중 0건</div>
               <i class="fa-solid fa-circle-check stat-icon-bg"></i>
             </div>
           </div>
@@ -4549,7 +4576,11 @@
                 <span>알리고 연동 상태</span>
                 <i class="fa-solid fa-server text-success"></i>
               </div>
-              <div class="stat-num" id="academyAligoConnection" style="font-size: 18px; margin-top: 6px;">조회 대기</div>
+              <div class="stat-num d-flex align-items-center" id="academyAligoConnection" style="height: 38px;">
+                <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 13.5px; padding: 5px 12px; border-radius: 6px;">
+                  <i class="fa-solid fa-circle-check mr-1"></i>정상 연결
+                </span>
+              </div>
               <div class="stat-sub text-muted" id="academyAligoConnectionSub">알리고 API 응답 기준</div>
               <i class="fa-solid fa-network-wired stat-icon-bg"></i>
             </div>
@@ -4559,18 +4590,18 @@
         <!-- 검색 및 필터 바 (학습 관리·포트폴리오 메뉴와 동일한 simple-card + portal-search-toolbar 디자인 결) -->
         <div class="simple-card p-3 mb-4">
           <div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap: 12px;" role="search" aria-label="카카오톡 발송 내역 검색">
-            <div>
-              <label class="font-weight-bold text-muted mb-1 d-block" style="font-size: 11.5px;">템플릿 구분</label>
-              <select id="academyDispatchTemplate" class="select-beige" aria-label="템플릿" onchange="renderAcademyDispatchTable()" style="min-width: 140px; height: 38px;">
+            <div style="min-width: 140px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">템플릿 구분</label>
+              <select id="academyDispatchTemplate" class="form-control" aria-label="템플릿" onchange="renderAcademyDispatchTable()" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                 <option value="ALL">전체 템플릿</option>
                 <option value="QUIZ">학습 리포트</option>
                 <option value="PORTFOLIO">포트폴리오</option>
                 <option value="LITERACY">문해력 테스트</option>
               </select>
             </div>
-            <div>
-              <label class="font-weight-bold text-muted mb-1 d-block" style="font-size: 11.5px;">발송 결과</label>
-              <select id="academyDispatchStatus" class="select-beige" aria-label="발송 결과" onchange="renderAcademyDispatchTable()" style="min-width: 140px; height: 38px;">
+            <div style="min-width: 140px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">발송 결과</label>
+              <select id="academyDispatchStatus" class="form-control" aria-label="발송 결과" onchange="renderAcademyDispatchTable()" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                 <option value="ALL">전체 결과</option>
                 <option value="SUCCESS">발송 성공</option>
                 <option value="FAILED">발송 실패</option>
@@ -4579,26 +4610,26 @@
                 <option value="UNKNOWN">결과 확인 중</option>
               </select>
             </div>
-            <div>
-              <label class="font-weight-bold text-muted mb-1 d-block" style="font-size: 11.5px;">발송 일자</label>
+            <div style="width: 295px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">발송 일자</label>
               <div class="d-flex align-items-center" style="gap: 6px;">
-                <input id="academyDispatchFrom" type="date" class="select-beige" aria-label="발송 시작일" onchange="renderAcademyDispatchTable()" style="width: 142px; height: 38px;">
-                <span class="text-muted font-weight-bold">~</span>
-                <input id="academyDispatchTo" type="date" class="select-beige" aria-label="발송 종료일" onchange="renderAcademyDispatchTable()" style="width: 142px; height: 38px;">
+                <input id="academyDispatchFrom" type="date" class="form-control" aria-label="발송 시작일" onchange="renderAcademyDispatchTable()" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; flex: 1;">
+                <span class="text-muted font-weight-bold" style="font-size: 12.5px;">~</span>
+                <input id="academyDispatchTo" type="date" class="form-control" aria-label="발송 종료일" onchange="renderAcademyDispatchTable()" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; flex: 1;">
               </div>
             </div>
-            <div style="flex: 1 1 220px; min-width: 200px;">
-              <label class="font-weight-bold text-muted mb-1 d-block" style="font-size: 11.5px;">수신자 / 번호 / 학급 검색</label>
+            <div style="flex: 1 1 240px; min-width: 220px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">수신자 / 번호 / 학급 검색</label>
               <div class="position-relative">
-                <i class="fa-solid fa-magnifying-glass text-muted" style="position: absolute; left: 12px; top: 11px; font-size: 13px; pointer-events: none;"></i>
-                <input id="academyDispatchSearch" type="search" class="form-control" placeholder="수신자명, 수신 번호, 학급 검색..." aria-label="수신자, 수신 번호, 학급" oninput="renderAcademyDispatchTable()" style="padding-left: 34px; height: 38px; border-radius: 8px; font-size: 13px;">
+                <i class="fa-solid fa-magnifying-glass text-muted" style="position: absolute; left: 12px; top: 12px; font-size: 13px; pointer-events: none;"></i>
+                <input id="academyDispatchSearch" type="search" class="form-control" placeholder="수신자명, 수신 번호, 학급 검색..." aria-label="수신자, 수신 번호, 학급" oninput="renderAcademyDispatchTable()" style="padding-left: 34px; height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
               </div>
             </div>
             <div class="d-flex align-items-center" style="gap: 6px;">
-              <button type="button" class="btn btn-beige-primary" onclick="renderAcademyDispatchTable()" style="height: 38px; padding: 0 16px;">
+              <button type="button" class="btn btn-beige-primary font-weight-bold" onclick="renderAcademyDispatchTable()" style="height: 38px; padding: 0 16px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
                 <i class="fa-solid fa-magnifying-glass mr-1"></i>검색
               </button>
-              <button type="button" class="btn btn-beige-secondary" onclick="resetAcademyDispatchFilters()" style="height: 38px; padding: 0 14px;">
+              <button type="button" class="btn btn-beige-secondary font-weight-bold" onclick="resetAcademyDispatchFilters()" style="height: 38px; padding: 0 14px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
                 <i class="fa-solid fa-rotate-left mr-1"></i>초기화
               </button>
             </div>
@@ -4606,23 +4637,31 @@
         </div>
 
         <div class="simple-card">
-          <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
-            <h6 class="font-weight-bold mb-0" style="color: var(--text-main);">
-              <i class="fa-solid fa-paper-plane mr-2 text-muted"></i>원내 알림톡/문자 발송 로그 (<span id="academyDispatchCount">0</span>건)
-            </h6>
-            <small class="text-muted" style="font-size: 12px;">* 발송 시 건당 8.5원이 차감되며, 최종 발송 실패 건은 자동 환급됩니다. (문자 대체 발송 성공 건은 차감 유지)</small>
+          <!-- 도서 및 회원 관리와 일치하는 상단 통계 헤더 바 -->
+          <div class="d-flex justify-content-between align-items-center p-3 border-bottom flex-wrap gap-2" style="background: var(--bg-surface);">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">
+                <i class="fa-solid fa-paper-plane mr-1.5 text-primary"></i>발송 내역 로그
+              </span>
+              <span class="badge-soft badge-soft-neutral" style="font-size: 11.5px; font-weight: 700;">
+                총 <strong id="academyDispatchCount" class="text-dark">0</strong>건
+              </span>
+            </div>
+            <div class="text-muted" style="font-size: 11.5px;">
+              * 발송 시 건당 8.5원이 차감되며, 최종 발송 실패 건은 자동 환급됩니다. (문자 대체 발송 성공 건은 차감 유지)
+            </div>
           </div>
           <div class="table-responsive"><table class="simple-table">
             <thead>
               <tr>
-                <th style="width: 60px; text-align: center;">번호</th>
-                <th style="text-align: center;">발송 일시</th>
-                <th style="text-align: center;">학급</th>
-                <th style="text-align: center;">템플릿</th>
-                <th style="text-align: left;">수신자 (학생/학부모)</th>
-                <th style="text-align: center;">수신 번호</th>
-                <th style="text-align: center;">발송 결과</th>
-                <th style="width: 130px; text-align: center;">관리</th>
+                <th style="width: 60px; text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">번호</th>
+                <th style="text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">발송 일시</th>
+                <th style="text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">학급</th>
+                <th style="text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">템플릿</th>
+                <th style="text-align: left; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">수신자 (학생/학부모)</th>
+                <th style="text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">수신 번호</th>
+                <th style="text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">발송 결과</th>
+                <th style="width: 130px; text-align: center; background: #fbf9f5; font-size: 12px; font-weight: 700; color: var(--text-muted); border-bottom: 1.5px solid var(--border-medium); padding: 11px 12px;">관리</th>
               </tr>
             </thead>
             <tbody id="academyDispatchTableBody">
@@ -4630,8 +4669,8 @@
             </tbody>
           </table></div>
           <!-- 알림톡 발송 목록 하단 여백 및 상태 바 -->
-          <div class="px-4 py-3 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: #ffffff;">
-            <div class="text-muted" style="font-size: 12.5px; font-weight: 600; color: #64748b;">
+          <div class="px-4 py-2.5 border-top d-flex justify-content-between align-items-center flex-wrap" style="background: var(--bg-surface);">
+            <div class="text-muted font-weight-600" style="font-size: 11.5px;">
               * 알림톡 및 문자 발송 로그는 최근 90일간 보관되며 실시간 전송 결과가 반영됩니다.
             </div>
           </div>
