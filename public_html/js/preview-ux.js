@@ -323,10 +323,37 @@ document.addEventListener('DOMContentLoaded', function () {
 // [전역 표준] 모든 연락처 섹션 하이픈 자동 포맷팅 유틸리티 & 리스너
 // ==============================================================
 (function () {
+  // 실시간 입력(input) 전용: 입력 중인 짧은 숫자(1~6자리)를 '-'로 덮어쓰지 않고 자연스럽게 하이픈 연결
+  function formatPhoneLiveInput(rawVal) {
+    var clean = String(rawVal == null ? '' : rawVal).replace(/[^0-9]/g, '');
+    if (!clean) return '';
+
+    // 1. 서울 지역번호 (02)
+    if (clean.startsWith('02')) {
+      if (clean.length <= 2) return clean;
+      if (clean.length <= 5) return clean.slice(0, 2) + '-' + clean.slice(2);
+      if (clean.length <= 9) return clean.slice(0, 2) + '-' + clean.slice(2, 5) + '-' + clean.slice(5);
+      return clean.slice(0, 2) + '-' + clean.slice(2, 6) + '-' + clean.slice(6, 10);
+    }
+
+    // 2. 전국 대표번호 (1544, 1588, 1600 등 8자리)
+    if (/^(15|16|18)\d{2}/.test(clean)) {
+      if (clean.length <= 4) return clean;
+      return clean.slice(0, 4) + '-' + clean.slice(4, 8);
+    }
+
+    // 3. 휴대폰(010 등) 및 일반 지역번호(031, 070 등)
+    if (clean.length <= 3) return clean;
+    if (clean.length <= 6) return clean.slice(0, 3) + '-' + clean.slice(3);
+    if (clean.length <= 10) return clean.slice(0, 3) + '-' + clean.slice(3, 6) + '-' + clean.slice(6);
+    return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7, 11);
+  }
+
+  // 조회/표시 및 input 겸용 전화번호 포맷터
   function formatPhoneNumber(val) {
     if (val == null) return '-';
     if (typeof val === 'object' && val !== null && 'value' in val) {
-      val.value = formatPhoneNumber(val.value);
+      val.value = formatPhoneLiveInput(val.value);
       return val.value;
     }
     var str = String(val).trim();
@@ -336,39 +363,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (/^\d{2,4}-\d{3,4}-\d{4}$/.test(str)) return str;
 
     var clean = str.replace(/[^0-9]/g, '');
-    if (!clean) return str;
+    if (!clean) return '-';
 
-    // 1. 서울 지역번호 02
-    if (clean.startsWith('02')) {
-      if (clean.length === 9) {
-        return clean.slice(0, 2) + '-' + clean.slice(2, 5) + '-' + clean.slice(5);
-      } else if (clean.length === 10) {
-        return clean.slice(0, 2) + '-' + clean.slice(2, 6) + '-' + clean.slice(6);
-      } else if (clean.length < 9) {
-        return clean.length <= 2 ? clean : clean.slice(0, 2) + '-' + clean.slice(2);
-      }
-    }
-
-    // 2. 전국 대표번호 (1544, 1588, 1600 등 8자리)
-    if (clean.length === 8 && /^(15|16|18)\d{2}/.test(clean)) {
-      return clean.slice(0, 4) + '-' + clean.slice(4);
-    }
-
-    // 3. 휴대폰(010, 011 등) 및 일반 지역번호(031, 032, 051 등)
-    if (clean.length === 11) {
-      return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7);
-    } else if (clean.length === 10) {
-      return clean.slice(0, 3) + '-' + clean.slice(3, 6) + '-' + clean.slice(6);
-    } else if (clean.length === 12) {
-      return clean.slice(0, 4) + '-' + clean.slice(4, 8) + '-' + clean.slice(8);
-    } else if (clean.length > 11) {
-      return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7, 11);
-    }
-
-    // 4. 입력 중이거나 짧은 경우
-    if (clean.length < 7) return '-';
-    if (clean.length === 7) return clean.slice(0, 3) + '-' + clean.slice(3);
-    return clean.slice(0, 3) + '-' + clean.slice(3, 7) + '-' + clean.slice(7);
+    return formatPhoneLiveInput(clean);
   }
 
   // 전역 유틸리티 함수로 등록 (어느 JS 파일에서나 즉시 호출 가능)
@@ -376,7 +373,10 @@ document.addEventListener('DOMContentLoaded', function () {
     window.formatPhoneNumber = formatPhoneNumber;
     window.formatPhoneInput = function(input) {
       if (!input) return;
-      input.value = formatPhoneNumber(input.value);
+      var formatted = formatPhoneLiveInput(input.value);
+      if (input.value !== formatted) {
+        input.value = formatted;
+      }
     };
   }
 
@@ -398,13 +398,17 @@ document.addEventListener('DOMContentLoaded', function () {
       placeholder.includes('010') || placeholder.includes('연락처') || placeholder.includes('전화');
 
     if (isPhoneField) {
-      var prevLen = target.value.length;
-      var cursor = target.selectionStart;
-      target.value = formatPhoneNumber(target.value);
-      var newLen = target.value.length;
-      if (cursor != null) {
-        var newCursor = cursor + (newLen - prevLen);
-        target.setSelectionRange(newCursor, newCursor);
+      var prevVal = target.value;
+      var formatted = formatPhoneLiveInput(prevVal);
+      if (prevVal !== formatted) {
+        var prevLen = prevVal.length;
+        var cursor = target.selectionStart;
+        target.value = formatted;
+        var newLen = formatted.length;
+        if (cursor != null) {
+          var newCursor = Math.max(0, cursor + (newLen - prevLen));
+          try { target.setSelectionRange(newCursor, newCursor); } catch (err) {}
+        }
       }
     }
   });

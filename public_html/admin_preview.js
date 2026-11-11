@@ -4132,7 +4132,8 @@ var worksheetEditableFields = [
   ['drawingObservation', '그림 표현 관찰', 3],
   ['languageHandwritingNote', '글과 표현 방식 관찰', 3],
   ['nextStep', '다음 성장 방향', 4],
-  ['parentGuide', '가정 대화 팁', 4]
+  ['parentGuide', '가정 대화 팁', 4],
+  ['teacherCommentDraft', '지도교사 종합 첨삭 코멘트', 4]
 ];
 
 function worksheetEditorField(id, label, value, rows) {
@@ -4152,8 +4153,17 @@ function renderWorksheetCorrectionEditor() {
   }).join('');
   worksheetEditableFields.slice(1).forEach(function(field) {
     var growth = field[0] === 'nextStep' || field[0] === 'parentGuide';
-    html += '<div class="' + (growth ? 'p-3 mb-3 rounded' : '') + '"' + (growth ? ' style="background:#f0f8f6;border:1px solid #bddbd4;"' : '') + '>' +
-      (growth ? '<p class="text-muted mb-2" style="font-size:12px;">' + (field[0] === 'nextStep' ? '다음 독서에서 시도할 작은 활동과 구체적인 실천 방법을 안내해 주세요.' : '아이의 표현을 바탕으로 칭찬 한마디와 함께 나눌 열린 질문을 적어 주세요.') + '</p>' : '') +
+    var isTeacherDraft = field[0] === 'teacherCommentDraft';
+    var boxStyle = growth
+      ? ' style="background:#f0f8f6;border:1px solid #bddbd4;"'
+      : (isTeacherDraft ? ' style="background:#fffdf7;border:1px solid #e6d7be;"' : '');
+    var guideText = field[0] === 'nextStep'
+      ? '다음 독서에서 시도할 작은 활동과 구체적인 실천 방법을 안내해 주세요.'
+      : (field[0] === 'parentGuide'
+        ? '아이의 표현을 바탕으로 칭찬 한마디와 함께 나눌 열린 질문을 적어 주세요.'
+        : (isTeacherDraft ? '학습리포트 및 학부모 알림톡에 수록되는 지도교사 종합 첨삭 코멘트입니다.' : ''));
+    html += '<div class="' + ((growth || isTeacherDraft) ? 'p-3 mb-3 rounded' : '') + '"' + boxStyle + '>' +
+      (guideText ? '<p class="text-muted mb-2" style="font-size:12px;">' + guideText + '</p>' : '') +
       worksheetEditorField('worksheetEdit-' + field[0], field[1], result[field[0]], field[2]) + '</div>';
   });
   document.getElementById('worksheetAiEditor').innerHTML = html;
@@ -4162,11 +4172,15 @@ function renderWorksheetCorrectionEditor() {
 function readWorksheetCorrectionEditor() {
   var result = JSON.parse(JSON.stringify(currentWorksheetAiResult || {}));
   worksheetEditableFields.forEach(function(field) {
-    result[field[0]] = document.getElementById('worksheetEdit-' + field[0]).value.trim();
+    var el = document.getElementById('worksheetEdit-' + field[0]);
+    if (el) result[field[0]] = el.value.trim();
   });
   result.actualQuotes = (Array.isArray(result.actualQuotes) ? result.actualQuotes : []).map(function(q, i) {
     var edited = Object.assign({}, q);
-    ['quote', 'criteria', 'comment'].forEach(function(key) { edited[key] = document.getElementById('worksheetQuote-' + i + '-' + key).value.trim(); });
+    ['quote', 'criteria', 'comment'].forEach(function(key) {
+      var qEl = document.getElementById('worksheetQuote-' + i + '-' + key);
+      if (qEl) edited[key] = qEl.value.trim();
+    });
     return edited;
   });
   return result;
@@ -4197,6 +4211,60 @@ function openCorrectionModal(logId) {
   currentWorksheetPhotos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos.slice() : [];
   currentWorksheetAiResult = log.worksheetAiResult ? JSON.parse(JSON.stringify(log.worksheetAiResult)) : null;
   currentWorksheetCorrectionDone = !!currentWorksheetAiResult || String(log.reviewed || '').includes('완료');
+
+  // 첨삭 완료 상태인데 worksheetAiResult가 비어있거나(이관/구형 첨삭 기록 등) 일부 필드가 누락된 경우 기존 코멘트와 학습 기록을 바탕으로 복원
+  if (currentWorksheetCorrectionDone) {
+    var sName = log.studentName || log.name || '원생';
+    var bName = log.bookTitle || '도서';
+    var existingComment = String(log.comment || '').trim();
+    var studentAns = String(log.studentThoughtAnswer || log.thoughtAnswer || log.sheetAnswer || '').trim();
+    if (!currentWorksheetAiResult || typeof currentWorksheetAiResult !== 'object') {
+      currentWorksheetAiResult = {
+        summary: existingComment || (sName + ' 학생이 『' + bName + '』을(를) 읽고 자신의 생각과 느낌을 주도적으로 표현했습니다.'),
+        actualQuotes: studentAns ? [
+          {
+            quote: studentAns,
+            criteria: '경험 연결 및 자기표현',
+            comment: existingComment || '책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.'
+          }
+        ] : [],
+        drawingObservation: '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.',
+        languageHandwritingNote: '자신의 느낌과 생각을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
+        nextStep: '다음에는 왜 그렇게 생각했는지 구체적인 이유나 일상 경험을 한 문장 더 덧붙여 보면 더욱 좋습니다.',
+        parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 인상 깊었던 장면에 대해 열린 대화를 나누어 보세요.',
+        teacherCommentDraft: existingComment || (sName + ' 학생은 『' + bName + '』을(를) 읽고 인상 깊었던 장면을 자신의 시각으로 정성껏 표현했습니다.')
+      };
+    } else {
+      if (currentWorksheetAiResult.teacherCommentDraft === undefined && existingComment) {
+        currentWorksheetAiResult.teacherCommentDraft = existingComment;
+      }
+      if (currentWorksheetAiResult.drawingObservation === undefined) {
+        currentWorksheetAiResult.drawingObservation = '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.';
+      }
+      if (currentWorksheetAiResult.languageHandwritingNote === undefined) {
+        currentWorksheetAiResult.languageHandwritingNote = '자신의 느낌과 생각을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.';
+      }
+    }
+  }
+
+  var donePhotosBox = document.getElementById('worksheetDonePhotosPreview');
+  if (donePhotosBox) {
+    if (currentWorksheetCorrectionDone && currentWorksheetPhotos.length > 0) {
+      donePhotosBox.style.display = 'block';
+      donePhotosBox.innerHTML = '<div class="p-2.5 px-3 rounded border" style="background:#faf8f5; border-color:#e5dccb !important;">' +
+        '<div class="font-weight-bold mb-1.5" style="font-size:12px; color:var(--text-main);"><i class="fa-solid fa-images text-primary mr-1"></i>업로드된 나노시트 원본 이미지 (' + currentWorksheetPhotos.length + '장)</div>' +
+        '<div class="d-flex flex-wrap" style="gap:8px;">' +
+        currentWorksheetPhotos.map(function(p, idx) {
+          var src = escapePortfolioText((p && (p.dataUrl || p.url)) || '');
+          return src ? '<img src="' + src + '" alt="시트 ' + (idx + 1) + '" style="width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid #d8cebf;cursor:pointer;" onclick="openWorksheetPhotoLightbox(\'' + src + '\')">' : '';
+        }).join('') +
+        '</div></div>';
+    } else {
+      donePhotosBox.style.display = 'none';
+      donePhotosBox.innerHTML = '';
+    }
+  }
+
   document.getElementById('modalCorrectionStudent').innerText = (log.studentName || log.name) + ' (' + (log.classGroup || '-') + ')';
   document.getElementById('modalCorrectionBook').innerText = log.bookTitle + ' · ' + log.date;
   var badge = document.getElementById('modalCorrectionBadge');
@@ -4216,6 +4284,11 @@ async function saveCorrectionFromModal() {
   var log = logs.find(function(l) { return l.id === targetId; });
   if (!log) return;
   log.worksheetAiResult = readWorksheetCorrectionEditor();
+  if (log.worksheetAiResult && log.worksheetAiResult.teacherCommentDraft) {
+    log.comment = log.worksheetAiResult.teacherCommentDraft;
+  } else if (log.worksheetAiResult && log.worksheetAiResult.summary && !log.comment) {
+    log.comment = log.worksheetAiResult.summary;
+  }
   log.reviewRevision = currentWorksheetReviewRevision;
   log.reviewed = '첨삭 완료';
   log.sheet = '작성 완료';
@@ -15739,9 +15812,25 @@ function openMyInfoModal() {
  * - 이유: 사용자가 숫자만 입력하더라도 010-XXXX-XXXX 표준 규격으로 일관성 있게 표시하기 위함
  */
 function formatPhoneNumber(input) {
-  var value = input.value.replace(/[^0-9]/g, '');
+  if (input == null) return '-';
+  var isElement = typeof input === 'object' && 'value' in input;
+  var raw = isElement ? String(input.value || '') : String(input || '').trim();
+  if (!isElement && (!raw || raw === '-' || raw === 'null' || raw === 'undefined')) return '-';
+  var value = raw.replace(/[^0-9]/g, '');
+  if (!value) {
+    if (isElement) {
+      input.value = '';
+      return '';
+    }
+    return '-';
+  }
   var result = '';
-  if (value.length < 4) {
+  if (value.startsWith('02')) {
+    if (value.length <= 2) result = value;
+    else if (value.length <= 5) result = value.slice(0, 2) + '-' + value.slice(2);
+    else if (value.length <= 9) result = value.slice(0, 2) + '-' + value.slice(2, 5) + '-' + value.slice(5);
+    else result = value.slice(0, 2) + '-' + value.slice(2, 6) + '-' + value.slice(6, 10);
+  } else if (value.length < 4) {
     result = value;
   } else if (value.length < 7) {
     result = value.substr(0, 3) + '-' + value.substr(3);
@@ -15750,7 +15839,8 @@ function formatPhoneNumber(input) {
   } else {
     result = value.substr(0, 3) + '-' + value.substr(3, 4) + '-' + value.substr(7, 4);
   }
-  input.value = result;
+  if (isElement) input.value = result;
+  return result;
 }
 
 /**
@@ -17926,6 +18016,9 @@ JSON 출력 형식:
     if (!updated) throw new Error('학습 기록을 찾을 수 없습니다.');
     updated.worksheetAiResult = aiData;
     updated.worksheetPhotos = analysisPhotos;
+    if (aiData && (aiData.teacherCommentDraft || aiData.summary)) {
+      updated.comment = aiData.teacherCommentDraft || aiData.summary;
+    }
     updated.reviewed = '첨삭 완료';
     updated.sheet = '작성 완료';
     updated.manualSheetDone = true;

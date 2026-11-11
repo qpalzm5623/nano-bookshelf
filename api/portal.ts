@@ -64,7 +64,8 @@ export default async function handler(req: any, res: any) {
   }
   try {
     const body = req.body || {};
-    if (JSON.stringify(body).length > 100000) return res.status(413).json({ error: '요청 크기가 너무 큽니다.' });
+    const maxBodyLength = action === 'review' ? 4500000 : 100000;
+    if (JSON.stringify(body).length > maxBodyLength) return res.status(413).json({ error: '요청 크기가 너무 큽니다.' });
     if (action === 'login' && req.method === 'POST') {
       const ip = String(req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown');
       if (typeof body.username !== 'string' || typeof body.password !== 'string' || body.username.length > 100 || body.password.length > 256) return res.status(400).json({ error: '아이디와 비밀번호를 확인해 주세요.' });
