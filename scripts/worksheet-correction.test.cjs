@@ -3,8 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
-const source = fs.readFileSync('public_html/admin_preview.js', 'utf8');
-const ast = ts.createSourceFile('admin_preview.js', source, ts.ScriptTarget.Latest, true);
+const sourceFiles = ['public_html/admin_preview.js', 'public_html/js/admin_worksheet_ai.js'];
+const source = sourceFiles.filter(p => fs.existsSync(p)).map(p => fs.readFileSync(p, 'utf8')).join('\n');
+const ast = ts.createSourceFile('admin_preview_combined.js', source, ts.ScriptTarget.Latest, true);
 function setup() {
   let rows = [{ id: 'a', studentName: '검증 원생', classGroup: 'A', bookTitle: '검증 도서', date: '2026-11-05', score: 80, quizResults: ['보존'], comment: '기존 코멘트', reviewed: '첨삭 완료', sheet: '작성 완료', worksheetPhotos: [{dataUrl:'photo',base64:'sample',mimeType:'image/jpeg'}], worksheetAiResult: {summary:'요약', actualQuotes:[{quote:'인용',criteria:'자기표현',comment:'관찰'}],nextStep:'활동',parentGuide:'질문'} }];
   const elements = new Map(), stored = new Map(), modals = [], notices = [];
