@@ -3667,9 +3667,9 @@
 <script src="js/portal-client.js?v=20261106_theme_sync_v2"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261014" defer></script>
-<link rel="stylesheet" href="css/quiz-result.css?v=20261029-friends3">
+<link rel="stylesheet" href="css/quiz-result.css?v=20261110-characters">
 <script src="js/reading-progress.js?v=20261029-integrity"></script>
-<script src="js/quiz-result-art.js?v=20261029-integrity"></script>
+<script src="js/quiz-result-art.js?v=20261110-characters"></script>
 </head>
 <body>
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
@@ -4578,6 +4578,7 @@
       <div id="charDetailPreview" style="background: #fafaf9; border: 2px solid #e7e5e4; border-radius: 16px; padding: 14px; margin-bottom: 14px; display: flex; gap: 14px; align-items: center;">
         <!-- JS 동적 렌더링 -->
       </div>
+      <div id="charGrowthPreview" aria-label="캐릭터의 1~3단계 성장 모습" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:16px;"></div>
 
       <!-- 안내 레이블 -->
       <div style="font-size: 12.5px; font-weight: 800; color: #475569; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
@@ -4615,7 +4616,7 @@
     <div style="margin-bottom:12px;">
       <div style="display:inline-flex;align-items:center;gap:6px;">
         <span style="font-size:17px;font-weight:900;color:#1e293b;" id="celebCharName">부키 (Booki)</span>
-        <span id="celebEvolvedTag" class="char-evolved-badge" style="display:none;"><i class="fa-solid fa-crown"></i> 진화형</span>
+        <span id="celebEvolvedTag" class="char-evolved-badge" style="display:none;">성장 단계</span>
       </div>
       <div style="font-size:12px;font-weight:700;color:#0d9488;margin-top:2px;" id="celebCharTag">지혜의 독서 박사 부엉이 🦉</div>
     </div>
@@ -8617,10 +8618,10 @@ var CHAR_QUIZ_FEEDBACKS = {
     retry: "도토리처럼 알찬 지식을 다시 모아봐요! 힘내서 파이팅!"
   },
   lumi: {
-    perfect: "반짝반짝! 마법의 별가루가 쏟아져요! 생각의 힘이 눈부시게 빛나고 있어요! 🧚✨",
-    high: "놀라운 상상력과 논리력이에요! 마법의 퍼즐을 멋지게 완성했네요.",
-    pass: "별빛이 반짝이고 있어요! 차근차근 생각하면 정답의 길이 보인답니다.",
-    retry: "마법은 연습에서 나오는 법! 다시 한번 신비한 책 속으로 날아가 볼까요?"
+    perfect: "모든 퍼즐이 딱 맞았어. 네 풀이, 내 생각 수첩에 적어둬야겠다! 🐱",
+    high: "귀가 쫑긋해지는 풀이야. 놓친 조건 하나만 같이 살펴볼까?",
+    pass: "실마리를 찾았네. 복잡한 문제도 작은 조각으로 나누면 풀 수 있어.",
+    retry: "잠깐 기지개를 켜자. 첫 번째 조건부터 천천히 다시 찾아보면 돼."
   },
   mir: {
     perfect: "크아앙! 푸른 용의 여의주처럼 눈부신 100점이다! 천하를 호령할 대독서가로다! 🐲⚡",
@@ -8629,24 +8630,24 @@ var CHAR_QUIZ_FEEDBACKS = {
     retry: "좌절하지 마라! 폭풍우를 견뎌낸 이무기만이 진정한 용이 되는 법이다!"
   },
   jelly: {
-    perfect: "말랑말랑 통통! 환상적인 100점 만점이에요! 온 책장이 달콤한 행복으로 가득해요! 🫧🍭",
-    high: "퐁퐁 솟아나는 독서 즐거움! 책 읽는 기쁨을 제대로 알고 있군요!",
-    pass: "달콤한 독서 에너지가 충전되고 있어요! 톡톡 튀는 호기심으로 다시 봐요!",
-    retry: "말랑한 마음으로 다시 시작해봐요! 내가 언제나 곁에서 응원할게요!"
+    perfect: "한 장 한 장 읽은 이야기가 모두 이어졌네. 오늘의 책갈피는 여기에 꽂아둘게. 🐑",
+    high: "이야기를 참 잘 기억했구나. 남은 장면도 함께 이어보자.",
+    pass: "네 속도로 잘 읽고 있어. 궁금했던 장면에 책갈피를 꽂고 다시 만나보자.",
+    retry: "잠시 쉬어도 괜찮아. 책은 여기서 기다릴 테니, 한 장부터 다시 읽자."
   }
 };
 
-// 추천하기(따봉) 클릭 시 모든 나노프렌즈 9종 기쁨의 반응 대사
+// 추천할 때 캐릭터마다 취향과 역할이 드러나는 짧은 반응
 var CHAR_RECOMMEND_REACTIONS = {
-  nano: "야호!! 따봉 고마워! 네가 추천한 이 멋진 책이 친구들의 마음도 반짝이게 할 거야! 🦊👍✨",
-  toto: "깡충깡충!! 우와아~ 정말 재밌는 책이었구나! 나도 귀가 쫑긋할 만큼 신나! 🐰💖",
-  booki: "부우웅~ 훌륭한 안목이구나! 네 따뜻한 추천 한 표가 지식의 숲을 더 환하게 밝혔단다! 🦉🌟",
-  pico: "뒤뚱뒤뚱 신난다!! 친구들에게 꼭 읽어보라고 나도 같이 소문낼게! 최고야! 🐧👍",
-  popo: "으하하! 마음이 포근해지는 멋진 추천이야! 좋은 책을 나누는 건 정말 행복한 일이지! 🐻🍯",
-  chichi: "찍찍!! 도토리 백 개 찾은 것보다 더 기뻐!! 네 추천 덕분에 책장이 북적북적 신나겠어! 🐿️🎉",
-  lumi: "반짝반짝~★ 네가 보낸 따봉 별빛이 온 우주로 퍼져나가고 있어! 정말 고마워! ⭐💛",
-  mir: "크하하! 대독서가다운 호탕한 추천이로다! 푸른 용의 기운으로 널리 알리겠다! 🐲🔥",
-  jelly: "말랑통통~ 우와아! 달콤한 추천 고마워요! 구름 위를 둥실둥실 날아갈 것처럼 기뻐요! 🫧🍭"
+  nano: "좋은 책이라는 증거 확보. 추천 수첩에 기록했어. 🦊",
+  toto: "이 이야기가 필요한 친구에게, 네 마음을 담아 보낼게. 🐰",
+  booki: "지식의 숲에 좋은 씨앗 하나가 더해졌군요. 🦉",
+  pico: "추천 신호 수신. 다음 탐사대에 공유하겠습니다. 🐧",
+  popo: "오래 기억할 이야기로구나. 다음 여행자의 지도에 남겨두마. 🐻",
+  chichi: "알찬 책 한 권 수확! 친구들과 나눌 바구니에 담았어. 🐿️",
+  lumi: "내 취향에도 딱 맞는걸. 이 책엔 앞발 도장 하나. 🐱",
+  mir: "좋은 이야기는 물결처럼 멀리 퍼지는 법이지. 🐲",
+  jelly: "좋아하는 페이지를 함께 접어둘게. 다음 친구도 발견하도록. 🐑"
 };
 
 // 문항 렌더링: 정답 즉시 노출 X, 캐릭터 말풍선 속에 문제 디스플레이
@@ -8831,9 +8832,8 @@ function isBookRecommendedByStudent(bookOrId) {
   }
   if (!bKey && !altId) return false;
   if (Array.isArray(window.NANO_USER_RECOMMENDS)) {
-    if ((bKey && window.NANO_USER_RECOMMENDS.indexOf(bKey) !== -1) || (altId && window.NANO_USER_RECOMMENDS.indexOf(altId) !== -1)) {
-      return true;
-    }
+    // 서버에서 받은 목록이 있으면 오래된 로컬 캐시보다 우선합니다.
+    return !!((bKey && window.NANO_USER_RECOMMENDS.indexOf(bKey) !== -1) || (altId && window.NANO_USER_RECOMMENDS.indexOf(altId) !== -1));
   }
   try {
     var localList = JSON.parse(localStorage.getItem(getStudentRecommendCacheKey()) || '[]');
@@ -8844,15 +8844,17 @@ function isBookRecommendedByStudent(bookOrId) {
   return false;
 }
 
-function syncRecommendedBookCountInMemory(bookKey, exactTotal) {
+function syncRecommendedBookCountInMemory(bookKey, exactTotal, delta) {
   if (!bookKey) return;
+  var visited = [];
   var applyToList = function(arr) {
     if (!Array.isArray(arr)) return;
     arr.forEach(function(item) {
-      if (!item) return;
-      if (String(item.bookNo || item.id) === bookKey || String(item.id) === bookKey) {
+      if (!item || visited.indexOf(item) !== -1) return;
+      if (String(item.bookNo || item.id) === bookKey || String(item.id) === bookKey || String(item.serverId || '') === bookKey) {
+        visited.push(item);
         if (typeof exactTotal === 'number') item.recommends = exactTotal;
-        else item.recommends = (Number(item.recommends) || 0) + 1;
+        else item.recommends = Math.max(0, (Number(item.recommends) || 0) + (typeof delta === 'number' ? delta : 1));
       }
     });
   };
@@ -8860,8 +8862,9 @@ function syncRecommendedBookCountInMemory(bookKey, exactTotal) {
   if (Array.isArray(window.MIGRATED_BOOKS)) applyToList(window.MIGRATED_BOOKS);
 }
 
-// 북퀴즈 결과 화면 우측 상단 [추천하기] 따봉 버튼 핸들러 (60점 이상 전용 + 전 캐릭터 기쁨 모션)
+// 인증 도서의 추천을 켜고 끄며, 저장에 성공한 뒤 화면과 추천 수를 함께 갱신합니다.
 async function handleQuizBookRecommend(btn) {
+  if (window._recommendRequestPending) return;
   var view = window.activeQuizResultView;
   var score = view && Number.isFinite(view.score) ? view.score : 0;
   if (score < 60) {
@@ -8871,80 +8874,76 @@ async function handleQuizBookRecommend(btn) {
   var targetBook = (view && view.book) || window.currentQuizBookObj || null;
   var bKey = String((btn && btn.getAttribute('data-book-id')) || (targetBook && (targetBook.bookNo || targetBook.id)) || curBook || '').trim();
   if (!bKey) return;
-
-  // 1. 모든 나노프렌즈 기뻐하는 축하 모션 즉시 재생 (재클릭 시에도 신나게 다시 점프!)
-  var card = (btn && btn.closest('.qr-card')) || document.querySelector('#quizResultHeroBanner .qr-card');
-  if (card) {
-    card.classList.remove('is-celebrating');
-    void card.offsetWidth;
-    card.classList.add('is-celebrating');
-    if (window._quizRecommendJoyTimer) clearTimeout(window._quizRecommendJoyTimer);
-    window._quizRecommendJoyTimer = setTimeout(function() {
-      if (card) card.classList.remove('is-celebrating');
-    }, 2600);
-  }
-
-  var charId = typeof getUserCharacterId === 'function' ? getUserCharacterId() : 'nano';
-  var joyLine = CHAR_RECOMMEND_REACTIONS[charId] || CHAR_RECOMMEND_REACTIONS.nano;
-  var msgP = card ? card.querySelector('.qr-message p') : null;
-  if (msgP) msgP.textContent = joyLine;
-
   var already = isBookRecommendedByStudent(targetBook || bKey);
-  if (btn) {
-    btn.classList.add('is-recommended');
-    var txtEl = btn.querySelector('.qr-rec-text');
-    if (txtEl) txtEl.textContent = '추천 완료';
-    btn.title = '이미 추천한 도서예요! 누르면 나노프렌즈가 다시 기뻐해요';
-  }
-  if (view && view.extra) view.extra.isRecommended = true;
-
-  if (already) {
-    toast('👍 이미 추천한 도서예요! 나노프렌즈가 기뻐하며 화답해요!');
-    return;
-  }
-
-  if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.api === 'function') {
-    if (window._recommendRequestPending) return;
-    window._recommendRequestPending = true;
-    try {
-      var res = await NanoPortal.api('/api/activity?action=recommend', { bookId: bKey });
-      var savedNo = String((res && res.bookNo) || bKey);
-      if (!Array.isArray(window.NANO_USER_RECOMMENDS)) window.NANO_USER_RECOMMENDS = [];
-      if (window.NANO_USER_RECOMMENDS.indexOf(savedNo) === -1) window.NANO_USER_RECOMMENDS.push(savedNo);
+  var recommended = !already;
+  var card = (btn && btn.closest('.qr-card')) || document.querySelector('#quizResultHeroBanner .qr-card');
+  var syncState = function(savedNo, nextRecommended) {
+    var aliases = [bKey, savedNo, targetBook && targetBook.id, targetBook && targetBook.serverId, targetBook && targetBook.bookNo]
+      .filter(Boolean).map(String);
+    var myList = Array.isArray(window.NANO_USER_RECOMMENDS) ? window.NANO_USER_RECOMMENDS : [];
+    if (!Array.isArray(window.NANO_USER_RECOMMENDS)) {
       try {
-        localStorage.setItem(getStudentRecommendCacheKey(), JSON.stringify(window.NANO_USER_RECOMMENDS));
+        var cached = JSON.parse(localStorage.getItem(getStudentRecommendCacheKey()) || '[]');
+        if (Array.isArray(cached)) myList = cached;
       } catch (e) {}
-      if (res && typeof res.recommends === 'number') {
-        syncRecommendedBookCountInMemory(savedNo, res.recommends);
-      } else if (!res || !res.alreadyRecommended) {
-        syncRecommendedBookCountInMemory(savedNo);
+    }
+    myList = myList.filter(function(id) { return aliases.indexOf(String(id)) === -1; });
+    if (nextRecommended) myList.push(savedNo);
+    window.NANO_USER_RECOMMENDS = myList;
+    try { localStorage.setItem(getStudentRecommendCacheKey(), JSON.stringify(myList)); } catch (e) {}
+    if (view) {
+      view.extra = view.extra || {};
+      view.extra.isRecommended = nextRecommended;
+    }
+    if (btn) {
+      btn.classList.toggle('is-recommended', nextRecommended);
+      btn.setAttribute('aria-pressed', String(nextRecommended));
+      var txtEl = btn.querySelector('.qr-rec-text');
+      if (txtEl) txtEl.textContent = nextRecommended ? '추천 완료' : '추천하기';
+      btn.title = nextRecommended ? '추천을 취소하려면 다시 눌러 주세요' : '재미있게 읽었다면 따봉을 눌러 친구들에게 추천해 보세요!';
+    }
+    if (window._quizRecommendJoyTimer) clearTimeout(window._quizRecommendJoyTimer);
+    if (card) {
+      card.classList.remove('is-celebrating');
+      var msgP = card.querySelector('.qr-message p');
+      if (nextRecommended) {
+        void card.offsetWidth;
+        card.classList.add('is-celebrating');
+        window._quizRecommendJoyTimer = setTimeout(function() { card.classList.remove('is-celebrating'); }, 2600);
+        var charId = typeof getUserCharacterId === 'function' ? getUserCharacterId() : 'nano';
+        if (msgP) msgP.textContent = CHAR_RECOMMEND_REACTIONS[charId] || CHAR_RECOMMEND_REACTIONS.nano;
+      } else if (msgP) {
+        msgP.textContent = (view && view.extra && view.extra.speechText) || '오늘 발견한 이야기가 내일의 너를 더 자라게 할 거야.';
       }
-      toast(res && res.alreadyRecommended
-        ? '👍 이미 추천한 도서예요! 나노프렌즈가 기뻐하며 화답해요!'
-        : '👍 이 책을 추천했어요! 마스터 콘텐츠 추천 수에 반영되었습니다!');
-    } catch (err) {
-      toast((err && err.message) || '추천 저장 중 오류가 발생했습니다.');
-    } finally {
-      window._recommendRequestPending = false;
     }
-    return;
-  }
+  };
 
-  // 오프라인/로컬 프리뷰 모드: 학생별 중복 추천 방지 후 추천 카운트 누적 보존
+  window._recommendRequestPending = true;
+  if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
   try {
-    var cacheKey = getStudentRecommendCacheKey();
-    var myList = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-    if (!Array.isArray(myList)) myList = [];
-    if (myList.indexOf(bKey) === -1) {
-      myList.push(bKey);
-      localStorage.setItem(cacheKey, JSON.stringify(myList));
+    if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.api === 'function') {
+      var res = await NanoPortal.api('/api/activity?action=recommend', { bookId: bKey, recommended: recommended });
+      var savedNo = String((res && res.bookNo) || bKey);
+      var savedRecommended = res && typeof res.recommended === 'boolean' ? res.recommended : recommended;
+      syncState(savedNo, savedRecommended);
+      syncRecommendedBookCountInMemory(savedNo, res && typeof res.recommends === 'number' ? res.recommends : undefined, savedRecommended === already ? 0 : savedRecommended ? 1 : -1);
+      recommended = savedRecommended;
+    } else {
+      // 로컬 프리뷰도 추천 추가·취소에 따라 도서별 증감치를 함께 보존합니다.
       var recMap = JSON.parse(localStorage.getItem('NANO_BOOK_RECOMMEND_COUNTS') || '{}');
-      recMap[bKey] = (Number(recMap[bKey]) || 0) + 1;
+      if (!recMap || typeof recMap !== 'object' || Array.isArray(recMap)) recMap = {};
+      recMap[bKey] = Math.max(0, (Number(recMap[bKey]) || 0) + (recommended ? 1 : -1));
       localStorage.setItem('NANO_BOOK_RECOMMEND_COUNTS', JSON.stringify(recMap));
-      syncRecommendedBookCountInMemory(bKey);
+      syncState(bKey, recommended);
+      syncRecommendedBookCountInMemory(bKey, undefined, recommended ? 1 : -1);
     }
-    toast('👍 이 책을 추천했어요! 나노프렌즈가 무척 기뻐해요!');
-  } catch (e) {}
+    toast(recommended ? '이 책을 추천했어요!' : '도서 추천을 취소했어요.');
+  } catch (err) {
+    toast((err && err.message) || '추천 저장 중 오류가 발생했습니다. 다시 시도해 주세요.');
+  } finally {
+    window._recommendRequestPending = false;
+    if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+  }
 }
 
 // 점수와 지급 결과는 기존 채점 흐름에서 전달하고, 화면 표현만 별도 렌더러에 위임합니다.
@@ -9907,6 +9906,7 @@ function renderMyBookshelf() {
 // ==============================================================
 // [NEW] 나노 프렌즈 9종 분야별 캐릭터 & 진화 시스템
 // ==============================================================
+// 저장된 선택과 독서 성장 기록을 유지하기 위해 냥이·양양도 기존 lumi·jelly ID를 사용합니다.
 var NANO_CHARACTERS = [
   {
     id: "nano",
@@ -9915,7 +9915,12 @@ var NANO_CHARACTERS = [
     themeName: "기본 스타터",
     themeColor: "#f97316",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fed7aa)",
-    story: "궁금한 건 못 참아! 돋보기 안경을 쓰고 책 속의 숨은 단서와 복선을 척척 풀어내는 영리한 아기 여우 탐정이에요. 모든 학생에게 가입 즉시 지급됩니다.",
+    story: "작은 단서도 지나치지 않는 여우 탐정. 돋보기로 살피고 수첩에 기록하며, 서로 떨어진 이야기의 조각을 연결해요.",
+    growth: [
+      { title: "단서 수집가", detail: "작은 돋보기로 첫 단서를 살펴요.", quote: "작은 발자국 발견. 첫 사건을 함께 풀어볼까?" },
+      { title: "수첩 속 추리", detail: "탐정 조끼와 수첩을 갖추고 증거를 모아요.", quote: "수첩에 모은 단서들이 하나의 이야기로 이어지고 있어." },
+      { title: "책장 명탐정", detail: "정교한 탐정 도구로 숨은 복선까지 찾아내요.", quote: "이제 아주 작은 흔적도 놓치지 않아. 다음 사건도 맡겨줘." }
+    ],
     isDefault: true,
     isStarter: true,
     reqType: "starter",
@@ -9935,7 +9940,12 @@ var NANO_CHARACTERS = [
     themeName: "인간, 생활",
     themeColor: "#ec4899",
     bgGradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
-    story: "친구들의 따뜻한 마음과 일상 생활의 소중함을 누구보다 깊이 이해하는 다정파 토끼! 재미있는 이야기와 생활 동화를 품에 안고 다녀요.",
+    story: "긴 귀로 친구들의 이야기를 끝까지 듣는 토끼 우체부. 말하기 어려운 마음도 편지에 담아 소중히 전해요.",
+    growth: [
+      { title: "첫 편지", detail: "전하고 싶은 마음을 작은 편지에 담아요.", quote: "네 이야기를 들려줘. 서두르지 않고 끝까지 들을게." },
+      { title: "마음 배달부", detail: "우편가방을 메고 친구들의 편지를 배달해요.", quote: "가방에 편지가 차곡차곡 쌓였어. 기다리는 친구에게 가볼까?" },
+      { title: "꽃편지 우체부", detail: "편지와 꽃다발로 서로의 마음을 이어줘요.", quote: "좋은 말 한 줄과 꽃 한 송이. 오늘도 마음을 전하러 가자." }
+    ],
     reqType: "theme_human",
     stage1Count: 50,
     stage2Count: 100,
@@ -9953,7 +9963,12 @@ var NANO_CHARACTERS = [
     themeName: "자연, 생물",
     themeColor: "#0d9488",
     bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
-    story: "숲속 도서관을 지키며 풀잎과 동물들의 생명 이야기를 탐구하는 숲의 현자! 친구들에게 재미있는 상식과 깊은 자연의 지혜를 가르쳐줘요.",
+    story: "풀잎의 무늬와 새의 발자국을 관찰하는 부엉이. 알아낸 것을 나무 도감에 남기며 숲의 변화를 오래 지켜봐요.",
+    growth: [
+      { title: "숲의 관찰자", detail: "작은 깃털을 펼치고 풀잎을 관찰해요.", quote: "이 잎의 무늬를 보세요. 숲에는 아직 읽지 않은 이야기가 많답니다." },
+      { title: "잎맥 연구가", detail: "날개에 잎맥 무늬가 자라고 관찰 기록이 쌓여요.", quote: "잎맥처럼 지식도 가지를 뻗는군요. 새로 찾은 것을 기록해볼까요?" },
+      { title: "숲의 기록자", detail: "풍성한 잎무늬 날개와 나무 도감을 갖춰요.", quote: "이 도감에는 우리가 함께 발견한 숲의 시간이 담겨 있어요." }
+    ],
     reqType: "theme_nature",
     stage1Count: 50,
     stage2Count: 100,
@@ -9971,7 +9986,12 @@ var NANO_CHARACTERS = [
     themeName: "기술, 과학",
     themeColor: "#0284c7",
     bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
-    story: "우주복 헬멧을 쓰고 AI, 로봇, 우주선과 미래 과학의 비밀을 분석하는 호기심 천재 펭귄! 미지의 과학 지식을 향해 로켓처럼 돌진해요.",
+    story: "궁금한 원리는 직접 실험해보는 펭귄 연구원. 탐사복과 연구 장비를 차근차근 갖추며 낯선 세계를 탐사해요.",
+    growth: [
+      { title: "호기심 연구원", detail: "작은 날개로 첫 과학 실험을 시작해요.", quote: "질문 접수. 직접 확인하면 더 재미있을 거예요." },
+      { title: "궤도 탐사대", detail: "탐사복과 안테나를 갖추고 신호를 수집해요.", quote: "탐사복 점검 완료. 미지의 신호를 찾으러 출발합니다." },
+      { title: "우주 연구소", detail: "태양전지와 연구 장비로 더 먼 곳을 탐사해요.", quote: "태양전지 충전 완료. 오늘의 발견을 다음 실험으로 이어갑니다." }
+    ],
     reqType: "theme_tech",
     stage1Count: 50,
     stage2Count: 100,
@@ -9989,7 +10009,12 @@ var NANO_CHARACTERS = [
     themeName: "역사, 이야기",
     themeColor: "#b45309",
     bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
-    story: "천 년의 역사와 옛 조상들의 발자취를 듬직하게 들려주는 이야기꾼 아기 곰! 우직한 끈기로 두꺼운 역사책도 끝까지 읽어냅니다.",
+    story: "옛사람들이 걸었던 길을 따라가는 곰 탐험가. 지도를 펼쳐 장소를 찾고, 유물에 남은 이야기를 차분히 들려줘요.",
+    growth: [
+      { title: "이야기 여행자", detail: "옛이야기를 품고 첫 여행을 떠나요.", quote: "어디서 시작된 이야기인지, 함께 발자취를 따라가보자꾸나." },
+      { title: "역사 탐험가", detail: "지도와 탐험가 가방을 챙겨 옛길을 찾아요.", quote: "지도에 길이 하나 더 생겼구나. 천천히 걸으며 살펴보자." },
+      { title: "유물 기록가", detail: "발견한 유물과 두루마리로 역사를 이어줘요.", quote: "작은 유물에도 긴 시간이 담겨 있단다. 그 이야기를 들려주마." }
+    ],
     reqType: "theme_hist",
     stage1Count: 50,
     stage2Count: 100,
@@ -10007,7 +10032,12 @@ var NANO_CHARACTERS = [
     themeName: "건강, 음식",
     themeColor: "#ea580c",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
-    story: "튼튼한 신체와 맛있는 음식, 건강한 영양 비결을 쏙쏙 모으는 에너지 대장! 책을 읽고 나면 비타민처럼 온몸에 생기가 퐁퐁 솟아나요.",
+    story: "도토리를 모으듯 건강한 습관을 모으는 다람쥐. 씨앗을 심고 식재료를 돌보며 맛있는 한 끼가 만들어지는 과정을 배워요.",
+    growth: [
+      { title: "도토리 수집가", detail: "작은 도토리에 담긴 영양을 찾아봐요.", quote: "이 작은 도토리가 어떻게 자라는지 궁금하지 않아?" },
+      { title: "새싹 재배가", detail: "앞치마를 두르고 새싹을 정성껏 길러요.", quote: "새싹이 고개를 내밀었어. 꾸준히 돌본 보람이 있네!" },
+      { title: "건강한 수확", detail: "수확 주머니에 다양한 건강 식재료를 모아요.", quote: "오늘 수확은 아주 알차네. 골고루 나눠 먹을 준비 됐어?" }
+    ],
     reqType: "theme_health",
     stage1Count: 50,
     stage2Count: 100,
@@ -10020,12 +10050,17 @@ var NANO_CHARACTERS = [
   },
   {
     id: "lumi",
-    name: "루미 (Lumi)",
-    tag: "학습·수학 생각 요정 🧚",
+    name: "냥이 (Nyangi)",
+    tag: "학습·수학 퍼즐 고양이 🐱",
     themeName: "학습, 수학, 기타",
     themeColor: "#8b5cf6",
     bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-    story: "마법 같은 수학 퍼즐과 생각의 날개를 활짝 펴주는 별빛 요정! 논리적 사고와 문제 해결의 힘을 눈부시게 밝혀줍니다.",
+    story: "문제를 만나면 귀부터 쫑긋 세우는 연보라 고양이. 앞발로 퍼즐 조각을 맞추고, 생각 수첩에 자신만의 풀이를 모아요.",
+    growth: [
+      { title: "쫑긋 호기심", detail: "연보라 귀와 긴 꼬리로 호기심을 표현해요.", quote: "이 조각은 어디에 맞을까? 잠깐, 좋은 생각이 났어." },
+      { title: "퍼즐 탐구자", detail: "기하학 목걸이와 생각 수첩으로 풀이를 모아요.", quote: "생각 수첩이 한 권 더 찼네. 서로 다른 풀이도 비교해볼까?" },
+      { title: "기하학 설계자", detail: "퍼즐 도구와 기하 궤도로 새로운 모양을 만들어요.", quote: "조각마다 제자리를 찾았어. 다음엔 우리가 새 퍼즐을 만들어보자." }
+    ],
     reqType: "theme_study",
     stage1Count: 50,
     stage2Count: 100,
@@ -10043,7 +10078,12 @@ var NANO_CHARACTERS = [
     themeName: "모든 분야 마스터",
     themeColor: "#059669",
     bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    story: "모든 학문의 영역을 골고루 섭렵한 자만이 깨울 수 있는 전설의 푸른 영물! 편식 없는 균형 독서의 수호신이에요.",
+    story: "여러 분야의 이야기를 물길처럼 이어주는 청룡. 고르게 읽을수록 가지뿔과 물결 비늘이 자라며 더 넓은 세상을 품어요.",
+    growth: [
+      { title: "작은 물결", detail: "작은 청룡이 다양한 이야기의 물길을 만나요.", quote: "서로 다른 이야기가 만나는 곳에 새로운 길이 열리지." },
+      { title: "푸른 물길", detail: "가지뿔과 물결 비늘이 자라나기 시작해요.", quote: "지식의 물줄기가 하나로 모이는구나. 더 넓은 곳으로 가보자." },
+      { title: "여의주 수호룡", detail: "큰 가지뿔과 여의주를 품고 물결을 이끌어요.", quote: "여의주에 많은 이야기가 담겼다. 이제 그 빛을 세상과 나누자." }
+    ],
     reqType: "all_genres",
     stage1Count: 75,
     stage2Count: 150,
@@ -10056,12 +10096,17 @@ var NANO_CHARACTERS = [
   },
   {
     id: "jelly",
-    name: "젤리 (Jelly)",
-    tag: "50권 완독 레전드 요정 🫧",
+    name: "양양 (Yangyang)",
+    tag: "차곡차곡 독서 기록 양 🐑",
     themeName: "대독서가 레전드",
-    themeColor: "#06b6d4",
-    bgGradient: "linear-gradient(135deg, #cffafe, #a5f3fc)",
-    story: "누적 50권의 책을 정복한 진정한 대독서가의 책장에서 탄생한 무지개 마법 정령! 책 읽는 모든 순간을 꿀처럼 달콤하게 만들어줘요.",
+    themeColor: "#92734f",
+    bgGradient: "linear-gradient(135deg, #fff8eb, #f0e4cf)",
+    story: "폭신한 크림색 털을 가진 느긋한 양. 좋아하는 문장에 책갈피를 꽂고, 읽어온 이야기를 한 올 한 올 잇듯 모아가요.",
+    growth: [
+      { title: "포근한 책 친구", detail: "크림색 곱슬 털을 가진 양과 독서를 시작해요.", quote: "서두르지 않아도 돼. 네 속도로 읽는 이야기가 좋아." },
+      { title: "책갈피 수집가", detail: "직조 가방에 책과 소중한 책갈피를 모아요.", quote: "이 책갈피마다 우리가 좋아한 문장이 하나씩 담겨 있어." },
+      { title: "이야기 직조가", detail: "풍성한 곱슬 털과 무늬 가방에 독서의 시간을 담아요.", quote: "한 권씩 읽어온 이야기가 이렇게 큰 무늬가 되었네." }
+    ],
     reqType: "total_read",
     stage1Count: 50,
     stage2Count: 100,
@@ -10257,6 +10302,10 @@ function getCharacterById(id) {
   return NANO_CHARACTERS.find(function(c){ return c.id === id; }) || NANO_CHARACTERS[0];
 }
 
+function getCharacterGrowth(char, stage) {
+  return char.growth[Math.max(1, Math.min(3, Number(stage) || 1)) - 1];
+}
+
 var tempSelectedCharId = null;
 
 function openCharacterSelectModal() {
@@ -10316,6 +10365,7 @@ function openCelebrationModal(charId, forceEvolved) {
   var char = getCharacterById(charId);
   var st = getCharacterUnlockStatus(char);
   var stage = typeof forceEvolved === 'number' ? forceEvolved : (forceEvolved === true ? Math.max(2, st.currentStage) : st.currentStage || 1);
+  var growth = getCharacterGrowth(char, stage);
   var evolved = stage >= 2;
 
   var modal = document.getElementById('characterCelebrationModal');
@@ -10330,27 +10380,16 @@ function openCelebrationModal(charId, forceEvolved) {
 
   if(topEmoji) topEmoji.innerText = evolved ? '🌟' : '🎉';
   if(title) title.innerText = evolved ? '캐릭터 외형 진화 달성!' : '새로운 캐릭터 해금 달성!';
-  if(subtitle) subtitle.innerText = evolved ? char.themeName + ' 분야의 최고 마스터로 성장했어요!' : char.unlockDesc + ' 미션을 완수했습니다!';
+  if(subtitle) subtitle.innerText = growth.title + ' · ' + growth.detail;
   if(avatarBox) avatarBox.innerHTML = getCharacterSvg(charId, 84, stage, false);
   if(nameEl) nameEl.innerText = char.name;
   if(tagEl) {
     tagEl.innerText = char.tag;
     tagEl.style.color = char.themeColor;
   }
-  if(evolvedTag) { evolvedTag.style.display = 'inline-flex'; evolvedTag.textContent = stage + '단계'; }
+  if(evolvedTag) { evolvedTag.style.display = 'inline-flex'; evolvedTag.textContent = stage + '단계 · ' + growth.title; }
   if(quoteEl) {
-    var quoteMap = {
-      nano: '"탐정 돋보기가 황금빛으로 진화했어! 더 깊은 비밀도 이제 다 풀어낼 수 있어!"',
-      toto: '"와아! 하트 날개가 생겼어! 친구들의 마음에 더 따뜻하게 다가갈게! 🐰"',
-      booki: '"호-호! 현자의 학사모가 빛나는구나. 숲속 지혜를 아낌없이 나눠주마! 🦉"',
-      pico: '"삐리릭-! 미래형 사이버 슈트로 업그레이드 완료! 우주 끝까지 탐험하자! 🐧"',
-      popo: '"허허! 역사 속 왕관을 쓰게 되었구나. 듬직하게 길을 밝혀주마! 🐻"',
-      chichi: '"황금 도토리 에너지 폭발! 비타민 파워로 온 세상을 건강하게 만들자! 🐿️"',
-      lumi: '"은하수 마법 완드가 완성되었어요! 생각의 별빛을 환하게 비춰드릴게요! 🧚"',
-      mir: '"크아앙! 푸른 용의 여의주가 황금빛으로 타오른다! 천하제일 독서왕의 탄생이다! 🐲"',
-      jelly: '"말랑 젤리가 크리스탈 크라운을 썼어요! 온 책장에 무지개 행복이 가득해요! 🫧"'
-    };
-    quoteEl.innerText = quoteMap[charId] || '"' + char.name.split(' ')[0] + '와(과) 함께 더 큰 독서 모험을 떠나요!"';
+    quoteEl.innerText = '"' + growth.quote + '"';
   }
 
   if(modal) modal.style.display = 'flex';
@@ -10372,6 +10411,7 @@ function applyCelebratedCharacter() {
 
 function renderCharacterSelectModal() {
   var previewEl = document.getElementById("charDetailPreview");
+  var growthPreviewEl = document.getElementById("charGrowthPreview");
   var gridEl = document.getElementById("charSelectGrid");
   var applyBtn = document.getElementById("btnApplyCharacter");
   if(!previewEl || !gridEl) return;
@@ -10425,7 +10465,7 @@ function renderCharacterSelectModal() {
     // 3단계 최종 달성
     statusBannerHtml = '<div style="background:#fefce8;border:1px solid #fef08a;border-radius:10px;padding:8px 10px;font-size:11px;">'
       + '<div style="margin-bottom:4px;">'
-      +   '<span style="color:#854d0e;font-weight:800;"><i class="fa-solid fa-crown mr-1 text-warning"></i>3단계 최종 완성! (' + (cur.stage3Desc || '') + ')</span>'
+      +   '<span style="color:#854d0e;font-weight:800;"><i class="fa-solid fa-award mr-1 text-warning"></i>3단계 최종 완성! (' + (cur.stage3Desc || '') + ')</span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;">'
       +   '<div style="flex:1;height:7px;background:#fef08a;border-radius:4px;overflow:hidden;">'
@@ -10446,9 +10486,9 @@ function renderCharacterSelectModal() {
   if (!curUnlock.unlocked) {
     badgeHtml = '<span style="font-size:10px;font-weight:800;background:#e11d48;color:#fff;padding:2px 7px;border-radius:6px;"><i class="fa-solid fa-lock mr-1"></i>잠금</span>';
   } else if (curUnlock.currentStage === 2) {
-    badgeHtml = '<span class="char-evolved-badge"><i class="fa-solid fa-crown mr-1"></i>2단계</span>';
+    badgeHtml = '<span class="char-evolved-badge"><i class="fa-solid fa-seedling mr-1"></i>2단계</span>';
   } else if (curUnlock.currentStage >= 3) {
-    badgeHtml = '<span class="char-evolved-badge" style="background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-crown mr-1"></i>3단계</span>';
+    badgeHtml = '<span class="char-evolved-badge" style="background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-award mr-1"></i>3단계</span>';
   }
 
   previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;background:' + cur.bgGradient + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);">'
@@ -10462,6 +10502,22 @@ function renderCharacterSelectModal() {
     +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">' + cur.story + '</div>'
     +   statusBannerHtml
     + '</div>';
+
+  // 외형과 성장 이야기를 함께 보여주어 다음 단계의 개성을 미리 확인합니다.
+  if (growthPreviewEl) {
+    growthPreviewEl.innerHTML = cur.growth.map(function(growth, index) {
+      var stage = index + 1;
+      var achieved = curUnlock.currentStage >= stage;
+      var requirement = stage === 1 ? cur.unlockDesc : (stage === 2 ? cur.stage2Desc : cur.stage3Desc);
+      return '<div class="char-growth-stage"' + (curUnlock.currentStage === stage ? ' aria-current="step"' : '') + ' style="min-width:0;padding:8px 5px;border:1px solid ' + (achieved ? '#99d6c7' : '#e7e5e4') + ';border-radius:12px;text-align:center;background:' + (achieved ? '#f0fdfa' : '#fafaf9') + ';">'
+        + '<div style="font-size:10px;font-weight:800;color:#64748b;">' + stage + '단계' + (achieved ? ' · 달성' : '') + '</div>'
+        + getCharacterSvg(cur.id, 62, stage)
+        + '<div style="font-size:11px;font-weight:800;color:#334155;line-height:1.5;">' + growth.title + '</div>'
+        + '<div style="font-size:10px;color:#64748b;line-height:1.5;margin:4px 0;word-break:keep-all;">' + growth.detail + '</div>'
+        + '<div style="font-size:9px;color:#64748b;line-height:1.5;word-break:keep-all;">' + requirement + '</div>'
+        + '</div>';
+    }).join('');
+  }
 
   // 하단 [이 캐릭터로 설정] 버튼 제어
   if (applyBtn) {
@@ -10489,7 +10545,7 @@ function renderCharacterSelectModal() {
     var cardClass = 'char-select-card ' + (isSel ? 'selected' : '') + (st.unlocked ? '' : ' locked');
 
     var badgeIcon = st.unlocked
-      ? (st.currentStage >= 2 ? '<div class="char-select-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:9px;"></i></div>' : '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>')
+      ? (st.currentStage >= 2 ? '<div class="char-select-badge" style="background:#f59e0b;"><i class="fa-solid fa-award" style="font-size:9px;"></i></div>' : '<div class="char-select-badge"><i class="fa-solid fa-check"></i></div>')
       : '<div class="char-lock-badge" title="잠금"><i class="fa-solid fa-lock"></i></div>';
 
     // 미획득 캐릭터는 어스름한 흑백 실루엣으로 렌더링
@@ -10501,9 +10557,9 @@ function renderCharacterSelectModal() {
     } else if (st.currentStage === 1) {
       subTagHtml = '<span style="font-size:10px;color:#0d9488;font-weight:700;">1단계</span>';
     } else if (st.currentStage === 2) {
-      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;"><i class="fa-solid fa-crown"></i> 2단계</span>';
+      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;"><i class="fa-solid fa-seedling"></i> 2단계</span>';
     } else {
-      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-crown"></i> 3단계</span>';
+      subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-award"></i> 3단계</span>';
     }
 
     return '<button type="button" aria-pressed="' + isSel + '" class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
@@ -10566,16 +10622,16 @@ function updateAllCharacterAvatars() {
   }
   if(hmQuote) {
     var quotes = {
-      nano: '"돋보기 안경 준비 완료! 오늘도 숨겨진 복선을 찾아볼까? 🔍"',
-      booki: '"책 속에 길이 있단다. 오늘도 깊은 지혜를 쌓아보자! 🦉"',
-      toto: '"번개처럼 빠르게 완독하고 골드 뱃지를 향해 점프! 🐰"',
-      lumi: '"별빛 가루를 뿌려줄게! 상상력의 동화 나라로 출발! 🧚"',
-      popo: '"한 장 한 장 꾸준히 읽는 네가 정말 대견해! 🐻"',
-      pico: '"우주선 탑승 준비! 미래 과학 SF 소설을 탐험하자! 🐧"',
-      chichi: '"오늘 북퀴즈도 백점 만점 노려보는 거야, 준비됐지? 🐿️"',
-      mir: '"영웅들의 용기 있는 이야기를 듣고 큰 꿈을 펼쳐봐! 🐲"',
+      nano: '"오늘의 사건은 어느 책에 숨어 있을까? 돋보기 준비됐어. 🦊"',
+      booki: '"오늘은 숲의 어떤 이야기를 관찰해볼까요? 🦉"',
+      toto: '"네 마음에 남은 이야기가 궁금해. 편지처럼 들려줘. 🐰"',
+      lumi: '"창가 자리는 비워뒀어. 오늘 풀어볼 퍼즐은 뭐야? 🐱"',
+      popo: '"지도를 펼쳐보자꾸나. 오늘은 어느 시대를 걸어볼까? 🐻"',
+      pico: '"탐사 노트 준비 완료. 오늘의 질문을 입력해주세요. 🐧"',
+      chichi: '"오늘도 지식 한 알을 심어볼까? 꾸준히 키워보자. 🐿️"',
+      mir: '"아직 만나지 않은 분야로 새로운 물길을 내어보자. 🐲"',
       choco: '"마음에 남는 멋진 문장을 찾으면 그림으로 그려보자! 🐶"',
-      jelly: '"말랑말랑 비타민 에너지 뿜뿜! 힘내서 즐겁게 읽자! 🫧"'
+      jelly: '"책갈피를 꽂아둔 곳부터, 오늘도 네 속도로 읽자. 🐑"'
     };
     hmQuote.innerText = quotes[charId] || '"오늘도 책 속의 신비한 모험을 떠나볼까요? 📖"';
   }

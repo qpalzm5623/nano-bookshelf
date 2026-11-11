@@ -123,7 +123,7 @@ test('캐릭터 API는 소속 학생의 선택만 조회하고 학생 화면과 
   user = { ...user, role: 'STUDENT' }; const student = response(); await run(req, student); assert.equal(student.code, 403); assert.equal(lookups, 1);
 });
 
-test('북퀴즈 결과 우측 상단 따봉 추천 버튼은 60점 이상에서만 활성화되고 모든 9종 나노프렌즈 기쁨 모션을 포함한다', () => {
+test('북퀴즈 추천은 60점 이상에서 활성화되고 9종 고유 반응과 성장 외형을 보존한다', () => {
   const artCtx = {};
   vm.runInNewContext(fs.readFileSync(path.join(root, 'public_html/js/reading-progress.js'), 'utf8'), artCtx);
   vm.runInNewContext(fs.readFileSync(path.join(root, 'public_html/js/quiz-result-art.js'), 'utf8'), artCtx);
@@ -150,22 +150,32 @@ test('북퀴즈 결과 우측 상단 따봉 추천 버튼은 60점 이상에서�
   const recHtml = NanoQuizResult.render(80, 'nano', book, { stage: 2, isRecommended: true });
   assert.ok(recHtml.includes('is-recommended') && recHtml.includes('추천 완료'));
 
-  // 4) 모든 9종 나노프렌즈(nano, toto, booki, pico, popo, chichi, lumi, mir, jelly) × 3단계 모두 기쁨 모션 파츠 포함
+  // 4) 기존 저장 ID와 27개 성장 외형을 유지하며 각 캐릭터가 고유한 추천 반응을 보여 줍니다.
   const allFriends = ['nano', 'toto', 'booki', 'pico', 'popo', 'chichi', 'lumi', 'mir', 'jelly'];
   assert.deepEqual(Object.keys(NanoQuizResult.characters), allFriends);
   const studentHtml = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
   const quizCss = fs.readFileSync(path.join(root, 'public_html/css/quiz-result.css'), 'utf8');
-  assert.ok(quizCss.includes('.qr-card.is-celebrating .qr-mascot[data-friend] .qr-mascot-motion'));
+  assert.equal(NanoQuizResult.characters.lumi.name, '냥이');
+  assert.equal(NanoQuizResult.characters.jelly.name, '양양');
+  assert.equal(new Set([...quizCss.matchAll(/--friend-celebrate:\s*(\w+)/g)].map(match => match[1])).size, 9);
+  assert.match(quizCss, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(quizCss, /animation: none !important/);
+  assert.match(recHtml, /aria-pressed="true"/);
+  assert.match(recHtml, /추천을 취소하려면 다시 눌러 주세요/);
 
   for (const fid of allFriends) {
     assert.ok(new RegExp(`\\b${fid}\\s*:`).test(studentHtml.split('CHAR_RECOMMEND_REACTIONS')[1]), `${fid} 추천 기쁨 대사 존재 확인`);
+    assert.equal(new Set([1, 2, 3].map(stage => NanoQuizResult.avatar(fid, 100, stage))).size, 3);
     for (const stg of [1, 2, 3]) {
+      const avatar = NanoQuizResult.avatar(fid, 100, stg);
+      assert.ok(avatar.includes('role="img"') && avatar.includes('aria-label="' + NanoQuizResult.characters[fid].name + ' ' + stg + '단계"'));
+      for (const score of [0, 60, 80, 100]) assert.ok(NanoQuizResult.render(score, fid, book, { stage: stg }).includes('data-stage="' + stg + '"'));
       const rendered = NanoQuizResult.render(80, fid, book, { stage: stg });
       assert.ok(rendered.includes(`data-friend="${fid}"`), `${fid} 캐릭터 식별자 확인`);
       assert.ok(rendered.includes('class="qr-eyes-joy"'), `${fid} ${stg}단계 반달 눈웃음 파츠 확인`);
-      assert.ok(rendered.includes('class="qr-mouth-joy"'), `${fid} ${stg}단계 함박웃음 파츠 확인`);
-      assert.ok(rendered.includes('class="qr-arms-joy"'), `${fid} ${stg}단계 만세 팔 파츠 확인`);
-      assert.ok(rendered.includes('class="qr-joy-burst"'), `${fid} ${stg}단계 하트·별·따봉 폭죽 확인`);
+      assert.ok(rendered.includes('class="qr-arms-joy"'), `${fid} ${stg}단계 고유 제스처 확인`);
+      assert.ok(rendered.includes('class="qr-signature-effect qr-effect-' + fid + '"'), `${fid} ${stg}단계 고유 추천 효과 확인`);
+      assert.ok(!rendered.includes('qr-joy-burst') && !rendered.includes('qr-joy-thumb-badge'), '공통 하트·따봉 폭죽을 사용하지 않음');
     }
   }
 });
@@ -196,11 +206,17 @@ test('추천 API는 60점 이상 인증 도서만 허용하며 기존 마스터 
     portalSetting: {
       findUnique: async ({ where }) => store.get(where.key) || null,
       findMany: async ({ where }) => Array.from(store.values()).filter(r => r.scope === where.scope),
-      upsert: async ({ where, create, update }) => {
-        const prev = store.get(where.key);
-        const next = prev ? { ...prev, scope: update.scope, value: update.value } : { ...create };
-        store.set(where.key, next);
+      create: async ({ data }) => {
+        if (store.has(data.key)) throw Object.assign(Error('Unique key'), { code: 'P2002' });
+        const next = { ...data, revision: 1 };
+        store.set(data.key, next);
         return next;
+      },
+      updateMany: async ({ where, data }) => {
+        const prev = store.get(where.key);
+        if (!prev || prev.revision !== where.revision) return { count: 0 };
+        store.set(where.key, { ...prev, scope: data.scope, value: data.value, revision: prev.revision + data.revision.increment });
+        return { count: 1 };
       }
     }
   };

@@ -34,7 +34,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "aligo_dispatch_logs_retryOf_key" ON aligo_dis
 CREATE INDEX IF NOT EXISTS "aligo_dispatch_logs_status_checkedAt_idx" ON aligo_dispatch_logs(status, "checkedAt");
 CREATE TABLE IF NOT EXISTS kakao_ledger (
   id TEXT PRIMARY KEY,
-  "academyId" TEXT NOT NULL REFERENCES academies(id),
+  "academyId" TEXT NOT NULL REFERENCES academies(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   amount INTEGER NOT NULL,
   kind TEXT NOT NULL,
   "referenceId" TEXT NOT NULL,

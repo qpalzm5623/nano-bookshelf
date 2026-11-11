@@ -10,7 +10,7 @@ function load(file, deps) {
   return exports;
 }
 const policy = load('lib/billing-policy.ts',{});
-const need=(value,message)=>{if(!value)throw Error(message);};
+const need=(value,message,status=400)=>{if(!value){const error=Error(message);error.status=status;throw error;}};
 function database(initial=50000) {
   let data={balance:initial,logs:{},ledger:[],payments:{}};
   let queue=Promise.resolve();
@@ -73,9 +73,9 @@ test('문자 대체 및 결과 불명은 환급하지 않는다',async()=>{
 });
 function billing(db,role='MASTER'){
   const w=wallet(db);
-  return load('api/billing.ts',{'../lib/prisma':{prisma:db},'../lib/portal-http':{need,authenticate:async()=>({role,academyId:'academy'}),staff:()=>{},master:user=>need(user.role==='MASTER','권한'),academyScope:async()=> 'academy',text:v=>String(v||''),failure:(res,e)=>res.status(400).json({error:e.message})},'../lib/billing-policy':policy,'../lib/kakao-wallet':w,'../lib/payment-view':{},'../lib/dispatch-view':{}}).default;
+  return load('api/billing.ts',{'../lib/prisma':{prisma:db},'../lib/portal-http':{need,authenticate:async()=>({role,academyId:'academy'}),staff:()=>{},master:user=>need(user.role==='MASTER','권한',403),academyScope:async()=> 'academy',text:v=>String(v||''),failure:(res,e)=>res.status(e.status||400).json({error:e.message})},'../lib/billing-policy':policy,'../lib/kakao-wallet':w,'../lib/payment-view':{},'../lib/dispatch-view':{}}).default;
 }
-async function request(handler,body){const res={code:200,setHeader(){},status(n){this.code=n;return this;},json(value){this.body=value;return this;}};await handler({method:'POST',body},res);return res;}
+async function request(handler,body,method='POST'){const res={code:200,setHeader(){},status(n){this.code=n;return this;},json(value){this.body=value;return this;}};await handler({method,body,query:{}},res);return res;}
 const pay={operation:'save',requestId:'12345678-1234-1234-1234-123456789012',academyId:'A',productCode:'KAKAO',amount:5500,method:'TRANSFER',status:'PAID'};
 test('동일 수동 결제 요청은 한 번 적립하고 중복 확인에도 적립하지 않는다',async()=>{
   const db=database(0),run=billing(db);
@@ -87,11 +87,59 @@ test('사용한 충전액으로 결제 취소 시 음수 잔액 없이 전체 �
   const db=database(0),run=billing(db),w=wallet(db);
   const first=await request(run,pay);await w.reserveDispatch(dispatch('one'),member,{});
   const result=await request(run,{...pay,id:first.body.id,revision:1,operation:'delete'});
-  assert.equal(result.code,400);assert.equal(db.data.balance,49915);assert.equal(db.data.payments[first.body.id].status,'PAID');
+  assert.equal(result.code,409);assert.equal(db.data.balance,49915);assert.equal(db.data.payments[first.body.id].status,'PAID');
 });
 test('학원 구매 신청은 대기 상태로만 저장하고 입금 확인 전 적립하지 않는다',async()=>{
   const db=database(0),run=billing(db,'DIRECTOR');
   const result=await request(run,{...pay,operation:'topup'});
   assert.equal(result.code,200);assert.equal(result.body.status,'PENDING');assert.equal(db.data.balance,0);
-  const denied=await request(run,pay);assert.equal(denied.code,400);
+  const denied=await request(run,pay);assert.equal(denied.code,403);
+});
+
+test('학원 구매 신청에 기존 수동·충전 결제 ID를 보내도 결제와 잔액을 변경하지 않는다',async()=>{
+  const db=database(0),masterRun=billing(db),directorRun=billing(db,'DIRECTOR');
+  const manual=await request(masterRun,{...pay,method:'CARD'});
+  const topup=await request(directorRun,{...pay,operation:'topup'});
+  const before=structuredClone(db.data);
+  for(const payment of [manual,topup]){
+    const denied=await request(directorRun,{...pay,operation:'topup',id:payment.body.id,revision:1,amount:11000});
+    assert.equal(denied.code,403);
+    assert.deepEqual(structuredClone(db.data),before);
+  }
+  const repeated=await request(directorRun,{...pay,operation:'topup'});
+  assert.equal(repeated.body.id,topup.body.id);
+  assert.equal(db.data.payments[manual.body.id].payMethod,'CARD');
+  assert.deepEqual(structuredClone(db.data),before);
+});
+
+test('기존 결제 수정·삭제는 본사만 가능하고 본사는 대기 충전을 승인할 수 있다',async()=>{
+  const db=database(0),masterRun=billing(db),directorRun=billing(db,'DIRECTOR');
+  const topup=await request(directorRun,{...pay,operation:'topup'});
+  const before=structuredClone(db.data);
+  for(const operation of ['save','delete']){
+    const denied=await request(directorRun,{...pay,operation,id:topup.body.id,revision:1});
+    assert.equal(denied.code,403);assert.deepEqual(structuredClone(db.data),before);
+  }
+  const approved=await request(masterRun,{...pay,id:topup.body.id,revision:1});
+  assert.equal(approved.code,200);assert.equal(approved.body.status,'PAID');assert.equal(db.data.balance,50000);
+});
+
+test('삭제는 결제 ID가 필수이고 존재하지 않는 결제는 새로 생성하지 않는다',async()=>{
+  const db=database(0),run=billing(db);
+  const first=await request(run,pay),before=structuredClone(db.data);
+  for(const id of [undefined,'','   ','missing-payment']){
+    const denied=await request(run,{...pay,operation:'delete',id,revision:1});
+    assert.equal(denied.code,id==='missing-payment'?404:400);
+    assert.deepEqual(structuredClone(db.data),before);
+  }
+  const deleted=await request(run,{...pay,operation:'delete',id:first.body.id,revision:1});
+  assert.equal(deleted.code,200);assert.equal(deleted.body.status,'CANCELLED');assert.equal(db.data.balance,0);
+});
+
+test('GET 이외 결제 변경은 POST만 허용하고 다른 HTTP 메서드는 저장 전에 차단한다',async()=>{
+  const db=database(0),run=billing(db),before=structuredClone(db.data);
+  for(const method of ['PUT','PATCH','DELETE','HEAD']){
+    const denied=await request(run,pay,method);
+    assert.equal(denied.code,405);assert.deepEqual(structuredClone(db.data),before);
+  }
 });

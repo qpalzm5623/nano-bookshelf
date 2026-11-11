@@ -43,6 +43,9 @@ export default async function handler(req: any, res: any) {
       need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
       const rawBookId = String(req.body?.bookId || '').trim();
       need(/^[A-Za-z0-9_-]{1,100}$/.test(rawBookId), '추천할 도서 정보를 확인해 주세요.');
+      need(req.body?.recommended === undefined || typeof req.body.recommended === 'boolean', '추천 상태를 확인해 주세요.');
+      // 원하는 상태를 저장하여 같은 요청이 재전송되어도 추천이 다시 뒤집히지 않게 합니다.
+      const recommended = req.body?.recommended !== false;
       const book = await prisma.book.findFirst({
         where: { OR: [{ bookNo: rawBookId }, { id: rawBookId }] },
         select: { id: true, bookNo: true, isRecommended: true },
@@ -56,20 +59,36 @@ export default async function handler(req: any, res: any) {
       need(passed, '60점 이상 인증 완료한 도서만 추천할 수 있습니다.', 403);
 
       const canonicalNo = String(book.bookNo || book.id);
-      const existingRow = await prisma.portalSetting.findUnique({ where: { key } });
-      const prevBooks = Array.isArray((existingRow?.value as any)?.books)
-        ? ((existingRow!.value as any).books as any[]).map((b) => String(b).trim()).filter(Boolean)
-        : [];
-      const alreadyRecommended = prevBooks.includes(canonicalNo) || prevBooks.includes(book.id);
-      const nextBooks = alreadyRecommended ? prevBooks : Array.from(new Set([...prevBooks, canonicalNo]));
-
-      if (!alreadyRecommended) {
-        await prisma.portalSetting.upsert({
-          where: { key },
-          create: { key, scope: 'book_recommend', value: { books: nextBooks } },
-          update: { scope: 'book_recommend', value: { books: nextBooks }, revision: { increment: 1 } },
-        });
+      let alreadyRecommended = false;
+      let saved = false;
+      // 다른 탭에서 서로 다른 책을 변경해도 전체 추천 목록을 덮어쓰지 않습니다.
+      for (let attempt = 0; attempt < 4 && !saved; attempt += 1) {
+        const existingRow = await prisma.portalSetting.findUnique({ where: { key } });
+        const prevBooks = Array.isArray((existingRow?.value as any)?.books)
+          ? ((existingRow!.value as any).books as any[]).map((b) => String(b).trim()).filter(Boolean)
+          : [];
+        alreadyRecommended = prevBooks.includes(canonicalNo) || prevBooks.includes(book.id);
+        const nextBooks = recommended
+          ? Array.from(new Set([...prevBooks.filter(id => id !== book.id), canonicalNo]))
+          : prevBooks.filter(id => id !== canonicalNo && id !== book.id);
+        if (existingRow) {
+          // 같은 상태의 재전송도 읽은 버전을 확인해 동시 취소·추천과 순서를 보장합니다.
+          const changed = await prisma.portalSetting.updateMany({
+            where: { key, revision: existingRow.revision },
+            data: { scope: 'book_recommend', value: { books: nextBooks }, revision: { increment: 1 } },
+          });
+          saved = changed.count === 1;
+        } else {
+          try {
+            await prisma.portalSetting.create({ data: { key, scope: 'book_recommend', value: { books: nextBooks } } });
+            saved = true;
+          } catch (error) {
+            // 최초 저장이 겹친 경우 먼저 생성된 목록을 다시 읽고 요청한 책만 변경합니다.
+            if ((error as { code?: string })?.code !== 'P2002') throw error;
+          }
+        }
       }
+      need(saved, '다른 기기에서 추천 목록이 변경되었습니다. 다시 시도해 주세요.', 409);
 
       const [socialSetting, allRecRows] = await Promise.all([
         prisma.portalSetting.findUnique({ where: { key: 'legacy_book_social_stats' } }),
@@ -87,6 +106,7 @@ export default async function handler(req: any, res: any) {
       return res.json({
         ok: true,
         alreadyRecommended,
+        recommended,
         bookNo: canonicalNo,
         recommends: baseRecs + dynamicRecs,
       });

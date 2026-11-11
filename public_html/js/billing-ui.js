@@ -78,7 +78,7 @@
         : p.status === 'paid'
           ? `<span class="badge px-2 py-1 font-weight-bold" style="background:#eaf5ec;color:#1e6b35;border:1px solid #b7dfbe;font-size:11.5px;"><i class="fa-solid fa-check mr-1"></i>${esc(statusLabel)}</span>${p.taxInvoiceIssued ? '<br><small>세금계산서 발행</small>' : ''}`
           : esc(statusLabel);
-      const manageHtml = (p.isAutoPending || p.status === 'pending')
+      const manageHtml = p.isAutoPending || (p.status === 'pending' && !p.manual)
         ? `<button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" data-payment-register-academy="${esc(p.academyId)}" style="border-radius:8px;font-size:11.5px;padding:4px 10px;white-space:nowrap;"><i class="fa-solid fa-plus mr-1"></i>결제 등록</button>${p.manual && !p.isAutoPending ? ` <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}" style="font-size:11px;padding:3px 7px;">삭제</button>` : ''}`
         : p.manual
           ? `<button type="button" class="btn btn-sm btn-outline-secondary" data-payment-edit="${esc(p.id)}">수정</button> <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}">삭제</button>`
@@ -150,7 +150,8 @@
         </button>
       </div>
       <input type="hidden" name="method" value="${esc(initialMethod)}">
-      <input type="hidden" name="status" value="${esc((p?.status || 'paid').toUpperCase())}">
+      ${field('결제 상태', `<select class="select-beige w-100" name="status" aria-label="결제 상태">${[['PAID','결제 완료'],['PENDING','결제 대기'],['CANCELLED','취소']].map(([value, label]) => `<option value="${value}" ${(p?.status || 'paid').toUpperCase() === value ? 'selected' : ''}>${label}</option>`).join('')}</select>`)}
+      ${p?.productCode === 'KAKAO' && p.status === 'pending' ? '<p class="text-muted" style="font-size:12px;">입금을 확인한 뒤 결제 완료로 저장하면 신청 금액이 충전됩니다.</p>' : ''}
 
       <!-- 1. 학원 선택 드롭 박스 (검색 지원) -->
       <div class="mb-3" id="billingAcademyDropdown" style="position:relative;">
@@ -197,6 +198,9 @@
         </div>
       </div>
 
+      <label class="d-flex align-items-center mb-3" style="gap:8px;font-size:12.5px;">
+        <input type="checkbox" name="taxInvoiceIssued" ${p?.taxInvoiceIssued ? 'checked' : ''}>세금계산서 발행 완료
+      </label>
       <!-- 6. 현금영수증/메모칸 (현금/계좌이체) 또는 카드 결제 승인 ID (신용카드) -->
       <div class="mb-1">
         <label id="billingMemoLabel" class="font-weight-bold mb-1 d-block" style="font-size:12.5px;color:#3d342d;">현금영수증 / 메모</label>
@@ -328,6 +332,7 @@
           revision: p?.revision,
           academyId: p?.academyId || data.academyId,
           status: data.status || 'PAID',
+          taxInvoiceIssued: form.elements.taxInvoiceIssued.checked,
           paidAt: data.paidAt ? data.paidAt + ':00+09:00' : undefined
         });
         el.close();
@@ -353,7 +358,7 @@
       '카카오톡 알림 충전 신청',
       `<div class="py-2 px-3 mb-3" style="font-size:12px;background:#fdfbf7;border:1px solid #ebdcc9;border-radius:10px;color:#5c5046;line-height:1.5;">
         <i class="fa-solid fa-comment-dots text-warning mr-1"></i>
-        <strong>5,500원(부가세 포함)</strong>마다 5,000원이 적립되며, 발송 시 건당 8.5원이 차감됩니다.<br>계좌이체 구매 신청 후 본사에서 입금을 확인하면 즉시 충전됩니다.
+        <strong>5,500원(부가세 포함)</strong>마다 5,000원이 적립되며, 발송 시 건당 8.5원이 차감됩니다.<br>계좌이체 구매 신청 후 본사에서 입금을 확인하면 즉시 충전됩니다.<br>입금 계좌는 본사에 확인해 주세요.
       </div>` +
       field('구매 수량 (1구좌 = 5,500원)', input('quantity', 1, 'number', 'min="1" max="10000" step="1" required'), true) +
       `<div class="p-3 mb-1 rounded d-flex justify-content-between align-items-center" style="background:#fdfbf7;border:1px solid #ece6dc;font-size:13.5px;">

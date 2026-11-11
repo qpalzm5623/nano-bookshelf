@@ -11,6 +11,7 @@ composer.phar
 scratch_*.ps1
 scratch_*.php
 scripts/migrate/find_cat_quiz.ts
+scripts/.prisma-check/
 public_html/scratch_*.js
 public_html/test_*.html
 *.log

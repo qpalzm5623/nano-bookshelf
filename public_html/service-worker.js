@@ -3,7 +3,7 @@
  * PWA 오프라인 지원, 캐싱 및 빠른 로딩 처리
  */
 
-const CACHE_NAME = 'nano-bookshelf-v20261106-modal-center-v1';
+const CACHE_NAME = 'nano-bookshelf-v20261110-characters-billing';
 
 // 오프라인 및 기본 캐싱 대상 핵심 리소스
 const PRECACHE_ASSETS = [
@@ -15,8 +15,8 @@ const PRECACHE_ASSETS = [
   './manifest.json',
   './js/pwa-install.js',
   './js/reading-progress.js?v=20261029-integrity',
-  './js/quiz-result-art.js?v=20261029-integrity',
-  './css/quiz-result.css?v=20261029-friends3',
+  './js/quiz-result-art.js?v=20261110-characters',
+  './css/quiz-result.css?v=20261110-characters',
   './resources/images/icons/icon-192.png',
   './resources/images/icons/icon-512.png',
   './resources/images/icons/apple-touch-icon.png',

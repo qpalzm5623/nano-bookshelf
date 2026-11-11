@@ -26,11 +26,16 @@ export default async function handler(req: any, res: any) {
       return res.json({ items: items.map(paymentView), products: PRODUCTS, balance: (academy?.kakaoBalance || 0) / 10, remainingCount: Math.floor((academy?.kakaoBalance || 0) / KAKAO_UNIT),
         stats: { monthRevenue: paid.filter(p => dispatchDate(p.paidAt || p.createdAt).startsWith(month)).reduce((a, p) => a + p.amount, 0), paidCount: paid.length, pendingCount: pending.length, pendingAmount: pending.reduce((a,p) => a+p.amount,0), expiring } });
     }
+    need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
     const input = req.body || {};
     const operation = String(input.operation || 'save');
     need(['save', 'delete', 'topup'].includes(operation), '결제 작업을 확인해 주세요.');
-    if (operation === 'topup') need(user.role === 'DIRECTOR', '학원 원장 권한이 필요합니다.', 403);
+    if (operation === 'topup') {
+      need(user.role === 'DIRECTOR', '학원 원장 권한이 필요합니다.', 403);
+      need(!input.id, '구매 신청으로 기존 결제 내역을 변경할 수 없습니다.', 403);
+    }
     else master(user);
+    if (operation === 'delete') need(typeof input.id === 'string' && input.id.trim().length > 0, '삭제할 결제 내역을 선택해 주세요.');
     const academyId = operation === 'topup' ? user.academyId : await academyScope(user, input.academyId);
     const product = PRODUCTS.find(p => p.code === (operation === 'topup' ? 'KAKAO' : input.productCode));
     if (operation !== 'delete') need(product, '등록된 상품을 선택해 주세요.');

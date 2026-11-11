@@ -18,9 +18,9 @@ var NanoQuizResult = (function () {
     pico: { name: '피코', fur: '#647c9c', dark: '#3e526f', light: '#f6f5e9' },
     popo: { name: '포포', fur: '#b89170', dark: '#76553f', light: '#f4dfbd' },
     chichi: { name: '치치', fur: '#cc9465', dark: '#97613e', light: '#fff0d1' },
-    lumi: { name: '루미', fur: '#bea6de', dark: '#7b60a0', light: '#f7eaff' },
+    lumi: { name: '냥이', fur: '#aaa8c8', dark: '#64617f', light: '#f6f1eb' },
     mir: { name: '미르', fur: '#7bb7ac', dark: '#3f8078', light: '#e6efce' },
-    jelly: { name: '젤리', fur: '#9acbd3', dark: '#538b9d', light: '#e9f9f6' }
+    jelly: { name: '양양', fur: '#f4ead7', dark: '#9b8575', light: '#fffaf0' }
   };
   var tiers = {
     perfect: { title: '책 속의 모든 순간을 찾았어요!', label: '완벽한 발견', note: '모든 문항을 맞혔어요', icon: 'trophy' },
@@ -120,133 +120,165 @@ var NanoQuizResult = (function () {
     return Number.isFinite(stage) ? Math.max(1, Math.min(3, Math.floor(stage))) : 1;
   }
 
+  // 단계가 오르면 각 친구의 생활과 도구가 자랍니다. 공통 왕관·망토는 사용하지 않습니다.
   function growthArtwork(id, stage, c) {
-    var back = '', outfit = '', head = '';
-    if (stage === 1) return { back: back, outfit: outfit, head: head };
-    // 2단계는 각 친구의 분야를 상징하는 의상, 3단계는 그 의상의 완성형입니다.
-    var master = stage === 3;
-    var gold = '#e5bd74';
-    if (master) {
-      back = '<path d="M-30,8Q-63,27 -55,72L-29,61L0,77L29,61L55,72Q63,27 30,8Z" fill="' + c.dark + '"/><path d="M-52,65L-29,55M29,55L52,65" stroke="' + gold + '" stroke-width="3" stroke-linecap="round"/>';
+    var master = stage === 3, growing = stage > 1;
+    var back = '', outfit = '', head = '', prop = '';
+    if (id === 'nano') {
+      outfit = growing
+        ? '<path d="M-28,12L-9,18L0,40L9,18L28,12L33,59L8,65L0,52L-8,65L-33,59Z" fill="' + (master ? '#536f65' : '#8da58e') + '"/><path d="M-17,16L-5,40L-19,33M17,16L5,40L19,33" fill="#d6ddc3"/><path d="M11,43H25V54H11Z" fill="#3f5d55"/><circle cy="46" r="2.5" fill="#e9c58e"/>'
+        : '<path d="M-20,12L0,20L20,12L13,28L0,24L-13,28Z" fill="#66877b"/>';
+      head = master ? '<path d="M-32,-64Q-26,-88 -4,-78Q16,-85 28,-66L39,-60Q4,-65 -38,-57Z" fill="#526e63"/><path d="M-27,-66Q0,-73 27,-65" stroke="#b7c7ae" stroke-width="3" fill="none"/>' : '';
+      prop = '<g class="qr-signature-prop" transform="translate(42 38) rotate(-14)"><path d="M0,12V29" stroke="#6b4c37" stroke-width="7" stroke-linecap="round"/><circle r="15" fill="#d8e8dc" fill-opacity=".9" stroke="' + (master ? '#bb955a' : '#6d7a64') + '" stroke-width="4"/><path d="M-8,-4Q-6,-10 1,-9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>';
+      if (growing) outfit += '<g transform="translate(-20 47) rotate(-9)"><rect x="-11" y="-11" width="23" height="29" rx="3" fill="#c6a477"/><path d="M-5,-3H6M-5,3H6M-5,9H2" stroke="#fff0cc" stroke-width="2"/><path d="M-7,-11V18" stroke="#8b6a4f" stroke-width="2"/></g>';
+    } else if (id === 'toto') {
+      outfit = growing ? '<path d="M-23,14L29,58" stroke="#af697d" stroke-width="7"/><rect x="-37" y="39" width="36" height="29" rx="8" fill="' + (master ? '#a9657d' : '#cd91a5') + '"/><path d="M-35,41L-19,54L-2,41" fill="none" stroke="#f4d5d7" stroke-width="2"/>' : '<path d="M-12,14L0,20L12,14L10,27L0,23L-10,27Z" fill="#c58d9f"/>';
+      head = growing ? '<g transform="translate(31 -61)"><path d="M-4,1Q-20,-15 -16,-22Q0,-20 4,-5Q13,-20 21,-15Q22,-3 6,3" fill="' + (master ? '#c9859b' : '#e5b5c1') + '"/><circle r="5" fill="#f5dfb7"/></g>' : '';
+      prop = '<g class="qr-signature-prop" transform="translate(27 43) rotate(-12)"><rect x="-18" y="-12" width="36" height="26" rx="3" fill="#fff9ed" stroke="#d3bdab" stroke-width="1.5"/><path d="M-16,-10L0,3L16,-10" fill="none" stroke="#c8a7a6" stroke-width="1.5"/><circle cy="3" r="3" fill="#bd8396"/></g>';
+      if (master) back = '<g transform="translate(-43 31)"><path d="M0,32L-5,-7M0,32L12,0" stroke="#7b9a76" stroke-width="3"/><path d="M-1,16Q-17,4 -18,17Q-9,24 -1,16M4,22Q18,10 19,22Q11,29 4,22" fill="#9eb190"/><g fill="#d9a0ac"><circle cx="-6" cy="-11" r="12"/><circle cx="12" cy="-2" r="9"/></g><circle cx="-6" cy="-11" r="4" fill="#fff1c4"/><circle cx="12" cy="-2" r="3" fill="#fff1c4"/></g>';
+    } else if (id === 'booki') {
+      back = growing ? '<path d="M-31,11Q-77,8 -69,58Q-52,58 -28,41M31,11Q77,8 69,58Q52,58 28,41" fill="' + (master ? '#436d60' : '#59816b') + '"/><path d="M-38,22L-59,47M38,22L59,47M-47,25L-49,36L-60,34M47,25L49,36L60,34" stroke="#a6bd8a" stroke-width="2" fill="none"/>' : '';
+      if (master) back = '<path d="M-31,8Q-71,-5 -83,23L-69,27L-82,43L-62,42L-68,59Q-40,64 -25,35M31,8Q71,-5 83,23L69,27L82,43L62,42L68,59Q40,64 25,35" fill="#436d60"/><path d="M-36,18L-67,44M36,18L67,44M-47,21L-48,31L-64,28M47,21L48,31L64,28M-57,35L-59,44L-71,40M57,35L59,44L71,40" stroke="#b1c58d" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+      outfit = '<path d="M-20,26L-13,33L-6,26M4,38L11,45L18,38M-12,49L-5,56L2,49" stroke="#aec1a0" stroke-width="3" fill="none" stroke-linecap="round"/>';
+      head = growing ? '<path d="M-37,-54Q-54,-75 -45,-87Q-28,-83 -25,-61M37,-54Q54,-75 45,-87Q28,-83 25,-61" fill="#4f7b65"/><path d="M-43,-78L-32,-61M43,-78L32,-61" stroke="#b5c991" stroke-width="2"/>' : '';
+      if (master) head += '<path d="M-17,-62Q0,-80 17,-62Q3,-57 -17,-62" fill="#9eaf7c"/><path d="M0,-62V-74" stroke="#59765e" stroke-width="2"/>';
+      prop = '<g class="qr-signature-prop">' + book(0, 39, growing ? .66 : .52, '#537963') + (master ? '<path d="M17,43Q3,34 8,24Q22,27 17,43" fill="#87a16f"/><path d="M14,29L17,43" stroke="#527959" stroke-width="1.5"/>' : '') + '</g>';
+    } else if (id === 'pico') {
+      outfit = growing ? '<path d="M-29,13Q0,26 29,13L31,61Q0,76 -31,61Z" fill="#e6eeeb" stroke="#a4b9be" stroke-width="2"/><rect x="-17" y="30" width="34" height="23" rx="6" fill="#4d7189"/><circle cx="-7" cy="41" r="4" fill="#e4bc73"/><path d="M3,37H11M3,43H11" stroke="#d3e5df" stroke-width="2" stroke-linecap="round"/>' : '<path d="M-32,12Q0,25 32,12L30,23Q0,35 -30,23Z" fill="#bc8973"/>';
+      head = growing ? '<path d="M-52,-18Q-60,-85 0,-89Q60,-85 52,-18" fill="none" stroke="#8eaab5" stroke-width="4"/><rect x="-58" y="-32" width="10" height="23" rx="5" fill="#6c8b9a"/><rect x="48" y="-32" width="10" height="23" rx="5" fill="#6c8b9a"/><path d="M53,-31L61,-61" stroke="#72949f" stroke-width="3"/><circle cx="62" cy="-64" r="5" fill="#e6bb75"/>' : '';
+      back = master ? '<g fill="#789baa" stroke="#d3e3df" stroke-width="1.5"><path d="M-34,20L-74,8L-78,42L-38,54ZM34,20L74,8L78,42L38,54Z"/><path d="M-55,14L-58,48M55,14L58,48M-76,25L-36,37M76,25L36,37" fill="none"/></g>' : '';
+      prop = '<g class="qr-signature-prop" transform="translate(28 42) rotate(9)"><rect x="-15" y="-18" width="30" height="38" rx="5" fill="#426177"/><rect x="-11" y="-13" width="22" height="25" rx="2" fill="#c3dedb"/><path d="M-7,4L-2,-2L3,1L8,-7" fill="none" stroke="#4b8c8d" stroke-width="2"/><circle cy="16" r="1.8" fill="#c7d9d6"/></g>';
+    } else if (id === 'popo') {
+      outfit = growing ? '<path d="M-31,14L-10,20L0,35L10,20L31,14L33,62L12,68L0,58L-12,68L-33,62Z" fill="' + (master ? '#8c7d61' : '#c4ac82') + '"/><path d="M-23,39H-9V53H-23M9,39H23V53H9" fill="#e7d6b5"/><path d="M-25,14L30,58" stroke="#77583f" stroke-width="6"/>' : '<path d="M-24,16L28,57" stroke="#84654d" stroke-width="6"/><rect x="17" y="45" width="25" height="23" rx="5" fill="#9d7b55"/>';
+      head = master ? '<path d="M-33,-62L-27,-82Q0,-91 27,-82L33,-62Z" fill="#ad9570"/><path d="M-29,-70H29" stroke="#756149" stroke-width="5"/><path d="M-43,-61Q0,-69 43,-61" stroke="#977b58" stroke-width="7" stroke-linecap="round"/>' : '';
+      prop = '<g class="qr-signature-prop" transform="translate(7 44) rotate(-7)"><path d="M-30,-16L-11,-11L9,-17L29,-12V18L9,13L-11,19L-30,14Z" fill="#f1dfb9" stroke="#b49971" stroke-width="1.5"/><path d="M-11,-11V19M9,-17V13" stroke="#c6b086" stroke-width="1.5"/><path d="M-22,5Q-12,-8 -3,5T18,0" stroke="#a88765" stroke-width="2" fill="none" stroke-dasharray="3 3"/><circle cx="18" r="3" fill="#ac7357"/></g>';
+      if (master) back = '<g transform="translate(-47 24) rotate(-10)"><rect x="-9" y="-18" width="18" height="56" rx="4" fill="#dbbd8c"/><path d="M-12,-17H12M-12,37H12" stroke="#8c6d4c" stroke-width="5" stroke-linecap="round"/></g>';
+    } else if (id === 'chichi') {
+      outfit = growing ? '<path d="M-18,12H18L21,29L29,64Q0,76 -29,64L-21,29Z" fill="' + (master ? '#648671' : '#9bb291') + '"/><path d="M-14,12L-20,32M14,12L20,32" stroke="#e7e1bb" stroke-width="5"/><path d="M-15,43H15V59Q0,65 -15,59Z" fill="#c8d2ad"/>' : '<path d="M-25,12L0,22L25,12L16,31L0,24L-16,31Z" fill="#d7b770"/>';
+      head = growing ? '<path d="M-35,-63Q0,-73 35,-63" stroke="#d5b370" stroke-width="7" stroke-linecap="round"/><path d="M16,-67Q12,-87 27,-89Q36,-74 16,-67" fill="#7f9d6d"/>' : '';
+      prop = '<g class="qr-signature-prop" transform="translate(22 45)"><path d="M-15,-3Q0,-15 15,-3L11,18Q0,28 -11,18Z" fill="#b97d4f"/><path d="M-17,-3Q0,-21 17,-3L15,3H-15Z" fill="#88633e"/><path d="M0,-12V-22Q11,-25 15,-18Q10,-11 0,-15" fill="#789866" stroke="#789866" stroke-width="2"/></g>';
+      if (master) back = '<g transform="translate(-58 32)"><path d="M-17,-3Q-21,-30 -8,-25Q0,-17 -4,-2M-3,-3Q0,-38 14,-34Q23,-17 9,-2" fill="#8da77b"/><path d="M-22,-2H22L17,30Q0,37 -17,30Z" fill="#c2a075"/><path d="M-20,5H20M-19,14H19M-17,23H17M-9,0L-7,31M3,0V33M13,0L11,31" stroke="#e1c39a" stroke-width="2"/><path d="M-20,-2Q0,-21 20,-2" fill="none" stroke="#a5825b" stroke-width="3"/></g>';
+      if (master) outfit += '<g transform="translate(-23 47)"><path d="M-9,0L0,22L9,0Z" fill="#d5a065"/><path d="M0,0L-6,-12M0,0L6,-14" stroke="#76946a" stroke-width="4" stroke-linecap="round"/></g>';
+    } else if (id === 'lumi') {
+      outfit = '<path d="M-24,11Q0,24 24,11L22,20Q0,31 -22,20Z" fill="' + (master ? '#6d7295' : '#9298b4') + '"/><path d="M0,22L7,31L0,40L-7,31Z" fill="#e4c48f"/><circle cy="31" r="2" fill="#fff8e8"/>';
+      if (growing) outfit += '<path d="M-27,19L23,58" stroke="#7c799a" stroke-width="4"/><rect x="12" y="44" width="27" height="25" rx="5" fill="#85829e"/><path d="M18,51H31M18,57H27" stroke="#ddd8eb" stroke-width="2"/>';
+      head = master ? '<path d="M-29,-60Q0,-73 29,-60" stroke="#7b7899" stroke-width="3" fill="none"/><g transform="translate(31 -57)"><path d="M-7,-7H7V7H-7Z" fill="#c4b4d1" transform="rotate(45)"/><circle r="3" fill="#f7eccf"/></g>' : '';
+      prop = growing ? '<g class="qr-signature-prop" transform="translate(-23 39) rotate(-10)"><path d="M-18,19L0,-15L19,19Z" fill="#d9cfb4"/><path d="M-8,12L0,-2L8,12Z" fill="#f8f5ec"/><path d="M-12,14L-9,15M-6,4L-3,5M0,-7L3,-6" stroke="#9e8c70" stroke-width="1.5"/></g>' : '';
+      if (master) prop = '<g class="qr-signature-prop" transform="translate(-28 39) rotate(-10)"><rect x="-21" y="-19" width="42" height="39" rx="5" fill="#757998"/><path d="M-13,10L0,-12L13,10Z" fill="none" stroke="#e3d1aa" stroke-width="2"/><path d="M-13,10H13M0,-12V10" stroke="#d2d9e8" stroke-width="1.5"/><circle cy="4" r="6" fill="none" stroke="#d2d9e8" stroke-width="1.5"/></g>';
+      if (master) back = '<g transform="translate(-58 0)"><ellipse rx="27" ry="10" transform="rotate(-35)" stroke="#b5a3cb" stroke-width="2" fill="none"/><circle cx="-15" cy="11" r="5" fill="#d9c58e"/></g>';
+    } else if (id === 'mir') {
+      head = growing ? '<path d="M-26,-57Q-44,-70 -39,-93M26,-57Q44,-70 39,-93M-39,-78L-51,-84M39,-78L51,-84" stroke="#d8c9a1" stroke-width="7" stroke-linecap="round" fill="none"/>' : '';
+      if (master) head += '<path d="M-40,-90L-49,-99M40,-90L49,-99M-34,-64L-53,-69M34,-64L53,-69" stroke="#d8c9a1" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M-41,-44Q-65,-28 -57,-8M41,-44Q65,-28 57,-8" fill="none" stroke="#c1d7bf" stroke-width="6" stroke-linecap="round"/>';
+      outfit = '<path d="M-21,26Q0,38 21,26M-22,38Q0,50 22,38M-19,50Q0,62 19,50" fill="none" stroke="#b3cdb3" stroke-width="3"/>';
+      prop = growing ? '<g class="qr-signature-prop" transform="translate(0 43)"><circle r="' + (master ? '19' : '14') + '" fill="#e9ddad" stroke="#c2ad6d" stroke-width="2"/><path d="M-9,2Q-1,-10 9,-2Q1,10 -9,2" fill="#fff5d1"/><circle cx="-4" cy="-7" r="3" fill="#fffaf0"/></g>' : '';
+      if (master) back = '<path d="M-35,17Q-68,6 -61,43L-45,32L-40,55M35,17Q68,6 61,43L45,32L40,55" fill="#82b69e" stroke="#558b7d" stroke-width="2"/>';
+    } else if (id === 'jelly') {
+      outfit = growing ? '<path d="M-23,16L29,54" stroke="#a18a77" stroke-width="6"/><rect x="10" y="40" width="34" height="30" rx="7" fill="' + (master ? '#9e8f9c' : '#b3a291') + '"/><path d="M14,47H40M14,55H40M14,63H40M20,43V68M28,43V68M36,43V68" stroke="#d9cabb" stroke-width="1.5"/>' : '<path d="M-15,15L0,21L15,15L11,27L0,25L-11,27Z" fill="#a7ada0"/>';
+      head = growing ? '<g transform="translate(32 -52)"><path d="M0,4Q-18,-8 -12,-18Q1,-15 2,-3Q12,-14 20,-8Q17,4 0,4" fill="#9eaf97"/><circle r="4" fill="#e5c997"/></g>' : '';
+      prop = '<g class="qr-signature-prop" transform="translate(-18 43) rotate(-9)"><rect x="-15" y="-17" width="30" height="37" rx="4" fill="' + (master ? '#8b7f9b' : '#a5a58f') + '"/><path d="M-9,-17V20" stroke="#d8cfb9" stroke-width="2"/><path d="M5,-17V-2L9,-6L12,-2V-17" fill="#dab990"/><path d="M-3,4H9M-3,9H6" stroke="#e9e2d2" stroke-width="2" stroke-linecap="round"/></g>';
+      if (master) back = '<g transform="translate(45 30)"><rect x="-6" y="-4" width="20" height="31" rx="3" fill="#bb9d7e"/><path d="M-3,0H14M-3,5H14M-3,10H14" stroke="#f7ecd7" stroke-width="2"/><path d="M6,-4V9L10,6L13,9V-4" fill="#839b8f"/></g>';
     }
-    var designs = {
-      nano: function () {
-        outfit = '<path d="M-31,12L0,23L31,12L35,61L10,68L0,51L-10,68L-35,61Z" fill="' + (master ? '#627d6b' : '#99b79a') + '"/><path d="M-16,13L0,36L16,13" fill="#fff0d5"/><circle cy="43" r="3" fill="' + gold + '"/><path d="M15,48L28,52" stroke="#f0dcb8" stroke-width="3"/>';
-        head = '<path d="M-36,-59Q-32,-87 6,-80Q31,-79 36,-59Z" fill="' + (master ? '#627d6b' : '#99b79a') + '"/><path d="M-43,-58Q0,-68 43,-58" stroke="#4f6b5a" stroke-width="7" stroke-linecap="round"/>' + (master ? star(0,-72,.65,gold) : '<path d="M-3,-79V-65" stroke="#77967e" stroke-width="3"/>');
-      },
-      toto: function () {
-        outfit = '<path d="M-27,15Q0,28 27,15L36,64Q0,80 -36,64Z" fill="' + (master ? '#c58ba9' : '#e3b3c4') + '"/><path d="M-25,20Q0,44 25,20" stroke="#fff7ed" stroke-width="6" fill="none"/><path d="M0,61C-22,47 -9,35 0,45C9,35 22,47 0,61Z" fill="#fff0db"/>';
-        head = '<g transform="translate(28 -66)"><circle cx="-8" r="8" fill="#e8b77c"/><circle cx="8" r="8" fill="#e8b77c"/><circle cy="-8" r="8" fill="#e8b77c"/><circle cy="8" r="8" fill="#e8b77c"/><circle r="6" fill="#fff5cf"/></g>' + (master ? '<path d="M-32,-57Q-12,-79 22,-64" stroke="#97ac83" stroke-width="5" fill="none"/>' + star(-22,-65,.6,gold) : '');
-      },
-      booki: function () {
-        outfit = '<path d="M-31,13L0,28L31,13L28,32L0,43L-28,32Z" fill="' + (master ? '#506c70' : '#d9bd82') + '"/><path d="M0,28V55" stroke="#f5e7bb" stroke-width="5"/>';
-        head = '<path d="M-27,-61V-75H27V-61Q0,-50 -27,-61" fill="#5e7b72"/><path d="M-45,-77L0,-94L45,-77L0,-60Z" fill="' + (master ? '#425e60' : '#8ba48c') + '"/><path d="M0,-77L32,-72V-50" stroke="' + gold + '" stroke-width="3" fill="none"/><path d="M28,-51L36,-51L38,-42L26,-42Z" fill="' + gold + '"/>' + (master ? star(0,-78,.6,gold) : '');
-      },
-      pico: function () {
-        outfit = '<path d="M-30,16Q0,29 30,16L33,63Q0,74 -33,63Z" fill="#eaf0ed" stroke="#b4c8d0" stroke-width="2"/><rect x="-18" y="30" width="36" height="23" rx="7" fill="' + (master ? '#687fa6' : '#9db6c9') + '"/><circle cx="-8" cy="41" r="4" fill="#f7cd87"/><path d="M3,38H11M3,44H11" stroke="#fff" stroke-width="2" stroke-linecap="round"/>';
-        head = '<path d="M-54,-22Q-63,-87 0,-92Q63,-87 54,-22" fill="none" stroke="' + (master ? gold : '#a7bdcc') + '" stroke-width="5"/><rect x="-62" y="-36" width="13" height="28" rx="6" fill="#b4c8d0"/><rect x="49" y="-36" width="13" height="28" rx="6" fill="#b4c8d0"/>' + (master ? star(0,-91,.7,gold) : '');
-      },
-      popo: function () {
-        outfit = '<path d="M-31,13L-9,18L0,30L9,18L31,13L34,62L11,68L0,56L-11,68L-34,62Z" fill="' + (master ? '#789282' : '#c7b38b') + '"/><path d="M-20,37H-7V50H-20M7,37H20V50H7" fill="#f4e2bd"/><path d="M-28,15L31,61" stroke="#97714f" stroke-width="6"/>';
-        head = master ? '<path d="M-28,-57L-30,-80L-14,-69L0,-87L14,-69L30,-80L28,-57Z" fill="' + gold + '"/><path d="M-28,-58H28" stroke="#bd9457" stroke-width="4"/>' + star(0,-70,.5,'#fff6db') : '<path d="M-29,-59L-24,-78H24L29,-59Z" fill="#aa9070"/><path d="M-41,-58H41" stroke="#856b52" stroke-width="7" stroke-linecap="round"/>';
-      },
-      chichi: function () {
-        outfit = '<path d="M-32,12L0,26L32,12L20,37L0,27L-20,37Z" fill="' + (master ? '#789b73' : '#dfb76f') + '"/><path d="M0,27L-9,49L5,45L13,51L9,28" fill="' + (master ? '#789b73' : '#dfb76f') + '"/><ellipse cx="0" cy="36" rx="5" ry="7" fill="#b77b50"/>';
-        head = '<path d="M-31,-61Q0,-97 31,-61Z" fill="' + (master ? '#bc9259' : '#a77a54') + '"/><path d="M-34,-61Q0,-73 34,-61" stroke="#855f42" stroke-width="6" stroke-linecap="round"/><path d="M0,-82Q-1,-96 12,-95" stroke="#7d9b69" stroke-width="5" fill="none"/>' + (master ? '<path d="M10,-92Q27,-107 30,-89Q20,-82 10,-92" fill="#8eb47c"/>' : '');
-      },
-      lumi: function () {
-        outfit = '<path d="M-24,15L0,24L24,15L40,63Q25,77 13,65Q0,80 -13,65Q-25,77 -40,63Z" fill="' + (master ? '#9c80c1' : '#d5bde8') + '"/><path d="M-22,33Q0,46 22,33" stroke="#f9e9cf" stroke-width="4" fill="none"/>' + star(0,50,.9,gold);
-        head = '<path d="M-29,-58L-23,-76L-11,-65L0,-88L11,-65L23,-76L29,-58" fill="' + (master ? gold : '#e8d2b0') + '"/>' + star(0,-76,.6,'#fff6dd');
-        if (master) back += '<path d="M-31,13Q-106,-47 -79,24Q-110,47 -37,57M31,13Q106,-47 79,24Q110,47 37,57" fill="#e5d7f5" stroke="#c0a3da" stroke-width="2"/>';
-      },
-      mir: function () {
-        outfit = '<path d="M-31,13L0,25L31,13L27,31L0,43L-27,31Z" fill="' + (master ? '#d9bb7c' : '#a6d0bd') + '"/><circle cy="38" r="11" fill="#fff2c7" stroke="' + gold + '" stroke-width="2"/>' + star(0,38,.65,'#d8b369');
-        head = '<path d="M-29,-58Q-51,-84 -40,-98M29,-58Q51,-84 40,-98" stroke="' + (master ? gold : '#d8c9a5') + '" stroke-width="8" fill="none" stroke-linecap="round"/>' + (master ? '<path d="M-38,-85L-51,-88M38,-85L51,-88" stroke="' + gold + '" stroke-width="5" stroke-linecap="round"/>' + star(0,-67,.8,gold) : '');
-      },
-      jelly: function () {
-        outfit = '<path d="M-30,13Q0,29 30,13L25,29L0,39L-25,29Z" fill="' + (master ? '#b6a1d9' : '#d2c2e7') + '"/><path d="M0,28L9,40L0,53L-9,40Z" fill="#fff1cc" stroke="#dbc38a" stroke-width="2"/>';
-        head = '<path d="M-28,-59L-31,-78L-16,-69L0,-94L16,-69L31,-78L28,-59Z" fill="' + (master ? '#c4b3e8' : '#d0e6e8') + '" stroke="' + (master ? '#9e84c6' : '#94c0c7') + '" stroke-width="2"/>' + star(0,-78,.7,'#fff3cc');
-      }
-    };
-    designs[id]();
-    if (master) outfit += '<circle cx="-23" cy="23" r="6" fill="' + gold + '"/>' + star(-23,23,.4,'#fff9e7');
-    return { back: back, outfit: outfit, head: head };
+    return { back: back, outfit: outfit, head: head, prop: prop };
   }
 
   function mascot(id, tier, stage) {
     stage = normalizeStage(stage);
-    var c = characters[id];
-    var growth = growthArtwork(id, stage, c);
+    var c = characters[id], growth = growthArtwork(id, stage, c);
     var fur = c.fur, dark = c.dark, light = c.light;
     var back = '', ears = '', face = '', accessory = '';
-    // 각 친구의 실루엣과 고유 소품은 유지하되, 둥근 전신 캐릭터로 다시 그립니다.
+    var headShape = 'M-46,-28C-48,-78 48,-78 46,-28Q45,12 0,14Q-45,12 -46,-28Z';
+    var bodyShape = 'M-29,7Q-45,29 -36,63Q0,83 36,63Q45,29 29,7Z';
+    var feet = '<ellipse cx="-20" cy="75" rx="16" ry="9" fill="' + dark + '"/><ellipse cx="20" cy="75" rx="16" ry="9" fill="' + dark + '"/>';
     if (id === 'nano') {
-      back = '<path d="M40,62Q100,54 84,5Q55,2 43,43" fill="' + fur + '"/><path d="M84,5Q63,3 60,20L79,28Q88,16 84,5" fill="' + light + '"/>';
-      ears = '<path d="M-41,-42L-43,-84Q-19,-76 -15,-55 M41,-42L43,-84Q19,-76 15,-55" fill="' + fur + '"/><path d="M-35,-49L-36,-73L-23,-55 M35,-49L36,-73L23,-55" fill="#eab7a3"/>';
-      face = '<path d="M-43,-27Q-26,-32 0,-8Q26,-32 43,-27Q36,7 0,9Q-36,7 -43,-27" fill="' + light + '"/>';
-      accessory = '<g stroke="' + dark + '" stroke-width="2.5" fill="none"><circle cx="-18" cy="-29" r="13"/><circle cx="18" cy="-29" r="13"/><path d="M-5,-29H5M-31,-30L-40,-34M31,-30L40,-34"/></g><ellipse cy="-11" rx="5" ry="3.5" fill="' + dark + '"/>';
+      back = '<path d="M34,61C109,70 105,4 73,-7Q76,28 34,38Z" fill="' + fur + '"/><path d="M73,-7Q77,8 70,24L91,29Q97,4 73,-7" fill="' + light + '"/>';
+      ears = '<path d="M-40,-41L-44,-85Q-22,-76 -14,-53M40,-41L44,-85Q22,-76 14,-53" fill="' + fur + '"/><path d="M-35,-49L-37,-73L-23,-54M35,-49L37,-73L23,-54" fill="#d7907e"/>';
+      headShape = 'M-42,-42Q-29,-73 0,-65Q29,-73 42,-42L54,-21Q33,13 0,14Q-33,13 -54,-21Z';
+      face = '<path d="M-51,-24Q-31,-31 0,-8Q31,-31 51,-24Q31,12 0,12Q-31,12 -51,-24" fill="' + light + '"/>';
+      accessory = '<g stroke="#6e5e4c" stroke-width="2.5" fill="none"><circle cx="-19" cy="-29" r="14"/><circle cx="19" cy="-29" r="14"/><path d="M-5,-29H5M-33,-30L-42,-34M33,-30L42,-34"/></g><path d="M-5,-13Q0,-17 5,-13L0,-8Z" fill="' + dark + '"/>';
     } else if (id === 'toto') {
-      ears = '<ellipse cx="-23" cy="-76" rx="12" ry="36" transform="rotate(-12 -23 -76)" fill="' + fur + '"/><ellipse cx="23" cy="-76" rx="12" ry="36" transform="rotate(12 23 -76)" fill="' + fur + '"/><path d="M-27,-94L-22,-66M27,-94L22,-66" stroke="' + light + '" stroke-width="10" stroke-linecap="round"/>';
-      accessory = '<path d="M-4,-13Q0,-17 4,-13L0,-8Z" fill="#c98599"/><path d="M21,10L38,5L34,21L21,15L8,22L6,6Z" fill="#cf96a5"/>';
+      ears = '<ellipse cx="-23" cy="-78" rx="11" ry="34" transform="rotate(-12 -23 -78)" fill="' + fur + '"/><path d="M17,-51Q7,-112 27,-110Q47,-105 39,-69L29,-54" fill="' + fur + '"/><path d="M-27,-96L-22,-66M24,-95Q32,-96 30,-69" stroke="#ebbec8" stroke-width="8" fill="none" stroke-linecap="round"/>';
+      headShape = 'M-39,-32Q-40,-64 0,-62Q40,-64 39,-32Q46,12 0,14Q-46,12 -39,-32Z';
+      accessory = '<path d="M-4,-13Q0,-17 4,-13L0,-8Z" fill="#c98599"/><path d="M0,-8V-4" stroke="#b47c8d" stroke-width="1.5"/>';
+      feet = '<ellipse cx="-21" cy="74" rx="19" ry="10" fill="#e8d7cc"/><ellipse cx="21" cy="74" rx="19" ry="10" fill="#e8d7cc"/>';
     } else if (id === 'booki') {
-      ears = '<path d="M-42,-33L-47,-72L-15,-55M42,-33L47,-72L15,-55" fill="' + fur + '"/>';
-      face = '<path d="M0,-46C-33,-76 -57,-24 -27,-5Q-10,6 0,-10Q10,6 27,-5C57,-24 33,-76 0,-46Z" fill="' + light + '"/>';
-      accessory = '<path d="M-6,-15L0,-4L6,-15Z" fill="#d5a452"/><path d="M-26,28l7,5l7,-5 M4,37l7,5l7,-5 M-16,48l7,5l7,-5" fill="none" stroke="#a7bf9b" stroke-width="3" stroke-linecap="round"/>';
+      ears = '<path d="M-42,-34L-47,-72L-15,-55M42,-34L47,-72L15,-55" fill="' + fur + '"/>';
+      headShape = 'M-48,-29Q-53,-65 -23,-62Q0,-54 23,-62Q53,-65 48,-29Q42,14 0,15Q-42,14 -48,-29Z';
+      bodyShape = 'M-33,5Q-53,33 -36,64L-15,72L0,64L15,72L36,64Q53,33 33,5Z';
+      face = '<path d="M0,-44C-32,-73 -56,-24 -29,-4Q-9,9 0,-8Q9,9 29,-4C56,-24 32,-73 0,-44Z" fill="' + light + '"/>';
+      accessory = '<path d="M-6,-14L0,-3L6,-14Z" fill="#cba05b"/>';
+      feet = '<path d="M-17,65V77M-17,75L-26,79M-17,75L-9,79M17,65V77M17,75L26,79M17,75L9,79" stroke="#bba16d" stroke-width="5" stroke-linecap="round"/>';
     } else if (id === 'pico') {
-      face = '<path d="M0,-43C-30,-74 -52,-26 -30,-4Q0,17 30,-4C52,-26 30,-74 0,-43Z" fill="' + light + '"/>';
-      accessory = '<path d="M-8,-12Q0,-20 8,-12L0,-5Z" fill="#e6ae61"/><path d="M-37,10Q0,28 37,10L39,23Q0,37 -39,23Z" fill="#bd8d7a"/><rect x="20" y="24" width="12" height="23" rx="3" fill="#bd8d7a"/>';
-      back = '<circle cy="-28" r="59" stroke="#b5cbd5" stroke-width="3" fill="#ffffff" fill-opacity=".2"/><path d="M-45,-52Q-37,-69 -22,-74" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/>';
+      bodyShape = 'M-29,-1Q-49,19 -43,57Q-35,80 0,80Q35,80 43,57Q49,19 29,-1Z';
+      headShape = 'M-43,-27Q-45,-68 0,-65Q45,-68 43,-27Q46,14 0,18Q-46,14 -43,-27Z';
+      face = '<path d="M0,-43C-25,-70 -49,-25 -28,-3Q0,18 28,-3C49,-25 25,-70 0,-43Z" fill="' + light + '"/>';
+      accessory = '<path d="M-9,-13Q0,-19 9,-13L0,-4Z" fill="#dba66a"/>';
+      feet = '<path d="M-13,68Q-28,64 -38,78Q-22,87 -6,78M13,68Q28,64 38,78Q22,87 6,78" fill="#d0a171"/>';
     } else if (id === 'popo') {
       ears = '<circle cx="-36" cy="-57" r="17" fill="' + fur + '"/><circle cx="36" cy="-57" r="17" fill="' + fur + '"/><circle cx="-36" cy="-57" r="9" fill="' + light + '"/><circle cx="36" cy="-57" r="9" fill="' + light + '"/>';
-      face = '<ellipse cy="-10" rx="22" ry="17" fill="' + light + '"/>';
-      accessory = '<ellipse cy="-17" rx="6" ry="4" fill="' + dark + '"/><path d="M-27,16L33,50" stroke="#82674c" stroke-width="7"/><rect x="20" y="43" width="22" height="23" rx="5" fill="#987851"/>';
+      headShape = 'M-48,-27Q-49,-69 0,-65Q49,-69 48,-27Q49,16 0,18Q-49,16 -48,-27Z';
+      bodyShape = 'M-31,6Q-51,32 -40,67Q0,89 40,67Q51,32 31,6Z';
+      face = '<ellipse cy="-10" rx="25" ry="19" fill="' + light + '"/>';
+      accessory = '<ellipse cy="-17" rx="7" ry="4.5" fill="' + dark + '"/><path d="M0,-13V-6" stroke="' + dark + '" stroke-width="2"/>';
     } else if (id === 'chichi') {
-      back = '<path d="M32,59C113,70 110,-43 67,-46C26,-49 39,6 64,-6C80,-12 73,-29 64,-23" stroke="' + dark + '" stroke-width="2" fill="' + fur + '"/><path d="M54,43Q95,20 81,-15" stroke="' + light + '" stroke-width="14" stroke-linecap="round" fill="none"/>';
-      ears = '<path d="M-37,-46Q-54,-86 -22,-63 M37,-46Q54,-86 22,-63" fill="' + fur + '"/>';
-      face = '<path d="M-17,-61L-11,-41M0,-65V-43M17,-61L11,-41" stroke="' + dark + '" stroke-width="5" stroke-linecap="round"/><ellipse cy="-10" rx="24" ry="18" fill="' + light + '"/>';
-      accessory = '<ellipse cy="-16" rx="5" ry="3" fill="' + dark + '"/>';
+      back = '<path d="M30,63C105,72 114,-33 76,-45C38,-57 30,-5 59,-2C80,0 80,-26 67,-21" stroke="' + dark + '" stroke-width="2" fill="' + fur + '"/><path d="M51,48Q95,23 84,-11" stroke="' + light + '" stroke-width="13" stroke-linecap="round" fill="none"/>';
+      ears = '<path d="M-37,-44Q-54,-80 -25,-64M37,-44Q54,-80 25,-64" fill="' + fur + '"/>';
+      headShape = 'M-41,-34Q-40,-69 0,-64Q40,-69 41,-34Q56,-7 34,8Q0,23 -34,8Q-56,-7 -41,-34Z';
+      face = '<path d="M-16,-60L-11,-44M0,-64V-44M16,-60L11,-44" stroke="' + dark + '" stroke-width="4" stroke-linecap="round"/><ellipse cy="-8" rx="28" ry="19" fill="' + light + '"/>';
+      accessory = '<ellipse cy="-15" rx="5" ry="3" fill="' + dark + '"/>';
     } else if (id === 'lumi') {
-      back = '<path d="M-27,23C-104,-47 -88,66 -35,57 M27,23C104,-47 88,66 35,57" fill="#ded9f1" stroke="#fff4ff" stroke-width="2"/><path d="M-35,39L-63,19M35,39L63,19" stroke="#bdaeda" stroke-width="2"/>';
-      ears = '<path d="M-42,-39L-62,-51L-44,-15M42,-39L62,-51L44,-15" fill="' + fur + '"/>';
-      accessory = '<path d="M-39,-48Q-15,-89 25,-59Q46,-56 43,-36Q20,-40 15,-55Q-7,-35 -39,-48" fill="' + dark + '"/>' + star(0,-71,1,'#e9c780');
+      back = '<path d="M29,63C82,91 96,33 74,17C58,4 49,19 59,29" fill="none" stroke="' + fur + '" stroke-width="18" stroke-linecap="round"/><path d="M77,58L82,49M72,70L80,65" stroke="#8582a3" stroke-width="7" stroke-linecap="round"/>';
+      ears = '<path d="M-39,-37L-42,-84Q-20,-80 -11,-55M39,-37L42,-84Q20,-80 11,-55" fill="' + fur + '"/><path d="M-33,-52L-35,-72L-21,-56M33,-52L35,-72L21,-56" fill="#d9b9c1"/>';
+      headShape = 'M-42,-38Q-28,-67 0,-62Q28,-67 42,-38L48,-19Q43,11 0,14Q-43,11 -48,-19Z';
+      face = '<path d="M-17,-60L-10,-47M0,-62V-46M17,-60L10,-47" stroke="#8582a3" stroke-width="4" stroke-linecap="round"/><path d="M-22,-13Q-11,-21 0,-10Q11,-21 22,-13Q24,7 0,8Q-24,7 -22,-13" fill="' + light + '"/>';
+      accessory = '<path d="M-4,-13Q0,-16 4,-13L0,-9Z" fill="#b48e99"/><path d="M0,-9V-5M-31,-13L-48,-17M-32,-6L-49,-5M31,-13L48,-17M32,-6L49,-5" fill="none" stroke="#78738d" stroke-width="1.5" stroke-linecap="round"/>';
     } else if (id === 'mir') {
-      back = '<path d="M29,62Q91,72 83,23Q108,62 66,81L22,75" fill="' + fur + '"/><path d="M-35,25L-65,2L-62,44L-37,51 M35,25L65,2L62,44L37,51" fill="#9dccba"/>';
-      ears = '<path d="M-28,-55L-33,-80L-18,-64M28,-55L33,-80L18,-64" fill="#dfc89d"/><path d="M-42,-38L-59,-51L-52,-23M42,-38L59,-51L52,-23" fill="' + fur + '"/>';
-      face = '<ellipse cy="-9" rx="28" ry="18" fill="' + light + '"/><circle cx="-10" cy="-13" r="2" fill="' + dark + '"/><circle cx="10" cy="-13" r="2" fill="' + dark + '"/>';
-      accessory = '<path d="M-12,-60L0,-71L12,-60" fill="#508e87"/>';
-    } else {
-      back = '<circle cx="-55" cy="8" r="10" fill="#d5e9e9"/><circle cx="55" cy="-57" r="7" fill="#bedfe2"/><circle cx="-39" cy="-72" r="5" fill="#e3cfe8"/>';
-      ears = '<path d="M-10,-60Q-25,-91 -1,-89Q18,-87 11,-61" fill="' + fur + '"/>';
-      accessory = '<path d="M-29,-47Q-22,-56 -14,-54" stroke="#f4ffff" stroke-width="6" stroke-linecap="round" fill="none"/>' + star(23,-52,.65,'#fff5ca');
+      back = '<path d="M27,65Q86,84 85,32Q109,68 67,84L22,77" fill="' + fur + '"/><path d="M67,77L69,66L79,71L82,58L91,61" fill="#4e8c80"/><path d="M-35,24L-58,7L-55,44L-36,50M35,24L58,7L55,44L36,50" fill="#9cc5ab"/>';
+      ears = '<path d="M-29,-53L-32,-76L-17,-61M29,-53L32,-76L17,-61" fill="#dfcba3"/><path d="M-40,-36L-58,-47L-50,-20M40,-36L58,-47L50,-20" fill="' + fur + '"/>';
+      headShape = 'M-43,-30Q-43,-67 0,-64Q43,-67 43,-30L49,-8Q38,21 0,20Q-38,21 -49,-8Z';
+      face = '<ellipse cy="-6" rx="29" ry="20" fill="' + light + '"/><circle cx="-11" cy="-11" r="2" fill="' + dark + '"/><circle cx="11" cy="-11" r="2" fill="' + dark + '"/>';
+      accessory = '<path d="M-13,-59L0,-72L13,-59" fill="#508e87"/>';
+    } else if (id === 'jelly') {
+      // 양의 얼굴과 양털을 분리해 표정은 또렷하고 실루엣은 포근하게 유지합니다.
+      ears = '<path d="M-29,-38Q-66,-53 -59,-27Q-43,-15 -29,-30M29,-38Q66,-53 59,-27Q43,-15 29,-30" fill="#cdb7a4"/><path d="M-39,-34L-53,-34M39,-34L53,-34" stroke="#dec4bc" stroke-width="6" stroke-linecap="round"/>';
+      headShape = 'M-38,-25Q-43,-57 -22,-60Q-6,-79 11,-63Q35,-68 41,-43Q58,-23 42,-6Q43,17 22,17Q0,32 -20,17Q-43,18 -43,-5Q-57,-17 -38,-25Z';
+      bodyShape = 'M-27,9Q-46,5 -43,29Q-58,44 -43,57Q-43,77 -23,74Q0,89 23,74Q43,77 43,57Q58,44 43,29Q46,5 27,9Z';
+      if (stage === 3) {
+        headShape = 'M-41,-29Q-59,-39 -45,-58Q-47,-77 -27,-77Q-11,-93 5,-77Q27,-93 39,-73Q60,-69 48,-47Q66,-27 46,-12Q48,14 24,19Q0,35 -24,19Q-49,17 -45,-6Q-65,-13 -41,-29Z';
+        bodyShape = 'M-30,8Q-56,6 -49,30Q-64,48 -48,61Q-48,81 -26,77Q0,93 26,77Q48,81 48,61Q64,48 49,30Q56,6 30,8Z';
+      }
+      face = '<path d="M-29,-31Q-30,-49 0,-46Q30,-49 29,-31L26,-10Q22,9 0,11Q-22,9 -26,-10Z" fill="#cdb7a4"/><path d="M-32,-42Q-45,-59 -26,-65Q-12,-81 0,-66Q18,-79 27,-61Q45,-58 32,-41Q19,-35 12,-45Q0,-34 -10,-45Q-21,-34 -32,-42Z" fill="#fffaf0" stroke="#deceb6" stroke-width="1.4" stroke-linejoin="round"/>';
+      accessory = '<path d="M-4,-13Q0,-16 4,-13L0,-9Z" fill="#8d786b"/><path d="M-32,-4Q-40,5 -30,11M32,-4Q40,5 30,11" fill="none" stroke="#e1d3ba" stroke-width="2" stroke-linecap="round"/>';
+      feet = '<rect x="-30" y="65" width="18" height="17" rx="8" fill="#a58c79"/><rect x="12" y="65" width="18" height="17" rx="8" fill="#a58c79"/>';
+      if (stage === 3) face += '<path d="M-38,-25Q-46,-34 -36,-40M38,-25Q46,-34 36,-40M-29,9Q-21,17 -15,9M15,9Q21,17 29,9" stroke="#e0d1b6" stroke-width="2" fill="none" stroke-linecap="round"/>';
     }
+    var woolOutline = id === 'jelly' ? ' stroke="#d8c8ae" stroke-width="1.5" stroke-linejoin="round"' : '';
+    var eyeColor = id === 'jelly' ? '#544b45' : '#383e44';
     var eyes = '<g class="qr-eyes-normal">' + (tier === 'perfect'
-      ? '<path d="M-24,-28Q-18,-36 -12,-28M12,-28Q18,-36 24,-28" stroke="#3f4248" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
-      : '<ellipse cx="-18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><ellipse cx="18" cy="-28" rx="5" ry="6.5" fill="#393d48"/><circle cx="-16.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="19.5" cy="-30.5" r="1.8" fill="#fff"/><circle cx="-19" cy="-25" r=".8" fill="#b4c2d5"/><circle cx="17" cy="-25" r=".8" fill="#b4c2d5"/>') + '</g>' +
-      (tier !== 'portrait' ? '<g class="qr-eyes-joy" opacity="0"><path d="M-25,-27Q-18,-38 -11,-27M11,-27Q18,-38 25,-27" stroke="#3f4248" stroke-width="3.8" fill="none" stroke-linecap="round"/></g>' : '');
-    var mouth = '<g class="qr-mouth-normal">' + (tier === 'perfect'
-      ? '<path d="M-7,-2Q0,15 7,-2Z" fill="#925f58"/><path d="M-4,3Q0,0 4,3" stroke="#e8a799" stroke-width="3"/>'
-      : '<path d="M-5,-2Q0,3 5,-2" stroke="#6c5550" stroke-width="2" stroke-linecap="round" fill="none"/>') + '</g>' +
-      (tier !== 'portrait' ? '<g class="qr-mouth-joy" opacity="0"><path d="M-9,-3Q0,18 9,-3Z" fill="#925f58"/><path d="M-5,4Q0,0 5,4" stroke="#f0a899" stroke-width="3.2" stroke-linecap="round"/></g><g class="qr-cheeks-joy" opacity="0"><ellipse cx="-32" cy="-12" rx="10" ry="6" fill="#f472b6" opacity=".6"/><ellipse cx="32" cy="-12" rx="10" ry="6" fill="#f472b6" opacity=".6"/></g>' : '');
-    var leftArm = tier === 'perfect' ? 'M-31,23Q-61,7 -60,-17' : tier === 'high' ? 'M-31,23Q-56,26 -60,5' : 'M-31,23Q-48,42 -23,49';
-    var rightArm = tier === 'perfect' || tier === 'high' ? 'M31,23Q57,6 58,-17' : 'M31,23Q48,42 23,49';
-    var props = tier === 'portrait' ? '' : tier === 'retry' ? book(0, 37, .8, dark)
-      : tier === 'pass' ? '<path d="M-18,41H18L14,65H-14Z" fill="#d6a081"/><path d="M0,43V19 M0,31Q-24,30 -20,13Q-2,12 0,31 M0,24Q21,20 18,5Q0,6 0,24" stroke="#6c9670" stroke-width="2" fill="#8daf80"/>'
-      : tier === 'high' ? star(60,-34,1.7,'#e5bd70') + '<path d="M60,-18L55,5" stroke="#bd955e" stroke-width="3"/>'
-      : '<g transform="translate(63 -33)"><path d="M-12,-7H12L9,9Q0,22 -9,9Z" fill="#e6bf72"/><path d="M-12,-4Q-26,-3 -13,9M12,-4Q26,-3 13,9M0,17V24M-9,26H9" stroke="#c49a59" stroke-width="3" fill="none" stroke-linecap="round"/>' + star(0,3,.6,'#fff5d7') + '</g>';
-    var joyArms = tier !== 'portrait'
-      ? '<g class="qr-arms-joy" opacity="0"><path d="M-31,23Q-63,2 -62,-24 M31,23Q63,2 62,-24" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + star(-63,-36,1.1,'#f59e0b') + star(63,-36,1.1,'#f59e0b') + '</g>'
-      : '';
-    var lift = tier === 'perfect' ? -8 : 0;
-    return '<g class="qr-mascot" data-friend="' + id + '" data-stage="' + stage + '" transform="translate(232 ' + (157 + lift) + ')"><g class="qr-mascot-motion">' +
-      '<g class="qr-part-back">' + back + growth.back + '</g>' +
-      '<ellipse cx="-20" cy="75" rx="16" ry="9" fill="' + dark + '"/><ellipse cx="20" cy="75" rx="16" ry="9" fill="' + dark + '"/>' +
-      '<path d="M-29,7Q-45,29 -36,63Q0,83 36,63Q45,29 29,7Z" fill="' + fur + '"/><ellipse cy="43" rx="25" ry="28" fill="' + light + '"/>' + growth.outfit +
-      '<g class="qr-part-ears">' + ears + '</g>' +
-      '<path d="M-46,-28C-48,-78 48,-78 46,-28Q45,12 0,14Q-45,12 -46,-28Z" fill="' + fur + '"/>' + face +
+      ? '<path d="M-24,-27Q-18,-33 -12,-27M12,-27Q18,-33 24,-27" stroke="' + eyeColor + '" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      : '<ellipse cx="-18" cy="-28" rx="4.3" ry="5.7" fill="' + eyeColor + '"/><ellipse cx="18" cy="-28" rx="4.3" ry="5.7" fill="' + eyeColor + '"/><circle cx="-16.6" cy="-30" r="1.5" fill="#fff"/><circle cx="19.4" cy="-30" r="1.5" fill="#fff"/>') + '</g>';
+    if (tier !== 'portrait') eyes += '<g class="qr-eyes-joy" opacity="0"><path d="M-24,-27Q-18,-34 -12,-27M12,-27Q18,-34 24,-27" stroke="' + eyeColor + '" stroke-width="3" fill="none" stroke-linecap="round"/></g>';
+    var mouth = '<path d="M-5,-2Q0,4 5,-2" stroke="' + (id === 'jelly' ? '#8d786b' : '#79645b') + '" stroke-width="1.8" stroke-linecap="round" fill="none"/>';
+    var armPaths = {
+      nano: ['M-31,25Q-43,36 -26,44', 'M31,25Q44,31 42,40', 'M-31,25Q-45,17 -42,0', 'M31,25Q46,31 42,40'],
+      toto: ['M-28,25Q-39,45 -18,47', 'M28,25Q41,35 29,44', 'M-28,25Q-49,16 -46,-4', 'M28,25Q41,35 29,44'],
+      booki: ['M-33,20Q-43,37 -24,47', 'M33,20Q43,37 24,47', 'M-33,20Q-55,4 -60,14', 'M33,20Q55,4 60,14'],
+      pico: ['M-32,24Q-49,35 -40,52', 'M32,24Q46,36 29,46', 'M-32,24Q-57,10 -49,-3', 'M32,24Q46,36 29,46'],
+      popo: ['M-32,25Q-45,44 -24,47', 'M32,25Q45,44 24,47', 'M-32,25Q-47,25 -46,12', 'M32,25Q45,44 24,47'],
+      chichi: ['M-30,23Q-41,41 -19,46', 'M30,23Q45,36 28,44', 'M-30,23Q-47,10 -40,-5', 'M30,23Q45,36 28,44'],
+      lumi: ['M-30,25Q-43,38 -25,45', 'M30,25Q45,42 26,49', 'M-30,25Q-43,38 -25,45', 'M30,25Q51,10 45,-4'],
+      mir: ['M-32,25Q-40,44 -18,46', 'M32,25Q40,44 18,46', 'M-32,25Q-48,36 -25,43', 'M32,25Q48,36 25,43'],
+      jelly: ['M-31,25Q-42,41 -20,46', 'M31,25Q45,41 26,50', 'M-31,25Q-42,41 -20,46', 'M31,25Q48,31 42,16']
+    }[id];
+    var arms = '<g class="qr-arms-normal"><path d="' + armPaths[0] + ' ' + armPaths[1] + '"/></g>' + (tier === 'portrait' ? '' : '<g class="qr-arms-joy" opacity="0"><path d="' + armPaths[2] + ' ' + armPaths[3] + '"/></g>');
+    return '<g class="qr-mascot" data-friend="' + id + '" data-stage="' + stage + '" data-mood="' + tier + '" transform="translate(232 157)"><g class="qr-mascot-motion">' +
+      '<g class="qr-part-back">' + back + growth.back + '</g>' + feet +
+      '<path d="' + bodyShape + '" fill="' + fur + '"' + woolOutline + '/><ellipse cy="42" rx="25" ry="27" fill="' + light + '"/>' + growth.outfit +
+      '<g class="qr-face-motion"><g class="qr-part-ears">' + ears + '</g>' +
+      '<path d="' + headShape + '" fill="' + fur + '"' + woolOutline + '/>' + face +
       '<g class="qr-part-eyes">' + eyes + '</g>' +
-      '<ellipse cx="-31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><ellipse cx="31" cy="-13" rx="8" ry="5" fill="#e8a49c" opacity=".6"/><path d="M-31,-45Q-24,-53 -15,-53" stroke="#fff9ef" stroke-opacity=".35" stroke-width="5" stroke-linecap="round" fill="none"/>' + mouth + accessory +
-      '<g class="qr-part-head">' + growth.head + '</g>' +
-      '<g class="qr-part-arms"><g class="qr-arms-normal"><path d="' + leftArm + ' M' + rightArm.substring(1) + '" fill="none" stroke="' + fur + '" stroke-width="16" stroke-linecap="round"/>' + props + '</g>' + joyArms + '</g></g></g>';
+      '<ellipse cx="-31" cy="-12" rx="6" ry="3.5" fill="#d99f93" opacity=".35"/><ellipse cx="31" cy="-12" rx="6" ry="3.5" fill="#d99f93" opacity=".35"/>' + mouth + accessory +
+      '<g class="qr-part-head">' + growth.head + '</g></g>' +
+      '<g class="qr-part-arms" fill="none" stroke="' + fur + '" stroke-width="' + (id === 'toto' ? 13 : 16) + '" stroke-linecap="round">' + arms + '</g>' + growth.prop + '</g></g>';
   }
 
   function avatar(charId, size, stage) {
@@ -258,8 +290,20 @@ var NanoQuizResult = (function () {
       '<rect x="117" y="15" width="230" height="230" rx="85" fill="' + c.light + '" fill-opacity=".55"/><ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
   }
 
-  function heart(x, y, s, fill) {
-    return '<path transform="translate(' + x + ' ' + y + ') scale(' + s + ')" d="M0,6C-6,0 -12,-3 -12,-8A6,6 0 0,1 0,-9A6,6 0 0,1 12,-8C12,-3 6,0 0,6Z" fill="' + fill + '"/>';
+  // 추천은 각 친구가 자기 방식으로 응답합니다. 효과도 캐릭터의 도구와 이야기를 따릅니다.
+  function celebrationArtwork(id) {
+    var effects = {
+      nano: '<g transform="translate(327 104)"><circle r="24" fill="#f8f5df" stroke="#a3b393" stroke-width="1.5"/><circle r="17" fill="none" stroke="#bdc7aa" stroke-dasharray="3 5"/><path d="M-9,0L-2,7L11,-8" stroke="#668573" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g><path d="M296,131L311,120" stroke="#9cae8c" stroke-width="2" stroke-dasharray="3 4"/>',
+      toto: '<path d="M305,153Q362,124 325,81" stroke="#c399a5" stroke-width="1.5" stroke-dasharray="3 5" fill="none"/><g transform="translate(326 84) rotate(-18)"><rect x="-19" y="-13" width="38" height="27" rx="3" fill="#fff8e8" stroke="#c99aa5" stroke-width="1.5"/><path d="M-17,-11L0,3L17,-11" stroke="#c99aa5" stroke-width="1.5" fill="none"/><circle cy="3" r="3" fill="#bc8499"/></g><path d="M142,106Q130,96 136,85Q149,89 142,106" fill="#a1b594"/>',
+      booki: '<path d="M130,161Q116,119 141,87M329,158Q345,119 325,96" stroke="#7b9b78" stroke-width="2" fill="none"/><path d="M125,138Q103,127 110,112Q130,115 125,138M129,116Q149,107 153,118Q146,132 129,127M137,95Q126,76 142,71Q154,82 137,95M337,134Q358,122 354,109Q334,111 337,134M332,114Q313,100 310,113Q316,125 332,124" fill="#9db48b"/>',
+      pico: '<g transform="translate(331 97) rotate(-25)"><circle r="16" fill="#b6cbd2"/><ellipse rx="34" ry="9" fill="none" stroke="#e2c48f" stroke-width="3"/><circle cx="-30" cy="-4" r="4" fill="#f9f3df"/></g><path d="M132,155L132,107L157,92" stroke="#91b2ba" stroke-width="1.5" fill="none" stroke-dasharray="3 5"/><circle cx="157" cy="92" r="4" fill="#d3b77b"/>',
+      popo: '<g transform="translate(332 108)"><circle r="24" fill="#f6e7c8" stroke="#b99d74" stroke-width="1.5"/><circle r="18" fill="none" stroke="#d8c09a"/><path d="M0,-17L6,0L0,17L-6,0Z" fill="#ab7559"/><path d="M0,0V17L-6,0Z" fill="#d8c6a4"/><circle r="2.5" fill="#725d47"/></g><path d="M125,151Q102,107 150,95" stroke="#bc9a73" stroke-width="2" fill="none" stroke-dasharray="3 5"/>',
+      chichi: '<g transform="translate(135 145)"><path d="M0,11V-20M0,-8Q-24,-12 -19,-28Q2,-26 0,-8M0,-17Q18,-38 27,-23Q25,-6 0,-11" fill="#95b280" stroke="#74946b" stroke-width="1.5"/><path d="M-14,11H14L10,28H-10Z" fill="#caa080"/></g><g transform="translate(332 116) rotate(20)"><ellipse cy="3" rx="9" ry="13" fill="#b98a5a"/><path d="M-11,-2Q0,-18 11,-2V2H-11Z" fill="#896c48"/><path d="M0,-10V-17" stroke="#896c48" stroke-width="3"/></g>',
+      lumi: '<g transform="translate(328 103)"><path d="M-21,18V-18H15V18Z" fill="none" stroke="#b7abc9" stroke-width="1.5" stroke-dasharray="3 3"/><path d="M-21,18L15,-18V18Z" fill="#c1b5d4"/><path d="M-21,-18H15L-21,18Z" fill="#e3c897"/><circle cx="24" cy="-26" r="7" fill="none" stroke="#9eacc4" stroke-width="2"/></g><path d="M134,106L143,89L152,106Z" fill="none" stroke="#a99bc2" stroke-width="2"/>',
+      mir: '<path d="M119,169Q132,146 151,166Q164,178 177,165M292,170Q307,150 323,166Q342,185 356,163M129,177Q143,166 158,179M312,181Q328,172 343,183" stroke="#8eb6a5" stroke-width="3" fill="none" stroke-linecap="round"/><g transform="translate(325 91)"><circle r="19" fill="#f2e5ba"/><path d="M-10,2Q0,-12 10,-2Q0,13 -10,2" fill="#d7c28a"/></g>',
+      jelly: '<path d="M125,151C108,122 154,108 153,130C152,150 115,128 130,106C139,90 158,90 164,78" fill="none" stroke="#baa7bc" stroke-width="2" stroke-linecap="round"/>' + book(331, 113, .48, '#a99bb6') + '<path d="M328,108V124L332,120L336,124V107" fill="#c5ab81"/>'
+    };
+    return '<g class="qr-signature-effect qr-effect-' + id + '" opacity="0" aria-hidden="true">' + effects[id] + '</g>';
   }
 
   function illustration(themeKey, charId, tier, stage) {
@@ -270,13 +314,7 @@ var NanoQuizResult = (function () {
       : tier === 'high' ? star(155,88,.8,'#d4ad6e') + star(299,59,.6,t.accent)
       : tier === 'pass' ? '<path d="M154,176Q138,160 151,150Q164,161 154,176 M304,181Q320,166 312,155Q295,163 304,181" fill="' + t.accent + '"/>'
       : '<path d="M143,93Q152,86 161,93 M303,92Q312,85 321,92" fill="none" stroke="' + t.accent + '" stroke-width="2" stroke-linecap="round"/>';
-    // 추천하기 버튼 클릭 시 모든 나노프렌즈 주변에 터지는 기쁨의 하트·별·따봉 이펙트
-    var joyBurst = '<g class="qr-joy-burst" opacity="0" aria-hidden="true">' +
-      '<g class="qr-joy-pop qr-joy-pop-1">' + heart(142, 68, 0.95, '#fb7185') + star(124, 108, 0.95, '#fbbf24') + '</g>' +
-      '<g class="qr-joy-pop qr-joy-pop-2">' + heart(324, 62, 1.05, '#f43f5e') + star(342, 105, 1.0, '#f59e0b') + '</g>' +
-      '<g class="qr-joy-pop qr-joy-pop-3">' + heart(232, 26, 0.85, '#ec4899') + star(182, 34, 0.8, '#fcd34d') + star(284, 34, 0.8, '#34d399') + '</g>' +
-      '<g class="qr-joy-thumb-badge" transform="translate(318 148)"><circle r="18" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.2"/><g transform="translate(-10 -10) scale(0.84)" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v11M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></g></g>' +
-      '</g>';
+    var joyBurst = celebrationArtwork(charId);
     return '<svg class="qr-scene" viewBox="0 0 464 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" data-character="' + charId + '" data-tier="' + tier + '">' +
       '<path d="M33,215V124C33,3 431,3 431,124V215Z" fill="' + t.sky + '"/>' +
       '<path d="M54,76Q68,59 84,69Q91,45 116,58Q133,54 143,76Z M284,45Q296,29 310,40Q322,18 339,36Q353,30 366,45Z" fill="#fffaf1" opacity=".75"/>' +
@@ -314,14 +352,14 @@ var NanoQuizResult = (function () {
     var speech = extra.speechText || (isPass ? '오늘 발견한 이야기가 내일의 너를 더 자라게 할 거야.' : '서두르지 않아도 괜찮아. 책을 다시 펼치고 함께 찾아보자!');
     var segments = Array.from({ length: total }, function (_, i) { return '<span class="' + (i < correct ? 'is-filled' : '') + '"></span>'; }).join('');
     var recBtnTitle = isPass
-      ? (isRecommended ? '이미 추천한 도서예요! 누르면 나노프렌즈가 다시 기뻐해요' : '재미있게 읽었다면 따봉을 눌러 친구들에게 추천해 보세요!')
+      ? (isRecommended ? '추천을 취소하려면 다시 눌러 주세요' : '재미있게 읽었다면 따봉을 눌러 친구들에게 추천해 보세요!')
       : '60점 이상 도서 인증 완료 시 추천할 수 있어요';
     var recBtnHtml = '<button type="button" id="btnQuizRecommend" class="qr-recommend-btn' +
       (isRecommended ? ' is-recommended' : '') +
       (!isPass ? ' is-disabled' : '') +
       '" data-book-id="' + bookIdAttr + '"' +
       (isPass ? ' onclick="handleQuizBookRecommend(this)"' : ' disabled aria-disabled="true"') +
-      ' title="' + recBtnTitle + '">' +
+      ' aria-pressed="' + isRecommended + '" title="' + recBtnTitle + '">' +
       '<span class="qr-rec-icon">' + icon('thumb') + '</span>' +
       '<span class="qr-rec-text">' + (isRecommended ? '추천 완료' : '추천하기') + '</span>' +
       '</button>';
