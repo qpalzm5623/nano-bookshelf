@@ -7165,6 +7165,20 @@ var academyDispatchLogs = [
 ];
 if (window.NANO_SERVER_DATA) academyDispatchLogs = (window.NANO_SERVER_DISPATCH || []).filter(function(item) { return item.academyId === currentAcademyInfo.id; });
 
+function resetAcademyDispatchFilters() {
+  var searchEl = document.getElementById('academyDispatchSearch');
+  var tplEl = document.getElementById('academyDispatchTemplate');
+  var statusEl = document.getElementById('academyDispatchStatus');
+  var fromEl = document.getElementById('academyDispatchFrom');
+  var toEl = document.getElementById('academyDispatchTo');
+  if (searchEl) searchEl.value = '';
+  if (tplEl) tplEl.value = 'ALL';
+  if (statusEl) statusEl.value = 'ALL';
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  renderAcademyDispatchTable();
+}
+
 function renderAcademyDispatchTable() {
   if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.dispatch();
   var tbody = document.getElementById('academyDispatchTableBody');
@@ -7182,26 +7196,37 @@ function renderAcademyDispatchTable() {
       (!from || day >= from) && (!to || day <= to) &&
       (!query || [l.receiver, l.receiverName, l.receiverPhone, l.className].join(' ').toLowerCase().includes(query));
   });
-  document.getElementById('academyDispatchCount').innerText = filtered.length;
-  if (!filtered.length) tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">발송 내역이 없습니다.</td></tr>';
+  var countEl = document.getElementById('academyDispatchCount');
+  if (countEl) countEl.innerText = filtered.length;
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted" style="font-size: 13.5px;"><i class="fa-regular fa-comment-dots d-block mb-2" style="font-size: 24px; opacity: 0.45;"></i>조건에 해당하는 알림톡/문자 발송 내역이 없습니다.</td></tr>';
+    return;
+  }
 
   filtered.forEach(function(l, idx) {
     var tr = document.createElement('tr');
+    tr.style.fontSize = '13px';
+    var badgeClass = l.status === 'SUCCESS'
+      ? 'badge-soft-success'
+      : (l.status === 'FAILED' ? 'badge-soft-danger' : (l.status === 'SMS_FALLBACK' ? 'badge-soft-warn' : 'badge-soft-neutral'));
+    var statusText = l.status === 'SMS_FALLBACK'
+      ? '문자 대체 발송'
+      : (l.status === 'SUCCESS' ? '발송 성공' : (l.status === 'FAILED' ? '발송 실패' : (l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중')));
     tr.innerHTML = `
-      <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
-      <td class="text-center"><small class="text-muted">${l.date}</small></td>
-      <td class="text-center">${escapeRankingText(l.className || '—')}</td>
-      <td class="text-center"><span class="badge-soft badge-soft-neutral">${escapeRankingText(l.typeName || l.type)}</span></td>
-      <td><strong>${escapeRankingText(l.receiverName || l.receiver || '—')}</strong></td>
-      <td>${escapeRankingText(l.receiverPhone || '—')}</td>
+      <td class="text-center text-muted font-weight-bold" style="font-size: 12px;">${idx + 1}</td>
+      <td class="text-center text-muted" style="font-size: 12.5px;">${escapeRankingText(l.date || l.datetime || '—')}</td>
+      <td class="text-center"><span class="badge badge-light border text-muted" style="font-size: 11.5px; font-weight: 600;">${escapeRankingText(l.className || '—')}</span></td>
+      <td class="text-center"><span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size: 11.5px;">${escapeRankingText(l.typeName || l.type)}</span></td>
+      <td style="color: var(--text-main); font-weight: 700;">${escapeRankingText(l.receiverName || l.receiver || '—')}</td>
+      <td class="text-center text-muted" style="font-size: 12.5px; font-family: monospace;">${escapeRankingText(l.receiverPhone || '—')}</td>
       <td class="text-center">
-        <span class="badge-soft ${l.status === 'SUCCESS' ? 'badge-soft-success' : l.status === 'FAILED' ? 'badge-soft-danger' : 'badge-soft-neutral'}">
-          ${l.status === 'SMS_FALLBACK' ? '문자 대체 발송' : l.status === 'SUCCESS' ? '발송 성공' : l.status === 'FAILED' ? '발송 실패' : l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}
+        <span class="badge-soft ${badgeClass} font-weight-bold" style="font-size: 11.5px;">
+          ${statusText}
         </span>
       </td>
       <td class="text-center">
-        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openAcademyDispatchDetailModal('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">전문</button>
-        ${l.status === 'FAILED' && l.canRetry !== false ? `<button class="btn btn-xs btn-outline-danger" onclick="retryAcademyDispatch('${l.id}')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;">재발송</button>` : ''}
+        <button type="button" class="btn btn-xs btn-outline-secondary font-weight-bold mr-1" onclick="openAcademyDispatchDetailModal('${l.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 3px 9px;">전문 보기</button>
+        ${l.status === 'FAILED' && l.canRetry !== false ? `<button type="button" class="btn btn-xs btn-outline-danger font-weight-bold" onclick="retryAcademyDispatch('${l.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 3px 9px;">재발송</button>` : ''}
       </td>
     `;
     tbody.appendChild(tr);
@@ -16115,7 +16140,74 @@ var planTiers = {
   }
 };
 
-// 학원 실제 계약 정보(currentAcademyInfo)를 기반으로 결제 관리 상단 카드·배너·요금제 선택 UI를 동기화
+// 매월 25일(주말·공휴일인 경우 다음 평일) 차월 사용분 정기결제일 및 당월 잔여 일수 산출 헬퍼
+function getNext25thBillingDateInfo(baseDate) {
+  var now = baseDate ? new Date(baseDate.getTime()) : new Date();
+  now.setHours(0, 0, 0, 0);
+  var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+
+  // 대한민국 주요 양력 공휴일 (MM-DD)
+  var fixedHolidays = ['01-01', '03-01', '05-05', '06-06', '08-15', '10-03', '10-09', '12-25'];
+  var isHolidayOrWeekend = function(d) {
+    var day = d.getDay();
+    if (day === 0 || day === 6) return true;
+    var mmdd = pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    return fixedHolidays.indexOf(mmdd) !== -1;
+  };
+  var adjustToNextBusinessDay = function(d) {
+    var copy = new Date(d.getTime());
+    var shifted = false;
+    while (isHolidayOrWeekend(copy)) {
+      copy.setDate(copy.getDate() + 1);
+      shifted = true;
+    }
+    return { date: copy, shifted: shifted };
+  };
+
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var candidate25 = new Date(year, month, 25);
+  var adjustedThisMonth = adjustToNextBusinessDay(candidate25);
+
+  var targetBillingObj = adjustedThisMonth.date;
+  var wasShifted = adjustedThisMonth.shifted;
+  if (now.getTime() > targetBillingObj.getTime()) {
+    var nextMonth25 = new Date(year, month + 1, 25);
+    var adjustedNextMonth = adjustToNextBusinessDay(nextMonth25);
+    targetBillingObj = adjustedNextMonth.date;
+    wasShifted = adjustedNextMonth.shifted;
+  }
+
+  var billingStr = targetBillingObj.getFullYear() + '-' + pad(targetBillingObj.getMonth() + 1) + '-' + pad(targetBillingObj.getDate());
+  var billingDot = billingStr.replace(/-/g, '.');
+
+  // 차월 사용 기간 (다음 달 1일 ~ 말일)
+  var usageStartObj = new Date(targetBillingObj.getFullYear(), targetBillingObj.getMonth() + 1, 1);
+  var usageEndObj = new Date(targetBillingObj.getFullYear(), targetBillingObj.getMonth() + 2, 0);
+  var nextMonthUsageStart = usageStartObj.getFullYear() + '-' + pad(usageStartObj.getMonth() + 1) + '-' + pad(usageStartObj.getDate());
+  var nextMonthUsageEnd = usageEndObj.getFullYear() + '-' + pad(usageEndObj.getMonth() + 1) + '-' + pad(usageEndObj.getDate());
+  var nextMonthLabel = usageStartObj.getFullYear() + '년 ' + (usageStartObj.getMonth() + 1) + '월분';
+
+  // 이번 달 총 일수 및 오늘 포함 이번 달 남은 일수 (일할 계산용)
+  var lastDayOfThisMonth = new Date(year, month + 1, 0);
+  var totalDaysInMonth = lastDayOfThisMonth.getDate();
+  var remainingDaysInMonth = Math.max(1, totalDaysInMonth - now.getDate() + 1);
+  var thisMonthEndStr = year + '-' + pad(month + 1) + '-' + pad(totalDaysInMonth);
+
+  return {
+    billingDateStr: billingStr,
+    billingDateDot: billingDot,
+    wasShifted: wasShifted,
+    nextMonthUsageStart: nextMonthUsageStart,
+    nextMonthUsageEnd: nextMonthUsageEnd,
+    nextMonthLabel: nextMonthLabel,
+    totalDaysInMonth: totalDaysInMonth,
+    remainingDaysInMonth: remainingDaysInMonth,
+    thisMonthEndStr: thisMonthEndStr
+  };
+}
+
+// 학원 실제 계약 정보(currentAcademyInfo)를 기반으로 결제 관리 상단 카드·요금제 선택 UI를 동기화
 function syncCurrentAcademyPlan(resetSelectedTier) {
   if (typeof currentAcademyInfo === 'undefined' || !currentAcademyInfo) return;
 
@@ -16158,7 +16250,7 @@ function syncCurrentAcademyPlan(resetSelectedTier) {
     ? parsedFee
     : Math.round(activeTier.monthlyPrice * 1.1);
 
-  // 시작일·만료일·다음 결제일·D-Day 계산 (자정 기준 일수 계산)
+  // 시작일·만료일·매월 25일 정기결제일·D-Day 계산
   var startStr = String(currentAcademyInfo.startDate || currentAcademyInfo.contractDate || currentAcademyInfo.joinDate || '2025-01-01').slice(0, 10);
   var endStr = String(currentAcademyInfo.endDate || currentAcademyInfo.expireDate || '2026-12-31').slice(0, 10);
   var endDot = endStr.replace(/-/g, '.');
@@ -16172,10 +16264,7 @@ function syncCurrentAcademyPlan(resetSelectedTier) {
   var diffDays = Math.ceil((endDateObj.getTime() - today.getTime()) / 86400000);
   var ddayLabel = diffDays > 0 ? ('D-' + diffDays) : (diffDays === 0 ? 'D-Day' : ('만료 +' + Math.abs(diffDays) + '일'));
 
-  var nextBillingObj = new Date(endDateObj.getTime() + 86400000);
-  var pad = function(n) { return n < 10 ? '0' + n : String(n); };
-  var nextBillingStr = nextBillingObj.getFullYear() + '-' + pad(nextBillingObj.getMonth() + 1) + '-' + pad(nextBillingObj.getDate());
-  var nextBillingDot = nextBillingStr.replace(/-/g, '.');
+  var billingInfo = getNext25thBillingDateInfo(today);
 
   currentAcademyPlan.tier = tierCode;
   currentAcademyPlan.name = activeTier.name;
@@ -16184,22 +16273,31 @@ function syncCurrentAcademyPlan(resetSelectedTier) {
   currentAcademyPlan.startDate = startStr;
   currentAcademyPlan.expiryDate = endStr;
   currentAcademyPlan.expiryDateDot = endDot;
-  currentAcademyPlan.nextBillingDate = nextBillingStr;
-  currentAcademyPlan.nextBillingDateDot = nextBillingDot;
+  currentAcademyPlan.nextBillingDate = billingInfo.billingDateStr;
+  currentAcademyPlan.nextBillingDateDot = billingInfo.billingDateDot;
+  currentAcademyPlan.nextMonthLabel = billingInfo.nextMonthLabel;
+  currentAcademyPlan.nextMonthUsageStart = billingInfo.nextMonthUsageStart;
+  currentAcademyPlan.nextMonthUsageEnd = billingInfo.nextMonthUsageEnd;
+  currentAcademyPlan.totalDaysInMonth = billingInfo.totalDaysInMonth;
+  currentAcademyPlan.remainingDaysInMonth = billingInfo.remainingDaysInMonth;
+  currentAcademyPlan.thisMonthEndStr = billingInfo.thisMonthEndStr;
   currentAcademyPlan.daysRemaining = Math.max(0, diffDays);
   currentAcademyPlan.ddayText = ddayLabel;
 
-  // 1) 상단 요약 카드 1: 현재 이용 중인 요금제
+  // 1) 상단 요약 카드 1: 현재 요금제 안내
   var payPlanNameEl = document.getElementById('paymentStatPlanName');
   var payPlanFeeEl = document.getElementById('paymentStatPlanFee');
   if (payPlanNameEl) {
-    payPlanNameEl.innerHTML = activeTier.name + ' (' + maxSlots + '명) <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">이용중</span>';
+    var pendingText = currentAcademyPlan.reservedNextTier
+      ? ' <span class="badge-soft badge-soft-warn ml-1" style="font-size: 10.5px; vertical-align: middle;">차월 ' + planTiers[currentAcademyPlan.reservedNextTier].name.split(' ')[0] + ' 예정</span>'
+      : '';
+    payPlanNameEl.innerHTML = activeTier.name + ' (' + maxSlots + '명) <span class="badge-soft badge-soft-success ml-2" style="font-size: 11px; vertical-align: middle;">이용중</span>' + pendingText;
   }
   if (payPlanFeeEl) {
     payPlanFeeEl.innerHTML = '월 결제액: <strong>' + Number(displayMonthlyFee).toLocaleString() + '원</strong> <small>(VAT 포함)</small>';
   }
 
-  // 2) 상단 요약 카드 2: 서비스 이용 기간 및 만료일
+  // 2) 상단 요약 카드 2: 서비스 이용 기간 및 만료일 (매월 25일 정기결제 반영)
   var payExpireEl = document.getElementById('paymentStatExpireDday');
   var payStartEl = document.getElementById('paymentStatStartDate');
   var payNextEl = document.getElementById('paymentStatNextDate');
@@ -16211,120 +16309,98 @@ function syncCurrentAcademyPlan(resetSelectedTier) {
     payStartEl.innerText = '시작일: ' + startStr;
   }
   if (payNextEl) {
-    payNextEl.className = diffDays <= 30 ? 'text-danger font-weight-bold' : 'font-weight-bold';
-    payNextEl.style.color = diffDays <= 30 ? '' : 'var(--btn-primary)';
-    payNextEl.innerText = '다음 결제일: ' + endStr;
+    payNextEl.className = 'font-weight-bold';
+    payNextEl.style.color = 'var(--btn-primary)';
+    payNextEl.innerText = '정기 결제일: ' + billingInfo.billingDateStr + ' (매월 25일·차월분)';
   }
 
-  // 3) STEP 1 우측 상단 '현재 이용중: ...' 요약 라벨 및 4종 요금제 카드 배지·슬롯 갱신
+  // 3) '요금제 선택' 우측 상단 '현재 이용중: ...' 요약 라벨 및 드롭박스 옵션 텍스트 갱신
   var summaryLabelEl = document.getElementById('currentPlanSummaryLabel');
   if (summaryLabelEl) {
     var displaySlotText = (tierCode === 'vip') ? (maxSlots > 0 ? maxSlots + '명 (협의)' : '협의') : (maxSlots + '명');
     summaryLabelEl.innerHTML = '현재 이용중: <strong>' + activeTier.name + ' (' + displaySlotText + ')</strong>';
   }
 
-  var defaultTopBadges = {
-    basic: { cls: 'badge-soft badge-soft-neutral', text: '소규모/공부방' },
-    standard: { cls: 'badge-soft badge-soft-neutral', text: '표준 학원 플랜' },
-    premium: { cls: 'badge-soft badge-soft-neutral', text: '중대형 학원 플랜' },
-    vip: { cls: 'badge-soft badge-soft-danger', text: '대형 프랜차이즈' }
-  };
-
-  var defaultPrices = { basic: '80,000', standard: '120,000', premium: '180,000', vip: '300,000' };
-
-  ['basic', 'standard', 'premium', 'vip'].forEach(function(code) {
-    var tObj = planTiers[code];
-    var slotEl = document.getElementById('tierSlots_' + code);
-    if (slotEl) {
-      slotEl.innerText = (tObj.slots === '협의') ? '정원 협의' : ('최대 ' + tObj.slots + '명 슬롯');
-    }
-    var priceEl = document.getElementById('tierPrice_' + code);
-    if (priceEl) {
-      priceEl.innerHTML = defaultPrices[code] + '<span style="font-size: 12px; font-weight: normal;">원/월</span>';
-    }
-
-    var topBadgeEl = document.getElementById('tierBadge_' + code);
-    if (topBadgeEl) {
-      if (code === tierCode) {
-        topBadgeEl.className = 'badge badge-success';
-        topBadgeEl.innerText = '현재 이용중 (' + ddayLabel + ')';
-      } else if (tObj.rank === activeTier.rank + 1) {
-        topBadgeEl.className = 'badge badge-warning text-dark font-weight-bold';
-        topBadgeEl.innerText = '추천 업그레이드';
-      } else {
-        topBadgeEl.className = defaultTopBadges[code].cls;
-        topBadgeEl.innerText = defaultTopBadges[code].text;
+  var dropdownEl = document.getElementById('planTierSelectDropdown');
+  if (dropdownEl) {
+    var optionLabels = {
+      basic: '🌱 베이직 (Basic) — 최대 ' + planTiers.basic.slots + '명 슬롯 · 월 80,000원 (VAT 별도)',
+      standard: '⚡ 스탠다드 (Standard) — 최대 ' + planTiers.standard.slots + '명 슬롯 · 월 120,000원 (VAT 별도)',
+      premium: '🚀 프리미엄 (Premium) — 최대 ' + planTiers.premium.slots + '명 슬롯 · 월 180,000원 (VAT 별도)',
+      vip: '👑 로열 (Royal) — 정원 협의 · 월 300,000원 (VAT 별도)'
+    };
+    Array.from(dropdownEl.options).forEach(function(opt) {
+      var code = opt.value;
+      if (optionLabels[code]) {
+        opt.text = optionLabels[code] + (code === tierCode ? ' [현재 이용중]' : '');
       }
-    }
+    });
+  }
 
-    var actionBadgeEl = document.getElementById('tierActionBadge_' + code);
-    if (actionBadgeEl) {
-      if (code === tierCode) {
-        actionBadgeEl.className = 'badge-soft badge-soft-success mt-1';
-        actionBadgeEl.innerText = '정기결제 이용중';
-      } else if (tObj.rank > activeTier.rank) {
-        actionBadgeEl.className = 'badge-soft badge-soft-danger mt-1';
-        actionBadgeEl.innerText = '즉시 변경 (차액 결제)';
-      } else {
-        actionBadgeEl.className = 'badge-soft badge-soft-warn mt-1';
-        actionBadgeEl.innerText = '차월 적용 (다운그레이드)';
-      }
-    }
-  });
-
-  // 4) 상단 구독 알림 배너 및 선택된 요금제 카드 동기화
+  // 4) 자동갱신 상태 및 선택 요금제 상세·카카오톡 충전 카드 동기화
   if (typeof updateAutoRenewUI === 'function') {
     updateAutoRenewUI();
   }
-  if (resetSelectedTier || !currentSelectedTier) {
+  if (resetSelectedTier || !currentSelectedTier || currentSelectedTier === 'kakao') {
     currentSelectedTier = tierCode;
   }
   if (typeof selectPlanTier === 'function') {
     selectPlanTier(currentSelectedTier);
   }
+  if (typeof updateKakaoTopupCardUI === 'function') {
+    updateKakaoTopupCardUI();
+  }
 }
 
-// 구독 기간 정의 및 할인율
+// 구독 기간 정의 (매월 25일 차월 사용분 정기결제)
 var periodDefinitions = {
   'monthly': {
     code: 'monthly',
-    name: '1개월 정기구독권',
+    name: '월 정기구독 (차월 사용분)',
     shortName: '1개월',
     periodMonths: 1,
     discountRate: 0,
-    badge: '1개월 정기구독',
-    desc: '부담 없는 매월 정기결제'
-  },
-  '6month': {
-    code: '6month',
-    name: '6개월 이용권 (10% 할인)',
-    shortName: '6개월 (10% OFF)',
-    periodMonths: 6,
-    discountRate: 0.10,
-    badge: '6개월 이용권 (1학기 패키지)',
-    desc: '1학기 6개월 패키지 (10% 즉시 절약)'
-  },
-  '12month': {
-    code: '12month',
-    name: '12개월 연간권 (20% 할인)',
-    shortName: '12개월 (20% OFF)',
-    periodMonths: 12,
-    discountRate: 0.20,
-    badge: '12개월 연간권 (VIP 라이선스)',
-    desc: '연간 라이선스 (20% 최대 할인)'
+    badge: '월 정기구독 (매월 25일 자동결제)',
+    desc: '매월 25일(공휴일 시 다음 평일) 차월 사용분 정기결제'
   }
 };
 
 var currentKakaoTopupQty = 1;
+var currentUpgradeApplyTiming = 'now'; // 'now' (지금 바로 적용 - 일할 차액 결제) | 'next_month' (차월부터 적용 - 추가 결제 없음)
+var currentCheckoutMode = 'monthly';   // 'monthly' | 'upgrade_now' | 'kakao'
+
+function updateKakaoTopupCardUI() {
+  var qty = Math.max(1, Number(currentKakaoTopupQty) || 1);
+  var kakaoSupply = qty * 5000;
+  var kakaoVat = qty * 500;
+  var kakaoTotal = qty * 5500;
+  var approxCount = Math.floor((qty * 50000) / 85);
+
+  var input = document.getElementById('kakaoTopupQtyInput');
+  if (input && Number(input.value) !== qty) input.value = String(qty);
+
+  var creditSummary = document.getElementById('kakaoCreditSummaryText');
+  if (creditSummary) {
+    creditSummary.innerText = qty + '단위(' + Number(kakaoTotal).toLocaleString() + '원) 결제 시 ' + Number(kakaoSupply).toLocaleString() + '원 적립 · 약 ' + Number(approxCount).toLocaleString() + '건 발송 가능 (만료 기한 없음)';
+  }
+  var supplyEl = document.getElementById('kakaoTopupSupplyText');
+  if (supplyEl) supplyEl.innerText = Number(kakaoSupply).toLocaleString() + '원';
+  var vatEl = document.getElementById('kakaoTopupVatText');
+  if (vatEl) vatEl.innerText = Number(kakaoVat).toLocaleString() + '원';
+  var totalEl = document.getElementById('kakaoTopupTotalText');
+  if (totalEl) totalEl.innerText = Number(kakaoTotal).toLocaleString() + '원';
+  var btnEl = document.getElementById('btnKakaoTopupSubmit');
+  if (btnEl) {
+    btnEl.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>카카오톡 알림 ' + Number(kakaoTotal).toLocaleString() + '원 충전 결제하기';
+  }
+}
 
 function changeKakaoTopupQty(delta) {
   var next = (Number(currentKakaoTopupQty) || 1) + Number(delta || 0);
   if (next < 1) next = 1;
   if (next > 100) next = 100;
   currentKakaoTopupQty = next;
-  var input = document.getElementById('kakaoTopupQtyInput');
-  if (input) input.value = String(next);
-  if (currentSelectedTier === 'kakao') selectPlanTier('kakao');
+  updateKakaoTopupCardUI();
 }
 
 function onKakaoTopupQtyInput(val) {
@@ -16332,215 +16408,365 @@ function onKakaoTopupQtyInput(val) {
   if (isNaN(next) || next < 1) next = 1;
   if (next > 100) next = 100;
   currentKakaoTopupQty = next;
-  if (currentSelectedTier === 'kakao') selectPlanTier('kakao');
+  updateKakaoTopupCardUI();
 }
 
-// 요금제(Tier 4종) 및 카카오톡 알림(1회성 충전) 선택·금액 계산 함수
+function openKakaoTopupCheckout() {
+  openCheckoutModal('kakao');
+}
+
+function onUpgradeTimingChange(timing) {
+  currentUpgradeApplyTiming = (timing === 'next_month') ? 'next_month' : 'now';
+  var rNow = document.getElementById('radioUpgradeNow');
+  var rNext = document.getElementById('radioUpgradeNextMonth');
+  var lNow = document.getElementById('labelUpgradeTimingNow');
+  var lNext = document.getElementById('labelUpgradeTimingNext');
+  if (rNow) rNow.checked = (currentUpgradeApplyTiming === 'now');
+  if (rNext) rNext.checked = (currentUpgradeApplyTiming === 'next_month');
+  if (lNow) {
+    lNow.style.border = (currentUpgradeApplyTiming === 'now') ? '1.5px solid #dc2626' : '1px solid #e2e8f0';
+    lNow.style.background = (currentUpgradeApplyTiming === 'now') ? '#ffffff' : '#f8fafc';
+  }
+  if (lNext) {
+    lNext.style.border = (currentUpgradeApplyTiming === 'next_month') ? '1.5px solid #5a4b3d' : '1px solid #e2e8f0';
+    lNext.style.background = (currentUpgradeApplyTiming === 'next_month') ? '#ffffff' : '#f8fafc';
+  }
+  selectPlanTier(currentSelectedTier);
+}
+
+// 당월 남은 일수 일할 차액 계산 헬퍼 (업그레이드 '지금 바로 적용' 선택 시)
+function calculateUpgradeProratedDiff(targetTier) {
+  var billingInfo = getNext25thBillingDateInfo();
+  var totalDays = billingInfo.totalDaysInMonth || 30;
+  var remainDays = billingInfo.remainingDaysInMonth || 1;
+  var currentMonthlySupply = Number(currentAcademyPlan.monthlyPrice) || 120000;
+  var targetMonthlySupply = Number(targetTier.monthlyPrice) || 180000;
+  var monthlySupplyDiff = Math.max(0, targetMonthlySupply - currentMonthlySupply);
+
+  var proratedSupply = Math.round((monthlySupplyDiff * remainDays) / totalDays);
+  var proratedVat = Math.round(proratedSupply * 0.1);
+  var proratedTotal = proratedSupply + proratedVat;
+
+  return {
+    monthlySupplyDiff: monthlySupplyDiff,
+    totalDays: totalDays,
+    remainDays: remainDays,
+    proratedSupply: proratedSupply,
+    proratedVat: proratedVat,
+    proratedTotal: proratedTotal,
+    billingInfo: billingInfo
+  };
+}
+
+// 요금제(Tier 4종) 드롭박스 선택 시 우측 설명·비용·버튼 업데이트 함수
 function selectPlanTier(tierCode) {
-  var isKakao = (tierCode === 'kakao');
-  var tier = isKakao ? null : (planTiers[tierCode] || planTiers['standard']);
-  currentSelectedTier = isKakao ? 'kakao' : (tier ? tier.code : 'standard');
+  if (tierCode === 'kakao') {
+    openKakaoTopupCheckout();
+    return;
+  }
+  var tier = planTiers[tierCode] || planTiers['standard'];
+  currentSelectedTier = tier.code;
 
-  // 1. 5종 카드 UI 활성화 스타일 처리
-  var tierKeys = ['basic', 'standard', 'premium', 'vip', 'kakao'];
-  tierKeys.forEach(function(code) {
-    var card = document.getElementById('cardTier_' + code);
-    if (!card) return;
-    var iconSpan = card.querySelector('.tier-check-icon');
+  var dropdownEl = document.getElementById('planTierSelectDropdown');
+  if (dropdownEl && dropdownEl.value !== currentSelectedTier) {
+    dropdownEl.value = currentSelectedTier;
+  }
 
-    if (code === currentSelectedTier) {
-      card.classList.add('active');
-      card.style.border = code === 'kakao' ? '2px solid #d97706' : '2px solid #5a4b3d';
-      card.style.background = code === 'kakao' ? '#fffbeb' : '#fffcf7';
-      card.style.boxShadow = '0 4px 16px rgba(90, 75, 61, 0.12)';
-      if (iconSpan) iconSpan.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
-    } else {
-      card.classList.remove('active');
-      card.style.border = '2px solid var(--border-medium)';
-      card.style.background = '#ffffff';
-      card.style.boxShadow = 'none';
-      if (iconSpan) iconSpan.innerHTML = '<i class="fa-regular fa-circle text-muted"></i>';
-    }
-  });
+  var billingInfo = getNext25thBillingDateInfo();
+  var nextBillingDateStr = billingInfo.billingDateStr;
+  var nextBillingDateDot = billingInfo.billingDateDot;
+  var nextMonthLabel = billingInfo.nextMonthLabel;
 
   var policyBox = document.getElementById('planTierPolicyNoticeBox');
+  var upgradeTimingWrap = document.getElementById('upgradeTimingOptionWrap');
   var titleDisplay = document.getElementById('selectedTierDisplayName');
+  var descDisplay = document.getElementById('selectedTierDescText');
   var typeBadge = document.getElementById('selectedPaymentTypeBadge');
-  var kakaoQtyWrap = document.getElementById('kakaoQuantityControlWrap');
-  var subGuideBox = document.getElementById('subscriptionGuideBox');
-  var cancelBtn = document.getElementById('btnCancelAutoRenewAction');
+  var statusChip = document.getElementById('selectedPlanStatusChip');
   var slotItem = document.getElementById('benefitSlot_monthly');
+  var supplyLabelEl = document.getElementById('supplyPriceLabelText');
+  var vatLabelEl = document.getElementById('vatPriceLabelText');
   var elP1Price = document.getElementById('periodPrice_monthly');
   var elVatText = document.getElementById('pgMonthlyVatText');
   var elP1Vat = document.getElementById('periodVatPrice_monthly');
+  var nextBillingSummaryEl = document.getElementById('nextBillingDateSummaryText');
   var b1 = document.getElementById('btnPeriodSubmit_monthly');
+  var cancelBtn = document.getElementById('btnCancelAutoRenewAction');
 
-  // [A] 카카오톡 알림 (1회성 충전 구매) 선택 시
-  if (isKakao) {
-    var qty = Math.max(1, Number(currentKakaoTopupQty) || 1);
-    var kakaoSupply = qty * 5000;
-    var kakaoVat = qty * 500;
-    var kakaoTotal = qty * 5500;
-    var approxCount = Math.floor((qty * 50000) / 85);
+  var currentRank = planTiers[currentAcademyPlan.tier].rank;
+  var targetRank = tier.rank;
 
+  var slotDesc = (tier.slots === '협의') ? '정원 협의' : ('최대 ' + tier.slots + '명 정원');
+  if (titleDisplay) {
+    titleDisplay.innerText = tier.name + ' (' + slotDesc + ')';
+  }
+  var tierDetailDescriptions = {
+    basic: '소규모 학원 및 공부방에 최적화된 실속 플랜으로, 원생 최대 25명까지 도서 배정·북퀴즈·나노시트·포트폴리오를 모두 제공합니다.',
+    standard: '표준 학원 운영에 가장 많이 선택하는 대표 플랜으로, 원생 최대 50명까지 모든 독서 관리 및 AI 첨삭 기능을 제한 없이 이용합니다.',
+    premium: '원생 확장에 대비하는 중대형 학원 플랜으로, 원생 최대 100명 슬롯과 전 학급 통합 리포트·포트폴리오 관리를 지원합니다.',
+    vip: '대형 프랜차이즈 및 전문 교육 브랜드 전용 플랜으로, 100명 이상 맞춤 정원 협의 및 본사 전담 기술 지원을 제공합니다.'
+  };
+  if (descDisplay) {
+    descDisplay.innerText = tierDetailDescriptions[tier.code] || tier.desc;
+  }
+  if (slotItem) {
+    var slotStr = (tier.slots === '협의') ? '정원 협의' : (tier.slots + '명');
+    slotItem.innerHTML = '<i class="fa-solid fa-circle-check text-success mr-1"></i>원생 슬롯 최대 <strong>' + slotStr + '</strong> 제공';
+  }
+
+  var regularSupply = tier.monthlyPrice;
+  var regularVat = Math.round(regularSupply * 0.1);
+  var regularTotal = regularSupply + regularVat;
+
+  // 1) 업그레이드 (targetRank > currentRank)
+  if (targetRank > currentRank) {
+    if (upgradeTimingWrap) upgradeTimingWrap.style.display = 'block';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    var prorated = calculateUpgradeProratedDiff(tier);
+
+    if (currentUpgradeApplyTiming === 'now') {
+      // [업그레이드 - 지금 바로 적용 (일할 차액 결제)]
+      if (typeBadge) {
+        typeBadge.className = 'badge badge-danger px-2.5 py-1';
+        typeBadge.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>업그레이드 · 지금 바로 적용 (일할 차액 결제)';
+      }
+      if (statusChip) {
+        statusChip.className = 'badge-soft badge-soft-danger font-weight-bold';
+        statusChip.innerText = '즉시 정원 상향 (' + currentAcademyPlan.slots + '명 → ' + tier.slots + '명)';
+      }
+      if (policyBox) {
+        policyBox.className = 'p-3 rounded mb-3';
+        policyBox.style.background = '#fff7f7';
+        policyBox.style.border = '1.5px solid #fca5a5';
+        policyBox.innerHTML =
+          '<div class="font-weight-bold mb-1" style="color: #b91c1c; font-size: 13.5px;">' +
+            '⚡ [업그레이드 - 지금 바로 적용] 이번 달 남은 ' + prorated.remainDays + '일치 차액만 일할 결제합니다.' +
+          '</div>' +
+          '<div class="text-muted" style="font-size: 12px; line-height: 1.6;">' +
+            '• <strong>당월 일할 차액 산출</strong>: 월 공급가 차액(' + Number(prorated.monthlySupplyDiff).toLocaleString() + '원) × 잔여 ' + prorated.remainDays + '일 / 당월 ' + prorated.totalDays + '일 = <strong>' + Number(prorated.proratedSupply).toLocaleString() + '원</strong> (VAT 별도)<br>' +
+            '• <strong>즉시 적용 및 차월 정액결제</strong>: 결제 즉시 <strong>' + tier.name + '(' + tier.slots + '명)</strong>이 적용되며, 차월 정기결제일(<strong>' + nextBillingDateDot + '</strong>, 매월 25일)부터는 <strong>월 ' + Number(regularTotal).toLocaleString() + '원(VAT 포함)</strong>으로 정액 결제됩니다.' +
+          '</div>';
+      }
+      if (supplyLabelEl) supplyLabelEl.innerText = '이번 달 남은 ' + prorated.remainDays + '일 일할 차액 (공급가액)';
+      if (vatLabelEl) vatLabelEl.innerText = '일할 차액 부가가치세 (10%)';
+      if (elP1Price) elP1Price.innerText = Number(prorated.proratedSupply).toLocaleString() + '원';
+      if (elVatText) elVatText.innerText = Number(prorated.proratedVat).toLocaleString() + '원';
+      if (elP1Vat) {
+        elP1Vat.innerHTML =
+          '<span class="font-weight-bold" style="font-size: 13.5px; color: #b91c1c;">지금 결제할 일할 차액 (VAT 포함)</span>' +
+          '<strong style="font-size: 22px; font-weight: 900; color: #dc2626;">' + Number(prorated.proratedTotal).toLocaleString() + '원 <small style="font-size: 11.5px; font-weight: normal; color: #786d63;">(당월 잔여 ' + prorated.remainDays + '일분)</small></strong>';
+      }
+      if (nextBillingSummaryEl) {
+        nextBillingSummaryEl.innerHTML = nextBillingDateDot + '부터 매월 25일 <strong class="text-danger">' + Number(regularTotal).toLocaleString() + '원</strong> 정액 결제';
+      }
+      if (b1) {
+        b1.className = 'btn btn-block btn-beige-primary font-weight-bold py-3';
+        b1.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>일할 차액 ' + Number(prorated.proratedTotal).toLocaleString() + '원 결제 및 지금 바로 적용';
+      }
+    } else {
+      // [업그레이드 - 차월부터 적용 (추가 결제 없음)]
+      if (typeBadge) {
+        typeBadge.className = 'badge badge-primary px-2.5 py-1';
+        typeBadge.innerHTML = '<i class="fa-solid fa-calendar-check mr-1"></i>업그레이드 · 차월부터 적용 (추가 결제 없음)';
+      }
+      if (statusChip) {
+        statusChip.className = 'badge-soft badge-soft-warn font-weight-bold';
+        statusChip.innerText = '차월분부터 상향 적용 예약';
+      }
+      if (policyBox) {
+        policyBox.className = 'p-3 rounded mb-3';
+        policyBox.style.background = '#eff6ff';
+        policyBox.style.border = '1.5px solid #93c5fd';
+        policyBox.innerHTML =
+          '<div class="font-weight-bold mb-1" style="color: #1d4ed8; font-size: 13.5px;">' +
+            '📅 [업그레이드 - 차월부터 적용] 지금 추가 결제 없이 변경 신청만으로 완료됩니다.' +
+          '</div>' +
+          '<div class="text-muted" style="font-size: 12px; line-height: 1.6;">' +
+            '• <strong>당월 요금제 유지</strong>: 이번 달은 현재 이용 중인 <strong>' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명)</strong>로 유지되며 지금 결제되는 금액은 없습니다.<br>' +
+            '• <strong>차월 정액 결제</strong>: 차월분 정기결제일(<strong>' + nextBillingDateDot + '</strong>, 매월 25일)부터 업그레이드된 <strong>' + tier.name + '(월 ' + Number(regularTotal).toLocaleString() + '원, VAT 포함)</strong>으로 정액 결제됩니다.' +
+          '</div>';
+      }
+      if (supplyLabelEl) supplyLabelEl.innerText = '차월 적용 월 공급가액 (VAT 별도)';
+      if (vatLabelEl) vatLabelEl.innerText = '차월 적용 부가가치세 (10%)';
+      if (elP1Price) elP1Price.innerText = Number(regularSupply).toLocaleString() + '원 (차월분)';
+      if (elVatText) elVatText.innerText = Number(regularVat).toLocaleString() + '원 (차월분)';
+      if (elP1Vat) {
+        elP1Vat.innerHTML =
+          '<span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">지금 결제할 금액 (추가 결제 없음)</span>' +
+          '<strong style="font-size: 22px; font-weight: 900; color: #1d4ed8;">0원 <small style="font-size: 11.5px; font-weight: normal; color: #64748b;">(차월 25일 ' + Number(regularTotal).toLocaleString() + '원 자동결제)</small></strong>';
+      }
+      if (nextBillingSummaryEl) {
+        nextBillingSummaryEl.innerHTML = nextBillingDateDot + ' (매월 25일) <strong class="text-primary">' + Number(regularTotal).toLocaleString() + '원</strong> 정액 결제';
+      }
+      if (b1) {
+        b1.className = 'btn btn-block btn-beige-primary font-weight-bold py-3';
+        b1.innerHTML = '<i class="fa-solid fa-calendar-check mr-1"></i>차월부터 업그레이드 변경 신청하기 (추가 결제 없음)';
+      }
+    }
+    return;
+  }
+
+  // 2) 다운그레이드 (targetRank < currentRank)
+  if (targetRank < currentRank) {
+    if (upgradeTimingWrap) upgradeTimingWrap.style.display = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    if (typeBadge) {
+      typeBadge.className = 'badge badge-warning text-dark px-2.5 py-1 font-weight-bold';
+      typeBadge.innerHTML = '<i class="fa-solid fa-calendar-day mr-1"></i>다운그레이드 · 차월분부터 적용 (추가 결제 없음)';
+    }
+    if (statusChip) {
+      statusChip.className = 'badge-soft badge-soft-warn font-weight-bold';
+      statusChip.innerText = '차월 적용 변경 신청';
+    }
     if (policyBox) {
       policyBox.className = 'p-3 rounded mb-3';
       policyBox.style.background = '#fffbeb';
       policyBox.style.border = '1.5px solid #fcd34d';
       policyBox.innerHTML =
-        '<div class="d-flex align-items-start gap-3">' +
-          '<div style="font-size: 24px; color: #d97706; line-height: 1;"><i class="fa-solid fa-comment-sms"></i></div>' +
-          '<div>' +
-            '<div class="font-weight-bold" style="color: #b45309; font-size: 14px;">' +
-              '💬 [1회성 충전 상품] 카카오톡 알림은 정기구독이 아닌 1회성 선불 충전 상품입니다.' +
-            '</div>' +
-            '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
-              '• <strong>자동결제 없음</strong>: 매월 자동 청구되지 않으며, 필요하실 때만 원하는 수량만큼 1회성으로 결제하여 충전합니다.<br>' +
-              '• <strong>소진 시까지 무기한 유지</strong>: 1단위(5,500원, VAT 포함) 결제 시 <strong>5,000원</strong>이 적립되며, 발송 성공 건당 8.5원씩 차감됩니다.' +
-            '</div>' +
-          '</div>' +
+        '<div class="font-weight-bold mb-1" style="color: #b45309; font-size: 13.5px;">' +
+          '📅 [다운그레이드 정책] 변경 신청 시 차월분부터 적용되며, 추가 결제 없이 신청으로 완료됩니다.' +
+        '</div>' +
+        '<div class="text-muted" style="font-size: 12px; line-height: 1.6;">' +
+          '• <strong>이번 달 혜택 유지</strong>: 이번 달 말일(' + billingInfo.thisMonthEndStr.replace(/-/g, '.') + ')까지는 현재 이용 중인 <strong>' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯)</strong> 혜택이 그대로 유지됩니다.<br>' +
+          '• <strong>차월분 자동 전환</strong>: 차월분 정기결제일(<strong>' + nextBillingDateDot + '</strong>, 매월 25일)부터 <strong>' + tier.name + '(월 ' + Number(regularTotal).toLocaleString() + '원, VAT 포함)</strong>으로 자동 결제됩니다.' +
         '</div>';
     }
-
-    if (typeBadge) {
-      typeBadge.className = 'badge badge-warning text-dark px-2 py-1 font-weight-bold';
-      typeBadge.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>1회성 단건 구매 (자동결제 없음)';
-    }
-    if (titleDisplay) {
-      titleDisplay.innerText = '카카오톡 알림 충전 (' + qty + '단위 · ' + Number(kakaoSupply).toLocaleString() + '원 적립)';
-    }
-    if (slotItem) {
-      slotItem.innerHTML = '<i class="fa-solid fa-circle-check text-warning mr-1"></i>약 <strong>' + Number(approxCount).toLocaleString() + '건</strong> 발송 가능 (건당 8.5원)';
-    }
-    if (kakaoQtyWrap) kakaoQtyWrap.style.display = 'block';
-    var creditSummary = document.getElementById('kakaoCreditSummaryText');
-    if (creditSummary) {
-      creditSummary.innerText = qty + '단위(' + Number(kakaoTotal).toLocaleString() + '원) 결제 시 ' + Number(kakaoSupply).toLocaleString() + '원 적립 · 약 ' + Number(approxCount).toLocaleString() + '건 발송 가능';
-    }
-    if (subGuideBox) {
-      subGuideBox.innerHTML =
-        '<div>• <strong>1회성 단건 결제 (NHN KCP)</strong>: 우측 <strong>[' + Number(kakaoTotal).toLocaleString() + '원 결제하기]</strong> 버튼을 누르면 정기구독 등록 없이 1회성 단건 결제로 진행됩니다.</div>' +
-        '<div>• <strong>적립 및 환급 기준</strong>: 알림톡 발송 실패 건은 차감되지 않으며(자동 환급), 충전 잔액은 이용권 만료 여부와 무관하게 보존됩니다.</div>';
-    }
-    if (elP1Price) elP1Price.innerText = Number(kakaoSupply).toLocaleString() + '원 (적립액)';
-    if (elVatText) elVatText.innerText = Number(kakaoVat).toLocaleString() + '원';
+    if (supplyLabelEl) supplyLabelEl.innerText = '차월 적용 월 공급가액 (VAT 별도)';
+    if (vatLabelEl) vatLabelEl.innerText = '차월 적용 부가가치세 (10%)';
+    if (elP1Price) elP1Price.innerText = Number(regularSupply).toLocaleString() + '원 (차월분)';
+    if (elVatText) elVatText.innerText = Number(regularVat).toLocaleString() + '원 (차월분)';
     if (elP1Vat) {
-      elP1Vat.innerHTML = '<span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">1회성 결제 금액 (VAT 포함)</span>' +
-        '<strong style="font-size: 22px; font-weight: 900; color: #b45309;">' + Number(kakaoTotal).toLocaleString() + '원 <small style="font-size: 12px; font-weight: normal; color: #786d63;">(1회성)</small></strong>';
+      elP1Vat.innerHTML =
+        '<span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">지금 결제할 금액 (추가 결제 없음)</span>' +
+        '<strong style="font-size: 22px; font-weight: 900; color: #b45309;">0원 <small style="font-size: 11.5px; font-weight: normal; color: #786d63;">(차월 25일 ' + Number(regularTotal).toLocaleString() + '원 자동결제)</small></strong>';
     }
-    if (b1) b1.innerText = Number(kakaoTotal).toLocaleString() + '원 결제하기';
-    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (nextBillingSummaryEl) {
+      nextBillingSummaryEl.innerHTML = nextBillingDateDot + ' (매월 25일) <strong>' + Number(regularTotal).toLocaleString() + '원</strong> 정액 결제';
+    }
+    if (b1) {
+      b1.className = 'btn btn-block btn-beige-primary font-weight-bold py-3';
+      b1.innerHTML = '<i class="fa-solid fa-check mr-1"></i>차월 다운그레이드 변경 신청하기 (추가 결제 없음)';
+    }
     return;
   }
 
-  // [B] 학원 정기구독 요금제 (베이직 ~ 로열) 선택 시
-  if (kakaoQtyWrap) kakaoQtyWrap.style.display = 'none';
+  // 3) 현재 이용 중인 동일 요금제 (targetRank === currentRank)
+  if (upgradeTimingWrap) upgradeTimingWrap.style.display = 'none';
   if (cancelBtn) cancelBtn.style.display = 'block';
-  if (typeBadge) {
-    typeBadge.className = 'badge badge-dark px-2 py-1';
-    typeBadge.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>월 정기구독 (NHN KCP 자동결제)';
-  }
-  if (subGuideBox) {
-    subGuideBox.innerHTML =
-      '<div>• <strong>NHN KCP 정기결제</strong>: 우측 <strong>[결제하기]</strong> 버튼을 누르면 NHN KCP 전자결제창이 열리며, 등록된 결제수단으로 매월 만료일에 자동 결제됩니다.</div>' +
-      '<div>• <strong>자동결제 종료(해지)</strong>: <strong>학원(원장님)에서 자동갱신을 취소</strong>하거나 <strong>본사(마스터)에서 취소 처리</strong>하면 다음 결제일부터 자동결제가 즉시 종료됩니다.</div>';
-  }
 
+  if (typeBadge) {
+    typeBadge.className = 'badge badge-dark px-2.5 py-1';
+    typeBadge.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>차월 사용분 정기결제 (매월 25일 자동결제)';
+  }
+  if (statusChip) {
+    statusChip.className = 'badge-soft badge-soft-success font-weight-bold';
+    statusChip.innerText = '현재 이용 중인 요금제';
+  }
+  if (policyBox) {
+    policyBox.className = 'p-3 rounded mb-3';
+    policyBox.style.background = '#f0fdf4';
+    policyBox.style.border = '1.5px solid #86efac';
+    policyBox.innerHTML =
+      '<div class="font-weight-bold mb-1" style="color: #15803d; font-size: 13.5px;">' +
+        '🔄 [현재 이용 중인 요금제] 차월 사용분(' + nextMonthLabel + ')은 매월 25일에 정기 결제됩니다.' +
+      '</div>' +
+      '<div class="text-muted" style="font-size: 12px; line-height: 1.6;">' +
+        '• <strong>차월 사용분 선결제</strong>: 사용자가 결제하는 금액은 <strong>차월 사용분(' + billingInfo.nextMonthUsageStart.replace(/-/g, '.') + ' ~ ' + billingInfo.nextMonthUsageEnd.replace(/-/g, '.') + ')</strong>에 대한 이용료입니다.<br>' +
+        '• <strong>매월 25일 정기결제</strong>: 자동결제는 항상 <strong>매월 25일(공휴일·주말인 경우 다음 평일, 예정일: ' + nextBillingDateDot + ')</strong>에 이루어집니다.' +
+      '</div>';
+  }
+  if (supplyLabelEl) supplyLabelEl.innerText = '차월분 공급가액 (VAT 별도)';
+  if (vatLabelEl) vatLabelEl.innerText = '부가가치세 (10%)';
+  if (elP1Price) elP1Price.innerText = Number(regularSupply).toLocaleString() + '원';
+  if (elVatText) elVatText.innerText = Number(regularVat).toLocaleString() + '원';
+  if (elP1Vat) {
+    elP1Vat.innerHTML =
+      '<span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">차월분 정기 결제 금액 (VAT 포함)</span>' +
+      '<strong style="font-size: 22px; font-weight: 900; color: #8c531b;">' + Number(regularTotal).toLocaleString() + '원 <small style="font-size: 12px; font-weight: normal; color: #786d63;">/ 월</small></strong>';
+  }
+  if (nextBillingSummaryEl) {
+    nextBillingSummaryEl.innerHTML = nextBillingDateDot + ' (매월 25일 · 공휴일 시 다음 평일)';
+  }
+  if (b1) {
+    b1.className = 'btn btn-block btn-beige-primary font-weight-bold py-3';
+    b1.innerHTML = '<i class="fa-solid fa-credit-card mr-1"></i>정기결제 등록하기 (월 ' + Number(regularTotal).toLocaleString() + '원)';
+  }
+}
+
+// 우측 메인 액션 버튼 클릭 핸들러 (동일 요금제 결제 등록 / 다운그레이드 무결제 변경신청 / 업그레이드 즉시 일할결제 or 차월 무결제 변경신청)
+function handlePlanPrimaryAction() {
+  var tier = planTiers[currentSelectedTier] || planTiers['standard'];
   var currentRank = planTiers[currentAcademyPlan.tier].rank;
   var targetRank = tier.rank;
 
-  // 남은 일수 차액 계산 (상향 시 당월 최대 30일 기준 일할 차액)
-  var monthlyDiff = Math.max(0, tier.monthlyPrice - currentAcademyPlan.monthlyPrice);
-  var proratedDays = Math.min(30, Math.max(1, currentAcademyPlan.daysRemaining || 30));
-  var proratedDiffSupply = Math.round((monthlyDiff / 30) * proratedDays);
-  var proratedDiffVat = Math.round(proratedDiffSupply * 0.1);
-  var proratedDiffTotal = proratedDiffSupply + proratedDiffVat;
-
-  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
-  var nextDot = currentAcademyPlan.nextBillingDateDot || String(currentAcademyPlan.nextBillingDate || '2027-01-01').replace(/-/g, '.');
-  var ddayLabel = currentAcademyPlan.ddayText || ('D-' + currentAcademyPlan.daysRemaining);
-
+  if (targetRank < currentRank) {
+    submitPlanChangeWithoutPayment('downgrade');
+    return;
+  }
   if (targetRank > currentRank) {
-    if (policyBox) {
-      policyBox.className = 'p-3 rounded mb-3 border-danger';
-      policyBox.style.background = '#fff7f7';
-      policyBox.style.border = '1.5px solid #fca5a5';
-      policyBox.innerHTML = 
-        '<div class="d-flex align-items-start gap-3">' +
-          '<div style="font-size: 24px; color: #dc2626; line-height: 1;"><i class="fa-solid fa-bolt"></i></div>' +
-          '<div>' +
-            '<div class="font-weight-bold" style="color: #b91c1c; font-size: 14px;">' +
-              '⚡ [요금제 즉시 상향 적용] 원생 정원을 ' + currentAcademyPlan.slots + '명 ➔ ' + tier.slots + '명으로 즉시 업그레이드합니다.' +
-            '</div>' +
-            '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
-              '• <strong>즉시 변경 적용</strong>: 신청 즉시 가맹 슬롯이 <strong>' + tier.slots + '명</strong>으로 즉시 확장되어 추가 원생 등록이 가능합니다.<br>' +
-              '• <strong>정기결제 등록</strong>: 선택하신 <strong>' + tier.name + '</strong> 요금제로 NHN KCP 정기결제가 등록됩니다.' +
-            '</div>' +
-          '</div>' +
-        '</div>';
+    if (currentUpgradeApplyTiming === 'next_month') {
+      submitPlanChangeWithoutPayment('upgrade_next_month');
+    } else {
+      openCheckoutModal('upgrade_now');
     }
-  } else if (targetRank < currentRank) {
-    if (policyBox) {
-      policyBox.className = 'p-3 rounded mb-3 border-warning';
-      policyBox.style.background = '#fffbeb';
-      policyBox.style.border = '1.5px solid #fcd34d';
-      policyBox.innerHTML = 
-        '<div class="d-flex align-items-start gap-3">' +
-          '<div style="font-size: 24px; color: #d97706; line-height: 1;"><i class="fa-solid fa-calendar-check"></i></div>' +
-          '<div>' +
-            '<div class="font-weight-bold" style="color: #b45309; font-size: 14px;">' +
-              '📅 [요금제 차월 적용 예약] 하위 요금제(' + tier.name + ' ' + tier.slots + '명)로 정기결제 변경을 신청합니다.' +
-            '</div>' +
-            '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
-              '• <strong>당월 혜택 유지</strong>: 현재 이용권 만료일(' + expDot + ')까지는 <strong>' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯)</strong> 혜택이 그대로 유지됩니다.<br>' +
-              '• <strong>차월 자동 적용</strong>: 다음 결제일(' + nextDot + ')부터 선택하신 <strong>' + tier.name + '</strong> 요금제로 정기 결제됩니다.' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-    }
-  } else {
-    if (policyBox) {
-      policyBox.className = 'p-3 rounded mb-3 border-success';
-      policyBox.style.background = '#f0fdf4';
-      policyBox.style.border = '1.5px solid #86efac';
-      policyBox.innerHTML = 
-        '<div class="d-flex align-items-start gap-3">' +
-          '<div style="font-size: 24px; color: #16a34a; line-height: 1;"><i class="fa-solid fa-arrows-rotate"></i></div>' +
-          '<div>' +
-            '<div class="font-weight-bold" style="color: #15803d; font-size: 14px;">' +
-              '🔄 [현재 정기구독 요금제] ' + tier.name + ' 요금제(' + tier.slots + '명)로 매월 정기 결제가 진행됩니다.' +
-            '</div>' +
-            '<div class="text-muted mt-1" style="font-size: 12.5px; line-height: 1.6;">' +
-              '• 만료 예정일(' + expDot + ')에 등록된 결제 수단으로 월 이용료가 자동 갱신 결제되며, 원장님 또는 본사에서 자동갱신을 취소하면 다음 결제일부터 자동결제가 종료됩니다.' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-    }
+    return;
   }
+  openCheckoutModal('monthly');
+}
 
-  if (titleDisplay) {
-    var slotDesc = (tier.slots === '협의') ? '정원 협의' : (tier.slots + '명 정원');
-    titleDisplay.innerText = tier.name + ' (' + slotDesc + ')';
-  }
+// 추가 결제 없이 차월분 요금제 변경 신청만 완료하는 함수 (다운그레이드 / 업그레이드 '차월부터 적용')
+function submitPlanChangeWithoutPayment(changeMode) {
+  var tier = planTiers[currentSelectedTier] || planTiers['standard'];
+  var billingInfo = getNext25thBillingDateInfo();
+  var regularSupply = tier.monthlyPrice;
+  var regularVat = Math.round(regularSupply * 0.1);
+  var regularTotal = regularSupply + regularVat;
+  var isDowngrade = (changeMode === 'downgrade');
+  var modeLabel = isDowngrade ? '다운그레이드' : '업그레이드 (차월부터 적용)';
 
-  var p1Supply = tier.monthlyPrice;
-  var p1Vat = Math.round(p1Supply * 0.1);
-  var p1Total = p1Supply + p1Vat;
-  if (elP1Price) elP1Price.innerText = Number(p1Supply).toLocaleString() + '원';
-  if (elVatText) elVatText.innerText = Number(p1Vat).toLocaleString() + '원';
-  if (elP1Vat) {
-    elP1Vat.innerHTML = '<span class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">매월 정기 결제액 (VAT 포함)</span>' +
-      '<strong style="font-size: 22px; font-weight: 900; color: #8c531b;">' + Number(p1Total).toLocaleString() + '원 <small style="font-size: 12px; font-weight: normal; color: #786d63;">/ 월</small></strong>';
-  }
+  var confirmMsg = '[' + tier.name + ' (' + (tier.slots === '협의' ? '정원 협의' : tier.slots + '명 슬롯') + ')] 요금제로 ' + modeLabel + ' 변경을 신청하시겠습니까?\n\n' +
+    '• 적용 시점: 차월 사용분(' + billingInfo.nextMonthLabel + ')부터 적용\n' +
+    '• 지금 결제 금액: 0원 (추가 결제 없음)\n' +
+    '• 차월 정기결제일: ' + billingInfo.billingDateStr + ' (매월 25일, 공휴일 시 다음 평일)\n' +
+    '• 차월부터 결제될 정액: 월 ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)';
 
-  if (slotItem) {
-    var slotStr = (tier.slots === '협의') ? '정원 협의' : (tier.slots + '명');
-    slotItem.innerHTML = '<i class="fa-solid fa-circle-check text-success mr-1"></i>원생 슬롯 기본 <strong>' + slotStr + '</strong> 제공';
-  }
+  if (!confirm(confirmMsg)) return;
 
-  if (b1) {
-    b1.innerText = Number(p1Total).toLocaleString() + '원 결제하기';
-  }
+  currentAcademyPlan.reservedNextTier = tier.code;
+
+  var now = new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : n; };
+  var dateStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' +
+                pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  var newId = 'CHG-' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + Math.floor(100 + Math.random() * 900);
+
+  academyPaymentList.unshift({
+    id: newId,
+    planType: tier.code + '_next_month',
+    planName: '[' + tier.name + '] 차월 요금제 ' + (isDowngrade ? '다운그레이드' : '업그레이드') + ' 신청 (추가결제 없음)',
+    supply: 0,
+    vat: 0,
+    total: 0,
+    method: '변경 신청 완료 (차월 25일 ' + Number(regularTotal).toLocaleString() + '원 자동결제)',
+    date: dateStr,
+    startDate: billingInfo.nextMonthUsageStart,
+    endDate: billingInfo.nextMonthUsageEnd,
+    status: 'pending'
+  });
+
+  renderAcademyPaymentTable(academyPaymentList);
+  syncCurrentAcademyPlan(false);
+
+  showAcademyToast('📅 [' + tier.name + '] 차월 요금제 변경 신청이 추가 결제 없이 완료되었습니다. (' + billingInfo.billingDateDot + '부터 적용)');
+  alert('✅ 요금제 변경 신청이 완료되었습니다!\n\n' +
+        '· 신청 구분: ' + modeLabel + '\n' +
+        '· 변경 요금제: ' + tier.name + ' (' + (tier.slots === '협의' ? '정원 협의' : tier.slots + '명 슬롯') + ')\n' +
+        '· 지금 결제 금액: 0원 (추가 결제 없음)\n' +
+        '· 차월 정기결제일: ' + billingInfo.billingDateStr + ' (매월 25일)\n' +
+        '· 차월 정액 결제액: ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)\n\n' +
+        '이번 달은 기존 요금제가 유지되며, 차월 사용분부터 변경된 요금제로 자동 적용됩니다.');
 }
 
 var academyPaymentList = [
@@ -16805,12 +17031,11 @@ function scrollToPaymentHistory() {
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 
-// 결제 신청 모달 열기 (NHN KCP 정기구독 결제 vs 카카오톡 1회성 충전 결제 분기)
-function openCheckoutModal(periodCode) {
-  var isKakao = (currentSelectedTier === 'kakao');
-  if (!isKakao && window.NanoPortal && NanoPortal.remote) {
-    // 운영 환경에서도 NHN KCP 구독 결제 안내 모달은 열어서 프로세스를 확인할 수 있도록 지원
-  }
+// 결제 신청 모달 열기 (카카오톡 1회성 충전 결제 / 업그레이드 즉시 적용 일할 차액 결제 / 차월 사용분 정기결제 등록 분기)
+function openCheckoutModal(modeCode) {
+  currentCheckoutMode = modeCode || 'monthly';
+  var isKakao = (currentCheckoutMode === 'kakao');
+  var isUpgradeNow = (currentCheckoutMode === 'upgrade_now');
 
   var modalTitleEl = document.getElementById('checkoutModalTitle');
   var modalAcadEl = document.getElementById('checkoutModalAcademyName');
@@ -16840,7 +17065,7 @@ function openCheckoutModal(periodCode) {
 
     if (modalTitleEl) modalTitleEl.innerText = 'NHN KCP 카카오톡 알림 1회성 충전';
     if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-comment-sms mr-1 text-primary"></i>NHN KCP 1회성 단건 결제 (비구독형 선불 충전)';
-    if (kcpGuideDesc) kcpGuideDesc.innerHTML = '카카오톡 알림 충전은 <strong>정기구독(자동결제) 상품이 아닌 1회성 구매 상품</strong>입니다. 결제 즉시 <strong>' + Number(kakaoSupply).toLocaleString() + '원</strong>이 학원 알림톡 지갑에 적립됩니다.';
+    if (kcpGuideDesc) kcpGuideDesc.innerHTML = '카카오톡 알림 충전은 <strong>정기구독(매월 25일 자동결제) 상품이 아닌 1회성 구매 상품</strong>입니다. 결제 즉시 <strong>' + Number(kakaoSupply).toLocaleString() + '원</strong>이 학원 알림톡 지갑에 적립됩니다.';
     if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>알림톡 잔액 즉시 적립';
     if (badgeEl) badgeEl.innerText = '카카오톡 알림 · ' + qty + '단위 (1회성 충전)';
     if (typeBadgeEl) {
@@ -16856,77 +17081,85 @@ function openCheckoutModal(periodCode) {
     if (supplyEl) supplyEl.innerText = Number(kakaoSupply).toLocaleString() + '원 (적립 금액)';
     if (vatEl) vatEl.innerText = Number(kakaoVat).toLocaleString() + '원';
     if (totalEl) totalEl.innerText = Number(kakaoTotal).toLocaleString() + '원';
-    if (submitBtnTextEl) submitBtnTextEl.innerText = Number(kakaoTotal).toLocaleString() + '원 결제하기';
+    if (submitBtnTextEl) submitBtnTextEl.innerText = Number(kakaoTotal).toLocaleString() + '원 충전 결제하기';
 
     selectPayMethod('신용카드');
     $('#paymentCheckoutModal').modal('show');
     return;
   }
 
-  // [B] 학원 요금제 4종 (월 정기구독)
   var tier = planTiers[currentSelectedTier] || planTiers['standard'];
-  var period = periodDefinitions['monthly'];
-  currentSelectedPeriod = 'monthly';
+  var billingInfo = getNext25thBillingDateInfo();
+  var nextBillingDot = billingInfo.billingDateDot;
+  var regularSupply = tier.monthlyPrice;
+  var regularVat = Math.round(regularSupply * 0.1);
+  var regularTotal = regularSupply + regularVat;
 
-  if (modalTitleEl) modalTitleEl.innerText = 'NHN KCP 정기구독 결제';
-  if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-shield-halved mr-1 text-primary"></i>NHN KCP 정기결제 (자동결제 빌링키 발급 안내)';
-  if (kcpGuideDesc) kcpGuideDesc.innerHTML = '하단 <strong>[결제하기]</strong> 클릭 시 <strong>NHN KCP 전자결제창</strong>이 호출됩니다. 최초 1회 결제수단 등록 이후 매월 지정일에 자동 결제되며, 학원 또는 본사에서 자동갱신 취소 시 즉시 정기결제가 종료됩니다.';
-  if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>정기결제 빌링 등록 완료';
+  // [B] 업그레이드 — 지금 바로 적용 (이번 달 남은 일수에 대한 일할 차액 결제 + 차월 25일부터 업그레이드 정액 결제)
+  if (isUpgradeNow) {
+    var prorated = calculateUpgradeProratedDiff(tier);
 
-  var currentRank = planTiers[currentAcademyPlan.tier].rank;
-  var targetRank = tier.rank;
-
-  var discountedSupply = tier.monthlyPrice;
-  var periodVat = Math.round(discountedSupply * 0.1);
-  var periodTotal = discountedSupply + periodVat;
-
-  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
-  var nextDot = currentAcademyPlan.nextBillingDateDot || String(currentAcademyPlan.nextBillingDate || '2027-01-01').replace(/-/g, '.');
-
-  var displayBadge = tier.name + ' (' + tier.slots + '명) · 월 정기구독 (NHN KCP)';
-  if (badgeEl) badgeEl.innerText = displayBadge;
-
-  if (targetRank > currentRank) {
+    if (modalTitleEl) modalTitleEl.innerText = 'NHN KCP 요금제 즉시 업그레이드 (일할 차액 결제)';
+    if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-bolt mr-1 text-danger"></i>이번 달 잔여 일수 일할 차액 결제 및 차월 정액결제 안내';
+    if (kcpGuideDesc) {
+      kcpGuideDesc.innerHTML =
+        '이번 달 남은 <strong>' + prorated.remainDays + '일분 차액(' + Number(prorated.proratedTotal).toLocaleString() + '원, VAT 포함)</strong>을 지금 결제하면 즉시 <strong>' + tier.name + '(' + tier.slots + '명)</strong>으로 상향 적용되며, 차월 정기결제일(<strong>' + nextBillingDot + '</strong>, 매월 25일)부터는 <strong>월 ' + Number(regularTotal).toLocaleString() + '원</strong>이 정액 결제됩니다.';
+    }
+    if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>즉시 상향 & 차월 정액 등록';
+    if (badgeEl) badgeEl.innerText = tier.name + ' (' + tier.slots + '명) · 즉시 업그레이드';
     if (typeBadgeEl) {
       typeBadgeEl.className = 'badge-soft badge-soft-danger font-weight-bold';
-      typeBadgeEl.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>즉시 상향 + 월 정기결제 등록';
+      typeBadgeEl.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i>당월 잔여 ' + prorated.remainDays + '일 일할 차액 결제';
     }
     if (policyDescEl) {
-      policyDescEl.innerHTML = 
-        '<div class="text-danger font-weight-bold mb-1"><i class="fa-solid fa-circle-check mr-1"></i>요금제 즉시 업그레이드 및 정기구독 안내</div>' +
-        '• 결제 즉시 가맹 원생 정원이 <strong>' + currentAcademyPlan.slots + '명 ➔ ' + tier.slots + '명</strong>으로 확장됩니다.<br>' +
-        '• 이후 매월 결제일에 <strong>' + Number(periodTotal).toLocaleString() + '원(VAT 포함)</strong>이 자동 결제되며, 언제든 자동갱신을 취소할 수 있습니다.';
+      policyDescEl.innerHTML =
+        '<div class="text-danger font-weight-bold mb-1"><i class="fa-solid fa-circle-check mr-1"></i>업그레이드 즉시 적용 및 차월 정액결제 조건</div>' +
+        '• <strong>당월 일할 차액</strong>: 월 공급가 차액(' + Number(prorated.monthlySupplyDiff).toLocaleString() + '원) × 남은 ' + prorated.remainDays + '일 / 당월 ' + prorated.totalDays + '일 = <strong>' + Number(prorated.proratedSupply).toLocaleString() + '원</strong> (+ 부가세 ' + Number(prorated.proratedVat).toLocaleString() + '원)<br>' +
+        '• <strong>즉시 적용</strong>: 결제 즉시 가맹 원생 정원이 <strong>' + currentAcademyPlan.slots + '명 ➔ ' + tier.slots + '명</strong>으로 상향 적용됩니다.<br>' +
+        '• <strong>차월 정액 결제</strong>: 차월 정기결제일(<strong>' + nextBillingDot + '</strong>, 매월 25일·공휴일 시 다음 평일)부터 업그레이드된 요금제 정액 <strong>' + Number(regularTotal).toLocaleString() + '원(VAT 포함)</strong>으로 자동 결제됩니다.';
     }
-  } else if (targetRank < currentRank) {
-    if (typeBadgeEl) {
-      typeBadgeEl.className = 'badge-soft badge-soft-warn font-weight-bold';
-      typeBadgeEl.innerHTML = '<i class="fa-solid fa-calendar-check mr-1"></i>차월(' + nextDot + ')부터 정기결제 변경';
-    }
-    if (policyDescEl) {
-      policyDescEl.innerHTML = 
-        '<div class="text-warning font-weight-bold mb-1" style="color: #b45309;"><i class="fa-solid fa-clock mr-1"></i>하위 요금제 정기구독 변경 안내</div>' +
-        '• 현재 이용권 만료일(' + expDot + ')까지는 <strong>' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯)</strong> 혜택이 유지됩니다.<br>' +
-        '• 다음 결제일(' + nextDot + ')부터 <strong>' + tier.name + '(월 ' + Number(periodTotal).toLocaleString() + '원)</strong>으로 자동 전환됩니다.';
-    }
-  } else {
-    if (typeBadgeEl) {
-      typeBadgeEl.className = 'badge-soft badge-soft-success font-weight-bold';
-      typeBadgeEl.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-1"></i>월 정기구독 결제 등록';
-    }
-    if (policyDescEl) {
-      policyDescEl.innerHTML = 
-        '<div class="text-success font-weight-bold mb-1"><i class="fa-solid fa-circle-check mr-1"></i>NHN KCP 월 정기구독 안내</div>' +
-        '• 매월 만료일(' + expDot + ') 기준으로 <strong>' + Number(periodTotal).toLocaleString() + '원</strong>이 자동 결제되며, 학원 또는 본사에서 취소 시 자동결제가 종료됩니다.';
-    }
+    if (supplyEl) supplyEl.innerText = Number(prorated.proratedSupply).toLocaleString() + '원 (당월 ' + prorated.remainDays + '일 일할 차액)';
+    if (vatEl) vatEl.innerText = Number(prorated.proratedVat).toLocaleString() + '원';
+    if (totalEl) totalEl.innerText = Number(prorated.proratedTotal).toLocaleString() + '원';
+    if (submitBtnTextEl) submitBtnTextEl.innerText = '일할 차액 ' + Number(prorated.proratedTotal).toLocaleString() + '원 결제 및 즉시 적용';
+
+    selectPayMethod('신용카드');
+    $('#paymentCheckoutModal').modal('show');
+    return;
   }
 
-  if (supplyEl) supplyEl.innerText = Number(discountedSupply).toLocaleString() + '원';
-  if (vatEl) vatEl.innerText = Number(periodVat).toLocaleString() + '원';
-  if (totalEl) totalEl.innerText = Number(periodTotal).toLocaleString() + '원';
-  if (submitBtnTextEl) submitBtnTextEl.innerText = Number(periodTotal).toLocaleString() + '원 결제하기';
+  // [C] 동일 요금제 차월 사용분 정기결제 등록 (매월 25일 자동결제)
+  currentSelectedPeriod = 'monthly';
+
+  if (modalTitleEl) modalTitleEl.innerText = 'NHN KCP 차월 사용분 정기결제 등록';
+  if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-shield-halved mr-1 text-primary"></i>NHN KCP 정기결제 등록 (매월 25일 차월분 자동결제)';
+  if (kcpGuideDesc) {
+    kcpGuideDesc.innerHTML =
+      '사용자가 결제하는 금액은 <strong>차월 사용분(' + billingInfo.nextMonthLabel + ')</strong>에 대한 금액입니다. 정기 자동결제는 항상 <strong>매월 25일(공휴일·주말인 경우 다음 평일)</strong>에 이루어지며, 학원 또는 본사에서 취소 시 자동결제가 종료됩니다.';
+  }
+  if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>매월 25일 정기결제 등록';
+
+  var displayBadge = tier.name + ' (' + tier.slots + '명) · 차월분 정기결제';
+  if (badgeEl) badgeEl.innerText = displayBadge;
+
+  if (typeBadgeEl) {
+    typeBadgeEl.className = 'badge-soft badge-soft-success font-weight-bold';
+    typeBadgeEl.innerHTML = '<i class="fa-solid fa-arrows-rotate mr-1"></i>차월 사용분 정기결제 (매월 25일)';
+  }
+  if (policyDescEl) {
+    policyDescEl.innerHTML =
+      '<div class="text-success font-weight-bold mb-1"><i class="fa-solid fa-circle-check mr-1"></i>차월 사용분 정기결제 안내</div>' +
+      '• <strong>적용 대상 기간</strong>: 차월 사용분 (' + billingInfo.nextMonthUsageStart.replace(/-/g, '.') + ' ~ ' + billingInfo.nextMonthUsageEnd.replace(/-/g, '.') + ')<br>' +
+      '• <strong>정기 자동결제일</strong>: 매월 25일 (공휴일·주말인 경우 다음 평일, 차기 예정일: <strong>' + nextBillingDot + '</strong>)<br>' +
+      '• 원장님 또는 본사에서 자동갱신을 취소하면 다음 결제일부터 자동결제가 즉시 종료됩니다.';
+  }
+
+  if (supplyEl) supplyEl.innerText = Number(regularSupply).toLocaleString() + '원';
+  if (vatEl) vatEl.innerText = Number(regularVat).toLocaleString() + '원';
+  if (totalEl) totalEl.innerText = Number(regularTotal).toLocaleString() + '원';
+  if (submitBtnTextEl) submitBtnTextEl.innerText = Number(regularTotal).toLocaleString() + '원 정기결제 등록하기';
 
   selectPayMethod('신용카드');
-
   $('#paymentCheckoutModal').modal('show');
 }
 
@@ -16951,7 +17184,7 @@ function selectPayMethod(method) {
   }
 }
 
-// 결제 신청 제출 (카카오톡 1회성 충전 서버 연동 및 NHN KCP 정기결제 시뮬레이션)
+// 결제 신청 제출 (카카오톡 1회성 충전 / 업그레이드 당월 일할 차액 결제 / 차월 사용분 정기결제 등록)
 async function submitSimulatedPayment() {
   var agree = document.getElementById('checkoutAgreeTerms');
   if (agree && !agree.checked) {
@@ -16960,7 +17193,7 @@ async function submitSimulatedPayment() {
   }
 
   // [A] 카카오톡 알림 1회성 충전 결제 처리
-  if (currentSelectedTier === 'kakao') {
+  if (currentCheckoutMode === 'kakao') {
     var qty = Math.max(1, Number(currentKakaoTopupQty) || 1);
     var kakaoSupply = qty * 5000;
     var kakaoVat = qty * 500;
@@ -17013,132 +17246,86 @@ async function submitSimulatedPayment() {
     showAcademyToast('NHN KCP 정기결제 가맹점 심사 완료 후 실시간 카드 빌링 결제가 연결됩니다.');
     return;
   }
-  var tier = planTiers[currentSelectedTier] || planTiers['standard'];
-  var period = periodDefinitions[currentSelectedPeriod] || periodDefinitions['monthly'];
 
-  var currentRank = planTiers[currentAcademyPlan.tier].rank;
-  var targetRank = tier.rank;
+  var tier = planTiers[currentSelectedTier] || planTiers['standard'];
+  var billingInfo = getNext25thBillingDateInfo();
+  var regularSupply = tier.monthlyPrice;
+  var regularVat = Math.round(regularSupply * 0.1);
+  var regularTotal = regularSupply + regularVat;
 
   var now = new Date();
   var pad = function(n) { return n < 10 ? '0' + n : n; };
-  var dateStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + ' ' + 
-                pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
-
+  var todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+  var dateStr = todayStr + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
   var newId = 'PAY-' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + Math.floor(100 + Math.random() * 900);
 
-  // 기본 기간 금액
-  var originalSupply = tier.monthlyPrice * period.periodMonths;
-  var discountedSupply = Math.round(originalSupply * (1 - period.discountRate));
-  var periodVat = Math.round(discountedSupply * 0.1);
-  var periodTotal = discountedSupply + periodVat;
-
-  var expDot = currentAcademyPlan.expiryDateDot || String(currentAcademyPlan.expiryDate || '2026-12-31').replace(/-/g, '.');
-  var nextDash = currentAcademyPlan.nextBillingDate || '2027-01-01';
-  var nextDot = currentAcademyPlan.nextBillingDateDot || nextDash.replace(/-/g, '.');
-  var ddayLabel = currentAcademyPlan.ddayText || ('D-' + currentAcademyPlan.daysRemaining);
-
-  if (targetRank > currentRank) {
-    // 1) 상위 요금제: 즉시 업그레이드 & 차액 결제
-    var monthlyDiff = tier.monthlyPrice - currentAcademyPlan.monthlyPrice;
-    var proratedDays = Math.min(30, Math.max(1, currentAcademyPlan.daysRemaining || 30));
-    var proratedDiffSupply = Math.round((monthlyDiff / 30) * proratedDays);
-    var proratedDiffVat = Math.round(proratedDiffSupply * 0.1);
-    var finalSupply = discountedSupply + proratedDiffSupply;
-    var finalVat = periodVat + proratedDiffVat;
-    var finalTotal = finalSupply + finalVat;
+  // [B] 업그레이드 — 지금 바로 적용 (당월 남은 일수 일할 차액 결제 + 즉시 요금제 적용 + 차월부터 업그레이드 요금제 정액 결제)
+  if (currentCheckoutMode === 'upgrade_now') {
+    var prorated = calculateUpgradeProratedDiff(tier);
 
     var newPayment = {
       id: newId,
-      planType: tier.code + '_' + period.code,
-      planName: '[' + tier.name + ' ' + tier.slots + '명] ' + period.name + ' (즉시 상향 차액결제)',
-      supply: finalSupply,
-      vat: finalVat,
-      total: finalTotal,
-      method: currentSelectedPayMethod + ' (즉시 결제)',
+      planType: tier.code + '_upgrade_prorated',
+      planName: '[' + tier.name + ' ' + tier.slots + '명] 즉시 업그레이드 (당월 잔여 ' + prorated.remainDays + '일 일할 차액)',
+      supply: prorated.proratedSupply,
+      vat: prorated.proratedVat,
+      total: prorated.proratedTotal,
+      method: currentSelectedPayMethod + ' (즉시 적용 · 차월 25일 정액결제)',
       date: dateStr,
-      startDate: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()),
-      endDate: currentAcademyPlan.expiryDate || '2027-03-19',
-      status: 'paid' // 즉시 승인
-    };
-
-    academyPaymentList.unshift(newPayment);
-    renderAcademyPaymentTable(academyPaymentList);
-
-    // 학원 현재 상태 즉시 업그레이드 반영 (원생 정원 확장 피드백)
-    currentAcademyInfo.maxStudents = tier.slots;
-    currentAcademyInfo.plan = tier.code === 'vip' ? 'VIP' : (tier.code === 'premium' ? 'Premium' : (tier.code === 'basic' ? 'Basic' : 'Standard'));
-    currentAcademyInfo.monthlyFee = Math.round(tier.monthlyPrice * 1.1) + '원';
-    updateAllStudentCounts();
-
-    // 모달 닫기
-    $('#paymentCheckoutModal').modal('hide');
-
-    showAcademyToast('🎉 [' + tier.name + ' ' + tier.slots + '명] 즉시 변경 완료! 정원이 ' + tier.slots + '명으로 확장되었습니다.');
-    alert('⚡ 요금제 즉시 변경 완료!\n\n' +
-          '- 변경 요금제: ' + tier.name + ' (' + tier.slots + '명 슬롯)\n' +
-          '- 적용 방식: 즉시 변경 적용 (당월 잔여 ' + ddayLabel + ' 차액 결제 완료)\n' +
-          '- 총 결제 금액: ' + Number(finalTotal).toLocaleString() + '원 (차액 ' + Number(proratedDiffSupply + proratedDiffVat).toLocaleString() + '원 포함)\n\n' +
-          '원생 가맹 정원이 ' + tier.slots + '명으로 즉시 확장되어 추가 원생 등록이 가능합니다!');
-
-    // 요금제 뷰 다시 갱신
-    selectPlanTier(tier.code);
-
-  } else if (targetRank < currentRank) {
-    // 2) 하위 요금제: 차월 적용 예약
-    var newPayment = {
-      id: newId,
-      planType: tier.code + '_' + period.code,
-      planName: '[' + tier.name + ' ' + tier.slots + '명] ' + period.name + ' (차월 ' + nextDot + ' 변경 예약)',
-      supply: discountedSupply,
-      vat: periodVat,
-      total: periodTotal,
-      method: currentSelectedPayMethod + ' (차월 자동결제 예약)',
-      date: dateStr,
-      startDate: nextDash,
-      endDate: currentAcademyPlan.expiryDate || '2027-03-20',
-      status: 'pending' // 차월 대기
-    };
-
-    academyPaymentList.unshift(newPayment);
-    renderAcademyPaymentTable(academyPaymentList);
-
-    // 모달 닫기
-    $('#paymentCheckoutModal').modal('hide');
-
-    showAcademyToast('📅 [' + tier.name + ' ' + tier.slots + '명] 차월(' + nextDot + ') 적용 예약이 완료되었습니다.');
-    alert('📅 요금제 차월 적용 예약 완료!\n\n' +
-          '- 예약 요금제: ' + tier.name + ' (' + tier.slots + '명 슬롯)\n' +
-          '- 적용 시작일: ' + nextDash + ' (차월 결제일)\n' +
-          '- 예정 결제액: ' + Number(periodTotal).toLocaleString() + '원 (VAT 포함)\n\n' +
-          '현재 이용 중인 ' + currentAcademyPlan.name + '(' + currentAcademyPlan.slots + '명 슬롯) 혜택은 만료일(' + expDot + ')까지 유지되며, 차월 결제일부터 ' + tier.name + ' 요금제로 자동 전환됩니다.');
-
-  } else {
-    // 3) 동일 요금제 연장
-    var newPayment = {
-      id: newId,
-      planType: tier.code + '_' + period.code,
-      planName: '[' + tier.name + '] ' + period.name + ' (서비스 연장)',
-      supply: discountedSupply,
-      vat: periodVat,
-      total: periodTotal,
-      method: currentSelectedPayMethod,
-      date: dateStr,
-      startDate: nextDash,
-      endDate: currentAcademyPlan.expiryDate || '2027-03-20',
+      startDate: todayStr,
+      endDate: billingInfo.thisMonthEndStr,
       status: 'paid'
     };
 
     academyPaymentList.unshift(newPayment);
     renderAcademyPaymentTable(academyPaymentList);
 
-    // 모달 닫기
+    // 학원 현재 요금제 및 슬롯 즉시 상향 적용
+    delete currentAcademyPlan.reservedNextTier;
+    currentAcademyInfo.maxStudents = tier.slots === '협의' ? 150 : tier.slots;
+    currentAcademyInfo.plan = tier.code === 'vip' ? 'VIP' : (tier.code === 'premium' ? 'Premium' : (tier.code === 'basic' ? 'Basic' : 'Standard'));
+    currentAcademyInfo.monthlyFee = regularTotal + '원';
+    updateAllStudentCounts();
+    syncCurrentAcademyPlan(true);
+
     $('#paymentCheckoutModal').modal('hide');
 
-    showAcademyToast('✅ 서비스 이용 기간 연장 신청이 완료되었습니다.');
-    alert('✅ 서비스 연장 완료!\n\n' +
-          '- 연장 상품: ' + tier.name + ' · ' + period.name + '\n' +
-          '- 결제 금액: ' + Number(periodTotal).toLocaleString() + '원\n\n' +
-          '만료 예정일 이후부터 끊김 없이 서비스가 자동 연장됩니다.');
+    showAcademyToast('🎉 [' + tier.name + '] 즉시 적용 완료! 당월 일할 차액(' + Number(prorated.proratedTotal).toLocaleString() + '원)이 결제되었습니다.');
+    alert('⚡ 요금제 즉시 업그레이드 완료!\n\n' +
+          '· 변경 요금제: ' + tier.name + ' (' + (tier.slots === '협의' ? '정원 협의' : tier.slots + '명 슬롯') + ')\n' +
+          '· 당월 일할 차액 결제액: ' + Number(prorated.proratedTotal).toLocaleString() + '원 (이번 달 남은 ' + prorated.remainDays + '일분, VAT 포함)\n' +
+          '· 차월 정기결제일: ' + billingInfo.billingDateStr + ' (매월 25일, 공휴일 시 다음 평일)\n' +
+          '· 차월부터 정액 결제될 금액: 월 ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)\n\n' +
+          '지금 바로 업그레이드된 요금제가 적용되었으며, 차월부터는 업그레이드된 요금제로 정액 결제됩니다.');
+  } else {
+    // [C] 차월 사용분 정기결제 등록 (매월 25일 자동결제)
+    var newPayment = {
+      id: newId,
+      planType: tier.code + '_monthly',
+      planName: '[' + tier.name + '] 차월 사용분(' + billingInfo.nextMonthLabel + ') 정기결제 등록',
+      supply: regularSupply,
+      vat: regularVat,
+      total: regularTotal,
+      method: currentSelectedPayMethod + ' (매월 25일 정기결제)',
+      date: dateStr,
+      startDate: billingInfo.nextMonthUsageStart,
+      endDate: billingInfo.nextMonthUsageEnd,
+      status: 'paid'
+    };
+
+    academyPaymentList.unshift(newPayment);
+    renderAcademyPaymentTable(academyPaymentList);
+    isAutoRenewActive = true;
+    updateAutoRenewUI();
+
+    $('#paymentCheckoutModal').modal('hide');
+
+    showAcademyToast('✅ [' + tier.name + '] 차월 사용분 정기결제 등록이 완료되었습니다.');
+    alert('✅ 차월 사용분 정기결제 등록 완료!\n\n' +
+          '· 등록 요금제: ' + tier.name + ' (' + (tier.slots === '협의' ? '정원 협의' : tier.slots + '명 슬롯') + ')\n' +
+          '· 적용 대상: 차월 사용분 (' + billingInfo.nextMonthUsageStart + ' ~ ' + billingInfo.nextMonthUsageEnd + ')\n' +
+          '· 정기 결제 금액: 월 ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)\n' +
+          '· 정기 결제일: 매월 25일 (공휴일 시 다음 평일, 예정일: ' + billingInfo.billingDateStr + ')');
   }
 
   // 결제 내역으로 스크롤 이동

@@ -729,112 +729,104 @@
     }
   }
 
-  /* ---------- 북퀴즈와 100% 동일한 완성도의 감성 결과 카드 렌더링 ---------- */
+  /* ---------- 문해력 진단 테스트 전용 완료 화면 렌더링 (북퀴즈 완료화면과 명확히 분리) ---------- */
   function renderQuizResultCard(score, correct, total) {
     var charMeta = getStudentCharMeta();
-    var charId = (charMeta && charMeta.id) ? charMeta.id : 'nano';
     var studentName = getStudentDisplayName();
-    var charSvg = getStudentCharSvg(68);
+    var charSvg = getStudentCharSvg(72);
+
+    var levelLabel = score >= 85
+      ? '심화 문해력 우수'
+      : score >= 70
+        ? '표준 문해력 안정'
+        : '기초 문해력 집중 코칭';
 
     var headline = score >= 80
-      ? '이야기를 멋지게 읽어냈어요!'
+      ? '집중해서 끝까지 문해력 진단 평가를 멋지게 마쳤어요!'
       : score >= 60
-        ? '한 걸음 더, 쑥쑥 자라났어요!'
-        : '끝까지 최선을 다한 소중한 시간이었어요!';
+        ? '차근차근 지문을 읽고 성실하게 진단을 완료했어요!'
+        : '포기하지 않고 마지막 문항까지 최선을 다해 풀었어요!';
 
-    var speech = '끝까지 집중해서 씩씩하게 진단을 마쳤어, ' + studentName + '! 선생님께서 꼼꼼한 분석 리포트를 준비해 주실 거야.';
+    var speech = studentName + ' 학생, 수고 많았어! 이번 문해력 진단 결과를 바탕으로 선생님께서 5대 문해력 영역별 분석 리포트를 꼼꼼하게 준비해 주실 거야.';
 
-    // 1. window.NanoQuizResult (공식 북퀴즈 결과 카드 렌더러) 사용
-    if (typeof window.NanoQuizResult !== 'undefined' && typeof window.NanoQuizResult.render === 'function') {
-      try {
-        var bookObj = {
-          title: '초등 문해력 표준 진단',
-          themeName: '자연, 생태',
-          cat: '자연'
-        };
-        var extraObj = {
-          tot: total,
-          ok: correct,
-          isPass: (score >= 60),
-          earnedPts: 0,
-          speechText: speech,
-          stage: 1
-        };
-        var renderedCard = window.NanoQuizResult.render(score, charId, bookObj, extraObj);
-
-        return '<div class="lt-quiz-container" style="padding: 16px 6px 40px;">' +
-          renderedCard +
-          '<div class="qr-actions" style="margin-top: 18px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px;">' +
-            '<button type="button" class="qnav sec" onclick="if(typeof switchPanel===\'function\')switchPanel(\'home\'); NanoLiteracyStudent.finish();" style="min-height:48px; border-radius:13px; font-weight:700; font-size:14px; background:#fff; border:1px solid #dce2d9; color:#50634f; cursor:pointer;">홈으로</button>' +
-            '<button type="button" class="qnav prim" onclick="NanoLiteracyStudent.finish()" style="min-height:48px; border-radius:13px; font-weight:800; font-size:14px; background:#00a896; border:1px solid #00a896; color:#fff; cursor:pointer; box-shadow: 0 4px 14px rgba(0,168,150,0.25);">확인 (목록으로) <i class="fa-solid fa-arrow-right ml-1"></i></button>' +
-          '</div>' +
-        '</div>';
-      } catch (err) {
-        console.warn('[NanoLiteracy] NanoQuizResult 렌더 폴백 사용:', err);
-      }
-    }
-
-    // 2. 자체 북퀴즈 풍 감성 결과 카드 폴백 (어떤 환경에서도 아름답게 표시)
-    var segmentHtml = '';
-    for (var i = 0; i < total; i++) {
-      segmentHtml += '<span class="' + (i < correct ? 'is-filled' : '') + '" style="flex:1; height:6px; border-radius:6px; background:' + (i < correct ? '#00a896' : '#e2e8f0') + ';"></span>';
-    }
+    var domains = ['어휘이해력', '학습도구어', '요약', '비교', '추론'];
+    var domainBadgesHtml = domains.map(function(d) {
+      return '<span style="display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border-radius:999px; background:#f0fdfa; border:1px solid #99f6e4; color:#0f766e; font-size:12.5px; font-weight:800;">' +
+        '<i class="fa-solid fa-circle-check" style="color:#0d9488;"></i>' + d +
+      '</span>';
+    }).join('');
 
     return '<div class="lt-quiz-container" style="padding: 16px 6px 40px;">' +
-      '<section class="qr-card" style="background:#ffffff; border:1px solid #e2ece9; border-radius:24px; box-shadow:0 12px 36px rgba(0,168,150,0.08); overflow:hidden;">' +
-        '<div class="qr-heading" style="padding: 24px 24px 0;">' +
-          '<div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700; color:#0f766e;">' +
-            '<span><i class="fa-solid fa-clipboard-check mr-1"></i>문해력 진단 완료</span>' +
-            '<span style="background:#ccfbf1; padding:4px 10px; border-radius:8px; border:1px solid #99f6e4;">초등 표준 진단</span>' +
+      '<section class="lt-diag-complete-card" style="background:#ffffff; border:2px solid #cbd5e1; border-radius:26px; box-shadow:0 16px 40px rgba(15, 23, 42, 0.08); overflow:hidden;">' +
+        '<!-- 상단 진단 리포트 전용 헤더 배너 -->' +
+        '<div style="background:linear-gradient(135deg, #1e293b 0%, #0f766e 100%); padding:26px 26px 22px; color:#ffffff; position:relative;">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">' +
+            '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.28); padding:5px 12px; border-radius:999px; font-size:12px; font-weight:800; letter-spacing:0.02em;">' +
+              '<i class="fa-solid fa-magnifying-glass-chart"></i>문해력 표준 진단 평가 (비도서 진단)' +
+            '</span>' +
+            '<span style="background:#10b981; color:#ffffff; padding:4px 11px; border-radius:8px; font-size:11.5px; font-weight:800;">' +
+              '<i class="fa-solid fa-check mr-1"></i>답안 제출 완료' +
+            '</span>' +
           '</div>' +
-          '<h2 style="font-size:24px; font-weight:900; color:#1e293b; margin:14px 0 6px;">나노의책장 초등 문해력 진단</h2>' +
-          '<p style="font-size:14px; color:#64748b; margin:0;">' + headline + '</p>' +
+          '<h2 style="font-size:23px; font-weight:900; color:#ffffff; margin:0 0 6px; letter-spacing:-0.02em;">문해력 진단 테스트를 완료했습니다!</h2>' +
+          '<p style="font-size:13.5px; color:#ccfbf1; margin:0; font-weight:600;">' + headline + '</p>' +
         '</div>' +
 
-        '<div style="text-align:center; padding: 20px 20px 10px; background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%); margin-top:14px;">' +
-          '<div class="lt-hero-avatar-box mx-auto" style="width:72px; height:72px; margin-bottom:12px;">' + charSvg + '</div>' +
-          '<div style="display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #ccfbf1; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; color:#0f766e; box-shadow:0 2px 8px rgba(0,168,150,0.1);">' +
-            '<i class="fa-solid fa-award"></i>' + charMeta.name + '와 함께한 진단 완료' +
+        '<!-- 캐릭터 격려 및 수험자 배지 -->' +
+        '<div style="display:flex; align-items:center; gap:16px; padding:20px 24px; background:#f8fafc; border-bottom:1px solid #e2e8f0; flex-wrap:wrap;">' +
+          '<div class="lt-hero-avatar-box" style="width:68px; height:68px; flex-shrink:0; background:#ffffff; border-radius:50%; border:2px solid #99f6e4; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(15,118,110,0.12);">' + charSvg + '</div>' +
+          '<div style="flex:1; min-width:200px;">' +
+            '<div style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800; color:#0f766e; margin-bottom:4px;">' +
+              '<i class="fa-solid fa-user-check"></i>응시 학생: ' + studentName + ' · ' + charMeta.name + '의 진단 응원' +
+            '</div>' +
+            '<div style="font-size:13.5px; color:#334155; font-weight:600; line-height:1.55;">"' + speech + '"</div>' +
           '</div>' +
         '</div>' +
 
-        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; padding: 18px 24px 0;">' +
-          '<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:14px 16px;">' +
-            '<span style="font-size:12px; font-weight:700; color:#64748b; display:block;">나의 점수</span>' +
-            '<div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">' +
-              '<strong style="font-size:38px; font-weight:900; color:#0f766e; line-height:1;">' + score + '</strong>' +
-              '<span style="font-size:14px; font-weight:700; color:#64748b;">점 <small style="font-size:11px;">/ 100</small></span>' +
+        '<!-- 진단 결과 핵심 지표 (북퀴즈 포인트/책추천 없음) -->' +
+        '<div style="padding:22px 24px 0;">' +
+          '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;">' +
+            '<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:15px 16px; text-align:center;">' +
+              '<span style="font-size:12px; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">응시 완료 문항</span>' +
+              '<strong style="font-size:26px; font-weight:900; color:#1e293b;">' + total + '<span style="font-size:14px; font-weight:700; color:#64748b; margin-left:2px;">문항</span></strong>' +
+              '<span style="font-size:11px; color:#0f766e; font-weight:700; display:block; margin-top:4px;">전 문항 답안 기록됨</span>' +
+            '</div>' +
+            '<div style="background:#f0fdfa; border:1px solid #99f6e4; border-radius:16px; padding:15px 16px; text-align:center;">' +
+              '<span style="font-size:12px; font-weight:700; color:#0f766e; display:block; margin-bottom:4px;">1차 종합 진단 점수</span>' +
+              '<strong style="font-size:26px; font-weight:900; color:#0d9488;">' + score + '<span style="font-size:14px; font-weight:700; color:#0f766e; margin-left:2px;">점</span></strong>' +
+              '<span style="font-size:11px; color:#0f766e; font-weight:700; display:block; margin-top:4px;">정답 ' + correct + ' / ' + total + '문항</span>' +
+            '</div>' +
+            '<div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:16px; padding:15px 16px; text-align:center;">' +
+              '<span style="font-size:12px; font-weight:700; color:#1e40af; display:block; margin-bottom:4px;">진단 단계 판정</span>' +
+              '<strong style="font-size:16px; font-weight:900; color:#1d4ed8; display:block; margin-top:6px;">' + levelLabel + '</strong>' +
+              '<span style="font-size:11px; color:#2563eb; font-weight:700; display:block; margin-top:6px;">선생님 정밀 분석 대기</span>' +
             '</div>' +
           '</div>' +
-          '<div style="background:#f0fdfa; border:1px solid #ccfbf1; border-radius:16px; padding:14px 16px;">' +
-            '<span style="font-size:12px; font-weight:700; color:#0f766e; display:block;">응시 문항 현황</span>' +
-            '<div style="display:flex; align-items:baseline; gap:4px; margin-top:2px;">' +
-              '<strong style="font-size:30px; font-weight:900; color:#00a896; line-height:1.2;">' + correct + '</strong>' +
-              '<span style="font-size:13px; font-weight:700; color:#64748b;">/ ' + total + '문항</span>' +
-            '</div>' +
-            '<span style="font-size:10.5px; color:#0d9488; font-weight:600; display:block; margin-top:2px;">선생님 분석 준비 중</span>' +
-          '</div>' +
         '</div>' +
 
-        '<div style="padding: 18px 24px 0;">' +
-          '<div style="display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:#475569; margin-bottom:8px;">' +
-            '<span>전체 ' + total + '문항 응시 완료</span>' +
-            '<span style="color:#00a896;"><i class="fa-solid fa-circle-check mr-1"></i>정상 제출 완료</span>' +
+        '<!-- 5대 문해력 진단 영역 점검 완료 배지 -->' +
+        '<div style="padding:20px 24px 0;">' +
+          '<div style="font-size:12.5px; font-weight:800; color:#334155; margin-bottom:10px;">' +
+            '<i class="fa-solid fa-layer-group mr-1" style="color:#0d9488;"></i>5대 문해력 핵심 영역 데이터 수집 완료' +
           '</div>' +
-          '<div style="display:flex; gap:4px;">' + segmentHtml + '</div>' +
+          '<div style="display:flex; flex-wrap:wrap; gap:8px;">' + domainBadgesHtml + '</div>' +
         '</div>' +
 
-        '<div style="margin: 20px 24px 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">' +
-          '<div style="font-size:11.5px; font-weight:800; color:#0f766e; margin-bottom:4px;">' +
-            '<i class="fa-solid fa-comment-dots mr-1"></i>' + charMeta.name + '의 한마디' +
+        '<!-- 사후 프로세스 안내 (북퀴즈와의 차이 명시) -->' +
+        '<div style="margin:20px 24px 24px; padding:16px 18px; border-radius:16px; background:#fffbeb; border:1px solid #fde68a;">' +
+          '<div style="font-size:12.5px; font-weight:800; color:#92400e; margin-bottom:6px;">' +
+            '<i class="fa-solid fa-circle-info mr-1"></i>문해력 진단 결과 리포트 안내' +
           '</div>' +
-          '<p style="font-size:13.5px; color:#334155; line-height:1.6; margin:0; font-weight:600;">' + speech + '</p>' +
+          '<ul style="margin:0; padding-left:18px; font-size:12.5px; color:#78350f; line-height:1.65; font-weight:600;">' +
+            '<li>문해력 진단 테스트는 일반 도서 북퀴즈와 달리 <strong>5대 영역별 문해력 수준을 측정하는 전문 진단 평가</strong>입니다.</li>' +
+            '<li>담당 선생님께서 영역별 성취도와 종합 소견을 확인하신 후, 학부모님 카카오톡으로 <strong>문해력 진단 결과표</strong>가 발송됩니다.</li>' +
+          '</ul>' +
         '</div>' +
       '</section>' +
 
       '<div class="qr-actions" style="margin-top: 18px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px;">' +
-        '<button type="button" class="qnav sec" onclick="if(typeof switchPanel===\'function\')switchPanel(\'home\'); NanoLiteracyStudent.finish();" style="min-height:48px; border-radius:13px; font-weight:700; font-size:14px; background:#fff; border:1px solid #dce2d9; color:#50634f; cursor:pointer;">홈으로</button>' +
-        '<button type="button" class="qnav prim" onclick="NanoLiteracyStudent.finish()" style="min-height:48px; border-radius:13px; font-weight:800; font-size:14px; background:#00a896; border:1px solid #00a896; color:#fff; cursor:pointer; box-shadow: 0 4px 14px rgba(0,168,150,0.25);">확인 (목록으로) <i class="fa-solid fa-arrow-right ml-1"></i></button>' +
+        '<button type="button" class="qnav sec" onclick="if(typeof switchPanel===\'function\')switchPanel(\'home\'); NanoLiteracyStudent.finish();" style="min-height:50px; border-radius:14px; font-weight:700; font-size:14px; background:#fff; border:1px solid #cbd5e1; color:#475569; cursor:pointer;">홈으로 이동</button>' +
+        '<button type="button" class="qnav prim" onclick="NanoLiteracyStudent.finish()" style="min-height:50px; border-radius:14px; font-weight:800; font-size:14.5px; background:#0f766e; border:1px solid #0f766e; color:#fff; cursor:pointer; box-shadow: 0 4px 14px rgba(15,118,110,0.28);">진단 평가 종료 (목록으로) <i class="fa-solid fa-check ml-1"></i></button>' +
       '</div>' +
     '</div>';
   }
