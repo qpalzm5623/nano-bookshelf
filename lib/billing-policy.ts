@@ -9,8 +9,8 @@ export const PRODUCTS = [
 export function paymentAmounts(amount: number, productCode: string) {
   if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 100000000) throw new Error('결제 금액을 확인해 주세요.');
   if (productCode === 'KAKAO' && amount % 5500 !== 0) throw new Error('카카오톡 알림은 5,500원 단위로 구매할 수 있습니다.');
-  const supply = productCode === 'KAKAO' ? amount / 5500 * 5000 : Math.round(amount / 1.1);
-  return { supply, vat: amount - supply, credit: productCode === 'KAKAO' ? supply * 10 : 0 };
+  const supply = Math.round(amount / 1.1);
+  return { supply, vat: amount - supply, credit: productCode === 'KAKAO' ? amount * 10 : 0 };
 }
 // 결과가 확정되지 않으면 과금 상태를 유지합니다. 대체문자 접수는 환급 대상이 아닙니다.
 export function deliveryOutcome(row: any): 'SUCCESS' | 'FAILED' | 'SMS_FALLBACK' | null {

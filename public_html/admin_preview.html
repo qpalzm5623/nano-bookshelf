@@ -4809,38 +4809,62 @@
 
         <div id="sectionPaymentPlans" class="payment-workspace">
           <section class="payment-panel" aria-labelledby="paymentPlanHeading">
-            <div class="payment-panel-heading"><h2 id="paymentPlanHeading">요금제 변경</h2><span class="badge-soft badge-soft-success" id="selectedPlanStatusChip">현재 이용 중</span></div>
-            <label class="payment-label" for="planTierSelectDropdown">이용 정원 · 월 요금 (부가세 포함)</label>
-            <select id="planTierSelectDropdown" class="payment-select" onchange="selectPlanTier(this.value)">
-              <option value="basic">베이직 · 25명 · 88,000원 / 월</option>
-              <option value="standard" selected>스탠다드 · 50명 · 132,000원 / 월</option>
-              <option value="premium">프리미엄 · 100명 · 198,000원 / 월</option>
-              <option value="vip">로열 · 정원 협의 · 330,000원 / 월</option>
-            </select>
-            <p class="payment-hint">모든 요금제의 기능은 같으며, 이용 정원만 다릅니다.</p>
-            <div id="upgradeTimingOptionWrap" style="display:none;">
-              <span class="payment-label">적용 시점</span>
-              <div class="payment-timing">
-                <label id="labelUpgradeTimingNow"><input type="radio" name="upgradeApplyTiming" id="radioUpgradeNow" value="now" checked onchange="onUpgradeTimingChange('now')"><span><strong>지금 적용</strong><small>남은 일수의 차액 결제</small></span></label>
-                <label id="labelUpgradeTimingNext"><input type="radio" name="upgradeApplyTiming" id="radioUpgradeNextMonth" value="next_month" onchange="onUpgradeTimingChange('next_month')"><span><strong>다음 달부터</strong><small>지금 추가 결제 없음</small></span></label>
+            <div class="payment-panel-heading"><h2 id="paymentPlanHeading">정기결제 신청</h2><span class="badge-soft badge-soft-success" id="selectedPlanStatusChip">현재 이용 중</span></div>
+            <div class="payment-panel-body">
+              <div class="payment-col-left">
+                <label class="payment-label" for="planTierSelectDropdown">이용 정원 · 월 요금 (부가세 포함)</label>
+                <select id="planTierSelectDropdown" class="payment-select" onchange="selectPlanTier(this.value)">
+                  <option value="basic">베이직 · 25명 · 88,000원 / 월</option>
+                  <option value="standard" selected>스탠다드 · 50명 · 132,000원 / 월</option>
+                  <option value="premium">프리미엄 · 100명 · 198,000원 / 월</option>
+                  <option value="vip">로열 · 정원 협의 · 330,000원 / 월</option>
+                </select>
+                <p class="payment-hint">모든 요금제의 기능은 같으며, 이용 정원만 다릅니다.</p>
+                <div id="upgradeTimingOptionWrap" style="display:none;">
+                  <span class="payment-label">적용 시점</span>
+                  <div class="payment-timing">
+                    <label id="labelUpgradeTimingNow"><input type="radio" name="upgradeApplyTiming" id="radioUpgradeNow" value="now" checked onchange="onUpgradeTimingChange('now')"><span><strong>지금 적용</strong><small>남은 일수의 차액 결제</small></span></label>
+                    <label id="labelUpgradeTimingNext"><input type="radio" name="upgradeApplyTiming" id="radioUpgradeNextMonth" value="next_month" onchange="onUpgradeTimingChange('next_month')"><span><strong>다음 달부터</strong><small>지금 추가 결제 없음</small></span></label>
+                  </div>
+                </div>
+                <div id="planTierPolicyNoticeBox" class="payment-note" aria-live="polite"></div>
+              </div>
+              <div class="payment-col-right">
+                <div class="payment-summary-card">
+                  <div>
+                    <div id="periodVatPrice_monthly" class="payment-total" aria-live="polite"><span>월 결제 금액</span><strong>132,000원</strong></div>
+                    <div id="nextMonthRegularNoticeRow" class="payment-next"><span>다음 정기결제</span><strong id="nextBillingDateSummaryText">조회 중</strong></div>
+                    <details class="payment-detail"><summary>금액 상세 · 부가세 포함</summary><div><span id="supplyPriceLabelText">공급가액</span><span id="periodPrice_monthly">120,000원</span></div><div><span id="vatPriceLabelText">부가세</span><span id="pgMonthlyVatText">12,000원</span></div></details>
+                  </div>
+                  <div>
+                    <button type="button" class="payment-action" id="btnPeriodSubmit_monthly" onclick="handlePlanPrimaryAction()">정기결제 신청</button>
+                    <button type="button" class="payment-secondary" id="btnCancelAutoRenewAction" onclick="toggleAutoRenew()">자동갱신 해지</button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div id="planTierPolicyNoticeBox" class="payment-note" aria-live="polite"></div>
-            <div id="periodVatPrice_monthly" class="payment-total" aria-live="polite"><span>월 결제 금액</span><strong>132,000원</strong></div>
-            <div id="nextMonthRegularNoticeRow" class="payment-next"><span>다음 정기결제</span><strong id="nextBillingDateSummaryText">조회 중</strong></div>
-            <details class="payment-detail"><summary>금액 상세 · 부가세 포함</summary><div><span id="supplyPriceLabelText">공급가액</span><span id="periodPrice_monthly">120,000원</span></div><div><span id="vatPriceLabelText">부가세</span><span id="pgMonthlyVatText">12,000원</span></div></details>
-            <button type="button" class="payment-action" id="btnPeriodSubmit_monthly" onclick="handlePlanPrimaryAction()">정기결제 등록</button>
-            <button type="button" class="payment-secondary" id="btnCancelAutoRenewAction" onclick="toggleAutoRenew()">자동갱신 해지</button>
           </section>
           <section id="sectionKakaoTopupCard" class="payment-panel" aria-labelledby="paymentKakaoHeading">
             <div class="payment-panel-heading"><h2 id="paymentKakaoHeading">카카오톡 알림 충전</h2><span class="badge-soft badge-soft-neutral">선불 · 자동결제 없음</span></div>
-            <div class="payment-wallet"><div><span class="payment-label">사용 가능한 잔액</span><small id="paymentKakaoCount">조회 중</small></div><strong id="paymentKakaoBalance">—</strong></div>
-            <div class="payment-quantity-row"><label for="kakaoTopupQtyInput" class="payment-label mb-0">충전 수량</label><div class="payment-quantity"><button type="button" onclick="changeKakaoTopupQty(-1)" aria-label="충전 수량 줄이기">−</button><input type="number" id="kakaoTopupQtyInput" value="1" min="1" max="100" step="1" oninput="onKakaoTopupQtyInput(this.value)"><button type="button" onclick="changeKakaoTopupQty(1)" aria-label="충전 수량 늘리기">+</button></div></div>
-            <p class="payment-hint">1단위 5,500원 결제 → 5,000원 충전 · 건당 8.5원</p>
-            <div id="kakaoCreditSummaryText" class="payment-note" aria-live="polite">5,000원 충전 · 588건 발송 가능</div>
-            <div class="payment-total"><span>결제 금액 <small>(부가세 포함)</small></span><strong id="kakaoTopupTotalText">5,500원</strong></div>
-            <details class="payment-detail"><summary>금액 상세</summary><div><span>충전액</span><span id="kakaoTopupSupplyText">5,000원</span></div><div><span>부가세</span><span id="kakaoTopupVatText">500원</span></div></details>
-            <button type="button" class="payment-action payment-action-kakao" id="btnKakaoTopupSubmit" onclick="openKakaoTopupCheckout()">5,500원 충전 결제</button>
+            <div class="payment-panel-body">
+              <div class="payment-col-left">
+                <div class="payment-wallet"><div><span class="payment-label">사용 가능한 잔액</span><small id="paymentKakaoCount">조회 중</small></div><strong id="paymentKakaoBalance">—</strong></div>
+                <div class="payment-quantity-row"><label for="kakaoTopupQtyInput" class="payment-label mb-0">충전 수량</label><div class="payment-quantity"><button type="button" onclick="changeKakaoTopupQty(-1)" aria-label="충전 수량 줄이기">−</button><input type="number" id="kakaoTopupQtyInput" value="1" min="1" max="100" step="1" oninput="onKakaoTopupQtyInput(this.value)"><button type="button" onclick="changeKakaoTopupQty(1)" aria-label="충전 수량 늘리기">+</button></div></div>
+                <p class="payment-hint">1단위 5,500원 결제 → 5,500원 충전 · 건당 8.5원</p>
+                <div id="kakaoCreditSummaryText" class="payment-note" aria-live="polite">5,500원 충전 · 647건 발송 가능</div>
+              </div>
+              <div class="payment-col-right">
+                <div class="payment-summary-card payment-summary-kakao">
+                  <div>
+                    <div class="payment-total"><span>결제 금액 <small>(부가세 포함)</small></span><strong id="kakaoTopupTotalText">5,500원</strong></div>
+                    <details class="payment-detail"><summary>금액 상세</summary><div><span>충전액 (부가세 포함)</span><span id="kakaoTopupSupplyText">5,500원</span></div><div><span>공급가 / 부가세</span><span id="kakaoTopupVatText">5,000원 / 500원</span></div></details>
+                  </div>
+                  <div>
+                    <button type="button" class="payment-action payment-action-kakao" id="btnKakaoTopupSubmit" onclick="openKakaoTopupCheckout()">5,500원 충전 결제</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
         </div>
 

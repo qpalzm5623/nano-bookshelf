@@ -41,10 +41,10 @@ function wallet(db){return load('lib/kakao-wallet.ts',{'./prisma':{prisma:db},'.
 const member={id:'student',name:'학생',classGroupId:'class'};
 const dispatch=id=>({id,academyId:'academy',recipientName:'보호자',recipientPhone:'01011112222',templateCode:'TT',message:'리포트'});
 
-test('5,500원은 공급가 5,000원 적립, 588건 후 2원 잔액 이월',()=>{
+test('5,500원은 5,500원 충전, 647건 후 5원 잔액 이월',()=>{
   const amount=policy.paymentAmounts(5500,'KAKAO');
-  assert.equal(amount.credit,50000);assert.equal(amount.vat,500);
-  assert.equal(amount.credit-588*policy.KAKAO_UNIT,20);
+  assert.equal(amount.credit,55000);assert.equal(amount.vat,500);
+  assert.equal(amount.credit-647*policy.KAKAO_UNIT,5);
   assert.throws(()=>policy.paymentAmounts(5501,'KAKAO'));
 });
 test('동일 발송 동시 요청은 한 번만 차감',async()=>{

@@ -16459,24 +16459,47 @@ var currentKakaoTopupQty = 1;
 var currentUpgradeApplyTiming = 'now'; // 'now' (지금 바로 적용 - 일할 차액 결제) | 'next_month' (차월부터 적용 - 추가 결제 없음)
 var currentCheckoutMode = 'monthly';   // 'monthly' | 'upgrade_now' | 'kakao'
 
+// 현재 학원이 활성 정기구독(정기결제)을 등록하여 이용 중인지 확인하는 함수
+function hasActiveSubscription() {
+  if (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) {
+    if (typeof currentAcademyInfo.hasSubscription === 'boolean') {
+      return currentAcademyInfo.hasSubscription;
+    }
+    if (currentAcademyInfo.subscriptionStatus === 'inactive' || currentAcademyInfo.subscriptionStatus === 'none') {
+      return false;
+    }
+    if (currentAcademyInfo.subscriptionStatus === 'active') {
+      return true;
+    }
+  }
+  // 결제 내역 중 월 정기결제 건이 존재하고 자동갱신(isAutoRenewActive)이 켜져 있는지 확인
+  if (Array.isArray(academyPaymentList) && academyPaymentList.length > 0) {
+    var hasPaidMonthly = academyPaymentList.some(function(p) {
+      return p.status === 'paid' && (p.planType === 'monthly' || String(p.planType).indexOf('monthly') !== -1 || String(p.planType).indexOf('upgrade') !== -1);
+    });
+    if (hasPaidMonthly && isAutoRenewActive) return true;
+  }
+  return false;
+}
+
 function updateKakaoTopupCardUI() {
   var qty = Math.max(1, Number(currentKakaoTopupQty) || 1);
   var kakaoSupply = qty * 5000;
   var kakaoVat = qty * 500;
   var kakaoTotal = qty * 5500;
-  var approxCount = Math.floor((qty * 50000) / 85);
+  var approxCount = Math.floor(kakaoTotal / 8.5); // 5,500원 결제 시 5,500원 충전 (건당 8.5원 기준 647건/단위)
 
   var input = document.getElementById('kakaoTopupQtyInput');
   if (input && Number(input.value) !== qty) input.value = String(qty);
 
   var creditSummary = document.getElementById('kakaoCreditSummaryText');
   if (creditSummary) {
-    creditSummary.innerText = Number(kakaoSupply).toLocaleString() + '원 충전 · ' + Number(approxCount).toLocaleString() + '건 발송 가능';
+    creditSummary.innerText = Number(kakaoTotal).toLocaleString() + '원 충전 · ' + Number(approxCount).toLocaleString() + '건 발송 가능';
   }
   var supplyEl = document.getElementById('kakaoTopupSupplyText');
-  if (supplyEl) supplyEl.innerText = Number(kakaoSupply).toLocaleString() + '원';
+  if (supplyEl) supplyEl.innerText = Number(kakaoTotal).toLocaleString() + '원';
   var vatEl = document.getElementById('kakaoTopupVatText');
-  if (vatEl) vatEl.innerText = Number(kakaoVat).toLocaleString() + '원';
+  if (vatEl) vatEl.innerText = Number(kakaoSupply).toLocaleString() + '원 / ' + Number(kakaoVat).toLocaleString() + '원';
   var totalEl = document.getElementById('kakaoTopupTotalText');
   if (totalEl) totalEl.innerText = Number(kakaoTotal).toLocaleString() + '원';
   var btnEl = document.getElementById('btnKakaoTopupSubmit');
@@ -16565,10 +16588,22 @@ function selectPlanTier(tierCode) {
   var vat = Math.round(supply * 0.1);
   var regularTotal = supply + vat;
   var amount = deferred ? 0 : regularTotal;
+
+  var hasSub = hasActiveSubscription();
+  var headingEl = document.getElementById('paymentPlanHeading');
+  if (headingEl) {
+    headingEl.textContent = hasSub ? '요금제 변경' : '정기결제 신청';
+  }
+
   var note = '매월 25일에 다음 달 이용료를 결제합니다. 휴일이면 다음 평일에 결제됩니다.';
-  var action = '정기결제 등록';
-  var status = '현재 이용 중';
-  if (immediate) {
+  var action = hasSub ? '정기결제 유지중' : '정기결제 신청';
+  var status = hasSub ? '현재 이용 중' : '정기결제 신청';
+
+  if (!hasSub) {
+    note = '매월 25일에 다음 달 이용료가 결제됩니다. 등록 시 다음 달부터 정기 결제됩니다.';
+    action = '정기결제 신청';
+    status = '정기결제 신청';
+  } else if (immediate) {
     var prorated = calculateUpgradeProratedDiff(tier);
     supply = prorated.proratedSupply;
     vat = prorated.proratedVat;
@@ -16581,11 +16616,12 @@ function selectPlanTier(tierCode) {
     action = '다음 달 요금제 변경 신청';
     status = '다음 달 적용';
   }
+
   var setText = function(id, value) { var el = document.getElementById(id); if (el) el.textContent = value; };
   var timing = document.getElementById('upgradeTimingOptionWrap');
-  if (timing) timing.style.display = upgrade ? 'block' : 'none';
+  if (timing) timing.style.display = (hasSub && upgrade) ? 'block' : 'none';
   var cancel = document.getElementById('btnCancelAutoRenewAction');
-  if (cancel) cancel.style.display = !upgrade && !downgrade ? 'block' : 'none';
+  if (cancel) cancel.style.display = (hasSub && !upgrade && !downgrade) ? 'block' : 'none';
   setText('selectedPlanStatusChip', status);
   setText('planTierPolicyNoticeBox', note);
   setText('supplyPriceLabelText', immediate ? '이번 달 일할 차액' : '월 공급가액');
@@ -16599,9 +16635,17 @@ function selectPlanTier(tierCode) {
   if (button) { button.className = 'payment-action'; button.textContent = action; }
 }
 
-// 우측 메인 액션 버튼 클릭 핸들러 (동일 요금제 결제 등록 / 다운그레이드 무결제 변경신청 / 업그레이드 즉시 일할결제 or 차월 무결제 변경신청)
+// 우측 메인 액션 버튼 클릭 핸들러 (정기결제 신청 / 동일 요금제 결제 등록 / 다운그레이드 무결제 변경신청 / 업그레이드 즉시 일할결제 or 차월 무결제 변경신청)
 function handlePlanPrimaryAction() {
   var tier = planTiers[currentSelectedTier] || planTiers['standard'];
+  var hasSub = hasActiveSubscription();
+
+  // 정기결제를 아직 안 한 학원은 즉시 정기결제 신청 모달로 진입
+  if (!hasSub) {
+    openCheckoutModal('monthly');
+    return;
+  }
+
   var currentRank = planTiers[currentAcademyPlan.tier].rank;
   var targetRank = tier.rank;
 
@@ -16795,9 +16839,17 @@ function toggleAutoRenew() {
 }
 
 function updateAutoRenewUI() {
+  var hasSub = hasActiveSubscription();
+  var headingEl = document.getElementById('paymentPlanHeading');
+  if (headingEl) {
+    headingEl.textContent = hasSub ? '요금제 변경' : '정기결제 신청';
+  }
+
   var toggleContainer = document.getElementById('autoRenewToggleContainer');
   if (toggleContainer) {
-    if (isAutoRenewActive) {
+    if (!hasSub) {
+      toggleContainer.innerHTML = '<span class="badge badge-light border text-muted font-weight-normal" style="font-size:11px; padding:3px 7px;">정기결제 미신청</span>';
+    } else if (isAutoRenewActive) {
       toggleContainer.innerHTML = '<button type="button" class="btn btn-xs btn-outline-success font-weight-bold" onclick="toggleAutoRenew()" style="border-radius:6px; padding:2px 8px;"><i class="fa-solid fa-toggle-on mr-1"></i>자동갱신 ON</button>';
     } else {
       toggleContainer.innerHTML = '<button type="button" class="btn btn-xs btn-outline-secondary font-weight-bold" onclick="toggleAutoRenew()" style="border-radius:6px; padding:2px 8px;"><i class="fa-solid fa-toggle-off mr-1"></i>자동갱신 OFF</button>';
@@ -16812,14 +16864,18 @@ function updateAutoRenewUI() {
   // 사이드바 뱃지 업데이트
   var navPaymentBadge = document.querySelector('#btn-nav-payment .badge');
   if (navPaymentBadge) {
-    if (isAutoRenewActive) {
+    if (hasSub && isAutoRenewActive) {
       navPaymentBadge.className = 'badge badge-success text-white ml-1';
       navPaymentBadge.style.background = '#16a34a';
       navPaymentBadge.innerText = '구독중';
-    } else {
+    } else if (hasSub && !isAutoRenewActive) {
       navPaymentBadge.className = 'badge badge-danger text-white ml-1';
       navPaymentBadge.style.background = '#dc2626';
       navPaymentBadge.innerText = ddayLabel;
+    } else {
+      navPaymentBadge.className = 'badge badge-secondary text-white ml-1';
+      navPaymentBadge.style.background = '#64748b';
+      navPaymentBadge.innerText = '미구독';
     }
   }
 
@@ -16833,10 +16889,14 @@ function updateAutoRenewUI() {
 
   if (btnWrap) btnWrap.innerHTML = '';
   if (cancelActionBtn) {
-    if (isAutoRenewActive) {
+    if (!hasSub) {
+      cancelActionBtn.style.display = 'none';
+    } else if (isAutoRenewActive) {
+      cancelActionBtn.style.display = 'block';
       cancelActionBtn.className = 'payment-secondary';
       cancelActionBtn.textContent = '자동갱신 해지';
     } else {
+      cancelActionBtn.style.display = 'block';
       cancelActionBtn.className = 'payment-secondary';
       cancelActionBtn.textContent = '자동갱신 다시 켜기';
     }
@@ -16965,11 +17025,11 @@ function openCheckoutModal(modeCode) {
     var kakaoSupply = qty * 5000;
     var kakaoVat = qty * 500;
     var kakaoTotal = qty * 5500;
-    var approxCount = Math.floor((qty * 50000) / 85);
+    var approxCount = Math.floor(kakaoTotal / 8.5); // 5,500원 결제 시 5,500원 전액 충전
 
     if (modalTitleEl) modalTitleEl.innerText = 'NHN KCP 카카오톡 알림 1회성 충전';
     if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-comment-sms mr-1 text-primary"></i>NHN KCP 1회성 단건 결제 (비구독형 선불 충전)';
-    if (kcpGuideDesc) kcpGuideDesc.innerHTML = '카카오톡 알림 충전은 <strong>정기구독(매월 25일 자동결제) 상품이 아닌 1회성 구매 상품</strong>입니다. 결제 즉시 <strong>' + Number(kakaoSupply).toLocaleString() + '원</strong>이 학원 알림톡 지갑에 적립됩니다.';
+    if (kcpGuideDesc) kcpGuideDesc.innerHTML = '카카오톡 알림 충전은 <strong>정기구독(매월 25일 자동결제) 상품이 아닌 1회성 구매 상품</strong>입니다. 결제 즉시 <strong>' + Number(kakaoTotal).toLocaleString() + '원</strong>이 학원 알림톡 지갑에 전액 충전 적립됩니다.';
     if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>알림톡 잔액 즉시 적립';
     if (badgeEl) badgeEl.innerText = '카카오톡 알림 · ' + qty + '단위 (1회성 충전)';
     if (typeBadgeEl) {
@@ -16979,11 +17039,11 @@ function openCheckoutModal(modeCode) {
     if (policyDescEl) {
       policyDescEl.innerHTML =
         '<div class="font-weight-bold mb-1" style="color: #b45309;"><i class="fa-solid fa-circle-check mr-1"></i>1회성 알림톡 충전 조건</div>' +
-        '• 결제 금액 <strong>' + Number(kakaoTotal).toLocaleString() + '원(VAT 포함)</strong> 중 공급가 <strong>' + Number(kakaoSupply).toLocaleString() + '원</strong>이 적립됩니다.<br>' +
+        '• 결제 금액 <strong>' + Number(kakaoTotal).toLocaleString() + '원(VAT 포함)</strong> 전액이 충전금으로 적립됩니다.<br>' +
         '• 약 <strong>' + Number(approxCount).toLocaleString() + '건</strong> 발송 가능하며(건당 8.5원), 잔액 소진 시까지 만료 기한 없이 유지됩니다.';
     }
-    if (supplyEl) supplyEl.innerText = Number(kakaoSupply).toLocaleString() + '원 (적립 금액)';
-    if (vatEl) vatEl.innerText = Number(kakaoVat).toLocaleString() + '원';
+    if (supplyEl) supplyEl.innerText = Number(kakaoTotal).toLocaleString() + '원 (충전 금액)';
+    if (vatEl) vatEl.innerText = Number(kakaoSupply).toLocaleString() + '원 / ' + Number(kakaoVat).toLocaleString() + '원 (공급가/부가세)';
     if (totalEl) totalEl.innerText = Number(kakaoTotal).toLocaleString() + '원';
     if (submitBtnTextEl) submitBtnTextEl.innerText = Number(kakaoTotal).toLocaleString() + '원 충전 결제하기';
 
@@ -16998,6 +17058,7 @@ function openCheckoutModal(modeCode) {
   var regularSupply = tier.monthlyPrice;
   var regularVat = Math.round(regularSupply * 0.1);
   var regularTotal = regularSupply + regularVat;
+  var hasSub = hasActiveSubscription();
 
   // [B] 업그레이드 — 지금 바로 적용 (이번 달 남은 일수에 대한 일할 차액 결제 + 차월 25일부터 업그레이드 정액 결제)
   if (isUpgradeNow) {
@@ -17032,18 +17093,18 @@ function openCheckoutModal(modeCode) {
     return;
   }
 
-  // [C] 동일 요금제 차월 사용분 정기결제 등록 (매월 25일 자동결제)
+  // [C] 차월 사용분 정기결제 등록 / 신규 정기결제 신청 (매월 25일 자동결제)
   currentSelectedPeriod = 'monthly';
 
-  if (modalTitleEl) modalTitleEl.innerText = 'NHN KCP 차월 사용분 정기결제 등록';
-  if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-shield-halved mr-1 text-primary"></i>NHN KCP 정기결제 등록 (매월 25일 차월분 자동결제)';
+  if (modalTitleEl) modalTitleEl.innerText = hasSub ? 'NHN KCP 차월 사용분 정기결제 등록' : 'NHN KCP 차월 사용분 정기결제 신청';
+  if (kcpGuideTitle) kcpGuideTitle.innerHTML = '<i class="fa-solid fa-shield-halved mr-1 text-primary"></i>NHN KCP 정기결제 ' + (hasSub ? '등록' : '신청') + ' (매월 25일 차월분 자동결제)';
   if (kcpGuideDesc) {
     kcpGuideDesc.innerHTML =
       '사용자가 결제하는 금액은 <strong>차월 사용분(' + billingInfo.nextMonthLabel + ')</strong>에 대한 금액입니다. 정기 자동결제는 항상 <strong>매월 25일(공휴일·주말인 경우 다음 평일)</strong>에 이루어지며, 학원 또는 본사에서 취소 시 자동결제가 종료됩니다.';
   }
-  if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>매월 25일 정기결제 등록';
+  if (kcpStep3) kcpStep3.innerHTML = '<strong class="text-success">STEP 3</strong><br>매월 25일 정기결제 ' + (hasSub ? '등록' : '신청');
 
-  var displayBadge = tier.name + ' (' + tier.slots + '명) · 차월분 정기결제';
+  var displayBadge = tier.name + ' (' + tier.slots + '명) · 차월분 정기결제 ' + (hasSub ? '등록' : '신청');
   if (badgeEl) badgeEl.innerText = displayBadge;
 
   if (typeBadgeEl) {
@@ -17061,7 +17122,7 @@ function openCheckoutModal(modeCode) {
   if (supplyEl) supplyEl.innerText = Number(regularSupply).toLocaleString() + '원';
   if (vatEl) vatEl.innerText = Number(regularVat).toLocaleString() + '원';
   if (totalEl) totalEl.innerText = Number(regularTotal).toLocaleString() + '원';
-  if (submitBtnTextEl) submitBtnTextEl.innerText = Number(regularTotal).toLocaleString() + '원 정기결제 등록하기';
+  if (submitBtnTextEl) submitBtnTextEl.innerText = Number(regularTotal).toLocaleString() + '원 정기결제 ' + (hasSub ? '등록하기' : '신청하기');
 
   selectPayMethod('신용카드');
   $('#paymentCheckoutModal').modal('show');
@@ -17202,11 +17263,13 @@ async function submitSimulatedPayment() {
           '· 차월부터 정액 결제될 금액: 월 ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)\n\n' +
           '지금 바로 업그레이드된 요금제가 적용되었으며, 차월부터는 업그레이드된 요금제로 정액 결제됩니다.');
   } else {
-    // [C] 차월 사용분 정기결제 등록 (매월 25일 자동결제)
+    // [C] 차월 사용분 정기결제 등록 / 신청 (매월 25일 자동결제)
+    var hadSubBefore = hasActiveSubscription();
+    var actionWord = hadSubBefore ? '등록' : '신청';
     var newPayment = {
       id: newId,
       planType: tier.code + '_monthly',
-      planName: '[' + tier.name + '] 차월 사용분(' + billingInfo.nextMonthLabel + ') 정기결제 등록',
+      planName: '[' + tier.name + '] 차월 사용분(' + billingInfo.nextMonthLabel + ') 정기결제 ' + actionWord,
       supply: regularSupply,
       vat: regularVat,
       total: regularTotal,
@@ -17219,14 +17282,20 @@ async function submitSimulatedPayment() {
 
     academyPaymentList.unshift(newPayment);
     renderAcademyPaymentTable(academyPaymentList);
+
+    if (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) {
+      currentAcademyInfo.hasSubscription = true;
+      currentAcademyInfo.subscriptionStatus = 'active';
+    }
     isAutoRenewActive = true;
     updateAutoRenewUI();
+    selectPlanTier(currentSelectedTier);
 
     $('#paymentCheckoutModal').modal('hide');
 
-    showAcademyToast('✅ [' + tier.name + '] 차월 사용분 정기결제 등록이 완료되었습니다.');
-    alert('✅ 차월 사용분 정기결제 등록 완료!\n\n' +
-          '· 등록 요금제: ' + tier.name + ' (' + (tier.slots === '협의' ? '정원 협의' : tier.slots + '명 슬롯') + ')\n' +
+    showAcademyToast('✅ [' + tier.name + '] 차월 사용분 정기결제 ' + actionWord + '이 완료되었습니다.');
+    alert('✅ 차월 사용분 정기결제 ' + actionWord + ' 완료!\n\n' +
+          '· ' + actionWord + ' 요금제: ' + tier.name + ' (' + (tier.slots === '협의' ? '정원 협의' : tier.slots + '명 슬롯') + ')\n' +
           '· 적용 대상: 차월 사용분 (' + billingInfo.nextMonthUsageStart + ' ~ ' + billingInfo.nextMonthUsageEnd + ')\n' +
           '· 정기 결제 금액: 월 ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)\n' +
           '· 정기 결제일: 매월 25일 (공휴일 시 다음 평일, 예정일: ' + billingInfo.billingDateStr + ')');
