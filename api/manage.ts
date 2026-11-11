@@ -31,9 +31,9 @@ export default async function handler(req: any, res: any) {
     const entity = String(req.query.entity || 'members');
     // 학원 자체의 생성·수정은 아직 존재하지 않는 코드도 받을 수 있으므로 세션 학원을 기준으로 권한만 확인합니다.
     const academyId = entity === 'academies' ? user.academyId : await academyScope(user, req.query.academy);
-    const body = req.body || {}; const input = body.data || {};
+    const body = req.body || {}; const input = body.data || body;
     if (req.method === 'POST') {
-      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'themes' && body.operation === 'reorder') || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')), '요청 작업을 확인해 주세요.');
+      need(['save','delete','import','restore'].includes(body.operation) || (entity === 'themes' && body.operation === 'reorder') || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')) || entity === 'summarize_synopsis', '요청 작업을 확인해 주세요.');
       if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
       if (body.operation === 'delete' || body.operation === 'restore') need(typeof input.id === 'string' && input.id.length > 0, '대상 항목을 선택해 주세요.');
     }
@@ -909,6 +909,71 @@ export default async function handler(req: any, res: any) {
         maskedKey: finalKey ? (finalKey.slice(0, 6) + '...' + finalKey.slice(-4)) : '',
         model
       });
+    }
+    if (entity === 'summarize_synopsis') {
+      master(user);
+      const rawText = text(input.rawText, '원문 줄거리', 20000, true);
+      const title = text(input.title || '', '도서명', 300);
+      const author = text(input.author || '', '저자', 200);
+
+      const configRow = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
+      const aiConfig = ((configRow?.value as any) || {}) as Record<string, any>;
+      const apiKey = (typeof input.apiKey === 'string' && input.apiKey.trim()) || (typeof aiConfig.apiKey === 'string' && aiConfig.apiKey.trim()) || (process.env.GEMINI_API_KEY || '');
+      let model = (typeof aiConfig.model === 'string' && aiConfig.model.trim()) || (process.env.GEMINI_MODEL || 'gemini-1.5-flash');
+      if (model.includes('3.8')) model = 'gemini-1.5-flash';
+
+      const cleaned = rawText
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'").replace(/&apos;/g, "'").replace(/&amp;/g, '&')
+        .replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+      if (!apiKey) {
+        const sentences = cleaned.split(/(?<=[.?!])\s+/).filter(Boolean);
+        const fallback = sentences.slice(0, 3).join(' ');
+        return res.json({ summary: fallback || cleaned.slice(0, 200) });
+      }
+
+      const prompt = `당신은 어린이·청소년 독서교육 전문가입니다.
+다음 도서의 출판사 소개/줄거리 정보를 바탕으로, 학생과 지도교사가 도서의 핵심 내용과 흥미를 쉽게 파악할 수 있도록 정확히 3문장 이내의 읽기 쉬운 줄거리(도서 소개)로 재구성하여 요약해 주세요.
+
+[도서 정보]
+- 도서명: ${title || '도서'}
+- 저자: ${author || '저자'}
+
+[출판사 제공 원문]
+${cleaned}
+
+[작성 규칙]
+1. 불필요한 홍보 문구, 시리즈 권수 안내, 특수기호 등은 제외하고 이야기의 중심 줄거리와 핵심 배경 위주로 서술하세요.
+2. 부드럽고 정돈된 어조(~합니다, ~이야기입니다)로 작성하세요.
+3. 반드시 2~3개의 완성된 문장으로만 작성하고, 번호 매김(1., 2.)이나 불릿 없이 자연스러운 줄글 형태로 작성하세요.`;
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+        const resp = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+          }),
+          signal: AbortSignal.timeout(15000)
+        });
+        if (resp.ok) {
+          const geminiData = await resp.json();
+          const rawResult = (((geminiData.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+          const trimmedResult = rawResult.trim().replace(/^["']|["']$/g, '');
+          if (trimmedResult) {
+            return res.json({ summary: trimmedResult });
+          }
+        }
+      } catch (err) {
+        console.warn('Gemini 요약 호출 실패, 스마트 폴백 적용:', err);
+      }
+
+      const sentences = cleaned.split(/(?<=[.?!])\s+/).filter(Boolean);
+      const fallback = sentences.slice(0, 3).join(' ');
+      return res.json({ summary: fallback || cleaned.slice(0, 200) });
     }
     need(false, '지원하지 않는 항목입니다.', 404);
   } catch (error) { return failure(res, error); }

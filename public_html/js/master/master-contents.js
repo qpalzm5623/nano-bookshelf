@@ -1918,10 +1918,13 @@ function handleAddCoverFileUpload(e) {
   reader.readAsDataURL(file);
 }
 
+let editingBookSheetDeleted = false;
+
 function handleAddSheetFileUpload(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
+  editingBookSheetDeleted = false;
   const sizeText = (file.size / 1024).toFixed(1) + " KB";
   editingBookSheetAddFile = {
     name: file.name,
@@ -1936,6 +1939,8 @@ function handleAddSheetFileUpload(e) {
   if (nameEl) nameEl.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-pdf mr-1"></i>${file.name} (${sizeText})</span>`;
   const label = document.getElementById("mbAddSheetFileLabel");
   if (label) label.innerText = file.name;
+  const delBtn = document.getElementById("btnDeleteMasterBookSheet");
+  if (delBtn) delBtn.style.display = "inline-block";
 
   const reader = new FileReader();
   reader.onload = function(evt) {
@@ -1946,6 +1951,146 @@ function handleAddSheetFileUpload(e) {
   reader.readAsDataURL(file);
 
   showMasterToast(`[${file.name}] 나노시트 학습자료 파일이 업로드되었습니다.`);
+}
+
+// 등록된 나노시트 파일 삭제 처리
+function handleRemoveMasterBookSheet() {
+  editingBookSheetAddFile = null;
+  editingBookSheetDeleted = true;
+
+  const sheetInput = document.getElementById("mbAddSheetFileInput");
+  if (sheetInput) sheetInput.value = "";
+  const nameEl = document.getElementById("mbAddSheetFileName");
+  if (nameEl) {
+    nameEl.innerHTML = '<span class="text-danger font-weight-bold"><i class="fa-solid fa-trash-can mr-1"></i>기존 나노시트가 삭제 대기 상태입니다. (도서 등록 완료 시 영구 반영)</span>';
+  }
+  const label = document.getElementById("mbAddSheetFileLabel");
+  if (label) label.innerText = "파일 선택 (.pdf)";
+  const delBtn = document.getElementById("btnDeleteMasterBookSheet");
+  if (delBtn) delBtn.style.display = "none";
+
+  showMasterToast("나노시트 파일이 삭제 대기 처리되었습니다. 하단 [도서 등록 완료]를 누르면 영구 삭제됩니다.");
+}
+
+// 출판사 제공 줄거리 HTML 특수문자 및 불필요한 태그 완벽 정제
+function cleanRawSynopsisText(raw) {
+  if (!raw) return "";
+  let text = String(raw);
+  text = text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ");
+  text = text.replace(/<[^>]*>/g, " ");
+  text = text.replace(/\s+/g, " ").trim();
+  return text;
+}
+
+// Google Gemini API를 활용한 줄거리 3문장 스마트 요약
+async function summarizeSynopsisWithGemini(rawText, title, author) {
+  const cleaned = cleanRawSynopsisText(rawText);
+  if (!cleaned) return "";
+
+  // 1. 서버 엔드포인트(/api/manage?entity=summarize_synopsis) 우선 호출
+  if (window.NanoPortal && NanoPortal.remote) {
+    try {
+      const res = await NanoPortal.api('/api/manage?entity=summarize_synopsis', {
+        rawText: cleaned,
+        title: title || '',
+        author: author || ''
+      }, 15000);
+      if (res && res.summary) {
+        return res.summary;
+      }
+    } catch (apiErr) {
+      console.warn('[summarizeSynopsis] 서버 Gemini 요약 호출 실패, 브라우저 직접 호출 시도:', apiErr);
+    }
+  }
+
+  // 2. 브라우저 로컬 저장소 Gemini API 키로 직접 호출
+  const localKey = localStorage.getItem('NANO_GEMINI_API_KEY') || '';
+  if (localKey && !localKey.startsWith('sk-')) {
+    const rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-1.5-flash';
+    const model = rawModel.includes('3.8') ? 'gemini-1.5-flash' : rawModel;
+    const prompt = `당신은 어린이·청소년 독서교육 전문가입니다.
+다음 도서의 출판사 소개/줄거리 정보를 바탕으로, 학생과 지도교사가 도서의 핵심 내용과 흥미를 쉽게 파악할 수 있도록 정확히 3문장 이내의 읽기 쉬운 줄거리(도서 소개)로 재구성하여 요약해 주세요.
+
+[도서 정보]
+- 도서명: ${title || '도서'}
+- 저자: ${author || '저자'}
+
+[출판사 제공 원문]
+${cleaned}
+
+[작성 규칙]
+1. 홍보 문구, 권수/시리즈 소개 등은 제외하고 이야기의 중심 줄거리와 핵심 배경 위주로 서술하세요.
+2. 따뜻하고 정돈된 문체(~합니다, ~이야기입니다)로 작성하세요.
+3. 반드시 2~3개의 완성된 문장으로만 작성하고, 번호 매김이나 불릿 없이 하나의 자연스러운 문단으로 작성하세요.`;
+
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': localKey },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+        })
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const geminiText = (((data.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
+        const trimmed = geminiText.trim().replace(/^["']|["']$/g, '');
+        if (trimmed) return trimmed;
+      }
+    } catch (e) {
+      console.warn('[summarizeSynopsis] 브라우저 Gemini 직접 호출 실패:', e);
+    }
+  }
+
+  // 3. API 키가 없거나 실패 시: 정제된 문장 3문장 슬라이싱 스마트 폴백
+  const sentences = cleaned.split(/(?<=[.?!])\s+/).filter(Boolean);
+  return sentences.slice(0, 3).join(' ') || cleaned.slice(0, 200);
+}
+
+// 사용자가 수동으로 [AI 3문장 요약] 버튼 클릭 시
+async function triggerAiSynopsisSummary() {
+  const synopsisEl = document.getElementById("mbAddSynopsis");
+  if (!synopsisEl) return;
+  const raw = synopsisEl.value.trim();
+  if (!raw) {
+    showMasterToast("요약할 줄거리 또는 도서 소개 정보가 없습니다.", "warning");
+    synopsisEl.focus();
+    return;
+  }
+
+  const btn = document.getElementById("btnAiSummarizeSynopsis");
+  const origHtml = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>AI 요약중...';
+    btn.disabled = true;
+  }
+
+  const title = (document.getElementById("mbAddTitle") ? document.getElementById("mbAddTitle").value : "").trim();
+  const author = (document.getElementById("mbAddAuthor") ? document.getElementById("mbAddAuthor").value : "").trim();
+
+  try {
+    const summary = await summarizeSynopsisWithGemini(raw, title, author);
+    if (summary) {
+      synopsisEl.value = summary;
+      showMasterToast("Gemini AI를 통해 줄거리가 3문장으로 깔끔하게 요약되었습니다!");
+    }
+  } catch (err) {
+    showMasterToast("줄거리 요약 중 오류가 발생했습니다: " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.innerHTML = origHtml;
+      btn.disabled = false;
+    }
+  }
 }
 
 async function fetchMasterBookByIsbnForAdd() {
@@ -1996,7 +2141,20 @@ async function fetchMasterBookByIsbnForAdd() {
       if (document.getElementById("mbAddTitle")) document.getElementById("mbAddTitle").value = title;
       if (document.getElementById("mbAddAuthor")) document.getElementById("mbAddAuthor").value = author;
       if (document.getElementById("mbAddPublisher")) document.getElementById("mbAddPublisher").value = publisher;
-      if (doc.contents && document.getElementById("mbAddSynopsis")) document.getElementById("mbAddSynopsis").value = doc.contents;
+      if (doc.contents && document.getElementById("mbAddSynopsis")) {
+        const cleanedContents = cleanRawSynopsisText(doc.contents);
+        document.getElementById("mbAddSynopsis").value = cleanedContents;
+
+        // Gemini AI를 통해 3문장 스마트 요약 자동 실행
+        summarizeSynopsisWithGemini(cleanedContents, title, author).then(summary => {
+          if (summary && document.getElementById("mbAddSynopsis")) {
+            document.getElementById("mbAddSynopsis").value = summary;
+            showMasterToast(`[${title}] 줄거리가 Gemini AI 3문장으로 요약되었습니다!`);
+          }
+        }).catch(err => {
+          console.warn('AI 줄거리 자동 요약 실패:', err);
+        });
+      }
 
       // 1. 시리즈 vs 단권 지능형 판별
       const seriesInfo = detectBookSeries(title, "");
@@ -2254,12 +2412,14 @@ function openMasterBookAddModal(id = null) {
   switchAddCoverMode("url");
 
   // 나노 시트 / 지도안 첨부 파일 상태 초기화
+  editingBookSheetDeleted = false;
   const sheetInput = document.getElementById("mbAddSheetFileInput");
   if (sheetInput) sheetInput.value = "";
   const sheetNameEl = document.getElementById("mbAddSheetFileName");
   const sheetLabel = document.getElementById("mbAddSheetFileLabel");
+  const delSheetBtn = document.getElementById("btnDeleteMasterBookSheet");
 
-  if (book && (book.hasSheet || book.sheet || book.materialName || book.pdfBlob || book.pdfDataUrl || book.sheetFile)) {
+  if (book && (book.hasSheet || book.sheet || book.materialName || book.pdfBlob || book.pdfDataUrl || book.sheetFile || book.worksheetUrl)) {
     const sName = (book.sheetFile && book.sheetFile.name) || book.materialName || `${book.title}_나노시트.pdf`;
     const sSize = (book.sheetFile && book.sheetFile.size) || book.materialSize || "1.45 MB";
     editingBookSheetAddFile = book.sheetFile || {
@@ -2267,14 +2427,17 @@ function openMasterBookAddModal(id = null) {
       size: sSize,
       file: book.pdfBlob || null,
       blob: book.pdfBlob || null,
-      dataUrl: book.pdfDataUrl || null
+      dataUrl: book.pdfDataUrl || null,
+      existingUrl: book.worksheetUrl || book.worksheet || null
     };
     if (sheetNameEl) sheetNameEl.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-pdf mr-1"></i>기존 등록 파일: ${sName} (${sSize})</span>`;
     if (sheetLabel) sheetLabel.innerText = sName;
+    if (delSheetBtn) delSheetBtn.style.display = "inline-block";
   } else {
     editingBookSheetAddFile = null;
     if (sheetNameEl) sheetNameEl.innerText = "등록된 나노시트 파일 없음 (클릭하여 .pdf 선택)";
     if (sheetLabel) sheetLabel.innerText = "파일 선택 (.pdf)";
+    if (delSheetBtn) delSheetBtn.style.display = "none";
   }
 
   $('#masterBookAddModal').modal('show');
@@ -2403,15 +2566,27 @@ async function saveBookDataDirectly(bookData) {
         ...prevBook,
         ...bookData,
         id: originalEditingBookIdForAdd,
-        worksheetUrl: bookData.worksheetUrl || prevBook.worksheetUrl || null,
-        worksheet: bookData.worksheetUrl || prevBook.worksheetUrl || null
+        worksheetUrl: editingBookSheetDeleted ? null : (bookData.worksheetUrl || prevBook.worksheetUrl || null),
+        worksheet: editingBookSheetDeleted ? null : (bookData.worksheetUrl || prevBook.worksheetUrl || null)
       };
-      // 사용자가 새 시트 파일을 올리지 않았더라도 기존에 시트가 있던 도서라면 기존 시트 파일 정보 보존
-      if (!bookData.pdfBlob && prevBook.pdfBlob && editingBookSheetAddFile) {
-        nextBook.pdfBlob = prevBook.pdfBlob;
-      }
-      if (!bookData.pdfDataUrl && prevBook.pdfDataUrl && editingBookSheetAddFile) {
-        nextBook.pdfDataUrl = prevBook.pdfDataUrl;
+      if (editingBookSheetDeleted) {
+        nextBook.hasSheet = false;
+        nextBook.sheet = false;
+        nextBook.hasCustomSheet = false;
+        nextBook.pdfBlob = null;
+        nextBook.pdfDataUrl = null;
+        nextBook.sheetFile = null;
+        nextBook.materialName = null;
+        nextBook.materialSize = null;
+        nextBook.materialType = null;
+      } else {
+        // 사용자가 새 시트 파일을 올리지 않았더라도 기존에 시트가 있던 도서라면 기존 시트 파일 정보 보존
+        if (!bookData.pdfBlob && prevBook.pdfBlob && editingBookSheetAddFile) {
+          nextBook.pdfBlob = prevBook.pdfBlob;
+        }
+        if (!bookData.pdfDataUrl && prevBook.pdfDataUrl && editingBookSheetAddFile) {
+          nextBook.pdfDataUrl = prevBook.pdfDataUrl;
+        }
       }
     }
   }
@@ -2479,8 +2654,19 @@ let currentQuizQuestions = [];
 let curQuizQuestionIdx = 0;
 let curQuizTargetInput = null;
 
+// 북퀴즈 입력창 기본 더미 텍스트 자동 클리어 헬퍼
+function clearDefaultQuizPlaceholder(el) {
+  if (!el || typeof el.value !== "string") return;
+  const trimmed = el.value.trim();
+  if (trimmed === "문제를 입력해주세요" || trimmed === "문제를 입력해 주세요" ||
+      /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(trimmed)) {
+    el.value = "";
+  }
+}
+
 function setCurrentQuizTargetInput(el) {
   curQuizTargetInput = el;
+  clearDefaultQuizPlaceholder(el);
 }
 
 function insertQuizSymbol(sym) {
@@ -2846,11 +3032,11 @@ function openNewQuizSetModal() {
     questions: [
       {
         type: "CHOICE",
-        question: "문제를 입력해주세요",
-        choices: ["1번 선택지를 입력해주세요", "2번 선택지를 입력해주세요", "3번 선택지를 입력해주세요"],
-        opt1: "1번 선택지를 입력해주세요",
-        opt2: "2번 선택지를 입력해주세요",
-        opt3: "3번 선택지를 입력해주세요",
+        question: "",
+        choices: ["", "", ""],
+        opt1: "",
+        opt2: "",
+        opt3: "",
         ans: "1",
         hint: ""
       }
@@ -3285,7 +3471,7 @@ function renderDynamicChoices(choices, ans) {
   if (!container) return;
 
   if (!Array.isArray(choices) || choices.length < 2) {
-    choices = ["1번 선택지를 입력해주세요", "2번 선택지를 입력해주세요", "3번 선택지를 입력해주세요"];
+    choices = ["", "", ""];
   }
   if (choices.length > 5) {
     choices = choices.slice(0, 5);
@@ -3299,6 +3485,8 @@ function renderDynamicChoices(choices, ans) {
     const circle = circleNums[idx] || `${num}`;
     const isChecked = currentAns === num;
     const canDelete = choices.length > 2;
+    const isDummy = /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(String(optText || '').trim());
+    const cleanVal = isDummy ? "" : (optText || "");
 
     return `
       <div class="input-group choice-option-row">
@@ -3308,7 +3496,7 @@ function renderDynamicChoices(choices, ans) {
             <label for="mqRadio${num}" class="mb-0 ml-1 font-weight-bold text-dark" style="font-size: 12.5px; cursor: pointer;">${circle}번</label>
           </div>
         </div>
-        <input type="text" class="form-control form-control-beige choice-opt-input" id="mqOpt${num}" data-opt-idx="${idx}" value="${String(optText || '').replace(/"/g, '&quot;')}" placeholder="${num}번 선택지를 입력해주세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()" style="${canDelete ? 'border-radius: 0;' : 'border-radius: 0 8px 8px 0;'}">
+        <input type="text" class="form-control form-control-beige choice-opt-input" id="mqOpt${num}" data-opt-idx="${idx}" value="${String(cleanVal || '').replace(/"/g, '&quot;')}" placeholder="${num}번 선택지를 입력해주세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()" style="${canDelete ? 'border-radius: 0;' : 'border-radius: 0 8px 8px 0;'}">
         ${canDelete ? `
         <div class="input-group-append">
           <button type="button" class="btn btn-outline-danger" onclick="deleteQuizChoiceOption(${idx})" title="보기 삭제" style="border-radius: 0 8px 8px 0; font-size: 12px; padding: 0 10px;">
@@ -3349,7 +3537,7 @@ function addQuizChoiceOption() {
     return;
   }
 
-  choices.push(`${choices.length + 1}번 선택지를 입력해주세요`);
+  choices.push("");
   q.choices = choices;
   syncQuestionChoicesProps(q);
 
@@ -3411,7 +3599,9 @@ function loadCurrentQuizQuestionForm() {
     titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 ${curQuizQuestionIdx + 1}번 문항 설정 (${isChoice ? '객관식' : '주관식 단답/서술'})`;
   }
 
-  document.getElementById("mqQuestionText").value = q.question || "";
+  const rawQ = q.question || "";
+  const isDummyQ = (rawQ.trim() === "문제를 입력해주세요" || rawQ.trim() === "문제를 입력해 주세요");
+  document.getElementById("mqQuestionText").value = isDummyQ ? "" : rawQ;
   if (document.getElementById("mqQuizHint")) {
     document.getElementById("mqQuizHint").value = q.hint || "";
   }
@@ -3485,16 +3675,16 @@ function addNewQuizQuestion() {
   const nextNum = currentQuizQuestions.length + 1;
   currentQuizQuestions.push({
     type: "CHOICE",
-    question: "문제를 입력해주세요",
+    question: "",
     mediaType: "none",
     mediaUrl: "",
     mediaCaption: "",
     mediaName: "",
     mediaSizeInfo: "",
-    choices: ["1번 선택지를 입력해주세요", "2번 선택지를 입력해주세요", "3번 선택지를 입력해주세요"],
-    opt1: "1번 선택지를 입력해주세요",
-    opt2: "2번 선택지를 입력해주세요",
-    opt3: "3번 선택지를 입력해주세요",
+    choices: ["", "", ""],
+    opt1: "",
+    opt2: "",
+    opt3: "",
     ans: "1",
     hint: ""
   });

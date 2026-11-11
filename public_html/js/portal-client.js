@@ -5,10 +5,29 @@
   var memoryLogs = null;
   var learningRefresh = null, learningOverlay = new Map();
   var activity = null, activitySequence = 0;
+  var isRedirectingToLogin = false;
+  function handleConcurrentLogout(errorMsg) {
+    if (isRedirectingToLogin) return;
+    isRedirectingToLogin = true;
+    try { sessionStorage.removeItem('nano_auth_user'); } catch (e) {}
+    alert(errorMsg || '다른 기기에서 로그인하여 현재 접속이 종료되었습니다. 다시 로그인해 주세요.');
+    location.href = 'index.html';
+  }
+
   async function api(path, body, timeout) {
     var response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers: {'Content-Type':'application/json'}, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeout || 20000) });
     var data; try { data = await response.json(); } catch(e) { throw new Error('서버 응답을 확인하지 못했습니다.'); }
-    if (!response.ok) throw new Error(data.error || '서버 요청에 실패했습니다.');
+    if (!response.ok) {
+      if (response.status === 401 && data && (data.concurrentLoggedOut || (typeof data.error === 'string' && data.error.indexOf('다른 기기에서 로그인하여') !== -1))) {
+        handleConcurrentLogout(data.error);
+        return;
+      }
+      var err = new Error(data.error || '서버 요청에 실패했습니다.');
+      err.status = response.status;
+      err.conflict = data.conflict;
+      err.concurrentLogin = data.concurrentLogin;
+      throw err;
+    }
     return data;
   }
   function academy() { return typeof currentAcademyInfo !== 'undefined' ? currentAcademyInfo.id : (user() || {}).academyId; }
@@ -494,7 +513,13 @@
       });
       var data;
       try { data = await response.json(); } catch(e) { throw new Error('운영 서버에 연결할 수 없습니다.'); }
-      if (!response.ok) throw new Error(data.error || '서버 요청에 실패했습니다.');
+      if (!response.ok) {
+        var err = new Error(data.error || '서버 요청에 실패했습니다.');
+        err.status = response.status;
+        err.conflict = data.conflict;
+        err.concurrentLogin = data.concurrentLogin;
+        throw err;
+      }
       return data;
     } catch(e) { if (e.name === 'AbortError') throw new Error('서버 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.'); throw e; }
     finally { clearTimeout(timer); }
@@ -570,6 +595,27 @@
     return;
   }
 
+  var sessionWatcherTimer = null;
+  function startSessionWatcher() {
+    if (sessionWatcherTimer) return;
+    async function checkConcurrentSession() {
+      try {
+        var res = await fetch('/api/portal?action=session', { credentials: 'same-origin', cache: 'no-store' });
+        if (res.status === 401) {
+          var data = await res.json().catch(function() { return {}; });
+          if (data && (data.concurrentLoggedOut || (typeof data.error === 'string' && data.error.indexOf('다른 기기에서 로그인하여') !== -1))) {
+            if (sessionWatcherTimer) { clearInterval(sessionWatcherTimer); sessionWatcherTimer = null; }
+            handleConcurrentLogout(data.error);
+          }
+        }
+      } catch (e) {}
+    }
+    sessionWatcherTimer = setInterval(checkConcurrentSession, 25000);
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') checkConcurrentSession();
+    });
+  }
+
   async function verify() {
     try {
       if (remote && global.NANO_BOOTSTRAP_FAILED) throw new Error('회원 정보를 불러오지 못했습니다. 다시 로그인해 주세요.');
@@ -578,6 +624,11 @@
       var current = remote && global.NANO_SERVER_DATA ? user() : remote ? (await request('session')).user : user();
       if (!current || !checkRole(roles[page], current.role)) throw new Error('로그인 권한을 확인해 주세요.');
       sessionStorage.setItem('nano_auth_user', JSON.stringify(current));
+
+      // master 계정이 아닌 경우 중복 로그인 감시 타이머 시작
+      if (remote && current && current.role !== 'master') {
+        startSessionWatcher();
+      }
 
       // 세션 확인 즉시 화면 렌더링 활성화
       document.documentElement.style.visibility = '';

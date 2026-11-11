@@ -6073,6 +6073,72 @@ function goToGradeLibrary(grade) {
   selectGradeFilter(targetGrade);
 }
 
+// 도서의 북퀴즈 준비 상태 판정 (실제 퀴즈 등록 여부 엄격 판정)
+function isBookQuizReady(b) {
+  if (!b) return false;
+  // 1. quizSets 배열에 문항이 있는 세트가 존재하는가?
+  if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
+    var hasAnyQ = b.quizSets.some(function(s) {
+      return (Array.isArray(s.questions) && s.questions.length > 0) ||
+             (Array.isArray(s.quizzes) && s.quizzes.length > 0);
+    });
+    if (hasAnyQ) return true;
+  }
+  // 2. MIGRATED_QUIZZES 글로벌 데이터셋에 등록되어 있는가?
+  if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES) {
+    var mq = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
+    if (Array.isArray(mq) && mq.length > 0 && mq.some(function(s) { return Array.isArray(s.questions) && s.questions.length > 0; })) {
+      return true;
+    }
+  }
+  // 3. 전역 QB 딕셔너리에 실문항이 있는가? (레거시 기본 도서)
+  if (typeof QB !== 'undefined') {
+    var qbEntry = QB[b.id] || QB[b.bookNo] || (b.title ? QB[b.title] : null);
+    if (qbEntry && Array.isArray(qbEntry.qs) && qbEntry.qs.length > 0) {
+      return true;
+    }
+  }
+  // 4. 문항 수 속성 (quizCount, quizzes)이 1 이상인가?
+  var qNum = Number(b.quizCount || b.quizzes || 0);
+  if (qNum > 0) return true;
+  // 5. hasQuiz 플래그 (단, 'N'이나 false는 명시적 제외)
+  if (b.hasQuiz === true || b.hasQuiz === 'Y') return true;
+  return false;
+}
+
+// 실제 북퀴즈 문항 수 산출
+function getBookActualQuizCount(b) {
+  if (!b) return 0;
+  if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
+    for (var i = 0; i < b.quizSets.length; i++) {
+      var s = b.quizSets[i];
+      if (Array.isArray(s.questions) && s.questions.length > 0) return s.questions.length;
+      if (Array.isArray(s.quizzes) && s.quizzes.length > 0) return s.quizzes.length;
+    }
+  }
+  if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES) {
+    var mq = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
+    if (Array.isArray(mq) && mq.length > 0 && mq[0].questions) return mq[0].questions.length;
+  }
+  if (typeof QB !== 'undefined') {
+    var qbEntry = QB[b.id] || QB[b.bookNo] || (b.title ? QB[b.title] : null);
+    if (qbEntry && Array.isArray(qbEntry.qs)) return qbEntry.qs.length;
+  }
+  var qNum = Number(b.quizCount || b.quizzes || 0);
+  if (qNum > 0) return qNum;
+  if (b.hasQuiz === true || b.hasQuiz === 'Y') return 5;
+  return 0;
+}
+
+// 도서 목록용 북퀴즈 액션 버튼 HTML 렌더링 (준비중인 경우 비활성화)
+function getBookQuizActionBtnHtml(b, extraStyle) {
+  var ready = isBookQuizReady(b);
+  if (ready) {
+    return '<button type="button" class="act-btn start" onclick="event.stopPropagation();startQuiz(\'' + b.id + '\')" ' + (extraStyle ? 'style="' + extraStyle + '"' : '') + '><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>';
+  }
+  return '<button type="button" class="act-btn" disabled style="background:#f1ece4;color:#8c7e72;border:1px solid #e2dacd;cursor:not-allowed;font-size:11px;' + (extraStyle || '') + '" title="북퀴즈 준비 중"><i class="fa-regular fa-clock mr-1"></i>준비중</button>';
+}
+
 // ==============================================================
 // 신규 도서 상세 정보 화면 (Book Info Detail) 로직
 // ==============================================================
@@ -6159,12 +6225,14 @@ function openBookDetail(id, from) {
   var qBadgeEl = document.getElementById('detailQuizBadge');
   var qDescEl = document.getElementById('detailQuizDesc');
   var qBtnTextEl = document.getElementById('detailQuizActionBtnText');
-  var hasQuiz = b.hasQuiz === true || b.hasQuiz === 'Y' || Number(b.quizCount) > 0 || (Array.isArray(b.quizSets) && b.quizSets.length > 0) || Boolean(b.title);
-  var qCnt = Number(b.quizCount) || 5;
+  var qActionBtn = document.getElementById('detailQuizActionBtn');
+  var qCardEl = document.querySelector('.detail-quiz-banner-card');
+  var hasQuiz = isBookQuizReady(b);
+  var qCnt = getBookActualQuizCount(b);
 
   if (qBadgeEl) {
     if (hasQuiz) {
-      qBadgeEl.innerHTML = '<i class="fa-solid fa-bolt" style="font-size:10px;"></i> ' + qCnt + '문항';
+      qBadgeEl.innerHTML = '<i class="fa-solid fa-bolt" style="font-size:10px;"></i> ' + (qCnt > 0 ? qCnt + '문항' : '퀴즈 응시');
       qBadgeEl.style.background = '';
       qBadgeEl.style.color = '';
     } else {
@@ -6182,6 +6250,31 @@ function openBookDetail(id, from) {
   }
   if (qBtnTextEl) {
     qBtnTextEl.innerText = hasQuiz ? '북퀴즈 도전하기' : '퀴즈 준비 중';
+  }
+  if (qActionBtn) {
+    qActionBtn.disabled = !hasQuiz;
+    if (hasQuiz) {
+      qActionBtn.style.background = '';
+      qActionBtn.style.color = '';
+      qActionBtn.style.cursor = 'pointer';
+      qActionBtn.style.opacity = '1';
+    } else {
+      qActionBtn.style.background = '#cbd5e1';
+      qActionBtn.style.color = '#64748b';
+      qActionBtn.style.cursor = 'not-allowed';
+      qActionBtn.style.opacity = '0.85';
+    }
+  }
+  if (qCardEl) {
+    if (hasQuiz) {
+      qCardEl.style.cursor = 'pointer';
+      qCardEl.style.opacity = '1';
+      qCardEl.setAttribute('title', '북퀴즈 도전하기');
+    } else {
+      qCardEl.style.cursor = 'not-allowed';
+      qCardEl.style.opacity = '0.78';
+      qCardEl.setAttribute('title', '현재 북퀴즈 문항 준비 중인 도서입니다.');
+    }
   }
 
   // 4-2. 완독 인증 기록이 있는 경우 [내 학습리포트 보기] 배너 노출
@@ -6214,8 +6307,7 @@ function openBookDetail(id, from) {
   // 5. 하단 퀴즈 버튼 텍스트 업데이트
   var quizBtnText = document.getElementById('detailQuizBtnText');
   if(quizBtnText) {
-    // 아이콘 중복 제거: HTML 버튼에 이미 스타일 있으므로 텍스트만 표시
-    quizBtnText.innerHTML = '📖 북퀴즈 풀기 ('+b.title+')';
+    quizBtnText.innerHTML = hasQuiz ? ('📖 북퀴즈 풀기 ('+b.title+')') : ('⏳ 북퀴즈 준비 중 ('+b.title+')');
   }
 
   switchPanel('book-detail');
@@ -6230,6 +6322,11 @@ function closeBookDetail() {
 // 상세 화면 하단 고정 버튼에서 퀴즈 시작
 function startQuizFromDetail() {
   if(!currentDetailBookId) return;
+  var b = libData.find(function(x){ return x.id === currentDetailBookId; });
+  if (b && !isBookQuizReady(b)) {
+    toast('해당 도서는 현재 북퀴즈 문항을 준비 중입니다.');
+    return;
+  }
   startQuiz(currentDetailBookId);
 }
 
@@ -6354,15 +6451,18 @@ function switchLibSubTab(tab) {
 // 도서관 탭별 목록 렌더링 헬퍼 (카드 HTML 생성기)
 // ==============================================================
 function getAssignedLibRowHtml(b) {
+  var qReady = isBookQuizReady(b);
+  var badgeText = qReady ? '배정 도서 · 북퀴즈 응시 가능' : '배정 도서 · 북퀴즈 준비 중';
+  var badgeClass = qReady ? 'dbadge urgent' : 'dbadge';
   return '<div class="book-row priority" onclick="openBookDetail(\'' + b.id + '\', \'books\')">'
     + '<span class="pflag">📌 배정</span>'
     + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
     + '<div class="binfo">'
     +   '<div class="btitle">' + b.title + '</div>'
     +   '<div class="bauthor">' + b.author + ' · ' + b.pub + '</div>'
-    +   '<span class="dbadge urgent">배정 도서 · 북퀴즈 응시 가능</span>'
+    +   '<span class="' + badgeClass + '">' + badgeText + '</span>'
     + '</div>'
-    + '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\'' + b.id + '\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+    + getBookQuizActionBtnHtml(b)
     + '</div>';
 }
 
@@ -6378,7 +6478,7 @@ function getRecLibRowHtml(b) {
     +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">' + b.cat + '</span>'
     + '</div>'
     + '<div style="display:flex; align-items:center;">'
-    +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\'' + b.id + '\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+    +   getBookQuizActionBtnHtml(b)
     + '</div>'
     + '</div>';
 }
@@ -6407,7 +6507,7 @@ function getPopularLibRowHtml(b, rank) {
     +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">' + b.cat + '</span>'
     + '</div>'
     + '<div style="display:flex; align-items:center;">'
-    +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\'' + b.id + '\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+    +   getBookQuizActionBtnHtml(b)
     + '</div>'
     + '</div>';
 }
@@ -6423,9 +6523,7 @@ function getInterestLibRowHtml(b) {
     +   '<span class="nbadge">' + b.grade + ' 권장</span>'
     +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">' + b.cat + '</span>'
     + '</div>'
-    + '<button class="act-btn start" onclick="event.stopPropagation(); startQuiz(\'' + b.id + '\');" style="font-size:11.5px; padding:6px 12px;">'
-    +   '<i class="fa-solid fa-pen-nib mr-1"></i>퀴즈'
-    + '</button>'
+    + getBookQuizActionBtnHtml(b)
     + '</div>';
 }
 
@@ -6441,7 +6539,7 @@ function getAllLibRowHtml(b) {
     +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">' + b.cat + '</span>'
     + '</div>'
     + '<div style="display:flex; align-items:center;">'
-    +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\'' + b.id + '\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+    +   getBookQuizActionBtnHtml(b)
     + '</div>'
     + '</div>';
 }
@@ -7430,7 +7528,7 @@ function renderThemeBookRow(b) {
     +   '<span class="nbadge" style="background:#f4f0eb;color:var(--wood-mid);">'+b.cat+'</span>'
     + '</div>'
     + '<div style="display:flex; align-items:center;">'
-    +   '<button class="act-btn start" onclick="event.stopPropagation();startQuiz(\''+b.id+'\')"><i class="fa-solid fa-pen-nib mr-1"></i>퀴즈</button>'
+    +   getBookQuizActionBtnHtml(b)
     + '</div>'
     + '</div>';
 }
@@ -8244,33 +8342,37 @@ async function startQuiz(id) {
     }
   }
   if (quizSets.length === 0) {
-    // 기본 QB 세트 생성
-    var defaultQB = (typeof QB !== 'undefined') ? (QB[id] || (activeBook ? QB[activeBook.title] : null)) : null;
-    quizSets.push({
-      id: 'qs_default_' + id,
-      authorType: 'HQ',
-      authorName: '본사 공식',
-      academyName: '나노 본사',
-      createdAt: '2025-01-01',
-      questions: defaultQB ? defaultQB.qs.map(function(q, qIdx) {
-        return {
-          num: qIdx + 1,
-          question: q.q,
-          type: 'CHOICE',
-          options: q.os,
-          opt1: q.os[0] || '',
-          opt2: q.os[1] || '',
-          opt3: q.os[2] || '',
-          opt4: q.os[3] || '',
-          opt5: q.os[4] || '',
-          ans: String(q.a + 1)
-        };
-      }) : [
-        { question: `『${activeBook.title}』을 읽고 가장 인상 깊었던 핵심 주제로 알맞은 것은?`, type: 'CHOICE', opt1: '도전과 용기의 가치', opt2: '약자에 대한 공감과 배려', opt3: '자아를 찾아가는 용기', opt4: '위 세 가지 모두 정답', ans: '4' },
-        { question: '주인공의 내적 성장 과정에서 가장 큰 전환점이 된 사건은?', type: 'CHOICE', opt1: '친구와의 진심 어린 대화', opt2: '새로운 환경으로의 용기 있는 도전', opt3: '어려움을 극복한 협동', opt4: '위 모두 복합적으로 작용함', ans: '4' },
-        { question: '작가가 이 도서를 통해 독자에게 전하고자 한 중심 메시지는?', type: 'CHOICE', opt1: '서로를 이해하고 연대하는 삶', opt2: '혼자만의 승리가 최고라는 생각', opt3: '물질적 성공의 중요성', opt4: '경쟁에서 이기는 법', ans: '1' }
-      ]
-    });
+    // 등록된 QB 기본 세트가 존재하는 경우에만 주입 (실문항 매핑)
+    var defaultQB = (typeof QB !== 'undefined') ? (QB[id] || (activeBook ? (QB[activeBook.title] || QB[activeBook.id]) : null)) : null;
+    if (defaultQB && Array.isArray(defaultQB.qs) && defaultQB.qs.length > 0) {
+      quizSets.push({
+        id: 'qs_default_' + id,
+        authorType: 'HQ',
+        authorName: '본사 공식',
+        academyName: '나노 본사',
+        createdAt: '2025-01-01',
+        questions: defaultQB.qs.map(function(q, qIdx) {
+          return {
+            num: qIdx + 1,
+            question: q.q,
+            type: 'CHOICE',
+            options: q.os,
+            opt1: q.os[0] || '',
+            opt2: q.os[1] || '',
+            opt3: q.os[2] || '',
+            opt4: q.os[3] || '',
+            opt5: q.os[4] || '',
+            ans: String((q.a !== undefined ? q.a : 0) + 1)
+          };
+        })
+      });
+    }
+  }
+
+  // 북퀴즈 문항이 등록되지 않은 도서는 더미 퀴즈를 생성하지 않고 준비 중 안내 후 차단
+  if (quizSets.length === 0) {
+    toast('해당 도서는 현재 북퀴즈 문항을 준비 중입니다.');
+    return;
   }
 
   // 예시: 다중 퀴즈 세트 체험을 위해 도서 1001번에 학원 출제 세트가 없으면 샘플 보강
@@ -8685,19 +8787,30 @@ function renderQ() {
     if (mediaBox) mediaBox.style.display = 'none';
     qTextEl.innerHTML = `<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-2" style="font-size:11.5px;"><i class="fa-solid fa-lightbulb mr-1"></i>나노 시트 생각 담기 (마지막 주관식 과제)</span><div style="margin-top:6px;font-size:14.5px;line-height:1.6;">${escapeStudentQuizText(q.q)}</div>`;
 
+    var curLen = (currentStudentThoughtAnswer || '').trim().length;
+    var isEnough = curLen >= 10;
+    var countColor = isEnough ? '#059669' : '#e11d48';
+    var countMsg = isEnough
+      ? `<i class="fa-solid fa-circle-check mr-1"></i>작성 완료 (${curLen}자)`
+      : `<i class="fa-solid fa-circle-exclamation mr-1"></i>최소 10자 이상 작성해 주세요 (현재 <strong>${curLen}</strong>/10자)`;
+
     c.innerHTML = `
       <div style="background:#fff;border:1.5px solid #00a896;border-radius:14px;padding:14px;box-shadow:0 3px 12px rgba(0,168,150,0.08);">
-        <label for="qThoughtTextarea" style="font-size:14px;font-weight:700;color:#0f766e;margin-bottom:6px;display:block;">
-          <i class="fa-solid fa-pen mr-1"></i>나의 생각 타이핑하기 <span class="text-danger">*</span>
-        </label>
-        <textarea id="qThoughtTextarea" class="form-control" rows="4" placeholder="책을 읽고 떠오른 나만의 생각을 자유롭게 작성해 보세요." oninput="onThoughtTextareaInput(this.value)" style="width:100%;border-radius:10px;border:1px solid #cbd5e1;padding:10px;font-size:16px;line-height:1.6;"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <label for="qThoughtTextarea" style="font-size:14px;font-weight:700;color:#0f766e;margin-bottom:0;display:block;">
+            <i class="fa-solid fa-pen mr-1"></i>나의 생각 타이핑하기 <span class="text-danger">*</span>
+          </label>
+          <span id="thoughtCharCountBadge" style="font-size:12px;font-weight:600;color:${countColor};">${countMsg}</span>
+        </div>
+        <textarea id="qThoughtTextarea" class="form-control" rows="4" placeholder="책을 읽고 떠오른 나만의 생각을 최소 10자 이상 자유롭게 작성해 보세요." oninput="onThoughtTextareaInput(this.value)" style="width:100%;border-radius:10px;border:1px solid #cbd5e1;padding:10px;font-size:16px;line-height:1.6;"></textarea>
       </div>
     `;
     document.getElementById('qThoughtTextarea').value = currentStudentThoughtAnswer;
 
     nx.style.display = 'flex';
     nx.innerHTML = '<i class="fa-solid fa-flag-checkered mr-1"></i>답안 저장 및 채점하기';
-    nx.disabled = !currentStudentThoughtAnswer || currentStudentThoughtAnswer.trim().length === 0;
+    nx.disabled = !isEnough;
+    nx.title = isEnough ? '답안 저장 및 채점하기' : '생각담기 글을 최소 10자 이상 작성해 주세요.';
     return;
   }
 
@@ -8760,9 +8873,23 @@ function onThoughtTextareaInput(val) {
   if (window.studentSubmissionPending) return;
   currentStudentThoughtAnswer = val;
   saveStudentQuizDraft();
+
+  var trimmed = (val || '').trim();
+  var len = trimmed.length;
+  var isEnough = len >= 10;
+
+  var badge = document.getElementById('thoughtCharCountBadge');
+  if (badge) {
+    badge.style.color = isEnough ? '#059669' : '#e11d48';
+    badge.innerHTML = isEnough
+      ? `<i class="fa-solid fa-circle-check mr-1"></i>작성 완료 (${len}자)`
+      : `<i class="fa-solid fa-circle-exclamation mr-1"></i>최소 10자 이상 작성해 주세요 (현재 <strong>${len}</strong>/10자)`;
+  }
+
   var nx = document.getElementById('qNext');
   if (nx) {
-    nx.disabled = !val || val.trim().length === 0;
+    nx.disabled = !isEnough;
+    nx.title = isEnough ? '답안 저장 및 채점하기' : '생각담기 글을 최소 10자 이상 작성해 주세요.';
   }
 }
 
@@ -8792,7 +8919,7 @@ function selectAns(sel) {
 function goNext() {
   if (!curData || studentQuizSubmitted) return;
   var question = curData.qs[curQ];
-  if (question.isThoughtQuestion ? !currentStudentThoughtAnswer.trim() : studentSelectedAnsMap[curQ] === undefined) return;
+  if (question.isThoughtQuestion ? (currentStudentThoughtAnswer || '').trim().length < 10 : studentSelectedAnsMap[curQ] === undefined) return;
   if (curQ >= curData.qs.length - 1) {
     showResult();
   } else {
@@ -8970,12 +9097,13 @@ function refreshQuizResultArtwork() {
 async function showResult() {
   if (!curData || studentQuizSubmitted) return;
   var firstMissing = curData.qs.findIndex(function(q, idx) {
-    return q.isThoughtQuestion ? !currentStudentThoughtAnswer.trim() : studentSelectedAnsMap[idx] === undefined;
+    return q.isThoughtQuestion ? (currentStudentThoughtAnswer || '').trim().length < 10 : studentSelectedAnsMap[idx] === undefined;
   });
   if (firstMissing !== -1) {
     curQ = firstMissing;
     renderQ();
-    toast('답하지 않은 문제를 먼저 확인해 주세요.');
+    var missingQ = curData.qs[firstMissing];
+    toast(missingQ.isThoughtQuestion ? '생각담기 글을 최소 10자 이상 작성해 주세요.' : '답하지 않은 문제를 먼저 확인해 주세요.');
     return;
   }
   var gradedQuestions = curData.qs.filter(function(q) { return !q.isThoughtQuestion; });
@@ -9766,9 +9894,7 @@ function renderWishList() {
       +   '</div>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation();">'
-      +   '<button type="button" class="btn btn-xs" onclick="startQuiz(\'' + b.id + '\')" style="background:var(--leaf-soft);color:var(--leaf);border:none;border-radius:8px;font-weight:700;padding:6px 10px;font-size:11.5px;" title="북퀴즈 풀기">'
-      +     '<i class="fa-solid fa-pen-nib mr-1"></i>퀴즈'
-      +   '</button>'
+      +   getBookQuizActionBtnHtml(b, 'padding:5px 9px;font-size:11px;')
       +   '<button type="button" class="btn-hero-wish active" onclick="toggleWish(\'' + b.id + '\', event)" title="찜 해제" style="width:32px;height:32px;font-size:14px;">'
       +     '<i class="fa-solid fa-heart"></i>'
       +   '</button>'

@@ -12,6 +12,19 @@ export async function authenticate(req: any) {
   const session = readSession(token);
   const user = session && await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true, classGroup: true } });
   need(user && session && user.status === 'APPROVED' && user.academy.status === 'ACTIVE' && !user.academy.deletedAt && session.version === passwordVersion(user.password || ''), '다시 로그인해 주세요.', 401);
+  if (user && user.role !== 'MASTER' && session && session.sid && prisma.portalSetting?.findUnique) {
+    try {
+      const activeSetting = await prisma.portalSetting.findUnique({ where: { key: 'session:' + user.id } });
+      if (activeSetting && activeSetting.value) {
+        const active = activeSetting.value as any;
+        if (active.sessionId && active.sessionId !== session.sid) {
+          throw new PortalError(401, '다른 기기에서 로그인하여 현재 접속이 종료되었습니다.');
+        }
+      }
+    } catch (e) {
+      if (e instanceof PortalError) throw e;
+    }
+  }
   return user;
 }
 export function staff(user: any) { need(['MASTER','DIRECTOR','TEACHER'].includes(user.role), '관리자 권한이 필요합니다.', 403); }

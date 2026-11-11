@@ -18,11 +18,13 @@ function getSecret() {
   if (secret.length < 32) throw new Error('PORTAL_AUTH_SECRET must contain at least 32 characters');
   return secret;
 }
-export function signSession(memberId: string, hash: string, now = Date.now()) {
-  const payload = Buffer.from(JSON.stringify({ sub: memberId, version: passwordVersion(hash), exp: now + 8 * 3600000 })).toString('base64url');
+export function signSession(memberId: string, hash: string, now = Date.now(), sid = '') {
+  const data: any = { sub: memberId, version: passwordVersion(hash), exp: now + 8 * 3600000 };
+  if (sid) data.sid = sid;
+  const payload = Buffer.from(JSON.stringify(data)).toString('base64url');
   return payload + '.' + createHmac('sha256', getSecret()).update(payload).digest('base64url');
 }
-export function readSession(token: string, now = Date.now()): { sub: string; version: string; exp: number } | null {
+export function readSession(token: string, now = Date.now()): { sub: string; version: string; exp: number; sid?: string } | null {
   try {
     const [payload, signature, extra] = token.split('.');
     if (extra || !payload || !signature) return null;

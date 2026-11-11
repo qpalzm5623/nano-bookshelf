@@ -4357,14 +4357,14 @@ function addNewAcadQuizSet() {
     createdAt: new Date().toISOString().slice(0, 10),
     questions: [
       {
-        question: '문제를 입력해주세요',
+        question: '',
         type: 'CHOICE',
         optionCount: 3,
-        opt1: '1번 선택지를 입력해주세요',
-        opt2: '2번 선택지를 입력해주세요',
-        opt3: '3번 선택지를 입력해주세요',
-        opt4: '4번 선택지를 입력해주세요',
-        opt5: '5번 선택지를 입력해주세요',
+        opt1: '',
+        opt2: '',
+        opt3: '',
+        opt4: '',
+        opt5: '',
         ans: '1',
         hint: ''
       }
@@ -4780,8 +4780,9 @@ function loadAcadQuizForm() {
   }
   onAcadQuizTypeChanged(qType);
 
-  // 질문
-  if (document.getElementById('abQuizQuestion')) document.getElementById('abQuizQuestion').value = q.question || '';
+  // 질문 (더미 안내 문구는 실제 텍스트가 아닌 placeholder로 디스플레이되도록 처리)
+  var cleanQ = (q.question === '문제를 입력해주세요' || q.question === '문제를 입력해 주세요') ? '' : (q.question || '');
+  if (document.getElementById('abQuizQuestion')) document.getElementById('abQuizQuestion').value = cleanQ;
 
   // 보기 개수 설정: 디폴트 3개 (3지선다 기본)
   var optCount = q.optionCount || (q.opt5 ? 5 : (q.opt4 ? 4 : 3));
@@ -4789,12 +4790,16 @@ function loadAcadQuizForm() {
   if (selOptCount) selOptCount.value = String(optCount);
   changeAcadQuizOptionCount(optCount);
 
-  // 보기 1~5 바인딩
-  if (document.getElementById('abOpt1')) document.getElementById('abOpt1').value = q.opt1 || '';
-  if (document.getElementById('abOpt2')) document.getElementById('abOpt2').value = q.opt2 || '';
-  if (document.getElementById('abOpt3')) document.getElementById('abOpt3').value = q.opt3 || '';
-  if (document.getElementById('abOpt4')) document.getElementById('abOpt4').value = q.opt4 || '';
-  if (document.getElementById('abOpt5')) document.getElementById('abOpt5').value = q.opt5 || '';
+  // 보기 1~5 바인딩 (더미 텍스트는 빈 값으로 바인딩하여 placeholder 노출)
+  function cleanOptText(opt) {
+    if (!opt || typeof opt !== 'string') return '';
+    return /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(opt.trim()) ? '' : opt;
+  }
+  if (document.getElementById('abOpt1')) document.getElementById('abOpt1').value = cleanOptText(q.opt1);
+  if (document.getElementById('abOpt2')) document.getElementById('abOpt2').value = cleanOptText(q.opt2);
+  if (document.getElementById('abOpt3')) document.getElementById('abOpt3').value = cleanOptText(q.opt3);
+  if (document.getElementById('abOpt4')) document.getElementById('abOpt4').value = cleanOptText(q.opt4);
+  if (document.getElementById('abOpt5')) document.getElementById('abOpt5').value = cleanOptText(q.opt5);
 
   // 주관식 답안
   if (document.getElementById('abSubjectiveAnswer')) {
@@ -4908,18 +4913,18 @@ function addAcadQuizItem() {
   saveCurrentAcadQuizInput();
   var nextNum = editingAcadQuizzes.length + 1;
   editingAcadQuizzes.push({
-    question: "문제를 입력해주세요",
+    question: "",
     type: 'CHOICE',
     optionCount: 3,
     mediaType: "none",
     mediaUrl: "",
     mediaCaption: "",
     mediaName: "",
-    opt1: "1번 선택지를 입력해주세요",
-    opt2: "2번 선택지를 입력해주세요",
-    opt3: "3번 선택지를 입력해주세요",
-    opt4: "4번 선택지를 입력해주세요",
-    opt5: "5번 선택지를 입력해주세요",
+    opt1: "",
+    opt2: "",
+    opt3: "",
+    opt4: "",
+    opt5: "",
     ans: "1",
     hint: ""
   });
@@ -4951,9 +4956,20 @@ function deleteAcadQuizItem() {
   showAcademyToast('문항이 삭제되었습니다.');
 }
 
+// 북퀴즈 입력창 기본 더미 텍스트 자동 클리어 헬퍼
+function clearDefaultAcadQuizPlaceholder(el) {
+  if (!el || typeof el.value !== 'string') return;
+  var trimmed = el.value.trim();
+  if (trimmed === '문제를 입력해주세요' || trimmed === '문제를 입력해 주세요' ||
+      /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(trimmed)) {
+    el.value = '';
+  }
+}
+
 // 특수기호 입력
 function setCurAcadQuizInput(el) {
   curActiveAcadQuizInput = el;
+  clearDefaultAcadQuizPlaceholder(el);
 }
 
 function insertAcadQuizSym(sym) {

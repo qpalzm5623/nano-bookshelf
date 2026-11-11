@@ -1937,8 +1937,16 @@
 
               <!-- 줄거리 (도서 소개 및 읽기 포인트) -->
               <div class="form-group">
-                <label class="font-weight-bold" style="font-size: 13px;">줄거리 (도서 소개 및 읽기 포인트)</label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="font-weight-bold mb-0" style="font-size: 13px;">줄거리 (도서 소개 및 읽기 포인트)</label>
+                  <button type="button" class="btn btn-xs btn-outline-info font-weight-bold" id="btnAiSummarizeSynopsis" onclick="triggerAiSynopsisSummary()" style="padding: 2px 8px; font-size: 11.5px; border-radius: 5px;">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI 3문장 요약
+                  </button>
+                </div>
                 <textarea id="mbAddSynopsis" class="form-control form-control-beige" rows="3" placeholder="도서의 상세 줄거리 및 핵심 독서 포인트를 입력하세요. (미입력 시 기본 안내 문구가 자동 표시됩니다.)"></textarea>
+                <small class="text-muted d-block mt-1" style="font-size: 11px;">
+                  <i class="fa-solid fa-sparkles text-info mr-1"></i>ISBN 조회 시 출판사 정보가 Gemini AI로 정제되어 3문장 내로 자동 요약됩니다.
+                </small>
               </div>
 
               <!-- 생각 꺼내기 (직접 타이핑) -->
@@ -2017,14 +2025,19 @@
 
               <!-- 나노 시트 / 지도안 첨부 -->
               <div class="w-100 text-left mt-3 pt-3 border-top">
-                <label class="font-weight-bold mb-1" style="font-size: 12px;">
-                  <i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트 / 지도안 파일
-                </label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="font-weight-bold mb-0" style="font-size: 12px;">
+                    <i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트 / 지도안 파일
+                  </label>
+                  <button type="button" class="btn btn-xs btn-outline-danger font-weight-bold" id="btnDeleteMasterBookSheet" onclick="handleRemoveMasterBookSheet()" style="display: none; padding: 2px 7px; font-size: 11px; border-radius: 4px;">
+                    <i class="fa-solid fa-trash-can mr-1"></i>파일 삭제
+                  </button>
+                </div>
                 <div class="custom-file mb-1">
                   <input type="file" class="custom-file-input" id="mbAddSheetFileInput" accept=".pdf,.hwp,.docx" onchange="handleAddSheetFileUpload(event)">
                   <label class="custom-file-label" for="mbAddSheetFileInput" id="mbAddSheetFileLabel" style="font-size: 11.5px;">파일 선택 (.pdf)</label>
                 </div>
-                <small class="text-muted d-block" id="mbAddSheetFileName">나노_독서학습시트.pdf</small>
+                <small class="text-muted d-block text-break" id="mbAddSheetFileName">나노_독서학습시트.pdf</small>
               </div>
 
               <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px;">

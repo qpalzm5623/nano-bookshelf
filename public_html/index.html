@@ -1092,8 +1092,27 @@
           sessionStorage.setItem('nano_auth_user', JSON.stringify(data.user));
           if (rememberMe) localStorage.setItem('nano_saved_id', inputId); else localStorage.removeItem('nano_saved_id');
           location.href = data.user.role === 'master' ? 'master_preview.html' : data.user.role === 'student' ? 'student_preview.html' : 'admin_preview.html';
-        } catch(e) { errorMessage.textContent = e.message; errorAlert.style.display = 'block'; }
-        finally { btnLogin.disabled = false; }
+        } catch(e) {
+          if (e && (e.status === 409 || e.concurrentLogin || (e.message && e.message.indexOf('현재 다른 기기에서 사용 중입니다') !== -1))) {
+            btnLogin.disabled = false;
+            if (confirm('현재 다른 기기에서 사용 중입니다. 기존 접속을 종료하고 로그인하시겠습니까?')) {
+              try {
+                btnLogin.disabled = true;
+                const forceData = await NanoPortal.request('login', { username: inputId, password: inputPw, confirmConcurrent: true });
+                sessionStorage.setItem('nano_auth_user', JSON.stringify(forceData.user));
+                if (rememberMe) localStorage.setItem('nano_saved_id', inputId); else localStorage.removeItem('nano_saved_id');
+                location.href = forceData.user.role === 'master' ? 'master_preview.html' : forceData.user.role === 'student' ? 'student_preview.html' : 'admin_preview.html';
+                return;
+              } catch(forceErr) {
+                showError(forceErr.message);
+              } finally {
+                btnLogin.disabled = false;
+              }
+            }
+            return;
+          }
+          showError(e.message);
+        } finally { btnLogin.disabled = false; }
         return;
       }
       // 계정 검증

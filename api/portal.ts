@@ -72,17 +72,75 @@ export default async function handler(req: any, res: any) {
       if (!allowLogin('ip:' + ip, 200) || !allowLogin(ip + ':' + body.username.trim())) return res.status(429).json({ error: '로그인 시도가 많습니다. 15분 후 다시 시도해 주세요.' });
       const member = await prisma.member.findUnique({ where: { username: body.username.trim() }, include: { academy: true, classGroup: true } });
       if (!allowed(member) || !verifyPassword(body.password, member!.password || '')) return res.status(401).json({ error: '아이디·비밀번호 또는 계정 승인 상태를 확인해 주세요.' });
+
+      // master 계정 제외: 학원/학생 계정 중복 로그인 감지
+      if (member!.role !== 'MASTER' && prisma.portalSetting?.findUnique) {
+        try {
+          const setting = await prisma.portalSetting.findUnique({ where: { key: 'session:' + member!.id } });
+          if (setting && setting.value) {
+            const val = setting.value as any;
+            if (val.sessionId && val.expiresAt && val.expiresAt > Date.now()) {
+              if (body.confirmConcurrent !== true) {
+                return res.status(409).json({
+                  conflict: true,
+                  concurrentLogin: true,
+                  error: '현재 다른 기기에서 사용 중입니다. 기존 접속을 종료하고 로그인하시겠습니까?'
+                });
+              }
+            }
+          }
+        } catch {}
+      }
+
+      const newSid = randomUUID();
+      const expiresAt = Date.now() + 8 * 3600000;
+      if (member!.role !== 'MASTER' && prisma.portalSetting?.upsert) {
+        try {
+          await prisma.portalSetting.upsert({
+            where: { key: 'session:' + member!.id },
+            create: {
+              key: 'session:' + member!.id,
+              scope: 'member_session',
+              value: { sessionId: newSid, loginAt: new Date().toISOString(), expiresAt, ip }
+            },
+            update: {
+              value: { sessionId: newSid, loginAt: new Date().toISOString(), expiresAt, ip }
+            }
+          });
+        } catch (e) {
+          console.warn('활성 세션 저장 실패:', e);
+        }
+      }
+
       await prisma.member.update({ where: { id: member!.id }, data: { lastLoginAt: new Date() } });
-      res.setHeader('Set-Cookie', cookie(signSession(member!.id, member!.password!)));
+      res.setHeader('Set-Cookie', cookie(signSession(member!.id, member!.password!, Date.now(), newSid)));
       return res.status(200).json({ user: publicUser(member) });
     }
     if (action === 'logout' && req.method === 'POST') {
+      const token = String(req.headers.cookie || '').split(';').map((v: string) => v.trim()).find((v: string) => v.startsWith(cookieName + '='))?.slice(cookieName.length + 1) || '';
+      const session = readSession(token);
+      if (session?.sub && prisma.portalSetting?.deleteMany) {
+        try { await prisma.portalSetting.deleteMany({ where: { key: 'session:' + session.sub } }); } catch {}
+      }
       res.setHeader('Set-Cookie', cookie('', 0)); return res.status(200).json({ ok: true });
     }
     const token = String(req.headers.cookie || '').split(';').map((v: string) => v.trim()).find((v: string) => v.startsWith(cookieName + '='))?.slice(cookieName.length + 1) || '';
     const session = readSession(token);
     const member = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true, classGroup: true } }) : null;
     if (!allowed(member) || !session || session.version !== passwordVersion(member!.password || '')) return res.status(401).json({ error: '로그인이 만료되었습니다. 다시 로그인해 주세요.' });
+
+    // master 계정 제외: 다른 기기 로그인으로 이전 세션이 무효화된 경우 차단
+    if (member!.role !== 'MASTER' && session.sid && prisma.portalSetting?.findUnique) {
+      try {
+        const activeSetting = await prisma.portalSetting.findUnique({ where: { key: 'session:' + member!.id } });
+        if (activeSetting && activeSetting.value) {
+          const active = activeSetting.value as any;
+          if (active.sessionId && active.sessionId !== session.sid) {
+            return res.status(401).json({ error: '다른 기기에서 로그인하여 현재 접속이 종료되었습니다.', concurrentLoggedOut: true });
+          }
+        }
+      } catch (e) {}
+    }
     const user = member!;
     if (action === 'session' && req.method === 'GET') return res.status(200).json({ user: publicUser(user) });
     if (action === 'password' && req.method === 'POST') {
