@@ -33,3 +33,4 @@ test('billing-ui.js에서 잔여 캐시와 연동 상태가 디자인 시스템 
   assert.ok(js.includes("numUnit(prefix+'Cash', money(s.balance), '원')"), 'Should render cash with numUnit');
   assert.ok(js.includes("badge-soft badge-soft-success"), 'Should render connection status with badge-soft-success');
 });
+
