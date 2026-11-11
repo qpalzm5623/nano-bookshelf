@@ -1220,44 +1220,75 @@ var currentWorksheetReviewRevision = '';
 var worksheetCorrectionSaving = false;
 var worksheetAnalysisJobs = new Set();
 var worksheetEditableFields = [
-  ['summary', '한 줄 관찰', 2],
-  ['drawingObservation', '그림 표현 관찰', 3],
-  ['languageHandwritingNote', '글과 표현 방식 관찰', 3],
-  ['nextStep', '다음 성장 방향', 4],
-  ['parentGuide', '가정 대화 팁', 4],
-  ['teacherCommentDraft', '지도교사 종합 첨삭 코멘트', 4]
+  ['summary', '이번 활동에서 돋보인 점 (한 줄 관찰)', 2],
+  ['nextStep', '다음 성장을 위한 발걸음 (이렇게 해보세요)', 3],
+  ['parentGuide', '집에서 함께 나눌 이야기 (가정 대화 팁)', 2],
+  ['drawingObservation', '그림에 담긴 생각 (선택)', 2],
+  ['languageHandwritingNote', '글과 표현 방식 관찰 (선택)', 2]
 ];
 
 function worksheetEditorField(id, label, value, rows) {
-  return '<div class="form-group mb-3"><label class="font-weight-bold" for="' + id + '" style="font-size:13px;">' + escapePortfolioText(label) + '</label>' +
-    '<textarea id="' + id + '" class="form-control form-control-beige" rows="' + rows + '" maxlength="5000" style="font-size:13px;line-height:1.7;resize:vertical;">' + escapePortfolioText(value || '') + '</textarea></div>';
+  return '<div class="form-group mb-2.5"><label class="font-weight-bold text-dark mb-1" for="' + id + '" style="font-size:12px;">' + escapePortfolioText(label) + '</label>' +
+    '<textarea id="' + id + '" class="form-control form-control-beige" rows="' + rows + '" maxlength="5000" style="font-size:12.5px;line-height:1.65;resize:vertical;border-radius:8px;">' + escapePortfolioText(value || '') + '</textarea></div>';
 }
 
 function renderWorksheetCorrectionEditor() {
   var result = currentWorksheetAiResult || {};
-  var html = worksheetEditorField('worksheetEdit-summary', '한 줄 관찰', result.summary, 2);
-  var quotes = Array.isArray(result.actualQuotes) ? result.actualQuotes : [];
-  html += quotes.map(function(q, i) {
-    return '<fieldset class="border rounded p-3 mb-3"><legend class="w-auto px-2 font-weight-bold" style="font-size:13px;">표현 관찰 ' + (i + 1) + '</legend>' +
-      worksheetEditorField('worksheetQuote-' + i + '-quote', '아이의 표현 · 인용문', q.quote, 2) +
-      worksheetEditorField('worksheetQuote-' + i + '-criteria', '관찰 영역', q.criteria, 1) +
-      worksheetEditorField('worksheetQuote-' + i + '-comment', '관찰 내용', q.comment, 3) + '</fieldset>';
-  }).join('');
-  worksheetEditableFields.slice(1).forEach(function(field) {
-    var growth = field[0] === 'nextStep' || field[0] === 'parentGuide';
-    var isTeacherDraft = field[0] === 'teacherCommentDraft';
-    var boxStyle = growth
-      ? ' style="background:#f0f8f6;border:1px solid #bddbd4;"'
-      : (isTeacherDraft ? ' style="background:#fffdf7;border:1px solid #e6d7be;"' : '');
-    var guideText = field[0] === 'nextStep'
-      ? '다음 독서에서 시도할 작은 활동과 구체적인 실천 방법을 안내해 주세요.'
-      : (field[0] === 'parentGuide'
-        ? '아이의 표현을 바탕으로 칭찬 한마디와 함께 나눌 열린 질문을 적어 주세요.'
-        : (isTeacherDraft ? '학습리포트 및 학부모 알림톡에 수록되는 지도교사 종합 첨삭 코멘트입니다.' : ''));
-    html += '<div class="' + ((growth || isTeacherDraft) ? 'p-3 mb-3 rounded' : '') + '"' + boxStyle + '>' +
-      (guideText ? '<p class="text-muted mb-2" style="font-size:12px;">' + guideText + '</p>' : '') +
-      worksheetEditorField('worksheetEdit-' + field[0], field[1], result[field[0]], field[2]) + '</div>';
+  var quotes = Array.isArray(result.actualQuotes) && result.actualQuotes.length > 0
+    ? result.actualQuotes
+    : [{ quote: '', criteria: '경험 연결 및 자기표현', comment: '' }];
+
+  var html = '';
+
+  // [카드 1] 이번 활동에서 돋보인 점 (에메랄드/그린 테마)
+  html += '<div class="p-3 mb-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 10px;">' +
+    '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #d1fae5 !important;">' +
+    '<i class="fa-solid fa-lightbulb text-warning mr-1.5" style="font-size: 14px;"></i>' +
+    '<strong style="font-size: 13px; color: #065f46;">1. 이번 활동에서 돋보인 점</strong>' +
+    '<small class="text-muted ml-2 font-weight-normal">(리포트 메인 강점 요약)</small>' +
+    '</div>' +
+    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약', result.summary, 2) +
+    '</div>';
+
+  // [카드 2] 나노시트 생각담기 관찰 피드백 (블루/슬레이트 테마)
+  html += '<div class="p-3 mb-3 rounded" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-left: 4px solid #3b82f6; border-radius: 10px;">' +
+    '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #e2e8f0 !important;">' +
+    '<i class="fa-solid fa-quote-left text-primary mr-1.5" style="font-size: 13px;"></i>' +
+    '<strong style="font-size: 13px; color: #1e3a8a;">2. 나노시트 생각담기 피드백</strong>' +
+    '<small class="text-muted ml-2 font-weight-normal">(학생 작성 답안 옆에 노출)</small>' +
+    '</div>';
+
+  quotes.forEach(function(q, i) {
+    html += '<div class="row no-gutters mb-2" style="gap: 8px;">' +
+      '<div style="flex: 1 1 55%; min-width: 220px;">' +
+      worksheetEditorField('worksheetQuote-' + i + '-quote', '학생 답안 인용문', q.quote, 2) +
+      '</div>' +
+      '<div style="flex: 1 1 40%; min-width: 180px;">' +
+      '<div class="form-group mb-2.5"><label class="font-weight-bold text-dark mb-1" for="worksheetQuote-' + i + '-criteria" style="font-size:12px;">관찰 영역</label>' +
+      '<input type="text" id="worksheetQuote-' + i + '-criteria" class="form-control form-control-beige form-control-sm" style="font-size:12px;border-radius:8px;height:38px;" value="' + escapePortfolioText(q.criteria || '경험 연결 및 자기표현') + '">' +
+      '</div></div></div>' +
+      worksheetEditorField('worksheetQuote-' + i + '-comment', '생각담기 관찰 및 칭찬 피드백', q.comment, 3);
   });
+
+  // 그림 표현 관찰 (선택 입력)
+  html += '<div class="mt-2 pt-2 border-top" style="border-color: #e2e8f0 !important;">' +
+    worksheetEditorField('worksheetEdit-drawingObservation', '그림에 담긴 생각 (선택 입력)', result.drawingObservation, 2) +
+    '</div></div>';
+
+  // [카드 3] 다음 성장을 위한 발걸음 (틸/민트 테마)
+  html += '<div class="p-3 mb-2 rounded" style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-left: 4px solid #0d9488; border-radius: 10px;">' +
+    '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #ccfbf1 !important;">' +
+    '<i class="fa-solid fa-compass text-info mr-1.5" style="font-size: 14px;"></i>' +
+    '<strong style="font-size: 13px; color: #0f766e;">3. 다음 성장을 위한 발걸음</strong>' +
+    '<small class="text-muted ml-2 font-weight-normal">(다음 독서 방향 및 가정 대화)</small>' +
+    '</div>' +
+    worksheetEditorField('worksheetEdit-nextStep', '• 이렇게 해보세요 (다음 독서 실천 방향)', result.nextStep, 2) +
+    worksheetEditorField('worksheetEdit-parentGuide', '• 집에서 함께 나눌 이야기 (가정 대화 팁)', result.parentGuide, 2) +
+    '</div>';
+
+  // 보조 호환 필드 (숨김 input으로 호환성 유지)
+  html += '<input type="hidden" id="worksheetEdit-languageHandwritingNote" value="' + escapePortfolioText(result.languageHandwritingNote || '') + '">';
+
   document.getElementById('worksheetAiEditor').innerHTML = html;
 }
 
@@ -1275,6 +1306,18 @@ function readWorksheetCorrectionEditor() {
     });
     return edited;
   });
+  if (result.actualQuotes.length === 0) {
+    var q0 = document.getElementById('worksheetQuote-0-quote');
+    var c0 = document.getElementById('worksheetQuote-0-comment');
+    var cr0 = document.getElementById('worksheetQuote-0-criteria');
+    if (q0 || c0) {
+      result.actualQuotes = [{
+        quote: q0 ? q0.value.trim() : '',
+        criteria: cr0 ? cr0.value.trim() : '경험 연결 및 자기표현',
+        comment: c0 ? c0.value.trim() : ''
+      }];
+    }
+  }
   return result;
 }
 
@@ -1304,7 +1347,7 @@ function openCorrectionModal(logId) {
   currentWorksheetAiResult = log.worksheetAiResult ? JSON.parse(JSON.stringify(log.worksheetAiResult)) : null;
   currentWorksheetCorrectionDone = !!currentWorksheetAiResult || String(log.reviewed || '').includes('완료');
 
-  // 첨삭 완료 상태인데 worksheetAiResult가 비어있거나(이관/구형 첨삭 기록 등) 일부 필드가 누락된 경우 기존 코멘트와 학습 기록을 바탕으로 복원
+  // 첨삭 완료 상태인데 worksheetAiResult가 비어있거나(이관/구형 첨삭 기록 등) 일부 필드가 누락된 경우 복원
   if (currentWorksheetCorrectionDone) {
     var sName = log.studentName || log.name || '원생';
     var bName = log.bookTitle || '도서';
@@ -1313,23 +1356,19 @@ function openCorrectionModal(logId) {
     if (!currentWorksheetAiResult || typeof currentWorksheetAiResult !== 'object') {
       currentWorksheetAiResult = {
         summary: existingComment || (sName + ' 학생이 『' + bName + '』을(를) 읽고 자신의 생각과 느낌을 주도적으로 표현했습니다.'),
-        actualQuotes: studentAns ? [
+        actualQuotes: [
           {
-            quote: studentAns,
+            quote: studentAns || '나노시트 생각 담기',
             criteria: '경험 연결 및 자기표현',
             comment: existingComment || '책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.'
           }
-        ] : [],
+        ],
         drawingObservation: '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.',
         languageHandwritingNote: '자신의 느낌과 생각을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
         nextStep: '다음에는 왜 그렇게 생각했는지 구체적인 이유나 일상 경험을 한 문장 더 덧붙여 보면 더욱 좋습니다.',
-        parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 인상 깊었던 장면에 대해 열린 대화를 나누어 보세요.',
-        teacherCommentDraft: existingComment || (sName + ' 학생은 『' + bName + '』을(를) 읽고 인상 깊었던 장면을 자신의 시각으로 정성껏 표현했습니다.')
+        parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 인상 깊었던 장면에 대해 열린 대화를 나누어 보세요.'
       };
     } else {
-      if (currentWorksheetAiResult.teacherCommentDraft === undefined && existingComment) {
-        currentWorksheetAiResult.teacherCommentDraft = existingComment;
-      }
       if (currentWorksheetAiResult.drawingObservation === undefined) {
         currentWorksheetAiResult.drawingObservation = '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.';
       }
@@ -1376,9 +1415,7 @@ async function saveCorrectionFromModal() {
   var log = logs.find(function(l) { return l.id === targetId; });
   if (!log) return;
   log.worksheetAiResult = readWorksheetCorrectionEditor();
-  if (log.worksheetAiResult && log.worksheetAiResult.teacherCommentDraft) {
-    log.comment = log.worksheetAiResult.teacherCommentDraft;
-  } else if (log.worksheetAiResult && log.worksheetAiResult.summary && !log.comment) {
+  if (log.worksheetAiResult && log.worksheetAiResult.summary) {
     log.comment = log.worksheetAiResult.summary;
   }
   log.reviewRevision = currentWorksheetReviewRevision;
@@ -1404,7 +1441,7 @@ async function saveCorrectionFromModal() {
 
 async function deleteCorrectionFromModal() {
   if (!currentOpenCorrectionLogId || worksheetCorrectionSaving || worksheetAnalysisJobs.has(currentOpenCorrectionLogId)) return;
-  if (!confirm('기존 첨삭 내역을 삭제하시겠습니까? AI 분석 결과와 교사 코멘트가 삭제됩니다. 원본 사진과 북퀴즈 학습 기록은 보존됩니다.')) return;
+  if (!confirm('기존 첨삭 내역을 삭제하시겠습니까? AI 분석 결과가 삭제됩니다. 원본 사진과 북퀴즈 학습 기록은 보존됩니다.')) return;
   var targetId = currentOpenCorrectionLogId;
   var logs = getLoadedLearningLogs();
   var log = logs.find(function(l) { return l.id === targetId; });
@@ -2095,38 +2132,33 @@ function openLearningDetailModal(id) {
     };
   }
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
-  if (wsAiSec) {
-    var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
-    if (log.worksheetAiResult) {
-      wsAiSec.style.display = 'block';
-      var res = log.worksheetAiResult;
-      
-      var sumEl = document.getElementById('worksheetAiSummary');
-      if (sumEl) sumEl.innerText = res.summary || '자신의 생각을 성실하게 글과 그림으로 담아냈습니다.';
+  var thoughtFeedbackCol = document.getElementById('learnModalThoughtFeedbackCol');
 
-      // 원본 사진 썸네일
-      var thumbsEl = document.getElementById('worksheetAiThumbnails');
-      if (thumbsEl) {
-        if (photos.length > 0) {
-          thumbsEl.innerHTML = renderWorksheetReportPhotos(photos);
+  if (log.worksheetAiResult || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0)) {
+    var res = log.worksheetAiResult || {};
+    var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
+    var sName = log.studentName || log.name || '원생';
+
+    // 1) 상단 생각담기 영역 우측 컬럼: 나노시트 생각담기 관찰 피드백
+    if (thoughtFeedbackCol) {
+      thoughtFeedbackCol.style.display = 'block';
+      var quotesEl = document.getElementById('worksheetAiQuotesList');
+      if (quotesEl) {
+        var quotes = Array.isArray(res.actualQuotes) ? res.actualQuotes : [];
+        if (quotes.length > 0) {
+          quotesEl.innerHTML = quotes.map(function(q) {
+            return '<div class="p-2.5 rounded bg-white border mb-2 shadow-2xs" style="border-color:#d1fae5 !important;">' +
+              (q.quote ? '<div class="font-weight-bold text-dark mb-1" style="font-size:11.5px;"><i class="fa-solid fa-quote-left mr-1 text-success" style="opacity:0.65;font-size:10px;"></i>“' + escapePortfolioText(q.quote) + '”</div>' : '') +
+              (q.criteria ? '<div class="mb-1"><span class="badge badge-light text-success border border-success" style="font-size:9.5px;padding:1px 5px;"><i class="fa-solid fa-tag mr-0.5"></i>' + escapePortfolioText(q.criteria) + '</span></div>' : '') +
+              '<div style="font-size:11.5px; line-height:1.6; color:#334155;">' + escapePortfolioText(q.comment || '원생의 독서 사고력과 표현을 칭찬합니다.') + '</div>' +
+              '</div>';
+          }).join('');
         } else {
-          thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;">등록된 원본 사진이 없습니다.</span>';
+          quotesEl.innerHTML = '<div class="text-muted p-2" style="font-size:11.5px;">생각담기 관찰 피드백이 준비 중입니다.</div>';
         }
       }
 
-      // 실제 인용구 및 관찰 코멘트
-      var quotesEl = document.getElementById('worksheetAiQuotesList');
-      if (quotesEl) {
-        quotesEl.innerHTML = (Array.isArray(res.actualQuotes) ? res.actualQuotes : []).map(function(q) {
-          return '<article class="worksheet-quote">' +
-            '<blockquote><i class="fa-solid fa-quote-left mr-1.5" style="opacity: 0.65; font-size: 11px;"></i>“' + escapePortfolioText(q.quote) + '”</blockquote>' +
-            '<div class="mb-1"><small><i class="fa-solid fa-tag mr-1" style="font-size: 9.5px;"></i>' + escapePortfolioText(q.criteria || '표현 살펴보기') + '</small></div>' +
-            '<div style="color: #334155; line-height: 1.65; font-size: 11.5px;">' + escapePortfolioText(q.comment) + '</div>' +
-            '</article>';
-        }).join('') || '<div class="worksheet-quote text-muted">아직 등록된 표현별 코멘트가 없습니다.</div>';
-      }
-
-      // 그림 관찰 (그림이 있는 경우만)
+      // 그림 관찰 코멘트
       var drawRow = document.getElementById('worksheetAiDrawingRow');
       var drawText = document.getElementById('worksheetAiDrawingText');
       if (drawRow && drawText) {
@@ -2137,39 +2169,43 @@ function openLearningDetailModal(id) {
           drawRow.style.display = 'none';
         }
       }
+    }
 
-      // 다음 성장 방향 (20%) & 가정 대화 팁
-      var nextStepEl = document.getElementById('worksheetAiNextStep');
-      if (nextStepEl) nextStepEl.innerHTML = '• <strong>이렇게 해보세요:</strong> ' + escapePortfolioText(res.nextStep || '자신의 생각에 이유를 한 문장 더 덧붙여 보아도 좋아요.');
-
-      var parentEl = document.getElementById('worksheetAiParentGuide');
-      if (parentEl) parentEl.innerHTML = '• <strong>집에서 함께 나눌 이야기:</strong> ' + escapePortfolioText(res.parentGuide || '아이의 표현을 충분히 격려해 주세요.');
-
-    } else if (photos.length > 0) {
-      // AI 분석 전이지만 업로드된 나노시트 원본 사진이 있는 경우 썸네일 노출
+    // 2) 하단 나노시트 첨삭 리포트 (좌: 원본 사진 / 우: 2개 카드 - 돋보인 점 & 다음 성장)
+    if (wsAiSec) {
       wsAiSec.style.display = 'block';
-      var sumEl = document.getElementById('worksheetAiSummary');
-      if (sumEl) sumEl.innerText = '원생이 작성한 나노시트 원본 사진이 등록되어 있습니다. 하단 지도교사 첨삭 코멘트를 확인해 주세요.';
 
-      var thumbsEl = document.getElementById('worksheetAiThumbnails');
-      if (thumbsEl) {
-        thumbsEl.innerHTML = renderWorksheetReportPhotos(photos);
+      // 우측 카드 1) 이번 활동에서 돋보인 점
+      var sumEl = document.getElementById('worksheetAiSummary');
+      if (sumEl) {
+        sumEl.innerText = res.summary || (sName + ' 학생이 도서의 핵심을 읽고 자신의 생각을 주도적으로 표현했습니다.');
       }
 
-      var quotesEl = document.getElementById('worksheetAiQuotesList');
-      if (quotesEl) quotesEl.innerHTML = '<div class="text-muted p-2" style="font-size: 11px;">나노시트 ' + photos.length + '장이 등록되어 있습니다. 첨삭 코멘트가 준비되면 이곳에 표시됩니다.</div>';
+      // 좌측 원본 사진 썸네일
+      var thumbsEl = document.getElementById('worksheetAiThumbnails');
+      if (thumbsEl) {
+        if (photos.length > 0) {
+          thumbsEl.innerHTML = renderWorksheetReportPhotos(photos);
+        } else {
+          thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;">등록된 원본 사진이 없습니다.</span>';
+        }
+      }
 
-      var drawRow = document.getElementById('worksheetAiDrawingRow');
-      if (drawRow) drawRow.style.display = 'none';
-
+      // 우측 카드 2) 다음 성장을 위한 발걸음 & 가정 대화 팁
       var nextStepEl = document.getElementById('worksheetAiNextStep');
-      if (nextStepEl) nextStepEl.innerHTML = '• <strong>지도교사 첨삭 피드백:</strong> ' + (log.comment || '원생의 생각 표현을 칭찬하고 격려해 주세요.');
+      if (nextStepEl) {
+        nextStepEl.innerHTML = '• <strong>이렇게 해보세요:</strong> ' + escapePortfolioText(res.nextStep || '자신의 생각에 구체적인 이유를 한 문장 더 덧붙여 보아도 좋습니다.');
+      }
 
       var parentEl = document.getElementById('worksheetAiParentGuide');
-      if (parentEl) parentEl.innerHTML = '• <strong>가정 대화 팁:</strong> 아이가 시트에 쓴 생각에 대해 칭찬하고 대화를 나누어 보세요.';
-    } else {
-      wsAiSec.style.display = 'none';
+      if (parentEl) {
+        parentEl.innerHTML = '• <strong>집에서 함께 나눌 이야기:</strong> ' + escapePortfolioText(res.parentGuide || '아이가 표현한 생각을 충분히 칭찬하고 대화를 나누어 보세요.');
+      }
     }
+
+  } else {
+    if (wsAiSec) wsAiSec.style.display = 'none';
+    if (thoughtFeedbackCol) thoughtFeedbackCol.style.display = 'none';
   }
 
   $('#learningDetailModal').modal('show');

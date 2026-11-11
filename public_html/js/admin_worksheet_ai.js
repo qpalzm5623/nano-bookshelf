@@ -214,7 +214,6 @@ async function runWorksheetAiAnalysis() {
           languageHandwritingNote: '자신의 느낌을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
           nextStep: '다음에는 왜 그렇게 생각했는지 구체적인 이유나 까닭을 한 문장 더 덧붙여 보면 더욱 좋습니다.',
           parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 재미있었던 장면에 대해 열린 대화를 나누어 주세요.',
-          teacherCommentDraft: studentName + ' 학생은 『' + bookTitle + '』을(를) 읽고 인상 깊었던 장면을 자신의 시각으로 정성껏 표현했습니다. 성실하고 주도적인 독서 태도를 칭찬하며 다음 활동에서도 즐겁게 생각을 펼쳐가길 기대합니다.',
           warning: warnTxt,
           isFallback: true
         };
@@ -234,8 +233,7 @@ JSON 출력 형식:
   "drawingObservation": "그림 표현 관찰 1문장 (그림 있을 때만)",
   "languageHandwritingNote": "정성스럽게 표현한 태도에 대한 긍정적 관찰",
   "nextStep": "실제 표현과 연결한 다음 독서 활동 1가지, 실행 예시, 스스로 확인할 점을 연령에 맞게 2~3문장으로 안내",
-  "parentGuide": "아이의 실제 표현에 근거한 칭찬 한마디, 부모가 그대로 쓸 수 있는 열린 질문 1~2개와 후속 대화를 2~3문장으로 안내",
-  "teacherCommentDraft": "지도교사 첨삭 코멘트 제안문 (150~220자)"
+  "parentGuide": "아이의 실제 표현에 근거한 칭찬 한마디, 부모가 그대로 쓸 수 있는 열린 질문 1~2개와 후속 대화를 2~3문장으로 안내"
 }`;
 
         var parts = [{ text: promptText }];
@@ -275,7 +273,6 @@ JSON 출력 형식:
               languageHandwritingNote: '끝까지 생각을 완결하려는 정성스러운 표현 태도가 돋보입니다.',
               nextStep: '다음 독서에서도 마음에 드는 단어나 인상 깊은 이유를 한 문장 더 덧붙여 보세요.',
               parentGuide: '아이가 스스로 생각을 완성한 점을 칭찬해 주세요.',
-              teacherCommentDraft: studentName + ' 학생이 『' + bookTitle + '』을(를) 읽고 자신의 생각을 성실히 담아냈습니다. 정성스러운 표현 태도를 칭찬하며 다음 독서 활동에서도 즐겁게 생각을 펼치길 기대합니다.',
               warning: 'API 통신 문제(' + errMessage + ')로 교육원 표준 모델로 첨삭 코멘트를 자동 생성했습니다.',
               isFallback: true
             };
@@ -297,7 +294,6 @@ JSON 출력 형식:
             languageHandwritingNote: '정성을 다해 생각을 글과 그림으로 담아냈습니다.',
             nextStep: '다음에는 떠오른 생각에 구체적인 이유를 한 문장 더 적어보아도 좋습니다.',
             parentGuide: '스스로 완독 후 생각을 표현한 점을 칭찬해 주세요.',
-            teacherCommentDraft: studentName + ' 학생이 『' + bookTitle + '』을(를) 읽고 자신의 생각을 성실히 담아냈습니다.',
             warning: '통신 지연으로 교육원 표준 모델로 코멘트를 생성했습니다.',
             isFallback: true
           };
@@ -311,8 +307,8 @@ JSON 출력 형식:
     if (!updated) throw new Error('학습 기록을 찾을 수 없습니다.');
     updated.worksheetAiResult = aiData;
     updated.worksheetPhotos = analysisPhotos;
-    if (aiData && (aiData.teacherCommentDraft || aiData.summary)) {
-      updated.comment = aiData.teacherCommentDraft || aiData.summary;
+    if (aiData && aiData.summary) {
+      updated.comment = aiData.summary;
     }
     updated.reviewed = '첨삭 완료';
     updated.sheet = '작성 완료';

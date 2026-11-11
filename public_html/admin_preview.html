@@ -5893,155 +5893,106 @@
 
             <!-- 생각 담기 본문 (숨기기 시 접힘/숨김) -->
             <div id="learnModalThoughtBody">
-              <!-- 도서의 생각담기 논제/질문 -->
-              <div class="report-question-box">
-                <div class="font-weight-bold text-primary mb-1" style="font-size: 11px;">
-                  <i class="fa-solid fa-circle-question mr-1"></i>논제 / 생각 질문
-                </div>
-                <div id="learnModalThoughtQuestion" class="font-weight-600" style="line-height: 1.5; color: #1e293b;">
-                  이 책을 읽고 난 후 주인공의 태도나 선택에 대해 나의 생각을 서술해 보세요.
-                </div>
-              </div>
-
-              <!-- 학생 작성 주관식 답안 -->
-              <div class="report-answer-box">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="font-weight-bold text-muted" style="font-size: 11px;">
-                    <i class="fa-solid fa-user-pen mr-1 text-warning"></i>학생 작성 답안
-                  </span>
-                  <span class="badge-soft badge-soft-neutral" style="font-size: 10px; border-radius: 12px;">주관식 작성</span>
-                </div>
-                <div style="font-size: 12px; line-height: 1.7; color: #1e293b; white-space: pre-wrap;" id="learnModalSheetAnswer">
-                  어린 왕자와 사막여우의 대화를 읽고, 관계란 서로 시간을 들이고 길들여질 때 비로소 진정한 의미를 가진다는 것을 깨달았습니다...
-                </div>
-              </div>
-
-              <!-- [신규] 나노시트 AI 사고력 분석지 섹션 (오프라인 시트 사진 분석 결과) -->
-              <div id="learnModalWorksheetAiSection" class="mb-3" style="display: none;">
-                <div class="worksheet-review">
-                  <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-                    <div>
-                      <strong style="font-size: 15px; color: #1f8a7e;"><i class="fa-solid fa-seedling mr-1"></i>나노시트 첨삭 리포트</strong>
+              <!-- [상단 영역] 생각 담기: 좌측(논제/질문 + 학생답안) vs 우측(나노시트 생각담기 관찰 피드백) -->
+              <div class="row no-gutters mb-3" style="gap: 14px; display: flex; flex-wrap: wrap;">
+                <!-- 좌측 컬럼: 논제 질문 & 학생 작성 답안 -->
+                <div style="flex: 1 1 360px; min-width: 300px;">
+                  <!-- 도서의 생각담기 논제/질문 -->
+                  <div class="report-question-box mb-2" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;">
+                    <div class="font-weight-bold text-primary mb-1" style="font-size: 11px;">
+                      <i class="fa-solid fa-circle-question mr-1"></i>논제 / 생각 질문
                     </div>
-                    <span class="text-muted" style="font-size: 11px;" id="worksheetSheetCountBadge">3번째 나노시트</span>
-                  </div>
-
-                  <!-- 1) 이번 활동의 한 줄 요약 -->
-                  <div class="my-2.5 p-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1px solid #a7f3d0; border-left: 4px solid #1f8a7e !important;">
-                    <div class="font-weight-bold mb-1" style="font-size: 11px; color: #047857;">
-                      <i class="fa-solid fa-lightbulb text-warning mr-1"></i>이번 활동에서 돋보인 점
-                    </div>
-                    <div class="font-weight-bold text-dark" id="worksheetAiSummary" style="font-size: 12.5px; line-height: 1.6;">
-                      -
+                    <div id="learnModalThoughtQuestion" class="font-weight-600" style="line-height: 1.5; color: #1e293b; font-size: 12.5px;">
+                      이 책을 읽고 난 후 주인공의 태도나 선택에 대해 나의 생각을 서술해 보세요.
                     </div>
                   </div>
 
-                  <!-- 2) 나노시트 원본 사진 썸네일 & 실제 인용 관찰 코멘트 -->
-                  <div class="worksheet-review-grid">
+                  <!-- 학생 작성 주관식 답안 -->
+                  <div class="report-answer-box" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="font-weight-bold text-muted" style="font-size: 11px;">
+                        <i class="fa-solid fa-user-pen mr-1 text-warning"></i>학생 작성 답안
+                      </span>
+                      <span class="badge-soft badge-soft-neutral" style="font-size: 10px; border-radius: 12px;">주관식 작성</span>
+                    </div>
+                    <div style="font-size: 12px; line-height: 1.7; color: #1e293b; white-space: pre-wrap;" id="learnModalSheetAnswer">
+                      어린 왕자와 사막여우의 대화를 읽고, 관계란 서로 시간을 들이고 길들여질 때 비로소 진정한 의미를 가진다는 것을 깨달았습니다...
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 우측 컬럼: 나노시트 생각담기 피드백 & 관찰 (논제 생각문/학생 작성답안 카드 우측에 배치) -->
+                <div id="learnModalThoughtFeedbackCol" style="flex: 1 1 320px; min-width: 280px;">
+                  <div class="h-100 p-3 rounded" style="background: #fbfdfc; border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 10px;">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom" style="border-color: #d1fae5 !important;">
+                      <span class="font-weight-bold" style="font-size: 12px; color: #065f46;">
+                        <i class="fa-solid fa-quote-left mr-1 text-success"></i>나노시트 생각 담기 관찰 피드백
+                      </span>
+                      <span class="badge badge-pill badge-light text-success border border-success" style="font-size: 10px; padding: 1px 7px;">생각담기 분석</span>
+                    </div>
+                    <div id="worksheetAiQuotesList" class="worksheet-quotes mb-2">
+                      <!-- 실제 인용구 및 생각담기 관찰 코멘트 동적 삽입 -->
+                    </div>
+                    <!-- 그림 코멘트가 있는 경우 함께 표시 -->
+                    <div id="worksheetAiDrawingRow" class="worksheet-drawing p-2 rounded mt-2" style="background: #fffbeb; border: 1px solid #fde68a; display: none;">
+                      <strong class="text-warning" style="font-size: 11px; color: #d97706 !important;"><i class="fa-solid fa-palette mr-1"></i>그림에 담긴 생각</strong>
+                      <div id="worksheetAiDrawingText" class="text-dark mt-0.5" style="font-size: 11.5px; line-height: 1.6;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- [하단 영역] 나노시트 첨삭 리포트 (원본 사진 좌측 vs 이번 활동에서 돋보인점 & 다음 성장을 위한 발걸음 우측) -->
+              <div id="learnModalWorksheetAiSection" class="mb-2" style="display: none;">
+                <div class="worksheet-review p-3 rounded" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                  <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-bottom">
                     <div>
-                      <div class="font-weight-bold text-muted mb-1" style="font-size: 11px;">
-                        <i class="fa-solid fa-camera mr-1"></i>아이가 작성한 나노시트
+                      <strong style="font-size: 14.5px; color: #1f8a7e;"><i class="fa-solid fa-seedling mr-1.5"></i>나노시트 첨삭 리포트</strong>
+                    </div>
+                    <span class="badge badge-pill badge-light text-muted border" style="font-size: 11px;" id="worksheetSheetCountBadge">3번째 나노시트</span>
+                  </div>
+
+                  <!-- 좌: 원본 사진 썸네일 / 우: 2개 카드 (돋보인 점 & 다음 성장을 위한 발걸음) -->
+                  <div class="row no-gutters" style="gap: 14px; display: flex; flex-wrap: wrap;">
+                    <!-- 좌측: 아이가 작성한 나노시트 원본 사진 -->
+                    <div style="flex: 1 1 260px; min-width: 240px; max-width: 320px;">
+                      <div class="font-weight-bold text-muted mb-1.5" style="font-size: 11px;">
+                        <i class="fa-solid fa-camera mr-1 text-primary"></i>아이가 작성한 나노시트
                       </div>
-                      <div id="worksheetAiThumbnails" class="worksheet-photos">
+                      <div id="worksheetAiThumbnails" class="worksheet-photos d-flex flex-wrap gap-2">
                         <!-- 썸네일 동적 삽입 -->
                       </div>
                     </div>
-                    <div class="worksheet-feedback">
-                      <div class="font-weight-bold text-muted mb-1" style="font-size: 11px;">
-                        <i class="fa-solid fa-quote-left mr-1 text-primary"></i>표현 속에서 발견한 강점
-                      </div>
-                      <div id="worksheetAiQuotesList" class="worksheet-quotes">
-                        <!-- 실제 인용구 동적 삽입 -->
-                      </div>
-                      <!-- 그림 코멘트도 원본 오른쪽에 표시 -->
-                      <div id="worksheetAiDrawingRow" class="worksheet-drawing" style="display: none;">
-                        <strong class="text-warning" style="color: #d97706 !important;"><i class="fa-solid fa-palette mr-1"></i>그림에 담긴 생각</strong>
-                        <div id="worksheetAiDrawingText" class="text-dark mt-1" style="font-size: 12px; line-height: 1.6;"></div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <!-- 4) 다음 성장을 위한 발걸음 (20%) & 가정 대화 팁 -->
-                  <div class="p-3 rounded mb-2" style="background: #f0fdfa; border: 1px solid #99f6e4; border-left: 4px solid #0d9488; font-size: 12px; line-height: 1.75;">
-                    <div class="font-weight-bold mb-1" style="color: #0f766e; font-size: 12.5px;">
-                      <i class="fa-solid fa-compass mr-1.5"></i>다음 성장을 위한 발걸음
-                    </div>
-                    <div class="text-dark mb-1" id="worksheetAiNextStep">
-                      • <strong>이렇게 해보세요:</strong> -
-                    </div>
-                    <div class="text-muted" id="worksheetAiParentGuide">
-                      • <strong>집에서 함께 나눌 이야기:</strong> -
+                    <!-- 우측: 2개 카드 -->
+                    <div style="flex: 1 1 360px; min-width: 300px; display: flex; flex-direction: column; gap: 10px;">
+                      <!-- 우측 카드 1) 이번 활동에서 돋보인 점 -->
+                      <div class="p-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1px solid #a7f3d0; border-left: 4px solid #1f8a7e !important;">
+                        <div class="font-weight-bold mb-1" style="font-size: 11.5px; color: #047857;">
+                          <i class="fa-solid fa-lightbulb text-warning mr-1"></i>이번 활동에서 돋보인 점
+                        </div>
+                        <div class="font-weight-bold text-dark" id="worksheetAiSummary" style="font-size: 12.5px; line-height: 1.65;">
+                          -
+                        </div>
+                      </div>
+
+                      <!-- 우측 카드 2) 다음 성장을 위한 발걸음 -->
+                      <div class="p-3 rounded" style="background: #f0fdfa; border: 1px solid #99f6e4; border-left: 4px solid #0d9488; font-size: 12px; line-height: 1.75;">
+                        <div class="font-weight-bold mb-1" style="color: #0f766e; font-size: 12px;">
+                          <i class="fa-solid fa-compass mr-1.5"></i>다음 성장을 위한 발걸음
+                        </div>
+                        <div class="text-dark mb-1" id="worksheetAiNextStep">
+                          • <strong>이렇게 해보세요:</strong> -
+                        </div>
+                        <div class="text-muted" id="worksheetAiParentGuide">
+                          • <strong>집에서 함께 나눌 이야기:</strong> -
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <!-- 지도교사 코멘트 영역 (디폴트: 없음, 교사 코멘트 넣기 옵션으로 직접 타이핑) -->
-              <div id="learnModalCommentWrapper" class="pt-1">
-                <!-- 상단 버튼/헤더 영역 -->
-                <div class="d-flex justify-content-between align-items-center mb-1.5">
-                  <span class="font-weight-bold text-muted" style="font-size: 11.5px;">
-                    <i class="fa-solid fa-comment-dots mr-1 text-success"></i>지도교사 첨삭 코멘트
-                  </span>
-                  <div class="d-print-none">
-                    <!-- 코멘트가 없을 때: 코멘트 넣기 버튼 -->
-                    <button type="button" class="btn btn-xs btn-outline-primary" id="btnToggleTeacherComment"
-                      onclick="openTeacherCommentEditor()"
-                      style="border-radius: 6px; padding: 2.5px 8px; font-size: 11px; font-weight: 600;">
-                      <i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기
-                    </button>
-                  </div>
-                </div>
-
-                <!-- 1) 코멘트 타이핑 입력 에디터 (교사 코멘트 넣기 클릭 시 오픈) -->
-                <div id="learnModalCommentEditor" class="p-3 rounded mb-2 d-print-none"
-                  style="background: #f8fafc; border: 1px solid #cbd5e1; display: none;">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="font-weight-bold" style="font-size: 12px; color: #0f172a;">
-                      <i class="fa-solid fa-keyboard mr-1 text-primary"></i>선생님 코멘트 직접 입력
-                    </span>
-                    <small class="text-muted">입력 시 즉시 저장되며 리포트에 실시간 반영됩니다.</small>
-                  </div>
-                  <textarea id="learnModalCommentInput" class="form-control form-control-sm mb-2" rows="3"
-                    placeholder="원생의 생각 담기 답안에 대한 지도교사 칭찬 및 첨삭 코멘트를 직접 입력하세요..."
-                    oninput="onTeacherCommentInput(this.value)"
-                    style="border-radius: 8px; font-size: 12px; line-height: 1.6;"></textarea>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted" style="font-size: 11px;" id="commentCharCount">0자 작성됨</span>
-                    <div>
-                      <button type="button" class="btn btn-xs btn-outline-danger mr-1" onclick="clearTeacherComment()"
-                        style="border-radius: 5px; font-size: 11px; padding: 2.5px 7px;">
-                        <i class="fa-solid fa-trash mr-1"></i>코멘트 비우기
-                      </button>
-                      <button type="button" class="btn btn-xs btn-beige-primary px-3"
-                        onclick="closeTeacherCommentEditor()"
-                        style="border-radius: 5px; font-size: 11px; padding: 2.5px 9px;">
-                        <i class="fa-solid fa-check mr-1"></i>입력 완료
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 2) 작성된 코멘트 표시 카드 (코멘트가 있을 때만 노출) -->
-                <div id="learnModalCommentCard" style="display: none;">
-                  <div class="report-comment-box">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <strong style="color: #065f46; font-size: 11.5px;">
-                        <i class="fa-solid fa-quote-left mr-1 text-success"></i>선생님 첨삭 피드백
-                      </strong>
-                      <span class="badge-soft badge-soft-success" style="font-size: 10px; border-radius: 12px;">첨삭 지도 완료</span>
-                    </div>
-                    <div id="learnModalCommentDisplay" style="white-space: pre-wrap; font-size: 12px; line-height: 1.7; color: #1e293b;"></div>
-                  </div>
-                </div>
-
-                <!-- 3) 코멘트가 없을 때 디폴트 안내 (출력/인쇄 시에는 안 보임) -->
-                <div id="learnModalCommentEmptyGuide" class="p-2 rounded text-muted text-center d-print-none"
-                  style="background: #f8fafc; border: 1px dashed #cbd5e1; font-size: 11px;">
-                  <i class="fa-solid fa-info-circle mr-1"></i>작성된 지도교사 코멘트가 없습니다. 상단의 <strong>[교사 코멘트 넣기]</strong>를 눌러
-                  직접 타이핑할 수 있습니다.
-                </div>
-              </div>
+            </div>
 
             </div>
           </div>
