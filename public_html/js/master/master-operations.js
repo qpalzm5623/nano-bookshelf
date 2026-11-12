@@ -160,8 +160,8 @@ function handleBannerFileUpload(e) {
     const tempImg = new Image();
     tempImg.onload = function() {
       try {
-        const maxWidth = 1000;
-        const maxHeight = 500;
+        const maxWidth = 1280;
+        const maxHeight = 720;
         let w = tempImg.width;
         let h = tempImg.height;
 

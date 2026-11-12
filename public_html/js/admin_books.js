@@ -4220,7 +4220,49 @@ async function handleSaveAcademyBookOnly(event) {
 
   if (!title || !author) {
     alert('도서명과 저자는 필수 입력 사항입니다.');
+    if (!title) {
+      var tEl = document.getElementById('abEditTitle');
+      if (tEl) tEl.focus();
+    } else {
+      var aEl = document.getElementById('abEditAuthor');
+      if (aEl) aEl.focus();
+    }
     return;
+  }
+
+  // ISBN 입력 시 형식 및 기등록 도서 중복 사전 검사
+  var cleanIsbn = isbn ? isbn.replace(/[-\s]/g, '') : '';
+  if (cleanIsbn) {
+    if (cleanIsbn.length !== 10 && cleanIsbn.length !== 13) {
+      alert('ISBN은 10자리 또는 13자리 숫자여야 합니다.\n(입력된 ISBN: ' + isbn + ')');
+      var isbnEl = document.getElementById('abEditIsbn');
+      if (isbnEl) { isbnEl.focus(); isbnEl.select(); }
+      return;
+    }
+    var existingIsbnBook = academyBookList.find(function(b) {
+      if (originalEditingAcadBookId && (b.id === originalEditingAcadBookId || b.bookNo === originalEditingAcadBookId)) return false;
+      var bIsbn = String(b.isbn || '').replace(/[-\s]/g, '');
+      return bIsbn && bIsbn === cleanIsbn;
+    });
+    if (existingIsbnBook) {
+      alert('중복된 ISBN 넘버가 이미 등록되어 있습니다.\n\n• 중복 도서명: ' + (existingIsbnBook.title || '무제') + '\n• 도서 코드: ' + (existingIsbnBook.id || existingIsbnBook.bookNo || '') + '\n• ISBN: ' + isbn + '\n\n동일한 ISBN의 도서는 중복 등록할 수 없습니다.');
+      var isbnEl = document.getElementById('abEditIsbn');
+      if (isbnEl) { isbnEl.focus(); isbnEl.select(); }
+      return;
+    }
+  }
+
+  // 신규 등록 시 지정 도서 코드 중복 사전 검사
+  if (!originalEditingAcadBookId && finalId) {
+    var existingCodeBook = academyBookList.find(function(b) {
+      return b.id === finalId || b.bookNo === finalId;
+    });
+    if (existingCodeBook) {
+      alert('이미 사용 중인 도서 코드입니다.\n\n• 기존 도서명: ' + (existingCodeBook.title || '') + '\n• 도서 코드: ' + finalId + '\n\n다른 도서 코드를 지정해 주세요.');
+      var idEl = document.getElementById('abEditId');
+      if (idEl) { idEl.focus(); idEl.select(); }
+      return;
+    }
   }
 
   var existingIdx = -1;
@@ -4232,6 +4274,7 @@ async function handleSaveAcademyBookOnly(event) {
     var b = academyBookList[existingIdx];
     // 타 가맹점 및 본사 도서 저장 시도 2중 방어
     if (!isBookCreatedByMyAcademy(b)) {
+      alert('다른 가맹점 또는 본사 공식 도서는 수정할 수 없습니다. (읽기 전용)');
       showAcademyToast('다른 가맹점 또는 본사 공식 도서는 수정할 수 없습니다. (읽기 전용)');
       $('#academyBookAddModal').modal('hide');
       return;
@@ -4275,7 +4318,9 @@ async function handleSaveAcademyBookOnly(event) {
       try {
         await NanoPortal.saveBook(b);
       } catch (err) {
-        showAcademyToast('도서 수정 저장 실패: ' + (err && err.message ? err.message : '서버 오류'));
+        var errMsg = (err && err.message) ? err.message : '서버 오류가 발생했습니다.';
+        alert('도서 수정 저장 실패\n\n' + errMsg);
+        showAcademyToast('도서 수정 저장 실패: ' + errMsg);
         return;
       }
     }
@@ -4328,7 +4373,9 @@ async function handleSaveAcademyBookOnly(event) {
       try {
         await NanoPortal.saveBook(newBook);
       } catch (err) {
-        showAcademyToast('신규 도서 등록 실패: ' + (err && err.message ? err.message : '서버 오류'));
+        var errMsg = (err && err.message) ? err.message : '서버 오류가 발생했습니다.';
+        alert('신규 도서 등록 실패\n\n' + errMsg);
+        showAcademyToast('신규 도서 등록 실패: ' + errMsg);
         return;
       }
     }
@@ -4874,7 +4921,7 @@ function removeAcadQuizMedia() {
 
 function changeAcadQuizOptionCount(countVal) {
   var count = parseInt(countVal, 10);
-  if (isNaN(count) || count < 2) count = 2;
+  if (isNaN(count) || count < 3) count = 3;
   if (count > 5) count = 5;
 
   var q = editingAcadQuizzes[currentAcadQuizIdx];
@@ -5061,6 +5108,11 @@ function addAcadQuizItem() {
     return;
   }
 
+  if (editingAcadQuizzes.length >= 20) {
+    showAcademyToast('북퀴즈는 최대 20문항까지 등록할 수 있습니다.');
+    return;
+  }
+
   saveCurrentAcadQuizInput();
   var nextNum = editingAcadQuizzes.length + 1;
   editingAcadQuizzes.push({
@@ -5094,8 +5146,8 @@ function deleteAcadQuizItem() {
     return;
   }
 
-  if (editingAcadQuizzes.length <= 1) {
-    showAcademyToast('도서에는 최소 1개 이상의 북퀴즈 문항이 유지되어야 합니다.');
+  if (editingAcadQuizzes.length <= 3) {
+    showAcademyToast('북퀴즈는 최소 3문항 이상 유지되어야 합니다.');
     return;
   }
   editingAcadQuizzes.splice(currentAcadQuizIdx, 1);
@@ -5139,12 +5191,102 @@ function insertAcadQuizSym(sym) {
   saveCurrentAcadQuizDraft();
 }
 
+// 학원 북퀴즈 문항 세트 유효성 검증 (엑셀 등록 정책과 100% 동일)
+function validateAcadQuizQuestions(questions) {
+  if (!Array.isArray(questions) || questions.length < 3) {
+    showAcademyToast('북퀴즈는 최소 3문항 이상 등록되어야 합니다. (현재: ' + (questions ? questions.length : 0) + '문항)');
+    return false;
+  }
+  if (questions.length > 20) {
+    showAcademyToast('북퀴즈는 최대 20문항까지 등록 가능합니다. (현재: ' + questions.length + '문항)');
+    return false;
+  }
+
+  for (var i = 0; i < questions.length; i++) {
+    var q = questions[i];
+    var qNum = i + 1;
+    var qText = (q.question || '').trim();
+    var isDummyQ = (qText === '문제를 입력해주세요' || qText === '문제를 입력해 주세요');
+
+    if (!qText || isDummyQ) {
+      showAcademyToast(qNum + '번 문항의 질문 내용을 입력해 주세요.');
+      switchAcadQuizItem(i);
+      setTimeout(function() {
+        var el = document.getElementById('abQuizQuestion');
+        if (el) el.focus();
+      }, 100);
+      return false;
+    }
+
+    var qType = q.type || 'CHOICE';
+    if (qType === 'CHOICE') {
+      var opt1 = (q.opt1 || '').trim();
+      var opt2 = (q.opt2 || '').trim();
+      var opt3 = (q.opt3 || '').trim();
+
+      var isDummy1 = /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(opt1);
+      var isDummy2 = /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(opt2);
+      var isDummy3 = /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(opt3);
+
+      if (!opt1 || isDummy1) {
+        showAcademyToast(qNum + '번 문항의 1번 보기를 입력해 주세요. (보기 1~3 필수)');
+        switchAcadQuizItem(i);
+        setTimeout(function() { var el = document.getElementById('abOpt1'); if (el) el.focus(); }, 100);
+        return false;
+      }
+      if (!opt2 || isDummy2) {
+        showAcademyToast(qNum + '번 문항의 2번 보기를 입력해 주세요. (보기 1~3 필수)');
+        switchAcadQuizItem(i);
+        setTimeout(function() { var el = document.getElementById('abOpt2'); if (el) el.focus(); }, 100);
+        return false;
+      }
+      if (!opt3 || isDummy3) {
+        showAcademyToast(qNum + '번 문항의 3번 보기를 입력해 주세요. (보기 1~3 필수)');
+        switchAcadQuizItem(i);
+        setTimeout(function() { var el = document.getElementById('abOpt3'); if (el) el.focus(); }, 100);
+        return false;
+      }
+
+      var ansNum = parseInt(q.ans || '0', 10);
+      var maxOpt = q.optionCount || 3;
+      if (isNaN(ansNum) || ansNum < 1 || ansNum > maxOpt) {
+        showAcademyToast(qNum + '번 문항의 정답을 선택해 주세요.');
+        switchAcadQuizItem(i);
+        return false;
+      }
+      var targetOpt = q['opt' + ansNum] ? q['opt' + ansNum].trim() : '';
+      if (!targetOpt) {
+        showAcademyToast(qNum + '번 문항에서 선택된 정답(' + ansNum + '번)의 보기 내용이 비어있습니다.');
+        switchAcadQuizItem(i);
+        return false;
+      }
+    } else if (qType === 'SUBJECTIVE') {
+      var subjAns = (q.subjectiveAnswer || '').trim();
+      if (!subjAns) {
+        showAcademyToast(qNum + '번 문항의 주관식 정답을 입력해 주세요.');
+        switchAcadQuizItem(i);
+        setTimeout(function() {
+          var el = document.getElementById('abSubjectiveAnswer');
+          if (el) el.focus();
+        }, 100);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 // 북퀴즈 독립 저장 핸들러
 function handleSaveAcademyQuizOnly(event) {
   if (window.NanoPortal && NanoPortal.remote) { if (event) event.preventDefault(); showAcademyToast('학원 자체 퀴즈 등록은 전용 서버 저장 구조가 준비된 뒤 사용할 수 있습니다.'); return; }
   if (event) event.preventDefault();
 
   saveCurrentAcadQuizInput();
+
+  if (!validateAcadQuizQuestions(editingAcadQuizzes)) {
+    return;
+  }
 
   var book = academyBookList.find(function(b) { return b.id === curQuizTargetBookId; });
   if (!book) {

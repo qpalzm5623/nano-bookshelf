@@ -502,8 +502,8 @@ export default async function handler(req: any, res: any) {
     if (entity === 'payments') {
       need(false, '결제 관리 화면에서 상품과 입금 정보를 확인한 뒤 등록해 주세요.');
     }
-    master(user);
     if (entity === 'academies') {
+      master(user);
       const existing = input.id && await prisma.academy.findUnique({ where: { id: input.id } }); need(!input.id || existing, '학원을 찾을 수 없습니다.', 404);
       if (body.operation === 'delete') { need(existing.id !== user.academyId, '본사 계정의 소속 학원은 삭제할 수 없습니다.'); await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: new Date(), status: 'SUSPENDED' } }); return res.json({ ok: true }); }
       if (body.operation === 'restore') { need(existing.deletedAt, '삭제된 학원이 아닙니다.'); return res.json({ item: await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: null, status: 'ACTIVE' } }) }); }
@@ -552,7 +552,18 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: academy });
     }
     if (entity === 'books') {
-      if (body.operation === 'delete') { need(!await prisma.quizAttempt.count({ where: { bookId: input.id } }), '학습 기록이 있는 도서는 삭제할 수 없습니다.'); await prisma.book.delete({ where: { id: input.id } }); return res.json({ ok: true }); }
+      if (body.operation === 'delete') {
+        const targetBook = await prisma.book.findUnique({ where: { id: input.id } });
+        need(targetBook, '도서를 찾을 수 없습니다.', 404);
+        if (user.role !== 'MASTER' && prisma.portalSetting) {
+          const creatorSetting = await prisma.portalSetting.findUnique({ where: { key: `book_creator:${targetBook.bookNo}` } });
+          const creatorData = creatorSetting?.value as any;
+          need(creatorData && creatorData.academyId === academyId, '본사 도서 또는 타 학원의 도서는 삭제할 수 없습니다.', 403);
+        }
+        need(!await prisma.quizAttempt.count({ where: { bookId: input.id } }), '학습 기록이 있는 도서는 삭제할 수 없습니다.');
+        await prisma.book.delete({ where: { id: input.id } });
+        return res.json({ ok: true });
+      }
       const data = { bookNo: text(input.bookNo, '도서 코드', 100, true), title: text(input.title, '도서명', 300, true), author: text(input.author, '저자', 200, true), publisher: text(input.publisher, '출판사'), isbn: text(input.isbn, 'ISBN'), grade: text(input.grade, '권장 학년'), category: text(input.category, '분류'), subCategory: text(input.subCategory, '세부 분류'), description: text(input.description, '소개', 20000), thinkTitle: text(input.thinkTitle, '생각꺼내기', 3000), thinkQuiz: text(input.thinkQuiz, '생각담기', 3000) };
       need(/^[A-Za-z0-9_-]+$/.test(data.bookNo), '도서 코드는 영문·숫자·하이픈·밑줄로 입력해 주세요.');
       for (const url of [input.coverUrl,input.worksheetUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|data:application\/pdf)/i.test(url), '자료 주소 형식을 확인해 주세요.');
@@ -568,6 +579,46 @@ export default async function handler(req: any, res: any) {
         award: text(input.award || input.awards, '어워드', 1000),
         subject: text(rawSubject, '주제', 100)
       };
+
+      // 1) ISBN 중복 검사
+      if (data.isbn) {
+        const cleanIsbn = data.isbn.replace(/[-\s]/g, '');
+        if (cleanIsbn) {
+          const existingIsbnBook = await prisma.book.findFirst({
+            where: {
+              OR: [
+                { isbn: cleanIsbn },
+                { isbn: data.isbn }
+              ],
+              ...(input.id ? { id: { not: input.id } } : {})
+            }
+          });
+          need(!existingIsbnBook, `중복된 ISBN 넘버가 이미 등록되어 있습니다. (도서명: ${existingIsbnBook?.title || ''}, 코드: ${existingIsbnBook?.bookNo || ''})`, 409);
+        }
+      }
+
+      // 2) 도서 코드(bookNo) 중복 검사
+      const existingCodeBook = await prisma.book.findFirst({
+        where: {
+          OR: [
+            { bookNo: data.bookNo },
+            { id: data.bookNo }
+          ],
+          ...(input.id ? { id: { not: input.id } } : {})
+        }
+      });
+      need(!existingCodeBook, `이미 등록된 도서 코드입니다. (도서명: ${existingCodeBook?.title || ''}, 코드: ${data.bookNo})`, 409);
+
+      // 3) 도서 수정 시 권한 검사 (학원 사용자는 타 학원/본사 도서 수정 불가)
+      if (input.id && user.role !== 'MASTER' && prisma.portalSetting) {
+        const currentBook = await prisma.book.findUnique({ where: { id: input.id } });
+        if (currentBook) {
+          const creatorSetting = await prisma.portalSetting.findUnique({ where: { key: `book_creator:${currentBook.bookNo}` } });
+          const creatorData = creatorSetting?.value as any;
+          need(creatorData && creatorData.academyId === academyId, '본사 도서 또는 다른 학원의 도서는 수정할 수 없습니다.', 403);
+        }
+      }
+
       const savedBook = input.id
         ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } })
         : await prisma.book.create({ data: { ...data, ...extra } });
@@ -786,6 +837,7 @@ export default async function handler(req: any, res: any) {
       }); return res.json({ item });
     }
     if (entity === 'notices') {
+      master(user);
       if (body.operation === 'delete') {
         await prisma.notice.delete({ where: { id: input.id } });
         await prisma.portalSetting.deleteMany({ where: { key: 'notice_meta:' + input.id, scope: 'notice_meta' } });
@@ -811,6 +863,7 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: { ...saved, ...meta } });
     }
     if (entity === 'themes') {
+      master(user);
       if (body.operation === 'delete') {
         await prisma.themeCategory.delete({ where: { id: input.id } });
         await prisma.portalSetting.deleteMany({ where: { key: 'theme_meta:' + input.id, scope: 'theme_meta' } });
@@ -864,6 +917,7 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: { ...saved, ...meta } });
     }
     if (entity === 'banners') {
+      master(user);
       if (body.operation === 'delete') {
         await prisma.mainBanner.delete({ where: { id: input.id } });
         await prisma.portalSetting.deleteMany({ where: { key: 'banner_meta:' + input.id, scope: 'banner_meta' } });

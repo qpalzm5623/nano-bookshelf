@@ -27,6 +27,8 @@
     "js/master/master-franchise.js",
     "js/master/master-members.js",
     "js/master/master-operations.js",
+    "js/master/master-learning.js",
+    "js/master/master-portfolio.js",
     "js/master/master-ranking.js",
     "js/master/master-contents.js",
     "js/master/master-dispatch.js",

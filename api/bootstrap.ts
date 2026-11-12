@@ -272,6 +272,9 @@ export default async function handler(req: any, res: any) {
           const baseRecs = (socialStats.recommends?.[finalBookId] || 0) || (b.isRecommended ? 1 : 0);
           const totalRecs = baseRecs + dynamicRec;
           const totalCerts = (socialStats.legacyCerts?.[finalBookId] || 0) + dynamicCert;
+          const weeklyCerts = dynamicCert > 0 ? dynamicCert : Math.max(0, Math.round(totalCerts * 0.35));
+          const bookCreatedAt = b.createdAt ? (typeof b.createdAt.toISOString === 'function' ? b.createdAt.toISOString() : String(b.createdAt)) : new Date().toISOString();
+          const bookDate = bookCreatedAt.slice(0, 10);
 
           const creatorMeta = bookCreatorMap.get(finalBookId);
           bookMap.set(finalBookId, {
@@ -285,6 +288,8 @@ export default async function handler(req: any, res: any) {
             grade: grade,
             pub: pub,
             cover: resolveMediaUrl(cover, false),
+            createdAt: bookCreatedAt,
+            date: bookDate,
             ...(creatorMeta ? {
               creatorType: 'ACADEMY',
               academyId: creatorMeta.academyCode || creatorMeta.academyId || '',
@@ -315,6 +320,8 @@ export default async function handler(req: any, res: any) {
             likes: totalLikes,
             recommends: totalRecs,
             quizCompletions: totalCerts,
+            quizCount7d: weeklyCerts,
+            readCount: totalCerts,
             quizzes: undefined,
             _count: undefined,
             theme: undefined

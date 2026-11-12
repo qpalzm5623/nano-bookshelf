@@ -62,7 +62,10 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
     const duplicate = await tx.quizAttempt.findUnique({ where: { id: data.id } });
     if (duplicate) {
       if (duplicate.memberId !== user.id) throw new Error('ATTEMPT_OWNER');
-      return { attempt: duplicate, earned: await earnedForAttempt(tx, duplicate), isCertified: duplicate.score >= 60 };
+      const prevCertifiedBefore = await tx.quizAttempt.count({
+        where: { memberId: user.id, bookId: book.id, score: { gte: 60 }, completedAt: { lt: duplicate.completedAt } }
+      });
+      return { attempt: duplicate, earned: await earnedForAttempt(tx, duplicate), isCertified: duplicate.score >= 60, roundNum: duplicate.score >= 60 ? prevCertifiedBefore + 1 : 0 };
     }
 
     // 해당 회원의 이 도서에 대한 과거 모든 응시 이력 조회
@@ -83,13 +86,12 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
     const isCertified = data.score >= 60;
     const awards: Array<{ kind: string; amount: number; content: string }> = [];
     let earned = 0;
+    const previousCertifiedCount = previous.filter((a: any) => a.score >= 60).length;
+    const roundNum = isCertified ? previousCertifiedCount + 1 : 0;
 
     if (!importing && isCertified) {
       // 4. 동일한 도서에 한해서 최대 2번까지 포인트 지급 됨.
-      const previousCertifiedCount = previous.filter((a: any) => a.score >= 60).length;
-
       if (previousCertifiedCount < 2) {
-        const roundNum = previousCertifiedCount + 1; // 1회차 또는 2회차
 
         // 서버에서 채점한 정답 수 × 3P에 권장학년 가중치를 적용하고 반올림합니다.
         const isHighGrade = isGrade4OrAbove(book.grade || book.level || book.recommendGrade);
@@ -145,7 +147,7 @@ export async function saveAttempt(db: any, user: any, book: any, data: any, impo
       });
     }
 
-    return { attempt, earned, isCertified };
+    return { attempt, earned, isCertified, roundNum };
   });
 }
 

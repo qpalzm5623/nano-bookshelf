@@ -306,7 +306,7 @@ export default async function handler(req: any, res: any) {
       const score = Math.round(correctCount / results.length * 100);
       const saved = await saveAttempt(prisma, user, book, { id: body.id, memberId: user.id, bookId: book.id, score, correctCount, questionCount: results.length,
         thinkReply: String(body.thoughtAnswer || '').slice(0, 20000), answers: { quizResults: results, thoughtQuestion: book.thinkQuiz || '' } });
-      return res.status(201).json({ score: saved.attempt.score, quizResults: saved.isCertified ? results : [], correctCount, earned: saved.earned, isCertified: saved.isCertified, log: logView({ ...saved.attempt, member: user }, book, true) });
+      return res.status(201).json({ score: saved.attempt.score, quizResults: saved.isCertified ? results : [], correctCount, earned: saved.earned, isCertified: saved.isCertified, roundNum: saved.roundNum, log: logView({ ...saved.attempt, member: user }, book, true) });
     }
     if (action === 'review' && req.method === 'POST') {
       if (!['MASTER', 'DIRECTOR', 'TEACHER'].includes(user.role)) return res.status(403).json({ error: '지도교사와 관리자만 첨삭을 저장할 수 있습니다.' });

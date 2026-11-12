@@ -101,6 +101,16 @@
       <span>서비스 운영 관리</span>
     </a>
 
+    <a class="nav-item-btn" id="nav-master-learning" onclick="switchMasterTab('learning')">
+      <i class="fa-solid fa-clipboard-check"></i>
+      <span>학습 관리</span>
+    </a>
+
+    <a class="nav-item-btn" id="nav-master-portfolio" onclick="switchMasterTab('portfolio')">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>포트폴리오 관리</span>
+    </a>
+
     <a class="nav-item-btn" id="nav-master-ranking" onclick="switchMasterTab('ranking')">
       <i class="fa-solid fa-trophy"></i>
       <span>전국 랭킹 시스템</span>
@@ -633,6 +643,288 @@
           <!-- 학년별 권장도서 20권 단위 페이지네이션 UI -->
           <div id="recommendedPagination" class="d-flex justify-content-center align-items-center mt-3 pt-2 pb-2" style="gap: 5px;"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB. 학습 관리 (Learning Management)
+         ======================================================== -->
+    <section id="tab-master-learning" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-clipboard-check"></i>학습 관리
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 학원 원생들의 완독 도서 북퀴즈 결과, 생각담기 서술형 과제 및 지도교사 첨삭 리포트를 통합 조회합니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- 요약 통계 (학습 기록 연동) -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 13px;">이달 총 독서 학습 건수</div>
+            <div class="stat-num"><span id="masterLearningStatMonthlyCount">0</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <small id="masterLearningStatMonthlySub" class="text-success font-weight-600">조회 버튼 클릭 시 집계</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 13px;">북퀴즈 평균 점수</div>
+            <div class="stat-num"><span id="masterLearningStatAvgScore" class="text-success">0</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">점</span></div>
+            <small id="masterLearningStatPassSub" class="text-muted">인증 통과 기준: 60점 이상</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 13px;">나노 시트 첨삭 완료율</div>
+            <div class="stat-num"><span id="masterLearningStatReviewRate">0</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">%</span></div>
+            <small id="masterLearningStatReviewSub" class="text-success font-weight-600">담당 지도교사 첨삭 완료 건</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 바: 가맹점 필터, 클래스 필터, 조회기간, 학습검색, 조회 버튼 -->
+      <div class="simple-card p-3 mb-4">
+        <div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap: 12px;">
+          <!-- 1. 가맹점 필터 (클래스 필터 좌측) -->
+          <div style="width: 170px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">가맹점 필터</label>
+            <select class="form-control" id="masterLearningAcademyFilter"
+              style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+              <option value="ALL" selected>전체 가맹점</option>
+            </select>
+          </div>
+
+          <!-- 2. 클래스 필터 -->
+          <div style="width: 140px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
+            <select class="form-control" id="masterLearningClassFilter"
+              style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+              <option value="ALL" selected>전체 클래스</option>
+            </select>
+          </div>
+
+          <!-- 3. 조회 기간 (당월 1일 ~ today 기본) -->
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+              조회 기간 <small class="text-muted font-weight-normal">(당월 1일 ~ 오늘 기본)</small>
+            </label>
+            <div class="d-flex align-items-center" style="gap: 6px;">
+              <input type="date" class="form-control" id="masterLearningStartDate"
+                style="height: 38px; border-radius: 8px; font-size: 12px; width: 135px;">
+              <span class="text-muted px-1">~</span>
+              <input type="date" class="form-control" id="masterLearningEndDate"
+                style="height: 38px; border-radius: 8px; font-size: 12px; width: 135px;">
+            </div>
+          </div>
+
+          <!-- 4. 학습 검색 -->
+          <div style="width: 250px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">학습 검색</label>
+            <div style="position: relative;">
+              <input type="search" class="form-control" id="masterLearningSearchInput"
+                placeholder="학생명, 도서명 검색..." style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
+                onkeydown="if(event.key==='Enter') executeMasterLearningSearch()">
+            </div>
+          </div>
+
+          <!-- 5. 조회 버튼 -->
+          <div>
+            <button type="button" class="btn btn-beige-primary px-3 font-weight-bold"
+              onclick="executeMasterLearningSearch()" style="height: 38px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+              <i class="fa-solid fa-search mr-1"></i>조회
+            </button>
+            <button type="button" class="btn btn-outline-secondary ml-1"
+              onclick="resetMasterLearningFilters()" style="height: 38px; border-radius: 8px; font-size: 12.5px;" title="필터 초기화">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 학습 기록 테이블: 컬럼 (번호, 완료일, 도서명, 가맹점, 학급, 원생명, 북퀴즈 결과, 첨삭, 관리) -->
+      <div class="simple-card">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom flex-wrap gap-2" style="background: var(--bg-surface); min-height: 56px;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+              <i class="fa-solid fa-list-check mr-1.5 text-primary"></i>전국 학습 기록 내역
+            </span>
+            <span class="badge-soft badge-soft-primary" style="font-size: 12px; font-weight: 700; padding: 4px 11px; border-radius: 20px;">
+              <i class="fa-solid fa-database mr-1" style="font-size: 10.5px;"></i>총 <strong id="masterLearningLogCount" class="text-primary font-weight-bold">0</strong>건
+            </span>
+          </div>
+          <div class="d-flex align-items-center" style="gap: 12px;">
+            <small class="text-muted d-none d-md-inline" style="font-size: 12px;">
+              <i class="fa-solid fa-circle-check text-success mr-1"></i>기본적으로 [조회]를 누르면 검색 조건에 맞춰 표시됩니다.
+            </small>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 55px;">번호</th>
+                <th style="width: 135px;">완료일</th>
+                <th style="text-align: left;">도서명</th>
+                <th style="width: 140px;">가맹점</th>
+                <th style="width: 100px;">학급</th>
+                <th>원생명</th>
+                <th>북퀴즈 결과</th>
+                <th>나노시트 첨삭</th>
+                <th style="width: 160px; text-align: center;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="masterLearningTableBody">
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">
+                  <i class="fa-solid fa-magnifying-glass mr-2" style="font-size: 18px; color: var(--primary-color);"></i>
+                  가맹점 및 검색 조건을 설정한 후 <strong>[조회]</strong> 버튼을 클릭하세요.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="masterLearningPagination" class="d-flex justify-content-center align-items-center px-4 py-3 border-top" style="background: #ffffff; gap: 6px;"></div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB. 포트폴리오 관리 (Portfolio Management)
+         ======================================================== -->
+    <section id="tab-master-portfolio" class="master-tab-view" style="display: none;">
+      <div class="workspace-header">
+        <div>
+          <div class="workspace-title">
+            <i class="fa-solid fa-chart-pie"></i>포트폴리오 관리
+          </div>
+          <div class="workspace-subtitle">
+            전국 가맹 학원에서 발급된 독서 성장 포트폴리오 내역을 일괄 모니터링하고 알림톡 발송 현황을 확인합니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- 요약 통계: 1. 이번달 생성 건수, 2. 누적 발급 건수, 3. 알림톡 발송률 -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 13px;">이번달 포트폴리오 생성 건수</div>
+            <div class="stat-num"><span id="masterPfMonthIssuedCount">0</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <small class="text-primary font-weight-600" id="masterPfMonthIssuedSub">전국 가맹점 이번 달 신규 발급</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 13px;">누적 발급 포트폴리오 건수</div>
+            <div class="stat-num"><span id="masterPfTotalIssuedCount">0</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">건</span></div>
+            <small class="text-success font-weight-600" id="masterPfTotalIssuedSub">전국 누적 포트폴리오 통합 관리 중</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="text-muted" style="font-size: 13px;">학부모 알림톡 발송률</div>
+            <div class="stat-num"><span id="masterPfKakaoSentRate">0</span><span style="font-size: 16px; font-weight: normal; margin-left: 2px;">%</span></div>
+            <small class="text-success font-weight-600" id="masterPfKakaoSentSub">0건 발송 완료</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- 필터 바: 가맹점 필터, 클래스 필터, 발급일자 필터, 원생/리포트 검색, 조회 버튼 -->
+      <div class="simple-card p-3 mb-4">
+        <div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap: 12px;">
+          <!-- 1. 가맹점 필터 (클래스 필터 좌측) -->
+          <div style="width: 170px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">가맹점 필터</label>
+            <select class="form-control" id="masterPfAcademyFilter" onchange="filterMasterPortfolioList()"
+              style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+              <option value="ALL" selected>전체 가맹점</option>
+            </select>
+          </div>
+
+          <!-- 2. 클래스 필터 -->
+          <div style="width: 140px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
+            <select class="form-control" id="masterPfClassFilter" onchange="filterMasterPortfolioList()"
+              style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+              <option value="ALL" selected>전체 클래스</option>
+            </select>
+          </div>
+
+          <!-- 3. 발급일자 필터 (마스터 & 학원관리자 모두 당월 1일 ~ today 기본) -->
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+              발급일자 <small class="text-muted font-weight-normal">(당월 1일 ~ 오늘 기본)</small>
+            </label>
+            <div class="d-flex align-items-center" style="gap: 6px;">
+              <input type="date" class="form-control" id="masterPfStartDate" onchange="filterMasterPortfolioList()"
+                style="height: 38px; border-radius: 8px; font-size: 12px; width: 135px;">
+              <span class="text-muted px-1">~</span>
+              <input type="date" class="form-control" id="masterPfEndDate" onchange="filterMasterPortfolioList()"
+                style="height: 38px; border-radius: 8px; font-size: 12px; width: 135px;">
+            </div>
+          </div>
+
+          <!-- 4. 원생 / 리포트 검색 -->
+          <div style="width: 250px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">원생 / 리포트 검색</label>
+            <div style="position: relative;">
+              <input type="search" class="form-control" id="masterPfSearchInput"
+                placeholder="원생명, 학번, 포트폴리오 명칭..." style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
+                oninput="filterMasterPortfolioList()" onkeydown="if(event.key==='Enter') filterMasterPortfolioList()">
+            </div>
+          </div>
+
+          <!-- 5. 조회 버튼 -->
+          <div>
+            <button type="button" class="btn btn-beige-primary px-3 font-weight-bold"
+              onclick="filterMasterPortfolioList()" style="height: 38px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+              <i class="fa-solid fa-search mr-1"></i>조회
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 포트폴리오 리스트 테이블: No., 가맹점, 소속 클래스, 학교/학년, 원생명, 포트폴리오 명칭, 포함 완독 도서(권수만), 북퀴즈 평균, 발급일자, 관리 -->
+      <div class="simple-card">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom flex-wrap gap-2" style="background: var(--bg-surface); min-height: 56px;">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="font-weight-bold" style="font-size: 14px; color: var(--text-main);">
+              <i class="fa-solid fa-id-card-clip mr-1.5 text-primary"></i>전국 포트폴리오 발급 내역
+            </span>
+            <span class="badge-soft badge-soft-primary" style="font-size: 12px; font-weight: 700; padding: 4px 11px; border-radius: 20px;">
+              <i class="fa-solid fa-database mr-1" style="font-size: 10.5px;"></i>총 <strong id="masterPfTotalCount" class="text-primary font-weight-bold">0</strong>건
+            </span>
+          </div>
+          <div class="d-flex align-items-center" style="gap: 12px;">
+            <small class="text-muted d-none d-md-inline" style="font-size: 12px;">
+              <i class="fa-solid fa-circle-check text-success mr-1"></i>발급된 포트폴리오의 실시간 조회 및 인쇄를 지원합니다.
+            </small>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="simple-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 50px;">No.</th>
+                <th style="width: 140px;">가맹점</th>
+                <th>소속 클래스</th>
+                <th>학교 / 학년</th>
+                <th>원생명</th>
+                <th>포트폴리오 명칭</th>
+                <th>포함 완독 도서</th>
+                <th>북퀴즈 평균</th>
+                <th>발급일자</th>
+                <th style="text-align: center; width: 220px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="masterPfTableBody">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+        <div id="masterPfPagination" class="d-flex justify-content-center align-items-center px-4 py-3 border-top" style="background: #ffffff; gap: 6px;"></div>
       </div>
     </section>
 
@@ -1440,6 +1732,8 @@
 <script src="js/master/master-franchise.js?v=20261110_auto_unapprove"></script>
 <script src="js/master/master-members.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-operations.js?v=20261109_speed_v2"></script>
+<script src="js/master/master-learning.js?v=20261112_v1"></script>
+<script src="js/master/master-portfolio.js?v=20261112_v1"></script>
 <script src="js/master/master-ranking.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-contents.js?v=20261110_speed_v3"></script>
 <script src="js/master/master-dispatch.js?v=20261110_kakao_v1"></script>

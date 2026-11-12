@@ -2615,7 +2615,9 @@ async function saveBookDataDirectly(bookData) {
     try {
       await NanoPortal.saveBook(nextBook);
     } catch (error) {
-      showMasterToast('도서를 저장하지 못했습니다: ' + error.message);
+      var errMsg = (error && error.message) ? error.message : '서버 오류가 발생했습니다.';
+      alert('도서 저장 실패\n\n' + errMsg);
+      showMasterToast('도서를 저장하지 못했습니다: ' + errMsg);
       return;
     }
   }
@@ -3484,7 +3486,7 @@ function renderDynamicChoices(choices, ans) {
     const num = idx + 1;
     const circle = circleNums[idx] || `${num}`;
     const isChecked = currentAns === num;
-    const canDelete = choices.length > 2;
+    const canDelete = choices.length > 3;
     const isDummy = /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(String(optText || '').trim());
     const cleanVal = isDummy ? "" : (optText || "");
 
@@ -3672,6 +3674,10 @@ function switchQuizQuestionItem(idx) {
 
 function addNewQuizQuestion() {
   saveCurrentQuizDraft();
+  if (currentQuizQuestions.length >= 20) {
+    showMasterToast("북퀴즈는 최대 20문항까지 등록할 수 있습니다.");
+    return;
+  }
   const nextNum = currentQuizQuestions.length + 1;
   currentQuizQuestions.push({
     type: "CHOICE",
@@ -3695,8 +3701,8 @@ function addNewQuizQuestion() {
 }
 
 function deleteCurQuizQuestion() {
-  if (currentQuizQuestions.length <= 1) {
-    showMasterToast("북퀴즈에는 최소 1개 이상의 문항이 유지되어야 합니다.");
+  if (currentQuizQuestions.length <= 3) {
+    showMasterToast("북퀴즈는 최소 3문항 이상 유지되어야 합니다.");
     return;
   }
   currentQuizQuestions.splice(curQuizQuestionIdx, 1);
@@ -3708,8 +3714,87 @@ function deleteCurQuizQuestion() {
   showMasterToast("문항이 삭제되었습니다.");
 }
 
+// 북퀴즈 문항 세트 유효성 검증 (엑셀 등록 정책과 100% 동일)
+function validateMasterQuizQuestions(questions) {
+  if (!Array.isArray(questions) || questions.length < 3) {
+    showMasterToast(`북퀴즈는 최소 3문항 이상 등록되어야 합니다. (현재: ${questions ? questions.length : 0}문항)`);
+    return false;
+  }
+  if (questions.length > 20) {
+    showMasterToast(`북퀴즈는 최대 20문항까지 등록 가능합니다. (현재: ${questions.length}문항)`);
+    return false;
+  }
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    const qNum = i + 1;
+    const qText = (q.question || "").trim();
+    const isDummyQ = (qText === "문제를 입력해주세요" || qText === "문제를 입력해 주세요");
+
+    if (!qText || isDummyQ) {
+      showMasterToast(`${qNum}번 문항의 질문 내용을 입력해 주세요.`);
+      switchQuizQuestionItem(i);
+      setTimeout(() => {
+        document.getElementById("mqQuestionText")?.focus();
+      }, 100);
+      return false;
+    }
+
+    const qType = q.type || "CHOICE";
+    if (qType === "CHOICE") {
+      const choices = (q.choices && Array.isArray(q.choices)) ? q.choices : [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(x => x !== undefined && x !== "");
+      if (choices.length < 3) {
+        showMasterToast(`${qNum}번 문항의 객관식 보기는 최소 3개 이상이어야 합니다.`);
+        switchQuizQuestionItem(i);
+        return false;
+      }
+      for (let cIdx = 0; cIdx < 3; cIdx++) {
+        const cVal = String(choices[cIdx] || "").trim();
+        const isDummyOpt = /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(cVal);
+        if (!cVal || isDummyOpt) {
+          showMasterToast(`${qNum}번 문항의 ${cIdx + 1}번 보기를 입력해 주세요. (보기 1~3 필수)`);
+          switchQuizQuestionItem(i);
+          setTimeout(() => {
+            document.getElementById(`mqOpt${cIdx + 1}`)?.focus();
+          }, 100);
+          return false;
+        }
+      }
+
+      const ansNum = parseInt(q.ans || "0", 10);
+      if (isNaN(ansNum) || ansNum < 1 || ansNum > choices.length) {
+        showMasterToast(`${qNum}번 문항의 정답을 선택해 주세요.`);
+        switchQuizQuestionItem(i);
+        return false;
+      }
+      const ansChoiceText = String(choices[ansNum - 1] || "").trim();
+      if (!ansChoiceText) {
+        showMasterToast(`${qNum}번 문항에서 선택된 정답(${ansNum}번)의 보기 내용이 비어있습니다.`);
+        switchQuizQuestionItem(i);
+        return false;
+      }
+    } else if (qType === "SUBJECTIVE") {
+      const subjAns = (q.subjectiveAns || "").trim();
+      if (!subjAns) {
+        showMasterToast(`${qNum}번 문항의 주관식 정답을 입력해 주세요.`);
+        switchQuizQuestionItem(i);
+        setTimeout(() => {
+          document.getElementById("mqSubjectiveAns")?.focus();
+        }, 100);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 async function handleSaveMasterQuizOnly() {
   saveCurrentQuizDraft();
+
+  if (!validateMasterQuizQuestions(currentQuizQuestions)) {
+    return;
+  }
 
   const book = masterBooks.find(b => b.id === curQuizTargetBookId);
   if (!book || !book.quizSets[curQuizSetIdx]) return;

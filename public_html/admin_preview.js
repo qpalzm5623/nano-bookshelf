@@ -231,6 +231,11 @@ function saveAllQuizzes() {
 // 2. 7대 탭 네비게이션 제어
 // ==============================================================
 function switchTab(tab) {
+  // 선생님 계정 접속 시 결제 관리 메뉴 접근 차단
+  if (tab === 'payment' && typeof isCurrentLoggedInTeacher === 'function' && isCurrentLoggedInTeacher()) {
+    showAcademyToast('결제 관리는 원장님 전용 권한 메뉴입니다.');
+    tab = 'members';
+  }
   var views = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   if (views.indexOf(tab) < 0) tab = 'members';
   // 저장소가 차단되어도 URL에는 현재 메뉴를 남깁니다.
@@ -312,6 +317,7 @@ function switchTab(tab) {
     if (pfBadge) { pfBadge.style.display = 'none'; pfBadge.innerHTML = ''; }
     var pfClass = document.getElementById('filterPortfolioClass');
     if (pfClass) pfClass.value = 'ALL';
+    initPortfolioDateFilters();
     showPortfolioList();
     if (typeof filterPortfolioList === 'function') filterPortfolioList();
     else renderPortfolioTable(portfolioList);
@@ -517,11 +523,27 @@ function updateHeaderUserInfo() {
   var btnOpenClassManage = document.getElementById('btnOpenClassManageModal');
   var btnOpenDeletedStudents = document.getElementById('btnOpenDeletedStudentsModal');
   var btnModalClassManage = document.getElementById('btnModalClassManageWrapper') || document.getElementById('btnModalClassManage');
+  var navPaymentBtn = document.getElementById('btn-nav-payment');
+  var navPaymentSection = document.getElementById('sidebar-section-payment');
 
   var isTeacher = isCurrentLoggedInTeacher();
 
   // 1. 우측 상단 헤더 역할 배지 및 이름 갱신
   if (isTeacher) {
+    // [권한 설정] 선생님 계정 접속 시 결제 관리 메뉴 완전 숨김
+    if (navPaymentBtn) {
+      navPaymentBtn.style.display = 'none';
+    }
+    if (navPaymentSection) {
+      navPaymentSection.style.display = 'none';
+    }
+
+    // 현재 활성화된 탭이 결제 관리인 경우 회원 관리로 강제 전환
+    var activeTab = sessionStorage.getItem('nano_admin_active_tab') || (window.location.hash ? window.location.hash.replace('#', '') : '');
+    if (activeTab === 'payment') {
+      switchTab('members');
+    }
+
     // 선생님 계정으로 로그인한 경우: [선생님] ㅇㅇㅇ 선생님
     if (roleBadgeEl) {
       roleBadgeEl.className = 'badge-soft mr-2';
@@ -602,11 +624,22 @@ function updateHeaderUserInfo() {
     if (btnModalClassManage) {
       btnModalClassManage.style.display = '';
     }
+    if (navPaymentBtn) {
+      navPaymentBtn.style.display = '';
+    }
+    if (navPaymentSection) {
+      navPaymentSection.style.display = '';
+    }
   }
 
   // 학원명 갱신
   if (acadNameEl && currentAcademyInfo.name) {
     acadNameEl.innerText = currentAcademyInfo.name;
+  }
+
+  // 권한별 학급 필터 드롭다운 옵션 즉시 동기화
+  if (typeof updateClassSelectOptions === 'function') {
+    updateClassSelectOptions();
   }
 }
 
@@ -1625,8 +1658,17 @@ function renderLearningTable() {
   var startDateVal = document.getElementById('learningStartDate') ? document.getElementById('learningStartDate').value : '';
   var endDateVal = document.getElementById('learningEndDate') ? document.getElementById('learningEndDate').value : '';
 
+  var isTeacher = isCurrentLoggedInTeacher();
+  var assignedClasses = isTeacher ? getTeacherAssignedClasses() : [];
+  var assignedClassNames = assignedClasses.map(function(c) { return c.name; });
+
   var allLogs = getLoadedLearningLogs();
-  var filtered = allLogs.filter(function(l) {
+  // 선생님 계정 접속 시 담당 클래스에 속한 원생의 학습 로그만 기본 조회
+  var baseLogs = isTeacher ? allLogs.filter(function(l) {
+    return l.classGroup && assignedClassNames.includes(l.classGroup);
+  }) : allLogs;
+
+  var filtered = baseLogs.filter(function(l) {
     var matchClass = classFilter === 'ALL' || l.classGroup === classFilter;
     var matchQuery = !query || l.studentName.toLowerCase().includes(query) || l.bookTitle.toLowerCase().includes(query);
 
@@ -1665,9 +1707,9 @@ function renderLearningTable() {
   var curYm = kstNow.toISOString().slice(0, 7);
   var prevDate = new Date(Date.UTC(kstNow.getUTCFullYear(), kstNow.getUTCMonth() - 1, 1));
   var prevYm = prevDate.toISOString().slice(0, 7);
-  var thisMonthLogs = allLogs.filter(function(l) { return String(l.date || '').slice(0, 7) === curYm; });
-  var prevMonthLogs = allLogs.filter(function(l) { return String(l.date || '').slice(0, 7) === prevYm; });
-  var statBaseLogs = filtered.length > 0 ? filtered : allLogs;
+  var thisMonthLogs = baseLogs.filter(function(l) { return String(l.date || '').slice(0, 7) === curYm; });
+  var prevMonthLogs = baseLogs.filter(function(l) { return String(l.date || '').slice(0, 7) === prevYm; });
+  var statBaseLogs = filtered.length > 0 ? filtered : baseLogs;
 
   var monthlyCountEl = document.getElementById('learningStatMonthlyCount');
   var monthlySubEl = document.getElementById('learningStatMonthlySub');
@@ -1677,9 +1719,9 @@ function renderLearningTable() {
   if (monthlySubEl) {
     if (thisMonthLogs.length > 0) {
       var diff = thisMonthLogs.length - prevMonthLogs.length;
-      monthlySubEl.innerText = (diff >= 0 ? '지난달 대비 +' + diff + '건 증가' : '지난달 대비 ' + diff + '건') + ' (누적 ' + allLogs.length + '건)';
+      monthlySubEl.innerText = (diff >= 0 ? '지난달 대비 +' + diff + '건 증가' : '지난달 대비 ' + diff + '건') + ' (누적 ' + baseLogs.length + '건)';
     } else {
-      monthlySubEl.innerText = '전체 누적 ' + allLogs.length + '건 (조회 ' + filtered.length + '건)';
+      monthlySubEl.innerText = (isTeacher ? '담당 누적 ' : '전체 누적 ') + baseLogs.length + '건 (조회 ' + filtered.length + '건)';
     }
   }
 
@@ -5950,7 +5992,17 @@ function renderPortfolioTable(list) {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  var dataList = list || portfolioList;
+  var isTeacher = isCurrentLoggedInTeacher();
+  var assignedClasses = isTeacher ? getTeacherAssignedClasses() : [];
+  var assignedClassNames = assignedClasses.map(function(c) { return c.name; });
+
+  // 선생님 계정인 경우 담당 학급의 포트폴리오만 기본 집계 베이스로 설정
+  var basePfList = (Array.isArray(portfolioList) ? portfolioList : []).filter(function(p) {
+    if (!isTeacher) return true;
+    return p.classGroup && assignedClassNames.some(function(tc) { return p.classGroup.indexOf(tc) !== -1; });
+  });
+
+  var dataList = list || basePfList;
 
   // 상단 통계 카드 3종 (실제 데이터 연동: 이번달 생성 건수, 누적 발급 건수, 알림톡 발송률)
   var thisMonthCountEl = document.getElementById('pfMonthIssuedCount') || document.getElementById('pfThisMonthCount');
@@ -5960,7 +6012,7 @@ function renderPortfolioTable(list) {
   var kakaoRateEl = document.getElementById('pfKakaoSentRate');
   var kakaoSubEl = document.getElementById('pfKakaoSentSub');
 
-  var listToCalc = Array.isArray(portfolioList) ? portfolioList : [];
+  var listToCalc = basePfList;
   var totalCount = listToCalc.length;
 
   // 1. 이번달 포트폴리오 생성 건수 계산
@@ -5988,7 +6040,7 @@ function renderPortfolioTable(list) {
   if (totalIssuedCountEl) totalIssuedCountEl.innerText = totalCount;
   if (totalIssuedSubEl) {
     if (totalCount > 0) {
-      totalIssuedSubEl.innerText = '원내 누적 포트폴리오 ' + totalCount + '건 통합 관리 중';
+      totalIssuedSubEl.innerText = (isTeacher ? '담당 누적 포트폴리오 ' : '원내 누적 포트폴리오 ') + totalCount + '건 관리 중';
     } else {
       totalIssuedSubEl.innerText = '발급된 누적 포트폴리오 없음 (0건)';
     }
@@ -6012,7 +6064,7 @@ function renderPortfolioTable(list) {
   }
 
   if (dataList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-5 text-muted">일치하는 독서 포트폴리오가 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">일치하는 독서 포트폴리오가 없습니다.</td></tr>';
     return;
   }
 
@@ -6027,39 +6079,37 @@ function renderPortfolioTable(list) {
     var rowNo = totalLen - idx;
     var displayIssueDate = pf.issueDate || '2026.09.08 14:00';
 
-    // 1. 상태 부분: 발송 완료(카톡 발송 완료 시) vs 카톡 발송하기(발송 전 시 버튼)
-    var statusCellHtml = '';
-    if (pf.kakaoSent === true) {
-      statusCellHtml = '<span class="badge-soft badge-soft-success font-weight-bold" style="font-size:12px; padding:4px 10px; border-radius:6px;"><i class="fa-solid fa-check mr-1"></i>발송 완료</span>';
+    // 카톡 액션 버튼 (상세/인쇄 버튼 우측에 배치)
+    var kakaoActionHtml = '';
+    if (pf.kakaoSent === true || pf.status === '발송 완료') {
+      kakaoActionHtml = '<span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-check mr-1"></i>발송 완료</span>';
     } else {
-      statusCellHtml = '<button type="button" class="btn btn-xs font-weight-bold" onclick="sendPortfolioKakaoDirect(\'' + pf.id + '\', event)" ' +
-        'style="background-color:#FEE500; color:#3C1E1E; border:1px solid #ebd000; border-radius:6px; font-size:11.5px; padding:3px 10px; box-shadow:0 1px 3px rgba(0,0,0,0.08); cursor:pointer;">' +
-        '<i class="fa-solid fa-comment mr-1"></i>카톡 발송하기' +
+      kakaoActionHtml = '<button type="button" class="btn btn-xs font-weight-bold" onclick="sendPortfolioKakaoDirect(\'' + pf.id + '\', event)" ' +
+        'style="background-color:#FEE500; color:#3C1E1E; border:1px solid #ebd000; border-radius:6px; font-size:11px; padding:3px 8px; box-shadow:0 1px 3px rgba(0,0,0,0.08); cursor:pointer;">' +
+        '<i class="fa-solid fa-comment mr-1"></i>카톡 발송' +
         '</button>';
     }
 
+    // 컬럼 순서: No. | 소속 클래스 | 학교/학년 | 원생명 | 포트폴리오 명칭 | 포함 완독 도서(권수만) | 북퀴즈 평균 | 발급일자 | 관리
     tr.innerHTML = 
       '<td class="text-center"><span class="font-weight-bold" style="font-size:12.5px; color:var(--text-main);">' + rowNo + '</span></td>' +
+      '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + escapePortfolioText(pf.classGroup || '-') + '</span></td>' +
+      '<td class="text-center"><small class="text-muted">' + escapePortfolioText((pf.school || '초등학교') + ' ' + (pf.grade || '')) + '</small></td>' +
       '<td>' +
-        '<strong style="font-size:13.5px; color:var(--text-main); cursor:pointer; text-decoration:underline;" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')">' + pf.studentName + '</strong>' +
+        '<strong style="font-size:13.5px; color:var(--text-main); cursor:pointer; text-decoration:underline;" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')">' + escapePortfolioText(pf.studentName) + '</strong>' +
         (pf.id === lastCreatedPortfolioId ? ' <span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : '') +
       '</td>' +
-      '<td class="text-center"><small class="text-muted">' + (pf.school || '초등학교') + ' ' + (pf.grade || '') + '</small></td>' +
-      '<td class="text-center"><span class="badge-soft badge-soft-neutral">' + pf.classGroup + '</span></td>' +
       '<td>' +
-        '<div class="font-weight-bold" style="font-size:13px; color:var(--text-main); cursor:pointer;" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')">' + pf.title + '</div>' +
-        '<small class="text-muted">' + (pf.period || '') + '</small>' +
+        '<div class="font-weight-bold" style="font-size:13px; color:var(--text-main); cursor:pointer;" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')">' + escapePortfolioText(pf.title) + '</div>' +
+        '<small class="text-muted">' + escapePortfolioText(pf.period || '') + '</small>' +
       '</td>' +
-      '<td>' +
-        '<span class="font-weight-bold text-dark">' + pf.bookCount + '권</span> ' +
-        '<small class="text-muted">(' + pf.booksSummary + ')</small>' +
-      '</td>' +
+      '<td class="text-center"><span class="font-weight-bold text-dark">' + pf.bookCount + '권</span></td>' +
       '<td class="text-center text-success font-weight-bold">' + (pf.quizAvg != null && !isNaN(parseFloat(String(pf.quizAvg))) ? Math.round(parseFloat(String(pf.quizAvg))) + '점' : (pf.quizAvg || '-')) + '</td>' +
       '<td class="text-center text-muted" style="font-size:12px; white-space:nowrap;">' + displayIssueDate + '</td>' +
-      '<td class="text-center" style="white-space:nowrap;">' + statusCellHtml + '</td>' +
       '<td class="text-center" style="white-space:nowrap;">' +
-        '<button class="btn btn-xs btn-beige-primary mr-1" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 9px;">상세 보기</button>' +
-        '<button class="btn btn-xs btn-outline-secondary" onclick="printSinglePortfolio(\'' + pf.studentId + '\', \'' + pf.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;" title="리포트 인쇄"><i class="fa-solid fa-print"></i></button>' +
+        '<button class="btn btn-xs btn-beige-primary mr-1" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 9px;">상세보기</button>' +
+        '<button class="btn btn-xs btn-outline-secondary mr-1" onclick="printSinglePortfolio(\'' + pf.studentId + '\', \'' + pf.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;" title="리포트 인쇄"><i class="fa-solid fa-print"></i></button>' +
+        kakaoActionHtml +
       '</td>';
 
     tbody.appendChild(tr);
@@ -6155,23 +6205,62 @@ function clearPortfolioSearch() {
   filterPortfolioList();
 }
 
+// 포트폴리오 발급일자 기본 필터 초기화 (최근 당월 1일 ~ today)
+function initPortfolioDateFilters() {
+  var startEl = document.getElementById('filterPortfolioStartDate');
+  var endEl = document.getElementById('filterPortfolioEndDate');
+  if (!startEl || !endEl) return;
+  if (!startEl.value || !endEl.value) {
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    startEl.value = y + '-' + m + '-01';
+    endEl.value = y + '-' + m + '-' + d;
+  }
+}
+
 // 포트폴리오 목록 검색 및 필터링
 function filterPortfolioList() {
+  initPortfolioDateFilters();
+
   var classVal = document.getElementById('filterPortfolioClass') ? document.getElementById('filterPortfolioClass').value : 'ALL';
   var query = (document.getElementById('searchPortfolioInput') ? document.getElementById('searchPortfolioInput').value : '').toLowerCase().trim();
+  var startVal = document.getElementById('filterPortfolioStartDate') ? document.getElementById('filterPortfolioStartDate').value : '';
+  var endVal = document.getElementById('filterPortfolioEndDate') ? document.getElementById('filterPortfolioEndDate').value : '';
 
   // ✕ 버튼 상태 동기화
   var clearBtn = document.getElementById("btnPortfolioSearchClear");
   if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
 
-  var filtered = portfolioList.filter(function(pf) {
-    var matchClass = (classVal === 'ALL') || (pf.classGroup.indexOf(classVal) !== -1);
+  var isTeacher = isCurrentLoggedInTeacher();
+  var assignedClasses = isTeacher ? getTeacherAssignedClasses() : [];
+  var assignedClassNames = assignedClasses.map(function(c) { return c.name; });
+
+  // 선생님 계정인 경우 담당 학급의 포트폴리오만 기본 조회 베이스로 제한
+  var baseList = isTeacher ? (portfolioList || []).filter(function(pf) {
+    return pf.classGroup && assignedClassNames.some(function(tc) { return pf.classGroup.indexOf(tc) !== -1; });
+  }) : (portfolioList || []);
+
+  var filtered = baseList.filter(function(pf) {
+    var matchClass = (classVal === 'ALL') || (pf.classGroup && pf.classGroup.indexOf(classVal) !== -1);
     var matchQuery = !query || 
       pf.studentName.toLowerCase().indexOf(query) !== -1 || 
       pf.id.toLowerCase().indexOf(query) !== -1 || 
       pf.title.toLowerCase().indexOf(query) !== -1 ||
       pf.studentId.toLowerCase().indexOf(query) !== -1;
-    return matchClass && matchQuery;
+
+    // 발급일자 기간 필터링
+    var matchDate = true;
+    if (startVal || endVal) {
+      var rawDate = String(pf.issueDate || pf.createdAt || pf.date || '').slice(0, 10).replace(/\./g, '-');
+      if (rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+        if (startVal && rawDate < startVal) matchDate = false;
+        if (endVal && rawDate > endVal) matchDate = false;
+      }
+    }
+
+    return matchClass && matchQuery && matchDate;
   });
 
   // 활성 검색 배지 상태 동기화
@@ -7370,14 +7459,23 @@ function onWizardClassFilterChange(classGroup) {
   if (!sel) return;
   sel.innerHTML = '';
 
-  var filteredStudents = studentDataList.filter(function(std) {
+  var isTeacher = isCurrentLoggedInTeacher();
+  var assignedClasses = isTeacher ? getTeacherAssignedClasses() : [];
+  var assignedClassNames = assignedClasses.map(function(c) { return c.name; });
+
+  // 선생님 계정인 경우 담당 학급에 속한 원생만 선택 가능하도록 제한
+  var baseStudents = isTeacher ? studentDataList.filter(function(std) {
+    return std.classGroup && assignedClassNames.includes(std.classGroup);
+  }) : studentDataList;
+
+  var filteredStudents = baseStudents.filter(function(std) {
     return (classGroup === 'ALL') || (std.classGroup === classGroup);
   });
 
   if (filteredStudents.length === 0) {
     var opt = document.createElement('option');
     opt.value = '';
-    opt.innerText = '해당 학급에 등록된 원생이 없습니다.';
+    opt.innerText = isTeacher ? '담당 학급에 등록된 원생이 없습니다.' : '해당 학급에 등록된 원생이 없습니다.';
     sel.appendChild(opt);
     return;
   }

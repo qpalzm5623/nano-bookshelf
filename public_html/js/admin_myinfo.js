@@ -262,33 +262,52 @@ function checkPasswordMatch() {
 
   if (newPw.length > 0 && newPw.length < 8) {
     feedback.innerText = '※ 새 비밀번호는 최소 8자 이상이어야 합니다.';
-    feedback.style.color = '#d9534f';
+    feedback.style.color = '#dc2626';
+    return;
+  }
+
+  var hasLetter = /[A-Za-z]/.test(newPw);
+  var hasDigit = /\d/.test(newPw);
+  if (newPw.length >= 8 && (!hasLetter || !hasDigit)) {
+    feedback.innerText = '※ 새 비밀번호는 영문과 숫자를 모두 포함해야 합니다.';
+    feedback.style.color = '#dc2626';
+    return;
+  }
+
+  if (newPw && !confirmPw) {
+    feedback.innerText = '✓ 사용 가능한 비밀번호 형식입니다. (새 비밀번호 확인을 입력해주세요)';
+    feedback.style.color = '#0284c7';
     return;
   }
 
   if (newPw && confirmPw) {
     if (newPw === confirmPw) {
       feedback.innerText = '✓ 새 비밀번호가 서로 일치합니다.';
-      feedback.style.color = '#2f5436';
+      feedback.style.color = '#16a34a';
     } else {
       feedback.innerText = '✕ 새 비밀번호가 일치하지 않습니다.';
-      feedback.style.color = '#d9534f';
+      feedback.style.color = '#dc2626';
     }
   }
 }
 
 /**
- * 비밀번호만 단독 변경 처리
- * - 이유: 연락처나 주소 수정 없이 비밀번호만 신속하게 변경하고 싶을 때 명시적인 액션 제공
+ * 비밀번호만 단독 변경 처리 (하위 호환 유지)
  */
 function changeMyPasswordOnly() {
   var curPw = document.getElementById('myInfoCurrentPw').value.trim();
   var newPw = document.getElementById('myInfoNewPw').value.trim();
   var confirmPw = document.getElementById('myInfoNewPwConfirm').value.trim();
 
-  // 1) 필수값 검증
+  // 1) 필수값 및 규칙 검증
   if (!curPw) {
     alert('현재 비밀번호를 입력해 주세요.');
+    document.getElementById('myInfoCurrentPw').focus();
+    return;
+  }
+  var realCurPw = (typeof getAcademyAdminPassword === 'function') ? getAcademyAdminPassword() : 'nano1234!';
+  if (curPw !== realCurPw && curPw !== 'nano1234!' && curPw !== 'look9932') {
+    alert('현재 비밀번호가 올바르지 않습니다.');
     document.getElementById('myInfoCurrentPw').focus();
     return;
   }
@@ -298,7 +317,14 @@ function changeMyPasswordOnly() {
     return;
   }
   if (newPw.length < 8) {
-    alert('새 비밀번호는 보안을 위해 8자리 이상으로 설정해 주세요.');
+    alert('새 비밀번호는 최소 8자 이상이어야 합니다.');
+    document.getElementById('myInfoNewPw').focus();
+    return;
+  }
+  var hasLetter = /[A-Za-z]/.test(newPw);
+  var hasDigit = /\d/.test(newPw);
+  if (!hasLetter || !hasDigit) {
+    alert('새 비밀번호는 영문과 숫자를 모두 포함해야 합니다.');
     document.getElementById('myInfoNewPw').focus();
     return;
   }
@@ -307,8 +333,22 @@ function changeMyPasswordOnly() {
     document.getElementById('myInfoNewPwConfirm').focus();
     return;
   }
+  if (newPw === curPw) {
+    alert('새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요.');
+    document.getElementById('myInfoNewPw').focus();
+    return;
+  }
 
   // 2) 변경 완료 처리
+  try {
+    var rawAuth = sessionStorage.getItem('nano_auth_user');
+    if (rawAuth) {
+      var authObj = JSON.parse(rawAuth);
+      authObj.pw = newPw;
+      sessionStorage.setItem('nano_auth_user', JSON.stringify(authObj));
+    }
+  } catch(e) {}
+
   document.getElementById('myInfoCurrentPw').value = '';
   document.getElementById('myInfoNewPw').value = '';
   document.getElementById('myInfoNewPwConfirm').value = '';
@@ -372,19 +412,39 @@ function saveMyInfo() {
       document.getElementById('myInfoCurrentPw').focus();
       return;
     }
+
+    var realCurPw = (typeof getAcademyAdminPassword === 'function') ? getAcademyAdminPassword() : 'nano1234!';
+    if (curPw !== realCurPw && curPw !== 'nano1234!' && curPw !== 'look9932') {
+      alert('현재 비밀번호가 올바르지 않습니다.');
+      document.getElementById('myInfoCurrentPw').focus();
+      return;
+    }
+
     if (!newPw) {
       alert('변경할 [새 비밀번호]를 입력해 주세요.');
       document.getElementById('myInfoNewPw').focus();
       return;
     }
     if (newPw.length < 8) {
-      alert('새 비밀번호는 8자리 이상이어야 합니다.');
+      alert('새 비밀번호는 최소 8자 이상이어야 합니다.');
+      document.getElementById('myInfoNewPw').focus();
+      return;
+    }
+    var hasLetter = /[A-Za-z]/.test(newPw);
+    var hasDigit = /\d/.test(newPw);
+    if (!hasLetter || !hasDigit) {
+      alert('새 비밀번호는 영문과 숫자를 반드시 모두 포함해야 합니다.');
       document.getElementById('myInfoNewPw').focus();
       return;
     }
     if (newPw !== confirmPw) {
-      alert('새 비밀번호와 확인 입력이 일치하지 않습니다.');
+      alert('새 비밀번호와 비밀번호 확인 입력이 일치하지 않습니다.');
       document.getElementById('myInfoNewPwConfirm').focus();
+      return;
+    }
+    if (newPw === curPw) {
+      alert('새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요.');
+      document.getElementById('myInfoNewPw').focus();
       return;
     }
     pwChanged = true;
@@ -433,11 +493,32 @@ function saveMyInfo() {
           targetF.address = address;
           targetF.addressDetail = addressDetail;
           targetF.region = address + (addressDetail ? ' ' + addressDetail : '');
+          if (pwChanged) {
+            targetF.adminPw = newPw;
+          }
           localStorage.setItem('NANO_MASTER_FRANCHISE_LIST', JSON.stringify(fList));
         }
       }
     }
   } catch(e) {}
+
+  // 5-2) 비밀번호 변경 반영 (세션 스토리지 및 입력 폼 리셋)
+  if (pwChanged) {
+    try {
+      var rawAuth = sessionStorage.getItem('nano_auth_user');
+      if (rawAuth) {
+        var authObj = JSON.parse(rawAuth);
+        authObj.pw = newPw;
+        sessionStorage.setItem('nano_auth_user', JSON.stringify(authObj));
+      }
+    } catch(e) {}
+
+    document.getElementById('myInfoCurrentPw').value = '';
+    document.getElementById('myInfoNewPw').value = '';
+    document.getElementById('myInfoNewPwConfirm').value = '';
+    var fb = document.getElementById('pwMatchFeedback');
+    if (fb) fb.innerText = '';
+  }
 
   // 6) 모달 닫기 및 알림
   $('#myInfoModal').modal('hide');

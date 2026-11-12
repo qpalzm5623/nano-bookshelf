@@ -881,7 +881,7 @@
                   </div>
                   <div class="alert alert-secondary py-2 px-3 mb-2" style="font-size: 11.5px; border-radius: 8px; line-height: 1.5;">
                     <i class="fa-solid fa-circle-info mr-1 text-primary"></i>
-                    <strong>권장 규격:</strong> 학생 화면 실측 (500×220px) 또는 16:9 와이드 (1280×720px) / 학생 홈 화면과 <strong>1:1 실측 동일 사이즈</strong>로 미리보기가 제공됩니다.
+                    <strong>권장 규격:</strong> 16:9 와이드 (1280×720px 또는 1920×1080px 권장) / 학생 홈 화면과 <strong>1:1 실측 동일 비율</strong>로 미리보기가 제공됩니다.
                   </div>
 
                   <!-- 직접 파일 업로드 -->
@@ -894,20 +894,20 @@
                 <div class="p-2 bg-light rounded" style="border: 1px dashed var(--border-medium); text-align: center;">
                   <div class="d-flex justify-content-between align-items-center mb-1 px-1">
                     <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 11px;">
-                      <i class="fa-solid fa-mobile-screen mr-1"></i>학생 홈 노출 실측 규격 (500×220px)
+                      <i class="fa-solid fa-mobile-screen mr-1"></i>학생 홈 노출 실측 규격 (16:9 와이드)
                     </span>
                     <small class="text-muted font-weight-bold" style="font-size: 11px;" id="bannerPreviewFitNote">실제 노출 1:1 뷰</small>
                   </div>
-                  <div id="bannerModalPreviewBox" style="width: 100%; max-width: 500px; height: 220px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #1e1b18; display: flex; align-items: center; justify-content: center; position: relative; border: 1.5px solid rgba(220, 208, 195, 0.6); box-shadow: 0 4px 14px rgba(0,0,0,0.1);">
+                  <div id="bannerModalPreviewBox" style="width: 100%; max-width: 500px; aspect-ratio: 16 / 9; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #1e1b18; display: flex; align-items: center; justify-content: center; position: relative; border: 1.5px solid rgba(220, 208, 195, 0.6); box-shadow: 0 4px 14px rgba(0,0,0,0.1);">
                     <img id="bannerModalPreviewImg" src="" alt="미리보기" style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: none;">
                     <div id="bannerModalEmptyNotice" class="text-muted" style="font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #a39c94 !important;">
                       <i class="fa-regular fa-image" style="font-size: 28px; opacity: 0.5;"></i>
                       <span>등록된 배너 이미지가 없습니다.</span>
-                      <small style="font-size: 11px; opacity: 0.7;">권장 규격: 500×220px 또는 16:9 와이드</small>
+                      <small style="font-size: 11px; opacity: 0.7;">권장 규격: 16:9 와이드 (1280×720px 또는 1920×1080px)</small>
                     </div>
                   </div>
                   <small class="text-muted mt-2 d-block" style="font-size: 11px;">
-                    * 학생 스마트폰/태블릿 화면 상단에 <strong>실제 렌더링되는 정확한 크기와 비율</strong> 그대로 노출됩니다.
+                    * 학생 스마트폰/태블릿 화면 상단에 <strong>실제 렌더링되는 정확한 크기와 비율(16:9)</strong> 그대로 노출됩니다.
                   </small>
                 </div>
               </div>
@@ -2123,7 +2123,7 @@
                 <tr>
                   <td class="font-weight-bold text-danger">2. 주제 분류 태그 (필수)</td>
                   <td>
-                    <span class="badge badge-info">#이야기</span> <span class="badge badge-info">#학습</span> <span class="badge badge-info">#수학</span> <span class="badge badge-info">#자연</span> <span class="badge badge-info">#인간</span> <span class="badge badge-info">#건강</span> <span class="badge badge-info">#과학</span> <span class="badge badge-info">#생활</span> <span class="badge badge-info">#역사</span> <span class="badge badge-info">#예술</span> <span class="badge badge-info">#사회</span> <span class="badge badge-info">#감정</span> <span class="badge badge-info">#환경</span> 등<br>
+                    <span class="badge badge-info">#이야기</span> <span class="badge badge-info">#학습</span> <span class="badge badge-info">#수학</span> <span class="badge badge-info">#자연</span> <span class="badge badge-info">#생물</span> <span class="badge badge-info">#기술</span> <span class="badge badge-info">#인간</span> <span class="badge badge-info">#건강</span> <span class="badge badge-info">#음식</span> <span class="badge badge-info">#과학</span> <span class="badge badge-info">#생활</span> <span class="badge badge-info">#역사</span> <span class="badge badge-info">#기타</span> 등<br>
                     <small class="text-muted">* 도서 정보의 주제 분류 태그(테마)입니다. # 기호 생략 시에도 자동 보정됩니다.</small>
                   </td>
                 </tr>

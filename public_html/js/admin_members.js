@@ -80,9 +80,9 @@ var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id;
 var STORAGE_KEY_DELETED_STUDENTS = 'NANO_ACADEMY_DELETED_STUDENTS_' + currentAcademyInfo.id;
 
 var defaultStudentDataList = [
-  { id: 'kty4290', name: '강태양', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 3학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 3', bookCount: 28, quizAvg: '94.5', parentName: '강태양 학부모', phone: '010-4290-8812', parentEmail: 'kty4290@kakao.com', reportYn: true, lastDate: '2026.09.28', createdAt: '2026.03.02', teacher: '지도교사', memo: '실제 DB 연동 원생' },
-  { id: 'lhj5017', name: '이현진', gender: '여', password: '••••', school: '개포초등학교', grade: '초등 1학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 1', bookCount: 19, quizAvg: '92.0', parentName: '이현진 학부모', phone: '010-5017-3482', parentEmail: 'lhj5017@kakao.com', reportYn: true, lastDate: '2026.09.27', createdAt: '2026.03.10', teacher: '지도교사', memo: '실제 DB 연동 원생' },
-  { id: 'jjw7681', name: '조진우', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 2학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 2', bookCount: 22, quizAvg: '95.1', parentName: '조진우 학부모', phone: '010-7681-9920', parentEmail: 'jjw7681@kakao.com', reportYn: true, lastDate: '2026.09.25', createdAt: '2026.03.15', teacher: '지도교사', memo: '실제 DB 연동 원생' }
+  { id: 'kty4290', name: '강태양', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 3학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 3', bookCount: 28, quizAvg: '94.5', parentName: '강태양 학부모', phone: '010-4290-8812', parentEmail: 'kty4290@kakao.com', reportYn: true, lastDate: '2026-09-28', createdAt: '2026-03-02', teacher: '지도교사', memo: '실제 DB 연동 원생' },
+  { id: 'lhj5017', name: '이현진', gender: '여', password: '••••', school: '개포초등학교', grade: '초등 1학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 1', bookCount: 19, quizAvg: '92.0', parentName: '이현진 학부모', phone: '010-5017-3482', parentEmail: 'lhj5017@kakao.com', reportYn: true, lastDate: '2026-09-27', createdAt: '2026-03-10', teacher: '지도교사', memo: '실제 DB 연동 원생' },
+  { id: 'jjw7681', name: '조진우', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 2학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 2', bookCount: 22, quizAvg: '95.1', parentName: '조진우 학부모', phone: '010-7681-9920', parentEmail: 'jjw7681@kakao.com', reportYn: true, lastDate: '2026-09-25', createdAt: '2026-03-15', teacher: '지도교사', memo: '실제 DB 연동 원생' }
 ];
 
 var defaultAcademyClassList = [
@@ -1121,15 +1121,19 @@ function updateClassSelectOptions() {
   var learningClassSelect = document.getElementById('learningClassFilter');
   if (learningClassSelect) {
     var curLVal = learningClassSelect.value;
-    learningClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
-    academyClassList.forEach(function(c) {
+    var isT = isCurrentLoggedInTeacher();
+    learningClassSelect.innerHTML = isT ? '<option value="ALL">전체 담당 클래스</option>' : '<option value="ALL">전체 클래스</option>';
+    var targetLClasses = isT ? getTeacherAssignedClasses() : academyClassList;
+    targetLClasses.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.name;
       opt.innerText = c.name;
       learningClassSelect.appendChild(opt);
     });
-    if (curLVal && (academyClassList.some(function(c) { return c.name === curLVal; }) || curLVal === 'ALL')) {
+    if (curLVal && (targetLClasses.some(function(c) { return c.name === curLVal; }) || curLVal === 'ALL')) {
       learningClassSelect.value = curLVal;
+    } else {
+      learningClassSelect.value = 'ALL';
     }
   }
 
@@ -1173,15 +1177,19 @@ function updateClassSelectOptions() {
   var portfolioClassSelect = document.getElementById('filterPortfolioClass');
   if (portfolioClassSelect) {
     var curPFVal = portfolioClassSelect.value;
-    portfolioClassSelect.innerHTML = '<option value="ALL">전체 클래스</option>';
-    academyClassList.forEach(function(c) {
+    var isT = isCurrentLoggedInTeacher();
+    portfolioClassSelect.innerHTML = isT ? '<option value="ALL">전체 담당 클래스</option>' : '<option value="ALL">전체 클래스</option>';
+    var targetPFClasses = isT ? getTeacherAssignedClasses() : academyClassList;
+    targetPFClasses.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.name;
       opt.innerText = c.name;
       portfolioClassSelect.appendChild(opt);
     });
-    if (curPFVal && (academyClassList.some(function(c) { return c.name === curPFVal; }) || curPFVal === 'ALL')) {
+    if (curPFVal && (targetPFClasses.some(function(c) { return c.name === curPFVal; }) || curPFVal === 'ALL')) {
       portfolioClassSelect.value = curPFVal;
+    } else {
+      portfolioClassSelect.value = 'ALL';
     }
   }
 
@@ -1189,15 +1197,19 @@ function updateClassSelectOptions() {
   var wizClassSelect = document.getElementById('wizStudentClassFilter');
   if (wizClassSelect) {
     var curWVal = wizClassSelect.value;
-    wizClassSelect.innerHTML = '<option value="ALL">전체 학급</option>';
-    academyClassList.forEach(function(c) {
+    var isT = isCurrentLoggedInTeacher();
+    wizClassSelect.innerHTML = isT ? '<option value="ALL">전체 담당 학급</option>' : '<option value="ALL">전체 학급</option>';
+    var targetWizClasses = isT ? getTeacherAssignedClasses() : academyClassList;
+    targetWizClasses.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.name;
       opt.innerText = c.name;
       wizClassSelect.appendChild(opt);
     });
-    if (curWVal && (academyClassList.some(function(c) { return c.name === curWVal; }) || curWVal === 'ALL')) {
+    if (curWVal && (targetWizClasses.some(function(c) { return c.name === curWVal; }) || curWVal === 'ALL')) {
       wizClassSelect.value = curWVal;
+    } else {
+      wizClassSelect.value = 'ALL';
     }
   }
 
@@ -1509,6 +1521,23 @@ async function restoreDeletedStudent(idx) {
   showAcademyToast(`[${restored.name}] 원생이 기존 학급(${restored.classGroup}) 및 학습 데이터와 함께 복구되었습니다.`);
 }
 
+// 계정 생성일/가입일 표시 형식 표준화 헬퍼 (YYYY-MM-DD 통일)
+function formatAccountDate(rawDate) {
+  if (!rawDate) return '-';
+  var s = String(rawDate).trim();
+  if (!s || s === '-') return '-';
+  s = s.split('T')[0].split(' ')[0];
+  s = s.replace(/\./g, '-');
+  var match = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (match) {
+    var y = match[1];
+    var m = match[2].padStart(2, '0');
+    var d = match[3].padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return s;
+}
+
 // ==============================================================
 // 3-3. 원생 등록 / 수정 모달 로직
 // ==============================================================
@@ -1540,8 +1569,8 @@ function openStudentAddModal() {
 
   var pwEl = document.getElementById('newStdPw');
   if (pwEl) {
-    pwEl.value = '123456';
-    pwEl.placeholder = '원생 접속용 비밀번호 입력 (6자리 이상, 예: 123456)';
+    pwEl.value = '';
+    pwEl.placeholder = '6자리 이상 입력';
   }
 
   var schoolEl = document.getElementById('newStdSchool');
@@ -1586,6 +1615,7 @@ function openStudentAddModal() {
     var mm = String(today.getMonth() + 1).padStart(2, '0');
     var dd = String(today.getDate()).padStart(2, '0');
     joinDateEl.value = `${yyyy}-${mm}-${dd}`;
+    joinDateEl.readOnly = true;
   }
 
   if (window.jQuery && typeof $('#studentAddModal').modal === 'function') {
@@ -1675,7 +1705,8 @@ function openStudentEditModal(id) {
   var joinDateEl = document.getElementById('newStdJoinDate');
   if (joinDateEl) {
     var dt = std.createdAt || std.joinDate || '2026-09-01';
-    joinDateEl.value = dt.replace(/\./g, '-');
+    joinDateEl.value = formatAccountDate(dt);
+    joinDateEl.readOnly = true;
   }
 
   if (window.jQuery && typeof $('#studentAddModal').modal === 'function') {
@@ -1786,7 +1817,8 @@ async function saveNewStudent() {
     return;
   }
 
-  var createdDateStr = joinDate.replace(/-/g, '.');
+  var todayStr = formatAccountDate(new Date().toISOString().slice(0, 10));
+  var createdDateStr = formatAccountDate(joinDate || todayStr);
   var previousStudent = existingStd ? Object.assign({}, existingStd) : null;
   var successMessage = '';
 
@@ -1813,7 +1845,9 @@ async function saveNewStudent() {
       std.reportYn = reportYn;
       std.teacher = teacher;
       std.memo = memo;
-      std.createdAt = createdDateStr;
+      var origCreated = (existingStd && (existingStd.createdAt || existingStd.joinDate)) ? (existingStd.createdAt || existingStd.joinDate) : createdDateStr;
+      std.createdAt = formatAccountDate(origCreated);
+      std.joinDate = formatAccountDate(origCreated);
 
       successMessage = `[${name}] 원생 정보 및 상태(${status})가 성공적으로 수정되었습니다.`;
     }
@@ -1843,11 +1877,11 @@ async function saveNewStudent() {
       parentEmail: parentEmail,
       reportYn: reportYn,
       stdPhone: '',
-      lastDate: createdDateStr,
-      createdAt: createdDateStr,
+      lastDate: todayStr,
+      createdAt: todayStr,
       teacher: teacher,
       memo: memo || '신규 등록 원생',
-      joinDate: joinDate
+      joinDate: todayStr
     };
 
     studentDataList.unshift(newStudent);
@@ -2535,7 +2569,7 @@ function renderStudentTable(list, page) {
       parentInfo += '<div style="font-size:11px; color:#64748b;">' + std.parentEmail + '</div>';
     }
 
-    var createDateStr = std.createdAt || std.joinDate || '2026.03.01';
+    var createDateStr = formatAccountDate(std.createdAt || std.joinDate || '2026-03-01');
 
     tr.innerHTML = 
       '<td class="text-center"><span class="font-weight-bold" style="color:#64748b; font-size:12.5px;">' + rowNo + '</span></td>' +
@@ -2723,7 +2757,7 @@ function renderTeacherTable(customList) {
       <td class="text-center">${classNamesStr}</td>
       <td class="text-center font-weight-bold" style="color:var(--btn-primary);">${totalStudentCount}명</td>
       <td class="text-center">${typeof formatPhoneNumber === 'function' ? formatPhoneNumber(t.phone) : (t.phone || '-')}</td>
-      <td class="text-center"><small class="text-muted">${t.joinDate}</small></td>
+      <td class="text-center"><small class="text-muted font-weight-bold">${formatAccountDate(t.joinDate || t.createdAt)}</small></td>
       <td class="text-center">
         <div class="d-inline-flex align-items-center justify-content-center" style="gap: 5px;">
           <button class="btn btn-xs btn-outline-secondary" onclick="openTeacherEditModal('${t.id}')" style="width: 58px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>
@@ -2768,8 +2802,8 @@ function openTeacherAddModal() {
   document.getElementById('teacherUsernameInput').value = '';
   var pwEl = document.getElementById('teacherPasswordInput');
   if (pwEl) {
-    pwEl.value = '123456';
-    pwEl.placeholder = '6자 이상 입력 (예: 123456)';
+    pwEl.value = '';
+    pwEl.placeholder = '6자 이상 입력';
   }
   document.getElementById('teacherPhoneInput').value = '';
   $('#teacherModal').modal('show');
@@ -2817,8 +2851,8 @@ async function handleSaveTeacher(e) {
     document.getElementById('teacherUsernameInput').focus();
     return;
   }
-  if (window.NanoPortal && NanoPortal.remote && ((!id && password.length < 6) || (id && password && password.length < 6))) {
-    alert('비밀번호는 6자 이상 입력해 주세요.');
+  if ((!id && (!password || password.length < 6)) || (id && password && password.length < 6)) {
+    alert('선생님 비밀번호는 6자 이상 입력해 주세요.');
     if (pwEl) pwEl.focus();
     return;
   }

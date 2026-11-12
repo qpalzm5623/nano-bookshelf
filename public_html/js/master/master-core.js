@@ -9,7 +9,7 @@ function restoreMasterActiveTab() {
   switchMasterTab(target);
 }
 window.addEventListener('hashchange', function() {
-  const validTabs = ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
+  const validTabs = ['franchise', 'members', 'operations', 'learning', 'portfolio', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
   const hash = (window.location.hash || '').replace('#', '').trim();
   if (validTabs.includes(hash)) {
     switchMasterTab(hash);
@@ -1820,6 +1820,10 @@ function ensureMasterTabRendered(tabName) {
     if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
     if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
     if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load();
+  } else if (tabName === "learning") {
+    if (typeof initMasterLearning === "function") initMasterLearning();
+  } else if (tabName === "portfolio") {
+    if (typeof initMasterPortfolio === "function") initMasterPortfolio();
   }
 }
 
@@ -1900,6 +1904,10 @@ function switchMasterTab(tabName) {
     if (document.getElementById("masterPaymentSearchInput")) document.getElementById("masterPaymentSearchInput").value = "";
     if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
     if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
+  } else if (tabName === "learning") {
+    if (typeof resetMasterLearningFilters === "function") resetMasterLearningFilters();
+  } else if (tabName === "portfolio") {
+    if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList();
   }
 
   const mainEl = document.querySelector('.main-workspace');

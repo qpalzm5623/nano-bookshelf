@@ -342,6 +342,7 @@ var NanoQuizResult = (function () {
     var tier = score === 100 ? 'perfect' : score >= 80 ? 'high' : score >= 60 ? 'pass' : 'retry';
     var themeKey = themeFor(currentBook), t = themes[themeKey], state = tiers[tier];
     var isPass = typeof extra.isPass === 'boolean' ? extra.isPass : score >= 60;
+    var isSecondPass = extra.isSecondPass === true;
     var isRecommended = extra.isRecommended === true;
     var bookIdAttr = escape(currentBook.bookNo || currentBook.id || '');
     var total = Number.isFinite(extra.tot) ? Math.max(0, Math.floor(extra.tot)) : 5;
@@ -363,12 +364,19 @@ var NanoQuizResult = (function () {
       '<span class="qr-rec-icon">' + icon('thumb') + '</span>' +
       '<span class="qr-rec-text">' + (isRecommended ? '추천 완료' : '추천하기') + '</span>' +
       '</button>';
+    var round2NoticeHtml = isSecondPass
+      ? '<div class="qr-notice-round2" style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:11px 14px;margin:12px 0 6px;display:flex;align-items:center;gap:10px;color:#92400e;font-size:12.5px;line-height:1.5;box-shadow:0 2px 8px rgba(245,158,11,0.08);text-align:left;"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span style="font-weight:700;">북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.</span></div>'
+      : '';
+    var rewardNote = isSecondPass
+      ? '북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.'
+      : (points > 0 ? '독서의 즐거움이 차곡차곡' : isPass ? '이번에 지급된 포인트가 없어요' : '60점 이상이면 받을 수 있어요');
     return '<section class="qr-card qr-theme-' + themeKey + ' qr-tier-' + tier + '" style="--qr-ink:' + t.ink + ';--qr-paper:' + t.paper + ';--qr-accent:' + t.accent + '">' +
       '<div class="qr-heading"><div class="qr-eyebrow"><span>북퀴즈 완료</span><div class="qr-eyebrow-actions"><span class="qr-theme-label">' + icon('book') + t.label + '</span>' + recBtnHtml + '</div></div>' +
       '<h2 class="qr-book-title">' + escape(currentBook.title || '선택 도서') + '</h2><p class="qr-headline">' + state.title + '</p></div>' +
       '<div class="qr-artwork">' + illustration(themeKey,charId,tier,extra.stage) + '<div class="qr-achievement">' + icon(state.icon) + '<span>' + state.label + '</span></div></div>' +
       '<div class="qr-summary"><div class="qr-score"><span class="qr-label">나의 점수</span><div><strong>' + score + '</strong><span class="qr-score-unit">점 <span>/ 100</span></span></div></div>' +
-      '<div class="qr-reward"><span class="qr-label">획득 포인트</span><strong>' + icon('coin') + '+' + points.toLocaleString('ko-KR') + '<small>P</small></strong><span class="qr-reward-note">' + (points > 0 ? '독서의 즐거움이 차곡차곡' : isPass ? '이번에 지급된 포인트가 없어요' : '60점 이상이면 받을 수 있어요') + '</span></div></div>' +
+      '<div class="qr-reward"><span class="qr-label">획득 포인트</span><strong>' + icon('coin') + '+' + points.toLocaleString('ko-KR') + '<small>P</small></strong><span class="qr-reward-note">' + rewardNote + '</span></div></div>' +
+      round2NoticeHtml +
       '<div class="qr-progress"><div class="qr-progress-label"><span><strong>' + correct + '</strong> / ' + total + '문항 정답</span><span class="qr-certification">' + icon(isPass ? 'check' : 'book') + (isPass ? '도서 인증 완료' : '60점부터 도서 인증') + '</span></div><div class="qr-segments" aria-hidden="true">' + segments + '</div></div>' +
       '<div class="qr-message"><span class="qr-message-name">' + name + '의 한마디</span><p>' + escape(speech) + '</p></div>' +
       (!isPass ? '<p class="qr-retry-note">' + (failCount >= 3 ? '오늘은 3회 도전했어요. 자정 이후에 다시 도전할 수 있어요.' : '오늘 실패 ' + failCount + '/3회 · 책을 다시 읽고 도전해 보세요.') + '</p>' : '') + '</section>';
