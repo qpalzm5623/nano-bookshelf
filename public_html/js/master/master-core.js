@@ -1,7 +1,7 @@
 
 // [새로고침 시 머무르던 탭 유지] URL 해시 또는 세션 스토리지에서 활성 탭 복원
 function restoreMasterActiveTab() {
-  const validTabs = ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
+  const validTabs = ['franchise', 'members', 'operations', 'learning', 'portfolio', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
   const hash = (window.location.hash || '').replace('#', '').trim();
   let saved = '';
   try { saved = sessionStorage.getItem('nano_master_active_tab') || ''; } catch(e) {}
@@ -528,6 +528,10 @@ function saveFranchisesToStorage() {
 }
 
 let franchiseList = loadFranchisesFromStorage();
+if (typeof window !== "undefined") {
+  window.franchiseList = franchiseList;
+  window.defaultFranchiseList = defaultFranchiseList;
+}
 
 // 가맹 학원 20개 단위 페이징 상태 변수 (TDZ 호이스팅 오류 방지를 위해 상단 선언)
 let franchiseCurrentPage = 1;
@@ -1773,6 +1777,8 @@ const initializedMasterTabs = {
   franchise: false,
   members: false,
   operations: false,
+  learning: false,
+  portfolio: false,
   ranking: false,
   contents: false,
   dispatch: false,
@@ -1791,6 +1797,10 @@ function ensureMasterTabRendered(tabName) {
       if (typeof populateDispatchAcademyFilter === "function") populateDispatchAcademyFilter();
     } else if (tabName === "payment") {
       if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
+    } else if (tabName === "learning") {
+      if (typeof initMasterLearning === "function") initMasterLearning();
+    } else if (tabName === "portfolio") {
+      if (typeof initMasterPortfolio === "function") initMasterPortfolio();
     }
   }
 
@@ -1821,9 +1831,9 @@ function ensureMasterTabRendered(tabName) {
     if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
     if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load();
   } else if (tabName === "learning") {
-    if (typeof initMasterLearning === "function") initMasterLearning();
+    if (typeof executeMasterLearningSearch === "function") executeMasterLearningSearch();
   } else if (tabName === "portfolio") {
-    if (typeof initMasterPortfolio === "function") initMasterPortfolio();
+    if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList();
   }
 }
 
@@ -1905,8 +1915,10 @@ function switchMasterTab(tabName) {
     if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
     if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
   } else if (tabName === "learning") {
-    if (typeof resetMasterLearningFilters === "function") resetMasterLearningFilters();
+    if (typeof initMasterLearningDateFilters === "function") initMasterLearningDateFilters();
+    if (typeof executeMasterLearningSearch === "function") executeMasterLearningSearch();
   } else if (tabName === "portfolio") {
+    if (typeof initMasterPfDateFilters === "function") initMasterPfDateFilters();
     if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList();
   }
 

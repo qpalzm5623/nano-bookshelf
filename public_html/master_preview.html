@@ -493,7 +493,7 @@
             <i class="fa-solid fa-bullhorn mr-1"></i>전체 공지사항
           </button>
           <button type="button" class="btn btn-beige-secondary" id="btn-op-recommended" onclick="switchOpSubTab('recommended')">
-            <i class="fa-solid fa-star mr-1"></i>권장도서 관리
+            <i class="fa-solid fa-star mr-1"></i>추천 도서 관리
           </button>
         </div>
       </div>
@@ -584,12 +584,12 @@
         </div>
       </div>
 
-      <!-- 서브탭 4: 권장도서 관리 -->
+      <!-- 서브탭 4: 추천 도서 관리 -->
       <div id="op-sub-recommended" style="display: none;">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div>
             <h6 class="font-weight-bold mb-0 text-muted">
-              <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 권장도서 관리 (전체 <span id="recBookCount">0</span>권 등록)
+              <i class="fa-solid fa-star mr-2 text-warning"></i>학년별 추천도서 관리 (전체 <span id="recBookCount">0</span>권 등록)
             </h6>
             <small class="text-muted">학생 도서관에 노출될 학년별(유치부~중등3) 권장/추천 도서 목록을 관리합니다.</small>
           </div>
@@ -601,7 +601,7 @@
               <i class="fa-solid fa-file-import mr-1" style="color: #2563eb;"></i>엑셀 일괄 등록/삭제
             </button>
             <button class="btn-beige-primary" onclick="openAddRecommendedBookModal()">
-              <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+              <i class="fa-solid fa-plus mr-1"></i>추천도서 추가
             </button>
           </div>
         </div>
@@ -1224,6 +1224,13 @@
             <option value="ALL">전체 주제 (전체 태그)</option>
           </select>
         </div>
+        <div class="d-flex align-items-center" style="gap: 5px; background: #fff; padding: 0 10px; border: 1.5px solid var(--border-medium); border-radius: 10px; height: 38px;">
+          <i class="fa-regular fa-calendar text-muted" style="font-size: 12px;"></i>
+          <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">등록일</span>
+          <input type="date" id="contentDateStart" class="form-control" style="border: none; background: transparent; padding: 0; font-size: 12px; width: 110px; height: 28px; box-shadow: none;" onchange="filterMasterContentList()" title="등록일 시작">
+          <span style="font-size: 11px; color: var(--text-muted);">~</span>
+          <input type="date" id="contentDateEnd" class="form-control" style="border: none; background: transparent; padding: 0; font-size: 12px; width: 110px; height: 28px; box-shadow: none;" onchange="filterMasterContentList()" title="등록일 종료">
+        </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="search" id="contentSearchInput" name="search_content_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="도서명, 저자, 출판사, 세부태그 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMasterContentList();}">
@@ -1269,7 +1276,8 @@
                 <th style="width: 48px; text-align: center; padding-left: 2px; padding-right: 2px; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortQuiz" onclick="toggleMasterBookSort('quiz')" title="클릭 시 인증(완료) 많은 순으로 정렬">
                   <span class="d-inline-flex align-items-center justify-content-center">인증<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconQuiz" style="font-size: 10px;"></i></span>
                 </th>
-                <th style="width: 155px; text-align: center; white-space: nowrap;">관리</th>
+                <th style="width: 88px; text-align: center; white-space: nowrap;">등록일</th>
+                <th style="width: 90px; text-align: center; white-space: nowrap;">관리</th>
               </tr>
             </thead>
             <tbody id="masterContentTableBody">

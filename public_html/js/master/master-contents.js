@@ -98,6 +98,8 @@ function resetContentFilters() {
   if (document.getElementById("contentGradeFilter")) document.getElementById("contentGradeFilter").value = "ALL";
   if (document.getElementById("contentCategoryFilter")) document.getElementById("contentCategoryFilter").value = "ALL";
   if (document.getElementById("contentPublicFilter")) document.getElementById("contentPublicFilter").value = "ALL";
+  if (document.getElementById("contentDateStart")) document.getElementById("contentDateStart").value = "";
+  if (document.getElementById("contentDateEnd")) document.getElementById("contentDateEnd").value = "";
   masterBookSortMode = null;
   updateMasterBookSortUI();
   contentCurrentPage = 1;
@@ -346,6 +348,8 @@ function renderMasterContents() {
   const gradeFilter = document.getElementById("contentGradeFilter")?.value || "ALL";
   const catFilter = document.getElementById("contentCategoryFilter")?.value || "ALL";
   const publicFilter = document.getElementById("contentPublicFilter")?.value || "ALL";
+  const dateStart = document.getElementById("contentDateStart")?.value || "";
+  const dateEnd = document.getElementById("contentDateEnd")?.value || "";
 
   const filtered = masterBooks.filter(b => {
     if (!b) return false;
@@ -398,7 +402,18 @@ function renderMasterContents() {
       matchPublic = b.isPublic === "N";
     }
 
-    return matchQuery && matchAcademy && matchGrade && matchCat && matchPublic;
+    let matchDate = true;
+    if (dateStart || dateEnd) {
+      const bDate = String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10);
+      if (dateStart && (!bDate || bDate < dateStart)) {
+        matchDate = false;
+      }
+      if (dateEnd && (!bDate || bDate > dateEnd)) {
+        matchDate = false;
+      }
+    }
+
+    return matchQuery && matchAcademy && matchGrade && matchCat && matchPublic && matchDate;
   });
 
   // 찜 / 추천 / 인증 많은 순 내림차순 정렬 처리
@@ -431,7 +446,7 @@ function renderMasterContents() {
   if (countEl) countEl.innerText = filtered.length;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="14" class="text-center py-5 text-muted">일치하는 마스터 도서가 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15" class="text-center py-5 text-muted">일치하는 마스터 도서가 없습니다.</td></tr>`;
     renderContentPagination(0, 1);
     return;
   }
@@ -538,17 +553,25 @@ function renderMasterContents() {
             ${b.quizCompletions || 0}
           </span>
         </td>
-        <!-- 관리 액션: [북퀴즈 생성/편집], [도서 수정], [삭제] -->
-        <td class="text-center" style="white-space: nowrap;">
-          <button class="btn btn-xs btn-outline-warning mr-1" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 7px; color: #855304; border-color: #f1c40f;" title="해당 도서의 북퀴즈 문항 구성 및 편집">
-            <i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈
-          </button>
-          <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openMasterBookAddModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 7px;" title="도서 서지 정보 수정">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button class="btn btn-xs btn-outline-danger" onclick="deleteMasterBook('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 7px;" title="도서 삭제">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+        <!-- [신규] 등록일 컬럼 -->
+        <td class="text-center" style="white-space: nowrap; font-size: 11.5px; color: #64748b; font-weight: 600;">
+          ${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}
+        </td>
+        <!-- 관리 액션: [관리], [휴지통] 상단 / [북퀴즈] 하단 2단 배치로 가로폭 축소 -->
+        <td class="text-center" style="white-space: nowrap; padding: 4px 6px;">
+          <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
+            <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
+              <button type="button" class="btn btn-xs btn-outline-secondary flex-fill" onclick="openMasterBookAddModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 서지 정보 수정">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-danger flex-fill" onclick="deleteMasterBook('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 삭제">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+            <button type="button" class="btn btn-xs btn-outline-warning w-100 font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 4px; color: #855304; border-color: #f1c40f; background: #fffdf5;" title="해당 도서의 북퀴즈 문항 구성 및 편집">
+              <i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -574,7 +597,12 @@ function renderMasterContents() {
           <td class="text-center font-weight-bold text-danger">${b.likes || 12}</td>
           <td class="text-center font-weight-bold text-primary">${b.recommends || 25}</td>
           <td class="text-center font-weight-bold text-success">${b.quizCompletions || 42}</td>
-          <td class="text-center"><button class="btn btn-xs btn-outline-warning mr-1" onclick="openMasterQuizModal('${b.id}')"><i class="fa-solid fa-clipboard-question"></i></button></td>
+          <td class="text-center" style="font-size: 11.5px; color: #64748b; white-space: nowrap;">${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}</td>
+          <td class="text-center" style="padding: 4px 6px;">
+            <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
+              <button type="button" class="btn btn-xs btn-outline-warning w-100 font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 4px; color: #855304; border-color: #f1c40f; background: #fffdf5;"><i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈</button>
+            </div>
+          </td>
         </tr>
       `).join("");
       renderContentPagination(masterBooks.length, 1);

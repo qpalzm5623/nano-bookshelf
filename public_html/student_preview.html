@@ -4114,8 +4114,8 @@
           <button type="button" class="grade-chip" data-grade="중3" onclick="selectAllLibGradeFilter('중3')">중3</button>
         </div>
         <div class="sbar" id="libSearchBar" style="margin-bottom:12px;">
-          <input type="text" id="libQ" placeholder="전체 도서관 도서명, 저자, 출판사 검색..." oninput="filterLib()">
-          <button onclick="filterLib()"><i class="fa-solid fa-search"></i></button>
+          <input type="text" id="libQ" placeholder="전체 도서관 도서명, 저자, 출판사 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterLib();}">
+          <button type="button" onclick="filterLib()" title="검색"><i class="fa-solid fa-search"></i></button>
         </div>
         <div id="libList"></div>
         <!-- 무한스크롤 로딩 인디케이터 -->
@@ -6505,6 +6505,7 @@ function openBookDetail(id, from) {
 
 // 상세 정보 닫고 이전 화면으로 복귀
 function closeBookDetail() {
+  currentDetailBookId = null;
   switchPanel(prevPanel || 'home');
 }
 
@@ -7134,6 +7135,7 @@ function renderPopularLib() {
 
 // 4. 전체 도서관 렌더링 (10개 초기화 + 무한스크롤)
 var currentAllLibGradeFilter = 'all';
+var appliedLibSearchQuery = '';
 
 function selectAllLibGradeFilter(grade) {
   currentAllLibGradeFilter = grade;
@@ -7145,7 +7147,7 @@ function selectAllLibGradeFilter(grade) {
 }
 
 function renderLib(q) {
-  var query = (q || (document.getElementById('libQ') ? document.getElementById('libQ').value : '') || '').toLowerCase();
+  var query = (q !== undefined ? q : (appliedLibSearchQuery || '')).toLowerCase();
   var list = libData.slice();
 
   // 권장 학년 필터 적용
@@ -7168,7 +7170,9 @@ function renderLib(q) {
 }
 
 function filterLib() {
-  renderLib();
+  var input = document.getElementById('libQ');
+  appliedLibSearchQuery = (input ? input.value : '').trim();
+  renderLib(appliedLibSearchQuery);
 }
 
 // 전역 도서관 무한 스크롤 옵저버 및 리스너 등록
@@ -8513,6 +8517,41 @@ function checkDailyQuizLimit(bookId) {
 
 // 퀴즈 시작 메인 엔트리: 여러 북퀴즈 세트가 있으면 선택 모달, 1개면 바로 시작
 async function startQuiz(id) {
+  // [신규] 퀴즈 진입 전 화면 상태 스냅샷 저장 (< 목록 클릭 시 완벽한 복귀 지원)
+  var isDetailActive = false;
+  var detailPanelEl = document.getElementById('p-book-detail');
+  if (detailPanelEl && (detailPanelEl.classList.contains('active') || detailPanelEl.style.display === 'block')) {
+    isDetailActive = true;
+  }
+
+  // 목록에서 바로 퀴즈 버튼을 누른 경우, 잔여 상세 도서 ID를 제거
+  if (!isDetailActive) {
+    currentDetailBookId = null;
+  }
+
+  window._quizOriginSnapshot = {
+    panel: (curActivePanel && curActivePanel !== 'quiz') ? curActivePanel : (prevPanel || 'books'),
+    fromDetail: isDetailActive,
+    detailBookId: isDetailActive ? currentDetailBookId : null,
+    // 도서관 상태
+    bookMainTab: currentBookMainTab || 'my',
+    mySubTab: currentMyLibSubTab || 'assigned',
+    allSubTab: currentAllLibSubTab || 'all',
+    allGradeFilter: currentAllLibGradeFilter || 'all',
+    popularPeriod: (typeof currentPopularPeriod !== 'undefined' ? currentPopularPeriod : 'daily'),
+    libSearchQuery: (document.getElementById('libQ') ? document.getElementById('libQ').value : ''),
+    appliedLibSearchQuery: (typeof appliedLibSearchQuery !== 'undefined' ? appliedLibSearchQuery : ''),
+    recSearchQuery: (document.getElementById('recLibQ') ? document.getElementById('recLibQ').value : ''),
+    themeTagQuery: (document.getElementById('themeTagQ') ? document.getElementById('themeTagQ').value : ''),
+    themeBookQuery: (document.getElementById('themeBookQ') ? document.getElementById('themeBookQ').value : ''),
+    bannerBookQuery: (document.getElementById('bannerBookQ') ? document.getElementById('bannerBookQ').value : ''),
+    // 내 책장 상태
+    bookshelfTab: (typeof curBookshelfMainTab !== 'undefined' ? curBookshelfMainTab : 'history'),
+    historySearchQuery: (document.getElementById('historyQ') ? document.getElementById('historyQ').value : ''),
+    // 스크롤 위치
+    scrollY: window.scrollY || window.pageYOffset || 0
+  };
+
   // 5. 동일한 도서에 한해서 하루 3번 이상 인증 실패 시 자정이 넘어갈때 까지 재도전 불가
   var limitCheck = checkDailyQuizLimit(id);
   if (limitCheck.blocked) {
@@ -9602,13 +9641,101 @@ function syncQuizResultToAdminLearning(bookTitle, score, thoughtAnswer) {
 function backToSelect(){
   if (window.studentSubmissionPending) return;
   if (!studentQuizSubmitted && curData && !saveStudentQuizDraft()) return;
-  if(currentDetailBookId) {
-    openBookDetail(currentDetailBookId, prevPanel);
-    return;
-  }
-  switchPanel(prevPanel || 'books');
+
+  var snap = window._quizOriginSnapshot;
   curBook = null;
   curData = null;
+
+  if (snap) {
+    if (snap.fromDetail && snap.detailBookId) {
+      // 1. 상세 화면에서 퀴즈로 진입했던 경우: 상세 화면으로 복귀
+      openBookDetail(snap.detailBookId, snap.panel !== 'book-detail' ? snap.panel : 'books');
+    } else {
+      // 2. 목록 화면에서 퀴즈로 진입했던 경우: 상세화면 플래그 해제 및 원래 패널로 복귀
+      currentDetailBookId = null;
+      var targetPanel = snap.panel && snap.panel !== 'quiz' && snap.panel !== 'book-detail' ? snap.panel : 'books';
+      switchPanel(targetPanel);
+
+      if (targetPanel === 'books') {
+        // 도서관 메인탭('my' | 'all') 및 서브탭 복원
+        var targetSubTab = (snap.bookMainTab === 'my') ? (snap.mySubTab || 'assigned') : (snap.allSubTab || 'all');
+        switchBookMainTab(snap.bookMainTab || 'all', targetSubTab);
+
+        if (snap.bookMainTab === 'all') {
+          // 전체 도서관 서브탭이 'all'인 경우: 학년 필터 및 검색 결과 복원
+          if (snap.allSubTab === 'all') {
+            if (snap.allGradeFilter && typeof selectAllLibGradeFilter === 'function') {
+              currentAllLibGradeFilter = snap.allGradeFilter;
+              document.querySelectorAll('#allLibGradeFilterBar .grade-chip').forEach(function(chip){
+                var g = chip.getAttribute('data-grade');
+                chip.classList.toggle('active', g === snap.allGradeFilter);
+              });
+            }
+            // 검색어 복원 및 재렌더링
+            var libInput = document.getElementById('libQ');
+            if (libInput) {
+              libInput.value = snap.libSearchQuery || '';
+            }
+            appliedLibSearchQuery = snap.appliedLibSearchQuery || snap.libSearchQuery || '';
+            renderLib(appliedLibSearchQuery);
+          }
+        } else if (snap.bookMainTab === 'my') {
+          // 내 도서관 서브탭 복원
+          if (snap.mySubTab === 'recommended') {
+            var recInput = document.getElementById('recLibQ');
+            if (recInput) recInput.value = snap.recSearchQuery || '';
+            renderRecLib(snap.recSearchQuery || '');
+          } else if (snap.mySubTab === 'popular') {
+            if (snap.popularPeriod && typeof selectPopularPeriod === 'function') {
+              selectPopularPeriod(snap.popularPeriod);
+            } else {
+              renderPopularLib();
+            }
+          } else if (snap.mySubTab === 'interest') {
+            renderInterestTags();
+            renderInterestRecommendations();
+          } else if (snap.mySubTab === 'assigned') {
+            renderAssignedLib();
+          }
+        }
+      } else if (targetPanel === 'history') {
+        // 내 책장(완독 도서, 찜한 도서 등) 복원
+        if (typeof switchMyBookshelfMainTab === 'function') {
+          switchMyBookshelfMainTab(snap.bookshelfTab || 'history');
+        }
+        if (snap.bookshelfTab === 'history') {
+          var histInput = document.getElementById('historyQ');
+          if (histInput) histInput.value = snap.historySearchQuery || '';
+          renderReadingHistoryGrid();
+        } else if (snap.bookshelfTab === 'interest') {
+          renderWishList();
+        } else if (snap.bookshelfTab === 'points') {
+          renderPointHistory();
+        }
+      }
+
+      // 브라우저 히스토리 상태 갱신 (뒤로가기 스택 정리)
+      try {
+        if (history.state && history.state.panel === 'quiz') {
+          history.replaceState({ panel: targetPanel }, '', '#' + targetPanel);
+        }
+      } catch(e) {}
+
+      // 스크롤 위치 복원
+      if (typeof snap.scrollY === 'number' && snap.scrollY > 0) {
+        setTimeout(function() {
+          window.scrollTo({ top: snap.scrollY, behavior: 'instant' });
+        }, 30);
+      }
+    }
+  } else {
+    // 스냅샷이 없을 경우 기존 fallback
+    if(currentDetailBookId) {
+      openBookDetail(currentDetailBookId, prevPanel);
+      return;
+    }
+    switchPanel(prevPanel || 'books');
+  }
 }
 // ==============================================================
 // 찜하기(Wishlist) 및 내 책장(Bookshelf) 종합 모듈

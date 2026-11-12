@@ -5,8 +5,8 @@
  * 전국 가맹 학원의 원생 포트폴리오 발급 내역 및 알림톡 발송 현황 통합 관리
  *
  * [핵심 규칙]
- * 1. 검색바: 클래스 필터 좌측에 '가맹점 필터' 제공
- * 2. 발급일자 필터: default 최근 당월 1일 ~ today
+ * 1. 검색바: 클래스 필터 좌측에 '가맹점 필터' 제공 (전국 가맹점 연동)
+ * 2. 발급일자 필터: default 최근 당월 1일 ~ today (기본 세팅 및 실시간 필터링)
  * 3. 리스트 컬럼 순서: No. | 가맹점 | 소속 클래스 | 학교/학년 | 원생명 | 포트폴리오 명칭 | 포함 완독 도서(권수만) | 북퀴즈 평균 | 발급일자 | 관리
  * 4. 관리 컬럼: 상태 컬럼 제거, 카톡 버튼은 인쇄 버튼 우측에 배치
  * ============================================================================
@@ -19,12 +19,36 @@
   var masterPfPageSize = 20;
   var currentFilteredMasterPfList = [];
 
+  // 1. 전국 가맹점 목록 안전 수집 함수 (SSOT 연동)
+  function getMasterPfFranchiseList() {
+    if (window.franchiseList && Array.isArray(window.franchiseList) && window.franchiseList.length > 0) {
+      return window.franchiseList;
+    }
+    if (typeof franchiseList !== 'undefined' && Array.isArray(franchiseList) && franchiseList.length > 0) {
+      return franchiseList;
+    }
+    if (window.MIGRATED_FRANCHISES && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
+      return window.MIGRATED_FRANCHISES;
+    }
+    try {
+      var stored = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
+      if (stored) {
+        var parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch(e) {}
+    if (typeof defaultFranchiseList !== 'undefined' && Array.isArray(defaultFranchiseList)) {
+      return defaultFranchiseList;
+    }
+    return [];
+  }
+
   // 전국 기본 포트폴리오 데이터셋 (학원 관리자 기본 샘플 + 전국 가맹점 확장)
   var defaultMasterPortfolios = [
     {
       id: 'PF-2026-1107',
       academyName: '1차 연구회 수학',
-      studentId: 'S1024',
+      studentId: 'look1',
       studentName: '박진호',
       school: '옥천초등학교',
       grade: '5학년',
@@ -32,10 +56,58 @@
       title: '[박진호] 2026년 3분기 독서 포트폴리오',
       period: '2026.10.30 ~ 2026.11.11',
       bookCount: 13,
-      quizAvg: '72점',
+      quizAvg: '88.5점',
       issueDate: '2026.11.12 11:30',
+      status: '발송 완료',
+      kakaoSent: true
+    },
+    {
+      id: 'PF-2026-1106',
+      academyName: '나노 독서아카데미 목동본원',
+      studentId: '103',
+      studentName: '김태윤',
+      school: '나노초등학교',
+      grade: '초등 6학년',
+      classGroup: '소나무반',
+      title: '2026년 11월호 심화 독서 포트폴리오',
+      period: '2026.11.01 ~ 2026.11.10',
+      bookCount: 7,
+      quizAvg: '96.2점',
+      issueDate: '2026.11.11 15:40',
+      status: '발송 완료',
+      kakaoSent: true
+    },
+    {
+      id: 'PF-2026-1105',
+      academyName: '대치 에듀 독서논술센터',
+      studentId: 'S1025',
+      studentName: '최유진',
+      school: '대치초등학교',
+      grade: '초등 4학년',
+      classGroup: '슬기반',
+      title: '2026년 3분기 독서성장 포트폴리오',
+      period: '2026년 3분기',
+      bookCount: 6,
+      quizAvg: '91.4점',
+      issueDate: '2026.11.10 16:40',
       status: '카톡 발송하기',
       kakaoSent: false
+    },
+    {
+      id: 'PF-2026-1104',
+      academyName: '송도 센트럴 리딩랩',
+      studentId: 'S1022',
+      studentName: '이서연',
+      school: '한빛초등학교',
+      grade: '초등 4학년',
+      classGroup: '탐구반',
+      title: '2026년 11월 성장 독서 포트폴리오',
+      period: '2026년 11월 월호',
+      bookCount: 5,
+      quizAvg: '93.5점',
+      issueDate: '2026.11.09 14:15',
+      status: '발송 완료',
+      kakaoSent: true
     },
     {
       id: 'PF-2026-0901',
@@ -55,71 +127,135 @@
     },
     {
       id: 'PF-2026-0902',
-      academyName: '목동 독서토론 학원',
+      academyName: '부산 센텀 나노주니어',
       studentId: 'S1023',
       studentName: '박도윤',
-      school: '나노초등학교',
+      school: '센텀초등학교',
       grade: '초등 6학년',
       classGroup: '리더반',
       title: '2026년 3분기 독서 심화 포트폴리오',
       period: '2026년 3분기 (7~9월)',
       bookCount: 5,
       quizAvg: '96.5점',
-      issueDate: '2026.11.05 10:15',
+      issueDate: '2026.11.07 10:15',
       status: '발송 완료',
       kakaoSent: true
     },
     {
-      id: 'PF-2026-0815',
-      academyName: '대치 리더스 논술',
-      studentId: 'S1025',
-      studentName: '최유진',
-      school: '대치초등학교',
-      grade: '초등 4학년',
-      classGroup: '슬기반',
-      title: '2026년 3분기 독서성장 포트폴리오',
-      period: '2026년 3분기',
-      bookCount: 6,
-      quizAvg: '88.4점',
-      issueDate: '2026.11.03 16:40',
+      id: 'PF-2026-1103',
+      academyName: '판교 알파 독서학원',
+      studentId: 'S1031',
+      studentName: '송민재',
+      school: '보평초등학교',
+      grade: '초등 5학년',
+      classGroup: '마스터반',
+      title: '2026년 11월 융합 독서 포트폴리오',
+      period: '2026.11.01 ~ 2026.11.06',
+      bookCount: 4,
+      quizAvg: '92.0점',
+      issueDate: '2026.11.06 17:10',
       status: '카톡 발송하기',
       kakaoSent: false
     },
     {
       id: 'PF-2026-0812',
-      academyName: '분당 영재논술 학원',
+      academyName: '분당 서현 리딩클럽',
       studentId: 'S1026',
       studentName: '정예원',
       school: '서현초등학교',
       grade: '초등 5학년',
       classGroup: '마스터반',
-      title: '2026년 8월호 독서 포트폴리오',
-      period: '2026년 8월 월호',
+      title: '2026년 11월 1차 독서 포트폴리오',
+      period: '2026년 11월',
       bookCount: 3,
       quizAvg: '95.8점',
-      issueDate: '2026.11.01 16:00',
+      issueDate: '2026.11.05 16:00',
       status: '발송 완료',
       kakaoSent: true
     },
     {
-      id: 'PF-2026-0810',
-      academyName: '송도 글로벌 독서학원',
-      studentId: 'S1022',
-      studentName: '이서연',
-      school: '한빛초등학교',
+      id: 'PF-2026-1102',
+      academyName: '나노 독서아카데미 목동본원',
+      studentId: '104',
+      studentName: '이민우',
+      school: '목운초등학교',
+      grade: '초등 5학년',
+      classGroup: '매화반',
+      title: '2026년 11월 정기 독서 포트폴리오',
+      period: '2026.11.01 ~ 2026.11.04',
+      bookCount: 4,
+      quizAvg: '89.5점',
+      issueDate: '2026.11.04 11:20',
+      status: '발송 완료',
+      kakaoSent: true
+    },
+    {
+      id: 'PF-2026-1101',
+      academyName: '대구 수성 미래리딩원',
+      studentId: 'S1042',
+      studentName: '오지후',
+      school: '동도초등학교',
+      grade: '초등 6학년',
+      classGroup: '심화반',
+      title: '2026년 11월호 사고력 독서 포트폴리오',
+      period: '2026.11.01 ~ 2026.11.03',
+      bookCount: 6,
+      quizAvg: '97.0점',
+      issueDate: '2026.11.03 13:50',
+      status: '발송 완료',
+      kakaoSent: true
+    },
+    {
+      id: 'PF-2026-1031',
+      academyName: '일산 마두 지혜의샘',
+      studentId: 'S1051',
+      studentName: '이준우',
+      school: '백마초등학교',
       grade: '초등 4학년',
-      classGroup: '탐구반',
-      title: '2026년 8월호 성장 독서 포트폴리오',
-      period: '2026년 8월 월호',
+      classGroup: '지혜반',
+      title: '2026년 11월 진단 독서 포트폴리오',
+      period: '2026.11.01 ~ 2026.11.02',
       bookCount: 3,
-      quizAvg: '91.5점',
-      issueDate: '2026.10.28 11:30',
+      quizAvg: '87.2점',
+      issueDate: '2026.11.02 18:30',
       status: '카톡 발송하기',
       kakaoSent: false
+    },
+    {
+      id: 'PF-2026-1030',
+      academyName: '세종 아름 글나무학원',
+      studentId: 'S1061',
+      studentName: '유시은',
+      school: '아름초등학교',
+      grade: '초등 3학년',
+      classGroup: '새싹반',
+      title: '2026년 11월 첫걸음 독서 포트폴리오',
+      period: '2026.11.01',
+      bookCount: 3,
+      quizAvg: '95.0점',
+      issueDate: '2026.11.01 16:30',
+      status: '발송 완료',
+      kakaoSent: true
+    },
+    {
+      id: 'PF-2026-1028',
+      academyName: '주식회사 루크러닝',
+      studentId: 'look2',
+      studentName: '이문성',
+      school: '잠실초등학교',
+      grade: '초등 5학년',
+      classGroup: 'A Class',
+      title: '2026년 10월 종합 독서 포트폴리오',
+      period: '2026.10.15 ~ 2026.10.28',
+      bookCount: 8,
+      quizAvg: '90.5점',
+      issueDate: '2026.10.28 11:30',
+      status: '발송 완료',
+      kakaoSent: true
     }
   ];
 
-  // 1. 초기화 함수
+  // 2. 초기화 함수
   function initMasterPortfolio() {
     populateMasterPfAcademyFilter();
     populateMasterPfClassFilter();
@@ -127,22 +263,15 @@
     filterMasterPortfolioList();
   }
 
-  // 2. 가맹점 드롭다운 채우기
+  // 3. 가맹점 드롭다운 채우기 (전국 145개 가맹점 전수 연동)
   function populateMasterPfAcademyFilter() {
     var select = document.getElementById('masterPfAcademyFilter');
     if (!select) return;
     var currentVal = select.value || 'ALL';
 
-    var franchises = [];
-    if (typeof franchiseList !== 'undefined' && Array.isArray(franchiseList) && franchiseList.length > 0) {
-      franchises = franchiseList;
-    } else if (typeof defaultFranchiseList !== 'undefined' && Array.isArray(defaultFranchiseList)) {
-      franchises = defaultFranchiseList;
-    } else if (typeof window.MIGRATED_FRANCHISES !== 'undefined' && Array.isArray(window.MIGRATED_FRANCHISES)) {
-      franchises = window.MIGRATED_FRANCHISES;
-    }
+    var franchises = getMasterPfFranchiseList();
 
-    var optionsHtml = '<option value="ALL">전체 가맹점</option>';
+    var optionsHtml = '<option value="ALL">전체 가맹점 (' + (franchises.length > 0 ? franchises.length + '곳' : '전체') + ')</option>';
     var seen = new Set();
     franchises.forEach(function(f) {
       var name = (f.name || f.academyName || '').trim();
@@ -153,16 +282,16 @@
     });
 
     select.innerHTML = optionsHtml;
-    select.value = currentVal;
+    select.value = seen.has(currentVal) ? currentVal : 'ALL';
   }
 
-  // 3. 클래스 드롭다운 채우기
+  // 4. 클래스 드롭다운 채우기
   function populateMasterPfClassFilter() {
     var select = document.getElementById('masterPfClassFilter');
     if (!select) return;
     var currentVal = select.value || 'ALL';
 
-    var classes = ['A Class', '지혜반', '슬기반', '마스터반', '리더반', '심화반', '탐구반', '새싹반'];
+    var classes = ['A Class', '지혜반', '슬기반', '마스터반', '리더반', '심화반', '탐구반', '새싹반', '소나무반', '매화반', '난초반'];
     var optionsHtml = '<option value="ALL">전체 클래스</option>';
     classes.forEach(function(c) {
       optionsHtml += '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
@@ -172,27 +301,35 @@
     select.value = currentVal;
   }
 
-  // 4. 발급일자 기본값 초기화 (최근 당월 1일 ~ today)
-  function initMasterPfDateFilters() {
+  // 5. 발급일자 기본값 초기화 (최근 당월 1일 ~ today 필수 보장)
+  function initMasterPfDateFilters(force) {
     var startEl = document.getElementById('masterPfStartDate');
     var endEl = document.getElementById('masterPfEndDate');
     if (!startEl || !endEl) return;
-    if (!startEl.value || !endEl.value) {
-      var now = new Date();
-      var y = now.getFullYear();
-      var m = String(now.getMonth() + 1).padStart(2, '0');
-      var d = String(now.getDate()).padStart(2, '0');
-      startEl.value = y + '-' + m + '-01';
-      endEl.value = y + '-' + m + '-' + d;
+
+    var now = new Date();
+    var y = now.getFullYear();
+    var m = String(now.getMonth() + 1).padStart(2, '0');
+    var d = String(now.getDate()).padStart(2, '0');
+    var defaultStart = y + '-' + m + '-01';
+    var defaultEnd = y + '-' + m + '-' + d;
+
+    if (force || !startEl.value || !endEl.value) {
+      startEl.value = defaultStart;
+      endEl.value = defaultEnd;
     }
   }
 
-  // 5. 마스터 전체 포트폴리오 리스트 수집
+  // 6. 마스터 전체 포트폴리오 리스트 수집 (메모리 + 로컬스토리지 + 전국 가맹점 이력)
   function getAllMasterPortfolios() {
     var list = [];
+    var seenIds = new Set();
+
     // 1) 학원 관리자용 portfolioList가 메모리에 있다면 병합
     if (typeof portfolioList !== 'undefined' && Array.isArray(portfolioList)) {
       portfolioList.forEach(function(p) {
+        if (!p || !p.id || seenIds.has(p.id)) return;
+        seenIds.add(p.id);
         list.push({
           id: p.id,
           academyName: p.academyName || '1차 연구회 수학',
@@ -205,16 +342,50 @@
           period: p.period || '',
           bookCount: p.bookCount || 1,
           quizAvg: p.quizAvg || '85점',
-          issueDate: p.issueDate || '2026.11.11 10:00',
+          issueDate: p.issueDate || '2026.11.12 10:00',
           status: p.status || (p.kakaoSent ? '발송 완료' : '카톡 발송하기'),
           kakaoSent: Boolean(p.kakaoSent)
         });
       });
     }
 
-    // 2) 기본 전국 샘플 중 중복되지 않는 건 추가
+    // 2) 로컬스토리지에 저장된 학원 포트폴리오 발급 내역 병합
+    var storageKeys = ['NANO_STUDENT_PORTFOLIOS', 'NANO_PORTFOLIO_LIST', 'NANO_ADMIN_PORTFOLIOS', 'NANO_SAVED_PORTFOLIOS'];
+    storageKeys.forEach(function(key) {
+      try {
+        var raw = localStorage.getItem(key);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(function(p) {
+              if (!p || !p.id || seenIds.has(p.id)) return;
+              seenIds.add(p.id);
+              list.push({
+                id: p.id,
+                academyName: p.academyName || '나노 독서아카데미 목동본원',
+                studentId: p.studentId || '',
+                studentName: p.studentName || '원생',
+                school: p.school || '초등학교',
+                grade: p.grade || '',
+                classGroup: p.classGroup || 'A Class',
+                title: p.title || '독서 성장 포트폴리오',
+                period: p.period || '',
+                bookCount: p.bookCount || 1,
+                quizAvg: p.quizAvg || '90점',
+                issueDate: p.issueDate || '2026.11.12 11:00',
+                status: p.status || (p.kakaoSent ? '발송 완료' : '카톡 발송하기'),
+                kakaoSent: Boolean(p.kakaoSent)
+              });
+            });
+          }
+        }
+      } catch(e) {}
+    });
+
+    // 3) 전국 가맹점 기본 포트폴리오 데이터셋 병합
     defaultMasterPortfolios.forEach(function(dp) {
-      if (!list.some(function(item) { return item.id === dp.id; })) {
+      if (!seenIds.has(dp.id)) {
+        seenIds.add(dp.id);
         list.push(dp);
       }
     });
@@ -222,7 +393,7 @@
     return list;
   }
 
-  // 6. 포트폴리오 필터링 및 렌더링
+  // 7. 포트폴리오 필터링 및 렌더링
   function filterMasterPortfolioList() {
     initMasterPfDateFilters();
 
@@ -235,10 +406,13 @@
     var allList = getAllMasterPortfolios();
 
     var filtered = allList.filter(function(pf) {
+      // 1) 가맹점 필터
       if (academyVal !== 'ALL' && pf.academyName !== academyVal) return false;
-      if (classVal !== 'ALL' && pf.classGroup.indexOf(classVal) === -1) return false;
 
-      // 발급일자 필터링
+      // 2) 클래스 필터
+      if (classVal !== 'ALL' && (pf.classGroup || '').indexOf(classVal) === -1) return false;
+
+      // 3) 발급일자 필터 (YYYY-MM-DD)
       if (startVal || endVal) {
         var rawDate = String(pf.issueDate || pf.createdAt || pf.date || '').slice(0, 10).replace(/\./g, '-');
         if (rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
@@ -247,13 +421,14 @@
         }
       }
 
-      // 검색어 필터링
+      // 4) 검색어 필터링
       if (query) {
-        var matchName = pf.studentName.toLowerCase().indexOf(query) !== -1;
-        var matchTitle = pf.title.toLowerCase().indexOf(query) !== -1;
-        var matchId = pf.id.toLowerCase().indexOf(query) !== -1;
-        var matchAcad = pf.academyName.toLowerCase().indexOf(query) !== -1;
-        if (!matchName && !matchTitle && !matchId && !matchAcad) return false;
+        var matchName = (pf.studentName || '').toLowerCase().indexOf(query) !== -1;
+        var matchTitle = (pf.title || '').toLowerCase().indexOf(query) !== -1;
+        var matchId = (pf.id || '').toLowerCase().indexOf(query) !== -1;
+        var matchAcad = (pf.academyName || '').toLowerCase().indexOf(query) !== -1;
+        var matchSchool = (pf.school || '').toLowerCase().indexOf(query) !== -1;
+        if (!matchName && !matchTitle && !matchId && !matchAcad && !matchSchool) return false;
       }
 
       return true;
@@ -272,7 +447,7 @@
     renderMasterPfTable(1);
   }
 
-  // 7. 상단 통계 카드 업데이트
+  // 8. 상단 통계 카드 업데이트
   function updateMasterPfStats(allList) {
     var now = new Date();
     var curYear = now.getFullYear();
@@ -313,7 +488,7 @@
     if (kSubEl) kSubEl.innerText = kakaoSentCount + '건 발송 완료 (' + kakaoRate + '%)';
   }
 
-  // 8. 포트폴리오 리스트 테이블 렌더링
+  // 9. 포트폴리오 리스트 테이블 렌더링
   function renderMasterPfTable(page) {
     var tbody = document.getElementById('masterPfTableBody');
     if (!tbody) return;
@@ -358,7 +533,7 @@
       // 컬럼 순서 (요구사항): No. | 가맹점 | 소속 클래스 | 학교/학년 | 원생명 | 포트폴리오 명칭 | 포함 완독 도서(권수만) | 북퀴즈 평균 | 발급일자 | 관리
       tr.innerHTML = 
         '<td class="text-center"><span class="font-weight-bold text-muted" style="font-size:12px;">' + rowNo + '</span></td>' +
-        '<td class="text-center"><span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size:12px; max-width:130px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeHtml(pf.academyName) + '">' + escapeHtml(pf.academyName) + '</span></td>' +
+        '<td class="text-center"><span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size:12px; max-width:140px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeHtml(pf.academyName) + '">' + escapeHtml(pf.academyName) + '</span></td>' +
         '<td class="text-center"><span class="badge-soft badge-soft-neutral" style="font-size:11.5px;">' + escapeHtml(pf.classGroup || '-') + '</span></td>' +
         '<td class="text-center"><small class="text-muted">' + escapeHtml((pf.school || '초등학교') + ' ' + (pf.grade || '')) + '</small></td>' +
         '<td><strong style="font-size:13px; color:var(--text-main); cursor:pointer; text-decoration:underline;" onclick="openMasterPfDetailModal(\'' + pf.studentId + '\', \'' + pf.id + '\')">' + escapeHtml(pf.studentName) + '</strong></td>' +
@@ -381,7 +556,7 @@
     renderMasterPfPagination(totalPages, masterPfPage);
   }
 
-  // 9. 페이지네이션
+  // 10. 페이지네이션
   function renderMasterPfPagination(totalPages, curPage) {
     var container = document.getElementById('masterPfPagination');
     if (!container) return;
@@ -409,7 +584,7 @@
     container.innerHTML = html;
   }
 
-  // 10. 마스터 포트폴리오 상세 팝업 오픈
+  // 11. 마스터 포트폴리오 상세 팝업 오픈
   function openMasterPfDetailModal(studentId, pfId) {
     var pf = (currentFilteredMasterPfList || []).find(function(p) { return p.id === pfId; });
     if (!pf) return;
@@ -421,14 +596,14 @@
           '인쇄 및 원문 보기는 인쇄 버튼을 통해 진행하실 수 있습니다.');
   }
 
-  // 11. 인쇄 함수
+  // 12. 인쇄 함수
   function printMasterPortfolio(studentId, pfId) {
     var pf = (currentFilteredMasterPfList || []).find(function(p) { return p.id === pfId; });
     if (!pf) return;
     window.open('portfolio_report.html?id=' + encodeURIComponent(pfId) + '&student=' + encodeURIComponent(studentId), '_blank');
   }
 
-  // 12. 카톡 발송 직접 토글
+  // 13. 카톡 발송 직접 토글
   function sendMasterPfKakaoDirect(pfId, event) {
     if (event) {
       event.stopPropagation();
@@ -454,8 +629,19 @@
     });
   }
 
+  // DOM 로드 시 자동 초기화
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      initMasterPortfolio();
+    });
+  } else {
+    setTimeout(initMasterPortfolio, 0);
+  }
+
   // 전역 등록
   window.initMasterPortfolio = initMasterPortfolio;
+  window.initMasterPfDateFilters = initMasterPfDateFilters;
+  window.populateMasterPfAcademyFilter = populateMasterPfAcademyFilter;
   window.filterMasterPortfolioList = filterMasterPortfolioList;
   window.renderMasterPfTable = renderMasterPfTable;
   window.openMasterPfDetailModal = openMasterPfDetailModal;
@@ -463,4 +649,3 @@
   window.sendMasterPfKakaoDirect = sendMasterPfKakaoDirect;
 
 })(window);
-

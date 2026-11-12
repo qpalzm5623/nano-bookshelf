@@ -12,6 +12,17 @@ export async function extractQuizAuthors(dumpFilePath: string = DUMP_PATH): Prom
 
   console.log(`🔍 백업 SQL에서 북퀴즈 출제기관 매핑 추출 중... (${dumpFilePath})`);
 
+  const academies = await prisma.academy.findMany({
+    select: { code: true, name: true }
+  });
+  const acadByName = new Map<string, { code: string; name: string }>();
+  for (const a of academies) {
+    if (a.name) {
+      acadByName.set(a.name.trim(), a);
+      acadByName.set(a.name.replace(/\s+/g, ''), a);
+    }
+  }
+
   const members = await prisma.member.findMany({
     select: {
       username: true,
@@ -38,10 +49,27 @@ export async function extractQuizAuthors(dumpFilePath: string = DUMP_PATH): Prom
     crlfDelay: Infinity
   });
 
+  let inTbUser = false;
   let inTbQuiz = false;
-  const quizAuthorMap: Record<number, { authorType: 'HQ' | 'ACADEMY'; authorName: string; academyName: string; academyCode?: string }> = {};
+  const legacyUserGroupMap = new Map<string, string>();
+  const quizSeqUserMap = new Map<number, string>();
 
   for await (const line of rl) {
+    if (line.includes("INSERT INTO `tb_user` VALUES") || line.includes("INSERT INTO `tb_user` ")) {
+      inTbUser = true;
+      continue;
+    }
+    if (inTbUser) {
+      if (line.startsWith('UNLOCK TABLES') || (line.startsWith('INSERT INTO') && !line.includes('`tb_user`'))) {
+        inTbUser = false;
+      } else {
+        const m = line.match(/^\s*\(\s*\d+\s*,\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*'[^']*'\s*,\s*[^,]+\s*,\s*[^,]+\s*,\s*[^,]+\s*,\s*'([^']+)'/);
+        if (m) {
+          legacyUserGroupMap.set(m[1].toLowerCase(), m[2].trim());
+        }
+      }
+    }
+
     if (line.includes("INSERT INTO `tb_quiz` VALUES") || line.includes("INSERT INTO `tb_quiz` ")) {
       inTbQuiz = true;
       continue;
@@ -49,7 +77,7 @@ export async function extractQuizAuthors(dumpFilePath: string = DUMP_PATH): Prom
     if (inTbQuiz) {
       if (line.includes('UNLOCK TABLES') || line.includes('INSERT INTO `') || line.includes('CREATE TABLE `')) {
         inTbQuiz = false;
-        break;
+        continue;
       }
 
       const seqMatch = line.match(/^\s*\(([0-9]+),/);
@@ -58,25 +86,45 @@ export async function extractQuizAuthors(dumpFilePath: string = DUMP_PATH): Prom
 
       const userMatch = line.match(/(?:,\s*|',\s*)'([a-zA-Z0-9_-]+)',\s*'(?:202[0-9]-[0-9]{2}-[0-9]{2})/);
       const userId = userMatch ? userMatch[1].toLowerCase() : 'admin';
+      quizSeqUserMap.set(quizSeq, userId);
+    }
+  }
 
-      if (userId === 'admin' || userId === 'master' || memberMap.get(userId)?.role === 'MASTER') {
-        quizAuthorMap[quizSeq] = {
-          authorType: 'HQ',
-          authorName: '본사',
-          academyName: '본사 직속 (공용)',
-          academyCode: 'HQ'
-        };
-      } else {
-        const mem = memberMap.get(userId);
-        const acadName = mem?.academyName || '가맹 학원';
-        const acadCode = mem?.academyCode || 'ACADEMY';
-        quizAuthorMap[quizSeq] = {
-          authorType: 'ACADEMY',
-          authorName: acadName,
-          academyName: acadName,
-          academyCode: acadCode
-        };
+  // 스트리밍 완료 후 전체 사용자/학원 매핑으로 출제기관 맵 구성
+  const quizAuthorMap: Record<number, { authorType: 'HQ' | 'ACADEMY'; authorName: string; academyName: string; academyCode?: string }> = {};
+
+  for (const [quizSeq, userId] of quizSeqUserMap.entries()) {
+    if (userId === 'admin' || userId === 'master' || memberMap.get(userId)?.role === 'MASTER') {
+      quizAuthorMap[quizSeq] = {
+        authorType: 'HQ',
+        authorName: '본사',
+        academyName: '본사 직속 (공용)',
+        academyCode: 'HQ'
+      };
+    } else {
+      const mem = memberMap.get(userId);
+      let acadName = (mem && mem.academyName && mem.academyName !== '가맹 학원') ? mem.academyName : '';
+      let acadCode = (mem && mem.academyCode && mem.academyCode !== 'ACADEMY') ? mem.academyCode : '';
+
+      // memberMap에서 학원을 찾지 못한 경우 레거시 tb_user의 group_name과 Academy 매핑 확인
+      if (!acadName) {
+        const groupName = legacyUserGroupMap.get(userId);
+        if (groupName) {
+          const matchedAcad = acadByName.get(groupName) || acadByName.get(groupName.replace(/\s+/g, ''));
+          acadName = matchedAcad ? matchedAcad.name : groupName;
+          acadCode = matchedAcad ? matchedAcad.code : 'ACADEMY';
+        }
       }
+
+      acadName = acadName || '가맹 학원';
+      acadCode = acadCode || 'ACADEMY';
+
+      quizAuthorMap[quizSeq] = {
+        authorType: 'ACADEMY',
+        authorName: acadName,
+        academyName: acadName,
+        academyCode: acadCode
+      };
     }
   }
 

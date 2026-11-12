@@ -507,6 +507,10 @@ function filterAcademyBooks(keepPage) {
   var ownedRadio = document.querySelector('input[name="filterAcadBookOwned"]:checked');
   var ownedFilter = ownedRadio ? ownedRadio.value : (document.getElementById('filterAcadBookOwned') ? document.getElementById('filterAcadBookOwned').value : 'ALL');
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
+  var dateStartInput = document.getElementById('filterAcadBookDateStart');
+  var dateEndInput = document.getElementById('filterAcadBookDateEnd');
+  var dateStartVal = dateStartInput ? dateStartInput.value : '';
+  var dateEndVal = dateEndInput ? dateEndInput.value : '';
 
   updateOwnedBookCountBadge();
 
@@ -548,7 +552,16 @@ function filterAcademyBooks(keepPage) {
       (b.academyName && b.academyName.toLowerCase().indexOf(query) !== -1) ||
       (isHqBook && ('본사'.indexOf(query) !== -1 || '본사 직속'.indexOf(query) !== -1));
 
-    return matchQuery;
+    if (!matchQuery) return false;
+
+    // 4. 등록일 기간 매칭
+    if (dateStartVal || dateEndVal) {
+      var bDate = String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10);
+      if (dateStartVal && (!bDate || bDate < dateStartVal)) return false;
+      if (dateEndVal && (!bDate || bDate > dateEndVal)) return false;
+    }
+
+    return true;
   });
 
   // 정렬 적용
@@ -749,7 +762,7 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
   var baseIdx = (typeof startIdx === 'number') ? startIdx : 0;
 
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="13" class="text-center py-5 text-muted">일치하는 도서가 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" class="text-center py-5 text-muted">일치하는 도서가 없습니다.</td></tr>';
     return;
   }
 
@@ -836,6 +849,9 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
         <span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>${b.quizStatus || '5문항 완비'}</span>
       </td>
       <td class="text-center font-weight-bold">${b.readCount || '0회'}</td>
+      <td class="text-center" style="white-space: nowrap; font-size: 11.5px; color: #64748b; font-weight: 600;">
+        ${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}
+      </td>
       <td class="text-center" style="white-space: nowrap;">
         <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
           ${editBtnHtml}

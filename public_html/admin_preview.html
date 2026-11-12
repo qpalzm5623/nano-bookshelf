@@ -3596,6 +3596,20 @@
                 </div>
               </div>
 
+              <!-- [신규] 등록일 기간 필터 -->
+              <div>
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                  <i class="fa-regular fa-calendar mr-1"></i>등록일
+                </label>
+                <div class="d-flex align-items-center" style="gap: 4px; height: 38px;">
+                  <input type="date" id="filterAcadBookDateStart" class="form-control" onchange="filterAcademyBooks()"
+                    style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12px; width: 120px; padding: 4px 6px;" title="등록일 시작">
+                  <span style="font-size: 11px; color: var(--text-muted);">~</span>
+                  <input type="date" id="filterAcadBookDateEnd" class="form-control" onchange="filterAcademyBooks()"
+                    style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12px; width: 120px; padding: 4px 6px;" title="등록일 종료">
+                </div>
+              </div>
+
               <!-- 4. 도서 검색 (보유 여부 바로 우측에 나란히 배치) -->
               <div style="width: 310px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">도서 검색</label>
@@ -3667,6 +3681,7 @@
                   <th style="width: 100px;">나노시트</th>
                   <th>북퀴즈 현황</th>
                   <th>누적 완독</th>
+                  <th style="width: 88px; text-align: center; white-space: nowrap;">등록일</th>
                   <th style="width: 110px;">관리</th>
                 </tr>
               </thead>

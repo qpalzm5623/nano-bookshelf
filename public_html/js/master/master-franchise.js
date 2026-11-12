@@ -209,8 +209,8 @@ function renderRecommendedBooksTable() {
       <tr>
         <td colspan="8" class="text-center py-5 text-muted">
           <i class="fa-solid fa-book-open mb-2" style="font-size: 28px; opacity: 0.5;"></i>
-          <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">${gradeName}등록된 권장 도서가 없습니다.</div>
-          <small class="text-muted">우측 상단의 <strong>[+ 권장도서 추가]</strong> 버튼을 눌러 이 학년의 권장도서를 등록해보세요.</small>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">${gradeName}등록된 추천 도서가 없습니다.</div>
+          <small class="text-muted">우측 상단의 <strong>[+ 추천도서 추가]</strong> 버튼을 눌러 이 학년의 추천도서를 등록해보세요.</small>
         </td>
       </tr>
     `;
@@ -502,7 +502,7 @@ function filterRecModalBooks(resetPage = false) {
             ${isAlreadyRec
               ? `<button class="btn btn-sm btn-secondary disabled" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px; cursor: not-allowed;" disabled><i class="fa-solid fa-check mr-1"></i>이미 등록됨</button>`
               : `<button class="btn btn-sm btn-beige-primary" style="font-size: 11.5px; padding: 4px 12px; border-radius: 6px; font-weight: 700;" onclick="addBookToRecommended('${b.id}')">
-                  <i class="fa-solid fa-plus mr-1"></i>권장도서 추가
+                  <i class="fa-solid fa-plus mr-1"></i>추천도서 추가
                  </button>`
             }
           </div>
