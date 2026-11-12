@@ -2291,6 +2291,15 @@ async function toggleThoughtSectionVisibility() {
 // ==============================================================
 // 3-1. 생각 담기 교사 직접 지도 코멘트 UI 및 저장 기능
 // ==============================================================
+// 인쇄에는 저장된 코멘트만 반영하고, 빈 코멘트 영역은 생략합니다.
+function updateThoughtTeacherCommentPrint(comment) {
+  var text = String(comment || '').trim();
+  var printEl = document.getElementById('thoughtTeacherCommentPrintDisplay');
+  var section = document.getElementById('learnModalThoughtSection');
+  if (printEl) printEl.innerText = text;
+  if (section) section.classList.toggle('has-saved-thought-comment', Boolean(text));
+}
+
 function initThoughtTeacherCommentUI(log) {
   if (!log) return;
   var tComment = (log.thoughtTeacherComment !== undefined && log.thoughtTeacherComment !== null)
@@ -2300,11 +2309,10 @@ function initThoughtTeacherCommentUI(log) {
   var inputEl = document.getElementById('thoughtTeacherCommentInput');
   var countEl = document.getElementById('thoughtTeacherCommentCharCount');
   var badgeEl = document.getElementById('thoughtTeacherCommentStatusBadge');
-  var printEl = document.getElementById('thoughtTeacherCommentPrintDisplay');
 
   if (inputEl) inputEl.value = tComment;
   if (countEl) countEl.innerText = tComment.length + '자 작성됨';
-  if (printEl) printEl.innerText = tComment || '지도교사 코멘트가 작성되지 않았습니다.';
+  updateThoughtTeacherCommentPrint(tComment);
 
   if (badgeEl) {
     if (tComment.trim()) {
@@ -2321,8 +2329,6 @@ function onThoughtTeacherCommentInput(val) {
   var text = String(val || '');
   var countEl = document.getElementById('thoughtTeacherCommentCharCount');
   if (countEl) countEl.innerText = text.length + '자 작성됨';
-  var printEl = document.getElementById('thoughtTeacherCommentPrintDisplay');
-  if (printEl) printEl.innerText = text || '지도교사 코멘트가 작성되지 않았습니다.';
 }
 
 async function saveThoughtTeacherComment() {
@@ -2352,6 +2358,7 @@ async function saveThoughtTeacherComment() {
   try {
     var ok = await saveCustomLearningLogs(allLogs);
     if (ok) {
+      if (currentOpenLearningLogId === log.id) updateThoughtTeacherCommentPrint(commentVal);
       var badgeEl = document.getElementById('thoughtTeacherCommentStatusBadge');
       if (badgeEl) {
         if (commentVal) {
@@ -6197,6 +6204,211 @@ function showPortfolioList() {
 // 1. 다양성, 2. 난이도, 3. 습관, 4. 몰입, 5. 이해도 정합성
 // 규칙: 3~4개 코멘트, 각 40~70자, 2문장 이내, 독서량 감소 언급 금지, 타인 비교 금지
 // ==============================================================
+// ==============================================================
+// 완독 도서 실데이터 기반 장르 분포(%) 및 테마 태그 동적 계산 엔진
+// ==============================================================
+function getBookCatalogReference() {
+  if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList) && academyBookList.length > 0) {
+    return academyBookList;
+  }
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+    return window.MIGRATED_BOOKS;
+  }
+  return [];
+}
+
+function findMatchingCatalogBook(b) {
+  if (!b) return null;
+  var catalog = getBookCatalogReference();
+  if (!catalog || catalog.length === 0) return null;
+  var bTitle = String(b.title || '').trim();
+  var bCleanTitle = bTitle.replace(/\s+/g, '').toLowerCase();
+  var bId = String(b.bookId || b.id || '').trim();
+
+  return catalog.find(function(item) {
+    if (!item) return false;
+    if (bId && (String(item.id) === bId || String(item.bookNo) === bId)) return true;
+    var itemTitle = String(item.title || '').trim();
+    if (itemTitle === bTitle) return true;
+    return itemTitle.replace(/\s+/g, '').toLowerCase() === bCleanTitle;
+  }) || null;
+}
+
+function calculateRealBookGenreDist(books) {
+  if (!Array.isArray(books) || books.length === 0) {
+    return { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 };
+  }
+  var counts = {};
+  var total = 0;
+
+  books.forEach(function(b) {
+    var matched = findMatchingCatalogBook(b);
+    var genre = '';
+    if (matched) {
+      genre = matched.category || matched.subject || matched.cat1 || '';
+    }
+    if (!genre && b.category) genre = b.category;
+    if (!genre) {
+      var t = String(b.title || '');
+      if (/역사|조선|한국사|전쟁|왕|사회/.test(t)) genre = '사회/역사';
+      else if (/과학|우주|동물|식물|로봇|자연|환경/.test(t)) genre = '과학/자연';
+      else if (/철학|생각|마음|질문|인문/.test(t)) genre = '인문/철학';
+      else genre = '문학/성장';
+    } else {
+      if (/문학|소설|동화|시|수필|그림책/.test(genre)) genre = '문학/성장';
+      else if (/인문|철학|교양|인물/.test(genre)) genre = '인문/철학';
+      else if (/사회|역사|지리|경제/.test(genre)) genre = '사회/역사';
+      else if (/과학|자연|수학|기술/.test(genre)) genre = '과학/자연';
+      else if (/예술|문화/.test(genre)) genre = '예술/문화';
+      else genre = '교양/문학';
+    }
+
+    counts[genre] = (counts[genre] || 0) + 1;
+    total++;
+  });
+
+  if (total === 0) return { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 };
+
+  var dist = {};
+  var percentSum = 0;
+  var keys = Object.keys(counts);
+  keys.forEach(function(k, idx) {
+    if (idx === keys.length - 1) {
+      dist[k] = Math.max(1, 100 - percentSum);
+    } else {
+      var p = Math.round((counts[k] / total) * 100);
+      dist[k] = p;
+      percentSum += p;
+    }
+  });
+
+  return dist;
+}
+
+function extractRealBookTags(books) {
+  if (!Array.isArray(books) || books.length === 0) {
+    return ['#성장소설', '#인간관계', '#철학적사유', '#공감과소통', '#자아탐색'];
+  }
+  var tagCounts = {};
+  books.forEach(function(b) {
+    var matched = findMatchingCatalogBook(b);
+    var rawList = [];
+    if (matched) {
+      if (Array.isArray(matched.tags)) rawList = rawList.concat(matched.tags);
+      if (matched.themeTag) rawList.push(matched.themeTag);
+      if (matched.detailTag) rawList = rawList.concat(String(matched.detailTag).split(/\s+/));
+      if (matched.rawTags) rawList = rawList.concat(String(matched.rawTags).split(','));
+      if (matched.subject) rawList.push(matched.subject);
+    }
+    if (b.tags && Array.isArray(b.tags)) rawList = rawList.concat(b.tags);
+
+    rawList.forEach(function(tag) {
+      var cleaned = String(tag || '').replace(/^[#,\s]+|[,\s]+$/g, '').trim();
+      if (!cleaned || cleaned.length < 2 || cleaned === '이야기' || cleaned === '전체' || cleaned === '선택') return;
+      var hashTag = '#' + cleaned;
+      tagCounts[hashTag] = (tagCounts[hashTag] || 0) + 1;
+    });
+  });
+
+  var sortedTags = Object.keys(tagCounts).sort(function(a, b) {
+    return tagCounts[b] - tagCounts[a];
+  });
+
+  if (sortedTags.length >= 3) {
+    return sortedTags.slice(0, 5);
+  }
+
+  var fallbackDefaults = ['#자아성장', '#인간관계', '#상상력확장', '#공감과소통', '#문해력향상'];
+  var merged = sortedTags.slice();
+  fallbackDefaults.forEach(function(ft) {
+    if (merged.indexOf(ft) === -1 && merged.length < 5) merged.push(ft);
+  });
+  return merged;
+}
+
+// 도서별 독서 관찰 생성 (나노시트 첨삭 최우선 반영 & 북퀴즈 점수 수치 언급 전면 배제)
+function getBookObservationComment(b, studentName, logs) {
+  var bTitle = String(b.title || '').trim();
+  var bCleanTitle = bTitle.replace(/\s+/g, '').toLowerCase();
+
+  // 1. 해당 학생 및 도서의 첨삭 기록(나노시트 첨삭 / 생각담기 교사 코멘트) 조회
+  if (Array.isArray(logs)) {
+    var matchedLog = logs.find(function(l) {
+      if (!l) return false;
+      var lTitle = String(l.bookTitle || l.title || '').trim();
+      if (!lTitle) return false;
+      return lTitle === bTitle || lTitle.replace(/\s+/g, '').toLowerCase() === bCleanTitle;
+    });
+
+    if (matchedLog) {
+      if (matchedLog.thoughtTeacherComment && matchedLog.thoughtTeacherComment.trim()) {
+        return matchedLog.thoughtTeacherComment.trim();
+      }
+      if (matchedLog.worksheetAiResult) {
+        var w = matchedLog.worksheetAiResult;
+        var comment = w.summary || w.goodPoints || '';
+        if (comment && comment.trim()) {
+          var cleaned = comment.replace(/\n+/g, ' ').trim();
+          if (cleaned.length > 140) cleaned = cleaned.slice(0, 137) + '…';
+          return cleaned;
+        }
+      }
+    }
+  }
+
+  // 2. 도서 성취 기존 문구 정제 (점수 및 북퀴즈 언급 제거)
+  if (b.achievement && b.achievement.indexOf('생성 전') === -1) {
+    var rawAch = String(b.achievement);
+    var cleanedAch = rawAch.replace(/북퀴즈(?:에서)?\s*\d+점을?\s*(?:기록|획득|받았|얻었)?[^.]*\./g, '')
+                           .replace(/북퀴즈를?\s*성실히?\s*완수했습니다\.?/g, '등장인물의 선택과 감정에 깊이 공감하며 읽었습니다.')
+                           .trim();
+    if (cleanedAch.length >= 20) {
+      return cleanedAch;
+    }
+  }
+
+  // 3. 도서 특징(카탈로그 카테고리/주제)에 따른 정성적 성장 서술
+  var matchedBook = findMatchingCatalogBook(b);
+  var cat = matchedBook ? (matchedBook.category || matchedBook.subject || '') : '';
+  if (/문학|소설|동화/.test(cat)) {
+    return '《' + bTitle + '》을(를) 읽으며 인물의 내면적 갈등과 선택에 깊이 공감하고, 이야기 속 상황을 자신의 일상 경험과 연결하여 풍부하게 사유하는 모습을 보였습니다.';
+  } else if (/인문|철학/.test(cat)) {
+    return '《' + bTitle + '》의 중심 질문을 진지하게 고민하며, 당연하게 여겼던 생각들에 대해 새로운 관점으로 질문을 던지고 가치관을 넓혀가는 성장을 이루었습니다.';
+  } else if (/과학|자연/.test(cat)) {
+    return '《' + bTitle + '》에 등장하는 자연과 과학 원리를 호기심을 갖고 탐구하며, 책에서 발견한 사실들을 바탕으로 논리적인 인과관계를 차분히 짚어냈습니다.';
+  } else if (/사회|역사/.test(cat)) {
+    return '《' + bTitle + '》을(를) 통해 다양한 시대적 배경과 사람들의 삶의 모습을 살펴보며, 공동체와 사회적 맥락을 균형 잡힌 시각으로 이해하는 안목을 길렀습니다.';
+  }
+
+  return '《' + bTitle + '》의 중심 서사와 핵심 맥락을 꼼꼼하게 파악하며 완독하였고, 작품 속 주제 의식을 자신의 언어로 주도적으로 정리해내는 성취를 보였습니다.';
+}
+
+// 선생님의 한마디 스마트 생성 헬퍼 (잘한 점과 응원 중심, 나노시트 첨삭 위주 반영, 3~4문장 간결)
+function generateSmartTeacherNote(studentName, books, logs) {
+  var worksheetHighlights = [];
+  if (Array.isArray(logs)) {
+    logs.forEach(function(l) {
+      if (!l) return;
+      if (l.worksheetAiResult && l.worksheetAiResult.goodPoints) {
+        worksheetHighlights.push(l.worksheetAiResult.goodPoints);
+      } else if (l.thoughtTeacherComment && l.thoughtTeacherComment.trim()) {
+        worksheetHighlights.push(l.thoughtTeacherComment.trim());
+      }
+    });
+  }
+  var count = books ? books.length : 0;
+  var note = studentName + ' 학생은 이번 기간 동안 총 ' + count + '권의 도서를 꾸준히 완독하며 책 읽는 즐거움과 주도적인 독서 태도를 훌륭하게 보여주었습니다. ';
+  if (worksheetHighlights.length > 0) {
+    var highlight = worksheetHighlights[0].replace(/\n/g, ' ').replace(/^-\s*/, '').slice(0, 90).trim();
+    note += '특히 독후 활동에서 ' + highlight + ' 점이 매우 인상적이었습니다. ';
+  } else {
+    note += '작품 속 다양한 인물들의 갈등과 선택에 깊이 공감하며 자신의 생각과 느낌을 주도적으로 확장해 나가는 모습이 돋보였습니다. ';
+  }
+  note += '앞으로도 따뜻한 인문학적 감수성과 논리적인 사고력을 바탕으로 더욱 큰 생각의 날개를 펼쳐갈 수 있도록 응원합니다.';
+  return note;
+}
+
+// ==============================================================
 // 5대 분석 축 기반 정성 코멘트 자동 생성 엔진
 // 4대 핵심 역량 (문해력, 정서/공감, 비판적사고, 독서태도)
 // ==============================================================
@@ -6208,10 +6420,9 @@ function generatePortfolioInsights(student, pfData) {
     return pfData.aiComments;
   }
   
-  // 지능형 스마트 기본 4대 역량 코멘트 (학생 완독 도서 데이터 기반)
+  // 지능형 스마트 기본 4대 역량 코멘트 (학생 완독 도서 데이터 기반 - 북퀴즈 점수 언급 배제)
   var books = (pfData && pfData.books) || [];
-  var firstTitle = (books[0] && books[0].title) ? ('《' + books[0].title + '》') : '지정 도서';
-  var rawAvg = Number(pfData && pfData.quizAvg) || 85;
+  var firstTitle = (books[0] && books[0].title) ? ('《' + books[0].title + '》') : '완독 도서';
   
   return [
     {
@@ -6230,7 +6441,7 @@ function generatePortfolioInsights(student, pfData) {
       category: '비판적 사고 & 문제 해결력',
       icon: 'fa-solid fa-scale-balanced',
       color: '#3b82f6',
-      comment: '북퀴즈 평균 ' + Math.round(rawAvg) + '점을 기록하며 사건의 인과관계를 논리적으로 분석하고 자신의 관점으로 재해석하는 역량이 돋보입니다.'
+      comment: '작품 속 사건의 인과관계를 논리적으로 분석하고, 다양한 관점에서 문제를 다각도로 짚어내는 뛰어난 사유 능력을 발휘했습니다.'
     },
     {
       category: '자기표현 & 능동적 독서 태도',
@@ -6246,39 +6457,26 @@ function applySmartPortfolioDefaults(pfData, std) {
   if (!pfData) return;
   var books = pfData.books || [];
   var stdName = pfData.name || (std ? std.name : '원생');
+  var logs = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
   
-  // 1. 도서별 성취 내역 보강
+  // 1. 도서별 성취 내역 보강 (점수 언급 배제)
   books.forEach(function(b, idx) {
-    var rawScore = parseFloat(String(b.score || '80').replace(/[^0-9.]/g, ''));
-    if (isNaN(rawScore)) rawScore = 80;
-    
     var needUpdate = !b.achievement || 
                      b.achievement.indexOf('생성 전입니다') !== -1 || 
                      b.achievement.indexOf('AI 성취') !== -1 ||
                      b.achievement.trim().length < 15;
     if (needUpdate) {
-      var title = b.title || '완독 도서';
-      if (rawScore >= 95) {
-        b.achievement = '《' + title + '》의 중심 서사와 핵심 주제 의식을 완벽하게 파악하였으며, 인물의 내면적 동기와 갈등 구조를 입체적으로 분석하는 탁월한 이해도를 보였습니다.';
-      } else if (rawScore >= 80) {
-        b.achievement = '《' + title + '》의 주요 사건 전개와 핵심 어휘를 바르게 이해하였으며, 등장인물의 감정선에 공감하며 북퀴즈를 성실하고 우수하게 완수했습니다.';
-      } else {
-        b.achievement = '《' + title + '》의 전반적인 줄거리와 기본 배경 지식을 습득하였으며, 텍스트를 끝까지 완독하고 능동적으로 사유를 확장하는 끈기 있는 태도를 보였습니다.';
-      }
+      b.achievement = getBookObservationComment(b, stdName, logs);
     }
   });
 
-  // 2. 지도교사 총평 보강
+  // 2. 지도교사 총평 보강 (잘한 점과 응원 중심, 간결한 3~4문장)
   var needTeacherNoteUpdate = !pfData.teacherNote || 
                               pfData.teacherNote.indexOf('생성합니다') !== -1 || 
                               pfData.teacherNote.indexOf('AI 총평') !== -1 ||
                               pfData.teacherNote.trim().length < 25;
   if (needTeacherNoteUpdate) {
-    var bookCount = books.length;
-    var avgScore = Math.round(Number(pfData.quizAvg) || 85);
-    pfData.teacherNote = stdName + ' 학생은 이번 분석 기간 동안 총 ' + bookCount + '권의 목표 도서를 성실하게 완독하며 북퀴즈 평균 ' + avgScore + '점의 높은 성취도를 달성했습니다. ' +
-      '문학적 감수성과 논리적 사고력을 균형 있게 키워가고 있으며, 책 속 다양한 인물들의 갈등과 성장을 통해 자신의 생각과 삶을 돌아보는 인문학적 깊이가 날로 깊어지고 있습니다. ' +
-      '앞으로도 다양한 테마의 도서를 탐구하며 깊이 있는 문해력과 창의적 표현력을 꽃피울 수 있도록 세심하고 따뜻한 지도를 이어가겠습니다.';
+    pfData.teacherNote = generateSmartTeacherNote(stdName, books, logs);
   }
 
   // 3. 4대 역량 코멘트 설정
@@ -6323,19 +6521,24 @@ async function generatePortfolioWithGeminiClient(studentId, pfId, pfData, std) {
     '당신은 대한민국 최고 수준의 독서 논술 교육 전문 연구원입니다. 학생의 독서 포트폴리오를 위한 맞춤 분석 리포트를 작성해 주세요.\n\n' +
     '학생명: ' + (pfData.name || (std ? std.name : '원생')) + '\n' +
     '완독 도서 목록:\n' + bookSummary + '\n\n' +
+    '[절대 준수 작성 원칙]\n' +
+    '1. 북퀴즈 점수 수치(예: 60점, 80점, 100점 등)나 "북퀴즈 몇 점 기록/획득"과 같은 점수 언급은 일체 하지 마십시오.\n' +
+    '2. 어떤 류의 도서를 읽어서 인물의 심리 이해, 비판적 사고, 어휘력, 맥락 파악 등 어떤 면이 발전했는지를 정성적으로 간결하게 서술하십시오.\n' +
+    '3. bookAchievements는 도서의 특징과 주제에 따라 어떤 부분이 성장했을지를 상상하며 서술하십시오 (60~85자).\n' +
+    '4. teacherNote는 상단의 내용을 종합하여 잘한 점과 따뜻한 응원을 중심으로 3~4문장의 간결한 마무리 멘트로 작성하십시오 (130~170자).\n\n' +
     '반드시 아래 JSON 형식으로만 응답해 주세요 (코드블록 없이 순수 JSON):\n' +
     '{\n' +
     '  "aiInsights": [\n' +
     '    { "category": "문해력 & 중심 맥락 파악", "icon": "fa-solid fa-lightbulb", "color": "#1f8a7e", "comment": "도서들의 중심 서사와 인물의 선택을 정밀하게 파악함 (50~70자)" },\n' +
     '    { "category": "공감 능력 & 정서적 사유", "icon": "fa-solid fa-heart", "color": "#e67828", "comment": "작품 속 인물의 갈등에 깊이 공감하고 정서적 통찰을 얻음 (50~70자)" },\n' +
-    '    { "category": "비판적 사고 & 문제 해결력", "icon": "fa-solid fa-scale-balanced", "color": "#3b82f6", "comment": "북퀴즈를 통해 인과관계를 논리적으로 분석하고 재해석함 (50~70자)" },\n' +
+    '    { "category": "비판적 사고 & 문제 해결력", "icon": "fa-solid fa-scale-balanced", "color": "#3b82f6", "comment": "작품의 사건 인과관계를 논리적으로 분석하고 재해석함 (50~70자)" },\n' +
     '    { "category": "자기표현 & 능동적 독서 태도", "icon": "fa-solid fa-seedling", "color": "#10b981", "comment": "정해진 목표를 꾸준히 완독하며 자기주도적 독서 습관 형성 (50~70자)" }\n' +
     '  ],\n' +
     '  "bookAchievements": [\n' +
-    '    "도서 1에 대한 핵심 성취 내역 (60~90자)",\n' +
-    '    "도서 2에 대한 핵심 성취 내역 (60~90자)"\n' +
+    '    "도서 1에 대한 핵심 성장 관찰 (점수 언급 금지, 60~85자)",\n' +
+    '    "도서 2에 대한 핵심 성장 관찰 (점수 언급 금지, 60~85자)"\n' +
     '  ],\n' +
-    '  "teacherNote": "학부모에게 전달할 지도교사 종합 총평 (150~220자)"\n' +
+    '  "teacherNote": "잘한 점과 따뜻한 응원 중심의 간결한 마무리 멘트 (3~4문장, 130~170자)"\n' +
     '}';
 
   try {
@@ -6533,43 +6736,21 @@ function renderPortfolioDocument(studentId, pfId) {
     '</div>'
   );
 
-  // SVG 도넛 차트 생성 (장르 분포)
-  var dist = pfData.genreDist || { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 };
+  // 실데이터 기반 장르 분포 계산 (완독 도서 실제 카테고리/주제 집계)
+  var dist = calculateRealBookGenreDist(books);
   var distKeys = Object.keys(dist);
   var donutSvg = buildGenreDonutSvg(dist);
 
-  // 태그 뱃지 생성
-  var tags = pfData.tags || ['#성장소설', '#인간관계', '#철학적사유', '#공감과소통', '#자아탐색'];
+  // 실데이터 기반 테마 태그 추출 (완독 도서 실제 태그 집계)
+  var tags = extractRealBookTags(books);
   var tagsHtml = tags.map(function(t) {
-    return '<span class="pf-tag-badge">' + t + '</span>';
+    return '<span class="pf-tag-badge">' + escapePortfolioText(t) + '</span>';
   }).join(' ');
 
-  // 책 커버 갤러리 가로 그리드 HTML
-  var coverGridHtml = books.map(function(b, idx) {
-    var matchedBook = (typeof academyBookList !== 'undefined' && academyBookList)
-      ? academyBookList.find(function(ab) {
-          if (!ab || !ab.title) return false;
-          return ab.title === b.title || ab.title.replace(/\s+/g, '') === (b.title || '').replace(/\s+/g, '');
-        })
-      : null;
+  // 학습 로그 데이터 (나노시트 첨삭 및 교사 코멘트 연동용)
+  var loadedLogs = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
 
-    var rawCover = (b.cover && b.cover !== 'undefined' && b.cover !== 'null') ? b.cover : (matchedBook ? matchedBook.cover : '');
-    var coverUrl = rawCover || 'resources/images/book_default.svg';
-    var pubText = b.pub || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '나노출판');
-
-    var coverAction = escapePortfolioText('openCoverModal(' + JSON.stringify(coverUrl) + ', ' + JSON.stringify(b.title || '') + ', ' + JSON.stringify(pubText || '') + ')');
-    return (
-      '<div class="pf-cover-card-item">' +
-        '<button type="button" class="pf-cover-card-img-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
-          '<img src="' + escapePortfolioText(coverUrl) + '" class="pf-cover-card-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
-        '</button>' +
-        '<div class="pf-cover-card-title">' + escapePortfolioText(b.title || '') + '</div>' +
-        '<div class="pf-cover-card-sub">' + escapePortfolioText(pubText || '') + '</div>' +
-      '</div>'
-    );
-  }).join('');
-
-  // 북퀴즈 응시 및 성취도 이력 카드 HTML
+  // 북퀴즈 응시 및 성취도 이력 카드 HTML (No.1 / (연도) 월.일 한 줄 / 점수 배치)
   var booksGridHtml = books.map(function(b, idx) {
     var matchedBook = (typeof academyBookList !== 'undefined' && academyBookList)
       ? academyBookList.find(function(ab) {
@@ -6591,17 +6772,18 @@ function renderPortfolioDocument(studentId, pfId) {
       ? b.author 
       : (matchedBook ? matchedBook.author : '');
 
-    var scoreText = b.score == null || b.score === '' ? '기록 없음' : b.score;
-    if (typeof scoreText === 'number' || (typeof scoreText === 'string' && /^\d+(\.\d+)?$/.test(scoreText))) {
-      scoreText = scoreText + '점';
+    var cleanScoreText = String(b.score == null || b.score === '' ? '기록 없음' : b.score).replace(/북퀴즈\s*/g, '').trim();
+    if (/^\d+(\.\d+)?$/.test(cleanScoreText)) {
+      cleanScoreText = cleanScoreText + '점';
     }
 
-    var commentText = b.achievement || ('《' + (b.title || '완독 도서') + '》의 중심 맥락과 핵심 어휘를 바르게 습득하였으며, 북퀴즈를 성실히 완수했습니다.');
-    // 연도와 월일을 분리해 왼쪽의 좁은 메타 정보 열에 정렬합니다.
+    var commentText = getBookObservationComment(b, studentName, loadedLogs);
+
+    // (2026) 11.11 형태로 한 줄 정렬
     var bookDate = String(b.date || '').trim();
     var dateParts = bookDate.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:$|[T\s])/);
-    var bookDateHtml = dateParts
-      ? '<span class="pf-book-year">' + dateParts[1] + '</span><span class="pf-book-month-day">' + dateParts[2].padStart(2, '0') + '.' + dateParts[3].padStart(2, '0') + '</span>'
+    var singleLineDate = dateParts
+      ? ('(' + dateParts[1] + ') ' + dateParts[2].padStart(2, '0') + '.' + dateParts[3].padStart(2, '0'))
       : escapePortfolioText(bookDate || '완독일 미등록');
 
     var coverAction = escapePortfolioText('openCoverModal(' + JSON.stringify(coverUrl) + ', ' + JSON.stringify(b.title || '') + ', ' + JSON.stringify(pubText || '') + ')');
@@ -6610,9 +6792,9 @@ function renderPortfolioDocument(studentId, pfId) {
         '<div class="pf-book-row-card">' +
           '<div class="pf-book-meta-left">' +
             '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
-            '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + bookDateHtml + '</span>' +
+            '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + singleLineDate + '</span>' +
+            '<span class="pf-book-score-pill">' + escapePortfolioText(cleanScoreText) + '</span>' +
           '</div>' +
-          '<div class="pf-book-score"><span>북퀴즈</span><span>' + escapePortfolioText(scoreText) + '</span></div>' +
           '<div class="pf-book-card-top">' +
             '<button type="button" class="pf-book-cover-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
               '<img src="' + escapePortfolioText(coverUrl) + '" class="pf-book-cover-img" alt="' + escapePortfolioText(b.title || '') + '" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
@@ -6631,7 +6813,12 @@ function renderPortfolioDocument(studentId, pfId) {
     );
   }).join('');
 
-  // 전체 포트폴리오 문서 조립: 종합 분석에서 도서별 성취 내역과 지도교사 총평으로 이어집니다.
+  // 선생님의 한마디 (초기 기본값 스마트 생성)
+  var currentTeacherNote = (pfData.teacherNote && pfData.teacherNote.indexOf('생성합니다') === -1)
+    ? pfData.teacherNote
+    : generateSmartTeacherNote(studentName, books, loadedLogs);
+
+  // 전체 포트폴리오 문서 조립: 종합 분석에서 도서별 상세 성장 이력과 선생님 한마디로 구성
   var html = 
     '<!-- ============================================================== -->' +
     '<!-- [포트폴리오 종합 대시보드] -->' +
@@ -6671,20 +6858,19 @@ function renderPortfolioDocument(studentId, pfId) {
         '</div>' +
       '</div>' +
 
-      '<!-- ③ 📖 나노의 독서 이야기 (4대 핵심 역량 인포그래픽 카드) -->' +
+      '<!-- ③ 📖 나노의 독서 이야기 (4대 핵심 역량 인포그래픽 카드 - AI 분석 뱃지 제거) -->' +
       '<div class="mb-3">' +
         '<div class="pf-panel">' +
           '<div class="pf-panel-head">' +
-            '<h5 class="pf-section-title">' +
+            '<h5 class="pf-section-title mb-0">' +
               '<i class="fa-solid fa-book-open-reader" style="color:#1f8a7e;"></i>독서에서 발견한 성장' +
             '</h5>' +
-            '<span class="pf-panel-badge">AI 분석</span>' +
           '</div>' +
           insightGridHtml +
         '</div>' +
       '</div>' +
 
-      '<!-- ④ 독서 취향 그래프 (카테고리별 / 주제별) -->' +
+      '<!-- ④ 나의 독서 취향 (완독 도서 실데이터 기반 장르 및 테마 태그) -->' +
       '<div class="mb-3">' +
         '<div class="pf-section-title mb-2"><i class="fa-solid fa-pie-chart"></i>나의 독서 취향</div>' +
         '<div class="pf-preference-wrap">' +
@@ -6711,7 +6897,7 @@ function renderPortfolioDocument(studentId, pfId) {
                   return (
                     '<div class="mb-1" style="font-size:11.5px;">' +
                       '<div class="d-flex justify-content-between mb-0.5">' +
-                        '<span>' + k + '</span>' +
+                        '<span>' + escapePortfolioText(k) + '</span>' +
                         '<span class="font-weight-bold text-success" style="color:#1f8a7e !important;">' + val + '%</span>' +
                       '</div>' +
                       '<div class="progress" style="height:5px; background:#ece5d9; border-radius:3px;">' +
@@ -6725,21 +6911,6 @@ function renderPortfolioDocument(studentId, pfId) {
           '</div>' +
         '</div>' +
       '</div>' +
-
-      '<!-- ⑤ 책 커버 갤러리 (기간 내 완독 도서 - 가로 책장 그리드) -->' +
-      (books.length > 0 ? (
-        '<div class="mb-2">' +
-          '<div class="pf-collection-head">' +
-            '<div class="pf-section-title mb-0"><i class="fa-solid fa-book-bookmark"></i>함께 읽은 책 (' + bookCount + '권)</div>' +
-            '<small class="text-muted pf-print-hide">표지를 누르면 확대됩니다</small>' +
-          '</div>' +
-          '<div class="pf-collection">' +
-            '<div class="pf-cover-grid-wrap">' +
-              coverGridHtml +
-            '</div>' +
-          '</div>' +
-        '</div>'
-      ) : '') +
     '</div>' +
 
     '<!-- ────────────────────────────────────────────── -->' +
@@ -6748,7 +6919,7 @@ function renderPortfolioDocument(studentId, pfId) {
     '<div class="pf-page-break"></div>' +
 
     '<!-- ============================================================== -->' +
-    '<!-- [북퀴즈 상세 이력 & 지도교사 심층 총평: 도서 카드 단위로 이어서 인쇄] -->' +
+    '<!-- [북퀴즈 상세 이력 & 선생님의 한마디] -->' +
     '<!-- ============================================================== -->' +
     '<div class="pf-page2-section">' +
       '<!-- 상세 이력 안내 -->' +
@@ -6759,7 +6930,7 @@ function renderPortfolioDocument(studentId, pfId) {
         '<div style="font-size:11px; color:#7d756d;">학생명: <strong class="text-dark">' + escapePortfolioText(studentName) + '</strong> (' + escapePortfolioText(schoolGrade) + ') · 발급번호: ' + reportId + '</div>' +
       '</div>' +
 
-      '<!-- ⑥ 북퀴즈 응시 및 성취도 이력 -->' +
+      '<!-- ⑥ 책마다 쌓인 성장 기록 -->' +
       '<div class="mb-3">' +
         '<div class="pf-section-title mb-2"><i class="fa-solid fa-award"></i>책마다 쌓인 성장 기록</div>' +
         '<div class="pf-books-grid-row">' +
@@ -6767,15 +6938,29 @@ function renderPortfolioDocument(studentId, pfId) {
         '</div>' +
       '</div>' +
 
-      '<!-- ⑦ 지도교사 심층 총평 및 서명 -->' +
+      '<!-- ⑦ 선생님의 한마디 (수정 및 저장 가능) -->' +
       '<div class="mb-3">' +
         '<div class="pf-panel pf-teacher-comment-box">' +
-          '<div class="pf-panel-head">' +
-            '<strong class="pf-section-title"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>선생님의 한마디</strong>' +
-            '<span class="pf-panel-badge">담당 교사: ' + escapePortfolioText(teacher) + '</span>' +
+          '<div class="pf-panel-head d-flex justify-content-between align-items-center">' +
+            '<strong class="pf-section-title mb-0"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>선생님의 한마디</strong>' +
+            '<div class="d-flex align-items-center" style="gap:8px;">' +
+              '<span class="pf-panel-badge">담당 교사: ' + escapePortfolioText(teacher) + '</span>' +
+              '<button type="button" class="btn btn-sm btn-outline-success pf-print-hide" style="font-size:11.5px; padding:2px 8px; border-radius:6px;" onclick="togglePfTeacherNoteEdit(true)" id="btnPfTeacherNoteEdit">' +
+                '<i class="fa-solid fa-pen-to-square mr-1"></i>수정' +
+              '</button>' +
+            '</div>' +
           '</div>' +
-          '<div id="pfTeacherNoteDisplay">' +
-            escapePortfolioText(pfData.teacherNote || '') +
+          '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13px; color:#374151;">' +
+            escapePortfolioText(currentTeacherNote) +
+          '</div>' +
+          '<div id="pfTeacherNoteEditWrap" style="display:none;" class="pf-print-hide mt-2">' +
+            '<textarea id="pfTeacherNoteInput" class="form-control" rows="4" style="font-size:13px; border-color:#1f8a7e; line-height:1.6; resize:vertical;">' + escapePortfolioText(currentTeacherNote) + '</textarea>' +
+            '<div class="d-flex justify-content-end mt-2" style="gap:8px;">' +
+              '<button type="button" class="btn btn-sm btn-secondary" style="font-size:12px; padding:3px 10px;" onclick="togglePfTeacherNoteEdit(false)">취소</button>' +
+              '<button type="button" class="btn btn-sm btn-success" style="font-size:12px; padding:3px 12px; background:#1f8a7e; border-color:#1f8a7e;" onclick="saveViewingPortfolioTeacherNote(' + JSON.stringify(studentId) + ', ' + JSON.stringify(pfId) + ')">' +
+                '<i class="fa-solid fa-check mr-1"></i>저장' +
+              '</button>' +
+            '</div>' +
           '</div>' +
           '<div class="pf-signature mt-3 pt-2 border-top">' +
             '<span style="font-size:11px; color:#6b7280;">나노의 책장 독서 교육 연구소 인증 지도교사</span>' +
@@ -6794,6 +6979,58 @@ function renderPortfolioDocument(studentId, pfId) {
     '</div>';
 
   docContainer.innerHTML = html;
+}
+
+// 선생님의 한마디 인라인 수정/저장 제어
+function togglePfTeacherNoteEdit(show) {
+  var displayEl = document.getElementById('pfTeacherNoteDisplay');
+  var editWrap = document.getElementById('pfTeacherNoteEditWrap');
+  var editBtn = document.getElementById('btnPfTeacherNoteEdit');
+  var inputEl = document.getElementById('pfTeacherNoteInput');
+  if (show) {
+    if (displayEl) displayEl.style.display = 'none';
+    if (editWrap) editWrap.style.display = 'block';
+    if (editBtn) editBtn.style.display = 'none';
+    if (inputEl && displayEl) {
+      inputEl.value = displayEl.innerText.trim();
+      inputEl.focus();
+    }
+  } else {
+    if (displayEl) displayEl.style.display = 'block';
+    if (editWrap) editWrap.style.display = 'none';
+    if (editBtn) editBtn.style.display = 'inline-block';
+  }
+}
+
+async function saveViewingPortfolioTeacherNote(studentId, pfId) {
+  var inputEl = document.getElementById('pfTeacherNoteInput');
+  var newText = inputEl ? inputEl.value.trim() : '';
+  if (!newText) {
+    alert('선생님의 한마디 내용을 입력해 주세요.');
+    return;
+  }
+
+  var targetData = (pfId && portfolioDataMap[pfId]) || portfolioDataMap[studentId] || null;
+  if (targetData) {
+    targetData.teacherNote = newText;
+  }
+  if (portfolioDataMap[studentId]) {
+    portfolioDataMap[studentId].teacherNote = newText;
+  }
+
+  // 서버 모드 동기화
+  if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.updatePortfolioComment === 'function') {
+    try {
+      await NanoPortal.updatePortfolioComment(pfId, newText);
+    } catch (e) {
+      console.warn('[saveViewingPortfolioTeacherNote] Remote sync failed:', e.message);
+    }
+  }
+
+  var displayEl = document.getElementById('pfTeacherNoteDisplay');
+  if (displayEl) displayEl.innerText = newText;
+  togglePfTeacherNoteEdit(false);
+  showAcademyToast('선생님의 한마디가 성공적으로 저장되었습니다.');
 }
 
 function buildGenreDonutSvg(dist) {
@@ -7237,7 +7474,8 @@ function goToWizardStep(step) {
     if (btnNext) btnNext.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i>포트폴리오 생성 완료!';
     var std = studentDataList.find(function(s) { return s.id === wizardSelectedStudentId; });
     var tInput = document.getElementById('wizReportTitle');
-    if (std && tInput) { tInput.value = '[' + std.name + '] 2026년 3분기 독서 포트폴리오'; }
+    if (std && tInput) { tInput.value = '[' + std.name + '] 독서 성장 포트폴리오'; }
+    updateWizardAutoPeriod();
   } else if (step === 4) {
     if (btnPrev) btnPrev.style.display = 'none';
     if (btnCancel) btnCancel.style.display = 'none';
@@ -7411,11 +7649,35 @@ function toggleWizardBook(idx, isChecked) {
   updateWizardBookCountBadge();
 }
 
+// 선택된 완독 도서들의 완료일 기준 자동 분석 기간 산출 (제일 빠른 일자 ~ 제일 늦은 일자)
+function updateWizardAutoPeriod() {
+  var periodInput = document.getElementById('wizReportPeriod');
+  if (!periodInput) return;
+
+  var selectedObjs = (currentWizardFilteredBooks || []).filter(function(b) {
+    return wizardSelectedBookKeys.indexOf(b.uniqueKey) !== -1;
+  });
+
+  var dates = selectedObjs.map(function(b) {
+    return String(b.date || '').trim().replace(/\./g, '-');
+  }).filter(function(d) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(d);
+  }).sort();
+
+  if (dates.length > 0) {
+    var minDate = dates[0];
+    var maxDate = dates[dates.length - 1];
+    var autoPeriod = (minDate === maxDate) ? minDate : (minDate + ' ~ ' + maxDate);
+    periodInput.value = autoPeriod;
+  }
+}
+
 function syncWizardSelectedBooks() {
   var selectedObjs = (currentWizardFilteredBooks || []).filter(function(b) {
     return wizardSelectedBookKeys.indexOf(b.uniqueKey) !== -1;
   });
   wizardSelectedBooks = selectedObjs.map(function(b) { return b.title; });
+  updateWizardAutoPeriod();
 }
 
 function onWizardSelectAllBooks(checked) {
@@ -7438,6 +7700,7 @@ function onWizardSelectAllBooks(checked) {
   }
 
   updateWizardBookCountBadge();
+  updateWizardAutoPeriod();
 }
 
 function updateWizardBookCountBadge() {
@@ -7492,16 +7755,22 @@ async function finishPortfolioCreate() {
     var fromDate = startDateInput && startDateInput.value ? startDateInput.value : '';
     var toDate = endDateInput && endDateInput.value ? endDateInput.value : '';
     if (!fromDate || !toDate) {
-      var quarter = period.match(/(\d{4})년\s*([1-4])분기/);
-      if (quarter) {
-        var year = Number(quarter[1]);
-        var startMonth = (Number(quarter[2]) - 1) * 3;
-        fromDate = new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10);
-        toDate = new Date(Date.UTC(year, startMonth + 3, 0)).toISOString().slice(0, 10);
+      var rangeMatch = period.match(/(\d{4}[-.]\d{2}[-.]\d{2})\s*~\s*(\d{4}[-.]\d{2}[-.]\d{2})/);
+      if (rangeMatch) {
+        fromDate = rangeMatch[1].replace(/\./g, '-');
+        toDate = rangeMatch[2].replace(/\./g, '-');
       } else {
-        var today = new Date();
-        fromDate = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
-        toDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).toISOString().slice(0, 10);
+        var quarter = period.match(/(\d{4})년\s*([1-4])분기/);
+        if (quarter) {
+          var year = Number(quarter[1]);
+          var startMonth = (Number(quarter[2]) - 1) * 3;
+          fromDate = new Date(Date.UTC(year, startMonth, 1)).toISOString().slice(0, 10);
+          toDate = new Date(Date.UTC(year, startMonth + 3, 0)).toISOString().slice(0, 10);
+        } else {
+          var today = new Date();
+          fromDate = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
+          toDate = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).toISOString().slice(0, 10);
+        }
       }
     }
     var selectedBookObjects = (currentWizardFilteredBooks || []).filter(function(b) {

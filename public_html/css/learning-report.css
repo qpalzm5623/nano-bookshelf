@@ -80,8 +80,8 @@
   body.is-printing-report #learningReportModalBody .report-overview-split { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) !important; }
   body.is-printing-report #learningReportModalBody #learnModalBook { font-size: 16px !important; }
   body.is-printing-report #learningReportModalBody #learnModalScore { font-size: 26px !important; }
-  body.is-printing-report #learningReportModalBody .report-quiz-grid { display: block !important; }
-  body.is-printing-report #learningReportModalBody .report-quiz-card { margin-bottom: 8px; padding: 10px 12px !important; break-inside: avoid; }
+  body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-quiz-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px 10px !important; }
+  body.is-printing-report #learningReportModalBody .report-quiz-card { margin-bottom: 0; padding: 10px 12px !important; break-inside: avoid; }
   body.is-printing-report #learningReportModalBody .report-quiz-question { font-size: 10pt !important; line-height: 1.5 !important; min-height: 0 !important; }
   body.is-printing-report #learningReportModalBody .report-choice-val { font-size: 10pt !important; }
   body.is-printing-report #learningReportModalBody .report-choice-label { font-size: 9pt !important; }
@@ -90,10 +90,14 @@
   body.is-printing-report #learningReportModalBody .worksheet-review,
   body.is-printing-report #learningReportModalBody .report-thought-layout,
   body.is-printing-report #learningReportModalBody .report-worksheet-layout { break-before: auto !important; page-break-before: auto !important; break-inside: auto !important; page-break-inside: auto !important; }
-  body.is-printing-report #learningReportModalBody .report-thought-layout,
-  body.is-printing-report #learningReportModalBody .report-worksheet-layout { display: block !important; }
-  body.is-printing-report #learningReportModalBody .report-thought-layout > *,
-  body.is-printing-report #learningReportModalBody .report-worksheet-layout > * { margin-bottom: 10px; }
+  body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-thought-layout,
+  body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-worksheet-layout { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; align-items: start; }
+  /* 저장된 지도 코멘트가 없으면 질문과 답안만 전체 폭으로 인쇄합니다. */
+  body.is-printing-report #learningReportModalDialog #learnModalThoughtSection:not(.has-saved-thought-comment) .report-thought-layout { grid-template-columns: minmax(0, 1fr) !important; }
+  body.is-printing-report #learnModalThoughtSection:not(.has-saved-thought-comment) #learnModalThoughtFeedbackCol,
+  body.is-printing-report #thoughtTeacherCommentStatusBadge { display: none !important; }
+  body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-thought-layout > *,
+  body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-worksheet-layout > * { min-width: 0 !important; max-width: none !important; margin-bottom: 10px; }
   body.is-printing-report #learningReportModalBody .report-thought-card { margin-top: 16px; }
   body.is-printing-report #learningReportModalBody :is(#learnModalThoughtQuestion, #learnModalSheetAnswer, #worksheetAiSummary, #worksheetAiNextStep, #worksheetAiParentGuide, #worksheetAiDrawingText) { font-size: 10pt !important; line-height: 1.6 !important; }
   body.is-printing-report #learningReportModalBody .report-section-heading,

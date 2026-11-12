@@ -3117,7 +3117,7 @@
   </style>
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
-<link rel="stylesheet" href="css/learning-report.css?v=20261111-layout">
+<link rel="stylesheet" href="css/learning-report.css?v=20261112-print">
 </head>
 
 <body>
@@ -7418,18 +7418,19 @@
             </div>
 
             <div class="row">
-              <div class="col-md-7">
+              <div class="col-md-6">
                 <div class="form-group mb-3">
                   <label class="font-weight-bold" style="font-size: 12.5px;">포트폴리오 리포트 명칭</label>
                   <input type="text" class="form-control form-control-sm" id="wizReportTitle"
                     value="2026년 3분기 독서 포트폴리오" style="border-radius: 8px; font-weight: 600;">
                 </div>
               </div>
-              <div class="col-md-5">
+              <div class="col-md-6">
                 <div class="form-group mb-3">
-                  <label class="font-weight-bold" style="font-size: 12.5px;">발급 기준 기간 (직접 입력)</label>
-                  <input type="text" class="form-control form-control-sm" id="wizReportPeriod" value="2026년 3분기 (7~9월)"
-                    placeholder="예: 2026년 3분기, 9월호 등 직접 입력" style="border-radius: 8px; font-weight: 600;">
+                  <label class="font-weight-bold" style="font-size: 12.5px;">분석 대상 기간 (선택 도서 완독일 기준 자동 산출)</label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="wizReportPeriod" value=""
+                    readonly style="border-radius: 8px; font-weight: 600; color: #1f8a7e; background: #f8fafc;"
+                    placeholder="선택한 도서 완독일 기준 자동 설정">
                 </div>
               </div>
             </div>
@@ -7442,51 +7443,23 @@
                   <div class="col-6 mb-2">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="wizOptInsights" checked>
-                      <label class="custom-control-label" for="wizOptInsights">나노의 독서 이야기 (4대 정성 코멘트 자동 생성)</label>
+                      <label class="custom-control-label" for="wizOptInsights">독서에서 발견한 성장 (4대 정성 코멘트)</label>
                     </div>
                   </div>
                   <div class="col-6 mb-2">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="wizOptChart" checked>
-                      <label class="custom-control-label" for="wizOptChart">독서 취향 & 선호도 분석 (카테고리 도넛 차트)</label>
+                      <label class="custom-control-label" for="wizOptChart">독서 취향 분석 (카테고리 도넛 차트)</label>
                     </div>
                   </div>
-                  <div class="col-6">
-                    <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="wizOptBooks" checked>
-                      <label class="custom-control-label" for="wizOptBooks">완독 도서 커버 갤러리 그리드</label>
-                    </div>
-                  </div>
-                  <div class="col-6">
+                  <div class="col-12">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="wizOptQuizTable" checked>
-                      <label class="custom-control-label" for="wizOptQuizTable">북퀴즈 응시 및 성취도 이력 테이블</label>
+                      <label class="custom-control-label" for="wizOptQuizTable">책마다 쌓인 성장 기록 및 독서 관찰</label>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <!-- 지도교사 총평 및 템플릿 추천 -->
-            <div class="form-group mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="font-weight-bold mb-0" style="font-size: 12.5px;">지도교사 따뜻한 총평 (리포트 수록)</label>
-                <div>
-                  <span class="text-muted mr-1" style="font-size: 11px;">추천 템플릿:</span>
-                  <button type="button" class="btn btn-xs btn-outline-secondary mr-1"
-                    onclick="applyWizardTemplate('habit')"
-                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">성실 루틴형</button>
-                  <button type="button" class="btn btn-xs btn-outline-secondary mr-1"
-                    onclick="applyWizardTemplate('comprehension')"
-                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">문해 탐구형</button>
-                  <button type="button" class="btn btn-xs btn-outline-secondary"
-                    onclick="applyWizardTemplate('variety')"
-                    style="border-radius: 6px; font-size: 11px; padding: 2px 7px;">다양성 확장형</button>
-                </div>
-              </div>
-              <textarea class="form-control" id="wizReportComment" rows="3"
-                placeholder="비워 두면 선택한 도서와 북퀴즈 점수로 AI 총평을 생성합니다. 직접 작성하면 입력한 총평을 우선 수록합니다."
-                style="border-radius: 8px; font-size: 12.5px; line-height: 1.6;"></textarea>
             </div>
 
             <!-- 카카오톡 발송 안내 박스 (즉시 발송 체크박스 제거, 목록에서 원클릭 발송 안내) -->
@@ -9374,7 +9347,7 @@
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
-<script src="admin_preview.js?v=20261111_correction_fix"></script>
+<script src="admin_preview.js?v=20261112_report_print"></script>
 <script src="js/admin_members.js?v=20261111_v1"></script>
 <script src="js/admin_books.js?v=20261111_v1"></script>
 <script src="js/admin_payment.js?v=20261111_v1"></script>
