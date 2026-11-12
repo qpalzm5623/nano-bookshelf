@@ -3514,15 +3514,15 @@
           <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
             <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportAcademyBooksToExcel()"
               style="padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; background: #ffffff; border-color: #16a34a; color: #16a34a;" title="현재 학원 도서 콘텐츠 전체 목록을 엑셀(CSV) 파일로 다운로드합니다.">
-              <i class="fa-solid fa-file-excel mr-1"></i>엑셀 다운로드
+              <i class="fa-solid fa-file-excel mr-1"></i>도서 목록 다운로드
             </button>
             <button class="btn btn-sm btn-beige-secondary" onclick="openBulkModal()"
               style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap;">
-              <i class="fa-solid fa-arrow-up-from-bracket mr-1 text-success"></i>엑셀 대량 도서 등록
+              <i class="fa-solid fa-arrow-up-from-bracket mr-1 text-success"></i>엑셀 도서 등록
             </button>
             <button class="btn btn-sm btn-beige-secondary" onclick="openAcadQuizExcelModal()"
               style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; background: #fffbeb; border-color: #f59e0b; color: #b45309;">
-              <i class="fa-solid fa-file-circle-question mr-1" style="color: #d97706;"></i>엑셀 대량 북퀴즈 등록
+              <i class="fa-solid fa-file-circle-question mr-1" style="color: #d97706;"></i>엑셀 북퀴즈 등록
             </button>
             <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openAcademyBookOnlyAddModal()"
               style="padding: 6px 14px; border-radius: 8px; box-shadow: 0 2px 6px rgba(45, 106, 79, 0.2); font-size: 12.5px; white-space: nowrap;">
@@ -3640,7 +3640,7 @@
                 </select>
                 <button class="btn btn-sm btn-outline-success font-weight-bold" onclick="exportAcademyBooksToExcel()"
                   style="padding: 4px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap; background: #ffffff; border-color: #16a34a; color: #16a34a; height: 31px;" title="현재 학원 도서 콘텐츠 전체 목록을 엑셀(CSV) 파일로 다운로드합니다.">
-                  <i class="fa-solid fa-file-excel mr-1"></i>엑셀 다운로드
+                  <i class="fa-solid fa-file-excel mr-1"></i>도서 목록 다운로드
                 </button>
               </div>
             </div>
@@ -4954,7 +4954,7 @@
 
         <div id="sectionPaymentPlans" class="payment-workspace">
           <section class="payment-panel" aria-labelledby="paymentPlanHeading">
-            <div class="payment-panel-heading"><h2 id="paymentPlanHeading">정기결제 신청</h2><span class="badge-soft badge-soft-success" id="selectedPlanStatusChip">현재 이용 중</span></div>
+            <div class="payment-panel-heading"><h2 id="paymentPlanHeading"><i class="fa-solid fa-calendar-check text-success mr-2" style="font-size: 15px;"></i>정기결제 신청</h2><span class="badge-soft badge-soft-success" id="selectedPlanStatusChip">현재 이용 중</span></div>
             <div class="payment-panel-body">
               <div class="payment-col-left">
                 <label class="payment-label" for="planTierSelectDropdown">이용 정원 · 월 요금 (부가세 포함)</label>
@@ -4990,7 +4990,7 @@
             </div>
           </section>
           <section id="sectionKakaoTopupCard" class="payment-panel" aria-labelledby="paymentKakaoHeading">
-            <div class="payment-panel-heading"><h2 id="paymentKakaoHeading">카카오톡 알림 충전</h2><span class="badge-soft badge-soft-neutral">선불 · 자동결제 없음</span></div>
+            <div class="payment-panel-heading"><h2 id="paymentKakaoHeading"><i class="fa-solid fa-comment-dots text-warning mr-2" style="font-size: 15px;"></i>카카오톡 알림 충전</h2><span class="badge-soft badge-soft-neutral">선불 · 자동결제 없음</span></div>
             <div class="payment-panel-body">
               <div class="payment-col-left">
                 <div class="payment-wallet"><div><span class="payment-label">사용 가능한 잔액</span><small id="paymentKakaoCount">조회 중</small></div><strong id="paymentKakaoBalance">—</strong></div>
@@ -5024,7 +5024,7 @@
             </div>
             <div class="d-flex align-items-center gap-2">
               <select class="form-control form-control-sm" id="filterPaymentStatus"
-                onchange="filterAcademyPaymentTable()" style="width: 130px; border-radius: 8px; font-size: 12.5px;">
+                onchange="filterAcademyPaymentTable()" style="width: 130px; border: 1.5px solid #d5ded9; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: #1e242b;">
                 <option value="ALL">전체 상태</option>
                 <option value="paid">결제 완료</option>
                 <option value="pending">결제 대기</option>
@@ -5036,7 +5036,7 @@
           <div class="payment-table-scroll" tabindex="0" role="region" aria-label="결제 내역 표"><table class="simple-table">
             <thead>
               <tr>
-                <th style="width: 80px;">결제번호</th>
+                <th style="width: 140px; min-width: 130px;">결제번호</th>
                 <th>상품명</th>
                 <th>공급가액 (VAT별도)</th>
                 <th>부가세 (10%)</th>
@@ -6876,6 +6876,19 @@
                   </div>
                 </div>
 
+                <!-- 학부모 리포트 카카오톡 발송 동의 -->
+                <div class="form-group mb-2 p-2" style="background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-light, #e2e8f0);">
+                  <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="newStdReportYn" checked>
+                    <label class="custom-control-label font-weight-bold" for="newStdReportYn" style="font-size: 12.5px; cursor: pointer;">
+                      학부모 리포트 카카오톡 발송 동의
+                    </label>
+                  </div>
+                  <div class="text-muted ml-4 mt-1" style="font-size: 11.5px; line-height: 1.4;">
+                    체크 시 독서 리포트, 북퀴즈 결과, 포트폴리오를 학부모님 카카오톡 알림톡으로 발송할 수 있습니다.
+                  </div>
+                </div>
+
                 <!-- 학부모 이메일 (선택 항목) -->
                 <div class="form-group mb-2">
                   <label class="font-weight-bold" style="font-size: 12.5px;">학부모 이메일 <small class="text-muted">(선택
@@ -8034,7 +8047,7 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- 6-A-2. 엑셀 대량 도서 등록 모달 (본사 관리자와 동일한 상세 규격 가이드 제공) -->
+  <!-- 6-A-2. 엑셀 도서 등록 모달 (본사 관리자와 동일한 상세 규격 가이드 제공) -->
   <!-- ============================================================== -->
   <div class="modal fade" id="acadBookExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document" style="max-width: 760px;">
@@ -8049,7 +8062,7 @@
             </div>
             <div>
               <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: var(--text-main);">
-                엑셀 대량 도서 등록
+                엑셀 도서 등록
               </h5>
               <small class="text-muted" style="font-size: 11.5px;">표준 엑셀 서식에 맞추어 여러 권의 도서를 라이브러리에 한 번에 일괄 등록합니다.</small>
             </div>
@@ -8064,6 +8077,13 @@
           <div class="mb-3 p-3 rounded" style="background: #ffffff; border: 1.5px solid #e8e2d8; font-size: 12px; line-height: 1.5;">
             <div class="font-weight-bold text-dark mb-1" style="font-size: 13px;">
               <i class="fa-solid fa-circle-exclamation text-warning mr-1"></i>콘텐츠 대량 등록 신규 서식 규격 안내
+            </div>
+            <div class="alert alert-info py-2 px-3 mb-2 mt-2" style="font-size: 11.5px; border-radius: 6px; line-height: 1.5; background: #e8f4fd; border-color: #bee3f8; color: #1e3a8a;">
+              <strong><i class="fa-solid fa-circle-info mr-1"></i>[필독 엑셀 작성 안내]</strong><br>
+              • 본 양식(XLSX)은 <strong>'입력'</strong> 시트의 데이터를 읽어 처리합니다.<br>
+              • 1행(설명)과 2행(컬럼명)을 제외한 <strong>3행부터</strong> 실제 도서 데이터가 등록됩니다.<br>
+              • <strong>순번</strong>, <strong>책 제목</strong> 컬럼은 참고용으로 생략 가능합니다. (ISBN 입력 시 도서 정보가 자동 채워집니다.)<br>
+              • <strong>기존에 이미 등록된 ISBN</strong>, <strong>잘못된 형식의 ISBN</strong>, <strong>유효하지 않은 주제분류태그</strong> 입력 시 오류 안내가 표시됩니다.
             </div>
             <div class="table-responsive mt-2">
               <table class="table table-sm table-bordered mb-0" style="font-size: 11.5px; background: #faf9f6;">
@@ -8132,13 +8152,13 @@
           <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded border" style="gap: 8px; flex-wrap: wrap;">
             <div>
               <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
-                <i class="fa-solid fa-file-csv text-success mr-1"></i>새로운 표준 도서 등록 서식 다운로드
+                <i class="fa-solid fa-file-excel text-success mr-1"></i>새로운 표준 도서 등록 서식 다운로드
               </span>
-              <small class="text-muted">ISBN, 주제 분류 태그, 세부 태그(1~5), 어워드, 생각 꺼내기, 생각 담기 규격 완비</small>
+              <small class="text-muted">ISBN(필수), 주제분류태그(필수), 세부태그(1~5), 어워드및추천, 생각꺼내기, 생각담기 규격 완비 (.xlsx)</small>
             </div>
             <button type="button" class="btn btn-sm btn-outline-success font-weight-bold"
               onclick="downloadAcadBookSampleExcel()" style="border-radius: 8px; font-size: 12px; padding: 5px 12px;">
-              <i class="fa-solid fa-download mr-1"></i>샘플 다운로드 (.csv)
+              <i class="fa-solid fa-download mr-1"></i>샘플 다운로드 (.xlsx)
             </button>
           </div>
 
@@ -8169,7 +8189,7 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- 6-A-3. 엑셀 대량 북퀴즈 등록 모달 (본사 관리자와 동일한 상세 규격 가이드 제공) -->
+  <!-- 6-A-3. 엑셀 북퀴즈 등록 모달 (본사 관리자와 동일한 상세 규격 가이드 제공) -->
   <!-- ============================================================== -->
   <div class="modal fade" id="acadQuizExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document" style="max-width: 780px;">
@@ -8184,9 +8204,9 @@
             </div>
             <div>
               <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: var(--text-main);">
-                엑셀 대량 북퀴즈 등록
+                엑셀 북퀴즈 등록
               </h5>
-              <small class="text-muted" style="font-size: 11.5px;">표준 엑셀 서식에 맞추어 이미 등록된 도서(도서 관리코드 기준)에 최소 3문항에서 최대 10문항의 북퀴즈를 한 번에 일괄 등록·갱신합니다.</small>
+              <small class="text-muted" style="font-size: 11.5px;">표준 엑셀 서식에 맞추어 이미 등록된 도서(도서 관리코드 기준)에 최소 3문항에서 최대 20문항의 북퀴즈를 한 번에 일괄 등록·갱신합니다.</small>
             </div>
           </div>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -8198,7 +8218,16 @@
           <!-- 대량 등록 규격 안내 배너 -->
           <div class="mb-3 p-3 rounded" style="background: #ffffff; border: 1.5px solid #e8e2d8; font-size: 12px; line-height: 1.5;">
             <div class="font-weight-bold text-dark mb-1" style="font-size: 13px;">
-              <i class="fa-solid fa-circle-exclamation text-warning mr-1"></i>엑셀(CSV/XLSX) 작성 시 필수 규격 안내
+              <i class="fa-solid fa-circle-exclamation text-warning mr-1"></i>북퀴즈 엑셀(XLSX) 신규 등록 규격 안내
+            </div>
+            <div class="alert alert-warning py-2 px-3 mb-2 mt-2" style="font-size: 11.5px; border-radius: 6px; line-height: 1.5; background: #fffbeb; border-color: #fde68a; color: #92400e;">
+              <strong><i class="fa-solid fa-circle-info mr-1"></i>[필독 북퀴즈 엑셀 작성 규칙]</strong><br>
+              • 1행, 2행(설명)과 3행(컬럼명)을 제외하고 실제 문항 데이터는 <strong>4행부터</strong> 작성해주세요.<br>
+              • <strong>도서명(참고)</strong> 열은 참고용이며 생략 가능합니다. (도서코드로 매칭)<br>
+              • <strong>도서코드 당 문항 수</strong>는 <strong>최소 3문항 이상 ~ 최대 20문항 이하</strong>여야 합니다.<br>
+              • <strong>문항유형</strong>은 <strong>'객관식'</strong> 또는 <strong>'주관식'</strong> 둘 중 하나만 허용됩니다.<br>
+              • <strong>객관식</strong>: 보기1~보기3은 필수이며, 정답은 번호가 아닌 <strong>보기에 작성된 텍스트와 정확히 동일한 값</strong>을 입력해야 합니다.<br>
+              • <strong>주관식</strong>: 보기는 채우지 않아도 되며(입력된 보기는 무시), <strong>유사인정정답</strong>은 콤마(,)로 구분하여 입력합니다.
             </div>
             <div class="table-responsive mt-2">
               <table class="table table-sm table-bordered mb-0" style="font-size: 11.5px; background: #faf9f6;">
@@ -8210,55 +8239,55 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="font-weight-bold">도서코드 (필수)</td>
+                    <td class="font-weight-bold text-danger">도서코드 (필수)</td>
                     <td>
                       시스템에 기등록된 <strong>도서 관리코드</strong> 입력 (예: <span class="badge badge-secondary">FA000001</span>, <span class="badge badge-secondary">AB-001</span>)<br>
                       <small class="text-danger">* 등록되지 않은 도서코드는 업로드 시 자동 검출되어 차단됩니다.</small>
                     </td>
                   </tr>
                   <tr>
-                    <td class="font-weight-bold">도서명 (선택)</td>
+                    <td class="font-weight-bold">도서명 (참고)</td>
                     <td>
                       작성자 확인용 (예: 어린 왕자, 고양이 목욕탕)<br>
                       <small class="text-muted">* 실제 매칭은 '도서코드'로 이루어지므로 비워두셔도 정상 등록됩니다.</small>
                     </td>
                   </tr>
                   <tr>
-                    <td class="font-weight-bold">문항번호 (필수)</td>
+                    <td class="font-weight-bold text-danger">문항번호 (필수)</td>
                     <td>
-                      <span class="badge badge-light border mr-1">1</span> ~ <span class="badge badge-light border mr-1">10</span> (해당 도서 내 문항 순번, 도서당 최소 3개 ~ 최대 10문항 작성 가능)
+                      <span class="badge badge-light border mr-1">1</span> ~ <span class="badge badge-light border mr-1">20</span> (도서당 최소 3문항 ~ 최대 20문항 작성 가능)
                     </td>
                   </tr>
                   <tr>
-                    <td class="font-weight-bold">문항유형</td>
+                    <td class="font-weight-bold text-danger">문항유형 (필수)</td>
                     <td>
-                      <span class="text-primary font-weight-bold">객관식</span> (기본값, 3~5지선다) 또는 <span class="text-primary font-weight-bold">주관식</span> (단답형)
+                      <span class="text-primary font-weight-bold">객관식</span> 또는 <span class="text-success font-weight-bold">주관식</span> (이 외의 값은 허용되지 않음)
                     </td>
                   </tr>
                   <tr>
-                    <td class="font-weight-bold">문항내용 (필수)</td>
+                    <td class="font-weight-bold text-danger">문항내용 (필수)</td>
                     <td>
-                      문제 질문 본문 <small class="text-muted">(쉼표, 큰따옴표, 물음표, 줄바꿈 등 특수문자 자유롭게 허용)</small>
+                      문제 질문 본문 <small class="text-muted">(쉼표, 큰따옴표, 물음표 등 특수문자 자유롭게 허용)</small>
                     </td>
                   </tr>
                   <tr>
                     <td class="font-weight-bold">보기1 ~ 보기5</td>
                     <td>
-                      객관식 선택지 3~5개 <small class="text-danger">* 객관식은 최소 3개(보기1~보기3) 필수 입력, 보기4~보기5는 선택 (3지/4지/5지선다 지원), 주관식인 경우 공란 가능</small>
+                      • <strong>객관식</strong>: <strong>보기1~보기3 필수</strong> 입력, 보기4~보기5는 선택<br>
+                      • <strong>주관식</strong>: 입력 불필요 (입력하더라도 무시됨)
                     </td>
                   </tr>
                   <tr>
-                    <td class="font-weight-bold">정답 (필수)</td>
+                    <td class="font-weight-bold text-danger">정답 (필수)</td>
                     <td>
-                      객관식: <span class="badge badge-success font-weight-bold">1</span> ~ <span class="badge badge-success font-weight-bold">5</span> 숫자 (또는 보기 텍스트와 정확히 일치해도 자동 인식)<br>
-                      주관식: 대표 정답 단어 또는 문장
+                      • <strong>객관식</strong>: <strong>보기에 작성된 텍스트와 정확히 동일한 값</strong> 입력<br>
+                      • <strong>주관식</strong>: 대표 정답 단어 또는 문장 입력
                     </td>
                   </tr>
                   <tr>
                     <td class="font-weight-bold">유사인정정답 (선택)</td>
                     <td>
-                      주관식 유사 인정 단어들을 쉼표(,)로 구분하여 입력 (예: <span class="badge badge-light border">담대함, 씩씩함, 용기있는 태도</span>)<br>
-                      <small class="text-muted">* '정답' 컬럼에 쉼표로 함께 적어주셔도 자동으로 분리되어 유사 인정 정답으로 등록됩니다.</small>
+                      주관식 유사 인정 단어들을 <strong>콤마(,)</strong>로 구분하여 입력 (예: <span class="badge badge-light border">담대함, 씩씩함, 용기있는 태도</span>)
                     </td>
                   </tr>
                 </tbody>
@@ -8270,18 +8299,14 @@
           <div class="mb-3 d-flex justify-content-between align-items-center bg-white p-3 rounded border" style="gap: 8px; flex-wrap: wrap;">
             <div>
               <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
-                <i class="fa-solid fa-file-csv text-success mr-1"></i>표준 북퀴즈 서식 다운로드
+                <i class="fa-solid fa-file-excel text-success mr-1"></i>표준 북퀴즈 서식 다운로드
               </span>
-              <small class="text-muted">도서코드, 문항번호, 보기 1~5, 정답, 유사인정정답 등 실제 등록 도서 샘플 데이터 포함</small>
+              <small class="text-muted">도서코드, 문항번호, 보기 1~5, 정답, 유사인정정답 규격 완비 (.xlsx)</small>
             </div>
             <div class="d-flex" style="gap: 6px;">
               <button type="button" class="btn btn-sm btn-outline-success font-weight-bold"
-                onclick="downloadAcadQuizExcelTemplate('csv')" style="border-radius: 8px; font-size: 12px; padding: 6px 14px;">
-                <i class="fa-solid fa-download mr-1"></i>샘플 CSV (.csv)
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold"
                 onclick="downloadAcadQuizExcelTemplate('xlsx')" style="border-radius: 8px; font-size: 12px; padding: 6px 14px;">
-                <i class="fa-solid fa-file-excel mr-1"></i>샘플 엑셀 (.xlsx)
+                <i class="fa-solid fa-download mr-1"></i>샘플 다운로드 (.xlsx)
               </button>
             </div>
           </div>

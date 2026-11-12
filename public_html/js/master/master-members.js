@@ -1345,6 +1345,9 @@ function openMemberDetailModal(id) {
   const parentEmailEl = document.getElementById("detailMemberParentEmail");
   if (parentEmailEl) parentEmailEl.value = mem.parentEmail || "";
 
+  const reportYnEl = document.getElementById("detailMemberReportYn");
+  if (reportYnEl) reportYnEl.checked = mem.reportYn !== false;
+
   const phoneEl = document.getElementById("detailMemberPhone");
   if (phoneEl) phoneEl.value = mem.phone || "";
 
@@ -1430,6 +1433,8 @@ async function saveMemberDetailEdit() {
   if (parentNameEl) mem.parentName = parentNameEl.value.trim();
   if (parentPhoneEl) mem.parentPhone = parentPhoneEl.value.trim();
   if (parentEmailEl) mem.parentEmail = parentEmailEl.value.trim();
+  const reportYnEl = document.getElementById("detailMemberReportYn");
+  if (reportYnEl) mem.reportYn = reportYnEl.checked;
   if (phoneEl) mem.phone = phoneEl.value.trim();
   if (memoEl) mem.memo = memoEl.value.trim();
 

@@ -74,8 +74,8 @@ export default async function handler(req: any, res: any) {
         const changed = await tx.payment.updateMany({ where: { id, revision: prior.revision, deletedAt: null }, data: { ...data, revision: { increment: 1 } } });
         need(changed.count === 1, '결제 내역이 변경되었습니다. 새로고침해 주세요.', 409);
       } else await tx.payment.create({ data: { ...data, id, payCode, academyId } });
-      const before = prior?.productCode === 'KAKAO' && prior.status === 'PAID' ? (prior.supplyAmount || 0) * 10 : 0;
-      const after = operation !== 'delete' && product!.code === 'KAKAO' && status === 'PAID' ? data.supplyAmount * 10 : 0;
+      const before = prior?.productCode === 'KAKAO' && prior.status === 'PAID' ? (prior.amount || 0) * 10 : 0;
+      const after = operation !== 'delete' && product!.code === 'KAKAO' && status === 'PAID' ? data.amount * 10 : 0;
       const delta = after - before;
       if (delta) await changeBalance(tx, academyId, delta, 'payment:' + id + ':' + ((prior?.revision || 0) + 1), delta > 0 ? 'TOPUP' : 'PAYMENT_REVERSAL', id);
       return tx.payment.findUnique({ where: { id } });

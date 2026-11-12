@@ -163,8 +163,8 @@ function loadStudentsFromStorage() {
         school: m.school || '미등록', grade: m.grade || '미등록', classGroup: m.className || '미지정',
         status: m.status === 'APPROVED' ? '승인' : (m.status === 'WITHDRAWN' ? '퇴원' : '미승인'),
         level: m.level || '미설정', bookCount: Number(m.bookCount) || 0, quizAvg: (m.quizAvg == null || isNaN(Number(m.quizAvg))) ? '-' : Math.round(Number(m.quizAvg)),
-        parentName: m.parentName || '', phone: m.parentPhone || '', parentEmail: m.parentEmail || '',
-        reportYn: m.reportYn === true, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
+        parentName: m.parentName || '', phone: m.parentPhone || m.phone || '', parentPhone: m.parentPhone || m.phone || '', stdPhone: m.phone || '', parentEmail: m.parentEmail || '',
+        reportYn: m.reportYn !== false, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
         teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0, characterId: m.characterId || null };
     });
     // 최초 1회 로컬 스토리지에 캐시 보관하여 새로고침 시에도 지속 보장
@@ -1807,6 +1807,8 @@ async function saveNewStudent() {
       std.level = level;
       std.parentName = parentName || '-';
       std.phone = parentPhone || '-';
+      std.parentPhone = parentPhone || '';
+      std.stdPhone = std.stdPhone || '';
       std.parentEmail = parentEmail;
       std.reportYn = reportYn;
       std.teacher = teacher;
@@ -1837,6 +1839,7 @@ async function saveNewStudent() {
       quizAvg: '0.0',
       parentName: parentName || '-',
       phone: parentPhone || '-',
+      parentPhone: parentPhone || '',
       parentEmail: parentEmail,
       reportYn: reportYn,
       stdPhone: '',

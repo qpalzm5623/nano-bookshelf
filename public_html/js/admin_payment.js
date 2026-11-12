@@ -591,6 +591,48 @@ var academyPaymentList = [
 ];
 if (window.NANO_SERVER_DATA) academyPaymentList = (window.NANO_SERVER_PAYMENTS || []).filter(function(item) { return item.academyId === currentAcademyInfo.id; });
 
+// 결제번호 요약 표시 및 복사 헬퍼 함수
+function formatPaymentIdSummary(id) {
+  if (!id) return '-';
+  var rawId = String(id).trim();
+
+  // MANUAL-07d01661-6b73-4b30-b92e-00e799a9608b -> MANUAL-07d01661 (8자리 요약)
+  // TOPUP-07d01661-6b73... -> TOPUP-07d01661
+  var shortText = rawId;
+  var isManual = rawId.startsWith('MANUAL-');
+  var isTopup = rawId.startsWith('TOPUP-');
+
+  if (isManual || isTopup) {
+    var prefix = isManual ? 'MANUAL' : 'TOPUP';
+    var uuidPart = rawId.replace(/^(MANUAL|TOPUP)-/, '');
+    var shortHash = uuidPart.split('-')[0] || uuidPart.slice(0, 8);
+    shortText = prefix + '-' + shortHash;
+  } else if (rawId.length > 18) {
+    shortText = rawId.slice(0, 14) + '…';
+  }
+
+  return '<span class="payment-code-pill" title="클릭하여 전체 결제번호 복사: ' + rawId + '" onclick="copyPaymentCodeToClipboard(\'' + rawId + '\', event)">' +
+    '<i class="fa-regular fa-copy mr-1 text-muted"></i>' + shortText +
+  '</span>';
+}
+
+function copyPaymentCodeToClipboard(code, event) {
+  if (event) event.stopPropagation();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function() {
+      if (typeof showAcademyToast === 'function') {
+        showAcademyToast('결제번호가 복사되었습니다: ' + code);
+      } else {
+        alert('결제번호가 복사되었습니다: ' + code);
+      }
+    }).catch(function() {
+      prompt('결제번호 전체 복사:', code);
+    });
+  } else {
+    prompt('결제번호 전체 복사:', code);
+  }
+}
+
 // 결제 내역 렌더링
 function renderAcademyPaymentTable(data) {
   var list = data || academyPaymentList;
@@ -619,11 +661,11 @@ function renderAcademyPaymentTable(data) {
     }
 
     html += '<tr style="font-size:13px;">' +
-      '<td class="font-weight-bold text-muted" style="font-size:11.5px;">' + item.id + '</td>' +
+      '<td>' + formatPaymentIdSummary(item.id) + '</td>' +
       '<td><span class="font-weight-bold" style="color:var(--text-main);">' + item.planName + '</span></td>' +
       '<td>' + Number(item.supply).toLocaleString() + '원</td>' +
       '<td>' + Number(item.vat).toLocaleString() + '원</td>' +
-      '<td class="font-weight-bold" style="color:#962a22; font-size:13.5px;">' + Number(item.total).toLocaleString() + '원</td>' +
+      '<td class="font-weight-bold" style="color:#1f8a7e; font-size:13.5px;">' + Number(item.total).toLocaleString() + '원</td>' +
       '<td><small class="text-muted"><i class="fa-solid fa-credit-card mr-1"></i>' + item.method + '</small></td>' +
       '<td><small class="text-muted">' + item.date + '</small></td>' +
       '<td><span class="badge badge-light border" style="font-size:11.5px;">' + item.startDate + ' ~ ' + item.endDate + '</span></td>' +

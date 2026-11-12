@@ -1,62 +1,506 @@
-/* 결제 화면: 현재 상태 → 선택/금액 → 이력 순으로 읽히는 간결한 배치 */
-#view-payment { max-width: 1440px; margin: 0 auto; }
-#view-payment .workspace-header { margin-bottom: 16px; }
-#view-payment .payment-overview { margin-bottom: 16px; }
-#view-payment .payment-overview .stat-card { padding: 16px 18px; box-shadow: none; }
-#view-payment .payment-overview .stat-num { font-size: 20px !important; }
-#view-payment .payment-overview .d-flex { flex-wrap: wrap; gap: 6px; }
-#view-payment .payment-workspace { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; margin-bottom: 20px; align-items: stretch; }
-#view-payment .payment-panel { min-width: 0; padding: 18px 20px; background: #fff; border: 1px solid #e2e5df; border-radius: 14px; display: flex; flex-direction: column; justify-content: space-between; }
-#view-payment .payment-panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
-#view-payment .payment-panel h2 { margin: 0; font-size: 16px; font-weight: 800; color: #283e39; }
-#view-payment .payment-panel-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 16px; align-items: stretch; height: 100%; }
-#view-payment .payment-col-left { min-width: 0; display: flex; flex-direction: column; }
-#view-payment .payment-col-right { min-width: 0; display: flex; flex-direction: column; }
-#view-payment .payment-summary-card { background: #faf8f5; border: 1px solid #eae3d7; border-radius: 11px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
-#view-payment .payment-summary-kakao { background: #fdfbf4; border-color: #f3e8cf; }
-#view-payment .payment-hint { font-size: 11.5px; color: #687771; line-height: 1.5; margin: 5px 0 10px; }
-#view-payment .payment-label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #50615a; }
-#view-payment .payment-select { width: 100%; height: 42px; border: 1px solid #cbd5ce; border-radius: 9px; padding: 0 12px; background: #fff; color: #293f36; font-size: 13.5px; }
-#view-payment .payment-note { margin: 8px 0; padding: 8px 12px; background: #f2f7f4; border-radius: 8px; color: #466254; font-size: 11.5px; line-height: 1.5; }
-#view-payment .payment-timing { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-#view-payment .payment-timing label { display: flex; gap: 6px; align-items: flex-start; padding: 8px; margin: 0; border: 1px solid #d9e1db; border-radius: 8px; cursor: pointer; font-size: 11.5px; }
-#view-payment .payment-timing input { margin-top: 3px; accent-color: #16877b; }
-#view-payment .payment-timing small { display: block; color: #718078; margin-top: 2px; }
-#view-payment .payment-summary-card .payment-total { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 0; padding-top: 0; border-top: 0; font-size: 12.5px; }
-#view-payment .payment-total strong { font-size: 23px; color: #1f7164; white-space: nowrap; }
-#view-payment .payment-summary-kakao .payment-total strong { color: #8c5d10; }
-#view-payment .payment-next { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #687771; margin: 6px 0 8px; flex-wrap: wrap; }
-#view-payment .payment-next strong { color: #43574b; font-weight: 600; }
-#view-payment .payment-detail { font-size: 11.5px; color: #687771; margin: 6px 0 10px; }
-#view-payment summary { cursor: pointer; padding: 4px 0; font-weight: 600; }
-#view-payment .payment-detail > div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
-#view-payment .payment-action { width: 100%; min-height: 40px; padding: 9px 12px; border: 0; border-radius: 8px; background: #16877b; color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-#view-payment .payment-action:hover { background: #116f65; }
-#view-payment .payment-action-kakao { background: #f4c541; color: #4e3c13; }
-#view-payment .payment-action-kakao:hover { background: #e8b82e; }
-#view-payment .payment-secondary { display: block; margin: 8px auto 0; padding: 2px 6px; border: 0; background: transparent; color: #80625e; font-size: 11.5px; text-decoration: underline; cursor: pointer; }
-#view-payment .payment-wallet { background: #fcf9ed; border: 1px solid #f3e9cb; border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-#view-payment .payment-wallet strong { font-size: 20px; color: #72591c; }
-#view-payment .payment-wallet small { display: block; font-size: 11px; color: #80775e; }
-#view-payment .payment-quantity { display: flex; align-items: center; gap: 6px; }
-#view-payment .payment-quantity button { width: 32px; height: 32px; border: 1px solid #d2d9d2; border-radius: 7px; background: #fff; font-size: 14px; }
-#view-payment .payment-quantity input { width: 62px; height: 32px; text-align: center; border: 1px solid #d2d9d2; border-radius: 7px; font-size: 13px; font-weight: 700; }
-#view-payment .payment-quantity-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-#view-payment .payment-policy { margin-top: 18px; padding: 12px 18px; border: 1px solid #e3e5df; border-radius: 10px; background: #fff; font-size: 12px; }
-#view-payment .payment-policy > summary { color: #58665c; }
-#view-payment .payment-policy-content { padding-top: 14px; }
-#view-payment .payment-table-scroll { overflow-x: auto; }
-#view-payment .payment-table-scroll table { min-width: 900px; }
-#view-payment :is(button, select, input, summary):focus-visible { outline: 3px solid #16877b; outline-offset: 3px; }
-@media (max-width: 1100px) {
-  #view-payment .payment-workspace { grid-template-columns: 1fr; }
-  #view-payment .payment-overview .stat-card { padding: 14px; }
+/* ==========================================================================
+   나노의 책장 - 학원 이용권 및 결제 관리 전용 스타일시트
+   테마: 부드러운 웜 아이보리/베이지 베이스 + 시그니처 틸/청록 & 웜 카카오 골드
+   ========================================================================== */
+
+#view-payment {
+  max-width: 1440px;
+  margin: 0 auto;
 }
+
+#view-payment .workspace-header {
+  margin-bottom: 18px;
+}
+
+#view-payment .payment-overview {
+  margin-bottom: 18px;
+}
+
+#view-payment .payment-overview .stat-card {
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid var(--border-light, #ebe6df);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#view-payment .payment-overview .stat-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+#view-payment .payment-overview .stat-num {
+  font-size: 21px !important;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+#view-payment .payment-overview .d-flex {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 2열 패널 레이아웃 (정기결제 신청 & 카카오톡 알림 충전) */
+#view-payment .payment-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+  align-items: stretch;
+}
+
+#view-payment .payment-panel {
+  min-width: 0;
+  padding: 20px 22px;
+  background: #ffffff;
+  border: 1px solid var(--border-light, #ebe6df);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#view-payment .payment-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light, #f1ede6);
+}
+
+#view-payment .payment-panel h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main, #1e242b);
+  display: flex;
+  align-items: center;
+}
+
+#view-payment .payment-panel-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 18px;
+  align-items: stretch;
+  height: 100%;
+}
+
+#view-payment .payment-col-left {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#view-payment .payment-col-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 드롭다운 디자인 - 나노의 책장 감성 커스텀 셀렉트 */
+#view-payment .payment-select {
+  width: 100%;
+  height: 44px;
+  border: 1.5px solid #d5ded9;
+  border-radius: 10px;
+  padding: 0 38px 0 14px;
+  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%231f8a7e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 14px center;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  color: var(--text-main, #1e242b);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#view-payment .payment-select:hover {
+  border-color: #1f8a7e;
+  background-color: #fafdfc;
+}
+
+#view-payment .payment-select:focus {
+  border-color: #1f8a7e;
+  box-shadow: 0 0 0 3.5px rgba(31, 138, 126, 0.14);
+  outline: none;
+  background-color: #ffffff;
+}
+
+#view-payment .payment-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 7px;
+  color: #475569;
+}
+
+#view-payment .payment-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 6px 0 10px;
+}
+
+#view-payment .payment-note {
+  margin: 8px 0;
+  padding: 9px 12px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  color: #166534;
+  font-size: 11.5px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* 요약 카드 (우측 금액 및 결제 버튼) */
+#view-payment .payment-summary-card {
+  background: #f7faf8;
+  border: 1.5px solid #d8eae3;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+#view-payment .payment-summary-kakao {
+  background: #fffdf7;
+  border: 1.5px solid #f6ebd0;
+}
+
+#view-payment .payment-summary-card .payment-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+#view-payment .payment-total strong {
+  font-size: 24px;
+  color: #1f8a7e;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: -0.5px;
+}
+
+#view-payment .payment-summary-kakao .payment-total strong {
+  color: #b45309;
+}
+
+#view-payment .payment-next {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 6px 0 8px;
+  flex-wrap: wrap;
+}
+
+#view-payment .payment-next strong {
+  color: #334155;
+  font-weight: 600;
+}
+
+#view-payment .payment-detail {
+  font-size: 11.5px;
+  color: #64748b;
+  margin: 6px 0 10px;
+}
+
+#view-payment summary {
+  cursor: pointer;
+  padding: 4px 0;
+  font-weight: 600;
+  color: #475569;
+}
+
+#view-payment .payment-detail > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+/* 결제 액션 버튼 */
+#view-payment .payment-action {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #1f8a7e 0%, #166e64 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(31, 138, 126, 0.22);
+  transition: all 0.2s ease;
+}
+
+#view-payment .payment-action:hover {
+  background: linear-gradient(135deg, #166e64 0%, #11574f 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(31, 138, 126, 0.3);
+}
+
+#view-payment .payment-action:active {
+  transform: translateY(0);
+}
+
+#view-payment .payment-action-kakao {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.25);
+}
+
+#view-payment .payment-action-kakao:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 5px 12px rgba(245, 158, 11, 0.35);
+}
+
+#view-payment .payment-secondary {
+  display: block;
+  margin: 8px auto 0;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: #8c949f;
+  font-size: 11.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#view-payment .payment-secondary:hover {
+  color: #dc2626;
+}
+
+/* 카카오 지갑 잔액 표시 박스 */
+#view-payment .payment-wallet {
+  background: #fffdf5;
+  border: 1px solid #f6ebd0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#view-payment .payment-wallet strong {
+  font-size: 21px;
+  color: #b45309;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+#view-payment .payment-wallet small {
+  display: block;
+  font-size: 11px;
+  color: #92400e;
+  font-weight: 500;
+}
+
+/* 수량 조절기 */
+#view-payment .payment-quantity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#view-payment .payment-quantity button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d2d9d2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#view-payment .payment-quantity button:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+#view-payment .payment-quantity input {
+  width: 58px;
+  height: 32px;
+  text-align: center;
+  border: 1px solid #d2d9d2;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e242b;
+}
+
+#view-payment .payment-quantity input:focus {
+  border-color: #f59e0b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+#view-payment .payment-quantity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* 적용 시점 라디오 버튼 */
+#view-payment .payment-timing {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#view-payment .payment-timing label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px;
+  margin: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+#view-payment .payment-timing label:hover {
+  background: #ffffff;
+  border-color: #1f8a7e;
+}
+
+#view-payment .payment-timing input:checked + span {
+  color: #1f8a7e;
+}
+
+#view-payment .payment-timing input {
+  margin-top: 2px;
+  accent-color: #1f8a7e;
+}
+
+#view-payment .payment-timing small {
+  display: block;
+  color: #64748b;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+/* 결제 내역 테이블 및 요약 결제번호 알약 태그 */
+#view-payment .payment-table-scroll {
+  overflow-x: auto;
+}
+
+#view-payment .payment-table-scroll table {
+  min-width: 950px;
+}
+
+#view-payment .payment-table-scroll thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12.5px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 11px 12px;
+  white-space: nowrap;
+}
+
+#view-payment .payment-table-scroll tbody td {
+  padding: 11px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* 요약 결제번호 알약 태그 (클릭 시 복사) */
+.payment-code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.payment-code-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.payment-code-pill i {
+  color: #64748b;
+  font-size: 10.5px;
+  transition: color 0.15s;
+}
+
+.payment-code-pill:hover i {
+  color: #1f8a7e;
+}
+
+#view-payment :is(button, select, input, summary):focus-visible {
+  outline: 3px solid #1f8a7e;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  #view-payment .payment-workspace {
+    grid-template-columns: 1fr;
+  }
+  #view-payment .payment-overview .stat-card {
+    padding: 14px;
+  }
+}
+
 @media (max-width: 650px) {
-  #view-payment .payment-panel-body { grid-template-columns: 1fr; gap: 12px; }
-  #view-payment .payment-panel { padding: 16px; }
-  #view-payment .payment-timing { grid-template-columns: 1fr; }
-  #view-payment .payment-panel-heading { flex-wrap: wrap; }
-  #view-payment .payment-wallet { align-items: flex-start; }
-  #view-payment .payment-overview > div { margin-bottom: 8px !important; }
+  #view-payment .payment-panel-body {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  #view-payment .payment-panel {
+    padding: 16px;
+  }
+  #view-payment .payment-timing {
+    grid-template-columns: 1fr;
+  }
+  #view-payment .payment-panel-heading {
+    flex-wrap: wrap;
+  }
+  #view-payment .payment-wallet {
+    align-items: flex-start;
+  }
+  #view-payment .payment-overview > div {
+    margin-bottom: 8px !important;
+  }
 }

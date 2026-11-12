@@ -358,7 +358,7 @@
       '카카오톡 알림 충전 신청',
       `<div class="py-2 px-3 mb-3" style="font-size:12px;background:#fdfbf7;border:1px solid #ebdcc9;border-radius:10px;color:#5c5046;line-height:1.5;">
         <i class="fa-solid fa-comment-dots text-warning mr-1"></i>
-        <strong>5,500원(부가세 포함)</strong>마다 5,000원이 적립되며, 발송 시 건당 8.5원이 차감됩니다.<br>계좌이체 구매 신청 후 본사에서 입금을 확인하면 즉시 충전됩니다.<br>입금 계좌는 본사에 확인해 주세요.
+        <strong>5,500원(부가세 포함)</strong> 결제 시 5,500원 전액이 적립되며, 발송 시 건당 8.5원이 차감됩니다.<br>계좌이체 구매 신청 후 본사에서 입금을 확인하면 즉시 충전됩니다.<br>입금 계좌는 본사에 확인해 주세요.
       </div>` +
       field('구매 수량 (1구좌 = 5,500원)', input('quantity', 1, 'number', 'min="1" max="10000" step="1" required'), true) +
       `<div class="p-3 mb-1 rounded d-flex justify-content-between align-items-center" style="background:#fdfbf7;border:1px solid #ece6dc;font-size:13.5px;">

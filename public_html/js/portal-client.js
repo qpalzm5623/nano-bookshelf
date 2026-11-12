@@ -81,11 +81,14 @@
       var d = new Date(item.updatedAt);
       safeUpdatedAt = (!isNaN(d.getTime())) ? d.toISOString() : String(item.updatedAt);
     }
+    // 학생의 경우 학원 UI의 phone/stdPhone/parentPhone 필드 혼용을 안전하게 정규화
+    var finalPhone = isStudent ? (item.stdPhone || '') : (item.phone || '');
+    var finalParentPhone = isStudent ? (item.parentPhone || item.phone || '') : (item.parentPhone || '');
     var payload = {
       id: item.serverId || undefined, updatedAt: safeUpdatedAt, username: item.username || item.id, name: item.name, role: role,
       status: enumStatus(item.status || 'APPROVED'), grade: item.grade || '', school: item.school || '', gender: item.gender || '',
-      phone: academyStudentShape ? (item.stdPhone || '') : (item.phone || ''), parentName: item.parentName || '', parentPhone: academyStudentShape ? (item.phone || '') : (item.parentPhone || ''),
-      parentEmail: item.parentEmail || '', reportYn: item.reportYn === true, classGroupId: classIdFor(item, academyCode),
+      phone: finalPhone, parentName: item.parentName || '', parentPhone: finalParentPhone,
+      parentEmail: item.parentEmail || '', reportYn: item.reportYn !== false, classGroupId: classIdFor(item, academyCode),
       force: (opts && opts.force === true) ? true : undefined
     };
     if (item.password && typeof item.password === 'string') {
