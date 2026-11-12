@@ -1104,7 +1104,7 @@ async function saveCustomLearningLogs(logs) {
     window.nanoReviewSaving = true;
     try {
       for (var log of changes) {
-        var response = await NanoPortal.request('review', { id: log.id, comment: log.comment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, worksheetPhotos: log.worksheetPhotos, reviewRevision: log.reviewRevision || '' });
+        var response = await NanoPortal.request('review', { id: log.id, comment: log.comment || '', thoughtTeacherComment: log.thoughtTeacherComment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, worksheetPhotos: log.worksheetPhotos, reviewRevision: log.reviewRevision || '' });
         log.reviewRevision = response.reviewRevision; NanoPortal.applyReview(log);
         saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos);
       }
@@ -1227,9 +1227,10 @@ var worksheetEditableFields = [
   ['languageHandwritingNote', '글과 표현 방식 관찰 (선택)', 2]
 ];
 
-function worksheetEditorField(id, label, value, rows) {
-  return '<div class="form-group mb-2.5"><label class="font-weight-bold text-dark mb-1" for="' + id + '" style="font-size:12px;">' + escapePortfolioText(label) + '</label>' +
-    '<textarea id="' + id + '" class="form-control form-control-beige" rows="' + rows + '" maxlength="5000" style="font-size:12.5px;line-height:1.65;resize:vertical;border-radius:8px;">' + escapePortfolioText(value || '') + '</textarea></div>';
+function worksheetEditorField(id, label, value, rows, minHeight) {
+  var minH = minHeight ? 'min-height:' + minHeight + ';' : '';
+  return '<div class="form-group mb-3"><label class="font-weight-bold text-dark mb-1.5" for="' + id + '" style="font-size:12.5px;">' + escapePortfolioText(label) + '</label>' +
+    '<textarea id="' + id + '" class="form-control form-control-beige" rows="' + rows + '" maxlength="5000" style="font-size:13px;line-height:1.65;resize:vertical;border-radius:8px;' + minH + 'padding:10px 12px;border:1px solid #cbd5e1;background:#ffffff;">' + escapePortfolioText(value || '') + '</textarea></div>';
 }
 
 function renderWorksheetCorrectionEditor() {
@@ -1241,24 +1242,24 @@ function renderWorksheetCorrectionEditor() {
   var html = '';
 
   // [카드 1] 이번 활동에서 돋보인 점 (에메랄드/그린 테마)
-  html += '<div class="p-3 mb-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 10px;">' +
-    '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #d1fae5 !important;">' +
-    '<i class="fa-solid fa-lightbulb text-warning mr-1.5" style="font-size: 14px;"></i>' +
-    '<strong style="font-size: 13px; color: #065f46;">이번 활동에서 돋보인 점</strong>' +
+  html += '<div class="p-3.5 mb-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 12px;">' +
+    '<div class="d-flex align-items-center mb-2.5 pb-2 border-bottom" style="border-color: #d1fae5 !important;">' +
+    '<i class="fa-solid fa-lightbulb text-warning mr-2" style="font-size: 15px;"></i>' +
+    '<strong style="font-size: 13.5px; color: #065f46;">이번 활동에서 돋보인 점</strong>' +
     '<small class="text-muted ml-2 font-weight-normal">(리포트 메인 강점 피드백)</small>' +
     '</div>' +
-    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약 및 칭찬 피드백', result.summary, 3) +
+    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약 및 칭찬 피드백', result.summary, 6, '130px') +
     '</div>';
 
   // [카드 2] 다음 성장을 위한 발걸음 (틸/민트 테마)
-  html += '<div class="p-3 mb-2 rounded" style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-left: 4px solid #0d9488; border-radius: 10px;">' +
-    '<div class="d-flex align-items-center mb-2 pb-1 border-bottom" style="border-color: #ccfbf1 !important;">' +
-    '<i class="fa-solid fa-compass text-info mr-1.5" style="font-size: 14px;"></i>' +
-    '<strong style="font-size: 13px; color: #0f766e;">다음 성장을 위한 발걸음</strong>' +
+  html += '<div class="p-3.5 mb-2 rounded" style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-left: 4px solid #0d9488; border-radius: 12px;">' +
+    '<div class="d-flex align-items-center mb-2.5 pb-2 border-bottom" style="border-color: #ccfbf1 !important;">' +
+    '<i class="fa-solid fa-compass text-info mr-2" style="font-size: 15px;"></i>' +
+    '<strong style="font-size: 13.5px; color: #0f766e;">다음 성장을 위한 발걸음</strong>' +
     '<small class="text-muted ml-2 font-weight-normal">(다음 독서 방향 및 가정 대화)</small>' +
     '</div>' +
-    worksheetEditorField('worksheetEdit-nextStep', '• 이렇게 해보세요 (다음 독서 실천 방향)', result.nextStep, 2) +
-    worksheetEditorField('worksheetEdit-parentGuide', '• 집에서 함께 나눌 이야기 (가정 대화 팁)', result.parentGuide, 2) +
+    worksheetEditorField('worksheetEdit-nextStep', '• 이렇게 해보세요 (다음 독서 실천 방향)', result.nextStep, 4, '90px') +
+    worksheetEditorField('worksheetEdit-parentGuide', '• 집에서 함께 나눌 이야기 (가정 대화 팁)', result.parentGuide, 4, '90px') +
     '</div>';
 
   // [숨김 영역: 데이터 정합성 및 백엔드/테스트 호환성 유지용]
@@ -1312,7 +1313,7 @@ function syncWorksheetCorrectionActions() {
   var run = document.getElementById('btnRunWorksheetAi');
   run.style.display = done ? 'none' : 'inline-block';
   run.disabled = processing || worksheetCorrectionSaving || !currentWorksheetPhotos.length;
-  run.textContent = processing ? '첨삭 중…' : '나노 시트 첨삭 실행';
+  run.innerHTML = processing ? '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>첨삭 중…' : '<i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>나노 시트 첨삭 실행';
   ['btnSaveWorksheetCorrection', 'btnDeleteWorksheetCorrection'].forEach(function(id) {
     var button = document.getElementById(id);
     button.style.display = done ? 'inline-block' : 'none';
@@ -2156,8 +2157,8 @@ function openLearningDetailModal(id) {
       // 1) 생각 담기 숨기기 / 보이기 상태 반영
       updateThoughtSectionUI(log);
 
-      // 2) 교사 코멘트 상태 반영 (기본값: 없음)
-      updateTeacherCommentUI(log);
+      // 2) 생각 담기 교사 지도 코멘트 초기화 및 바인딩
+      initThoughtTeacherCommentUI(log);
     }
   }
 
@@ -2177,46 +2178,13 @@ function openLearningDetailModal(id) {
     };
   }
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
-  var thoughtFeedbackCol = document.getElementById('learnModalThoughtFeedbackCol');
 
   if (log.worksheetAiResult || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0)) {
     var res = log.worksheetAiResult || {};
     var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
     var sName = log.studentName || log.name || '원생';
 
-    // 1) 상단 생각담기 영역 우측 컬럼: 나노시트 생각담기 관찰 피드백
-    if (thoughtFeedbackCol) {
-      thoughtFeedbackCol.style.display = 'block';
-      var quotesEl = document.getElementById('worksheetAiQuotesList');
-      if (quotesEl) {
-        var quotes = Array.isArray(res.actualQuotes) ? res.actualQuotes : [];
-        if (quotes.length > 0) {
-          quotesEl.innerHTML = quotes.map(function(q) {
-            return '<div class="p-2.5 rounded bg-white border mb-2 shadow-2xs" style="border-color:#d1fae5 !important;">' +
-              (q.quote ? '<div class="font-weight-bold text-dark mb-1" style="font-size:11.5px;"><i class="fa-solid fa-quote-left mr-1 text-success" style="opacity:0.65;font-size:10px;"></i>“' + escapePortfolioText(q.quote) + '”</div>' : '') +
-              (q.criteria ? '<div class="mb-1"><span class="badge badge-light text-success border border-success" style="font-size:9.5px;padding:1px 5px;"><i class="fa-solid fa-tag mr-0.5"></i>' + escapePortfolioText(q.criteria) + '</span></div>' : '') +
-              '<div style="font-size:11.5px; line-height:1.6; color:#334155;">' + escapePortfolioText(q.comment || '원생의 독서 사고력과 표현을 칭찬합니다.') + '</div>' +
-              '</div>';
-          }).join('');
-        } else {
-          quotesEl.innerHTML = '<div class="text-muted p-2" style="font-size:11.5px;">생각담기 관찰 피드백이 준비 중입니다.</div>';
-        }
-      }
-
-      // 그림 관찰 코멘트
-      var drawRow = document.getElementById('worksheetAiDrawingRow');
-      var drawText = document.getElementById('worksheetAiDrawingText');
-      if (drawRow && drawText) {
-        if (res.drawingObservation && res.drawingObservation.trim()) {
-          drawText.innerText = res.drawingObservation;
-          drawRow.style.display = 'block';
-        } else {
-          drawRow.style.display = 'none';
-        }
-      }
-    }
-
-    // 2) 하단 나노시트 첨삭 리포트 (좌: 원본 사진 / 우: 2개 카드 - 돋보인 점 & 다음 성장)
+    // 하단 나노시트 첨삭 리포트 (좌: 원본 사진 / 우: 2개 카드 - 돋보인 점 & 다음 성장)
     if (wsAiSec) {
       wsAiSec.style.display = 'block';
 
@@ -2250,7 +2218,6 @@ function openLearningDetailModal(id) {
 
   } else {
     if (wsAiSec) wsAiSec.style.display = 'none';
-    if (thoughtFeedbackCol) thoughtFeedbackCol.style.display = 'none';
   }
 
   $('#learningDetailModal').modal('show');
@@ -2321,125 +2288,98 @@ async function toggleThoughtSectionVisibility() {
   }
 }
 
-// 지도교사 코멘트 UI 상태 반영 (기본 디폴트값: 없음)
-function updateTeacherCommentUI(log) {
-  var commentWrapper = document.getElementById('learnModalCommentWrapper');
-  var commentBtn = document.getElementById('btnToggleTeacherComment');
-  var commentEditor = document.getElementById('learnModalCommentEditor');
-  var commentCard = document.getElementById('learnModalCommentCard');
-  var commentDisplay = document.getElementById('learnModalCommentDisplay');
-  var commentInput = document.getElementById('learnModalCommentInput');
-  var commentEmptyGuide = document.getElementById('learnModalCommentEmptyGuide');
-  var charCount = document.getElementById('commentCharCount');
+// ==============================================================
+// 3-1. 생각 담기 교사 직접 지도 코멘트 UI 및 저장 기능
+// ==============================================================
+function initThoughtTeacherCommentUI(log) {
+  if (!log) return;
+  var tComment = (log.thoughtTeacherComment !== undefined && log.thoughtTeacherComment !== null)
+    ? String(log.thoughtTeacherComment)
+    : (log.thoughtComment || (!log.worksheetAiResult && log.comment ? log.comment : ''));
 
-  if (commentEditor) commentEditor.style.display = 'none';
+  var inputEl = document.getElementById('thoughtTeacherCommentInput');
+  var countEl = document.getElementById('thoughtTeacherCommentCharCount');
+  var badgeEl = document.getElementById('thoughtTeacherCommentStatusBadge');
+  var printEl = document.getElementById('thoughtTeacherCommentPrintDisplay');
 
-  if (log && log.comment && log.comment.trim() !== '') {
-    // 코멘트가 직접 작성되어 존재할 때
-    if (commentWrapper) commentWrapper.classList.remove('no-comment');
-    if (commentBtn) {
-      commentBtn.className = 'btn btn-xs btn-outline-secondary';
-      commentBtn.innerHTML = '<i class="fa-solid fa-pen mr-1"></i>교사 코멘트 수정';
-    }
-    if (commentCard) commentCard.style.display = 'block';
-    if (commentDisplay) commentDisplay.innerText = log.comment;
-    if (commentInput) commentInput.value = log.comment;
-    if (commentEmptyGuide) commentEmptyGuide.style.display = 'none';
-    if (charCount) charCount.innerText = log.comment.length + '자 작성됨';
-  } else {
-    // 코멘트가 없을 때 (디폴트값: 없음)
-    if (commentWrapper) commentWrapper.classList.add('no-comment');
-    if (commentBtn) {
-      commentBtn.className = 'btn btn-xs btn-outline-primary';
-      commentBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기';
-    }
-    if (commentCard) commentCard.style.display = 'none';
-    if (commentDisplay) commentDisplay.innerText = '';
-    if (commentInput) commentInput.value = '';
-    if (commentEmptyGuide) commentEmptyGuide.style.display = 'block';
-    if (charCount) charCount.innerText = '0자 작성됨';
-  }
-}
+  if (inputEl) inputEl.value = tComment;
+  if (countEl) countEl.innerText = tComment.length + '자 작성됨';
+  if (printEl) printEl.innerText = tComment || '지도교사 코멘트가 작성되지 않았습니다.';
 
-// 교사 코멘트 넣기 / 수정 에디터 열기
-function openTeacherCommentEditor() {
-  var editor = document.getElementById('learnModalCommentEditor');
-  var emptyGuide = document.getElementById('learnModalCommentEmptyGuide');
-  var input = document.getElementById('learnModalCommentInput');
-  if (editor) {
-    editor.style.display = 'block';
-    if (emptyGuide) emptyGuide.style.display = 'none';
-    if (input) {
-      input.focus();
+  if (badgeEl) {
+    if (tComment.trim()) {
+      badgeEl.className = 'badge badge-pill badge-light text-success border border-success';
+      badgeEl.innerHTML = '<i class="fa-solid fa-check mr-0.5"></i>작성 완료';
+    } else {
+      badgeEl.className = 'badge badge-pill badge-light text-primary border border-primary';
+      badgeEl.innerHTML = '<i class="fa-solid fa-pen mr-0.5"></i>직접 작성';
     }
   }
 }
 
-// 교사 코멘트 에디터 닫기
-function closeTeacherCommentEditor() {
-  var editor = document.getElementById('learnModalCommentEditor');
-  if (editor) editor.style.display = 'none';
-
-  if (currentOpenLearningLogId) {
-    var allLogs = getLoadedLearningLogs();
-    var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
-    if (log) {
-      updateTeacherCommentUI(log);
-      if (log.comment && log.comment.trim()) {
-        showAcademyToast('지도교사 첨삭 코멘트가 저장되었습니다.');
-      }
-    }
-  }
+function onThoughtTeacherCommentInput(val) {
+  var text = String(val || '');
+  var countEl = document.getElementById('thoughtTeacherCommentCharCount');
+  if (countEl) countEl.innerText = text.length + '자 작성됨';
+  var printEl = document.getElementById('thoughtTeacherCommentPrintDisplay');
+  if (printEl) printEl.innerText = text || '지도교사 코멘트가 작성되지 않았습니다.';
 }
 
-// 교사 코멘트 직접 타이핑 입력 처리
-async function onTeacherCommentInput(val) {
-  var charCount = document.getElementById('commentCharCount');
-  if (charCount) charCount.innerText = val.length + '자 작성됨';
-
+async function saveThoughtTeacherComment() {
   if (!currentOpenLearningLogId) return;
   var allLogs = getLoadedLearningLogs();
   var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
   if (!log) return;
 
-  log.comment = val;
-  log.reviewed = val.trim() ? '첨삭 완료' : '첨삭 전';
-  if (!await saveCustomLearningLogs(allLogs)) return;
+  var inputEl = document.getElementById('thoughtTeacherCommentInput');
+  var commentVal = inputEl ? inputEl.value.trim() : '';
 
-  var display = document.getElementById('learnModalCommentDisplay');
-  var card = document.getElementById('learnModalCommentCard');
-  var wrapper = document.getElementById('learnModalCommentWrapper');
-  var btn = document.getElementById('btnToggleTeacherComment');
-
-  if (val.trim()) {
-    if (display) display.innerText = val;
-    if (card) card.style.display = 'block';
-    if (wrapper) wrapper.classList.remove('no-comment');
-    if (btn) {
-      btn.className = 'btn btn-xs btn-outline-secondary';
-      btn.innerHTML = '<i class="fa-solid fa-pen mr-1"></i>교사 코멘트 수정';
-    }
-  } else {
-    if (display) display.innerText = '';
-    if (card) card.style.display = 'none';
-    if (wrapper) wrapper.classList.add('no-comment');
-    if (btn) {
-      btn.className = 'btn btn-xs btn-outline-primary';
-      btn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-1"></i>교사 코멘트 넣기';
+  log.thoughtTeacherComment = commentVal;
+  // 나노시트 AI 첨삭이 없는 경우 기본 comment에도 동기화하여 인쇄/발송 호환성 보장
+  if (!log.worksheetAiResult) {
+    log.comment = commentVal;
+    if (commentVal) {
+      log.reviewed = '첨삭 완료';
     }
   }
 
-  // 테이블 내 첨삭 상태 배지 실시간 갱신
-  renderLearningTable();
+  var saveBtn = document.getElementById('btnSaveThoughtComment');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>저장 중…';
+  }
+
+  try {
+    var ok = await saveCustomLearningLogs(allLogs);
+    if (ok) {
+      var badgeEl = document.getElementById('thoughtTeacherCommentStatusBadge');
+      if (badgeEl) {
+        if (commentVal) {
+          badgeEl.className = 'badge badge-pill badge-light text-success border border-success';
+          badgeEl.innerHTML = '<i class="fa-solid fa-check mr-0.5"></i>작성 완료';
+        } else {
+          badgeEl.className = 'badge badge-pill badge-light text-primary border border-primary';
+          badgeEl.innerHTML = '<i class="fa-solid fa-pen mr-0.5"></i>직접 작성';
+        }
+      }
+      renderLearningTable();
+      showAcademyToast('🎉 [' + (log.studentName || log.name || '원생') + '] 학생의 생각 담기 지도 코멘트가 저장되었습니다.');
+    } else {
+      showAcademyToast('⚠️ 코멘트 저장에 실패했습니다. 다시 시도해 주세요.');
+    }
+  } catch (err) {
+    showAcademyToast('⚠️ 코멘트 저장 중 오류가 발생했습니다: ' + (err.message || err));
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i>코멘트 저장';
+    }
+  }
 }
 
-// 교사 코멘트 비우기 (삭제하여 디폴트값으로 원복)
-function clearTeacherComment() {
-  var input = document.getElementById('learnModalCommentInput');
-  if (input) input.value = '';
-  onTeacherCommentInput('');
-  closeTeacherCommentEditor();
-  showAcademyToast('교사 코멘트가 삭제되어 기본값(없음)으로 변경되었습니다.');
+// 하위 호환성 유지용 별칭
+function updateTeacherCommentUI(log) {
+  initThoughtTeacherCommentUI(log);
 }
 
 // 카카오 알림톡 발송 전문 보기 모달 열기
@@ -2492,9 +2432,13 @@ function openAcademyDispatchDetailModal(dispatchId) {
       content += `\n\n※ 본 학습 리포트는 학원 지도 방침에 따라 '생각 담기' 영역이 제외되어 발송되었습니다.`;
     } else {
       content += `\n\n■ 생각 담기: 학생 서술 답안 제출 완료`;
-      if (l.comment && l.comment.trim()) {
-        content += `\n■ 지도교사 첨삭:\n"${l.comment.trim()}"`;
+      var tComment = l.thoughtTeacherComment || (!l.worksheetAiResult ? l.comment : '');
+      if (tComment && tComment.trim()) {
+        content += `\n■ 선생님 지도 코멘트:\n"${tComment.trim()}"`;
       }
+    }
+    if (l.worksheetAiResult && l.worksheetAiResult.summary) {
+      content += `\n\n■ 나노시트 첨삭 피드백:\n"${l.worksheetAiResult.summary.trim()}"`;
     }
 
     content += `\n\n상세한 북퀴즈 문항별 채점 결과는 아래 링크에서 확인하실 수 있습니다.`;

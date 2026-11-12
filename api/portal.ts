@@ -49,6 +49,7 @@ function logView(attempt: any, book: any, studentView = false) {
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
     worksheetAiResult: details.worksheetAiResult || null,
     worksheetPhotos: Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [],
+    thoughtTeacherComment: details.thoughtTeacherComment || '',
     comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
 }
 export default async function handler(req: any, res: any) {
@@ -309,7 +310,7 @@ export default async function handler(req: any, res: any) {
     }
     if (action === 'review' && req.method === 'POST') {
       if (!['MASTER', 'DIRECTOR', 'TEACHER'].includes(user.role)) return res.status(403).json({ error: '지도교사와 관리자만 첨삭을 저장할 수 있습니다.' });
-      if (typeof body.id !== 'string' || typeof body.comment !== 'string' || body.comment.length > 20000 || typeof body.thoughtHidden !== 'boolean' || !['대기', '첨삭 전', '첨삭 완료'].includes(body.reviewed) || !['작성 전', '작성 완료'].includes(body.sheet)) return res.status(400).json({ error: '첨삭 내용을 확인해 주세요.' });
+      if (typeof body.id !== 'string' || typeof body.comment !== 'string' || body.comment.length > 20000 || typeof body.thoughtHidden !== 'boolean' || !['대기', '첨삭 전', '첨삭 완료'].includes(body.reviewed) || !['작성 전', '작성 완료'].includes(body.sheet) || (body.thoughtTeacherComment !== undefined && (typeof body.thoughtTeacherComment !== 'string' || body.thoughtTeacherComment.length > 20000))) return res.status(400).json({ error: '첨삭 내용을 확인해 주세요.' });
       // 관리자 편집 결과도 외부 입력이므로 형식과 길이를 서버에서 확인합니다. null은 첨삭 결과 삭제입니다.
       const worksheet = body.worksheetAiResult;
       if (worksheet !== undefined && worksheet !== null) {
@@ -325,7 +326,9 @@ export default async function handler(req: any, res: any) {
       const previous: any = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
       if ((previous.reviewRevision || '') !== (body.reviewRevision || '')) return res.status(409).json({ error: '다른 선생님이 수정한 내용이 있습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.' });
       const reviewRevision = randomUUID();
-      const answers = { ...previous, comment: body.comment, reviewed: body.reviewed, sheet: body.sheet, thoughtHidden: body.thoughtHidden, worksheetAiResult: body.worksheetAiResult !== undefined ? body.worksheetAiResult : (previous.worksheetAiResult || null), worksheetPhotos: Array.isArray(body.worksheetPhotos) ? body.worksheetPhotos : (previous.worksheetPhotos || []), reviewRevision };
+      const thoughtTeacherComment = typeof body.thoughtTeacherComment === 'string' ? body.thoughtTeacherComment : (previous.thoughtTeacherComment || '');
+      const commentToSave = body.comment || (!body.worksheetAiResult && thoughtTeacherComment ? thoughtTeacherComment : (previous.comment || ''));
+      const answers = { ...previous, comment: commentToSave, thoughtTeacherComment, reviewed: body.reviewed, sheet: body.sheet, thoughtHidden: body.thoughtHidden, worksheetAiResult: body.worksheetAiResult !== undefined ? body.worksheetAiResult : (previous.worksheetAiResult || null), worksheetPhotos: Array.isArray(body.worksheetPhotos) ? body.worksheetPhotos : (previous.worksheetPhotos || []), reviewRevision };
       const saved = await prisma.quizAttempt.updateMany({ where: { id: attempt.id, answers: { equals: attempt.answers as any } }, data: { answers } });
       if (saved.count !== 1) return res.status(409).json({ error: '첨삭 내용이 변경되었습니다. 새로고침 후 다시 저장해 주세요.' });
       return res.status(200).json({ reviewRevision });
