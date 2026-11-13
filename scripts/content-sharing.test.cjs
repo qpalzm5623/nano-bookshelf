@@ -29,14 +29,15 @@ function setup() {
   let settings = [];
   let questions = [];
   const books = [{ id: 'book-1', bookNo: 'B1', title: '첫 번째 책' }, { id: 'book-2', bookNo: 'B2', title: '다른 책' }];
-  const files = [];
+  let files = [];
   const directors = [user('director-b', 'b'), user('teacher-c', 'c', 'TEACHER')];
   const db = {
     academy: { findMany: async () => academies },
     member: { findUnique: async () => current, findMany: async ({ where }) => directors.filter(r => matches(r, where)) },
-    book: { findFirst: async ({ where }) => { const b = books.find(r => matches(r, where)); return b && { ...b, quizzes: questions.filter(q => q.bookId === b.id) }; }, findUnique: async ({ where }) => books.find(r => matches(r, where)), findMany: async ({ where } = {}) => books.filter(r => matches(r, where)) },
+    book: { findFirst: async ({ where }) => { const b = books.find(r => matches(r, where)); return b && { ...b, quizzes: questions.filter(q => q.bookId === b.id) }; }, findUnique: async ({ where }) => books.find(r => matches(r, where)), findMany: async ({ where } = {}) => books.filter(r => matches(r, where)), update: async ({ where, data }) => { const b = books.find(r => matches(r, where)); if (b) Object.assign(b, data); return b; } },
     portalSetting: {
       findMany: async ({ where } = {}) => settings.filter(r => matches(r, where)),
+      deleteMany: async ({ where }) => { settings = settings.filter(r => !matches(r, where)); },
       findUnique: async ({ where }) => settings.find(r => r.key === where.key) || null,
       create: async ({ data }) => { if (settings.some(r => r.key === data.key)) throw Object.assign(Error('duplicate'), { code: 'P2002' }); const row = { ...data, revision: 1 }; settings.push(row); return row; },
       updateMany: async ({ where, data }) => { const row = settings.find(r => matches(r, where)); if (!row) return { count: 0 }; row.value = data.value; row.revision++; return { count: 1 }; }
@@ -49,7 +50,8 @@ function setup() {
     portalFile: {
       create: async ({ data }) => { const f = { ...data, id: 'file-' + files.length }; files.push(f); return { id: f.id }; },
       findUnique: async ({ where }) => files.find(f => f.id === where.id),
-      findMany: async ({ where }) => files.filter(f => matches(f, where))
+      findMany: async ({ where }) => files.filter(f => matches(f, where)),
+      deleteMany: async ({ where }) => { files = files.filter(f => !matches(f, where)); }
     },
     quizAttempt: { findUnique: async () => null },
     $queryRaw: async () => [],
@@ -74,7 +76,7 @@ function setup() {
     questions.push({ id: 'q' + seq, bookId, legacyQuizSeq: seq, questionNo: 1, question: '질문' + seq, quizType: 'MULTIPLE_CHOICE', options: ['정답', '오답'], correctAnswer: '1' });
   }
   async function folder() { return request('folder', { name: '함께 읽기', bookIds: ['book-1'], directorUsernames: ['director-b'] }); }
-  return { db, request, content, portal, user, addQuiz, folder, setUser: u => { current = u; }, settings: () => settings, questions: () => questions };
+  return { db, request, content, portal, user, addQuiz, folder, setUser: u => { current = u; }, settings: () => settings, questions: () => questions, files: () => files };
 }
 
 test('직접 등록한 콘텐츠만 폴더 후보로 제공하고 원장 ID를 학원 권한으로 변환한다', async () => {
@@ -193,4 +195,74 @@ test('문항 내용이 같은 세트도 선택한 세트의 정답으로 채점�
   assert.equal(selected.code, 201); assert.equal(selected.data.score, 100);
   assert.equal((await f.request('learning', { ...payload, quizSetSeq: -10 }, {}, f.portal)).data.score, 0);
   assert.equal((await f.request('learning', { ...payload, quizSetSeq: -30 }, {}, f.portal)).code, 403);
+});
+
+test('나노시트 목록 조회는 업로드 권한(canUpload)과 기관별 소유권(isMine)을 분리해 반환한다', async () => {
+  const f = setup();
+  const hqUser = { ...f.user('master-hq', 'hq', 'MASTER'), academy: { id: 'hq', code: 'HQ', name: '본사', status: 'ACTIVE', deletedAt: null } };
+  const acadA = f.user('owner-a', 'a', 'DIRECTOR');
+  const acadB = f.user('owner-b', 'b', 'DIRECTOR');
+  const studentB = f.user('student-b', 'b', 'STUDENT');
+
+  // 마스터 본사 시트 1건, 학원 A 공개 시트 1건 등록
+  f.setUser(hqUser);
+  const hqChunk = await f.request('sheet-chunk', { base64: Buffer.from('%PDF-1.7\n본사').toString('base64') });
+  const hqSaved = await f.request('worksheet', { bookId: 'book-1', name: '본사_공식.pdf', isPublic: 'Y', fileIds: [hqChunk.data.id] });
+  assert.equal(hqSaved.code, 200);
+
+  f.setUser(acadA);
+  const aChunk = await f.request('sheet-chunk', { base64: Buffer.from('%PDF-1.7\n학원A').toString('base64') });
+  const aSaved = await f.request('worksheet', { bookId: 'book-1', name: '학원A_맞춤.pdf', isPublic: 'Y', fileIds: [aChunk.data.id] });
+  assert.equal(aSaved.code, 200);
+
+  // 마스터는 본사 시트만 isMine=true, 학원 등록 시트는 isMine=false
+  f.setUser(hqUser);
+  const hqRes = await f.request('worksheets', undefined, { bookId: 'book-1' });
+  assert.equal(hqRes.data.canUpload, true);
+  assert.equal(hqRes.data.items.find(s => s.id === hqSaved.data.item.id).isMine, true);
+  assert.equal(hqRes.data.items.find(s => s.id === aSaved.data.item.id).isMine, false);
+
+  // 학원 B는 둘 다 남의 시트이므로 isMine=false (단 canUpload=true)
+  f.setUser(acadB);
+  const bRes = await f.request('worksheets', undefined, { bookId: 'book-1' });
+  assert.equal(bRes.data.canUpload, true);
+  assert.equal(bRes.data.items.every(s => s.isMine === false), true);
+
+  // 학생은 업로드 불가(canUpload=false) & 목록 선택 열람만 가능
+  f.setUser(studentB);
+  const sRes = await f.request('worksheets', undefined, { bookId: 'book-1' });
+  assert.equal(sRes.data.canUpload, false);
+  assert.equal(sRes.data.items.length, 2);
+});
+
+test('나노시트 공개/비공개 전환 및 본인 등록 시트만 삭제 가능하며 타인 시트 삭제는 차단한다', async () => {
+  const f = setup();
+  const hqUser = { ...f.user('master-hq', 'hq', 'MASTER'), academy: { id: 'hq', code: 'HQ', name: '본사', status: 'ACTIVE', deletedAt: null } };
+  const acadA = f.user('owner-a', 'a', 'DIRECTOR');
+  const acadB = f.user('owner-b', 'b', 'DIRECTOR');
+
+  f.setUser(acadA);
+  const aChunk = await f.request('sheet-chunk', { base64: Buffer.from('%PDF-1.7\n내시트').toString('base64') });
+  const aSaved = await f.request('worksheet', { bookId: 'book-1', name: '내시트.pdf', isPublic: 'N', fileIds: [aChunk.data.id] });
+  assert.equal(aSaved.code, 200);
+  const sheetId = aSaved.data.item.id;
+
+  // 공개로 전환
+  const toggled = await f.request('worksheet', { bookId: 'book-1', id: sheetId, name: '내시트.pdf', isPublic: 'Y', revision: aSaved.data.item.revision });
+  assert.equal(toggled.code, 200);
+  assert.equal(toggled.data.item.isPublic, 'Y');
+
+  // 타 학원 및 마스터는 학원 A가 올린 시트를 삭제할 수 없음 (403)
+  f.setUser(acadB);
+  assert.equal((await f.request('worksheet', { operation: 'delete', bookId: 'book-1', id: sheetId })).code, 403);
+  f.setUser(hqUser);
+  assert.equal((await f.request('worksheet', { operation: 'delete', bookId: 'book-1', id: sheetId })).code, 403);
+
+  // 본인(학원 A)이 삭제하면 정상 삭제되고 파일 청크·목록에서도 제거됨
+  f.setUser(acadA);
+  const delRes = await f.request('worksheet', { operation: 'delete', bookId: 'book-1', id: sheetId });
+  assert.equal(delRes.code, 200);
+  assert.equal(delRes.data.deletedId, sheetId);
+  assert.equal(f.files().length, 0);
+  assert.equal((await f.request('worksheets', undefined, { bookId: 'book-1' })).data.items.length, 0);
 });

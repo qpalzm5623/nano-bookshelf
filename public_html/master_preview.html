@@ -35,14 +35,15 @@
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
 
-  <link rel="stylesheet" href="css/master_preview.css?v=20261113_master_pf_v1">
+  <link rel="stylesheet" href="css/master_preview.css?v=20261113_pf_unify">
+  <link rel="stylesheet" href="css/portfolio.css?v=20261113_pf_unify">
   <script src="js/preview-data.js?v=20261014"></script>
-  <script src="js/portal-client.js?v=20261112_content_sharing"></script>
+  <script src="js/portal-client.js?v=20261113_pf_unify"></script>
   <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
   <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
-<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_ui">
-<script src="js/content-sharing.js?v=20261113_sharing_ui"></script>
+  <link rel="stylesheet" href="css/content-sharing.css?v=20261113_nanosheet_mgr">
+  <script src="js/content-sharing.js?v=20261113_nanosheet_mgr"></script>
 </head>
 <body>
 
@@ -1320,7 +1321,7 @@
                 <th style="width: 96px; text-align: center; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortDate" onclick="toggleMasterBookSort('date')" title="클릭 시 등록일 최신순/과거순 정렬">
                   <span class="d-inline-flex align-items-center justify-content-center">등록일<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconDate" style="font-size: 10px;"></i></span>
                 </th>
-                <th style="width: 90px; text-align: center; white-space: nowrap;">관리</th>
+                <th style="width: 162px; text-align: center; white-space: nowrap;">관리</th>
               </tr>
             </thead>
             <tbody id="masterContentTableBody">
@@ -1947,77 +1948,35 @@
             <small class="text-muted d-block text-truncate" id="masterPfModalSubtitle" style="font-size: 11.5px;">가맹점 · 원생 · 발급일자 정보</small>
           </div>
         </div>
-        <button type="button" class="close ml-2 d-print-none" data-dismiss="modal" aria-label="Close" style="font-size: 24px; padding: 0 4px; line-height: 1;">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <div class="d-flex align-items-center" style="gap: 8px;">
+          <div class="btn-group d-print-none" role="group" style="background:#ede7dc; padding:3px; border-radius:8px;">
+            <button type="button" class="btn btn-sm master-pf-view-toggle active" id="btnMasterPfViewA4" onclick="setMasterPortfolioViewMode('a4')">
+              <i class="fa-solid fa-file-lines mr-1"></i>A4 리포트
+            </button>
+            <button type="button" class="btn btn-sm master-pf-view-toggle" id="btnMasterPfViewMobile" onclick="setMasterPortfolioViewMode('mobile')">
+              <i class="fa-solid fa-mobile-screen mr-1"></i>모바일 (390px)
+            </button>
+          </div>
+          <button type="button" class="close ml-2 d-print-none" data-dismiss="modal" aria-label="Close" style="font-size: 24px; padding: 0 4px; line-height: 1;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
       </div>
 
-      <div class="modal-body p-4" style="background: #faf8f5; max-height: 78vh; overflow-y: auto;">
+      <div class="modal-body p-4" style="background: #f4f1ea; max-height: 80vh; overflow-y: auto;">
         <div id="masterPfModalLoading" class="text-center py-4 d-none">
           <div class="spinner-border spinner-border-sm text-secondary mr-2" role="status"></div>
           <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">포트폴리오 상세 내역을 불러오는 중입니다...</span>
         </div>
 
         <div id="masterPfModalContentBody">
-          <div class="master-pf-hero-card">
-            <div class="d-flex justify-content-between align-items-start flex-wrap" style="gap: 10px;">
-              <div style="min-width: 0;">
-                <span class="badge-soft badge-soft-success font-weight-bold mb-2 d-inline-block" style="font-size: 11px;">독서 성장 포트폴리오 리포트</span>
-                <h4 class="font-weight-bold mb-1" id="masterPfModalReportName" style="font-size: 18px; color: var(--text-main);">포트폴리오 명칭</h4>
-                <div class="text-muted" style="font-size: 12px;">
-                  <i class="fa-regular fa-calendar mr-1"></i>분석 기간: <strong id="masterPfModalPeriod" style="color: var(--text-main);">-</strong>
-                  <span class="mx-2">|</span>
-                  <i class="fa-solid fa-building mr-1"></i>발행 가맹점: <strong id="masterPfModalAcademy" style="color: var(--text-main);">-</strong>
-                </div>
-              </div>
-              <div class="text-right">
-                <small class="text-muted d-block" style="font-size: 11px;">발급 일시</small>
-                <strong id="masterPfModalIssueDate" style="font-size: 12.5px; color: var(--text-main);">-</strong>
+          <!-- 학원 관리자(#portfolioPrintDoc)와 100% 동일한 공용 A4 포트폴리오 문서 뷰포트 -->
+          <div id="masterPortfolioViewport" class="portfolio-view-a4 master-pf-report-viewport">
+            <div class="portfolio-device-frame">
+              <div class="portfolio-mobile-screen">
+                <div id="portfolioPrintDoc" class="portfolio-document-paper"></div>
               </div>
             </div>
-
-            <div class="master-pf-meta-grid">
-              <div class="master-pf-meta-item">
-                <small class="text-muted d-block" style="font-size: 10.5px; font-weight: 700;">원생 / 클래스</small>
-                <strong id="masterPfModalStudent" style="font-size: 13px; color: var(--text-main);">-</strong>
-              </div>
-              <div class="master-pf-meta-item">
-                <small class="text-muted d-block" style="font-size: 10.5px; font-weight: 700;">학교 / 학년</small>
-                <strong id="masterPfModalSchool" style="font-size: 13px; color: var(--text-main);">-</strong>
-              </div>
-              <div class="master-pf-meta-item">
-                <small class="text-muted d-block" style="font-size: 10.5px; font-weight: 700;">포함 완독 도서</small>
-                <strong id="masterPfModalBookCount" style="font-size: 14px; color: #2f5436;">0권</strong>
-              </div>
-              <div class="master-pf-meta-item">
-                <small class="text-muted d-block" style="font-size: 10.5px; font-weight: 700;">북퀴즈 평균 성적</small>
-                <strong id="masterPfModalQuizAvg" style="font-size: 14px; color: #2f5436;">-</strong>
-              </div>
-            </div>
-          </div>
-
-          <div id="masterPfModalInsightsSection" class="mb-3" style="display: none;">
-            <h6 class="font-weight-bold mb-2 px-1" style="font-size: 13.5px; color: var(--text-main);">
-              <i class="fa-solid fa-brain mr-1" style="color: #7c6855;"></i>독서 역량 성장 관찰
-            </h6>
-            <div id="masterPfModalInsightsGrid" class="master-pf-insights-grid"></div>
-          </div>
-
-          <div>
-            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-              <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: var(--text-main);">
-                <i class="fa-solid fa-book-open mr-1" style="color: #2f5436;"></i>포함 완독 도서 이력
-              </h6>
-              <span class="text-muted font-weight-bold" id="masterPfModalBooksCountBadge" style="font-size: 12px;">총 0권</span>
-            </div>
-            <div id="masterPfModalBooksGrid" class="master-pf-books-grid"></div>
-          </div>
-
-          <div id="masterPfModalCommentCard" class="master-pf-comment-card" style="display: none;">
-            <div class="font-weight-bold mb-1" style="font-size: 12.5px; color: #2f5436;">
-              <i class="fa-solid fa-comment-dots mr-1"></i>지도교사 / AI 종합 총평
-            </div>
-            <div id="masterPfModalCommentText" style="font-size: 12.5px; line-height: 1.65; white-space: pre-wrap; color: var(--text-main);">-</div>
           </div>
         </div>
       </div>
@@ -2060,14 +2019,15 @@
 
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
-<script src="js/master/master-core.js?v=20261112_pf_v2"></script>
+<script src="js/master/master-core.js?v=20261113_sharing_fix"></script>
 <script src="js/master/master-franchise.js?v=20261110_auto_unapprove"></script>
 <script src="js/master/master-members.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-operations.js?v=20261109_speed_v2"></script>
-<script src="js/master/master-learning.js?v=20261113_real_db_v1"></script>
-<script src="js/master/master-portfolio.js?v=20261113_real_db_v1"></script>
+<script src="js/master/master-learning.js?v=20261113_sharing_fix"></script>
+<script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
+<script src="js/master/master-portfolio.js?v=20261113_pf_unify"></script>
 <script src="js/master/master-ranking.js?v=20261109_speed_v2"></script>
-<script src="js/master/master-contents.js?v=20261112_content_sharing"></script>
+<script src="js/master/master-contents.js?v=20261113_nanosheet_mgr"></script>
 <script src="js/master/master-dispatch.js?v=20261110_kakao_v1"></script>
 <script src="js/master/master-payment.js?v=20261110_payment_routine"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
@@ -2093,7 +2053,7 @@
 <script>
   (function() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'modals/master_modals.html?v=20261110_auto_unapprove', true);
+    xhr.open('GET', 'modals/master_modals.html?v=20261113_nanosheet_mgr', true);
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 0)) {
         var container = document.getElementById('masterModalsContainer');

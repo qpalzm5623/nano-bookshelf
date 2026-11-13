@@ -47,8 +47,8 @@
       kstDate: '2026-11-12',
       comment: '도서 핵심 사건을 정확히 파악하며 사고력 표현력이 꾸준히 향상되고 있습니다.',
       books: [
-        { title: '오즈의 마법사', pub: '어스본코리아', cover: 'upload/book/book_default.jpg', date: '2026-11-10', score: 100, thought: '친구들과 협력하는 과정이 인상 깊었습니다.' },
-        { title: '수호의 하얀 말', pub: '한림출판사', cover: 'upload/book/book_default.jpg', date: '2026-11-05', score: 80, thought: '하얀 말과의 우정이 감동적이었습니다.' }
+        { title: '오즈의 마법사', pub: '어스본코리아', cover: 'resources/images/book_default.svg', date: '2026-11-10', score: 100, thought: '친구들과 협력하는 과정이 인상 깊었습니다.' },
+        { title: '수호의 하얀 말', pub: '한림출판사', cover: 'resources/images/book_default.svg', date: '2026-11-05', score: 80, thought: '하얀 말과의 우정이 감동적이었습니다.' }
       ]
     }
   ];
@@ -74,7 +74,7 @@
   function resolveSafeBookCover(rawUrl) {
     var src = String(rawUrl || '').trim();
     if (!src || /^(javascript|vbscript):/i.test(src)) {
-      return 'upload/book/book_default.jpg';
+      return 'resources/images/book_default.svg';
     }
     if (src.charAt(0) === '/' && src.charAt(1) !== '/') {
       src = src.slice(1);
@@ -82,7 +82,7 @@
     if (/^(https?:\/\/|data:image\/|upload\/|resources\/|assets\/)/i.test(src)) {
       return src;
     }
-    return 'upload/book/book_default.jpg';
+    return 'resources/images/book_default.svg';
   }
 
   // KST 기준 YYYY-MM-DD
@@ -745,6 +745,77 @@
     container.innerHTML = html;
   }
 
+  // 포트폴리오 공용 뷰 모드(A4 / 모바일 390px) 전환
+  function setMasterPortfolioViewMode(mode) {
+    var viewport = document.getElementById('masterPortfolioViewport');
+    var btnA4 = document.getElementById('btnMasterPfViewA4');
+    var btnMobile = document.getElementById('btnMasterPfViewMobile');
+    var isMobile = mode === 'mobile';
+
+    if (viewport) {
+      viewport.classList.remove('portfolio-view-a4', 'portfolio-view-mobile');
+      viewport.classList.add(isMobile ? 'portfolio-view-mobile' : 'portfolio-view-a4');
+    }
+    if (btnA4) btnA4.classList.toggle('active', !isMobile);
+    if (btnMobile) btnMobile.classList.toggle('active', isMobile);
+  }
+
+  function getMasterPfBookCatalog() {
+    if (Array.isArray(window.masterBooks) && window.masterBooks.length > 0) {
+      return window.masterBooks;
+    }
+    if (Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
+      return window.MIGRATED_BOOKS;
+    }
+    return [];
+  }
+
+  function resolveMasterPfStudentRecord(pf) {
+    if (!pf || !Array.isArray(window.MIGRATED_MEMBERS)) return null;
+    var studentId = String(pf.studentId || '').trim();
+    var memberId = String(pf.memberId || '').trim();
+    return window.MIGRATED_MEMBERS.find(function(m) {
+      if (!m) return false;
+      if (memberId && String(m.id || '') === memberId) return true;
+      if (studentId && (String(m.username || '') === studentId || String(m.id || '') === studentId)) return true;
+      return false;
+    }) || null;
+  }
+
+  function resolveMasterPfTeacherName(pf, std) {
+    var direct = String((pf && (pf.teacher || pf.teacherName)) || '').trim();
+    if (direct && direct !== '미지정' && direct !== '-' && direct.indexOf('미지정') === -1) {
+      return direct;
+    }
+    if (std) {
+      var stdTeacher = String(std.teacher || std.teacherName || '').trim();
+      if (stdTeacher && stdTeacher !== '미지정' && stdTeacher !== '-' && stdTeacher.indexOf('미지정') === -1) {
+        return stdTeacher;
+      }
+    }
+    var classGroup = String((pf && pf.classGroup) || (std && std.classGroup) || '').trim();
+    var academyId = String((pf && pf.academyId) || '').trim();
+    var classPool = (Array.isArray(window.NANO_SERVER_CLASSES) && window.NANO_SERVER_CLASSES.length > 0)
+      ? window.NANO_SERVER_CLASSES
+      : (Array.isArray(window.MIGRATED_CLASSES) ? window.MIGRATED_CLASSES : []);
+    if (classGroup && classPool.length > 0) {
+      var matchedCls = classPool.find(function(c) {
+        if (!c || String(c.name || '').trim() !== classGroup) return false;
+        if (!academyId || !c.academyId) return true;
+        return String(c.academyId) === academyId;
+      }) || classPool.find(function(c) {
+        return c && String(c.name || '').trim() === classGroup;
+      });
+      if (matchedCls) {
+        var clsTeacher = String(matchedCls.teacherName || matchedCls.teacher || '').trim();
+        if (clsTeacher && clsTeacher !== '미지정' && clsTeacher !== '-') {
+          return clsTeacher;
+        }
+      }
+    }
+    return '미지정';
+  }
+
   // 10. 포트폴리오 상세 리포트 모달 열기 (단건 API 조회 후 상세 렌더링)
   async function openMasterPfDetailModal(studentId, pfId) {
     if (!pfId) return;
@@ -752,6 +823,7 @@
     if (!rowPf) return;
 
     currentOpenMasterPfId = String(pfId);
+    setMasterPortfolioViewMode('a4');
     var cached = currentPfDetailCache[String(pfId)] || null;
     renderMasterPortfolioModal(cached || rowPf);
 
@@ -787,110 +859,83 @@
     }
   }
 
-  // 포트폴리오 상세 모달 DOM 바인딩
+  // 포트폴리오 상세 모달 DOM 바인딩 (학원 관리자 공용 #portfolioPrintDoc 렌더러 사용)
   function renderMasterPortfolioModal(pf) {
     if (!pf) return;
-    var setText = function(id, val) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
+    var subtitleEl = document.getElementById('masterPfModalSubtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = (pf.academyName || '-') + ' · ' + (pf.studentName || '-') + ' · ' + (pf.issueDate || '-');
+    }
 
-    setText('masterPfModalSubtitle', (pf.academyName || '-') + ' · ' + (pf.studentName || '-') + ' · ' + (pf.issueDate || '-'));
-    setText('masterPfModalReportName', pf.title || ((pf.studentName || '원생') + ' 독서 성장 포트폴리오'));
-    setText('masterPfModalPeriod', pf.period || '-');
-    setText('masterPfModalAcademy', pf.academyName || '-');
-    setText('masterPfModalIssueDate', pf.issueDate || '-');
-    setText('masterPfModalStudent', (pf.studentName || '-') + ' (' + (pf.classGroup || '미지정') + ')');
-    setText('masterPfModalSchool', [pf.school || '', pf.grade || ''].filter(Boolean).join(' ') || '-');
+    var docContainer = document.getElementById('portfolioPrintDoc');
+    if (!docContainer) return;
 
+    var std = resolveMasterPfStudentRecord(pf);
+    var teacherName = resolveMasterPfTeacherName(pf, std);
     var books = Array.isArray(pf.books) ? pf.books : [];
-    setText('masterPfModalBookCount', (pf.bookCount || books.length) + '권');
-    setText('masterPfModalQuizAvg', pf.quizAvg || '-');
-    setText('masterPfModalBooksCountBadge', '총 ' + books.length + '권');
 
-    // 독서 역량 성장 관찰 카드
-    var insightsSec = document.getElementById('masterPfModalInsightsSection');
-    var insightsGrid = document.getElementById('masterPfModalInsightsGrid');
-    var insights = [];
-    if (Array.isArray(pf.aiInsights) && pf.aiInsights.length > 0) {
-      insights = pf.aiInsights;
-    } else if (Array.isArray(pf.insights) && pf.insights.length > 0) {
-      insights = pf.insights;
-    } else if (Array.isArray(pf.aiComments) && pf.aiComments.length > 0) {
-      var catNames = ['문해력 & 중심 맥락 파악', '공감 능력 & 정서적 사유', '비판적 사고 & 문제 해결력', '자기표현 & 능동적 독서 태도'];
-      insights = pf.aiComments.map(function(txt, idx) {
-        return { category: catNames[idx] || '독서 성장 관찰', comment: txt };
+    if (window.NanoPortfolioRenderer && typeof window.NanoPortfolioRenderer.renderPortfolioDocument === 'function') {
+      var rawSchool = String(pf.school || (std && std.school) || '').trim();
+      var rawGrade = String(pf.grade || (std && std.grade) || '').trim();
+      var combinedSchool = (rawSchool && rawGrade && rawSchool.indexOf(rawGrade) !== -1)
+        ? rawSchool
+        : [rawSchool, rawGrade].filter(Boolean).join(' ');
+
+      window.NanoPortfolioRenderer.renderPortfolioDocument(docContainer, {
+        pfData: pf,
+        std: std,
+        studentId: pf.studentId || '',
+        pfId: pf.id || '',
+        studentName: pf.studentName || '학생',
+        schoolGrade: combinedSchool || pf.schoolGrade || '',
+        classGroup: pf.classGroup || (std && std.classGroup) || '미지정',
+        teacher: teacherName,
+        period: pf.period || '-',
+        issueDate: pf.issueDate || pf.kstDate || '-',
+        books: books,
+        quizAvg: pf.quizAvgNum != null ? pf.quizAvgNum : pf.quizAvg,
+        loadedLogs: [],
+        bookCatalog: getMasterPfBookCatalog(),
+        allowTeacherNoteEdit: false,
+        allowCoverZoom: false
       });
+      return;
     }
 
-    if (insightsSec && insightsGrid) {
-      if (insights.length > 0) {
-        insightsSec.style.display = 'block';
-        insightsGrid.innerHTML = insights.map(function(ins) {
-          var cat = (typeof ins === 'object' && ins.category) ? ins.category : '독서 역량 관찰';
-          var body = (typeof ins === 'object' && ins.comment) ? ins.comment : String(ins || '');
-          return (
-            '<div class="master-pf-insight-card">' +
-              '<div class="font-weight-bold mb-1" style="font-size:12px; color:#594e44;">' + escapeHtml(cat) + '</div>' +
-              '<div style="font-size:12px; line-height:1.55; color:var(--text-main);">' + escapeHtml(body) + '</div>' +
-            '</div>'
-          );
-        }).join('');
-      } else {
-        insightsSec.style.display = 'none';
-        insightsGrid.innerHTML = '';
-      }
-    }
-
-    // 포함 완독 도서 이력 카드
-    var booksGrid = document.getElementById('masterPfModalBooksGrid');
-    if (booksGrid) {
-      if (books.length === 0) {
-        booksGrid.innerHTML =
-          '<div style="grid-column: 1 / -1; background:#ffffff; border:1px dashed var(--border-medium); border-radius:12px; padding:18px; text-align:center; font-size:12.5px; color:var(--text-muted);">' +
-            '포함된 완독 도서 상세 목록이 없습니다.' +
-          '</div>';
-      } else {
-        booksGrid.innerHTML = books.map(function(b) {
-          var cover = resolveSafeBookCover(b.cover || b.coverUrl);
-          var pubInfo = [b.pub || b.publisher || '', b.author || ''].filter(Boolean).join(' · ') || '도서';
-          var scoreStr = b.score != null && b.score !== '' ? (String(b.score).replace(/점$/, '') + '점') : '-';
-          var noteText = String(b.achievement || b.thought || b.comment || '').trim();
-
-          return (
-            '<div class="master-pf-book-item">' +
-              '<img class="master-pf-book-cover" src="' + escapeHtml(cover) + '" alt="" onerror="this.onerror=null;this.src=\'upload/book/book_default.jpg\';">' +
-              '<div style="min-width:0; flex:1;">' +
-                '<div class="d-flex justify-content-between align-items-start" style="gap:6px;">' +
-                  '<strong class="text-truncate" style="font-size:13px; color:var(--text-main); display:block;" title="' + escapeHtml(b.title || '도서') + '">' + escapeHtml(b.title || '도서') + '</strong>' +
-                  '<span class="badge-soft badge-soft-success" style="font-size:10.5px; flex-shrink:0;">' + escapeHtml(scoreStr) + '</span>' +
-                '</div>' +
-                '<div class="text-muted text-truncate" style="font-size:11px;">' + escapeHtml(pubInfo) + (b.date ? (' · ' + escapeHtml(b.date)) : '') + '</div>' +
-                (noteText ? ('<div class="mt-1 p-1 px-2 rounded" style="background:#fbf9f5; font-size:11.5px; color:#594e44; line-height:1.45;">' + escapeHtml(noteText) + '</div>') : '') +
-              '</div>' +
-            '</div>'
-          );
-        }).join('');
-      }
-    }
-
-    // 지도교사 / AI 종합 총평
-    var commentCard = document.getElementById('masterPfModalCommentCard');
-    var commentTextEl = document.getElementById('masterPfModalCommentText');
-    var totalNote = String(pf.comment || pf.aiTeacherNote || pf.teacherNote || '').trim();
-    if (commentCard && commentTextEl) {
-      if (totalNote) {
-        commentCard.style.display = 'block';
-        commentTextEl.textContent = totalNote;
-      } else {
-        commentCard.style.display = 'none';
-      }
-    }
+    // 공용 렌더러 미로드 환경 대비 최소 폴백
+    var fallbackNote = String(pf.teacherNote || pf.comment || pf.aiTeacherNote || '').trim();
+    docContainer.innerHTML =
+      '<div class="p-4">' +
+        '<h4 class="font-weight-bold mb-2">' + escapeHtml(pf.title || ((pf.studentName || '원생') + ' 독서 성장 포트폴리오')) + '</h4>' +
+        '<div class="text-muted mb-3" style="font-size:13px;">' + escapeHtml(pf.academyName || '-') + ' · ' + escapeHtml(pf.studentName || '-') + ' (' + escapeHtml(pf.classGroup || '미지정') + ') · ' + escapeHtml(pf.period || '-') + '</div>' +
+        '<div class="pf-books-grid-row">' +
+          books.map(function(b) {
+            return '<div class="p-2 border rounded">' + escapeHtml((b && b.title) || '도서') + '</div>';
+          }).join('') +
+        '</div>' +
+        (fallbackNote ? '<div class="mt-3 p-3 bg-light rounded">' + escapeHtml(fallbackNote) + '</div>' : '') +
+      '</div>';
   }
 
-  // 모달 내 인쇄 실행
+  // 모달 내 인쇄 실행 (학원 관리자와 동일한 격리 A4 iframe 인쇄)
   function printCurrentMasterPortfolioModal() {
     if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    var docEl = document.getElementById('portfolioPrintDoc');
+    if (docEl && window.NanoPortfolioRenderer && typeof window.NanoPortfolioRenderer.printHtmlInIsolatedFrame === 'function') {
+      var printBodyHtml = '<div id="portfolioPrintDoc" class="portfolio-document-view" style="max-width:800px; margin:0 auto; padding:0; background:#ffffff;">' + docEl.innerHTML + '</div>';
+      window.NanoPortfolioRenderer.printHtmlInIsolatedFrame(
+        printBodyHtml,
+        'is-printing-portfolio',
+        '나노의 책장 독서 성장 포트폴리오',
+        function() {
+          if (typeof showMasterToast === 'function') {
+            showMasterToast('포트폴리오 인쇄 화면을 준비하지 못했습니다. 다시 시도해 주세요.');
+          }
+        }
+      );
+      return;
+    }
+
     document.body.classList.add('printing-master-portfolio');
     var cleanup = function() {
       document.body.classList.remove('printing-master-portfolio');
@@ -934,6 +979,7 @@
   window.resetMasterPfFilters = resetMasterPfFilters;
   window.renderMasterPfTable = renderMasterPfTable;
   window.openMasterPfDetailModal = openMasterPfDetailModal;
+  window.setMasterPortfolioViewMode = setMasterPortfolioViewMode;
   window.printMasterPortfolio = printMasterPortfolio;
   window.printCurrentMasterPortfolioModal = printCurrentMasterPortfolioModal;
   window.toggleMasterPfAcademyDropdown = toggleMasterPfAcademyDropdown;

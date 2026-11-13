@@ -56,7 +56,9 @@ async function queryPortfolios(academyId: string, isMasterAll: boolean, query: a
             name: true,
             school: true,
             grade: true,
-            classGroup: { select: { name: true } }
+            teacherName: true,
+            classGroupId: true,
+            classGroup: { select: { id: true, name: true } }
           }
         })
       : Promise.resolve([])
@@ -66,6 +68,65 @@ async function queryPortfolios(academyId: string, isMasterAll: boolean, query: a
   const memberMap = new Map(members.map((m: any) => [m.id, m]));
   const hasAcademyFilter = isMasterAll && academyIds.length > 0 && typeof prisma.academy?.findMany === 'function';
 
+  // 학원 포트폴리오와 동일한 도서 카테고리·태그(나의 독서 취향) 및 교사·첨삭 코멘트 보강 데이터 조회
+  const allBookKeys = new Set<string>();
+  const allBookTitles = new Set<string>();
+  for (const r of rows) {
+    const valBooks = Array.isArray((r.value as any)?.books) ? (r.value as any).books : [];
+    for (const b of valBooks) {
+      if (!b || typeof b !== 'object') continue;
+      if (b.bookId) allBookKeys.add(String(b.bookId).trim());
+      if (b.bookNo) allBookKeys.add(String(b.bookNo).trim());
+      if (b.title) allBookTitles.add(String(b.title).trim());
+    }
+  }
+
+  let catalogBooks: any[] = [];
+  if ((allBookKeys.size > 0 || allBookTitles.size > 0) && typeof (prisma as any).book?.findMany === 'function') {
+    const keysArr = [...allBookKeys];
+    const titlesArr = [...allBookTitles];
+    const orConds: any[] = [];
+    if (keysArr.length > 0) {
+      orConds.push({ id: { in: keysArr } }, { bookNo: { in: keysArr } });
+    }
+    if (titlesArr.length > 0) {
+      orConds.push({ title: { in: titlesArr } });
+    }
+    if (orConds.length > 0) {
+      catalogBooks = await prisma.book.findMany({
+        where: { OR: orConds },
+        select: { id: true, bookNo: true, title: true, author: true, publisher: true, coverUrl: true, category: true, subCategory: true, subject: true, tags: true }
+      });
+    }
+  }
+
+  // 단건 상세 조회 시 지도교사(class_meta)와 나노시트 첨삭·생각담기 코멘트(quiz_attempts) 추가 조회
+  const classTeacherMap = new Map<string, string>();
+  const attemptById = new Map<string, any>();
+  const attemptByBook = new Map<string, any>();
+  if (targetId && rows.length > 0) {
+    const firstStu = memberMap.get(String((rows[0].value as any)?.memberId || ''));
+    const classId = firstStu?.classGroupId || firstStu?.classGroup?.id;
+    if (classId && !firstStu?.teacherName && typeof (prisma as any).portalSetting?.findUnique === 'function') {
+      const metaRow = await prisma.portalSetting.findUnique({ where: { key: 'class_meta:' + classId } }).catch(() => null);
+      const tName = (metaRow?.value as any)?.teacher;
+      if (tName) classTeacherMap.set(String(classId), String(tName).trim());
+    }
+    if (firstStu?.id && typeof (prisma as any).quizAttempt?.findMany === 'function') {
+      const attempts = await prisma.quizAttempt.findMany({
+        where: { memberId: firstStu.id, score: { gte: 60 } },
+        orderBy: { completedAt: 'desc' },
+        select: { id: true, bookId: true, answers: true }
+      });
+      for (const a of attempts) {
+        attemptById.set(String(a.id), a);
+        if (!attemptByBook.has(String(a.bookId))) {
+          attemptByBook.set(String(a.bookId), a);
+        }
+      }
+    }
+  }
+
   const enriched = rows
     .map((p: any) => {
       const rowAcadId = String(p.scope || '').replace(/^portfolio:/, '');
@@ -74,7 +135,45 @@ async function queryPortfolios(academyId: string, isMasterAll: boolean, query: a
 
       const val = (p.value || {}) as any;
       const stu: any = memberMap.get(String(val.memberId || ''));
-      const booksArr = Array.isArray(val.books) ? val.books : [];
+      const rawBooksArr = Array.isArray(val.books) ? val.books : [];
+      const booksArr = rawBooksArr.map((b: any) => {
+        if (!b || typeof b !== 'object') return b;
+        const bIdStr = String(b.bookId || b.bookNo || '').trim();
+        const bCleanTitle = String(b.title || '').replace(/\s+/g, '').toLowerCase();
+        const matched = catalogBooks.find(cb =>
+          (bIdStr && (cb.id === bIdStr || cb.bookNo === bIdStr)) ||
+          (bCleanTitle && String(cb.title || '').replace(/\s+/g, '').toLowerCase() === bCleanTitle)
+        );
+        const rawTags = Array.isArray(b.tags) && b.tags.length > 0
+          ? b.tags
+          : (matched?.tags ? String(matched.tags).split(',').map((t: string) => t.trim()).filter(Boolean) : []);
+        const att = (b.attemptId ? attemptById.get(String(b.attemptId)) : null) ||
+          (b.bookId ? attemptByBook.get(String(b.bookId)) : null) ||
+          (matched?.id ? attemptByBook.get(String(matched.id)) : null);
+        const attDetails = (att?.answers && !Array.isArray(att.answers) && typeof att.answers === 'object' ? att.answers : {}) as any;
+
+        return {
+          ...b,
+          bookNo: b.bookNo || matched?.bookNo || '',
+          subCategory: b.subCategory || matched?.subCategory || '',
+          category: b.category || matched?.category || '',
+          subject: b.subject || matched?.subject || '',
+          tags: rawTags,
+          pub: b.pub || b.publisher || matched?.publisher || '',
+          author: b.author || matched?.author || '',
+          cover: b.cover || matched?.coverUrl || '',
+          ...(attDetails.thoughtTeacherComment && !b.thoughtTeacherComment ? { thoughtTeacherComment: attDetails.thoughtTeacherComment } : {}),
+          ...(attDetails.worksheetAiResult && !b.worksheetAiResult ? { worksheetAiResult: attDetails.worksheetAiResult } : {})
+        };
+      });
+
+      const resolvedTeacher = String(
+        stu?.teacherName ||
+        (stu?.classGroupId ? classTeacherMap.get(String(stu.classGroupId)) : '') ||
+        val.teacher ||
+        ''
+      ).trim();
+
       const scores = booksArr
         .map((b: any) => (b?.score == null || b?.score === '' ? NaN : Number(String(b.score).replace(/[^0-9.]/g, ''))))
         .filter(Number.isFinite);
@@ -101,7 +200,9 @@ async function queryPortfolios(academyId: string, isMasterAll: boolean, query: a
         school: stu?.school || val.school || '',
         grade: stu?.grade || val.grade || '',
         classGroup: stu?.classGroup?.name || val.classGroup || '미지정',
+        teacher: resolvedTeacher || val.teacher || '',
         period: val.period || (val.from && val.to ? `${val.from} ~ ${val.to}` : ''),
+        books: booksArr,
         bookCount: booksArr.length,
         quizAvgNum,
         quizAvg: quizAvgNum !== null ? `${quizAvgNum}점` : (val.quizAvg || '-'),
@@ -449,7 +550,7 @@ export default async function handler(req: any, res: any) {
       }
       const logBookIds = [...new Set(logs.map(l => l.bookId))];
       const books = logBookIds.length > 0
-        ? await prisma.book.findMany({ where: { OR: [{ id: { in: logBookIds } }, { bookNo: { in: logBookIds } }] }, select: { id: true, bookNo: true, title: true, publisher: true, coverUrl: true, author: true } })
+        ? await prisma.book.findMany({ where: { OR: [{ id: { in: logBookIds } }, { bookNo: { in: logBookIds } }] }, select: { id: true, bookNo: true, title: true, publisher: true, coverUrl: true, author: true, subCategory: true } })
         : [];
       const selectedTitlesNorm = Array.isArray(input.selectedTitles)
         ? input.selectedTitles.map((t: any) => String(t).replace(/\s+/g, '')).filter(Boolean)
@@ -474,6 +575,8 @@ export default async function handler(req: any, res: any) {
           list.push({
             attemptId: l.id,
             bookId: l.bookId,
+            bookNo: matchedBook?.bookNo || '',
+            subCategory: matchedBook?.subCategory || '',
             title: bookTitle,
             pub: matchedBook?.publisher || '',
             cover: matchedBook?.coverUrl || '',

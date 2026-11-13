@@ -144,7 +144,8 @@ function createAcademyBookItem(b) {
     publisher: b.publisher || '출판사 미상',
     category: (b.category || '문학') + ' / ' + (b.subject || '이야기'),
     grade: b.grade || '초등 3학년',
-    cat1: b.cat1 || '소설',
+    subCategory: b.subCategory || '',
+    cat1: b.cat1 || (b.subCategory === 'C' ? '비문학/정보글' : (b.subCategory === 'B' ? '인물 이야기 (위인)' : '소설')),
     cat2: b.cat2 || '국내서',
     isbn: b.isbn || '',
     series: seriesVal,
@@ -789,13 +790,13 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
 
     var coverImg = normalizeBookCoverUrl(b.cover);
     
-    // 나노시트 단독 버튼 (서버에 실제 파일이 존재하는 도서만 활성화, 없는 도서는 무조건 '시트 없음' 비활성화)
+    // 나노시트 단독 버튼 (실제 등록/열람 가능한 나노시트가 존재하는 도서만 활성화, 없는 도서는 '시트 없음' 비활성화)
     var isSheetAvailable = checkBookHasAvailableSheet(b);
-    var pdfBtn = (isSheetAvailable || window.NANO_SERVER_DATA)
-      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
+    var pdfBtn = isSheetAvailable
+      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openContentPdfModal('${b.id}')" title="나노시트 목록 보기 및 열기" style="padding: 3px 8px; font-size: 11.5px;">
            <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
          </button>`
-      : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF) 파일이 서버에 준비되지 않았습니다" style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
+      : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF)가 없습니다. 우측 [나노시트 관리]에서 등록할 수 있습니다." style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
            <i class="fa-regular fa-file-circle-xmark mr-1" style="font-size: 10px;"></i>시트 없음
          </button>`;
 
@@ -857,9 +858,14 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
       <td class="text-center" style="white-space: nowrap;">
         <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
           ${editBtnHtml}
-          <button type="button" class="btn btn-xs w-100" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="border-radius: 6px; font-size: 11px; padding: 2.5px 6px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309;" title="북퀴즈 문항 세트 관리 및 출제">
-            <i class="fa-solid fa-clipboard-question mr-1 text-warning"></i>퀴즈 관리
-          </button>
+          <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
+            <button type="button" class="btn btn-xs flex-fill" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="border-radius: 6px; font-size: 10.5px; padding: 2.5px 5px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; white-space: nowrap;" title="북퀴즈 문항 세트 관리 및 출제">
+              <i class="fa-solid fa-clipboard-question mr-1 text-warning"></i>퀴즈 관리
+            </button>
+            <button type="button" class="btn btn-xs flex-fill" onclick="openAcademySheetManageModal('${b.id}')" style="border-radius: 6px; font-size: 10.5px; padding: 2.5px 5px; font-weight: 700; background: #fff5f5; border: 1px solid #fecaca; color: #b91c1c; white-space: nowrap;" title="나노시트(PDF) 업로드·공개설정·삭제">
+              <i class="fa-solid fa-file-pdf mr-1"></i>나노시트 관리
+            </button>
+          </div>
         </div>
       </td>`;
 
@@ -2989,10 +2995,43 @@ function updateWatermarkInfo() {
 }
 
 // PDF 학습자료 미리보기 모달 열기 (도서별 실제 전용 PDF 캔버스 렌더링 + 도서 맞춤형 동적 나노시트 완벽 지원)
+// 나노시트 독립 관리 모달 열기 (업로드 / 본인 등록 시트 삭제 / 공개·비공개 전환)
+function openAcademySheetManageModal(bookId) {
+  var b = (academyBookList || []).find(function(item) { return item.id === bookId; });
+  if (!b) return;
+  if (!window.ContentSharing || typeof ContentSharing.openSheets !== 'function') {
+    if (typeof showAcademyToast === 'function') showAcademyToast('나노시트 관리 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
+    return;
+  }
+  return ContentSharing.openSheets(
+    b,
+    function (url, sheet) { openContentPdfModal(bookId, sheet); },
+    {
+      mode: 'manage',
+      onChange: function (items) {
+        var list = Array.isArray(items) ? items : [];
+        b.worksheetList = list;
+        b.hasSheet = list.length > 0;
+        b.sheet = list.length > 0;
+        b.worksheetUrl = list[0] ? list[0].url : null;
+        b.pdfUrl = list[0] ? list[0].url : null;
+        b.materialName = list[0] ? list[0].name : null;
+        if (list.length === 0) {
+          b.hasCustomSheet = false;
+          b.pdfBlob = null;
+          b.pdfDataUrl = null;
+          b.sheetFile = null;
+        }
+        if (typeof renderAcademyBookTable === 'function') renderAcademyBookTable();
+      }
+    }
+  );
+}
+
 function openContentPdfModal(bookId, selectedSheet) {
   var b = academyBookList.find(function(item) { return item.id === bookId; });
   if (window.NANO_SERVER_DATA && !selectedSheet) {
-    return ContentSharing.openSheets(b, function (url, sheet) { openContentPdfModal(bookId, sheet); });
+    return ContentSharing.openSheets(b, function (url, sheet) { openContentPdfModal(bookId, sheet); }, { mode: 'view' });
   }
   if (selectedSheet) b = Object.assign({}, b, { worksheetUrl: selectedSheet.url, pdfUrl: selectedSheet.url, materialName: selectedSheet.name, hasSheet: true, pdfBlob: null, pdfDataUrl: null, isMyCreation: false });
   activeViewingBook = b || null;
@@ -4221,7 +4260,6 @@ async function handleSaveAcademyBookOnly(event) {
   var finalId = document.getElementById('abEditId').value.trim();
   var isbn = document.getElementById('abEditIsbn').value.trim();
   var isPublic = 'Y'; // 도서는 무조건 전체 공개
-  var sheetVisibility = document.getElementById('abSheetVisibility') ? document.getElementById('abSheetVisibility').value : 'Y';
   var title = document.getElementById('abEditTitle').value.trim();
   var isSingle = document.getElementById('abEditIsSingle') ? document.getElementById('abEditIsSingle').checked : true;
   var series = isSingle ? '단권' : ((document.getElementById('abEditSeries') ? document.getElementById('abEditSeries').value.trim() : '') || '단권');
@@ -4245,9 +4283,8 @@ async function handleSaveAcademyBookOnly(event) {
   var isNonfiction = (cat1 === '비문학/정보글' || cat1 === '비문학' || cat1 === 'C');
   var category = isNonfiction ? '비문학' : '문학';
 
-  var matName = editingAcadSheetFile ? editingAcadSheetFile.name : `${title}_나노시트_학습용.pdf`;
-  var matSize = editingAcadSheetFile ? editingAcadSheetFile.size : '1.45 MB';
-  var matType = editingAcadSheetFile ? editingAcadSheetFile.type : '나노 시트 (PDF)';
+  // 나노시트는 목록의 [나노시트 관리]에서 독립 등록/삭제되므로 도서 서지 등록 시 임의 시트 메타데이터를 생성하지 않음
+  editingAcadSheetFile = null;
 
   if (!title || !author) {
     alert('도서명과 저자는 필수 입력 사항입니다.');
@@ -4331,23 +4368,8 @@ async function handleSaveAcademyBookOnly(event) {
     b.thinkInsert = thinkInsert;
     b.cover = cover;
     b.coverFile = editingAcadCoverFile || null;
-    b.materialName = matName;
-    b.materialSize = matSize;
-    b.materialType = matType;
-    if (editingAcadSheetFile) {
-      b.hasSheet = true;
-      b.sheet = true;
-      b.hasCustomSheet = true;
-      b.sheetFile = editingAcadSheetFile;
-      if (editingAcadSheetFile.file) b.pdfBlob = editingAcadSheetFile.file;
-      if (editingAcadSheetFile.dataUrl) b.pdfDataUrl = editingAcadSheetFile.dataUrl;
-    } else if (matName && !matName.includes('미등록') && !matName.includes('없음')) {
-      b.hasSheet = true;
-      b.sheet = true;
-    }
     if (window.NanoPortal && NanoPortal.remote) {
       try {
-        b.sheetIsPublic = sheetVisibility;
         await NanoPortal.saveBook(b);
       } catch (err) {
         var errMsg = (err && err.message) ? err.message : '서버 오류가 발생했습니다.';
@@ -4388,22 +4410,23 @@ async function handleSaveAcademyBookOnly(event) {
       isMyCreation: true,
       cover: cover,
       coverFile: editingAcadCoverFile || null,
-      materialName: matName,
-      materialSize: matSize,
-      materialType: matType,
-      hasSheet: !!editingAcadSheetFile || (!!matName && !matName.includes('미등록') && !matName.includes('없음')),
-      sheet: !!editingAcadSheetFile || (!!matName && !matName.includes('미등록') && !matName.includes('없음')),
-      hasCustomSheet: !!editingAcadSheetFile,
-      sheetFile: editingAcadSheetFile || null,
-      pdfBlob: editingAcadSheetFile ? (editingAcadSheetFile.file || editingAcadSheetFile.pdfBlob) : null,
-      pdfDataUrl: editingAcadSheetFile ? editingAcadSheetFile.dataUrl : null,
+      materialName: null,
+      materialSize: null,
+      materialType: null,
+      hasSheet: false,
+      sheet: false,
+      worksheetUrl: null,
+      worksheetList: [],
+      hasCustomSheet: false,
+      sheetFile: null,
+      pdfBlob: null,
+      pdfDataUrl: null,
       quizStatus: '0문항 (미등록)',
       readCount: '0회',
       answerGuide: '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
     };
     if (window.NanoPortal && NanoPortal.remote) {
       try {
-        newBook.sheetIsPublic = sheetVisibility;
         await NanoPortal.saveBook(newBook);
       } catch (err) {
         var errMsg = (err && err.message) ? err.message : '서버 오류가 발생했습니다.';

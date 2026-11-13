@@ -361,8 +361,8 @@ function renderMasterContents() {
       const recDelta = isServerMode ? 0 : ((localRecMap[k] || 0) + (k !== String(b.id) ? (localRecMap[b.id] || 0) : 0));
       const certDelta = isServerMode ? 0 : ((localCertMap[k] || 0) + (k !== String(b.id) ? (localCertMap[b.id] || 0) : 0));
 
-      // 사용자가 업로드한 커스텀 나노시트 실시간 복원
-      const sheetInfo = localCustomSheets[k] || (b.isbn && localCustomSheets[b.isbn]) || (b.id && localCustomSheets[b.id]);
+      // 로컬 미리보기 모드에서 사용자가 업로드한 커스텀 나노시트 실시간 복원 (운영 서버 DB 모드에서는 서버 목록 우선)
+      const sheetInfo = !isServerMode ? (localCustomSheets[k] || (b.isbn && localCustomSheets[b.isbn]) || (b.id && localCustomSheets[b.id])) : null;
       if (sheetInfo && sheetInfo.hasSheet) {
         b.hasSheet = true;
         b.sheet = true;
@@ -635,9 +635,11 @@ function renderMasterContents() {
       ? `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-check mr-1"></i>${setCount}Set</span>`
       : `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-xmark mr-1"></i>No</span>`;
 
-    // 나노시트 단독 버튼 판정 (직접 업로드 파일, 커스텀 시트, 또는 배포 파일 실존 시 즉시 활성화)
+    // 나노시트 단독 버튼 판정 (실제 등록된 나노시트가 존재하는 경우에만 활성화)
     let hasSheet = false;
-    if (b.pdfBlob || b.pdfDataUrl || b.hasCustomSheet === true || (b.sheetFile && (b.sheetFile.file || b.sheetFile.dataUrl))) {
+    if (Array.isArray(b.worksheetList) && b.worksheetList.length > 0) {
+      hasSheet = true;
+    } else if (b.pdfBlob || b.pdfDataUrl || b.hasCustomSheet === true || (b.sheetFile && (b.sheetFile.file || b.sheetFile.dataUrl))) {
       hasSheet = true;
     } else if (b.materialName && typeof b.materialName === 'string' && b.materialName.trim() && !b.materialName.includes('미등록') && !b.materialName.includes('없음')) {
       hasSheet = true;
@@ -650,7 +652,7 @@ function renderMasterContents() {
       hasSheet = false;
     }
     const pdfBtn = hasSheet
-      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openMasterPdfModal('${b.id}')" title="나노시트 학습자료 열기" style="padding: 3px 8px; font-size: 11.5px;">
+      ? `<button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openMasterPdfModal('${b.id}')" title="나노시트 목록 보기 및 열기" style="padding: 3px 8px; font-size: 11.5px;">
            <i class="fa-solid fa-file-pdf mr-1" style="font-size: 11px;"></i>나노시트
          </button>`
       : `<button type="button" class="btn-sheet-action w-100" disabled title="등록된 나노시트(PDF)가 없는 도서입니다" style="padding: 3px 8px; font-size: 11px; opacity: 0.42; cursor: not-allowed; background: #f8fafc; color: #94a3b8; border: 1px dashed #cbd5e1;">
@@ -719,7 +721,7 @@ function renderMasterContents() {
         <td class="text-center" style="white-space: nowrap; font-size: 11.5px; color: #64748b; font-weight: 600;">
           ${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}
         </td>
-        <!-- 관리 액션: [관리], [휴지통] 상단 / [북퀴즈] 하단 2단 배치로 가로폭 축소 -->
+        <!-- 관리 액션: [수정], [삭제] 상단 / [북퀴즈], [나노시트 관리] 하단 나란히 2단 배치 -->
         <td class="text-center" style="white-space: nowrap; padding: 4px 6px;">
           <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
             <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
@@ -730,9 +732,14 @@ function renderMasterContents() {
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
-            <button type="button" class="btn btn-xs btn-outline-warning w-100 font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 4px; color: #855304; border-color: #f1c40f; background: #fffdf5;" title="해당 도서의 북퀴즈 문항 구성 및 편집">
-              <i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈
-            </button>
+            <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
+              <button type="button" class="btn btn-xs btn-outline-warning flex-fill font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #855304; border-color: #f1c40f; background: #fffdf5; white-space: nowrap;" title="해당 도서의 북퀴즈 문항 구성 및 편집">
+                <i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈
+              </button>
+              <button type="button" class="btn btn-xs btn-outline-danger flex-fill font-weight-bold" onclick="openMasterSheetManageModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #b91c1c; border-color: #fecaca; background: #fff5f5; white-space: nowrap;" title="해당 도서의 나노시트(PDF) 업로드·공개설정·삭제">
+                <i class="fa-solid fa-file-pdf mr-1"></i>나노시트 관리
+              </button>
+            </div>
           </div>
         </td>
       </tr>
@@ -761,8 +768,9 @@ function renderMasterContents() {
           <td class="text-center font-weight-bold text-success">${b.quizCompletions || 42}</td>
           <td class="text-center" style="font-size: 11.5px; color: #64748b; white-space: nowrap;">${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}</td>
           <td class="text-center" style="padding: 4px 6px;">
-            <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
-              <button type="button" class="btn btn-xs btn-outline-warning w-100 font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 4px; color: #855304; border-color: #f1c40f; background: #fffdf5;"><i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈</button>
+            <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
+              <button type="button" class="btn btn-xs btn-outline-warning flex-fill font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #855304; border-color: #f1c40f; background: #fffdf5; white-space: nowrap;"><i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈</button>
+              <button type="button" class="btn btn-xs btn-outline-danger flex-fill font-weight-bold" onclick="openMasterSheetManageModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #b91c1c; border-color: #fecaca; background: #fff5f5; white-space: nowrap;"><i class="fa-solid fa-file-pdf mr-1"></i>나노시트 관리</button>
             </div>
           </td>
         </tr>
@@ -1416,12 +1424,46 @@ function printNanoSheetViewer() {
 }
 
 // 마스터 관리자 나노시트 모달 열기 (학원관리자와 100% 동일 규격 및 API 연동)
+// 마스터 나노시트 독립 관리 모달 열기 (업로드 / 본인 등록 시트 삭제 / 공개·비공개 전환)
+function openMasterSheetManageModal(bookId) {
+  const b = masterBooks.find(item => item.id === bookId);
+  if (!b) return;
+  if (!window.ContentSharing || typeof ContentSharing.openSheets !== "function") {
+    if (typeof showMasterToast === "function") showMasterToast("나노시트 관리 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.", "warning");
+    return;
+  }
+  return ContentSharing.openSheets(
+    b,
+    function (url, sheet) { openMasterPdfModal(bookId, sheet); },
+    {
+      mode: 'manage',
+      onChange: function (items) {
+        const list = Array.isArray(items) ? items : [];
+        b.worksheetList = list;
+        b.hasSheet = list.length > 0;
+        b.sheet = list.length > 0;
+        b.worksheetUrl = list[0] ? list[0].url : null;
+        b.worksheet = list[0] ? list[0].url : null;
+        b.pdfUrl = list[0] ? list[0].url : null;
+        b.materialName = list[0] ? list[0].name : null;
+        if (list.length === 0) {
+          b.hasCustomSheet = false;
+          b.pdfBlob = null;
+          b.pdfDataUrl = null;
+          b.sheetFile = null;
+        }
+        if (typeof renderMasterContents === "function") renderMasterContents();
+      }
+    }
+  );
+}
+
 function openMasterPdfModal(bookId, selectedSheet) {
   var b = masterBooks.find(function(item) { return item.id === bookId; });
   if (!b && typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS)) {
     b = window.MIGRATED_BOOKS.find(function(item) { return item.id === bookId; });
   }
-  if (window.NANO_SERVER_DATA && !selectedSheet) return ContentSharing.openSheets(b, function (url, sheet) { openMasterPdfModal(bookId, sheet); });
+  if (window.NANO_SERVER_DATA && !selectedSheet) return ContentSharing.openSheets(b, function (url, sheet) { openMasterPdfModal(bookId, sheet); }, { mode: 'view' });
   if (selectedSheet) b = Object.assign({}, b, { worksheetUrl: selectedSheet.url, pdfUrl: selectedSheet.url, hasSheet: true, sheet: true, materialName: selectedSheet.name, pdfBlob: null, pdfDataUrl: null, sheetFile: null });
   activeViewingBook = b || null;
 
@@ -2607,34 +2649,9 @@ function openMasterBookAddModal(id = null) {
   updateAddCoverPreview(coverUrl);
   switchAddCoverMode("url");
 
-  // 나노 시트 / 지도안 첨부 파일 상태 초기화
+  // 나노 시트 / 지도안은 목록의 [나노시트 관리]에서 독립 관리하므로 도서 서지 모달에서는 초기화만 수행
   editingBookSheetDeleted = false;
-  const sheetInput = document.getElementById("mbAddSheetFileInput");
-  if (sheetInput) sheetInput.value = "";
-  const sheetNameEl = document.getElementById("mbAddSheetFileName");
-  const sheetLabel = document.getElementById("mbAddSheetFileLabel");
-  const delSheetBtn = document.getElementById("btnDeleteMasterBookSheet");
-
-  if (book && (book.hasSheet || book.sheet || book.materialName || book.pdfBlob || book.pdfDataUrl || book.sheetFile || book.worksheetUrl)) {
-    const sName = (book.sheetFile && book.sheetFile.name) || book.materialName || `${book.title}_나노시트.pdf`;
-    const sSize = (book.sheetFile && book.sheetFile.size) || book.materialSize || "1.45 MB";
-    editingBookSheetAddFile = book.sheetFile || {
-      name: sName,
-      size: sSize,
-      file: book.pdfBlob || null,
-      blob: book.pdfBlob || null,
-      dataUrl: book.pdfDataUrl || null,
-      existingUrl: book.worksheetUrl || book.worksheet || null
-    };
-    if (sheetNameEl) sheetNameEl.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-pdf mr-1"></i>기존 등록 파일: ${sName} (${sSize})</span>`;
-    if (sheetLabel) sheetLabel.innerText = sName;
-    if (delSheetBtn) delSheetBtn.style.display = "inline-block";
-  } else {
-    editingBookSheetAddFile = null;
-    if (sheetNameEl) sheetNameEl.innerText = "등록된 나노시트 파일 없음 (클릭하여 .pdf 선택)";
-    if (sheetLabel) sheetLabel.innerText = "파일 선택 (.pdf)";
-    if (delSheetBtn) delSheetBtn.style.display = "none";
-  }
+  editingBookSheetAddFile = null;
 
   $('#masterBookAddModal').modal('show');
 }
@@ -2676,9 +2693,6 @@ function handleSaveMasterBookOnly(e) {
   }
 
   const isNonfiction = (cat1 === "비문학/정보글" || cat1 === "비문학" || cat1 === "C");
-  const hasSheetFile = !!editingBookSheetAddFile;
-  const sheetFileName = editingBookSheetAddFile ? editingBookSheetAddFile.name : (title + "_나노시트.pdf");
-  const sheetFileSize = editingBookSheetAddFile ? (editingBookSheetAddFile.size || "1.45 MB") : "1.45 MB";
 
   const bookData = {
     id: id || generateNewBookId(),
@@ -2706,17 +2720,18 @@ function handleSaveMasterBookOnly(e) {
     academyId: "HQ",
     academyName: "본사 직속 (공용)",
     creatorType: "HQ",
-    sheet: hasSheetFile,
-    hasSheet: hasSheetFile,
-    worksheet: editingBookSheetAddFile && editingBookSheetAddFile.existingUrl ? editingBookSheetAddFile.existingUrl : null,
-    worksheetUrl: editingBookSheetAddFile && editingBookSheetAddFile.existingUrl ? editingBookSheetAddFile.existingUrl : null,
-    hasCustomSheet: hasSheetFile,
-    materialName: hasSheetFile ? sheetFileName : null,
-    materialSize: hasSheetFile ? sheetFileSize : null,
-    materialType: hasSheetFile ? "나노 시트 (PDF)" : null,
-    sheetFile: editingBookSheetAddFile,
-    pdfBlob: editingBookSheetAddFile ? (editingBookSheetAddFile.file || editingBookSheetAddFile.blob) : null,
-    pdfDataUrl: editingBookSheetAddFile ? editingBookSheetAddFile.dataUrl : null,
+    sheet: false,
+    hasSheet: false,
+    worksheet: null,
+    worksheetUrl: null,
+    worksheetList: [],
+    hasCustomSheet: false,
+    materialName: null,
+    materialSize: null,
+    materialType: null,
+    sheetFile: null,
+    pdfBlob: null,
+    pdfDataUrl: null,
     hasQuiz: false,
     quizzes: 0,
     likes: 0,
@@ -2763,28 +2778,20 @@ async function saveBookDataDirectly(bookData) {
         ...prevBook,
         ...bookData,
         id: originalEditingBookIdForAdd,
-        worksheetUrl: editingBookSheetDeleted ? null : (bookData.worksheetUrl || prevBook.worksheetUrl || null),
-        worksheet: editingBookSheetDeleted ? null : (bookData.worksheetUrl || prevBook.worksheetUrl || null)
+        // 나노시트는 목록의 [나노시트 관리]에서 독립 관리되므로 도서 서지 수정 시 기존 시트 상태를 보존합니다.
+        sheet: prevBook.sheet,
+        hasSheet: prevBook.hasSheet,
+        worksheet: prevBook.worksheet || null,
+        worksheetUrl: prevBook.worksheetUrl || null,
+        worksheetList: Array.isArray(prevBook.worksheetList) ? prevBook.worksheetList : [],
+        hasCustomSheet: prevBook.hasCustomSheet,
+        materialName: prevBook.materialName || null,
+        materialSize: prevBook.materialSize || null,
+        materialType: prevBook.materialType || null,
+        sheetFile: prevBook.sheetFile || null,
+        pdfBlob: prevBook.pdfBlob || null,
+        pdfDataUrl: prevBook.pdfDataUrl || null
       };
-      if (editingBookSheetDeleted) {
-        nextBook.hasSheet = false;
-        nextBook.sheet = false;
-        nextBook.hasCustomSheet = false;
-        nextBook.pdfBlob = null;
-        nextBook.pdfDataUrl = null;
-        nextBook.sheetFile = null;
-        nextBook.materialName = null;
-        nextBook.materialSize = null;
-        nextBook.materialType = null;
-      } else {
-        // 사용자가 새 시트 파일을 올리지 않았더라도 기존에 시트가 있던 도서라면 기존 시트 파일 정보 보존
-        if (!bookData.pdfBlob && prevBook.pdfBlob && editingBookSheetAddFile) {
-          nextBook.pdfBlob = prevBook.pdfBlob;
-        }
-        if (!bookData.pdfDataUrl && prevBook.pdfDataUrl && editingBookSheetAddFile) {
-          nextBook.pdfDataUrl = prevBook.pdfDataUrl;
-        }
-      }
     }
   }
 

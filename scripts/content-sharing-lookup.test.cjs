@@ -227,7 +227,7 @@ test('공유 폴더 삭제 API는 본인이 만든 폴더만 삭제한다', asyn
   assert.equal(state.settings.length, 0);
 });
 
-test('마스터 페이지와 콘텐츠 공유 프런트엔드 파일에 필수 메뉴, 뷰, ID 조회 UI가 연결되어 있다', () => {
+test('마스터 페이지와 콘텐츠 공유 프런트엔드 파일에 필수 메뉴, 뷰, ID 조회 UI 및 최신 스크립트 캐시 키가 연결되어 있다', () => {
   const masterHtml = fs.readFileSync(path.join(__dirname, '../public_html/master_preview.html'), 'utf8');
   const masterCore = fs.readFileSync(path.join(__dirname, '../public_html/js/master/master-core.js'), 'utf8');
   const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
@@ -235,9 +235,37 @@ test('마스터 페이지와 콘텐츠 공유 프런트엔드 파일에 필수 �
   assert.match(masterHtml, /id="nav-master-content-sharing"/);
   assert.match(masterHtml, /id="tab-master-content-sharing"/);
   assert.match(masterHtml, /id="view-content-sharing"/);
+  assert.doesNotMatch(masterHtml, /master-core\.js\?v=20261112_pf_v2/);
+  assert.match(masterHtml, /master-core\.js\?v=20261113_sharing_fix/);
   assert.match(masterCore, /'content-sharing'/);
   assert.match(masterCore, /ContentSharing\.refresh\(\)/);
   assert.match(sharingJs, /action=director&username=/);
   assert.match(sharingJs, /id="sharingDirectorLookupBtn"/);
+});
+
+test('마스터 계정은 소속 academy 객체가 비어 있어도 folders 조회와 폴더 생성이 정상 동작한다', async () => {
+  const state = {
+    academies: [{ id: 'acad-a', code: 'A', name: 'A학원', status: 'ACTIVE', deletedAt: null }],
+    members: [
+      { id: 'master-hq', username: 'master', name: '마스터', role: 'MASTER', status: 'APPROVED', academyId: null, academy: null },
+      { id: 'dir-a', username: 'dir_a', name: 'A원장', role: 'DIRECTOR', status: 'APPROVED', academyId: 'acad-a', academy: { id: 'acad-a', name: 'A학원', status: 'ACTIVE', deletedAt: null } }
+    ],
+    books: [{ id: 'b-hq', bookNo: 'HQ1', title: '본사 책', author: '저자', publisher: '출판사', grade: '초3', coverUrl: '', worksheetUrl: 'https://r2.example.com/hq.pdf' }],
+    quizGroups: [],
+    settings: [],
+    currentUser: null
+  };
+  const handler = makeContentHandler(state);
+  state.currentUser = state.members[0];
+
+  let res = makeRes();
+  await handler({ method: 'GET', query: { action: 'folders' } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body, { items: [], received: [] });
+
+  res = makeRes();
+  await handler({ method: 'POST', query: { action: 'folder' }, body: { name: '본사 배포 폴더', bookIds: ['b-hq'], directorUsernames: ['dir_a'] } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(state.settings[0].value.ownerAcademyName, '본사');
 });
 

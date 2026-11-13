@@ -1862,10 +1862,15 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     purgeAutofilledSearchInputs();
     // 브라우저 탭이 다시 활성화되면 현재 마스터 탭 데이터를 즉시 재갱신
-    const activeNavBtn = document.querySelector(".master-nav-btn.active");
+    const activeNavBtn = document.querySelector(".nav-item-btn.active, .master-nav-btn.active");
     if (activeNavBtn) {
       const currentTab = activeNavBtn.id.replace("nav-master-", "");
-      ensureMasterTabRendered(currentTab);
+      if (currentTab === "content-sharing" && window.ContentSharing) {
+        const shareRoot = document.getElementById("view-content-sharing");
+        if (shareRoot && !shareRoot.hasChildNodes()) ContentSharing.refresh();
+      } else {
+        ensureMasterTabRendered(currentTab);
+      }
     }
   }
 });

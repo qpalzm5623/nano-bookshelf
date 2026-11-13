@@ -1,7 +1,7 @@
 import { randomUUID, randomInt } from 'node:crypto';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, need, text, failure } from '../lib/portal-http';
-import { loadContentAccess, canReadContent, ownsContent, bookSheets, sheetView, saveContentRecord, resolveShareRecipients, shareableBooks, quizContent } from '../lib/portal-content';
+import { loadContentAccess, canReadContent, ownsContent, isOwnSheet, bookSheets, sheetView, saveContentRecord, resolveShareRecipients, shareableBooks, quizContent } from '../lib/portal-content';
 
 export const config = { api: { bodyParser: { sizeLimit: '4.5mb' } }, maxDuration: 60 };
 
@@ -70,7 +70,7 @@ export default async function handler(req: any, res: any) {
       const id = text(req.query.bookId, '도서 ID', 100, true);
       const book = await prisma.book.findFirst({ where: { OR: [{ id }, { bookNo: id }] } });
       need(book, '도서를 찾을 수 없습니다.', 404);
-      return res.json({ items: bookSheets(access, book).filter(s => canReadContent(user, s, access)).map(s => sheetView(s, user)) });
+      return res.json({ canUpload: user.role !== 'STUDENT', items: bookSheets(access, book).filter(s => canReadContent(user, s, access)).map(s => sheetView(s, user)) });
     }
     staff(user);
     if (req.method === 'GET' && action === 'director') {
@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
     }
     if (req.method === 'GET' && action === 'folders') {
       const own = access.folders.filter((f: any) => f.ownerMemberId === user.id);
-      const received = access.folders.filter((f: any) => f.recipients?.some((r: any) => r.academyId === user.academyId));
+      const received = access.folders.filter((f: any) => user.academyId && f.recipients?.some((r: any) => r.academyId === user.academyId));
       const ids = [...new Set<string>([...own, ...received].flatMap((f: any) => f.bookIds))];
       const books = await prisma.book.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, bookNo: true, author: true, coverUrl: true } });
       const bookById = new Map(books.map((b: any) => [b.id, b]));
@@ -106,7 +106,8 @@ export default async function handler(req: any, res: any) {
       const available = new Set((await shareableBooks(prisma, user, access)).map((b: any) => b.id));
       need(bookIds.every(id => available.has(id)), '직접 등록한 북퀴즈 또는 나노시트가 있는 도서만 공유할 수 있습니다.', 403);
       const recipients = await resolveShareRecipients(prisma, body.directorUsernames, user.academyId);
-      const value = { id, name, bookIds, recipients, ownerMemberId: user.id, ownerAcademyId: user.academyId, ownerAcademyName: user.academy.name };
+      const academyName = user.academy?.name || (user.role === 'MASTER' ? '본사' : '가맹학원');
+      const value = { id, name, bookIds, recipients, ownerMemberId: user.id, ownerAcademyId: user.academyId, ownerAcademyName: academyName };
       if (previous) need(body.revision === previous.revision, '다른 화면에서 폴더가 변경되었습니다. 새로고침해 주세요.', 409);
       await saveContentRecord(prisma, 'content_folder:' + id, 'content_folder', value, previous ? body.revision : 0);
       return res.json({ ok: true, id });
@@ -115,9 +116,23 @@ export default async function handler(req: any, res: any) {
       const bookId = text(body.bookId, '도서 ID', 100, true);
       const book = await prisma.book.findFirst({ where: { OR: [{ id: bookId }, { bookNo: bookId }] } });
       need(book, '도서를 찾을 수 없습니다.', 404);
+      if (body.operation === 'delete') {
+        const targetId = text(body.id, '나노시트 ID', 120, true);
+        const target = bookSheets(access, book).find(s => s.id === targetId);
+        need(target, '나노시트를 찾을 수 없습니다.', 404);
+        need(isOwnSheet(user, target), user.role === 'MASTER' ? '본사에서 등록한 나노시트만 삭제할 수 있습니다.' : '우리 학원에서 등록한 나노시트만 삭제할 수 있습니다.', 403);
+        await prisma.portalSetting.deleteMany({ where: { key: 'content_sheet:' + target.id, scope: 'content_sheet' } });
+        if (Array.isArray(target.fileIds) && target.fileIds.length > 0 && typeof prisma.portalFile?.deleteMany === 'function') {
+          await prisma.portalFile.deleteMany({ where: { id: { in: target.fileIds }, attemptId: 'CONTENT_SHEET' } });
+        }
+        if (target.id === 'legacy-' + book.id && typeof prisma.book?.update === 'function') {
+          await prisma.book.update({ where: { id: book.id }, data: { worksheetUrl: null } });
+        }
+        return res.json({ deletedId: target.id });
+      }
       need(['Y', 'N'].includes(body.isPublic), '공개 여부를 선택해 주세요.');
       const previous = body.id ? bookSheets(access, book).find(s => s.id === body.id) : null;
-      need(!body.id || (previous && ownsContent(user, previous)), '우리 학원에서 등록한 나노시트만 수정할 수 있습니다.', 403);
+      need(!body.id || (previous && isOwnSheet(user, previous)), user.role === 'MASTER' ? '본사에서 등록한 나노시트만 수정할 수 있습니다.' : '우리 학원에서 등록한 나노시트만 수정할 수 있습니다.', 403);
       if (previous) need(body.revision === previous.revision, '다른 화면에서 자료가 변경되었습니다. 다시 열어 주세요.', 409);
       const id = previous?.id || randomUUID();
       let fileIds = previous?.fileIds || [], size = previous?.size || 0;
@@ -133,10 +148,11 @@ export default async function handler(req: any, res: any) {
       need(previous || fileIds.length, 'PDF 파일을 선택해 주세요.');
       const value = { id, bookId: book.id, name: text(body.name || previous?.name, '자료명', 200, true), isPublic: body.isPublic,
         ownerAcademyId: previous?.ownerAcademyId || user.academyId, ownerMemberId: previous?.ownerMemberId || user.id,
-        academyName: previous?.academyName || user.academy.name, fileIds, size,
+        academyName: previous?.academyName || user.academy?.name || (user.role === 'MASTER' ? '본사' : '가맹학원'), fileIds, size,
         ...(previous?.legacyUrl && !body.fileIds ? { legacyUrl: previous.legacyUrl } : {}) };
-      const saved = await saveContentRecord(prisma, 'content_sheet:' + id, 'content_sheet', value, previous ? body.revision : 0);
-      return res.json({ item: sheetView({ ...value, revision: saved.revision }, user) });
+      const nextValue = { ...value, authorType: (previous && previous.authorType) || (user.role === 'MASTER' ? 'HQ' : 'ACADEMY') };
+      const saved = await saveContentRecord(prisma, 'content_sheet:' + id, 'content_sheet', nextValue, previous ? body.revision : 0);
+      return res.json({ item: sheetView({ ...nextValue, revision: saved.revision }, user) });
     }
     if (req.method === 'POST' && action === 'quiz') {
       const bookId = text(body.bookId, '도서 ID', 100, true);
@@ -164,12 +180,13 @@ export default async function handler(req: any, res: any) {
       const key = `content_quiz:${book.id}:${seq}`;
       const oldRow = access.rows.find(r => r.key === key);
       need((body.revision || 0) === (oldRow?.revision || 0), '다른 화면에서 퀴즈가 변경되었습니다. 다시 열어 주세요.', 409);
+      const actorAcademyName = user.academy?.name || (user.role === 'MASTER' ? '본사' : '가맹학원');
       const value = { bookId: book.id, seq, ownerAcademyId: isNew ? user.academyId : previous.ownerAcademyId,
-        ownerMemberId: previous.ownerMemberId || user.id, academyName: isNew ? user.academy.name : previous.academyName,
+        ownerMemberId: previous.ownerMemberId || user.id, academyName: isNew ? actorAcademyName : previous.academyName,
         authorType: user.role === 'MASTER' && isNew ? 'HQ' : previous.authorType, isPublic: body.isPublic };
       await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM books WHERE id = ${book.id} FOR UPDATE`;
-        if (isNew) await tx.portalSetting.create({ data: { key: `quiz_seq:${seq}`, scope: 'quiz_author_seq', value: { academyId: user.academyId, academyName: user.academy.name, authorName: user.academy.name, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY' } } });
+        if (isNew) await tx.portalSetting.create({ data: { key: `quiz_seq:${seq}`, scope: 'quiz_author_seq', value: { academyId: user.academyId, academyName: actorAcademyName, authorName: actorAcademyName, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY' } } });
         await saveContentRecord(tx, key, 'content_quiz', value, oldRow?.revision || 0);
         await tx.bookQuiz.deleteMany({ where: { bookId: book.id, ...(seq === 0 ? { OR: [{ legacyQuizSeq: 0 }, { legacyQuizSeq: null }] } : { legacyQuizSeq: seq }) } });
         await tx.bookQuiz.createMany({ data: questions });

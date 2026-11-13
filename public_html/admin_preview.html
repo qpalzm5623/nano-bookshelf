@@ -3089,10 +3089,10 @@
 
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261112_content_sharing"></script>
+<script src="js/portal-client.js?v=20261113_pf_unify"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
-<link rel="stylesheet" href="css/portfolio.css?v=20261111-editorial">
+<link rel="stylesheet" href="css/portfolio.css?v=20261113_pf_unify">
   <style>
     /* 첨삭 리포트: 에디토리얼 카드 스타일 (원본과 코멘트를 나란히 읽는 프리미엄 구성) */
     .worksheet-review { padding: 18px 20px; background: #fbfdfc; border: 1.5px solid #d1fae5; border-radius: 14px; }
@@ -3118,7 +3118,7 @@
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
 <link rel="stylesheet" href="css/learning-report.css?v=20261112-print">
-<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_ui">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261113_nanosheet_mgr">
 </head>
 
 <body>
@@ -3690,7 +3690,7 @@
                   <th>북퀴즈 현황</th>
                   <th>누적 완독</th>
                   <th style="width: 88px; text-align: center; white-space: nowrap;">등록일</th>
-                  <th style="width: 110px;">관리</th>
+                  <th style="width: 168px;">관리</th>
                 </tr>
               </thead>
               <tbody id="academyBookTableBody">
@@ -8042,29 +8042,8 @@
                   </div>
                 </div>
 
-                <!-- 나노 시트 / 지도안 첨부 -->
-                <div class="w-100 text-left mt-3 pt-3 border-top">
-                  <label class="font-weight-bold mb-1" style="font-size: 12px;">
-                    <i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트 / 지도안 파일
-                  </label>
-                  <div class="custom-file mb-1">
-                    <input type="file" class="custom-file-input" id="abSheetFileInput" accept=".pdf,.hwp,.docx"
-                      onchange="handleAcadSheetFileUpload(event)">
-                    <label class="custom-file-label" for="abSheetFileInput" id="abSheetFileLabel"
-                      style="font-size: 11.5px;">파일 선택 (.pdf)</label>
-                  </div>
-                  <small class="text-muted d-block" id="abSheetFileName">나노_독서학습시트.pdf</small>
-                  <label for="abSheetVisibility" class="mt-2">새 나노시트 공개 범위</label>
-                  <select id="abSheetVisibility" class="form-control form-control-sm">
-                    <option value="Y">공개 · 모든 학원</option>
-                    <option value="N">비공개 · 우리 학원 및 공유받은 학원</option>
-                  </select>
-                  <small class="text-muted d-block mt-1">기존 자료의 공개 범위는 도서 목록의 나노시트 버튼에서 변경합니다.</small>
-                </div>
-
-                <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px;">
-                  <i class="fa-solid fa-circle-info mr-1"></i><strong>안내:</strong> 도서를 등록한 후, 목록의 <strong>[퀴즈
-                    관리]</strong> 버튼을 통해 문항을 구성할 수 있습니다.
+                <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px; line-height: 1.55;">
+                  <i class="fa-solid fa-circle-info mr-1"></i><strong>안내:</strong> 도서를 등록한 후, 목록의 관리 컬럼에서 <strong>[퀴즈 관리]</strong> 및 <strong>[나노시트 관리]</strong> 버튼을 통해 북퀴즈와 나노시트(PDF 업로드·공개설정·삭제)를 독립적으로 관리할 수 있습니다.
                 </div>
               </div>
             </div>
@@ -9351,78 +9330,5 @@
             <input type="text" class="form-control" id="manualPointReasonInput"
               placeholder="직접 사유를 입력하거나 위의 추천 사유를 클릭하세요"
               style="font-size: 13px; border-radius: 10px; border-color: var(--border-medium);">
-            <small class="text-muted mt-1 d-block" style="font-size: 11px;">
-              * 학생의 포인트 적립 내역에 작성하신 사유가 투명하게 기록됩니다.
-            </small>
-          </div>
-        </div>
-
-        <!-- 푸터 -->
-        <div class="modal-footer py-3 px-4 d-flex justify-content-between align-items-center"
-          style="background: #faf8f5; border-top: 1px solid var(--border-light);">
-          <button type="button" class="btn btn-sm btn-secondary font-weight-bold px-3 py-2" data-dismiss="modal"
-            style="border-radius: 10px; font-size: 12.5px;">
-            취소
-          </button>
-          <button type="button" class="btn btn-sm btn-success font-weight-bold px-4 py-2" onclick="submitManualPointAdjustment()"
-            id="btnConfirmManualPoint"
-            style="border-radius: 10px; font-size: 13px; background: #16a34a; border-color: #15803d; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);">
-            <i class="fa-solid fa-check mr-1"></i>포인트 적용하기
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 토스트 알림 -->
-  <div id="academyToast"
-    style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;"
-    class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
-    <div class="d-flex align-items-center">
-      <i class="fa-solid fa-circle-check text-warning mr-2" style="font-size: 18px;"></i>
-      <span id="academyToastText" style="font-size: 13.5px; font-weight: 600;">알림 내용</span>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- SheetJS for Excel Download & Upload Parsing (비동기 지연 로딩) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <!-- PDF.js library for secure worksheet viewer (비동기 지연 로딩) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-  <!-- Daum 우편번호 서비스 (비동기 지연 로딩) -->
-  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
-  <script src="js/learning-storage.js?v=20261014_ux2"></script>
-  <script src="js/quiz-result-art.js?v=20261110-characters"></script>
-  <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
-<script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
-<script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
-<script src="admin_preview.js?v=20261113_content_sharing"></script>
-<script src="js/admin_members.js?v=20261111_v1"></script>
-<script src="js/content-sharing.js?v=20261113_sharing_ui"></script>
-<script src="js/admin_books.js?v=20261112_content_sharing"></script>
-<script src="js/admin_payment.js?v=20261111_v1"></script>
-<script src="js/admin_notices.js?v=20261111_v1"></script>
-<script src="js/admin_worksheet_ai.js?v=20261111_v1"></script>
-<script src="js/admin_myinfo.js?v=20261111_v1"></script>
-
-  <!-- PWA Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then((reg) => console.log('[PWA] Service Worker registered scope:', reg.scope))
-          .catch((err) => console.warn('[PWA] Service Worker register failed:', err));
-      });
-    }
-  </script>
-  <!-- PWA 모바일 설치 유도 스크립트 -->
-  <script src="js/pwa-install.js"></script>
-
-<script src="js/portal-extras.js?v=20261029-integrity"></script>
-<script src="js/billing-ui.js?v=20261110_topup_confirm"></script>
-</body>
-
-</html>
+            <small class="text-muted mt-1 d-block" style="font-siz
+... [truncated for diff preview]

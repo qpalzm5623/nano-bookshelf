@@ -748,12 +748,73 @@ dialog.sharing-dialog::backdrop {
   gap: 10px;
 }
 
+.sharing-sheet-item.is-mine {
+  border-color: #c5ded9;
+  border-left: 3.5px solid var(--btn-primary, #1f8a7e);
+  background: #fcfdfd;
+}
+
 .sharing-sheet-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.sharing-sheet-info {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sharing-sheet-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main, #2e2620);
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sharing-sheet-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sharing-sheet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--bg-subtle, #f6f4ef);
+  color: var(--text-muted, #6c6258);
+  border: 1px solid var(--border-light, #e6dfd3);
+}
+
+.sharing-sheet-badge.is-public {
+  background: #eaf7ef;
+  color: #1b7a4b;
+  border-color: #cdebd7;
+}
+
+.sharing-sheet-badge.is-private {
+  background: #f5f2ec;
+  color: #6f6458;
+  border-color: #dfd8ca;
+}
+
+.sharing-sheet-badge.is-mine {
+  background: #e6f4f1;
+  color: #166c62;
+  border-color: #bfe1da;
 }
 
 .sharing-sheet-controls {
@@ -765,6 +826,23 @@ dialog.sharing-dialog::backdrop {
   border-top: 1px dashed var(--border-light, #e8e2d5);
 }
 
+.sharing-sheet-readonly {
+  font-size: 11.5px;
+  color: var(--text-muted, #786d63);
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-light, #e8e2d5);
+}
+
+.sharing-sheet-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-main, #2e2620);
+  margin: 0;
+}
+
 .sharing-sheet-upload-box {
   border: 1.5px dashed var(--border-medium, #d8cfc1);
   border-radius: 12px;
@@ -772,6 +850,13 @@ dialog.sharing-dialog::backdrop {
   background: var(--bg-subtle, #fbf9f5);
   display: grid;
   gap: 10px;
+}
+
+.sharing-sheet-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .sharing-select {
@@ -790,6 +875,10 @@ dialog.sharing-dialog::backdrop {
   font-weight: 600;
   color: var(--btn-primary, #1f8a7e);
   margin: 0;
+}
+
+.sharing-status-text.is-error {
+  color: #b43c35;
 }
 
 @media (max-width: 600px) {

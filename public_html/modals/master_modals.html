@@ -2036,25 +2036,8 @@
                 <small class="text-muted d-block mt-1" style="font-size: 10.5px;">* 권장 비율(1:1.4)로 등록 시 목록 및 배너에 왜곡 없이 표시됩니다.</small>
               </div>
 
-              <!-- 나노 시트 / 지도안 첨부 -->
-              <div class="w-100 text-left mt-3 pt-3 border-top">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <label class="font-weight-bold mb-0" style="font-size: 12px;">
-                    <i class="fa-solid fa-file-pdf text-danger mr-1"></i>나노 시트 / 지도안 파일
-                  </label>
-                  <button type="button" class="btn btn-xs btn-outline-danger font-weight-bold" id="btnDeleteMasterBookSheet" onclick="handleRemoveMasterBookSheet()" style="display: none; padding: 2px 7px; font-size: 11px; border-radius: 4px;">
-                    <i class="fa-solid fa-trash-can mr-1"></i>파일 삭제
-                  </button>
-                </div>
-                <div class="custom-file mb-1">
-                  <input type="file" class="custom-file-input" id="mbAddSheetFileInput" accept=".pdf,.hwp,.docx" onchange="handleAddSheetFileUpload(event)">
-                  <label class="custom-file-label" for="mbAddSheetFileInput" id="mbAddSheetFileLabel" style="font-size: 11.5px;">파일 선택 (.pdf)</label>
-                </div>
-                <small class="text-muted d-block text-break" id="mbAddSheetFileName">나노_독서학습시트.pdf</small>
-              </div>
-
-              <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px;">
-                <i class="fa-solid fa-circle-info mr-1"></i><strong>안내:</strong> 도서를 먼저 등록한 후, 라이브러리 리스트에서 <strong>[북퀴즈 생성]</strong> 버튼을 통해 퀴즈를 자유롭게 등록할 수 있습니다.
+              <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px; line-height: 1.55;">
+                <i class="fa-solid fa-circle-info mr-1"></i><strong>안내:</strong> 도서를 먼저 등록한 후, 도서 목록의 관리 컬럼에서 <strong>[북퀴즈]</strong> 및 <strong>[나노시트 관리]</strong> 버튼을 통해 퀴즈와 나노시트(PDF·공개/비공개·삭제)를 독립적으로 관리할 수 있습니다.
               </div>
             </div>
           </div>

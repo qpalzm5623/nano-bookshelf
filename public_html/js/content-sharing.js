@@ -100,85 +100,167 @@
     return request('/api/content?action=worksheet', payload);
   }
 
-  // 나노시트 목록 확인 / 공개 범위 설정 / 추가 업로드 모달
-  async function openSheets(book, openPdf) {
+  // 로컬 미리보기(비서버) 환경 여부 판별
+  function isServerMode() {
+    if (typeof global === 'undefined') return false;
+    if (global.NANO_SERVER_DATA === true) return true;
+    return !!(global.NanoPortal && global.NanoPortal.remote);
+  }
+
+  // 나노시트 목록 확인(view) / 업로드·공개설정·삭제(manage) 공용 모달
+  async function openSheets(book, openPdf, opts) {
     if (!book) return;
+    opts = opts || {};
+    var mode = opts.mode === 'manage' ? 'manage' : 'view';
+    var onChange = typeof opts.onChange === 'function' ? opts.onChange : null;
     var bookId = book.serverId || book.bookNo || book.id;
-    var data = await request('/api/content?action=worksheets&bookId=' + encodeURIComponent(bookId));
-    if (!data.canUpload && data.items.length === 0) {
-      notify('현재 열람할 수 있는 나노시트가 없습니다.');
-      return;
-    }
-    if (!data.canUpload && data.items.length === 1) {
-      openPdf(data.items[0].url, data.items[0]);
-      return;
+
+    async function fetchSheetState() {
+      if (isServerMode()) {
+        return request('/api/content?action=worksheets&bookId=' + encodeURIComponent(bookId));
+      }
+      // 오프라인/정적 미리보기 모드 로컬 fallback
+      var list = Array.isArray(book.worksheetList) ? book.worksheetList.slice() : [];
+      if (list.length === 0 && (book.hasSheet || book.sheet || book.pdfBlob || book.pdfDataUrl || book.worksheetUrl)) {
+        list = [{
+          id: 'local-' + book.id,
+          bookId: book.id,
+          name: book.materialName || ((book.title || '도서') + '_나노시트.pdf'),
+          academyName: book.academyName || '본사',
+          isPublic: 'Y',
+          isMine: true,
+          revision: 0,
+          url: book.worksheetUrl || book.pdfUrl || book.pdfDataUrl || ''
+        }];
+      }
+      book.worksheetList = list;
+      return { canUpload: true, items: list };
     }
 
-    var sheetRows = data.items.map(function (s, idx) {
-      var badgeCls = s.isPublic === 'Y' ? 'badge-soft-success' : 'badge-soft-warn';
-      var badgeLabel = s.isPublic === 'Y' ? '전체 공개' : '비공개 · 공유 폴더 허용';
-      return (
-        '<div class="sharing-sheet-item">' +
-          '<div class="sharing-sheet-top">' +
-            '<div style="min-width: 0; flex: 1;">' +
-              '<div style="font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">' +
-                '<i class="fa-solid fa-file-pdf text-danger"></i>' +
-                '<span>' + esc(s.name) + '</span>' +
-                '<span class="badge-soft badge-soft-neutral">' + esc(s.academyName || '본사') + '</span>' +
-                '<span class="badge-soft ' + badgeCls + '">' + badgeLabel + '</span>' +
+    var data;
+    try {
+      data = await fetchSheetState();
+    } catch (err) {
+      notify((err && err.message) || '나노시트 목록을 불러오지 못했습니다.');
+      return;
+    }
+    data.items = Array.isArray(data.items) ? data.items : [];
+    var canUpload = data.canUpload !== false;
+
+    function syncBookMeta() {
+      book.worksheetList = data.items.slice();
+      book.hasSheet = data.items.length > 0;
+      book.sheet = data.items.length > 0;
+      book.worksheetUrl = data.items[0] ? data.items[0].url : null;
+      book.pdfUrl = data.items[0] ? data.items[0].url : null;
+      book.materialName = data.items[0] ? data.items[0].name : null;
+      if (onChange) onChange(data.items, book);
+    }
+
+    function buildBodyHtml(statusMsg, isError) {
+      var sheetRows = data.items.map(function (s, idx) {
+        var isPublic = s.isPublic === 'Y';
+        var visClass = isPublic ? 'is-public' : 'is-private';
+        var visLabel = isPublic ? '전체 공개' : '비공개 · 공유 폴더 허용';
+        var itemCls = 'sharing-sheet-item' + (s.isMine ? ' is-mine' : '');
+        var controlsHtml = '';
+        if (mode === 'manage') {
+          if (s.isMine) {
+            controlsHtml =
+              '<div class="sharing-sheet-controls">' +
+                '<label style="font-size: 12px; font-weight: 700; margin: 0; color: var(--text-muted, #786d63);">공개 범위</label>' +
+                '<select class="sharing-select" data-vis="' + idx + '" style="flex: 1; min-width: 195px;">' +
+                  '<option value="Y"' + (isPublic ? ' selected' : '') + '>공개 · 모든 학원 열람 가능</option>' +
+                  '<option value="N"' + (!isPublic ? ' selected' : '') + '>비공개 · 우리 기관 및 공유 폴더 학원만</option>' +
+                '</select>' +
+                '<button type="button" class="btn-beige-secondary sharing-btn-sm" data-save="' + idx + '">' +
+                  '<i class="fa-solid fa-check"></i> 범위 저장' +
+                '</button>' +
+                '<button type="button" class="sharing-btn-danger-outline" data-delete="' + idx + '" style="height: 34px; padding: 0 11px;">' +
+                  '<i class="fa-solid fa-trash-can"></i> 삭제' +
+                '</button>' +
+              '</div>';
+          } else {
+            controlsHtml =
+              '<div class="sharing-sheet-readonly">' +
+                '<i class="fa-solid fa-lock mr-1"></i>타 기관(또는 본사)이 등록한 나노시트입니다. 본인이 등록한 시트만 수정·삭제할 수 있습니다.' +
+              '</div>';
+          }
+        }
+
+        return (
+          '<div class="' + itemCls + '">' +
+            '<div class="sharing-sheet-top">' +
+              '<div class="sharing-sheet-info">' +
+                '<div class="sharing-sheet-name">' +
+                  '<i class="fa-solid fa-file-pdf text-danger"></i>' +
+                  '<span>' + esc(s.name) + '</span>' +
+                '</div>' +
+                '<div class="sharing-sheet-meta">' +
+                  '<span class="sharing-sheet-badge">' + esc(s.academyName || '본사') + '</span>' +
+                  '<span class="sharing-sheet-badge ' + visClass + '">' + visLabel + '</span>' +
+                  (s.isMine ? '<span class="sharing-sheet-badge is-mine"><i class="fa-solid fa-user-check"></i> 내 등록</span>' : '') +
+                '</div>' +
               '</div>' +
+              '<button type="button" class="btn-beige-primary sharing-btn-sm" data-open="' + idx + '">' +
+                '<i class="fa-solid fa-eye"></i> ' + (mode === 'manage' ? '미리보기' : '열람하기') +
+              '</button>' +
             '</div>' +
-            '<button type="button" class="btn-beige-primary sharing-btn-sm" data-open="' + idx + '">' +
-              '<i class="fa-solid fa-eye"></i> 열람하기' +
+            controlsHtml +
+          '</div>'
+        );
+      }).join('');
+
+      var listSectionTitle =
+        '<div class="sharing-sheet-section-title">' +
+          '<span>등록된 나노시트 (' + data.items.length + '건)</span>' +
+          (mode === 'view' ? '<span style="font-size: 11.5px; font-weight: 600; color: var(--text-muted, #786d63);">원하는 나노시트를 선택해 열람하세요.</span>' : '') +
+        '</div>';
+
+      var listHtml = sheetRows
+        ? '<div class="sharing-sheet-list">' + sheetRows + '</div>'
+        : (mode === 'manage'
+            ? '<div class="sharing-empty-state"><i class="fa-regular fa-file-pdf sharing-empty-icon"></i><p>아직 등록된 나노시트가 없습니다.</p><small>아래에서 새 PDF 나노시트를 업로드하고 공개 범위를 설정할 수 있습니다.</small></div>'
+            : '<div class="sharing-empty-state"><i class="fa-regular fa-file-pdf sharing-empty-icon"></i><p>열람할 수 있는 나노시트가 없습니다.</p><small>관리 컬럼의 [나노시트 관리] 버튼에서 새 나노시트를 등록해 주세요.</small></div>');
+
+      var uploadSection = (mode === 'manage' && canUpload) ? (
+        '<div class="sharing-sheet-upload-box">' +
+          '<div style="font-weight: 800; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">' +
+            '<i class="fa-solid fa-cloud-arrow-up text-primary"></i> 새 나노시트 PDF 업로드' +
+          '</div>' +
+          '<input type="file" id="sharingNewSheetFile" accept=".pdf,application/pdf" class="sharing-input" style="height: auto; padding: 8px 10px;">' +
+          '<div class="sharing-sheet-upload-row">' +
+            '<select id="sharingNewSheetVis" class="sharing-select" style="flex: 1; min-width: 220px;">' +
+              '<option value="Y">전체 공개 · 모든 학원 열람 가능</option>' +
+              '<option value="N">비공개 · 우리 기관 및 공유 폴더 학원만</option>' +
+            '</select>' +
+            '<button type="button" class="btn-beige-primary sharing-btn-sm" id="sharingUploadBtn">' +
+              '<i class="fa-solid fa-upload"></i> 나노시트 등록' +
             '</button>' +
           '</div>' +
-          (s.isMine ? (
-            '<div class="sharing-sheet-controls">' +
-              '<label style="font-size: 12px; font-weight: 700; margin: 0; color: var(--text-muted, #786d63);">공개 범위</label>' +
-              '<select class="sharing-select" data-vis="' + idx + '" style="flex: 1; min-width: 210px;">' +
-                '<option value="Y"' + (s.isPublic === 'Y' ? ' selected' : '') + '>공개 · 모든 학원 열람 가능</option>' +
-                '<option value="N"' + (s.isPublic === 'N' ? ' selected' : '') + '>비공개 · 우리 학원 및 공유 폴더 학원만</option>' +
-              '</select>' +
-              '<button type="button" class="btn-beige-secondary sharing-btn-sm" data-save="' + idx + '">' +
-                '<i class="fa-solid fa-check"></i> 범위 저장' +
-              '</button>' +
-            '</div>'
-          ) : '') +
+          '<p class="sharing-status-text' + (isError ? ' is-error' : '') + '" id="sharingUploadStatus">' + esc(statusMsg || '') + '</p>' +
         '</div>'
-      );
-    }).join('');
+      ) : (statusMsg ? '<p class="sharing-status-text' + (isError ? ' is-error' : '') + '" id="sharingUploadStatus">' + esc(statusMsg) + '</p>' : '');
 
-    var uploadSection = data.canUpload ? (
-      '<div class="sharing-sheet-upload-box">' +
-        '<div style="font-weight: 800; font-size: 13.5px; display: flex; align-items: center; gap: 6px;">' +
-          '<i class="fa-solid fa-cloud-arrow-up"></i> 우리 기관 새 나노시트 PDF 추가' +
-        '</div>' +
-        '<input type="file" id="sharingNewSheetFile" accept=".pdf,application/pdf" class="sharing-input" style="height: auto; padding: 8px 10px;">' +
-        '<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">' +
-          '<select id="sharingNewSheetVis" class="sharing-select" style="flex: 1; min-width: 220px;">' +
-            '<option value="Y">공개 · 모든 학원 열람 가능</option>' +
-            '<option value="N">비공개 · 우리 학원 및 공유 폴더 학원만</option>' +
-          '</select>' +
-          '<button type="button" class="btn-beige-primary sharing-btn-sm" id="sharingUploadBtn">' +
-            '<i class="fa-solid fa-upload"></i> 나노시트 등록' +
-          '</button>' +
-        '</div>' +
-        '<p class="sharing-status-text" id="sharingUploadStatus"></p>' +
-      '</div>'
-    ) : '';
+      return listSectionTitle + listHtml + uploadSection;
+    }
+
+    var headTitle = mode === 'manage' ? (esc(book.title) + ' — 나노시트 관리') : (esc(book.title) + ' — 나노시트 선택');
+    var headDesc = mode === 'manage'
+      ? '나노시트(PDF) 업로드, 공개/비공개 설정 변경 및 본인 등록 시트 삭제를 관리합니다.'
+      : '등록된 나노시트 목록에서 열람할 자료를 선택하세요.';
 
     var dialog = openModal(
       '<form class="sharing-dialog-form" method="dialog">' +
         '<div class="sharing-dialog-head">' +
           '<div>' +
-            '<h3><i class="fa-solid fa-file-pdf text-danger"></i> ' + esc(book.title) + ' 나노시트</h3>' +
-            '<p>기관별로 등록된 나노시트를 열람하거나 공개 범위를 관리할 수 있습니다.</p>' +
+            '<h3><i class="fa-solid fa-file-pdf text-danger"></i> ' + headTitle + '</h3>' +
+            '<p>' + headDesc + '</p>' +
           '</div>' +
           '<button type="button" class="sharing-close-icon" value="close" id="sharingSheetCloseBtn" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>' +
         '</div>' +
-        '<div class="sharing-dialog-body">' +
-          (sheetRows ? '<div class="sharing-sheet-list">' + sheetRows + '</div>' : '<div class="sharing-empty-state"><i class="fa-regular fa-file-pdf sharing-empty-icon"></i><p>아직 등록된 나노시트가 없습니다.</p><small>아래 영역에서 새 PDF 파일을 업로드할 수 있습니다.</small></div>') +
-          uploadSection +
+        '<div class="sharing-dialog-body" id="sharingSheetBody">' +
+          buildBodyHtml('', false) +
         '</div>' +
         '<div class="sharing-dialog-foot">' +
           '<button type="button" class="btn-beige-secondary" id="sharingSheetFootClose">닫기</button>' +
@@ -189,59 +271,135 @@
     dialog.querySelector('#sharingSheetCloseBtn').onclick = function () { dialog.close(); };
     dialog.querySelector('#sharingSheetFootClose').onclick = function () { dialog.close(); };
 
-    dialog.querySelectorAll('[data-open]').forEach(function (button) {
-      button.onclick = function () {
-        var sheet = data.items[Number(button.dataset.open)];
-        dialog.close();
-        openPdf(sheet.url, sheet);
-      };
-    });
-
-    dialog.querySelectorAll('[data-save]').forEach(function (button) {
-      button.onclick = async function () {
-        var index = Number(button.dataset.save);
-        var select = dialog.querySelector('[data-vis="' + index + '"]');
-        button.disabled = true;
-        try {
-          await saveSheet(book, null, select.value, data.items[index]);
-          dialog.close();
-          notify('나노시트 공개 범위를 저장했습니다.');
-          await openSheets(book, openPdf);
-        } catch (err) {
-          notify(err.message);
-        } finally {
-          button.disabled = false;
-        }
-      };
-    });
-
-    var uploadBtn = dialog.querySelector('#sharingUploadBtn');
-    if (uploadBtn) {
-      uploadBtn.onclick = async function () {
-        var input = dialog.querySelector('#sharingNewSheetFile');
-        var status = dialog.querySelector('#sharingUploadStatus');
-        var file = input.files && input.files[0];
-        if (!file) {
-          status.textContent = 'PDF 파일을 먼저 선택해 주세요.';
-          return;
-        }
-        uploadBtn.disabled = true;
-        try {
-          await saveSheet(book, file, dialog.querySelector('#sharingNewSheetVis').value, null, function (pct) {
-            status.textContent = '파일 업로드 중... ' + pct + '%';
-          });
-          book.hasSheet = true;
-          book.sheet = true;
-          dialog.close();
-          notify('새 나노시트를 등록했습니다.');
-          await openSheets(book, openPdf);
-        } catch (err) {
-          status.textContent = err.message;
-        } finally {
-          uploadBtn.disabled = false;
-        }
-      };
+    function renderAndBindBody(statusMsg, isError) {
+      var bodyEl = dialog.querySelector('#sharingSheetBody');
+      if (bodyEl) bodyEl.innerHTML = buildBodyHtml(statusMsg, isError);
+      bindBodyEvents();
     }
+
+    function bindBodyEvents() {
+      dialog.querySelectorAll('[data-open]').forEach(function (button) {
+        button.onclick = function () {
+          var sheet = data.items[Number(button.dataset.open)];
+          if (!sheet) return;
+          dialog.close();
+          openPdf(sheet.url, sheet);
+        };
+      });
+
+      dialog.querySelectorAll('[data-save]').forEach(function (button) {
+        button.onclick = async function () {
+          var index = Number(button.dataset.save);
+          var target = data.items[index];
+          var select = dialog.querySelector('[data-vis="' + index + '"]');
+          if (!target || !select) return;
+          button.disabled = true;
+          try {
+            if (isServerMode()) {
+              await saveSheet(book, null, select.value, target);
+              data = await fetchSheetState();
+              data.items = Array.isArray(data.items) ? data.items : [];
+            } else {
+              target.isPublic = select.value;
+            }
+            syncBookMeta();
+            notify('나노시트 공개 범위를 저장했습니다.');
+            renderAndBindBody('공개 범위가 저장되었습니다.', false);
+          } catch (err) {
+            notify(err.message);
+            renderAndBindBody(err.message || '공개 범위 저장에 실패했습니다.', true);
+          } finally {
+            button.disabled = false;
+          }
+        };
+      });
+
+      dialog.querySelectorAll('[data-delete]').forEach(function (button) {
+        button.onclick = async function () {
+          var index = Number(button.dataset.delete);
+          var target = data.items[index];
+          if (!target) return;
+          if (!confirm('[' + target.name + '] 나노시트를 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.')) return;
+          button.disabled = true;
+          try {
+            if (isServerMode()) {
+              await request('/api/content?action=worksheet', {
+                operation: 'delete',
+                bookId: bookId,
+                id: target.id
+              });
+              data = await fetchSheetState();
+              data.items = Array.isArray(data.items) ? data.items : [];
+            } else {
+              data.items.splice(index, 1);
+            }
+            syncBookMeta();
+            notify('나노시트를 삭제했습니다.');
+            renderAndBindBody('선택한 나노시트가 삭제되었습니다.', false);
+          } catch (err) {
+            notify(err.message);
+            renderAndBindBody(err.message || '나노시트 삭제에 실패했습니다.', true);
+          } finally {
+            button.disabled = false;
+          }
+        };
+      });
+
+      var uploadBtn = dialog.querySelector('#sharingUploadBtn');
+      if (uploadBtn) {
+        uploadBtn.onclick = async function () {
+          var input = dialog.querySelector('#sharingNewSheetFile');
+          var visEl = dialog.querySelector('#sharingNewSheetVis');
+          var status = dialog.querySelector('#sharingUploadStatus');
+          var file = input && input.files && input.files[0];
+          if (!file) {
+            if (status) {
+              status.className = 'sharing-status-text is-error';
+              status.textContent = 'PDF 파일을 먼저 선택해 주세요.';
+            }
+            return;
+          }
+          uploadBtn.disabled = true;
+          try {
+            var visVal = visEl ? visEl.value : 'Y';
+            if (isServerMode()) {
+              await saveSheet(book, file, visVal, null, function (pct) {
+                if (status) {
+                  status.className = 'sharing-status-text';
+                  status.textContent = '파일 업로드 중... ' + pct + '%';
+                }
+              });
+              data = await fetchSheetState();
+              data.items = Array.isArray(data.items) ? data.items : [];
+            } else {
+              var localUrl = URL.createObjectURL(file);
+              data.items.push({
+                id: 'local-' + Date.now(),
+                bookId: book.id,
+                name: file.name,
+                academyName: (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '본사',
+                isPublic: visVal,
+                isMine: true,
+                revision: 0,
+                url: localUrl
+              });
+            }
+            syncBookMeta();
+            notify('새 나노시트를 등록했습니다.');
+            renderAndBindBody('새 나노시트가 등록되었습니다.', false);
+          } catch (err) {
+            if (status) {
+              status.className = 'sharing-status-text is-error';
+              status.textContent = err.message || '업로드 중 오류가 발생했습니다.';
+            }
+          } finally {
+            uploadBtn.disabled = false;
+          }
+        };
+      }
+    }
+
+    bindBodyEvents();
   }
 
   // 폴더 칩 목록 렌더링 (최대 5권 미리보기 + 더보기 토글)

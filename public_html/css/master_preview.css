@@ -1220,9 +1220,26 @@
       }
     }
 
-    /* 마스터 포트폴리오 상세 리포트 모달 */
+    /* 마스터 포트폴리오 상세 리포트 모달 (공용 #portfolioPrintDoc A4 뷰포트 수용) */
     #masterPortfolioReportModal .modal-dialog {
-      max-width: 920px;
+      max-width: 960px;
+    }
+    .master-pf-view-toggle {
+      border-radius: 6px !important;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+    }
+    .master-pf-view-toggle.active {
+      background: #ffffff;
+      color: var(--text-main);
+      box-shadow: 0 1px 4px rgba(46, 38, 32, 0.12);
+    }
+    .master-pf-report-viewport {
+      padding: 4px 0 8px;
     }
     .master-pf-hero-card {
       background: #ffffff;

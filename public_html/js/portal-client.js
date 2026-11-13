@@ -404,7 +404,7 @@
     var subCat = item.subCategory || (item.cat1 && item.cat1.includes('비문학') ? 'C' : (item.cat1 && item.cat1.includes('인물') ? 'B' : 'A'));
     var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.bookNo || item.id, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
       isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), subCategory: subCat, description: item.description || item.synopsis || '',
-      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: /^\/api\/content\?/.test(worksheetUrl || '') ? undefined : worksheetUrl, tags: tags, series: item.series || '',
+      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: (worksheetUrl && !/^\/api\/content\?/.test(worksheetUrl)) ? worksheetUrl : undefined, tags: tags, series: item.series || '',
       awards: item.awards || item.award || '', themeTag: item.themeTag || item.tag || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
     if (result.item) {
       item.serverId = result.item.id;
@@ -470,28 +470,33 @@
         });
       }
       var avgScore = books.length ? Math.round(books.reduce(function(sum, book) { return sum + (Number(book.score) || 0); }, 0) / books.length) : 0;
-      var pfEntry = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : '', classGroup: student ? student.classGroup : '미지정',
-        teacher: student ? student.teacher : '', level: student ? student.level : '', bookCount: books.length,
+      var pfEntry = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : (item.school ? ((item.school || '') + ' ' + (item.grade || '')) : ''), classGroup: student ? student.classGroup : (item.classGroup || '미지정'),
+        teacher: (student && student.teacher) || item.teacher || '', level: student ? student.level : '', bookCount: books.length,
         quizAvg: avgScore,
         books: books.map(function(book) {
+          var bIdStr = String(book.bookId || book.bookNo || '').trim();
           var matchedBook = (global.academyBookList || []).find(function(ab) {
-            if (!ab || !ab.title) return false;
-            return ab.title === book.title || ab.title.replace(/\s+/g, '') === (book.title || '').replace(/\s+/g, '');
+            if (!ab) return false;
+            if (bIdStr && (String(ab.serverId || '') === bIdStr || String(ab.id || '') === bIdStr || String(ab.bookNo || '') === bIdStr)) return true;
+            return ab.title && (ab.title === book.title || ab.title.replace(/\s+/g, '') === (book.title || '').replace(/\s+/g, ''));
           });
           var numScore = parseFloat(String(book.score || 0).replace(/[^0-9.]/g, '')) || 0;
           return {
             bookId: book.bookId,
+            bookNo: book.bookNo || (matchedBook ? (matchedBook.bookNo || matchedBook.id) : ''),
+            subCategory: book.subCategory || (matchedBook ? matchedBook.subCategory : ''),
+            cat1: book.cat1 || (matchedBook ? matchedBook.cat1 : ''), category: book.category || (matchedBook ? matchedBook.category : ''), subject: book.subject || (matchedBook ? matchedBook.subject : ''), tags: Array.isArray(book.tags) && book.tags.length > 0 ? book.tags : (matchedBook && matchedBook.tags ? matchedBook.tags : []),
             title: book.title,
             date: book.date,
             score: Math.round(numScore) + '점',
-            cover: book.cover || (matchedBook ? matchedBook.cover : 'assets/covers/cover_default.jpg'),
+            cover: book.cover || (matchedBook ? matchedBook.cover : 'resources/images/book_default.svg'),
             pub: book.pub || book.publisher || (matchedBook ? (matchedBook.publisher || matchedBook.pub) : '나노출판'),
             author: book.author || (matchedBook ? matchedBook.author : ''),
-            achievement: book.achievement || '',
+            achievement: book.achievement || '', thoughtTeacherComment: book.thoughtTeacherComment || '', worksheetAiResult: book.worksheetAiResult || null,
             comment: book.thought || book.comment || ''
           };
         }), teacherNote: item.commentSource === 'teacher' ? (item.comment || item.aiTeacherNote || '') : (item.aiTeacherNote || item.comment || ''),
-        aiComments: item.aiComments || [], aiVersion: item.aiVersion || 0 };
+        commentSource: item.commentSource || '', comment: item.comment || '', aiTeacherNote: item.aiTeacherNote || '', aiComments: item.aiComments || [], aiVersion: item.aiVersion || 0 };
       // 포트폴리오 고유 ID별 저장 + 원생별 최신(도서 존재 우선) 포트폴리오 유지 (과거 0권 포트폴리오가 덮어쓰는 현상 방지)
       portfolioDataMap[item.id] = pfEntry;
       if (!portfolioDataMap[studentId] || (portfolioDataMap[studentId].bookCount === 0 && pfEntry.bookCount > 0)) {

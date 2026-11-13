@@ -5781,6 +5781,14 @@ function openPosterPreviewModal() {
 // 인쇄 미리보기가 백지로 나오는 문제가 있어, 인쇄 대상만 복사한 숨김 iframe에서 인쇄한다.
 // ------------------------------------------------------------------
 function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
+  if (typeof window !== 'undefined' && window.NanoPortfolioRenderer && typeof window.NanoPortfolioRenderer.printHtmlInIsolatedFrame === 'function') {
+    window.NanoPortfolioRenderer.printHtmlInIsolatedFrame(innerHtml, bodyClass, title, function(error) {
+      if (typeof showAcademyToast === 'function') {
+        showAcademyToast('인쇄를 시작하지 못했습니다: ' + error.message);
+      }
+    });
+    return;
+  }
   var frame = document.createElement('iframe');
   frame.setAttribute('aria-hidden', 'true');
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
@@ -5876,7 +5884,7 @@ var portfolioDataMap = {
     quizSub: '전체 응시 북퀴즈 1차 통과',
     sheetRate: 100,
     scores: [95, 90, 92, 94],
-    genreDist: { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 },
+    genreDist: { '소설': 100, '인물이야기(위인)': 0, '비문학/정보글': 0 },
     tags: ['#성장소설', '#인간관계', '#철학적사유', '#공감과소통', '#자아탐색'],
     books: [
       { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '100점', sheet: '우수 완결', comment: '길들임의 의미와 책임감을 깊이 있게 해석함.' },
@@ -5898,7 +5906,7 @@ var portfolioDataMap = {
     quizSub: '핵심 어휘 및 맥락 우수',
     sheetRate: 100,
     scores: [90, 92, 90, 94],
-    genreDist: { '문학/동화': 40, '과학/환경': 35, '인문/교양': 25 },
+    genreDist: { '소설': 100, '인물이야기(위인)': 0, '비문학/정보글': 0 },
     tags: ['#호기심탐구', '#자연생태', '#친구와우정', '#상상력', '#감정표현'],
     books: [
       { cover: 'assets/covers/cover_1003.jpg', title: '자전거 도둑', pub: '다림', date: '2026.09.05', score: '95점', sheet: '우수 완결', comment: '등장인물의 갈등 상황을 자신의 경험과 연결지어 성찰함.' },
@@ -5919,7 +5927,7 @@ var portfolioDataMap = {
     quizSub: '고난도 문맥 추론 만점',
     sheetRate: 100,
     scores: [98, 96, 98, 96],
-    genreDist: { '인문/사회': 45, '문학/고전': 35, '역사/사상': 20 },
+    genreDist: { '소설': 50, '인물이야기(위인)': 25, '비문학/정보글': 25 },
     tags: ['#비판적사고', '#사회탐구', '#고전명작', '#논리적이해', '#리더십'],
     books: [
       { cover: 'assets/covers/cover_1002.jpg', title: '아몬드', pub: '창비', date: '2026.09.06', score: '98점', sheet: '우수 완결', comment: '감정 표현 불능증 주인공의 시선을 통해 타인의 마음에 깊이 접근함.' },
@@ -5941,7 +5949,7 @@ var portfolioDataMap = {
     quizSub: '줄거리 재구성 및 어휘 우수',
     sheetRate: 100,
     scores: [96, 94, 96, 97],
-    genreDist: { '문학/감성': 45, '인문/철학': 35, '과학/환경': 20 },
+    genreDist: { '소설': 100, '인물이야기(위인)': 0, '비문학/정보글': 0 },
     tags: ['#감성독서', '#인물공감', '#철학동화', '#가치탐구', '#창의적표현'],
     books: [
       { cover: 'assets/covers/cover_1001.jpg', title: '어린 왕자', pub: '열린책들', date: '2026.09.06', score: '98점', sheet: '우수 완결', comment: '눈에 보이지 않는 진정한 가치에 대해 깊이 사색함.' },
@@ -6346,72 +6354,147 @@ function getBookCatalogReference() {
   return [];
 }
 
+var PORTFOLIO_BOOK_CATEGORIES = ['소설', '인물이야기(위인)', '비문학/정보글'];
+var PORTFOLIO_CATEGORY_COLOR_MAP = {
+  '소설': '#1f8a7e',
+  '인물이야기(위인)': '#f6c344',
+  '비문학/정보글': '#e89936'
+};
+
 function findMatchingCatalogBook(b) {
   if (!b) return null;
   var catalog = getBookCatalogReference();
   if (!catalog || catalog.length === 0) return null;
   var bTitle = String(b.title || '').trim();
   var bCleanTitle = bTitle.replace(/\s+/g, '').toLowerCase();
-  var bId = String(b.bookId || b.id || '').trim();
+  var bId = String(b.bookId || b.bookNo || b.id || '').trim();
 
   return catalog.find(function(item) {
     if (!item) return false;
-    if (bId && (String(item.id) === bId || String(item.bookNo) === bId)) return true;
+    if (bId && (String(item.serverId || '') === bId || String(item.id || '') === bId || String(item.bookNo || '') === bId)) return true;
     var itemTitle = String(item.title || '').trim();
+    if (!itemTitle || !bTitle) return false;
     if (itemTitle === bTitle) return true;
     return itemTitle.replace(/\s+/g, '').toLowerCase() === bCleanTitle;
   }) || null;
 }
 
-function calculateRealBookGenreDist(books) {
-  if (!Array.isArray(books) || books.length === 0) {
-    return { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 };
+// 도서 정보의 카테고리 1(A: 소설, B: 인물이야기(위인), C: 비문학/정보글) 값을 포트폴리오 3대 카테고리로 정규화
+function normalizePortfolioCategory1Label(raw) {
+  var s = String(raw || '').trim();
+  if (!s) return '';
+  // 카테고리 2(국내서/외서/구분 없음) 값이 들어온 경우 오분류 방지를 위해 건너뜀
+  if (s === '국내서' || s === '외서' || s === '구분 없음' || s === 'K' || s === 'F' || s === 'N') return '';
+  var upper = s.toUpperCase();
+  if (upper === 'B' || s.indexOf('인물') !== -1 || s.indexOf('위인') !== -1) return '인물이야기(위인)';
+  if (upper === 'C' || s.indexOf('비문학') !== -1 || s.indexOf('정보글') !== -1 || s.indexOf('정보') !== -1) return '비문학/정보글';
+  if (upper === 'A' || s === '소설') return '소설';
+  return '';
+}
+
+function resolvePortfolioBookCategory1(b) {
+  if (!b) return '소설';
+  var matched = findMatchingCatalogBook(b);
+
+  // 1. 카탈로그·스냅샷의 명시적 subCategory('A'|'B'|'C') 또는 카테고리 1(cat1) 최우선 반영
+  var directCandidates = [
+    matched && matched.subCategory,
+    b.subCategory,
+    matched && matched.cat1,
+    b.cat1
+  ];
+  for (var i = 0; i < directCandidates.length; i++) {
+    var resolved = normalizePortfolioCategory1Label(directCandidates[i]);
+    if (resolved) return resolved;
   }
-  var counts = {};
+
+  // 2. 도서 관리 코드([Cat2][Cat1][Grade][순번], 예: KA500162, KB200002, KC500113) 2번째 문자 판별
+  var codeCandidates = [
+    b.bookNo,
+    b.bookId,
+    b.id,
+    matched && matched.bookNo,
+    matched && matched.id
+  ];
+  for (var j = 0; j < codeCandidates.length; j++) {
+    var codeStr = String(codeCandidates[j] || '').trim().toUpperCase();
+    var codeMatch = codeStr.match(/^[KFN]([ABC])\d/);
+    if (codeMatch) {
+      return normalizePortfolioCategory1Label(codeMatch[1]);
+    }
+  }
+
+  // 3. 구버전 데이터나 카탈로그 미등록 도서를 위한 보조 키워드 판별
+  var legacyText = [
+    b.cat2,
+    b.category,
+    matched && matched.cat2,
+    matched && matched.category,
+    matched && matched.subject
+  ].filter(Boolean).join(' ');
+  if (/인물|위인|전기|자서전/.test(legacyText)) return '인물이야기(위인)';
+  if (/비문학|정보|과학|자연|사회|역사|경제|수학|기술|철학|인문|지리/.test(legacyText)) return '비문학/정보글';
+  if (/소설|문학|동화|그림책|이야기|시|수필/.test(legacyText)) return '소설';
+
+  var titleText = String(b.title || (matched && matched.title) || '');
+  if (/위인|전기|인물이야기/.test(titleText)) return '인물이야기(위인)';
+  if (/과학|우주|자연|생물|역사|조선|한국사|세계사|경제|철학|수학|기술/.test(titleText)) return '비문학/정보글';
+
+  return '소설';
+}
+
+function calculateRealBookCategoryStats(books) {
+  var counts = {
+    '소설': 0,
+    '인물이야기(위인)': 0,
+    '비문학/정보글': 0
+  };
   var total = 0;
 
-  books.forEach(function(b) {
-    var matched = findMatchingCatalogBook(b);
-    var genre = '';
-    if (matched) {
-      genre = matched.category || matched.subject || matched.cat1 || '';
+  if (Array.isArray(books) && books.length > 0) {
+    books.forEach(function(b) {
+      var cat1Label = resolvePortfolioBookCategory1(b);
+      counts[cat1Label] = (counts[cat1Label] || 0) + 1;
+      total++;
+    });
+  }
+
+  var dist = {
+    '소설': 0,
+    '인물이야기(위인)': 0,
+    '비문학/정보글': 0
+  };
+
+  if (total > 0) {
+    // 0권인 카테고리는 0%를 유지하고, 독서한 카테고리만 최대 나머지 방식으로 합계 100% 보정
+    var active = [];
+    var floorSum = 0;
+    PORTFOLIO_BOOK_CATEGORIES.forEach(function(catKey, orderIdx) {
+      var count = counts[catKey] || 0;
+      if (count <= 0) return;
+      var exact = (count / total) * 100;
+      var floored = Math.floor(exact);
+      dist[catKey] = floored;
+      floorSum += floored;
+      active.push({ key: catKey, remainder: exact - floored, count: count, order: orderIdx });
+    });
+    var remainderToAllocate = 100 - floorSum;
+    active.sort(function(a, b) {
+      if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+      if (b.count !== a.count) return b.count - a.count;
+      return a.order - b.order;
+    });
+    for (var k = 0; k < active.length && remainderToAllocate > 0; k++) {
+      dist[active[k].key] += 1;
+      remainderToAllocate--;
     }
-    if (!genre && b.category) genre = b.category;
-    if (!genre) {
-      var t = String(b.title || '');
-      if (/역사|조선|한국사|전쟁|왕|사회/.test(t)) genre = '사회/역사';
-      else if (/과학|우주|동물|식물|로봇|자연|환경/.test(t)) genre = '과학/자연';
-      else if (/철학|생각|마음|질문|인문/.test(t)) genre = '인문/철학';
-      else genre = '문학/성장';
-    } else {
-      if (/문학|소설|동화|시|수필|그림책/.test(genre)) genre = '문학/성장';
-      else if (/인문|철학|교양|인물/.test(genre)) genre = '인문/철학';
-      else if (/사회|역사|지리|경제/.test(genre)) genre = '사회/역사';
-      else if (/과학|자연|수학|기술/.test(genre)) genre = '과학/자연';
-      else if (/예술|문화/.test(genre)) genre = '예술/문화';
-      else genre = '교양/문학';
-    }
+  }
 
-    counts[genre] = (counts[genre] || 0) + 1;
-    total++;
-  });
+  return { dist: dist, counts: counts, total: total };
+}
 
-  if (total === 0) return { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 };
-
-  var dist = {};
-  var percentSum = 0;
-  var keys = Object.keys(counts);
-  keys.forEach(function(k, idx) {
-    if (idx === keys.length - 1) {
-      dist[k] = Math.max(1, 100 - percentSum);
-    } else {
-      var p = Math.round((counts[k] / total) * 100);
-      dist[k] = p;
-      percentSum += p;
-    }
-  });
-
-  return dist;
+function calculateRealBookGenreDist(books) {
+  return calculateRealBookCategoryStats(books).dist;
 }
 
 function extractRealBookTags(books) {
@@ -6496,17 +6579,22 @@ function getBookObservationComment(b, studentName, logs) {
     }
   }
 
-  // 3. 도서 특징(카탈로그 카테고리/주제)에 따른 정성적 성장 서술
+  // 3. 도서 특징(카테고리 1 및 카탈로그 주제)에 따른 정성적 성장 서술
   var matchedBook = findMatchingCatalogBook(b);
   var cat = matchedBook ? (matchedBook.category || matchedBook.subject || '') : '';
-  if (/문학|소설|동화/.test(cat)) {
-    return '《' + bTitle + '》을(를) 읽으며 인물의 내면적 갈등과 선택에 깊이 공감하고, 이야기 속 상황을 자신의 일상 경험과 연결하여 풍부하게 사유하는 모습을 보였습니다.';
+  var cat1Type = typeof resolvePortfolioBookCategory1 === 'function' ? resolvePortfolioBookCategory1(b) : '';
+  if (cat1Type === '인물이야기(위인)' || /인물|위인/.test(cat)) {
+    return '《' + bTitle + '》 속 인물의 삶과 가치관, 시련을 극복하는 선택의 과정을 깊이 살펴보며, 자신의 태도와 목표를 되돌아보는 성숙한 안목을 길렀습니다.';
   } else if (/인문|철학/.test(cat)) {
     return '《' + bTitle + '》의 중심 질문을 진지하게 고민하며, 당연하게 여겼던 생각들에 대해 새로운 관점으로 질문을 던지고 가치관을 넓혀가는 성장을 이루었습니다.';
   } else if (/과학|자연/.test(cat)) {
     return '《' + bTitle + '》에 등장하는 자연과 과학 원리를 호기심을 갖고 탐구하며, 책에서 발견한 사실들을 바탕으로 논리적인 인과관계를 차분히 짚어냈습니다.';
   } else if (/사회|역사/.test(cat)) {
     return '《' + bTitle + '》을(를) 통해 다양한 시대적 배경과 사람들의 삶의 모습을 살펴보며, 공동체와 사회적 맥락을 균형 잡힌 시각으로 이해하는 안목을 길렀습니다.';
+  } else if (cat1Type === '비문학/정보글') {
+    return '《' + bTitle + '》에서 다루는 핵심 개념과 배경 지식을 체계적으로 정리하고, 근거와 정보를 바탕으로 논리적으로 사고를 확장하는 성장을 보여주었습니다.';
+  } else if (cat1Type === '소설' || /문학|소설|동화/.test(cat)) {
+    return '《' + bTitle + '》을(를) 읽으며 인물의 내면적 갈등과 선택에 깊이 공감하고, 이야기 속 상황을 자신의 일상 경험과 연결하여 풍부하게 사유하는 모습을 보였습니다.';
   }
 
   return '《' + bTitle + '》의 중심 서사와 핵심 맥락을 꼼꼼하게 파악하며 완독하였고, 작품 속 주제 의식을 자신의 언어로 주도적으로 정리해내는 성취를 보였습니다.';
@@ -6840,6 +6928,29 @@ function renderPortfolioDocument(studentId, pfId) {
 
   // AI 분석 요청 및 스마트 기본값 자동 적용
   requestGeminiPortfolioStory(studentId, pfId, pfData, std);
+  var loadedLogsEarly = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
+  if (typeof window !== 'undefined' && window.NanoPortfolioRenderer && typeof window.NanoPortfolioRenderer.renderPortfolioDocument === 'function') {
+    window.NanoPortfolioRenderer.renderPortfolioDocument(docContainer, {
+      pfData: pfData,
+      std: std,
+      studentId: studentId,
+      pfId: pfId,
+      studentName: studentName,
+      schoolGrade: schoolGrade,
+      classGroup: classGroup,
+      teacher: teacher,
+      period: period,
+      issueDate: issueDate,
+      reportId: reportId,
+      books: books,
+      quizAvg: quizAvg,
+      loadedLogs: loadedLogsEarly,
+      bookCatalog: typeof getBookCatalogReference === 'function' ? getBookCatalogReference() : [],
+      allowTeacherNoteEdit: true,
+      allowCoverZoom: true
+    });
+    return;
+  }
 
   // 4대 핵심 역량 인포그래픽 카드 HTML
   var insightItems = generatePortfolioInsights(std, pfData);
@@ -6865,8 +6976,10 @@ function renderPortfolioDocument(studentId, pfId) {
     '</div>'
   );
 
-  // 실데이터 기반 장르 분포 계산 (완독 도서 실제 카테고리/주제 집계)
-  var dist = calculateRealBookGenreDist(books);
+  // 도서 정보 카테고리 1(소설 / 인물이야기(위인) / 비문학/정보글) 기반 독서 취향 분포 집계
+  var catStats = calculateRealBookCategoryStats(books);
+  var dist = catStats.dist;
+  var catCounts = catStats.counts;
   var distKeys = Object.keys(dist);
   var donutSvg = buildGenreDonutSvg(dist);
 
@@ -6908,21 +7021,26 @@ function renderPortfolioDocument(studentId, pfId) {
 
     var commentText = getBookObservationComment(b, studentName, loadedLogs);
 
-    // (2026) 11.11 형태로 한 줄 정렬
+    // 좌측(No. + 연/월일 줄바꿈)과 우측(점수 1칸) 분할 배치를 위해 연도/월일 분리 마크업 생성
     var bookDate = String(b.date || '').trim();
     var dateParts = bookDate.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:$|[T\s])/);
-    var singleLineDate = dateParts
-      ? ('(' + dateParts[1] + ') ' + dateParts[2].padStart(2, '0') + '.' + dateParts[3].padStart(2, '0'))
-      : escapePortfolioText(bookDate || '완독일 미등록');
+    var dateHtml = dateParts
+      ? ('<span class="pf-book-year">(' + escapePortfolioText(dateParts[1]) + ')</span>' +
+         '<span class="pf-book-month-day">' + escapePortfolioText(dateParts[2].padStart(2, '0') + '.' + dateParts[3].padStart(2, '0')) + '</span>')
+      : ('<span class="pf-book-month-day">' + escapePortfolioText(bookDate || '완독일 미등록') + '</span>');
 
     var coverAction = escapePortfolioText('openCoverModal(' + JSON.stringify(coverUrl) + ', ' + JSON.stringify(b.title || '') + ', ' + JSON.stringify(pubText || '') + ')');
     return (
       '<article class="pf-book-col">' +
         '<div class="pf-book-row-card">' +
           '<div class="pf-book-meta-left">' +
-            '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
-            '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + singleLineDate + '</span>' +
-            '<span class="pf-book-score-pill">' + escapePortfolioText(cleanScoreText) + '</span>' +
+            '<div class="pf-book-meta-info">' +
+              '<span class="pf-book-number">No.' + (idx + 1) + '</span>' +
+              '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + dateHtml + '</span>' +
+            '</div>' +
+            '<div class="pf-book-score-slot">' +
+              '<span class="pf-book-score-pill">' + escapePortfolioText(cleanScoreText) + '</span>' +
+            '</div>' +
           '</div>' +
           '<div class="pf-book-card-top">' +
             '<button type="button" class="pf-book-cover-wrap" aria-label="' + escapePortfolioText(b.title || '도서') + ' 표지 확대" onclick="' + coverAction + '">' +
@@ -7022,15 +7140,22 @@ function renderPortfolioDocument(studentId, pfId) {
               '<div>' +
                 '<div class="font-weight-bold mb-1.5 text-dark" style="font-size:12px;">카테고리 구성 비율</div>' +
                 distKeys.map(function(k, index) {
-                  var val = dist[k];
+                  var val = dist[k] || 0;
+                  var cnt = (catCounts && catCounts[k]) || 0;
+                  var barColor = (typeof PORTFOLIO_CATEGORY_COLOR_MAP !== 'undefined' && PORTFOLIO_CATEGORY_COLOR_MAP[k]) || ['#1f8a7e', '#f6c344', '#e89936', '#72aaa1'][index % 4];
+                  var countLabel = bookCount > 0 ? (' (' + cnt + '권)') : '';
+                  var valColor = val > 0 ? '#1f8a7e' : '#94a3b8';
                   return (
-                    '<div class="mb-1" style="font-size:11.5px;">' +
-                      '<div class="d-flex justify-content-between mb-0.5">' +
-                        '<span>' + escapePortfolioText(k) + '</span>' +
-                        '<span class="font-weight-bold text-success" style="color:#1f8a7e !important;">' + val + '%</span>' +
+                    '<div class="mb-1.5" style="font-size:11.5px;">' +
+                      '<div class="d-flex justify-content-between align-items-center mb-0.5">' +
+                        '<span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; color:#334155;">' +
+                          '<span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:' + barColor + '; flex-shrink:0;"></span>' +
+                          escapePortfolioText(k) +
+                        '</span>' +
+                        '<span class="font-weight-bold" style="color:' + valColor + ';">' + val + '%' + countLabel + '</span>' +
                       '</div>' +
                       '<div class="progress" style="height:5px; background:#ece5d9; border-radius:3px;">' +
-                        '<div class="progress-bar" style="width:' + val + '%; background:' + ['#1f8a7e', '#f6c344', '#e89936', '#72aaa1'][index % 4] + '; border-radius:3px;"></div>' +
+                        '<div class="progress-bar" style="width:' + val + '%; background:' + barColor + '; border-radius:3px;"></div>' +
                       '</div>' +
                     '</div>'
                   );
@@ -7164,36 +7289,42 @@ async function saveViewingPortfolioTeacherNote(studentId, pfId) {
 
 function buildGenreDonutSvg(dist) {
   var total = 0;
-  for (var k in dist) total += dist[k];
-  if (total === 0) total = 100;
+  var keys = Object.keys(dist || {});
+  for (var i = 0; i < keys.length; i++) total += Number(dist[keys[i]]) || 0;
 
   var colors = ['#1f8a7e', '#f6c344', '#e89936', '#72aaa1'];
   var accumulatedPercent = 0;
   var paths = [];
 
-  var keys = Object.keys(dist);
-  keys.forEach(function(key, idx) {
-    var percent = (dist[key] / total) * 100;
-    var startX = getCoordinatesForPercent(accumulatedPercent)[0];
-    var startY = getCoordinatesForPercent(accumulatedPercent)[1];
+  if (total > 0) {
+    keys.forEach(function(key, idx) {
+      var val = Number(dist[key]) || 0;
+      if (val <= 0) return;
+      var color = (typeof PORTFOLIO_CATEGORY_COLOR_MAP !== 'undefined' && PORTFOLIO_CATEGORY_COLOR_MAP[key]) || colors[idx % colors.length];
+      var percent = (val / total) * 100;
+      // 100% 단일 카테고리일 때는 시작·끝 좌표 겹침을 피해 완전한 원으로 렌더링
+      if (percent >= 99.999) {
+        paths.push('<circle cx="0" cy="0" r="1" fill="' + color + '"></circle>');
+        return;
+      }
+      var startCoords = getCoordinatesForPercent(accumulatedPercent);
+      accumulatedPercent += percent;
+      var endCoords = getCoordinatesForPercent(accumulatedPercent);
+      var largeArcFlag = percent > 50 ? 1 : 0;
 
-    accumulatedPercent += percent;
+      var pathData = [
+        'M ' + startCoords[0] + ' ' + startCoords[1],
+        'A 1 1 0 ' + largeArcFlag + ' 1 ' + endCoords[0] + ' ' + endCoords[1],
+        'L 0 0'
+      ].join(' ');
 
-    var endX = getCoordinatesForPercent(accumulatedPercent)[0];
-    var endY = getCoordinatesForPercent(accumulatedPercent)[1];
-    var largeArcFlag = percent > 50 ? 1 : 0;
-
-    var pathData = [
-      'M ' + startX + ' ' + startY,
-      'A 1 1 0 ' + largeArcFlag + ' 1 ' + endX + ' ' + endY,
-      'L 0 0'
-    ].join(' ');
-
-    paths.push('<path d="' + pathData + '" fill="' + colors[idx % colors.length] + '"></path>');
-  });
+      paths.push('<path d="' + pathData + '" fill="' + color + '"></path>');
+    });
+  }
 
   return (
     '<svg viewBox="-1.1 -1.1 2.2 2.2" style="width:130px; height:130px; transform:rotate(-90deg); border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.06);">' +
+      '<circle cx="0" cy="0" r="1" fill="#ece5d9"></circle>' +
       paths.join('') +
       '<circle cx="0" cy="0" r="0.65" fill="#fbf9f4"></circle>' +
     '</svg>'
@@ -7371,7 +7502,7 @@ function getStudentCertifiedBooksForWizard(stdId) {
 
       var matchedBook = catalog.find(function(b) {
         if (!b) return false;
-        if (log.bookId && (String(b.id) === String(log.bookId) || String(b.bookNo) === String(log.bookId))) return true;
+        if (log.bookId && (String(b.serverId || '') === String(log.bookId) || String(b.id) === String(log.bookId) || String(b.bookNo) === String(log.bookId))) return true;
         return b.title === title || (b.title && b.title.replace(/\s+/g, '') === title.replace(/\s+/g, ''));
       });
 
@@ -7394,6 +7525,9 @@ function getStudentCertifiedBooksForWizard(stdId) {
         uniqueKey: uniqueKey,
         logId: log.id || '',
         bookId: log.bookId || '',
+        bookNo: matchedBook ? (matchedBook.bookNo || matchedBook.id || '') : '',
+        subCategory: matchedBook ? (matchedBook.subCategory || '') : '',
+        cat1: matchedBook ? (matchedBook.cat1 || '') : '',
         cover: cover,
         title: title,
         pub: pub,
@@ -8029,7 +8163,7 @@ async function finishPortfolioCreate() {
       level: std ? std.level : '초등 심화 Lv 5',
       bookCount: bookCount,
       quizAvg: stdAvgRounded,
-      genreDist: { '문학/성장': 50, '인문/철학': 25, '사회/과학': 25 },
+      genreDist: { '소설': 100, '인물이야기(위인)': 0, '비문학/정보글': 0 },
       tags: ['#성장소설', '#독서루틴', '#인물공감', '#지적호기심'],
       books: selectedBookObjects.length > 0 ? selectedBookObjects : [
         { cover: 'assets/covers/cover_1001.jpg', title: wizardSelectedBooks[0] || '어린 왕자', pub: '열린책들', date: '2026.09.07', score: '95점', sheet: '우수 완결', comment: '주제 의식을 바르게 파악하고 성실히 완독함.' }
