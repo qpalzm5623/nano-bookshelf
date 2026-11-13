@@ -25,13 +25,141 @@ const memberFields = { id: true, username: true, name: true, role: true, status:
   parentName: true, parentPhone: true, parentEmail: true, reportYn: true, classGroupId: true, points: true, bookCount: true, quizAvg: true, updatedAt: true } as const;
 function enumValue(value: any, values: string[], label: string) { need(values.includes(value), label + ' 값을 확인해 주세요.'); return value; }
 function date(value: any, label: string) { const result = new Date(value); need(Number.isFinite(+result), label + ' 날짜를 입력해 주세요.'); return result; }
+// 마스터(전국/특정 가맹점) 및 학원 관리자 포트폴리오 조회·보강 헬퍼
+async function queryPortfolios(academyId: string, isMasterAll: boolean, query: any) {
+  const targetId = typeof query?.id === 'string' ? query.id.trim() : '';
+  const where: any = isMasterAll
+    ? { scope: { startsWith: 'portfolio:' }, ...(targetId ? { key: targetId } : {}) }
+    : { scope: 'portfolio:' + academyId, ...(targetId ? { key: targetId } : {}) };
+
+  const rows = await prisma.portalSetting.findMany({
+    where,
+    orderBy: { updatedAt: 'desc' }
+  });
+
+  const academyIds = [...new Set(rows.map((r: any) => String(r.scope || '').replace(/^portfolio:/, '')).filter(Boolean))];
+  const memberIds = [...new Set(rows.map((r: any) => (r.value as any)?.memberId).filter(Boolean).map(String))];
+
+  const [academies, members] = await Promise.all([
+    academyIds.length && typeof prisma.academy?.findMany === 'function'
+      ? prisma.academy.findMany({
+          where: { id: { in: academyIds }, deletedAt: null },
+          select: { id: true, code: true, name: true }
+        })
+      : Promise.resolve([]),
+    memberIds.length && typeof prisma.member?.findMany === 'function'
+      ? prisma.member.findMany({
+          where: { id: { in: memberIds } },
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            school: true,
+            grade: true,
+            classGroup: { select: { name: true } }
+          }
+        })
+      : Promise.resolve([])
+  ]);
+
+  const academyMap = new Map(academies.map((a: any) => [a.id, a]));
+  const memberMap = new Map(members.map((m: any) => [m.id, m]));
+  const hasAcademyFilter = isMasterAll && academyIds.length > 0 && typeof prisma.academy?.findMany === 'function';
+
+  const enriched = rows
+    .map((p: any) => {
+      const rowAcadId = String(p.scope || '').replace(/^portfolio:/, '');
+      const acad: any = academyMap.get(rowAcadId);
+      if (hasAcademyFilter && !acad) return null;
+
+      const val = (p.value || {}) as any;
+      const stu: any = memberMap.get(String(val.memberId || ''));
+      const booksArr = Array.isArray(val.books) ? val.books : [];
+      const scores = booksArr
+        .map((b: any) => (b?.score == null || b?.score === '' ? NaN : Number(String(b.score).replace(/[^0-9.]/g, ''))))
+        .filter(Number.isFinite);
+
+      const fallbackQuizAvg = val.quizAvg != null && val.quizAvg !== '' ? Number(String(val.quizAvg).replace(/[^0-9.]/g, '')) : NaN;
+      const quizAvgNum = scores.length
+        ? Math.round((scores.reduce((sum: number, n: number) => sum + n, 0) / scores.length) * 10) / 10
+        : (Number.isFinite(fallbackQuizAvg) ? fallbackQuizAvg : null);
+
+      const rawDate = val.createdAt || p.updatedAt || p.createdAt;
+      const parsedDate = rawDate ? new Date(rawDate) : new Date();
+      const kstIso = Number.isFinite(+parsedDate) ? new Date(+parsedDate + 9 * 3600000).toISOString() : '';
+      const kstDate = kstIso ? kstIso.slice(0, 10) : '';
+      const issueDate = kstIso ? `${kstIso.slice(0, 10)} ${kstIso.slice(11, 16)}` : '';
+
+      return {
+        ...val,
+        id: p.key,
+        revision: p.revision,
+        academyId: acad?.code || val.academyId || '',
+        academyName: acad?.name || val.academyName || '',
+        studentId: stu?.username || val.studentId || '',
+        studentName: stu?.name || val.name || val.studentName || '학생',
+        school: stu?.school || val.school || '',
+        grade: stu?.grade || val.grade || '',
+        classGroup: stu?.classGroup?.name || val.classGroup || '미지정',
+        period: val.period || (val.from && val.to ? `${val.from} ~ ${val.to}` : ''),
+        bookCount: booksArr.length,
+        quizAvgNum,
+        quizAvg: quizAvgNum !== null ? `${quizAvgNum}점` : (val.quizAvg || '-'),
+        issueDate,
+        kstDate,
+        createdAt: val.createdAt || (Number.isFinite(+parsedDate) ? parsedDate.toISOString() : '')
+      };
+    })
+    .filter(Boolean) as any[];
+
+  const curKstYm = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+  const scoredItems = enriched.filter(item => typeof item.quizAvgNum === 'number' && Number.isFinite(item.quizAvgNum));
+  const totalBookCount = enriched.reduce((sum, item) => sum + (Number(item.bookCount) || 0), 0);
+  const stats = {
+    totalIssuedCount: enriched.length,
+    monthIssuedCount: enriched.filter(item => String(item.kstDate || '').slice(0, 7) === curKstYm).length,
+    totalBookCount,
+    avgBookCount: enriched.length ? Math.round((totalBookCount / enriched.length) * 10) / 10 : 0,
+    avgQuizScore: scoredItems.length
+      ? Math.round((scoredItems.reduce((sum, item) => sum + item.quizAvgNum, 0) / scoredItems.length) * 10) / 10
+      : 0
+  };
+
+  if (targetId) {
+    return { items: enriched, stats };
+  }
+
+  const classGroup = typeof query?.classGroup === 'string' ? query.classGroup.trim() : '';
+  const startDate = typeof query?.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.startDate) ? query.startDate : '';
+  const endDate = typeof query?.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.endDate) ? query.endDate : '';
+  const search = typeof query?.search === 'string' ? query.search.trim().slice(0, 100).toLowerCase() : '';
+
+  const filtered = enriched.filter(item => {
+    if (classGroup && classGroup.toUpperCase() !== 'ALL' && item.classGroup !== classGroup) return false;
+    if (startDate && (!item.kstDate || item.kstDate < startDate)) return false;
+    if (endDate && (!item.kstDate || item.kstDate > endDate)) return false;
+    if (search) {
+      const hay = [item.studentName, item.studentId, item.title, item.academyName, item.school, item.id, item.period]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  filtered.sort((a, b) => String(b.createdAt || b.issueDate || '').localeCompare(String(a.createdAt || a.issueDate || '')));
+  return { items: filtered, stats };
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
   try {
     const user = await authenticate(req); staff(user);
     const entity = String(req.query.entity || 'members');
     // 학원 자체의 생성·수정은 아직 존재하지 않는 코드도 받을 수 있으므로 세션 학원을 기준으로 권한만 확인합니다.
-    const academyId = entity === 'academies' ? user.academyId : await academyScope(user, req.query.academy);
+    const isMasterAllPortfolios = entity === 'portfolios' && req.method === 'GET' && user.role === 'MASTER' && (!req.query.academy || String(req.query.academy).trim().toUpperCase() === 'ALL');
+    const academyId = (entity === 'academies' || isMasterAllPortfolios) ? user.academyId : await academyScope(user, req.query.academy);
     const body = req.body || {}; const input = body.data || body;
     if (req.method === 'POST') {
       need(['save','delete','import','restore'].includes(body.operation) || (entity === 'themes' && body.operation === 'reorder') || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')) || entity === 'summarize_synopsis', '요청 작업을 확인해 주세요.');
@@ -281,7 +409,7 @@ export default async function handler(req: any, res: any) {
         return res.json({ items: items.filter(q => canReadContent(user, quizContent(access, q.bookId, q.legacyQuizSeq || 0), access)) });
       }
       if (entity === 'dispatch') return res.json({ items: await prisma.aligoDispatchLog.findMany({ where: { academyId }, orderBy: { sentAt: 'desc' }, take: 200 }) });
-      if (entity === 'portfolios') return res.json({ items: (await prisma.portalSetting.findMany({ where: { scope: 'portfolio:' + academyId }, orderBy: { updatedAt: 'desc' } })).map(p => ({ ...(p.value as any), id: p.key, revision: p.revision })) });
+      if (entity === 'portfolios') return res.json(await queryPortfolios(academyId, isMasterAllPortfolios, req.query));
       if (entity === 'ai_config') {
         master(user);
         const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });

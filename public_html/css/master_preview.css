@@ -886,3 +886,417 @@
     #masterLiteracyItemModal .card,.literacy-image-card { border:1px solid var(--border-light); border-radius:14px; padding:18px; background:#faf8f5; }
     #literacyImagePreview { max-width:100%; max-height:240px; object-fit:contain; margin:16px auto 0; border-radius:10px; }
     @media(max-width:575px){#masterLiteracyItemModal .modal-body{padding:16px !important}}
+
+    /* =====================================================================
+       마스터 학습관리 검색형 가맹점 드롭다운 & 학습 리포트 모달 스타일
+       ===================================================================== */
+    .master-searchable-dropdown {
+      position: relative;
+      width: 100%;
+    }
+    .master-dropdown-trigger {
+      width: 100%;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-medium);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 12.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+      text-align: left;
+    }
+    .master-dropdown-trigger:hover {
+      border-color: #9e9081;
+      background: #fdfcf9;
+    }
+    .master-searchable-dropdown.is-open .master-dropdown-trigger,
+    .master-dropdown-trigger:focus {
+      outline: none;
+      border-color: #7c6855;
+      box-shadow: 0 0 0 3px rgba(124, 104, 85, 0.14);
+    }
+    .master-dropdown-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .master-dropdown-chevron {
+      font-size: 11px;
+      color: var(--text-muted);
+      transition: transform 0.18s ease;
+      flex-shrink: 0;
+    }
+    .master-searchable-dropdown.is-open .master-dropdown-chevron {
+      transform: rotate(180deg);
+    }
+    .master-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 280px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      box-shadow: 0 14px 32px rgba(46, 38, 32, 0.16);
+      z-index: 1060;
+      display: none;
+      overflow: hidden;
+    }
+    .master-searchable-dropdown.is-open .master-dropdown-menu {
+      display: block;
+    }
+    .master-dropdown-search-wrap {
+      position: relative;
+      padding: 10px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border-light);
+    }
+    .master-dropdown-search-icon {
+      position: absolute;
+      left: 21px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--text-soft);
+      pointer-events: none;
+    }
+    .master-dropdown-search-input {
+      width: 100%;
+      height: 34px;
+      padding: 0 28px 0 31px;
+      border-radius: 8px;
+      border: 1px solid var(--border-medium);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 12.5px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .master-dropdown-search-input:focus {
+      outline: none;
+      border-color: #7c6855;
+      box-shadow: 0 0 0 2px rgba(124, 104, 85, 0.14);
+    }
+    .master-dropdown-search-clear {
+      position: absolute;
+      right: 17px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: var(--text-soft);
+      font-size: 13px;
+      line-height: 1;
+      padding: 2px 4px;
+      cursor: pointer;
+      display: none;
+    }
+    .master-dropdown-search-clear:hover {
+      color: var(--text-main);
+    }
+    .master-dropdown-options {
+      max-height: 270px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .master-dropdown-options::-webkit-scrollbar {
+      width: 6px;
+    }
+    .master-dropdown-options::-webkit-scrollbar-thumb {
+      background: #d8cebf;
+      border-radius: 6px;
+    }
+    .master-dropdown-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      padding: 8px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      text-align: left;
+      font-size: 12.5px;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background-color 0.12s ease;
+    }
+    .master-dropdown-item:hover,
+    .master-dropdown-item.is-focused {
+      background: var(--bg-hover);
+    }
+    .master-dropdown-item.is-selected {
+      background: var(--btn-secondary);
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .master-dropdown-item-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .master-dropdown-item-code {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      background: #f5f1ea;
+      border: 1px solid #e6dfd2;
+      border-radius: 999px;
+      padding: 1px 7px;
+      flex-shrink: 0;
+    }
+    .master-dropdown-empty {
+      padding: 20px 12px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* 마스터 학습 리포트 모달 */
+    #masterLearningReportModal .modal-dialog {
+      max-width: 900px;
+    }
+    .master-report-overview-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(46, 38, 32, 0.04);
+    }
+    .master-report-overview-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .master-report-book-box {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      min-width: 0;
+    }
+    .master-report-cover {
+      width: 82px;
+      height: 112px;
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+      background: #f5f1ea;
+      flex-shrink: 0;
+      box-shadow: 0 3px 10px rgba(46, 38, 32, 0.08);
+    }
+    .master-report-subgrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .master-report-subcard {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .master-report-subcard.highlight {
+      background: linear-gradient(135deg, #f3f9f5 0%, #eaf3ed 100%);
+      border-color: #c7decb;
+    }
+    .master-report-quiz-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .master-report-quiz-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 12px 14px;
+      border-left: 4px solid #2f5436;
+    }
+    .master-report-quiz-card.is-wrong {
+      border-left-color: #b45349;
+      background: #fffdfb;
+    }
+    .master-report-choice-box {
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      background: #f7f5f0;
+      border: 1px solid #ebe5da;
+    }
+    .master-report-choice-box.correct {
+      background: #eef6f0;
+      border-color: #c8dfc9;
+    }
+    .master-report-choice-box.wrong {
+      background: #fdf2f1;
+      border-color: #f1ccc8;
+    }
+    .master-report-thought-card,
+    .master-report-worksheet-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 15px 16px;
+      margin-top: 14px;
+    }
+    .master-report-photo-btn {
+      border: 1px solid var(--border-medium);
+      background: #fbf9f5;
+      border-radius: 10px;
+      padding: 6px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      width: 118px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .master-report-photo-btn:hover {
+      transform: translateY(-2px);
+      border-color: #7c6855;
+    }
+    .master-report-photo-btn img {
+      width: 104px;
+      height: 132px;
+      object-fit: cover;
+      border-radius: 6px;
+      background: #eee8dd;
+    }
+    .master-report-photo-btn span {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    @media (max-width: 767px) {
+      .master-report-overview-split,
+      .master-report-quiz-grid {
+        grid-template-columns: 1fr;
+      }
+      .master-searchable-dropdown {
+        width: 100%;
+      }
+    }
+    @media print {
+      body.printing-master-report > *:not(#masterLearningReportModal) {
+        display: none !important;
+      }
+      body.printing-master-report #masterLearningReportModal,
+      body.printing-master-portfolio #masterPortfolioReportModal {
+        position: static !important;
+        display: block !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+      }
+      body.printing-master-portfolio > *:not(#masterPortfolioReportModal) {
+        display: none !important;
+      }
+      body.printing-master-report #masterLearningReportModal .modal-dialog,
+      body.printing-master-portfolio #masterPortfolioReportModal .modal-dialog {
+        max-width: 100% !important;
+        margin: 0 !important;
+      }
+      body.printing-master-report #masterLearningReportModal .modal-body,
+      body.printing-master-portfolio #masterPortfolioReportModal .modal-body {
+        max-height: none !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+      }
+      body.printing-master-report .modal-backdrop,
+      body.printing-master-portfolio .modal-backdrop {
+        display: none !important;
+      }
+    }
+
+    /* 마스터 포트폴리오 상세 리포트 모달 */
+    #masterPortfolioReportModal .modal-dialog {
+      max-width: 920px;
+    }
+    .master-pf-hero-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(46, 38, 32, 0.04);
+    }
+    .master-pf-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .master-pf-meta-item {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .master-pf-insights-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .master-pf-insight-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 12px 14px;
+      border-left: 4px solid #7c6855;
+    }
+    .master-pf-books-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .master-pf-book-item {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .master-pf-book-cover {
+      width: 56px;
+      height: 78px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: #f5f1ea;
+      flex-shrink: 0;
+    }
+    .master-pf-comment-card {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      border-left: 4px solid #2f5436;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    @media (max-width: 767px) {
+      .master-pf-meta-grid,
+      .master-pf-insights-grid,
+      .master-pf-books-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 575px) {
+      .master-pf-insights-grid,
+      .master-pf-books-grid {
+        grid-template-columns: 1fr;
+      }
+    }

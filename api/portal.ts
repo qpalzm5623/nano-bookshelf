@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma';
 import { loadContentAccess, quizContent, canReadContent, ownsContent } from '../lib/portal-content';
 import { saveAttempt, earnedForAttempt, estimateAttemptPoints } from '../lib/portal-learning';
-import { academyScope } from '../lib/portal-http';
+import { academyScope, PortalError } from '../lib/portal-http';
 import { randomUUID } from 'node:crypto';
 import { hashPassword, verifyPassword, signSession, readSession, passwordVersion } from '../lib/portal-auth';
 
@@ -32,13 +32,14 @@ function allowed(member: any) {
   return member && member.status === 'APPROVED' && member.academy?.status === 'ACTIVE' && !member.academy.deletedAt;
 }
 // 학습 이력 뷰 변환: 한국 표준시(KST, UTC+9) 기준으로 완독 일자를 산출하여 자정~오전 9시 사이 응시 건의 날짜 밀림 방지
-function logView(attempt: any, book: any, studentView = false) {
+function logView(attempt: any, book: any, studentView = false, summaryOnly = false) {
   const details = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
   const completedDate = attempt.completedAt instanceof Date ? attempt.completedAt : new Date(attempt.completedAt);
   const kstDate = new Date(+completedDate + 9 * 3600000).toISOString().slice(0, 10);
   const schoolInfo = [attempt.member?.school, attempt.member?.grade].filter(Boolean).join(' ') || attempt.member?.academy?.name || '';
   const bookPubInfo = [book?.publisher, book?.author].filter(Boolean).join(' · ') || '';
-  return { id: attempt.id, academyId: attempt.member.academy.code, studentId: attempt.member.username,
+  const photos = Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [];
+  return { id: attempt.id, academyId: attempt.member?.academy?.code || attempt.member?.academyId || '', academyName: attempt.member?.academy?.name || '', studentId: attempt.member.username,
     studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정',
     school: schoolInfo, bookId: book?.bookNo || attempt.bookId,
     bookTitle: book?.title || '도서', bookPub: bookPubInfo, cover: book?.coverUrl || '', grade: book?.grade || '',
@@ -49,10 +50,104 @@ function logView(attempt: any, book: any, studentView = false) {
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
     worksheetAiResult: details.worksheetAiResult || null,
-    worksheetPhotos: Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [],
+    worksheetPhotos: summaryOnly ? [] : photos, worksheetPhotoCount: photos.length,
     thoughtTeacherComment: details.thoughtTeacherComment || '',
     comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
 }
+// 마스터(전국) 및 가맹 학원 학습 이력 조건부 조회 헬퍼
+async function queryLearningLogs(user: any, query: any) {
+  let memberWhere: any;
+  if (user.role === 'MASTER') {
+    const requestedAcademy = typeof query?.academy === 'string' ? query.academy.trim() : '';
+    if (!requestedAcademy || requestedAcademy.toUpperCase() === 'ALL') {
+      memberWhere = { academy: { deletedAt: null } };
+    } else {
+      const academyId = await academyScope(user, requestedAcademy);
+      memberWhere = { academyId };
+    }
+  } else {
+    const academyId = await academyScope(user, query?.academy);
+    memberWhere = { academyId };
+  }
+
+  const classGroup = typeof query?.classGroup === 'string' ? query.classGroup.trim() : '';
+  if (user.role !== 'STUDENT' && classGroup && classGroup.toUpperCase() !== 'ALL') {
+    if (classGroup === '미지정') memberWhere.OR = [{ classGroupId: null }, { classGroup: { name: '미지정' } }];
+    else memberWhere.classGroup = { name: classGroup };
+  }
+
+  const completedAt: any = {};
+  if (typeof query?.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.startDate)) {
+    completedAt.gte = new Date(`${query.startDate}T00:00:00+09:00`);
+  }
+  if (typeof query?.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.endDate)) {
+    completedAt.lte = new Date(`${query.endDate}T23:59:59.999+09:00`);
+  }
+
+  const searchTerm = user.role !== 'STUDENT' && typeof query?.search === 'string' ? query.search.trim().slice(0, 100) : '';
+  let searchOr: any[] | null = null;
+  if (searchTerm) {
+    const matchedBooks = await prisma.book.findMany({
+      where: {
+        OR: [
+          { title: { contains: searchTerm, mode: 'insensitive' } },
+          { bookNo: { contains: searchTerm, mode: 'insensitive' } },
+          { author: { contains: searchTerm, mode: 'insensitive' } },
+          { publisher: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+      },
+      select: { id: true, bookNo: true },
+      take: 200
+    });
+    const matchedBookIds = [...new Set(matchedBooks.flatMap((b: any) => [b.id, b.bookNo]).filter(Boolean))];
+    searchOr = [
+      { member: { name: { contains: searchTerm, mode: 'insensitive' } } },
+      { member: { username: { contains: searchTerm, mode: 'insensitive' } } },
+      { member: { academy: { name: { contains: searchTerm, mode: 'insensitive' } } } },
+      ...(matchedBookIds.length ? [{ bookId: { in: matchedBookIds } }] : [])
+    ];
+  }
+
+  const targetId = typeof query?.id === 'string' ? query.id.trim() : '';
+  const summaryOnly = query?.summary === '1' && !targetId;
+  const limit = targetId ? 1 : Math.min(Math.max(Number(query?.limit) || 100, 1), 500);
+  const where: any = {
+    member: memberWhere,
+    ...(user.role === 'STUDENT' ? { memberId: user.id } : {}),
+    ...(targetId ? { id: targetId } : {}),
+    ...(Object.keys(completedAt).length ? { completedAt } : {}),
+    ...(searchOr ? { OR: searchOr } : {})
+  };
+
+  const attempts = await prisma.quizAttempt.findMany({
+    where,
+    include: { member: { include: { academy: true, classGroup: true } } },
+    orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+    ...(typeof query?.cursor === 'string' && !targetId ? { cursor: { id: query.cursor }, skip: 1 } : {})
+  });
+  const page = attempts.slice(0, limit);
+  const bookKeys = [...new Set(page.map((a: any) => a.bookId).filter(Boolean))];
+  const [books, files] = await Promise.all([
+    bookKeys.length
+      ? prisma.book.findMany({
+          where: { OR: [{ id: { in: bookKeys } }, { bookNo: { in: bookKeys } }] },
+          select: { id: true, title: true, bookNo: true, publisher: true, author: true, coverUrl: true, grade: true }
+        })
+      : Promise.resolve([]),
+    prisma.portalFile && page.length
+      ? prisma.portalFile.findMany({ where: { attemptId: { in: page.map((a: any) => a.id) } }, select: { id: true, name: true, attemptId: true } })
+      : Promise.resolve([])
+  ]);
+  return {
+    logs: page.map((a: any) => ({
+      ...logView(a, books.find((b: any) => b.id === a.bookId || b.bookNo === a.bookId), user.role === 'STUDENT', summaryOnly),
+      files: files.filter((f: any) => f.attemptId === a.id)
+    })),
+    nextCursor: !targetId && attempts.length > limit ? page[limit - 1].id : null
+  };
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
   const action = req.query.action || 'session';
@@ -252,18 +347,8 @@ export default async function handler(req: any, res: any) {
       });
     }
     if (action === 'learning' && req.method === 'GET') {
-      // 학생은 자신의 기록만, 교사·원장은 소속 학원의 기록만 조회합니다.
-      const academyId = await academyScope(user, req.query.academy);
-      const limit = Math.min(Math.max(Number(req.query?.limit) || 100, 1), 500);
-      const attempts = await prisma.quizAttempt.findMany({ where: { member: { academyId }, ...(user.role === 'STUDENT' ? { memberId: user.id } : {}) },
-        include: { member: { include: { academy: true, classGroup: true } } }, orderBy: [{ completedAt: 'desc' }, { id: 'desc' }], take: limit + 1, ...(typeof req.query.cursor === 'string' ? { cursor: { id: req.query.cursor }, skip: 1 } : {}) });
-      const page = attempts.slice(0, limit);
-      // 현재 페이지의 도서·첨부 목록은 서로 독립적이므로 동시에 조회합니다.
-      const [books, files] = await Promise.all([
-        prisma.book.findMany({ where: { id: { in: [...new Set(page.map(a => a.bookId))] } }, select: { id: true, title: true, bookNo: true, publisher: true, author: true, coverUrl: true, grade: true } }),
-        prisma.portalFile ? prisma.portalFile.findMany({ where: { attemptId: { in: page.map(a => a.id) } }, select: { id: true, name: true, attemptId: true } }) : Promise.resolve([])
-      ]);
-      return res.status(200).json({ logs: page.map(a => ({ ...logView(a, books.find(b => b.id === a.bookId), user.role === 'STUDENT'), files: files.filter(f => f.attemptId === a.id) })), nextCursor: attempts.length > limit ? page[limit - 1].id : null });
+      // 학생은 자신의 기록만, 교사·원장은 소속 학원, 마스터는 전국 또는 선택 가맹점 이력을 조회합니다.
+      return res.status(200).json(await queryLearningLogs(user, req.query));
     }
     if (action === 'learning' && req.method === 'POST') {
       if (user.role !== 'STUDENT') return res.status(403).json({ error: '학생만 답안을 제출할 수 있습니다.' });
@@ -352,6 +437,7 @@ export default async function handler(req: any, res: any) {
     if (error.message === 'DAILY_LIMIT_EXCEEDED') return res.status(429).json({ error: '해당 도서의 오늘 인증 실패 횟수(3회)를 초과하여 오늘 자정까지 재도전할 수 없습니다.' });
     if (error.message === 'QUIZ_MISMATCH') return res.status(409).json({ error: '서버 문항과 답안이 일치하지 않습니다. 답안은 기기에 유지됩니다.' });
     // 중복 클릭/재시도 시 고유 ID 제약으로 두 번 저장되지 않습니다.
+    if (error instanceof PortalError) return res.status(error.status).json({ error: error.message });
     if (error.code === 'P2002') return res.status(409).json({ error: '이미 처리 중인 답안입니다. 잠시 후 다시 시도해 주세요.' });
     console.error('Portal request failed', error.code || error.name);
     return res.status(500).json({ error: '서버 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.' });

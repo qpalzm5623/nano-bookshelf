@@ -73,17 +73,30 @@ export default async function handler(req: any, res: any) {
       return res.json({ items: bookSheets(access, book).filter(s => canReadContent(user, s, access)).map(s => sheetView(s, user)) });
     }
     staff(user);
+    if (req.method === 'GET' && action === 'director') {
+      const username = text(req.query.username, '학원장 ID', 100, true);
+      const [item] = await resolveShareRecipients(prisma, [username], user.academyId);
+      return res.json({ item });
+    }
     if (req.method === 'GET' && action === 'folders') {
       const own = access.folders.filter((f: any) => f.ownerMemberId === user.id);
       const received = access.folders.filter((f: any) => f.recipients?.some((r: any) => r.academyId === user.academyId));
       const ids = [...new Set<string>([...own, ...received].flatMap((f: any) => f.bookIds))];
-      const books = await prisma.book.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, bookNo: true } });
+      const books = await prisma.book.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, bookNo: true, author: true, coverUrl: true } });
+      const bookById = new Map(books.map((b: any) => [b.id, b]));
       const view = (f: any, mine: boolean) => ({ id: f.id, name: f.name, ownerAcademyName: f.ownerAcademyName, bookIds: f.bookIds,
-        books: books.filter(b => f.bookIds.includes(b.id)), recipients: mine ? f.recipients : undefined, revision: f.revision, isMine: mine });
+        books: (f.bookIds || []).map((bid: string) => bookById.get(bid)).filter(Boolean), recipients: mine ? f.recipients : undefined, revision: f.revision, isMine: mine });
       return res.json({ items: own.map((f: any) => view(f, true)), received: received.map((f: any) => view(f, false)) });
     }
     if (req.method === 'GET' && action === 'catalog') return res.json({ items: await shareableBooks(prisma, user, access) });
     if (req.method === 'POST' && action === 'folder') {
+      if (body.operation === 'delete') {
+        const id = text(body.id, '폴더 ID', 100, true);
+        const previous = access.folders.find((f: any) => f.id === id);
+        need(previous && previous.ownerMemberId === user.id, '본인이 만든 공유 폴더만 삭제할 수 있습니다.', 403);
+        await prisma.portalSetting.deleteMany({ where: { key: 'content_folder:' + id, scope: 'content_folder' } });
+        return res.json({ ok: true, id });
+      }
       const id = body.id ? text(body.id, '폴더 ID', 100, true) : randomUUID();
       const previous = access.folders.find((f: any) => f.id === id);
       need(!body.id || (previous && previous.ownerMemberId === user.id), '본인이 만든 공유 폴더만 편집할 수 있습니다.', 403);

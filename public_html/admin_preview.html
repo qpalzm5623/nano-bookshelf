@@ -3118,7 +3118,7 @@
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
 <link rel="stylesheet" href="css/learning-report.css?v=20261112-print">
-<link rel="stylesheet" href="css/content-sharing.css?v=20261112">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_ui">
 </head>
 
 <body>
@@ -3215,25 +3215,16 @@
         <span>회원 관리 <small class="text-muted font-weight-normal">(선생님/원생)</small></span>
       </a>
 
-      <div class="sidebar-section-title" style="margin-top: 18px;">콘텐츠 & 학습</div>
-
-      <a class="nav-item-btn" id="btn-nav-contents" onclick="switchTab('contents')">
-        <i class="fa-solid fa-book-bookmark"></i>
-        <span>콘텐츠 관리 <small class="text-muted font-weight-normal">(도서/퀴즈)</small></span>
-      </a>
-
-      <a class="nav-item-btn" id="btn-nav-content-sharing" href="#content-sharing" onclick="switchTab('content-sharing'); return false;">
-        <i class="fa-solid fa-folder-open"></i><span>콘텐츠 공유</span>
-      </a>
+      <div class="sidebar-section-title" style="margin-top: 18px;">학습</div>
 
       <a class="nav-item-btn" id="btn-nav-learning" onclick="switchTab('learning')">
         <i class="fa-solid fa-clipboard-check"></i>
         <span>학습 관리 <small class="text-muted font-weight-normal">(리포트)</small></span>
       </a>
 
-      <a class="nav-item-btn" id="btn-nav-literacy" onclick="switchTab('literacy')">
-        <i class="fa-solid fa-graduation-cap"></i>
-        <span>문해력 진단 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
+      <a class="nav-item-btn" id="btn-nav-assignment" onclick="switchTab('assignment')">
+        <i class="fa-solid fa-thumbtack"></i>
+        <span>도서 배정 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
       </a>
 
       <a class="nav-item-btn" id="btn-nav-portfolio" onclick="switchTab('portfolio')">
@@ -3241,9 +3232,21 @@
         <span>독서 포트폴리오</span>
       </a>
 
-      <a class="nav-item-btn" id="btn-nav-assignment" onclick="switchTab('assignment')">
-        <i class="fa-solid fa-thumbtack"></i>
-        <span>도서 배정 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
+      <a class="nav-item-btn" id="btn-nav-literacy" onclick="switchTab('literacy')">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>문해력 진단 <span class="badge badge-warning text-dark ml-1" style="font-size: 10px;">신규</span></span>
+      </a>
+
+      <div class="sidebar-section-title" style="margin-top: 18px;">콘텐츠</div>
+
+      <a class="nav-item-btn" id="btn-nav-contents" onclick="switchTab('contents')">
+        <i class="fa-solid fa-book-bookmark"></i>
+        <span>콘텐츠 관리 <small class="text-muted font-weight-normal">(도서/퀴즈)</small></span>
+      </a>
+
+      <a class="nav-item-btn" id="btn-nav-content-sharing" href="#content-sharing" onclick="switchTab('content-sharing'); return false;">
+        <i class="fa-solid fa-folder-tree"></i>
+        <span>콘텐츠 공유</span>
       </a>
 
       <div class="sidebar-section-title" style="margin-top: 18px;">알림 & 랭킹</div>
@@ -9398,7 +9401,7 @@
 <script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
 <script src="admin_preview.js?v=20261113_content_sharing"></script>
 <script src="js/admin_members.js?v=20261111_v1"></script>
-<script src="js/content-sharing.js?v=20261112"></script>
+<script src="js/content-sharing.js?v=20261113_sharing_ui"></script>
 <script src="js/admin_books.js?v=20261112_content_sharing"></script>
 <script src="js/admin_payment.js?v=20261111_v1"></script>
 <script src="js/admin_notices.js?v=20261111_v1"></script>

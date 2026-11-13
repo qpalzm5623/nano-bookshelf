@@ -1,591 +1,1174 @@
-/**
- * ============================================================================
- * [나노의 책장 B2B 마스터 관리자] 전국 학습 관리 모듈 (Master Learning Management)
- * ----------------------------------------------------------------------------
- * 전국 가맹 학원의 원생 북퀴즈 응시 점수, 생각담기 서술형 과제, 교사 첨삭 현황 통합 관리
- * 
- * [핵심 규칙]
- * 1. 검색바: 클래스 필터 좌측에 '가맹점 필터' 드롭박스 제공 (전국 145개 가맹점 연동)
- * 2. 조회기간: default 최근 당월 1일 ~ today (기본 세팅 및 실시간 필터링)
- * 3. 테이블: '학급' 좌측에 '가맹점' 컬럼 배치
- * 4. 연동: 진입 시 당월 1일 ~ 오늘 기준으로 전국 가맹점 학습 이력 즉시 집계 및 렌더링
- * ============================================================================
- */
+/* ============================================================================
+ * 나노의 책장 - 마스터 관리자 학습 관리 모듈 (master-learning.js)
+ *  - PostgreSQL DB(/api/portal?action=learning) 전국 실시간 학습 이력 조회
+ *  - 검색 가능한 커스텀 가맹점 필터 드롭다운 (웜 베이지 디자인)
+ *  - 실제 학습 리포트 상세 모달 및 인쇄 지원 (카톡 버튼 제거)
+ * ============================================================================ */
 
-(function(window) {
-  'use strict';
+(function() {
+  var MASTER_LEARNING_PAGE_SIZE = 15;
+  var MAX_SERVER_FETCH_PAGES = 6; // 최대 3,000건 (500 * 6)
 
-  var isMasterLearningSearched = false;
   var currentFilteredMasterLogs = [];
-  var masterLearningPage = 1;
-  var masterLearningPageSize = 20;
+  var masterLearningCurrentPage = 1;
+  var masterReportDetailCache = Object.create(null);
+  var currentOpenMasterReportId = null;
 
-  // 1. 전국 가맹점 목록 안전 수집 함수 (SSOT 연동)
-  function getMasterLearningFranchiseList() {
-    if (window.franchiseList && Array.isArray(window.franchiseList) && window.franchiseList.length > 0) {
-      return window.franchiseList;
-    }
-    if (typeof franchiseList !== 'undefined' && Array.isArray(franchiseList) && franchiseList.length > 0) {
-      return franchiseList;
-    }
-    if (window.MIGRATED_FRANCHISES && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
-      return window.MIGRATED_FRANCHISES;
-    }
-    try {
-      var stored = localStorage.getItem('NANO_MASTER_FRANCHISE_LIST');
-      if (stored) {
-        var parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch(e) {}
-    if (typeof defaultFranchiseList !== 'undefined' && Array.isArray(defaultFranchiseList)) {
-      return defaultFranchiseList;
-    }
-    return [];
-  }
+  // 중복 호출(초기 탭 진입 시 initMasterLearning + executeMasterLearningSearch 연속 호출) 방지 상태
+  var masterLearningSearchSeq = 0;
+  var activeSearchKey = '';
+  var activeSearchPromise = null;
+  var isMasterLearningLoading = false;
+  var dropdownEventsBound = false;
+  var dropdownFocusedIndex = -1;
+  var knownMasterClassNames = {};
 
-  // 2. 주요 가맹점 당월 기본 샘플 학습 기록 (목동본원, 대치, 송도, 판교 등)
-  var defaultExtraLearningLogs = [
+  // 로컬 정적 HTML(서버 미연동) 전용 미리보기 샘플 데이터 — 운영 DB 모드에서는 절대 사용하지 않음
+  var OFFLINE_SAMPLE_LOGS = [
     {
-      id: 'L_20261112_01',
-      academyName: '1차 연구회 수학',
-      studentId: 'look1',
-      studentName: '박진호',
-      school: '옥천초등학교 5학년',
+      id: 'L_SAMPLE_01',
+      academyId: 'ACAD-001',
+      academyName: '강남 대치 리딩랩',
+      studentId: 'student_demo1',
+      studentName: '박지후',
       classGroup: 'A Class',
-      bookTitle: '오즈의 마법사',
-      cover: 'upload/book_covers/oz.jpg',
-      publisher: '어스본코리아',
-      author: 'L, 프랭크 바움',
-      date: '2026-11-12',
-      dateTime: '2026.11.12 11:15',
-      score: 80,
-      reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
-    },
-    {
-      id: 'L_20261112_02',
-      academyName: '나노 독서아카데미 목동본원',
-      studentId: '103',
-      studentName: '김태윤',
-      school: '나노초등학교 6학년',
-      classGroup: '소나무반',
-      bookTitle: '13의 얼굴',
-      cover: 'upload/book_covers/face13.jpg',
-      publisher: '위즈덤하우스',
-      author: '김다노',
-      date: '2026-11-12',
-      dateTime: '2026.11.12 10:20',
-      score: 100,
-      reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
-    },
-    {
-      id: 'L_20261111_01',
-      academyName: '대치 에듀 독서논술센터',
-      studentId: 'S1025',
-      studentName: '최유진',
       school: '대치초등학교 4학년',
-      classGroup: '슬기반',
-      bookTitle: '11월 13일의 불꽃',
-      cover: 'upload/book_covers/flame.jpg',
-      publisher: '풀빛',
-      author: '윤자명',
-      date: '2026-11-11',
-      dateTime: '2026.11.11 16:40',
+      bookId: 'FA000003',
+      bookTitle: '오즈의 마법사',
+      bookPub: '어스본코리아 · L. 프랭크 바움',
+      cover: 'upload/book/book_default.jpg',
+      grade: '초등 4학년',
+      date: '2026-11-12',
+      submittedAt: '2026-11-12T02:15:00.000Z',
       score: 80,
+      earnedPoints: 25,
+      correctCount: 4,
+      isCertified: true,
+      sheet: '작성 완료',
       reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
-    },
-    {
-      id: 'L_20261110_01',
-      academyName: '송도 센트럴 리딩랩',
-      studentId: 'S1022',
-      studentName: '이서연',
-      school: '한빛초등학교 4학년',
-      classGroup: '탐구반',
-      bookTitle: '100만 번 산 고양이',
-      cover: 'upload/book_covers/cat.jpg',
-      publisher: '비룡소',
-      author: '사노 요코',
-      date: '2026-11-10',
-      dateTime: '2026.11.10 14:30',
-      score: 100,
-      reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
-    },
-    {
-      id: 'L_20261109_01',
-      academyName: '판교 알파 독서학원',
-      studentId: 'S1031',
-      studentName: '송민재',
-      school: '보평초등학교 5학년',
-      classGroup: '마스터반',
-      bookTitle: '(댕글댕글~) 왜일까요?',
-      cover: 'upload/book_covers/daeng.jpg',
-      publisher: '지성사',
-      author: '이원중 엮음',
-      date: '2026-11-09',
-      dateTime: '2026.11.09 17:05',
-      score: 60,
-      reviewed: '첨삭 전',
+      thoughtQuestion: '도로시와 친구들이 마법사를 만나고 싶어 했던 이유는 무엇인가요?',
+      studentThoughtAnswer: '각자 부족하다고 생각했던 지혜와 마음, 용기를 얻고 싶었기 때문입니다.',
+      thoughtTeacherComment: '등장인물별 소망을 정확히 짚어내어 정리한 점이 인상적입니다.',
+      quizResults: [
+        { qNum: 1, question: '도로시가 회오리바람을 타고 도착한 나라는?', userChoiceText: '먼치킨의 나라', correctChoiceText: '먼치킨의 나라', isCorrect: true },
+        { qNum: 2, question: '허수아비가 원했던 것은 무엇인가요?', userChoiceText: '뇌(지혜)', correctChoiceText: '뇌(지혜)', isCorrect: true }
+      ],
+      worksheetPhotos: [],
       worksheetAiResult: null
-    },
-    {
-      id: 'L_20261108_01',
-      academyName: '1차 연구회 수학',
-      studentId: 'S1021',
-      studentName: '김민준',
-      school: '나노초등학교 5학년',
-      classGroup: '지혜반',
-      bookTitle: '그림 그리는 토끼',
-      cover: 'upload/book_covers/rabbit.jpg',
-      publisher: '푸른숲주니어',
-      author: '시몬 프라앤',
-      date: '2026-11-08',
-      dateTime: '2026.11.08 15:10',
-      score: 100,
-      reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
-    },
-    {
-      id: 'L_20261107_01',
-      academyName: '부산 센텀 나노주니어',
-      studentId: 'S1023',
-      studentName: '박도윤',
-      school: '센텀초등학교 6학년',
-      classGroup: '리더반',
-      bookTitle: '가로등을 밝히는 사람',
-      cover: 'upload/book_covers/lamp.jpg',
-      publisher: '시원어린이',
-      author: '아리비 식스',
-      date: '2026-11-07',
-      dateTime: '2026.11.07 11:45',
-      score: 80,
-      reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
-    },
-    {
-      id: 'L_20261106_01',
-      academyName: '분당 서현 리딩클럽',
-      studentId: 'S1026',
-      studentName: '정예원',
-      school: '서현초등학교 5학년',
-      classGroup: '마스터반',
-      bookTitle: '코끼리는 즙을 못 줘',
-      cover: 'upload/book_covers/elephant.jpg',
-      publisher: '봄이아트북스',
-      author: '모 윌렘스',
-      date: '2026-11-06',
-      dateTime: '2026.11.06 16:30',
-      score: 100,
-      reviewed: '첨삭 완료',
-      worksheetAiResult: { status: 'DONE' }
     }
   ];
 
-  // 3. 초기화 함수
+  // 운영 DB / API 연동 여부 판별
+  function isRemoteServerMode() {
+    if (typeof window === 'undefined') return false;
+    return Boolean(window.NANO_SERVER_DATA || (window.NanoPortal && window.NanoPortal.remote));
+  }
+
+  // XSS 방지용 HTML 이스케이프
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // 안전한 이미지 URL만 허용
+  function resolveSafeCoverUrl(rawUrl, fallbackBook) {
+    var src = rawUrl || (fallbackBook && (fallbackBook.cover || fallbackBook.coverUrl)) || '';
+    src = String(src || '').trim();
+    if (!src) return 'upload/book/book_default.jpg';
+    if (/^(javascript|vbscript):/i.test(src)) return 'upload/book/book_default.jpg';
+    if (src.charAt(0) === '/' && src.charAt(1) !== '/') {
+      src = src.slice(1);
+    }
+    if (/^(https?:\/\/|data:image\/|upload\/|resources\/|assets\/)/i.test(src)) {
+      return src;
+    }
+    return 'upload/book/book_default.jpg';
+  }
+
+  // 원본 나노시트 사진 URL 안전 검증 (data:image/* 또는 허용된 상대/원격 경로)
+  function resolveSafePhotoSrc(photo) {
+    var raw = typeof photo === 'string' ? photo : (photo && (photo.dataUrl || photo.url || photo.src)) || '';
+    raw = String(raw || '').trim();
+    if (!raw) return '';
+    if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(raw)) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^\/?(upload|resources)\//i.test(raw)) return raw.charAt(0) === '/' ? raw.slice(1) : raw;
+    return '';
+  }
+
+  // MIGRATED_BOOKS 인덱스 검색 (도서 표지/출판사/학년 보완용)
+  function findMigratedBookMeta(bookId, bookTitle) {
+    var books = (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) ? window.MIGRATED_BOOKS : [];
+    if (!books.length) return null;
+    if (bookId) {
+      var byId = books.find(function(b) { return b.id === bookId || b.bookNo === bookId; });
+      if (byId) return byId;
+    }
+    if (bookTitle) {
+      var cleanKey = String(bookTitle).replace(/\s+/g, '').toLowerCase();
+      return books.find(function(b) {
+        return String(b.title || '').replace(/\s+/g, '').toLowerCase() === cleanKey;
+      }) || null;
+    }
+    return null;
+  }
+
+  // KST 날짜·시간 문자열 포맷 (YYYY-MM-DD HH:mm)
+  function formatKstDateTime(log) {
+    var rawIso = log && (log.submittedAt || log.completedAt);
+    if (rawIso) {
+      var dt = new Date(rawIso);
+      if (!isNaN(dt.getTime())) {
+        var kst = new Date(dt.getTime() + 9 * 60 * 60 * 1000);
+        var iso = kst.toISOString();
+        return iso.slice(0, 10) + ' ' + iso.slice(11, 16);
+      }
+    }
+    return (log && log.date) ? String(log.date) : '-';
+  }
+
+  // 오늘 날짜 (로컬/KST 기준 YYYY-MM-DD)
+  function getTodayYmd() {
+    var now = new Date();
+    var kst = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60000);
+    return kst.toISOString().slice(0, 10);
+  }
+
+  // 가맹점 코드 -> 표시명 조회 맵
+  function getFranchiseNameMap() {
+    var map = Object.create(null);
+    var list = getMasterLearningFranchiseList();
+    list.forEach(function(f) {
+      if (f.id) map[f.id] = f.name;
+      if (f.serverId) map[f.serverId] = f.name;
+    });
+    return map;
+  }
+
+  // 1. 가맹점 목록 추출 (전국 활성 가맹점, 중복 제거 및 정렬)
+  function getMasterLearningFranchiseList() {
+    var list = [];
+    if (typeof MIGRATED_FRANCHISES !== 'undefined' && Array.isArray(MIGRATED_FRANCHISES) && MIGRATED_FRANCHISES.length > 0) {
+      list = MIGRATED_FRANCHISES;
+    } else if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_FRANCHISES) && window.MIGRATED_FRANCHISES.length > 0) {
+      list = window.MIGRATED_FRANCHISES;
+    } else if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_ACADEMY_OPTIONS) && window.MIGRATED_ACADEMY_OPTIONS.length > 0) {
+      list = window.MIGRATED_ACADEMY_OPTIONS;
+    } else if (typeof franchiseList !== 'undefined' && Array.isArray(franchiseList) && franchiseList.length > 0) {
+      list = franchiseList;
+    }
+
+    var seen = Object.create(null);
+    var result = [];
+    list.forEach(function(f) {
+      if (!f) return;
+      var code = String(f.id || f.code || '').trim();
+      var name = String(f.name || code).trim();
+      if (!code || !name || seen[code]) return;
+      if (f.deletedAt) return;
+      seen[code] = true;
+      result.push({
+        id: code,
+        serverId: f.serverId || '',
+        name: name,
+        status: f.status || 'ACTIVE'
+      });
+    });
+
+    // 본사(HQ)를 최상단에 두고 나머지는 가나다순 정렬
+    result.sort(function(a, b) {
+      if (a.id === 'HQ' && b.id !== 'HQ') return -1;
+      if (b.id === 'HQ' && a.id !== 'HQ') return 1;
+      return a.name.localeCompare(b.name, 'ko');
+    });
+
+    return result;
+  }
+
+  // 학습 로그 객체 표준화
+  function normalizeMasterLearningLog(raw, franchiseMap) {
+    if (!raw || typeof raw !== 'object') return null;
+    var bookMeta = (!raw.cover || !raw.bookPub || !raw.grade)
+      ? findMigratedBookMeta(raw.bookId, raw.bookTitle)
+      : null;
+
+    var academyId = String(raw.academyId || '').trim();
+    var resolvedAcademyName = String(raw.academyName || '').trim();
+    if (!resolvedAcademyName && academyId && franchiseMap && franchiseMap[academyId]) {
+      resolvedAcademyName = franchiseMap[academyId];
+    }
+    if (!resolvedAcademyName) {
+      resolvedAcademyName = academyId || '소속 미지정';
+    }
+
+    var bookPub = String(raw.bookPub || '').trim();
+    if (!bookPub && bookMeta) {
+      bookPub = [bookMeta.publisher, bookMeta.author].filter(Boolean).join(' · ');
+    }
+
+    return Object.assign({}, raw, {
+      academyId: academyId,
+      academyName: resolvedAcademyName,
+      classGroup: String(raw.classGroup || '미지정').trim() || '미지정',
+      studentName: String(raw.studentName || raw.name || '학생').trim(),
+      bookTitle: String(raw.bookTitle || (bookMeta && bookMeta.title) || '도서').trim(),
+      bookPub: bookPub || '도서 정보 없음',
+      grade: String(raw.grade || (bookMeta && bookMeta.grade) || '').trim(),
+      cover: resolveSafeCoverUrl(raw.cover, bookMeta),
+      score: Number(raw.score || 0),
+      earnedPoints: Number(raw.earnedPoints || 0),
+      reviewed: raw.reviewed === '첨삭 완료' ? '첨삭 완료' : (raw.reviewed || '대기'),
+      sheet: raw.sheet === '작성 완료' ? '작성 완료' : '작성 전',
+      worksheetPhotos: Array.isArray(raw.worksheetPhotos) ? raw.worksheetPhotos : [],
+      worksheetPhotoCount: typeof raw.worksheetPhotoCount === 'number'
+        ? raw.worksheetPhotoCount
+        : (Array.isArray(raw.worksheetPhotos) ? raw.worksheetPhotos.length : 0),
+      quizResults: Array.isArray(raw.quizResults) ? raw.quizResults : [],
+      formattedDateTime: formatKstDateTime(raw)
+    });
+  }
+
+  // 2. 마스터 학습 관리 초기화 (학습 관리 탭 최초 진입 시 1회)
   function initMasterLearning() {
+    bindMasterAcademyDropdownEvents();
     populateMasterLearningAcademyFilter();
     populateMasterLearningClassFilter();
     initMasterLearningDateFilters();
-    // 진입 시 당월 1일 ~ 오늘 기본 조건으로 즉시 전국 이력 조회
     executeMasterLearningSearch();
   }
 
-  // 4. 가맹점 드롭다운 채우기 (전국 145개 가맹점 전수 연동)
-  function populateMasterLearningAcademyFilter() {
-    var select = document.getElementById('masterLearningAcademyFilter');
-    if (!select) return;
-    var currentVal = select.value || 'ALL';
+  // 3. 검색형 가맹점 드롭다운 이벤트 바인딩 (1회만 등록)
+  function bindMasterAcademyDropdownEvents() {
+    if (dropdownEventsBound || typeof document === 'undefined') return;
+    dropdownEventsBound = true;
 
-    var franchises = getMasterLearningFranchiseList();
+    var searchInput = document.getElementById('masterLearningAcademySearchInput');
+    var clearBtn = document.getElementById('masterLearningAcademySearchClear');
+    var optionsEl = document.getElementById('masterLearningAcademyOptions');
 
-    var optionsHtml = '<option value="ALL">전체 가맹점 (' + (franchises.length > 0 ? franchises.length + '곳' : '전체') + ')</option>';
-    var seen = new Set();
-    franchises.forEach(function(f) {
-      var name = (f.name || f.academyName || '').trim();
-      if (name && !seen.has(name)) {
-        seen.add(name);
-        optionsHtml += '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        dropdownFocusedIndex = -1;
+        if (clearBtn) {
+          clearBtn.style.display = searchInput.value.trim() ? 'block' : 'none';
+        }
+        renderMasterAcademyDropdownOptions(searchInput.value);
+      });
+
+      searchInput.addEventListener('keydown', function(e) {
+        var items = optionsEl ? Array.prototype.slice.call(optionsEl.querySelectorAll('.master-dropdown-item')) : [];
+        if (e.key === 'Escape') {
+          closeMasterAcademyDropdown();
+          var trigger = document.getElementById('masterLearningAcademyTrigger');
+          if (trigger) trigger.focus();
+          return;
+        }
+        if (e.key === 'ArrowDown' && items.length) {
+          e.preventDefault();
+          dropdownFocusedIndex = (dropdownFocusedIndex + 1) % items.length;
+          updateDropdownKeyboardFocus(items);
+          return;
+        }
+        if (e.key === 'ArrowUp' && items.length) {
+          e.preventDefault();
+          dropdownFocusedIndex = dropdownFocusedIndex <= 0 ? items.length - 1 : dropdownFocusedIndex - 1;
+          updateDropdownKeyboardFocus(items);
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (items.length) {
+            var target = items[dropdownFocusedIndex >= 0 ? dropdownFocusedIndex : 0];
+            if (target) selectMasterAcademyOption(target.getAttribute('data-value') || 'ALL');
+          }
+        }
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (searchInput) {
+          searchInput.value = '';
+          searchInput.focus();
+        }
+        clearBtn.style.display = 'none';
+        dropdownFocusedIndex = -1;
+        renderMasterAcademyDropdownOptions('');
+      });
+    }
+
+    if (optionsEl) {
+      optionsEl.addEventListener('click', function(e) {
+        var btn = e.target && e.target.closest ? e.target.closest('.master-dropdown-item') : null;
+        if (!btn) return;
+        e.stopPropagation();
+        selectMasterAcademyOption(btn.getAttribute('data-value') || 'ALL');
+      });
+    }
+
+    document.addEventListener('click', function(e) {
+      var wrapper = document.getElementById('masterLearningAcademyDropdown');
+      if (!wrapper || !wrapper.classList.contains('is-open')) return;
+      if (!wrapper.contains(e.target)) {
+        closeMasterAcademyDropdown();
       }
     });
-
-    select.innerHTML = optionsHtml;
-    select.value = seen.has(currentVal) ? currentVal : 'ALL';
   }
 
-  // 5. 클래스 드롭다운 채우기
-  function populateMasterLearningClassFilter() {
+  function updateDropdownKeyboardFocus(items) {
+    items.forEach(function(item, idx) {
+      if (idx === dropdownFocusedIndex) {
+        item.classList.add('is-focused');
+        if (typeof item.scrollIntoView === 'function') {
+          item.scrollIntoView({ block: 'nearest' });
+        }
+      } else {
+        item.classList.remove('is-focused');
+      }
+    });
+  }
+
+  function toggleMasterAcademyDropdown(event) {
+    if (event && typeof event.stopPropagation === 'function') {
+      event.stopPropagation();
+    }
+    var wrapper = document.getElementById('masterLearningAcademyDropdown');
+    if (!wrapper) return;
+    if (wrapper.classList.contains('is-open')) {
+      closeMasterAcademyDropdown();
+    } else {
+      openMasterAcademyDropdown();
+    }
+  }
+
+  function openMasterAcademyDropdown() {
+    var wrapper = document.getElementById('masterLearningAcademyDropdown');
+    var trigger = document.getElementById('masterLearningAcademyTrigger');
+    var searchInput = document.getElementById('masterLearningAcademySearchInput');
+    var clearBtn = document.getElementById('masterLearningAcademySearchClear');
+    if (!wrapper) return;
+
+    dropdownFocusedIndex = -1;
+    if (searchInput) {
+      searchInput.value = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+    }
+    renderMasterAcademyDropdownOptions('');
+    wrapper.classList.add('is-open');
+    if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    if (searchInput) {
+      setTimeout(function() { searchInput.focus(); }, 10);
+    }
+  }
+
+  function closeMasterAcademyDropdown() {
+    var wrapper = document.getElementById('masterLearningAcademyDropdown');
+    var trigger = document.getElementById('masterLearningAcademyTrigger');
+    if (!wrapper) return;
+    wrapper.classList.remove('is-open');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    dropdownFocusedIndex = -1;
+  }
+
+  function syncMasterAcademyTriggerLabel(selectedVal) {
+    var franchises = getMasterLearningFranchiseList();
+    var labelEl = document.getElementById('masterLearningAcademyLabel');
+    var hiddenInput = document.getElementById('masterLearningAcademyFilter');
+    var count = franchises.length;
+    var val = selectedVal || (hiddenInput ? hiddenInput.value : 'ALL') || 'ALL';
+
+    if (!labelEl) return;
+    if (val === 'ALL') {
+      labelEl.textContent = count > 0 ? ('전체 가맹점 (' + count + '곳)') : '전체 가맹점';
+      return;
+    }
+    var matched = franchises.find(function(f) { return f.id === val || f.name === val; });
+    labelEl.textContent = matched ? matched.name : val;
+  }
+
+  function renderMasterAcademyDropdownOptions(keyword) {
+    var optionsEl = document.getElementById('masterLearningAcademyOptions');
+    var hiddenInput = document.getElementById('masterLearningAcademyFilter');
+    if (!optionsEl) return;
+
+    var franchises = getMasterLearningFranchiseList();
+    var currentVal = (hiddenInput && hiddenInput.value) || 'ALL';
+    var q = String(keyword || '').trim().toLowerCase();
+
+    var htmlParts = [];
+    if (!q || '전체 가맹점'.indexOf(q) !== -1 || q === 'all') {
+      var allLabel = franchises.length > 0 ? ('전체 가맹점 (' + franchises.length + '곳)') : '전체 가맹점';
+      var isAllSelected = currentVal === 'ALL';
+      htmlParts.push(
+        '<button type="button" class="master-dropdown-item' + (isAllSelected ? ' is-selected' : '') + '" data-value="ALL" role="option" aria-selected="' + isAllSelected + '">' +
+          '<span class="master-dropdown-item-name">' + escapeHtml(allLabel) + '</span>' +
+          (isAllSelected ? '<i class="fa-solid fa-check" style="font-size:11px; color:#2f5436;"></i>' : '<span class="master-dropdown-item-code">ALL</span>') +
+        '</button>'
+      );
+    }
+
+    var filtered = q
+      ? franchises.filter(function(f) {
+          return f.name.toLowerCase().indexOf(q) !== -1 || f.id.toLowerCase().indexOf(q) !== -1;
+        })
+      : franchises;
+
+    filtered.forEach(function(f) {
+      var isSelected = currentVal === f.id || currentVal === f.name;
+      htmlParts.push(
+        '<button type="button" class="master-dropdown-item' + (isSelected ? ' is-selected' : '') + '" data-value="' + escapeHtml(f.id) + '" role="option" aria-selected="' + isSelected + '">' +
+          '<span class="master-dropdown-item-name">' + escapeHtml(f.name) + '</span>' +
+          (isSelected
+            ? '<i class="fa-solid fa-check" style="font-size:11px; color:#2f5436;"></i>'
+            : '<span class="master-dropdown-item-code">' + escapeHtml(f.id) + '</span>') +
+        '</button>'
+      );
+    });
+
+    if (htmlParts.length === 0) {
+      optionsEl.innerHTML = '<div class="master-dropdown-empty"><i class="fa-regular fa-circle-xmark mr-1"></i>일치하는 가맹점이 없습니다.</div>';
+    } else {
+      optionsEl.innerHTML = htmlParts.join('');
+    }
+  }
+
+  function selectMasterAcademyOption(value) {
+    var hiddenInput = document.getElementById('masterLearningAcademyFilter');
+    var nextVal = value || 'ALL';
+    if (hiddenInput) {
+      hiddenInput.value = nextVal;
+    }
+    syncMasterAcademyTriggerLabel(nextVal);
+    closeMasterAcademyDropdown();
+    populateMasterLearningClassFilter();
+    executeMasterLearningSearch();
+  }
+
+  // 4. 가맹점 드롭다운 채우기 (전국 활성 가맹점 연동)
+  function populateMasterLearningAcademyFilter() {
+    bindMasterAcademyDropdownEvents();
+    var franchises = getMasterLearningFranchiseList();
+    var hiddenInput = document.getElementById('masterLearningAcademyFilter');
+    var currentVal = (hiddenInput && hiddenInput.value) || 'ALL';
+
+    if (currentVal !== 'ALL' && !franchises.some(function(f) { return f.id === currentVal || f.name === currentVal; })) {
+      currentVal = 'ALL';
+      if (hiddenInput) hiddenInput.value = 'ALL';
+    }
+    syncMasterAcademyTriggerLabel(currentVal);
+    renderMasterAcademyDropdownOptions('');
+
+    // 상단 안내 배지 가맹점 수를 실제 가맹점 수로 동기화
+    var hintEl = document.querySelector('#tab-master-learning small.text-muted');
+    if (hintEl && franchises.length > 0 && hintEl.textContent.indexOf('가맹점의 실시간 학습 이력') !== -1) {
+      hintEl.innerHTML = '<i class="fa-solid fa-circle-check text-success mr-1"></i>전국 ' + franchises.length + '개 가맹점의 실시간 학습 이력이 연동됩니다.';
+    }
+  }
+
+  // 5. 클래스 필터 동적 채우기 (선택 학원 또는 전체 회원/이력 기준)
+  function populateMasterLearningClassFilter(logsToMerge) {
     var select = document.getElementById('masterLearningClassFilter');
     if (!select) return;
     var currentVal = select.value || 'ALL';
+    var academyInput = document.getElementById('masterLearningAcademyFilter');
+    var selectedAcademy = (academyInput && academyInput.value) || 'ALL';
 
-    var classes = ['A Class', '지혜반', '슬기반', '마스터반', '심화반', '새싹반', '소나무반', '매화반', '탐구반', '리더반'];
-    var optionsHtml = '<option value="ALL">전체 클래스</option>';
-    classes.forEach(function(c) {
-      optionsHtml += '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
+    if (Array.isArray(logsToMerge)) {
+      logsToMerge.forEach(function(l) {
+        if (l && l.classGroup) knownMasterClassNames[String(l.classGroup)] = true;
+      });
+    }
+
+    var classSet = Object.create(null);
+    ['유치부', 'A Class', 'B Class', '소나무반', '초등부', '미지정'].forEach(function(c) { classSet[c] = true; });
+    Object.keys(knownMasterClassNames).forEach(function(c) { classSet[c] = true; });
+
+    if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS)) {
+      window.MIGRATED_MEMBERS.forEach(function(m) {
+        if (!m || !m.classGroup) return;
+        if (selectedAcademy === 'ALL' || m.academyId === selectedAcademy) {
+          classSet[String(m.classGroup).trim()] = true;
+        }
+      });
+    }
+
+    var html = '<option value="ALL">전체 클래스</option>';
+    Object.keys(classSet).sort(function(a, b) {
+      if (a === '미지정') return 1;
+      if (b === '미지정') return -1;
+      return a.localeCompare(b, 'ko');
+    }).forEach(function(cls) {
+      if (!cls) return;
+      html += '<option value="' + escapeHtml(cls) + '">' + escapeHtml(cls) + '</option>';
     });
+    select.innerHTML = html;
 
-    select.innerHTML = optionsHtml;
-    select.value = currentVal;
+    if (Array.prototype.some.call(select.options, function(opt) { return opt.value === currentVal; })) {
+      select.value = currentVal;
+    } else {
+      select.value = 'ALL';
+    }
   }
 
-  // 6. 날짜 기본값 초기화 (최근 당월 1일 ~ today 필수 보장)
-  function initMasterLearningDateFilters(force) {
+  // 6. 날짜 필터 초기화 (기본: 당월 1일 ~ 오늘 KST 기준)
+  function initMasterLearningDateFilters() {
     var startEl = document.getElementById('masterLearningStartDate');
     var endEl = document.getElementById('masterLearningEndDate');
     if (!startEl || !endEl) return;
 
-    var now = new Date();
-    var y = now.getFullYear();
-    var m = String(now.getMonth() + 1).padStart(2, '0');
-    var d = String(now.getDate()).padStart(2, '0');
-    var defaultStart = y + '-' + m + '-01';
-    var defaultEnd = y + '-' + m + '-' + d;
-
-    if (force || !startEl.value || !endEl.value) {
-      startEl.value = defaultStart;
-      endEl.value = defaultEnd;
-    }
+    var todayStr = getTodayYmd();
+    var firstDayStr = todayStr.slice(0, 7) + '-01';
+    if (!startEl.value) startEl.value = firstDayStr;
+    if (!endEl.value) endEl.value = todayStr;
   }
 
-  // 7. 학생 회원 기반 가맹점명 조회 헬퍼
-  function findStudentAcademyName(studentId, studentName) {
-    var members = [];
-    if (window.memberList && Array.isArray(window.memberList)) members = window.memberList;
-    else if (typeof memberList !== 'undefined' && Array.isArray(memberList)) members = memberList;
-    else if (window.MIGRATED_MEMBERS && Array.isArray(window.MIGRATED_MEMBERS)) members = window.MIGRATED_MEMBERS;
-
-    if (members.length > 0) {
-      var matched = members.find(function(m) {
-        if (!m) return false;
-        if (studentId && (String(m.id) === String(studentId) || String(m.memberId) === String(studentId) || m.username === studentId)) return true;
-        if (studentName && m.name === studentName) return true;
-        return false;
-      });
-      if (matched && matched.academyName) return matched.academyName;
+  // 서버에서 전국 또는 선택 가맹점 학습 이력 조회
+  async function fetchMasterLearningLogsFromServer(params) {
+    if (!window.NanoPortal || typeof NanoPortal.api !== 'function') {
+      throw new Error('포털 API 클라이언트를 사용할 수 없습니다.');
     }
-    return '1차 연구회 수학';
+
+    var collected = [];
+    var cursor = '';
+    var pageCount = 0;
+
+    do {
+      var qs = [
+        'action=learning',
+        'summary=1',
+        'limit=500',
+        'academy=' + encodeURIComponent(params.academy || 'ALL')
+      ];
+      if (params.classGroup && params.classGroup !== 'ALL') {
+        qs.push('classGroup=' + encodeURIComponent(params.classGroup));
+      }
+      if (params.startDate) qs.push('startDate=' + encodeURIComponent(params.startDate));
+      if (params.endDate) qs.push('endDate=' + encodeURIComponent(params.endDate));
+      if (params.searchQuery) qs.push('search=' + encodeURIComponent(params.searchQuery));
+      if (cursor) qs.push('cursor=' + encodeURIComponent(cursor));
+
+      var res = await NanoPortal.api('/api/portal?' + qs.join('&'));
+      var batch = Array.isArray(res && res.logs) ? res.logs : [];
+      collected = collected.concat(batch);
+      cursor = (res && res.nextCursor) ? String(res.nextCursor) : '';
+      pageCount++;
+    } while (cursor && pageCount < MAX_SERVER_FETCH_PAGES);
+
+    return collected;
   }
 
-  // 8. 마스터 학습 기록 검색 실행 (전국 가맹점 실데이터 연동)
-  function executeMasterLearningSearch() {
-    isMasterLearningSearched = true;
-    initMasterLearningDateFilters();
+  // 로딩 상태 테이블 렌더링
+  function renderMasterLearningLoadingState() {
+    var tbody = document.getElementById('masterLearningTableBody');
+    if (!tbody) return;
+    tbody.innerHTML =
+      '<tr><td colspan="9" class="text-center py-5 text-muted">' +
+        '<div class="spinner-border spinner-border-sm text-secondary mr-2" role="status"></div>' +
+        '<span style="font-size: 13px; font-weight: 600;">DB에서 전국 학습 이력을 불러오는 중입니다...</span>' +
+      '</td></tr>';
+  }
 
-    var academyFilter = document.getElementById('masterLearningAcademyFilter') ? document.getElementById('masterLearningAcademyFilter').value : 'ALL';
-    var classFilter = document.getElementById('masterLearningClassFilter') ? document.getElementById('masterLearningClassFilter').value : 'ALL';
-    var startVal = document.getElementById('masterLearningStartDate') ? document.getElementById('masterLearningStartDate').value : '';
-    var endVal = document.getElementById('masterLearningEndDate') ? document.getElementById('masterLearningEndDate').value : '';
-    var query = (document.getElementById('masterLearningSearchInput') ? document.getElementById('masterLearningSearchInput').value : '').toLowerCase().trim();
+  // 에러 상태 테이블 렌더링
+  function renderMasterLearningErrorState(message) {
+    var tbody = document.getElementById('masterLearningTableBody');
+    if (!tbody) return;
+    tbody.innerHTML =
+      '<tr><td colspan="9" class="text-center py-5 text-danger">' +
+        '<i class="fa-solid fa-triangle-exclamation mr-2"></i>' +
+        escapeHtml(message || '학습 이력을 불러오지 못했습니다. 잠시 후 다시 조회해 주세요.') +
+      '</td></tr>';
+  }
 
-    // 1) 가맹점 ID -> 명칭 맵 생성
-    var franchises = getMasterLearningFranchiseList();
-    var franchiseIdMap = {};
-    franchises.forEach(function(f) {
-      if (f.id) franchiseIdMap[f.id] = f.name;
-    });
+  // 7. 마스터 학습 이력 통합 조회 (서버 DB 우선 / 로컬 프리뷰 분리)
+  async function executeMasterLearningSearch() {
+    var academyInput = document.getElementById('masterLearningAcademyFilter');
+    var classSelect = document.getElementById('masterLearningClassFilter');
+    var startEl = document.getElementById('masterLearningStartDate');
+    var endEl = document.getElementById('masterLearningEndDate');
+    var searchInput = document.getElementById('masterLearningSearchInput');
 
-    // 2) 데이터 소스 수집
-    var rawLogs = [];
-    var seenIds = new Set();
+    var academyFilter = (academyInput && academyInput.value) || 'ALL';
+    var classFilter = (classSelect && classSelect.value) || 'ALL';
+    var startDate = (startEl && startEl.value) || '';
+    var endDate = (endEl && endEl.value) || '';
+    var searchQuery = (searchInput && searchInput.value ? searchInput.value.trim() : '');
 
-    // 2-1) 실데이터 MIGRATED_LEARNING_LOGS (300건)
-    if (typeof window.MIGRATED_LEARNING_LOGS !== 'undefined' && Array.isArray(window.MIGRATED_LEARNING_LOGS)) {
-      window.MIGRATED_LEARNING_LOGS.forEach(function(l) {
-        if (!l || !l.id || seenIds.has(l.id)) return;
-        seenIds.add(l.id);
-        rawLogs.push(l);
-      });
-    }
+    var franchiseMap = getFranchiseNameMap();
 
-    // 2-2) 로컬스토리지 학습 로그 병합
-    var localLogKeys = ['NANO_LEARNING_LOGS', 'NANO_USER_LOGS', 'NANO_STUDENT_LOGS', 'NANO_QUIZ_RESULTS'];
-    localLogKeys.forEach(function(key) {
-      try {
-        var stored = localStorage.getItem(key);
-        if (stored) {
-          var parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            parsed.forEach(function(item) {
-              if (item && item.id && !seenIds.has(item.id)) {
-                seenIds.add(item.id);
-                rawLogs.push(item);
-              }
-            });
+    if (isRemoteServerMode()) {
+      var requestParams = {
+        academy: academyFilter,
+        classGroup: classFilter,
+        startDate: startDate,
+        endDate: endDate,
+        searchQuery: searchQuery
+      };
+      var queryKey = JSON.stringify(requestParams);
+
+      // 동일한 조건으로 이미 조회 중이면 기존 요청을 재사용하여 중복 트래픽 차단
+      if (activeSearchPromise && activeSearchKey === queryKey) {
+        return activeSearchPromise;
+      }
+
+      var mySeq = ++masterLearningSearchSeq;
+      activeSearchKey = queryKey;
+      isMasterLearningLoading = true;
+      renderMasterLearningLoadingState();
+
+      var task = (async function() {
+        try {
+          var serverLogs = await fetchMasterLearningLogsFromServer(requestParams);
+          if (mySeq !== masterLearningSearchSeq) return;
+
+          var normalized = serverLogs
+            .map(function(item) { return normalizeMasterLearningLog(item, franchiseMap); })
+            .filter(Boolean);
+
+          normalized.sort(function(a, b) {
+            return String(b.submittedAt || b.date || '').localeCompare(String(a.submittedAt || a.date || '')) ||
+              String(b.id).localeCompare(String(a.id));
+          });
+
+          currentFilteredMasterLogs = normalized;
+          masterLearningCurrentPage = 1;
+          populateMasterLearningClassFilter(normalized);
+          updateMasterLearningStats(currentFilteredMasterLogs, startDate, endDate);
+          renderMasterLearningTable();
+        } catch (err) {
+          if (mySeq !== masterLearningSearchSeq) return;
+          currentFilteredMasterLogs = [];
+          masterLearningCurrentPage = 1;
+          updateMasterLearningStats([], startDate, endDate);
+          renderMasterLearningErrorState(err && err.message ? err.message : '학습 이력 조회 중 오류가 발생했습니다.');
+          var countEl = document.getElementById('masterLearningLogCount');
+          if (countEl) countEl.textContent = '0';
+          var pagEl = document.getElementById('masterLearningPagination');
+          if (pagEl) pagEl.innerHTML = '';
+        } finally {
+          if (activeSearchKey === queryKey) {
+            activeSearchKey = '';
+            activeSearchPromise = null;
+          }
+          if (mySeq === masterLearningSearchSeq) {
+            isMasterLearningLoading = false;
           }
         }
-      } catch(e) {}
-    });
+      })();
 
-    // 2-3) 주요 가맹점 당월 실데이터 보강
-    defaultExtraLearningLogs.forEach(function(el) {
-      if (!seenIds.has(el.id)) {
-        seenIds.add(el.id);
-        rawLogs.push(el);
-      }
-    });
+      activeSearchPromise = task;
+      return task;
+    }
 
-    // 3) 각 로그 가맹점명 및 정규화
-    var normalizedLogs = rawLogs.map(function(l, idx) {
-      var stdId = l.studentId || l.memberId || ('S' + (1000 + idx));
-      var stdName = l.studentName || l.name || '원생';
+    // 로컬 정적 HTML(서버 미연동) 미리보기 폴백
+    var rawLogs = (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_LEARNING_LOGS) && window.MIGRATED_LEARNING_LOGS.length > 0)
+      ? window.MIGRATED_LEARNING_LOGS.slice()
+      : OFFLINE_SAMPLE_LOGS.slice();
 
-      // 가맹점명 정확한 맵핑: l.academyName -> franchiseIdMap[l.academyId] -> findStudentAcademyName
-      var acadName = l.academyName;
-      if (!acadName && l.academyId && franchiseIdMap[l.academyId]) {
-        acadName = franchiseIdMap[l.academyId];
-      }
-      if (!acadName) {
-        acadName = findStudentAcademyName(stdId, stdName);
-      }
+    var localNormalized = rawLogs
+      .map(function(item) { return normalizeMasterLearningLog(item, franchiseMap); })
+      .filter(Boolean);
 
-      var bTitle = l.bookTitle || l.title || '완독 도서';
-      var cls = l.classGroup || l.className || 'A Class';
-      var rawDate = String(l.date || l.submittedAt || '2026-11-12').slice(0, 10).replace(/\./g, '-');
-      var rawScore = l.score != null ? Number(l.score) : 80;
-
-      return {
-        id: l.id || ('log_' + idx),
-        studentId: stdId,
-        studentName: stdName,
-        academyName: acadName,
-        bookTitle: bTitle,
-        cover: l.cover || 'resources/images/book_default.svg',
-        publisher: l.pub || l.publisher || '나노출판',
-        author: l.author || '',
-        classGroup: cls,
-        date: rawDate,
-        dateTime: l.dateTime || (rawDate + ' 10:00'),
-        score: rawScore,
-        reviewed: l.reviewed || (l.worksheetAiResult ? '첨삭 완료' : '첨삭 전'),
-        thoughtTeacherComment: l.thoughtTeacherComment || '',
-        worksheetAiResult: l.worksheetAiResult || null
-      };
-    });
-
-    // 4) 조건 필터링
-    var filtered = normalizedLogs.filter(function(l) {
-      // 4-1) 가맹점 필터
-      if (academyFilter !== 'ALL' && l.academyName !== academyFilter) return false;
-
-      // 4-2) 클래스 필터
-      if (classFilter !== 'ALL' && (l.classGroup || '').indexOf(classFilter) === -1) return false;
-
-      // 4-3) 조회 기간 필터 (YYYY-MM-DD)
-      if (startVal && l.date < startVal) return false;
-      if (endVal && l.date > endVal) return false;
-
-      // 4-4) 검색어 필터링
-      if (query) {
-        var matchName = (l.studentName || '').toLowerCase().indexOf(query) !== -1;
-        var matchBook = (l.bookTitle || '').toLowerCase().indexOf(query) !== -1;
-        var matchAcad = (l.academyName || '').toLowerCase().indexOf(query) !== -1;
-        var matchStdId = (l.studentId || '').toLowerCase().indexOf(query) !== -1;
-        if (!matchName && !matchBook && !matchAcad && !matchStdId) return false;
+    var qLower = searchQuery.toLowerCase();
+    var filtered = localNormalized.filter(function(l) {
+      if (academyFilter !== 'ALL' && l.academyId !== academyFilter && l.academyName !== academyFilter) return false;
+      if (classFilter !== 'ALL' && l.classGroup !== classFilter) return false;
+      if (startDate && l.date < startDate) return false;
+      if (endDate && l.date > endDate) return false;
+      if (qLower) {
+        var matched =
+          l.studentName.toLowerCase().indexOf(qLower) !== -1 ||
+          String(l.studentId || '').toLowerCase().indexOf(qLower) !== -1 ||
+          l.bookTitle.toLowerCase().indexOf(qLower) !== -1 ||
+          l.academyName.toLowerCase().indexOf(qLower) !== -1;
+        if (!matched) return false;
       }
       return true;
     });
 
-    // 5) 최신 날짜순 정렬
     filtered.sort(function(a, b) {
-      return (b.dateTime || b.date || '').localeCompare(a.dateTime || a.date || '');
+      return String(b.submittedAt || b.date || '').localeCompare(String(a.submittedAt || a.date || ''));
     });
 
     currentFilteredMasterLogs = filtered;
-    masterLearningPage = 1;
-
-    // 6) 통계 카드 계산 및 반영
-    var totalCount = filtered.length;
-    var avgScore = totalCount > 0 ? Math.round(filtered.reduce(function(sum, item) { return sum + item.score; }, 0) / totalCount) : 0;
-    var reviewDoneCount = filtered.filter(function(item) {
-      return item.reviewed === '첨삭 완료' || item.reviewed === '완료' || Boolean(item.worksheetAiResult);
-    }).length;
-    var reviewRate = totalCount > 0 ? Math.round((reviewDoneCount / totalCount) * 100) : 0;
-
-    updateMasterLearningStats(totalCount, avgScore, reviewRate);
-    renderMasterLearningTable(1);
+    masterLearningCurrentPage = 1;
+    populateMasterLearningClassFilter(filtered);
+    updateMasterLearningStats(currentFilteredMasterLogs, startDate, endDate);
+    renderMasterLearningTable();
   }
 
-  // 9. 통계 카드 UI 업데이트
-  function updateMasterLearningStats(count, avg, rate) {
+  // 8. 상단 KPI 요약 지표 실시간 동기화
+  function updateMasterLearningStats(logs, startDate, endDate) {
     var countEl = document.getElementById('masterLearningStatMonthlyCount');
-    if (countEl) countEl.innerText = count.toLocaleString();
-
-    var subCountEl = document.getElementById('masterLearningStatMonthlySub');
-    if (subCountEl) subCountEl.innerText = count > 0 ? ('조회 결과 총 ' + count + '건') : '조회된 학습 이력 0건';
-
+    var subEl = document.getElementById('masterLearningStatMonthlySub');
     var avgEl = document.getElementById('masterLearningStatAvgScore');
-    if (avgEl) avgEl.innerText = avg;
-
     var passSubEl = document.getElementById('masterLearningStatPassSub');
-    if (passSubEl) passSubEl.innerText = '인증 통과 기준: 60점 이상 (평균 ' + avg + '점)';
+    var reviewRateEl = document.getElementById('masterLearningStatReviewRate');
+    var reviewSubEl = document.getElementById('masterLearningStatReviewSub');
 
-    var rateEl = document.getElementById('masterLearningStatReviewRate');
-    if (rateEl) rateEl.innerText = rate;
-
-    var revSubEl = document.getElementById('masterLearningStatReviewSub');
-    if (revSubEl) revSubEl.innerText = '담당 지도교사 첨삭 완료 (' + rate + '%)';
-  }
-
-  // 10. 테이블 렌더링
-  function renderMasterLearningTable(page) {
-    var tbody = document.getElementById('masterLearningTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    masterLearningPage = page || 1;
-    var logs = currentFilteredMasterLogs || [];
-    var totalCount = logs.length;
-
-    var countBadge = document.getElementById('masterLearningLogCount');
-    if (countBadge) countBadge.innerText = totalCount.toLocaleString();
-
-    if (totalCount === 0) {
-      tbody.innerHTML = 
-        '<tr>' +
-          '<td colspan="9" class="text-center py-5 text-muted">' +
-            '선택하신 조건에 일치하는 전국 학습 기록이 없습니다.' +
-          '</td>' +
-        '</tr>';
-      renderMasterLearningPagination(0, 1);
-      return;
-    }
-
-    var totalPages = Math.ceil(totalCount / masterLearningPageSize);
-    if (masterLearningPage > totalPages) masterLearningPage = totalPages;
-
-    var startIdx = (masterLearningPage - 1) * masterLearningPageSize;
-    var endIdx = Math.min(startIdx + masterLearningPageSize, totalCount);
-    var pagedLogs = logs.slice(startIdx, endIdx);
-
-    pagedLogs.forEach(function(l, i) {
-      var rowNo = totalCount - (startIdx + i);
-      var isReviewed = l.reviewed === '첨삭 완료' || l.reviewed === '완료' || Boolean(l.worksheetAiResult);
-      var reviewBadge = isReviewed
-        ? '<span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11.5px; padding:3px 9px; border-radius:6px;"><i class="fa-solid fa-check mr-1"></i>첨삭 완료</span>'
-        : '<span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size:11.5px; padding:3px 9px; border-radius:6px; color:#d97706; background:#fef3c7;"><i class="fa-solid fa-clock mr-1"></i>첨삭 전</span>';
-
-      var scoreBadge = '<span class="font-weight-bold ' + (l.score >= 60 ? 'text-success' : 'text-danger') + '" style="font-size:13px;">' + l.score + '점</span>';
-
-      var tr = document.createElement('tr');
-      // 순서: 번호 | 완료일 | 도서명 | 가맹점 | 학급 | 원생명 | 북퀴즈 결과 | 첨삭 | 관리
-      tr.innerHTML = 
-        '<td class="text-center"><span class="font-weight-bold text-muted" style="font-size:12px;">' + rowNo + '</span></td>' +
-        '<td class="text-center" style="font-size:12px; color:#6b7280; white-space:nowrap;">' + escapeHtml(l.dateTime) + '</td>' +
-        '<td>' +
-          '<div class="d-flex align-items-center" style="gap:10px;">' +
-            '<img src="' + escapeHtml(l.cover) + '" alt="" style="width:34px; height:46px; object-fit:cover; border-radius:4px; border:1px solid #e5e7eb;" onerror="this.onerror=null; this.src=\'resources/images/book_default.svg\';">' +
-            '<div style="min-width:0;">' +
-              '<div class="font-weight-bold text-truncate" style="font-size:13px; color:var(--text-main); max-width:220px;" title="' + escapeHtml(l.bookTitle) + '">' + escapeHtml(l.bookTitle) + '</div>' +
-              '<small class="text-muted text-truncate" style="font-size:11px; display:block;">' + escapeHtml(l.publisher + (l.author ? (' · ' + l.author) : '')) + '</small>' +
-            '</div>' +
-          '</div>' +
-        '</td>' +
-        '<td class="text-center"><span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size:12px; max-width:140px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escapeHtml(l.academyName) + '">' + escapeHtml(l.academyName) + '</span></td>' +
-        '<td class="text-center"><span class="badge-soft badge-soft-neutral" style="font-size:11.5px;">' + escapeHtml(l.classGroup) + '</span></td>' +
-        '<td><strong style="font-size:13px; color:var(--text-main);">' + escapeHtml(l.studentName) + '</strong></td>' +
-        '<td class="text-center">' + scoreBadge + '</td>' +
-        '<td class="text-center">' + reviewBadge + '</td>' +
-        '<td class="text-center" style="white-space:nowrap;">' +
-          '<button type="button" class="btn btn-xs btn-beige-primary mr-1" onclick="openMasterLearningReportDetail(\'' + l.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 9px;">학습리포트</button>' +
-          '<button type="button" class="btn btn-xs font-weight-bold" onclick="sendMasterLearningKakao(\'' + l.id + '\')" style="background-color:#FEE500; color:#3C1E1E; border:1px solid #ebd000; border-radius:6px; font-size:11.5px; padding:3px 8px;"><i class="fa-solid fa-comment mr-1"></i>카톡</button>' +
-        '</td>';
-
-      tbody.appendChild(tr);
-    });
-
-    renderMasterLearningPagination(totalPages, masterLearningPage);
-  }
-
-  // 11. 페이지네이션 렌더링
-  function renderMasterLearningPagination(totalPages, curPage) {
-    var container = document.getElementById('masterLearningPagination');
-    if (!container) return;
-    if (totalPages <= 1) {
-      container.innerHTML = '';
-      return;
-    }
-
-    var html = '';
-    html += '<button type="button" class="btn btn-xs btn-outline-secondary" ' + (curPage <= 1 ? 'disabled' : '') + ' onclick="renderMasterLearningTable(' + (curPage - 1) + ')"><i class="fa-solid fa-chevron-left"></i></button>';
-
-    var startPage = Math.max(1, curPage - 2);
-    var endPage = Math.min(totalPages, startPage + 4);
-    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
-
-    for (var p = startPage; p <= endPage; p++) {
-      if (p === curPage) {
-        html += '<button type="button" class="btn btn-xs btn-primary font-weight-bold" style="min-width:28px;">' + p + '</button>';
+    var total = logs.length;
+    if (countEl) countEl.textContent = total.toLocaleString();
+    if (subEl) {
+      if (startDate && endDate) {
+        subEl.textContent = '조회 기간 (' + startDate + ' ~ ' + endDate + ')';
       } else {
-        html += '<button type="button" class="btn btn-xs btn-outline-secondary" style="min-width:28px;" onclick="renderMasterLearningTable(' + p + ')">' + p + '</button>';
+        subEl.textContent = '전체 기간 조회 결과';
       }
     }
 
-    html += '<button type="button" class="btn btn-xs btn-outline-secondary" ' + (curPage >= totalPages ? 'disabled' : '') + ' onclick="renderMasterLearningTable(' + (curPage + 1) + ')"><i class="fa-solid fa-chevron-right"></i></button>';
-    container.innerHTML = html;
+    if (total === 0) {
+      if (avgEl) avgEl.textContent = '0';
+      if (passSubEl) passSubEl.textContent = '인증 통과 기준: 60점 이상 (0건)';
+      if (reviewRateEl) reviewRateEl.textContent = '0';
+      if (reviewSubEl) reviewSubEl.textContent = '첨삭 완료 0건 / 총 0건';
+      return;
+    }
+
+    var sumScore = 0;
+    var passCount = 0;
+    var reviewedCount = 0;
+    logs.forEach(function(l) {
+      var s = Number(l.score || 0);
+      sumScore += s;
+      if (s >= 60) passCount++;
+      if (l.reviewed === '첨삭 완료') reviewedCount++;
+    });
+
+    var avg = Math.round(sumScore / total);
+    var passRate = Math.round((passCount / total) * 100);
+    var revRate = Math.round((reviewedCount / total) * 100);
+
+    if (avgEl) avgEl.textContent = String(avg);
+    if (passSubEl) passSubEl.textContent = '완독 인증 ' + passCount.toLocaleString() + '건 (' + passRate + '%)';
+    if (reviewRateEl) reviewRateEl.textContent = String(revRate);
+    if (reviewSubEl) reviewSubEl.textContent = '첨삭 완료 ' + reviewedCount.toLocaleString() + '건 / 총 ' + total.toLocaleString() + '건';
   }
 
-  // 12. 필터 초기화
-  function resetMasterLearningFilters() {
-    var aFilter = document.getElementById('masterLearningAcademyFilter');
-    if (aFilter) aFilter.value = 'ALL';
-    var cFilter = document.getElementById('masterLearningClassFilter');
-    if (cFilter) cFilter.value = 'ALL';
-    var sInput = document.getElementById('masterLearningSearchInput');
-    if (sInput) sInput.value = '';
+  // 9. 테이블 렌더링
+  function renderMasterLearningTable() {
+    var tbody = document.getElementById('masterLearningTableBody');
+    var countEl = document.getElementById('masterLearningLogCount');
+    if (!tbody) return;
 
-    initMasterLearningDateFilters(true);
+    var total = currentFilteredMasterLogs.length;
+    if (countEl) countEl.textContent = total.toLocaleString();
+
+    if (total === 0) {
+      if (!isMasterLearningLoading) {
+        tbody.innerHTML =
+          '<tr><td colspan="9" class="text-center py-5 text-muted">' +
+            '<i class="fa-regular fa-folder-open mr-2" style="font-size: 16px;"></i>조건에 일치하는 학습 이력이 없습니다.' +
+          '</td></tr>';
+      }
+      renderMasterLearningPagination();
+      return;
+    }
+
+    var startIdx = (masterLearningCurrentPage - 1) * MASTER_LEARNING_PAGE_SIZE;
+    var pageLogs = currentFilteredMasterLogs.slice(startIdx, startIdx + MASTER_LEARNING_PAGE_SIZE);
+
+    tbody.innerHTML = pageLogs.map(function(l, idx) {
+      var num = total - (startIdx + idx);
+      var coverSrc = escapeHtml(resolveSafeCoverUrl(l.cover));
+      var scoreVal = Number(l.score || 0);
+      var scoreColor = scoreVal >= 60 ? '#2f5436' : '#962a22';
+      var reviewBadge = l.reviewed === '첨삭 완료'
+        ? '<span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>첨삭 완료</span>'
+        : '<span class="badge-soft badge-soft-warn"><i class="fa-regular fa-clock mr-1"></i>첨삭 전</span>';
+
+      return (
+        '<tr>' +
+          '<td class="text-muted font-weight-bold" style="font-size:12px;">' + num + '</td>' +
+          '<td style="font-size:12px; color:#64748b; white-space:nowrap;">' + escapeHtml(l.formattedDateTime || l.date || '-') + '</td>' +
+          '<td style="text-align:left;">' +
+            '<div class="d-flex align-items-center" style="gap: 10px; min-width: 180px;">' +
+              '<img src="' + coverSrc + '" alt="" onerror="this.onerror=null;this.src=\'upload/book/book_default.jpg\';" ' +
+                'style="width:32px; height:44px; object-fit:cover; border-radius:4px; border:1px solid var(--border-light); flex-shrink:0; background:#f5f1ea;">' +
+              '<div style="min-width:0;">' +
+                '<div class="font-weight-bold text-dark text-truncate" style="font-size:13px; max-width:240px;" title="' + escapeHtml(l.bookTitle) + '">' + escapeHtml(l.bookTitle) + '</div>' +
+                '<small class="text-muted text-truncate d-block" style="font-size:11px; max-width:240px;">' + escapeHtml(l.bookPub) + '</small>' +
+              '</div>' +
+            '</div>' +
+          '</td>' +
+          '<td><span class="badge-soft badge-soft-neutral font-weight-bold" style="font-size:11px; max-width:135px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;" title="' + escapeHtml(l.academyName) + '">' + escapeHtml(l.academyName) + '</span></td>' +
+          '<td><span class="badge-soft badge-soft-neutral" style="font-size:11px;">' + escapeHtml(l.classGroup || '미지정') + '</span></td>' +
+          '<td class="font-weight-bold" style="color:var(--text-main);" title="' + escapeHtml(l.studentId || '') + '">' + escapeHtml(l.studentName) + '</td>' +
+          '<td><strong style="font-size:13px; color:' + scoreColor + ';">' + scoreVal + '점</strong></td>' +
+          '<td>' + reviewBadge + '</td>' +
+          '<td class="text-center" style="white-space:nowrap;">' +
+            '<button type="button" class="btn btn-xs btn-beige-primary" data-log-id="' + escapeHtml(String(l.id)) + '" ' +
+              'onclick="openMasterLearningReportDetail(this.getAttribute(\'data-log-id\'))" ' +
+              'style="border-radius:6px; font-size:11.5px; padding:4px 10px; font-weight:600;">' +
+              '<i class="fa-solid fa-file-lines mr-1"></i>학습리포트' +
+            '</button>' +
+          '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    renderMasterLearningPagination();
+  }
+
+  // 10. 페이지네이션 렌더링 및 페이지 이동
+  function renderMasterLearningPagination() {
+    var pagEl = document.getElementById('masterLearningPagination');
+    if (!pagEl) return;
+
+    var totalPages = Math.ceil(currentFilteredMasterLogs.length / MASTER_LEARNING_PAGE_SIZE);
+    if (totalPages <= 1) {
+      pagEl.innerHTML = '';
+      return;
+    }
+
+    var startPage = Math.max(1, masterLearningCurrentPage - 2);
+    var endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) {
+      startPage = Math.max(1, endPage - 4);
+    }
+
+    var html = '';
+    html += '<button type="button" class="btn btn-xs btn-light border" ' +
+      (masterLearningCurrentPage <= 1 ? 'disabled' : 'onclick="changeMasterLearningPage(' + (masterLearningCurrentPage - 1) + ')"') +
+      ' style="border-radius:6px; min-width:30px; height:30px;"><i class="fa-solid fa-chevron-left" style="font-size:10px;"></i></button>';
+
+    for (var p = startPage; p <= endPage; p++) {
+      var active = p === masterLearningCurrentPage;
+      html += '<button type="button" class="btn btn-xs ' + (active ? 'btn-beige-primary font-weight-bold' : 'btn-light border') + '" ' +
+        'onclick="changeMasterLearningPage(' + p + ')" style="border-radius:6px; min-width:30px; height:30px;">' + p + '</button>';
+    }
+
+    html += '<button type="button" class="btn btn-xs btn-light border" ' +
+      (masterLearningCurrentPage >= totalPages ? 'disabled' : 'onclick="changeMasterLearningPage(' + (masterLearningCurrentPage + 1) + ')"') +
+      ' style="border-radius:6px; min-width:30px; height:30px;"><i class="fa-solid fa-chevron-right" style="font-size:10px;"></i></button>';
+
+    pagEl.innerHTML = html;
+  }
+
+  function changeMasterLearningPage(page) {
+    var totalPages = Math.max(1, Math.ceil(currentFilteredMasterLogs.length / MASTER_LEARNING_PAGE_SIZE));
+    var target = Math.min(Math.max(Number(page) || 1, 1), totalPages);
+    masterLearningCurrentPage = target;
+    renderMasterLearningTable();
+  }
+
+  // 11. 필터 초기화
+  function resetMasterLearningFilters() {
+    var academyInput = document.getElementById('masterLearningAcademyFilter');
+    var classEl = document.getElementById('masterLearningClassFilter');
+    var startEl = document.getElementById('masterLearningStartDate');
+    var endEl = document.getElementById('masterLearningEndDate');
+    var searchEl = document.getElementById('masterLearningSearchInput');
+
+    if (academyInput) academyInput.value = 'ALL';
+    syncMasterAcademyTriggerLabel('ALL');
+    closeMasterAcademyDropdown();
+    populateMasterLearningClassFilter();
+
+    if (classEl) classEl.value = 'ALL';
+    if (searchEl) searchEl.value = '';
+
+    var todayStr = getTodayYmd();
+    if (startEl) startEl.value = todayStr.slice(0, 7) + '-01';
+    if (endEl) endEl.value = todayStr;
+
     executeMasterLearningSearch();
   }
 
-  // 13. 학습리포트 모달 오픈
-  function openMasterLearningReportDetail(logId) {
-    var log = currentFilteredMasterLogs.find(function(item) { return String(item.id) === String(logId); });
-    if (!log) return;
-    alert('[' + log.studentName + '] 원생의 『' + log.bookTitle + '』 학습 리포트\n\n' +
-          '- 소속 학원: ' + log.academyName + '\n' +
-          '- 소속 클래스: ' + log.classGroup + '\n' +
-          '- 북퀴즈 결과: ' + log.score + '점\n' +
-          '- 첨삭 상태: ' + (log.reviewed || '첨삭 완료') + '\n\n' +
-          '상세 리포트 인쇄 및 모니터링이 정상 연동되었습니다.');
-  }
+  // 12. 학습 리포트 상세 모달 열기 (필요 시 단건 API로 문항·사진 전체 로드)
+  async function openMasterLearningReportDetail(logId) {
+    if (!logId) return;
+    var rowLog = currentFilteredMasterLogs.find(function(item) { return String(item.id) === String(logId); });
+    if (!rowLog) return;
 
-  // 14. 카톡 발송 안내
-  function sendMasterLearningKakao(logId) {
-    var log = currentFilteredMasterLogs.find(function(item) { return String(item.id) === String(logId); });
-    if (!log) return;
-    if (typeof showMasterToast === 'function') {
-      showMasterToast('🎉 [' + log.studentName + ' / ' + log.academyName + '] 학부모님께 학습 리포트 카카오톡 알림톡이 전송되었습니다.');
-    } else {
-      alert('[' + log.studentName + '] 학부모님께 알림톡이 전송되었습니다.');
+    currentOpenMasterReportId = String(logId);
+    var cachedFull = masterReportDetailCache[String(logId)] || null;
+    var initialLog = cachedFull || rowLog;
+
+    renderMasterLearningReportModal(initialLog);
+
+    var modalEl = document.getElementById('masterLearningReportModal');
+    if (modalEl && typeof $ === 'function') {
+      $('#masterLearningReportModal').modal('show');
+    }
+
+    // 서버 모드이고 아직 단건 상세를 불러오지 않은 경우 전체 문항/원본 사진을 비동기 로드
+    var needsDetailFetch = isRemoteServerMode() && !cachedFull;
+    var loadingEl = document.getElementById('masterReportLoadingState');
+    if (needsDetailFetch && window.NanoPortal && typeof NanoPortal.api === 'function') {
+      if (loadingEl) loadingEl.classList.remove('d-none');
+      try {
+        var res = await NanoPortal.api('/api/portal?action=learning&id=' + encodeURIComponent(logId));
+        var fetched = Array.isArray(res && res.logs) ? res.logs[0] : null;
+        if (fetched) {
+          var normalizedFull = normalizeMasterLearningLog(fetched, getFranchiseNameMap()) || fetched;
+          masterReportDetailCache[String(logId)] = normalizedFull;
+          if (currentOpenMasterReportId === String(logId)) {
+            renderMasterLearningReportModal(normalizedFull);
+          }
+        }
+      } catch (err) {
+        if (typeof showMasterToast === 'function') {
+          showMasterToast('상세 이력을 불러오는 중 일부 정보를 가져오지 못했습니다.');
+        }
+      } finally {
+        if (loadingEl && currentOpenMasterReportId === String(logId)) {
+          loadingEl.classList.add('d-none');
+        }
+      }
+    } else if (loadingEl) {
+      loadingEl.classList.add('d-none');
     }
   }
 
-  function escapeHtml(str) {
-    return String(str == null ? '' : str).replace(/[&<>"']/g, function(c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
+  // 학습 리포트 모달 DOM 바인딩
+  function renderMasterLearningReportModal(log) {
+    if (!log) return;
+
+    var setText = function(id, value) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('masterReportSubtitle', (log.studentName || '-') + ' · ' + (log.academyName || '-') + ' · ' + (log.formattedDateTime || log.date || '-'));
+
+    var coverImg = document.getElementById('masterReportCoverImg');
+    if (coverImg) {
+      coverImg.src = resolveSafeCoverUrl(log.cover);
+      coverImg.alt = (log.bookTitle || '도서') + ' 표지';
+    }
+
+    setText('masterReportBookGrade', log.grade || '학년 미지정');
+    setText('masterReportEarnedPoints', (Number(log.earnedPoints || 0)).toLocaleString() + ' P');
+    setText('masterReportBookTitle', log.bookTitle || '도서');
+    setText('masterReportBookPub', log.bookPub || '출판사 및 저자 정보 없음');
+    setText('masterReportAcademy', log.academyName || log.academyId || '-');
+    setText('masterReportDate', log.formattedDateTime || log.date || '-');
+    setText('masterReportStudent', (log.studentName || '-') + ' (' + (log.classGroup || '미지정') + ')');
+    setText('masterReportStudentSub', log.school || log.studentId || '-');
+
+    var score = Number(log.score || 0);
+    setText('masterReportScore', score + '점');
+
+    var scoreEl = document.getElementById('masterReportScore');
+    var passBadgeEl = document.getElementById('masterReportPassBadge');
+    var certBadgeEl = document.getElementById('masterReportCertifiedBadge');
+    if (score >= 80) {
+      if (scoreEl) scoreEl.style.color = '#2f5436';
+      if (passBadgeEl) {
+        passBadgeEl.className = 'badge-soft badge-soft-success';
+        passBadgeEl.textContent = '우수 완독 인증';
+      }
+      if (certBadgeEl) {
+        certBadgeEl.className = 'badge-soft badge-soft-success font-weight-bold';
+        certBadgeEl.textContent = '완독 인증 도서';
+      }
+    } else if (score >= 60) {
+      if (scoreEl) scoreEl.style.color = '#2f5436';
+      if (passBadgeEl) {
+        passBadgeEl.className = 'badge-soft badge-soft-success';
+        passBadgeEl.textContent = '완독 인증 통과';
+      }
+      if (certBadgeEl) {
+        certBadgeEl.className = 'badge-soft badge-soft-success font-weight-bold';
+        certBadgeEl.textContent = '완독 인증 도서';
+      }
+    } else {
+      if (scoreEl) scoreEl.style.color = '#962a22';
+      if (passBadgeEl) {
+        passBadgeEl.className = 'badge-soft badge-soft-danger';
+        passBadgeEl.textContent = '미통과 (재도전 권장)';
+      }
+      if (certBadgeEl) {
+        certBadgeEl.className = 'badge-soft badge-soft-warn font-weight-bold';
+        certBadgeEl.textContent = '미인증 응시';
+      }
+    }
+
+    // 북퀴즈 문항별 결과
+    var quizzes = Array.isArray(log.quizResults) ? log.quizResults : [];
+    var totalQ = quizzes.length;
+    var correctQ = quizzes.filter(function(q) { return q && q.isCorrect; }).length;
+    var summaryEl = document.getElementById('masterReportQuizSummary');
+    var quizContainer = document.getElementById('masterReportQuizDetailContainer');
+
+    if (summaryEl) {
+      if (totalQ > 0) {
+        var accRate = Math.round((correctQ / totalQ) * 100);
+        summaryEl.innerHTML = '총 ' + totalQ + '문항 중 <strong style="color:' + (accRate >= 60 ? '#2f5436' : '#962a22') + ';">' + correctQ + '문항</strong> 정답 (정답률 ' + accRate + '%)';
+      } else {
+        summaryEl.textContent = '정답 수: ' + Number(log.correctCount || 0) + '문항 (' + score + '점)';
+      }
+    }
+
+    if (quizContainer) {
+      if (totalQ === 0) {
+        quizContainer.innerHTML =
+          '<div style="grid-column: 1 / -1; background:#ffffff; border:1px dashed var(--border-medium); border-radius:12px; padding:18px; text-align:center; font-size:12.5px; color:var(--text-muted);">' +
+            '문항별 상세 답안이 기록되지 않은 학습 이력입니다.' +
+          '</div>';
+      } else {
+        quizContainer.innerHTML = quizzes.map(function(q, idx) {
+          var qNum = q.qNum || (idx + 1);
+          var isCorrect = Boolean(q.isCorrect);
+          var badge = isCorrect
+            ? '<span class="badge-soft badge-soft-success" style="font-size:10.5px;">정답</span>'
+            : '<span class="badge-soft badge-soft-danger" style="font-size:10.5px;">오답</span>';
+
+          var choicesHtml = isCorrect
+            ? '<div class="master-report-choice-box correct">' +
+                '<div class="font-weight-bold" style="font-size:11px; color:#2f5436;">학생 선택 답안</div>' +
+                '<div class="mt-1" style="color:var(--text-main);">' + escapeHtml(q.userChoiceText || '-') + '</div>' +
+              '</div>'
+            : '<div class="master-report-choice-box wrong mb-1">' +
+                '<div class="font-weight-bold" style="font-size:11px; color:#962a22;">학생 선택 오답</div>' +
+                '<div class="mt-1" style="color:#962a22; text-decoration:line-through;">' + escapeHtml(q.userChoiceText || '-') + '</div>' +
+              '</div>' +
+              '<div class="master-report-choice-box correct">' +
+                '<div class="font-weight-bold" style="font-size:11px; color:#2f5436;">실제 정답</div>' +
+                '<div class="mt-1 font-weight-bold" style="color:#2f5436;">' + escapeHtml(q.correctChoiceText || '-') + '</div>' +
+              '</div>';
+
+          return (
+            '<div class="master-report-quiz-card ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+              '<div class="d-flex justify-content-between align-items-center mb-2">' +
+                '<strong style="font-size:12px; color:var(--text-muted);">Q' + String(qNum).padStart(2, '0') + ' · 문제 ' + qNum + '</strong>' +
+                badge +
+              '</div>' +
+              '<div class="font-weight-bold mb-2" style="font-size:13px; line-height:1.45; color:var(--text-main);">' + escapeHtml(q.question || '-') + '</div>' +
+              choicesHtml +
+            '</div>'
+          );
+        }).join('');
+      }
+    }
+
+    // 생각 담기 & 교사 코멘트
+    var thoughtSec = document.getElementById('masterReportThoughtSection');
+    var studentReply = String(log.studentThoughtAnswer || log.thoughtAnswer || '').trim();
+    var teacherComment = String(log.thoughtTeacherComment || log.comment || '').trim();
+    var thoughtQ = String(log.thoughtQuestion || '').trim();
+    var hasThoughtData = Boolean(thoughtQ || studentReply || teacherComment);
+
+    if (thoughtSec) {
+      if (!hasThoughtData) {
+        thoughtSec.style.display = 'none';
+      } else {
+        thoughtSec.style.display = 'block';
+        setText('masterReportThoughtQuestion', thoughtQ || '책을 읽고 가장 기억에 남는 내용과 느낀 점을 자유롭게 적어보세요.');
+        setText('masterReportThoughtAnswer', studentReply || '작성된 원생 답안이 없습니다.');
+        var visBadge = document.getElementById('masterReportThoughtVisibilityBadge');
+        if (visBadge) {
+          visBadge.className = log.thoughtHidden ? 'badge-soft badge-soft-warn' : 'badge-soft badge-soft-success';
+          visBadge.textContent = log.thoughtHidden ? '리포트 비공개' : '리포트 포함';
+        }
+        var commentWrap = document.getElementById('masterReportThoughtCommentWrap');
+        if (commentWrap) {
+          if (teacherComment) {
+            commentWrap.style.display = 'block';
+            setText('masterReportThoughtComment', teacherComment);
+          } else {
+            commentWrap.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    // 나노시트 첨삭 및 원본 사진
+    var wsSec = document.getElementById('masterReportWorksheetSection');
+    var aiRes = log.worksheetAiResult && typeof log.worksheetAiResult === 'object' ? log.worksheetAiResult : null;
+    var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
+    var hasWorksheetSection = Boolean(aiRes || photos.length > 0 || log.sheet === '작성 완료' || log.reviewed === '첨삭 완료');
+
+    if (wsSec) {
+      if (!hasWorksheetSection) {
+        wsSec.style.display = 'none';
+      } else {
+        wsSec.style.display = 'block';
+        var sheetBadge = document.getElementById('masterReportSheetBadge');
+        if (sheetBadge) {
+          sheetBadge.className = log.sheet === '작성 완료' ? 'badge-soft badge-soft-success' : 'badge-soft badge-soft-neutral';
+          sheetBadge.textContent = log.sheet === '작성 완료' ? '시트 작성 완료' : '시트 작성 전';
+        }
+        var revBadge = document.getElementById('masterReportReviewBadge');
+        if (revBadge) {
+          revBadge.className = log.reviewed === '첨삭 완료' ? 'badge-soft badge-soft-success' : 'badge-soft badge-soft-warn';
+          revBadge.textContent = log.reviewed === '첨삭 완료' ? '첨삭 완료' : '첨삭 전';
+        }
+
+        var photosEl = document.getElementById('masterReportWorksheetPhotos');
+        if (photosEl) {
+          var safePhotos = photos.map(resolveSafePhotoSrc).filter(Boolean);
+          if (safePhotos.length > 0) {
+            photosEl.innerHTML = safePhotos.map(function(src, idx) {
+              return (
+                '<button type="button" class="master-report-photo-btn" data-photo-src="' + escapeHtml(src) + '" onclick="openMasterWorksheetLightbox(this.getAttribute(\'data-photo-src\'))">' +
+                  '<img src="' + escapeHtml(src) + '" alt="나노시트 ' + (idx + 1) + '페이지">' +
+                  '<span>' + (idx + 1) + '페이지 확대</span>' +
+                '</button>'
+              );
+            }).join('');
+          } else {
+            photosEl.innerHTML = '<div class="text-muted p-3 rounded w-100 text-center" style="background:#fbf9f5; border:1px dashed var(--border-medium); font-size:12px;">등록된 나노시트 사진이 없습니다.</div>';
+          }
+        }
+
+        setText(
+          'masterReportWorksheetSummary',
+          (aiRes && aiRes.summary) || (log.comment && log.comment.trim()) || '아직 AI/지도교사 나노시트 종합 소견이 등록되지 않았습니다.'
+        );
+        var nextStepEl = document.getElementById('masterReportWorksheetNextStep');
+        if (nextStepEl) {
+          nextStepEl.innerHTML = '• <strong>이렇게 해보세요:</strong> ' + escapeHtml((aiRes && aiRes.nextStep) || '글의 핵심 이유나 느낀 점을 한 문장 더 구체화해 보세요.');
+        }
+        var parentGuideEl = document.getElementById('masterReportWorksheetParentGuide');
+        if (parentGuideEl) {
+          parentGuideEl.innerHTML = '• <strong>가정 대화 가이드:</strong> ' + escapeHtml((aiRes && aiRes.parentGuide) || '아이가 완독 후 정리한 생각을 칭찬하고 인상 깊은 장면을 물어봐 주세요.');
+        }
+      }
+    }
   }
 
-  // DOM 로드 시 자동 초기화
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      initMasterLearning();
-    });
-  } else {
-    setTimeout(initMasterLearning, 0);
+  // 나노시트 원본 이미지 확대 보기
+  function openMasterWorksheetLightbox(imgSrc) {
+    if (!imgSrc) return;
+    var safeSrc = resolveSafePhotoSrc(imgSrc);
+    if (!safeSrc) return;
+    var img = document.getElementById('masterLearningLightboxImg');
+    if (img) img.src = safeSrc;
+    if (typeof $ === 'function') {
+      $('#masterLearningPhotoLightboxModal').modal('show');
+    }
   }
 
-  // 전역 등록
+  // 학습 리포트 인쇄
+  function printMasterLearningReport() {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    document.body.classList.add('printing-master-report');
+    var cleanup = function() {
+      document.body.classList.remove('printing-master-report');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+    setTimeout(cleanup, 1000);
+  }
+
+  // 전역 함수 바인딩 (마스터 HTML 및 master-core.js 호환 유지)
   window.initMasterLearning = initMasterLearning;
-  window.initMasterLearningDateFilters = initMasterLearningDateFilters;
   window.populateMasterLearningAcademyFilter = populateMasterLearningAcademyFilter;
+  window.populateMasterLearningClassFilter = populateMasterLearningClassFilter;
+  window.initMasterLearningDateFilters = initMasterLearningDateFilters;
   window.executeMasterLearningSearch = executeMasterLearningSearch;
-  window.renderMasterLearningTable = renderMasterLearningTable;
   window.resetMasterLearningFilters = resetMasterLearningFilters;
+  window.changeMasterLearningPage = changeMasterLearningPage;
   window.openMasterLearningReportDetail = openMasterLearningReportDetail;
-  window.sendMasterLearningKakao = sendMasterLearningKakao;
-
-})(window);
+  window.openMasterWorksheetLightbox = openMasterWorksheetLightbox;
+  window.printMasterLearningReport = printMasterLearningReport;
+  window.toggleMasterAcademyDropdown = toggleMasterAcademyDropdown;
+  window.selectMasterAcademyOption = selectMasterAcademyOption;
+})();

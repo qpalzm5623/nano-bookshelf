@@ -1,7 +1,7 @@
 
 // [새로고침 시 머무르던 탭 유지] URL 해시 또는 세션 스토리지에서 활성 탭 복원
 function restoreMasterActiveTab() {
-  const validTabs = ['franchise', 'members', 'operations', 'learning', 'portfolio', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
+  const validTabs = ['franchise', 'members', 'operations', 'learning', 'portfolio', 'ranking', 'contents', 'content-sharing', 'literacy', 'dispatch', 'payment'];
   const hash = (window.location.hash || '').replace('#', '').trim();
   let saved = '';
   try { saved = sessionStorage.getItem('nano_master_active_tab') || ''; } catch(e) {}
@@ -9,7 +9,7 @@ function restoreMasterActiveTab() {
   switchMasterTab(target);
 }
 window.addEventListener('hashchange', function() {
-  const validTabs = ['franchise', 'members', 'operations', 'learning', 'portfolio', 'ranking', 'contents', 'literacy', 'dispatch', 'payment'];
+  const validTabs = ['franchise', 'members', 'operations', 'learning', 'portfolio', 'ranking', 'contents', 'content-sharing', 'literacy', 'dispatch', 'payment'];
   const hash = (window.location.hash || '').replace('#', '').trim();
   if (validTabs.includes(hash)) {
     switchMasterTab(hash);
@@ -1921,6 +1921,8 @@ function switchMasterTab(tabName) {
   } else if (tabName === "portfolio") {
     if (typeof initMasterPfDateFilters === "function") initMasterPfDateFilters();
     if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList();
+  } else if (tabName === "content-sharing" && window.ContentSharing) {
+    ContentSharing.refresh();
   }
 
   const mainEl = document.querySelector('.main-workspace');
