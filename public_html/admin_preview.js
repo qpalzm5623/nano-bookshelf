@@ -231,9 +231,13 @@ function saveAllQuizzes() {
 // 2. 7대 탭 네비게이션 제어
 // ==============================================================
 function switchTab(tab) {
-  // 선생님 계정 접속 시 결제 관리 메뉴 접근 차단
-  if (tab === 'payment' && typeof isCurrentLoggedInTeacher === 'function' && isCurrentLoggedInTeacher()) {
-    showAcademyToast('결제 관리는 원장님 전용 권한 메뉴입니다.');
+  // 선생님 계정 접속 시 원장 전용 메뉴(결제 관리·콘텐츠 공유) 접근 차단
+  var isTeacherUser = typeof isCurrentLoggedInTeacher === 'function' && isCurrentLoggedInTeacher();
+  if (isTeacherUser && (tab === 'payment' || tab === 'content-sharing')) {
+    var restrictedMsg = tab === 'content-sharing'
+      ? '콘텐츠 공유는 원장님 전용 권한 메뉴입니다.'
+      : '결제 관리는 원장님 전용 권한 메뉴입니다.';
+    if (typeof showAcademyToast === 'function') showAcademyToast(restrictedMsg);
     tab = 'members';
   }
   var views = ['members', 'contents', 'content-sharing', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
@@ -527,22 +531,36 @@ function updateHeaderUserInfo() {
   var btnModalClassManage = document.getElementById('btnModalClassManageWrapper') || document.getElementById('btnModalClassManage');
   var navPaymentBtn = document.getElementById('btn-nav-payment');
   var navPaymentSection = document.getElementById('sidebar-section-payment');
+  var navContentSharingBtn = document.getElementById('btn-nav-content-sharing');
+  var btnOpenStudentAdd = document.getElementById('btnOpenStudentAddModal');
+  var btnOpenStudentExcel = document.getElementById('btnOpenStudentExcelModal');
 
   var isTeacher = isCurrentLoggedInTeacher();
+  if (typeof document !== 'undefined' && document.documentElement && document.documentElement.classList) {
+    document.documentElement.classList.toggle('nano-teacher-role', !!isTeacher);
+  }
+  if (!isTeacher) {
+    if (navContentSharingBtn) navContentSharingBtn.style.display = '';
+    if (btnOpenStudentAdd) btnOpenStudentAdd.style.display = '';
+    if (btnOpenStudentExcel) btnOpenStudentExcel.style.display = '';
+  }
 
   // 1. 우측 상단 헤더 역할 배지 및 이름 갱신
   if (isTeacher) {
-    // [권한 설정] 선생님 계정 접속 시 결제 관리 메뉴 완전 숨김
+    // [권한 설정] 선생님 계정 접속 시 결제 관리·콘텐츠 공유 메뉴 완전 숨김
     if (navPaymentBtn) {
       navPaymentBtn.style.display = 'none';
     }
     if (navPaymentSection) {
       navPaymentSection.style.display = 'none';
     }
+    if (navContentSharingBtn) {
+      navContentSharingBtn.style.display = 'none';
+    }
 
-    // 현재 활성화된 탭이 결제 관리인 경우 회원 관리로 강제 전환
+    // 현재 활성화된 탭이 원장 전용 메뉴(결제 관리·콘텐츠 공유)인 경우 회원 관리로 강제 전환
     var activeTab = sessionStorage.getItem('nano_admin_active_tab') || (window.location.hash ? window.location.hash.replace('#', '') : '');
-    if (activeTab === 'payment') {
+    if (activeTab === 'payment' || activeTab === 'content-sharing') {
       switchTab('members');
     }
 
@@ -581,7 +599,7 @@ function updateHeaderUserInfo() {
       navMembersSmall.innerText = '(원생 관리)';
     }
 
-    // [권한 설정 1 & 2] 선생님 계정은 학생 계정 삭제 및 학급 생성/삭제 불가 -> 버튼 숨김
+    // [권한 설정 1 & 2] 선생님 계정은 회원 생성/수정/삭제 및 학급 생성/삭제 불가 -> 관련 버튼 숨김
     if (btnOpenClassManage) {
       btnOpenClassManage.style.display = 'none';
     }
@@ -590,6 +608,12 @@ function updateHeaderUserInfo() {
     }
     if (btnModalClassManage) {
       btnModalClassManage.style.display = 'none';
+    }
+    if (btnOpenStudentAdd) {
+      btnOpenStudentAdd.style.display = 'none';
+    }
+    if (btnOpenStudentExcel) {
+      btnOpenStudentExcel.style.display = 'none';
     }
 
     // 만약 현재 탭이 선생님 관리로 열려있다면 원생 관리 탭으로 강제 전환
@@ -2663,13 +2687,24 @@ function isBookOwnedByAcademy(book) {
   return defaultOwnedIds.indexOf(String(book.id)) !== -1 || book.creatorType === 'ACADEMY';
 }
 
+function getAdminAcademyIdSafe() {
+  if (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) {
+    return currentAcademyInfo.id;
+  }
+  if (typeof window !== 'undefined' && window.NanoPortal && typeof window.NanoPortal.academy === 'function') {
+    return window.NanoPortal.academy() || '';
+  }
+  return '';
+}
+
 // 1) 개별 원생 맞춤 도서 배정 데이터셋 (각 도서별 배정 일시 assignedAt 포함)
 var studentAssignmentList = [];
 var classAssignmentList = [];
 var assignmentLoadError = false;
 (function restoreAssignmentsData() {
   try {
-    var saved = NanoPreviewData.readAssignments(currentAcademyInfo.id);
+    var acadId = getAdminAcademyIdSafe();
+    var saved = NanoPreviewData.readAssignments(acadId);
     studentAssignmentList = saved.students;
     classAssignmentList = saved.classes;
   } catch(e) { assignmentLoadError = true; console.warn(e); }
@@ -4548,7 +4583,12 @@ var academyDispatchLogs = [
   { id: 'AL-M02', date: '2026-09-08 16:45', type: '도서 배정 알림', receiver: '이서윤 학부모 (010-5829-3019)', summary: '[나노 독서아카데미 본원] 이번 주 필수 배정 도서 <마당을 나온 암탉>이 배정되었습니다.', status: 'SUCCESS' },
   { id: 'AL-M03', date: '2026-09-08 14:10', type: '독서 격려 알림톡', receiver: '강시우 학생 (010-4820-1948)', summary: '[나노의 책장] 시우 학생! 이번 주 북퀴즈 도전까지 1권 남았어요. 즐겁게 완독해 보아요!', status: 'FAILED' }
 ];
-if (window.NANO_SERVER_DATA) academyDispatchLogs = (window.NANO_SERVER_DISPATCH || []).filter(function(item) { return item.academyId === currentAcademyInfo.id; });
+if (window.NANO_SERVER_DATA) {
+  var dispatchAcadId = getAdminAcademyIdSafe();
+  academyDispatchLogs = dispatchAcadId
+    ? (window.NANO_SERVER_DISPATCH || []).filter(function(item) { return item.academyId === dispatchAcadId; })
+    : [];
+}
 
 var appliedAcademyDispatchDates = { from: '', to: '' };
 
@@ -6181,6 +6221,13 @@ var portfolioList = [
   }
 ];
 
+// 운영 서버 환경에서는 샘플 포트폴리오가 초기 화면/AI 요청을 오염시키지 않도록 빈 상태로 시작합니다.
+if (typeof window !== 'undefined' && window.NANO_SERVER_DATA) {
+  currentViewingPortfolioId = '';
+  portfolioDataMap = {};
+  portfolioList = [];
+}
+
 var lastCreatedPortfolioId = null;
 
 // ==============================================================
@@ -7018,16 +7065,25 @@ async function requestGeminiPortfolioStory(studentId, pfId, pfData, std) {
       }
       success = true;
     } catch (err) {
-      console.warn('[NanoPortal.generatePortfolioAI] Remote failed, trying client Gemini:', err.message);
+      pfData._aiError = (err && err.message) ? err.message : '';
+      console.warn('[NanoPortal.generatePortfolioAI] Remote failed, trying client Gemini:', pfData._aiError);
     }
   }
 
   // 2순위: 백엔드 실패 또는 로컬 모드 시 클라이언트 직접 호출 및 스마트 룰베이스 폴백
-  if (!success) {
+  if (!success && typeof generatePortfolioWithGeminiClient === 'function') {
     await generatePortfolioWithGeminiClient(studentId, pfId, pfData, std);
   }
 
   pfData._aiPending = false;
+  // refreshPortfolios()가 portfolioDataMap을 새 객체로 교체하므로, 새 객체에도 _aiRequested를 유지해 무한 재호출을 차단합니다.
+  if (typeof portfolioDataMap !== 'undefined' && portfolioDataMap) {
+    var refreshedPfData = (pfId && portfolioDataMap[pfId]) || portfolioDataMap[studentId] || null;
+    if (!refreshedPfData) return;
+    refreshedPfData._aiRequested = true;
+    refreshedPfData._aiPending = false;
+    if (pfData._aiError) refreshedPfData._aiError = pfData._aiError;
+  }
   if (currentViewingPortfolioId === pfId) {
     renderPortfolioDocument(studentId, pfId);
   }
@@ -7119,8 +7175,14 @@ function renderPortfolioDocument(studentId, pfId) {
   }
   var quizAvg = Math.round(rawAvg || (std && std.quizAvg && !isNaN(parseFloat(std.quizAvg)) ? parseFloat(std.quizAvg) : 0));
 
-  // AI 분석 요청 및 스마트 기본값 자동 적용
-  requestGeminiPortfolioStory(studentId, pfId, pfData, std);
+  var hasPfEntry = !!(
+    (typeof portfolioDataMap !== 'undefined' && portfolioDataMap) &&
+    ((pfId && portfolioDataMap[pfId]) || (studentId && portfolioDataMap[studentId]))
+  );
+  // AI 분석 요청 및 스마트 기본값 자동 적용 (실제 포트폴리오 엔트리가 있을 때만 실행)
+  if (hasPfEntry) {
+    requestGeminiPortfolioStory(studentId, pfId, pfData, std);
+  }
   var loadedLogsEarly = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
   if (typeof window !== 'undefined' && window.NanoPortfolioRenderer && typeof window.NanoPortfolioRenderer.renderPortfolioDocument === 'function') {
     window.NanoPortfolioRenderer.renderPortfolioDocument(docContainer, {
@@ -7584,6 +7646,7 @@ function initPortfolioOptions() {
 
 function onPortfolioStudentChange(stdId) {
   var pf = portfolioList.find(function(p) { return p.studentId === stdId; }) || portfolioList[0];
+  if (!pf) return;
   currentViewingPortfolioId = pf.id;
   renderPortfolioDocument(stdId, pf.id);
   updatePortfolioDetailKakaoButton(pf.id);
@@ -7593,6 +7656,10 @@ function onPortfolioStudentChange(stdId) {
 function viewStudentPortfolio(stdId) {
   switchTab('portfolio');
   var pf = portfolioList.find(function(p) { return p.studentId === stdId; }) || portfolioList[0];
+  if (!pf) {
+    showAcademyToast('아직 발급된 독서 포트폴리오가 없습니다.');
+    return;
+  }
   viewPortfolioDetail(stdId, pf.id);
 }
 
@@ -8517,7 +8584,7 @@ document.addEventListener('DOMContentLoaded', function() {
   syncOwnedBooksState();
   filterAcademyBooks();
   initPortfolioOptions();
-  if (studentDataList.length > 0) {
+  if ((!window.NANO_SERVER_DATA) && studentDataList.length > 0 && portfolioList.length > 0) {
     onPortfolioStudentChange(studentDataList[0].id);
   }
   renderPortfolioTable(portfolioList);

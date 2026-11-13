@@ -78,6 +78,20 @@
       box-sizing: border-box;
     }
 
+    /* [권한 설정] 선생님 계정 접속 시 초기 렌더링 깜빡임 없이 원장 전용 메뉴·회원 변경 버튼 즉시 숨김 */
+    html.nano-teacher-role #btn-nav-content-sharing,
+    html.nano-teacher-role #btn-nav-payment,
+    html.nano-teacher-role #sidebar-section-payment,
+    html.nano-teacher-role #btn-member-teachers,
+    html.nano-teacher-role #btnOpenDeletedStudentsModal,
+    html.nano-teacher-role #btnOpenClassManageModal,
+    html.nano-teacher-role #btnOpenStudentExcelModal,
+    html.nano-teacher-role #btnOpenStudentAddModal,
+    html.nano-teacher-role #btnModalClassManageWrapper,
+    html.nano-teacher-role #btnModalClassManage {
+      display: none !important;
+    }
+
     html {
       height: 100%;
       overflow: hidden;
@@ -3434,6 +3448,8 @@
           var role = String(u.role || '').toLowerCase();
           var isTeacher = (role === 'teacher' || role === 'staff' || String(u.id || '').includes('teacher'));
           if (isTeacher) {
+            // 초기 HTML 파싱 단계에서 teacher 전용 클래스를 부여해 메뉴·버튼 노출 깜빡임(FOUC) 차단
+            document.documentElement.classList.add('nano-teacher-role');
             if (rBadge) {
               rBadge.className = 'badge-soft mr-2';
               rBadge.style.cssText = 'font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700;';
@@ -9675,11 +9691,11 @@
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-admin.js?v=20261113_kakao_log"></script>
 <script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
-<script src="admin_preview.js?v=20261113_kakao_log"></script>
-<script src="js/admin_members.js?v=20261113_center"></script>
+<script src="js/admin_members.js?v=20261113_init_fix"></script>
+<script src="admin_preview.js?v=20261113_init_fix"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
 <script src="js/admin_books.js?v=20261113_center"></script>
-<script src="js/admin_payment.js?v=20261113_center"></script>
+<script src="js/admin_payment.js?v=20261113_init_fix"></script>
 <script src="js/admin_notices.js?v=20261111_v1"></script>
 <script src="js/admin_worksheet_ai.js?v=20261113_center"></script>
 <script src="js/admin_myinfo.js?v=20261111_v1"></script>

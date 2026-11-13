@@ -1333,7 +1333,24 @@ function deleteStudent(id) {
 }
 
 // 2단계: 관리자 패스워드 검증 후 7일 임시 보존 보관함으로 이동 (Soft Delete)
+// [권한 설정] 선생님(TEACHER) 계정은 회원 조회만 허용하고 생성·수정·삭제는 차단
+function isTeacherMemberReadOnly() {
+  return typeof isCurrentLoggedInTeacher === 'function' && isCurrentLoggedInTeacher();
+}
+
+function guardTeacherMemberMutation(actionLabel) {
+  if (!isTeacherMemberReadOnly()) return false;
+  var msg = (actionLabel ? actionLabel + '은(는) ' : '') + '원장님 전용 권한입니다. 선생님 계정은 회원 조회만 가능합니다.';
+  if (typeof showAcademyToast === 'function') {
+    showAcademyToast(msg);
+  } else if (typeof alert === 'function') {
+    alert(msg);
+  }
+  return true;
+}
+
 async function confirmDeleteStudent() {
+  if (guardTeacherMemberMutation('원생 삭제')) return;
   if (!pendingDeleteStudentId) return;
 
   var pwInput = document.getElementById('studentDeletePassword');
@@ -1412,6 +1429,7 @@ async function confirmDeleteStudent() {
 
 // 3단계: 7일 임시 보존 원생 목록 모달 열기
 function openDeletedStudentListModal() {
+  if (guardTeacherMemberMutation('삭제 원생 관리')) return;
   renderDeletedStudentList();
   if (window.jQuery && typeof $('#deletedStudentListModal').modal === 'function') {
     $('#deletedStudentListModal').modal('show');
@@ -1488,6 +1506,7 @@ function renderDeletedStudentList() {
 
 // 4단계: 7일 임시 보존 원생 원상 복구 (기존 학급 및 데이터 복원)
 async function restoreDeletedStudent(idx) {
+  if (guardTeacherMemberMutation('삭제 원생 복구')) return;
   if (!deletedStudentList || !deletedStudentList[idx]) return;
 
   var restored = deletedStudentList[idx];
@@ -1542,6 +1561,7 @@ function formatAccountDate(rawDate) {
 // 3-3. 원생 등록 / 수정 모달 로직
 // ==============================================================
 function openStudentAddModal() {
+  if (guardTeacherMemberMutation('원생 등록')) return;
   updateAllStudentCounts();
   updateClassSelectOptions();
 
@@ -1631,6 +1651,7 @@ function openStudentAddModal() {
 }
 
 function openStudentEditModal(id) {
+  if (guardTeacherMemberMutation('원생 정보 수정')) return;
   var std = studentDataList.find(function(s) { return s.id === id; });
   if (!std) return;
 
@@ -1716,11 +1737,8 @@ function openStudentEditModal(id) {
   }
 }
 
-function openStudentDetailModal(id) {
-  openStudentEditModal(id);
-}
-
 function openStudentExcelModal() {
+  if (guardTeacherMemberMutation('원생 엑셀 일괄 등록')) return;
   if (window.jQuery && typeof $('#studentExcelModal').modal === 'function') {
     $('#studentExcelModal').modal('show');
   } else {
@@ -1743,6 +1761,7 @@ function getDefaultLevelByGrade(grade) {
 }
 
 async function saveNewStudent() {
+  if (guardTeacherMemberMutation('원생 등록 및 수정')) return;
   var editId = (document.getElementById('editStudentTargetId') ? document.getElementById('editStudentTargetId').value : '').trim();
 
   var name = (document.getElementById('newStdName') ? document.getElementById('newStdName').value : '').trim();
@@ -1930,6 +1949,7 @@ async function saveNewStudent() {
 }
 
 async function importSampleExcelStudents() {
+  if (guardTeacherMemberMutation('샘플 원생 일괄 등록')) return;
   if (window.NanoPortal && NanoPortal.remote) {
     showAcademyToast('샘플 원생 입력은 로컬 체험에서만 사용할 수 있습니다. 운영 원생은 원생 등록에서 추가해 주세요.');
     return;
@@ -2158,7 +2178,11 @@ function convertGradeCodeToText(codeStr) {
 
 // 엑셀 파일 직접 선택 업로드 핸들러 (유효성 검사 및 정밀 안내)
 function handleStudentExcelFileSelect(input) {
-  if (!input.files || input.files.length === 0) return;
+  if (guardTeacherMemberMutation('원생 엑셀 일괄 등록')) {
+    if (input) input.value = '';
+    return;
+  }
+  if (!input || !input.files || input.files.length === 0) return;
   var file = input.files[0];
   var fileNameEl = document.getElementById('studentExcelFileName');
   if (fileNameEl) {
@@ -2517,8 +2541,11 @@ function renderStudentTable(list, page) {
   if (countEl) countEl.innerText = total;
 
   if (total === 0) {
+    var isTeacherReadOnly = isTeacherMemberReadOnly();
     var emptyMessage = (studentDataList.length === 0)
-      ? '<div class="py-4"><i class="fa-solid fa-user-plus text-primary mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">우측 상단의 <strong>[+ 원생 등록]</strong> 또는 <strong>[엑셀 일괄 등록]</strong>을 통해 첫 원생을 등록해 보세요.</span></div>'
+      ? (isTeacherReadOnly
+          ? '<div class="py-4"><i class="fa-solid fa-user-graduate text-muted mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">원장님 계정에서 원생을 등록하면 이곳에서 확인할 수 있습니다.</span></div>'
+          : '<div class="py-4"><i class="fa-solid fa-user-plus text-primary mb-2" style="font-size: 28px; opacity: 0.7;"></i><br><strong style="font-size: 14.5px; color: var(--text-main);">등록된 원생이 없습니다.</strong><br><span style="font-size: 12.5px; color: var(--text-muted);">우측 상단의 <strong>[+ 원생 등록]</strong> 또는 <strong>[엑셀 일괄 등록]</strong>을 통해 첫 원생을 등록해 보세요.</span></div>')
       : '일치하는 원생이 없습니다.';
     tbody.innerHTML = '<tr><td colspan="11" class="text-center py-4 text-muted">' + emptyMessage + '</td></tr>';
     renderStudentPagination(0, 1, 1);
@@ -2571,10 +2598,11 @@ function renderStudentTable(list, page) {
 
     var createDateStr = formatAccountDate(std.createdAt || std.joinDate || '2026-03-01');
 
+    var isTeacherReadOnly = isTeacherMemberReadOnly();
     tr.innerHTML = 
       '<td class="text-center"><span class="font-weight-bold" style="color:#64748b; font-size:12.5px;">' + rowNo + '</span></td>' +
       '<td class="text-center"><small class="text-muted font-weight-bold">' + std.id + '</small></td>' +
-      '<td class="text-center"><span class="student-link font-weight-bold" onclick="openStudentEditModal(\'' + std.id + '\')">' + std.name + '</span>' + 
+      '<td class="text-center"><span class="student-link font-weight-bold" onclick="' + (isTeacherReadOnly ? 'openStudentDetailModal' : 'openStudentEditModal') + '(\'' + std.id + '\')" title="' + (isTeacherReadOnly ? '원생 상세 정보 보기' : '원생 정보 수정') + '">' + std.name + '</span>' + 
       (std.id === lastAddedStudentId ? ' <span class="badge badge-warning text-dark ml-1" style="font-size:10px;">신규</span>' : '') + '</td>' +
       '<td class="text-center">' + genderBadge + '</td>' +
       '<td class="text-center">' + std.school + ' <small class="text-muted">(' + std.grade + ')</small></td>' +
@@ -2585,8 +2613,10 @@ function renderStudentTable(list, page) {
       '<td class="text-center font-weight-bold">' + std.bookCount + '권 <small class="text-success font-weight-bold">(' + quizScoreDisplay + ')</small></td>' +
       '<td class="text-center" style="white-space: nowrap;">' +
         '<div class="d-inline-flex flex-row align-items-center justify-content-center" style="gap: 5px; width: 100%;">' +
-          '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
-          (!isCurrentLoggedInTeacher() ? '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>' : '') +
+          (isTeacherReadOnly
+            ? '<button type="button" class="btn btn-xs btn-outline-info" onclick="openStudentDetailModal(\'' + std.id + '\')" title="원생 상세 정보 조회" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-eye mr-1"></i>상세</button>'
+            : '<button type="button" class="btn btn-xs btn-outline-secondary" onclick="openStudentEditModal(\'' + std.id + '\')" title="수정 및 상태 변경" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-pen mr-1"></i>수정</button>' +
+              '<button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteStudent(\'' + std.id + '\')" title="원생 삭제 (학급 미지정 변환)" style="width: 56px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11.5px; font-weight: 600;"><i class="fa-solid fa-trash-can mr-1"></i>삭제</button>') +
         '</div>' +
       '</td>';
     tbody.appendChild(tr);
@@ -2814,6 +2844,7 @@ function resetTeacherSearch() {
 }
 
 function openTeacherAddModal() {
+  if (guardTeacherMemberMutation('선생님 등록')) return;
   document.getElementById('teacherModalTitle').innerText = '신규 선생님(교사) 등록';
   document.getElementById('teacherFormId').value = '';
   document.getElementById('teacherNameInput').value = '';
@@ -2828,6 +2859,7 @@ function openTeacherAddModal() {
 }
 
 function openTeacherEditModal(id) {
+  if (guardTeacherMemberMutation('선생님 정보 수정')) return;
   var t = teacherDataList.find(item => item.id === id);
   if (!t) return;
 
@@ -2845,7 +2877,8 @@ function openTeacherEditModal(id) {
 }
 
 async function handleSaveTeacher(e) {
-  e.preventDefault();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (guardTeacherMemberMutation('선생님 등록 및 수정')) return;
   var id = document.getElementById('teacherFormId').value;
   var name = document.getElementById('teacherNameInput').value.trim();
   var username = document.getElementById('teacherUsernameInput').value.trim();
@@ -2934,6 +2967,7 @@ async function handleSaveTeacher(e) {
 }
 
 async function deleteTeacher(id) {
+  if (guardTeacherMemberMutation('선생님 삭제')) return;
   var t = teacherDataList.find(item => item.id === id);
   if (!t) return;
   var teacherDeleteMsg = `[${t.name}] 선생님 계정을 삭제하시겠습니까?`;
@@ -2958,22 +2992,22 @@ function openStudentDetailModal(stdId) {
   var std = studentDataList.find(s => s.id === stdId);
   if (!std) return;
 
-  document.getElementById('m_std_name').innerText = std.name;
-  document.getElementById('m_std_id').innerText = std.id;
-  document.getElementById('m_std_school').innerText = std.school + ' (' + std.grade + ')';
-  document.getElementById('m_std_class').innerText = std.classGroup;
-  document.getElementById('m_std_level').innerText = std.level;
-  document.getElementById('m_std_books').innerText = std.bookCount + '권 완독';
+  var setDetailText = function(id, textVal) {
+    var el = document.getElementById(id);
+    if (el) el.innerText = textVal;
+  };
+  setDetailText('m_std_name', std.name || '-');
+  setDetailText('m_std_id', std.id || '-');
+  setDetailText('m_std_school', (std.school || '-') + (std.grade ? ' (' + std.grade + ')' : ''));
+  setDetailText('m_std_class', std.classGroup || '학급 미지정');
+  setDetailText('m_std_level', std.level || '-');
+  setDetailText('m_std_books', (std.bookCount || 0) + '권 완독');
   var detailAvgNum = parseFloat(std.quizAvg);
-  document.getElementById('m_std_score').innerText = (std.quizAvg === '0.0' || std.quizAvg === 0 || std.quizAvg === '-' || isNaN(detailAvgNum)) ? '-' : Math.round(detailAvgNum) + '점';
-  document.getElementById('m_std_phone').innerText = std.phone;
-  if (document.getElementById('m_std_teacher')) {
-    document.getElementById('m_std_teacher').innerText = std.teacher || '박선혜 지도교사';
-  }
-  document.getElementById('m_std_date').innerText = std.lastDate;
-  if (document.getElementById('m_std_memo')) {
-    document.getElementById('m_std_memo').innerText = std.memo || '-';
-  }
+  setDetailText('m_std_score', (std.quizAvg === '0.0' || std.quizAvg === 0 || std.quizAvg === '-' || isNaN(detailAvgNum)) ? '-' : Math.round(detailAvgNum) + '점');
+  setDetailText('m_std_phone', std.phone || '-');
+  setDetailText('m_std_teacher', std.teacher || '박선혜 지도교사');
+  setDetailText('m_std_date', std.lastDate || '-');
+  setDetailText('m_std_memo', std.memo || '-');
 
   if (window.jQuery && typeof $('#studentDetailModal').modal === 'function') {
     $('#studentDetailModal').modal('show');

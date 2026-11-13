@@ -73,6 +73,10 @@ export default async function handler(req: any, res: any) {
       return res.json({ canUpload: user.role !== 'STUDENT', items: bookSheets(access, book).filter(s => canReadContent(user, s, access)).map(s => sheetView(s, user)) });
     }
     staff(user);
+    if (action === 'director' || action === 'folders' || action === 'catalog' || action === 'folder') {
+      // 선생님(TEACHER) 계정은 콘텐츠 공유 메뉴 및 공유 폴더 조회/변경 불가
+      need(user.role !== 'TEACHER', '콘텐츠 공유는 원장 또는 본사 관리자만 이용할 수 있습니다.', 403);
+    }
     if (req.method === 'GET' && action === 'director') {
       const username = text(req.query.username, '학원장 ID', 100, true);
       const [item] = await resolveShareRecipients(prisma, [username], user.academyId);

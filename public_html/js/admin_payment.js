@@ -589,7 +589,14 @@ var academyPaymentList = [
     status: "paid"
   }
 ];
-if (window.NANO_SERVER_DATA) academyPaymentList = (window.NANO_SERVER_PAYMENTS || []).filter(function(item) { return item.academyId === currentAcademyInfo.id; });
+if (window.NANO_SERVER_DATA) {
+  var paymentAcadId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id)
+    ? currentAcademyInfo.id
+    : ((window.NanoPortal && typeof window.NanoPortal.academy === 'function' && window.NanoPortal.academy()) || '');
+  academyPaymentList = paymentAcadId
+    ? (window.NANO_SERVER_PAYMENTS || []).filter(function(item) { return item.academyId === paymentAcadId; })
+    : [];
+}
 
 // 결제번호 요약 표시 및 복사 헬퍼 함수
 function formatPaymentIdSummary(id) {
