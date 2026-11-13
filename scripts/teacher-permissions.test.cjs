@@ -583,12 +583,18 @@ test('admin_preview.html: 운영 서버(NANO_SERVER_DATA=true + 비어있지 않
     return { ctx, elMap, docEl, fetchUrls };
   }
 
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const expectedStart = `${kstNow.getUTCFullYear()}-${String(kstNow.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  const expectedEnd = `${kstNow.getUTCFullYear()}-${String(kstNow.getUTCMonth() + 1).padStart(2, '0')}-${String(kstNow.getUTCDate()).padStart(2, '0')}`;
+
   const adminBoot = await runBootScenario({
     id: 'lookadmin', username: 'lookadmin', name: '이정민 원장', role: 'admin',
     academyId: 'ACAD-143', academyName: '주식회사 루크러닝', server: true
   });
   assert.equal(adminBoot.ctx.assignmentLoadError, false);
   assert.equal(adminBoot.ctx.academyDispatchLogs.length, 1);
+  assert.equal(adminBoot.elMap['learningStartDate'].value, expectedStart);
+  assert.equal(adminBoot.elMap['learningEndDate'].value, expectedEnd);
   assert.equal(adminBoot.elMap['tabStudentCount'].innerText, 1);
   assert.equal(adminBoot.elMap['tabTeacherCount'].innerText, 1);
   assert.equal(adminBoot.elMap['studentTableBody'].children.length, 1);
@@ -601,6 +607,11 @@ test('admin_preview.html: 운영 서버(NANO_SERVER_DATA=true + 비어있지 않
   });
   assert.equal(teacherBoot.docEl.classList.contains('nano-teacher-role'), true);
   assert.equal(teacherBoot.elMap['btn-nav-content-sharing'].style.display, 'none');
+  assert.equal(teacherBoot.elMap['learningStartDate'].value, expectedStart);
+  assert.equal(teacherBoot.elMap['learningEndDate'].value, expectedEnd);
+  teacherBoot.ctx.switchTab('learning');
+  assert.equal(teacherBoot.elMap['learningStartDate'].value, expectedStart);
+  assert.equal(teacherBoot.elMap['learningEndDate'].value, expectedEnd);
   assert.equal(teacherBoot.elMap['studentTableBody'].children.length, 1);
   const teacherRowHtml = teacherBoot.elMap['studentTableBody'].children[0].innerHTML;
   assert.match(teacherRowHtml, /박진호/);

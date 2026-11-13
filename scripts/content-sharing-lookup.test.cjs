@@ -304,7 +304,41 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
       status: 200,
       json: async () => url.includes('action=folders')
         ? {
-            items: [],
+            items: [
+              {
+                id: 'own-1',
+                name: '내가 공유한 1번 폴더',
+                bookIds: ['b1', 'b2'],
+                books: [
+                  { id: 'b1', bookNo: 'B1', title: '가나다 책', author: '작가1', grade: '초3' },
+                  { id: 'b2', bookNo: 'B2', title: '다라마 책', author: '작가2', grade: '초4' }
+                ],
+                recipients: [
+                  { academyId: 'ac-1', academyName: '루크러닝', directorName: '이정민', username: 'lookadmin' }
+                ]
+              },
+              {
+                id: 'own-2',
+                name: '내가 공유한 2번 폴더',
+                bookIds: ['b2'],
+                books: [
+                  { id: 'b2', bookNo: 'B2', title: '다라마 책', author: '작가2', grade: '초4' }
+                ],
+                recipients: [
+                  { academyId: 'ac-1', academyName: '루크러닝', directorName: '이정민', username: 'lookadmin' },
+                  { academyId: 'ac-2', academyName: '다온학원', directorName: '홍길동', username: 'daon' }
+                ]
+              },
+              {
+                id: 'own-3',
+                name: '수신 학원 미지정 폴더',
+                bookIds: ['b3'],
+                books: [
+                  { id: 'b3', bookNo: 'B3', title: '바사아 책', author: '작가3', grade: '초5' }
+                ],
+                recipients: []
+              }
+            ],
             received: [
               { id: 'rec-1', name: '테스트 1번 폴더', ownerAcademyName: '본사', books: [
                 { id: 'b1', bookNo: 'B1', title: '가나다 책', author: '작가1', grade: '초3' },
@@ -316,7 +350,13 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
               ] }
             ]
           }
-        : { items: [] }
+        : {
+            items: [
+              { id: 'b1', bookNo: 'B1', title: '가나다 책' },
+              { id: 'b2', bookNo: 'B2', title: '다라마 책' },
+              { id: 'b3', bookNo: 'B3', title: '바사아 책' }
+            ]
+          }
     }),
     document: {
       getElementById: (id) => (id === 'view-content-sharing' ? rootEl : null),
@@ -329,8 +369,11 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
   };
   win.window = win;
   vm.runInNewContext(sharingJs, win);
-  // refresh() 호출 후 상단 KPI에 '2개'와 중복 제거된 '총 3권' 및 클릭 가능 폴더 속성이 렌더링되는지 확인
+  // refresh() 호출 후 공유 가능한 내 도서(공유 중 N권), 내가 공유한 폴더(공유 학원 N곳), 공유받은 폴더 KPI가 모두 정확히 집계되는지 확인
   return win.ContentSharing.refresh().then(() => {
+    assert.match(rootEl.innerHTML, /3<span>권<\/span>[\s\S]*공유 중 <strong>2<\/strong>권/);
+    assert.match(rootEl.innerHTML, /3<span>개<\/span>[\s\S]*공유 학원 <strong>2<\/strong>곳/);
+    assert.match(rootEl.innerHTML, /내가 공유한 폴더 <span class="badge-soft badge-soft-neutral">3개 · 공유 학원 2곳<\/span>/);
     assert.match(rootEl.innerHTML, /2<span>개<\/span>/);
     assert.match(rootEl.innerHTML, /총 <strong>3<\/strong>권/);
     assert.match(rootEl.innerHTML, /data-received-folder="rec-1"/);

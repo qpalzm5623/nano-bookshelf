@@ -453,15 +453,46 @@
 
     var myFolders = state.items || [];
     var receivedFolders = state.received || [];
-    var catalogCount = (state.catalog || []).length;
+    var catalogItems = state.catalog || [];
+    var catalogCount = catalogItems.length;
+    var catalogBookIdSet = new Set();
+    catalogItems.forEach(function (b) {
+      if (b && b.id) catalogBookIdSet.add(String(b.id));
+    });
+
+    function extractFolderBookIds(folder) {
+      var list = Array.isArray(folder && folder.books) ? folder.books : null;
+      if (list && list.length > 0) {
+        return list.map(function (b) { return b && b.id ? String(b.id) : ''; }).filter(Boolean);
+      }
+      if (Array.isArray(folder && folder.bookIds)) {
+        return folder.bookIds.map(function (bid) { return bid ? String(bid) : ''; }).filter(Boolean);
+      }
+      return [];
+    }
+
+    var sharedAcademyKeySet = new Set();
+    var sharedBookIdSet = new Set();
+    myFolders.forEach(function (folder) {
+      var recs = Array.isArray(folder.recipients) ? folder.recipients : [];
+      if (recs.length === 0) return;
+      recs.forEach(function (r) {
+        if (!r) return;
+        var academyKey = String(r.academyId || r.username || r.directorId || r.academyName || '').trim();
+        if (academyKey) sharedAcademyKeySet.add(academyKey);
+      });
+      extractFolderBookIds(folder).forEach(function (bid) {
+        if (catalogBookIdSet.has(bid)) sharedBookIdSet.add(bid);
+      });
+    });
+    var sharedAcademyCount = sharedAcademyKeySet.size;
+    var sharedCatalogBookCount = sharedBookIdSet.size;
+
     var receivedBookIdSet = new Set();
     receivedFolders.forEach(function (folder) {
-      var list = Array.isArray(folder.books) ? folder.books : null;
-      if (list) {
-        list.forEach(function (b) { if (b && b.id) receivedBookIdSet.add(b.id); });
-      } else if (Array.isArray(folder.bookIds)) {
-        folder.bookIds.forEach(function (bid) { if (bid) receivedBookIdSet.add(bid); });
-      }
+      extractFolderBookIds(folder).forEach(function (bid) {
+        receivedBookIdSet.add(bid);
+      });
     });
     var receivedBookCount = receivedBookIdSet.size;
 
@@ -485,13 +516,21 @@
       '<div class="sharing-kpi-grid">' +
         '<div class="sharing-kpi-card">' +
           '<div class="sharing-kpi-title">공유 가능한 내 도서</div>' +
-          '<div class="sharing-kpi-num">' + catalogCount + '<span>권</span></div>' +
+          '<div class="sharing-kpi-num">' +
+            catalogCount + '<span>권</span>' +
+            '<span class="sharing-kpi-sep" aria-hidden="true">·</span>' +
+            '<span class="sharing-kpi-subcount">공유 중 <strong>' + sharedCatalogBookCount + '</strong>권</span>' +
+          '</div>' +
           '<div class="sharing-kpi-sub">비공개 북퀴즈 · 나노시트 포함 도서 기준</div>' +
           '<i class="fa-solid fa-book-open sharing-kpi-icon"></i>' +
         '</div>' +
         '<div class="sharing-kpi-card">' +
           '<div class="sharing-kpi-title">내가 공유한 폴더</div>' +
-          '<div class="sharing-kpi-num">' + myFolders.length + '<span>개</span></div>' +
+          '<div class="sharing-kpi-num">' +
+            myFolders.length + '<span>개</span>' +
+            '<span class="sharing-kpi-sep" aria-hidden="true">·</span>' +
+            '<span class="sharing-kpi-subcount">공유 학원 <strong>' + sharedAcademyCount + '</strong>곳</span>' +
+          '</div>' +
           '<div class="sharing-kpi-sub">원장 ID 검증 후 등록된 공유 폴더</div>' +
           '<i class="fa-solid fa-folder-open sharing-kpi-icon"></i>' +
         '</div>' +
@@ -614,7 +653,7 @@
         errorBanner +
         '<div class="simple-card">' +
           '<div class="sharing-card-head">' +
-            '<h2 class="sharing-card-title"><i class="fa-solid fa-folder-open" style="color: var(--btn-primary, #1f8a7e);"></i> 내가 공유한 폴더 <span class="badge-soft badge-soft-neutral">' + myFolders.length + '개</span></h2>' +
+            '<h2 class="sharing-card-title"><i class="fa-solid fa-folder-open" style="color: var(--btn-primary, #1f8a7e);"></i> 내가 공유한 폴더 <span class="badge-soft badge-soft-neutral">' + myFolders.length + '개 · 공유 학원 ' + sharedAcademyCount + '곳</span></h2>' +
             '<p class="sharing-card-hint">폴더에 담은 도서의 비공개 북퀴즈·나노시트도 지정 학원에서는 열람할 수 있습니다.</p>' +
           '</div>' +
           '<div class="sharing-card-body">' + ownBodyHtml + '</div>' +

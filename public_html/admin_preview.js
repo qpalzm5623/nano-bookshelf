@@ -1210,23 +1210,18 @@ var currentOpenCorrectionLogId = null;
 
 var appliedLearningDates = { initialized: false, startDate: '', endDate: '' };
 
-// 학습 관리 날짜 필터 초기화 (Default: 최근 90일 ~ 오늘 날짜 기본 세팅하여 이전 달 및 이관 학습내역 즉시 노출)
+// 학습 관리 날짜 필터 초기화 (Default: 현재월 1일 ~ 오늘 날짜 기본 세팅)
 function initLearningDateFilters() {
   var startInput = document.getElementById('learningStartDate');
   var endInput = document.getElementById('learningEndDate');
   if (!startInput || !endInput) return;
 
-  var now = new Date();
-  var yyyy = now.getFullYear();
-  var mm = String(now.getMonth() + 1).padStart(2, '0');
-  var dd = String(now.getDate()).padStart(2, '0');
+  var kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  var yyyy = kstNow.getUTCFullYear();
+  var mm = String(kstNow.getUTCMonth() + 1).padStart(2, '0');
+  var dd = String(kstNow.getUTCDate()).padStart(2, '0');
   var todayStr = `${yyyy}-${mm}-${dd}`;
-
-  var past90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  var sY = past90.getFullYear();
-  var sM = String(past90.getMonth() + 1).padStart(2, '0');
-  var sD = String(past90.getDate()).padStart(2, '0');
-  var defaultStartStr = `${sY}-${sM}-${sD}`;
+  var defaultStartStr = `${yyyy}-${mm}-01`;
 
   if (!startInput.value) startInput.value = defaultStartStr;
   if (!endInput.value) endInput.value = todayStr;
