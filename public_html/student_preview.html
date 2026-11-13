@@ -3673,12 +3673,14 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261106_theme_sync_v2"></script>
+<script src="js/portal-client.js?v=20261112_content_sharing"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
 <link rel="stylesheet" href="css/quiz-result.css?v=20261110-characters">
 <script src="js/reading-progress.js?v=20261029-integrity"></script>
 <script src="js/quiz-result-art.js?v=20261110-characters"></script>
+<link rel="stylesheet" href="css/content-sharing.css?v=20261112">
+<script src="js/content-sharing.js?v=20261112"></script>
 </head>
 <body>
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
@@ -3966,12 +3968,12 @@
   <div id="p-books" class="panel anim">
     <div class="sec-title"><i class="fa-solid fa-books" style="color:var(--leaf);"></i> 도서관</div>
     <div class="tab2-btns">
-      <button class="tab2-btn on" id="btab-a" onclick="switchBookMainTab('my')"><i class="fa-solid fa-book-bookmark mr-1"></i>내 도서관</button>
-      <button class="tab2-btn off" id="btab-b" onclick="switchBookMainTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
+      <button class="tab2-btn on" id="btab-b" onclick="switchBookMainTab('all')"><i class="fa-solid fa-globe mr-1"></i>전체 도서관</button>
+      <button class="tab2-btn off" id="btab-a" onclick="switchBookMainTab('my')"><i class="fa-solid fa-book-bookmark mr-1"></i>내 도서관</button>
     </div>
 
     <!-- 1. 내 도서관 영역 -->
-    <div id="bsub-my">
+    <div id="bsub-my" style="display:none;">
       <!-- 내 도서관 2차 서브탭: 배정 도서 / 추천 도서 / 인기 도서 / 관심 도서 -->
       <div class="lib-sub-nav">
         <button type="button" class="lib-sub-pill active" id="myLibSubPill-assigned" onclick="switchMyLibSubTab('assigned')">
@@ -4076,7 +4078,7 @@
     </div>
 
     <!-- 2. 전체 도서관 영역 -->
-    <div id="bsub-all" style="display:none;">
+    <div id="bsub-all">
       <!-- 전체 도서관 2차 서브탭: 전체 / 주제별 도서 / [마스터 등록 배너 제목 탭들] (좌우 스크롤 이동 버튼 및 드래그 스크롤 지원) -->
       <div class="lib-sub-nav-wrapper">
         <button type="button" class="lib-nav-scroll-btn btn-left" id="allLibScrollLeftBtn" onclick="scrollLibSubNav('left')" title="이전 탭 보기" aria-label="이전 탭 보기">
@@ -4252,6 +4254,7 @@
     </div>
 
     <!-- 완독 인증 도서일 경우 내 학습리포트 바로가기 배너 노출 -->
+    <button type="button" id="detailSheetButton" class="btn btn-outline-secondary mb-3">나노시트 목록</button>
     <div id="detailMyLearningReportBox" style="display:none; margin-bottom:16px;"></div>
 
     <!-- 이 도서를 읽은 학생이 함께 읽은 책 -->
@@ -4327,7 +4330,7 @@
         <p id="quizSubmissionStatus" role="status" style="display:none;"></p>
         <div class="qr-actions">
           <button type="button" class="qnav sec" onclick="switchPanel('home')">홈으로</button>
-          <button type="button" class="qnav prim" onclick="backToSelect()">다른 도서 살펴보기 <i class="fa-solid fa-arrow-right ml-1" aria-hidden="true"></i></button>
+          <button type="button" class="qnav prim" onclick="goToAllLibraryFromQuiz()">다른 도서 살펴보기 <i class="fa-solid fa-arrow-right ml-1" aria-hidden="true"></i></button>
         </div>
       </div></div>
     </div>
@@ -5780,6 +5783,14 @@ function initStudentMigratedData() {
 initStudentMigratedData();
 
 // ==============================================================
+// [운영 설정] 인기 도서 섹션 '퀴즈 N회' 배지 표시 여부 (기본: 숨김처리)
+// - false: 퀴즈 횟수 숨김 (기본)
+// - true: 퀴즈 횟수 노출
+// ※ 언제든 퀴즈 횟수를 다시 보이게 하려면 아래 값을 true로 변경하세요.
+// ==============================================================
+window.SHOW_POPULAR_QUIZ_COUNT = false;
+
+// ==============================================================
 // 학습 로그 및 로컬 완료 기록 연동 -> 도서별 북퀴즈 완료횟수 및 7일 랭킹 동기화
 // ==============================================================
 function syncAllBooksQuizCounts() {
@@ -5867,7 +5878,8 @@ function syncAllBooksQuizCounts() {
     );
 
     var deltaTotal = Math.max(logCerts, localCerts);
-    var delta7d = Math.max(logCerts7d, serverWeekly, deltaTotal);
+    // 최근 7일간 완료 횟수만 집계 (전체 누적 deltaTotal 제외)
+    var delta7d = Math.max(logCerts7d, serverWeekly);
 
     b.quizCount7d = b._baseQuizCount7d + delta7d;
     b.quizCompletions = b._baseQuizCompletions + deltaTotal;
@@ -5981,8 +5993,8 @@ function switchPanel(n, pushHistory){
   if(n === 'home') renderHomeSliders();
   if(n === 'history') renderMyBookshelf();
   if(n === 'ranking') renderRank();
-  // 도서관 진입 시 내 도서관(배정도서) 탭을 기본으로 표시
-  if(n === 'books') switchBookMainTab('my', 'assigned');
+  // 도서관 진입 시 전체 도서관 탭을 기본으로 표시
+  if(n === 'books') switchBookMainTab('all', 'all');
   if(n === 'literacy' && window.NanoLiteracyStudent) NanoLiteracyStudent.renderPanel();
 
   // 최상단으로 즉시 이동 (이전 화면의 스크롤 위치 잔상 방지)
@@ -6150,7 +6162,9 @@ function renderHomeSliders() {
       var rank = idx + 1;
       var rankCls = rank === 1 ? 'top-1' : rank === 2 ? 'top-2' : rank === 3 ? 'top-3' : '';
       var rankBadge = '<span class="card-rank-badge '+rankCls+'">'+rank+'</span>';
-      var quizCount = b.quizCount7d || b.quizCompletions || 0;
+      // 최근 7일간의 퀴즈 완료 횟수만 반영
+      var quizCount = Math.max(0, Number(b.quizCount7d) || 0);
+      var showQuizBadge = (typeof window.SHOW_POPULAR_QUIZ_COUNT === 'boolean') ? window.SHOW_POPULAR_QUIZ_COUNT : false;
       return '<div class="book-slide-card" onclick="openBookDetail(\''+b.id+'\', \'home\')">'
         +'<div class="card-cover-wrap">'
         +rankBadge
@@ -6158,7 +6172,7 @@ function renderHomeSliders() {
         +'</div>'
         +'<div class="card-title-text" title="'+b.title+'">'+b.title+'</div>'
         +'<div class="card-author-text">'+b.author+'</div>'
-        +'<span class="card-quiz-count" style="background:#fef2f2;color:#ef4444;"><i class="fa-solid fa-fire mr-1"></i>퀴즈 '+quizCount+'회</span>'
+        +'<span class="card-quiz-count" style="background:#fef2f2;color:#ef4444;' + (showQuizBadge ? '' : 'display:none !important;') + '"><i class="fa-solid fa-fire mr-1"></i>퀴즈 '+quizCount+'회</span>'
         +'</div>';
     }).join('');
   }
@@ -6184,7 +6198,9 @@ function renderHomeSliders() {
             var rank = idx + 1;
             var rankCls = rank === 1 ? 'top-1' : rank === 2 ? 'top-2' : rank === 3 ? 'top-3' : '';
             var rankBadge = '<span class="card-rank-badge '+rankCls+'">'+rank+'</span>';
-            var qc = b.quizCount7d || b.quizCompletions || 0;
+            // 최근 7일간의 퀴즈 완료 횟수만 반영
+            var qc = Math.max(0, Number(b.quizCount7d) || 0);
+            var showQuizBadge = (typeof window.SHOW_POPULAR_QUIZ_COUNT === 'boolean') ? window.SHOW_POPULAR_QUIZ_COUNT : false;
             return '<div class="book-slide-card" onclick="openBookDetail(\''+b.id+'\', \'home\')">'
               +'<div class="card-cover-wrap">'
               +rankBadge
@@ -6192,7 +6208,7 @@ function renderHomeSliders() {
               +'</div>'
               +'<div class="card-title-text" title="'+b.title+'">'+b.title+'</div>'
               +'<div class="card-author-text">'+b.author+'</div>'
-              +'<span class="card-quiz-count" style="background:#fef2f2;color:#ef4444;"><i class="fa-solid fa-fire mr-1"></i>퀴즈 '+qc+'회</span>'
+              +'<span class="card-quiz-count" style="background:#fef2f2;color:#ef4444;' + (showQuizBadge ? '' : 'display:none !important;') + '"><i class="fa-solid fa-fire mr-1"></i>퀴즈 '+qc+'회</span>'
               +'</div>';
           }).join('');
         }
@@ -6340,6 +6356,8 @@ function openBookDetail(id, from) {
 
   if(from) prevPanel = from;
   currentDetailBookId = id;
+  var sheetButton = document.getElementById('detailSheetButton');
+  if (sheetButton) { sheetButton.hidden = !window.NANO_SERVER_DATA; sheetButton.onclick = function () { ContentSharing.openSheets(b); }; }
 
   // 1. 헤더 서지정보 주입
   var heroCard = document.getElementById('detailHeroCard');
@@ -6526,7 +6544,7 @@ function startQuizFromDetail() {
 // 2. 내 도서관 하위: 배정 도서(assigned), 권장 도서(recommended), 인기 도서(popular), 관심 도서(interest)
 // 3. 전체 도서관 하위: 전체(all), 주제별 도서(themes)
 // ==============================================================
-var currentBookMainTab = 'my';
+var currentBookMainTab = 'all';
 var currentMyLibSubTab = 'assigned';
 var currentAllLibSubTab = 'all';
 
@@ -6686,8 +6704,12 @@ function getPopularLibRowHtml(b, rank) {
     rankBadge = '<span class="nbadge" style="background:#f3f4f6;color:#6b7280;font-weight:800;">#' + rank + '위</span>';
   }
 
-  var qc = b.quizCount7d || b.quizCompletions || 0;
-  var qcBadge = qc > 0 ? '<span class="nbadge" style="background:#fef2f2;color:#ef4444;font-weight:700;"><i class="fa-solid fa-fire mr-1"></i>퀴즈 ' + qc + '회</span>' : '';
+  // 최근 7일간의 퀴즈 완료 횟수만 반영
+  var qc = Math.max(0, Number(b.quizCount7d) || 0);
+  var showQuizBadge = (typeof window.SHOW_POPULAR_QUIZ_COUNT === 'boolean') ? window.SHOW_POPULAR_QUIZ_COUNT : false;
+  var qcBadge = (qc > 0 && showQuizBadge)
+    ? '<span class="nbadge card-quiz-count" style="background:#fef2f2;color:#ef4444;font-weight:700;"><i class="fa-solid fa-fire mr-1"></i>퀴즈 ' + qc + '회</span>'
+    : '<span class="nbadge card-quiz-count" style="display:none !important;"><i class="fa-solid fa-fire mr-1"></i>퀴즈 ' + qc + '회</span>';
 
   return '<div class="lib-row" onclick="openBookDetail(\'' + b.id + '\', \'books\')">'
     + getBookCoverHtml(b, 'bcover', 'width:48px;height:66px;')
@@ -8449,7 +8471,9 @@ function getStudentBookCertifiedPassCount(bookId, excludeLogId) {
   var identity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
   if (!identity || !identity.studentId) return 0;
 
-  var targetBook = window.currentQuizBookObj || (typeof libData !== 'undefined' ? libData.find(function(b){ return b.id === bookId; }) : null);
+  var targetBook = window.currentQuizBookObj || (typeof libData !== 'undefined' ? libData.find(function(b){
+    return b && (String(b.id) === String(bookId) || String(b.bookNo) === String(bookId) || String(b.serverId) === String(bookId));
+  }) : null);
   var targetAliases = [
     String(bookId || ''),
     targetBook && targetBook.id ? String(targetBook.id) : '',
@@ -8560,6 +8584,26 @@ async function startQuiz(id) {
     return;
   }
 
+  // 6. 퀴즈를 60점 이상 받은 이력이 2회 이상 있을 때 Alert 안내 (진행은 계속 가능)
+  var certPassCount = 0;
+  if (typeof getStudentBookCertifiedPassCount === 'function') {
+    certPassCount = Math.max(certPassCount, getStudentBookCertifiedPassCount(id));
+  }
+  if (typeof getStudentCertifiedLogsForBook === 'function') {
+    certPassCount = Math.max(certPassCount, (getStudentCertifiedLogsForBook(id) || []).length);
+  }
+  try {
+    var certMap = JSON.parse(localStorage.getItem('NANO_BOOK_CERT_COUNTS') || '{}');
+    var bKey = String(id || '').trim();
+    if (bKey && typeof certMap[bKey] === 'number') {
+      certPassCount = Math.max(certPassCount, certMap[bKey]);
+    }
+  } catch(e) {}
+
+  if (certPassCount >= 2) {
+    alert('퀴즈를 이미 완료한 도서에요. 이번부터는 포인트가 쌓이지 않아요.');
+  }
+
   var sId = String(id || '').trim();
   var book = null;
   // 도서 정보 탐색 (ID, bookNo, serverId 정확한 고유 식별자 우선 일치)
@@ -8603,7 +8647,7 @@ async function startQuiz(id) {
   }
 
   // 운영 학생 화면은 수천 권의 문항을 처음부터 받지 않고, 선택한 도서만 지연 조회합니다.
-  if (window.NANO_SERVER_DATA && quizSets.length === 0 && (activeBook.hasQuiz || Number(activeBook.quizCount) > 0) && window.NanoPortal) {
+  if (window.NANO_SERVER_DATA && activeBook && window.NanoPortal) {
     try {
       var lookupBookId = activeBook.serverId || activeBook.bookNo || activeBook.id || id;
       var quizResponse = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupBookId));
@@ -8619,7 +8663,7 @@ async function startQuiz(id) {
   if (quizSets.length === 0) {
     // 등록된 QB 기본 세트가 존재하는 경우에만 주입 (실문항 매핑)
     var defaultQB = (typeof QB !== 'undefined') ? (QB[id] || (activeBook ? (QB[activeBook.title] || QB[activeBook.id]) : null)) : null;
-    if (defaultQB && Array.isArray(defaultQB.qs) && defaultQB.qs.length > 0) {
+    if (!window.NANO_SERVER_DATA && defaultQB && Array.isArray(defaultQB.qs) && defaultQB.qs.length > 0) {
       quizSets.push({
         id: 'qs_default_' + id,
         authorType: 'HQ',
@@ -8667,7 +8711,7 @@ async function startQuiz(id) {
   }
 
   // ★ 공개 상태인 퀴즈 세트만 학생에게 제공 (비공개 세트 제외)
-  quizSets = quizSets.filter(function(s) { return s.isPublic !== 'N'; });
+  quizSets = quizSets.filter(function(s) { return window.NANO_SERVER_DATA ? s.canAccess === true : s.isPublic !== 'N'; });
   if (quizSets.length === 0) {
     toast('해당 도서의 공개된 북퀴즈 문항이 준비 중입니다.');
     return;
@@ -9395,6 +9439,7 @@ async function showResult() {
     document.getElementById('qNext').disabled = true;
     try {
       var result = await NanoPortal.request('learning', { id: studentQuizAttemptId, studentId: identity.studentId, bookId: String(curBook), thoughtAnswer: currentStudentThoughtAnswer,
+        quizSetSeq: curSelectedQuizSet && curSelectedQuizSet.seq,
         quizResults: gradedQuestions.map(function(q, idx) {
           // q.q는 화면 표시용으로 정리된 문장입니다. 서버 검증에는 받은 원문을 그대로 보냅니다.
           var source = curSelectedQuizSet && curSelectedQuizSet.questions && curSelectedQuizSet.questions[idx];
@@ -9464,9 +9509,12 @@ async function showResult() {
     }
   }
   var isSecondPass = isPass && (certRound === 2);
+  var isThirdOrMorePass = isPass && (certRound >= 3);
 
   if (isPass) {
-    if (isSecondPass) {
+    if (isThirdOrMorePass) {
+      document.getElementById('rPt').innerHTML = '<span style="color:#16a34a;font-weight:800;">✓ 도서 인증 완료 (' + certRound + '회차)!</span> · 획득 포인트: <strong>+0 P</strong><div style="margin-top:6px;color:#64748b;font-size:12px;font-weight:700;line-height:1.4;"><i class="fa-solid fa-circle-info mr-1"></i>포인트는 퀴즈 2회 완독까지만 주어져요</div>';
+    } else if (isSecondPass) {
       document.getElementById('rPt').innerHTML = '<span style="color:#16a34a;font-weight:800;">✓ 도서 인증 2회차 완료!</span> · 획득 포인트: <strong>+' + earnedPts + ' P</strong><div style="margin-top:6px;color:#d97706;font-size:12px;font-weight:700;line-height:1.4;"><i class="fa-solid fa-circle-info mr-1"></i>북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.</div>';
       toast('북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.');
     } else {
@@ -9533,12 +9581,14 @@ async function showResult() {
       ok: ok,
       isPass: isPass,
       isSecondPass: isSecondPass,
+      isThirdOrMorePass: isThirdOrMorePass,
+      certRound: certRound,
       earnedPts: earnedPts,
       speechText: speechText,
       failCount: (failInfoObj ? failInfoObj.count : 0)
     });
     window.activeQuizResultView = { attemptId: studentQuizAttemptId, score: score, book: activeBookObj,
-      extra: { tot: tot, ok: ok, isPass: isPass, isSecondPass: isSecondPass, earnedPts: earnedPts, failCount: failInfoObj ? failInfoObj.count : 0 } };
+      extra: { tot: tot, ok: ok, isPass: isPass, isSecondPass: isSecondPass, isThirdOrMorePass: isThirdOrMorePass, certRound: certRound, earnedPts: earnedPts, failCount: failInfoObj ? failInfoObj.count : 0 } };
   }
 
   // 결과 화면 캐릭터 말풍선 렌더링 (하위 호환성 유지)
@@ -9736,6 +9786,41 @@ function backToSelect(){
     }
     switchPanel(prevPanel || 'books');
   }
+}
+
+// 퀴즈 결과 화면에서 '다른 도서 살펴보기' 클릭 시 도서관-전체도서관 메뉴로 이동
+function goToAllLibraryFromQuiz() {
+  if (window.studentSubmissionPending) return;
+  curBook = null;
+  curData = null;
+  window._quizOriginSnapshot = null;
+  currentDetailBookId = null;
+
+  // 1. 도서관(books) 패널로 이동
+  switchPanel('books');
+
+  // 2. 전체 도서관(all) 메인탭 및 전체(all) 서브탭 활성화
+  switchBookMainTab('all', 'all');
+
+  // 3. 전체 도서관 검색어 초기화 및 도서 목록 새로고침
+  var libInput = document.getElementById('libQ');
+  if (libInput) libInput.value = '';
+  if (typeof appliedLibSearchQuery !== 'undefined') appliedLibSearchQuery = '';
+  if (typeof renderLib === 'function') renderLib('');
+
+  // 4. 최상단으로 스크롤 이동
+  try {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  } catch(e) {
+    window.scrollTo(0, 0);
+  }
+
+  // 5. 브라우저 히스토리 상태 갱신
+  try {
+    if (history.replaceState) {
+      history.replaceState({ panel: 'books' }, '', '#books');
+    }
+  } catch(e) {}
 }
 // ==============================================================
 // 찜하기(Wishlist) 및 내 책장(Bookshelf) 종합 모듈

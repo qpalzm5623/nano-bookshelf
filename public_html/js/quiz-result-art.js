@@ -343,6 +343,7 @@ var NanoQuizResult = (function () {
     var themeKey = themeFor(currentBook), t = themes[themeKey], state = tiers[tier];
     var isPass = typeof extra.isPass === 'boolean' ? extra.isPass : score >= 60;
     var isSecondPass = extra.isSecondPass === true;
+    var isThirdOrMorePass = extra.isThirdOrMorePass === true || (typeof extra.certRound === 'number' && extra.certRound >= 3);
     var isRecommended = extra.isRecommended === true;
     var bookIdAttr = escape(currentBook.bookNo || currentBook.id || '');
     var total = Number.isFinite(extra.tot) ? Math.max(0, Math.floor(extra.tot)) : 5;
@@ -367,9 +368,11 @@ var NanoQuizResult = (function () {
     var round2NoticeHtml = isSecondPass
       ? '<div class="qr-notice-round2" style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:11px 14px;margin:12px 0 6px;display:flex;align-items:center;gap:10px;color:#92400e;font-size:12.5px;line-height:1.5;box-shadow:0 2px 8px rgba(245,158,11,0.08);text-align:left;"><svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span style="font-weight:700;">북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.</span></div>'
       : '';
-    var rewardNote = isSecondPass
-      ? '북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.'
-      : (points > 0 ? '독서의 즐거움이 차곡차곡' : isPass ? '이번에 지급된 포인트가 없어요' : '60점 이상이면 받을 수 있어요');
+    var rewardNote = (isThirdOrMorePass || (isPass && points === 0))
+      ? '포인트는 퀴즈 2회 완독까지만 주어져요'
+      : (isSecondPass
+          ? '북퀴즈를 2회째 완료했습니다. 3회차부터는 포인트가 쌓이지 않습니다.'
+          : (points > 0 ? '독서의 즐거움이 차곡차곡' : '60점 이상이면 받을 수 있어요'));
     return '<section class="qr-card qr-theme-' + themeKey + ' qr-tier-' + tier + '" style="--qr-ink:' + t.ink + ';--qr-paper:' + t.paper + ';--qr-accent:' + t.accent + '">' +
       '<div class="qr-heading"><div class="qr-eyebrow"><span>북퀴즈 완료</span><div class="qr-eyebrow-actions"><span class="qr-theme-label">' + icon('book') + t.label + '</span>' + recBtnHtml + '</div></div>' +
       '<h2 class="qr-book-title">' + escape(currentBook.title || '선택 도서') + '</h2><p class="qr-headline">' + state.title + '</p></div>' +

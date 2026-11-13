@@ -3,6 +3,7 @@ import { authenticate, staff, master, need, text, failure, academyScope } from '
 import { hashPassword } from '../lib/portal-auth';
 import { randomUUID } from 'node:crypto';
 import { monthWindow } from '../lib/portal-learning';
+import { loadContentAccess, quizContent, canReadContent, bookSheets, sheetView } from '../lib/portal-content';
 
 let quizAuthorMap: Record<string, any> = {};
 try { quizAuthorMap = require('../lib/quiz-authors.json'); } catch {}
@@ -209,7 +210,14 @@ export default async function handler(req: any, res: any) {
       if (entity === 'members') return res.json({ items: await prisma.member.findMany({ where: { academyId }, select: memberFields, orderBy: { name: 'asc' } }) });
       if (entity === 'classes') return res.json({ items: await prisma.classGroup.findMany({ where: { academyId }, orderBy: { name: 'asc' } }) });
       if (entity === 'academies') { master(user); return res.json({ items: await prisma.academy.findMany({ where: { deletedAt: null }, orderBy: { name: 'asc' } }) }); }
-      if (entity === 'books') return res.json({ items: await prisma.book.findMany({ orderBy: { bookNo: 'asc' }, take: 1000, where: req.query.search ? { title: { contains: String(req.query.search), mode: 'insensitive' } } : {} }) });
+      if (entity === 'books') {
+        const access = await loadContentAccess(prisma);
+        const books = await prisma.book.findMany({ orderBy: { bookNo: 'asc' }, take: 1000, where: req.query.search ? { title: { contains: String(req.query.search), mode: 'insensitive' } } : {} });
+        return res.json({ items: books.map(book => {
+          const sheets = bookSheets(access, book).filter(sheet => canReadContent(user, sheet, access)).map(sheet => sheetView(sheet, user));
+          return { ...book, worksheetUrl: sheets[0]?.url || null, worksheetList: sheets, hasSheet: sheets.length > 0 };
+        }) });
+      }
       if (entity === 'owned') return res.json({ items: await prisma.academyBook.findMany({ where: { academyId }, include: { book: { select: { bookNo: true, title: true } } } }) });
       if (entity === 'assignments') return res.json({ items: await prisma.bookAssignment.findMany({ where: { academyId }, include: { book: { select: { title: true, bookNo: true } }, member: { select: { name: true, username: true } } }, orderBy: { createdAt: 'desc' } }) });
       if (entity === 'payments') return res.json({ items: await prisma.payment.findMany({ where: { academyId, deletedAt: null }, orderBy: { createdAt: 'desc' } }) });
@@ -266,7 +274,12 @@ export default async function handler(req: any, res: any) {
           })
         });
       }
-      if (entity === 'quizzes') { need(req.query.bookId, '도서를 선택해 주세요.'); return res.json({ items: await prisma.bookQuiz.findMany({ where: { bookId: String(req.query.bookId) }, orderBy: { questionNo: 'asc' } }) }); }
+      if (entity === 'quizzes') {
+        need(req.query.bookId, '도서를 선택해 주세요.');
+        const access = await loadContentAccess(prisma);
+        const items = await prisma.bookQuiz.findMany({ where: { bookId: String(req.query.bookId) }, orderBy: { questionNo: 'asc' } });
+        return res.json({ items: items.filter(q => canReadContent(user, quizContent(access, q.bookId, q.legacyQuizSeq || 0), access)) });
+      }
       if (entity === 'dispatch') return res.json({ items: await prisma.aligoDispatchLog.findMany({ where: { academyId }, orderBy: { sentAt: 'desc' }, take: 200 }) });
       if (entity === 'portfolios') return res.json({ items: (await prisma.portalSetting.findMany({ where: { scope: 'portfolio:' + academyId }, orderBy: { updatedAt: 'desc' } })).map(p => ({ ...(p.value as any), id: p.key, revision: p.revision })) });
       if (entity === 'ai_config') {
@@ -573,7 +586,7 @@ export default async function handler(req: any, res: any) {
         themeId: input.themeId || null,
         isRecommended: input.isRecommended === true,
         coverUrl: text(input.coverUrl, '표지 주소', 2000),
-        worksheetUrl: text(input.worksheetUrl, '학습지 주소', 2000),
+        ...(input.worksheetUrl !== undefined ? { worksheetUrl: text(input.worksheetUrl, '학습지 주소', 2000) } : {}),
         tags: text(input.tags, '태그', 2000),
         series: text(input.series, '시리즈'),
         award: text(input.award || input.awards, '어워드', 1000),
@@ -687,6 +700,8 @@ export default async function handler(req: any, res: any) {
 
         if (!isMasterUser && academyQuizSeq !== null && academyMeta && prisma.portalSetting) {
           const seqKey = `quiz_seq:${academyQuizSeq}`;
+          const previousAuthor = await prisma.portalSetting.findUnique({ where: { key: seqKey } });
+          need(!previousAuthor || (previousAuthor.value as any)?.academyId === academyMeta.academyId, '학원 퀴즈 식별자가 충돌했습니다. 개별 퀴즈 등록을 이용해 주세요.', 409);
           const seqVal = {
             authorType: 'ACADEMY',
             authorName: academyMeta.academyName,
@@ -786,6 +801,15 @@ export default async function handler(req: any, res: any) {
 
             await tx.bookQuiz.createMany({ data: questions });
 
+            // 엑셀 재등록으로 비공개 설정이 공개로 되돌아가지 않도록 보존합니다.
+            const policyKey = `content_quiz:${book.id}:${isMasterUser ? 0 : academyQuizSeq}`;
+            const oldPolicy = await tx.portalSetting.findUnique({ where: { key: policyKey } });
+            const policy = { ...((oldPolicy?.value as any) || {}), bookId: book.id, seq: isMasterUser ? 0 : academyQuizSeq,
+              ownerAcademyId: academyId, ownerMemberId: (oldPolicy?.value as any)?.ownerMemberId || user.id,
+              academyName: isMasterUser ? '본사' : academyMeta!.academyName, authorType: isMasterUser ? 'HQ' : 'ACADEMY',
+              isPublic: (oldPolicy?.value as any)?.isPublic === 'N' ? 'N' : 'Y' };
+            await tx.portalSetting.upsert({ where: { key: policyKey }, create: { key: policyKey, scope: 'content_quiz', value: policy }, update: { value: policy, revision: { increment: 1 } } });
+
             totalImportedQuestions += questions.length;
             affectedBookCount++;
           }
@@ -801,6 +825,8 @@ export default async function handler(req: any, res: any) {
 
         return res.json(result);
       }
+      // 학원 편집은 소유 세트를 검증하는 콘텐츠 API를 사용합니다.
+      master(user);
       if (body.operation === 'replace') {
         need(typeof input.bookId === 'string' && await prisma.book.findUnique({ where: { id: input.bookId } }), '도서를 찾을 수 없습니다.');
         need(Array.isArray(input.questions) && input.questions.length <= 100, '최대 100문항까지 저장할 수 있습니다.');

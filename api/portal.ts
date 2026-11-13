@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma';
+import { loadContentAccess, quizContent, canReadContent, ownsContent } from '../lib/portal-content';
 import { saveAttempt, earnedForAttempt, estimateAttemptPoints } from '../lib/portal-learning';
 import { academyScope } from '../lib/portal-http';
 import { randomUUID } from 'node:crypto';
@@ -162,10 +163,13 @@ export default async function handler(req: any, res: any) {
       });
       if (!book) return res.status(404).json({ error: '도서를 찾을 수 없습니다.' });
 
+      const contentAccess = await loadContentAccess(prisma);
+
       // 출제 기관별(legacyQuizSeq) 북퀴즈 세트 분리 (본사 및 가맹점)
       const setsMap = new Map<number, any[]>();
       for (const q of book.quizzes) {
         const seq = q.legacyQuizSeq || 0;
+        if (!canReadContent(user, quizContent(contentAccess, book.id, seq), contentAccess)) continue;
         if (!setsMap.has(seq)) setsMap.set(seq, []);
         setsMap.get(seq)!.push(q);
       }
@@ -193,6 +197,7 @@ export default async function handler(req: any, res: any) {
       });
 
       const quizSets = orderedEntries.map(([seq, qList], idx) => {
+        const content = quizContent(contentAccess, book.id, seq);
         const authorInfo = (seq < 0 ? dynamicAuthorMap.get(seq) : (quizAuthorMap as any)[seq]) || {
           authorType: seq < 0 ? 'ACADEMY' : 'HQ',
           authorName: seq < 0 ? '가맹 학원' : '본사',
@@ -204,12 +209,16 @@ export default async function handler(req: any, res: any) {
         );
         return {
           id: `server-${book.id}-${seq || idx}`,
-          authorType: authorInfo.authorType || 'HQ',
-          authorName: authorInfo.authorName || '본사',
-          academyName: authorInfo.academyName || '본사 직속 (공용)',
+          authorType: content.authorType,
+          authorName: authorInfo.authorName || content.academyName,
           ...(authorInfo.academyCode ? { academyId: authorInfo.academyCode } : {}),
           ...(isMyAcademySet ? { isMine: true } : {}),
-          isPublic: 'Y',
+          isPublic: content.isPublic,
+          seq,
+          revision: contentAccess.rows.find(r => r.key === `content_quiz:${book.id}:${seq}`)?.revision || 0,
+          isMine: user.role !== 'STUDENT' && ownsContent(user, content),
+          canAccess: true,
+          academyName: content.academyName,
           questions: qList.map(q => {
             const opts = Array.isArray(q.options) ? q.options : [];
             const isSubj = q.quizType === 'SHORT_ANSWER';
@@ -269,6 +278,8 @@ export default async function handler(req: any, res: any) {
       // 학생 요청의 이관 플래그로 응시 제한·작성일을 우회하지 못하게 합니다.
       if (body.importing === true || body.sourceDate !== undefined) return res.status(403).json({ error: '학생 화면에서는 과거 기록을 이관할 수 없습니다. 관리자에게 문의해 주세요.' });
       const book = await prisma.book.findFirst({ where: { OR: [{ id: body.bookId }, { bookNo: body.bookId }] }, include: { quizzes: { orderBy: [{ legacyQuizSeq: 'asc' }, { questionNo: 'asc' }] } } });
+      const contentAccess = await loadContentAccess(prisma);
+      if (book) book.quizzes = book.quizzes.filter(q => canReadContent(user, quizContent(contentAccess, book.id, q.legacyQuizSeq || 0), contentAccess));
       if (!book || !book.quizzes.length) return res.status(409).json({ error: '서버의 퀴즈 문항과 다릅니다. 관리자에게 도서 문항 확인을 요청해 주세요.' });
       const quizGroups = new Map<number, any[]>();
       for (const q of book.quizzes) {
@@ -277,7 +288,10 @@ export default async function handler(req: any, res: any) {
         quizGroups.get(seq)!.push(q);
       }
       let targetQuizzes = book.quizzes;
-      if (quizGroups.size > 1) {
+      if (body.quizSetSeq !== undefined) {
+        if (!Number.isInteger(body.quizSetSeq) || !quizGroups.has(body.quizSetSeq)) return res.status(403).json({ error: '선택한 퀴즈의 공유가 해제되었거나 이용 권한이 없습니다.' });
+        targetQuizzes = quizGroups.get(body.quizSetSeq)!;
+      } else if (quizGroups.size > 1) {
         const matchedSet = Array.from(quizGroups.values()).find(
           setQs => setQs.length === body.quizResults.length && setQs.every((q, idx) => body.quizResults[idx]?.question === q.question)
         );

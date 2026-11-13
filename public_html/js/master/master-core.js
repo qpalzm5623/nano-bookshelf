@@ -1820,6 +1820,7 @@ function ensureMasterTabRendered(tabName) {
     if (typeof populateRankingAcademyFilter === "function") populateRankingAcademyFilter();
     if (typeof renderRankings === "function") renderRankings();
   } else if (tabName === "contents") {
+    if (typeof populateMasterContentAcademyFilter === "function") populateMasterContentAcademyFilter();
     if (typeof populateMasterContentCategoryOptions === "function") populateMasterContentCategoryOptions();
     if (typeof renderMasterContents === "function") renderMasterContents();
   } else if (tabName === "literacy") {

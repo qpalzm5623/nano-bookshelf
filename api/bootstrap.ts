@@ -1,5 +1,6 @@
 import { paymentView } from '../lib/payment-view';
 import { prisma } from '../lib/prisma';
+import { loadContentAccess, quizContent, canReadContent, bookSheets, sheetView } from '../lib/portal-content';
 import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import Reading = require('../public_html/js/reading-progress');
 import { readSession, passwordVersion } from '../lib/portal-auth';
@@ -154,6 +155,16 @@ export default async function handler(req: any, res: any) {
     ]);
 
     const books = catalog.books;
+    const [contentAccess, contentQuizGroups] = await Promise.all([
+      loadContentAccess(prisma, academies), prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'], _count: { id: true } })
+    ]);
+    const accessibleQuizCounts = new Map<string, { sets: number; questions: number }>();
+    for (const group of contentQuizGroups) {
+      if (!canReadContent(user, quizContent(contentAccess, group.bookId, group.legacyQuizSeq || 0), contentAccess)) continue;
+      const count = accessibleQuizCounts.get(group.bookId) || { sets: 0, questions: 0 };
+      count.sets++; count.questions += group._count.id;
+      accessibleQuizCounts.set(group.bookId, count);
+    }
     const quizSetCountMap = catalog.quizSetCountMap;
     const noticeMetaMap = catalog.noticeMetaMap;
     const bannerMetaMap = catalog.bannerMetaMap;
@@ -277,6 +288,8 @@ export default async function handler(req: any, res: any) {
           const bookDate = bookCreatedAt.slice(0, 10);
 
           const creatorMeta = bookCreatorMap.get(finalBookId);
+          const visibleSheets = bookSheets(contentAccess, b).filter(s => canReadContent(user, s, contentAccess)).map(s => sheetView(s, user));
+          const visibleQuizCount = accessibleQuizCounts.get(b.id) || { sets: 0, questions: 0 };
           bookMap.set(finalBookId, {
             ...b,
             serverId: b.id,
@@ -295,10 +308,11 @@ export default async function handler(req: any, res: any) {
               academyId: creatorMeta.academyCode || creatorMeta.academyId || '',
               academyName: creatorMeta.academyName || '가맹 학원'
             } : {}),
-            sheet: !!b.worksheetUrl,
-            hasSheet: !!b.worksheetUrl,
-            worksheet: resolveMediaUrl(b.worksheetUrl, true) || null,
-            worksheetUrl: resolveMediaUrl(b.worksheetUrl, true) || null,
+            sheet: visibleSheets.length > 0,
+            hasSheet: visibleSheets.length > 0,
+            worksheet: visibleSheets[0]?.url || null,
+            worksheetUrl: visibleSheets[0]?.url || null,
+            worksheetList: visibleSheets,
             cat: series,
             series: series,
             single: !series || series === '단권',
@@ -313,9 +327,9 @@ export default async function handler(req: any, res: any) {
             thinkExtract: b.thinkTitle || '',
             thinkInsert: b.thinkQuiz || '',
             thinkOpen: b.thinkTitle || '',
-            hasQuiz: ((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0,
-            quizCount: (b.quizzes && b.quizzes.length) || b._count?.quizzes || 0,
-            quizSetCount: quizSetCountMap.get(b.id) || (((b.quizzes && b.quizzes.length) || b._count?.quizzes || 0) > 0 ? 1 : 0),
+            hasQuiz: visibleQuizCount.questions > 0,
+            quizCount: visibleQuizCount.questions,
+            quizSetCount: visibleQuizCount.sets,
             quizSets: [],
             likes: totalLikes,
             recommends: totalRecs,

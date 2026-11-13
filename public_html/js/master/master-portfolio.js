@@ -623,6 +623,19 @@
     }
   }
 
+  // 14. 필터 초기화
+  function resetMasterPfFilters() {
+    var aFilter = document.getElementById('masterPfAcademyFilter');
+    if (aFilter) aFilter.value = 'ALL';
+    var cFilter = document.getElementById('masterPfClassFilter');
+    if (cFilter) cFilter.value = 'ALL';
+    var sInput = document.getElementById('masterPfSearchInput');
+    if (sInput) sInput.value = '';
+
+    initMasterPfDateFilters(true);
+    filterMasterPortfolioList();
+  }
+
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function(c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -643,6 +656,7 @@
   window.initMasterPfDateFilters = initMasterPfDateFilters;
   window.populateMasterPfAcademyFilter = populateMasterPfAcademyFilter;
   window.filterMasterPortfolioList = filterMasterPortfolioList;
+  window.resetMasterPfFilters = resetMasterPfFilters;
   window.renderMasterPfTable = renderMasterPfTable;
   window.openMasterPfDetailModal = openMasterPfDetailModal;
   window.printMasterPortfolio = printMasterPortfolio;

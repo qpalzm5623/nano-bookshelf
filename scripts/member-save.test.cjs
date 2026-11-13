@@ -5,6 +5,7 @@ const path = require('node:path');
 const ts = require('typescript');
 
 function load(file, modules = {}) {
+  if (/^api\/(portal|bootstrap|manage)\.ts$/.test(file)) modules = { '../lib/portal-content': require('./test-portal-content.cjs')(modules['../lib/portal-http']), ...modules };
   const code = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const transpiled = ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const fn = new Function('require', 'exports', 'module', transpiled);

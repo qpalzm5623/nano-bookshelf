@@ -3089,7 +3089,7 @@
 
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261106_acad_bulk_v1"></script>
+<script src="js/portal-client.js?v=20261112_content_sharing"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
 <link rel="stylesheet" href="css/portfolio.css?v=20261111-editorial">
@@ -3118,6 +3118,7 @@
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
 <link rel="stylesheet" href="css/learning-report.css?v=20261112-print">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261112">
 </head>
 
 <body>
@@ -3219,6 +3220,10 @@
       <a class="nav-item-btn" id="btn-nav-contents" onclick="switchTab('contents')">
         <i class="fa-solid fa-book-bookmark"></i>
         <span>콘텐츠 관리 <small class="text-muted font-weight-normal">(도서/퀴즈)</small></span>
+      </a>
+
+      <a class="nav-item-btn" id="btn-nav-content-sharing" href="#content-sharing" onclick="switchTab('content-sharing'); return false;">
+        <i class="fa-solid fa-folder-open"></i><span>콘텐츠 공유</span>
       </a>
 
       <a class="nav-item-btn" id="btn-nav-learning" onclick="switchTab('learning')">
@@ -3542,9 +3547,9 @@
         <div id="content-sub-list">
           <div class="simple-card p-3 mb-4">
             <div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap: 14px;">
-              <!-- 1. 등록도서 필터 -->
+              <!-- 1. 등록처 필터 -->
               <div style="width: 140px;">
-                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">등록도서 필터</label>
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">등록처 필터</label>
                 <select class="form-control" id="filterAcadBookOrigin" onchange="filterAcademyBooks()"
                   style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                   <option value="ALL" selected>전체 등록처</option>
@@ -4062,6 +4067,7 @@
       <!-- ============================================================== -->
       <!-- MENU 3: 학습 관리 (원생 독서 이력, 퀴즈 결과, 리포트) -->
       <!-- ============================================================== -->
+      <div id="view-content-sharing" style="display: none;"></div>
       <div id="view-learning" style="display: none;">
         <div class="workspace-header">
           <div>
@@ -6270,7 +6276,7 @@
             </div>
 
             <!-- 선택된 이미지 썸네일 미리보기 컨테이너 -->
-            <div id="worksheetUploadThumbnails" class="d-flex gap-2 mt-2 flex-wrap" style="display: none !important;">
+            <div id="worksheetUploadThumbnails" class="gap-2 mt-2 flex-wrap" style="display: none;">
               <!-- 썸네일 미리보기 카드 동적 생성 -->
             </div>
           </div>
@@ -8045,6 +8051,12 @@
                       style="font-size: 11.5px;">파일 선택 (.pdf)</label>
                   </div>
                   <small class="text-muted d-block" id="abSheetFileName">나노_독서학습시트.pdf</small>
+                  <label for="abSheetVisibility" class="mt-2">새 나노시트 공개 범위</label>
+                  <select id="abSheetVisibility" class="form-control form-control-sm">
+                    <option value="Y">공개 · 모든 학원</option>
+                    <option value="N">비공개 · 우리 학원 및 공유받은 학원</option>
+                  </select>
+                  <small class="text-muted d-block mt-1">기존 자료의 공개 범위는 도서 목록의 나노시트 버튼에서 변경합니다.</small>
                 </div>
 
                 <div class="alert alert-info w-100 text-left mt-3 mb-0 p-2" style="font-size: 11px;">
@@ -8837,7 +8849,7 @@
                   style="height: 40px; border-radius: 10px; font-size: 13px;">취소</button>
                 <button type="submit" class="btn btn-beige-primary px-4 font-weight-bold"
                   style="height: 40px; border-radius: 10px; font-size: 13.5px; box-shadow: 0 3px 8px rgba(45,106,79,0.25);">
-                  <i class="fa-solid fa-floppy-disk mr-1"></i>북퀴즈 문항 세트 저장 완료
+                  <i class="fa-solid fa-floppy-disk mr-1"></i>선택한 퀴즈 세트 저장
                 </button>
               </div>
             </div>
@@ -9384,9 +9396,10 @@
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
-<script src="admin_preview.js?v=20261112_report_print"></script>
+<script src="admin_preview.js?v=20261113_content_sharing"></script>
 <script src="js/admin_members.js?v=20261111_v1"></script>
-<script src="js/admin_books.js?v=20261111_v1"></script>
+<script src="js/content-sharing.js?v=20261112"></script>
+<script src="js/admin_books.js?v=20261112_content_sharing"></script>
 <script src="js/admin_payment.js?v=20261111_v1"></script>
 <script src="js/admin_notices.js?v=20261111_v1"></script>
 <script src="js/admin_worksheet_ai.js?v=20261111_v1"></script>

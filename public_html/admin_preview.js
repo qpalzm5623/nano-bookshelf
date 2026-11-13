@@ -27,7 +27,7 @@ function getWorksheetStore(logId) {
 
 // [새로고침 시 머무르던 탭 유지] URL 해시 또는 세션 스토리지에서 활성 탭 복원
 function restoreAdminActiveTab() {
-  var validTabs = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  var validTabs = ['members', 'contents', 'content-sharing', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   var hash = (window.location.hash || '').replace('#', '').trim();
   var saved = '';
   try { saved = sessionStorage.getItem('nano_admin_active_tab') || ''; } catch(e) {}
@@ -35,7 +35,7 @@ function restoreAdminActiveTab() {
   switchTab(target);
 }
 window.addEventListener('hashchange', function() {
-  var validTabs = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  var validTabs = ['members', 'contents', 'content-sharing', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   var hash = (window.location.hash || '').replace('#', '').trim();
   if (validTabs.indexOf(hash) >= 0) {
     switchTab(hash);
@@ -236,7 +236,7 @@ function switchTab(tab) {
     showAcademyToast('결제 관리는 원장님 전용 권한 메뉴입니다.');
     tab = 'members';
   }
-  var views = ['members', 'contents', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
+  var views = ['members', 'contents', 'content-sharing', 'learning', 'literacy', 'portfolio', 'assignment', 'notice', 'dispatch', 'ranking', 'payment'];
   if (views.indexOf(tab) < 0) tab = 'members';
   // 저장소가 차단되어도 URL에는 현재 메뉴를 남깁니다.
   try { sessionStorage.setItem('nano_admin_active_tab', tab); } catch (e) {}
@@ -272,6 +272,7 @@ function switchTab(tab) {
     if (typeof filterStudents === 'function') filterStudents();
     else if (typeof renderStudentTable === 'function') renderStudentTable();
   }
+  if (tab === 'content-sharing' && window.ContentSharing) ContentSharing.refresh();
   if (tab === 'contents') {
     var bInput = document.getElementById('searchAcadBookInput');
     if (bInput) bInput.value = '';
@@ -1364,6 +1365,17 @@ function openCorrectionModal(logId) {
   currentWorksheetAiResult = log.worksheetAiResult ? JSON.parse(JSON.stringify(log.worksheetAiResult)) : null;
   currentWorksheetCorrectionDone = !!currentWorksheetAiResult || String(log.reviewed || '').includes('완료');
 
+  // DOM 잔여물 및 이전 업로드 캐시 즉시 초기화
+  var thumbBox = document.getElementById('worksheetUploadThumbnails');
+  if (thumbBox) {
+    thumbBox.innerHTML = '';
+    thumbBox.style.setProperty('display', 'none', 'important');
+  }
+  var fileInput = document.getElementById('correctionFileInput');
+  if (fileInput) fileInput.value = '';
+  var photoBadge = document.getElementById('worksheetPhotoCountBadge');
+  if (photoBadge) photoBadge.innerText = currentWorksheetPhotos.length > 0 ? (currentWorksheetPhotos.length + '장 선택됨') : '0장 선택됨';
+
   // 첨삭 완료 상태인데 worksheetAiResult가 비어있거나(이관/구형 첨삭 기록 등) 일부 필드가 누락된 경우 복원
   if (currentWorksheetCorrectionDone) {
     var sName = log.studentName || log.name || '원생';
@@ -1442,6 +1454,34 @@ function openCorrectionModal(logId) {
   syncWorksheetCorrectionActions();
   document.getElementById('correctionFileInput').value = '';
   if (window.jQuery) $('#modalCorrection').modal('show');
+}
+
+// 첨삭 모달 닫힘 시 잔여 메모리 및 DOM 완전 초기화
+function resetCorrectionModalState() {
+  currentOpenCorrectionLogId = null;
+  currentWorksheetPhotos = [];
+  currentWorksheetAiResult = null;
+  currentWorksheetCorrectionDone = false;
+  var thumbBox = document.getElementById('worksheetUploadThumbnails');
+  if (thumbBox) {
+    thumbBox.innerHTML = '';
+    thumbBox.style.setProperty('display', 'none', 'important');
+  }
+  var fileInput = document.getElementById('correctionFileInput');
+  if (fileInput) fileInput.value = '';
+  var photoBadge = document.getElementById('worksheetPhotoCountBadge');
+  if (photoBadge) photoBadge.innerText = '0장 선택됨';
+}
+
+if (typeof window !== 'undefined') {
+  if (window.jQuery) {
+    window.jQuery(document).on('hidden.bs.modal', '#modalCorrection', resetCorrectionModalState);
+  } else {
+    document.addEventListener('DOMContentLoaded', function() {
+      var modalEl = document.getElementById('modalCorrection');
+      if (modalEl) modalEl.addEventListener('hidden.bs.modal', resetCorrectionModalState);
+    });
+  }
 }
 
 async function saveCorrectionFromModal() {

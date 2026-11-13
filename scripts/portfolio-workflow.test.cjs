@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const root = path.join(__dirname, '..');
 function load(file, deps = {}, extra = {}) {
+  if (/^api\/(portal|bootstrap|manage)\.ts$/.test(file)) deps = { '../lib/portal-content': require('./test-portal-content.cjs')(deps['../lib/portal-http']), ...deps };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require: name => deps[name] || require(name), console, process, URL, AbortSignal, ...extra });

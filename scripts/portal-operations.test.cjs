@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const path = require('node:path');
 function load(file, deps = {}, extra = {}) {
+  if (/^api\/(portal|bootstrap|manage)\.ts$/.test(file)) deps = { '../lib/portal-content': require('./test-portal-content.cjs')(deps['../lib/portal-http']), ...deps };
   if (file === 'api/services.ts') {
     const policy = load('lib/billing-policy.ts');
     deps = { '../lib/dispatch-view': load('lib/dispatch-view.ts'), '../lib/billing-policy': policy,

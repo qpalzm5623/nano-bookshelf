@@ -12,12 +12,22 @@
 // ==========================================
 let contentCurrentPage = 1;
 const contentPageSize = 15;
-let masterBookSortMode = null; // null | 'likes' | 'recommends' | 'quiz'
+let masterBookSortMode = 'DATE_DESC'; // 'DATE_DESC' (기본: 등록일 최신순) | 'DATE_ASC' | 'ID_DESC' | 'ID_ASC' | 'TITLE_ASC' | 'GRADE_ASC' | 'likes' | 'recommends' | 'quiz'
 
-// 찜 / 추천 / 인증 정렬 토글 함수 (클릭 시 많은 순 내림차순, 다시 클릭 시 해제)
+// 리스트 정렬 셀렉트박스 변경 핸들러
+function changeMasterBookSort(mode) {
+  masterBookSortMode = mode || 'DATE_DESC';
+  contentCurrentPage = 1;
+  updateMasterBookSortUI();
+  renderMasterContents();
+}
+
+// 찜 / 추천 / 인증 / 등록일 헤더 클릭 시 정렬 토글 함수
 function toggleMasterBookSort(mode) {
-  if (masterBookSortMode === mode) {
-    masterBookSortMode = null; // 해제 후 기본 정렬(최근 등록/코드순)로 복귀
+  if (mode === 'date') {
+    masterBookSortMode = (masterBookSortMode === 'DATE_DESC') ? 'DATE_ASC' : 'DATE_DESC';
+  } else if (masterBookSortMode === mode) {
+    masterBookSortMode = 'DATE_DESC'; // 해제 후 기본 정렬(등록일 최신순)로 복귀
   } else {
     masterBookSortMode = mode;
   }
@@ -30,20 +40,92 @@ function updateMasterBookSortUI() {
   const iconLikes = document.getElementById("sortIconLikes");
   const iconRec = document.getElementById("sortIconRecommends");
   const iconQuiz = document.getElementById("sortIconQuiz");
+  const iconDate = document.getElementById("sortIconDate");
   const thLikes = document.getElementById("thSortLikes");
   const thRec = document.getElementById("thSortRecommends");
   const thQuiz = document.getElementById("thSortQuiz");
+  const thDate = document.getElementById("thSortDate");
+  const selSort = document.getElementById("sortMasterBookSelect");
 
   if (iconLikes) iconLikes.className = masterBookSortMode === 'likes' ? 'fa-solid fa-arrow-down-wide-short ml-1 text-danger' : 'fa-solid fa-sort ml-1 text-muted';
   if (iconRec) iconRec.className = masterBookSortMode === 'recommends' ? 'fa-solid fa-arrow-down-wide-short ml-1 text-primary' : 'fa-solid fa-sort ml-1 text-muted';
   if (iconQuiz) iconQuiz.className = masterBookSortMode === 'quiz' ? 'fa-solid fa-arrow-down-wide-short ml-1 text-success' : 'fa-solid fa-sort ml-1 text-muted';
+  if (iconDate) {
+    if (masterBookSortMode === 'DATE_DESC') iconDate.className = 'fa-solid fa-arrow-down-wide-short ml-1 text-primary';
+    else if (masterBookSortMode === 'DATE_ASC') iconDate.className = 'fa-solid fa-arrow-up-wide-short ml-1 text-primary';
+    else iconDate.className = 'fa-solid fa-sort ml-1 text-muted';
+  }
 
   if (thLikes) thLikes.style.background = masterBookSortMode === 'likes' ? '#fee2e2' : '';
   if (thRec) thRec.style.background = masterBookSortMode === 'recommends' ? '#e0f2fe' : '';
   if (thQuiz) thQuiz.style.background = masterBookSortMode === 'quiz' ? '#dcfce7' : '';
+  if (thDate) thDate.style.background = (masterBookSortMode === 'DATE_DESC' || masterBookSortMode === 'DATE_ASC') ? '#e0f2fe' : '';
+
+  if (selSort) {
+    if (['DATE_DESC', 'ID_DESC', 'ID_ASC', 'TITLE_ASC', 'GRADE_ASC'].includes(masterBookSortMode)) {
+      selSort.value = masterBookSortMode;
+    }
+  }
 }
 
-// 마스터 콘텐츠 관리 주제/태그 셀렉트 옵션 바인딩 (테마관리 등록 태그 연동)
+// 마스터 콘텐츠 관리 등록처 셀렉트 옵션 바인딩 (전체 도서 및 모든 가맹점 동적 연동)
+function populateMasterContentAcademyFilter() {
+  const select = document.getElementById("contentAcademyFilter");
+  if (!select) return;
+
+  const currentVal = select.value || "ALL";
+
+  // 1. 도서 목록 전체에서 고유 등록처(학원명) 수집
+  const originSet = new Set();
+  const bookList = (typeof masterBooks !== "undefined" && Array.isArray(masterBooks) && masterBooks.length > 0)
+    ? masterBooks
+    : ((typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS)) ? window.MIGRATED_BOOKS : []);
+
+  bookList.forEach(b => {
+    if (!b) return;
+    let acad = String(b.academyName || '').trim();
+    if (acad.includes('?') || acad.includes('숈썝') || acad.includes('습점') || /^[a-z0-9_]+\s*\?/.test(acad)) {
+      acad = '가맹 교육원';
+    }
+    if (acad && !acad.includes('본사') && acad !== '본사 직속 (공용)' && acad !== '본사 직속(HQ)') {
+      originSet.add(acad);
+    }
+  });
+
+  // 2. 가맹점 목록(franchiseList / window.MIGRATED_FRANCHISES)에서도 가맹점 수집
+  const franList = (typeof franchiseList !== "undefined" && Array.isArray(franchiseList) && franchiseList.length > 0)
+    ? franchiseList
+    : ((typeof window !== "undefined" && Array.isArray(window.MIGRATED_FRANCHISES)) ? window.MIGRATED_FRANCHISES : []);
+
+  franList.forEach(f => {
+    if (!f) return;
+    let fname = String(f.name || f.academyName || '').trim();
+    if (fname && !fname.includes('본사') && fname !== '본사 직속 (공용)' && fname !== '본사 직속(HQ)') {
+      originSet.add(fname);
+    }
+  });
+
+  // 가나다 오름차순 정렬
+  const sortedOrigins = Array.from(originSet).sort((a, b) => a.localeCompare(b, 'ko'));
+
+  let html = `<option value="ALL">등록처 (전체)</option>`;
+  html += `<option value="HQ">👑 본사 직속 (공용)</option>`;
+
+  sortedOrigins.forEach(orig => {
+    const safeOrig = orig.replace(/"/g, '&quot;');
+    html += `<option value="${safeOrig}">🏫 ${orig}</option>`;
+  });
+
+  select.innerHTML = html;
+
+  if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+    select.value = currentVal;
+  } else {
+    select.value = "ALL";
+  }
+}
+
+// 마스터 콘텐츠 관리 주제/태그 셀렉트 옵션 바인딩 (서비스 운영관리 테마 관리 100% 일치 동기화)
 function populateMasterContentCategoryOptions() {
   const select = document.getElementById("contentCategoryFilter");
   if (!select) return;
@@ -56,38 +138,48 @@ function populateMasterContentCategoryOptions() {
 
   let html = `<option value="ALL">전체 주제 (전체 태그)</option>`;
 
-  // 1. 테마관리 등록 태그 (#태그)
-  if (sourceThemes.length > 0) {
-    const seen = new Set();
-    sourceThemes.forEach(t => {
-      const cleanTag = String(t.tag || t.title || t.name || '').replace(/^#/, '').trim();
-      if (cleanTag && !seen.has(cleanTag)) {
-        seen.add(cleanTag);
-        html += `<option value="#${cleanTag}">#${cleanTag}</option>`;
-      }
-    });
-  }
+  // 서비스 운영관리의 테마 순서(order) 오름차순으로 정렬
+  const sortedThemes = sourceThemes.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // 2. 기본 주제 분류 (문학, 인문, 과학, 사회, 역사, 예술 등)
-  const defaultCats = [
-    { value: "문학", label: "문학" },
-    { value: "인문", label: "인문/철학" },
-    { value: "과학", label: "과학/환경" },
-    { value: "사회", label: "사회" },
-    { value: "역사", label: "역사" },
-    { value: "예술", label: "예술/문화" }
-  ];
-  defaultCats.forEach(c => {
-    html += `<option value="${c.value}">${c.label}</option>`;
+  const seen = new Set();
+  sortedThemes.forEach(t => {
+    const cleanTag = String(t.tag || t.title || t.name || '').replace(/^#/, '').trim();
+    if (cleanTag && !seen.has(cleanTag)) {
+      seen.add(cleanTag);
+      html += `<option value="#${cleanTag}">#${cleanTag}</option>`;
+    }
   });
 
   select.innerHTML = html;
   if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
     select.value = currentVal;
+  } else {
+    select.value = "ALL";
   }
 }
 
+// 현재 적용된 마스터 콘텐츠 검색 필터 상태 (사용자가 [검색] 버튼을 누르거나 엔터를 칠 때만 갱신)
+let appliedMasterContentFilters = {
+  query: "",
+  academy: "ALL",
+  grade: "ALL",
+  category: "ALL",
+  publicStatus: "ALL",
+  dateStart: "",
+  dateEnd: ""
+};
+
+// [검색] 버튼 클릭 또는 엔터 키 입력 시 현재 검색 폼 조건을 확정 적용
 function filterMasterContentList() {
+  appliedMasterContentFilters = {
+    query: (document.getElementById("contentSearchInput")?.value || "").toLowerCase().trim(),
+    academy: document.getElementById("contentAcademyFilter")?.value || "ALL",
+    grade: document.getElementById("contentGradeFilter")?.value || "ALL",
+    category: document.getElementById("contentCategoryFilter")?.value || "ALL",
+    publicStatus: document.getElementById("contentPublicFilter")?.value || "ALL",
+    dateStart: document.getElementById("contentDateStart")?.value || "",
+    dateEnd: document.getElementById("contentDateEnd")?.value || ""
+  };
   contentCurrentPage = 1;
   renderMasterContents();
 }
@@ -100,7 +192,19 @@ function resetContentFilters() {
   if (document.getElementById("contentPublicFilter")) document.getElementById("contentPublicFilter").value = "ALL";
   if (document.getElementById("contentDateStart")) document.getElementById("contentDateStart").value = "";
   if (document.getElementById("contentDateEnd")) document.getElementById("contentDateEnd").value = "";
-  masterBookSortMode = null;
+  if (document.getElementById("sortMasterBookSelect")) document.getElementById("sortMasterBookSelect").value = "DATE_DESC";
+
+  appliedMasterContentFilters = {
+    query: "",
+    academy: "ALL",
+    grade: "ALL",
+    category: "ALL",
+    publicStatus: "ALL",
+    dateStart: "",
+    dateEnd: ""
+  };
+
+  masterBookSortMode = 'DATE_DESC';
   updateMasterBookSortUI();
   contentCurrentPage = 1;
   renderMasterContents();
@@ -343,13 +447,24 @@ function renderMasterContents() {
     if (statRecEl) statRecEl.innerHTML = `${recBookCount.toLocaleString()}<span style="font-size: 14px; font-weight: 600; margin-left: 2px;">권</span>`;
     if (statRecSubEl) statRecSubEl.innerText = `서비스 운영 관리 권장도서 연동`;
 
-  const query = (document.getElementById("contentSearchInput")?.value || "").toLowerCase().trim();
-  const academyFilter = document.getElementById("contentAcademyFilter")?.value || "ALL";
-  const gradeFilter = document.getElementById("contentGradeFilter")?.value || "ALL";
-  const catFilter = document.getElementById("contentCategoryFilter")?.value || "ALL";
-  const publicFilter = document.getElementById("contentPublicFilter")?.value || "ALL";
-  const dateStart = document.getElementById("contentDateStart")?.value || "";
-  const dateEnd = document.getElementById("contentDateEnd")?.value || "";
+  // 등록처 및 주제 필터 옵션이 아직 바인딩되지 않았거나 단일 옵션인 경우 동적 채우기
+  const acadSel = document.getElementById("contentAcademyFilter");
+  if (acadSel && acadSel.options.length <= 1) {
+    populateMasterContentAcademyFilter();
+  }
+  const catSel = document.getElementById("contentCategoryFilter");
+  if (catSel && catSel.options.length <= 1) {
+    populateMasterContentCategoryOptions();
+  }
+
+  // 검색 필터: 사용자가 [검색] 버튼을 클릭(또는 엔터)하여 확정한 조건(appliedMasterContentFilters)만 반영
+  const query = (appliedMasterContentFilters.query || "").toLowerCase().trim();
+  const academyFilter = appliedMasterContentFilters.academy || "ALL";
+  const gradeFilter = appliedMasterContentFilters.grade || "ALL";
+  const catFilter = appliedMasterContentFilters.category || "ALL";
+  const publicFilter = appliedMasterContentFilters.publicStatus || "ALL";
+  const dateStart = appliedMasterContentFilters.dateStart || "";
+  const dateEnd = appliedMasterContentFilters.dateEnd || "";
 
   const filtered = masterBooks.filter(b => {
     if (!b) return false;
@@ -368,9 +483,11 @@ function renderMasterContents() {
 
     let matchAcademy = true;
     if (academyFilter === "HQ") {
-      matchAcademy = !b.academyId || b.academyId === "HQ";
+      matchAcademy = !b.academyId || b.academyId === "HQ" || (b.academyName && b.academyName.includes("본사"));
     } else if (academyFilter !== "ALL") {
-      matchAcademy = b.academyId === academyFilter;
+      const bAcadName = String(b.academyName || '').trim();
+      const bAcadId = String(b.academyId || '').trim();
+      matchAcademy = (bAcadName === academyFilter || bAcadId === academyFilter || bAcadName.includes(academyFilter));
     }
 
     let matchGrade = true;
@@ -383,16 +500,17 @@ function renderMasterContents() {
     let matchCat = true;
     if (catFilter !== "ALL") {
       const cleanFilter = catFilter.replace(/^#/, '').trim();
-      if (catFilter.startsWith("#")) {
-        matchCat = (Array.isArray(b.tags) && b.tags.some(t => {
-            const cleanT = String(t || '').replace(/^#/, '').trim();
-            return cleanT === cleanFilter || cleanT.includes(cleanFilter);
-          })) ||
-          (b.detailTag && typeof b.detailTag === 'string' && (b.detailTag.includes(cleanFilter) || b.detailTag.includes(catFilter))) ||
-          (b.themeTag && typeof b.themeTag === 'string' && (b.themeTag.includes(cleanFilter) || b.themeTag.includes(catFilter)));
-      } else {
-        matchCat = b.category === catFilter || (b.tags && b.tags.includes(catFilter)) || (b.themeTag && b.themeTag.includes(catFilter));
-      }
+      matchCat = (Array.isArray(b.tags) && b.tags.some(t => {
+          const cleanT = String(t || '').replace(/^#/, '').trim();
+          return cleanT === cleanFilter || cleanT.includes(cleanFilter);
+        })) ||
+        (b.themeTag && typeof b.themeTag === 'string' && (b.themeTag.includes(cleanFilter) || b.themeTag.includes(catFilter))) ||
+        (b.detailTag && typeof b.detailTag === 'string' && (b.detailTag.includes(cleanFilter) || b.detailTag.includes(catFilter))) ||
+        (b.subject && typeof b.subject === 'string' && (b.subject.includes(cleanFilter) || b.subject === cleanFilter)) ||
+        (b.themeName && typeof b.themeName === 'string' && (b.themeName.includes(cleanFilter) || b.themeName === cleanFilter)) ||
+        (b.category && typeof b.category === 'string' && (b.category.includes(cleanFilter) || b.category === cleanFilter)) ||
+        (b.cat1 && typeof b.cat1 === 'string' && b.cat1.includes(cleanFilter)) ||
+        (b.cat2 && typeof b.cat2 === 'string' && b.cat2.includes(cleanFilter));
     }
 
     let matchPublic = true;
@@ -416,28 +534,72 @@ function renderMasterContents() {
     return matchQuery && matchAcademy && matchGrade && matchCat && matchPublic && matchDate;
   });
 
-  // 찜 / 추천 / 인증 많은 순 내림차순 정렬 처리
-  if (masterBookSortMode === 'likes') {
+  // 정렬 처리: 리스트 정렬 셀렉트 및 헤더 토글 연동 (기본: 등록일 최신순 DATE_DESC)
+  const curSortMode = masterBookSortMode || (document.getElementById("sortMasterBookSelect")?.value) || 'DATE_DESC';
+
+  if (curSortMode === 'likes') {
     filtered.sort((a, b) => {
       const vA = Number(a.likes) || 0;
       const vB = Number(b.likes) || 0;
       if (vB !== vA) return vB - vA;
       return (Number(b.quizCompletions) || 0) - (Number(a.quizCompletions) || 0);
     });
-  } else if (masterBookSortMode === 'recommends') {
+  } else if (curSortMode === 'recommends') {
     filtered.sort((a, b) => {
       const vA = Number(a.recommends) || 0;
       const vB = Number(b.recommends) || 0;
       if (vB !== vA) return vB - vA;
       return (Number(b.likes) || 0) - (Number(a.likes) || 0);
     });
-  } else if (masterBookSortMode === 'quiz') {
+  } else if (curSortMode === 'quiz') {
     filtered.sort((a, b) => {
       const vA = Number(a.quizCompletions) || 0;
       const vB = Number(b.quizCompletions) || 0;
       if (vB !== vA) return vB - vA;
       return (Number(b.likes) || 0) - (Number(a.likes) || 0);
     });
+  } else if (curSortMode === 'DATE_DESC') {
+    filtered.sort((a, b) => {
+      const da = String(a.createdAt || a.date || a.regDate || a.registeredAt || '').slice(0, 10);
+      const db = String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10);
+      if (da && db && da !== db) {
+        return db.localeCompare(da);
+      }
+      if (da && !db) return -1;
+      if (!da && db) return 1;
+      const idA = String(a.id || a.bookNo || '');
+      const idB = String(b.id || b.bookNo || '');
+      return idB.localeCompare(idA, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  } else if (curSortMode === 'DATE_ASC') {
+    filtered.sort((a, b) => {
+      const da = String(a.createdAt || a.date || a.regDate || a.registeredAt || '').slice(0, 10);
+      const db = String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10);
+      if (da && db && da !== db) {
+        return da.localeCompare(db);
+      }
+      if (da && !db) return 1;
+      if (!da && db) return -1;
+      const idA = String(a.id || a.bookNo || '');
+      const idB = String(b.id || b.bookNo || '');
+      return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  } else if (curSortMode === 'ID_DESC') {
+    filtered.sort((a, b) => {
+      const idA = String(a.id || a.bookNo || '');
+      const idB = String(b.id || b.bookNo || '');
+      return idB.localeCompare(idA, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  } else if (curSortMode === 'ID_ASC') {
+    filtered.sort((a, b) => {
+      const idA = String(a.id || a.bookNo || '');
+      const idB = String(b.id || b.bookNo || '');
+      return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  } else if (curSortMode === 'TITLE_ASC') {
+    filtered.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ko'));
+  } else if (curSortMode === 'GRADE_ASC') {
+    filtered.sort((a, b) => String(a.grade || '').localeCompare(String(b.grade || ''), 'ko'));
   }
 
   updateMasterBookSortUI();
@@ -955,6 +1117,10 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
     renderCurrentPdfPage();
   }).catch(function(err) {
     console.warn('PDF 캔버스 렌더링 실패, 도서 맞춤형 동적 나노시트로 안전 전환:', err);
+    if (typeof pdfSource === 'string' && pdfSource.indexOf('/api/content?') === 0) {
+      if (loadingInd) { loadingInd.style.display = 'block'; loadingInd.textContent = '나노시트를 열 수 없습니다. 목록에서 다시 선택해 주세요.'; }
+      return;
+    }
     if (fallbackBook || activeViewingBook) {
       renderCustomNanoSheetHtml(fallbackBook || activeViewingBook);
     } else {
@@ -1250,11 +1416,13 @@ function printNanoSheetViewer() {
 }
 
 // 마스터 관리자 나노시트 모달 열기 (학원관리자와 100% 동일 규격 및 API 연동)
-function openMasterPdfModal(bookId) {
+function openMasterPdfModal(bookId, selectedSheet) {
   var b = masterBooks.find(function(item) { return item.id === bookId; });
   if (!b && typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS)) {
     b = window.MIGRATED_BOOKS.find(function(item) { return item.id === bookId; });
   }
+  if (window.NANO_SERVER_DATA && !selectedSheet) return ContentSharing.openSheets(b, function (url, sheet) { openMasterPdfModal(bookId, sheet); });
+  if (selectedSheet) b = Object.assign({}, b, { worksheetUrl: selectedSheet.url, pdfUrl: selectedSheet.url, hasSheet: true, sheet: true, materialName: selectedSheet.name, pdfBlob: null, pdfDataUrl: null, sheetFile: null });
   activeViewingBook = b || null;
 
   var hasSheet = false;
@@ -2554,6 +2722,7 @@ function handleSaveMasterBookOnly(e) {
     likes: 0,
     recommends: 0,
     quizCompletions: 0,
+    createdAt: new Date().toISOString(),
     date: new Date().toISOString().split("T")[0]
   };
 
@@ -4468,6 +4637,7 @@ async function handleMasterBookExcelUpload() {
         academyName: "본사 직속 (공용)",
         creatorType: "HQ",
         sheet: false,
+        createdAt: new Date().toISOString(),
         date: new Date().toISOString().split("T")[0],
         quizSets: []
       });

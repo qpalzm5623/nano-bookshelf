@@ -37,10 +37,12 @@
 
   <link rel="stylesheet" href="css/master_preview.css?v=20261110_modal_beige">
   <script src="js/preview-data.js?v=20261014"></script>
-  <script src="js/portal-client.js?v=20261110_auto_unapprove"></script>
+  <script src="js/portal-client.js?v=20261112_content_sharing"></script>
   <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
   <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
   <link rel="stylesheet" href="css/portal-search.css?v=20261104_plain">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261112">
+<script src="js/content-sharing.js?v=20261112"></script>
 </head>
 <body>
 
@@ -692,7 +694,7 @@
           <!-- 1. 가맹점 필터 (클래스 필터 좌측) -->
           <div style="width: 170px;">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">가맹점 필터</label>
-            <select class="form-control" id="masterLearningAcademyFilter"
+            <select class="form-control" id="masterLearningAcademyFilter" onchange="executeMasterLearningSearch()"
               style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
               <option value="ALL" selected>전체 가맹점</option>
             </select>
@@ -701,7 +703,7 @@
           <!-- 2. 클래스 필터 -->
           <div style="width: 140px;">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-            <select class="form-control" id="masterLearningClassFilter"
+            <select class="form-control" id="masterLearningClassFilter" onchange="executeMasterLearningSearch()"
               style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
               <option value="ALL" selected>전체 클래스</option>
             </select>
@@ -713,10 +715,10 @@
               조회 기간 <small class="text-muted font-weight-normal">(당월 1일 ~ 오늘 기본)</small>
             </label>
             <div class="d-flex align-items-center" style="gap: 6px;">
-              <input type="date" class="form-control" id="masterLearningStartDate"
+              <input type="date" class="form-control" id="masterLearningStartDate" onchange="executeMasterLearningSearch()"
                 style="height: 38px; border-radius: 8px; font-size: 12px; width: 135px;">
               <span class="text-muted px-1">~</span>
-              <input type="date" class="form-control" id="masterLearningEndDate"
+              <input type="date" class="form-control" id="masterLearningEndDate" onchange="executeMasterLearningSearch()"
                 style="height: 38px; border-radius: 8px; font-size: 12px; width: 135px;">
             </div>
           </div>
@@ -758,7 +760,7 @@
           </div>
           <div class="d-flex align-items-center" style="gap: 12px;">
             <small class="text-muted d-none d-md-inline" style="font-size: 12px;">
-              <i class="fa-solid fa-circle-check text-success mr-1"></i>기본적으로 [조회]를 누르면 검색 조건에 맞춰 표시됩니다.
+              <i class="fa-solid fa-circle-check text-success mr-1"></i>전국 145개 가맹점의 실시간 학습 이력이 연동됩니다.
             </small>
           </div>
         </div>
@@ -876,11 +878,15 @@
             </div>
           </div>
 
-          <!-- 5. 조회 버튼 -->
+          <!-- 5. 조회 및 초기화 버튼 -->
           <div>
             <button type="button" class="btn btn-beige-primary px-3 font-weight-bold"
               onclick="filterMasterPortfolioList()" style="height: 38px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
               <i class="fa-solid fa-search mr-1"></i>조회
+            </button>
+            <button type="button" class="btn btn-outline-secondary ml-1"
+              onclick="resetMasterPfFilters()" style="height: 38px; border-radius: 8px; font-size: 12.5px;" title="필터 초기화">
+              <i class="fa-solid fa-rotate-right"></i>
             </button>
           </div>
         </div>
@@ -1192,20 +1198,15 @@
         </div>
       </div>
 
-      <!-- 검색 및 필터 (등록처, 권장학년, 주제 필터 및 검색창) -->
+      <!-- 검색 및 필터 (등록처, 권장학년, 주제 필터 및 검색창 - [검색] 버튼 클릭 시 일괄 반영) -->
       <div class="filter-bar">
         <div>
-          <select id="contentAcademyFilter" class="select-beige" onchange="filterMasterContentList()">
+          <select id="contentAcademyFilter" class="select-beige">
             <option value="ALL">등록처 (전체)</option>
-            <option value="HQ">👑 본사 직속 (공용)</option>
-            <option value="ACAD-001">🏫 나노 목동본원</option>
-            <option value="ACAD-002">🏫 대치 에듀센터</option>
-            <option value="ACAD-003">🏫 송도 센트럴랩</option>
-            <option value="ACAD-004">🏫 판교 알파학원</option>
           </select>
         </div>
         <div>
-          <select id="contentGradeFilter" class="select-beige" onchange="filterMasterContentList()">
+          <select id="contentGradeFilter" class="select-beige">
             <option value="ALL">전체 권장 학년</option>
             <option value="유치부">유치부</option>
             <option value="초등 1학년">초등 1학년</option>
@@ -1220,16 +1221,16 @@
           </select>
         </div>
         <div>
-          <select id="contentCategoryFilter" class="select-beige" onchange="filterMasterContentList()">
+          <select id="contentCategoryFilter" class="select-beige">
             <option value="ALL">전체 주제 (전체 태그)</option>
           </select>
         </div>
         <div class="d-flex align-items-center" style="gap: 5px; background: #fff; padding: 0 10px; border: 1.5px solid var(--border-medium); border-radius: 10px; height: 38px;">
           <i class="fa-regular fa-calendar text-muted" style="font-size: 12px;"></i>
           <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap;">등록일</span>
-          <input type="date" id="contentDateStart" class="form-control" style="border: none; background: transparent; padding: 0; font-size: 12px; width: 110px; height: 28px; box-shadow: none;" onchange="filterMasterContentList()" title="등록일 시작">
+          <input type="date" id="contentDateStart" class="form-control" style="border: none; background: transparent; padding: 0; font-size: 12px; width: 110px; height: 28px; box-shadow: none;" title="등록일 시작">
           <span style="font-size: 11px; color: var(--text-muted);">~</span>
-          <input type="date" id="contentDateEnd" class="form-control" style="border: none; background: transparent; padding: 0; font-size: 12px; width: 110px; height: 28px; box-shadow: none;" onchange="filterMasterContentList()" title="등록일 종료">
+          <input type="date" id="contentDateEnd" class="form-control" style="border: none; background: transparent; padding: 0; font-size: 12px; width: 110px; height: 28px; box-shadow: none;" title="등록일 종료">
         </div>
         <div class="search-input-wrap">
           <i class="fa-solid fa-magnifying-glass"></i>
@@ -1249,8 +1250,21 @@
           <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">
             <i class="fa-solid fa-book mr-2 text-muted"></i>마스터 도서 라이브러리 (<span id="contentFilteredCount">0</span>권 등록됨)
           </span>
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center flex-wrap gap-2">
             <span class="badge-soft badge-soft-neutral" style="font-size: 11.5px;">* 찜/추천/인증 숫자를 클릭하면 학년별/성별 통계 모달이 열립니다.</span>
+            <div class="d-flex align-items-center ml-md-2" style="gap: 6px;">
+              <label for="sortMasterBookSelect" class="mb-0 text-muted font-weight-bold" style="font-size: 12px; white-space: nowrap;">
+                <i class="fa-solid fa-arrow-down-short-wide mr-1 text-secondary"></i>리스트 정렬
+              </label>
+              <select class="form-control form-control-sm" id="sortMasterBookSelect" onchange="changeMasterBookSort(this.value)"
+                style="border-radius: 8px; border-color: var(--border-medium); font-size: 12px; font-weight: 600; width: auto; height: 32px; min-width: 170px;">
+                <option value="DATE_DESC" selected>등록일 최신순 (기본)</option>
+                <option value="ID_DESC">도서 번호 내림차순</option>
+                <option value="ID_ASC">도서 번호 오름차순</option>
+                <option value="TITLE_ASC">도서명 순</option>
+                <option value="GRADE_ASC">권장 학년 순</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="table-responsive">
@@ -1276,7 +1290,9 @@
                 <th style="width: 48px; text-align: center; padding-left: 2px; padding-right: 2px; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortQuiz" onclick="toggleMasterBookSort('quiz')" title="클릭 시 인증(완료) 많은 순으로 정렬">
                   <span class="d-inline-flex align-items-center justify-content-center">인증<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconQuiz" style="font-size: 10px;"></i></span>
                 </th>
-                <th style="width: 88px; text-align: center; white-space: nowrap;">등록일</th>
+                <th style="width: 96px; text-align: center; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortDate" onclick="toggleMasterBookSort('date')" title="클릭 시 등록일 최신순/과거순 정렬">
+                  <span class="d-inline-flex align-items-center justify-content-center">등록일<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconDate" style="font-size: 10px;"></i></span>
+                </th>
                 <th style="width: 90px; text-align: center; white-space: nowrap;">관리</th>
               </tr>
             </thead>
@@ -1736,14 +1752,14 @@
 
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
-<script src="js/master/master-core.js?v=20261110_payment_routine"></script>
+<script src="js/master/master-core.js?v=20261112_pf_v2"></script>
 <script src="js/master/master-franchise.js?v=20261110_auto_unapprove"></script>
 <script src="js/master/master-members.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-operations.js?v=20261109_speed_v2"></script>
-<script src="js/master/master-learning.js?v=20261112_v1"></script>
-<script src="js/master/master-portfolio.js?v=20261112_v1"></script>
+<script src="js/master/master-learning.js?v=20261112_v2"></script>
+<script src="js/master/master-portfolio.js?v=20261112_v2"></script>
 <script src="js/master/master-ranking.js?v=20261109_speed_v2"></script>
-<script src="js/master/master-contents.js?v=20261110_speed_v3"></script>
+<script src="js/master/master-contents.js?v=20261112_content_sharing"></script>
 <script src="js/master/master-dispatch.js?v=20261110_kakao_v1"></script>
 <script src="js/master/master-payment.js?v=20261110_payment_routine"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>

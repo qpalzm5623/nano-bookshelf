@@ -92,20 +92,22 @@ function renderWorksheetPhotoThumbnails() {
   if (typeof syncWorksheetCorrectionActions === 'function') syncWorksheetCorrectionActions();
   if (!container) return;
 
-  if (currentWorksheetPhotos.length === 0) {
-    container.style.display = 'none';
+  if (!Array.isArray(currentWorksheetPhotos) || currentWorksheetPhotos.length === 0) {
+    container.innerHTML = '';
+    container.style.setProperty('display', 'none', 'important');
     if (badge) badge.innerText = '0장 선택됨';
     return;
   }
 
-  container.style.display = 'flex';
-  if (badge) badge.innerText = currentWorksheetPhotos.length + '장 등록됨';
+  container.style.setProperty('display', 'flex', 'important');
+  if (badge) badge.innerText = currentWorksheetPhotos.length + '장 선택됨';
 
   container.innerHTML = currentWorksheetPhotos.map(function(photo, idx) {
+    var src = (photo && (photo.dataUrl || photo.url)) || '';
     return `
       <div class="position-relative d-inline-block border rounded p-1 bg-white shadow-sm" style="width: 82px;">
-        <img src="${photo.dataUrl}" alt="시트 ${idx + 1}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="openWorksheetPhotoLightbox('${photo.dataUrl}')">
-        <button type="button" class="btn btn-xs btn-danger position-absolute" style="top: -6px; right: -6px; width: 20px; height: 20px; padding: 0; border-radius: 50%; font-size: 10px;" onclick="removeWorksheetPhoto(${idx})">&times;</button>
+        <img src="${src}" alt="시트 ${idx + 1}" style="width: 72px; height: 72px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="openWorksheetPhotoLightbox('${src}')">
+        <button type="button" class="btn btn-xs btn-danger position-absolute" style="top: -6px; right: -6px; width: 20px; height: 20px; padding: 0; border-radius: 50%; font-size: 11px; line-height: 1; display: flex; align-items: center; justify-content: center;" onclick="removeWorksheetPhoto(${idx})">&times;</button>
         <div class="text-center text-muted mt-1" style="font-size: 10px; font-weight: 600;">${idx + 1}p 시트</div>
       </div>
     `;
@@ -114,7 +116,22 @@ function renderWorksheetPhotoThumbnails() {
 
 // 썸네일 삭제
 function removeWorksheetPhoto(idx) {
-  currentWorksheetPhotos.splice(idx, 1);
+  if (Array.isArray(currentWorksheetPhotos) && idx >= 0 && idx < currentWorksheetPhotos.length) {
+    currentWorksheetPhotos.splice(idx, 1);
+  }
+  // 현재 열려 있는 학습 기록과 사진 배열 동기화
+  if (typeof currentOpenCorrectionLogId !== 'undefined' && currentOpenCorrectionLogId) {
+    var allLogs = (typeof getLoadedLearningLogs === 'function') ? getLoadedLearningLogs() : [];
+    var log = allLogs.find(function(l) { return l.id === currentOpenCorrectionLogId; });
+    if (log) {
+      log.worksheetPhotos = currentWorksheetPhotos.slice();
+      try {
+        localStorage.setItem('nano_learning_logs', JSON.stringify(allLogs));
+      } catch(e) {}
+    }
+  }
+  var input = document.getElementById('correctionFileInput');
+  if (input) input.value = '';
   renderWorksheetPhotoThumbnails();
 }
 

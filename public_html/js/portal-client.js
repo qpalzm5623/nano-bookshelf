@@ -387,7 +387,12 @@
     var sheetBlob = item.pdfBlob || (item.sheetFile && (item.sheetFile.file || item.sheetFile.blob || item.sheetFile.pdfBlob)) || null;
     var sheetDataUrl = item.pdfDataUrl || (item.sheetFile && item.sheetFile.dataUrl) || '';
     var worksheetUrl = rawWs;
-    if (sheetBlob) {
+    var protectedSheet = global.ContentSharing && (sheetBlob || /^data:application\/pdf/i.test(sheetDataUrl || worksheetUrl));
+    if (protectedSheet) {
+      if (!sheetBlob) sheetBlob = await (await fetch(sheetDataUrl || worksheetUrl)).blob();
+      if (sheetBlob.size > 25 * 1024 * 1024 || await sheetBlob.slice(0, 5).text() !== '%PDF-') throw new Error('25MB 이하의 유효한 PDF 파일을 선택해 주세요.');
+      worksheetUrl = undefined;
+    } else if (sheetBlob) {
       var sName = (item.sheetFile && item.sheetFile.name) || item.materialName || ((keyHint || 'sheet') + '.pdf');
       worksheetUrl = await uploadMedia(sheetBlob, { category: 'nano-sheet', keyHint: keyHint, fileName: sName, contentType: 'application/pdf' });
     } else if (/^data:application\/pdf/i.test(sheetDataUrl || worksheetUrl)) {
@@ -399,13 +404,17 @@
     var subCat = item.subCategory || (item.cat1 && item.cat1.includes('비문학') ? 'C' : (item.cat1 && item.cat1.includes('인물') ? 'B' : 'A'));
     var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.bookNo || item.id, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
       isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), subCategory: subCat, description: item.description || item.synopsis || '',
-      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: worksheetUrl, tags: tags, series: item.series || '',
+      thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: /^\/api\/content\?/.test(worksheetUrl || '') ? undefined : worksheetUrl, tags: tags, series: item.series || '',
       awards: item.awards || item.award || '', themeTag: item.themeTag || item.tag || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
     if (result.item) {
       item.serverId = result.item.id;
       if (result.item.coverUrl) { item.cover = result.item.coverUrl; item.coverUrl = result.item.coverUrl; }
       if (result.item.worksheetUrl) { item.worksheetUrl = result.item.worksheetUrl; item.pdfUrl = result.item.worksheetUrl; item.hasSheet = true; item.sheet = true; }
       delete item.coverFile;
+    }
+    if (protectedSheet) {
+      await global.ContentSharing.saveSheet(item, sheetBlob, item.sheetIsPublic || 'Y');
+      delete item.pdfBlob; delete item.pdfDataUrl; delete item.sheetFile;
     }
     return result.item;
   }

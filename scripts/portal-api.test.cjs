@@ -7,6 +7,7 @@ const path = require('node:path');
 process.env.PORTAL_AUTH_SECRET = 'test-only-secret-with-more-than-32-characters';
 process.env.DATABASE_URL = 'postgresql://test.invalid/test';
 function load(file, dependencies = {}) {
+  if (/^api\/(portal|bootstrap|manage)\.ts$/.test(file)) dependencies = { '../lib/portal-content': require('./test-portal-content.cjs')(dependencies['../lib/portal-http']), ...dependencies };
   if (file === 'api/bootstrap.ts') {
     const dispatchView = load('lib/dispatch-view.ts');
     dependencies = { '../lib/dispatch-view': dispatchView, '../lib/payment-view': load('lib/payment-view.ts', { './dispatch-view': dispatchView, './billing-policy': load('lib/billing-policy.ts') }), ...dependencies };
@@ -167,6 +168,7 @@ test('초기 데이터 조회를 병렬화해도 사용자 범위와 기존 퀴�
     }
     db.member.findUnique = async () => user;
     db.quizAttempt = { groupBy: async () => [] };
+    db.bookQuiz = { groupBy: async () => [{ bookId: 'book-id', legacyQuizSeq: 0, _count: { id: 1 } }] };
     db.portalSetting = { findMany: async () => [] };
     const run = load('api/bootstrap.ts', { '../lib/prisma': { prisma: db }, '../lib/portal-auth': auth }).default;
     const res = { ...response(), send(value) { this.data = value; return this; } };
