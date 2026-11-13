@@ -285,6 +285,9 @@ export default async function handler(req: any, res: any) {
 
       // 본사(HQ) 세트가 항상 첫 번째 탭에 오도록 정렬 (양수/0 우선, 음수 학원 세트 후순위)
       const orderedEntries = Array.from(setsMap.entries()).sort((a, b) => {
+        const aAcademy = quizContent(contentAccess, book.id, a[0]).authorType === 'ACADEMY' ? 1 : 0;
+        const bAcademy = quizContent(contentAccess, book.id, b[0]).authorType === 'ACADEMY' ? 1 : 0;
+        if (aAcademy !== bAcademy) return aAcademy - bAcademy;
         const aNeg = a[0] < 0 ? 1 : 0;
         const bNeg = b[0] < 0 ? 1 : 0;
         if (aNeg !== bNeg) return aNeg - bNeg;

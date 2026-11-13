@@ -113,6 +113,41 @@ let masterRankMode = "MONTH";
 let masterRankStartDate = "";
 let masterRankEndDate = "";
 
+// 검색 바 확정 적용 조건 (조회/검색 버튼 클릭 시에만 반영)
+const appliedMasterRankFilters = {
+  initialized: false,
+  month: "",
+  startDate: "",
+  endDate: "",
+  academy: "ALL",
+  search: ""
+};
+
+function syncMasterRankFiltersFromDom(options) {
+  const opts = options || {};
+  const monthEl = document.getElementById("rankMonthFilter");
+  if (monthEl && monthEl.value) {
+    appliedMasterRankFilters.month = monthEl.value;
+  }
+  if (opts.applyDates !== false) {
+    const startInput = document.getElementById("masterRankStartDate");
+    const endInput = document.getElementById("masterRankEndDate");
+    if (startInput && startInput.value !== undefined) {
+      masterRankStartDate = startInput.value || "";
+      appliedMasterRankFilters.startDate = masterRankStartDate;
+    }
+    if (endInput && endInput.value !== undefined) {
+      masterRankEndDate = endInput.value || "";
+      appliedMasterRankFilters.endDate = masterRankEndDate;
+    }
+  }
+  const acadEl = document.getElementById("rankAcademyFilter");
+  appliedMasterRankFilters.academy = (acadEl && acadEl.value) ? acadEl.value : "ALL";
+  const searchEl = document.getElementById("rankStudentSearchInput");
+  appliedMasterRankFilters.search = (searchEl && searchEl.value) ? searchEl.value.trim() : "";
+  appliedMasterRankFilters.initialized = true;
+}
+
 // 조회 방식 3단계 전환 함수 (월별 / 전체 누적 / 기간 지정)
 function setMasterRankMode(mode) {
   masterRankMode = mode || "MONTH";
@@ -252,9 +287,11 @@ function getCalculatedRankings(skipRemoteFetch) {
   const monthSelect = document.getElementById("rankMonthFilter");
   const now = new Date();
   const defaultYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const selectedMonth = (monthSelect && monthSelect.value) ? monthSelect.value : defaultYm;
-  const startDate = masterRankStartDate || "";
-  const endDate = masterRankEndDate || "";
+  const selectedMonth = (appliedMasterRankFilters.initialized && appliedMasterRankFilters.month)
+    ? appliedMasterRankFilters.month
+    : ((monthSelect && monthSelect.value) ? monthSelect.value : defaultYm);
+  const startDate = (appliedMasterRankFilters.initialized ? appliedMasterRankFilters.startDate : masterRankStartDate) || "";
+  const endDate = (appliedMasterRankFilters.initialized ? appliedMasterRankFilters.endDate : masterRankEndDate) || "";
 
   // 모드별 기간 배지 텍스트 및 헤더 레이블 헬퍼
   let periodBadgePrefix = "";
@@ -400,40 +437,53 @@ function handleRankingSearchInput(input) {
   }
 }
 
-// 랭킹 검색어 원클릭 클리어 및 전체 복귀
-function clearRankingSearch() {
+// 검색창 입력만 지움 (확정 조회된 결과 및 미조회 조건은 유지)
+function clearRankingSearchInput() {
   const input = document.getElementById("rankStudentSearchInput");
   if (input) input.value = "";
   const clearBtn = document.getElementById("btnRankingSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
+}
+
+// 검색 결과 배지의 [✕ 검색 해제] 클릭 시 확정된 기존 조건만으로 검색어 해제
+function clearRankingSearch() {
+  clearRankingSearchInput();
   const badgeEl = document.getElementById("rankingSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  appliedMasterRankFilters.search = "";
+  appliedMasterRankFilters.initialized = true;
   rankingCurrentPage = 1;
   renderRankings();
 }
 
 function applyMasterRankDateFilter() {
-  const startInput = document.getElementById("masterRankStartDate");
-  const endInput = document.getElementById("masterRankEndDate");
-  const nextStart = (startInput && startInput.value) || "";
-  const nextEnd = (endInput && endInput.value) || "";
-  if (nextStart && nextEnd && nextStart > nextEnd) {
-    if (typeof showMasterToast === "function") showMasterToast("시작일은 종료일보다 이전이어야 합니다.");
-    return;
+  if (masterRankMode === "RANGE") {
+    const startInput = document.getElementById("masterRankStartDate");
+    const endInput = document.getElementById("masterRankEndDate");
+    const nextStart = (startInput && startInput.value) || "";
+    const nextEnd = (endInput && endInput.value) || "";
+    if (nextStart && nextEnd && nextStart > nextEnd) {
+      if (typeof showMasterToast === "function") showMasterToast("시작일은 종료일보다 이전이어야 합니다.");
+      return;
+    }
   }
-  masterRankStartDate = nextStart;
-  masterRankEndDate = nextEnd;
+  syncMasterRankFiltersFromDom({ applyDates: true });
   rankingCurrentPage = 1;
   renderRankings();
 }
 
 function filterStudentRankings(options) {
-  if (!options || options.applyDates !== false) {
+  if (masterRankMode === "RANGE" && (!options || options.applyDates !== false)) {
     const startInput = document.getElementById("masterRankStartDate");
     const endInput = document.getElementById("masterRankEndDate");
-    if (startInput && startInput.value !== undefined) masterRankStartDate = startInput.value || "";
-    if (endInput && endInput.value !== undefined) masterRankEndDate = endInput.value || "";
+    const nextStart = (startInput && startInput.value) || "";
+    const nextEnd = (endInput && endInput.value) || "";
+    if (nextStart && nextEnd && nextStart > nextEnd) {
+      if (typeof showMasterToast === "function") showMasterToast("시작일은 종료일보다 이전이어야 합니다.");
+      return;
+    }
   }
+  syncMasterRankFiltersFromDom(options);
   rankingCurrentPage = 1;
   renderRankings();
 }
@@ -479,6 +529,7 @@ function resetRankingFilters() {
   if (clearBtn) clearBtn.style.display = "none";
   const badgeEl = document.getElementById("rankingSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  syncMasterRankFiltersFromDom({ applyDates: true });
   rankingCurrentPage = 1;
   renderRankings();
 }
@@ -494,7 +545,17 @@ function renderRankings(skipRemoteFetch) {
     academyBooksHeader, 
     academyRankings, 
     studentRankings 
-  } = getCalculatedRankings(skipRemoteFetch);
+  } = typeof getCalculatedRankings === "function"
+    ? getCalculatedRankings(skipRemoteFetch)
+    : {
+        periodBadgePrefix: "",
+        studentPointsHeader: "월별 포인트",
+        studentBooksHeader: "월별 독서 권수",
+        academyPointsHeader: "총 포인트 합계",
+        academyBooksHeader: "1인당 평균 독서량",
+        academyRankings: typeof academyRankingData !== "undefined" ? academyRankingData : [],
+        studentRankings: typeof allStudentRankings !== "undefined" ? allStudentRankings : []
+      };
 
   // 테이블 헤더 레이블 동적 반영 (월별 포인트 / 기간 획득 포인트 / 누적 포인트)
   const thStudentPoints = document.getElementById("thStudentRankPoints");
@@ -508,7 +569,10 @@ function renderRankings(skipRemoteFetch) {
   if (thAcadBooks) thAcadBooks.innerText = academyBooksHeader;
 
   const totalCountEl = document.getElementById("rankTotalCount");
-  const searchQ = (document.getElementById("rankStudentSearchInput")?.value || "").toLowerCase().trim();
+  const rankFilters = typeof appliedMasterRankFilters !== "undefined" ? appliedMasterRankFilters : { initialized: false };
+  const searchQ = (rankFilters.initialized
+    ? rankFilters.search
+    : (document.getElementById("rankStudentSearchInput")?.value || "")).toLowerCase().trim();
 
   // 1. 전국 가맹 학원 랭킹 뷰 (3가지 모드 완벽 반영)
   if (currentRankingType === "academy") {
@@ -586,7 +650,9 @@ function renderRankings(skipRemoteFetch) {
   }
 
   // 2. 전국 학생 개인 랭킹 뷰 (3가지 모드 완벽 반영)
-  const acadFilter = document.getElementById("rankAcademyFilter")?.value || "ALL";
+  const acadFilter = rankFilters.initialized
+    ? (rankFilters.academy || "ALL")
+    : (document.getElementById("rankAcademyFilter")?.value || "ALL");
 
   const filtered = studentRankings.filter(s => {
     const hasPoints = (Number(s.points) || 0) > 0;
@@ -599,8 +665,9 @@ function renderRankings(skipRemoteFetch) {
   });
 
   // ✕ 버튼 및 활성 배지 상태 동기화
+  const rawRankInputVal = (document.getElementById("rankStudentSearchInput")?.value || "").trim();
   const clearBtn = document.getElementById("btnRankingSearchClear");
-  if (clearBtn) clearBtn.style.display = searchQ.length > 0 ? "inline-flex" : "none";
+  if (clearBtn) clearBtn.style.display = rawRankInputVal.length > 0 ? "inline-flex" : "none";
   const badgeEl = document.getElementById("rankingSearchActiveBadge");
   if (badgeEl) {
     if (searchQ) {
@@ -1173,6 +1240,7 @@ const _origRenderStudentRankings = null; // renderRankings 내부에서 처리
     }
     if (typeof populateRankingMonthFilter === "function") populateRankingMonthFilter();
     if (typeof populateRankingAcademyFilter === "function") populateRankingAcademyFilter();
+    if (typeof syncMasterRankFiltersFromDom === "function") syncMasterRankFiltersFromDom({ applyDates: true });
     if (typeof renderRankings === "function") renderRankings();
   }
 

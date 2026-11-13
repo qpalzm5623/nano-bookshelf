@@ -246,10 +246,10 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
   assert.match(masterHtml, /id="view-content-sharing"/);
   assert.doesNotMatch(masterHtml, /master-core\.js\?v=20261112_pf_v2/);
   assert.match(masterHtml, /master-core\.js\?v=20261113_sharing_fix/);
-  assert.match(masterHtml, /content-sharing\.css\?v=20261113_sharing_v4/);
-  assert.match(masterHtml, /content-sharing\.js\?v=20261113_sharing_v4/);
-  assert.match(adminHtml, /content-sharing\.css\?v=20261113_sharing_v4/);
-  assert.match(adminHtml, /content-sharing\.js\?v=20261113_sharing_v4/);
+  assert.match(masterHtml, /content-sharing\.css\?v=20261113_sharing_v6/);
+  assert.match(masterHtml, /content-sharing\.js\?v=20261113_sharing_v6/);
+  assert.match(adminHtml, /content-sharing\.css\?v=20261113_sharing_v6/);
+  assert.match(adminHtml, /content-sharing\.js\?v=20261113_sharing_v6/);
   assert.match(masterCore, /'content-sharing'/);
   assert.match(masterCore, /ContentSharing\.refresh\(\)/);
   assert.match(sharingJs, /action=director&username=/);
@@ -265,6 +265,9 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
   assert.match(sharingJs, /id="sharingSortTitleBtn"/);
   assert.match(sharingJs, /id="sharingSelectedBookListBox"/);
   assert.match(sharingJs, /data-recipients-folder/);
+  assert.match(sharingJs, /data-vis-radio=/);
+  assert.match(sharingJs, /sharingNewSheetVis/);
+  assert.doesNotMatch(sharingJs, /범위 저장/);
   assert.doesNotMatch(sharingJs, /sharingFilterPills/);
 
   // 프런트엔드 ContentSharing.refresh() / openReceivedFolderModal() 실행 검증 (KPI 총 권수 및 모달 리스트)
@@ -368,5 +371,127 @@ test('마스터 계정은 소속 academy 객체가 비어 있어도 folders 조�
   assert.equal(res.statusCode, 200);
   const savedFolder = state.settings.find(s => s.scope === 'content_folder');
   assert.equal(savedFolder.value.ownerAcademyName, '본사');
+});
+
+test('나노시트 관리 모달은 드롭다운/범위저장 대신 공개/비공개 라디오 버튼으로 즉시 상태를 반영한다', async () => {
+  const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
+  const savedRequests = [];
+  let sheetIsPublic = 'Y';
+  const makeEl = (tag) => {
+    const el = {
+      tagName: String(tag || 'div').toUpperCase(),
+      innerHTML: '',
+      value: '',
+      checked: false,
+      disabled: false,
+      textContent: '',
+      style: {},
+      dataset: {},
+      className: '',
+      showModal() {},
+      close() {},
+      remove() {},
+      setAttribute() {},
+      addEventListener() {},
+      closest() { return null; },
+      querySelector(sel) {
+        if (!el._q) el._q = {};
+        if (!el._q[sel]) el._q[sel] = makeEl('div');
+        return el._q[sel];
+      },
+      querySelectorAll(sel) {
+        return el._all && el._all[sel] ? el._all[sel] : [];
+      }
+    };
+    return el;
+  };
+
+  let createdDialog = null;
+  const radioPub = Object.assign(makeEl('input'), { value: 'Y', checked: true, dataset: { visRadio: '0' } });
+  const radioPriv = Object.assign(makeEl('input'), { value: 'N', checked: false, dataset: { visRadio: '0' } });
+  const win = {
+    NANO_SERVER_DATA: true,
+    fetch: async (url, init) => {
+      if (init && init.method === 'POST' && url.includes('action=worksheet')) {
+        const body = JSON.parse(init.body);
+        savedRequests.push(body);
+        if (body.isPublic) sheetIsPublic = body.isPublic;
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          canUpload: true,
+          items: [{ id: 'sheet-1', name: '시트1.pdf', academyName: '본사', isPublic: sheetIsPublic, isMine: true, revision: 1, url: '/api/content?action=sheet-file&id=sheet-1' }]
+        })
+      };
+    },
+    document: {
+      getElementById: () => null,
+      createElement: (tag) => {
+        createdDialog = makeEl(tag);
+        createdDialog._all = {
+          'input[data-vis-radio]': [radioPub, radioPriv]
+        };
+        return createdDialog;
+      },
+      body: { appendChild: () => {} }
+    },
+    confirm: () => true,
+    alert: () => {},
+    Set, Map, Array, String, Number, Date, Object, Math, Promise, encodeURIComponent
+  };
+  win.window = win;
+  vm.runInNewContext(sharingJs, win);
+
+  await win.ContentSharing.openSheets(
+    { id: 'b-hq', serverId: 'b-hq', title: '테스트 도서' },
+    () => {},
+    { mode: 'manage' }
+  );
+
+  const renderedHtml = createdDialog.innerHTML;
+  assert.doesNotMatch(renderedHtml, /<select\b/i);
+  assert.doesNotMatch(renderedHtml, /범위 저장/);
+  assert.match(renderedHtml, /type="radio"[^>]*name="sharingSheetVis_0"[^>]*value="Y"[^>]*checked/);
+  assert.match(renderedHtml, /type="radio"[^>]*name="sharingNewSheetVis"[^>]*value="Y"[^>]*checked/);
+  assert.equal(typeof radioPriv.onchange, 'function');
+
+  // '비공개' 라디오 클릭 시 별도 저장 버튼 없이 즉시 서버 반영
+  radioPub.checked = false;
+  radioPriv.checked = true;
+  await radioPriv.onchange();
+
+  assert.equal(savedRequests.length, 1);
+  assert.equal(savedRequests[0].isPublic, 'N');
+  assert.equal(savedRequests[0].id, 'sheet-1');
+  const updatedHtml = createdDialog.querySelector('#sharingSheetBody').innerHTML;
+  assert.match(updatedHtml, /type="radio"[^>]*name="sharingSheetVis_0"[^>]*value="N"[^>]*checked/);
+});
+
+test('마스터 북퀴즈 저장 시 /api/content?action=quiz로 공개 여부(isPublic)를 저장하고 공유 버튼 CSS가 정의된다', () => {
+  const masterJs = fs.readFileSync(path.join(__dirname, '../public_html/js/master/master-contents.js'), 'utf8');
+  const sharingCss = fs.readFileSync(path.join(__dirname, '../public_html/css/content-sharing.css'), 'utf8');
+  const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
+
+  // openMasterQuizModal이 _quizLoadedFromServer 기준으로 항상 서버 최신 seq/isPublic을 조회하는지 확인
+  assert.match(masterJs, /if\s*\(\s*window\.NANO_SERVER_DATA\s*&&\s*!book\._quizLoadedFromServer\s*&&/);
+
+  // handleSaveMasterQuizOnly가 구 syncQuizzes 대신 /api/content?action=quiz에 isPublic을 전달하는지 확인
+  const saveFnMatch = masterJs.match(/async function handleSaveMasterQuizOnly\(\)[\s\S]*?\n\}/);
+  assert.ok(saveFnMatch, 'handleSaveMasterQuizOnly 함수를 찾을 수 없습니다');
+  const saveFnBody = saveFnMatch[0];
+  assert.doesNotMatch(saveFnBody, /NanoPortal\.syncQuizzes/);
+  assert.match(saveFnBody, /\/api\/content\?action=quiz/);
+  assert.match(saveFnBody, /isPublic:\s*targetIsPublic/);
+  assert.match(saveFnBody, /\/api\/portal\?action=quiz&bookId=/);
+
+  // 공유 도서 모달의 '목록 전체 선택' / '전체 해제' 버튼 스타일 클래스 및 CSS 규칙 검증
+  assert.match(sharingJs, /class="sharing-text-btn sharing-text-btn-select" id="sharingSelectVisibleBtn"/);
+  assert.match(sharingJs, /class="sharing-text-btn sharing-text-btn-clear" id="sharingClearBooksBtn"/);
+  assert.match(sharingCss, /\.sharing-text-btn\s*\{/);
+  assert.match(sharingCss, /\.sharing-text-btn-select\s*\{/);
+  assert.match(sharingCss, /\.sharing-text-btn-clear\s*\{/);
 });
 

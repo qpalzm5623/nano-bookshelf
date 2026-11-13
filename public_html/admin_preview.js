@@ -319,7 +319,7 @@ function switchTab(tab) {
     if (pfBadge) { pfBadge.style.display = 'none'; pfBadge.innerHTML = ''; }
     var pfClass = document.getElementById('filterPortfolioClass');
     if (pfClass) pfClass.value = 'ALL';
-    initPortfolioDateFilters();
+    if (typeof initPortfolioDateFilters === 'function') initPortfolioDateFilters();
     showPortfolioList();
     if (typeof filterPortfolioList === 'function') filterPortfolioList();
     else renderPortfolioTable(portfolioList);
@@ -1211,6 +1211,8 @@ function initLearningDateFilters() {
   }
 }
 
+var appliedLearningFilters = { initialized: false, classFilter: 'ALL', query: '' };
+
 // 학습 관리 검색 입력 핸들러
 function handleLearningSearchInput(input) {
   var clearBtn = document.getElementById("btnLearningSearchClear");
@@ -1219,15 +1221,21 @@ function handleLearningSearchInput(input) {
   }
 }
 
-// 학습 관리 검색어 원클릭 클리어
-function clearLearningSearch() {
+// 검색창 입력만 지움 (확정 조회 결과 및 미적용 드롭다운 유지)
+function clearLearningSearchInput() {
   var input = document.getElementById("learningSearchInput");
   if (input) input.value = "";
   var clearBtn = document.getElementById("btnLearningSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
+}
+
+// 검색 결과 배지 [✕ 검색 해제] 클릭 시 이미 확정된 조건만으로 검색어 해제
+function clearLearningSearch() {
+  clearLearningSearchInput();
   var badgeEl = document.getElementById("learningSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  renderLearningTable();
+  appliedLearningFilters.query = '';
+  renderLearningTable({ applyFilters: false });
 }
 
 // 학습 관리 '조회' 버튼 실행 (날짜 범위 체크: 최대 6개월)
@@ -1256,7 +1264,12 @@ function executeLearningSearch() {
     startDate: startInput ? startInput.value : '',
     endDate: endInput ? endInput.value : ''
   };
-  renderLearningTable();
+  appliedLearningFilters = {
+    initialized: true,
+    classFilter: document.getElementById('learningClassFilter') ? document.getElementById('learningClassFilter').value : 'ALL',
+    query: (document.getElementById('learningSearchInput') ? document.getElementById('learningSearchInput').value : '').toLowerCase().trim()
+  };
+  renderLearningTable({ applyFilters: true });
 }
 
 // 첨삭 결과는 원본과 분리된 편집본으로 다뤄 저장 실패 시에도 입력을 유지합니다.
@@ -1697,15 +1710,22 @@ function formatLearningDateTime(log) {
 
 // 학습 관리 테이블 렌더링
 // 컬럼 순서: 1.번호, 2.완료일, 3.도서명, 4.학급, 5.원생명, 6.북퀴즈 결과, 7.나노 시트, 8.첨삭, 9.관리
-function renderLearningTable() {
+function renderLearningTable(options) {
   initLearningDateFilters();
 
   var tbody = document.getElementById('learningTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  var classFilter = document.getElementById('learningClassFilter') ? document.getElementById('learningClassFilter').value : 'ALL';
-  var query = (document.getElementById('learningSearchInput') ? document.getElementById('learningSearchInput').value : '').toLowerCase().trim();
+  if (!appliedLearningFilters.initialized || (options && options.applyFilters === true)) {
+    appliedLearningFilters = {
+      initialized: true,
+      classFilter: document.getElementById('learningClassFilter') ? document.getElementById('learningClassFilter').value : 'ALL',
+      query: (document.getElementById('learningSearchInput') ? document.getElementById('learningSearchInput').value : '').toLowerCase().trim()
+    };
+  }
+  var classFilter = appliedLearningFilters.classFilter || 'ALL';
+  var query = appliedLearningFilters.query || '';
   var startDateVal = appliedLearningDates.startDate || '';
   var endDateVal = appliedLearningDates.endDate || '';
 
@@ -1739,8 +1759,9 @@ function renderLearningTable() {
   if (countEl) countEl.innerText = filtered.length;
 
   // ✕ 버튼 및 활성 검색 배지 상태 동기화
+  var rawLearningInputVal = (document.getElementById('learningSearchInput') ? document.getElementById('learningSearchInput').value : '').trim();
   var clearBtn = document.getElementById("btnLearningSearchClear");
-  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  if (clearBtn) clearBtn.style.display = rawLearningInputVal.length > 0 ? "inline-flex" : "none";
   var badgeEl = document.getElementById("learningSearchActiveBadge");
   if (badgeEl) {
     if (query) {
@@ -4472,19 +4493,30 @@ function resetAcademyDispatchFilters() {
   renderAcademyDispatchTable({ applyDates: false });
 }
 
+var appliedAcademyDispatchFilters = { initialized: false, query: '', type: 'ALL', status: 'ALL' };
+
 function renderAcademyDispatchTable(options) {
   if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.dispatch();
   var tbody = document.getElementById('academyDispatchTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  if (!options || options.applyDates !== false) {
+  var useApplied = Boolean(appliedAcademyDispatchFilters.initialized && options && options.useApplied);
+  if (!useApplied && (!options || options.applyDates !== false)) {
     appliedAcademyDispatchDates.from = document.getElementById('academyDispatchFrom')?.value || '';
     appliedAcademyDispatchDates.to = document.getElementById('academyDispatchTo')?.value || '';
   }
-  var query = (document.getElementById('academyDispatchSearch')?.value || '').trim().toLowerCase();
-  var type = document.getElementById('academyDispatchTemplate')?.value || 'ALL';
-  var status = document.getElementById('academyDispatchStatus')?.value || 'ALL';
+  if (!useApplied) {
+    appliedAcademyDispatchFilters = {
+      initialized: true,
+      query: (document.getElementById('academyDispatchSearch')?.value || '').trim().toLowerCase(),
+      type: document.getElementById('academyDispatchTemplate')?.value || 'ALL',
+      status: document.getElementById('academyDispatchStatus')?.value || 'ALL'
+    };
+  }
+  var query = appliedAcademyDispatchFilters.query;
+  var type = appliedAcademyDispatchFilters.type;
+  var status = appliedAcademyDispatchFilters.status;
   var from = appliedAcademyDispatchDates.from || '';
   var to = appliedAcademyDispatchDates.to || '';
   var filtered = academyDispatchLogs.filter(function(l) {
@@ -4536,7 +4568,7 @@ function retryAcademyDispatch(id) {
   var l = academyDispatchLogs.find(item => item.id === id);
   if (l) {
     l.status = 'SUCCESS';
-    renderAcademyDispatchTable({ applyDates: false });
+    renderAcademyDispatchTable({ applyDates: false, useApplied: true });
     showAcademyToast('학부모 알림톡이 성공적으로 재전송되었습니다.');
   }
 }
@@ -4781,21 +4813,23 @@ function setAdminRankMode(mode) {
     if (endInput && !endInput.value) endInput.value = adminRankEndDate;
   }
 
-  renderAdminRankingView();
+  renderAdminRankingView(false, true);
 }
 
 function applyAdminRankDateFilter() {
-  var sInput = document.getElementById('adminRankStartDate');
-  var eInput = document.getElementById('adminRankEndDate');
-  var nextStart = (sInput && sInput.value) ? sInput.value : '';
-  var nextEnd = (eInput && eInput.value) ? eInput.value : '';
-  if (nextStart && nextEnd && nextStart > nextEnd) {
-    alert('시작일은 종료일보다 이전이어야 합니다.');
-    return;
+  if ((adminRankMode || 'MONTH') === 'RANGE') {
+    var sInput = document.getElementById('adminRankStartDate');
+    var eInput = document.getElementById('adminRankEndDate');
+    var nextStart = (sInput && sInput.value) ? sInput.value : '';
+    var nextEnd = (eInput && eInput.value) ? eInput.value : '';
+    if (nextStart && nextEnd && nextStart > nextEnd) {
+      alert('시작일은 종료일보다 이전이어야 합니다.');
+      return;
+    }
+    adminRankStartDate = nextStart;
+    adminRankEndDate = nextEnd;
   }
-  adminRankStartDate = nextStart;
-  adminRankEndDate = nextEnd;
-  renderAdminRankingView();
+  renderAdminRankingView(false, false);
 }
 
 var adminServerRankingCache = {};
@@ -4845,10 +4879,11 @@ function getAdminRankMonthOptions() {
     .map(function(k) { return monthMap[k]; });
 }
 
-// 랭킹 화면의 기간/학급 드롭다운을 실제 데이터로 채움 (사용자가 방금 변경한 선택값을 최우선 보존)
-function populateAdminRankFilters() {
+// 랭킹 화면의 기간/학급 드롭다운 채움 및 적용 (preserveApplied=true 이면 미조회 드롭다운 변경을 유지하고 기존 조회값 보존)
+function populateAdminRankFilters(preserveApplied) {
   var periodSel = document.getElementById('adminRankPeriodSelect');
-  if (periodSel && periodSel.options.length > 0 && periodSel.value) {
+  var hadPeriodOptions = Boolean(periodSel && periodSel.options.length > 0);
+  if (!preserveApplied && hadPeriodOptions && periodSel.value) {
     adminRankPeriod = periodSel.value;
   }
 
@@ -4859,13 +4894,21 @@ function populateAdminRankFilters() {
 
   if (periodSel) {
     if (periodSel.options.length !== months.length) {
+      var prevPeriodDom = periodSel.value;
       periodSel.innerHTML = months.map(function(m) { return '<option value="' + m.key + '">' + m.label + '</option>'; }).join('');
+      if (preserveApplied && prevPeriodDom && months.some(function(m) { return m.key === prevPeriodDom; })) {
+        periodSel.value = prevPeriodDom;
+      } else if (adminRankPeriod) {
+        periodSel.value = adminRankPeriod;
+      }
+    } else if (!preserveApplied && adminRankPeriod) {
+      periodSel.value = adminRankPeriod;
     }
-    if (adminRankPeriod) periodSel.value = adminRankPeriod;
   }
 
   var classSel = document.getElementById('adminRankClassSelect');
-  if (classSel && classSel.options.length > 1 && classSel.value) {
+  var hadClassOptions = Boolean(classSel && classSel.options.length > 1);
+  if (!preserveApplied && hadClassOptions && classSel.value) {
     adminRankClass = classSel.value;
   }
   if (classSel) {
@@ -4873,9 +4916,12 @@ function populateAdminRankFilters() {
       var html = '<option value="all">원내 전체</option>';
       academyClassList.forEach(function(c) { html += '<option value="' + c.name + '">' + c.name + '</option>'; });
       classSel.innerHTML = html;
+      if (adminRankClass !== 'all' && !academyClassList.some(function(c) { return c.name === adminRankClass; })) adminRankClass = 'all';
+      if (adminRankClass) classSel.value = adminRankClass;
+    } else if (!preserveApplied) {
+      if (adminRankClass !== 'all' && !academyClassList.some(function(c) { return c.name === adminRankClass; })) adminRankClass = 'all';
+      if (adminRankClass) classSel.value = adminRankClass;
     }
-    if (adminRankClass !== 'all' && !academyClassList.some(function(c) { return c.name === adminRankClass; })) adminRankClass = 'all';
-    if (adminRankClass) classSel.value = adminRankClass;
   }
 }
 
@@ -4885,7 +4931,7 @@ function buildAdminRankingRows(periodOverride) {
   var mode = periodOverride ? 'MONTH' : ((typeof adminRankMode !== 'undefined' && adminRankMode) ? adminRankMode : 'MONTH');
   var pSel = hasDoc ? document.getElementById('adminRankPeriodSelect') : null;
   var fallbackPeriod = (typeof adminRankPeriod !== 'undefined' && adminRankPeriod) ? adminRankPeriod : '';
-  var monthKey = periodOverride || ((pSel && pSel.value) ? pSel.value : fallbackPeriod);
+  var monthKey = periodOverride || fallbackPeriod || ((pSel && pSel.value) ? pSel.value : '');
   var startDate = (typeof adminRankStartDate !== 'undefined' && adminRankStartDate) ? adminRankStartDate : '';
   var endDate = (typeof adminRankEndDate !== 'undefined' && adminRankEndDate) ? adminRankEndDate : '';
 
@@ -5167,7 +5213,7 @@ async function refreshAdminServerRankings() {
 }
 
 // 화면 랭킹 뷰 메인 렌더링
-function renderAdminRankingView(skipCharacterRefresh) {
+function renderAdminRankingView(skipCharacterRefresh, preserveApplied) {
   if (!skipCharacterRefresh && window.NanoPortal && NanoPortal.remote) refreshAdminRankingCharacters();
 
   // 랭킹 조회 모드별 툴바 컨트롤 표시/숨김 동기화 (전체 누적 및 기간 지정 선택 시 월선택 숨김 보장)
@@ -5183,7 +5229,8 @@ function renderAdminRankingView(skipCharacterRefresh) {
     wrapRange.style.setProperty('display', (curMode === 'RANGE') ? 'flex' : 'none', 'important');
   }
 
-  populateAdminRankFilters();
+  var shouldPreserve = (typeof preserveApplied === 'boolean') ? preserveApplied : Boolean(skipCharacterRefresh);
+  populateAdminRankFilters(shouldPreserve);
   if (!skipCharacterRefresh && window.NanoPortal && NanoPortal.remote) refreshAdminServerRankings();
   var list = getFilteredAdminRankingList();
   
@@ -6268,17 +6315,25 @@ function handlePortfolioSearchInput(input) {
   }
 }
 
-// 포트폴리오 검색어 원클릭 클리어
+// 포트폴리오 검색어 및 적용 필터 상태
 var appliedPortfolioDates = { initialized: false, startDate: '', endDate: '' };
+var appliedPortfolioFilters = { initialized: false, classVal: 'ALL', query: '' };
 
-function clearPortfolioSearch() {
+// 검색창 입력만 지움 (확정 조회 결과 및 미적용 드롭다운 유지)
+function clearPortfolioSearchInput() {
   var input = document.getElementById("searchPortfolioInput");
   if (input) input.value = "";
   var clearBtn = document.getElementById("btnPortfolioSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
+}
+
+// 검색 결과 배지 [✕ 검색 해제] 클릭 시 확정된 기존 조건만으로 검색어 해제
+function clearPortfolioSearch() {
+  clearPortfolioSearchInput();
   var badgeEl = document.getElementById("portfolioSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterPortfolioList({ applyDates: false });
+  appliedPortfolioFilters.query = '';
+  filterPortfolioList({ applyDates: false, useApplied: true });
 }
 
 // 포트폴리오 발급일자 기본 필터 초기화 (최근 당월 1일 ~ today)
@@ -6315,14 +6370,23 @@ function filterPortfolioList(options) {
     };
   }
 
-  var classVal = document.getElementById('filterPortfolioClass') ? document.getElementById('filterPortfolioClass').value : 'ALL';
-  var query = (document.getElementById('searchPortfolioInput') ? document.getElementById('searchPortfolioInput').value : '').toLowerCase().trim();
+  var useApplied = Boolean(appliedPortfolioFilters.initialized && options && options.useApplied);
+  if (!useApplied) {
+    appliedPortfolioFilters = {
+      initialized: true,
+      classVal: document.getElementById('filterPortfolioClass') ? document.getElementById('filterPortfolioClass').value : 'ALL',
+      query: (document.getElementById('searchPortfolioInput') ? document.getElementById('searchPortfolioInput').value : '').toLowerCase().trim()
+    };
+  }
+  var classVal = appliedPortfolioFilters.classVal;
+  var query = appliedPortfolioFilters.query;
   var startVal = appliedPortfolioDates.startDate || '';
   var endVal = appliedPortfolioDates.endDate || '';
 
   // ✕ 버튼 상태 동기화
+  var rawPfInputVal = (document.getElementById('searchPortfolioInput') ? document.getElementById('searchPortfolioInput').value : '').trim();
   var clearBtn = document.getElementById("btnPortfolioSearchClear");
-  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  if (clearBtn) clearBtn.style.display = rawPfInputVal.length > 0 ? "inline-flex" : "none";
 
   var isTeacher = isCurrentLoggedInTeacher();
   var assignedClasses = isTeacher ? getTeacherAssignedClasses() : [];

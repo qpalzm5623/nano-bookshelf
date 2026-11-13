@@ -67,7 +67,7 @@
       '<div class="modal fade" id="litAssignModal" tabindex="-1" aria-labelledby="litAssignTitle"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">' +
       '<div class="modal-header"><h5 class="modal-title font-weight-bold" id="litAssignTitle"><i class="fa-solid fa-paper-plane mr-2"></i>문해력 진단 테스트 부여</h5><button type="button" class="close" data-dismiss="modal" aria-label="닫기">&times;</button></div>' +
       '<div class="modal-body"><div class="text-muted mb-2" style="font-size:12.5px">검사지(밴드)는 등록된 학년으로 자동 추천됩니다. 필요하면 학생별로 한 단계 위/아래 검사지로 바꿀 수 있어요.</div>' +
-      '<div class="lit-pick-toolbar"><select id="litPickClass" class="form-control lit-ctl" style="max-width:160px" aria-label="학급 필터" onchange="NanoLiteracyAdmin.renderPick()"><option value="ALL">전체 학급</option></select>' +
+      '<div class="lit-pick-toolbar"><select id="litPickClass" class="form-control lit-ctl" style="max-width:160px" aria-label="학급 필터"><option value="ALL">전체 학급</option></select>' +
       '<input id="litPickSearch" class="form-control lit-ctl" style="flex:1;min-width:180px" aria-label="원생 이름 또는 아이디 검색" placeholder="이름·아이디 검색" onkeydown="if(event.key===\'Enter\'){event.preventDefault();NanoLiteracyAdmin.renderPick();}">' +
       '<button type="button" class="btn btn-beige-primary" onclick="NanoLiteracyAdmin.renderPick()" style="height:40px;white-space:nowrap"><i class="fa-solid fa-magnifying-glass mr-1"></i>검색</button></div>' +
       '<div class="d-flex align-items-center mb-3" style="gap:12px">' +

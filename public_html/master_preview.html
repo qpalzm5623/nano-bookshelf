@@ -42,8 +42,8 @@
   <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
   <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
   <link rel="stylesheet" href="css/portal-search.css?v=20261113_dropdown_fix">
-  <link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v4">
-  <script src="js/content-sharing.js?v=20261113_sharing_v4"></script>
+  <link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v6">
+  <script src="js/content-sharing.js?v=20261113_sharing_v6"></script>
 </head>
 <body>
 
@@ -247,7 +247,7 @@
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px; position: relative;">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="search" id="franchiseSearchInput" name="search_franchise_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학원명, 원장명, 계정, 전화번호, 지역, 사업자번호 검색..." oninput="handleFranchiseSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterFranchiseList();}">
-          <button type="button" id="btnFranchiseSearchClear" class="btn-search-clear" onclick="clearFranchiseSearch()" style="display: none;" title="검색어 지우기">✕</button>
+          <button type="button" id="btnFranchiseSearchClear" class="btn-search-clear" onclick="clearFranchiseSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
         </div>
         <!-- 검색 버튼 (버튼 클릭 또는 Enter 시에만 검색 실행) -->
         <button type="button" class="btn btn-sm font-weight-bold" onclick="filterFranchiseList()" style="border-radius: 10px; height: 38px; background: #3d342d; border: 1px solid #3d342d; color: #ffffff; white-space: nowrap; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(61,52,45,0.18); cursor: pointer;" title="설정한 조건으로 가맹 학원을 검색합니다.">
@@ -720,7 +720,7 @@
           <!-- 2. 클래스 필터 (특정 가맹점 선택 시에만 활성화) -->
           <div style="width: 140px;">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-            <select class="form-control" id="masterLearningClassFilter" onchange="executeMasterLearningSearch({ applyDates: false })"
+            <select class="form-control" id="masterLearningClassFilter"
               disabled aria-disabled="true" title="특정 가맹점을 선택하면 클래스 필터가 활성화됩니다."
               style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
               <option value="ALL" selected>가맹점 먼저 선택</option>
@@ -877,7 +877,7 @@
           <!-- 2. 클래스 필터 (특정 가맹점 선택 시에만 활성화) -->
           <div style="width: 140px;">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-            <select class="form-control" id="masterPfClassFilter" onchange="filterMasterPortfolioList({ applyDates: false })"
+            <select class="form-control" id="masterPfClassFilter"
               disabled aria-disabled="true" title="특정 가맹점을 선택하면 클래스 필터가 활성화됩니다."
               style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
               <option value="ALL" selected>가맹점 먼저 선택</option>
@@ -904,7 +904,7 @@
             <div style="position: relative;">
               <input type="search" class="form-control" id="masterPfSearchInput"
                 placeholder="원생명, 학번, 포트폴리오 명칭..." style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
-                oninput="scheduleMasterPfSearch()" onkeydown="if(event.key==='Enter') filterMasterPortfolioList()">
+                onkeydown="if(event.key==='Enter') filterMasterPortfolioList()">
             </div>
           </div>
 
@@ -1064,7 +1064,7 @@
             <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 4px; white-space: nowrap;">
               <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>조회 월:
             </span>
-            <select id="rankMonthFilter" class="select-beige form-control form-control-sm font-weight-bold" onchange="renderRankings()" style="min-width: 155px; border-radius: 8px; border: 1px solid var(--border-medium); font-size: 12.5px; height: 36px;">
+            <select id="rankMonthFilter" class="select-beige form-control form-control-sm font-weight-bold" style="min-width: 155px; border-radius: 8px; border: 1px solid var(--border-medium); font-size: 12.5px; height: 36px;">
               <!-- JS 동적 생성 (최근 6개월) -->
             </select>
           </div>
@@ -1086,7 +1086,7 @@
           </div>
           <!-- 가맹학원 선택 드롭박스 (가맹 학원 랭킹 선택 시 숨김) -->
           <div id="rankAcademyFilterWrap" style="min-width: 180px;">
-            <select id="rankAcademyFilter" class="select-beige w-100" onchange="renderRankings()" style="border-radius: 8px; border: 1px solid var(--border-medium); font-size: 12.5px; height: 36px;">
+            <select id="rankAcademyFilter" class="select-beige w-100" style="border-radius: 8px; border: 1px solid var(--border-medium); font-size: 12.5px; height: 36px;">
               <option value="ALL">전체 가맹 학원</option>
               <option value="나노 독서아카데미 목동본원">🏫 나노 목동본원</option>
               <option value="대치 에듀 독서논술센터">🏫 대치 에듀센터</option>
@@ -1097,8 +1097,8 @@
           </div>
           <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0; position: relative;">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." oninput="handleRankingSearchInput(this); filterStudentRankings({ applyDates: false });" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentRankings();}">
-            <button type="button" id="btnRankingSearchClear" class="btn-search-clear" onclick="clearRankingSearch()" style="display: none;" title="검색어 지우기">✕</button>
+            <input type="search" id="rankStudentSearchInput" name="search_rank_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="학생 이름 또는 계정 검색..." oninput="handleRankingSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentRankings();}">
+            <button type="button" id="btnRankingSearchClear" class="btn-search-clear" onclick="clearRankingSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
           </div>
           <div class="d-flex align-items-center" style="gap: 8px;">
             <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterStudentRankings()" style="border-radius: 8px; height: 38px; padding: 0 16px; white-space: nowrap;">
@@ -1546,13 +1546,13 @@
       <!-- 검색 및 필터 (발송학원, 템플릿, 결과상태 드롭다운을 검색창 좌측으로 배치) -->
       <div class="filter-bar">
         <div>
-          <select id="dispatchAcademyFilter" class="select-beige" onchange="filterDispatchList({ applyDates: false })">
+          <select id="dispatchAcademyFilter" class="select-beige">
             <option value="ALL">전체 발송 학원</option>
             <!-- JS 동적 주입 -->
           </select>
         </div>
         <div>
-          <select id="dispatchTemplateFilter" class="select-beige" onchange="filterDispatchList({ applyDates: false })">
+          <select id="dispatchTemplateFilter" class="select-beige">
             <option value="ALL">전체</option>
             <option value="QUIZ">학습 리포트</option>
             <option value="PORTFOLIO">포트폴리오</option>
@@ -1564,7 +1564,7 @@
           <input type="date" id="dispatchDateFrom" class="select-beige">
           <label class="sr-only" for="dispatchDateTo">발송 종료일</label>
           <input type="date" id="dispatchDateTo" class="select-beige">
-          <select id="dispatchStatusFilter" class="select-beige" onchange="filterDispatchList({ applyDates: false })">
+          <select id="dispatchStatusFilter" class="select-beige">
             <option value="ALL">전체 전송 결과</option>
             <option value="SUCCESS">전송 성공</option>
             <option value="FAILED">전송 실패</option><option value="SMS_FALLBACK">문자 대체 발송</option><option value="ACCEPTED">전송 중</option><option value="UNKNOWN">결과 확인 중</option>
@@ -1572,7 +1572,7 @@
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="dispatchSearchInput" name="search_dispatch_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeyup="filterDispatchList({ applyDates: false })" onsearch="filterDispatchList({ applyDates: false })" onkeydown="if(event.key==='Enter'){event.preventDefault();filterDispatchList();}">
+          <input type="search" id="dispatchSearchInput" name="search_dispatch_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="수신자명, 전화번호, 발송 학원명, 내용 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterDispatchList();}">
         </div>
         <button type="button" class="btn btn-sm font-weight-bold" onclick="filterDispatchList()" style="border-radius: 10px; height: 38px; background: #3d342d; border: 1px solid #3d342d; color: #ffffff; white-space: nowrap; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(61,52,45,0.18); cursor: pointer;" title="설정한 조건으로 발송 내역을 검색합니다.">
           <i class="fa-solid fa-magnifying-glass"></i>검색
@@ -1678,13 +1678,13 @@
       <!-- 검색 & 필터 바 -->
       <div class="filter-bar">
         <div>
-          <select id="masterPaymentMonthFilter" class="select-beige" onchange="filterMasterPaymentList()" aria-label="결제 월별 조회"><option value="ALL">전체 기간 (월별 선택)</option></select></div><div><select id="masterPaymentAcademyFilter" class="select-beige" onchange="filterMasterPaymentList()">
+          <select id="masterPaymentMonthFilter" class="select-beige" aria-label="결제 월별 조회"><option value="ALL">전체 기간 (월별 선택)</option></select></div><div><select id="masterPaymentAcademyFilter" class="select-beige">
             <option value="ALL">전체 가맹 학원</option>
             <!-- JS 동적 옵션 -->
           </select>
         </div>
         <div>
-          <select id="masterPaymentPlanFilter" class="select-beige" onchange="filterMasterPaymentList()">
+          <select id="masterPaymentPlanFilter" class="select-beige">
             <option value="ALL">전체 상품명</option>
             <option value="monthly">1개월 정기구독권 (10만)</option>
             <option value="6month">6개월 이용권 (54만, 10%할인)</option>
@@ -1692,7 +1692,7 @@
           </select>
         </div>
         <div>
-          <select id="masterPaymentStatusFilter" class="select-beige" onchange="filterMasterPaymentList()">
+          <select id="masterPaymentStatusFilter" class="select-beige">
             <option value="ALL">전체 결제 상태</option>
             <option value="paid">결제 완료</option>
             <option value="pending">결제 대기</option>
@@ -1701,7 +1701,7 @@
         </div>
         <div class="search-input-wrap flex-grow-1" style="min-width: 240px;">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="search" id="masterPaymentSearchInput" name="search_payment_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeyup="filterMasterPaymentList()" onsearch="filterMasterPaymentList()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterMasterPaymentList();}">
+          <input type="search" id="masterPaymentSearchInput" name="search_payment_query_rnd" autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" class="form-control form-control-beige" placeholder="결제번호, 학원명, 원장 성함, 연락처 검색..." onkeydown="if(event.key==='Enter'){event.preventDefault();filterMasterPaymentList();}">
         </div>
         <button type="button" class="btn btn-sm font-weight-bold" onclick="filterMasterPaymentList()" style="border-radius: 10px; height: 38px; background: #3d342d; border: 1px solid #3d342d; color: #ffffff; white-space: nowrap; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(61,52,45,0.18); cursor: pointer;" title="설정한 조건으로 결제 내역을 검색합니다.">
           <i class="fa-solid fa-magnifying-glass"></i>검색
@@ -2026,14 +2026,14 @@
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
 <script src="js/master/master-core.js?v=20261113_sharing_fix"></script>
-<script src="js/master/master-franchise.js?v=20261113_date_query"></script>
+<script src="js/master/master-franchise.js?v=20261113_query_only"></script>
 <script src="js/master/master-members.js?v=20261109_speed_v2"></script>
 <script src="js/master/master-operations.js?v=20261109_speed_v2"></script>
-<script src="js/master/master-learning.js?v=20261113_class_gate"></script>
+<script src="js/master/master-learning.js?v=20261113_query_only"></script>
 <script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
-<script src="js/master/master-portfolio.js?v=20261113_class_gate"></script>
-<script src="js/master/master-ranking.js?v=20261113_date_query"></script>
-<script src="js/master/master-contents.js?v=20261113_nanosheet_mgr"></script>
+<script src="js/master/master-portfolio.js?v=20261113_query_only"></script>
+<script src="js/master/master-ranking.js?v=20261113_query_only"></script>
+<script src="js/master/master-contents.js?v=20261113_sharing_v6"></script>
 <script src="js/master/master-dispatch.js?v=20261113_date_query"></script>
 <script src="js/master/master-payment.js?v=20261110_payment_routine"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>

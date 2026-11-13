@@ -462,7 +462,6 @@
     syncMasterAcademyTriggerLabel(nextVal);
     closeMasterAcademyDropdown();
     populateMasterLearningClassFilter();
-    executeMasterLearningSearch({ applyDates: false });
   }
 
   // 4. 가맹점 드롭다운 채우기 (전국 활성 가맹점 연동)
@@ -695,9 +694,14 @@
           masterLearningCurrentPage = 1;
           populateMasterLearningClassFilter(normalized);
           updateMasterLearningStats(currentFilteredMasterLogs, startDate, endDate);
+          // total === 0 일 때도 빈 상태 안내가 렌더링되도록 테이블 렌더링 직전에 로딩 플래그를 해제합니다.
+          if (mySeq === masterLearningSearchSeq) {
+            isMasterLearningLoading = false;
+          }
           renderMasterLearningTable();
         } catch (err) {
           if (mySeq !== masterLearningSearchSeq) return;
+          isMasterLearningLoading = false;
           currentFilteredMasterLogs = [];
           masterLearningCurrentPage = 1;
           updateMasterLearningStats([], startDate, endDate);
@@ -720,6 +724,8 @@
       activeSearchPromise = task;
       return task;
     }
+
+    isMasterLearningLoading = false;
 
     // 로컬 정적 HTML(서버 미연동) 미리보기 폴백
     var rawLogs = (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_LEARNING_LOGS) && window.MIGRATED_LEARNING_LOGS.length > 0)

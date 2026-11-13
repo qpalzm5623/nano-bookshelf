@@ -1499,39 +1499,62 @@ function handleFranchiseSearchInput(input) {
   }
 }
 
-// 가맹점 검색어 원클릭 클리어 및 전체 복귀
-function clearFranchiseSearch() {
+// 검색창 입력만 지움 (적용된 검색 조건/목록은 유지, 검색 버튼 클릭 시 반영)
+function clearFranchiseSearchInput() {
   const input = document.getElementById("franchiseSearchInput");
   if (input) input.value = "";
   const clearBtn = document.getElementById("btnFranchiseSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
+}
+
+// 검색 결과 배지의 [✕ 검색 해제] 클릭 시 이미 확정된 조건만으로 검색어 해제
+function clearFranchiseSearch() {
+  clearFranchiseSearchInput();
   const badgeEl = document.getElementById("franchiseSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterFranchiseList({ applyDates: false });
+  appliedFranchiseFilters.query = "";
+  filterFranchiseList({ useApplied: true });
 }
 
 let appliedFranchiseDates = { start: "", end: "" };
+let appliedFranchiseFilters = { initialized: false, query: "", status: "ALL", plan: "ALL" };
 
-// 가맹점 필터링 (가입일 기간 2개 박스, 이용 상품명, 운영 상태, 검색어 — 날짜는 검색 클릭/Enter 시 반영)
+// 가맹점 필터링 (가입일 기간 2개 박스, 이용 상품명, 운영 상태, 검색어 — 조회/검색 버튼 또는 Enter 시 확정 반영)
 function filterFranchiseList(options) {
   franchiseCurrentPage = 1; // 필터링 시 1페이지로 리셋
-  const query = (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim();
+  const dateStore = typeof appliedFranchiseDates !== "undefined"
+    ? appliedFranchiseDates
+    : (filterFranchiseList._dates || (filterFranchiseList._dates = { start: "", end: "" }));
+  const filterStore = typeof appliedFranchiseFilters !== "undefined"
+    ? appliedFranchiseFilters
+    : (filterFranchiseList._filters || (filterFranchiseList._filters = { initialized: false, query: "", status: "ALL", plan: "ALL" }));
+  const useApplied = Boolean(options && options.useApplied && filterStore.initialized);
+  if (!useApplied) {
+    Object.assign(filterStore, {
+      initialized: true,
+      query: (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim(),
+      status: document.getElementById("franchiseStatusFilter")?.value || "ALL",
+      plan: document.getElementById("franchisePlanFilter")?.value || "ALL"
+    });
+  }
+  const query = filterStore.query;
   const cleanQueryPhone = query.replace(/[^0-9]/g, '');
 
-  // ✕ 버튼 상태 동기화
+  // ✕ 버튼 상태 동기화 (입력창에 글자가 남아 있으면 지우기 버튼 표시)
+  const rawInputVal = (document.getElementById("franchiseSearchInput")?.value || "").trim();
   const clearBtn = document.getElementById("btnFranchiseSearchClear");
   if (clearBtn) {
-    clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+    clearBtn.style.display = rawInputVal.length > 0 ? "inline-flex" : "none";
   }
 
-  const statusFilter = document.getElementById("franchiseStatusFilter")?.value || "ALL";
-  const planFilter = document.getElementById("franchisePlanFilter")?.value || "ALL";
-  if (!options || options.applyDates !== false) {
-    appliedFranchiseDates.start = document.getElementById("franchiseStartDateFilter")?.value || "";
-    appliedFranchiseDates.end = document.getElementById("franchiseEndDateFilter")?.value || "";
+  const statusFilter = filterStore.status;
+  const planFilter = filterStore.plan;
+  if (!useApplied && (!options || options.applyDates !== false)) {
+    dateStore.start = document.getElementById("franchiseStartDateFilter")?.value || "";
+    dateStore.end = document.getElementById("franchiseEndDateFilter")?.value || "";
   }
-  const startDateFilter = appliedFranchiseDates.start || "";
-  const endDateFilter = appliedFranchiseDates.end || "";
+  const startDateFilter = dateStore.start || "";
+  const endDateFilter = dateStore.end || "";
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const filtered = franchiseList.filter(item => {

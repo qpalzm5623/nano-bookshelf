@@ -3131,7 +3131,7 @@
   <link rel="stylesheet" href="css/portal-search.css?v=20261113_dropdown_fix">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
 <link rel="stylesheet" href="css/learning-report.css?v=20261112-print">
-<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v4">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v6">
 </head>
 
 <body>
@@ -3380,7 +3380,7 @@
               <!-- 1. 클래스 필터 -->
               <div style="width: 160px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-                <select class="form-control" id="filterStudentClass" onchange="filterStudents()"
+                <select class="form-control" id="filterStudentClass"
                   style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                   <option value="ALL" selected>전체 클래스 보기</option>
                   <option value="지혜반">초등 5학년 (지혜반)</option>
@@ -3394,7 +3394,7 @@
               <!-- 2. 상태 -->
               <div style="width: 120px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">상태</label>
-                <select class="form-control" id="filterStudentStatus" onchange="filterStudents()"
+                <select class="form-control" id="filterStudentStatus"
                   style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                   <option value="ALL" selected>전체 상태</option>
                   <option value="승인">승인</option>
@@ -3412,7 +3412,7 @@
                       data-1p-ignore="true" oninput="handleStudentSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudents();}"
                       style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
                       placeholder="원생명, 아이디, 학교 등 검색...">
-                    <button type="button" id="btnStudentSearchClear" class="btn-search-clear" onclick="clearStudentSearch()" style="display: none;" title="검색어 지우기">✕</button>
+                    <button type="button" id="btnStudentSearchClear" class="btn-search-clear" onclick="clearStudentSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
                   <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
                     onclick="filterStudents()"><i class="fa-solid fa-search mr-1"></i>검색</button>
@@ -3566,7 +3566,7 @@
               <!-- 1. 등록처 필터 -->
               <div style="width: 140px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">등록처 필터</label>
-                <select class="form-control" id="filterAcadBookOrigin" onchange="filterAcademyBooks(false, { applyDates: false })"
+                <select class="form-control" id="filterAcadBookOrigin"
                   style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                   <option value="ALL" selected>전체 등록처</option>
                   <option value="HQ">본사 직속</option>
@@ -3576,7 +3576,7 @@
               <!-- 2. 권장 학년 -->
               <div style="width: 130px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">권장 학년</label>
-                <select class="form-control" id="filterAcadBookGrade" onchange="filterAcademyBooks(false, { applyDates: false })"
+                <select class="form-control" id="filterAcadBookGrade"
                   style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                   <option value="ALL" selected>전체 학년</option>
                   <option value="유치부">유치부</option>
@@ -3597,19 +3597,19 @@
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">보유 여부</label>
                 <div class="d-flex align-items-center" style="gap: 14px; height: 38px;">
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked onchange="filterAcademyBooks(false, { applyDates: false })">
+                    <input type="radio" id="ownedFilterAll" name="filterAcadBookOwned" class="custom-control-input" value="ALL" checked>
                     <label class="custom-control-label font-weight-bold" for="ownedFilterAll" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
                       전체
                     </label>
                   </div>
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED" onchange="filterAcademyBooks(false, { applyDates: false })">
+                    <input type="radio" id="ownedFilterOwned" name="filterAcadBookOwned" class="custom-control-input" value="OWNED">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterOwned" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
                       보유
                     </label>
                   </div>
                   <div class="custom-control custom-radio custom-control-inline mb-0 mr-0">
-                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED" onchange="filterAcademyBooks(false, { applyDates: false })">
+                    <input type="radio" id="ownedFilterUnowned" name="filterAcadBookOwned" class="custom-control-input" value="UNOWNED">
                     <label class="custom-control-label font-weight-bold" for="ownedFilterUnowned" style="cursor: pointer; font-size: 12.5px; color: var(--text-main); user-select: none;">
                       미보유
                     </label>
@@ -3641,7 +3641,7 @@
                       data-1p-ignore="true" oninput="handleAcadBookSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAcademyBooks();}"
                       style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
                       placeholder="도서명, 저자, 출판사, 등록처(학원명)...">
-                    <button type="button" id="btnAcadBookSearchClear" class="btn-search-clear" onclick="clearAcadBookSearch()" style="display: none;" title="검색어 지우기">✕</button>
+                    <button type="button" id="btnAcadBookSearchClear" class="btn-search-clear" onclick="clearAcadBookSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
                   <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
                     onclick="filterAcademyBooks()"><i class="fa-solid fa-search mr-1"></i>검색</button>
@@ -3671,7 +3671,7 @@
                 <label for="sortAcadBookSelect" class="mb-0 text-muted font-weight-bold" style="font-size: 12px; white-space: nowrap;">
                   <i class="fa-solid fa-arrow-down-short-wide mr-1 text-secondary"></i>리스트 정렬
                 </label>
-                <select class="form-control form-control-sm" id="sortAcadBookSelect" onchange="filterAcademyBooks(false, { applyDates: false })"
+                <select class="form-control form-control-sm" id="sortAcadBookSelect" onchange="changeAcadBookSort()"
                   style="border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; font-weight: 600; width: auto; min-width: 210px;">
                   <option value="DATE_DESC" selected>등록일 최신순 (기본)</option>
                   <option value="DEFAULT">보유순 · 도서번호 내림차순</option>
@@ -4130,7 +4130,7 @@
             <!-- 1. 클래스 필터 -->
             <div style="width: 150px;">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-              <select class="form-control" id="learningClassFilter" onchange="renderLearningTable()"
+              <select class="form-control" id="learningClassFilter"
                 style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                 <option value="ALL" selected>전체 클래스</option>
                 <option value="지혜반">지혜반</option>
@@ -4163,8 +4163,8 @@
                   <input type="search" class="form-control" id="learningSearchInput" name="learning_search_no_autofill"
                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
                     placeholder="학생명, 도서명 검색..." style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
-                    oninput="handleLearningSearchInput(this)" onkeydown="if(event.key==='Enter') executeLearningSearch()" onsearch="executeLearningSearch()">
-                  <button type="button" id="btnLearningSearchClear" class="btn-search-clear" onclick="clearLearningSearch()" style="display: none;" title="검색어 지우기">✕</button>
+                    oninput="handleLearningSearchInput(this)" onkeydown="if(event.key==='Enter') executeLearningSearch()">
+                  <button type="button" id="btnLearningSearchClear" class="btn-search-clear" onclick="clearLearningSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
                 </div>
                 <button type="button" class="btn btn-beige-primary px-3 font-weight-bold"
                   onclick="executeLearningSearch()" style="height: 38px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
@@ -4277,7 +4277,7 @@
               <!-- 1. 클래스 필터 -->
               <div style="width: 150px;">
                 <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">클래스 필터</label>
-                <select class="form-control" id="filterPortfolioClass" onchange="filterPortfolioList({ applyDates: false })"
+                <select class="form-control" id="filterPortfolioClass"
                   style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                   <option value="ALL" selected>전체 클래스</option>
                   <option value="지혜반">지혜반</option>
@@ -4309,12 +4309,12 @@
                   <div style="position: relative; flex-grow: 1;">
                     <input type="search" class="form-control" id="searchPortfolioInput"
                       name="search_portfolio_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
-                      spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="handlePortfolioSearchInput(this); filterPortfolioList({ applyDates: false });"
+                      spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="handlePortfolioSearchInput(this);"
                       onkeydown="if(event.key==='Enter'){event.preventDefault();filterPortfolioList();}"
-                      onsearch="filterPortfolioList({ applyDates: false })"
+                     
                       style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
                       placeholder="원생명, 학번, 포트폴리오 명칭...">
-                    <button type="button" id="btnPortfolioSearchClear" class="btn-search-clear" onclick="clearPortfolioSearch()" style="display: none;" title="검색어 지우기">✕</button>
+                    <button type="button" id="btnPortfolioSearchClear" class="btn-search-clear" onclick="clearPortfolioSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
                   <button type="button" class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
                     onclick="filterPortfolioList()"><i class="fa-solid fa-search mr-1"></i>조회</button>
@@ -4478,14 +4478,15 @@
               <!-- 우측 툴바: 학급 필터, 검색 인풋, 개별 원생 배정, 학급 일괄 배정, 인증 도서 일괄 삭제 (간격 부여) -->
               <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
                 <select class="form-control form-control-sm" id="filterAssignStudentClass"
-                  onchange="filterStudentAssignments()" style="width: 130px; border-radius: 8px; font-size: 12.5px; height: 34px;">
+                  style="width: 130px; border-radius: 8px; font-size: 12.5px; height: 34px;">
                   <option value="ALL">전체 클래스</option>
                 </select>
                 <input type="search" class="form-control form-control-sm" id="searchAssignStudentInput"
                   name="search_assign_student_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
-                  spellcheck="false" data-lpignore="true" data-1p-ignore="true" oninput="filterStudentAssignments()"
-                  onsearch="filterStudentAssignments()" placeholder="원생 이름/학번 검색..."
+                  spellcheck="false" data-lpignore="true" data-1p-ignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterStudentAssignments();}"
+                  placeholder="원생 이름/학번 검색..."
                   style="width: 160px; border-radius: 8px; font-size: 12.5px; height: 34px;">
+                <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterStudentAssignments()" style="border-radius: 8px; font-size: 12.5px; height: 34px; padding: 0 12px; white-space: nowrap;"><i class="fa-solid fa-search mr-1"></i>조회</button>
                 <button class="btn btn-sm btn-beige-primary font-weight-bold" onclick="openIndividualAssignModal()"
                   style="border-radius: 8px; font-size: 12px; white-space: nowrap; height: 34px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px;">
                   <i class="fa-solid fa-plus"></i>개별 원생 배정
@@ -4650,7 +4651,7 @@
           <div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap: 12px;" role="search" aria-label="카카오톡 발송 내역 검색">
             <div style="min-width: 140px;">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">템플릿 구분</label>
-              <select id="academyDispatchTemplate" class="form-control" aria-label="템플릿" onchange="renderAcademyDispatchTable({ applyDates: false })" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+              <select id="academyDispatchTemplate" class="form-control" aria-label="템플릿" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                 <option value="ALL">전체 템플릿</option>
                 <option value="QUIZ">학습 리포트</option>
                 <option value="PORTFOLIO">포트폴리오</option>
@@ -4659,7 +4660,7 @@
             </div>
             <div style="min-width: 140px;">
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">발송 결과</label>
-              <select id="academyDispatchStatus" class="form-control" aria-label="발송 결과" onchange="renderAcademyDispatchTable({ applyDates: false })" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+              <select id="academyDispatchStatus" class="form-control" aria-label="발송 결과" style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
                 <option value="ALL">전체 결과</option>
                 <option value="SUCCESS">발송 성공</option>
                 <option value="FAILED">발송 실패</option>
@@ -4680,7 +4681,7 @@
               <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block;">수신자 / 번호 / 학급 검색</label>
               <div class="position-relative">
                 <i class="fa-solid fa-magnifying-glass text-muted" style="position: absolute; left: 12px; top: 12px; font-size: 13px; pointer-events: none;"></i>
-                <input id="academyDispatchSearch" type="search" class="form-control" placeholder="수신자명, 수신 번호, 학급 검색..." aria-label="수신자, 수신 번호, 학급" oninput="renderAcademyDispatchTable({ applyDates: false })" onkeydown="if(event.key==='Enter'){event.preventDefault();renderAcademyDispatchTable();}" style="padding-left: 34px; height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
+                <input id="academyDispatchSearch" type="search" class="form-control" placeholder="수신자명, 수신 번호, 학급 검색..." aria-label="수신자, 수신 번호, 학급" onkeydown="if(event.key==='Enter'){event.preventDefault();renderAcademyDispatchTable();}" style="padding-left: 34px; height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px;">
               </div>
             </div>
             <div class="d-flex align-items-center" style="gap: 6px;">
@@ -4855,7 +4856,7 @@
                   <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 6px; white-space: nowrap;">
                     <i class="fa-regular fa-calendar-check mr-1 text-warning"></i>월 선택:
                   </span>
-                  <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect" onchange="renderAdminRankingView()"
+                  <select class="form-control form-control-sm font-weight-bold" id="adminRankPeriodSelect"
                     style="width: 175px; border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                     <!-- JS 동적 생성: 현재월 포함 최근 6개월 -->
                   </select>
@@ -4871,22 +4872,22 @@
                   <span class="text-muted font-weight-bold">~</span>
                   <input type="date" class="form-control form-control-sm font-weight-bold" id="adminRankEndDate"
                     style="width: 135px; border-radius: 8px; border-color: var(--border-medium); font-size: 12px;">
-                  <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" onclick="applyAdminRankDateFilter()"
-                    style="border-radius: 8px; height: 31px; padding: 0 12px; font-size: 12px; white-space: nowrap;">
-                    <i class="fa-solid fa-search mr-1"></i>조회
-                  </button>
                 </div>
               </div>
 
               <!-- 우측: 학급 필터 선택기 (검색바 완전 제거) -->
-              <div class="d-flex align-items-center ml-auto" style="flex-shrink: 0;">
-                <span style="font-size: 12.5px; font-weight: 800; color: #475569; margin-right: 8px; white-space: nowrap;">
+              <div class="d-flex align-items-center ml-auto" style="flex-shrink: 0; gap: 8px;">
+                <span style="font-size: 12.5px; font-weight: 800; color: #475569; white-space: nowrap;">
                   <i class="fa-solid fa-users-rectangle mr-1 text-primary"></i>학급 선택:
                 </span>
-                <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect" onchange="renderAdminRankingView()"
+                <select class="form-control form-control-sm font-weight-bold" id="adminRankClassSelect"
                   style="width: 155px; border-radius: 8px; border-color: var(--border-medium); font-size: 13px;">
                   <option value="all">원내 전체</option>
                 </select>
+                <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" onclick="applyAdminRankDateFilter()"
+                  style="border-radius: 8px; height: 31px; padding: 0 12px; font-size: 12px; white-space: nowrap;">
+                  <i class="fa-solid fa-search mr-1"></i>조회
+                </button>
               </div>
             </div>
           </div>
@@ -5086,12 +5087,16 @@
             </div>
             <div class="d-flex align-items-center gap-2">
               <select class="form-control form-control-sm" id="filterPaymentStatus"
-                onchange="filterAcademyPaymentTable()" style="width: 130px; border: 1.5px solid #d5ded9; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: #1e242b;">
+                style="width: 130px; border: 1.5px solid #d5ded9; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: #1e242b;">
                 <option value="ALL">전체 상태</option>
                 <option value="paid">결제 완료</option>
                 <option value="pending">결제 대기</option>
                 <option value="cancelled">취소 / 환불</option>
               </select>
+              <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterAcademyPaymentTable()"
+                style="border-radius: 8px; height: 31px; padding: 0 12px; font-size: 12px; white-space: nowrap;">
+                <i class="fa-solid fa-search mr-1"></i>조회
+              </button>
             </div>
           </div>
 
@@ -5516,7 +5521,7 @@
                 <span class="font-weight-bold mr-2 text-muted" style="font-size: 12.5px; white-space: nowrap;">학급
                   선택:</span>
                 <select class="form-control form-control-sm" id="indivStudentClassFilter"
-                  onchange="filterIndivModalStudents()" style="border-radius: 8px; font-weight: 700;">
+                  style="border-radius: 8px; font-weight: 700;">
                   <option value="ALL">전체 클래스</option>
                 </select>
               </div>
@@ -5524,11 +5529,11 @@
                 <div class="input-group input-group-sm">
                   <input type="search" class="form-control" id="indivStudentSearchInput"
                     name="indiv_student_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
-                    spellcheck="false" data-lpignore="true" oninput="filterIndivModalStudents()"
+                    spellcheck="false" data-lpignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterIndivModalStudents();}"
                     placeholder="원생 이름, 학번(S1021...), 학교 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;">
                   <div class="input-group-append">
-                    <span class="input-group-text bg-white" style="border-radius: 0 8px 8px 0;"><i
-                        class="fa-solid fa-search text-muted"></i></span>
+                    <button type="button" class="btn btn-beige-primary px-3" onclick="filterIndivModalStudents()"
+                      style="border-radius: 0 8px 8px 0;"><i class="fa-solid fa-search mr-1"></i>조회</button>
                   </div>
                 </div>
               </div>
@@ -5615,8 +5620,7 @@
                   </h6>
                   <!-- 학원 보유 도서만 검색 토글 체크박스 -->
                   <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="indivOnlyAcademyOwned"
-                      onchange="filterIndivBookCatalog()">
+                    <input type="checkbox" class="custom-control-input" id="indivOnlyAcademyOwned">
                     <label class="custom-control-label font-weight-bold text-success" for="indivOnlyAcademyOwned"
                       style="font-size: 12px; cursor: pointer;">
                       <i class="fa-solid fa-building-circle-check mr-1"></i>학원 보유 도서만 검색
@@ -5629,7 +5633,7 @@
                   <div class="input-group input-group-sm mb-2">
                     <input type="search" class="form-control" id="indivBookSearchInput"
                       name="indiv_book_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
-                      spellcheck="false" data-lpignore="true" oninput="filterIndivBookCatalog()"
+                      spellcheck="false" data-lpignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterIndivBookCatalog();}"
                       placeholder="도서명, 저자, 출판사 검색..." style="border-radius: 8px 0 0 8px; font-size: 13px;">
                     <div class="input-group-append">
                       <button class="btn btn-beige-primary px-3" onclick="filterIndivBookCatalog()"
@@ -5639,7 +5643,7 @@
                   <div class="row align-items-center">
                     <div class="col-4">
                       <select class="form-control form-control-sm" id="indivFilterGrade"
-                        onchange="filterIndivBookCatalog()" style="font-size: 11.5px; border-radius: 6px;">
+                        style="font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 학년</option>
                         <option value="초등 1~2학년">초등 1~2학년</option>
                         <option value="초등 3~4학년">초등 3~4학년</option>
@@ -5649,7 +5653,7 @@
                     </div>
                     <div class="col-4">
                       <select class="form-control form-control-sm" id="indivFilterOrigin"
-                        onchange="filterIndivBookCatalog()" style="font-size: 11.5px; border-radius: 6px;">
+                        style="font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 출제처</option>
                         <option value="HQ">본사 직속</option>
                         <option value="ACADEMY">자체 등록</option>
@@ -5657,7 +5661,7 @@
                     </div>
                     <div class="col-4">
                       <select class="form-control form-control-sm" id="indivFilterCategory"
-                        onchange="filterIndivBookCatalog()" style="font-size: 11.5px; border-radius: 6px;">
+                        style="font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 주제</option>
                         <option value="문학">문학 / 소설</option>
                         <option value="사회">사회 / 인성</option>
@@ -5832,11 +5836,11 @@
                   <div class="row no-gutters">
                     <div class="col-md-5 pr-md-1 mb-1 mb-md-0">
                       <input type="search" class="form-control form-control-sm" id="batchBookSearchInput"
-                        oninput="filterBatchBookCatalog()" placeholder="도서명, 저자, 출판사 검색..." style="border-radius: 6px; font-size: 12px;">
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();filterBatchBookCatalog();}" placeholder="도서명, 저자, 출판사 검색..." style="border-radius: 6px; font-size: 12px;">
                     </div>
-                    <div class="col-md-7 d-flex gap-1 flex-wrap">
+                    <div class="col-md-7 d-flex gap-1 flex-wrap align-items-center">
                       <select class="form-control form-control-sm" id="batchBookFilterGrade"
-                        onchange="filterBatchBookCatalog()" style="width: 120px; font-size: 11.5px; border-radius: 6px;">
+                        style="width: 120px; font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 학년</option>
                         <option value="유치부">유치부</option>
                         <option value="초등 1학년">초등 1학년</option>
@@ -5850,19 +5854,23 @@
                         <option value="중학교 3학년">중학교 3학년</option>
                       </select>
                       <select class="form-control form-control-sm" id="batchBookFilterOrigin"
-                        onchange="filterBatchBookCatalog()" style="width: 105px; font-size: 11.5px; border-radius: 6px;">
+                        style="width: 105px; font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 출제처</option>
                         <option value="HQ">본사 직속</option>
                         <option value="ACADEMY">자체 등록</option>
                       </select>
                       <select class="form-control form-control-sm" id="batchBookFilterCategory"
-                        onchange="filterBatchBookCatalog()" style="width: 110px; font-size: 11.5px; border-radius: 6px;">
+                        style="width: 110px; font-size: 11.5px; border-radius: 6px;">
                         <option value="ALL">전체 주제</option>
                         <option value="문학">문학 / 소설</option>
                         <option value="사회">사회 / 인성</option>
                         <option value="과학">과학 / 환경</option>
                         <option value="인문">인문 / 철학</option>
                       </select>
+                      <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" onclick="filterBatchBookCatalog()"
+                        style="border-radius: 6px; font-size: 11.5px; height: 31px; padding: 0 10px; white-space: nowrap;">
+                        <i class="fa-solid fa-search mr-1"></i>조회
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -9395,12 +9403,12 @@
   <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
+<script src="js/literacy/literacy-admin.js?v=20261113_query_only"></script>
 <script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
-<script src="admin_preview.js?v=20261113_date_query"></script>
-<script src="js/admin_members.js?v=20261111_v1"></script>
-<script src="js/content-sharing.js?v=20261113_sharing_v4"></script>
-<script src="js/admin_books.js?v=20261113_date_query"></script>
+<script src="admin_preview.js?v=20261113_query_only"></script>
+<script src="js/admin_members.js?v=20261113_query_only"></script>
+<script src="js/content-sharing.js?v=20261113_sharing_v6"></script>
+<script src="js/admin_books.js?v=20261113_query_only"></script>
 <script src="js/admin_payment.js?v=20261111_v1"></script>
 <script src="js/admin_notices.js?v=20261111_v1"></script>
 <script src="js/admin_worksheet_ai.js?v=20261111_v1"></script>

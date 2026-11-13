@@ -351,3 +351,49 @@ test('단계별 폴더 워크플로우: 폴더명만 생성 → 대상 설정·�
   assert.deepEqual(Array.from(stored.bookIds), ['book-1']);
   assert.deepEqual(Array.from(stored.recipients), []);
 });
+
+test('마스터(HQ)가 북퀴즈를 비공개로 저장하면 공유 후보(catalog)에 포함되고 본사 세트가 우선 정렬된다', async () => {
+  const f = setup();
+  const hq = { ...f.user('master-1', 'hq', 'MASTER'), academy: { id: 'hq', code: 'HQ', name: '본사', status: 'ACTIVE', deletedAt: null } };
+  f.setUser(hq);
+
+  // 1) 기존 본사 기본 세트(seq: 0)를 주관식 포함 구성 + 비공개('N')로 저장
+  const saveZero = await f.request('quiz', {
+    bookId: 'book-1',
+    seq: 0,
+    revision: 0,
+    isPublic: 'N',
+    questions: [
+      { question: '주인공은 누구인가요?', type: 'CHOICE', options: ['어린 왕자', '여우', '장미'], answer: '1', hint: '제목 참고' },
+      { question: '여우가 알려준 관계의 핵심 낱말은?', type: 'SUBJECTIVE', answer: '길들임', similarAns: '길들이기', hint: '세 글자' }
+    ]
+  });
+  assert.equal(saveZero.code, 200);
+  assert.equal(f.settings().find(r => r.key === 'content_quiz:book-1:0')?.value.isPublic, 'N');
+
+  // 2) 본사 추가 세트(seq 생략 -> 음수 seq 발급) + 가맹 학원 세트가 함께 있어도 본사 세트가 먼저 정렬됨
+  await f.addQuiz('book-2', -200, 'N', 'director-b', 'b');
+  const saveNewHq = await f.request('quiz', {
+    bookId: 'book-2',
+    revision: 0,
+    isPublic: 'N',
+    questions: [
+      { question: '신규 본사 퀴즈 문항', type: 'CHOICE', options: ['보기1', '보기2'], answer: '2' }
+    ]
+  });
+  assert.equal(saveNewHq.code, 200);
+
+  // 콘텐츠 공유 카탈로그 조회 시 비공개 북퀴즈를 저장한 book-1, book-2 모두 포함됨
+  const cat = await f.request('catalog');
+  assert.equal(cat.code, 200);
+  assert.deepEqual(cat.data.items.map(b => b.id).sort(), ['book-1', 'book-2']);
+  assert.equal(cat.data.items.find(b => b.id === 'book-1').hasPrivateQuiz, true);
+  assert.equal(cat.data.items.find(b => b.id === 'book-2').hasPrivateQuiz, true);
+
+  // /api/portal?action=quiz 조회 시 음수 seq 본사 세트가 학원 세트보다 앞(0번)에 정렬되고 isPublic='N' 유지
+  const portalQuizRes = await f.request('quiz', undefined, { bookId: 'book-2' }, f.portal);
+  assert.equal(portalQuizRes.code, 200);
+  assert.equal(portalQuizRes.data.quizSets[0].authorType, 'HQ');
+  assert.equal(portalQuizRes.data.quizSets[0].isPublic, 'N');
+  assert.equal(portalQuizRes.data.quizSets[1].authorType, 'ACADEMY');
+});

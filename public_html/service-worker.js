@@ -3,7 +3,7 @@
  * PWA 오프라인 지원, 캐싱 및 빠른 로딩 처리
  */
 
-const CACHE_NAME = 'nano-bookshelf-v20261113-dropdown-class-gate';
+const CACHE_NAME = 'nano-bookshelf-v20261113-sharing-v6';
 
 // 오프라인 및 기본 캐싱 대상 핵심 리소스
 const PRECACHE_ASSETS = [

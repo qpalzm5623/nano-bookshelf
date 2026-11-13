@@ -2662,28 +2662,46 @@ function handleStudentSearchInput(input) {
   }
 }
 
-// 원생 검색어 원클릭 클리어
-function clearStudentSearch() {
+var appliedStudentFilters = { initialized: false, classVal: 'ALL', statusVal: 'ALL', query: '' };
+
+// 검색창 입력만 지움 (확정 검색 결과/미조회 드롭박스는 유지)
+function clearStudentSearchInput() {
   var input = document.getElementById("searchStudentInput");
   if (input) input.value = "";
   var clearBtn = document.getElementById("btnStudentSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
-  var badgeEl = document.getElementById("studentSearchActiveBadge");
-  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterStudents();
 }
 
-function filterStudents(keepPage) {
+// 검색 결과 배지 [✕ 검색 해제] 클릭 시 이미 확정된 조건만으로 검색어 해제
+function clearStudentSearch() {
+  clearStudentSearchInput();
+  var badgeEl = document.getElementById("studentSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  appliedStudentFilters.query = '';
+  filterStudents(false, { useApplied: true });
+}
+
+function filterStudents(keepPage, options) {
   if (!keepPage) {
     studentCurrentPage = 1;
   }
-  var classVal = document.getElementById('filterStudentClass') ? document.getElementById('filterStudentClass').value : 'ALL';
-  var query = (document.getElementById('searchStudentInput') ? document.getElementById('searchStudentInput').value : '').toLowerCase().trim();
-  var statusVal = document.getElementById('filterStudentStatus') ? document.getElementById('filterStudentStatus').value : 'ALL';
+  var useApplied = Boolean(appliedStudentFilters.initialized && ((options && options.useApplied) || keepPage));
+  if (!useApplied) {
+    appliedStudentFilters = {
+      initialized: true,
+      classVal: document.getElementById('filterStudentClass') ? document.getElementById('filterStudentClass').value : 'ALL',
+      statusVal: document.getElementById('filterStudentStatus') ? document.getElementById('filterStudentStatus').value : 'ALL',
+      query: (document.getElementById('searchStudentInput') ? document.getElementById('searchStudentInput').value : '').toLowerCase().trim()
+    };
+  }
+  var classVal = appliedStudentFilters.classVal;
+  var query = appliedStudentFilters.query;
+  var statusVal = appliedStudentFilters.statusVal;
 
   // ✕ 버튼 상태 동기화
+  var rawInputVal = (document.getElementById('searchStudentInput') ? document.getElementById('searchStudentInput').value : '').trim();
   var clearBtn = document.getElementById("btnStudentSearchClear");
-  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  if (clearBtn) clearBtn.style.display = rawInputVal.length > 0 ? "inline-flex" : "none";
 
   var filtered = studentDataList.filter(function(std) {
     var matchClass = (classVal === 'ALL') || (std.classGroup === classVal);

@@ -420,7 +420,6 @@
     syncMasterPfAcademyTriggerLabel(nextVal);
     closeMasterPfAcademyDropdown();
     populateMasterPfClassFilter();
-    filterMasterPortfolioList({ applyDates: false });
   }
 
   // 3. 가맹점 드롭다운 채우기
@@ -530,13 +529,12 @@
     }
   }
 
-  // 검색 입력 디바운스 (키 입력 시 과도한 API 호출 방지 및 미조회 날짜 미적용)
+  // 검색 입력 시 자동 조회하지 않고 조회 버튼 클릭 또는 Enter 시에만 조회합니다.
   function scheduleMasterPfSearch() {
-    if (pfSearchDebounceTimer) clearTimeout(pfSearchDebounceTimer);
-    pfSearchDebounceTimer = setTimeout(function() {
+    if (pfSearchDebounceTimer) {
+      clearTimeout(pfSearchDebounceTimer);
       pfSearchDebounceTimer = null;
-      filterMasterPortfolioList({ applyDates: false });
-    }, 260);
+    }
   }
 
   function renderMasterPfLoadingState() {
@@ -585,6 +583,7 @@
 
     if (isRemoteServerMode()) {
       if (!window.NanoPortal || typeof NanoPortal.api !== 'function') {
+        isMasterPfLoading = false;
         renderMasterPfErrorState('포털 API 클라이언트를 사용할 수 없습니다.');
         return;
       }
@@ -621,9 +620,12 @@
           masterPfPage = 1;
           populateMasterPfClassFilter(normalized);
           updateMasterPfStats(normalized, res && res.stats);
+          // 0건 조회 결과에서도 빈 상태 안내를 그릴 수 있도록 렌더링 직전에 로딩 플래그를 해제합니다.
+          if (mySeq === pfSearchSeq) isMasterPfLoading = false;
           renderMasterPfTable(1);
         } catch (err) {
           if (mySeq !== pfSearchSeq) return;
+          isMasterPfLoading = false;
           currentFilteredMasterPfList = [];
           masterPfPage = 1;
           updateMasterPfStats([], null);
@@ -644,6 +646,8 @@
       activePfSearchPromise = task;
       return task;
     }
+
+    isMasterPfLoading = false;
 
     // 로컬 정적 HTML 프리뷰 폴백
     var rawLocal = (Array.isArray(window.portfolioList) && window.portfolioList.length > 0)

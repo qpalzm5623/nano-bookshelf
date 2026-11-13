@@ -157,25 +157,44 @@
       if (onChange) onChange(data.items, book);
     }
 
+    // 공개/비공개 라디오 버튼 공통 렌더러 (목록 변경 및 신규 업로드 폼에서 재사용)
+    function renderVisRadios(inputName, selectedVal, extraAttr, ariaLabel) {
+      var isPub = selectedVal !== 'N';
+      return (
+        '<div class="sharing-vis-radio-group" role="radiogroup" aria-label="' + esc(ariaLabel || '공개 여부') + '">' +
+          '<label class="sharing-vis-radio-option' + (isPub ? ' is-selected is-public' : '') + '">' +
+            '<input type="radio" name="' + inputName + '" value="Y"' + (extraAttr ? ' ' + extraAttr : '') + (isPub ? ' checked' : '') + '>' +
+            '<span>공개</span>' +
+          '</label>' +
+          '<label class="sharing-vis-radio-option' + (!isPub ? ' is-selected is-private' : '') + '">' +
+            '<input type="radio" name="' + inputName + '" value="N"' + (extraAttr ? ' ' + extraAttr : '') + (!isPub ? ' checked' : '') + '>' +
+            '<span>비공개</span>' +
+          '</label>' +
+        '</div>'
+      );
+    }
+
+    function syncRadioGroupStyles(groupEl, activeVal) {
+      if (!groupEl) return;
+      groupEl.querySelectorAll('.sharing-vis-radio-option').forEach(function (labelEl) {
+        var r = labelEl.querySelector('input[type="radio"]');
+        var isMatch = Boolean(r && r.value === activeVal);
+        labelEl.className = 'sharing-vis-radio-option' + (isMatch ? (' is-selected ' + (activeVal === 'Y' ? 'is-public' : 'is-private')) : '');
+      });
+    }
+
     function buildBodyHtml(statusMsg, isError) {
       var sheetRows = data.items.map(function (s, idx) {
-        var isPublic = s.isPublic === 'Y';
+        var isPublic = s.isPublic !== 'N';
         var visClass = isPublic ? 'is-public' : 'is-private';
-        var visLabel = isPublic ? '전체 공개' : '비공개 · 공유 폴더 허용';
+        var visLabel = isPublic ? '공개' : '비공개';
         var itemCls = 'sharing-sheet-item' + (s.isMine ? ' is-mine' : '');
         var controlsHtml = '';
         if (mode === 'manage') {
           if (s.isMine) {
             controlsHtml =
               '<div class="sharing-sheet-controls">' +
-                '<label style="font-size: 12px; font-weight: 700; margin: 0; color: var(--text-muted, #786d63);">공개 범위</label>' +
-                '<select class="sharing-select" data-vis="' + idx + '" style="flex: 1; min-width: 195px;">' +
-                  '<option value="Y"' + (isPublic ? ' selected' : '') + '>공개 · 모든 학원 열람 가능</option>' +
-                  '<option value="N"' + (!isPublic ? ' selected' : '') + '>비공개 · 우리 기관 및 공유 폴더 학원만</option>' +
-                '</select>' +
-                '<button type="button" class="btn-beige-secondary sharing-btn-sm" data-save="' + idx + '">' +
-                  '<i class="fa-solid fa-check"></i> 범위 저장' +
-                '</button>' +
+                renderVisRadios('sharingSheetVis_' + idx, isPublic ? 'Y' : 'N', 'data-vis-radio="' + idx + '"', '나노시트 공개 여부') +
                 '<button type="button" class="sharing-btn-danger-outline" data-delete="' + idx + '" style="height: 34px; padding: 0 11px;">' +
                   '<i class="fa-solid fa-trash-can"></i> 삭제' +
                 '</button>' +
@@ -220,7 +239,7 @@
       var listHtml = sheetRows
         ? '<div class="sharing-sheet-list">' + sheetRows + '</div>'
         : (mode === 'manage'
-            ? '<div class="sharing-empty-state"><i class="fa-regular fa-file-pdf sharing-empty-icon"></i><p>아직 등록된 나노시트가 없습니다.</p><small>아래에서 새 PDF 나노시트를 업로드하고 공개 범위를 설정할 수 있습니다.</small></div>'
+            ? '<div class="sharing-empty-state"><i class="fa-regular fa-file-pdf sharing-empty-icon"></i><p>아직 등록된 나노시트가 없습니다.</p><small>아래에서 새 PDF 나노시트를 업로드하고 공개/비공개 여부를 선택할 수 있습니다.</small></div>'
             : '<div class="sharing-empty-state"><i class="fa-regular fa-file-pdf sharing-empty-icon"></i><p>열람할 수 있는 나노시트가 없습니다.</p><small>관리 컬럼의 [나노시트 관리] 버튼에서 새 나노시트를 등록해 주세요.</small></div>');
 
       var uploadSection = (mode === 'manage' && canUpload) ? (
@@ -230,11 +249,8 @@
           '</div>' +
           '<input type="file" id="sharingNewSheetFile" accept=".pdf,application/pdf" class="sharing-input" style="height: auto; padding: 8px 10px;">' +
           '<div class="sharing-sheet-upload-row">' +
-            '<select id="sharingNewSheetVis" class="sharing-select" style="flex: 1; min-width: 220px;">' +
-              '<option value="Y">전체 공개 · 모든 학원 열람 가능</option>' +
-              '<option value="N">비공개 · 우리 기관 및 공유 폴더 학원만</option>' +
-            '</select>' +
-            '<button type="button" class="btn-beige-primary sharing-btn-sm" id="sharingUploadBtn">' +
+            renderVisRadios('sharingNewSheetVis', 'Y', '', '새 나노시트 공개 여부') +
+            '<button type="button" class="btn-beige-primary sharing-btn-sm" id="sharingUploadBtn" style="margin-left: auto;">' +
               '<i class="fa-solid fa-upload"></i> 나노시트 등록' +
             '</button>' +
           '</div>' +
@@ -287,30 +303,41 @@
         };
       });
 
-      dialog.querySelectorAll('[data-save]').forEach(function (button) {
-        button.onclick = async function () {
-          var index = Number(button.dataset.save);
+      // 공개/비공개 라디오 선택 시 즉시 저장 반영
+      dialog.querySelectorAll('input[data-vis-radio]').forEach(function (radio) {
+        radio.onchange = async function () {
+          if (!radio.checked) return;
+          var index = Number(radio.dataset.visRadio);
           var target = data.items[index];
-          var select = dialog.querySelector('[data-vis="' + index + '"]');
-          if (!target || !select) return;
-          button.disabled = true;
+          var nextVis = radio.value === 'N' ? 'N' : 'Y';
+          if (!target || (target.isPublic !== 'N' ? 'Y' : 'N') === nextVis) return;
+
+          var groupEl = radio.closest('.sharing-vis-radio-group');
+          var peerRadios = groupEl ? groupEl.querySelectorAll('input[type="radio"]') : [radio];
+          peerRadios.forEach(function (el) { el.disabled = true; });
+          syncRadioGroupStyles(groupEl, nextVis);
           try {
             if (isServerMode()) {
-              await saveSheet(book, null, select.value, target);
+              await saveSheet(book, null, nextVis, target);
               data = await fetchSheetState();
               data.items = Array.isArray(data.items) ? data.items : [];
             } else {
-              target.isPublic = select.value;
+              target.isPublic = nextVis;
             }
             syncBookMeta();
-            notify('나노시트 공개 범위를 저장했습니다.');
-            renderAndBindBody('공개 범위가 저장되었습니다.', false);
+            var labelText = nextVis === 'Y' ? '공개' : '비공개';
+            notify('나노시트를 ' + labelText + ' 상태로 변경했습니다.');
+            renderAndBindBody('[' + labelText + '] 상태로 변경되었습니다.', false);
           } catch (err) {
             notify(err.message);
-            renderAndBindBody(err.message || '공개 범위 저장에 실패했습니다.', true);
-          } finally {
-            button.disabled = false;
+            renderAndBindBody(err.message || '공개 설정 변경에 실패했습니다.', true);
           }
+        };
+      });
+
+      dialog.querySelectorAll('input[name="sharingNewSheetVis"]').forEach(function (radio) {
+        radio.onchange = function () {
+          if (radio.checked) syncRadioGroupStyles(radio.closest('.sharing-vis-radio-group'), radio.value);
         };
       });
 
@@ -349,7 +376,7 @@
       if (uploadBtn) {
         uploadBtn.onclick = async function () {
           var input = dialog.querySelector('#sharingNewSheetFile');
-          var visEl = dialog.querySelector('#sharingNewSheetVis');
+          var visEl = dialog.querySelector('input[name="sharingNewSheetVis"]:checked');
           var status = dialog.querySelector('#sharingUploadStatus');
           var file = input && input.files && input.files[0];
           if (!file) {
@@ -1026,7 +1053,7 @@
             '<div class="sharing-split-pane">' +
               '<div class="sharing-pane-head">' +
                 '<span class="sharing-label">도서 선택 <span class="badge-soft badge-soft-neutral" id="sharingCatalogCountBadge">' + state.catalog.length + '권</span></span>' +
-                '<button type="button" class="sharing-text-btn" id="sharingSelectVisibleBtn">목록 전체 선택</button>' +
+                '<button type="button" class="sharing-text-btn sharing-text-btn-select" id="sharingSelectVisibleBtn"><i class="fa-solid fa-check-double"></i> 목록 전체 선택</button>' +
               '</div>' +
               '<div class="sharing-book-toolbar">' +
                 '<select id="sharingGradeFilter" class="sharing-select sharing-grade-select" aria-label="권장학년 필터">' +
@@ -1058,7 +1085,7 @@
             '<div class="sharing-split-pane is-selected-pane">' +
               '<div class="sharing-pane-head">' +
                 '<span class="sharing-label">선택된 도서 <span class="badge-soft badge-soft-success" id="sharingSelectedCountBadge">' + selectedIds.size + '권 선택됨</span></span>' +
-                '<button type="button" class="sharing-text-btn" id="sharingClearBooksBtn">전체 해제</button>' +
+                '<button type="button" class="sharing-text-btn sharing-text-btn-clear" id="sharingClearBooksBtn"><i class="fa-solid fa-rotate-left"></i> 전체 해제</button>' +
               '</div>' +
               '<p class="sharing-help">좌측 목록에서 체크한 도서가 아래에 표시되며, 개별 제거할 수 있습니다.</p>' +
               '<div class="sharing-selected-list" id="sharingSelectedBookListBox"></div>' +

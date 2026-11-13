@@ -480,19 +480,31 @@ function handleAcadBookSearchInput(input) {
 }
 
 var appliedAcadBookDates = { startDate: '', endDate: '' };
+var appliedAcadBookFilters = { initialized: false, origin: 'ALL', grade: 'ALL', ownedFilter: 'ALL', query: '' };
 
-// 학원 도서 검색어 원클릭 클리어
-function clearAcadBookSearch() {
+// 검색창 입력만 지움 (확정 검색 결과/미적용 필터는 유지)
+function clearAcadBookSearchInput() {
   var input = document.getElementById("searchAcadBookInput");
   if (input) input.value = "";
   var clearBtn = document.getElementById("btnAcadBookSearchClear");
   if (clearBtn) clearBtn.style.display = "none";
-  var badgeEl = document.getElementById("acadBookSearchActiveBadge");
-  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterAcademyBooks(false, { applyDates: false });
 }
 
-// 도서 필터링 & 정렬 (기본: 보유 순 -> 도서 번호 내림차순, 30개 페이징, 날짜는 검색 클릭 시에만 반영)
+// 검색 결과 배지 [✕ 검색 해제] 클릭 시 이미 확정된 조건만으로 검색어 해제
+function clearAcadBookSearch() {
+  clearAcadBookSearchInput();
+  var badgeEl = document.getElementById("acadBookSearchActiveBadge");
+  if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
+  appliedAcadBookFilters.query = '';
+  filterAcademyBooks(false, { applyDates: false, useApplied: true });
+}
+
+// 리스트 정렬 드롭박스 변경 시 미조회 검색 바 조건을 섞지 않고 현재 조건만 재정렬
+function changeAcadBookSort() {
+  filterAcademyBooks(false, { applyDates: false, useApplied: true });
+}
+
+// 도서 필터링 & 정렬 (기본: 보유 순 -> 도서 번호 내림차순, 30개 페이징, 검색/조회 클릭 시에만 조건 반영)
 function filterAcademyBooks(keepPage, options) {
   syncAcademyBooksState();
 
@@ -506,15 +518,26 @@ function filterAcademyBooks(keepPage, options) {
     academyBookCurrentPage = 1;
   }
 
-  var originVal = originSel ? originSel.value : 'ALL';
-  var gradeVal = document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL';
+  var useApplied = Boolean(appliedAcadBookFilters.initialized && ((options && options.useApplied) || keepPage));
+  if (!useApplied) {
+    var ownedRadioDom = document.querySelector('input[name="filterAcadBookOwned"]:checked');
+    appliedAcadBookFilters = {
+      initialized: true,
+      origin: originSel ? originSel.value : 'ALL',
+      grade: document.getElementById('filterAcadBookGrade') ? document.getElementById('filterAcadBookGrade').value : 'ALL',
+      ownedFilter: ownedRadioDom ? ownedRadioDom.value : (document.getElementById('filterAcadBookOwned') ? document.getElementById('filterAcadBookOwned').value : 'ALL'),
+      query: (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim()
+    };
+  }
+
+  var originVal = appliedAcadBookFilters.origin;
+  var gradeVal = appliedAcadBookFilters.grade;
   var sortVal = document.getElementById('sortAcadBookSelect') ? document.getElementById('sortAcadBookSelect').value : 'DATE_DESC';
-  var ownedRadio = document.querySelector('input[name="filterAcadBookOwned"]:checked');
-  var ownedFilter = ownedRadio ? ownedRadio.value : (document.getElementById('filterAcadBookOwned') ? document.getElementById('filterAcadBookOwned').value : 'ALL');
-  var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
+  var ownedFilter = appliedAcadBookFilters.ownedFilter;
+  var query = appliedAcadBookFilters.query;
   var dateStartInput = document.getElementById('filterAcadBookDateStart');
   var dateEndInput = document.getElementById('filterAcadBookDateEnd');
-  if (!keepPage && (!options || options.applyDates !== false)) {
+  if (!useApplied && !keepPage && (!options || options.applyDates !== false)) {
     appliedAcadBookDates.startDate = dateStartInput ? dateStartInput.value : '';
     appliedAcadBookDates.endDate = dateEndInput ? dateEndInput.value : '';
   }
@@ -627,8 +650,9 @@ function filterAcademyBooks(keepPage, options) {
   var total = filtered.length;
 
   // ✕ 버튼 및 활성 검색 배지 상태 동기화
+  var rawInputVal = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').trim();
   var clearBtn = document.getElementById("btnAcadBookSearchClear");
-  if (clearBtn) clearBtn.style.display = query.length > 0 ? "inline-flex" : "none";
+  if (clearBtn) clearBtn.style.display = rawInputVal.length > 0 ? "inline-flex" : "none";
   var badgeEl = document.getElementById("acadBookSearchActiveBadge");
   if (badgeEl) {
     if (query) {
