@@ -499,3 +499,31 @@ test('포트폴리오 단건 조회 시 지도교사(class_meta 포함)·도서 
   assert.equal(res.data.items[0].books[0].thoughtTeacherComment, '등장인물의 마음을 잘 읽어냈습니다.');
   assert.equal(res.data.items[0].books[0].worksheetAiResult.goodPoints, '핵심 요약이 정확합니다.');
 });
+
+test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 스크립트를 모두 포함한다', () => {
+  const pubDir = path.join(__dirname, '..', 'public_html');
+  const pages = ['index.html', 'admin_preview.html', 'master_preview.html', 'student_preview.html'];
+  for (const name of pages) {
+    const html = fs.readFileSync(path.join(pubDir, name), 'utf8');
+    assert.equal(html.includes('truncated for diff preview'), false, `${name}에 diff 축약 문자열이 남아 있습니다`);
+    assert.match(html, /<\/body>/i, `${name}에 </body> 태그가 누락되었습니다`);
+    assert.match(html, /<\/html>/i, `${name}에 </html> 태그가 누락되었습니다`);
+  }
+
+  const adminHtml = fs.readFileSync(path.join(pubDir, 'admin_preview.html'), 'utf8');
+  assert.match(adminHtml, /js\/portfolio-renderer\.js\?v=20261113_pf_unify/);
+  assert.match(adminHtml, /admin_preview\.js\?v=20261113_pf_unify/);
+  assert.match(adminHtml, /js\/admin_members\.js/);
+  assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_nanosheet_mgr/);
+  assert.match(adminHtml, /js\/admin_books\.js\?v=20261113_nanosheet_mgr/);
+
+  // admin_preview.html이 참조하는 배포용 로컬 JS 파일 존재 여부 및 구문 검증
+  const scriptMatches = [...adminHtml.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]);
+  for (const src of scriptMatches) {
+    if (/^(https?:)?\/\//i.test(src) || src.startsWith('migrated_real_data') || src.startsWith('upload/')) continue;
+    const relPath = src.split('?')[0];
+    const absPath = path.join(pubDir, relPath);
+    assert.equal(fs.existsSync(absPath), true, `누락된 스크립트: ${relPath}`);
+    new vm.Script(fs.readFileSync(absPath, 'utf8'), { filename: relPath });
+  }
+});

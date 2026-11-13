@@ -9330,5 +9330,79 @@
             <input type="text" class="form-control" id="manualPointReasonInput"
               placeholder="직접 사유를 입력하거나 위의 추천 사유를 클릭하세요"
               style="font-size: 13px; border-radius: 10px; border-color: var(--border-medium);">
-            <small class="text-muted mt-1 d-block" style="font-siz
-... [truncated for diff preview]
+            <small class="text-muted mt-1 d-block" style="font-size: 11px;">
+              * 학생의 포인트 적립 내역에 작성하신 사유가 투명하게 기록됩니다.
+            </small>
+          </div>
+        </div>
+
+        <!-- 푸터 -->
+        <div class="modal-footer py-3 px-4 d-flex justify-content-between align-items-center"
+          style="background: #faf8f5; border-top: 1px solid var(--border-light);">
+          <button type="button" class="btn btn-sm btn-secondary font-weight-bold px-3 py-2" data-dismiss="modal"
+            style="border-radius: 10px; font-size: 12.5px;">
+            취소
+          </button>
+          <button type="button" class="btn btn-sm btn-success font-weight-bold px-4 py-2" onclick="submitManualPointAdjustment()"
+            id="btnConfirmManualPoint"
+            style="border-radius: 10px; font-size: 13px; background: #16a34a; border-color: #15803d; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);">
+            <i class="fa-solid fa-check mr-1"></i>포인트 적용하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div id="academyToast"
+    style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;"
+    class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
+    <div class="d-flex align-items-center">
+      <i class="fa-solid fa-circle-check text-warning mr-2" style="font-size: 18px;"></i>
+      <span id="academyToastText" style="font-size: 13.5px; font-weight: 600;">알림 내용</span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SheetJS for Excel Download & Upload Parsing (비동기 지연 로딩) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <!-- PDF.js library for secure worksheet viewer (비동기 지연 로딩) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+  <!-- Daum 우편번호 서비스 (비동기 지연 로딩) -->
+  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
+  <script src="js/learning-storage.js?v=20261014_ux2"></script>
+  <script src="js/quiz-result-art.js?v=20261110-characters"></script>
+  <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
+<script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
+<script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
+<script src="js/literacy/literacy-admin.js?v=20261104_search_right"></script>
+<script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
+<script src="admin_preview.js?v=20261113_pf_unify"></script>
+<script src="js/admin_members.js?v=20261111_v1"></script>
+<script src="js/content-sharing.js?v=20261113_nanosheet_mgr"></script>
+<script src="js/admin_books.js?v=20261113_nanosheet_mgr"></script>
+<script src="js/admin_payment.js?v=20261111_v1"></script>
+<script src="js/admin_notices.js?v=20261111_v1"></script>
+<script src="js/admin_worksheet_ai.js?v=20261111_v1"></script>
+<script src="js/admin_myinfo.js?v=20261111_v1"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then((reg) => console.log('[PWA] Service Worker registered scope:', reg.scope))
+          .catch((err) => console.warn('[PWA] Service Worker register failed:', err));
+      });
+    }
+  </script>
+  <!-- PWA 모바일 설치 유도 스크립트 -->
+  <script src="js/pwa-install.js"></script>
+
+<script src="js/portal-extras.js?v=20261029-integrity"></script>
+<script src="js/billing-ui.js?v=20261110_topup_confirm"></script>
+</body>
+
+</html>
