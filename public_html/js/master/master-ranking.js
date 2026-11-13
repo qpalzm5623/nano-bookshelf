@@ -253,10 +253,8 @@ function getCalculatedRankings(skipRemoteFetch) {
   const now = new Date();
   const defaultYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const selectedMonth = (monthSelect && monthSelect.value) ? monthSelect.value : defaultYm;
-  const startInput = document.getElementById("masterRankStartDate");
-  const endInput = document.getElementById("masterRankEndDate");
-  const startDate = (startInput && startInput.value) ? startInput.value : masterRankStartDate;
-  const endDate = (endInput && endInput.value) ? endInput.value : masterRankEndDate;
+  const startDate = masterRankStartDate || "";
+  const endDate = masterRankEndDate || "";
 
   // 모드별 기간 배지 텍스트 및 헤더 레이블 헬퍼
   let periodBadgePrefix = "";
@@ -414,7 +412,28 @@ function clearRankingSearch() {
   renderRankings();
 }
 
-function filterStudentRankings() {
+function applyMasterRankDateFilter() {
+  const startInput = document.getElementById("masterRankStartDate");
+  const endInput = document.getElementById("masterRankEndDate");
+  const nextStart = (startInput && startInput.value) || "";
+  const nextEnd = (endInput && endInput.value) || "";
+  if (nextStart && nextEnd && nextStart > nextEnd) {
+    if (typeof showMasterToast === "function") showMasterToast("시작일은 종료일보다 이전이어야 합니다.");
+    return;
+  }
+  masterRankStartDate = nextStart;
+  masterRankEndDate = nextEnd;
+  rankingCurrentPage = 1;
+  renderRankings();
+}
+
+function filterStudentRankings(options) {
+  if (!options || options.applyDates !== false) {
+    const startInput = document.getElementById("masterRankStartDate");
+    const endInput = document.getElementById("masterRankEndDate");
+    if (startInput && startInput.value !== undefined) masterRankStartDate = startInput.value || "";
+    if (endInput && endInput.value !== undefined) masterRankEndDate = endInput.value || "";
+  }
   rankingCurrentPage = 1;
   renderRankings();
 }
@@ -450,6 +469,8 @@ function resetRankingFilters() {
 
   const monthSelect = document.getElementById("rankMonthFilter");
   if (monthSelect && monthSelect.options.length > 0) monthSelect.selectedIndex = 0;
+  masterRankStartDate = "";
+  masterRankEndDate = "";
   if (document.getElementById("masterRankStartDate")) document.getElementById("masterRankStartDate").value = "";
   if (document.getElementById("masterRankEndDate")) document.getElementById("masterRankEndDate").value = "";
   if (document.getElementById("rankAcademyFilter")) document.getElementById("rankAcademyFilter").value = "ALL";

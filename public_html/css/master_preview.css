@@ -890,9 +890,26 @@
     /* =====================================================================
        마스터 학습관리 검색형 가맹점 드롭다운 & 학습 리포트 모달 스타일
        ===================================================================== */
+    .master-filter-toolbar-card,
+    .simple-card:has(> .portal-search-toolbar),
+    .simple-card:has(.master-searchable-dropdown) {
+      overflow: visible !important;
+      position: relative;
+      z-index: 30;
+    }
+    .portal-search-toolbar select.form-control:disabled {
+      background-color: #f3f0ea;
+      color: #9e9386;
+      border-color: #e4ddd2;
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
     .master-searchable-dropdown {
       position: relative;
       width: 100%;
+    }
+    .master-searchable-dropdown.is-open {
+      z-index: 1060;
     }
     .master-dropdown-trigger {
       width: 100%;
@@ -1190,29 +1207,156 @@
       }
     }
     @media print {
-      body.printing-master-report > *:not(#masterLearningReportModal) {
+      @page {
+        size: A4 portrait;
+        margin: 10mm 12mm;
+      }
+      html {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+      body.printing-master-report,
+      body.printing-master-portfolio {
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      body.printing-master-report > *:not(#masterLearningReportModal),
+      body.printing-master-portfolio > *:not(#masterPortfolioReportModal) {
         display: none !important;
       }
       body.printing-master-report #masterLearningReportModal,
       body.printing-master-portfolio #masterPortfolioReportModal {
         position: static !important;
         display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
         overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
         background: #ffffff !important;
-      }
-      body.printing-master-portfolio > *:not(#masterPortfolioReportModal) {
-        display: none !important;
+        opacity: 1 !important;
       }
       body.printing-master-report #masterLearningReportModal .modal-dialog,
       body.printing-master-portfolio #masterPortfolioReportModal .modal-dialog {
+        display: block !important;
+        width: 100% !important;
         max-width: 100% !important;
+        min-height: 0 !important;
+        height: auto !important;
         margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
+      }
+      body.printing-master-report #masterLearningReportModal .modal-content,
+      body.printing-master-portfolio #masterPortfolioReportModal .modal-content {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+        border: 1px solid #d8cebf !important;
+        border-radius: 14px !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+      }
+      body.printing-master-report #masterLearningReportModal .modal-header {
+        background: #fbf9f5 !important;
+        border-bottom: 1px solid #e8e2d5 !important;
+        padding: 12px 18px !important;
+        border-top-left-radius: 13px !important;
+        border-top-right-radius: 13px !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
       }
       body.printing-master-report #masterLearningReportModal .modal-body,
       body.printing-master-portfolio #masterPortfolioReportModal .modal-body {
+        display: block !important;
         max-height: none !important;
+        height: auto !important;
         overflow: visible !important;
-        background: #ffffff !important;
+        padding: 14px 16px !important;
+        background: #faf8f5 !important;
+      }
+      /* 인쇄 시에도 미리보기 모달과 동일한 2열 구성 강제 유지 (A4 폭이 767px 이하로 판정되어 1열로 무너지는 현상 방지) */
+      body.printing-master-report .master-report-overview-card {
+        padding: 13px 14px !important;
+        margin-bottom: 12px !important;
+        box-shadow: none !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      body.printing-master-report .master-report-overview-split {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) !important;
+        gap: 14px !important;
+        align-items: stretch !important;
+      }
+      body.printing-master-report .master-report-cover {
+        width: 72px !important;
+        height: 100px !important;
+      }
+      body.printing-master-report .master-report-subgrid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+      }
+      body.printing-master-report .master-report-subcard {
+        padding: 8px 10px !important;
+      }
+      body.printing-master-report .master-report-quiz-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 9px !important;
+      }
+      body.printing-master-report .master-report-quiz-card {
+        padding: 10px 12px !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+      }
+      body.printing-master-report .master-report-choice-box {
+        padding: 6px 8px !important;
+        font-size: 11.5px !important;
+      }
+      body.printing-master-report .master-report-thought-card,
+      body.printing-master-report .master-report-worksheet-card {
+        padding: 12px 14px !important;
+        margin-top: 12px !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+      }
+      body.printing-master-report #masterReportWorksheetSection .row {
+        display: grid !important;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr) !important;
+        gap: 12px !important;
+        margin: 0 !important;
+      }
+      body.printing-master-report #masterReportWorksheetPhotosCol,
+      body.printing-master-report #masterReportWorksheetAiCol {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+        padding: 0 !important;
+      }
+      body.printing-master-report .master-report-photo-btn {
+        width: 106px !important;
+      }
+      body.printing-master-report .master-report-photo-btn img {
+        width: 92px !important;
+        height: 118px !important;
       }
       body.printing-master-report .modal-backdrop,
       body.printing-master-portfolio .modal-backdrop {

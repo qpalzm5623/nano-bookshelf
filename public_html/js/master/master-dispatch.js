@@ -84,13 +84,19 @@ function populateDispatchAcademyFilter() {
   select.innerHTML = `<option value="ALL">전체 발송 학원</option>` + academies.map(name => `<option value="${name}">${name}</option>`).join("");
 }
 
-function filterDispatchList() {
+let appliedDispatchDates = { from: '', to: '' };
+
+function filterDispatchList(options) {
   const query = (document.getElementById("dispatchSearchInput")?.value || "").toLowerCase().trim();
   const acadFilter = document.getElementById("dispatchAcademyFilter")?.value || "ALL";
   const typeFilter = document.getElementById("dispatchTemplateFilter")?.value || "ALL";
   const statusFilter = document.getElementById("dispatchStatusFilter")?.value || "ALL";
-  const from = document.getElementById('dispatchDateFrom')?.value || '';
-  const to = document.getElementById('dispatchDateTo')?.value || '';
+  if (!options || options.applyDates !== false) {
+    appliedDispatchDates.from = document.getElementById('dispatchDateFrom')?.value || '';
+    appliedDispatchDates.to = document.getElementById('dispatchDateTo')?.value || '';
+  }
+  const from = appliedDispatchDates.from || '';
+  const to = appliedDispatchDates.to || '';
 
   const filtered = dispatchLogs.filter(log => {
     const matchQuery = !query ||
@@ -112,6 +118,7 @@ function filterDispatchList() {
 
 function resetDispatchFilters() {
   ['dispatchDateFrom', 'dispatchDateTo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  appliedDispatchDates = { from: '', to: '' };
   document.getElementById("dispatchSearchInput").value = "";
   document.getElementById("dispatchAcademyFilter").value = "ALL";
   document.getElementById("dispatchTemplateFilter").value = "ALL";

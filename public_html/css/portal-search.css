@@ -9,6 +9,11 @@
   border-radius: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
+  overflow: visible !important;
+}
+.simple-card:has(> .portal-search-toolbar) {
+  position: relative;
+  z-index: 30;
 }
 #rankingFilterBar { margin: 16px 20px; }
 

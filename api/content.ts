@@ -82,7 +82,7 @@ export default async function handler(req: any, res: any) {
       const own = access.folders.filter((f: any) => f.ownerMemberId === user.id);
       const received = access.folders.filter((f: any) => user.academyId && f.recipients?.some((r: any) => r.academyId === user.academyId));
       const ids = [...new Set<string>([...own, ...received].flatMap((f: any) => f.bookIds))];
-      const books = await prisma.book.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, bookNo: true, author: true, coverUrl: true } });
+      const books = await prisma.book.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, bookNo: true, author: true, grade: true, coverUrl: true, createdAt: true } });
       const bookById = new Map(books.map((b: any) => [b.id, b]));
       const view = (f: any, mine: boolean) => ({ id: f.id, name: f.name, ownerAcademyName: f.ownerAcademyName, bookIds: f.bookIds,
         books: (f.bookIds || []).map((bid: string) => bookById.get(bid)).filter(Boolean), recipients: mine ? f.recipients : undefined, revision: f.revision, isMine: mine });
@@ -101,11 +101,16 @@ export default async function handler(req: any, res: any) {
       const previous = access.folders.find((f: any) => f.id === id);
       need(!body.id || (previous && previous.ownerMemberId === user.id), '본인이 만든 공유 폴더만 편집할 수 있습니다.', 403);
       const name = text(body.name, '폴더명', 100, true);
-      need(Array.isArray(body.bookIds) && body.bookIds.length <= 500 && body.bookIds.every((id: any) => typeof id === 'string'), '공유 도서는 최대 500권까지 선택할 수 있습니다.');
-      const bookIds = [...new Set<string>(body.bookIds)];
+      const rawBookIds = body.bookIds === undefined && !previous ? [] : body.bookIds;
+      need(Array.isArray(rawBookIds) && rawBookIds.length <= 500 && rawBookIds.every((id: any) => typeof id === 'string'), '공유 도서는 최대 500권까지 선택할 수 있습니다.');
+      const bookIds = [...new Set<string>(rawBookIds)];
       const available = new Set((await shareableBooks(prisma, user, access)).map((b: any) => b.id));
-      need(bookIds.every(id => available.has(id)), '직접 등록한 북퀴즈 또는 나노시트가 있는 도서만 공유할 수 있습니다.', 403);
-      const recipients = await resolveShareRecipients(prisma, body.directorUsernames, user.academyId);
+      for (const prevBookId of Array.isArray(previous?.bookIds) ? previous.bookIds : []) {
+        available.add(String(prevBookId));
+      }
+      need(bookIds.every(id => available.has(id)), '비공개로 등록된 북퀴즈 또는 나노시트가 있는 내 도서만 공유할 수 있습니다.', 403);
+      const rawDirectors = body.directorUsernames === undefined && !previous ? [] : body.directorUsernames;
+      const recipients = await resolveShareRecipients(prisma, rawDirectors, user.academyId);
       const academyName = user.academy?.name || (user.role === 'MASTER' ? '본사' : '가맹학원');
       const value = { id, name, bookIds, recipients, ownerMemberId: user.id, ownerAcademyId: user.academyId, ownerAcademyName: academyName };
       if (previous) need(body.revision === previous.revision, '다른 화면에서 폴더가 변경되었습니다. 새로고침해 주세요.', 409);

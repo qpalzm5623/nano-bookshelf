@@ -303,6 +303,7 @@ function switchTab(tab) {
     if (lStartDate) lStartDate.value = '';
     var lEndDate = document.getElementById('learningEndDate');
     if (lEndDate) lEndDate.value = '';
+    if (typeof appliedLearningDates !== 'undefined') appliedLearningDates.initialized = false;
     renderLearningTable();
   }
   if (tab === 'literacy') {
@@ -1183,6 +1184,8 @@ async function toggleNanoSheetStatus(logId) {
 
 var currentOpenCorrectionLogId = null;
 
+var appliedLearningDates = { initialized: false, startDate: '', endDate: '' };
+
 // 학습 관리 날짜 필터 초기화 (Default: 최근 90일 ~ 오늘 날짜 기본 세팅하여 이전 달 및 이관 학습내역 즉시 노출)
 function initLearningDateFilters() {
   var startInput = document.getElementById('learningStartDate');
@@ -1203,6 +1206,9 @@ function initLearningDateFilters() {
 
   if (!startInput.value) startInput.value = defaultStartStr;
   if (!endInput.value) endInput.value = todayStr;
+  if (!appliedLearningDates.initialized) {
+    appliedLearningDates = { initialized: true, startDate: startInput.value || '', endDate: endInput.value || '' };
+  }
 }
 
 // 학습 관리 검색 입력 핸들러
@@ -1245,6 +1251,11 @@ function executeLearningSearch() {
     }
   }
 
+  appliedLearningDates = {
+    initialized: true,
+    startDate: startInput ? startInput.value : '',
+    endDate: endInput ? endInput.value : ''
+  };
   renderLearningTable();
 }
 
@@ -1695,8 +1706,8 @@ function renderLearningTable() {
 
   var classFilter = document.getElementById('learningClassFilter') ? document.getElementById('learningClassFilter').value : 'ALL';
   var query = (document.getElementById('learningSearchInput') ? document.getElementById('learningSearchInput').value : '').toLowerCase().trim();
-  var startDateVal = document.getElementById('learningStartDate') ? document.getElementById('learningStartDate').value : '';
-  var endDateVal = document.getElementById('learningEndDate') ? document.getElementById('learningEndDate').value : '';
+  var startDateVal = appliedLearningDates.startDate || '';
+  var endDateVal = appliedLearningDates.endDate || '';
 
   var isTeacher = isCurrentLoggedInTeacher();
   var assignedClasses = isTeacher ? getTeacherAssignedClasses() : [];
@@ -4444,6 +4455,8 @@ var academyDispatchLogs = [
 ];
 if (window.NANO_SERVER_DATA) academyDispatchLogs = (window.NANO_SERVER_DISPATCH || []).filter(function(item) { return item.academyId === currentAcademyInfo.id; });
 
+var appliedAcademyDispatchDates = { from: '', to: '' };
+
 function resetAcademyDispatchFilters() {
   var searchEl = document.getElementById('academyDispatchSearch');
   var tplEl = document.getElementById('academyDispatchTemplate');
@@ -4455,20 +4468,25 @@ function resetAcademyDispatchFilters() {
   if (statusEl) statusEl.value = 'ALL';
   if (fromEl) fromEl.value = '';
   if (toEl) toEl.value = '';
-  renderAcademyDispatchTable();
+  appliedAcademyDispatchDates = { from: '', to: '' };
+  renderAcademyDispatchTable({ applyDates: false });
 }
 
-function renderAcademyDispatchTable() {
+function renderAcademyDispatchTable(options) {
   if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.dispatch();
   var tbody = document.getElementById('academyDispatchTableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
+  if (!options || options.applyDates !== false) {
+    appliedAcademyDispatchDates.from = document.getElementById('academyDispatchFrom')?.value || '';
+    appliedAcademyDispatchDates.to = document.getElementById('academyDispatchTo')?.value || '';
+  }
   var query = (document.getElementById('academyDispatchSearch')?.value || '').trim().toLowerCase();
   var type = document.getElementById('academyDispatchTemplate')?.value || 'ALL';
   var status = document.getElementById('academyDispatchStatus')?.value || 'ALL';
-  var from = document.getElementById('academyDispatchFrom')?.value || '';
-  var to = document.getElementById('academyDispatchTo')?.value || '';
+  var from = appliedAcademyDispatchDates.from || '';
+  var to = appliedAcademyDispatchDates.to || '';
   var filtered = academyDispatchLogs.filter(function(l) {
     var day = String(l.date || l.datetime || '').slice(0, 10);
     return (type === 'ALL' || l.type === type) && (status === 'ALL' || l.status === status) &&
@@ -4518,7 +4536,7 @@ function retryAcademyDispatch(id) {
   var l = academyDispatchLogs.find(item => item.id === id);
   if (l) {
     l.status = 'SUCCESS';
-    renderAcademyDispatchTable();
+    renderAcademyDispatchTable({ applyDates: false });
     showAcademyToast('학부모 알림톡이 성공적으로 재전송되었습니다.');
   }
 }
@@ -4766,6 +4784,20 @@ function setAdminRankMode(mode) {
   renderAdminRankingView();
 }
 
+function applyAdminRankDateFilter() {
+  var sInput = document.getElementById('adminRankStartDate');
+  var eInput = document.getElementById('adminRankEndDate');
+  var nextStart = (sInput && sInput.value) ? sInput.value : '';
+  var nextEnd = (eInput && eInput.value) ? eInput.value : '';
+  if (nextStart && nextEnd && nextStart > nextEnd) {
+    alert('시작일은 종료일보다 이전이어야 합니다.');
+    return;
+  }
+  adminRankStartDate = nextStart;
+  adminRankEndDate = nextEnd;
+  renderAdminRankingView();
+}
+
 var adminServerRankingCache = {};
 var adminServerRankingReqSeq = 0;
 var adminServerAvailableMonths = [];
@@ -4854,10 +4886,8 @@ function buildAdminRankingRows(periodOverride) {
   var pSel = hasDoc ? document.getElementById('adminRankPeriodSelect') : null;
   var fallbackPeriod = (typeof adminRankPeriod !== 'undefined' && adminRankPeriod) ? adminRankPeriod : '';
   var monthKey = periodOverride || ((pSel && pSel.value) ? pSel.value : fallbackPeriod);
-  var startInput = hasDoc ? document.getElementById('adminRankStartDate') : null;
-  var endInput = hasDoc ? document.getElementById('adminRankEndDate') : null;
-  var startDate = (startInput && startInput.value) ? startInput.value : ((typeof adminRankStartDate !== 'undefined' && adminRankStartDate) ? adminRankStartDate : '');
-  var endDate = (endInput && endInput.value) ? endInput.value : ((typeof adminRankEndDate !== 'undefined' && adminRankEndDate) ? adminRankEndDate : '');
+  var startDate = (typeof adminRankStartDate !== 'undefined' && adminRankStartDate) ? adminRankStartDate : '';
+  var endDate = (typeof adminRankEndDate !== 'undefined' && adminRankEndDate) ? adminRankEndDate : '';
 
   // 1. 전체 학습 로그를 시간순 정렬하여 현행 적립 정책(60점 이상 인증, 도서당 최대 2회차, 초4 이상 1.2배, 정답×3P + 생각담기 5P) 적용
   var rawLogs = (typeof getLoadedLearningLogs === 'function' ? getLoadedLearningLogs() : []) || [];
@@ -5099,10 +5129,8 @@ async function refreshAdminServerRankings() {
   var curMode = adminRankMode || 'MONTH';
   var pSel = document.getElementById('adminRankPeriodSelect');
   var monthVal = (pSel && pSel.options.length > 0 && pSel.value) ? pSel.value : adminRankPeriod;
-  var sInput = document.getElementById('adminRankStartDate');
-  var eInput = document.getElementById('adminRankEndDate');
-  var sDate = (sInput && sInput.value) ? sInput.value : adminRankStartDate;
-  var eDate = (eInput && eInput.value) ? eInput.value : adminRankEndDate;
+  var sDate = adminRankStartDate || '';
+  var eDate = adminRankEndDate || '';
 
   var cacheKey = acadId + '|' + curMode + '|' + (curMode === 'MONTH' ? monthVal : (curMode === 'RANGE' ? (sDate + '~' + eDate) : 'ALL'));
   var cached = adminServerRankingCache[cacheKey];
@@ -5175,8 +5203,8 @@ function renderAdminRankingView(skipCharacterRefresh) {
     if (mode === 'ALL') {
       podiumTitle.textContent = '전체 누적 TOP 3 독서 챔피언 (' + currentClassText + ')';
     } else if (mode === 'RANGE') {
-      var sDate = (document.getElementById('adminRankStartDate') && document.getElementById('adminRankStartDate').value) || adminRankStartDate;
-      var eDate = (document.getElementById('adminRankEndDate') && document.getElementById('adminRankEndDate').value) || adminRankEndDate;
+      var sDate = adminRankStartDate || '';
+      var eDate = adminRankEndDate || '';
       podiumTitle.textContent = (sDate || '기간') + ' ~ ' + (eDate || '기간') + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
     } else {
       podiumTitle.textContent = periodText + ' TOP 3 독서 챔피언 (' + currentClassText + ')';
@@ -5530,10 +5558,8 @@ function renderAdminRankingPoster(container) {
     subTitleEn = 'ALL-TIME CUMULATIVE HALL OF FAME';
     top1PedestalBadge = '👑 명예의 다독왕';
   } else if (mode === 'RANGE') {
-    var sInput = document.getElementById('adminRankStartDate');
-    var eInput = document.getElementById('adminRankEndDate');
-    var sVal = (sInput && sInput.value) ? sInput.value.replace(/-/g, '.') : '';
-    var eVal = (eInput && eInput.value) ? eInput.value.replace(/-/g, '.') : '';
+    var sVal = adminRankStartDate ? String(adminRankStartDate).replace(/-/g, '.') : '';
+    var eVal = adminRankEndDate ? String(adminRankEndDate).replace(/-/g, '.') : '';
     var rangeText = (sVal && eVal) ? (sVal + ' ~ ' + eVal) : (sVal || eVal || '기간 지정');
     mainTitleText = '🏆 ' + rangeText + ' 독서 명예의 전당 🏆';
     subTitleEn = rangeText + ' SPECIAL HALL OF FAME';
@@ -6243,6 +6269,8 @@ function handlePortfolioSearchInput(input) {
 }
 
 // 포트폴리오 검색어 원클릭 클리어
+var appliedPortfolioDates = { initialized: false, startDate: '', endDate: '' };
+
 function clearPortfolioSearch() {
   var input = document.getElementById("searchPortfolioInput");
   if (input) input.value = "";
@@ -6250,7 +6278,7 @@ function clearPortfolioSearch() {
   if (clearBtn) clearBtn.style.display = "none";
   var badgeEl = document.getElementById("portfolioSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterPortfolioList();
+  filterPortfolioList({ applyDates: false });
 }
 
 // 포트폴리오 발급일자 기본 필터 초기화 (최근 당월 1일 ~ today)
@@ -6258,6 +6286,7 @@ function initPortfolioDateFilters() {
   var startEl = document.getElementById('filterPortfolioStartDate');
   var endEl = document.getElementById('filterPortfolioEndDate');
   if (!startEl || !endEl) return;
+  var changed = false;
   if (!startEl.value || !endEl.value) {
     var now = new Date();
     var y = now.getFullYear();
@@ -6265,17 +6294,31 @@ function initPortfolioDateFilters() {
     var d = String(now.getDate()).padStart(2, '0');
     startEl.value = y + '-' + m + '-01';
     endEl.value = y + '-' + m + '-' + d;
+    changed = true;
+  }
+  if (changed || !appliedPortfolioDates.initialized) {
+    appliedPortfolioDates = { initialized: true, startDate: startEl.value || '', endDate: endEl.value || '' };
   }
 }
 
-// 포트폴리오 목록 검색 및 필터링
-function filterPortfolioList() {
+// 포트폴리오 목록 검색 및 필터링 (날짜는 조회 버튼 클릭/Enter 시에만 확정 반영)
+function filterPortfolioList(options) {
   initPortfolioDateFilters();
+
+  var startEl = document.getElementById('filterPortfolioStartDate');
+  var endEl = document.getElementById('filterPortfolioEndDate');
+  if (!options || options.applyDates !== false) {
+    appliedPortfolioDates = {
+      initialized: true,
+      startDate: startEl ? startEl.value : '',
+      endDate: endEl ? endEl.value : ''
+    };
+  }
 
   var classVal = document.getElementById('filterPortfolioClass') ? document.getElementById('filterPortfolioClass').value : 'ALL';
   var query = (document.getElementById('searchPortfolioInput') ? document.getElementById('searchPortfolioInput').value : '').toLowerCase().trim();
-  var startVal = document.getElementById('filterPortfolioStartDate') ? document.getElementById('filterPortfolioStartDate').value : '';
-  var endVal = document.getElementById('filterPortfolioEndDate') ? document.getElementById('filterPortfolioEndDate').value : '';
+  var startVal = appliedPortfolioDates.startDate || '';
+  var endVal = appliedPortfolioDates.endDate || '';
 
   // ✕ 버튼 상태 동기화
   var clearBtn = document.getElementById("btnPortfolioSearchClear");

@@ -479,6 +479,8 @@ function handleAcadBookSearchInput(input) {
   }
 }
 
+var appliedAcadBookDates = { startDate: '', endDate: '' };
+
 // 학원 도서 검색어 원클릭 클리어
 function clearAcadBookSearch() {
   var input = document.getElementById("searchAcadBookInput");
@@ -487,11 +489,11 @@ function clearAcadBookSearch() {
   if (clearBtn) clearBtn.style.display = "none";
   var badgeEl = document.getElementById("acadBookSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterAcademyBooks();
+  filterAcademyBooks(false, { applyDates: false });
 }
 
-// 도서 필터링 & 정렬 (기본: 보유 순 -> 도서 번호 내림차순, 30개 페이징)
-function filterAcademyBooks(keepPage) {
+// 도서 필터링 & 정렬 (기본: 보유 순 -> 도서 번호 내림차순, 30개 페이징, 날짜는 검색 클릭 시에만 반영)
+function filterAcademyBooks(keepPage, options) {
   syncAcademyBooksState();
 
   // 등록처 드롭다운이 아직 초기화되지 않았거나 옵션이 3개 미만이면 채우기
@@ -512,8 +514,12 @@ function filterAcademyBooks(keepPage) {
   var query = (document.getElementById('searchAcadBookInput') ? document.getElementById('searchAcadBookInput').value : '').toLowerCase().trim();
   var dateStartInput = document.getElementById('filterAcadBookDateStart');
   var dateEndInput = document.getElementById('filterAcadBookDateEnd');
-  var dateStartVal = dateStartInput ? dateStartInput.value : '';
-  var dateEndVal = dateEndInput ? dateEndInput.value : '';
+  if (!keepPage && (!options || options.applyDates !== false)) {
+    appliedAcadBookDates.startDate = dateStartInput ? dateStartInput.value : '';
+    appliedAcadBookDates.endDate = dateEndInput ? dateEndInput.value : '';
+  }
+  var dateStartVal = appliedAcadBookDates.startDate || '';
+  var dateEndVal = appliedAcadBookDates.endDate || '';
 
   updateOwnedBookCountBadge();
 

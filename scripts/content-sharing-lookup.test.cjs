@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 const ts = require('typescript');
 const createPortalContent = require('./test-portal-content.cjs');
 
@@ -164,31 +165,38 @@ test('마스터(본사)는 본사 퀴즈·나노시트만 공유 후보로 조�
     ],
     books: [
       { id: 'b-hq', bookNo: 'HQ001', title: '본사 도서', author: '작가1', publisher: '출판1', grade: '초등 4학년', coverUrl: '/c1.png', worksheetUrl: 'https://r2.example.com/hq.pdf' },
+      { id: 'b-hq-pub', bookNo: 'HQ002', title: '본사 전체공개 도서', author: '작가0', publisher: '출판0', grade: '초등 4학년', coverUrl: '', worksheetUrl: '' },
       { id: 'b-acad-code', bookNo: 'AC001', title: 'A학원 도서', author: '작가2', publisher: '출판2', grade: '초등 5학년', coverUrl: '/c2.png', worksheetUrl: 'https://r2.example.com/ac.pdf' },
       { id: 'b-acad-quiz', bookNo: 'AC002', title: 'A학원 퀴즈 도서', author: '작가3', publisher: '출판3', grade: '초등 6학년', coverUrl: '', worksheetUrl: '' }
     ],
     quizGroups: [
       { bookId: 'b-hq', legacyQuizSeq: 1, _count: { id: 5 } },
+      { bookId: 'b-hq-pub', legacyQuizSeq: 2, _count: { id: 5 } },
       { bookId: 'b-acad-quiz', legacyQuizSeq: -12345, _count: { id: 4 } }
     ],
     settings: [
       { key: 'book_creator:AC001', scope: 'book_creator', revision: 1, value: { academyCode: 'ACAD-A', academyName: 'A학원' } },
-      { key: 'quiz_seq:-12345', scope: 'quiz_author_seq', revision: 1, value: { academyId: 'acad-a', academyName: 'A학원', authorType: 'ACADEMY' } }
+      { key: 'quiz_seq:-12345', scope: 'quiz_author_seq', revision: 1, value: { academyId: 'acad-a', academyName: 'A학원', authorType: 'ACADEMY' } },
+      { key: 'content_quiz:b-hq:1', scope: 'content_quiz', revision: 1, value: { bookId: 'b-hq', seq: 1, authorType: 'HQ', ownerAcademyId: 'acad-hq', academyName: '본사', isPublic: 'N' } },
+      { key: 'content_quiz:b-hq-pub:2', scope: 'content_quiz', revision: 1, value: { bookId: 'b-hq-pub', seq: 2, authorType: 'HQ', ownerAcademyId: 'acad-hq', academyName: '본사', isPublic: 'Y' } },
+      { key: 'content_sheet:legacy-b-acad-code', scope: 'content_sheet', revision: 1, value: { id: 'legacy-b-acad-code', bookId: 'b-acad-code', academyCode: 'ACAD-A', ownerAcademyId: 'acad-a', academyName: 'A학원', authorType: 'ACADEMY', isPublic: 'N' } },
+      { key: 'content_quiz:b-acad-quiz:-12345', scope: 'content_quiz', revision: 1, value: { bookId: 'b-acad-quiz', seq: -12345, ownerAcademyId: 'acad-a', academyName: 'A학원', authorType: 'ACADEMY', isPublic: 'N' } }
     ],
     currentUser: null
   };
   const handler = makeContentHandler(state);
 
-  // 마스터 카탈로그: 본사 도서(b-hq)만 포함, A학원 도서/퀴즈(b-acad-code, b-acad-quiz)는 제외
+  // 마스터 카탈로그: 비공개 항목이 있는 본사 도서(b-hq)만 포함, 전체 공개 도서(b-hq-pub)와 타 학원 도서는 제외
   state.currentUser = state.members[0];
   let res = makeRes();
   await handler({ method: 'GET', query: { action: 'catalog' } }, res);
   assert.equal(res.statusCode, 200);
   assert.deepEqual(res.body.items.map(i => i.id), ['b-hq']);
   assert.equal(res.body.items[0].quizCount, 5);
+  assert.equal(res.body.items[0].hasPrivateQuiz, true);
   assert.equal(res.body.items[0].hasSheet, true);
 
-  // A학원 원장 카탈로그: academyCode만 저장된 레거시 시트 도서(b-acad-code)와 퀴즈 도서(b-acad-quiz) 모두 포함
+  // A학원 원장 카탈로그: 비공개 시트(b-acad-code)와 비공개 퀴즈(b-acad-quiz) 모두 포함
   state.currentUser = state.members[1];
   res = makeRes();
   await handler({ method: 'GET', query: { action: 'catalog' } }, res);
@@ -227,8 +235,9 @@ test('공유 폴더 삭제 API는 본인이 만든 폴더만 삭제한다', asyn
   assert.equal(state.settings.length, 0);
 });
 
-test('마스터 페이지와 콘텐츠 공유 프런트엔드 파일에 필수 메뉴, 뷰, ID 조회 UI 및 최신 스크립트 캐시 키가 연결되어 있다', () => {
+test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 단계별 모달, 필터·정렬, 최신 스크립트 캐시 키가 연결되어 있다', () => {
   const masterHtml = fs.readFileSync(path.join(__dirname, '../public_html/master_preview.html'), 'utf8');
+  const adminHtml = fs.readFileSync(path.join(__dirname, '../public_html/admin_preview.html'), 'utf8');
   const masterCore = fs.readFileSync(path.join(__dirname, '../public_html/js/master/master-core.js'), 'utf8');
   const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
 
@@ -237,10 +246,99 @@ test('마스터 페이지와 콘텐츠 공유 프런트엔드 파일에 필수 �
   assert.match(masterHtml, /id="view-content-sharing"/);
   assert.doesNotMatch(masterHtml, /master-core\.js\?v=20261112_pf_v2/);
   assert.match(masterHtml, /master-core\.js\?v=20261113_sharing_fix/);
+  assert.match(masterHtml, /content-sharing\.css\?v=20261113_sharing_v4/);
+  assert.match(masterHtml, /content-sharing\.js\?v=20261113_sharing_v4/);
+  assert.match(adminHtml, /content-sharing\.css\?v=20261113_sharing_v4/);
+  assert.match(adminHtml, /content-sharing\.js\?v=20261113_sharing_v4/);
   assert.match(masterCore, /'content-sharing'/);
   assert.match(masterCore, /ContentSharing\.refresh\(\)/);
   assert.match(sharingJs, /action=director&username=/);
   assert.match(sharingJs, /id="sharingDirectorLookupBtn"/);
+  assert.match(sharingJs, /openCreateFolderModal/);
+  assert.match(sharingJs, /openRecipientsModal/);
+  assert.match(sharingJs, /openFolderBooksModal/);
+  assert.match(sharingJs, /openReceivedFolderModal/);
+  assert.match(sharingJs, /data-received-folder=/);
+  assert.match(sharingJs, /sharing-kpi-subcount/);
+  assert.match(sharingJs, /id="sharingGradeFilter"/);
+  assert.match(sharingJs, /id="sharingSortDateBtn"/);
+  assert.match(sharingJs, /id="sharingSortTitleBtn"/);
+  assert.match(sharingJs, /id="sharingSelectedBookListBox"/);
+  assert.match(sharingJs, /data-recipients-folder/);
+  assert.doesNotMatch(sharingJs, /sharingFilterPills/);
+
+  // 프런트엔드 ContentSharing.refresh() / openReceivedFolderModal() 실행 검증 (KPI 총 권수 및 모달 리스트)
+  const makeEl = () => {
+    const el = {
+      innerHTML: '',
+      value: '',
+      textContent: '',
+      style: {},
+      dataset: {},
+      className: '',
+      classList: { toggle: () => {}, add: () => {}, remove: () => {} },
+      listeners: {},
+      showModalCalled: false,
+      showModal() { this.showModalCalled = true; },
+      close() {},
+      remove() {},
+      setAttribute() {},
+      addEventListener(type, fn) { this.listeners[type] = fn; },
+      querySelector(sel) {
+        if (!el._q) el._q = {};
+        if (!el._q[sel]) el._q[sel] = makeEl();
+        return el._q[sel];
+      },
+      querySelectorAll() { return []; }
+    };
+    return el;
+  };
+  const rootEl = makeEl();
+  const createdDialogs = [];
+  const win = {
+    fetch: async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () => url.includes('action=folders')
+        ? {
+            items: [],
+            received: [
+              { id: 'rec-1', name: '테스트 1번 폴더', ownerAcademyName: '본사', books: [
+                { id: 'b1', bookNo: 'B1', title: '가나다 책', author: '작가1', grade: '초3' },
+                { id: 'b2', bookNo: 'B2', title: '다라마 책', author: '작가2', grade: '초4' }
+              ] },
+              { id: 'rec-2', name: '추가 폴더', ownerAcademyName: '본사', books: [
+                { id: 'b2', bookNo: 'B2', title: '다라마 책', author: '작가2', grade: '초4' },
+                { id: 'b3', bookNo: 'B3', title: '바사아 책', author: '작가3', grade: '초5' }
+              ] }
+            ]
+          }
+        : { items: [] }
+    }),
+    document: {
+      getElementById: (id) => (id === 'view-content-sharing' ? rootEl : null),
+      createElement: () => { const d = makeEl(); createdDialogs.push(d); return d; },
+      body: { appendChild: () => {} }
+    },
+    confirm: () => true,
+    alert: () => {},
+    Set, Map, Array, String, Number, Date, Object, Math, Promise, encodeURIComponent
+  };
+  win.window = win;
+  vm.runInNewContext(sharingJs, win);
+  // refresh() 호출 후 상단 KPI에 '2개'와 중복 제거된 '총 3권' 및 클릭 가능 폴더 속성이 렌더링되는지 확인
+  return win.ContentSharing.refresh().then(() => {
+    assert.match(rootEl.innerHTML, /2<span>개<\/span>/);
+    assert.match(rootEl.innerHTML, /총 <strong>3<\/strong>권/);
+    assert.match(rootEl.innerHTML, /data-received-folder="rec-1"/);
+    win.ContentSharing.openReceivedFolderModal('rec-1');
+    assert.equal(createdDialogs.length, 1);
+    assert.equal(createdDialogs[0].showModalCalled, true);
+    assert.match(createdDialogs[0].innerHTML, /테스트 1번 폴더/);
+    const modalListEl = createdDialogs[0].querySelector('#sharingReceivedBookListBox');
+    assert.match(modalListEl.innerHTML, /가나다 책/);
+    assert.match(modalListEl.innerHTML, /다라마 책/);
+  });
 });
 
 test('마스터 계정은 소속 academy 객체가 비어 있어도 folders 조회와 폴더 생성이 정상 동작한다', async () => {
@@ -252,7 +350,9 @@ test('마스터 계정은 소속 academy 객체가 비어 있어도 folders 조�
     ],
     books: [{ id: 'b-hq', bookNo: 'HQ1', title: '본사 책', author: '저자', publisher: '출판사', grade: '초3', coverUrl: '', worksheetUrl: 'https://r2.example.com/hq.pdf' }],
     quizGroups: [],
-    settings: [],
+    settings: [
+      { key: 'content_sheet:legacy-b-hq', scope: 'content_sheet', revision: 1, value: { id: 'legacy-b-hq', bookId: 'b-hq', authorType: 'HQ', ownerAcademyId: 'acad-hq', academyName: '본사', isPublic: 'N' } }
+    ],
     currentUser: null
   };
   const handler = makeContentHandler(state);
@@ -266,6 +366,7 @@ test('마스터 계정은 소속 academy 객체가 비어 있어도 folders 조�
   res = makeRes();
   await handler({ method: 'POST', query: { action: 'folder' }, body: { name: '본사 배포 폴더', bookIds: ['b-hq'], directorUsernames: ['dir_a'] } }, res);
   assert.equal(res.statusCode, 200);
-  assert.equal(state.settings[0].value.ownerAcademyName, '본사');
+  const savedFolder = state.settings.find(s => s.scope === 'content_folder');
+  assert.equal(savedFolder.value.ownerAcademyName, '본사');
 });
 

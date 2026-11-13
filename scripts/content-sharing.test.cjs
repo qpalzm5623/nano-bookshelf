@@ -266,3 +266,88 @@ test('나노시트 공개/비공개 전환 및 본인 등록 시트만 삭제 �
   assert.equal(f.files().length, 0);
   assert.equal((await f.request('worksheets', undefined, { bookId: 'book-1' })).data.items.length, 0);
 });
+
+test('공유 후보(catalog)는 비공개 북퀴즈 또는 비공개 나노시트가 1개 이상 있는 본인 도서만 반환한다', async () => {
+  const f = setup();
+  // book-1: 공개 퀴즈 + 공개 시트만 있는 경우 -> 제외
+  await f.addQuiz('book-1', -10, 'Y', 'owner', 'a');
+  const pubChunk = await f.request('sheet-chunk', { base64: Buffer.from('%PDF-1.7\n공개').toString('base64') });
+  await f.request('worksheet', { bookId: 'book-1', name: '공개시트.pdf', isPublic: 'Y', fileIds: [pubChunk.data.id] });
+
+  // book-2: 공개 퀴즈 + 비공개 시트 -> 비공개 시트가 1개 있으므로 포함
+  await f.addQuiz('book-2', -20, 'Y', 'owner', 'a');
+  const privChunk = await f.request('sheet-chunk', { base64: Buffer.from('%PDF-1.7\n비공개').toString('base64') });
+  await f.request('worksheet', { bookId: 'book-2', name: '비공개시트.pdf', isPublic: 'N', fileIds: [privChunk.data.id] });
+
+  let cat = await f.request('catalog');
+  assert.equal(cat.code, 200);
+  assert.deepEqual(cat.data.items.map(b => b.id), ['book-2']);
+  assert.equal(cat.data.items[0].hasPrivateQuiz, false);
+  assert.equal(cat.data.items[0].hasPrivateSheet, true);
+
+  // book-1에 비공개 퀴즈 추가 -> 비공개 퀴즈가 생겼으므로 포함
+  await f.addQuiz('book-1', -30, 'N', 'owner', 'a');
+  cat = await f.request('catalog');
+  assert.deepEqual(cat.data.items.map(b => b.id).sort(), ['book-1', 'book-2']);
+  assert.equal(cat.data.items.find(b => b.id === 'book-1').hasPrivateQuiz, true);
+});
+
+test('단계별 폴더 워크플로우: 폴더명만 생성 → 대상 설정·도서 수정 분리 및 공개 전환 도서 보존', async () => {
+  const f = setup();
+  await f.addQuiz('book-1', -10, 'N', 'owner', 'a');
+
+  // 1단계: 폴더명만으로 빈 폴더 생성
+  const created = await f.request('folder', { name: '1단계 폴더', bookIds: [], directorUsernames: [] });
+  assert.equal(created.code, 200);
+  let folders = await f.request('folders');
+  assert.equal(folders.data.items.length, 1);
+  assert.equal(folders.data.items[0].revision, 1);
+  assert.deepEqual(Array.from(folders.data.items[0].bookIds), []);
+
+  // 2단계(도서 수정): 비공개 도서 추가
+  const addBooks = await f.request('folder', {
+    id: created.data.id,
+    revision: 1,
+    name: '1단계 폴더',
+    bookIds: ['book-1'],
+    directorUsernames: []
+  });
+  assert.equal(addBooks.code, 200);
+  folders = await f.request('folders');
+  assert.equal(folders.data.items[0].revision, 2);
+
+  // 2단계(공유 대상 설정): 기존 도서를 유지한 채 수신 학원 등록
+  const addRecipients = await f.request('folder', {
+    id: created.data.id,
+    revision: 2,
+    name: '1단계 폴더',
+    bookIds: ['book-1'],
+    directorUsernames: ['director-b']
+  });
+  assert.equal(addRecipients.code, 200);
+  folders = await f.request('folders');
+  assert.equal(folders.data.items[0].revision, 3);
+
+  // 이후 book-1 퀴즈를 전체공개로 바꿔 catalog에서 빠져도, 기존 폴더 편집 시 보유 도서 유지 가능
+  const pubRes = await f.request('quiz', {
+    bookId: 'book-1',
+    seq: -10,
+    revision: 1,
+    isPublic: 'Y',
+    questions: [{ question: '질문', type: 'CHOICE', options: ['정답', '오답'], answer: '1' }]
+  });
+  assert.equal(pubRes.code, 200);
+  assert.equal((await f.request('catalog')).data.items.length, 0);
+
+  const preserveBook = await f.request('folder', {
+    id: created.data.id,
+    revision: 3,
+    name: '1단계 폴더',
+    bookIds: ['book-1'],
+    directorUsernames: []
+  });
+  assert.equal(preserveBook.code, 200);
+  const stored = f.settings().find(r => r.key === 'content_folder:' + created.data.id).value;
+  assert.deepEqual(Array.from(stored.bookIds), ['book-1']);
+  assert.deepEqual(Array.from(stored.recipients), []);
+});

@@ -101,27 +101,36 @@ export async function saveContentRecord(db: any, key: string, scope: string, val
 export async function resolveShareRecipients(db: any, usernames: any, ownerAcademyId: string) {
   need(Array.isArray(usernames) && usernames.length <= 100 && usernames.every(x => typeof x === 'string' && x.trim().length > 0 && x.length <= 100), '공유받을 학원장 ID를 확인해 주세요.');
   const ids = [...new Set<string>(usernames.map(x => x.trim()))];
+  if (ids.length === 0) return [];
   const directors = await db.member.findMany({ where: { username: { in: ids }, role: 'DIRECTOR', status: 'APPROVED', academy: { status: 'ACTIVE', deletedAt: null } }, select: { id: true, username: true, name: true, academyId: true, academy: { select: { name: true } } } });
   need(directors.length === ids.length, '활성 학원의 승인된 학원장 ID만 등록할 수 있습니다. 입력한 ID를 확인해 주세요.');
   need(directors.every((d: any) => d.academyId !== ownerAcademyId), '우리 학원은 별도 공유 등록 없이 이용할 수 있습니다.');
   return directors.map((d: any) => ({ directorId: d.id, username: d.username, ...(d.name ? { directorName: d.name } : {}), academyId: d.academyId, academyName: d.academy.name }));
 }
 
+// 직접 등록한 북퀴즈 또는 나노시트 중 1개 이상이 비공개('N')로 설정된 도서만 공유 후보로 반환합니다.
 export async function shareableBooks(db: any, user: any, access: ContentAccess) {
   const [groups, books] = await Promise.all([
     db.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'], _count: { id: true } }),
-    db.book.findMany({ select: { id: true, bookNo: true, title: true, author: true, publisher: true, grade: true, coverUrl: true, worksheetUrl: true } })
+    db.book.findMany({ select: { id: true, bookNo: true, title: true, author: true, publisher: true, grade: true, coverUrl: true, worksheetUrl: true, createdAt: true } })
   ]);
   const quizCounts = new Map<string, number>();
+  const privateQuizCounts = new Map<string, number>();
   for (const g of groups) {
-    if (!canShareContent(user, quizContent(access, g.bookId, g.legacyQuizSeq || 0))) continue;
-    const prev = quizCounts.get(g.bookId) || 0;
+    const qMeta = quizContent(access, g.bookId, g.legacyQuizSeq || 0);
+    if (!canShareContent(user, qMeta)) continue;
     const count = typeof g._count?.id === 'number' ? g._count.id : 1;
-    quizCounts.set(g.bookId, prev + count);
+    quizCounts.set(g.bookId, (quizCounts.get(g.bookId) || 0) + count);
+    if (qMeta.isPublic === 'N') {
+      privateQuizCounts.set(g.bookId, (privateQuizCounts.get(g.bookId) || 0) + count);
+    }
   }
   return books.map((b: any) => {
     const shareableSheets = bookSheets(access, b).filter(s => canShareContent(user, s));
+    const privateSheets = shareableSheets.filter(s => s.isPublic === 'N');
     const quizCount = quizCounts.get(b.id) || 0;
+    const privateQuizCount = privateQuizCounts.get(b.id) || 0;
+    const createdAtIso = b.createdAt ? new Date(b.createdAt).toISOString() : '';
     return {
       id: b.id,
       bookNo: b.bookNo,
@@ -130,10 +139,15 @@ export async function shareableBooks(db: any, user: any, access: ContentAccess) 
       publisher: b.publisher || '',
       grade: b.grade || '',
       coverUrl: b.coverUrl || '',
+      createdAt: createdAtIso,
       hasQuiz: quizCount > 0,
       quizCount,
+      hasPrivateQuiz: privateQuizCount > 0,
+      privateQuizCount,
       hasSheet: shareableSheets.length > 0,
-      sheetCount: shareableSheets.length
+      sheetCount: shareableSheets.length,
+      hasPrivateSheet: privateSheets.length > 0,
+      privateSheetCount: privateSheets.length
     };
-  }).filter((b: any) => b.hasQuiz || b.hasSheet);
+  }).filter((b: any) => b.hasPrivateQuiz || b.hasPrivateSheet);
 }

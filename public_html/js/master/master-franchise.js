@@ -1507,11 +1507,13 @@ function clearFranchiseSearch() {
   if (clearBtn) clearBtn.style.display = "none";
   const badgeEl = document.getElementById("franchiseSearchActiveBadge");
   if (badgeEl) { badgeEl.style.display = "none"; badgeEl.innerHTML = ""; }
-  filterFranchiseList();
+  filterFranchiseList({ applyDates: false });
 }
 
-// 가맹점 필터링 (가입일 기간 2개 박스, 이용 상품명, 운영 상태, 검색어)
-function filterFranchiseList() {
+let appliedFranchiseDates = { start: "", end: "" };
+
+// 가맹점 필터링 (가입일 기간 2개 박스, 이용 상품명, 운영 상태, 검색어 — 날짜는 검색 클릭/Enter 시 반영)
+function filterFranchiseList(options) {
   franchiseCurrentPage = 1; // 필터링 시 1페이지로 리셋
   const query = (document.getElementById("franchiseSearchInput")?.value || "").toLowerCase().trim();
   const cleanQueryPhone = query.replace(/[^0-9]/g, '');
@@ -1524,8 +1526,12 @@ function filterFranchiseList() {
 
   const statusFilter = document.getElementById("franchiseStatusFilter")?.value || "ALL";
   const planFilter = document.getElementById("franchisePlanFilter")?.value || "ALL";
-  const startDateFilter = document.getElementById("franchiseStartDateFilter")?.value || "";
-  const endDateFilter = document.getElementById("franchiseEndDateFilter")?.value || "";
+  if (!options || options.applyDates !== false) {
+    appliedFranchiseDates.start = document.getElementById("franchiseStartDateFilter")?.value || "";
+    appliedFranchiseDates.end = document.getElementById("franchiseEndDateFilter")?.value || "";
+  }
+  const startDateFilter = appliedFranchiseDates.start || "";
+  const endDateFilter = appliedFranchiseDates.end || "";
   const todayStr = new Date().toISOString().slice(0, 10);
 
   const filtered = franchiseList.filter(item => {
@@ -1623,6 +1629,7 @@ function resetFranchiseFilters() {
   if (sDate) sDate.value = "";
   const eDate = document.getElementById("franchiseEndDateFilter");
   if (eDate) eDate.value = "";
+  appliedFranchiseDates = { start: "", end: "" };
   const sortEl = document.getElementById("franchiseSortSelect");
   if (sortEl) sortEl.value = "joinDate_desc";
   renderFranchiseTable();

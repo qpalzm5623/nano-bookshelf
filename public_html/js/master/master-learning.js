@@ -21,7 +21,8 @@
   var isMasterLearningLoading = false;
   var dropdownEventsBound = false;
   var dropdownFocusedIndex = -1;
-  var knownMasterClassNames = {};
+  var knownMasterClassNamesByAcademy = Object.create(null);
+  var appliedMasterLearningDates = { startDate: '', endDate: '' };
 
   // 로컬 정적 HTML(서버 미연동) 전용 미리보기 샘플 데이터 — 운영 DB 모드에서는 절대 사용하지 않음
   var OFFLINE_SAMPLE_LOGS = [
@@ -362,8 +363,17 @@
     renderMasterAcademyDropdownOptions('');
     wrapper.classList.add('is-open');
     if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    // 검색 입력창 포커스 시 바깥 카드(.simple-card) 스크롤이 이동해 다른 필터가 가려지는 현상 방지
+    var resetToolbarScroll = function() {
+      var card = wrapper.closest ? wrapper.closest('.simple-card') : null;
+      if (card) { card.scrollTop = 0; card.scrollLeft = 0; }
+    };
+    resetToolbarScroll();
     if (searchInput) {
-      setTimeout(function() { searchInput.focus(); }, 10);
+      setTimeout(function() {
+        try { searchInput.focus({ preventScroll: true }); } catch (e) { searchInput.focus(); }
+        resetToolbarScroll();
+      }, 10);
     }
   }
 
@@ -440,14 +450,19 @@
 
   function selectMasterAcademyOption(value) {
     var hiddenInput = document.getElementById('masterLearningAcademyFilter');
+    var prevVal = (hiddenInput && hiddenInput.value) || 'ALL';
     var nextVal = value || 'ALL';
     if (hiddenInput) {
       hiddenInput.value = nextVal;
     }
+    if (prevVal !== nextVal) {
+      var classSelect = document.getElementById('masterLearningClassFilter');
+      if (classSelect) classSelect.value = 'ALL';
+    }
     syncMasterAcademyTriggerLabel(nextVal);
     closeMasterAcademyDropdown();
     populateMasterLearningClassFilter();
-    executeMasterLearningSearch();
+    executeMasterLearningSearch({ applyDates: false });
   }
 
   // 4. 가맹점 드롭다운 채우기 (전국 활성 가맹점 연동)
@@ -471,49 +486,81 @@
     }
   }
 
-  // 5. 클래스 필터 동적 채우기 (선택 학원 또는 전체 회원/이력 기준)
+  // 5. 클래스 필터 동적 채우기 (특정 가맹점 선택 시에만 활성화, 전체 가맹점 선택 시 비활성화)
   function populateMasterLearningClassFilter(logsToMerge) {
-    var select = document.getElementById('masterLearningClassFilter');
-    if (!select) return;
-    var currentVal = select.value || 'ALL';
-    var academyInput = document.getElementById('masterLearningAcademyFilter');
-    var selectedAcademy = (academyInput && academyInput.value) || 'ALL';
-
     if (Array.isArray(logsToMerge)) {
       logsToMerge.forEach(function(l) {
-        if (l && l.classGroup) knownMasterClassNames[String(l.classGroup)] = true;
-      });
-    }
-
-    var classSet = Object.create(null);
-    ['유치부', 'A Class', 'B Class', '소나무반', '초등부', '미지정'].forEach(function(c) { classSet[c] = true; });
-    Object.keys(knownMasterClassNames).forEach(function(c) { classSet[c] = true; });
-
-    if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_MEMBERS)) {
-      window.MIGRATED_MEMBERS.forEach(function(m) {
-        if (!m || !m.classGroup) return;
-        if (selectedAcademy === 'ALL' || m.academyId === selectedAcademy) {
-          classSet[String(m.classGroup).trim()] = true;
+        if (!l || !l.classGroup) return;
+        var aid = String(l.academyId || '').trim();
+        var clsName = String(l.classGroup).trim();
+        if (aid && clsName) {
+          if (!knownMasterClassNamesByAcademy[aid]) {
+            knownMasterClassNamesByAcademy[aid] = Object.create(null);
+          }
+          knownMasterClassNamesByAcademy[aid][clsName] = true;
         }
       });
     }
 
-    var html = '<option value="ALL">전체 클래스</option>';
-    Object.keys(classSet).sort(function(a, b) {
+    var select = document.getElementById('masterLearningClassFilter');
+    if (!select) return;
+    var academyInput = document.getElementById('masterLearningAcademyFilter');
+    var selectedAcademy = (academyInput && academyInput.value) || 'ALL';
+
+    if (!selectedAcademy || selectedAcademy === 'ALL') {
+      select.disabled = true;
+      select.setAttribute('aria-disabled', 'true');
+      select.title = '특정 가맹점을 선택하면 클래스 필터가 활성화됩니다.';
+      select.innerHTML = '<option value="ALL">가맹점 먼저 선택</option>';
+      select.value = 'ALL';
+      return;
+    }
+
+    var currentVal = select.value || 'ALL';
+    select.disabled = false;
+    select.setAttribute('aria-disabled', 'false');
+    select.title = '선택한 가맹점의 클래스별 필터링';
+
+    var classSet = Object.create(null);
+    var academyKnown = knownMasterClassNamesByAcademy[selectedAcademy];
+    if (academyKnown) {
+      Object.keys(academyKnown).forEach(function(c) { classSet[c] = true; });
+    }
+
+    if (typeof window !== 'undefined') {
+      var serverClasses = (Array.isArray(window.NANO_SERVER_CLASSES) && window.NANO_SERVER_CLASSES.length > 0)
+        ? window.NANO_SERVER_CLASSES
+        : (Array.isArray(window.MIGRATED_CLASSES) ? window.MIGRATED_CLASSES : []);
+      serverClasses.forEach(function(c) {
+        if (!c || !c.name) return;
+        if (String(c.academyId || c.academyCode || '').trim() === selectedAcademy) {
+          classSet[String(c.name).trim()] = true;
+        }
+      });
+
+      if (Array.isArray(window.MIGRATED_MEMBERS)) {
+        window.MIGRATED_MEMBERS.forEach(function(m) {
+          if (!m) return;
+          if (String(m.academyId || '').trim() !== selectedAcademy) return;
+          if (m.role && m.role !== 'STUDENT' && m.role !== 'student') return;
+          var clsName = String(m.classGroup || m.className || '').trim();
+          if (clsName) classSet[clsName] = true;
+        });
+      }
+    }
+
+    var sortedClasses = Object.keys(classSet).filter(Boolean).sort(function(a, b) {
       if (a === '미지정') return 1;
       if (b === '미지정') return -1;
       return a.localeCompare(b, 'ko');
-    }).forEach(function(cls) {
-      if (!cls) return;
+    });
+
+    var html = '<option value="ALL">전체 클래스</option>';
+    sortedClasses.forEach(function(cls) {
       html += '<option value="' + escapeHtml(cls) + '">' + escapeHtml(cls) + '</option>';
     });
     select.innerHTML = html;
-
-    if (Array.prototype.some.call(select.options, function(opt) { return opt.value === currentVal; })) {
-      select.value = currentVal;
-    } else {
-      select.value = 'ALL';
-    }
+    select.value = (sortedClasses.indexOf(currentVal) !== -1) ? currentVal : 'ALL';
   }
 
   // 6. 날짜 필터 초기화 (기본: 당월 1일 ~ 오늘 KST 기준)
@@ -526,6 +573,8 @@
     var firstDayStr = todayStr.slice(0, 7) + '-01';
     if (!startEl.value) startEl.value = firstDayStr;
     if (!endEl.value) endEl.value = todayStr;
+    appliedMasterLearningDates.startDate = startEl.value || '';
+    appliedMasterLearningDates.endDate = endEl.value || '';
   }
 
   // 서버에서 전국 또는 선택 가맹점 학습 이력 조회
@@ -585,18 +634,25 @@
       '</td></tr>';
   }
 
-  // 7. 마스터 학습 이력 통합 조회 (서버 DB 우선 / 로컬 프리뷰 분리)
-  async function executeMasterLearningSearch() {
+  // 7. 마스터 학습 이력 통합 조회 (서버 DB 우선 / 로컬 프리뷰 분리, 날짜는 조회 버튼 클릭 시 반영)
+  async function executeMasterLearningSearch(options) {
     var academyInput = document.getElementById('masterLearningAcademyFilter');
     var classSelect = document.getElementById('masterLearningClassFilter');
     var startEl = document.getElementById('masterLearningStartDate');
     var endEl = document.getElementById('masterLearningEndDate');
     var searchInput = document.getElementById('masterLearningSearchInput');
 
+    if (!options || options.applyDates !== false) {
+      appliedMasterLearningDates.startDate = (startEl && startEl.value) || '';
+      appliedMasterLearningDates.endDate = (endEl && endEl.value) || '';
+    }
+
     var academyFilter = (academyInput && academyInput.value) || 'ALL';
-    var classFilter = (classSelect && classSelect.value) || 'ALL';
-    var startDate = (startEl && startEl.value) || '';
-    var endDate = (endEl && endEl.value) || '';
+    var classFilter = (academyFilter !== 'ALL' && classSelect && !classSelect.disabled && classSelect.value)
+      ? classSelect.value
+      : 'ALL';
+    var startDate = appliedMasterLearningDates.startDate || '';
+    var endDate = appliedMasterLearningDates.endDate || '';
     var searchQuery = (searchInput && searchInput.value ? searchInput.value.trim() : '');
 
     var franchiseMap = getFranchiseNameMap();
@@ -1151,11 +1207,33 @@
     document.body.classList.add('printing-master-report');
     var cleanup = function() {
       document.body.classList.remove('printing-master-report');
-      window.removeEventListener('afterprint', cleanup);
+      if (typeof window.removeEventListener === 'function') {
+        window.removeEventListener('afterprint', cleanup);
+      }
     };
-    window.addEventListener('afterprint', cleanup);
-    window.print();
-    setTimeout(cleanup, 1000);
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('afterprint', cleanup);
+    }
+    // 인쇄 전용 2열·페이지 분할 스타일이 적용된 뒤 인쇄 창 호출
+    setTimeout(function() {
+      window.print();
+      setTimeout(cleanup, 1000);
+    }, 60);
+  }
+
+  // 모달이 열린 상태에서 브라우저 직접 인쇄(Ctrl+P) 시에도 인쇄 레이아웃 유지
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('beforeprint', function() {
+      var modal = typeof document !== 'undefined' ? document.getElementById('masterLearningReportModal') : null;
+      if (modal && modal.classList && modal.classList.contains('show')) {
+        document.body.classList.add('printing-master-report');
+      }
+    });
+    window.addEventListener('afterprint', function() {
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('printing-master-report');
+      }
+    });
   }
 
   // 전역 함수 바인딩 (마스터 HTML 및 master-core.js 호환 유지)

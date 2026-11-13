@@ -22,8 +22,9 @@
   var isMasterPfLoading = false;
   var pfDropdownEventsBound = false;
   var pfDropdownFocusedIndex = -1;
-  var knownPfClassNames = Object.create(null);
+  var knownPfClassNamesByAcademy = Object.create(null);
   var pfSearchDebounceTimer = null;
+  var appliedMasterPfDates = { startDate: '', endDate: '' };
 
   // 서버 미연동 로컬 정적 HTML 프리뷰 전용 샘플 데이터
   var OFFLINE_SAMPLE_PORTFOLIOS = [
@@ -325,7 +326,18 @@
     renderMasterPfAcademyDropdownOptions('');
     wrapper.classList.add('is-open');
     if (trigger) trigger.setAttribute('aria-expanded', 'true');
-    if (searchInput) setTimeout(function() { searchInput.focus(); }, 10);
+    // 검색 입력창 포커스 시 바깥 카드(.simple-card) 스크롤이 이동해 다른 필터가 가려지는 현상 방지
+    var resetToolbarScroll = function() {
+      var card = wrapper.closest ? wrapper.closest('.simple-card') : null;
+      if (card) { card.scrollTop = 0; card.scrollLeft = 0; }
+    };
+    resetToolbarScroll();
+    if (searchInput) {
+      setTimeout(function() {
+        try { searchInput.focus({ preventScroll: true }); } catch (e) { searchInput.focus(); }
+        resetToolbarScroll();
+      }, 10);
+    }
   }
 
   function closeMasterPfAcademyDropdown() {
@@ -398,12 +410,17 @@
 
   function selectMasterPfAcademyOption(value) {
     var hiddenInput = document.getElementById('masterPfAcademyFilter');
+    var prevVal = (hiddenInput && hiddenInput.value) || 'ALL';
     var nextVal = value || 'ALL';
     if (hiddenInput) hiddenInput.value = nextVal;
+    if (prevVal !== nextVal) {
+      var classSelect = document.getElementById('masterPfClassFilter');
+      if (classSelect) classSelect.value = 'ALL';
+    }
     syncMasterPfAcademyTriggerLabel(nextVal);
     closeMasterPfAcademyDropdown();
     populateMasterPfClassFilter();
-    filterMasterPortfolioList();
+    filterMasterPortfolioList({ applyDates: false });
   }
 
   // 3. 가맹점 드롭다운 채우기
@@ -421,44 +438,79 @@
     renderMasterPfAcademyDropdownOptions('');
   }
 
-  // 4. 클래스 필터 동적 채우기
+  // 4. 클래스 필터 동적 채우기 (특정 가맹점 선택 시에만 활성화, 전체 가맹점 선택 시 비활성화)
   function populateMasterPfClassFilter(itemsToMerge) {
-    var select = document.getElementById('masterPfClassFilter');
-    if (!select) return;
-    var currentVal = select.value || 'ALL';
-    var academyInput = document.getElementById('masterPfAcademyFilter');
-    var selectedAcademy = (academyInput && academyInput.value) || 'ALL';
-
     if (Array.isArray(itemsToMerge)) {
       itemsToMerge.forEach(function(item) {
-        if (item && item.classGroup) knownPfClassNames[String(item.classGroup)] = true;
-      });
-    }
-
-    var classSet = Object.create(null);
-    ['유치부', 'A Class', 'B Class', '소나무반', '초등부', '미지정'].forEach(function(c) { classSet[c] = true; });
-    Object.keys(knownPfClassNames).forEach(function(c) { classSet[c] = true; });
-
-    if (Array.isArray(window.MIGRATED_MEMBERS)) {
-      window.MIGRATED_MEMBERS.forEach(function(m) {
-        if (!m || !m.classGroup) return;
-        if (selectedAcademy === 'ALL' || m.academyId === selectedAcademy) {
-          classSet[String(m.classGroup).trim()] = true;
+        if (!item || !item.classGroup) return;
+        var aid = String(item.academyId || '').trim();
+        var clsName = String(item.classGroup).trim();
+        if (aid && clsName) {
+          if (!knownPfClassNamesByAcademy[aid]) {
+            knownPfClassNamesByAcademy[aid] = Object.create(null);
+          }
+          knownPfClassNamesByAcademy[aid][clsName] = true;
         }
       });
     }
 
-    var html = '<option value="ALL">전체 클래스</option>';
-    Object.keys(classSet).sort(function(a, b) {
+    var select = document.getElementById('masterPfClassFilter');
+    if (!select) return;
+    var academyInput = document.getElementById('masterPfAcademyFilter');
+    var selectedAcademy = (academyInput && academyInput.value) || 'ALL';
+
+    if (!selectedAcademy || selectedAcademy === 'ALL') {
+      select.disabled = true;
+      select.setAttribute('aria-disabled', 'true');
+      select.title = '특정 가맹점을 선택하면 클래스 필터가 활성화됩니다.';
+      select.innerHTML = '<option value="ALL">가맹점 먼저 선택</option>';
+      select.value = 'ALL';
+      return;
+    }
+
+    var currentVal = select.value || 'ALL';
+    select.disabled = false;
+    select.setAttribute('aria-disabled', 'false');
+    select.title = '선택한 가맹점의 클래스별 필터링';
+
+    var classSet = Object.create(null);
+    var academyKnown = knownPfClassNamesByAcademy[selectedAcademy];
+    if (academyKnown) {
+      Object.keys(academyKnown).forEach(function(c) { classSet[c] = true; });
+    }
+
+    var serverClasses = (Array.isArray(window.NANO_SERVER_CLASSES) && window.NANO_SERVER_CLASSES.length > 0)
+      ? window.NANO_SERVER_CLASSES
+      : (Array.isArray(window.MIGRATED_CLASSES) ? window.MIGRATED_CLASSES : []);
+    serverClasses.forEach(function(c) {
+      if (!c || !c.name) return;
+      if (String(c.academyId || c.academyCode || '').trim() === selectedAcademy) {
+        classSet[String(c.name).trim()] = true;
+      }
+    });
+
+    if (Array.isArray(window.MIGRATED_MEMBERS)) {
+      window.MIGRATED_MEMBERS.forEach(function(m) {
+        if (!m) return;
+        if (String(m.academyId || '').trim() !== selectedAcademy) return;
+        if (m.role && m.role !== 'STUDENT' && m.role !== 'student') return;
+        var clsName = String(m.classGroup || m.className || '').trim();
+        if (clsName) classSet[clsName] = true;
+      });
+    }
+
+    var sortedClasses = Object.keys(classSet).filter(Boolean).sort(function(a, b) {
       if (a === '미지정') return 1;
       if (b === '미지정') return -1;
       return a.localeCompare(b, 'ko');
-    }).forEach(function(c) {
-      if (!c) return;
+    });
+
+    var html = '<option value="ALL">전체 클래스</option>';
+    sortedClasses.forEach(function(c) {
       html += '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
     });
     select.innerHTML = html;
-    select.value = Array.prototype.some.call(select.options, function(o) { return o.value === currentVal; }) ? currentVal : 'ALL';
+    select.value = (sortedClasses.indexOf(currentVal) !== -1) ? currentVal : 'ALL';
   }
 
   // 5. 발급일자 기본값 초기화 (당월 1일 ~ 오늘 KST)
@@ -469,16 +521,21 @@
 
     var todayStr = getTodayYmd();
     var defaultStart = todayStr.slice(0, 7) + '-01';
-    if (force || !startEl.value) startEl.value = defaultStart;
-    if (force || !endEl.value) endEl.value = todayStr;
+    var changed = false;
+    if (force || !startEl.value) { startEl.value = defaultStart; changed = true; }
+    if (force || !endEl.value) { endEl.value = todayStr; changed = true; }
+    if (force || changed || (!appliedMasterPfDates.startDate && !appliedMasterPfDates.endDate)) {
+      appliedMasterPfDates.startDate = startEl.value || '';
+      appliedMasterPfDates.endDate = endEl.value || '';
+    }
   }
 
-  // 검색 입력 디바운스 (키 입력 시 과도한 API 호출 방지)
+  // 검색 입력 디바운스 (키 입력 시 과도한 API 호출 방지 및 미조회 날짜 미적용)
   function scheduleMasterPfSearch() {
     if (pfSearchDebounceTimer) clearTimeout(pfSearchDebounceTimer);
     pfSearchDebounceTimer = setTimeout(function() {
       pfSearchDebounceTimer = null;
-      filterMasterPortfolioList();
+      filterMasterPortfolioList({ applyDates: false });
     }, 260);
   }
 
@@ -503,13 +560,23 @@
   }
 
   // 6. 마스터 포트폴리오 목록 조회 및 필터링 (서버 DB 우선 / 로컬 프리뷰 분리)
-  async function filterMasterPortfolioList() {
+  async function filterMasterPortfolioList(options) {
     initMasterPfDateFilters();
 
+    var startEl = document.getElementById('masterPfStartDate');
+    var endEl = document.getElementById('masterPfEndDate');
+    if (!options || options.applyDates !== false) {
+      appliedMasterPfDates.startDate = (startEl && startEl.value) || '';
+      appliedMasterPfDates.endDate = (endEl && endEl.value) || '';
+    }
+
     var academyVal = (document.getElementById('masterPfAcademyFilter') && document.getElementById('masterPfAcademyFilter').value) || 'ALL';
-    var classVal = (document.getElementById('masterPfClassFilter') && document.getElementById('masterPfClassFilter').value) || 'ALL';
-    var startVal = (document.getElementById('masterPfStartDate') && document.getElementById('masterPfStartDate').value) || '';
-    var endVal = (document.getElementById('masterPfEndDate') && document.getElementById('masterPfEndDate').value) || '';
+    var classSelect = document.getElementById('masterPfClassFilter');
+    var classVal = (academyVal !== 'ALL' && classSelect && !classSelect.disabled && classSelect.value)
+      ? classSelect.value
+      : 'ALL';
+    var startVal = appliedMasterPfDates.startDate || '';
+    var endVal = appliedMasterPfDates.endDate || '';
     var query = (document.getElementById('masterPfSearchInput') && document.getElementById('masterPfSearchInput').value
       ? document.getElementById('masterPfSearchInput').value.trim()
       : '');

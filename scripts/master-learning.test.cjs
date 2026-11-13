@@ -207,6 +207,8 @@ test('마스터 UI/스크립트에 카톡 버튼·alert가 제거되고 검색�
   assert.match(masterHtml, /id="masterLearningAcademyDropdown"/);
   assert.match(masterHtml, /id="masterLearningAcademySearchInput"/);
   assert.match(masterHtml, /id="masterLearningReportModal"/);
+  assert.doesNotMatch(masterHtml, /<input[^>]+id="masterLearningStartDate"[^>]+onchange=/i);
+  assert.doesNotMatch(masterHtml, /<input[^>]+id="masterLearningEndDate"[^>]+onchange=/i);
 
   // 경량 DOM 목업을 통해 실제 DB 모드 동작(가짜 더미 차단 + 드롭다운 검색 + 리포트 상세) 검증
   function makeEl(id) {
@@ -368,6 +370,9 @@ test('마스터 UI/스크립트에 카톡 버튼·alert가 제거되고 검색�
 
   assert.equal(apiCalls.length, 1);
   assert.match(apiCalls[0], /^\/api\/portal\?action=learning&summary=1&limit=500&academy=ALL/);
+  assert.equal(elMap.masterLearningClassFilter.disabled, true);
+  assert.equal(elMap.masterLearningClassFilter.value, 'ALL');
+  assert.match(elMap.masterLearningClassFilter.innerHTML, /가맹점 먼저 선택/);
   assert.match(elMap.masterLearningTableBody.innerHTML, /홍서연/);
   assert.match(elMap.masterLearningTableBody.innerHTML, /부산 해운대 리딩/);
   assert.doesNotMatch(elMap.masterLearningTableBody.innerHTML, /박지후|김태윤/);
@@ -380,10 +385,13 @@ test('마스터 UI/스크립트에 카톡 버튼·alert가 제거되고 검색�
   assert.match(elMap.masterLearningAcademyOptions.innerHTML, /부산 해운대 리딩/);
   assert.doesNotMatch(elMap.masterLearningAcademyOptions.innerHTML, /서초 에듀클래스/);
 
-  // 가맹점 선택 시 필터가 반영되어 서버 재조회 실행
+  // 가맹점 선택 시 필터가 반영되어 서버 재조회 실행 + 해당 가맹점 클래스 필터 활성화
   await sandbox.selectMasterAcademyOption('ACAD-042');
   assert.equal(elMap.masterLearningAcademyFilter.value, 'ACAD-042');
   assert.equal(elMap.masterLearningAcademyLabel.textContent, '부산 해운대 리딩');
+  assert.equal(elMap.masterLearningClassFilter.disabled, false);
+  assert.match(elMap.masterLearningClassFilter.innerHTML, /해바라기반/);
+  assert.doesNotMatch(elMap.masterLearningClassFilter.innerHTML, /소나무반/);
   assert.equal(apiCalls.length, 2);
   assert.match(apiCalls[1], /academy=ACAD-042/);
 
@@ -398,4 +406,38 @@ test('마스터 UI/스크립트에 카톡 버튼·alert가 제거되고 검색�
   assert.equal(elMap.masterReportThoughtAnswer.textContent, '소중한 친구였습니다.');
   assert.equal(elMap.masterReportWorksheetSummary.textContent, '문해력이 뛰어납니다.');
   assert.match(elMap.masterReportWorksheetPhotos.innerHTML, /data:image\/png;base64,iVBOR/);
+
+  // 전체 가맹점으로 복귀 시 클래스 필터 비활성화+ALL 초기화 & 미조회 날짜는 조회 버튼(executeMasterLearningSearch) 클릭 시에만 반영
+  elMap.masterLearningClassFilter.value = '해바라기반';
+  elMap.masterLearningStartDate.value = '2025-01-02';
+  elMap.masterLearningEndDate.value = '2025-01-19';
+  await sandbox.selectMasterAcademyOption('ALL');
+  assert.equal(elMap.masterLearningClassFilter.disabled, true);
+  assert.equal(elMap.masterLearningClassFilter.value, 'ALL');
+  assert.equal(apiCalls.length, 4);
+  assert.equal(apiCalls[3].includes('classGroup='), false);
+  assert.equal(apiCalls[3].includes('startDate=2025-01-02'), false);
+  assert.equal(apiCalls[3].includes('endDate=2025-01-19'), false);
+
+  await sandbox.executeMasterLearningSearch();
+  assert.equal(apiCalls.length, 5);
+  assert.match(apiCalls[4], /startDate=2025-01-02/);
+  assert.match(apiCalls[4], /endDate=2025-01-19/);
+
+  // 인쇄 레이아웃·드롭다운 클리핑 방지 CSS & 초기 클래스 필터 disabled 검증
+  const masterCss = fs.readFileSync(path.join(__dirname, '..', 'public_html', 'css', 'master_preview.css'), 'utf8');
+  const portalSearchCss = fs.readFileSync(path.join(__dirname, '..', 'public_html', 'css', 'portal-search.css'), 'utf8');
+  const printBlock = masterCss.slice(masterCss.indexOf('@media print'));
+  assert.match(masterHtml, /css\/master_preview\.css\?v=20261113_dropdown_fix/);
+  assert.match(masterHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
+  assert.match(masterHtml, /js\/master\/master-learning\.js\?v=20261113_class_gate/);
+  assert.match(masterHtml, /<select[^>]+id="masterLearningClassFilter"[^>]+disabled/);
+  assert.match(masterCss, /\.master-filter-toolbar-card[\s\S]*overflow:\s*visible\s*!important/);
+  assert.match(portalSearchCss, /\.simple-card:has\(>\s*\.portal-search-toolbar\)[\s\S]*overflow:\s*visible\s*!important/);
+  assert.match(printBlock, /html\s*\{[^}]*height:\s*auto\s*!important;[^}]*overflow:\s*visible\s*!important;/);
+  assert.match(printBlock, /body\.printing-master-report[\s\S]*display:\s*block\s*!important;[\s\S]*height:\s*auto\s*!important;[\s\S]*overflow:\s*visible\s*!important;/);
+  assert.match(printBlock, /#masterLearningReportModal\s+\.modal-content[\s\S]*overflow:\s*visible\s*!important;/);
+  assert.match(printBlock, /\.master-report-overview-split[\s\S]*grid-template-columns:\s*minmax\(0,\s*1\.15fr\)\s*minmax\(0,\s*1fr\)\s*!important;/);
+  assert.match(printBlock, /\.master-report-quiz-grid[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*!important;/);
+  assert.match(masterJs, /beforeprint/);
 });

@@ -234,13 +234,18 @@ test('마스터 포트폴리오 UI/스크립트에 카톡 버튼·alert가 제�
   assert.match(html, /id="portfolioPrintDoc"/);
   assert.match(html, /id="btnMasterPfViewA4"/);
   assert.match(html, /id="btnMasterPfViewMobile"/);
-  assert.match(html, /css\/portfolio\.css\?v=20261113_pf_unify/);
+  assert.match(html, /css\/portfolio\.css\?v=20261113_pf_flow/);
   assert.match(html, /js\/portfolio-renderer\.js\?v=20261113_pf_unify/);
   assert.equal(html.includes('masterPfKakaoSentRate'), false);
 
-  // 한 줄 2권 2열 그리드 및 1페이지 A4 높이 채움 인쇄 CSS 검증
+  // 한 줄 2권 2열 그리드 및 1페이지 자연 흐름(나의 독서 취향 하단 여백 채움) 인쇄 CSS 검증
   assert.match(pfCss, /\.pf-books-grid-row\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(pfCss, /@media print[\s\S]*\.pf-page1-section[\s\S]*min-height:\s*254mm/);
+  const pfPrintBlock = pfCss.slice(pfCss.indexOf('@media print'));
+  assert.match(pfPrintBlock, /\.pf-page1-section\s*\{[^}]*display:\s*block;[^}]*min-height:\s*0;/);
+  assert.equal(/\.pf-page1-section[\s\S]*min-height:\s*254mm/.test(pfPrintBlock), false);
+  assert.match(pfPrintBlock, /\.pf-page2-section\s*\{[^}]*break-before:\s*auto;/);
+  assert.match(pfPrintBlock, /\.pf-detail-header\s*\{[^}]*display:\s*none\s*!important;/);
+  assert.match(pfPrintBlock, /\.pf-book-col,\s*#portfolioPrintDoc\s+\.pf-book-row-card[\s\S]*break-inside:\s*avoid;/);
 
   function makeEl(id) {
     return {
@@ -375,12 +380,15 @@ test('마스터 포트폴리오 UI/스크립트에 카톡 버튼·alert가 제�
 
   assert.equal(apiCalls.length, 1);
   assert.match(apiCalls[0], /^\/api\/manage\?entity=portfolios&academy=ALL/);
+  assert.equal(elMap.masterPfClassFilter.disabled, true);
+  assert.equal(elMap.masterPfClassFilter.value, 'ALL');
+  assert.match(elMap.masterPfClassFilter.innerHTML, /가맹점 먼저 선택/);
   assert.match(elMap.masterPfTableBody.innerHTML, /홍서연/);
   assert.match(elMap.masterPfTableBody.innerHTML, /부산 해운대 리딩/);
   assert.doesNotMatch(elMap.masterPfTableBody.innerHTML, /박지후|김태윤|카톡/);
   assert.equal(elMap.masterPfAvgQuizScore.textContent, '95');
 
-  // 검색형 가맹점 드롭다운 필터링 (API 미호출) -> 선택 시 재조회
+  // 검색형 가맹점 드롭다운 필터링 (API 미호출) -> 선택 시 재조회 + 클래스 필터 활성화
   elMap.masterPfAcademySearchInput.value = '해운대';
   elMap.masterPfAcademySearchInput.dispatchEvent({ type: 'input' });
   assert.equal(apiCalls.length, 1);
@@ -389,6 +397,9 @@ test('마스터 포트폴리오 UI/스크립트에 카톡 버튼·alert가 제�
 
   await sandbox.selectMasterPfAcademyOption('ACAD-042');
   assert.equal(elMap.masterPfAcademyFilter.value, 'ACAD-042');
+  assert.equal(elMap.masterPfClassFilter.disabled, false);
+  assert.match(elMap.masterPfClassFilter.innerHTML, /해바라기반/);
+  assert.doesNotMatch(elMap.masterPfClassFilter.innerHTML, /소나무반/);
   assert.equal(apiCalls.length, 2);
   assert.match(apiCalls[1], /academy=ACAD-042/);
 
@@ -413,6 +424,23 @@ test('마스터 포트폴리오 UI/스크립트에 카톡 버튼·alert가 제�
   sandbox.setMasterPortfolioViewMode('a4');
   assert.equal(elMap.masterPortfolioViewport.classList.contains('portfolio-view-a4'), true);
   assert.equal(elMap.btnMasterPfViewA4.classList.contains('active'), true);
+
+  // 전체 가맹점 복귀 시 클래스 필터 비활성화+ALL 초기화 & 미조회 날짜는 조회 버튼(filterMasterPortfolioList) 클릭 시에만 반영
+  elMap.masterPfClassFilter.value = '해바라기반';
+  elMap.masterPfStartDate.value = '2025-02-03';
+  elMap.masterPfEndDate.value = '2025-02-17';
+  await sandbox.selectMasterPfAcademyOption('ALL');
+  assert.equal(elMap.masterPfClassFilter.disabled, true);
+  assert.equal(elMap.masterPfClassFilter.value, 'ALL');
+  assert.equal(apiCalls.length, 4);
+  assert.equal(apiCalls[3].includes('classGroup='), false);
+  assert.equal(apiCalls[3].includes('startDate=2025-02-03'), false);
+  assert.equal(apiCalls[3].includes('endDate=2025-02-17'), false);
+
+  await sandbox.filterMasterPortfolioList();
+  assert.equal(apiCalls.length, 5);
+  assert.match(apiCalls[4], /startDate=2025-02-03/);
+  assert.match(apiCalls[4], /endDate=2025-02-17/);
 });
 
 test('포트폴리오 단건 조회 시 지도교사(class_meta 포함)·도서 메타·나노시트 코멘트가 DB에서 보강된다', async () => {
@@ -511,11 +539,29 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
   }
 
   const adminHtml = fs.readFileSync(path.join(pubDir, 'admin_preview.html'), 'utf8');
+  const masterHtml = fs.readFileSync(path.join(pubDir, 'master_preview.html'), 'utf8');
+  assert.match(adminHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
+  assert.match(adminHtml, /css\/portfolio\.css\?v=20261113_pf_flow/);
   assert.match(adminHtml, /js\/portfolio-renderer\.js\?v=20261113_pf_unify/);
-  assert.match(adminHtml, /admin_preview\.js\?v=20261113_pf_unify/);
+  assert.match(adminHtml, /admin_preview\.js\?v=20261113_date_query/);
   assert.match(adminHtml, /js\/admin_members\.js/);
-  assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_nanosheet_mgr/);
-  assert.match(adminHtml, /js\/admin_books\.js\?v=20261113_nanosheet_mgr/);
+  assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_sharing_v4/);
+  assert.match(adminHtml, /js\/admin_books\.js\?v=20261113_date_query/);
+  assert.match(masterHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
+  assert.match(masterHtml, /css\/master_preview\.css\?v=20261113_dropdown_fix/);
+  assert.match(masterHtml, /js\/master\/master-portfolio\.js\?v=20261113_class_gate/);
+  assert.match(masterHtml, /<select[^>]+id="masterPfClassFilter"[^>]+disabled/);
+
+  // 마스터/학원 HTML 내 모든 날짜 입력(<input type="date">)에 즉시 필터 onchange가 없고, 랭킹 조회 버튼이 존재하는지 검증
+  for (const [label, doc] of [['master_preview.html', masterHtml], ['admin_preview.html', adminHtml]]) {
+    const dateInputs = [...doc.matchAll(/<input\b[^>]*type=["']date["'][^>]*>/gi)].map(m => m[0]);
+    assert.equal(dateInputs.length >= 4, true, `${label}에 날짜 입력 필드가 4개 이상이어야 합니다`);
+    for (const tag of dateInputs) {
+      assert.equal(/\bonchange\s*=/i.test(tag), false, `${label} 날짜 입력에 onchange가 남아 있습니다: ${tag}`);
+    }
+  }
+  assert.match(masterHtml, /onclick="applyMasterRankDateFilter\(\)"/);
+  assert.match(adminHtml, /onclick="applyAdminRankDateFilter\(\)"/);
 
   // admin_preview.html이 참조하는 배포용 로컬 JS 파일 존재 여부 및 구문 검증
   const scriptMatches = [...adminHtml.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]);
