@@ -4661,7 +4661,7 @@ function addNewAcadQuizSet() {
 }
 
 // 선택된 퀴즈 세트 삭제
-function deleteCurAcadQuizSet() {
+async function deleteCurAcadQuizSet() {
   var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
   if (!curSet) return;
 
@@ -4676,7 +4676,8 @@ function deleteCurAcadQuizSet() {
     return;
   }
 
-  if (!confirm(`'${curSet.authorName}' 북퀴즈 세트 전체를 삭제하시겠습니까?`)) {
+  var quizSetDelMsg = `'${curSet.authorName}' 북퀴즈 세트 전체를 삭제하시겠습니까?`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(quizSetDelMsg) : confirm(quizSetDelMsg))) {
     return;
   }
 
@@ -5416,11 +5417,12 @@ async function handleSaveAcademyQuizOnly(event) {
 
 
 // 도서 삭제 함수
-function deleteAcademyBook(id) {
+async function deleteAcademyBook(id) {
   if (window.NanoPortal && NanoPortal.remote) { showAcademyToast('운영 도서 삭제는 본사 콘텐츠 관리에서 진행해 주세요.'); return; }
   var book = academyBookList.find(function(b) { return b.id === id; });
   var title = book ? book.title : id;
-  if (!confirm(`[${title}] 도서를 목록에서 삭제하시겠습니까?`)) {
+  var bookDelMsg = `[${title}] 도서를 목록에서 삭제하시겠습니까?`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(bookDelMsg) : confirm(bookDelMsg))) {
     return;
   }
   academyBookList = academyBookList.filter(function(b) { return b.id !== id; });

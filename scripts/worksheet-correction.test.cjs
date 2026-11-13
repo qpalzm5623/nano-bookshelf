@@ -117,3 +117,47 @@ test('첨삭 관리 탭에서는 원본 사진, 이번 활동에서 돋보인 �
   assert.match(editorHtml, /<div style="display:none;" aria-hidden="true">/);
   assert.ok(editorHtml.includes('type="hidden" id="worksheetQuote-0-quote"'));
 });
+
+test('첨삭 모달 상단 중복 버튼이 제거되고 도서표지·서지정보/학원·클래스·학생 레이아웃 및 간격이 개선되었다', () => {
+  const f = setup();
+  f.setRows([{
+    ...f.rows()[0],
+    academyName: '루크러닝학원',
+    bookPub: '문학동네',
+    bookAuthor: '루리',
+    cover: '/upload/book/long_night.jpg',
+    grade: '초등 5학년',
+    category: '문학'
+  }]);
+  f.ctx.openCorrectionModal('a');
+
+  assert.equal(f.get('modalCorrectionCoverImg').src, 'upload/book/long_night.jpg');
+  assert.equal(f.get('modalCorrectionBookGrade').innerText, '초등 5학년');
+  assert.equal(f.get('modalCorrectionBookCategory').innerText, '문학');
+  assert.equal(f.get('modalCorrectionBook').innerText, '검증 도서');
+  assert.equal(f.get('modalCorrectionBookPub').innerText, '문학동네 · 루리');
+  assert.equal(f.get('modalCorrectionAcademy').innerText, '루크러닝학원');
+  assert.equal(f.get('modalCorrectionClass').innerText, 'A');
+  assert.equal(f.get('modalCorrectionStudent').innerText, '검증 원생');
+  assert.equal(f.get('modalCorrectionDate').innerText, '2026-11-05');
+
+  const editorHtml = f.get('worksheetAiEditor').innerHTML;
+  assert.match(editorHtml, /corr-editor-card--strength/);
+  assert.match(editorHtml, /corr-editor-card--growth/);
+  assert.equal(editorHtml.includes('p-3.5'), false, 'Bootstrap 4에서 무시되는 p-3.5 클래스가 남아있으면 안 됩니다');
+
+  const adminHtml = fs.readFileSync('public_html/admin_preview.html', 'utf8');
+  const modalStart = adminHtml.indexOf('id="modalCorrection"');
+  const modalEnd = adminHtml.indexOf('id="modalCorrectionSubTitle"') > -1
+    ? adminHtml.indexOf('</div>\r\n  </div>\r\n\r\n  <div', modalStart)
+    : -1;
+  const aiCardStart = adminHtml.indexOf('id="worksheetAiResultCard"', modalStart);
+  const footerStart = adminHtml.indexOf('id="btnDeleteWorksheetCorrection"', aiCardStart);
+  assert.ok(modalStart > -1 && aiCardStart > modalStart && footerStart > aiCardStart);
+  const topAiCard = adminHtml.slice(aiCardStart, footerStart);
+  assert.equal(topAiCard.includes('deleteCorrectionFromModal()'), false, '상단 AI 섹션의 중복 삭제 버튼이 제거되어야 합니다');
+  assert.equal(topAiCard.includes('saveCorrectionFromModal()'), false, '상단 AI 섹션의 중복 수정 저장 버튼이 제거되어야 합니다');
+  assert.match(adminHtml.slice(modalStart, aiCardStart), /corr-overview-book/);
+  assert.match(adminHtml.slice(modalStart, aiCardStart), /corr-overview-student/);
+  assert.match(adminHtml.slice(modalStart, aiCardStart), /id="modalCorrectionAcademy"/);
+});

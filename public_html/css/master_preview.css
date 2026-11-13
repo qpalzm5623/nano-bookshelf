@@ -1331,12 +1331,27 @@
       }
       body.printing-master-report .master-report-thought-card,
       body.printing-master-report .master-report-worksheet-card {
-        padding: 12px 14px !important;
-        margin-top: 12px !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
+        padding: 9px 11px !important;
+        margin-top: 8px !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
         word-break: break-word !important;
         overflow-wrap: anywhere !important;
+      }
+      body.printing-master-report .master-report-photo-btn img {
+        max-height: 108px !important;
+        width: auto !important;
+        object-fit: contain !important;
+      }
+      body.printing-master-report .master-report-worksheet-card .row {
+        margin-top: 0 !important;
+        row-gap: 6px !important;
+      }
+      body.printing-master-report .master-report-worksheet-card .p-3 {
+        padding: 7px 10px !important;
+        margin-bottom: 5px !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
       body.printing-master-report #masterReportWorksheetSection .row {
         display: grid !important;

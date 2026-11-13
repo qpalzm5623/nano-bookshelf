@@ -710,7 +710,8 @@ async function deleteRecommendedBook(recId) {
   const target = list.find(b => b.id === recId);
   const targetName = target ? `[${target.title}] ` : '';
 
-  if (!confirm(`${targetName}해당 도서를 권장도서 목록에서 해제하시겠습니까?`)) return;
+  const recDelMsg = `${targetName}해당 도서를 권장도서 목록에서 해제하시겠습니까?`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(recDelMsg) : confirm(recDelMsg))) return;
 
   if (window.NanoPortal && NanoPortal.remote && target) {
     const book = masterBooks.find(item => item.id === target.bookId);

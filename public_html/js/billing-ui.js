@@ -348,7 +348,9 @@
 
   async function remove(id) {
     const p=state.payments.find(x=>x.id===id);
-    if (!p || !confirm(p.academyName+'의 결제 내역을 삭제할까요? 카카오톡 충전액은 회수되며, 잔액이 부족하면 삭제할 수 없습니다.')) return;
+    if (!p) return;
+    const removeMsg = p.academyName+'의 결제 내역을 삭제할까요? 카카오톡 충전액은 회수되며, 잔액이 부족하면 삭제할 수 없습니다.';
+    if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(removeMsg) : confirm(removeMsg))) return;
     try { await api('/api/billing',{ operation:'delete', id, revision:p.revision, academyId:p.academyId, requestId:crypto.randomUUID() }); await load(); toast('결제 내역을 삭제했습니다.'); } catch(e) { toast(e.message); }
   }
 
@@ -386,11 +388,15 @@
     };
   }
 
+  function invalidateDispatchCache() {
+    state.dispatchAt = 0;
+  }
+
   async function dispatch(force=false) {
     if (state.dispatchBusy || (!force && Date.now()-state.dispatchAt<30000)) return;
     state.dispatchBusy=true;
     try {
-      const s=await api('/api/services?action=dispatch_stats');
+      const s=await api('/api/services?action=dispatch_stats' + (force ? '&refresh=1' : ''));
       state.dispatchAt=Date.now();
       if (master()) { dispatchLogs=s.items; filterDispatchList(); }
       else { academyDispatchLogs=s.items; renderAcademyDispatchTable(); }
@@ -412,15 +418,22 @@
           connEl.innerHTML = '<span class="badge-soft badge-soft-danger font-weight-bold" style="font-size: 13.5px; padding: 5px 12px; border-radius: 6px;"><i class="fa-solid fa-triangle-exclamation mr-1"></i>연결 확인 필요</span>';
         }
       }
-      if (master()) text('statAligoConnectionSub',s.connected?'알리고 API 정상 연결됨':(s.aligoMessage||'알리고 API 응답 기준'));
+      text(master()?'statAligoConnectionSub':'academyAligoConnectionSub',s.connected?'알리고 API 정상 연결됨':(s.aligoMessage||'알리고 API 응답 기준'));
     } catch(e) { text(master()?'statAligoConnection':'academyAligoConnection','조회 실패'); toast(e.message); }
     finally { state.dispatchBusy=false; }
   }
 
   async function retry(id) {
     const list=master()?dispatchLogs:academyDispatchLogs, log=list.find(x=>x.id===id);
-    if (!log || !confirm(log.receiverName+' ('+log.receiverPhone+')에게 재발송할까요? 발송 시 1회 차감됩니다.')) return;
-    try { const result=await api('/api/services',{action:'retry',id}); toast(statuses[result.status] || '결과 확인 중'); await dispatch(true); }
+    if (!log) return;
+    const retryMsg = log.receiverName+' ('+log.receiverPhone+')에게 재발송할까요? 발송 시 1회 차감됩니다.';
+    if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(retryMsg, { tone: 'kakao', confirmText: '재발송하기' }) : confirm(retryMsg))) return;
+    try {
+      const result=await api('/api/services',{action:'retry',id});
+      const prefixLabel = result.duplicate ? '이미 접수된 건입니다 · ' : '';
+      toast(prefixLabel + (statuses[result.status] || '결과 확인 중') + (result.resultMessage ? ' (' + result.resultMessage + ')' : ''));
+      await dispatch(true);
+    }
     catch(e) { toast(e.message); }
   }
 
@@ -440,5 +453,5 @@
     if(deleteButton) remove(deleteButton.dataset.paymentDelete);
     if(registerButton) edit(null, registerButton.dataset.paymentRegisterAcademy);
   });
-  global.NanoBilling={load,renderPayments,edit,topup,dispatch,retry,wallet};
+  global.NanoBilling={load,renderPayments,edit,topup,dispatch,retry,wallet,invalidateDispatchCache};
 })(window);

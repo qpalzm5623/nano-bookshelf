@@ -112,7 +112,7 @@ export default async function handler(req: any, res: any) {
       const rawDirectors = body.directorUsernames === undefined && !previous ? [] : body.directorUsernames;
       const recipients = await resolveShareRecipients(prisma, rawDirectors, user.academyId);
       const academyName = user.academy?.name || (user.role === 'MASTER' ? '본사' : '가맹학원');
-      const value = { id, name, bookIds, recipients, ownerMemberId: user.id, ownerAcademyId: user.academyId, ownerAcademyName: academyName };
+      const value = { id, name, bookIds, recipients, ownerMemberId: user.id, ownerAcademyId: user.academyId, ownerAcademyName: academyName, ownerRole: user.role };
       if (previous) need(body.revision === previous.revision, '다른 화면에서 폴더가 변경되었습니다. 새로고침해 주세요.', 409);
       await saveContentRecord(prisma, 'content_folder:' + id, 'content_folder', value, previous ? body.revision : 0);
       return res.json({ ok: true, id });
@@ -186,9 +186,17 @@ export default async function handler(req: any, res: any) {
       const oldRow = access.rows.find(r => r.key === key);
       need((body.revision || 0) === (oldRow?.revision || 0), '다른 화면에서 퀴즈가 변경되었습니다. 다시 열어 주세요.', 409);
       const actorAcademyName = user.academy?.name || (user.role === 'MASTER' ? '본사' : '가맹학원');
-      const value = { bookId: book.id, seq, ownerAcademyId: isNew ? user.academyId : previous.ownerAcademyId,
-        ownerMemberId: previous.ownerMemberId || user.id, academyName: isNew ? actorAcademyName : previous.academyName,
-        authorType: user.role === 'MASTER' && isNew ? 'HQ' : previous.authorType, isPublic: body.isPublic };
+      // 마스터가 본사 퀴즈를 저장·공개전환할 때는 현재 본사 계정·기관 ID로 정규화해 공유 폴더 및 목록과 즉시 연결합니다.
+      const isMasterHqQuiz = user.role === 'MASTER' && (isNew || previous.authorType !== 'ACADEMY');
+      const value = {
+        bookId: book.id,
+        seq,
+        ownerAcademyId: isNew || isMasterHqQuiz ? user.academyId : previous.ownerAcademyId,
+        ownerMemberId: isMasterHqQuiz ? user.id : (previous.ownerMemberId || user.id),
+        academyName: isNew ? actorAcademyName : (previous.academyName || actorAcademyName),
+        authorType: isMasterHqQuiz ? 'HQ' : previous.authorType,
+        isPublic: body.isPublic
+      };
       await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM books WHERE id = ${book.id} FOR UPDATE`;
         if (isNew) await tx.portalSetting.create({ data: { key: `quiz_seq:${seq}`, scope: 'quiz_author_seq', value: { academyId: user.academyId, academyName: actorAcademyName, authorName: actorAcademyName, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY' } } });

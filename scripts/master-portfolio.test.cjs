@@ -555,14 +555,14 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
   assert.match(adminHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
   assert.match(adminHtml, /css\/portfolio\.css\?v=20261113_pf_flow/);
   assert.match(adminHtml, /js\/portfolio-renderer\.js\?v=20261113_pf_unify/);
-  assert.match(adminHtml, /admin_preview\.js\?v=20261113_query_only/);
-  assert.match(adminHtml, /js\/admin_members\.js\?v=20261113_query_only/);
-  assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_sharing_v6/);
-  assert.match(adminHtml, /js\/admin_books\.js\?v=20261113_query_only/);
+  assert.match(adminHtml, /admin_preview\.js\?v=20261113_kakao_log/);
+  assert.match(adminHtml, /js\/admin_members\.js\?v=20261113_center/);
+  assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_center/);
+  assert.match(adminHtml, /js\/admin_books\.js\?v=20261113_center/);
   assert.match(masterHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
-  assert.match(masterHtml, /css\/master_preview\.css\?v=20261113_dropdown_fix/);
+  assert.match(masterHtml, /css\/master_preview\.css\?v=20261113_print_compact/);
   assert.match(masterHtml, /js\/master\/master-portfolio\.js\?v=20261113_query_only/);
-  assert.match(masterHtml, /js\/master\/master-franchise\.js\?v=20261113_query_only/);
+  assert.match(masterHtml, /js\/master\/master-franchise\.js\?v=20261113_center/);
   assert.match(masterHtml, /js\/master\/master-ranking\.js\?v=20261113_query_only/);
   assert.match(masterHtml, /<select[^>]+id="masterPfClassFilter"[^>]+disabled/);
 

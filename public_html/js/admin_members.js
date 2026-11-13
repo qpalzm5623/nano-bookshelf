@@ -1046,7 +1046,7 @@ async function deleteClass(id) {
   var confirmMsg = `[${cls.name}] 학급을 삭제하시겠습니까?\n\n` +
     (count > 0 ? `※ 주의: 현재 이 학급에 소속된 원생 ${count}명의 소속이 자동으로 '미지정'으로 안전하게 전환됩니다.` : `※ 소속 원생이 없는 학급입니다.`);
 
-  if (!confirm(confirmMsg)) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
@@ -2936,7 +2936,8 @@ async function handleSaveTeacher(e) {
 async function deleteTeacher(id) {
   var t = teacherDataList.find(item => item.id === id);
   if (!t) return;
-  if (confirm(`[${t.name}] 선생님 계정을 삭제하시겠습니까?`)) {
+  var teacherDeleteMsg = `[${t.name}] 선생님 계정을 삭제하시겠습니까?`;
+  if (typeof nanoConfirm === 'function' ? await nanoConfirm(teacherDeleteMsg) : confirm(teacherDeleteMsg)) {
     if (window.NanoPortal && NanoPortal.remote) {
       try {
         await NanoPortal.deleteMember(t, currentAcademyInfo.id);

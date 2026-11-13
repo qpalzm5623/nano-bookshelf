@@ -1,8 +1,8 @@
-import { reserveDispatch, settleDispatch } from '../lib/kakao-wallet';
+import { reserveDispatch, settleDispatch, maskPhone } from '../lib/kakao-wallet';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, master, need, failure, academyScope } from '../lib/portal-http';
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
-import { ProxyAgent } from 'undici';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import seedBank from '../lib/literacy-item-bank.json';
 import {
   AREAS, PER_AREA, TOTAL_OF_BAND, bankCoverage, parseGradeStep, publicItem, selectItems, summarize, BAND_OF_GRADE,
@@ -30,6 +30,7 @@ const ACTIVE = ['PENDING', 'IN_PROGRESS'];
 // 알림톡 설정: 기존 서비스와 같은 환경변수를 쓰되, 문해력 결과지는 별도 승인 템플릿이 필요합니다.
 const fixieUrl = process.env.FIXIE_URL;
 const proxyDispatcher = fixieUrl ? new ProxyAgent(fixieUrl) : undefined;
+const aligoFetch: typeof fetch = proxyDispatcher && typeof undiciFetch === 'function' ? (undiciFetch as unknown as typeof fetch) : fetch;
 
 // ---------- 문항 은행 읽기/쓰기 ----------
 async function readBank() {
@@ -449,14 +450,23 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
     ],
   });
   const fingerprint = createHash('sha256').update(JSON.stringify([record.id, phone, message, tplCode])).digest('hex');
-  if (preview) return res.json({ message, recipient: phone, name: member.parentName || member.name + ' 보호자', targetUrl, fingerprint });
+  if (preview) {
+    console.info('[Aligo] literacy_preview', { recordId: record.id, tplCode, recipient: maskPhone(phone), messageLength: message.length });
+    return res.json({ message, recipient: phone, name: member.parentName || member.name + ' 보호자', targetUrl, fingerprint });
+  }
   need(fingerprint === fingerprintIn, '발송 전 최신 결과지 내용을 확인해 주세요.', 409);
   const logId = 'literacy_' + fingerprint;
   const existing = await prisma.aligoDispatchLog.findUnique({ where: { id: logId } });
-  if (existing) return res.json({ status: existing.status, duplicate: true });
+  if (existing) {
+    console.warn('[Aligo] literacy_duplicate_skipped', { logId: existing.id, status: existing.status, providerId: existing.providerId || null, resultCode: existing.resultCode || null, resultMessage: existing.resultMessage || null });
+    return res.json({ status: existing.status, duplicate: true, providerId: existing.providerId || null, resultCode: existing.resultCode || null, resultMessage: existing.resultMessage || null });
+  }
   // 외부 요청 전에 발송 기록을 먼저 남겨, 더블클릭이나 응답 유실로 인한 중복 발송을 막는다
   const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, subject: '문해력 진단 결과지' });
-  if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
+  if (reserved.duplicate) {
+    console.warn('[Aligo] literacy_duplicate_skipped', { logId: reserved.log.id, status: reserved.log.status, providerId: reserved.log.providerId || null });
+    return res.json({ status: reserved.log.status, duplicate: true, providerId: reserved.log.providerId || null, resultCode: reserved.log.resultCode || null, resultMessage: reserved.log.resultMessage || null });
+  }
   try {
     const fields = new URLSearchParams({
       apikey: apiKey!,
@@ -472,14 +482,20 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
     });
     const options: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
     if (proxyDispatcher) options.dispatcher = proxyDispatcher;
-    const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', options);
+    console.info('[Aligo] literacy_send_request', { logId, tplCode, recipient: maskPhone(phone), hasProxy: Boolean(proxyDispatcher), messageLength: message.length });
+    const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', options);
     const result: any = await response.json();
     const accepted = response.ok && result.code != null && Number(result.code) === 0;
     const rejected = response.ok && result.code != null && Number.isFinite(Number(result.code)) && Number(result.code) < 0;
     const status = accepted ? 'ACCEPTED' : rejected ? 'FAILED' : 'UNKNOWN';
-    await settleDispatch(logId, status, { providerId: accepted && result.info?.mid ? String(result.info.mid) : null, resultCode: String(result.code ?? ''), resultMessage: String(result.message || '').slice(0, 1000) });
-    return res.json({ status });
-  } catch {
+    const providerId = accepted && result.info?.mid ? String(result.info.mid) : null;
+    const resultCode = String(result.code ?? '');
+    const resultMessage = String(result.message || '').slice(0, 1000);
+    console[accepted ? 'info' : 'warn']('[Aligo] literacy_send_response', { logId, tplCode, httpStatus: response.status, ok: response.ok, status, code: resultCode, message: resultMessage, providerId });
+    await settleDispatch(logId, status, { providerId, resultCode, resultMessage });
+    return res.json({ status, providerId, resultCode, resultMessage });
+  } catch (err: any) {
+    console.error('[Aligo] literacy_send_exception', { logId, tplCode, recipient: maskPhone(phone), error: err?.cause?.message || err?.message || String(err) });
     await prisma.aligoDispatchLog.updateMany({ where: { id: logId, status: 'SENDING' }, data: { status: 'UNKNOWN' } });
     return res.status(502).json({ error: '발송 결과를 확인하지 못했습니다. 중복 발송을 막기 위해 재전송하지 않았습니다. 카톡 발송 내역에서 확인해 주세요.' });
   }

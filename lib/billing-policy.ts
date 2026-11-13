@@ -19,6 +19,7 @@ export function deliveryOutcome(row: any): 'SUCCESS' | 'FAILED' | 'SMS_FALLBACK'
   if (!row.rsltdate || String(row.rsltdate).startsWith('0000') || row.rslt == null || row.rslt === '' || !row.rslt_message) return null;
   if (/^(정상|성공|전송성공|전송 성공|정상처리|정상 처리|정상발송|정상 발송)$/.test(String(row.rslt_message).trim())) return 'SUCCESS';
   // 최종 실패 코드가 문서화된 경우에만 환급합니다. 미확인 코드는 확인 대기 유지.
-  if (['U'].includes(String(row.rslt)) || /실패|불가|불일치|일치하지|차단|미등록|존재하지|유효하지|만료|초과/.test(String(row.rslt_message))) return 'FAILED';
+  if (['U', 'N', 'E', 'F'].includes(String(row.rslt).trim().toUpperCase()) ||
+    /실패|불가|불일치|일치하지|차단|미등록|존재하지|유효하지|만료|초과|오류|거부|거절|미사용|미설치|해지|중단|제한|등록되지|허용되지/.test(String(row.rslt_message))) return 'FAILED';
   return null;
 }

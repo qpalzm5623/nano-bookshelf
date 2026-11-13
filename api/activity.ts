@@ -3,6 +3,15 @@ import { authenticate, need, failure, academyScope, staff } from '../lib/portal-
 import { monthWindow, getTodayStartUtc, readingProgress } from '../lib/portal-learning';
 import Reading = require('../public_html/js/reading-progress');
 
+/** 전국 랭킹에서 타 원생 아이디 뒷자리를 가려 개인정보·계정 노출을 방지합니다. */
+function maskRankingUsername(username: unknown): string {
+  const raw = String(username || '').trim();
+  if (!raw) return '';
+  if (raw.length <= 2) return raw[0] + '*';
+  const prefix = raw.length >= 4 ? raw.slice(0, 2) : raw.slice(0, 1);
+  return prefix + '*'.repeat(Math.min(4, Math.max(2, raw.length - prefix.length)));
+}
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -157,7 +166,7 @@ export default async function handler(req: any, res: any) {
       // 대상 전체를 JS로 전송하지 않고 DB에서 집계·순위를 정한 후 상위 100명과 본인만 반환합니다.
       const ranked = await prisma.$queryRaw<Array<any>>`
         WITH eligible AS (
-          SELECT m.id, m.name, m.points, a.name AS "academyName", c.name AS "className"
+          SELECT m.id, m.name, m.username, m.points, a.name AS "academyName", c.name AS "className"
           FROM members m JOIN academies a ON a.id = m."academyId"
           LEFT JOIN class_groups c ON c.id = m."classGroupId"
           WHERE m.role = 'STUDENT' AND m.status = 'APPROVED' AND a.status = 'ACTIVE' AND a."deletedAt" IS NULL
@@ -186,6 +195,7 @@ export default async function handler(req: any, res: any) {
         const selected = characters.get(r.id) || 'nano';
         const charId = Object.prototype.hasOwnProperty.call(Reading.rules, selected) && Reading.stage(selected, counts) > 0 ? selected : 'nano';
         return { rank: Number(r.rank), name: scope === 'national' && r.id !== user.id ? r.name.slice(0, 1) + '**' : r.name,
+          username: scope === 'national' && r.id !== user.id ? maskRankingUsername(r.username) : String(r.username || '').trim(),
           pt: Number(r.amount), books: Number(r.books), me: r.id === user.id, charId, stage: Reading.stage(charId, counts),
           cls: scope === 'national' ? [r.academyName, r.className].filter(Boolean).join(' · ') : r.className || '학급 미지정',
           academyName: r.academyName, className: r.className || '', change: 'same', changeNum: 0 };

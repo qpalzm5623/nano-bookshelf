@@ -612,6 +612,242 @@
       font-size: 12px;
     }
 
+    /* ==============================================================
+       나노 시트 첨삭 관리 모달 (#modalCorrection) 에디토리얼 디자인
+       ============================================================== */
+    #modalCorrection .corr-overview-card {
+      background: #edf5f1;
+      border: 1px solid #cddfd6;
+      border-top: 4px solid #187e73;
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+
+    #modalCorrection .corr-overview-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    #modalCorrection .corr-overview-book {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    #modalCorrection .corr-cover-wrap {
+      width: 72px;
+      height: 102px;
+      flex-shrink: 0;
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1px solid #d5e2dc;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(20, 89, 81, 0.14);
+    }
+
+    #modalCorrection .corr-cover-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #modalCorrection .corr-book-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    #modalCorrection .corr-book-badges {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    #modalCorrection .corr-book-title {
+      font-size: 16.5px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      margin: 0 0 4px;
+      word-break: keep-all;
+    }
+
+    #modalCorrection .corr-book-meta {
+      font-size: 12.5px;
+      color: #475569;
+      line-height: 1.45;
+      word-break: keep-all;
+    }
+
+    #modalCorrection .corr-overview-student {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #d3e5dc;
+      border-radius: 12px;
+      padding: 13px 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    #modalCorrection .corr-student-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e6eeea;
+    }
+
+    #modalCorrection .corr-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px 14px;
+    }
+
+    #modalCorrection .corr-info-item {
+      min-width: 0;
+    }
+
+    #modalCorrection .corr-info-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+
+    #modalCorrection .corr-info-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.35;
+      word-break: keep-all;
+    }
+
+    #modalCorrection .corr-section-header {
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #e6eeea;
+    }
+
+    #modalCorrection .corr-photos-box {
+      background: #faf9f6;
+      border: 1px solid #e6dfd5;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+
+    #modalCorrection .corr-photos-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #ece4d8;
+    }
+
+    #modalCorrection .corr-editor-card {
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+
+    #modalCorrection .corr-editor-card--strength {
+      background: linear-gradient(135deg, #f0fdf9 0%, #e7f7f2 100%);
+      border: 1px solid #a7f3d0;
+      border-left: 4px solid #10b981;
+    }
+
+    #modalCorrection .corr-editor-card--growth {
+      background: linear-gradient(135deg, #f4fbfa 0%, #ecf9f8 100%);
+      border: 1px solid #99f6e4;
+      border-left: 4px solid #0d9488;
+      margin-bottom: 0;
+    }
+
+    #modalCorrection .corr-card-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      padding-bottom: 11px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(15, 118, 110, 0.14);
+    }
+
+    #modalCorrection .corr-field-group {
+      margin-bottom: 14px;
+    }
+
+    #modalCorrection .corr-field-group:last-child {
+      margin-bottom: 0;
+    }
+
+    #modalCorrection .corr-field-label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 7px;
+    }
+
+    #modalCorrection .corr-textarea {
+      font-size: 13.5px;
+      line-height: 1.7;
+      resize: vertical;
+      border-radius: 10px;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    #modalCorrection .corr-textarea:focus {
+      border-color: #1f8a7e;
+      box-shadow: 0 0 0 3px rgba(31, 138, 126, 0.14);
+      outline: none;
+    }
+
+    #modalCorrection .corr-upload-dropzone {
+      background: #faf8f5;
+      border: 2px dashed #d1c7bd;
+      border-radius: 12px;
+      padding: 26px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 150ms ease, background-color 150ms ease;
+    }
+
+    #modalCorrection .corr-upload-dropzone:hover {
+      border-color: #1f8a7e;
+      background: #f3faf8;
+    }
+
+    @media (max-width: 680px) {
+      #modalCorrection .corr-overview-split {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      #modalCorrection .corr-overview-card {
+        padding: 14px;
+      }
+      #modalCorrection .corr-editor-card {
+        padding: 14px 15px;
+      }
+    }
+
     .report-quiz-card {
       background: #ffffff;
       border: 1.5px solid #e2e8f0;
@@ -823,7 +1059,7 @@
     @media print {
       @page {
         size: A4 portrait;
-        margin: 12mm 15mm 12mm 15mm;
+        margin: 8mm 10mm 8mm 10mm;
       }
 
       html {
@@ -1088,13 +1324,13 @@
 
       /* 3행 (2페이지): 생각 담기 및 첨삭 리포트 */
       body.is-printing-report .report-thought-card {
-        padding: 10px 14px !important;
+        padding: 9px 11px !important;
         background: #fdfbf7 !important;
         border: 1px solid #ebdccb !important;
         border-radius: 9px !important;
         box-shadow: none !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
       }
 
       body.is-printing-report .report-question-box {
@@ -1147,7 +1383,7 @@
       }
 
       body.is-printing-report .worksheet-photo img {
-        max-height: 250px !important;
+        max-height: 155px !important;
         object-fit: contain !important;
       }
 
@@ -3122,16 +3358,17 @@
     .worksheet-drawing strong { display: block; margin-bottom: 5px; font-size: 12.5px; }
     @media (max-width: 575.98px) { .worksheet-review { padding: 14px; } .worksheet-review-grid { grid-template-columns: 1fr !important; } }
     @media print {
-      body.is-printing-report .worksheet-review-grid { display: grid !important; grid-template-columns: 0.9fr 1.1fr !important; gap: 12px !important; }
-      body.is-printing-report .worksheet-photo, body.is-printing-report .worksheet-quote, body.is-printing-report .worksheet-drawing { break-inside: avoid !important; }
-      body.is-printing-report .worksheet-photo img { max-height: 250px !important; }
+      body.is-printing-report .worksheet-review-grid { display: grid !important; grid-template-columns: 0.85fr 1.15fr !important; gap: 10px !important; }
+      body.is-printing-report .worksheet-photo, body.is-printing-report .worksheet-quote, body.is-printing-report .worksheet-drawing { break-inside: avoid !important; page-break-inside: avoid !important; }
+      body.is-printing-report .worksheet-photo { padding: 4px !important; }
+      body.is-printing-report .worksheet-photo img { max-height: 155px !important; }
       body.is-printing-report .worksheet-feedback { margin-top: 0 !important; }
     }
   </style>
   <link rel="stylesheet" href="css/portal-search.css?v=20261113_dropdown_fix">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
-<link rel="stylesheet" href="css/learning-report.css?v=20261112-print">
-<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v6">
+<link rel="stylesheet" href="css/learning-report.css?v=20261113_print_compact">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v7">
 </head>
 
 <body>
@@ -6254,18 +6491,18 @@
   <!-- 3-B. 지도교사 나노 시트 첨삭 및 파일 관리 모달 -->
   <!-- ============================================================== -->
   <div class="modal fade" id="modalCorrection" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 760px;">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 780px;">
       <div class="modal-content"
-        style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 16px 40px rgba(0,0,0,0.18); overflow: hidden;">
+        style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 18px 44px rgba(0,0,0,0.18); overflow: hidden;">
         <div class="modal-header d-flex justify-content-between align-items-center"
-          style="background: #fbf9f5; border-bottom: 1px solid var(--border-light); padding: 16px 24px;">
+          style="background: #fbf9f5; border-bottom: 1px solid var(--border-light); padding: 18px 26px;">
           <div class="d-flex align-items-center">
             <div
-              style="width: 38px; height: 38px; border-radius: 10px; background: #e8ede4; color: #2d6a4f; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 18px;">
+              style="width: 40px; height: 40px; border-radius: 11px; background: #e8ede4; color: #2d6a4f; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 18px;">
               <i class="fa-solid fa-pen-nib"></i>
             </div>
             <div>
-              <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16.5px; color: var(--text-main);">
+              <h5 class="modal-title font-weight-bold mb-0" style="font-size: 17px; color: var(--text-main);">
                 나노 시트 첨삭 관리
               </h5>
               <small class="text-muted" style="font-size: 12px;" id="modalCorrectionSubTitle">원생의 나노시트 첨삭 및 지도 피드백</small>
@@ -6276,77 +6513,109 @@
           </button>
         </div>
 
-        <div class="modal-body p-4" style="background: #ffffff; max-height: 78vh; overflow-y: auto;">
-          <!-- 상단 원생 및 도서 요약 -->
-          <div class="p-3 mb-3 rounded bg-light border d-flex justify-content-between align-items-center"
-            style="border-color: #e2e8f0 !important;">
-            <div>
-              <div class="font-weight-bold text-dark" style="font-size: 14.5px;" id="modalCorrectionStudent">강태양 (나노반)
+        <div class="modal-body" style="background: #ffffff; padding: 24px 26px; max-height: 78vh; overflow-y: auto;">
+          <!-- 상단 개요 카드 (좌측: 도서 표지 및 도서 정보 / 우측: 학원명·클래스명·학생명 정보) -->
+          <div class="corr-overview-card">
+            <div class="corr-overview-split">
+              <!-- 좌측: 도서 표지 + 서지 정보 -->
+              <div class="corr-overview-book">
+                <div class="corr-cover-wrap">
+                  <img id="modalCorrectionCoverImg" src="upload/book/book_default.jpg" alt="도서 표지"
+                    onerror="this.onerror=null; this.src='upload/book/book_default.jpg';">
+                </div>
+                <div class="corr-book-info">
+                  <div class="corr-book-badges">
+                    <span class="badge-soft badge-soft-success font-weight-bold"
+                      style="font-size: 11px; padding: 2px 8px; border-radius: 20px;">
+                      <i class="fa-solid fa-book-open mr-1"></i>완독 도서
+                    </span>
+                    <span id="modalCorrectionBookGrade" class="badge-soft badge-soft-neutral"
+                      style="font-size: 11px; padding: 2px 8px; border-radius: 20px;">초등 전학년</span>
+                    <span id="modalCorrectionBookCategory" class="badge-soft badge-soft-neutral"
+                      style="font-size: 11px; padding: 2px 8px; border-radius: 20px;">문학 / 이야기</span>
+                  </div>
+                  <h5 class="corr-book-title" id="modalCorrectionBook">긴긴밤</h5>
+                  <div class="corr-book-meta" id="modalCorrectionBookPub">나노 교육출판</div>
+                </div>
               </div>
-              <small class="text-muted" id="modalCorrectionBook" style="font-size: 12.5px;">10층 큰 나무 아파트에 여름이 왔어요 · 2026-09-20</small>
+
+              <!-- 우측: 학원명 · 클래스명 · 학생명 · 학습일시 및 상태 -->
+              <div class="corr-overview-student">
+                <div class="corr-student-top">
+                  <span style="font-size: 11.5px; font-weight: 700; color: #047857;">
+                    <i class="fa-solid fa-user-graduate mr-1"></i>원생 및 소속 정보
+                  </span>
+                  <span class="badge-soft badge-soft-warn font-weight-bold" id="modalCorrectionBadge"
+                    style="font-size: 11.5px; padding: 3px 10px; border-radius: 14px;">첨삭 전</span>
+                </div>
+                <div class="corr-info-grid">
+                  <div class="corr-info-item">
+                    <span class="corr-info-label">학원명</span>
+                    <div class="corr-info-value" id="modalCorrectionAcademy">-</div>
+                  </div>
+                  <div class="corr-info-item">
+                    <span class="corr-info-label">클래스명</span>
+                    <div class="corr-info-value" id="modalCorrectionClass">-</div>
+                  </div>
+                  <div class="corr-info-item">
+                    <span class="corr-info-label">학생명</span>
+                    <div class="corr-info-value" id="modalCorrectionStudent">-</div>
+                  </div>
+                  <div class="corr-info-item">
+                    <span class="corr-info-label">학습일시</span>
+                    <div class="corr-info-value" id="modalCorrectionDate">-</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <span class="badge-soft badge-soft-warn font-weight-bold" id="modalCorrectionBadge"
-              style="font-size: 12px; padding: 4px 10px; border-radius: 14px;">첨삭 전</span>
           </div>
 
           <!-- 1) 나노시트 사진(2~3페이지) 촬영 / 업로드 -->
-          <div id="worksheetUploadSection" class="form-group mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <label class="font-weight-bold mb-0" style="font-size: 12.5px;">
-                <i class="fa-solid fa-camera text-primary mr-1"></i>나노시트 사진 촬영 / 업로드 <small class="text-muted font-weight-normal">(2~3페이지 최대 3장)</small>
+          <div id="worksheetUploadSection" class="form-group mb-0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="font-weight-bold mb-0" style="font-size: 13px; color: #1e293b;">
+                <i class="fa-solid fa-camera text-primary mr-2"></i>나노시트 사진 촬영 / 업로드 <small class="text-muted font-weight-normal">(2~3페이지 최대 3장)</small>
               </label>
-              <span class="badge badge-pill badge-light border text-muted" style="font-size: 11px;" id="worksheetPhotoCountBadge">0장 선택됨</span>
+              <span class="badge badge-pill badge-light border text-muted" style="font-size: 11.5px; padding: 4px 10px;" id="worksheetPhotoCountBadge">0장 선택됨</span>
             </div>
-            <div class="p-3 rounded text-center" style="background: #faf8f5; border: 2px dashed #d1c7bd; cursor: pointer;" onclick="document.getElementById('correctionFileInput').click()">
-              <i class="fa-solid fa-cloud-arrow-up text-muted mb-1" style="font-size: 24px;"></i>
-              <div class="font-weight-bold text-dark" style="font-size: 12.5px;">스마트폰 카메라로 촬영하거나 사진 파일 선택</div>
-              <small class="text-muted" style="font-size: 11px;">오프라인 손글씨 및 그림 시트 2~3p (JPG, PNG, WebP 지원, 자동 최적화)</small>
+            <div class="corr-upload-dropzone" onclick="document.getElementById('correctionFileInput').click()">
+              <i class="fa-solid fa-cloud-arrow-up text-muted mb-2" style="font-size: 26px;"></i>
+              <div class="font-weight-bold text-dark mb-1" style="font-size: 13px;">스마트폰 카메라로 촬영하거나 사진 파일 선택</div>
+              <small class="text-muted" style="font-size: 11.5px;">오프라인 손글씨 및 그림 시트 2~3p (JPG, PNG, WebP 지원, 자동 최적화)</small>
               <input type="file" id="correctionFileInput" accept="image/*,.pdf" multiple class="d-none" onchange="handleWorksheetImagesSelect(this)">
             </div>
 
             <!-- 선택된 이미지 썸네일 미리보기 컨테이너 -->
-            <div id="worksheetUploadThumbnails" class="gap-2 mt-2 flex-wrap" style="display: none;">
+            <div id="worksheetUploadThumbnails" class="gap-2 mt-3 flex-wrap" style="display: none;">
               <!-- 썸네일 미리보기 카드 동적 생성 -->
             </div>
           </div>
 
           <!-- 완료된 결과의 각 항목을 직접 검토하고 수정합니다. -->
           <div id="worksheetAiResultCard" style="display:none;">
-            <div class="d-flex justify-content-between align-items-start flex-wrap mb-3 pb-2 border-bottom" style="gap: 8px;">
-              <div>
-                <h6 class="font-weight-bold mb-1" style="color: var(--text-main); font-size: 14px;">
-                  <i class="fa-solid fa-wand-magic-sparkles text-success mr-1.5"></i>AI 분석 결과 및 첨삭 내역 편집
-                </h6>
-                <p class="text-muted mb-0" style="font-size:12px;">완료된 첨삭 결과를 확인하고 각 항목을 자유롭게 수정한 뒤 저장하거나 삭제할 수 있습니다.</p>
-              </div>
-              <div class="d-flex align-items-center" style="gap: 8px;">
-                <button type="button" class="btn btn-xs font-weight-bold px-3 py-1.5" onclick="deleteCorrectionFromModal()"
-                  style="border-radius: 7px; font-size: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; cursor: pointer; transition: all 0.15s ease;">
-                  <i class="fa-solid fa-trash-can mr-1"></i>첨삭 삭제
-                </button>
-                <button type="button" class="btn btn-xs font-weight-bold px-3 py-1.5" onclick="saveCorrectionFromModal()"
-                  style="border-radius: 7px; font-size: 12px; background: linear-gradient(135deg, #1f8a7e, #145951); color: #ffffff; border: none; box-shadow: 0 1px 4px rgba(31,138,126,0.25); cursor: pointer; transition: all 0.15s ease;">
-                  <i class="fa-solid fa-floppy-disk mr-1"></i>수정 저장
-                </button>
-              </div>
+            <div class="corr-section-header">
+              <h6 class="font-weight-bold mb-1" style="color: var(--text-main); font-size: 14.5px;">
+                <i class="fa-solid fa-wand-magic-sparkles text-success mr-2"></i>AI 분석 결과 및 첨삭 내역 편집
+              </h6>
+              <p class="text-muted mb-0" style="font-size:12.5px;">완료된 첨삭 결과를 확인하고 각 항목을 자유롭게 수정한 뒤 아래 [수정 내용 저장] 버튼으로 저장할 수 있습니다.</p>
             </div>
             <!-- 등록된 나노시트 원본 이미지 미리보기 (첨삭 완료 건) -->
-            <div id="worksheetDonePhotosPreview" class="mb-3" style="display: none;"></div>
+            <div id="worksheetDonePhotosPreview" style="display: none; margin-bottom: 18px;"></div>
             <div id="worksheetAiEditor"></div>
           </div>
         </div>
-        <div class="modal-footer px-4 py-3 bg-light" style="gap: 10px; border-top: 1px solid var(--border-light);">
-          <button type="button" id="btnDeleteWorksheetCorrection" class="btn btn-sm font-weight-bold mr-auto" style="display:none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; padding: 7px 18px; font-size: 13px;" onclick="deleteCorrectionFromModal()">
-            <i class="fa-solid fa-trash-can mr-1.5"></i>첨삭 내역 삭제
+        <div class="modal-footer bg-light" style="padding: 15px 26px; gap: 10px; border-top: 1px solid var(--border-light);">
+          <button type="button" id="btnDeleteWorksheetCorrection" class="btn btn-sm font-weight-bold mr-auto" style="display:none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; padding: 8px 18px; font-size: 13px;" onclick="deleteCorrectionFromModal()">
+            <i class="fa-solid fa-trash-can mr-2"></i>첨삭 내역 삭제
           </button>
-          <button type="button" class="btn btn-sm px-4 font-weight-semibold" data-dismiss="modal" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 8px; padding: 7px 22px; font-size: 13px;">
+          <button type="button" class="btn btn-sm px-4 font-weight-semibold" data-dismiss="modal" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 8px; padding: 8px 22px; font-size: 13px;">
             닫기
           </button>
-          <button type="button" id="btnRunWorksheetAi" class="btn btn-sm px-4 font-weight-bold" onclick="runWorksheetAiAnalysis()" disabled style="background: linear-gradient(135deg, #1f8a7e, #145951); border: none; color: #ffffff; border-radius: 8px; padding: 7px 22px; font-size: 13px; box-shadow: 0 2px 6px rgba(31,138,126,0.25);">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>나노 시트 첨삭 실행
+          <button type="button" id="btnRunWorksheetAi" class="btn btn-sm px-4 font-weight-bold" onclick="runWorksheetAiAnalysis()" disabled style="background: linear-gradient(135deg, #1f8a7e, #145951); border: none; color: #ffffff; border-radius: 8px; padding: 8px 22px; font-size: 13px; box-shadow: 0 2px 6px rgba(31,138,126,0.25);">
+            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>나노 시트 첨삭 실행
           </button>
-          <button type="button" id="btnSaveWorksheetCorrection" class="btn btn-sm px-4 font-weight-bold" style="display:none; background: linear-gradient(135deg, #1f8a7e, #145951); border: none; color: #ffffff; border-radius: 8px; padding: 7px 24px; font-size: 13px; box-shadow: 0 2px 6px rgba(31,138,126,0.25);" onclick="saveCorrectionFromModal()">
-            <i class="fa-solid fa-check mr-1.5"></i>수정 내용 저장
+          <button type="button" id="btnSaveWorksheetCorrection" class="btn btn-sm px-4 font-weight-bold" style="display:none; background: linear-gradient(135deg, #1f8a7e, #145951); border: none; color: #ffffff; border-radius: 8px; padding: 8px 24px; font-size: 13px; box-shadow: 0 2px 6px rgba(31,138,126,0.25);" onclick="saveCorrectionFromModal()">
+            <i class="fa-solid fa-check mr-2"></i>수정 내용 저장
           </button>
         </div>
       </div>
@@ -9398,20 +9667,21 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
   <!-- Daum 우편번호 서비스 (비동기 지연 로딩) -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
+  <script src="js/nano-dialog.js?v=20261113_center"></script>
   <script src="js/learning-storage.js?v=20261014_ux2"></script>
   <script src="js/quiz-result-art.js?v=20261110-characters"></script>
   <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-admin.js?v=20261113_query_only"></script>
+<script src="js/literacy/literacy-admin.js?v=20261113_kakao_log"></script>
 <script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
-<script src="admin_preview.js?v=20261113_query_only"></script>
-<script src="js/admin_members.js?v=20261113_query_only"></script>
-<script src="js/content-sharing.js?v=20261113_sharing_v6"></script>
-<script src="js/admin_books.js?v=20261113_query_only"></script>
-<script src="js/admin_payment.js?v=20261111_v1"></script>
+<script src="admin_preview.js?v=20261113_kakao_log"></script>
+<script src="js/admin_members.js?v=20261113_center"></script>
+<script src="js/content-sharing.js?v=20261113_center"></script>
+<script src="js/admin_books.js?v=20261113_center"></script>
+<script src="js/admin_payment.js?v=20261113_center"></script>
 <script src="js/admin_notices.js?v=20261111_v1"></script>
-<script src="js/admin_worksheet_ai.js?v=20261111_v1"></script>
+<script src="js/admin_worksheet_ai.js?v=20261113_center"></script>
 <script src="js/admin_myinfo.js?v=20261111_v1"></script>
 
   <!-- PWA Service Worker Registration -->
@@ -9428,7 +9698,7 @@
   <script src="js/pwa-install.js"></script>
 
 <script src="js/portal-extras.js?v=20261029-integrity"></script>
-<script src="js/billing-ui.js?v=20261110_topup_confirm"></script>
+<script src="js/billing-ui.js?v=20261113_kakao_log"></script>
 </body>
 
 </html>

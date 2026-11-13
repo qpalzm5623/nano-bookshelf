@@ -1287,8 +1287,8 @@ var worksheetEditableFields = [
 
 function worksheetEditorField(id, label, value, rows, minHeight) {
   var minH = minHeight ? 'min-height:' + minHeight + ';' : '';
-  return '<div class="form-group mb-3"><label class="font-weight-bold text-dark mb-1.5" for="' + id + '" style="font-size:12.5px;">' + escapePortfolioText(label) + '</label>' +
-    '<textarea id="' + id + '" class="form-control form-control-beige" rows="' + rows + '" maxlength="5000" style="font-size:13px;line-height:1.65;resize:vertical;border-radius:8px;' + minH + 'padding:10px 12px;border:1px solid #cbd5e1;background:#ffffff;">' + escapePortfolioText(value || '') + '</textarea></div>';
+  return '<div class="form-group corr-field-group" style="margin-bottom:14px;"><label class="corr-field-label" for="' + id + '" style="display:block;font-size:12.5px;font-weight:700;color:#1e293b;margin-bottom:7px;">' + escapePortfolioText(label) + '</label>' +
+    '<textarea id="' + id + '" class="form-control form-control-beige corr-textarea" rows="' + rows + '" maxlength="5000" style="width:100%;font-size:13.5px;line-height:1.7;resize:vertical;border-radius:10px;' + minH + 'padding:12px 14px;border:1px solid #cbd5e1;background:#ffffff;color:#0f172a;">' + escapePortfolioText(value || '') + '</textarea></div>';
 }
 
 function renderWorksheetCorrectionEditor() {
@@ -1300,24 +1300,24 @@ function renderWorksheetCorrectionEditor() {
   var html = '';
 
   // [카드 1] 이번 활동에서 돋보인 점 (에메랄드/그린 테마)
-  html += '<div class="p-3.5 mb-3 rounded" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6f7f4 100%); border: 1.5px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 12px;">' +
-    '<div class="d-flex align-items-center mb-2.5 pb-2 border-bottom" style="border-color: #d1fae5 !important;">' +
-    '<i class="fa-solid fa-lightbulb text-warning mr-2" style="font-size: 15px;"></i>' +
-    '<strong style="font-size: 13.5px; color: #065f46;">이번 활동에서 돋보인 점</strong>' +
-    '<small class="text-muted ml-2 font-weight-normal">(리포트 메인 강점 피드백)</small>' +
+  html += '<div class="corr-editor-card corr-editor-card--strength" style="padding:18px 20px;margin-bottom:16px;background:linear-gradient(135deg, #f0fdf9 0%, #e7f7f2 100%);border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:14px;">' +
+    '<div class="corr-card-head" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding-bottom:11px;margin-bottom:14px;border-bottom:1px solid rgba(16,185,129,0.2);">' +
+    '<i class="fa-solid fa-lightbulb text-warning mr-1" style="font-size:15px;"></i>' +
+    '<strong style="font-size:13.5px;color:#065f46;">이번 활동에서 돋보인 점</strong>' +
+    '<small class="text-muted font-weight-normal">(리포트 메인 강점 피드백)</small>' +
     '</div>' +
-    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약 및 칭찬 피드백', result.summary, 6, '130px') +
+    worksheetEditorField('worksheetEdit-summary', '활동 관찰 요약 및 칭찬 피드백', result.summary, 6, '135px') +
     '</div>';
 
   // [카드 2] 다음 성장을 위한 발걸음 (틸/민트 테마)
-  html += '<div class="p-3.5 mb-2 rounded" style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-left: 4px solid #0d9488; border-radius: 12px;">' +
-    '<div class="d-flex align-items-center mb-2.5 pb-2 border-bottom" style="border-color: #ccfbf1 !important;">' +
-    '<i class="fa-solid fa-compass text-info mr-2" style="font-size: 15px;"></i>' +
-    '<strong style="font-size: 13.5px; color: #0f766e;">다음 성장을 위한 발걸음</strong>' +
-    '<small class="text-muted ml-2 font-weight-normal">(다음 독서 방향 및 가정 대화)</small>' +
+  html += '<div class="corr-editor-card corr-editor-card--growth" style="padding:18px 20px;margin-bottom:0;background:linear-gradient(135deg, #f4fbfa 0%, #ecf9f8 100%);border:1px solid #99f6e4;border-left:4px solid #0d9488;border-radius:14px;">' +
+    '<div class="corr-card-head" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding-bottom:11px;margin-bottom:14px;border-bottom:1px solid rgba(13,148,136,0.2);">' +
+    '<i class="fa-solid fa-compass text-info mr-1" style="font-size:15px;"></i>' +
+    '<strong style="font-size:13.5px;color:#0f766e;">다음 성장을 위한 발걸음</strong>' +
+    '<small class="text-muted font-weight-normal">(다음 독서 방향 및 가정 대화)</small>' +
     '</div>' +
-    worksheetEditorField('worksheetEdit-nextStep', '• 이렇게 해보세요 (다음 독서 실천 방향)', result.nextStep, 4, '90px') +
-    worksheetEditorField('worksheetEdit-parentGuide', '• 집에서 함께 나눌 이야기 (가정 대화 팁)', result.parentGuide, 4, '90px') +
+    worksheetEditorField('worksheetEdit-nextStep', '• 이렇게 해보세요 (다음 독서 실천 방향)', result.nextStep, 4, '96px') +
+    worksheetEditorField('worksheetEdit-parentGuide', '• 집에서 함께 나눌 이야기 (가정 대화 팁)', result.parentGuide, 4, '96px') +
     '</div>';
 
   // [숨김 영역: 데이터 정합성 및 백엔드/테스트 호환성 유지용]
@@ -1393,45 +1393,37 @@ function openCorrectionModal(logId) {
   var thumbBox = document.getElementById('worksheetUploadThumbnails');
   if (thumbBox) {
     thumbBox.innerHTML = '';
-    thumbBox.style.setProperty('display', 'none', 'important');
+    if (thumbBox.style && typeof thumbBox.style.setProperty === 'function') thumbBox.style.setProperty('display', 'none', 'important');
+    else if (thumbBox.style) thumbBox.style.display = 'none';
   }
   var fileInput = document.getElementById('correctionFileInput');
   if (fileInput) fileInput.value = '';
   var photoBadge = document.getElementById('worksheetPhotoCountBadge');
   if (photoBadge) photoBadge.innerText = currentWorksheetPhotos.length > 0 ? (currentWorksheetPhotos.length + '장 선택됨') : '0장 선택됨';
 
-  // 첨삭 완료 상태인데 worksheetAiResult가 비어있거나(이관/구형 첨삭 기록 등) 일부 필드가 누락된 경우 복원
+  // 첨삭 완료 상태인데 worksheetAiResult가 비어있거나(이관/구형 첨삭 기록 등) 일부 필드가 누락된 경우 복원 (생각 담기 답안 혼입 금지)
   if (currentWorksheetCorrectionDone) {
     var sName = log.studentName || log.name || '원생';
     var bName = log.bookTitle || '도서';
     var existingComment = String(log.comment || '').trim();
-    var studentAns = String(log.studentThoughtAnswer || log.thoughtAnswer || log.sheetAnswer || '').trim();
     if (!currentWorksheetAiResult || typeof currentWorksheetAiResult !== 'object') {
-      var defaultSummary = existingComment || (studentAns.length > 3
-        ? ('『' + bName + '』의 핵심 사건을 접하고 "' + studentAns.slice(0, 30) + (studentAns.length > 30 ? '...' : '') + '"라는 생각을 솔직하게 풀어냈습니다. 책 속 상황을 자신의 일상 경험과 자연스럽게 연결 지어 주도적으로 생각을 완성했습니다.')
-        : ('『' + bName + '』을(를) 읽고 인물의 심리와 이야기 전개를 자신만의 시선으로 생생하게 시트에 담아냈습니다. 책의 중심 메시지를 놓치지 않고 자신의 느낌을 솔직하게 풀어낸 표현력이 돋보입니다.'));
-      var defaultNext = '이번 활동처럼 마음에 남는 장면을 발견했을 때, "만약 나라면 다른 결정을 내렸을까?"라는 짧은 메모를 덧붙여 보세요. 인물의 입장과 나의 입장을 비교해보며 깊이 있는 사고 습관이 길러집니다.';
-      var defaultParent = '"' + sName + '이가 『' + bName + '』을 읽고 자기만의 가치관으로 깊이 고민해본 모습이 무척 기특해!"라고 칭찬해 주시고, "인물이 그런 선택을 한 진짜 이유는 무엇이었을까?"라는 질문으로 대화를 나누어 보세요.';
+      var defaultSummary = existingComment || ('『' + bName + '』 나노시트 활동 사진이 등록되어 있습니다. AI 정밀 첨삭을 실행하면 업로드된 나노시트 사진을 바탕으로 분석합니다.');
+      var defaultNext = '나노시트 사진 속 글과 그림 표현을 바탕으로 AI 정밀 첨삭을 다시 실행하면 맞춤형 성장 피드백을 확인할 수 있습니다.';
+      var defaultParent = '"' + sName + '이가 『' + bName + '』 나노시트를 정성껏 완성했구나!"라고 격려해 주시고, 어떤 장면이 가장 기억에 남았는지 이야기를 나누어 보세요.';
       currentWorksheetAiResult = {
         summary: defaultSummary,
-        actualQuotes: [
-          {
-            quote: studentAns || ('『' + bName + '』 나노시트 생각 담기'),
-            criteria: '경험 연결 및 자기표현',
-            comment: existingComment || ('책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.')
-          }
-        ],
-        drawingObservation: '『' + bName + '』에서 느낀 감정과 장면의 분위기를 시트 여백에 정성스럽게 구성하여 표현력을 한층 더했습니다.',
-        languageHandwritingNote: '자신의 느낌과 생각을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.',
+        actualQuotes: [],
+        drawingObservation: '',
+        languageHandwritingNote: '',
         nextStep: defaultNext,
         parentGuide: defaultParent
       };
     } else {
       if (currentWorksheetAiResult.drawingObservation === undefined) {
-        currentWorksheetAiResult.drawingObservation = '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.';
+        currentWorksheetAiResult.drawingObservation = '';
       }
       if (currentWorksheetAiResult.languageHandwritingNote === undefined) {
-        currentWorksheetAiResult.languageHandwritingNote = '자신의 느낌과 생각을 솔직하게 문장으로 담아내려는 훌륭한 독서 태도를 보여줍니다.';
+        currentWorksheetAiResult.languageHandwritingNote = '';
       }
     }
   }
@@ -1441,25 +1433,25 @@ function openCorrectionModal(logId) {
     if (currentWorksheetCorrectionDone) {
       donePhotosBox.style.display = 'block';
       if (currentWorksheetPhotos.length > 0) {
-        donePhotosBox.innerHTML = '<div class="p-3 mb-3 rounded" style="background:#fbf9f5; border: 1.5px solid #e8e0d5; border-radius: 10px;">' +
-          '<div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom" style="border-color:#ece4d8 !important;">' +
-          '<div class="font-weight-bold" style="font-size:12.5px; color:#3d342d;">' +
-          '<i class="fa-solid fa-camera text-primary mr-1.5"></i><strong>아이가 작성한 나노시트 원본</strong>' +
+        donePhotosBox.innerHTML = '<div class="corr-photos-box" style="background:#faf9f6;border:1px solid #e6dfd5;border-radius:12px;padding:16px 18px;margin-bottom:18px;">' +
+          '<div class="corr-photos-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #ece4d8;">' +
+          '<div class="font-weight-bold" style="font-size:13px;color:#3d342d;">' +
+          '<i class="fa-solid fa-camera text-primary mr-2"></i><strong>아이가 작성한 나노시트 원본</strong>' +
           '</div>' +
-          '<span class="badge badge-pill badge-light border text-muted" style="font-size:11px;">총 ' + currentWorksheetPhotos.length + '장 · 눌러서 크게 보기</span>' +
+          '<span class="badge badge-pill badge-light border text-muted" style="font-size:11.5px;padding:4px 10px;">총 ' + currentWorksheetPhotos.length + '장 · 눌러서 크게 보기</span>' +
           '</div>' +
-          '<div class="d-flex flex-wrap" style="gap:10px;">' +
+          '<div class="d-flex flex-wrap" style="gap:12px;">' +
           currentWorksheetPhotos.map(function(p, idx) {
             var src = escapePortfolioText((p && (p.dataUrl || p.url)) || '');
             return src ? '<div class="position-relative" style="cursor:pointer;" onclick="openWorksheetPhotoLightbox(\'' + src + '\')" title="클릭하여 원본 크게 보기">' +
-              '<img src="' + src + '" alt="나노시트 ' + (idx + 1) + '페이지" style="width:84px;height:112px;object-fit:cover;border-radius:8px;border:1.5px solid #d8cebf;box-shadow:0 2px 6px rgba(0,0,0,0.08);">' +
-              '<span class="badge badge-dark position-absolute" style="bottom:4px;right:4px;font-size:10px;opacity:0.85;padding:2px 5px;">' + (idx + 1) + 'p</span>' +
+              '<img src="' + src + '" alt="나노시트 ' + (idx + 1) + '페이지" style="width:92px;height:122px;object-fit:cover;border-radius:9px;border:1.5px solid #d8cebf;box-shadow:0 3px 8px rgba(0,0,0,0.08);">' +
+              '<span class="badge badge-dark position-absolute" style="bottom:6px;right:6px;font-size:10px;opacity:0.88;padding:2px 6px;">' + (idx + 1) + 'p</span>' +
               '</div>' : '';
           }).join('') +
           '</div></div>';
       } else {
-        donePhotosBox.innerHTML = '<div class="p-3 mb-3 rounded text-center" style="background:#f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px; color:#64748b; font-size:12px;">' +
-          '<i class="fa-solid fa-camera mr-1 text-muted"></i>등록된 나노시트 원본 사진이 없습니다.' +
+        donePhotosBox.innerHTML = '<div class="corr-photos-box text-center" style="background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:12px;padding:18px;margin-bottom:18px;color:#64748b;font-size:12.5px;">' +
+          '<i class="fa-solid fa-camera mr-2 text-muted"></i>등록된 나노시트 원본 사진이 없습니다.' +
           '</div>';
       }
     } else {
@@ -1468,8 +1460,54 @@ function openCorrectionModal(logId) {
     }
   }
 
-  document.getElementById('modalCorrectionStudent').innerText = (log.studentName || log.name) + ' (' + (log.classGroup || '-') + ')';
-  document.getElementById('modalCorrectionBook').innerText = log.bookTitle + ' · ' + log.date;
+  // 상단 도서 표지·서지 정보 + 학원명·클래스명·학생명 바인딩
+  var bookMeta = typeof getLearningLogBookMeta === 'function' ? getLearningLogBookMeta(log) : { cover: log.cover || '', publisher: log.bookPub || '', book: null };
+  var matchedBook = bookMeta.book;
+  if (!matchedBook && typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
+    var cleanTitle = String(log.bookTitle || '').replace(/\s+/g, '').toLowerCase();
+    matchedBook = academyBookList.find(function(b) {
+      if (!b) return false;
+      if (log.bookId && String(b.id) === String(log.bookId)) return true;
+      return b.title && String(b.title).replace(/\s+/g, '').toLowerCase() === cleanTitle;
+    }) || null;
+  }
+
+  var coverUrl = (matchedBook && matchedBook.cover) || bookMeta.cover || log.cover || '';
+  if (coverUrl && coverUrl.startsWith('/')) coverUrl = coverUrl.substring(1);
+  if (!coverUrl) coverUrl = 'upload/book/book_default.jpg';
+  var corrCoverEl = document.getElementById('modalCorrectionCoverImg');
+  if (corrCoverEl) {
+    corrCoverEl.src = coverUrl;
+    corrCoverEl.alt = log.bookTitle || '도서 표지';
+  }
+
+  var corrGradeEl = document.getElementById('modalCorrectionBookGrade');
+  if (corrGradeEl) corrGradeEl.innerText = (matchedBook && matchedBook.grade) || log.grade || '초등 전학년';
+  var corrCatEl = document.getElementById('modalCorrectionBookCategory');
+  if (corrCatEl) corrCatEl.innerText = (matchedBook && matchedBook.category) || log.category || '문학 / 이야기';
+
+  var corrBookEl = document.getElementById('modalCorrectionBook');
+  if (corrBookEl) corrBookEl.innerText = log.bookTitle || '-';
+  var pubParts = [];
+  var pubStr = (matchedBook && matchedBook.publisher) || bookMeta.publisher || log.bookPub || '';
+  var authorStr = (matchedBook && matchedBook.author) || log.bookAuthor || '';
+  if (pubStr) pubParts.push(pubStr);
+  if (authorStr && (!pubStr || pubStr.indexOf(authorStr) === -1)) pubParts.push(authorStr);
+  var corrBookPubEl = document.getElementById('modalCorrectionBookPub');
+  if (corrBookPubEl) corrBookPubEl.innerText = pubParts.length > 0 ? pubParts.join(' · ') : '나노 교육출판';
+
+  var academyLabel = log.academyName || (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) || (typeof currentAcademyName !== 'undefined' && currentAcademyName) || '나노의 책장';
+  var corrAcademyEl = document.getElementById('modalCorrectionAcademy');
+  if (corrAcademyEl) corrAcademyEl.innerText = academyLabel;
+  var corrClassEl = document.getElementById('modalCorrectionClass');
+  if (corrClassEl) corrClassEl.innerText = log.classGroup || '-';
+  var corrStudentEl = document.getElementById('modalCorrectionStudent');
+  if (corrStudentEl) corrStudentEl.innerText = log.studentName || log.name || '-';
+
+  var dateInfo = typeof formatLearningDateTime === 'function' ? formatLearningDateTime(log) : { date: log.date || '-', time: '' };
+  var corrDateEl = document.getElementById('modalCorrectionDate');
+  if (corrDateEl) corrDateEl.innerText = dateInfo.time ? (dateInfo.date + ' ' + dateInfo.time) : dateInfo.date;
+
   var badge = document.getElementById('modalCorrectionBadge');
   badge.className = 'badge-soft ' + (currentWorksheetCorrectionDone ? 'badge-soft-success' : 'badge-soft-warn') + ' font-weight-bold';
   badge.innerText = currentWorksheetCorrectionDone ? '첨삭 완료' : '첨삭 전';
@@ -1541,7 +1579,7 @@ async function saveCorrectionFromModal() {
 
 async function deleteCorrectionFromModal() {
   if (!currentOpenCorrectionLogId || worksheetCorrectionSaving || worksheetAnalysisJobs.has(currentOpenCorrectionLogId)) return;
-  if (!confirm('기존 첨삭 내역을 삭제하시겠습니까? AI 분석 결과가 삭제됩니다. 원본 사진과 북퀴즈 학습 기록은 보존됩니다.')) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm('기존 첨삭 내역을 삭제하시겠습니까? AI 분석 결과가 삭제됩니다. 원본 사진과 북퀴즈 학습 기록은 보존됩니다.') : confirm('기존 첨삭 내역을 삭제하시겠습니까? AI 분석 결과가 삭제됩니다. 원본 사진과 북퀴즈 학습 기록은 보존됩니다.'))) return;
   var targetId = currentOpenCorrectionLogId;
   var logs = getLoadedLearningLogs();
   var log = logs.find(function(l) { return l.id === targetId; });
@@ -1981,6 +2019,20 @@ function getKakaoReportBtnHtml(logId, isModal) {
   }
 }
 
+function buildKakaoDispatchFeedback(result, label) {
+  var st = String(result && result.status || 'UNKNOWN');
+  var msg = result && result.resultMessage ? ' (' + result.resultMessage + ')' : '';
+  if (result && result.duplicate) {
+    if (st === 'SUCCESS' || st === 'SMS_FALLBACK') return '✅ 이미 발송 완료된 ' + label + ' 알림톡입니다.';
+    if (st === 'FAILED') return '⚠️ 이전 ' + label + ' 발송이 실패했습니다' + msg + '. [카톡 발송 내역]에서 재발송해 주세요.';
+    return 'ℹ️ 이미 발송 접수된 ' + label + ' 알림톡입니다. [카톡 발송 내역]에서 실제 전달 결과를 확인해 주세요.';
+  }
+  if (st === 'SUCCESS' || st === 'SMS_FALLBACK') return '🎉 학부모님께 ' + label + ' 알림톡이 발송되었습니다!';
+  if (st === 'ACCEPTED' || st === 'SENDING') return '📨 ' + label + ' 알림톡 발송이 알리고에 접수되었습니다. 실제 수신 결과는 [카톡 발송 내역]에서 확인해 주세요.';
+  if (st === 'FAILED') return '❌ ' + label + ' 알림톡 발송 실패' + (msg || ': [카톡 발송 내역]에서 사유를 확인해 주세요.');
+  return '⏳ 발송 상태: ' + st + msg + '. [카톡 발송 내역]을 확인해 주세요.';
+}
+
 async function sendLearningReportKakao(logId, event) {
   if (event) event.stopPropagation();
   if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('운영 서버에서만 발송할 수 있습니다.'); return; }
@@ -1992,9 +2044,10 @@ async function sendLearningReportKakao(logId, event) {
       preview.message + '\n\n' +
       '연결 링크: ' + preview.targetUrl + '\n\n' +
       '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
-    if (!confirm(confirmMsg)) return;
+    if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
     var result = await NanoPortal.api('/api/services', { type: 'quiz', action: 'send', logId: logId, fingerprint: preview.fingerprint });
-    showAcademyToast(result.status === 'ACCEPTED' ? '🎉 학부모님께 북퀴즈 결과 알림톡이 성공적으로 발송되었습니다!' : '발송 상태: ' + result.status + '. 알림톡 발송 내역을 확인해 주세요.');
+    if (window.NanoBilling && typeof NanoBilling.invalidateDispatchCache === 'function') NanoBilling.invalidateDispatchCache();
+    showAcademyToast(buildKakaoDispatchFeedback(result, '북퀴즈 결과'));
   } catch(e) { showAcademyToast(e.message); } finally { if(button) button.disabled = false; }
 }
 
@@ -2277,18 +2330,17 @@ function openLearningDetailModal(id) {
   }
 
   // 4. [신규] 나노시트 AI 사고력 분석지 렌더링 (#learnModalWorksheetAiSection)
-  // 첨삭 완료 상태이거나 코멘트가 있는데 worksheetAiResult가 비어있는 경우 스마트 자동 복원
-  if (!log.worksheetAiResult && (log.reviewed === '첨삭 완료' || (log.comment && log.comment.trim()))) {
-    var sName = log.studentName || log.name || '원생';
+  // 첨삭 완료 상태이지만 worksheetAiResult가 비어 있는 구형 기록은 허위 분석 대신 안내 문구로 복원
+  if (!log.worksheetAiResult && log.reviewed === '첨삭 완료') {
     var bName = log.bookTitle || '도서';
     log.worksheetAiResult = {
-      summary: sName + ' 학생이 『' + bName + '』을(를) 읽고 자신의 생각과 느낌을 주도적으로 표현했습니다.',
-      actualQuotes: [
-        { quote: '나노시트 생각 담기', criteria: '경험 연결 및 자기표현', comment: '책 속 상황을 자신의 시각으로 솔직하게 풀어나가며 생각을 완성했습니다.' }
-      ],
-      drawingObservation: '글과 더불어 시트에 생각을 정성껏 표현하여 독서 몰입도를 높였습니다.',
-      nextStep: '다음에는 떠오른 생각에 구체적인 까닭이나 경험을 한 문장 더 덧붙여 보아도 좋습니다.',
-      parentGuide: '아이가 스스로 생각을 끝까지 매듭지은 점을 크게 칭찬해 주시고, 인상 깊었던 장면에 대해 대화를 나누어 보세요.'
+      summary: (log.comment && log.comment.trim())
+        ? log.comment.trim()
+        : ('『' + bName + '』 나노시트 활동 사진이 등록되어 있습니다. AI 정밀 첨삭을 다시 실행하면 업로드된 나노시트 사진 내용을 분석해 드립니다.'),
+      actualQuotes: [],
+      drawingObservation: '',
+      nextStep: '나노시트 사진 속 글과 그림 표현을 바탕으로 AI 정밀 첨삭을 실행하면 맞춤형 성장 피드백을 확인할 수 있습니다.',
+      parentGuide: '아이가 완성한 나노시트를 함께 보며 어떤 장면이 가장 인상 깊었는지 이야기를 나누어 보세요.'
     };
   }
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
@@ -2519,13 +2571,31 @@ function openAcademyDispatchDetailModal(dispatchId) {
 
   var statusEl = document.getElementById('acadDispatchModalStatus');
   if (statusEl) {
-    statusEl.className = 'badge-soft ' + (l.status === 'SUCCESS' ? 'badge-soft-success' : 'badge-soft-danger');
-    statusEl.innerText = l.status === 'SUCCESS' ? '발송 성공 (알리고 0000)' : '발송 실패';
+    var hasPendingFailDetail = l.status === 'ACCEPTED' && l.code && l.code !== '0' && l.resultMessage;
+    var statusLabel = l.status === 'SUCCESS'
+      ? '발송 성공 (알리고 ' + (l.code || '0') + ')'
+      : l.status === 'SMS_FALLBACK'
+        ? '문자 대체 발송'
+        : hasPendingFailDetail
+          ? '전송 실패(환급 대기 · ' + l.code + ')'
+          : l.status === 'FAILED'
+            ? '발송 실패' + (l.code ? ' (' + l.code + ')' : '')
+            : l.status === 'UNKNOWN'
+              ? '결과 확인 중'
+              : '알리고 접수(전송 중)';
+    var badgeStyle = (l.status === 'SUCCESS' || l.status === 'SMS_FALLBACK')
+      ? 'badge-soft-success'
+      : (l.status === 'FAILED' || hasPendingFailDetail ? 'badge-soft-danger' : 'badge-soft-neutral');
+    statusEl.className = 'badge-soft ' + badgeStyle;
+    statusEl.innerText = statusLabel + (l.resultMessage ? ' - ' + l.resultMessage : '') + (l.providerId ? ' [MID:' + l.providerId + ']' : '');
   }
 
   var thoughtStatusEl = document.getElementById('acadDispatchModalThoughtIncluded');
   if (thoughtStatusEl) {
-    if (l.thoughtHidden) {
+    if (l.summary) {
+      thoughtStatusEl.className = 'badge-soft badge-soft-neutral';
+      thoughtStatusEl.innerText = l.typeName || '알리고 템플릿 원문 발송';
+    } else if (l.thoughtHidden) {
       thoughtStatusEl.className = 'badge-soft badge-soft-warn';
       thoughtStatusEl.innerText = '숨김 제외 (카톡 본문에 미포함)';
     } else {
@@ -2536,11 +2606,14 @@ function openAcademyDispatchDetailModal(dispatchId) {
 
   var bodyEl = document.getElementById('acadDispatchModalBody');
   if (bodyEl) {
-    var sName = l.studentName || (l.receiver ? l.receiver.split(' ')[0] : '원생');
-    var bTitle = l.bookTitle || '도서';
-    var score = l.score || 100;
+    if (l.summary) {
+      bodyEl.innerText = l.summary;
+    } else {
+      var sName = l.studentName || (l.receiver ? l.receiver.split(' ')[0] : '원생');
+      var bTitle = l.bookTitle || '도서';
+      var score = l.score || 100;
 
-    var content = `[나노의 책장] ${sName} 학생 학습 리포트 안내
+      var content = `[나노의 책장] ${sName} 학생 학습 리포트 안내
 
 학부모님, 안녕하십니까.
 나노 독서아카데미 본원에서 ${sName} 학생의 독서 및 북퀴즈 완독 리포트를 안내해 드립니다.
@@ -2549,21 +2622,22 @@ function openAcademyDispatchDetailModal(dispatchId) {
 ■ 북퀴즈 결과: ${score}점 (완독 인증 완료)
 ■ 응시 일시: ${l.date}`;
 
-    if (l.thoughtHidden) {
-      content += `\n\n※ 본 학습 리포트는 학원 지도 방침에 따라 '생각 담기' 영역이 제외되어 발송되었습니다.`;
-    } else {
-      content += `\n\n■ 생각 담기: 학생 서술 답안 제출 완료`;
-      var tComment = l.thoughtTeacherComment || (!l.worksheetAiResult ? l.comment : '');
-      if (tComment && tComment.trim()) {
-        content += `\n■ 선생님 지도 코멘트:\n"${tComment.trim()}"`;
+      if (l.thoughtHidden) {
+        content += `\n\n※ 본 학습 리포트는 학원 지도 방침에 따라 '생각 담기' 영역이 제외되어 발송되었습니다.`;
+      } else {
+        content += `\n\n■ 생각 담기: 학생 서술 답안 제출 완료`;
+        var tComment = l.thoughtTeacherComment || (!l.worksheetAiResult ? l.comment : '');
+        if (tComment && tComment.trim()) {
+          content += `\n■ 선생님 지도 코멘트:\n"${tComment.trim()}"`;
+        }
       }
-    }
-    if (l.worksheetAiResult && l.worksheetAiResult.summary) {
-      content += `\n\n■ 나노시트 첨삭 피드백:\n"${l.worksheetAiResult.summary.trim()}"`;
-    }
+      if (l.worksheetAiResult && l.worksheetAiResult.summary) {
+        content += `\n\n■ 나노시트 첨삭 피드백:\n"${l.worksheetAiResult.summary.trim()}"`;
+      }
 
-    content += `\n\n상세한 북퀴즈 문항별 채점 결과는 아래 링크에서 확인하실 수 있습니다.`;
-    bodyEl.innerText = content;
+      content += `\n\n상세한 북퀴즈 문항별 채점 결과는 아래 링크에서 확인하실 수 있습니다.`;
+      bodyEl.innerText = content;
+    }
   }
 
   if (window.jQuery && typeof $('#academyDispatchDetailModal').modal === 'function') {
@@ -2927,7 +3001,7 @@ function isAssignmentBookCertified(b) {
   return b.certified === true || !!b.certDate || b.status === '완료' || b.status === '합격';
 }
 
-function cleanCertifiedStudentAssignments() {
+async function cleanCertifiedStudentAssignments() {
   var totalCertCount = 0;
   var affectedStudentCount = 0;
 
@@ -2950,7 +3024,7 @@ function cleanCertifiedStudentAssignments() {
           + `· 정리 대상 도서 : 총 ${totalCertCount}권\n\n`
           + `* 아직 인증되지 않고 읽고 있는 도서는 안전하게 보존됩니다.`;
 
-  if (!confirm(msg)) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(msg) : confirm(msg))) return;
 
   studentAssignmentList.forEach(function(item) {
     if (!item.books || !item.books.length) return;
@@ -3407,7 +3481,7 @@ async function executeBatchClassAssign() {
   var confirmMsg = `[${batchSelectedClassName}] 소속 원생 총 ${targetStudents.length}명에게 선택한 도서 ${batchSelectedBooks.length}권을 일괄 배정하시겠습니까?\n\n`
                  + `* 이미 해당 도서를 배정받은 학생은 중복 추가되지 않고 유지되며, 미배정 학생에게만 안전하게 추가됩니다.`;
 
-  if (!confirm(confirmMsg)) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
 
   if (window.NanoPortal && NanoPortal.remote) {
     var remoteClass = academyClassList.find(function(item) { return item.name === batchSelectedClassName; });
@@ -3493,7 +3567,7 @@ async function executeBatchClassAssign() {
 async function cancelStudentAssignment(id) {
   var target = studentAssignmentList.find(function(a) { return a.id === id; });
   var name = target ? target.studentName : '해당 원생';
-  if (confirm(`[${name}] 원생의 맞춤 도서 배정 내역을 삭제하시겠습니까?`)) {
+  if (typeof nanoConfirm === 'function' ? await nanoConfirm(`[${name}] 원생의 맞춤 도서 배정 내역을 삭제하시겠습니까?`) : confirm(`[${name}] 원생의 맞춤 도서 배정 내역을 삭제하시겠습니까?`)) {
     if (window.NanoPortal && NanoPortal.remote && target) {
       try {
         await Promise.all((target.books || []).filter(function(book) { return book.assignmentId; }).map(function(book) { return NanoPortal.deleteAssignment(book.assignmentId, currentAcademyInfo.id); }));
@@ -3737,7 +3811,7 @@ function renderIndivStudentAssignedBooks(studentId) {
 }
 
 // 인증완료된 도서 일괄 배정 해제
-function releaseIndivCertifiedBooks() {
+async function releaseIndivCertifiedBooks() {
   if (!currentIndivStudentId) return;
 
   var assignRec = studentAssignmentList.find(function(a) { return a.studentId === currentIndivStudentId; });
@@ -3755,7 +3829,7 @@ function releaseIndivCertifiedBooks() {
 
   if (removedCount === 0) {
     // 모든 도서 중 1권을 예시로 인증완료 해제 처리
-    if (confirm('현재 인증 완료된 도서가 없습니다. 독서 완료된 도서를 배정 해제하시겠습니까?')) {
+    if (typeof nanoConfirm === 'function' ? await nanoConfirm('현재 인증 완료된 도서가 없습니다. 독서 완료된 도서를 배정 해제하시겠습니까?') : confirm('현재 인증 완료된 도서가 없습니다. 독서 완료된 도서를 배정 해제하시겠습니까?')) {
       assignRec.books.pop();
       removedCount = 1;
     } else {
@@ -4434,11 +4508,11 @@ async function batchAssignBookToClass(className, bookId) {
 }
 
 // 학급 전체에서 특정 도서 일괄 배정 해제
-function batchUnassignBookFromClass(className, bookId) {
+async function batchUnassignBookFromClass(className, bookId) {
   var b = academyBookList.find(function(item) { return String(item.id) === String(bookId); });
   var bookTitle = b ? b.title : '도서';
 
-  if (!confirm(`[${className}] 소속 모든 학생에게서 <${bookTitle}> 배정을 일괄 해제하시겠습니까?`)) {
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(`[${className}] 소속 모든 학생에게서 <${bookTitle}> 배정을 일괄 해제하시겠습니까?`) : confirm(`[${className}] 소속 모든 학생에게서 <${bookTitle}> 배정을 일괄 해제하시겠습니까?`))) {
     return;
   }
 
@@ -4535,12 +4609,16 @@ function renderAcademyDispatchTable(options) {
   filtered.forEach(function(l, idx) {
     var tr = document.createElement('tr');
     tr.style.fontSize = '13px';
+    var hasPendingFailDetail = l.status === 'ACCEPTED' && l.code && l.code !== '0' && l.resultMessage;
     var badgeClass = l.status === 'SUCCESS'
       ? 'badge-soft-success'
-      : (l.status === 'FAILED' ? 'badge-soft-danger' : (l.status === 'SMS_FALLBACK' ? 'badge-soft-warn' : 'badge-soft-neutral'));
+      : ((l.status === 'FAILED' || hasPendingFailDetail) ? 'badge-soft-danger' : (l.status === 'SMS_FALLBACK' ? 'badge-soft-warn' : 'badge-soft-neutral'));
     var statusText = l.status === 'SMS_FALLBACK'
       ? '문자 대체 발송'
-      : (l.status === 'SUCCESS' ? '발송 성공' : (l.status === 'FAILED' ? '발송 실패' : (l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중')));
+      : (l.status === 'SUCCESS' ? '발송 성공' : (hasPendingFailDetail ? '전송 실패(환급 대기)' : (l.status === 'FAILED' ? '발송 실패' : (l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'))));
+    var reasonHtml = (l.status === 'FAILED' || hasPendingFailDetail) && l.resultMessage
+      ? '<div class="text-danger mt-1" style="font-size: 11px; line-height: 1.3; max-width: 180px; margin: 0 auto; word-break: keep-all;">' + escapeRankingText(l.resultMessage) + '</div>'
+      : '';
     tr.innerHTML = `
       <td class="text-center text-muted font-weight-bold" style="font-size: 12px;">${idx + 1}</td>
       <td class="text-center text-muted" style="font-size: 12.5px;">${escapeRankingText(l.date || l.datetime || '—')}</td>
@@ -4552,6 +4630,7 @@ function renderAcademyDispatchTable(options) {
         <span class="badge-soft ${badgeClass} font-weight-bold" style="font-size: 11.5px;">
           ${statusText}
         </span>
+        ${reasonHtml}
       </td>
       <td class="text-center">
         <button type="button" class="btn btn-xs btn-outline-secondary font-weight-bold mr-1" onclick="openAcademyDispatchDetailModal('${l.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 3px 9px;">전문 보기</button>
@@ -6250,6 +6329,7 @@ async function sendPortfolioKakaoDirect(pfId, event) {
   if (button) button.disabled = true;
 
   try {
+    var result = null;
     if (window.NanoPortal && NanoPortal.remote) {
       var preview = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'preview', pfId: pfId });
       var confirmMsg = '[독서 포트폴리오 알림톡 발송 미리보기]\n\n' +
@@ -6257,16 +6337,21 @@ async function sendPortfolioKakaoDirect(pfId, event) {
         preview.message + '\n\n' +
         '연결 링크: ' + preview.targetUrl + '\n\n' +
         '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
-      if (!confirm(confirmMsg)) return;
+      if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
 
-      var result = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'send', pfId: pfId, fingerprint: preview.fingerprint });
-      if (result.status !== 'ACCEPTED' && result.status !== 'SENDING') {
-        throw new Error('알림톡 발송 상태: ' + result.status);
+      result = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'send', pfId: pfId, fingerprint: preview.fingerprint });
+      if (window.NanoBilling && typeof NanoBilling.invalidateDispatchCache === 'function') NanoBilling.invalidateDispatchCache();
+      if (!['ACCEPTED', 'SENDING', 'SUCCESS', 'SMS_FALLBACK'].includes(result.status)) {
+        throw new Error(buildKakaoDispatchFeedback(result, '포트폴리오'));
       }
+      if (!result.duplicate) {
+        pf.kakaoSent = true;
+        pf.status = (result.status === 'SUCCESS' || result.status === 'SMS_FALLBACK') ? '발송 완료' : '발송 접수';
+      }
+    } else {
+      pf.kakaoSent = true;
+      pf.status = '발송 완료';
     }
-
-    pf.kakaoSent = true;
-    pf.status = '발송 완료';
 
     var now = new Date();
     var month = ('0' + (now.getMonth() + 1)).slice(-2);
@@ -6278,7 +6363,9 @@ async function sendPortfolioKakaoDirect(pfId, event) {
     renderPortfolioTable();
     updatePortfolioDetailKakaoButton(pf.id);
 
-    showAcademyToast('🎉 [' + pf.studentName + '] 학부모님께 포트폴리오 카카오톡 알림톡이 성공적으로 발송되었습니다!');
+    showAcademyToast(result
+      ? buildKakaoDispatchFeedback(result, pf.studentName + ' 학생 포트폴리오')
+      : '🎉 [' + pf.studentName + '] 학부모님께 포트폴리오 카카오톡 알림톡이 발송되었습니다!');
   } catch(e) {
     showAcademyToast('알림톡 발송 실패: ' + e.message);
   } finally {
@@ -6823,18 +6910,17 @@ async function generatePortfolioWithGeminiClient(studentId, pfId, pfData, std) {
     return;
   }
 
-  var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-3.8-flash';
+  var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash';
   var model = rawModel;
   var mLower = rawModel.toLowerCase();
-  if (mLower.includes('3.8')) model = 'gemini-3.8-flash';
-  else if (mLower.includes('3.5')) model = 'gemini-3.5-pro';
-  else if (mLower.includes('3.0-flash-lite')) model = 'gemini-3.0-flash-lite';
-  else if (mLower.includes('3.0')) model = 'gemini-3.0-flash';
-  else if (mLower.includes('pro')) model = 'gemini-1.5-pro';
-  else if (mLower.includes('flash-lite')) model = 'gemini-2.0-flash-lite-preview-02-05';
-  else if (mLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
+  if (mLower.includes('3.8-flash-lite') || mLower.includes('3.0-flash-lite') || mLower.includes('2.5-flash-lite')) model = 'gemini-2.5-flash-lite';
+  else if (mLower.includes('3.8-pro') || mLower.includes('3.5-pro') || mLower.includes('2.5-pro')) model = 'gemini-2.5-pro';
+  else if (mLower.includes('3.8') || mLower.includes('3.0') || mLower.includes('2.5-flash')) model = 'gemini-2.5-flash';
+  else if (mLower.includes('flash-lite')) model = 'gemini-2.0-flash-lite';
   else if (mLower.includes('2.0')) model = 'gemini-2.0-flash';
-  else if (!model.startsWith('gemini-')) model = 'gemini-3.8-flash';
+  else if (mLower.includes('1.5-pro') || mLower.includes('pro')) model = 'gemini-1.5-pro';
+  else if (mLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
+  else if (!model.startsWith('gemini-')) model = 'gemini-2.5-flash';
 
   var books = pfData.books || [];
   var bookSummary = books.map(function(b, i) {

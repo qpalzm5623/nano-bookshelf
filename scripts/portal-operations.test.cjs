@@ -171,7 +171,7 @@ test('포인트 페이지 조회는 요청자 회원으로 제한하고 다음 �
 test('랭킹 DB 집계 결과와 상위권 밖 본인의 순위·캐릭터를 함께 반환한다',async()=>{
   let parameters, sql;
   const rankingStudent={...student,classGroupId:'class-1',classGroup:{name:'실제 반'},academy:{code:'A1',name:'실제 학원'}};
-  const ranked=[{id:'s2',name:'김학생',rank:1n,participants:150n,amount:20n,books:2n,points:900,academyName:'실제 학원',className:'실제 반'},
+  const ranked=[{id:'s2',name:'김학생',username:'kim_stu2',rank:1n,participants:150n,amount:20n,books:2n,points:900,academyName:'실제 학원',className:'실제 반'},
     {id:'s1',name:'박진호',rank:120n,participants:150n,amount:8n,books:1n,points:8,academyName:'실제 학원',className:'실제 반'}];
   const db={
     $queryRaw:async(strings,...values)=>{sql=strings.join('?');parameters=values;return ranked;},
@@ -181,7 +181,8 @@ test('랭킹 DB 집계 결과와 상위권 밖 본인의 순위·캐릭터를 �
   };
   const res=response();await api('api/activity.ts',rankingStudent,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
   assert.equal(res.code,200);assert.equal(res.data.participants,150);assert.equal(res.data.myRank,120);assert.equal(res.data.rows.length,1);
-  assert.equal(res.data.rows[0].charId,'booki');assert.equal(res.data.rows[0].stage,2);assert.equal(res.data.myBooks,1);
+  assert.equal(res.data.rows[0].charId,'booki');assert.equal(res.data.rows[0].stage,2);assert.equal(res.data.rows[0].username,'kim_stu2');assert.equal(res.data.myBooks,1);
+  assert.match(sql,/m\.username/);
   assert.equal(res.data.academyName,'실제 학원');assert.equal(res.data.className,'실제 반');
   assert.ok(parameters.includes('class-1'));assert.ok(parameters.includes('a1'));assert.ok(parameters.includes('s1'));
   assert.match(sql,/ROW_NUMBER/);assert.match(sql,/rank <= 100 OR id/);assert.doesNotThrow(()=>JSON.stringify(res.data));
@@ -189,12 +190,12 @@ test('랭킹 DB 집계 결과와 상위권 밖 본인의 순위·캐릭터를 �
 test('학급 미지정 학생의 요청은 학원 범위로 조회하고 전국에서는 이름을 가린다',async()=>{
   let values;
   const noClass={...student,classGroupId:null,classGroup:null,academy:{code:'A1',name:'실제 학원'}};
-  const db={$queryRaw:async(strings,...v)=>{values=v;return [{id:'s2',name:'김학생',rank:1n,participants:1n,amount:0n,books:0n,points:0,academyName:'실제 학원',className:null}];},
+  const db={$queryRaw:async(strings,...v)=>{values=v;return [{id:'s2',name:'김학생',username:'secret_id2',rank:1n,participants:1n,amount:0n,books:0n,points:0,academyName:'실제 학원',className:null},{id:'s1',name:'나',username:'my_login',rank:2n,participants:2n,amount:0n,books:0n,points:0,academyName:'실제 학원',className:null}];},
     portalSetting:{findMany:async()=>[]},quizAttempt:{findMany:async()=>[]},book:{findMany:async()=>[]}};
   const res=response();await api('api/activity.ts',noClass,db)({method:'GET',query:{action:'rankings',scope:'class',period:'month'}},res);
   assert.equal(res.data.scope,'academy');assert.equal(res.data.hasClass,false);assert.equal(values[0],false);assert.equal(values[2],true);
   const national=response();await api('api/activity.ts',noClass,db)({method:'GET',query:{action:'rankings',scope:'national'}},national);
-  assert.equal(values[0],true);assert.equal(national.data.rows[0].name,'김**');
+  assert.equal(values[0],true);assert.equal(national.data.rows[0].name,'김**');assert.equal(national.data.rows[0].username,'se****');assert.equal(national.data.rows[1].username,'my_login');
 });
 test('개인 설정의 다른 기기 변경은 덮어쓰지 않는다',async()=>{
   const run=api('api/activity.ts',student,{portalSetting:{updateMany:async()=>({count:0})}});const res=response();

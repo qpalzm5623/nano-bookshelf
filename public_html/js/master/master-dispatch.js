@@ -4,6 +4,8 @@
  * - Aligo Kakao Notification Talk Dispatch Logs & Statistics
  */
 
+const escDispatchHtml = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // 8. 카톡 발송 내역 모듈 (Aligo Dispatch)
 // ==========================================
 function renderDispatchTable(data = dispatchLogs) {
@@ -42,23 +44,30 @@ function renderDispatchTable(data = dispatchLogs) {
     if (log.type === "PORTFOLIO") typeBadge = `<span class="badge-soft badge-soft-warn"><i class="fa-solid fa-chart-pie mr-1"></i>포트폴리오</span>`;
     else if (log.type === "ASSIGN") typeBadge = `<span class="badge-soft badge-soft-success"><i class="fa-solid fa-book-bookmark mr-1"></i>도서배정</span>`;
 
+    const hasPendingFailDetail = log.status === 'ACCEPTED' && log.code && log.code !== '0' && log.resultMessage;
     const statusBadge = ["SUCCESS", "SMS_FALLBACK"].includes(log.status)
       ? `<span class="badge-soft badge-soft-success">${log.status === "SMS_FALLBACK" ? "문자 대체 발송" : "성공"}</span>`
-      : log.status === 'FAILED' ? `<span class="badge-soft badge-soft-danger">실패</span>`
-      : `<span class="badge-soft badge-soft-neutral">${log.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}</span>`;
+      : hasPendingFailDetail
+        ? `<span class="badge-soft badge-soft-danger">실패(환급 대기)</span>`
+        : log.status === 'FAILED'
+          ? `<span class="badge-soft badge-soft-danger">실패</span>`
+          : `<span class="badge-soft badge-soft-neutral">${log.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}</span>`;
+    const reasonHtml = (log.status === 'FAILED' || hasPendingFailDetail) && log.resultMessage
+      ? `<div class="text-danger mt-1" style="font-size: 11px; line-height: 1.3; max-width: 180px; margin: 0 auto; word-break: keep-all;">${escDispatchHtml(log.resultMessage)}</div>`
+      : '';
 
     return `
       <tr>
         <td class="text-center"><small class="text-muted font-weight-bold">${idx + 1}</small></td>
-        <td class="text-center"><small class="text-muted">${log.datetime}</small></td>
-        <td class="font-weight-bold">${log.academyName}</td>
-        <td class="text-center">${log.className || '—'}</td>
+        <td class="text-center"><small class="text-muted">${escDispatchHtml(log.datetime)}</small></td>
+        <td class="font-weight-bold">${escDispatchHtml(log.academyName)}</td>
+        <td class="text-center">${escDispatchHtml(log.className || '—')}</td>
         <td class="text-center">${typeBadge}</td>
         <td>
-          <div class="font-weight-bold">${log.receiverName}</div>
+          <div class="font-weight-bold">${escDispatchHtml(log.receiverName)}</div>
         </td>
-        <td class="text-center"><small>${log.receiverPhone}</small></td>
-        <td class="text-center">${statusBadge}</td>
+        <td class="text-center"><small>${escDispatchHtml(log.receiverPhone)}</small></td>
+        <td class="text-center">${statusBadge}${reasonHtml}</td>
         <td class="text-center">
           <button class="btn btn-xs btn-outline-secondary mr-1" onclick="openDispatchDetailModal('${log.id}')" style="border-radius: 6px; font-size: 11.5px; padding: 4px 8px;">
             전문보기
@@ -130,18 +139,48 @@ function openDispatchDetailModal(id) {
   const log = dispatchLogs.find(l => l.id === id);
   if (!log) return;
 
+  const hasPendingFailDetail = log.status === 'ACCEPTED' && log.code && log.code !== '0' && log.resultMessage;
+  const statusLabel = log.status === 'SUCCESS'
+    ? `전송 성공 (결과코드: ${log.code || '0'})`
+    : log.status === 'SMS_FALLBACK'
+      ? '문자 대체 발송 완료'
+      : hasPendingFailDetail
+        ? `전송 실패·환급 대기 (${log.code}${log.resultMessage ? ' · ' + log.resultMessage : ''})`
+        : log.status === 'FAILED'
+          ? `전송 실패 (${log.code || '-'}${log.resultMessage ? ' · ' + log.resultMessage : ''})`
+          : log.status === 'UNKNOWN'
+            ? '결과 확인 중'
+            : '알리고 접수(전송 중)';
+
+  if (!document.getElementById('dispatchDetailModal')) {
+    const detail = [
+      `[나노의 책장] ${log.typeName || log.type}`,
+      `발송 일시: ${log.datetime}`,
+      `발송 학원: ${log.academyName}`,
+      `수신 대상: ${log.receiverName} (${log.receiverPhone})`,
+      `발송 상태: ${statusLabel}${log.providerId ? ' [MID:' + log.providerId + ']' : ''}`,
+      '',
+      log.summary || ''
+    ].join('\n');
+    if (typeof nanoAlert === 'function') nanoAlert(detail, { title: '알림톡 발송 전문' });
+    else alert(detail);
+    return;
+  }
+
   document.getElementById("dispatchModalTime").innerText = log.datetime;
   document.getElementById("dispatchModalTitle").innerText = `[나노의 책장] ${log.typeName}`;
   document.getElementById("dispatchModalBody").innerHTML = `
-    <strong>수신: ${log.receiverName} 님</strong><br><br>
-    ${log.summary}<br><br>
-    ※ 본 메시지는 <strong>${log.academyName}</strong>에서 알리고(Aligo) 비즈메시지 공식 발신번호로 전송되었습니다.
+    <strong>수신: ${escDispatchHtml(log.receiverName)} 님</strong><br><br>
+    ${escDispatchHtml(log.summary).replace(/\n/g, '<br>')}<br><br>
+    ※ 본 메시지는 <strong>${escDispatchHtml(log.academyName)}</strong>에서 알리고(Aligo) 비즈메시지 공식 발신번호로 전송되었습니다.
   `;
   document.getElementById("dispatchModalAcademy").innerText = log.academyName;
   document.getElementById("dispatchModalReceiver").innerText = `${log.receiverName} (${log.receiverPhone})`;
-  document.getElementById("dispatchModalCode").innerHTML = log.status === "SUCCESS"
-    ? `<span class="badge-soft badge-soft-success">전송 성공 (결과코드: ${log.code})</span>`
-    : `<span class="badge-soft badge-soft-danger">전송 실패 (${log.code})</span>`;
+  const badgeClass = (log.status === 'SUCCESS' || log.status === 'SMS_FALLBACK')
+    ? 'badge-soft-success'
+    : ((log.status === 'FAILED' || hasPendingFailDetail) ? 'badge-soft-danger' : 'badge-soft-neutral');
+  document.getElementById("dispatchModalCode").innerHTML =
+    `<span class="badge-soft ${badgeClass}">${escDispatchHtml(statusLabel)}${log.providerId ? ' · MID:' + escDispatchHtml(log.providerId) : ''}</span>`;
 
   $('#dispatchDetailModal').modal('show');
 }

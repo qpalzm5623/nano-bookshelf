@@ -1010,6 +1010,9 @@
     <span id="toastMessage">로그인 성공</span>
   </div>
 
+  <!-- 통합 화면 중앙 알림/확인 모달 -->
+  <script src="js/nano-dialog.js?v=20261113_center"></script>
+
   <!-- 실제 마이그레이션 데이터 연동 (가맹 학원 143개소 및 원장 계정) -->
   <script src="migrated_real_data.js?v=20261007_real_v9"></script>
 
@@ -1138,7 +1141,8 @@
         } catch(e) {
           if (e && (e.status === 409 || e.concurrentLogin || (e.message && e.message.indexOf('현재 다른 기기에서 사용 중입니다') !== -1))) {
             btnLogin.disabled = false;
-            if (confirm('현재 다른 기기에서 사용 중입니다. 기존 접속을 종료하고 로그인하시겠습니까?')) {
+            const concurrentMsg = '현재 다른 기기에서 사용 중입니다. 기존 접속을 종료하고 로그인하시겠습니까?';
+            if (typeof nanoConfirm === 'function' ? await nanoConfirm(concurrentMsg) : confirm(concurrentMsg)) {
               try {
                 btnLogin.disabled = true;
                 const forceData = await NanoPortal.request('login', { username: inputId, password: inputPw, confirmConcurrent: true });

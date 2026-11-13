@@ -57,6 +57,8 @@ export function canShareContent(user: any, item: ContentItem) {
   // 마스터는 본사 콘텐츠만 공유 대상으로 노출하고, 타 가맹 학원의 등록물은 제외합니다.
   if (user.role === 'MASTER') {
     if (item.authorType === 'ACADEMY') return false;
+    // 본사 계정이 여러 명이거나 시드·대량등록 데이터여도 본사(HQ) 등록물은 마스터 공유 목록에 모두 노출합니다.
+    if (item.authorType === 'HQ') return true;
     if (item.ownerAcademyId && user.academyId && item.ownerAcademyId !== user.academyId) return false;
     return !item.ownerMemberId || item.ownerMemberId === user.id;
   }
@@ -64,11 +66,15 @@ export function canShareContent(user: any, item: ContentItem) {
 }
 export function canReadContent(user: any, item: ContentItem, access: ContentAccess) {
   if (item.isPublic !== 'N' || ownsContent(user, item)) return true;
-  return access.folders.some((folder: any) =>
-    folder.ownerAcademyId === item.ownerAcademyId &&
-    (!item.ownerMemberId || folder.ownerMemberId === item.ownerMemberId) &&
-    Array.isArray(folder.bookIds) && folder.bookIds.includes(item.bookId) &&
-    Array.isArray(folder.recipients) && folder.recipients.some((r: any) => r.academyId === user.academyId));
+  return access.folders.some((folder: any) => {
+    // 동일 출제처 일치 외에도 본사(MASTER) 폴더가 공유한 본사(HQ) 비공개 콘텐츠는 계정 전환과 무관하게 접근을 허용합니다.
+    const matchesOwner =
+      (folder.ownerAcademyId === item.ownerAcademyId && (!item.ownerMemberId || folder.ownerMemberId === item.ownerMemberId)) ||
+      (item.authorType === 'HQ' && folder.ownerRole === 'MASTER');
+    return matchesOwner &&
+      Array.isArray(folder.bookIds) && folder.bookIds.includes(item.bookId) &&
+      Array.isArray(folder.recipients) && folder.recipients.some((r: any) => r.academyId === user.academyId);
+  });
 }
 
 export function bookSheets(access: ContentAccess, book: any): ContentItem[] {

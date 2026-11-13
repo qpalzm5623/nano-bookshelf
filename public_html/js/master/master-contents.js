@@ -2251,8 +2251,12 @@ async function summarizeSynopsisWithGemini(rawText, title, author) {
   // 2. 브라우저 로컬 저장소 Gemini API 키로 직접 호출
   const localKey = localStorage.getItem('NANO_GEMINI_API_KEY') || '';
   if (localKey && !localKey.startsWith('sk-')) {
-    const rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-1.5-flash';
-    const model = rawModel.includes('3.8') ? 'gemini-1.5-flash' : rawModel;
+    const rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash';
+    const model = rawModel.includes('3.8-pro') || rawModel.includes('3.5-pro')
+      ? 'gemini-2.5-pro'
+      : (rawModel.includes('3.8-flash-lite') || rawModel.includes('3.0-flash-lite')
+        ? 'gemini-2.5-flash-lite'
+        : ((rawModel.includes('3.8') || rawModel.includes('3.0')) ? 'gemini-2.5-flash' : rawModel));
     const prompt = `당신은 어린이·청소년 독서교육 전문가입니다.
 다음 도서의 출판사 소개/줄거리 정보를 바탕으로, 학생과 지도교사가 도서의 핵심 내용과 흥미를 쉽게 파악할 수 있도록 정확히 3문장 이내의 읽기 쉬운 줄거리(도서 소개)로 재구성하여 요약해 주세요.
 
@@ -3182,13 +3186,59 @@ function renderQuizSetTabs() {
   }
 }
 
-// 마스터 관리자 북퀴즈 세트 공개/비공개 토글
-function onMasterQuizSetPublicChanged(val) {
+// 마스터 관리자 북퀴즈 세트 공개/비공개 토글 (서버 모드에서는 즉시 DB 반영)
+async function onMasterQuizSetPublicChanged(val) {
   const book = masterBooks.find(b => b.id === curQuizTargetBookId);
-  if (!book || !book.quizSets[curQuizSetIdx]) return;
-  book.quizSets[curQuizSetIdx].isPublic = val;
-  renderQuizSetTabs();
-  showMasterToast(`선택된 북퀴즈 세트가 [${val === 'Y' ? '공개 (전체 공유)' : '비공개 (출제처 전용)'}] 상태로 설정되었습니다.`);
+  if (!book || !book.quizSets || !book.quizSets[curQuizSetIdx]) return;
+
+  const targetIsPublic = val === 'N' ? 'N' : 'Y';
+  const curSet = book.quizSets[curQuizSetIdx];
+  const prevIsPublic = curSet.isPublic === 'N' ? 'N' : 'Y';
+
+  if (curSet.authorType === 'ACADEMY') {
+    renderQuizSetTabs();
+    showMasterToast('가맹 학원에서 출제한 북퀴즈 세트는 본사에서 공개 범위를 변경할 수 없습니다.');
+    return;
+  }
+
+  if (typeof saveCurrentQuizDraft === 'function') {
+    saveCurrentQuizDraft();
+  }
+
+  if (!isMasterQuizServerMode()) {
+    curSet.isPublic = targetIsPublic;
+    renderQuizSetTabs();
+    showMasterToast(`선택된 북퀴즈 세트가 [${targetIsPublic === 'Y' ? '공개 (전체 공유)' : '비공개 (출제처 전용)'}] 상태로 설정되었습니다.`);
+    return;
+  }
+
+  if (!canQuickPersistMasterQuiz(currentQuizQuestions)) {
+    curSet.isPublic = targetIsPublic;
+    renderQuizSetTabs();
+    showMasterToast(`선택된 북퀴즈 세트가 [${targetIsPublic === 'Y' ? '공개' : '비공개'}] 상태로 선택되었습니다. 문항 작성 후 저장 완료 버튼을 눌러 주세요.`);
+    return;
+  }
+
+  const radY = document.getElementById('mqSetPublicY');
+  const radN = document.getElementById('mqSetPublicN');
+  if (radY) radY.disabled = true;
+  if (radN) radN.disabled = true;
+  try {
+    const savedSet = await persistMasterQuizToServer(book, curSet, targetIsPublic, currentQuizQuestions);
+    if (savedSet && Array.isArray(savedSet.questions)) {
+      currentQuizQuestions = savedSet.questions;
+    }
+    renderQuizSetTabs();
+    renderMasterContents();
+    showMasterToast(`북퀴즈 세트가 [${targetIsPublic === 'Y' ? '공개 (전체 공유)' : '비공개 (출제처 전용)'}] 상태로 저장되었습니다.`);
+  } catch (error) {
+    curSet.isPublic = prevIsPublic;
+    renderQuizSetTabs();
+    showMasterToast('공개 상태 변경을 저장하지 못했습니다: ' + (error.message || '서버 오류'));
+  } finally {
+    if (radY) radY.disabled = false;
+    if (radN) radN.disabled = false;
+  }
 }
 
 // 출제 기관 탭 전환
@@ -3264,7 +3314,7 @@ function promptAddNewQuizSet() {
 }
 
 // 현재 선택된 퀴즈 세트 삭제 (마스터 관리자 전용 권한)
-function deleteCurQuizSet() {
+async function deleteCurQuizSet() {
   const book = masterBooks.find(b => b.id === curQuizTargetBookId);
   if (!book || !book.quizSets) return;
 
@@ -3274,7 +3324,8 @@ function deleteCurQuizSet() {
   }
 
   const curSet = book.quizSets[curQuizSetIdx];
-  if (!confirm(`'${curSet.authorName}'에서 출제한 북퀴즈 세트 전체를 삭제하시겠습니까?`)) {
+  const quizSetDelMsg = `'${curSet.authorName}'에서 출제한 북퀴즈 세트 전체를 삭제하시겠습니까?`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(quizSetDelMsg) : confirm(quizSetDelMsg))) {
     return;
   }
 
@@ -3993,6 +4044,101 @@ function validateMasterQuizQuestions(questions) {
   return true;
 }
 
+function isMasterQuizServerMode() {
+  return Boolean(window.NanoPortal && (NanoPortal.remote || window.NANO_SERVER_DATA) && typeof NanoPortal.api === 'function');
+}
+
+function buildMasterQuizApiPayload(questions) {
+  // 객관식(빈 보기 제거) 및 주관식(유사답안/힌트) 모두 /api/content?action=quiz 스키마로 정규화
+  return (Array.isArray(questions) ? questions : []).map(q => {
+    const qType = (q.type || 'CHOICE') === 'SUBJECTIVE' ? 'SUBJECTIVE' : 'CHOICE';
+    const hint = String(q.hint || '').trim();
+    if (qType === 'SUBJECTIVE') {
+      const subjectiveVal = (q.subjectiveAns !== undefined && q.subjectiveAns !== '')
+        ? q.subjectiveAns
+        : (q.ans || '');
+      const similarRaw = q.similarAns || (Array.isArray(q.similarAnswers) ? q.similarAnswers.join(', ') : '') || '';
+      return {
+        type: 'SUBJECTIVE',
+        question: String(q.question || '').trim(),
+        answer: String(subjectiveVal || '').trim(),
+        similarAns: String(similarRaw || '').trim(),
+        hint
+      };
+    }
+    const options = getChoicesFromQuestion(q)
+      .map(opt => String(opt || '').trim())
+      .filter(Boolean);
+    return {
+      type: 'CHOICE',
+      question: String(q.question || '').trim(),
+      options,
+      answer: String(q.ans || '1').trim(),
+      hint
+    };
+  });
+}
+
+function canQuickPersistMasterQuiz(questions) {
+  if (!Array.isArray(questions) || questions.length < 1 || questions.length > 100) return false;
+  return buildMasterQuizApiPayload(questions).every(item => {
+    if (!item.question || item.question === '문제를 입력해주세요' || item.question === '문제를 입력해 주세요') {
+      return false;
+    }
+    if (item.type === 'SUBJECTIVE') {
+      return Boolean(item.answer);
+    }
+    const ansNum = Number(item.answer);
+    return item.options.length >= 2 && item.options.length <= 5 && Number.isInteger(ansNum) && ansNum >= 1 && ansNum <= item.options.length;
+  });
+}
+
+async function persistMasterQuizToServer(book, curSet, targetIsPublic, questions) {
+  const targetBookId = book.serverId || book.id || book.bookNo || curQuizTargetBookId;
+  const payloadQuestions = buildMasterQuizApiPayload(questions);
+  const saveRes = await NanoPortal.api('/api/content?action=quiz', {
+    bookId: targetBookId,
+    seq: Number.isInteger(curSet.seq) ? curSet.seq : undefined,
+    revision: Number.isInteger(curSet.revision) ? curSet.revision : 0,
+    isPublic: targetIsPublic,
+    questions: payloadQuestions
+  });
+  const savedSeq = (saveRes && Number.isInteger(saveRes.seq))
+    ? saveRes.seq
+    : (Number.isInteger(curSet.seq) ? curSet.seq : null);
+
+  const refreshed = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(targetBookId));
+  if (refreshed && Array.isArray(refreshed.quizSets) && refreshed.quizSets.length > 0) {
+    book.quizSets = refreshed.quizSets;
+    book._quizLoadedFromServer = true;
+    if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
+    window.MIGRATED_QUIZZES[book.id] = refreshed.quizSets;
+    if (book.bookNo) window.MIGRATED_QUIZZES[book.bookNo] = refreshed.quizSets;
+    if (book.serverId) window.MIGRATED_QUIZZES[book.serverId] = refreshed.quizSets;
+  } else {
+    curSet.isPublic = targetIsPublic;
+    curSet.questions = JSON.parse(JSON.stringify(questions));
+  }
+
+  const savedIdx = book.quizSets.findIndex(s => savedSeq !== null && s.seq === savedSeq);
+  if (savedIdx >= 0) {
+    curQuizSetIdx = savedIdx;
+  }
+  const savedSet = book.quizSets[curQuizSetIdx] || book.quizSets[0] || curSet;
+  const primarySet = book.quizSets[0] || savedSet;
+  const primaryQuestions = Array.isArray(primarySet.questions) ? primarySet.questions : questions;
+
+  // 기본 목록 표시용 하위 호환
+  book.quizList = JSON.parse(JSON.stringify(primaryQuestions));
+  book.quizzes = primaryQuestions.length;
+  book.hasQuiz = primaryQuestions.length > 0;
+
+  if (window.ContentSharing && typeof ContentSharing.refresh === 'function') {
+    try { ContentSharing.refresh(); } catch (_e) {}
+  }
+  return savedSet;
+}
+
 async function handleSaveMasterQuizOnly() {
   saveCurrentQuizDraft();
 
@@ -4012,68 +4158,22 @@ async function handleSaveMasterQuizOnly() {
   const targetIsPublic = curSet.isPublic === 'N' ? 'N' : 'Y';
   curSet.isPublic = targetIsPublic;
 
-  let savedSeq = Number.isInteger(curSet.seq) ? curSet.seq : null;
+  let savedSet = curSet;
 
-  if (window.NanoPortal && NanoPortal.remote) {
+  if (isMasterQuizServerMode()) {
     if (curSet.authorType === 'ACADEMY') {
       showMasterToast('가맹 학원에서 출제한 북퀴즈 세트는 본사에서 덮어쓸 수 없습니다. [본사 세트 추가]를 이용해 주세요.');
       return;
     }
 
-    const targetBookId = book.serverId || book.id || book.bookNo || curQuizTargetBookId;
-    // 객관식(빈 보기 제거) 및 주관식(유사답안/힌트) 모두 /api/content?action=quiz 스키마로 정규화
-    const payloadQuestions = currentQuizQuestions.map(q => {
-      const qType = (q.type || 'CHOICE') === 'SUBJECTIVE' ? 'SUBJECTIVE' : 'CHOICE';
-      const hint = String(q.hint || '').trim();
-      if (qType === 'SUBJECTIVE') {
-        const subjectiveVal = (q.subjectiveAns !== undefined && q.subjectiveAns !== '')
-          ? q.subjectiveAns
-          : (q.ans || '');
-        const similarRaw = q.similarAns || (Array.isArray(q.similarAnswers) ? q.similarAnswers.join(', ') : '') || '';
-        return {
-          type: 'SUBJECTIVE',
-          question: String(q.question || '').trim(),
-          answer: String(subjectiveVal || '').trim(),
-          similarAns: String(similarRaw || '').trim(),
-          hint
-        };
-      }
-      const options = getChoicesFromQuestion(q)
-        .map(opt => String(opt || '').trim())
-        .filter(Boolean);
-      return {
-        type: 'CHOICE',
-        question: String(q.question || '').trim(),
-        options,
-        answer: String(q.ans || '1').trim(),
-        hint
-      };
-    });
-
-    const saveBtn = document.querySelector('#masterQuizModal .modal-footer .btn-beige-primary');
+    const saveBtn = document.querySelector('#masterQuizModal button[onclick*="handleSaveMasterQuizOnly"]');
     const origBtnHtml = saveBtn ? saveBtn.innerHTML : '';
     if (saveBtn) {
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>저장 중...';
     }
     try {
-      const saveRes = await NanoPortal.api('/api/content?action=quiz', {
-        bookId: targetBookId,
-        seq: Number.isInteger(curSet.seq) ? curSet.seq : undefined,
-        revision: Number.isInteger(curSet.revision) ? curSet.revision : 0,
-        isPublic: targetIsPublic,
-        questions: payloadQuestions
-      });
-      if (saveRes && Number.isInteger(saveRes.seq)) savedSeq = saveRes.seq;
-      const refreshed = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(targetBookId));
-      if (refreshed && Array.isArray(refreshed.quizSets) && refreshed.quizSets.length > 0) {
-        book.quizSets = refreshed.quizSets;
-        book._quizLoadedFromServer = true;
-        if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
-        window.MIGRATED_QUIZZES[book.id] = refreshed.quizSets;
-        if (book.bookNo) window.MIGRATED_QUIZZES[book.bookNo] = refreshed.quizSets;
-        if (book.serverId) window.MIGRATED_QUIZZES[book.serverId] = refreshed.quizSets;
-      }
+      savedSet = await persistMasterQuizToServer(book, curSet, targetIsPublic, currentQuizQuestions);
     } catch (error) {
       showMasterToast('북퀴즈를 저장하지 못했습니다: ' + (error.message || '서버 오류'));
       return;
@@ -4085,22 +4185,14 @@ async function handleSaveMasterQuizOnly() {
     }
   } else {
     curSet.questions = JSON.parse(JSON.stringify(currentQuizQuestions));
-  }
-
-  const savedSet = book.quizSets.find(s => savedSeq !== null && s.seq === savedSeq)
-    || book.quizSets[curQuizSetIdx]
-    || book.quizSets[0]
-    || curSet;
-  const primarySet = book.quizSets[0] || savedSet;
-  const primaryQuestions = Array.isArray(primarySet.questions) ? primarySet.questions : currentQuizQuestions;
-
-  // 기본 목록 표시용 하위 호환
-  book.quizList = JSON.parse(JSON.stringify(primaryQuestions));
-  book.quizzes = primaryQuestions.length;
-  book.hasQuiz = primaryQuestions.length > 0;
-
-  if (window.ContentSharing && typeof ContentSharing.refresh === 'function') {
-    try { ContentSharing.refresh(); } catch (_e) {}
+    const primarySet = book.quizSets[0] || savedSet;
+    const primaryQuestions = Array.isArray(primarySet.questions) ? primarySet.questions : currentQuizQuestions;
+    book.quizList = JSON.parse(JSON.stringify(primaryQuestions));
+    book.quizzes = primaryQuestions.length;
+    book.hasQuiz = primaryQuestions.length > 0;
+    if (window.ContentSharing && typeof ContentSharing.refresh === 'function') {
+      try { ContentSharing.refresh(); } catch (_e) {}
+    }
   }
 
   showMasterToast(`'${book.title}' [${savedSet.authorName || curSet.authorName}] 북퀴즈(${currentQuizQuestions.length}문항 · ${targetIsPublic === 'N' ? '비공개' : '전체 공개'}) 저장이 완료되었습니다!`);

@@ -1,6 +1,6 @@
 import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import { prisma } from '../lib/prisma';
-import { reserveDispatch, settleDispatch, reconcileDispatches } from '../lib/kakao-wallet';
+import { reserveDispatch, settleDispatch, reconcileDispatches, maskPhone } from '../lib/kakao-wallet';
 import { KAKAO_UNIT } from '../lib/billing-policy';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
@@ -167,10 +167,11 @@ export default async function handler(req: any, res: any) {
     const user = await authenticate(req);
     staff(user);
 
-    const aligoReady = Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER_KEY && process.env.ALIGO_SENDER);
+    const aligoReady = process.env.ALIGO_ENABLED !== 'false' && Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER_KEY && process.env.ALIGO_SENDER);
     if (req.method === 'GET') {
       if (action === 'dispatch_stats') {
-        await reconcileDispatches(user.role === 'MASTER' ? undefined : user.academyId, { apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID });
+        const refreshCutoff = String(req.query.refresh || '') === '1' ? new Date(Date.now() - 3000) : undefined;
+        const reconciledCount = await reconcileDispatches(user.role === 'MASTER' ? undefined : user.academyId, { apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID }, refreshCutoff);
         const wallet = await prisma.academy.findUnique({ where: { id: user.academyId } });
         const where = user.role === 'MASTER' ? {} : { academyId: user.academyId };
         const month = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
@@ -181,7 +182,7 @@ export default async function handler(req: any, res: any) {
           prisma.aligoDispatchLog.count({ where: { ...where, status: 'FAILED' } }),
         ]);
         const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: true }, orderBy: { sentAt: 'desc' } });
-        const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, code: d.resultCode || '', resultMessage: d.resultMessage || '', canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
+        const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, providerId: d.providerId || '', code: d.resultCode || '', resultMessage: d.resultMessage || '', canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
         let connected = false;
         let remainingCount: number | null = null;
         let aligoMessage = '';
@@ -197,7 +198,9 @@ export default async function handler(req: any, res: any) {
         } catch (err: any) {
           /* 조회 실패 시 임의의 잔액을 표시하지 않고 오류 사유만 기록합니다. */
           aligoMessage = String(err?.cause?.message || err?.message || '알리고 API 통신 실패').slice(0, 120);
+          console.error('[Aligo] heartinfo_error', { error: aligoMessage, hasProxy: Boolean(proxyDispatcher) });
         }
+        console[connected ? 'info' : 'warn']('[Aligo] dispatch_stats', { role: user.role, academyId: user.academyId, reconciledCount, total, success, failed, connected, aligoMessage, remainingCount });
         return res.json({ items, total, monthly, success, failed, pending: total - success - failed, connected, aligoMessage, balance: (wallet?.kakaoBalance || 0) / 10, walletCount: Math.floor((wallet?.kakaoBalance || 0) / KAKAO_UNIT),
           ...(user.role === 'MASTER' ? { remainingCount, estimatedCash: remainingCount == null ? null : remainingCount * 6.5, unitCost: 6.5 } : {}) });
       }
@@ -206,6 +209,7 @@ export default async function handler(req: any, res: any) {
 
     need(aligoReady, '알림톡 운영 설정(API Key, 발신번호 등)이 완료되지 않았습니다.', 503);
     const body = req.body || {};
+    console.info('[Aligo] request', { action: body.action || action, type: body.type || 'quiz', userId: user.id, academyId: user.academyId, role: user.role });
     if (body.action === 'retry') {
       const previous = await prisma.aligoDispatchLog.findFirst({ where: { id: String(body.id || ''), ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) } });
       need(previous && previous.status === 'FAILED' && previous.memberId && previous.payload, '재발송 가능한 실패 이력이 아닙니다.', 409);
@@ -214,7 +218,7 @@ export default async function handler(req: any, res: any) {
       const payload = previous.payload as any;
       const id = 'retry_' + createHash('sha256').update(previous.id).digest('hex');
       const reserved = await reserveDispatch({ id, academyId: previous.academyId, recipientName: previous.recipientName, recipientPhone: previous.recipientPhone, templateCode: previous.templateCode, message: previous.message }, member, payload, previous.id);
-      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
+      if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'retry');
       return dispatchAligo(id, previous.recipientPhone, member.name, payload.subject, previous.message, previous.templateCode, payload.buttonJson, res);
     }
     const type = String(body.type || 'quiz'); // 'quiz' | 'portfolio' | 'literacy'
@@ -267,6 +271,7 @@ export default async function handler(req: any, res: any) {
         .digest('hex');
 
       if (body.action === 'preview') {
+        console.info('[Aligo] preview', { type: 'quiz', refId: log.id, tplCode: ALIGO_QUIZ_TEMPLATE_CODE, recipient: maskPhone(phone), messageLength: message.length });
         return res.json({
           message,
           recipient: phone,
@@ -279,10 +284,10 @@ export default async function handler(req: any, res: any) {
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 리포트 내용을 확인해 주세요.', 409);
       const id = 'quiz_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
-      if (existing) return res.json({ status: existing.status, duplicate: true });
+      if (existing) return duplicateResponse(res, existing, 'quiz');
 
       const reserved = await reserveDispatch({ id, academyId: log.member.academyId, recipientName: log.member.parentName || log.member.name, recipientPhone: phone, templateCode: ALIGO_QUIZ_TEMPLATE_CODE, message }, log.member, { buttonJson, subject: '북퀴즈 결과 리포트' });
-      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
+      if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'quiz');
 
       return await dispatchAligo(id, phone, log.member.name, '북퀴즈 결과 리포트', message, ALIGO_QUIZ_TEMPLATE_CODE, buttonJson, res);
     }
@@ -336,6 +341,7 @@ export default async function handler(req: any, res: any) {
         .digest('hex');
 
       if (body.action === 'preview') {
+        console.info('[Aligo] preview', { type: 'portfolio', refId: pfId, tplCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, recipient: maskPhone(phone), messageLength: message.length });
         return res.json({
           message,
           recipient: phone,
@@ -348,10 +354,10 @@ export default async function handler(req: any, res: any) {
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 포트폴리오 내용을 확인해 주세요.', 409);
       const id = 'pf_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
-      if (existing) return res.json({ status: existing.status, duplicate: true });
+      if (existing) return duplicateResponse(res, existing, 'portfolio');
 
       const reserved = await reserveDispatch({ id, academyId: student.academyId, recipientName: student.parentName || student.name, recipientPhone: phone, templateCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, message }, student, { buttonJson, subject: '독서 성장 포트폴리오' });
-      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
+      if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'portfolio');
 
       return await dispatchAligo(id, phone, student.name, '독서 성장 포트폴리오', message, ALIGO_PORTFOLIO_TEMPLATE_CODE, buttonJson, res);
     }
@@ -404,6 +410,7 @@ export default async function handler(req: any, res: any) {
         .digest('hex');
 
       if (body.action === 'preview') {
+        console.info('[Aligo] preview', { type: 'literacy', refId: recordId, tplCode: ALIGO_LITERACY_TEMPLATE_CODE, recipient: maskPhone(phone), messageLength: message.length });
         return res.json({
           message,
           recipient: phone,
@@ -416,18 +423,39 @@ export default async function handler(req: any, res: any) {
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 진단 결과 내용을 확인해 주세요.', 409);
       const id = 'lit_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
-      if (existing) return res.json({ status: existing.status, duplicate: true });
+      if (existing) return duplicateResponse(res, existing, 'literacy');
 
       const reserved = await reserveDispatch({ id, academyId: member.academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: ALIGO_LITERACY_TEMPLATE_CODE, message }, member, { buttonJson, subject: '문해력 진단 결과지' });
-      if (reserved.duplicate) return res.json({ status: reserved.log.status, duplicate: true });
+      if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'literacy');
 
       return await dispatchAligo(id, phone, member.name, '문해력 진단 결과지', message, ALIGO_LITERACY_TEMPLATE_CODE, buttonJson, res);
     }
 
     throw new Error('지원하지 않는 알림톡 유형입니다.');
-  } catch (error) {
+  } catch (error: any) {
+    if (error && typeof error === 'object' && 'status' in error) {
+      console.warn('[Services] request_rejected', { action: String(req.query?.action || req.body?.action || ''), status: error.status, message: error.message });
+    }
     return failure(res, error);
   }
+}
+
+function duplicateResponse(res: any, existing: any, type: string) {
+  console.warn('[Aligo] duplicate_skipped', {
+    type,
+    logId: existing.id,
+    status: existing.status,
+    providerId: existing.providerId || null,
+    resultCode: existing.resultCode || null,
+    resultMessage: existing.resultMessage || null,
+  });
+  return res.json({
+    status: existing.status,
+    duplicate: true,
+    providerId: existing.providerId || null,
+    resultCode: existing.resultCode || null,
+    resultMessage: existing.resultMessage || null,
+  });
 }
 
 async function dispatchAligo(
@@ -457,14 +485,43 @@ async function dispatchAligo(
     const fetchOptions: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
     if (proxyDispatcher) fetchOptions.dispatcher = proxyDispatcher;
 
+    console.info('[Aligo] send_request', {
+      logId,
+      tplCode,
+      recipient: maskPhone(phone),
+      hasProxy: Boolean(proxyDispatcher),
+      messageLength: message.length,
+    });
+
     const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', fetchOptions);
     const result: any = await response.json();
     const accepted = response.ok && result.code != null && Number(result.code) === 0;
     const rejected = response.ok && result.code != null && Number.isFinite(Number(result.code)) && Number(result.code) < 0;
     const status = accepted ? 'ACCEPTED' : rejected ? 'FAILED' : 'UNKNOWN';
-    await settleDispatch(logId, status, { providerId: accepted && result.info?.mid ? String(result.info.mid) : null, resultCode: String(result.code ?? ''), resultMessage: String(result.message || '').slice(0, 1000) });
-    return res.json({ status });
-  } catch (err) {
+    const providerId = accepted && result.info?.mid ? String(result.info.mid) : null;
+    const resultCode = String(result.code ?? '');
+    const resultMessage = String(result.message || '').slice(0, 1000);
+
+    console[accepted ? 'info' : 'warn']('[Aligo] send_response', {
+      logId,
+      tplCode,
+      httpStatus: response.status,
+      ok: response.ok,
+      status,
+      code: resultCode,
+      message: resultMessage,
+      providerId,
+    });
+
+    await settleDispatch(logId, status, { providerId, resultCode, resultMessage });
+    return res.json({ status, providerId, resultCode, resultMessage });
+  } catch (err: any) {
+    console.error('[Aligo] send_exception', {
+      logId,
+      tplCode,
+      recipient: maskPhone(phone),
+      error: err?.cause?.message || err?.message || String(err),
+    });
     await prisma.aligoDispatchLog.updateMany({ where: { id: logId, status: 'SENDING' }, data: { status: 'UNKNOWN' } });
     return res.status(502).json({
       error: '발송 결과를 확인하지 못했습니다. 중복 발송을 막기 위해 재전송하지 않았습니다. 알리고 관리자 화면에서 확인해 주세요.',

@@ -2144,7 +2144,7 @@ function downloadAsCSV(filename, headers, rows) {
 
 // 마스터 운영자 전용 안전 로그아웃 처리
 async function handleMasterLogout() {
-  if (!confirm('로그아웃 하시겠습니까?')) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm('로그아웃 하시겠습니까?') : confirm('로그아웃 하시겠습니까?'))) return;
   try {
     if (window.NanoPortal && typeof NanoPortal.logout === 'function') {
       await NanoPortal.logout();
@@ -2192,7 +2192,7 @@ async function openMasterAiSettingsModal() {
     if (res.ok) {
       var data = await res.json();
       if (modelSelect && data.model) {
-        modelSelect.value = data.model || 'gemini-3.8-flash';
+        modelSelect.value = (data.model && !String(data.model).includes('3.8')) ? data.model : 'gemini-2.5-flash';
       }
       if (statusElem) {
         if (data.hasKey) {
@@ -2216,7 +2216,7 @@ async function saveMasterAiSettings() {
   var keyInput = document.getElementById('masterGeminiApiKey');
   var modelSelect = document.getElementById('masterGeminiModel');
   var apiKey = keyInput ? keyInput.value.trim() : '';
-  var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
+  var model = (modelSelect && modelSelect.value) ? modelSelect.value : 'gemini-2.5-flash';
 
   if (apiKey && apiKey.startsWith('sk-')) {
     alert('⚠️ 입력하신 키는 OpenAI API 키(sk-...)입니다.\n\n구글 제미나이(Google Gemini) 엔진은 "AIzaSy..."로 시작하는 Google AI Studio API 키를 사용해야 합니다.\n\nGoogle AI Studio(https://aistudio.google.com)에서 발급받은 Gemini API 키를 입력해 주세요.');

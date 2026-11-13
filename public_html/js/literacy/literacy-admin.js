@@ -241,7 +241,8 @@
     } catch (e) { fail(e); } finally { btn.disabled = false; }
   }
   async function cancel(id) {
-    if (!global.confirm('이 테스트 배정을 취소할까요?\n학생 화면에서 테스트 시작 버튼이 사라집니다.')) return;
+    var cancelLitMsg = '이 테스트 배정을 취소할까요?\n학생 화면에서 테스트 시작 버튼이 사라집니다.';
+    if (!(typeof global.nanoConfirm === 'function' ? await global.nanoConfirm(cancelLitMsg) : global.confirm(cancelLitMsg))) return;
     try { await L.api('cancel', { body: { id: id } }); toast('배정을 취소했습니다.'); refresh(); } catch (e) { fail(e); }
   }
 
@@ -277,10 +278,13 @@
     var d = state.current; if (!d) return;
     try {
       var pv = await L.api('kakao', { body: { id: d.record.id, preview: true } });
-      var ok = global.confirm('[문해력 진단 결과 알림톡 발송 미리보기]\n\n받는 분: ' + pv.name + ' (' + pv.recipient + ')\n\n' + pv.message + '\n\n연결 링크: ' + pv.targetUrl + '\n\n학부모님께 이 내용으로 발송할까요?');
+      var litKakaoMsg = '[문해력 진단 결과 알림톡 발송 미리보기]\n\n받는 분: ' + pv.name + ' (' + pv.recipient + ')\n\n' + pv.message + '\n\n연결 링크: ' + pv.targetUrl + '\n\n학부모님께 이 내용으로 발송할까요?';
+      var ok = typeof global.nanoConfirm === 'function' ? await global.nanoConfirm(litKakaoMsg) : global.confirm(litKakaoMsg);
       if (!ok) return;
       var res = await L.api('kakao', { body: { id: d.record.id, fingerprint: pv.fingerprint } });
-      toast(res.duplicate ? '이미 같은 내용이 발송되었습니다. (' + res.status + ')' : res.status === 'ACCEPTED' ? '🎉 문해력 결과지 알림톡 발송이 성공적으로 접수되었습니다!' : '발송에 실패했습니다. 카톡 발송 내역을 확인해 주세요.', res.status === 'FAILED');
+      if (global.NanoBilling && typeof global.NanoBilling.invalidateDispatchCache === 'function') global.NanoBilling.invalidateDispatchCache();
+      var resMsg = res.resultMessage ? ' (' + res.resultMessage + ')' : '';
+      toast(res.duplicate ? '이미 발송 접수된 내역입니다. (' + res.status + resMsg + ')' : res.status === 'ACCEPTED' ? '📨 문해력 결과지 알림톡 발송이 알리고에 접수되었습니다. ([카톡 발송 내역]에서 결과 확인)' : (res.status === 'SUCCESS' || res.status === 'SMS_FALLBACK') ? '🎉 문해력 결과지 알림톡이 발송되었습니다!' : '❌ 발송 실패' + (resMsg || ': 카톡 발송 내역을 확인해 주세요.'), res.status === 'FAILED');
     } catch (e) { fail(e); }
   }
 

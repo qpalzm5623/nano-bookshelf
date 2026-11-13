@@ -1107,26 +1107,48 @@
       background: #f8fafc;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
+    .rank-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .rank-card-academy {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f766e;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .rank-card-title {
       font-size: 13.5px;
       font-weight: 800;
       color: #1e293b;
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-bottom: 2px;
+      flex-wrap: wrap;
+      gap: 5px;
     }
-    .rank-char-tag {
-      font-size: 10px;
-      font-weight: 700;
+    .rank-card-id {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .rank-card-me {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #00a896;
+      background: #ccfbf1;
       padding: 1px 6px;
+      border-radius: 6px;
+    }
+    .rank-card-class {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
       border-radius: 6px;
       background: #f1f5f9;
       color: #475569;
-    }
-    .rank-card-sub {
-      font-size: 11.5px;
-      color: #64748b;
     }
     .rank-card-pt {
       font-size: 15px;
@@ -1134,6 +1156,21 @@
       color: #0284c7;
       text-align: right;
       flex-shrink: 0;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .rank-card-pt-unit {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      margin-left: 2px;
+    }
+    .rank-card-books {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
     }
 
     /* 캐릭터 선택 모달 */
@@ -3680,7 +3717,8 @@
 <script src="js/reading-progress.js?v=20261029-integrity"></script>
 <script src="js/quiz-result-art.js?v=20261110-characters"></script>
 <link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_ui">
-<script src="js/content-sharing.js?v=20261113_sharing_ui"></script>
+<script src="js/nano-dialog.js?v=20261113_center"></script>
+<script src="js/content-sharing.js?v=20261113_center"></script>
 </head>
 <body>
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
@@ -4254,7 +4292,6 @@
     </div>
 
     <!-- 완독 인증 도서일 경우 내 학습리포트 바로가기 배너 노출 -->
-    <button type="button" id="detailSheetButton" class="btn btn-outline-secondary mb-3">나노시트 목록</button>
     <div id="detailMyLearningReportBox" style="display:none; margin-bottom:16px;"></div>
 
     <!-- 이 도서를 읽은 학생이 함께 읽은 책 -->
@@ -6356,8 +6393,6 @@ function openBookDetail(id, from) {
 
   if(from) prevPanel = from;
   currentDetailBookId = id;
-  var sheetButton = document.getElementById('detailSheetButton');
-  if (sheetButton) { sheetButton.hidden = !window.NANO_SERVER_DATA; sheetButton.onclick = function () { ContentSharing.openSheets(b); }; }
 
   // 1. 헤더 서지정보 주입
   var heroCard = document.getElementById('detailHeroCard');
@@ -11171,7 +11206,7 @@ function renderCharacterSelectModal() {
 async function handleStudentLogout() {
   if (window.studentSubmissionPending) { toast('답안을 저장 중입니다. 잠시 기다려 주세요.'); return; }
   if (!studentQuizSubmitted && curData && !saveStudentQuizDraft()) return;
-  if (!confirm('로그아웃 하시겠습니까?')) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm('로그아웃 하시겠습니까?') : confirm('로그아웃 하시겠습니까?'))) return;
   try { await NanoPortal.logout(); } catch(e) { toast(e.message); }
 }
 
@@ -11493,6 +11528,18 @@ function renderRank() {
     if(r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
     else if(r.change === 'down') changeHtml = '<span class="rank-card-change down"><i class="fa-solid fa-caret-down"></i>' + (r.changeNum || 1) + '</span>';
 
+    var rawId = String(r.username || r.studentId || '').trim();
+    var rawCls = String(r.cls || '').trim();
+    // 전국 랭킹일 때만 이름 위에 학원명을 별도 줄로 표기하고, 학급명은 항상 이름·아이디 우측에 배치합니다.
+    var academyText = currentRankScope === 'national'
+      ? (String(r.academyName || '').trim() || (rawCls.indexOf(' · ') !== -1 ? rawCls.split(' · ')[0].trim() : ''))
+      : '';
+    var classText = String(
+      r.className
+      || (currentRankScope === 'national' && rawCls.indexOf(' · ') !== -1 ? rawCls.split(' · ').slice(1).join(' · ').trim() : (currentRankScope !== 'national' ? rawCls : ''))
+      || ''
+    ).trim() || '학급 미지정';
+
     return '<div class="rank-card ' + (r.me ? 'me' : '') + '">'
       + '<div class="rank-card-num-box">'
       +   '<div class="rank-card-num">' + r.rank + '</div>'
@@ -11501,16 +11548,18 @@ function renderRank() {
       + '<div class="rank-card-avatar">'
       +   getCharacterSvg(cId, 42, r.stage || 1)
       + '</div>'
-      + '<div style="flex: 1; min-width: 0;">'
+      + '<div class="rank-card-info">'
+      +   (academyText ? '<div class="rank-card-academy"><i class="fa-solid fa-school" style="font-size:10px;margin-right:4px;opacity:0.8;"></i>' + escapeStudentQuizText(academyText) + '</div>' : '')
       +   '<div class="rank-card-title">'
       +     '<span>' + escapeStudentQuizText(r.name) + '</span>'
-      +     (r.me ? '<span style="font-size: 10.5px; font-weight: 800; color: #00a896; background: #ccfbf1; padding: 1px 6px; border-radius: 6px;">나</span>' : '')
-      +     '<span class="rank-char-tag">' + escapeStudentQuizText(r.titleTag || '독서왕') + '</span>'
+      +     (rawId ? '<span class="rank-card-id">(' + escapeStudentQuizText(rawId) + ')</span>' : '')
+      +     '<span class="rank-card-class">' + escapeStudentQuizText(classText) + '</span>'
+      +     (r.me ? '<span class="rank-card-me">나</span>' : '')
       +   '</div>'
-      +   '<div class="rank-card-sub">' + escapeStudentQuizText(r.cls) + ' · 완독 ' + (r.books || 0) + '권</div>'
       + '</div>'
       + '<div class="rank-card-pt">'
-      +   r.pt.toLocaleString() + '<span style="font-size:11px;font-weight:700;color:#64748b;margin-left:2px;">P</span>'
+      +   '<span>' + Number(r.pt || 0).toLocaleString() + '<span class="rank-card-pt-unit">P</span></span>'
+      +   '<span class="rank-card-books">(완독 ' + (Number(r.books) || 0) + '권)</span>'
       + '</div>'
       + '</div>';
   }).join('');
@@ -11705,6 +11754,12 @@ function toast(msg){
       localStorage.removeItem('nano_auth_user');
       localStorage.removeItem('nano_user');
     } catch(e) {}
+    if (typeof nanoAlert === 'function') {
+      nanoAlert(msg).then(function() {
+        try { location.replace('index.html'); } catch(e) { location.href = 'index.html'; }
+      });
+      return;
+    }
     try { alert(msg); } catch(e) {}
     try { location.replace('index.html'); } catch(e) { location.href = 'index.html'; }
     return;
@@ -11721,7 +11776,7 @@ function toast(msg){
 async function handleStudentLogout() {
   if (window.studentSubmissionPending) { toast('답안을 저장 중입니다. 잠시 기다려 주세요.'); return; }
   if (!studentQuizSubmitted && curData && !saveStudentQuizDraft()) return;
-  if (!confirm('로그아웃 하시겠습니까?')) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm('로그아웃 하시겠습니까?') : confirm('로그아웃 하시겠습니까?'))) return;
   try { await NanoPortal.logout(); } catch(e) { toast(e.message); }
 }
 
@@ -12462,6 +12517,6 @@ document.addEventListener('click', function(event) {
 <script src="js/portal-extras.js?v=20261029-integrity"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_finish_art"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-student.js?v=20261104_finish_art"></script>
+<script src="js/literacy/literacy-student.js?v=20261113_center"></script>
 </body>
 </html>

@@ -496,7 +496,7 @@ function handlePlanPrimaryAction() {
 }
 
 // 추가 결제 없이 차월분 요금제 변경 신청만 완료하는 함수 (다운그레이드 / 업그레이드 '차월부터 적용')
-function submitPlanChangeWithoutPayment(changeMode) {
+async function submitPlanChangeWithoutPayment(changeMode) {
   var tier = planTiers[currentSelectedTier] || planTiers['standard'];
   var billingInfo = getNext25thBillingDateInfo();
   var regularSupply = tier.monthlyPrice;
@@ -511,7 +511,7 @@ function submitPlanChangeWithoutPayment(changeMode) {
     '• 차월 정기결제일: ' + billingInfo.billingDateStr + ' (매월 25일, 공휴일 시 다음 평일)\n' +
     '• 차월부터 결제될 정액: 월 ' + Number(regularTotal).toLocaleString() + '원 (VAT 포함)';
 
-  if (!confirm(confirmMsg)) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
 
   currentAcademyPlan.reservedNextTier = tier.code;
 

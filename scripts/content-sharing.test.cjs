@@ -397,3 +397,70 @@ test('마스터(HQ)가 북퀴즈를 비공개로 저장하면 공유 후보(cata
   assert.equal(portalQuizRes.data.quizSets[0].isPublic, 'N');
   assert.equal(portalQuizRes.data.quizSets[1].authorType, 'ACADEMY');
 });
+
+test('다른 본사 계정이나 시드가 등록한 HQ 비공개 북퀴즈도 마스터 공유 목록과 공유 폴더에서 정상 동작한다', async () => {
+  const f = setup();
+  // 다른 본사 계정/시드가 저장해 둔 비공개 본사 북퀴즈(seq: 0)
+  await f.db.portalSetting.create({
+    data: {
+      key: 'content_quiz:book-1:0',
+      scope: 'content_quiz',
+      value: {
+        bookId: 'book-1',
+        seq: 0,
+        ownerAcademyId: 'legacy-hq-academy',
+        ownerMemberId: 'legacy-master',
+        academyName: '본사',
+        authorType: 'HQ',
+        isPublic: 'N'
+      }
+    }
+  });
+  f.questions().push({
+    id: 'q-hq-legacy-1',
+    bookId: 'book-1',
+    legacyQuizSeq: 0,
+    questionNo: 1,
+    question: '본사 비공개 기존 문항',
+    quizType: 'MULTIPLE_CHOICE',
+    options: ['보기1', '보기2'],
+    correctAnswer: '1'
+  });
+
+  // 또 다른 본사 마스터 계정으로 조회
+  const master2 = { ...f.user('master-2', 'hq', 'MASTER'), academy: { id: 'hq', code: 'HQ', name: '본사', status: 'ACTIVE', deletedAt: null } };
+  f.setUser(master2);
+
+  const cat = await f.request('catalog');
+  assert.equal(cat.code, 200);
+  assert.deepEqual(cat.data.items.map(b => b.id), ['book-1']);
+  assert.equal(cat.data.items[0].hasPrivateQuiz, true);
+
+  // 마스터2가 공유 폴더를 생성해 B학원에 공유하면(authorType HQ + folder.ownerRole MASTER) 즉시 열람 가능
+  const created = await f.request('folder', { name: 'HQ 비공개 공유', bookIds: ['book-1'], directorUsernames: ['director-b'] });
+  assert.equal(created.code, 200);
+  const storedFolder = f.settings().find(r => r.key === 'content_folder:' + created.data.id).value;
+  assert.equal(storedFolder.ownerRole, 'MASTER');
+
+  // 타 가맹 학원(A) 폴더에 같은 도서가 있더라도 HQ 비공개 퀴즈를 무단 해제하지 않아야 함 (C학원은 차단)
+  f.setUser(f.user('director-b', 'b'));
+  assert.equal((await f.request('quiz', undefined, { bookId: 'book-1' }, f.portal)).data.quizSets.length, 1);
+  f.setUser(f.user('teacher-c', 'c', 'TEACHER'));
+  assert.equal((await f.request('quiz', undefined, { bookId: 'book-1' }, f.portal)).data.quizSets.length, 0);
+
+  // 마스터2가 해당 퀴즈를 다시 저장하면 현재 마스터 계정/기관 ID로 정규화되어 유지
+  f.setUser(master2);
+  const resaved = await f.request('quiz', {
+    bookId: 'book-1',
+    seq: 0,
+    revision: 1,
+    isPublic: 'N',
+    questions: [{ question: '수정된 문항', type: 'CHOICE', options: ['A', 'B'], answer: '2' }]
+  });
+  assert.equal(resaved.code, 200);
+  const storedQuiz = f.settings().find(r => r.key === 'content_quiz:book-1:0').value;
+  assert.equal(storedQuiz.ownerAcademyId, 'hq');
+  assert.equal(storedQuiz.ownerMemberId, 'master-2');
+  assert.equal(storedQuiz.authorType, 'HQ');
+  assert.equal(storedQuiz.isPublic, 'N');
+});

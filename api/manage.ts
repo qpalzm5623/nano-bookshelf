@@ -5,6 +5,17 @@ import { randomUUID } from 'node:crypto';
 import { monthWindow } from '../lib/portal-learning';
 import { loadContentAccess, quizContent, canReadContent, bookSheets, sheetView } from '../lib/portal-content';
 
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+function normalizeManageGeminiModel(rawModel?: unknown): string {
+  const trimmed = typeof rawModel === 'string' ? rawModel.trim() : '';
+  if (!trimmed) return DEFAULT_GEMINI_MODEL;
+  const lower = trimmed.toLowerCase();
+  if (lower.includes('3.8-flash-lite') || lower.includes('3.0-flash-lite') || lower.includes('2.5-flash-lite')) return 'gemini-2.5-flash-lite';
+  if (lower.includes('3.8-pro') || lower.includes('3.5-pro') || lower === 'gemini-3.5' || lower.includes('2.5-pro')) return 'gemini-2.5-pro';
+  if (lower.includes('3.8') || lower.includes('3.0') || lower.includes('2.5-flash') || lower === 'gemini-2.5') return 'gemini-2.5-flash';
+  return trimmed.startsWith('gemini-') ? trimmed : DEFAULT_GEMINI_MODEL;
+}
+
 let quizAuthorMap: Record<string, any> = {};
 try { quizAuthorMap = require('../lib/quiz-authors.json'); } catch {}
 
@@ -519,7 +530,7 @@ export default async function handler(req: any, res: any) {
         return res.json({
           hasKey: Boolean(rawKey),
           maskedKey: rawKey ? (rawKey.slice(0, 6) + '...' + rawKey.slice(-4)) : '',
-          model: val.model || 'gemini-3.8-flash',
+          model: normalizeManageGeminiModel(val.model || DEFAULT_GEMINI_MODEL),
           updatedAt: val.updatedAt || ''
         });
       }
@@ -1207,7 +1218,7 @@ export default async function handler(req: any, res: any) {
       const prev = ((row?.value as any) || {}) as Record<string, any>;
       const inputKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
       const finalKey = inputKey || (prev.apiKey ? String(prev.apiKey).trim() : '');
-      const model = typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || 'gemini-3.8-flash');
+      const model = normalizeManageGeminiModel(typeof input.model === 'string' && input.model.trim() ? input.model.trim() : (prev.model || DEFAULT_GEMINI_MODEL));
       const meta = { apiKey: finalKey, model, updatedAt: new Date().toISOString() };
       await prisma.portalSetting.upsert({
         where: { key: 'gemini_api_config' },
@@ -1231,7 +1242,7 @@ export default async function handler(req: any, res: any) {
       const aiConfig = ((configRow?.value as any) || {}) as Record<string, any>;
       const apiKey = (typeof input.apiKey === 'string' && input.apiKey.trim()) || (typeof aiConfig.apiKey === 'string' && aiConfig.apiKey.trim()) || (process.env.GEMINI_API_KEY || '');
       let model = (typeof aiConfig.model === 'string' && aiConfig.model.trim()) || (process.env.GEMINI_MODEL || 'gemini-1.5-flash');
-      if (model.includes('3.8')) model = 'gemini-1.5-flash';
+      model = normalizeManageGeminiModel(model);
 
       const cleaned = rawText
         .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')

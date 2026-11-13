@@ -636,7 +636,8 @@
    * 문항 삭제
    */
   async function deleteItem(itemId) {
-    if (!confirm('정말 [' + itemId + '] 문항을 삭제하시겠습니까?\n출제 선정 문항 삭제 시 규정 문항수(밴드당 30문항)가 부족하면 삭제가 차단될 수 있습니다.')) {
+    var delItemMsg = '정말 [' + itemId + '] 문항을 삭제하시겠습니까?\n출제 선정 문항 삭제 시 규정 문항수(밴드당 30문항)가 부족하면 삭제가 차단될 수 있습니다.';
+    if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(delItemMsg) : confirm(delItemMsg))) {
       return;
     }
 
@@ -668,7 +669,8 @@
    * 기본 209문항으로 복원
    */
   async function resetBank() {
-    if (!confirm('문항 은행을 초기 표준 209문항으로 되돌리시겠습니까?\n추가하거나 수정한 문항은 모두 기본 상태로 재설정됩니다.')) {
+    var resetBankMsg = '문항 은행을 초기 표준 209문항으로 되돌리시겠습니까?\n추가하거나 수정한 문항은 모두 기본 상태로 재설정됩니다.';
+    if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(resetBankMsg) : confirm(resetBankMsg))) {
       return;
     }
 

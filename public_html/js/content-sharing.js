@@ -346,7 +346,8 @@
           var index = Number(button.dataset.delete);
           var target = data.items[index];
           if (!target) return;
-          if (!confirm('[' + target.name + '] 나노시트를 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.')) return;
+          var deleteSheetMsg = '[' + target.name + '] 나노시트를 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.';
+          if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(deleteSheetMsg) : confirm(deleteSheetMsg))) return;
           button.disabled = true;
           try {
             if (isServerMode()) {
@@ -687,7 +688,8 @@
   async function deleteFolder(id) {
     var folder = state.items.find(function (item) { return item.id === id; });
     if (!folder) return;
-    if (!confirm('[' + folder.name + '] 공유 폴더를 삭제하시겠습니까?\n폴더를 삭제하면 공유받던 학원의 비공개 콘텐츠 열람 권한도 즉시 해제됩니다.')) {
+    var deleteFolderMsg = '[' + folder.name + '] 공유 폴더를 삭제하시겠습니까?\n폴더를 삭제하면 공유받던 학원의 비공개 콘텐츠 열람 권한도 즉시 해제됩니다.';
+    if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(deleteFolderMsg) : confirm(deleteFolderMsg))) {
       return;
     }
     try {
@@ -999,10 +1001,13 @@
     var folder = state.items.find(function (item) { return item.id === id; });
     if (!folder) return;
 
-    if (!state.catalog.length && !state.error) {
+    if (!state.error) {
       try {
         var catRes = await request('/api/content?action=catalog');
-        state.catalog = catRes.items || [];
+        if (catRes && Array.isArray(catRes.items)) {
+          state.catalog = catRes.items;
+          render();
+        }
       } catch (e) {}
     }
 
@@ -1087,7 +1092,7 @@
                 '<span class="sharing-label">선택된 도서 <span class="badge-soft badge-soft-success" id="sharingSelectedCountBadge">' + selectedIds.size + '권 선택됨</span></span>' +
                 '<button type="button" class="sharing-text-btn sharing-text-btn-clear" id="sharingClearBooksBtn"><i class="fa-solid fa-rotate-left"></i> 전체 해제</button>' +
               '</div>' +
-              '<p class="sharing-help">좌측 목록에서 체크한 도서가 아래에 표시되며, 개별 제거할 수 있습니다.</p>' +
+              '<p class="sharing-help">좌측 목록에서 체크한 도서가 아래에 표시되며, 제거는 우측 X 버튼 또는 [전체 해제]를 이용해 주세요.</p>' +
               '<div class="sharing-selected-list" id="sharingSelectedBookListBox"></div>' +
             '</div>' +
           '</div>' +
@@ -1176,18 +1181,14 @@
         btn.onclick = function () {
           var targetId = btn.dataset.removeBook;
           selectedIds.delete(targetId);
-          var leftBox = bookBox.querySelector('input[type="checkbox"][value="' + targetId.replace(/["\\]/g, '\\$&') + '"]');
-          if (leftBox) {
-            leftBox.checked = false;
-            var leftRow = leftBox.closest('.sharing-book-row');
-            if (leftRow) leftRow.classList.remove('is-selected');
-          }
+          renderBookList(true);
           renderSelectedPane();
         };
       });
     }
 
-    function renderBookList() {
+    function renderBookList(preserveScroll) {
+      var prevScrollTop = preserveScroll ? (bookBox.scrollTop || 0) : 0;
       updateSortButtons();
       if (state.catalog.length === 0) {
         catalogCountBadge.textContent = '0권';
@@ -1213,13 +1214,14 @@
       filteredSummary.textContent = '총 ' + filtered.length + '권 중 ' + slice.length + '권 표시';
       var rowsHtml = slice.map(function (b) {
         var isSelected = selectedIds.has(b.id);
-        var quizLabel = b.quizCount ? ('비공개 북퀴즈 ' + b.quizCount + '문항') : '비공개 북퀴즈';
+        var privateQCount = b.privateQuizCount || b.quizCount;
+        var quizLabel = privateQCount ? ('비공개 북퀴즈 ' + privateQCount + '문항') : '비공개 북퀴즈';
         var showPrivateQuiz = b.hasPrivateQuiz !== undefined ? b.hasPrivateQuiz : b.hasQuiz;
         var showPrivateSheet = b.hasPrivateSheet !== undefined ? b.hasPrivateSheet : b.hasSheet;
         var subParts = [b.bookNo, b.author, b.grade].filter(Boolean);
         return (
           '<label class="sharing-book-row' + (isSelected ? ' is-selected' : '') + '" data-book-id="' + esc(b.id) + '">' +
-            '<input type="checkbox" value="' + esc(b.id) + '"' + (isSelected ? ' checked' : '') + '>' +
+            '<input type="checkbox" value="' + esc(b.id) + '"' + (isSelected ? ' checked disabled' : '') + '>' +
             '<span class="sharing-book-thumb">' + renderBookThumbHtml(b) + '</span>' +
             '<span class="sharing-book-info">' +
               '<span class="sharing-book-title" style="display: block;">' + esc(b.title) + '</span>' +
@@ -1228,6 +1230,7 @@
             '<span class="sharing-book-badges">' +
               (showPrivateQuiz ? '<span class="badge-soft badge-soft-success"><i class="fa-solid fa-lock"></i> ' + esc(quizLabel) + '</span>' : '') +
               (showPrivateSheet ? '<span class="badge-soft badge-soft-master"><i class="fa-solid fa-file-pdf"></i> 비공개 나노시트</span>' : '') +
+              (isSelected ? '<span class="badge-soft sharing-selected-pill"><i class="fa-solid fa-check"></i> 선택됨</span>' : '') +
             '</span>' +
           '</label>'
         );
@@ -1244,13 +1247,19 @@
       }
 
       bookBox.innerHTML = rowsHtml;
+      if (preserveScroll) bookBox.scrollTop = prevScrollTop;
 
       bookBox.querySelectorAll('input[type="checkbox"]').forEach(function (box) {
         box.onchange = function () {
-          if (box.checked) selectedIds.add(box.value);
-          else selectedIds.delete(box.value);
-          var row = box.closest('.sharing-book-row');
-          if (row) row.classList.toggle('is-selected', box.checked);
+          // 선택된 도서는 좌측에서 체크 해제할 수 없고 우측 영역에서만 제거할 수 있습니다.
+          if (selectedIds.has(box.value)) {
+            box.checked = true;
+            box.disabled = true;
+            return;
+          }
+          if (!box.checked) return;
+          selectedIds.add(box.value);
+          renderBookList(true);
           renderSelectedPane();
         };
       });
@@ -1259,7 +1268,7 @@
       if (moreBtn) {
         moreBtn.onclick = function () {
           displayLimit += 100;
-          renderBookList();
+          renderBookList(true);
         };
       }
     }
@@ -1294,13 +1303,13 @@
 
     dialog.querySelector('#sharingSelectVisibleBtn').onclick = function () {
       getFilteredBooks().forEach(function (b) { selectedIds.add(b.id); });
-      renderBookList();
+      renderBookList(true);
       renderSelectedPane();
     };
 
     dialog.querySelector('#sharingClearBooksBtn').onclick = function () {
       selectedIds.clear();
-      renderBookList();
+      renderBookList(true);
       renderSelectedPane();
     };
 

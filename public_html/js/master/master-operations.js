@@ -519,8 +519,9 @@ function removeBookFromCurBanner(bookId) {
   renderBmAvailableBooks();
 }
 
-function clearCurBannerBooks() {
-  if (confirm("현재 배너에 선택된 모든 도서를 비우시겠습니까?")) {
+async function clearCurBannerBooks() {
+  const clearBannerMsg = "현재 배너에 선택된 모든 도서를 비우시겠습니까?";
+  if (typeof nanoConfirm === 'function' ? await nanoConfirm(clearBannerMsg) : confirm(clearBannerMsg)) {
     curBannerBooks = [];
     renderBmMappedBooks();
     renderBmAvailableBooks();
@@ -627,7 +628,8 @@ async function toggleBannerActive(id) {
 async function deleteBanner(id) {
   const b = bannerList.find(item => String(item.id) === String(id));
   const name = b ? b.title : "선택 배너";
-  if (confirm(`'${name}' 배너를 정말 삭제하시겠습니까?`)) {
+  const bannerDelMsg = `'${name}' 배너를 정말 삭제하시겠습니까?`;
+  if (typeof nanoConfirm === 'function' ? await nanoConfirm(bannerDelMsg) : confirm(bannerDelMsg)) {
     if (window.NanoPortal && NanoPortal.remote) {
       try { await NanoPortal.deleteBanner(b); }
       catch (error) { showMasterToast('배너를 삭제하지 못했습니다: ' + error.message); return; }
@@ -1068,7 +1070,8 @@ async function deleteTheme(themeId) {
   const target = themeList.find(item => String(item.id) === String(themeId));
   if (!target) return;
 
-  if (confirm(`'${target.tag}' 태그를 정말 삭제하시겠습니까?\n매핑된 도서 연결 정보도 함께 해제됩니다.`)) {
+  const themeDelMsg = `'${target.tag}' 태그를 정말 삭제하시겠습니까?\n매핑된 도서 연결 정보도 함께 해제됩니다.`;
+  if (typeof nanoConfirm === 'function' ? await nanoConfirm(themeDelMsg) : confirm(themeDelMsg)) {
     if (window.NanoPortal && NanoPortal.remote) {
       try { await NanoPortal.deleteTheme(target); }
       catch (error) { showMasterToast('테마를 삭제하지 못했습니다: ' + error.message); return; }
@@ -1597,7 +1600,8 @@ async function deleteNotice(noticeId) {
   const not = systemNoticeList.find(n => n.id === noticeId);
   if (!not) return;
 
-  if (!confirm(`[${not.title}]\n\n이 공지사항을 삭제하시겠습니까?`)) return;
+  const noticeDelMsg = `[${not.title}]\n\n이 공지사항을 삭제하시겠습니까?`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(noticeDelMsg) : confirm(noticeDelMsg))) return;
 
   if (window.NanoPortal && NanoPortal.remote) {
     try { await NanoPortal.deleteNotice(not); }

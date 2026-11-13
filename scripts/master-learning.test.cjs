@@ -437,7 +437,7 @@ test('마스터 UI/스크립트에 카톡 버튼·alert가 제거되고 검색�
   const masterCss = fs.readFileSync(path.join(__dirname, '..', 'public_html', 'css', 'master_preview.css'), 'utf8');
   const portalSearchCss = fs.readFileSync(path.join(__dirname, '..', 'public_html', 'css', 'portal-search.css'), 'utf8');
   const printBlock = masterCss.slice(masterCss.indexOf('@media print'));
-  assert.match(masterHtml, /css\/master_preview\.css\?v=20261113_dropdown_fix/);
+  assert.match(masterHtml, /css\/master_preview\.css\?v=20261113_print_compact/);
   assert.match(masterHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
   assert.match(masterHtml, /js\/master\/master-learning\.js\?v=20261113_query_only/);
   assert.match(masterHtml, /<select[^>]+id="masterLearningClassFilter"[^>]+disabled/);

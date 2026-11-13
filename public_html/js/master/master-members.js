@@ -425,7 +425,7 @@ async function quickToggleStudentApproval(id, event) {
     confirmMsg = `[${mem.name}] 탈퇴/정지된 회원을 다시 '정상 승인' 상태로 복구하시겠습니까?`;
   }
 
-  if (!confirm(confirmMsg)) return;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
 
   mem.status = targetStatus;
   if (window.NanoPortal && NanoPortal.remote) {

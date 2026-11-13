@@ -867,19 +867,21 @@
     document.body.style.overflow = '';
   }
   function finish() { close(); renderPanel(); }
-  function quit() {
-    if (!global.confirm('테스트를 그만할까요?\n지금까지 고른 답은 저장되지 않고, 다음에 처음 문제부터 다시 시작해요.')) return;
+  async function quit() {
+    var quitMsg = '테스트를 그만할까요?\n지금까지 고른 답은 저장되지 않고, 다음에 처음 문제부터 다시 시작해요.';
+    if (!(typeof global.nanoConfirm === 'function' ? await global.nanoConfirm(quitMsg) : global.confirm(quitMsg))) return;
     close();
     renderPanel();
   }
 
-  window.addEventListener('popstate', function () {
+  window.addEventListener('popstate', async function () {
     if (!run || !overlay || overlay.style.display === 'none') return;
     if (run.submitting) {
       history.pushState({ panel: 'literacy', litTest: true }, '', '#literacy');
       return;
     }
-    if (global.confirm('테스트를 그만할까요?\n지금까지 고른 답은 저장되지 않아요.')) {
+    var popQuitMsg = '테스트를 그만할까요?\n지금까지 고른 답은 저장되지 않아요.';
+    if (typeof global.nanoConfirm === 'function' ? await global.nanoConfirm(popQuitMsg) : global.confirm(popQuitMsg)) {
       close();
       renderPanel();
     } else {

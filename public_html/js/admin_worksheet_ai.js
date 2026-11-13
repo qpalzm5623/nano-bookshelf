@@ -145,6 +145,36 @@ function openWorksheetPhotoLightbox(src) {
 
 // 나노시트 분석은 백그라운드에서 저장하고 완료 화면에서 항목별로 수정합니다.
 async function runWorksheetAiAnalysis() {
+  // 저장된 URL 사진(재분석 등)에서도 base64 페이로드를 안전하게 확보하는 내부 헬퍼
+  async function resolveWorksheetPhotoPayload(photo) {
+    if (!photo) return null;
+    var mimeType = photo.mimeType || 'image/jpeg';
+    if (photo.base64) {
+      return { data: photo.base64, mimeType: mimeType };
+    }
+    var src = String(photo.dataUrl || photo.url || '').trim();
+    if (!src) return null;
+    if (src.indexOf('data:image/') === 0 && src.indexOf('base64,') >= 0) {
+      var semiIdx = src.indexOf(';');
+      if (semiIdx > 5) mimeType = src.slice(5, semiIdx);
+      return { data: src, mimeType: mimeType };
+    }
+    if (/^https?:\/\//i.test(src) || src.charAt(0) === '/') {
+      var resp = await fetch(src, { credentials: 'same-origin' });
+      if (!resp.ok) {
+        throw new Error('등록된 나노시트 사진을 불러오지 못했습니다. (HTTP ' + resp.status + ')');
+      }
+      var blob = await resp.blob();
+      var blobDataUrl = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(String(reader.result || '')); };
+        reader.onerror = function() { reject(new Error('이미지 파일 변환에 실패했습니다.')); };
+        reader.readAsDataURL(blob);
+      });
+      return { data: blobDataUrl, mimeType: blob.type || mimeType };
+    }
+    return null;
+  }
   if (currentWorksheetCorrectionDone || worksheetCorrectionSaving || worksheetAnalysisJobs.has(currentOpenCorrectionLogId)) return;
   if (currentWorksheetPhotos.length === 0) {
     alert('분석할 나노시트 사진(2~3페이지)을 먼저 촬영하거나 업로드해주세요.');
@@ -163,7 +193,7 @@ async function runWorksheetAiAnalysis() {
 
   // 1. 첨삭 실행 전 확인 알림창
   var confirmMsg = `[${studentName}] 원생의 『${bookTitle}』 나노시트 첨삭을 실행하시겠습니까?\n\n'확인'을 누르면 창이 닫히며 백그라운드에서 AI 분석이 자동으로 진행되고,\n완료된 분석 결과는 첨삭 완료 화면에서 항목별로 수정할 수 있습니다.`;
-  if (!confirm(confirmMsg)) {
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) {
     return;
   }
 
@@ -184,7 +214,30 @@ async function runWorksheetAiAnalysis() {
   if (stdLogs.length > 0) sheetCount = stdLogs.length;
 
   try {
-    var thoughtAnswer = String(log.studentThoughtAnswer || log.thoughtAnswer || '').trim();
+    var needsAsyncPhotoFetch = analysisPhotos.some(function(p) {
+      return p && !p.base64 && !String(p.dataUrl || p.url || '').trim().startsWith('data:image/');
+    });
+    var payloadImages = [];
+    if (!needsAsyncPhotoFetch) {
+      analysisPhotos.forEach(function(p) {
+        if (!p) return;
+        var inlineData = p.base64 || p.dataUrl || p.url;
+        if (inlineData) {
+          payloadImages.push({ data: inlineData, mimeType: p.mimeType || 'image/jpeg' });
+        }
+      });
+    } else {
+      for (var pIdx = 0; pIdx < analysisPhotos.length; pIdx++) {
+        var preparedPhoto = await resolveWorksheetPhotoPayload(analysisPhotos[pIdx]);
+        if (preparedPhoto && preparedPhoto.data) {
+          payloadImages.push(preparedPhoto);
+        }
+      }
+    }
+    if (payloadImages.length === 0) {
+      throw new Error('나노시트 사진 데이터를 읽지 못했습니다. 사진을 다시 선택하거나 업로드해 주세요.');
+    }
+
     var payload = {
       mode: 'single',
       studentName: studentName,
@@ -192,141 +245,127 @@ async function runWorksheetAiAnalysis() {
       bookTitle: bookTitle,
       bookAuthor: bookAuthor,
       sheetCount: sheetCount,
-      thoughtAnswer: thoughtAnswer,
-      images: analysisPhotos.map(function(p) {
-        return { data: p.base64, mimeType: p.mimeType };
-      })
+      images: payloadImages
     };
 
     var aiData = null;
+    var isServerMode = !!(window.NanoPortal && window.NanoPortal.remote && typeof NanoPortal.api === 'function');
 
-    // 1. 서버 API 정밀 분석 호출 (/api/worksheet-ai, 멀티모달 타임아웃 60초)
+    // 1. 서버 API 비전 정밀 분석 호출 (/api/worksheet-ai, 멀티모달 타임아웃 60초)
     if (window.NanoPortal && typeof NanoPortal.api === 'function') {
       try {
         var res = await NanoPortal.api('/api/worksheet-ai', payload, 60000);
         if (res && res.ok && res.result) {
           aiData = res.result;
+        } else {
+          throw new Error((res && res.error) || '서버 AI 비전 분석 응답이 올바르지 않습니다.');
         }
       } catch(apiErr) {
-        console.warn('서버 AI 엔드포인트 실패, 클라이언트 폴백 검토:', apiErr);
+        if (isServerMode) {
+          throw apiErr;
+        }
+        console.warn('서버 AI 엔드포인트 실패(로컬/오프라인 모드):', apiErr);
       }
     }
 
-    // 2. 클라이언트 직접 호출 폴백 (오프라인/프로토타입 환경)
+    // 2. 클라이언트 직접 호출 폴백 (오프라인/프로토타입 환경 전용)
     if (!aiData) {
       var apiKey = localStorage.getItem('NANO_GEMINI_API_KEY') || '';
-      var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-3.8-flash';
-      var model = rawModel.includes('3.8') ? 'gemini-3.8-flash' : rawModel;
+      var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash';
+      var model = rawModel.includes('3.8-pro') || rawModel.includes('3.5-pro')
+        ? 'gemini-2.5-pro'
+        : ((rawModel.includes('3.8-flash-lite') || rawModel.includes('3.0-flash-lite'))
+          ? 'gemini-2.5-flash-lite'
+          : ((rawModel.includes('3.8') || rawModel.includes('3.0')) ? 'gemini-2.5-flash' : rawModel));
 
-      // 도서명 및 학생 생각에 맞춘 동적 첨삭 피드백 생성 헬퍼
-      var generateDynamicWorksheetFeedback = function(warningMsg) {
-        var isLowGrade = grade.includes('1') || grade.includes('2') || grade.includes('유치') || grade.includes('7');
-        var isHighGrade = grade.includes('5') || grade.includes('6') || grade.includes('중');
-        var ansQuote = thoughtAnswer.length > 2 ? thoughtAnswer : ('『' + bookTitle + '』 나노시트 활동');
-        
-        var dSummary = '';
-        var dNext = '';
-        var dParent = '';
-
-        if (isLowGrade) {
-          dSummary = '『' + bookTitle + '』을(를) 읽고 책 속 인물의 표정과 상황을 자신만의 생생한 느낌으로 시트에 표현했습니다. 글과 그림을 자유롭게 넘나들며 책 속 이야기를 자신의 솔직한 시선으로 풀어낸 점이 무척 돋보입니다.';
-          dNext = '다음 독서에서도 마음에 드는 단어나 인물의 재미있는 행동을 하나 골라 시트 여백에 말풍선으로 적어보세요. 표현력이 한층 다채로워집니다.';
-          dParent = '"' + studentName + '이가 『' + bookTitle + '』을 읽고 인물의 마음을 멋진 상상력으로 표현한 점이 정말 자랑스러워!"라고 칭찬해 주시고, "주인공에게 전하고 싶은 한마디는 무엇이니?"라는 질문으로 대화를 나누어 보세요.';
-        } else if (isHighGrade) {
-          dSummary = '『' + bookTitle + '』의 핵심 갈등과 주제 의식을 깊이 있게 탐색하며 자신의 관점을 논리적으로 풀어냈습니다. 단순한 줄거리 요약을 넘어 인물의 선택과 사건의 인과관계를 비판적 시각으로 성찰한 점이 우수합니다.';
-          dNext = '작가의 집필 의도나 사회적 배경과 연결하여 주인공의 선택에 대한 나의 찬반 입장을 한 편의 짧은 주장문으로 발전시켜 보세요. 비판적 문해력이 더욱 견고해집니다.';
-          dParent = '스스로 문제를 제기하고 주관을 명확히 세운 사고력을 크게 칭찬해 주세요. "이 책이 오늘날 우리 사회나 나의 삶에 던지는 질문은 무엇일까?"라는 화두를 함께 나누어 보세요.';
-        } else {
-          // 초3~4 기본
-          dSummary = thoughtAnswer.length > 3
-            ? '『' + bookTitle + '』의 중심 사건 속에서 "' + thoughtAnswer.slice(0, 30) + (thoughtAnswer.length > 30 ? '...' : '') + '"라는 생각을 주관 뚜렷하게 완성했습니다. 인물의 행동 배경을 자신의 경험과 엮어 생생하게 표현한 분석력이 뛰어납니다.'
-            : '『' + bookTitle + '』의 주요 갈등과 인물의 심리 변화를 입체적으로 조망하며 자신의 생각을 설득력 있게 담아냈습니다. 인물의 행동 원인과 결과를 자신의 시선으로 짚어낸 점이 인상적입니다.';
-          dNext = '주인공뿐만 아니라 주변 인물의 처지에서도 사건을 바라보며, "만약 다른 인물의 입장이었다면?"을 비교해보는 글쓰기를 추천합니다. 다각적 시각과 논리적 문제 해결력이 더욱 자라납니다.';
-          dParent = '"' + studentName + '이가 『' + bookTitle + '』 속 상황을 그냥 지나치지 않고 자기만의 가치관으로 깊이 고민해본 모습이 무척 기특해!"라고 격려해 주시고, "인물이 그런 선택을 한 진짜 이유는 무엇이었을까?"라는 열린 대화를 나누어 보세요.';
-        }
-
-        return {
-          summary: dSummary,
-          actualQuotes: [
-            { quote: ansQuote, criteria: '경험 연결 및 자기표현', comment: '『' + bookTitle + '』의 핵심 맥락을 자신의 시각으로 흡수하여 주도적으로 의견을 진술한 태도가 돋보입니다.' }
-          ],
-          drawingObservation: '『' + bookTitle + '』에서 느낀 감정과 장면의 분위기를 시트 여백에 정성스럽게 구성하여 표현력을 한층 더했습니다.',
-          languageHandwritingNote: '자신의 생각을 정해진 틀에 얽매이지 않고 정성껏 완결하려는 우수한 독서 지구력을 보여줍니다.',
-          nextStep: dNext,
-          parentGuide: dParent,
-          warning: warningMsg,
-          isFallback: true
-        };
-      };
-
-      // 만약 API 키가 없거나 OpenAI 키(sk-...)인 경우 도서 맞춤형 첨삭 엔진 적용
+      // 오프라인/프로토타입 직접 호출 모드에서도 사진 없는 허위/추측 칭찬은 생성하지 않음
       if (!apiKey || apiKey.startsWith('sk-')) {
-        var warnTxt = apiKey.startsWith('sk-')
-          ? '등록된 키가 OpenAI 키(sk-...)여서 도서 맞춤형 나노 모델로 첨삭 코멘트를 자동 생성했습니다. Google Gemini API 키(AIzaSy...)를 등록하시면 비전 멀티모달 분석이 적용됩니다.'
-          : '본사 마스터 관리자에 Gemini API 키가 등록되지 않아 도서 맞춤형 나노 모델로 자동 생성했습니다.';
-        aiData = generateDynamicWorksheetFeedback(warnTxt);
-      } else {
-        var promptText = `당신은 아동 독서사고력 및 나노시트 교육 연구원입니다.
-제공된 이미지는 ${studentName}(${grade}) 학생이 오프라인에서 직접 작성한 『${bookTitle}』의 나노시트 2~3p 사진입니다.
-${thoughtAnswer ? `학생이 작성한 생각담기 답안 참고: "${thoughtAnswer}"` : ''}
+        throw new Error(
+          apiKey.startsWith('sk-')
+            ? '현재 등록된 키는 OpenAI 키(sk-...)입니다. 본사 마스터 관리자 [AI 엔진 설정]에서 Google Gemini API 키(AIzaSy...)를 등록해 주세요.'
+            : '본사 마스터 관리자에 Google Gemini API 키가 등록되지 않아 나노시트 사진 비전 분석을 실행할 수 없습니다.'
+        );
+      }
+
+      var promptText = `당신은 아동 독서사고력 및 나노시트 교육 연구원입니다.
+제공된 이미지는 ${studentName}(${grade}) 학생이 오프라인에서 직접 손글씨와 그림으로 작성한 『${bookTitle}』의 나노시트 사진입니다.
+반드시 첨부된 나노시트 사진 속에 실제로 쓰여 있거나 그려져 있는 내용만 판독하여 분석하세요. 온라인 '생각 담기' 입력 내용이나 사진에 없는 내용을 절대 추측·창작하지 마세요.
 
 [★ 작성 원칙 ★]
-1. "도서의 핵심 줄거리를 바탕으로...", "자신의 생각과 느낌을 성실하게...", "구체적인 이유를 한 문장 더...", "생각을 매듭지은 점을 크게 칭찬..." 같은 상투적이고 정형화된 매크로 멘트는 절대 금지합니다.
-2. 반드시 『${bookTitle}』의 구체적인 장면, 인물, 사건, 주제와 학생이 쓴 손글씨/그림 표현을 직접 엮어서 생생하게 관찰하세요.
-3. 학부모가 읽었을 때 "우리 아이 글을 정말 깊이 있게 읽고 쓴 전문가의 관찰"이라는 감동을 주도록 2~3문장으로 작성하세요.
+1. 사진에 실제로 적힌 손글씨 문장과 그림(인물, 사물, 표정 등)을 있는 그대로 읽고 근거로 삼아 관찰하세요. 글씨가 거의 없거나 단순 낙서 위주라면 없는 내용을 꾸며내어 칭찬하지 말고 실제 사진 상태를 사실대로 서술하세요.
+2. "도서의 핵심 줄거리를 바탕으로...", "자신의 생각과 느낌을 성실하게...", "구체적인 이유를 한 문장 더...", "생각을 매듭지은 점을 크게 칭찬..." 같은 상투적이고 정형화된 매크로 멘트는 절대 금지합니다.
+3. 반드시 『${bookTitle}』의 구체적인 장면, 인물, 사건, 주제와 학생이 사진 속에 표현한 실제 손글씨/그림 내용을 연결해 2~3문장으로 관찰하세요.
 
 JSON 출력 형식:
 {
-  "summary": "『${bookTitle}』 맥락과 아이의 생각을 구체적으로 엮은 2~3문장의 메인 강점 관찰 피드백 (상투적 문구 절대 금지)",
+  "summary": "첨부 사진 속 학생의 실제 글·그림 표현과 『${bookTitle}』 내용을 연결해 관찰 요약한 2~3문장",
   "actualQuotes": [
-    { "quote": "아이가 실제 적은 문장 그대로 인용", "criteria": "경험 연결", "comment": "실제 글에 근거한 구체적인 칭찬과 관찰 코멘트" }
+    { "quote": "사진 속 학생 손글씨에서 실제로 읽히는 문장·단어 (없으면 빈 배열)", "criteria": "경험 연결", "comment": "실제 글에 근거한 구체적인 관찰 코멘트" }
   ],
-  "drawingObservation": "그림 표현 관찰 (그림 있을 때만 구체적으로 작성)",
-  "languageHandwritingNote": "정성스럽게 표현한 태도에 대한 긍정적 관찰 1문장",
-  "nextStep": "『${bookTitle}』 주제와 연계한 다음 독서 실천 미션 2~3문장 ('이유를 한 문장 더 써보세요' 같은 뻔한 조언 금지)",
-  "parentGuide": "부모가 식사/취침 전 바로 물어볼 수 있는 『${bookTitle}』 맞춤형 실제 대화 질문과 팁 2~3문장"
+  "drawingObservation": "사진 속 그림 표현 관찰 (그림 있을 때만 구체적으로 작성, 없으면 빈 문자열)",
+  "languageHandwritingNote": "사진 속 손글씨·문장 구성 특징에 대한 긍정적 관찰 1문장",
+  "nextStep": "『${bookTitle}』 주제 및 사진 속 활동과 연계한 다음 독서 실천 미션 2~3문장",
+  "parentGuide": "부모가 아이의 나노시트 사진과 연결해 물어볼 수 있는 『${bookTitle}』 맞춤형 대화 질문과 팁 2~3문장"
 }`;
 
-        var parts = [{ text: promptText }];
-        analysisPhotos.forEach(function(p) {
-          parts.push({
-            inlineData: {
-              mimeType: p.mimeType,
-              data: p.base64
-            }
-          });
+      var parts = [{ text: promptText }];
+      payloadImages.forEach(function(img) {
+        var cleanBase64 = String(img.data || '').replace(/^data:image\/[a-z0-9+.-]+;base64,/i, '').trim();
+        if (!cleanBase64) return;
+        parts.push({
+          inlineData: {
+            mimeType: img.mimeType || 'image/jpeg',
+            data: cleanBase64
+          }
+        });
+      });
+
+      var clientCandidates = [model];
+      ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].forEach(function(fallbackModel) {
+        if (!clientCandidates.includes(fallbackModel)) clientCandidates.push(fallbackModel);
+      });
+
+      var lastClientErr = '나노시트 사진 AI 분석에 실패했습니다.';
+      for (var mIdx = 0; mIdx < clientCandidates.length; mIdx++) {
+        var candidateModel = clientCandidates[mIdx];
+        var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(candidateModel) + ':generateContent';
+        var resp = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: parts }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2500, responseMimeType: 'application/json' }
+          })
         });
 
-        try {
-          var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
-          var resp = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': apiKey
-            },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: parts }],
-              generationConfig: { temperature: 0.7, maxOutputTokens: 2500 }
-            })
-          });
-
-          if (!resp.ok) {
-            var errObj = await resp.json().catch(function(){ return {}; });
-            var errMessage = (errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')');
-            console.warn('[runWorksheetAiAnalysis] Gemini 호출 실패, 맞춤형 폴백 전환:', errMessage);
-            aiData = generateDynamicWorksheetFeedback('API 통신 문제(' + errMessage + ')로 도서 맞춤형 나노 모델로 코멘트를 생성했습니다.');
-          } else {
-            var geminiRes = await resp.json();
-            var rawTxt = (((geminiRes.candidates || [])[0] || {}).content || {}).parts?.[0]?.text || '';
-            var tb = String.fromCharCode(96).repeat(3);
-            var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
-            aiData = JSON.parse(cleanJson);
-          }
-        } catch (fetchErr) {
-          console.warn('[runWorksheetAiAnalysis] 통신 예외, 맞춤형 폴백 전환:', fetchErr);
-          aiData = generateDynamicWorksheetFeedback('통신 지연으로 도서 맞춤형 나노 모델로 코멘트를 생성했습니다.');
+        if (resp.ok) {
+          var geminiRes = await resp.json();
+          var respParts = ((((geminiRes.candidates || [])[0] || {}).content || {}).parts) || [];
+          var rawTxt = respParts
+            .filter(function(pt) { return pt && !pt.thought && typeof pt.text === 'string'; })
+            .map(function(pt) { return pt.text; })
+            .join('\n')
+            .trim();
+          var tb = String.fromCharCode(96).repeat(3);
+          var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
+          aiData = JSON.parse(cleanJson);
+          break;
         }
+
+        var errObj = await resp.json().catch(function(){ return {}; });
+        var errMessage = (errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')');
+        lastClientErr = errMessage;
+        var hasMoreCandidates = mIdx < clientCandidates.length - 1;
+        if (hasMoreCandidates && (resp.status === 404 || /not found|not supported/i.test(errMessage))) {
+          continue;
+        }
+        throw new Error(errMessage);
+      }
+      if (!aiData || !String(aiData.summary || '').trim()) {
+        throw new Error(lastClientErr);
       }
     }
 

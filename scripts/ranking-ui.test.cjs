@@ -249,3 +249,55 @@ test('추천 API는 60점 이상 인증 도서만 허용하며 기존 마스터 
   assert.equal(ok2.data.alreadyRecommended, true);
   assert.equal(ok2.data.recommends, 40);
 });
+
+
+test('학생 랭킹 목록은 독서왕 딱지 없이 이름(아이디)·학급명·포인트(완독 권수)를 표시하고 전국 랭킹에서만 이름 위에 학원명을 노출한다', () => {
+  const html = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
+  const scriptMatch = html.match(/function renderRank\(\) \{[\s\S]*?\n\}/);
+  assert.ok(scriptMatch, 'student_preview.html에 renderRank 함수가 있어야 합니다');
+  const escapeMatch = html.match(/function escapeStudentQuizText\([\s\S]*?\n\}/);
+  assert.ok(escapeMatch, 'student_preview.html에 escapeStudentQuizText 함수가 있어야 합니다');
+
+  const elements = { rankList: { innerHTML: '', textContent: '' } };
+  const rowsData = [
+    { rank: 1, name: '박진호', username: 'look1', className: 'A Class', academyName: '주식회사 루크러닝', pt: 83, books: 4, me: true, charId: 'nano', stage: 1 },
+    { rank: 2, name: '<김빵빵>', username: 'bbang<1>', className: '', academyName: '행복학원', pt: 0, books: 0, me: false, charId: 'nano', stage: 1 }
+  ];
+  const ctx = vm.createContext({
+    window: {},
+    document: { getElementById: id => elements[id] || null },
+    currentRankScope: 'academy',
+    currentRankPeriod: 'month',
+    fullRankDatabase: {
+      academy: { month: rowsData.map(r => ({ ...r })) },
+      national: { month: rowsData.map(r => ({ ...r })) }
+    },
+    checkAcademyClassMode() {},
+    updateAllCharacterAvatars() {},
+    updateRankingHeaderTexts() {},
+    clearRankPodium() {},
+    getUserCharacterId: () => 'nano',
+    getCharacterSvg: () => '<svg></svg>'
+  });
+  vm.runInContext(escapeMatch[0] + '\n' + scriptMatch[0], ctx);
+
+  // 1) 학원 전체 랭킹: 독서왕 딱지 없음, 이름 위 학원명 없음, 이름(아이디) + 학급명 + 포인트(완독 권수)
+  ctx.renderRank();
+  const academyHtml = elements.rankList.innerHTML;
+  assert.equal(academyHtml.includes('독서왕'), false, '랭킹 목록 카드에 독서왕 딱지가 남아있으면 안 됩니다');
+  assert.equal(academyHtml.includes('rank-card-academy'), false, '학원 전체 랭킹에서는 이름 위에 학원명을 표시하지 않습니다');
+  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(look1\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
+  assert.match(academyHtml, /<span class="rank-card-class">학급 미지정<\/span>/);
+  assert.match(academyHtml, /83<span class="rank-card-pt-unit">P<\/span><\/span><span class="rank-card-books">\(완독 4권\)<\/span>/);
+  assert.equal(academyHtml.includes('<김빵빵>') || academyHtml.includes('<1>'), false, 'XSS 위험 문자는 이스케이프되어야 합니다');
+
+  // 2) 전국 랭킹: 학원명이 이름(.rank-card-title)보다 위에 배치됨
+  ctx.currentRankScope = 'national';
+  ctx.renderRank();
+  const nationalHtml = elements.rankList.innerHTML;
+  const acadIdx = nationalHtml.indexOf('rank-card-academy');
+  const titleIdx = nationalHtml.indexOf('rank-card-title');
+  assert.ok(acadIdx !== -1 && acadIdx < titleIdx, '전국 랭킹에서는 학원명이 이름보다 먼저(위에) 렌더링되어야 합니다');
+  assert.ok(nationalHtml.includes('주식회사 루크러닝'), '전국 랭킹에 학원명이 표시되어야 합니다');
+  assert.equal(nationalHtml.includes('독서왕'), false);
+});

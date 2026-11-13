@@ -245,11 +245,11 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
   assert.match(masterHtml, /id="tab-master-content-sharing"/);
   assert.match(masterHtml, /id="view-content-sharing"/);
   assert.doesNotMatch(masterHtml, /master-core\.js\?v=20261112_pf_v2/);
-  assert.match(masterHtml, /master-core\.js\?v=20261113_sharing_fix/);
-  assert.match(masterHtml, /content-sharing\.css\?v=20261113_sharing_v6/);
-  assert.match(masterHtml, /content-sharing\.js\?v=20261113_sharing_v6/);
-  assert.match(adminHtml, /content-sharing\.css\?v=20261113_sharing_v6/);
-  assert.match(adminHtml, /content-sharing\.js\?v=20261113_sharing_v6/);
+  assert.match(masterHtml, /master-core\.js\?v=20261113_center/);
+  assert.match(masterHtml, /content-sharing\.css\?v=20261113_sharing_v7/);
+  assert.match(masterHtml, /content-sharing\.js\?v=20261113_center/);
+  assert.match(adminHtml, /content-sharing\.css\?v=20261113_sharing_v7/);
+  assert.match(adminHtml, /content-sharing\.js\?v=20261113_center/);
   assert.match(masterCore, /'content-sharing'/);
   assert.match(masterCore, /ContentSharing\.refresh\(\)/);
   assert.match(sharingJs, /action=director&username=/);
@@ -470,7 +470,7 @@ test('나노시트 관리 모달은 드롭다운/범위저장 대신 공개/비�
   assert.match(updatedHtml, /type="radio"[^>]*name="sharingSheetVis_0"[^>]*value="N"[^>]*checked/);
 });
 
-test('마스터 북퀴즈 저장 시 /api/content?action=quiz로 공개 여부(isPublic)를 저장하고 공유 버튼 CSS가 정의된다', () => {
+test('마스터 북퀴즈 저장 시 /api/content?action=quiz로 공개 여부(isPublic)를 저장하고 공유 선택 UI CSS가 정의된다', () => {
   const masterJs = fs.readFileSync(path.join(__dirname, '../public_html/js/master/master-contents.js'), 'utf8');
   const sharingCss = fs.readFileSync(path.join(__dirname, '../public_html/css/content-sharing.css'), 'utf8');
   const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
@@ -478,20 +478,231 @@ test('마스터 북퀴즈 저장 시 /api/content?action=quiz로 공개 여부(i
   // openMasterQuizModal이 _quizLoadedFromServer 기준으로 항상 서버 최신 seq/isPublic을 조회하는지 확인
   assert.match(masterJs, /if\s*\(\s*window\.NANO_SERVER_DATA\s*&&\s*!book\._quizLoadedFromServer\s*&&/);
 
-  // handleSaveMasterQuizOnly가 구 syncQuizzes 대신 /api/content?action=quiz에 isPublic을 전달하는지 확인
+  // 공용 저장 헬퍼 persistMasterQuizToServer가 구 syncQuizzes 대신 /api/content?action=quiz에 isPublic을 전달하고 라디오·저장 버튼 모두가 이를 사용하는지 확인
+  const helperMatch = masterJs.match(/async function persistMasterQuizToServer\([\s\S]*?\n\}/);
+  assert.ok(helperMatch, 'persistMasterQuizToServer 함수를 찾을 수 없습니다');
+  const helperBody = helperMatch[0];
+  assert.doesNotMatch(helperBody, /NanoPortal\.syncQuizzes/);
+  assert.match(helperBody, /\/api\/content\?action=quiz/);
+  assert.match(helperBody, /isPublic:\s*targetIsPublic/);
+  assert.match(helperBody, /\/api\/portal\?action=quiz&bookId=/);
+
   const saveFnMatch = masterJs.match(/async function handleSaveMasterQuizOnly\(\)[\s\S]*?\n\}/);
   assert.ok(saveFnMatch, 'handleSaveMasterQuizOnly 함수를 찾을 수 없습니다');
-  const saveFnBody = saveFnMatch[0];
-  assert.doesNotMatch(saveFnBody, /NanoPortal\.syncQuizzes/);
-  assert.match(saveFnBody, /\/api\/content\?action=quiz/);
-  assert.match(saveFnBody, /isPublic:\s*targetIsPublic/);
-  assert.match(saveFnBody, /\/api\/portal\?action=quiz&bookId=/);
+  assert.doesNotMatch(saveFnMatch[0], /NanoPortal\.syncQuizzes/);
+  assert.match(saveFnMatch[0], /persistMasterQuizToServer/);
 
-  // 공유 도서 모달의 '목록 전체 선택' / '전체 해제' 버튼 스타일 클래스 및 CSS 규칙 검증
+  const toggleFnMatch = masterJs.match(/async function onMasterQuizSetPublicChanged\(val\)[\s\S]*?\n\}/);
+  assert.ok(toggleFnMatch, 'onMasterQuizSetPublicChanged 함수를 찾을 수 없습니다');
+  assert.match(toggleFnMatch[0], /persistMasterQuizToServer/);
+
+  // 공유 도서 모달의 버튼·선택됨 뱃지·비활성화 체크박스 CSS 규칙 검증
   assert.match(sharingJs, /class="sharing-text-btn sharing-text-btn-select" id="sharingSelectVisibleBtn"/);
   assert.match(sharingJs, /class="sharing-text-btn sharing-text-btn-clear" id="sharingClearBooksBtn"/);
+  assert.match(sharingJs, /sharing-selected-pill/);
   assert.match(sharingCss, /\.sharing-text-btn\s*\{/);
   assert.match(sharingCss, /\.sharing-text-btn-select\s*\{/);
   assert.match(sharingCss, /\.sharing-text-btn-clear\s*\{/);
+  assert.match(sharingCss, /\.sharing-book-row\s+input\[type="checkbox"\]:disabled\s*\{/);
+  assert.match(sharingCss, /\.sharing-selected-pill\s*\{/);
+});
+
+test('마스터 북퀴즈 공개/비공개 라디오 클릭 시 별도 저장 없이 즉시 서버에 반영된다', async () => {
+  const masterJs = fs.readFileSync(path.join(__dirname, '../public_html/js/master/master-contents.js'), 'utf8');
+  const toggleSlice = masterJs.match(/async function onMasterQuizSetPublicChanged\(val\)[\s\S]*?\n\}/);
+  const saveSlice = masterJs.match(/function isMasterQuizServerMode\(\)[\s\S]*?async function handleSaveMasterQuizOnly\(\)[\s\S]*?\n\}/);
+  assert.ok(toggleSlice && saveSlice, '마스터 퀴즈 저장 함수 블록을 추출하지 못했습니다');
+
+  const apiCalls = [];
+  let refreshedCount = 0;
+  let serverIsPublic = 'Y';
+  const radY = { checked: true, disabled: false };
+  const radN = { checked: false, disabled: false };
+  const questions = [
+    { type: 'CHOICE', question: '1번 문제?', choices: ['보기A', '보기B', '보기C'], ans: '2', hint: '해설' }
+  ];
+  const book = {
+    id: 'B-100',
+    serverId: 'srv-book-100',
+    bookNo: 'B-100',
+    title: '테스트 도서',
+    quizSets: [{ id: 's-0', seq: 0, revision: 0, authorType: 'HQ', authorName: '본사', isPublic: 'Y', questions }]
+  };
+
+  const sandbox = {
+    masterBooks: [book],
+    curQuizTargetBookId: 'B-100',
+    curQuizSetIdx: 0,
+    currentQuizQuestions: questions,
+    MIGRATED_QUIZZES: {},
+    saveCurrentQuizDraft() {},
+    renderQuizSetTabs() {},
+    renderMasterContents() {},
+    showMasterToast() {},
+    validateMasterQuizQuestions: () => true,
+    getChoicesFromQuestion: q => q.choices || [],
+    $: () => ({ modal() {} }),
+    ContentSharing: { refresh() { refreshedCount++; } },
+    NanoPortal: {
+      remote: true,
+      async api(url, body) {
+        apiCalls.push({ url, body });
+        if (url === '/api/content?action=quiz') {
+          serverIsPublic = body.isPublic;
+          return { ok: true, seq: 0 };
+        }
+        if (url.startsWith('/api/portal?action=quiz')) {
+          return { quizSets: [{ id: 's-0', seq: 0, revision: 1, authorType: 'HQ', authorName: '본사', isPublic: serverIsPublic, questions }] };
+        }
+        return {};
+      }
+    },
+    document: {
+      getElementById: id => (id === 'mqSetPublicY' ? radY : id === 'mqSetPublicN' ? radN : null),
+      querySelector: () => null
+    }
+  };
+  sandbox.window = sandbox;
+  sandbox.NANO_SERVER_DATA = true;
+
+  vm.runInNewContext(toggleSlice[0] + '\n' + saveSlice[0], sandbox);
+  await sandbox.onMasterQuizSetPublicChanged('N');
+
+  const postCall = apiCalls.find(c => c.url === '/api/content?action=quiz');
+  assert.ok(postCall, '/api/content?action=quiz 호출이 누락되었습니다');
+  assert.equal(postCall.body.bookId, 'srv-book-100');
+  assert.equal(postCall.body.isPublic, 'N');
+  assert.equal(book.quizSets[0].isPublic, 'N');
+  assert.equal(book.quizSets[0].revision, 1);
+  assert.equal(refreshedCount, 1);
+  assert.equal(radN.disabled, false);
+});
+
+test('공유 폴더 도서 관리 좌측 목록은 선택됨 표시와 체크박스 비활성화를 적용하고 우측에서만 제거할 수 있다', async () => {
+  const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
+
+  let fetchCatalogCount = 0;
+  const catalogItems = [
+    { id: 'b1', bookNo: 'K1', title: '비공개 퀴즈 도서', author: '작가1', grade: '초3', hasPrivateQuiz: true, privateQuizCount: 5, hasPrivateSheet: false },
+    { id: 'b2', bookNo: 'K2', title: '비공개 시트 도서', author: '작가2', grade: '초4', hasPrivateQuiz: false, hasPrivateSheet: true }
+  ];
+
+  const makeEl = (tag) => {
+    let html = '';
+    const el = {
+      tagName: tag,
+      value: '',
+      scrollTop: 0,
+      textContent: '',
+      dataset: {},
+      classList: { toggle() {}, add() {}, remove() {} },
+      addEventListener() {},
+      showModal() {},
+      remove() {},
+      setAttribute() {},
+      closest() { return null; },
+      close() {},
+      querySelector(sel) {
+        if (!el._q) el._q = {};
+        if (!el._q[sel]) el._q[sel] = makeEl('div');
+        return el._q[sel];
+      },
+      querySelectorAll(sel) {
+        if (sel === 'input[type="checkbox"]' && el._boxes) return el._boxes;
+        if (sel === '[data-remove-book]' && el._removeBtns) return el._removeBtns;
+        return [];
+      },
+      set innerHTML(v) {
+        html = String(v);
+        if (html.includes('type="checkbox"')) {
+          el._boxes = [...html.matchAll(/<input\s+type="checkbox"\s+value="([^"]+)"([^>]*)>/g)].map(m => ({
+            value: m[1],
+            checked: /\bchecked\b/.test(m[2]),
+            disabled: /\bdisabled\b/.test(m[2]),
+            onchange: null
+          }));
+        } else {
+          el._boxes = [];
+        }
+        if (html.includes('data-remove-book=')) {
+          el._removeBtns = [...html.matchAll(/data-remove-book="([^"]+)"/g)].map(m => ({
+            dataset: { removeBook: m[1] },
+            onclick: null
+          }));
+        } else {
+          el._removeBtns = [];
+        }
+      },
+      get innerHTML() {
+        return html;
+      }
+    };
+    return el;
+  };
+
+  let createdDialog = null;
+  const rootEl = makeEl('div');
+  const win = {
+    NANO_SERVER_DATA: true,
+    fetch: async (url) => {
+      if (url.includes('action=folders')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [{ id: 'f1', name: '테스트 폴더', bookIds: ['b1'], books: [catalogItems[0]], recipients: [], revision: 1 }],
+            received: []
+          })
+        };
+      }
+      if (url.includes('action=catalog')) {
+        fetchCatalogCount++;
+        return { ok: true, status: 200, json: async () => ({ items: catalogItems }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    },
+    document: {
+      getElementById: id => (id === 'view-content-sharing' ? rootEl : null),
+      createElement: (tag) => {
+        createdDialog = makeEl(tag);
+        return createdDialog;
+      },
+      body: { appendChild() {} }
+    },
+    confirm: () => true,
+    alert: () => {},
+    Set, Map, Array, String, Number, Date, Object, Math, Promise, encodeURIComponent
+  };
+  win.window = win;
+  vm.runInNewContext(sharingJs, win);
+
+  await win.ContentSharing.refresh();
+  const countAfterRefresh = fetchCatalogCount;
+
+  await win.ContentSharing.openFolderBooksModal('f1');
+  assert.equal(fetchCatalogCount, countAfterRefresh + 1, '모달을 열 때마다 최신 카탈로그를 재조회해야 합니다');
+
+  const bookBox = createdDialog.querySelector('#sharingBookListBox');
+  const selectedBox = createdDialog.querySelector('#sharingSelectedBookListBox');
+
+  // 1) 초기 선택된 b1은 좌측 체크박스가 checked + disabled 상태이고 '선택됨' 표시가 있어야 함
+  assert.match(bookBox.innerHTML, /<input type="checkbox" value="b1" checked disabled>/);
+  assert.match(bookBox.innerHTML, /data-book-id="b1"[\s\S]*?선택됨/);
+  assert.match(bookBox.innerHTML, /<input type="checkbox" value="b2">/);
+
+  // 2) 좌측 체크박스에서 임의로 체크 해제(onchange)를 시도해도 선택 목록에서 제거되지 않아야 함
+  const leftB1 = bookBox.querySelectorAll('input[type="checkbox"]').find(b => b.value === 'b1');
+  leftB1.checked = false;
+  leftB1.onchange();
+  assert.equal(leftB1.checked, true);
+  assert.equal(leftB1.disabled, true);
+  assert.match(selectedBox.innerHTML, /data-remove-book="b1"/);
+
+  // 3) 우측 제거 버튼(X)을 클릭해야 비로소 우측에서 제거되고 좌측 체크박스 활성화 및 '선택됨' 제거가 반영됨
+  const removeB1Btn = selectedBox.querySelectorAll('[data-remove-book]').find(b => b.dataset.removeBook === 'b1');
+  removeB1Btn.onclick();
+  assert.doesNotMatch(selectedBox.innerHTML, /data-remove-book="b1"/);
+  assert.match(bookBox.innerHTML, /<input type="checkbox" value="b1">/);
+  assert.doesNotMatch(bookBox.innerHTML, /sharing-selected-pill/);
 });
 

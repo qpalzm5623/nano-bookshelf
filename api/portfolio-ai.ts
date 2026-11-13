@@ -1,6 +1,22 @@
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, need, text, failure, academyScope, PortalError } from '../lib/portal-http';
 
+const DEFAULT_PORTFOLIO_GEMINI_MODEL = 'gemini-2.5-flash';
+
+function normalizePortfolioGeminiModel(rawModel?: string | null): string {
+  const trimmed = typeof rawModel === 'string' ? rawModel.trim() : '';
+  if (!trimmed) return DEFAULT_PORTFOLIO_GEMINI_MODEL;
+  const lower = trimmed.toLowerCase();
+  if (lower.includes('3.8-flash-lite') || lower.includes('3.0-flash-lite') || lower.includes('2.5-flash-lite')) return 'gemini-2.5-flash-lite';
+  if (lower.includes('3.8-pro') || lower.includes('3.5-pro') || lower === 'gemini-3.5' || lower.includes('2.5-pro')) return 'gemini-2.5-pro';
+  if (lower.includes('3.8') || lower.includes('3.0') || lower.includes('2.5-flash') || lower === 'gemini-2.5') return 'gemini-2.5-flash';
+  if (lower.includes('2.0-flash-lite')) return 'gemini-2.0-flash-lite';
+  if (lower.includes('2.0-flash') || lower === 'gemini-2.0') return 'gemini-2.0-flash';
+  if (lower.includes('1.5-pro')) return 'gemini-1.5-pro';
+  if (lower.includes('1.5-flash')) return 'gemini-1.5-flash';
+  return trimmed;
+}
+
 export const config = { api: { bodyParser: { sizeLimit: '16kb' } } };
 
 // 세 영역을 한 번에 생성하고 발급본에 저장하여 재열람·인쇄 시 내용이 달라지지 않게 합니다.
@@ -40,19 +56,8 @@ export default async function handler(req: any, res: any) {
     const configRow = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
     const aiConfig = (configRow?.value || {}) as Record<string, any>;
     const apiKey = typeof aiConfig.apiKey === 'string' && aiConfig.apiKey.trim() ? aiConfig.apiKey.trim() : (process.env.GEMINI_API_KEY || '');
-    let rawModel = typeof aiConfig.model === 'string' && aiConfig.model.trim() ? aiConfig.model.trim() : (process.env.GEMINI_MODEL || 'gemini-3.8-flash');
-
-    // Google Gemini API 공식 유효 모델 식별자로 안전 매핑 (마스터 계정 설정 엔진 최우선 연동)
-    let model = rawModel;
-    const modelLower = rawModel.toLowerCase();
-    if (modelLower.includes('3.8-flash') || modelLower.includes('3.8')) model = 'gemini-3.8-flash';
-    else if (modelLower.includes('3.5-pro') || modelLower.includes('3.5')) model = 'gemini-3.5-pro';
-    else if (modelLower.includes('3.0-flash-lite')) model = 'gemini-3.0-flash-lite';
-    else if (modelLower.includes('3.0-flash') || modelLower.includes('3.0')) model = 'gemini-3.0-flash';
-    else if (modelLower.includes('1.5-pro')) model = 'gemini-1.5-pro';
-    else if (modelLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
-    else if (modelLower.includes('2.0-flash') || modelLower.includes('2.0')) model = 'gemini-2.0-flash';
-    else if (!model.startsWith('gemini-')) model = 'gemini-3.8-flash';
+    const rawModel = typeof aiConfig.model === 'string' && aiConfig.model.trim() ? aiConfig.model.trim() : (process.env.GEMINI_MODEL || DEFAULT_PORTFOLIO_GEMINI_MODEL);
+    const model = normalizePortfolioGeminiModel(rawModel);
 
     need(apiKey, '본사 관리자에서 Gemini API 키를 등록해 주세요.', 503);
     need(model && /^[a-zA-Z0-9._-]+$/.test(model), '본사 관리자에서 사용할 Gemini 모델을 확인해 주세요.', 503);
@@ -68,30 +73,48 @@ export default async function handler(req: any, res: any) {
 타인 비교와 낙인은 금지하며, 학생을 '학생'으로 지칭하고 따뜻한 존댓말로 작성하세요. HTML·마크다운 없이 순수 JSON만 반환하세요.`;
 
     let generated: any;
+    let usedModel = model;
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        signal: AbortSignal.timeout(45000),
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts: [{ text: JSON.stringify({ grade: student.grade, period: { from: value.from, to: value.to }, books }) }] }],
-          generationConfig: {
-            temperature: 0.4, maxOutputTokens: Math.min(16384, 2048 + books.length * 250),
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT', required: ['achievements', 'comments', 'teacherNote'],
-              properties: {
-                achievements: { type: 'ARRAY', items: { type: 'OBJECT', required: ['index', 'comment'], properties: { index: { type: 'INTEGER' }, comment: { type: 'STRING' } } } },
-                comments: { type: 'ARRAY', items: { type: 'STRING' } },
-                teacherNote: { type: 'STRING' }
-              }
+      const candidates = [model];
+      for (const fallback of ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']) {
+        if (!candidates.includes(fallback)) candidates.push(fallback);
+      }
+      const reqBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: JSON.stringify({ grade: student.grade, period: { from: value.from, to: value.to }, books }) }] }],
+        generationConfig: {
+          temperature: 0.4, maxOutputTokens: Math.min(16384, 2048 + books.length * 250),
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT', required: ['achievements', 'comments', 'teacherNote'],
+            properties: {
+              achievements: { type: 'ARRAY', items: { type: 'OBJECT', required: ['index', 'comment'], properties: { index: { type: 'INTEGER' }, comment: { type: 'STRING' } } } },
+              comments: { type: 'ARRAY', items: { type: 'STRING' } },
+              teacherNote: { type: 'STRING' }
             }
           }
-        })
+        }
       });
-      if (!response.ok) throw new Error('AI_RESPONSE');
-      const data = await response.json();
+
+      let data: any = null;
+      for (let i = 0; i < candidates.length; i++) {
+        const candidateModel = candidates[i];
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(candidateModel) + ':generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          signal: AbortSignal.timeout(45000),
+          body: reqBody
+        });
+        if (response.ok) {
+          usedModel = candidateModel;
+          data = await response.json();
+          break;
+        }
+        if (response.status === 404 && i < candidates.length - 1) {
+          continue;
+        }
+        throw new Error('AI_RESPONSE');
+      }
       const candidate = data?.candidates?.[0];
       if (candidate?.finishReason !== 'STOP') throw new Error('AI_INCOMPLETE');
       const output = (candidate.content?.parts || []).filter((part: any) => !part.thought && typeof part.text === 'string').map((part: any) => part.text).join('');
@@ -114,7 +137,7 @@ export default async function handler(req: any, res: any) {
       ...value,
       books: value.books.map((book: any, index: number) => ({ ...book, achievement: generated.achievements.find((item: any) => item.index === index).comment })),
       aiComments: generated.comments, aiTeacherNote: generated.teacherNote,
-      aiVersion: 1, aiModel: model, aiGeneratedAt: new Date().toISOString()
+      aiVersion: 1, aiModel: usedModel, aiGeneratedAt: new Date().toISOString()
     };
     const saved = await prisma.portalSetting.updateMany({
       where: { key: row.key, scope: row.scope, revision: row.revision },
