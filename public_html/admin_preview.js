@@ -2606,7 +2606,8 @@ function openAcademyDispatchDetailModal(dispatchId) {
       ? 'badge-soft-success'
       : (l.status === 'FAILED' || hasPendingFailDetail ? 'badge-soft-danger' : 'badge-soft-neutral');
     statusEl.className = 'badge-soft ' + badgeStyle;
-    statusEl.innerText = statusLabel + (l.resultMessage ? ' - ' + l.resultMessage : '') + (l.providerId ? ' [MID:' + l.providerId + ']' : '');
+    var modalDetailText = l.resultMessage || l.statusDetail || '';
+    statusEl.innerText = statusLabel + (modalDetailText ? ' - ' + modalDetailText : '') + (l.providerId ? ' [MID:' + l.providerId + ']' : '');
   }
 
   var thoughtStatusEl = document.getElementById('acadDispatchModalThoughtIncluded');
@@ -4651,9 +4652,14 @@ function renderAcademyDispatchTable(options) {
     var statusText = l.status === 'SMS_FALLBACK'
       ? '문자 대체 발송'
       : (l.status === 'SUCCESS' ? '발송 성공' : (hasPendingFailDetail ? '전송 실패(환급 대기)' : (l.status === 'FAILED' ? '발송 실패' : (l.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'))));
-    var reasonHtml = (l.status === 'FAILED' || hasPendingFailDetail) && l.resultMessage
-      ? '<div class="text-danger mt-1" style="font-size: 11px; line-height: 1.3; max-width: 180px; margin: 0 auto; word-break: keep-all;">' + escapeRankingText(l.resultMessage) + '</div>'
+    var pendingDetailText = !((l.status === 'FAILED' || hasPendingFailDetail) && l.resultMessage) && (l.status === 'ACCEPTED' || l.status === 'UNKNOWN' || l.status === 'SENDING')
+      ? (l.statusDetail || (l.providerId ? '알리고 처리 중 (MID:' + l.providerId + ')' : ''))
       : '';
+    var reasonHtml = (l.status === 'FAILED' || hasPendingFailDetail) && l.resultMessage
+      ? '<div class="text-danger mt-1" style="font-size: 11px; line-height: 1.3; max-width: 190px; margin: 0 auto; word-break: keep-all;">' + escapeRankingText(l.resultMessage) + '</div>'
+      : (pendingDetailText
+          ? '<div class="text-muted mt-1" style="font-size: 11px; line-height: 1.3; max-width: 210px; margin: 0 auto; word-break: keep-all;">' + escapeRankingText(pendingDetailText) + '</div>'
+          : '');
     tr.innerHTML = `
       <td class="text-center text-muted font-weight-bold" style="font-size: 12px;">${idx + 1}</td>
       <td class="text-center text-muted" style="font-size: 12.5px;">${escapeRankingText(l.date || l.datetime || '—')}</td>

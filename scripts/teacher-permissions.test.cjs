@@ -169,11 +169,11 @@ test('HTML/SW/테스트 캐시 키 및 teacher 초기 FOUC 차단 CSS·스크립
   assert.match(adminHtml, /html\.nano-teacher-role\s+#btnOpenStudentAddModal/);
   assert.match(adminHtml, /html\.nano-teacher-role\s+#btnOpenStudentExcelModal/);
   assert.match(adminHtml, /document\.documentElement\.classList\.add\('nano-teacher-role'\)/);
-  assert.match(adminHtml, /admin_preview\.js\?v=20261113_init_fix/);
+  assert.match(adminHtml, /admin_preview\.js\?v=20261116_dispatch/);
   assert.match(adminHtml, /js\/admin_members\.js\?v=20261113_init_fix/);
   assert.match(adminHtml, /js\/admin_payment\.js\?v=20261113_init_fix/);
   assert.ok(
-    adminHtml.indexOf('js/admin_members.js?v=20261113_init_fix') < adminHtml.indexOf('admin_preview.js?v=20261113_init_fix'),
+    adminHtml.indexOf('js/admin_members.js?v=20261113_init_fix') < adminHtml.indexOf('admin_preview.js?v=20261116_dispatch'),
     'admin_members.js는 currentAcademyInfo 전역 정의를 위해 admin_preview.js보다 먼저 로드되어야 합니다'
   );
   assert.match(swJs, /nano-bookshelf-v20261113-init-fix/);

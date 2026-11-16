@@ -8,7 +8,7 @@
     { code: 'ROYAL', name: '로열 (Royal)', price: 330000, slots: 0 },
     { code: 'KAKAO', name: '카카오톡 알림', price: 5500, slots: 0 }
   ];
-  const state = { products: DEFAULT_PRODUCTS.slice(), payments: [], busy: false, dispatchBusy: false, dispatchAt: 0 };
+  const state = { products: DEFAULT_PRODUCTS.slice(), payments: [], busy: false, dispatchBusy: false, dispatchAt: 0, dispatchTimer: null, dispatchPollCount: 0, dispatchPendingSig: '' };
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
   const money = value => Number(value || 0).toLocaleString('ko-KR', { maximumFractionDigits: 1 });
   const master = () => !!document.getElementById('tab-master-payment');
@@ -388,16 +388,58 @@
     };
   }
 
-  function invalidateDispatchCache() {
-    state.dispatchAt = 0;
+  function isDispatchViewVisible() {
+    const viewEl = document.getElementById(master() ? 'tab-master-dispatch' : 'view-dispatch');
+    return Boolean(viewEl && viewEl.offsetParent !== null);
   }
 
-  async function dispatch(force=false) {
+  function scheduleDispatchPoll(items) {
+    if (state.dispatchTimer) {
+      clearTimeout(state.dispatchTimer);
+      state.dispatchTimer = null;
+    }
+    const list = Array.isArray(items) ? items : [];
+    const now = Date.now();
+    // 최근 15분 이내 발송된 건 중 아직 최종 결과가 없는 '전송 중' 항목만 짧은 주기로 자동 재조회합니다.
+    const pendingRecent = list.filter(x => {
+      if (!['ACCEPTED', 'UNKNOWN', 'SENDING'].includes(x.status)) return false;
+      if (x.code && x.code !== '0' && x.resultMessage) return false;
+      const sentMs = x.sentAtIso ? Date.parse(x.sentAtIso) : NaN;
+      return !Number.isFinite(sentMs) || now - sentMs <= 15 * 60 * 1000;
+    });
+    const sig = pendingRecent.map(x => x.id).join(',');
+    if (!sig || !isDispatchViewVisible()) {
+      state.dispatchPollCount = 0;
+      state.dispatchPendingSig = '';
+      return;
+    }
+    if (sig !== state.dispatchPendingSig) {
+      state.dispatchPollCount = 0;
+      state.dispatchPendingSig = sig;
+    }
+    if (state.dispatchPollCount >= 6) return;
+    state.dispatchTimer = setTimeout(() => {
+      state.dispatchTimer = null;
+      if (isDispatchViewVisible()) dispatch(true, { autoPoll: true });
+    }, 8000);
+  }
+
+  function invalidateDispatchCache() {
+    state.dispatchAt = 0;
+    state.dispatchPollCount = 0;
+  }
+
+  async function dispatch(force=false, opts={}) {
+    const autoPoll = Boolean(opts && opts.autoPoll);
     if (state.dispatchBusy || (!force && Date.now()-state.dispatchAt<30000)) return;
+    if (force && !autoPoll) state.dispatchPollCount = 0;
+    if (autoPoll) state.dispatchPollCount += 1;
     state.dispatchBusy=true;
+    let fetchedItems = null;
     try {
       const s=await api('/api/services?action=dispatch_stats' + (force ? '&refresh=1' : ''));
       state.dispatchAt=Date.now();
+      fetchedItems = s.items || [];
       if (master()) { dispatchLogs=s.items; filterDispatchList(); }
       else { academyDispatchLogs=s.items; renderAcademyDispatchTable(); }
       const prefix=master()?'statAligo':'academyAligo';
@@ -419,8 +461,15 @@
         }
       }
       text(master()?'statAligoConnectionSub':'academyAligoConnectionSub',s.connected?'알리고 API 정상 연결됨':(s.aligoMessage||'알리고 API 응답 기준'));
-    } catch(e) { text(master()?'statAligoConnection':'academyAligoConnection','조회 실패'); toast(e.message); }
-    finally { state.dispatchBusy=false; }
+    } catch(e) {
+      if (!autoPoll) {
+        text(master()?'statAligoConnection':'academyAligoConnection','조회 실패');
+        toast(e.message);
+      }
+    } finally {
+      state.dispatchBusy=false;
+      if (fetchedItems) scheduleDispatchPoll(fetchedItems);
+    }
   }
 
   async function retry(id) {

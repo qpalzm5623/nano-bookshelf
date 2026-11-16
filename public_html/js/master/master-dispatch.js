@@ -52,9 +52,14 @@ function renderDispatchTable(data = dispatchLogs) {
         : log.status === 'FAILED'
           ? `<span class="badge-soft badge-soft-danger">실패</span>`
           : `<span class="badge-soft badge-soft-neutral">${log.status === 'UNKNOWN' ? '결과 확인 중' : '전송 중'}</span>`;
-    const reasonHtml = (log.status === 'FAILED' || hasPendingFailDetail) && log.resultMessage
-      ? `<div class="text-danger mt-1" style="font-size: 11px; line-height: 1.3; max-width: 180px; margin: 0 auto; word-break: keep-all;">${escDispatchHtml(log.resultMessage)}</div>`
+    const pendingDetailText = !((log.status === 'FAILED' || hasPendingFailDetail) && log.resultMessage) && ['ACCEPTED', 'UNKNOWN', 'SENDING'].includes(log.status)
+      ? (log.statusDetail || (log.providerId ? '알리고 처리 중 (MID:' + log.providerId + ')' : ''))
       : '';
+    const reasonHtml = (log.status === 'FAILED' || hasPendingFailDetail) && log.resultMessage
+      ? `<div class="text-danger mt-1" style="font-size: 11px; line-height: 1.3; max-width: 190px; margin: 0 auto; word-break: keep-all;">${escDispatchHtml(log.resultMessage)}</div>`
+      : (pendingDetailText
+          ? `<div class="text-muted mt-1" style="font-size: 11px; line-height: 1.3; max-width: 210px; margin: 0 auto; word-break: keep-all;">${escDispatchHtml(pendingDetailText)}</div>`
+          : '');
 
     return `
       <tr>
@@ -151,6 +156,7 @@ function openDispatchDetailModal(id) {
           : log.status === 'UNKNOWN'
             ? '결과 확인 중'
             : '알리고 접수(전송 중)';
+  const modalExtraDetail = log.resultMessage || log.statusDetail || '';
 
   if (!document.getElementById('dispatchDetailModal')) {
     const detail = [
@@ -158,7 +164,7 @@ function openDispatchDetailModal(id) {
       `발송 일시: ${log.datetime}`,
       `발송 학원: ${log.academyName}`,
       `수신 대상: ${log.receiverName} (${log.receiverPhone})`,
-      `발송 상태: ${statusLabel}${log.providerId ? ' [MID:' + log.providerId + ']' : ''}`,
+      `발송 상태: ${statusLabel}${modalExtraDetail && log.status !== 'FAILED' && !hasPendingFailDetail ? ' · ' + modalExtraDetail : ''}${log.providerId ? ' [MID:' + log.providerId + ']' : ''}`,
       '',
       log.summary || ''
     ].join('\n');
@@ -180,7 +186,7 @@ function openDispatchDetailModal(id) {
     ? 'badge-soft-success'
     : ((log.status === 'FAILED' || hasPendingFailDetail) ? 'badge-soft-danger' : 'badge-soft-neutral');
   document.getElementById("dispatchModalCode").innerHTML =
-    `<span class="badge-soft ${badgeClass}">${escDispatchHtml(statusLabel)}${log.providerId ? ' · MID:' + escDispatchHtml(log.providerId) : ''}</span>`;
+    `<span class="badge-soft ${badgeClass}">${escDispatchHtml(statusLabel)}${modalExtraDetail && log.status !== 'FAILED' && !hasPendingFailDetail ? ' · ' + escDispatchHtml(modalExtraDetail) : ''}${log.providerId ? ' · MID:' + escDispatchHtml(log.providerId) : ''}</span>`;
 
   $('#dispatchDetailModal').modal('show');
 }

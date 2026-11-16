@@ -1,4 +1,13 @@
-import { reserveDispatch, settleDispatch, maskPhone, isTerminalFailedDispatch } from '../lib/kakao-wallet';
+import {
+  reserveDispatch,
+  settleDispatch,
+  maskPhone,
+  isTerminalFailedDispatch,
+  normalizeAligoTemplate,
+  resolveAligoTemplate,
+  buildWebLinkButtonJson,
+  classifyAligoSendResponse,
+} from '../lib/kakao-wallet';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, master, need, failure, academyScope } from '../lib/portal-http';
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -419,13 +428,13 @@ function formatKstDateTime24(dateInput: any): string {
 }
 
 const DEFAULT_LITERACY_TEMPLATE =
-  '#{학생명} 학생이\n#{진단일}에 문해력 진단을 완료했어요!\n\n우리 아이의 글 읽기와 이해 능력은 어느 정도일까요?\n진단 결과를 확인해보세요~\n\n[진단 결과 확인]';
+  '#{학생명} 학생이\n#{진단일}에 문해력 진단을 완료했어요!\n\n우리 아이의 글 읽기와 이해 능력은 어느 정도일까요?\n진단 결과를 확인해보세요~';
 
 /** 학부모 알림톡: 결과지 링크가 담긴 승인 템플릿으로 발송 (미리보기 → 확인 후 발송, 중복 발송 방지) */
 async function sendKakao(req: any, res: any, academyId: string, record: any, preview: boolean, fingerprintIn: string) {
   const apiKey = process.env.ALIGO_API_KEY, userId = process.env.ALIGO_USER_ID, senderKey = process.env.ALIGO_SENDER_KEY, sender = process.env.ALIGO_SENDER;
   const tplCode = process.env.ALIGO_LITERACY_TEMPLATE_CODE || 'TT_4292';
-  const tpl = String(process.env.ALIGO_LITERACY_TEMPLATE || DEFAULT_LITERACY_TEMPLATE).replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+  const fallbackTpl = normalizeAligoTemplate(process.env.ALIGO_LITERACY_TEMPLATE || DEFAULT_LITERACY_TEMPLATE);
   need(apiKey && userId && senderKey && sender,
     '문해력 결과지 알림톡 설정(ALIGO_API_KEY 등)이 아직 완료되지 않았습니다. 우선 "링크 복사"로 학부모에게 공유해 주세요.', 503);
   const member = await prisma.member.findFirst({ where: { id: record.memberId, academyId } });
@@ -435,20 +444,17 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
   need(/^0\d{8,10}$/.test(phone), '보호자 연락처 형식을 확인해 주세요.');
   const targetUrl = shareUrl(req, record.id);
   const diagDate = formatKstDateTime24(record.finishedAt);
-  const subs: Record<string, string> = { 학생명: member.name, 진단일: diagDate, 레벨: String(record.result.level), 링크: targetUrl };
-  const message = tpl.replace(/#\{([^}]+)\}/g, (_, key) => subs[key] || '');
-  need(message.length <= 1000, '알림톡 내용이 1,000자를 초과합니다.');
-  const buttonJson = JSON.stringify({
-    button: [
-      {
-        name: '진단 결과 확인',
-        linkType: 'WL',
-        linkTypeName: '웹링크',
-        linkM: targetUrl,
-        linkP: targetUrl,
-      },
-    ],
+  const resolvedTpl = await resolveAligoTemplate(tplCode, fallbackTpl, '진단 결과 확인', {
+    apikey: apiKey!,
+    userid: userId!,
+    senderkey: senderKey!,
   });
+  const subs: Record<string, string> = { 학생명: member.name, 원생명: member.name, 진단일: diagDate, 레벨: String(record.result.level), 링크: targetUrl };
+  const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => subs[key] || '');
+  need(message.length <= 1000, '알림톡 내용이 1,000자를 초과합니다.');
+  const buttonJson = resolvedTpl.hasButtons
+    ? buildWebLinkButtonJson(resolvedTpl.buttonName, targetUrl, resolvedTpl.linkType, resolvedTpl.linkTypeName)
+    : '';
   const fingerprint = createHash('sha256').update(JSON.stringify([record.id, phone, message, tplCode])).digest('hex');
   if (preview) {
     console.info('[Aligo] literacy_preview', { recordId: record.id, tplCode, recipient: maskPhone(phone), messageLength: message.length });
@@ -465,13 +471,13 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
     console.info('[Aligo] retry_failed_dispatch', { type: 'literacy', logId, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
   }
   // 외부 요청 전에 발송 기록을 먼저 남겨, 더블클릭이나 응답 유실로 인한 중복 발송을 막는다
-  const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, subject: '문해력 진단 결과지' });
+  const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, emtitle: resolvedTpl.emtitle, subject: '문해력 진단 결과지' });
   if (reserved.duplicate) {
     console.warn('[Aligo] literacy_duplicate_skipped', { logId: reserved.log.id, status: reserved.log.status, providerId: reserved.log.providerId || null });
     return res.json({ status: reserved.log.status, duplicate: true, providerId: reserved.log.providerId || null, resultCode: reserved.log.resultCode || null, resultMessage: reserved.log.resultMessage || null });
   }
   try {
-    const fields = new URLSearchParams({
+    const rawFields: Record<string, string> = {
       apikey: apiKey!,
       userid: userId!,
       senderkey: senderKey!,
@@ -481,20 +487,40 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
       recvname_1: member.name,
       subject_1: '문해력 진단 결과지',
       message_1: message,
-      button_1: buttonJson,
-    });
+    };
+    if (buttonJson) rawFields.button_1 = buttonJson;
+    if (resolvedTpl.emtitle) rawFields.emtitle_1 = resolvedTpl.emtitle;
+    const fields = new URLSearchParams(rawFields);
     const options: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(12000) };
     if (proxyDispatcher) options.dispatcher = proxyDispatcher;
-    console.info('[Aligo] literacy_send_request', { logId, tplCode, recipient: maskPhone(phone), hasProxy: Boolean(proxyDispatcher), messageLength: message.length });
+    console.info('[Aligo] literacy_send_request', {
+      logId,
+      tplCode,
+      templateSource: resolvedTpl.source,
+      recipient: maskPhone(phone),
+      hasProxy: Boolean(proxyDispatcher),
+      messageLength: message.length,
+      lineCount: message.split('\n').length,
+      endsWithBracket: /\n\[[^\]]+\]\s*$/.test(message),
+      hasButton: Boolean(buttonJson),
+      hasEmtitle: Boolean(resolvedTpl.emtitle),
+    });
     const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', options);
     const result: any = await response.json();
-    const accepted = response.ok && result.code != null && Number(result.code) === 0;
-    const rejected = response.ok && result.code != null && Number.isFinite(Number(result.code)) && Number(result.code) < 0;
-    const status = accepted ? 'ACCEPTED' : rejected ? 'FAILED' : 'UNKNOWN';
-    const providerId = accepted && result.info?.mid ? String(result.info.mid) : null;
-    const resultCode = String(result.code ?? '');
-    const resultMessage = String(result.message || '').slice(0, 1000);
-    console[accepted ? 'info' : 'warn']('[Aligo] literacy_send_response', { logId, tplCode, httpStatus: response.status, ok: response.ok, status, code: resultCode, message: resultMessage, providerId });
+    const { status, providerId, resultCode, resultMessage } = classifyAligoSendResponse(response.ok, result);
+    console[status === 'ACCEPTED' ? 'info' : 'warn']('[Aligo] literacy_send_response', {
+      logId,
+      tplCode,
+      httpStatus: response.status,
+      ok: response.ok,
+      status,
+      code: resultCode,
+      message: resultMessage,
+      providerId,
+      infoType: result?.info?.type ?? null,
+      scnt: result?.info?.scnt ?? null,
+      fcnt: result?.info?.fcnt ?? null,
+    });
     await settleDispatch(logId, status, { providerId, resultCode, resultMessage });
     return res.json({ status, providerId, resultCode, resultMessage });
   } catch (err: any) {

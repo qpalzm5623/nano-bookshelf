@@ -275,7 +275,15 @@ test('프론트엔드 알림톡 피드백·대기실패 표시·HTML 무결성�
   const adminHtml = fs.readFileSync(path.join(root, 'public_html/admin_preview.html'), 'utf8');
   assert.equal(adminHtml.includes('truncated for diff preview'), false);
   assert.match(adminHtml, /<\/html>\s*$/);
-  assert.match(adminHtml, /billing-ui\.js\?v=20261113_kakao_log/);
+  assert.match(adminHtml, /billing-ui\.js\?v=20261116_dispatch/);
+  assert.match(adminHtml, /admin_preview\.js\?v=20261116_dispatch/);
+  const masterHtml = fs.readFileSync(path.join(root, 'public_html/master_preview.html'), 'utf8');
+  assert.match(masterHtml, /billing-ui\.js\?v=20261116_dispatch/);
+  assert.match(masterHtml, /master-dispatch\.js\?v=20261116_dispatch/);
+  const billingUiJs = fs.readFileSync(path.join(root, 'public_html/js/billing-ui.js'), 'utf8');
+  assert.match(billingUiJs, /scheduleDispatchPoll/);
+  assert.match(fs.readFileSync(path.join(root, 'public_html/js/master/master-dispatch.js'), 'utf8'), /log\.statusDetail/);
+  assert.match(adminJs, /l\.statusDetail/);
 });
 
 test('이전에 FAILED 또는 실패 사유(U)로 끝난 동일 퀴즈 알림톡은 재전송 시 duplicate_skipped로 막지 않고 재발송한다', async () => {
@@ -501,5 +509,142 @@ test('ALIGO_SYNC_TEMPLATE=true 시 알리고 승인 템플릿(template/list/) �
   assert.equal(sendRes.body.status, 'ACCEPTED');
   assert.equal(capturedSendBody.get('message_1'), pvRes.body.message);
   assert.equal(JSON.parse(capturedSendBody.get('button_1')).button[0].name, '북퀴즈결과 확인');
+});
+
+test('reconcileDispatches는 큐 대기(msgid Q...)·목록폴백(history/list)·배치실패(fcnt>0)를 상세 로깅하고 diagnosticsOut 요약을 채운다', async () => {
+  const spy = createLogSpy();
+  const policy = loadTs('lib/billing-policy.ts');
+  const queueLog = {
+    id: 'quiz_queue_1',
+    providerId: '1505756651',
+    recipientPhone: '01084349832',
+    templateCode: 'UN_5524',
+    status: 'ACCEPTED',
+    resultCode: '',
+    resultMessage: '',
+    sentAt: new Date(Date.now() - 5000),
+    checkedAt: null,
+  };
+  const missingBatchLog = {
+    id: 'quiz_batch_fail_1',
+    providerId: '1505756999',
+    recipientPhone: '01099998888',
+    templateCode: 'UN_5524',
+    status: 'ACCEPTED',
+    resultCode: '',
+    resultMessage: '',
+    sentAt: new Date(Date.now() - 5000),
+    checkedAt: null,
+  };
+  const updates = [];
+  const fakePrisma = {
+    aligoDispatchLog: {
+      findMany: async () => [queueLog, missingBatchLog],
+      update: async ({ where, data }) => {
+        updates.push({ id: where.id, data });
+        return data;
+      },
+    },
+  };
+  const wallet = loadTs('lib/kakao-wallet.ts', {
+    './prisma': { prisma: fakePrisma },
+    './portal-http': { need },
+    './billing-policy': policy,
+    'undici': { ProxyAgent: function () {}, fetch: null },
+  }, {
+    console: spy.logger,
+    fetch: async (url, opts) => {
+      const body = opts?.body?.toString() || '';
+      if (String(url).includes('history/detail')) {
+        if (body.includes('1505756651')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              code: 0,
+              list: [{
+                msgid: 'Q1505756651_1',
+                status: '2',
+                type: 'AT',
+                phone: '821084349832',
+                tpl_code: 'UN_5524',
+                reqdate: '2026-11-16 10:07:59',
+                sentdate: null,
+                rslt: null,
+                rslt_message: null,
+                rsltdate: null,
+                smid: null,
+              }],
+            }),
+          };
+        }
+        return { ok: true, status: 200, json: async () => ({ code: 0, list: [] }) };
+      }
+      if (String(url).includes('history/list')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            code: 0,
+            list: [
+              { mid: '1505756651', reserve_state: '전송중', scnt: 1, fcnt: 0 },
+              { mid: '1505756999', reserve_state: '전송완료', scnt: 0, fcnt: 1, fail_cnt: 1 },
+            ],
+          }),
+        };
+      }
+      throw new Error('Unexpected URL: ' + url);
+    },
+  });
+
+  const diagnostics = {};
+  const checked = await wallet.reconcileDispatches('acad_1', { apikey: 'key', userid: 'uid' }, undefined, diagnostics);
+  assert.equal(checked, 2);
+  assert.match(diagnostics.quiz_queue_1, /큐 대기/);
+  assert.match(diagnostics.quiz_batch_fail_1, /알리고 발송 실패/);
+  const queueLogEntry = spy.entries.find(e => e.tag === '[Aligo] reconcile_detail' && e.payload.logId === 'quiz_queue_1');
+  assert.ok(queueLogEntry);
+  assert.equal(queueLogEntry.payload.msgid, 'Q1505756651_1');
+  assert.equal(queueLogEntry.payload.aligoStatus, '2');
+  assert.equal(queueLogEntry.payload.reserveState, '전송중');
+  assert.ok(spy.entries.some(e => e.tag === '[Aligo] reconcile_summary' && e.payload.pendingCount >= 1));
+  const failUpdate = updates.find(u => u.id === 'quiz_batch_fail_1' && u.data.resultCode === 'FCNT');
+  assert.ok(failUpdate);
+});
+
+test('classifyAligoSendResponse는 code=0이라도 fcnt>0·scnt=0이면 FAILED(FCNT)로 처리하고 resolveAligoTemplate은 불일치 시 list[0]을 쓰지 않는다', async () => {
+  const spy = createLogSpy();
+  const policy = loadTs('lib/billing-policy.ts');
+  const wallet = loadTs('lib/kakao-wallet.ts', {
+    './prisma': { prisma: {} },
+    './portal-http': { need },
+    './billing-policy': policy,
+    'undici': { ProxyAgent: function () {}, fetch: null },
+  }, {
+    console: spy.logger,
+    process: { env: { ALIGO_SYNC_TEMPLATE: 'true', ALIGO_API_KEY: 'k', ALIGO_USER_ID: 'u', ALIGO_SENDER_KEY: 's' } },
+    fetch: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        code: '0',
+        list: [{ templtCode: 'OTHER_999', templtContent: '잘못된 템플릿', buttons: [{ name: '다른버튼' }] }],
+      }),
+    }),
+  });
+
+  const classified = wallet.classifyAligoSendResponse(true, {
+    code: 0,
+    message: '성공적으로 전송요청 하였습니다.',
+    info: { mid: '150999', scnt: 0, fcnt: 1 },
+  });
+  assert.equal(classified.status, 'FAILED');
+  assert.equal(classified.resultCode, 'FCNT');
+  assert.equal(classified.providerId, null);
+
+  const resolved = await wallet.resolveAligoTemplate('UN_5524', '안전한 기본 템플릿', '북퀴즈결과 확인');
+  assert.equal(resolved.source, 'config_fallback');
+  assert.equal(resolved.content, '안전한 기본 템플릿');
+  assert.ok(spy.entries.some(e => e.tag === '[Aligo] template_list_miss' && e.payload.tplCode === 'UN_5524'));
 });
 
