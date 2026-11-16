@@ -60,3 +60,50 @@ test('학습 리포트 모달: JS switchReportViewMode 구현 및 기본 뷰(PC)
   const openModalSlice = js.substring(openModalIndex, openModalIndex + 500);
   assert.ok(openModalSlice.includes("switchReportViewMode('pc')"), '모달 오픈 시 PC 리포트 뷰로 초기화되어야 합니다.');
 });
+
+test('학습 목록은 발송완료로 바뀌고 상세 화면만 재발송을 허용한다', async () => {
+  const vm = require('node:vm');
+  const js = fs.readFileSync(jsPath, 'utf8');
+  let sentTime = null;
+  let status = 'ACCEPTED';
+  let refreshes = 0;
+  const requests = [];
+  const modal = { innerHTML: '' };
+  const portal = { remote: true, api: async (_url, body) => {
+    requests.push(body);
+    return body.action === 'preview' ? { name: '보호자', recipient: '010', message: '리포트', targetUrl: '/report', fingerprint: 'fp' } : { status };
+  } };
+  const ctx = {
+    window: { NanoPortal: portal }, NanoPortal: portal,
+    crypto: { randomUUID: () => '11111111-1111-4111-8111-111111111111' },
+    getKakaoReportLog: () => sentTime, saveKakaoReportLog: (_id, value) => { sentTime = value; },
+    formatCurrentDateTimeShort: () => '11-16 12:00', escapePortfolioText: String,
+    nanoConfirm: async () => true, showAcademyToast() {},
+    renderLearningTable: () => { refreshes++; },
+    document: { getElementById: () => modal }, currentOpenLearningLogId: 'log1',
+  };
+  vm.createContext(ctx);
+  vm.runInContext(js.slice(js.indexOf('function getKakaoReportBtnHtml'), js.indexOf('// A4 리포트 인쇄 실행')), ctx);
+  await ctx.sendLearningReportKakao('log1', null, false);
+  assert.match(ctx.getKakaoReportBtnHtml('log1', false), /disabled/);
+  assert.match(ctx.getKakaoReportBtnHtml('log1', false), /발송완료/);
+  assert.doesNotMatch(ctx.getKakaoReportBtnHtml('log1', false), /onclick/);
+  assert.match(modal.innerHTML, /카톡 재발송/);
+  await ctx.sendLearningReportKakao('log1', null, true);
+  assert.equal(requests[2].resendKey, requests[3].resendKey);
+  assert.ok(requests[2].resendKey);
+  assert.equal(refreshes, 2);
+  sentTime = null;
+  status = 'FAILED';
+  await ctx.sendLearningReportKakao('log1', null, false);
+  assert.equal(sentTime, null);
+  assert.equal(refreshes, 2);
+});
+
+test('학습 리포트 발송과 인쇄는 상단 보기 전환 버튼 왼쪽에 한 번만 표시된다', () => {
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const modal = html.slice(html.indexOf('id="learningDetailModal"'), html.indexOf('id="modalCorrection"'));
+  assert.equal((modal.match(/id="modalKakaoSendBtnContainer"/g) || []).length, 1);
+  assert.ok(modal.indexOf('id="modalKakaoSendBtnContainer"') < modal.indexOf('id="btnReportViewPc"'));
+  assert.ok(modal.indexOf('onclick="printLearningReport()"') < modal.indexOf('id="btnReportViewPc"'));
+});

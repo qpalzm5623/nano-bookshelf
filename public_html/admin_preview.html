@@ -6181,6 +6181,12 @@
             </div>
           </div>
           <div class="d-flex align-items-center" style="gap: 10px;">
+            <div class="d-flex align-items-center d-print-none" style="gap: 8px;">
+              <span id="modalKakaoSendBtnContainer"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printLearningReport()">
+                <i class="fa-solid fa-print mr-1"></i>리포트 인쇄
+              </button>
+            </div>
             <!-- PC 리포트 뷰 vs 카톡 화면 뷰 토글 -->
             <div class="d-inline-flex align-items-center d-print-none" style="background: #eee8dd; padding: 3px; border-radius: 9px; gap: 3px;">
               <button type="button" class="btn btn-xs active" id="btnReportViewPc" onclick="switchReportViewMode('pc')"
@@ -6491,10 +6497,6 @@
             <i class="fa-solid fa-shield-halved text-success mr-1"></i>원생의 학습 이력 및 북퀴즈 채점 데이터는 보존됩니다.
           </small>
           <div class="d-flex align-items-center">
-            <span id="modalKakaoSendBtnContainer" class="mr-2"></span>
-            <button type="button" class="btn btn-sm btn-outline-secondary mr-2" onclick="printLearningReport()">
-              <i class="fa-solid fa-print mr-1"></i>리포트 인쇄
-            </button>
             <button type="button" class="btn btn-sm btn-beige-secondary px-3" data-dismiss="modal">닫기</button>
           </div>
         </div>

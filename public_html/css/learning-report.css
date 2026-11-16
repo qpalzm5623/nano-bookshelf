@@ -3,7 +3,8 @@
 #learningReportModalDialog *, #learningReportModalDialog *::before, #learningReportModalDialog *::after { box-sizing: border-box; }
 #learningReportModalDialog .modal-header { background: #fff !important; padding: 22px 26px !important; gap: 16px; border-bottom: 1px solid #dce7e3 !important; }
 #learningReportModalDialog .modal-header > div { min-width: 0; }
-#learningReportModalDialog .modal-header > div:last-child { flex-shrink: 0; }
+#learningReportModalDialog .modal-header > div:last-child { flex-shrink: 0; flex-wrap: wrap; max-width: 100%; }
+#learningReportModalDialog .modal-header { flex-wrap: wrap; }
 #learningReportModalDialog .modal-header .modal-title { font-size: 23px !important; letter-spacing: -.6px; color: #164f47 !important; }
 #learningReportModalDialog .modal-header > div:first-child > div:first-child { background: #e8f4ef !important; color: #187e73 !important; flex-shrink: 0; width: 44px !important; height: 44px !important; }
 #learningReportModalDialog .modal-header small { display: block; margin-top: 4px; }

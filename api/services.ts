@@ -324,8 +324,12 @@ export default async function handler(req: any, res: any) {
       const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
       const buttonJson = buildResolvedButtonJson(resolvedTpl, targetUrl);
 
+      const resendKey = String(body.resendKey || '');
+      need(!resendKey || /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resendKey), '재발송 요청 정보를 확인해 주세요.');
+      const fingerprintParts = [log.id, phone, message, ALIGO_QUIZ_TEMPLATE_CODE];
+      if (resendKey) fingerprintParts.push(resendKey);
       const fingerprint = createHash('sha256')
-        .update(JSON.stringify([log.id, phone, message, ALIGO_QUIZ_TEMPLATE_CODE]))
+        .update(JSON.stringify(fingerprintParts))
         .digest('hex');
 
       if (body.action === 'preview') {

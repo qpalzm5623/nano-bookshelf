@@ -233,6 +233,17 @@ test('services.ts 발송·중복차단·통계조회는 시크릿 없이 구조�
   await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_1' } }, pvRes);
   assert.equal(pvRes.code, 200);
 
+  // 상세 화면에서 시작한 재발송은 새 지문을 발급하되 같은 요청 키는 같은 지문을 유지합니다.
+  const resendKey = '11111111-1111-4111-8111-111111111111';
+  const resendPreview = mkRes();
+  const resendRequest = { method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_1', resendKey } };
+  await handler(resendRequest, resendPreview);
+  assert.equal(resendPreview.code, 200);
+  assert.notEqual(resendPreview.body.fingerprint, pvRes.body.fingerprint);
+  const samePreview = mkRes();
+  await handler(resendRequest, samePreview);
+  assert.equal(samePreview.body.fingerprint, resendPreview.body.fingerprint);
+
   const sendRes = mkRes();
   await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'send', logId: 'attempt_1', fingerprint: pvRes.body.fingerprint } }, sendRes);
   assert.equal(sendRes.code, 200);
@@ -647,4 +658,3 @@ test('classifyAligoSendResponse는 code=0이라도 fcnt>0·scnt=0이면 FAILED(F
   assert.equal(resolved.content, '안전한 기본 템플릿');
   assert.ok(spy.entries.some(e => e.tag === '[Aligo] template_list_miss' && e.payload.tplCode === 'UN_5524'));
 });
-

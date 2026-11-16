@@ -2023,17 +2023,16 @@ function showAcademyToast(message) {
 
 function getKakaoReportBtnHtml(logId, isModal) {
   var sentTime = getKakaoReportLog(logId);
-  var clickHandler = "sendLearningReportKakao('" + logId + "', event)";
+  var clickHandler = "sendLearningReportKakao('" + logId + "', event, " + Boolean(isModal) + ")";
   
-  if (sentTime) {
-    var modalClass = isModal ? 'px-3 py-1' : '';
-    return '<button type="button" class="btn-kakao-report-sent ' + modalClass + '" onclick="' + clickHandler + '" title="카톡 알림톡 발송 완료 (재발송 가능)">' +
-      '발송완료<br><span class="sent-time-text">' + sentTime + '</span>' +
+  if (sentTime && !isModal) {
+    return '<button type="button" class="btn-kakao-report-sent" disabled title="발송 처리된 리포트입니다. 재발송은 학습리포트 상세 화면에서 가능합니다. 실제 전달 결과는 카톡 발송 내역에서 확인해 주세요.">' +
+      '발송완료<br><span class="sent-time-text">' + escapePortfolioText(sentTime) + '</span>' +
     '</button>';
   } else {
     var modalPadding = isModal ? 'padding: 5px 12px; font-size: 12px;' : '';
     return '<button type="button" class="btn-kakao-report" style="' + modalPadding + '" onclick="' + clickHandler + '" title="학부모 카카오톡 알림톡 발송">' +
-      '<i class="fa-solid fa-comment"></i>카톡 발송' +
+      '<i class="fa-solid fa-comment"></i>' + (sentTime ? '카톡 재발송' : '카톡 발송') +
     '</button>';
   }
 }
@@ -2052,20 +2051,28 @@ function buildKakaoDispatchFeedback(result, label) {
   return '⏳ 발송 상태: ' + st + msg + '. [카톡 발송 내역]을 확인해 주세요.';
 }
 
-async function sendLearningReportKakao(logId, event) {
+async function sendLearningReportKakao(logId, event, isModal) {
   if (event) event.stopPropagation();
   if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('운영 서버에서만 발송할 수 있습니다.'); return; }
   var button = event && event.currentTarget; if(button) button.disabled = true;
   try {
-    var preview = await NanoPortal.api('/api/services', { type: 'quiz', action: 'preview', logId: logId });
+    // 상세 화면의 명시적 재발송은 별도 요청으로 구분하고 동일 요청의 중복 전송은 서버에서 차단합니다.
+    var resendKey = isModal ? crypto.randomUUID() : '';
+    var preview = await NanoPortal.api('/api/services', { type: 'quiz', action: 'preview', logId: logId, resendKey: resendKey });
     var confirmMsg = '[북퀴즈 완료 알림톡 발송 미리보기]\n\n' +
       '받는 분: ' + preview.name + ' (' + preview.recipient + ')\n\n' +
       preview.message + '\n\n' +
       '연결 링크: ' + preview.targetUrl + '\n\n' +
       '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
     if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
-    var result = await NanoPortal.api('/api/services', { type: 'quiz', action: 'send', logId: logId, fingerprint: preview.fingerprint });
+    var result = await NanoPortal.api('/api/services', { type: 'quiz', action: 'send', logId: logId, fingerprint: preview.fingerprint, resendKey: resendKey });
     if (window.NanoBilling && typeof NanoBilling.invalidateDispatchCache === 'function') NanoBilling.invalidateDispatchCache();
+    if (['ACCEPTED', 'SENDING', 'SUCCESS', 'SMS_FALLBACK'].includes(result.status)) {
+      saveKakaoReportLog(logId, formatCurrentDateTimeShort());
+      renderLearningTable({ applyFilters: false });
+      var modalButton = document.getElementById('modalKakaoSendBtnContainer');
+      if (modalButton && currentOpenLearningLogId === logId) modalButton.innerHTML = getKakaoReportBtnHtml(logId, true);
+    }
     showAcademyToast(buildKakaoDispatchFeedback(result, '북퀴즈 결과'));
   } catch(e) { showAcademyToast(e.message); } finally { if(button) button.disabled = false; }
 }
