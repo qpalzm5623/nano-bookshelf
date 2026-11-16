@@ -624,3 +624,66 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
     new vm.Script(fs.readFileSync(absPath, 'utf8'), { filename: relPath });
   }
 });
+
+test('포트폴리오 발급일자는 UTC createdAt 및 오전/오후 문자열을 KST 24시간 형식(YYYY-MM-DD HH:mm)으로 변환한다', async () => {
+  const pubDir = path.join(__dirname, '..', 'public_html');
+  const student = { id: 'S1', serverId: 's1', name: '박진호', school: '옥천초등학교', grade: '초등 5학년', teacher: '김선생', classGroup: 'A Class' };
+  const ctx = vm.createContext({
+    location: { protocol: 'https:', hostname: 'test.example', pathname: '/admin_preview.html' },
+    document: { readyState: 'loading' },
+    addEventListener() {},
+    URLSearchParams,
+    AbortSignal,
+    currentAcademyInfo: { id: 'A' },
+    portfolioList: [],
+    portfolioDataMap: {},
+    studentDataList: [student],
+    academyBookList: [],
+    fetch: async () => ({
+      ok: true,
+      json: async () => ({
+        items: [
+          {
+            id: 'pf_am',
+            revision: 1,
+            memberId: 's1',
+            name: '박진호',
+            from: '2026-08-13',
+            to: '2026-11-13',
+            title: '11/13 포트폴리오 테스트',
+            books: [],
+            createdAt: '2026-11-13T00:59:12.345Z'
+          },
+          {
+            id: 'pf_pm',
+            revision: 1,
+            memberId: 's1',
+            name: '박진호',
+            from: '2026-08-12',
+            to: '2026-11-12',
+            title: '오후 2시 포트폴리오',
+            books: [],
+            createdAt: '2026-11-13T05:00:00.000Z'
+          }
+        ]
+      })
+    })
+  });
+  ctx.window = ctx;
+  vm.runInNewContext(fs.readFileSync(path.join(pubDir, 'js/portal-client.js'), 'utf8'), ctx);
+  await ctx.NanoPortal.refreshPortfolios();
+  assert.equal(ctx.portfolioList[0].issueDate, '2026-11-13 09:59');
+  assert.equal(ctx.portfolioDataMap.pf_am.issueDate, '2026-11-13 09:59');
+  assert.equal(ctx.portfolioList[1].issueDate, '2026-11-13 14:00');
+  assert.equal(ctx.portfolioDataMap.pf_pm.issueDate, '2026-11-13 14:00');
+
+  const adminSrc = fs.readFileSync(path.join(pubDir, 'admin_preview.js'), 'utf8');
+  const ast = ts.createSourceFile('admin_preview.js', adminSrc, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const fnNode = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name && n.name.text === 'formatPortfolioIssueDate24');
+  assert.ok(fnNode, 'formatPortfolioIssueDate24 함수가 admin_preview.js에 존재해야 합니다');
+  const fnCtx = vm.createContext({ console });
+  vm.runInContext(fnNode.getText(ast), fnCtx);
+  assert.equal(fnCtx.formatPortfolioIssueDate24('2026.11.13 오후 2:00', ''), '2026-11-13 14:00');
+  assert.equal(fnCtx.formatPortfolioIssueDate24('', '2026-11-13T05:00:00.000Z'), '2026-11-13 14:00');
+  assert.equal(fnCtx.formatPortfolioIssueDate24('2026.11.13 오전 12:30', ''), '2026-11-13 00:30');
+});

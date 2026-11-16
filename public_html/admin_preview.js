@@ -6225,6 +6225,39 @@ if (typeof window !== 'undefined' && window.NANO_SERVER_DATA) {
 
 var lastCreatedPortfolioId = null;
 
+function formatPortfolioIssueDate24(issueVal, createdVal) {
+  function toKst24(val) {
+    if (val == null) return '';
+    if (typeof window !== 'undefined' && window.NanoPortal && typeof window.NanoPortal.formatKstDateTime === 'function') {
+      return window.NanoPortal.formatKstDateTime(val);
+    }
+    var s = val instanceof Date ? val.toISOString() : String(val).trim();
+    if (!s) return '';
+    if (/[TZ]$|[+-]\d{2}:?\d{2}$/i.test(s)) {
+      var isoDt = new Date(s);
+      if (!isNaN(isoDt.getTime())) {
+        var kstIso = new Date(isoDt.getTime() + 9 * 60 * 60 * 1000).toISOString();
+        return kstIso.slice(0, 10) + ' ' + kstIso.slice(11, 16);
+      }
+    }
+    var pad2 = function(n) { return String(n).padStart(2, '0'); };
+    var m = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s*(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2})/i);
+    if (m) {
+      var hh = parseInt(m[5], 10);
+      var mer = (m[4] || '').toUpperCase();
+      if ((mer === '오후' || mer === 'PM') && hh < 12) hh += 12;
+      else if ((mer === '오전' || mer === 'AM') && hh === 12) hh = 0;
+      return m[1] + '-' + pad2(parseInt(m[2], 10)) + '-' + pad2(parseInt(m[3], 10)) + ' ' + pad2(hh) + ':' + m[6];
+    }
+    var dateOnly = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})$/);
+    if (dateOnly) {
+      return dateOnly[1] + '-' + pad2(parseInt(dateOnly[2], 10)) + '-' + pad2(parseInt(dateOnly[3], 10));
+    }
+    return s.replace(/\./g, '-').replace('T', ' ').slice(0, 16);
+  }
+  return toKst24(issueVal) || toKst24(createdVal);
+}
+
 // ==============================================================
 // 포트폴리오 목록 테이블 렌더링
 // 1. 상태 컬럼: '발송 완료' (녹색 뱃지) / '카톡 발송하기' (노란색 액션 버튼)
@@ -6319,7 +6352,7 @@ function renderPortfolioTable(list) {
     }
 
     var rowNo = totalLen - idx;
-    var displayIssueDate = pf.issueDate || '2026.09.08 14:00';
+    var displayIssueDate = formatPortfolioIssueDate24(pf.issueDate, pf.createdAt) || '-';
 
     // 카톡 액션 버튼 (상세/인쇄 버튼 우측에 배치)
     var kakaoActionHtml = '';
@@ -6395,12 +6428,9 @@ async function sendPortfolioKakaoDirect(pfId, event) {
       pf.status = '발송 완료';
     }
 
-    var now = new Date();
-    var month = ('0' + (now.getMonth() + 1)).slice(-2);
-    var day = ('0' + now.getDate()).slice(-2);
-    var hours = ('0' + now.getHours()).slice(-2);
-    var mins = ('0' + now.getMinutes()).slice(-2);
-    pf.issueDate = now.getFullYear() + '.' + month + '.' + day + ' ' + hours + ':' + mins;
+    pf.issueDate = pf.issueDate
+      ? formatPortfolioIssueDate24(pf.issueDate, pf.createdAt)
+      : formatPortfolioIssueDate24('', new Date().toISOString());
 
     renderPortfolioTable();
     updatePortfolioDetailKakaoButton(pf.id);
@@ -7133,7 +7163,7 @@ function renderPortfolioDocument(studentId, pfId) {
 
   var period = pfMeta.period || '2026년 3분기 (7~9월)';
   var periodHtml = escapePortfolioText(period).replace(/\d{4}-\d{2}-\d{2}/g, '<span class="pf-date">$&</span>');
-  var issueDate = pfMeta.issueDate || '2026.09.08';
+  var issueDate = formatPortfolioIssueDate24(pfMeta.issueDate || pfData.issueDate, pfMeta.createdAt || pfData.createdAt) || '2026-09-08 14:00';
 
   var dateStr = (issueDate ? issueDate.replace(/[^0-9]/g, '') : '20261029').slice(0, 8);
   var tailNum = '01';
@@ -8375,10 +8405,7 @@ async function finishPortfolioCreate() {
     ? selectedBookObjects[0].title + ' 외 ' + (selectedBookObjects.length - 1) + '권'
     : (selectedBookObjects.length === 1 ? selectedBookObjects[0].title : '완독 도서');
 
-  var now = new Date();
-  var hh = String(now.getHours()).padStart(2, '0');
-  var min = String(now.getMinutes()).padStart(2, '0');
-  var formattedIssueDate = now.toISOString().split('T')[0].replace(/-/g, '.') + ' ' + hh + ':' + min;
+  var formattedIssueDate = formatPortfolioIssueDate24('', new Date().toISOString());
 
   var stdAvgRounded = (std && std.quizAvg != null && std.quizAvg !== '-' && !isNaN(parseFloat(std.quizAvg))) ? Math.round(parseFloat(std.quizAvg)) : 95;
 

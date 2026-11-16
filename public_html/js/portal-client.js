@@ -446,6 +446,44 @@
   async function generatePortfolioAI(portfolioId) {
     return api('/api/portfolio-ai', { portfolioId: portfolioId, academy: academy() }, 60000);
   }
+  function pad2Kst(n) { return String(n).padStart(2, '0'); }
+  function toKst24String(val) {
+    if (val == null) return '';
+    var s = val instanceof Date ? val.toISOString() : String(val).trim();
+    if (!s) return '';
+    // UTC ISO 문자열 또는 타임존 오프셋 포함 문자열은 KST(UTC+9) 24시간 형식으로 변환
+    if (/[TZ]$|[+-]\d{2}:?\d{2}$/.test(s) || (s.indexOf('T') !== -1 && /(?:Z|[+-]\d{2}:?\d{2})$/i.test(s))) {
+      var isoDt = new Date(s);
+      if (!isNaN(isoDt.getTime())) {
+        var kstIso = new Date(isoDt.getTime() + 9 * 60 * 60 * 1000).toISOString();
+        return kstIso.slice(0, 10) + ' ' + kstIso.slice(11, 16);
+      }
+    }
+    // 오전/오후/AM/PM 또는 점(.) 구분 날짜 문자열은 24시간 YYYY-MM-DD HH:mm 형식으로 통일
+    var m = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s*(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2})/i);
+    if (m) {
+      var hh = parseInt(m[5], 10);
+      var mer = (m[4] || '').toUpperCase();
+      if ((mer === '오후' || mer === 'PM') && hh < 12) hh += 12;
+      else if ((mer === '오전' || mer === 'AM') && hh === 12) hh = 0;
+      return m[1] + '-' + pad2Kst(parseInt(m[2], 10)) + '-' + pad2Kst(parseInt(m[3], 10)) + ' ' + pad2Kst(hh) + ':' + m[6];
+    }
+    var dateOnly = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})$/);
+    if (dateOnly) {
+      return dateOnly[1] + '-' + pad2Kst(parseInt(dateOnly[2], 10)) + '-' + pad2Kst(parseInt(dateOnly[3], 10));
+    }
+    var parsedDt = new Date(s);
+    if (!isNaN(parsedDt.getTime())) {
+      var fallbackKst = new Date(parsedDt.getTime() + 9 * 60 * 60 * 1000).toISOString();
+      return fallbackKst.slice(0, 10) + ' ' + fallbackKst.slice(11, 16);
+    }
+    return s.replace(/\./g, '-').replace('T', ' ').slice(0, 16);
+  }
+  function formatPortfolioIssueDateKst(item) {
+    var rawIssue = String((item && item.issueDate) || '').trim();
+    var rawCreated = (item && (item.createdAt || item.updatedAt || item.date)) || '';
+    return (rawIssue ? toKst24String(rawIssue) : '') || toKst24String(rawCreated);
+  }
   async function refreshPortfolios() {
     var result = await manageList('portfolios');
     if (typeof portfolioList === 'undefined' || typeof portfolioDataMap === 'undefined') return result;
@@ -470,9 +508,12 @@
         });
       }
       var avgScore = books.length ? Math.round(books.reduce(function(sum, book) { return sum + (Number(book.score) || 0); }, 0) / books.length) : 0;
+      var resolvedIssueDate = formatPortfolioIssueDateKst(item);
+      var resolvedKstDate = resolvedIssueDate ? resolvedIssueDate.slice(0, 10) : '';
       var pfEntry = { name: item.name, school: student ? ((student.school || '') + ' ' + (student.grade || '')) : (item.school ? ((item.school || '') + ' ' + (item.grade || '')) : ''), classGroup: student ? student.classGroup : (item.classGroup || '미지정'),
         teacher: (student && student.teacher) || item.teacher || '', level: student ? student.level : '', bookCount: books.length,
         quizAvg: avgScore,
+        issueDate: resolvedIssueDate, kstDate: resolvedKstDate, createdAt: item.createdAt || '',
         books: books.map(function(book) {
           var bIdStr = String(book.bookId || book.bookNo || '').trim();
           var matchedBook = (global.academyBookList || []).find(function(ab) {
@@ -505,7 +546,7 @@
       return { id: item.id, revision: item.revision, memberId: item.memberId, studentId: studentId, studentName: item.name, school: student ? student.school : '', grade: student ? student.grade : '',
         classGroup: student ? student.classGroup : '미지정', title: item.title, period: item.from + ' ~ ' + item.to, from: item.from, to: item.to, comment: item.comment || '',
         bookCount: books.length, booksSummary: books.length ? books[0].title + (books.length > 1 ? ' 외 ' + (books.length - 1) + '권' : '') : '완독 도서 없음',
-        quizAvg: avgScore + '점', issueDate: String(item.createdAt || '').replace('T', ' ').slice(0, 16), status: '발급 완료', kakaoSent: false };
+        quizAvg: avgScore + '점', issueDate: resolvedIssueDate, kstDate: resolvedKstDate, createdAt: item.createdAt || '', status: '발급 완료', kakaoSent: false };
     });
     if (typeof renderPortfolioTable === 'function') renderPortfolioTable(portfolioList);
     if (typeof initPortfolioOptions === 'function') initPortfolioOptions();
@@ -609,6 +650,7 @@
     saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
     saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
+    formatKstDateTime: toKst24String,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,
     refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout, handleConcurrentLogout: handleConcurrentLogout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },

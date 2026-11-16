@@ -165,14 +165,34 @@
     var quizAvgText = !isNaN(quizAvgNum) ? (quizAvgNum + '점') : (raw.quizAvg || '-');
 
     var kstDate = String(raw.kstDate || '').trim();
-    var issueDate = String(raw.issueDate || '').trim();
-    if (!kstDate && raw.createdAt) {
-      var dt = new Date(raw.createdAt);
-      if (!isNaN(dt.getTime())) {
-        var kstIso = new Date(dt.getTime() + 9 * 60 * 60 * 1000).toISOString();
-        kstDate = kstIso.slice(0, 10);
-        if (!issueDate) issueDate = kstIso.slice(0, 10) + ' ' + kstIso.slice(11, 16);
-      }
+    var issueDate = '';
+    if (window.NanoPortal && typeof window.NanoPortal.formatKstDateTime === 'function') {
+      issueDate = window.NanoPortal.formatKstDateTime(raw.issueDate) || window.NanoPortal.formatKstDateTime(raw.createdAt);
+    } else {
+      var pad2 = function(n) { return String(n).padStart(2, '0'); };
+      var norm24 = function(val) {
+        var s = String(val || '').trim();
+        if (!s) return '';
+        if (/[TZ]$|[+-]\d{2}:?\d{2}$/i.test(s)) {
+          var dtIso = new Date(s);
+          if (!isNaN(dtIso.getTime())) {
+            var kstIso = new Date(dtIso.getTime() + 9 * 60 * 60 * 1000).toISOString();
+            return kstIso.slice(0, 10) + ' ' + kstIso.slice(11, 16);
+          }
+        }
+        var m = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})\s*(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2})/i);
+        if (m) {
+          var hh = parseInt(m[5], 10);
+          var mer = (m[4] || '').toUpperCase();
+          if ((mer === '오후' || mer === 'PM') && hh < 12) hh += 12;
+          else if ((mer === '오전' || mer === 'AM') && hh === 12) hh = 0;
+          return m[1] + '-' + pad2(parseInt(m[2], 10)) + '-' + pad2(parseInt(m[3], 10)) + ' ' + pad2(hh) + ':' + m[6];
+        }
+        var dOnly = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})$/);
+        if (dOnly) return dOnly[1] + '-' + pad2(parseInt(dOnly[2], 10)) + '-' + pad2(parseInt(dOnly[3], 10));
+        return s.replace(/\./g, '-').replace('T', ' ').slice(0, 16);
+      };
+      issueDate = norm24(raw.issueDate) || norm24(raw.createdAt);
     }
     if (!kstDate && issueDate) {
       kstDate = issueDate.slice(0, 10).replace(/\./g, '-');

@@ -1,4 +1,4 @@
-import { reserveDispatch, settleDispatch, maskPhone } from '../lib/kakao-wallet';
+import { reserveDispatch, settleDispatch, maskPhone, isTerminalFailedDispatch } from '../lib/kakao-wallet';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, master, need, failure, academyScope } from '../lib/portal-http';
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -425,7 +425,7 @@ const DEFAULT_LITERACY_TEMPLATE =
 async function sendKakao(req: any, res: any, academyId: string, record: any, preview: boolean, fingerprintIn: string) {
   const apiKey = process.env.ALIGO_API_KEY, userId = process.env.ALIGO_USER_ID, senderKey = process.env.ALIGO_SENDER_KEY, sender = process.env.ALIGO_SENDER;
   const tplCode = process.env.ALIGO_LITERACY_TEMPLATE_CODE || 'TT_4292';
-  const tpl = process.env.ALIGO_LITERACY_TEMPLATE || DEFAULT_LITERACY_TEMPLATE;
+  const tpl = String(process.env.ALIGO_LITERACY_TEMPLATE || DEFAULT_LITERACY_TEMPLATE).replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
   need(apiKey && userId && senderKey && sender,
     '문해력 결과지 알림톡 설정(ALIGO_API_KEY 등)이 아직 완료되지 않았습니다. 우선 "링크 복사"로 학부모에게 공유해 주세요.', 503);
   const member = await prisma.member.findFirst({ where: { id: record.memberId, academyId } });
@@ -457,9 +457,12 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
   need(fingerprint === fingerprintIn, '발송 전 최신 결과지 내용을 확인해 주세요.', 409);
   const logId = 'literacy_' + fingerprint;
   const existing = await prisma.aligoDispatchLog.findUnique({ where: { id: logId } });
-  if (existing) {
+  if (existing && !isTerminalFailedDispatch(existing)) {
     console.warn('[Aligo] literacy_duplicate_skipped', { logId: existing.id, status: existing.status, providerId: existing.providerId || null, resultCode: existing.resultCode || null, resultMessage: existing.resultMessage || null });
     return res.json({ status: existing.status, duplicate: true, providerId: existing.providerId || null, resultCode: existing.resultCode || null, resultMessage: existing.resultMessage || null });
+  }
+  if (existing) {
+    console.info('[Aligo] retry_failed_dispatch', { type: 'literacy', logId, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
   }
   // 외부 요청 전에 발송 기록을 먼저 남겨, 더블클릭이나 응답 유실로 인한 중복 발송을 막는다
   const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, subject: '문해력 진단 결과지' });

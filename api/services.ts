@@ -1,6 +1,6 @@
 import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import { prisma } from '../lib/prisma';
-import { reserveDispatch, settleDispatch, reconcileDispatches, maskPhone } from '../lib/kakao-wallet';
+import { reserveDispatch, settleDispatch, reconcileDispatches, maskPhone, isTerminalFailedDispatch } from '../lib/kakao-wallet';
 import { KAKAO_UNIT } from '../lib/billing-policy';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
@@ -15,20 +15,81 @@ const ALIGO_USER_ID = process.env.ALIGO_USER_ID || 'min5k';
 const ALIGO_SENDER_KEY = process.env.ALIGO_SENDER_KEY || 'f1aa2df93adcc25d366d0089499d8b27a7a5ef27';
 const ALIGO_SENDER = process.env.ALIGO_SENDER || '01071414186';
 
+function normalizeAligoTemplate(tpl: string): string {
+  return String(tpl || '').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+}
+
+const templateCache = new Map<string, { content: string; buttonName: string; fetchedAt: number }>();
+
+/**
+ * 알리고 콘솔에 승인·등록된 실제 템플릿 본문 및 버튼명을 조회해
+ * 환경변수/하드코딩 문구 차이로 인한 resultCode="U"(템플릿 불일치) 오류를 방지합니다.
+ */
+async function resolveAligoTemplate(tplCode: string, fallbackMessage: string, fallbackButtonName: string): Promise<{ content: string; buttonName: string }> {
+  const useRemoteTemplate = Boolean(proxyDispatcher || process.env.ALIGO_SYNC_TEMPLATE === 'true');
+  if (!useRemoteTemplate || !tplCode) {
+    return { content: fallbackMessage, buttonName: fallbackButtonName };
+  }
+  const cached = templateCache.get(tplCode);
+  if (cached && Date.now() - cached.fetchedAt < 5 * 60 * 1000) {
+    return { content: cached.content, buttonName: cached.buttonName };
+  }
+  try {
+    const fields = new URLSearchParams({
+      apikey: ALIGO_API_KEY,
+      userid: ALIGO_USER_ID,
+      senderkey: ALIGO_SENDER_KEY,
+      tpl_code: tplCode,
+    });
+    const fetchOptions: any = { method: 'POST', body: fields, signal: AbortSignal.timeout(4000) };
+    if (proxyDispatcher) fetchOptions.dispatcher = proxyDispatcher;
+    const resp = await aligoFetch('https://kakaoapi.aligo.in/akv10/template/list/', fetchOptions);
+    const data: any = await resp.json();
+    if (resp.ok && Number(data?.code) === 0 && Array.isArray(data?.list) && data.list.length > 0) {
+      const matched = data.list.find((t: any) => String(t?.templtCode || '').trim() === tplCode) || data.list[0];
+      const rawContent = String(matched?.templtContent || '').replace(/\r\n/g, '\n');
+      const rawBtnName = Array.isArray(matched?.buttons) && matched.buttons[0]?.name
+        ? String(matched.buttons[0].name).trim()
+        : fallbackButtonName;
+      if (rawContent) {
+        templateCache.set(tplCode, { content: rawContent, buttonName: rawBtnName || fallbackButtonName, fetchedAt: Date.now() });
+        return { content: rawContent, buttonName: rawBtnName || fallbackButtonName };
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Aligo] template_list_fallback', { tplCode, error: err?.message || String(err) });
+  }
+  return { content: fallbackMessage, buttonName: fallbackButtonName };
+}
+
+function buildWebLinkButtonJson(buttonName: string, targetUrl: string): string {
+  return JSON.stringify({
+    button: [
+      {
+        name: buttonName,
+        linkType: 'WL',
+        linkTypeName: '웹링크',
+        linkM: targetUrl,
+        linkP: targetUrl,
+      },
+    ],
+  });
+}
+
 // 1. 북퀴즈 이력/결과 알림톡 템플릿 코드 & 기본 템플릿
 const ALIGO_QUIZ_TEMPLATE_CODE = process.env.ALIGO_TEMPLATE_CODE || 'TT_4291';
-const ALIGO_QUIZ_TEMPLATE = process.env.ALIGO_REPORT_TEMPLATE ||
-  '#{학생명} 학생이\n#{활동일}에 \'#{도서명}\'을 읽고\n북퀴즈를 완료했어요!\n\n우리 아이의 독서 이해도를 확인해보세요~\n\n[북퀴즈결과 확인]';
+const ALIGO_QUIZ_TEMPLATE = normalizeAligoTemplate(process.env.ALIGO_REPORT_TEMPLATE ||
+  '#{학생명} 학생이\n#{활동일}에 \'#{도서명}\'을 읽고\n북퀴즈를 완료했어요!\n\n우리 아이의 독서 이해도를 확인해보세요~\n\n[북퀴즈결과 확인]');
 
 // 2. 독서 포트폴리오 알림톡 템플릿 코드 & 기본 템플릿
 const ALIGO_PORTFOLIO_TEMPLATE_CODE = process.env.ALIGO_PORTFOLIO_TEMPLATE_CODE || 'TT_4290';
-const ALIGO_PORTFOLIO_TEMPLATE = process.env.ALIGO_PORTFOLIO_TEMPLATE ||
-  '#{학생명} 학생이\n#{시작일}부터 #{종료일}까지\n총 #{도서수}권의 책을 읽고 독서 활동을 완료했어요!\n\n차곡차곡 쌓인 우리 아이의 독서 성장 기록을 확인해보세요~\n\n[포트폴리오 확인]';
+const ALIGO_PORTFOLIO_TEMPLATE = normalizeAligoTemplate(process.env.ALIGO_PORTFOLIO_TEMPLATE ||
+  '#{학생명} 학생이\n#{시작일}부터 #{종료일}까지\n총 #{도서수}권의 책을 읽고 독서 활동을 완료했어요!\n\n차곡차곡 쌓인 우리 아이의 독서 성장 기록을 확인해보세요~\n\n[포트폴리오 확인]');
 
 // 3. 문해력 진단 결과 알림톡 템플릿 코드 & 기본 템플릿
 const ALIGO_LITERACY_TEMPLATE_CODE = process.env.ALIGO_LITERACY_TEMPLATE_CODE || 'TT_4292';
-const ALIGO_LITERACY_TEMPLATE = process.env.ALIGO_LITERACY_TEMPLATE ||
-  '#{학생명} 학생이\n#{진단일}에 문해력 진단을 완료했어요!\n\n우리 아이의 글 읽기와 이해 능력은 어느 정도일까요?\n진단 결과를 확인해보세요~\n\n[진단 결과 확인]';
+const ALIGO_LITERACY_TEMPLATE = normalizeAligoTemplate(process.env.ALIGO_LITERACY_TEMPLATE ||
+  '#{학생명} 학생이\n#{진단일}에 문해력 진단을 완료했어요!\n\n우리 아이의 글 읽기와 이해 능력은 어느 정도일까요?\n진단 결과를 확인해보세요~\n\n[진단 결과 확인]');
 
 // 학부모 비로그인 열람용 HMAC 서명 토큰 생성 & 검증
 function generatePublicToken(id: string): string {
@@ -212,7 +273,7 @@ export default async function handler(req: any, res: any) {
     console.info('[Aligo] request', { action: body.action || action, type: body.type || 'quiz', userId: user.id, academyId: user.academyId, role: user.role });
     if (body.action === 'retry') {
       const previous = await prisma.aligoDispatchLog.findFirst({ where: { id: String(body.id || ''), ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) } });
-      need(previous && previous.status === 'FAILED' && previous.memberId && previous.payload, '재발송 가능한 실패 이력이 아닙니다.', 409);
+      need(previous && isTerminalFailedDispatch(previous) && previous.memberId && previous.payload, '재발송 가능한 실패 이력이 아닙니다.', 409);
       const member = await prisma.member.findFirst({ where: { id: previous.memberId, academyId: previous.academyId!, status: 'APPROVED' } });
       need(member && member.reportYn && member.parentPhone?.replace(/\D/g, '') === previous.recipientPhone.replace(/\D/g, ''), '현재 보호자 연락처와 발송 동의를 확인해 주세요.');
       const payload = previous.payload as any;
@@ -247,24 +308,20 @@ export default async function handler(req: any, res: any) {
       const targetUrl = `${baseHost}/quiz_result.html?id=${encodeURIComponent(log.id)}&t=${token}`;
       const activityDate = formatKstDateTime24(log.completedAt);
 
+      const resolvedTpl = await resolveAligoTemplate(ALIGO_QUIZ_TEMPLATE_CODE, ALIGO_QUIZ_TEMPLATE, '북퀴즈결과 확인');
       const substitutions: Record<string, string> = {
         '학생명': log.member.name,
+        '원생명': log.member.name,
+        '이름': log.member.name,
         '활동일': activityDate,
+        '완료일': activityDate,
         '도서명': book?.title || '선택 도서',
+        '점수': String(log.score ?? ''),
+        '링크': targetUrl,
       };
 
-      const message = ALIGO_QUIZ_TEMPLATE.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] || '');
-      const buttonJson = JSON.stringify({
-        button: [
-          {
-            name: '북퀴즈결과 확인',
-            linkType: 'WL',
-            linkTypeName: '웹링크',
-            linkM: targetUrl,
-            linkP: targetUrl,
-          },
-        ],
-      });
+      const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
+      const buttonJson = buildWebLinkButtonJson(resolvedTpl.buttonName, targetUrl);
 
       const fingerprint = createHash('sha256')
         .update(JSON.stringify([log.id, phone, message, ALIGO_QUIZ_TEMPLATE_CODE]))
@@ -284,7 +341,10 @@ export default async function handler(req: any, res: any) {
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 리포트 내용을 확인해 주세요.', 409);
       const id = 'quiz_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
-      if (existing) return duplicateResponse(res, existing, 'quiz');
+      if (existing && !isTerminalFailedDispatch(existing)) return duplicateResponse(res, existing, 'quiz');
+      if (existing) {
+        console.info('[Aligo] retry_failed_dispatch', { type: 'quiz', logId: id, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
+      }
 
       const reserved = await reserveDispatch({ id, academyId: log.member.academyId, recipientName: log.member.parentName || log.member.name, recipientPhone: phone, templateCode: ALIGO_QUIZ_TEMPLATE_CODE, message }, log.member, { buttonJson, subject: '북퀴즈 결과 리포트' });
       if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'quiz');
@@ -316,25 +376,19 @@ export default async function handler(req: any, res: any) {
       const targetUrl = `${baseHost}/portfolio_report.html?pf=${encodeURIComponent(pfId)}&t=${token}`;
       const bookCount = Array.isArray(pfData.books) ? pfData.books.length : (pfData.bookCount || 0);
 
+      const resolvedTpl = await resolveAligoTemplate(ALIGO_PORTFOLIO_TEMPLATE_CODE, ALIGO_PORTFOLIO_TEMPLATE, '포트폴리오 확인');
       const substitutions: Record<string, string> = {
         '학생명': student.name,
+        '원생명': student.name,
         '시작일': pfData.from || '기간 시작일',
         '종료일': pfData.to || '기간 종료일',
         '도서수': String(bookCount),
+        '권수': String(bookCount),
+        '링크': targetUrl,
       };
 
-      const message = ALIGO_PORTFOLIO_TEMPLATE.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] || '');
-      const buttonJson = JSON.stringify({
-        button: [
-          {
-            name: '포트폴리오 확인',
-            linkType: 'WL',
-            linkTypeName: '웹링크',
-            linkM: targetUrl,
-            linkP: targetUrl,
-          },
-        ],
-      });
+      const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
+      const buttonJson = buildWebLinkButtonJson(resolvedTpl.buttonName, targetUrl);
 
       const fingerprint = createHash('sha256')
         .update(JSON.stringify([pfId, phone, message, ALIGO_PORTFOLIO_TEMPLATE_CODE]))
@@ -354,7 +408,10 @@ export default async function handler(req: any, res: any) {
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 포트폴리오 내용을 확인해 주세요.', 409);
       const id = 'pf_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
-      if (existing) return duplicateResponse(res, existing, 'portfolio');
+      if (existing && !isTerminalFailedDispatch(existing)) return duplicateResponse(res, existing, 'portfolio');
+      if (existing) {
+        console.info('[Aligo] retry_failed_dispatch', { type: 'portfolio', logId: id, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
+      }
 
       const reserved = await reserveDispatch({ id, academyId: student.academyId, recipientName: student.parentName || student.name, recipientPhone: phone, templateCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, message }, student, { buttonJson, subject: '독서 성장 포트폴리오' });
       if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'portfolio');
@@ -387,23 +444,16 @@ export default async function handler(req: any, res: any) {
       const targetUrl = `${baseHost}/literacy_report.html?r=${encodeURIComponent(recordId)}&t=${token}`;
       const diagDate = formatKstDateTime24(record.finishedAt);
 
+      const resolvedTpl = await resolveAligoTemplate(ALIGO_LITERACY_TEMPLATE_CODE, ALIGO_LITERACY_TEMPLATE, '진단 결과 확인');
       const substitutions: Record<string, string> = {
         '학생명': member.name,
+        '원생명': member.name,
         '진단일': diagDate,
+        '링크': targetUrl,
       };
 
-      const message = ALIGO_LITERACY_TEMPLATE.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] || '');
-      const buttonJson = JSON.stringify({
-        button: [
-          {
-            name: '진단 결과 확인',
-            linkType: 'WL',
-            linkTypeName: '웹링크',
-            linkM: targetUrl,
-            linkP: targetUrl,
-          },
-        ],
-      });
+      const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
+      const buttonJson = buildWebLinkButtonJson(resolvedTpl.buttonName, targetUrl);
 
       const fingerprint = createHash('sha256')
         .update(JSON.stringify([recordId, phone, message, ALIGO_LITERACY_TEMPLATE_CODE]))
@@ -423,7 +473,10 @@ export default async function handler(req: any, res: any) {
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 진단 결과 내용을 확인해 주세요.', 409);
       const id = 'lit_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
-      if (existing) return duplicateResponse(res, existing, 'literacy');
+      if (existing && !isTerminalFailedDispatch(existing)) return duplicateResponse(res, existing, 'literacy');
+      if (existing) {
+        console.info('[Aligo] retry_failed_dispatch', { type: 'literacy', logId: id, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
+      }
 
       const reserved = await reserveDispatch({ id, academyId: member.academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: ALIGO_LITERACY_TEMPLATE_CODE, message }, member, { buttonJson, subject: '문해력 진단 결과지' });
       if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'literacy');

@@ -17,12 +17,61 @@ export async function changeBalance(tx: any, academyId: string, amount: number, 
   await tx.kakaoLedger.create({ data: { id, academyId, amount, kind, referenceId } });
 }
 
+export function isTerminalFailedDispatch(log: any): boolean {
+  if (!log) return false;
+  if (log.status === 'FAILED') return true;
+  if ((log.status === 'ACCEPTED' || log.status === 'UNKNOWN') && log.resultCode && String(log.resultCode) !== '0') {
+    const outcome = deliveryOutcome({
+      msgid: log.providerId || '1',
+      smid: log.fallbackId || '0',
+      rsltdate: '2026-01-01 00:00:00',
+      rslt: log.resultCode,
+      rslt_message: log.resultMessage || '',
+    });
+    if (outcome === 'FAILED') return true;
+  }
+  return false;
+}
+
 export async function reserveDispatch(data: any, member: any, payload: any, retryOf?: string) {
   const classroom = member.classGroupId ? await prisma.classGroup.findUnique({ where: { id: member.classGroupId }, select: { name: true } }) : null;
   return prisma.$transaction(async tx => {
     const existing = await tx.aligoDispatchLog.findUnique({ where: { id: data.id } });
-    if (existing) return { log: existing, duplicate: true };
+    if (existing && !isTerminalFailedDispatch(existing)) return { log: existing, duplicate: true };
     need(data.academyId, '발송 학원 정보를 확인해 주세요.');
+    if (existing) {
+      if (existing.status !== 'FAILED' && existing.academyId && existing.debitAmount > 0 && !existing.refundedAt && !existing.fallbackId) {
+        await changeBalance(tx, existing.academyId, existing.debitAmount, 'refund:' + existing.id + ':re:' + Date.now(), 'REFUND', existing.id);
+      }
+      const debitId = 'debit:' + data.id + ':retry:' + Date.now();
+      await changeBalance(tx, data.academyId, -KAKAO_UNIT, debitId, 'DISPATCH', data.id);
+      const updated = await tx.aligoDispatchLog.update({
+        where: { id: data.id },
+        data: {
+          academyId: data.academyId,
+          recipientName: data.recipientName,
+          recipientPhone: data.recipientPhone,
+          templateCode: data.templateCode,
+          message: data.message,
+          memberId: member.id,
+          studentName: member.name,
+          className: classroom?.name || '',
+          payload,
+          retryOf: retryOf || existing.id,
+          debitAmount: KAKAO_UNIT,
+          cost: 0,
+          status: 'SENDING',
+          providerId: null,
+          resultCode: null,
+          resultMessage: null,
+          fallbackId: null,
+          refundedAt: null,
+          checkedAt: null,
+          sentAt: new Date(),
+        },
+      });
+      return { log: updated, duplicate: false };
+    }
     await changeBalance(tx, data.academyId, -KAKAO_UNIT, 'debit:' + data.id, 'DISPATCH', data.id);
     const log = await tx.aligoDispatchLog.create({ data: { ...data, memberId: member.id, studentName: member.name, className: classroom?.name || '',
       payload, retryOf, debitAmount: KAKAO_UNIT, cost: 0, status: 'SENDING' } });
@@ -38,7 +87,8 @@ export async function settleDispatch(id: string, status: string, details: any = 
     const updated = await tx.aligoDispatchLog.updateMany({ where: { id, status: { in: ['SENDING', 'ACCEPTED', 'UNKNOWN'] } }, data: { status, ...details } });
     if (!updated.count) return;
     if (status === 'FAILED' && log.academyId && log.debitAmount > 0 && !log.refundedAt && !details.fallbackId && !log.fallbackId) {
-      await changeBalance(tx, log.academyId, log.debitAmount, 'refund:' + id, 'REFUND', id);
+      const refundLedgerId = log.retryOf ? ('refund:' + id + ':' + Date.now()) : ('refund:' + id);
+      await changeBalance(tx, log.academyId, log.debitAmount, refundLedgerId, 'REFUND', id);
       await tx.aligoDispatchLog.update({ where: { id }, data: { refundedAt: new Date() } });
     }
   });

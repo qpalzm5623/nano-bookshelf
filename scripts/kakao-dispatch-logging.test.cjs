@@ -278,3 +278,228 @@ test('프론트엔드 알림톡 피드백·대기실패 표시·HTML 무결성�
   assert.match(adminHtml, /billing-ui\.js\?v=20261113_kakao_log/);
 });
 
+test('이전에 FAILED 또는 실패 사유(U)로 끝난 동일 퀴즈 알림톡은 재전송 시 duplicate_skipped로 막지 않고 재발송한다', async () => {
+  const spy = createLogSpy();
+  const policy = loadTs('lib/billing-policy.ts');
+  const dispatchView = loadTs('lib/dispatch-view.ts');
+  const env = {
+    ALIGO_ENABLED: 'true',
+    ALIGO_API_KEY: 'secret-api-key',
+    ALIGO_USER_ID: 'secret-user',
+    ALIGO_SENDER_KEY: 'secret-sender-key',
+    ALIGO_SENDER: '01000001111',
+    ALIGO_TEMPLATE_CODE: 'TT_4291',
+  };
+  let balance = 50000;
+  let ledgerIds = new Set();
+  let aligoCallCount = 0;
+  let record = null;
+
+  const db = {
+    academy: {
+      findUnique: async () => ({ id: 'a1', code: 'AC1', name: '루크러닝', kakaoBalance: balance }),
+      updateMany: async ({ data }) => {
+        balance += data.kakaoBalance.increment;
+        return { count: 1 };
+      },
+    },
+    classGroup: { findUnique: async () => ({ name: 'A Class' }) },
+    kakaoLedger: {
+      create: async ({ data }) => {
+        assert.equal(ledgerIds.has(data.id), false, `중복 원장 ID: ${data.id}`);
+        ledgerIds.add(data.id);
+        return data;
+      },
+    },
+    quizAttempt: {
+      findFirst: async () => ({
+        id: 'attempt_failed_1',
+        completedAt: new Date('2026-11-13T05:00:00Z'),
+        bookId: 'b1',
+        member: { id: 'm1', name: '박진호', parentName: '김태환', parentPhone: '01084349832', reportYn: true, academyId: 'a1', classGroupId: 'c1' },
+      }),
+    },
+    book: { findFirst: async () => ({ title: '긴긴밤' }) },
+    aligoDispatchLog: {
+      findUnique: async ({ where }) => (record && record.id === where.id ? record : null),
+      create: async ({ data }) => { record = { ...data, sentAt: new Date() }; return record; },
+      update: async ({ data }) => { Object.assign(record, data); return record; },
+      updateMany: async ({ data }) => { Object.assign(record, data); return { count: 1 }; },
+    },
+    $transaction: fn => fn(db),
+  };
+
+  const wallet = loadTs('lib/kakao-wallet.ts', {
+    './prisma': { prisma: db },
+    './portal-http': { need },
+    './billing-policy': policy,
+    undici: { ProxyAgent: class {} },
+  }, { console: spy.logger, process: { env } });
+
+  const handler = loadTs('api/services.ts', {
+    '../lib/prisma': { prisma: db },
+    '../lib/dispatch-view': dispatchView,
+    '../lib/billing-policy': policy,
+    '../lib/kakao-wallet': wallet,
+    '../lib/portal-http': {
+      need,
+      authenticate: async () => ({ id: 'u1', role: 'DIRECTOR', academyId: 'a1' }),
+      staff: () => {},
+      failure: (res, e) => res.status(e.status || 500).json({ error: e.message }),
+    },
+    undici: { ProxyAgent: class {} },
+  }, {
+    console: spy.logger,
+    process: { env },
+    fetch: async () => {
+      aligoCallCount++;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 0, message: '성공적으로 전송요청 하였습니다.', info: { mid: '1999999999' } }),
+      };
+    },
+  }).default;
+
+  const mkRes = () => ({ code: 200, setHeader() {}, status(n) { this.code = n; return this; }, json(v) { this.body = v; return this; } });
+
+  const pvRes = mkRes();
+  await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_failed_1' } }, pvRes);
+  assert.equal(pvRes.code, 200);
+
+  // 1) 과거 템플릿 불일치로 FAILED 상태였던 기존 로그 시뮬레이션
+  const { createHash } = require('node:crypto');
+  const logId = 'quiz_' + createHash('sha256')
+    .update(JSON.stringify(['attempt_failed_1', '01084349832', pvRes.body.message, 'TT_4291']))
+    .digest('hex');
+  record = {
+    id: logId,
+    academyId: 'a1',
+    status: 'FAILED',
+    providerId: '1503785807',
+    resultCode: 'U',
+    resultMessage: '메시지가 템플릿과 일치하지않음',
+    debitAmount: 85,
+    refundedAt: new Date(),
+  };
+
+  // 2) 템플릿 수정 후 재발송 시 duplicate_skipped로 막히지 않고 알리고 호출 후 ACCEPTED + 새 providerId 반환
+  const resendRes = mkRes();
+  await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'send', logId: 'attempt_failed_1', fingerprint: pvRes.body.fingerprint } }, resendRes);
+  assert.equal(resendRes.code, 200);
+  assert.equal(aligoCallCount, 1);
+  assert.equal(resendRes.body.status, 'ACCEPTED');
+  assert.equal(resendRes.body.duplicate, undefined);
+  assert.equal(resendRes.body.providerId, '1999999999');
+  assert.ok(spy.entries.some(e => e.tag === '[Aligo] retry_failed_dispatch' && e.payload.logId === logId));
+
+  // 3) 실패 사유 없이 정상 접수(ACCEPTED)된 건을 다시 발송하면 기존처럼 duplicate_skipped로 차단
+  const dupRes = mkRes();
+  await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'send', logId: 'attempt_failed_1', fingerprint: pvRes.body.fingerprint } }, dupRes);
+  assert.equal(dupRes.body.duplicate, true);
+  assert.equal(dupRes.body.status, 'ACCEPTED');
+  assert.equal(aligoCallCount, 1);
+  assert.ok(spy.entries.some(e => e.tag === '[Aligo] duplicate_skipped' && e.payload.logId === logId));
+});
+
+test('ALIGO_SYNC_TEMPLATE=true 시 알리고 승인 템플릿(template/list/) 본문·버튼명을 조회해 발송한다', async () => {
+  const spy = createLogSpy();
+  const policy = loadTs('lib/billing-policy.ts');
+  const dispatchView = loadTs('lib/dispatch-view.ts');
+  const env = {
+    ALIGO_ENABLED: 'true',
+    ALIGO_SYNC_TEMPLATE: 'true',
+    ALIGO_API_KEY: 'secret-api-key',
+    ALIGO_USER_ID: 'secret-user',
+    ALIGO_SENDER_KEY: 'secret-sender-key',
+    ALIGO_SENDER: '01000001111',
+    ALIGO_TEMPLATE_CODE: 'TT_4291',
+  };
+  let record = null;
+  let capturedSendBody = null;
+  const db = {
+    academy: {
+      findUnique: async () => ({ id: 'a1', code: 'AC1', name: '루크러닝', kakaoBalance: 50000 }),
+      updateMany: async () => ({ count: 1 }),
+    },
+    classGroup: { findUnique: async () => ({ name: 'A Class' }) },
+    kakaoLedger: { create: async () => ({}) },
+    quizAttempt: {
+      findFirst: async () => ({
+        id: 'attempt_sync_1',
+        completedAt: new Date('2026-11-13T05:00:00Z'),
+        bookId: 'b1',
+        member: { id: 'm1', name: '박진호', parentName: '김태환', parentPhone: '01084349832', reportYn: true, academyId: 'a1', classGroupId: 'c1' },
+      }),
+    },
+    book: { findFirst: async () => ({ title: '긴긴밤' }) },
+    aligoDispatchLog: {
+      findUnique: async () => record,
+      create: async ({ data }) => { record = { ...data, sentAt: new Date() }; return record; },
+      update: async ({ data }) => Object.assign(record, data),
+      updateMany: async ({ data }) => { Object.assign(record, data); return { count: 1 }; },
+    },
+    $transaction: fn => fn(db),
+  };
+
+  const wallet = loadTs('lib/kakao-wallet.ts', {
+    './prisma': { prisma: db },
+    './portal-http': { need },
+    './billing-policy': policy,
+    undici: { ProxyAgent: class {} },
+  }, { console: spy.logger, process: { env } });
+
+  const handler = loadTs('api/services.ts', {
+    '../lib/prisma': { prisma: db },
+    '../lib/dispatch-view': dispatchView,
+    '../lib/billing-policy': policy,
+    '../lib/kakao-wallet': wallet,
+    '../lib/portal-http': {
+      need,
+      authenticate: async () => ({ id: 'u1', role: 'DIRECTOR', academyId: 'a1' }),
+      staff: () => {},
+      failure: (res, e) => res.status(e.status || 500).json({ error: e.message }),
+    },
+    undici: { ProxyAgent: class {} },
+  }, {
+    console: spy.logger,
+    process: { env },
+    fetch: async (url, options) => {
+      if (String(url).includes('template/list')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            code: 0,
+            list: [{
+              templtCode: 'TT_4291',
+              templtContent: '#{학생명} 학생이\n#{활동일}에 \'#{도서명}\'을 읽고\n북퀴즈를 완료했어요!\n\n우리 아이의 독서 이해도를 확인해보세요~',
+              buttons: [{ name: '북퀴즈결과 확인' }],
+            }],
+          }),
+        };
+      }
+      capturedSendBody = new URLSearchParams(options.body.toString());
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 0, message: '성공적으로 전송요청 하였습니다.', info: { mid: '2000000001' } }),
+      };
+    },
+  }).default;
+
+  const mkRes = () => ({ code: 200, setHeader() {}, status(n) { this.code = n; return this; }, json(v) { this.body = v; return this; } });
+
+  const pvRes = mkRes();
+  await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_sync_1' } }, pvRes);
+  assert.equal(pvRes.code, 200);
+  assert.equal(pvRes.body.message.endsWith('우리 아이의 독서 이해도를 확인해보세요~'), true);
+
+  const sendRes = mkRes();
+  await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'send', logId: 'attempt_sync_1', fingerprint: pvRes.body.fingerprint } }, sendRes);
+  assert.equal(sendRes.code, 200);
+  assert.equal(sendRes.body.status, 'ACCEPTED');
+  assert.equal(capturedSendBody.get('message_1'), pvRes.body.message);
+  assert.equal(JSON.parse(capturedSendBody.get('button_1')).button[0].name, '북퀴즈결과 확인');
+});
+
