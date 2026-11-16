@@ -80,6 +80,7 @@ test('maskPhone은 전화번호 가운데 자리를 마스킹하고 reconcileDis
       update: async ({ data }) => Object.assign(rowState, data),
       updateMany: async ({ data }) => { Object.assign(rowState, data); return { count: 1 }; },
     },
+    $executeRaw: async () => 1,
     $transaction: fn => fn(db),
   };
 
@@ -194,6 +195,7 @@ test('services.ts 발송·중복차단·통계조회는 시크릿 없이 구조�
       update: async ({ data }) => Object.assign(record, data),
       updateMany: async ({ data }) => { Object.assign(record, data); return { count: 1 }; },
     },
+    $executeRaw: async () => 1,
     $transaction: fn => fn(db),
   };
 
@@ -233,22 +235,17 @@ test('services.ts 발송·중복차단·통계조회는 시크릿 없이 구조�
   await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_1' } }, pvRes);
   assert.equal(pvRes.code, 200);
 
-  // 상세 화면에서 시작한 재발송은 새 지문을 발급하되 같은 요청 키는 같은 지문을 유지합니다.
-  const resendKey = '11111111-1111-4111-8111-111111111111';
-  const resendPreview = mkRes();
-  const resendRequest = { method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_1', resendKey } };
-  await handler(resendRequest, resendPreview);
-  assert.equal(resendPreview.code, 200);
-  assert.notEqual(resendPreview.body.fingerprint, pvRes.body.fingerprint);
-  const samePreview = mkRes();
-  await handler(resendRequest, samePreview);
-  assert.equal(samePreview.body.fingerprint, resendPreview.body.fingerprint);
-
   const sendRes = mkRes();
   await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'send', logId: 'attempt_1', fingerprint: pvRes.body.fingerprint } }, sendRes);
   assert.equal(sendRes.code, 200);
   assert.equal(sendRes.body.status, 'ACCEPTED');
   assert.equal(sendRes.body.providerId, '1503785807');
+  const nextPreview = mkRes();
+  await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'preview', logId: 'attempt_1' } }, nextPreview);
+  assert.equal(nextPreview.body.sentCount, 1);
+  assert.equal(nextPreview.body.attemptNumber, 2);
+  assert.notEqual(nextPreview.body.fingerprint, pvRes.body.fingerprint);
+
 
   const dupRes = mkRes();
   await handler({ method: 'POST', headers: { host: 'www.nanosbook.co.kr' }, query: {}, body: { type: 'quiz', action: 'send', logId: 'attempt_1', fingerprint: pvRes.body.fingerprint } }, dupRes);
@@ -340,11 +337,13 @@ test('이전에 FAILED 또는 실패 사유(U)로 끝난 동일 퀴즈 알림톡
     },
     book: { findFirst: async () => ({ title: '긴긴밤' }) },
     aligoDispatchLog: {
+      findMany: async () => record ? [record] : [],
       findUnique: async ({ where }) => (record && record.id === where.id ? record : null),
       create: async ({ data }) => { record = { ...data, sentAt: new Date() }; return record; },
       update: async ({ data }) => { Object.assign(record, data); return record; },
       updateMany: async ({ data }) => { Object.assign(record, data); return { count: 1 }; },
     },
+    $executeRaw: async () => 1,
     $transaction: fn => fn(db),
   };
 
@@ -453,11 +452,13 @@ test('ALIGO_SYNC_TEMPLATE=true 시 알리고 승인 템플릿(template/list/) �
     },
     book: { findFirst: async () => ({ title: '긴긴밤' }) },
     aligoDispatchLog: {
+      findMany: async () => record ? [record] : [],
       findUnique: async () => record,
       create: async ({ data }) => { record = { ...data, sentAt: new Date() }; return record; },
       update: async ({ data }) => Object.assign(record, data),
       updateMany: async ({ data }) => { Object.assign(record, data); return { count: 1 }; },
     },
+    $executeRaw: async () => 1,
     $transaction: fn => fn(db),
   };
 

@@ -2051,21 +2051,29 @@ function buildKakaoDispatchFeedback(result, label) {
   return '⏳ 발송 상태: ' + st + msg + '. [카톡 발송 내역]을 확인해 주세요.';
 }
 
+// 서버가 집계한 이력을 확인창에 표시합니다. 실패 확정 건은 발송 횟수에서 제외합니다.
+function buildKakaoHistoryNotice(preview) {
+  var count = Number(preview.sentCount) || 0;
+  var limit = Number(preview.maxSends) || 3;
+  if (count >= limit) throw new Error('이미 ' + count + '회 발송 이력이 있습니다. 동일 리포트는 최대 ' + limit + '회까지 발송할 수 있습니다.');
+  return count > 0
+    ? '※ 기존 발송 이력이 ' + count + '회 있습니다. 이번은 ' + (count + 1) + '/' + limit + '회차 발송입니다. (추가 가능 ' + (limit - count) + '회)\n\n'
+    : '최초 발송입니다. 동일 리포트는 총 ' + limit + '회까지 발송할 수 있습니다.\n\n';
+}
+
 async function sendLearningReportKakao(logId, event, isModal) {
   if (event) event.stopPropagation();
   if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('운영 서버에서만 발송할 수 있습니다.'); return; }
   var button = event && event.currentTarget; if(button) button.disabled = true;
   try {
-    // 상세 화면의 명시적 재발송은 별도 요청으로 구분하고 동일 요청의 중복 전송은 서버에서 차단합니다.
-    var resendKey = isModal ? crypto.randomUUID() : '';
-    var preview = await NanoPortal.api('/api/services', { type: 'quiz', action: 'preview', logId: logId, resendKey: resendKey });
-    var confirmMsg = '[북퀴즈 완료 알림톡 발송 미리보기]\n\n' +
+    var preview = await NanoPortal.api('/api/services', { type: 'quiz', action: 'preview', logId: logId });
+    var confirmMsg = '[북퀴즈 완료 알림톡 발송 미리보기]\n\n' + buildKakaoHistoryNotice(preview) +
       '받는 분: ' + preview.name + ' (' + preview.recipient + ')\n\n' +
       preview.message + '\n\n' +
       '연결 링크: ' + preview.targetUrl + '\n\n' +
       '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
     if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
-    var result = await NanoPortal.api('/api/services', { type: 'quiz', action: 'send', logId: logId, fingerprint: preview.fingerprint, resendKey: resendKey });
+    var result = await NanoPortal.api('/api/services', { type: 'quiz', action: 'send', logId: logId, fingerprint: preview.fingerprint, attemptNumber: preview.attemptNumber });
     if (window.NanoBilling && typeof NanoBilling.invalidateDispatchCache === 'function') NanoBilling.invalidateDispatchCache();
     if (['ACCEPTED', 'SENDING', 'SUCCESS', 'SMS_FALLBACK'].includes(result.status)) {
       saveKakaoReportLog(logId, formatCurrentDateTimeShort());
@@ -6396,7 +6404,6 @@ function renderPortfolioTable(list) {
       '<td class="text-center text-muted" style="font-size:12px; white-space:nowrap;">' + displayIssueDate + '</td>' +
       '<td class="text-center" style="white-space:nowrap;">' +
         '<button class="btn btn-xs btn-beige-primary mr-1" onclick="viewPortfolioDetail(\'' + pf.studentId + '\', \'' + pf.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 9px;">상세보기</button>' +
-        '<button class="btn btn-xs btn-outline-secondary mr-1" onclick="printSinglePortfolio(\'' + pf.studentId + '\', \'' + pf.id + '\')" style="border-radius:6px; font-size:11.5px; padding:3px 8px;" title="리포트 인쇄"><i class="fa-solid fa-print"></i></button>' +
         kakaoActionHtml +
       '</td>';
 
@@ -6420,14 +6427,14 @@ async function sendPortfolioKakaoDirect(pfId, event) {
     var result = null;
     if (window.NanoPortal && NanoPortal.remote) {
       var preview = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'preview', pfId: pfId });
-      var confirmMsg = '[독서 포트폴리오 알림톡 발송 미리보기]\n\n' +
+      var confirmMsg = '[독서 포트폴리오 알림톡 발송 미리보기]\n\n' + buildKakaoHistoryNotice(preview) +
         '받는 분: ' + preview.name + ' (' + preview.recipient + ')\n\n' +
         preview.message + '\n\n' +
         '연결 링크: ' + preview.targetUrl + '\n\n' +
         '학부모님께 이 내용으로 알림톡을 발송하시겠습니까?';
       if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
 
-      result = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'send', pfId: pfId, fingerprint: preview.fingerprint });
+      result = await NanoPortal.api('/api/services', { type: 'portfolio', action: 'send', pfId: pfId, fingerprint: preview.fingerprint, attemptNumber: preview.attemptNumber });
       if (window.NanoBilling && typeof NanoBilling.invalidateDispatchCache === 'function') NanoBilling.invalidateDispatchCache();
       if (!['ACCEPTED', 'SENDING', 'SUCCESS', 'SMS_FALLBACK'].includes(result.status)) {
         throw new Error(buildKakaoDispatchFeedback(result, '포트폴리오'));
@@ -6465,18 +6472,10 @@ function updatePortfolioDetailKakaoButton(pfId) {
   var pf = portfolioList.find(function(p) { return p.id === pfId; });
   if (!pf) return;
 
-  if (pf.kakaoSent) {
-    container.innerHTML = 
-      '<span class="badge-soft badge-soft-success font-weight-bold mr-2" style="font-size:12.5px; padding:6px 12px; border-radius:8px;">' +
-      '<i class="fa-solid fa-check mr-1"></i>카톡 발송 완료' +
-      '</span>';
-  } else {
-    container.innerHTML = 
-      '<button type="button" class="btn btn-sm font-weight-bold mr-2" onclick="sendPortfolioKakaoDirect(\'' + pf.id + '\', event)" ' +
-      'style="background-color:#FEE500; color:#3C1E1E; border:1px solid #ebd000; border-radius:8px; font-size:12.5px; padding:6px 14px; box-shadow:0 1px 4px rgba(0,0,0,0.08);">' +
-      '<i class="fa-solid fa-comment mr-1"></i>카톡 발송하기' +
-      '</button>';
-  }
+  container.innerHTML =
+    '<button type="button" class="btn btn-sm font-weight-bold mr-2" onclick="sendPortfolioKakaoDirect(\'' + pf.id + '\', event)" ' +
+    'style="background-color:#FEE500; color:#3C1E1E; border:1px solid #ebd000; border-radius:8px; font-size:12.5px; padding:6px 14px;">' +
+    '<i class="fa-solid fa-comment mr-1"></i>' + (pf.kakaoSent ? '카톡 재발송' : '카톡 발송하기') + '</button>';
 }
 
 // 포트폴리오 검색 입력 핸들러

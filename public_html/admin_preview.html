@@ -3382,6 +3382,7 @@
   <link rel="stylesheet" href="css/portal-search.css?v=20261113_dropdown_fix">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
 <link rel="stylesheet" href="css/learning-report.css?v=20261113_print_compact">
+<link rel="stylesheet" href="css/admin-notices.css?v=20261116">
 <link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v7">
 </head>
 
@@ -4799,29 +4800,23 @@
           </div>
         </div>
 
-        <!-- 상단 안내 배너 카드 -->
-        <div class="alert alert-light border mb-4 p-3 d-flex align-items-center justify-content-between flex-wrap gap-2"
-          style="border-radius: 14px; background: #ffffff; border-color: var(--border-medium) !important; box-shadow: 0 2px 8px rgba(60, 50, 40, 0.03);">
-          <div class="d-flex align-items-center gap-3">
-            <div
-              style="width: 40px; height: 40px; border-radius: 10px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 18px;">
-              <i class="fa-solid fa-bullhorn"></i>
-            </div>
-            <div>
-              <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main);">본사 직속 시스템 공지 채널</div>
-              <small class="text-muted">중요 기능 업데이트, 정기 점검 안내, 전국 독서 랭킹 이벤트 소식을 실시간으로 확인하실 수 있습니다.</small>
-            </div>
+        <section class="notice-channel" aria-label="본사 공지 안내">
+          <div class="notice-channel-icon"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></div>
+          <div class="notice-channel-copy">
+            <span class="notice-eyebrow">나노의책장 · 본사 소식</span>
+            <h2>학원 운영에 필요한 소식, 한곳에서</h2>
+            <p>서비스 업데이트부터 교육 운영 안내까지, 중요한 소식을 확인하세요.</p>
           </div>
-          <div>
-            <span class="badge badge-warning text-dark font-weight-bold px-3 py-2" id="noticeViewTotalCountBadge"
-              style="font-size: 12px; border-radius: 8px;">게시 중 공지</span>
+          <span id="noticeViewTotalCountBadge" class="notice-total">게시 중 공지</span>
+        </section>
+        <div class="notice-toolbar">
+          <div class="notice-list-heading"><h2>공지 목록</h2><span id="noticeViewResultCount" aria-live="polite"></span></div>
+          <div class="notice-tools">
+            <label class="notice-pinned-filter"><input type="checkbox" id="noticePinnedOnly" onchange="renderAcademyNoticeViewList()">필독만 보기</label>
+            <label class="notice-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="noticeViewSearch" placeholder="제목 또는 내용 검색" aria-label="공지 제목 또는 내용 검색" oninput="renderAcademyNoticeViewList()"></label>
           </div>
         </div>
-
-        <!-- 공지사항 카드 리스트 영역 -->
-        <div id="academyNoticeViewContainer">
-          <!-- JS 동적 렌더링 -->
-        </div>
+        <div id="academyNoticeViewContainer"></div>
       </div>
 
       <!-- ============================================================== -->
@@ -9691,14 +9686,14 @@
   <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-admin.js?v=20261113_kakao_log"></script>
+<script src="js/literacy/literacy-admin.js?v=20261116_limit3"></script>
 <script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
 <script src="js/admin_members.js?v=20261113_init_fix"></script>
-<script src="admin_preview.js?v=20261116_dispatch"></script>
+<script src="admin_preview.js?v=20261116_dispatch_limit3"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
 <script src="js/admin_books.js?v=20261113_center"></script>
 <script src="js/admin_payment.js?v=20261113_init_fix"></script>
-<script src="js/admin_notices.js?v=20261111_v1"></script>
+<script src="js/admin_notices.js?v=20261116"></script>
 <script src="js/admin_worksheet_ai.js?v=20261113_center"></script>
 <script src="js/admin_myinfo.js?v=20261111_v1"></script>
 

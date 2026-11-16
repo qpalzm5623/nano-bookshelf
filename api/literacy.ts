@@ -1,5 +1,6 @@
 import {
   reserveDispatch,
+  reportDispatchHistory,
   settleDispatch,
   maskPhone,
   isTerminalFailedDispatch,
@@ -401,7 +402,7 @@ export default async function handler(req: any, res: any) {
         return res.json({ record, history });
       }
       if (action === 'share_link') return res.json({ url: shareUrl(req, id) });
-      return sendKakao(req, res, academyId, record, !!body.preview, String(body.fingerprint || ''));
+      return await sendKakao(req, res, academyId, record, !!body.preview, String(body.fingerprint || ''));
     }
     return res.status(404).json({ error: '지원하지 않는 요청입니다.' });
   } catch (error) { return failure(res, error); }
@@ -455,11 +456,17 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
   const buttonJson = resolvedTpl.hasButtons
     ? buildWebLinkButtonJson(resolvedTpl.buttonName, targetUrl, resolvedTpl.linkType, resolvedTpl.linkTypeName)
     : '';
-  const fingerprint = createHash('sha256').update(JSON.stringify([record.id, phone, message, tplCode])).digest('hex');
+  const reportKey = 'literacy:' + record.id;
+  const history = await reportDispatchHistory(academyId, member.id, reportKey);
+  const attemptNumber = preview ? history.attemptNumber : Number(req.body?.attemptNumber || 1);
+  const fingerprintParts = [record.id, phone, message, tplCode];
+  if (attemptNumber > 1) fingerprintParts.push(String(attemptNumber));
+  const fingerprint = createHash('sha256').update(JSON.stringify(fingerprintParts)).digest('hex');
   if (preview) {
     console.info('[Aligo] literacy_preview', { recordId: record.id, tplCode, recipient: maskPhone(phone), messageLength: message.length });
-    return res.json({ message, recipient: phone, name: member.parentName || member.name + ' 보호자', targetUrl, fingerprint });
+    return res.json({ message, recipient: phone, name: member.parentName || member.name + ' 보호자', targetUrl, fingerprint, ...history });
   }
+  need(Number.isInteger(attemptNumber) && attemptNumber >= 1 && attemptNumber <= 3, '동일 리포트는 최대 3회까지 발송할 수 있습니다.', 409);
   need(fingerprint === fingerprintIn, '발송 전 최신 결과지 내용을 확인해 주세요.', 409);
   const logId = 'literacy_' + fingerprint;
   const existing = await prisma.aligoDispatchLog.findUnique({ where: { id: logId } });
@@ -471,7 +478,7 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
     console.info('[Aligo] retry_failed_dispatch', { type: 'literacy', logId, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
   }
   // 외부 요청 전에 발송 기록을 먼저 남겨, 더블클릭이나 응답 유실로 인한 중복 발송을 막는다
-  const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, emtitle: resolvedTpl.emtitle, subject: '문해력 진단 결과지' });
+  const reserved = await reserveDispatch({ id: logId, academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: tplCode, message }, member, { buttonJson, reportKey, attemptNumber, emtitle: resolvedTpl.emtitle, subject: '문해력 진단 결과지' });
   if (reserved.duplicate) {
     console.warn('[Aligo] literacy_duplicate_skipped', { logId: reserved.log.id, status: reserved.log.status, providerId: reserved.log.providerId || null });
     return res.json({ status: reserved.log.status, duplicate: true, providerId: reserved.log.providerId || null, resultCode: reserved.log.resultCode || null, resultMessage: reserved.log.resultMessage || null });

@@ -33,12 +33,50 @@ export function isTerminalFailedDispatch(log: any): boolean {
   return false;
 }
 
+// URL의 리포트 ID로 묶어 본문 수정·수신번호 변경·서로 다른 발송 API로 횟수를 우회하지 못하게 합니다.
+export function reportDispatchKey(payload: any): string {
+  if (typeof payload?.reportKey === 'string' && /^(quiz|portfolio|literacy):.+/.test(payload.reportKey)) return payload.reportKey;
+  try {
+    const buttons = JSON.parse(payload?.buttonJson || '{}').button || [];
+    for (const button of buttons) {
+      for (const href of [button.linkM, button.linkP]) {
+        if (!href) continue;
+        const url = new URL(href);
+        const route = url.pathname.replace(/\.html$/, '');
+        const type = route === '/quiz_result' ? 'quiz' : route === '/portfolio_report' ? 'portfolio' : route === '/literacy_report' ? 'literacy' : '';
+        const ref = url.searchParams.get(type === 'quiz' ? 'id' : type === 'portfolio' ? 'pf' : 'r');
+        if (type && ref) return type + ':' + ref;
+      }
+    }
+  } catch (_) { /* 구형 버튼 없는 기록은 리포트 식별자가 없으므로 합산하지 않습니다. */ }
+  return '';
+}
+
+export async function reportDispatchHistory(academyId: string, memberId: string, reportKey: string, db: any = prisma) {
+  const rows = await db.aligoDispatchLog.findMany({ where: { academyId, memberId }, orderBy: { sentAt: 'desc' },
+    select: { id: true, payload: true, status: true, resultCode: true, resultMessage: true, providerId: true, fallbackId: true, sentAt: true } });
+  const history = rows.filter((row: any) => reportDispatchKey(row.payload) === reportKey && !isTerminalFailedDispatch(row));
+  return { sentCount: history.length, maxSends: 3, remainingSends: Math.max(0, 3 - history.length),
+    attemptNumber: history.length + 1, lastSentAt: history[0]?.sentAt || null };
+}
+
 export async function reserveDispatch(data: any, member: any, payload: any, retryOf?: string) {
   const classroom = member.classGroupId ? await prisma.classGroup.findUnique({ where: { id: member.classGroupId }, select: { name: true } }) : null;
   return prisma.$transaction(async tx => {
+    const reportKey = reportDispatchKey(payload);
+    if (reportKey) {
+      // 같은 리포트의 동시 요청은 예약·차감이 끝날 때까지 직렬 처리합니다.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${data.academyId + ':' + reportKey}))`;
+    }
     const existing = await tx.aligoDispatchLog.findUnique({ where: { id: data.id } });
     if (existing && !isTerminalFailedDispatch(existing)) return { log: existing, duplicate: true };
     need(data.academyId, '발송 학원 정보를 확인해 주세요.');
+    if (reportKey) {
+      const history = await reportDispatchHistory(data.academyId, member.id, reportKey, tx);
+      need(history.sentCount < 3, '동일 리포트는 최대 3회까지 발송할 수 있습니다. 이미 3회 발송 이력이 있습니다.', 409);
+      if (!retryOf) need(payload.attemptNumber === history.attemptNumber, '발송 이력이 변경되었습니다. 발송 버튼을 다시 눌러 확인해 주세요.', 409);
+      payload = { ...payload, reportKey, attemptNumber: history.attemptNumber };
+    }
     if (existing) {
       if (existing.status !== 'FAILED' && existing.academyId && existing.debitAmount > 0 && !existing.refundedAt && !existing.fallbackId) {
         await changeBalance(tx, existing.academyId, existing.debitAmount, 'refund:' + existing.id + ':re:' + Date.now(), 'REFUND', existing.id);

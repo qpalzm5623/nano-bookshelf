@@ -71,7 +71,7 @@ test('학습 목록은 발송완료로 바뀌고 상세 화면만 재발송을 �
   const modal = { innerHTML: '' };
   const portal = { remote: true, api: async (_url, body) => {
     requests.push(body);
-    return body.action === 'preview' ? { name: '보호자', recipient: '010', message: '리포트', targetUrl: '/report', fingerprint: 'fp' } : { status };
+    return body.action === 'preview' ? { name: '보호자', recipient: '010', message: '리포트', targetUrl: '/report', fingerprint: 'fp', attemptNumber: sentTime ? 2 : 1, sentCount: sentTime ? 1 : 0, maxSends: 3 } : { status };
   } };
   const ctx = {
     window: { NanoPortal: portal }, NanoPortal: portal,
@@ -90,8 +90,9 @@ test('학습 목록은 발송완료로 바뀌고 상세 화면만 재발송을 �
   assert.doesNotMatch(ctx.getKakaoReportBtnHtml('log1', false), /onclick/);
   assert.match(modal.innerHTML, /카톡 재발송/);
   await ctx.sendLearningReportKakao('log1', null, true);
-  assert.equal(requests[2].resendKey, requests[3].resendKey);
-  assert.ok(requests[2].resendKey);
+  assert.equal(requests[3].attemptNumber, 2);
+  assert.match(ctx.buildKakaoHistoryNotice({ sentCount: 1, maxSends: 3 }), /기존 발송 이력이 1회/);
+  assert.throws(() => ctx.buildKakaoHistoryNotice({ sentCount: 3, maxSends: 3 }), /최대 3회/);
   assert.equal(refreshes, 2);
   sentTime = null;
   status = 'FAILED';

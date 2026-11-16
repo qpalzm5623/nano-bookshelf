@@ -2,6 +2,7 @@ import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import { prisma } from '../lib/prisma';
 import {
   reserveDispatch,
+  reportDispatchHistory,
   settleDispatch,
   reconcileDispatches,
   maskPhone,
@@ -324,13 +325,12 @@ export default async function handler(req: any, res: any) {
       const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
       const buttonJson = buildResolvedButtonJson(resolvedTpl, targetUrl);
 
-      const resendKey = String(body.resendKey || '');
-      need(!resendKey || /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resendKey), '재발송 요청 정보를 확인해 주세요.');
+      const reportKey = 'quiz:' + log.id;
+      const history = await reportDispatchHistory(log.member.academyId, log.member.id, reportKey);
+      const attemptNumber = body.action === 'preview' ? history.attemptNumber : Number(body.attemptNumber || 1);
       const fingerprintParts = [log.id, phone, message, ALIGO_QUIZ_TEMPLATE_CODE];
-      if (resendKey) fingerprintParts.push(resendKey);
-      const fingerprint = createHash('sha256')
-        .update(JSON.stringify(fingerprintParts))
-        .digest('hex');
+      if (attemptNumber > 1) fingerprintParts.push(String(attemptNumber));
+      const fingerprint = createHash('sha256').update(JSON.stringify(fingerprintParts)).digest('hex');
 
       if (body.action === 'preview') {
         console.info('[Aligo] preview', { type: 'quiz', refId: log.id, tplCode: ALIGO_QUIZ_TEMPLATE_CODE, recipient: maskPhone(phone), messageLength: message.length });
@@ -340,9 +340,11 @@ export default async function handler(req: any, res: any) {
           name: log.member.parentName || (log.member.name + ' 보호자'),
           targetUrl,
           fingerprint,
+          ...history,
         });
       }
 
+      need(Number.isInteger(attemptNumber) && attemptNumber >= 1 && attemptNumber <= 3, '동일 리포트는 최대 3회까지 발송할 수 있습니다.', 409);
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 리포트 내용을 확인해 주세요.', 409);
       const id = 'quiz_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
@@ -351,7 +353,7 @@ export default async function handler(req: any, res: any) {
         console.info('[Aligo] retry_failed_dispatch', { type: 'quiz', logId: id, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
       }
 
-      const reserved = await reserveDispatch({ id, academyId: log.member.academyId, recipientName: log.member.parentName || log.member.name, recipientPhone: phone, templateCode: ALIGO_QUIZ_TEMPLATE_CODE, message }, log.member, { buttonJson, emtitle: resolvedTpl.emtitle, subject: '북퀴즈 결과 리포트' });
+      const reserved = await reserveDispatch({ id, academyId: log.member.academyId, recipientName: log.member.parentName || log.member.name, recipientPhone: phone, templateCode: ALIGO_QUIZ_TEMPLATE_CODE, message }, log.member, { buttonJson, reportKey, attemptNumber, emtitle: resolvedTpl.emtitle, subject: '북퀴즈 결과 리포트' });
       if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'quiz');
 
       return await dispatchAligo(id, phone, log.member.name, '북퀴즈 결과 리포트', message, ALIGO_QUIZ_TEMPLATE_CODE, buttonJson, res, { emtitle: resolvedTpl.emtitle, templateSource: resolvedTpl.source });
@@ -395,9 +397,12 @@ export default async function handler(req: any, res: any) {
       const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
       const buttonJson = buildResolvedButtonJson(resolvedTpl, targetUrl);
 
-      const fingerprint = createHash('sha256')
-        .update(JSON.stringify([pfId, phone, message, ALIGO_PORTFOLIO_TEMPLATE_CODE]))
-        .digest('hex');
+      const reportKey = 'portfolio:' + pfId;
+      const history = await reportDispatchHistory(student.academyId, student.id, reportKey);
+      const attemptNumber = body.action === 'preview' ? history.attemptNumber : Number(body.attemptNumber || 1);
+      const fingerprintParts = [pfId, phone, message, ALIGO_PORTFOLIO_TEMPLATE_CODE];
+      if (attemptNumber > 1) fingerprintParts.push(String(attemptNumber));
+      const fingerprint = createHash('sha256').update(JSON.stringify(fingerprintParts)).digest('hex');
 
       if (body.action === 'preview') {
         console.info('[Aligo] preview', { type: 'portfolio', refId: pfId, tplCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, recipient: maskPhone(phone), messageLength: message.length });
@@ -407,9 +412,11 @@ export default async function handler(req: any, res: any) {
           name: student.parentName || (student.name + ' 보호자'),
           targetUrl,
           fingerprint,
+          ...history,
         });
       }
 
+      need(Number.isInteger(attemptNumber) && attemptNumber >= 1 && attemptNumber <= 3, '동일 리포트는 최대 3회까지 발송할 수 있습니다.', 409);
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 포트폴리오 내용을 확인해 주세요.', 409);
       const id = 'pf_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
@@ -418,7 +425,7 @@ export default async function handler(req: any, res: any) {
         console.info('[Aligo] retry_failed_dispatch', { type: 'portfolio', logId: id, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
       }
 
-      const reserved = await reserveDispatch({ id, academyId: student.academyId, recipientName: student.parentName || student.name, recipientPhone: phone, templateCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, message }, student, { buttonJson, emtitle: resolvedTpl.emtitle, subject: '독서 성장 포트폴리오' });
+      const reserved = await reserveDispatch({ id, academyId: student.academyId, recipientName: student.parentName || student.name, recipientPhone: phone, templateCode: ALIGO_PORTFOLIO_TEMPLATE_CODE, message }, student, { buttonJson, reportKey, attemptNumber, emtitle: resolvedTpl.emtitle, subject: '독서 성장 포트폴리오' });
       if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'portfolio');
 
       return await dispatchAligo(id, phone, student.name, '독서 성장 포트폴리오', message, ALIGO_PORTFOLIO_TEMPLATE_CODE, buttonJson, res, { emtitle: resolvedTpl.emtitle, templateSource: resolvedTpl.source });
@@ -460,9 +467,12 @@ export default async function handler(req: any, res: any) {
       const message = resolvedTpl.content.replace(/#\{([^}]+)\}/g, (_, key) => substitutions[key] ?? '');
       const buttonJson = buildResolvedButtonJson(resolvedTpl, targetUrl);
 
-      const fingerprint = createHash('sha256')
-        .update(JSON.stringify([recordId, phone, message, ALIGO_LITERACY_TEMPLATE_CODE]))
-        .digest('hex');
+      const reportKey = 'literacy:' + recordId;
+      const history = await reportDispatchHistory(member.academyId, member.id, reportKey);
+      const attemptNumber = body.action === 'preview' ? history.attemptNumber : Number(body.attemptNumber || 1);
+      const fingerprintParts = [recordId, phone, message, ALIGO_LITERACY_TEMPLATE_CODE];
+      if (attemptNumber > 1) fingerprintParts.push(String(attemptNumber));
+      const fingerprint = createHash('sha256').update(JSON.stringify(fingerprintParts)).digest('hex');
 
       if (body.action === 'preview') {
         console.info('[Aligo] preview', { type: 'literacy', refId: recordId, tplCode: ALIGO_LITERACY_TEMPLATE_CODE, recipient: maskPhone(phone), messageLength: message.length });
@@ -472,9 +482,11 @@ export default async function handler(req: any, res: any) {
           name: member.parentName || (member.name + ' 보호자'),
           targetUrl,
           fingerprint,
+          ...history,
         });
       }
 
+      need(Number.isInteger(attemptNumber) && attemptNumber >= 1 && attemptNumber <= 3, '동일 리포트는 최대 3회까지 발송할 수 있습니다.', 409);
       need(body.action === 'send' && body.fingerprint === fingerprint, '발송 전 최신 진단 결과 내용을 확인해 주세요.', 409);
       const id = 'lit_' + fingerprint;
       const existing = await prisma.aligoDispatchLog.findUnique({ where: { id } });
@@ -483,7 +495,7 @@ export default async function handler(req: any, res: any) {
         console.info('[Aligo] retry_failed_dispatch', { type: 'literacy', logId: id, previousProviderId: existing.providerId || null, previousResultCode: existing.resultCode || null });
       }
 
-      const reserved = await reserveDispatch({ id, academyId: member.academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: ALIGO_LITERACY_TEMPLATE_CODE, message }, member, { buttonJson, emtitle: resolvedTpl.emtitle, subject: '문해력 진단 결과지' });
+      const reserved = await reserveDispatch({ id, academyId: member.academyId, recipientName: member.parentName || member.name, recipientPhone: phone, templateCode: ALIGO_LITERACY_TEMPLATE_CODE, message }, member, { buttonJson, reportKey, attemptNumber, emtitle: resolvedTpl.emtitle, subject: '문해력 진단 결과지' });
       if (reserved.duplicate) return duplicateResponse(res, reserved.log, 'literacy');
 
       return await dispatchAligo(id, phone, member.name, '문해력 진단 결과지', message, ALIGO_LITERACY_TEMPLATE_CODE, buttonJson, res, { emtitle: resolvedTpl.emtitle, templateSource: resolvedTpl.source });

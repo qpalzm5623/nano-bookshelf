@@ -136,59 +136,60 @@ function updateAcademyNoticeBadge(forceZeroUnread) {
   }
 }
 
-// 메인 작업 공간(view-notice) 공지사항 카드 목록 렌더링
+// 공지 제목과 본문은 텍스트로 표시하고 외부 안내 링크는 HTTP(S)만 허용합니다.
+function escapeAcademyNoticeText(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+// 필독 우선 목록: 첫 공지를 펼쳐 두고 나머지는 제목을 보고 선택합니다.
 function renderAcademyNoticeViewList() {
-  const notices = getAcademySystemNotices();
+  const notices = getAcademySystemNotices().slice().sort(function(a, b) {
+    return Number(!!b.isPinned) - Number(!!a.isPinned) || String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+  });
   const container = document.getElementById('academyNoticeViewContainer');
-  // 공지사항 탭에 진입했으므로 읽음 처리 및 뱃지 숫자 즉시 제거
   markAcademyNoticesAsRead();
   updateAcademyNoticeBadge(true);
   if (!container) return;
 
-  if (notices.length === 0) {
-    container.innerHTML = `
-      <div class="simple-card p-5 text-center text-muted">
-        <i class="fa-solid fa-bullhorn fa-3x mb-3 text-secondary" style="opacity: 0.5;"></i>
-        <h5 class="font-weight-bold text-dark mb-1">등록된 본사 공지사항이 없습니다.</h5>
-        <p class="mb-0" style="font-size: 13px;">새로운 본사 소식이나 공지사항이 등록되면 이곳에 실시간으로 표시됩니다.</p>
-      </div>
-    `;
+  const search = document.getElementById('noticeViewSearch');
+  const pinnedOnly = document.getElementById('noticePinnedOnly');
+  const query = String(search && search.value || '').trim().toLocaleLowerCase();
+  const filtered = notices.filter(function(n) {
+    return (!(pinnedOnly && pinnedOnly.checked) || n.isPinned) &&
+      (!query || [n.title, n.content].join(' ').toLocaleLowerCase().includes(query));
+  });
+  const count = document.getElementById('noticeViewResultCount');
+  if (count) count.textContent = filtered.length + '건 · 필독 우선 / 최신순';
+  if (!filtered.length) {
+    container.innerHTML = '<div class="notice-empty"><i class="fa-regular fa-folder-open" aria-hidden="true"></i><h3>' +
+      (notices.length ? '검색 조건에 맞는 공지가 없습니다.' : '아직 등록된 공지가 없습니다.') +
+      '</h3><p>' + (notices.length ? '다른 검색어를 입력하거나 필독 필터를 해제해 주세요.' : '새로운 본사 소식이 등록되면 이곳에서 확인할 수 있습니다.') + '</p></div>';
     return;
   }
 
-  container.innerHTML = notices.map(n => {
-    const isPinnedBadge = n.isPinned ? '<span class="badge badge-danger mr-1" style="font-size: 11px; font-weight: 800;"><i class="fa-solid fa-thumbtack mr-1"></i>필독</span>' : '';
-    const catBadge = '<span class="badge badge-light border text-muted mr-1" style="font-size: 11px;">' + (n.category || '공지') + '</span>';
-    const targetBadge = '<span class="badge badge-info mr-1" style="font-size: 10.5px;">' + n.target + '</span>';
-    const popupBadge = n.isPopup ? '<span class="badge badge-warning text-dark ml-1" style="font-size: 10.5px;"><i class="fa-solid fa-window-restore mr-1"></i>팝업 공지</span>' : '';
-    const contentFormatted = (n.content || '').replace(/\n/g, '<br>');
-    const linkHtml = (n.link && n.link.trim()) ? `<div class="mt-3 pt-2 border-top"><a href="${n.link}" target="_blank" class="btn btn-sm btn-outline-primary font-weight-bold" style="font-size: 12px; border-radius: 6px;"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>관련 안내 링크 바로가기</a></div>` : '';
-
-    return `
-      <div class="simple-card mb-3" style="border-radius: 14px; overflow: hidden; border: 1px solid var(--border-medium);">
-        <div class="p-3 bg-white d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-bottom: 1px solid var(--border-light);">
-          <div class="d-flex align-items-center flex-wrap" style="gap: 5px;">
-            ${isPinnedBadge}
-            ${catBadge}
-            ${targetBadge}
-            ${popupBadge}
-            <h5 class="font-weight-bold mb-0 ml-1" style="font-size: 15px; color: var(--text-main);">${n.title}</h5>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <span class="text-muted" style="font-size: 12px;"><i class="fa-regular fa-clock mr-1"></i>${n.createdAt || ''}</span>
-          </div>
-        </div>
-        <div class="p-3.5 px-4" style="background: #faf8f5;">
-          <div style="font-size: 13.5px; color: var(--text-main); line-height: 1.75; white-space: normal; word-break: break-word;">
-            ${contentFormatted}
-          </div>
-          ${linkHtml}
-        </div>
-      </div>
-    `;
+  const esc = escapeAcademyNoticeText;
+  container.innerHTML = filtered.map(function(n, index) {
+    const pinned = n.isPinned ? '<span class="notice-tag pinned">필독</span>' : '';
+    const popup = n.isPopup ? '<span class="notice-tag secondary">팝업 안내</span>' : '';
+    let link = '';
+    try {
+      const url = new URL(String(n.link || '').trim());
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        link = '<a class="notice-link" href="' + esc(url.href) + '" target="_blank" rel="noopener noreferrer">관련 안내 확인하기 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span class="sr-only"> (새 창)</span></a>';
+      }
+    } catch (e) { /* 링크가 없는 공지는 본문만 표시합니다. */ }
+    return '<details class="notice-card"' + (index === 0 ? ' open' : '') + '>' +
+      '<summary><span class="notice-number' + (n.isPinned ? ' is-pinned' : '') + '" aria-hidden="true">' +
+      (n.isPinned ? '<i class="fa-solid fa-thumbtack"></i>' : String(index + 1).padStart(2, '0')) + '</span>' +
+      '<span class="notice-summary-copy"><span class="notice-tags">' + pinned + '<span class="notice-tag">' + esc(n.category || '일반 공지') + '</span>' + popup + '</span>' +
+      '<span class="notice-title">' + esc(n.title) + '</span></span>' +
+      '<time class="notice-date">' + esc(String(n.createdAt || '').slice(0, 10)) + '</time><i class="fa-solid fa-chevron-down notice-chevron" aria-hidden="true"></i></summary>' +
+      '<div class="notice-detail"><div class="notice-byline">본사 운영팀 <span aria-hidden="true">·</span> 안내 대상: ' + esc(n.target || '전체') + '</div>' +
+      '<div class="notice-body">' + esc(n.content || '') + '</div>' + link + '</div></details>';
   }).join('');
 }
-
 function checkAcademyNoticePopups() {
   const notices = getAcademySystemNotices();
   const today = new Date();
