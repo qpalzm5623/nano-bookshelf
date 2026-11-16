@@ -1,0 +1,30 @@
+/* 카톡 공유 링크는 관리자 미리보기와 같은 440px 단일 열 리포트로 표시합니다. */
+body { margin:0; background:#f1f5f9; font-family:Pretendard,sans-serif; color:#243b38; }
+#learningReportModalDialog { max-width:440px; margin:8px auto; background:white; border-radius:18px; overflow:hidden; }
+#learningReportModalDialog .modal-title { margin:0 0 6px; }
+#learningReportModalBody { padding:16px; }
+.msg { padding:40px 16px; text-align:center; color:#64748b; }
+.report-overview-left { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+.report-cover-wrapper img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
+h2 { font-size:18px; margin:8px 0; } h3 { font-size:16px; } p { line-height:1.7; }
+small { color:#64748b; font-size:12px; }
+.report-sub-card { border-radius:12px; }
+.score-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#learnModalScore { color:#008573; font-weight:800; }
+.report-meta-grid { display:grid; gap:8px; margin-top:8px; font-size:13px; }
+.report-meta-grid strong { display:block; margin:4px 0; }
+.report-quiz-grid { display:grid; grid-template-columns:minmax(0,1fr) !important; }
+.report-quiz-card { background:white; border:1px solid #cbd5e1; border-radius:10px; }
+.report-quiz-card.is-wrong { border-color:#fca5a5; }
+.report-quiz-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #e2e8f0; padding-bottom:8px; font-size:13px; font-weight:700; }
+.report-quiz-q-badge { background:#008573; color:white; padding:4px 7px; border-radius:6px; margin-right:6px; }
+.report-quiz-badge { border-radius:20px; padding:4px 8px; font-size:11px; background:#ecfdf5; color:#008573; }
+.report-quiz-badge.wrong { color:#b91c1c; background:#fef2f2; }
+.report-choice-box { display:flex; border:1px solid #bbf7d0; border-radius:8px; background:#f0fdf4; color:#166534; margin-top:6px; }
+.report-choice-box.wrong { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+.report-choice-label { font-size:11px; font-weight:700; }
+.report-choice-val { font-weight:700; white-space:pre-wrap; }
+.report-choice-val.strike { text-decoration:line-through; }
+.report-text { white-space:pre-wrap; overflow-wrap:anywhere; }
+.worksheet-photo { display:block; margin:12px 0; } .worksheet-photo img { width:100%; height:auto; }
+@media print { body { background:white; } #learningReportModalDialog { margin:0 auto; max-width:100%; } .report-quiz-card { break-inside:avoid; } }

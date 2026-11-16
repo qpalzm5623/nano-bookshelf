@@ -31,14 +31,12 @@
   try {
     var data = await NanoLiteracy.api('public_report', { params: { id: q.get('r') || '', t: q.get('t') || '' } });
     var rec = data.record, history = data.history || [];
-    function draw(mode) {
+    function draw() {
       box.innerHTML = '<div class="bar"><span style="color:#4b606b;font-size:14px">' + NanoLiteracy.esc(rec.student.name) + ' 학생 결과지</span><span class="actions">' +
-        '<button class="' + (mode === 'regular' ? 'on' : '') + '" aria-pressed="' + (mode === 'regular') + '" data-m="regular">정기진단용 · 2장</button> ' +
-        '<button class="' + (mode === 'consult' ? 'on' : '') + '" aria-pressed="' + (mode === 'consult') + '" data-m="consult">신규상담용 · 1장</button> ' +
-        '<button onclick="window.print()">인쇄 / PDF 저장</button></span></div>' + NanoLiteracy.renderReport(rec, history, mode);
-      box.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { draw(b.getAttribute('data-m')); }; });
+        '<span>정기진단용 · 2장</span> ' +
+        '<button onclick="window.print()">인쇄 / PDF 저장</button></span></div>' + NanoLiteracy.renderReport(rec, history, 'regular');
     }
-    draw('regular');
+    draw();
   } catch (e) {
     box.innerHTML = '<p class="msg">' + NanoLiteracy.esc(e.message || '결과지를 열 수 없습니다.') + '<br><small>링크가 올바른지 학원에 문의해 주세요.</small></p>';
   }

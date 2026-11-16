@@ -120,7 +120,7 @@ export default async function handler(req: any, res: any) {
       const log = await prisma.quizAttempt.findUnique({
         where: { id },
         include: {
-          member: { select: { id: true, name: true, academy: { select: { name: true } } } },
+          member: { select: { id: true, name: true, school: true, grade: true, classGroup: { select: { name: true } }, academy: { select: { name: true } } } },
         },
       });
       need(log, '북퀴즈 결과를 찾을 수 없습니다.', 404);
@@ -150,14 +150,22 @@ export default async function handler(req: any, res: any) {
           cover: book?.coverUrl || '',
           readingGenre: book?.subCategory === 'C' ? '비문학/정보글' : book?.subCategory === 'B' ? '인물 이야기' : '문학/이야기',
           grade: book?.grade || '',
+          publisher: book?.publisher || '',
+          author: book?.author || '',
         },
         student: {
           name: log.member.name,
+          school: log.member.school || '',
+          grade: log.member.grade || '',
+          classGroup: log.member.classGroup?.name || '',
           academyName: log.member.academy?.name || '나노의책장',
         },
-        thoughtQuestion: details.thoughtQuestion || '',
+        quizResults: Array.isArray(details.quizResults) ? details.quizResults : [],
+        worksheetAiResult: details.worksheetAiResult || null,
+        worksheetPhotos: Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [],
+        thoughtQuestion: details.thoughtHidden ? '' : (details.thoughtQuestion || ''),
         thoughtAnswer: details.thoughtHidden ? '' : (log.thinkReply || ''),
-        comment: details.thoughtHidden ? '' : (details.comment || ''),
+        comment: details.thoughtHidden ? '' : (details.thoughtTeacherComment || details.comment || ''),
       });
     }
 
@@ -171,7 +179,7 @@ export default async function handler(req: any, res: any) {
       const val = row.value as any;
 
       const member = val.memberId
-        ? await prisma.member.findUnique({ where: { id: val.memberId }, select: { academy: { select: { name: true } } } })
+        ? await prisma.member.findUnique({ where: { id: val.memberId }, select: { school: true, grade: true, teacherName: true, classGroup: { select: { name: true } }, academy: { select: { name: true } } } })
         : null;
 
       return res.json({
@@ -179,9 +187,12 @@ export default async function handler(req: any, res: any) {
           id: row.key,
           name: val.name,
           academyName: member?.academy?.name || '나노의책장',
-          grade: val.grade || '',
-          classGroup: val.classGroup || '',
-          teacher: val.teacher || '',
+          school: member?.school || val.school || '',
+          grade: member?.grade || val.grade || '',
+          classGroup: member?.classGroup?.name || val.classGroup || '',
+          teacher: member?.teacherName || val.teacher || '',
+          issueDate: val.issueDate || formatKstDateTime24(val.createdAt || row.updatedAt),
+          period: val.period || '',
           from: val.from || '',
           to: val.to || '',
           bookCount: Array.isArray(val.books) ? val.books.length : (val.bookCount || 0),
@@ -189,6 +200,9 @@ export default async function handler(req: any, res: any) {
           books: val.books || [],
           aiInsights: val.aiInsights || val.insights || [],
           aiComments: val.aiComments || [],
+          teacherNote: val.teacherNote || '',
+          aiTeacherNote: val.aiTeacherNote || '',
+          commentSource: val.commentSource || '',
           comment: val.comment || val.aiTeacherNote || val.teacherNote || '',
         },
       });
