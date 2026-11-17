@@ -194,13 +194,18 @@ function getAcademyNoticeKstTodayStr() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-function getAcademyNoticeUserScope() {
+function getAcademyNoticeUserScopes() {
+  const scopes = [];
   try {
-    if (window.NANO_BOOTSTRAP_MEMBER_ID) return String(window.NANO_BOOTSTRAP_MEMBER_ID);
+    if (window.NANO_BOOTSTRAP_MEMBER_ID) scopes.push(String(window.NANO_BOOTSTRAP_MEMBER_ID));
     const auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null');
-    if (auth && (auth.memberId || auth.id)) return String(auth.memberId || auth.id);
+    if (auth) {
+      if (auth.memberId && !scopes.includes(String(auth.memberId))) scopes.push(String(auth.memberId));
+      if (auth.id && !scopes.includes(String(auth.id))) scopes.push(String(auth.id));
+    }
   } catch (e) {}
-  return 'local';
+  if (scopes.length === 0) scopes.push('local');
+  return scopes;
 }
 
 function isAcademyNoticeHiddenToday(noticeId, todayStr) {
@@ -210,41 +215,57 @@ function isAcademyNoticeHiddenToday(noticeId, todayStr) {
     return true;
   }
   try {
-    const scopedKey = 'NANO_HIDE_ADMIN_POPUP_' + getAcademyNoticeUserScope() + '_' + idStr;
-    if (localStorage.getItem(scopedKey) === todayStr) return true;
-    if (!window.NANO_SERVER_DATA && localStorage.getItem('NANO_HIDE_ADMIN_POPUP_' + idStr) === todayStr) return true;
+    const scopes = getAcademyNoticeUserScopes();
+    for (const scope of scopes) {
+      const val = localStorage.getItem('NANO_HIDE_ADMIN_POPUP_' + scope + '_' + idStr);
+      if (val && val >= todayStr) return true;
+    }
+    const legacyVal = !window.NANO_SERVER_DATA ? localStorage.getItem('NANO_HIDE_ADMIN_POPUP_' + idStr) : '';
+    if (legacyVal && legacyVal >= todayStr) return true;
   } catch (e) {}
   return false;
 }
 
+const _academyNoticeHideSynced = {};
 function persistAcademyNoticeHideToday(noticeId, shouldHide) {
   const idStr = String(noticeId || '').trim();
   if (!idStr) return;
   const todayStr = getAcademyNoticeKstTodayStr();
+  const hideFlag = !!shouldHide;
+  const stateSig = todayStr + ':' + (hideFlag ? '1' : '0');
+
   window.NANO_SERVER_HIDDEN_NOTICES = window.NANO_SERVER_HIDDEN_NOTICES || {};
-  if (shouldHide) {
+  if (hideFlag) {
     window.NANO_SERVER_HIDDEN_NOTICES[idStr] = todayStr;
   } else {
     delete window.NANO_SERVER_HIDDEN_NOTICES[idStr];
   }
   try {
-    const scopedKey = 'NANO_HIDE_ADMIN_POPUP_' + getAcademyNoticeUserScope() + '_' + idStr;
-    if (shouldHide) {
-      localStorage.setItem(scopedKey, todayStr);
-      if (!window.NANO_SERVER_DATA) localStorage.setItem('NANO_HIDE_ADMIN_POPUP_' + idStr, todayStr);
-    } else {
-      localStorage.removeItem(scopedKey);
-      if (!window.NANO_SERVER_DATA) localStorage.removeItem('NANO_HIDE_ADMIN_POPUP_' + idStr);
+    const scopes = getAcademyNoticeUserScopes();
+    for (const scope of scopes) {
+      const scopedKey = 'NANO_HIDE_ADMIN_POPUP_' + scope + '_' + idStr;
+      if (hideFlag) localStorage.setItem(scopedKey, todayStr);
+      else localStorage.removeItem(scopedKey);
+    }
+    if (!window.NANO_SERVER_DATA) {
+      if (hideFlag) localStorage.setItem('NANO_HIDE_ADMIN_POPUP_' + idStr, todayStr);
+      else localStorage.removeItem('NANO_HIDE_ADMIN_POPUP_' + idStr);
     }
   } catch (e) {}
   if (window.NanoPortal && window.NanoPortal.remote && typeof fetch === 'function') {
+    if (_academyNoticeHideSynced[idStr] === stateSig) return;
+    _academyNoticeHideSynced[idStr] = stateSig;
     fetch('/api/activity?action=hide_notice', {
       method: 'POST',
       credentials: 'same-origin',
       keepalive: true,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ noticeId: idStr, hide: !!shouldHide })
-    }).catch(function() {});
+      body: JSON.stringify({ noticeId: idStr, hide: hideFlag })
+    }).then(function(res) {
+      if (!res || !res.ok) delete _academyNoticeHideSynced[idStr];
+    }).catch(function() {
+      delete _academyNoticeHideSynced[idStr];
+    });
   }
 }
 

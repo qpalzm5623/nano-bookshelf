@@ -83,11 +83,31 @@ export default async function handler(req: any, res: any) {
       }
       if (shouldHide) nextMap[noticeId] = todayKst;
       else delete nextMap[noticeId];
-      await prisma.portalSetting.upsert({
-        where: { key },
-        create: { key, scope: 'notice_hide', value: nextMap },
-        update: { value: nextMap }
-      });
+      // 체크박스 토글 + 닫기 클릭 시 동시 요청이 들어와도 P2002 충돌 없이 24:00(KST 당일)까지 유지되도록 보장합니다.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          await prisma.portalSetting.upsert({
+            where: { key },
+            create: { key, scope: 'notice_hide', value: nextMap },
+            update: { value: nextMap }
+          });
+          break;
+        } catch (err: any) {
+          if (err?.code === 'P2002' && attempt === 0) {
+            const latest = await prisma.portalSetting.findUnique({ where: { key } });
+            const latestMap = (latest?.value && typeof latest.value === 'object' && !Array.isArray(latest.value))
+              ? (latest.value as Record<string, any>)
+              : {};
+            for (const [k, v] of Object.entries(latestMap)) {
+              if (typeof v === 'string' && v >= todayKst && !(k in nextMap) && (shouldHide || k !== noticeId)) {
+                nextMap[k] = v;
+              }
+            }
+            continue;
+          }
+          throw err;
+        }
+      }
       return res.json({ ok: true, hiddenNotices: nextMap, hideDate: todayKst });
     }
     if (action === 'recommend') {

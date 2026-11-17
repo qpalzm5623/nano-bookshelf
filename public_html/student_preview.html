@@ -12395,13 +12395,18 @@ function getStudentNoticeKstTodayStr() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-function getStudentNoticeUserScope() {
+function getStudentNoticeUserScopes() {
+  var scopes = [];
   try {
-    if (window.NANO_BOOTSTRAP_MEMBER_ID) return String(window.NANO_BOOTSTRAP_MEMBER_ID);
+    if (window.NANO_BOOTSTRAP_MEMBER_ID) scopes.push(String(window.NANO_BOOTSTRAP_MEMBER_ID));
     var auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null');
-    if (auth && (auth.memberId || auth.id)) return String(auth.memberId || auth.id);
+    if (auth) {
+      if (auth.memberId && scopes.indexOf(String(auth.memberId)) === -1) scopes.push(String(auth.memberId));
+      if (auth.id && scopes.indexOf(String(auth.id)) === -1) scopes.push(String(auth.id));
+    }
   } catch (e) {}
-  return 'local';
+  if (scopes.length === 0) scopes.push('local');
+  return scopes;
 }
 
 function isStudentNoticeHiddenToday(noticeId, todayStr) {
@@ -12411,41 +12416,58 @@ function isStudentNoticeHiddenToday(noticeId, todayStr) {
     return true;
   }
   try {
-    var scopedKey = 'NANO_HIDE_STUDENT_POPUP_' + getStudentNoticeUserScope() + '_' + idStr;
-    if (localStorage.getItem(scopedKey) === todayStr) return true;
-    if (!window.NANO_SERVER_DATA && localStorage.getItem('NANO_HIDE_STUDENT_POPUP_' + idStr) === todayStr) return true;
+    var scopes = getStudentNoticeUserScopes();
+    for (var i = 0; i < scopes.length; i++) {
+      var val = localStorage.getItem('NANO_HIDE_STUDENT_POPUP_' + scopes[i] + '_' + idStr);
+      if (val && val >= todayStr) return true;
+    }
+    var legacyVal = !window.NANO_SERVER_DATA ? localStorage.getItem('NANO_HIDE_STUDENT_POPUP_' + idStr) : '';
+    if (legacyVal && legacyVal >= todayStr) return true;
   } catch (e) {}
   return false;
 }
 
+var _studentNoticeHideSynced = {};
 function persistStudentNoticeHideToday(noticeId, shouldHide) {
   var idStr = String(noticeId || '').trim();
   if (!idStr) return;
   var todayStr = getStudentNoticeKstTodayStr();
+  var hideFlag = !!shouldHide;
+  var stateSig = todayStr + ':' + (hideFlag ? '1' : '0');
+
   window.NANO_SERVER_HIDDEN_NOTICES = window.NANO_SERVER_HIDDEN_NOTICES || {};
-  if (shouldHide) {
+  if (hideFlag) {
     window.NANO_SERVER_HIDDEN_NOTICES[idStr] = todayStr;
   } else {
     delete window.NANO_SERVER_HIDDEN_NOTICES[idStr];
   }
   try {
-    var scopedKey = 'NANO_HIDE_STUDENT_POPUP_' + getStudentNoticeUserScope() + '_' + idStr;
-    if (shouldHide) {
-      localStorage.setItem(scopedKey, todayStr);
-      if (!window.NANO_SERVER_DATA) localStorage.setItem('NANO_HIDE_STUDENT_POPUP_' + idStr, todayStr);
-    } else {
-      localStorage.removeItem(scopedKey);
-      if (!window.NANO_SERVER_DATA) localStorage.removeItem('NANO_HIDE_STUDENT_POPUP_' + idStr);
+    var scopes = getStudentNoticeUserScopes();
+    for (var i = 0; i < scopes.length; i++) {
+      var scopedKey = 'NANO_HIDE_STUDENT_POPUP_' + scopes[i] + '_' + idStr;
+      if (hideFlag) localStorage.setItem(scopedKey, todayStr);
+      else localStorage.removeItem(scopedKey);
+    }
+    if (!window.NANO_SERVER_DATA) {
+      if (hideFlag) localStorage.setItem('NANO_HIDE_STUDENT_POPUP_' + idStr, todayStr);
+      else localStorage.removeItem('NANO_HIDE_STUDENT_POPUP_' + idStr);
     }
   } catch (e) {}
+
   if (window.NanoPortal && window.NanoPortal.remote && typeof fetch === 'function') {
+    if (_studentNoticeHideSynced[idStr] === stateSig) return;
+    _studentNoticeHideSynced[idStr] = stateSig;
     fetch('/api/activity?action=hide_notice', {
       method: 'POST',
       credentials: 'same-origin',
       keepalive: true,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ noticeId: idStr, hide: !!shouldHide })
-    }).catch(function(){});
+      body: JSON.stringify({ noticeId: idStr, hide: hideFlag })
+    }).then(function(res) {
+      if (!res || !res.ok) delete _studentNoticeHideSynced[idStr];
+    }).catch(function() {
+      delete _studentNoticeHideSynced[idStr];
+    });
   }
 }
 
