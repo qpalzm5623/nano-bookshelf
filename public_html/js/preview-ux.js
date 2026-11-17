@@ -36,9 +36,18 @@ document.addEventListener('DOMContentLoaded', function () {
 // 10초 무동작 후 30:00 카운트다운 · 로그아웃 좌측 타이머 · 유지 확인 모달 공통 모듈
 // ==============================================================
 (function () {
-  // 아무 동작 없이 10초 경과 시 30:00(1800초) 카운트다운 시작
+  var isStudentPortal = (function () {
+    try {
+      var loc = (window.location && (String(window.location.pathname || '') + String(window.location.href || ''))) || '';
+      if (/student_preview/i.test(loc)) return true;
+    } catch (e) {}
+    return !!document.querySelector('header .btn-student-logout');
+  })();
+  // 아무 동작 없이 10초 경과 시 카운트다운 시작 (학생: 10:00 / 원장·본사: 30:00)
   var IDLE_GRACE_MS = 10 * 1000;
-  var SESSION_COUNTDOWN_SEC = 30 * 60;
+  var SESSION_COUNTDOWN_MINUTES = isStudentPortal ? 10 : 30;
+  var SESSION_COUNTDOWN_SEC = SESSION_COUNTDOWN_MINUTES * 60;
+  var SESSION_COUNTDOWN_LABEL = String(SESSION_COUNTDOWN_MINUTES).padStart(2, '0') + ':00';
   // 00:00 도달 후 모달 확인 대기 시간 = 60초 (미응답 시 자동 로그아웃)
   var MODAL_GRACE_SEC = 60;
 
@@ -259,8 +268,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var pill = document.createElement('span');
     pill.id = 'nanoSessionTimerPill';
     pill.className = 'nano-session-timer-pill';
-    pill.title = '10초간 활동이 없으면 30:00부터 자동 로그아웃 카운트다운이 시작됩니다.';
-    pill.innerHTML = '<i class="fa-regular fa-clock" aria-hidden="true"></i><span class="nano-session-timer-text">30:00</span>';
+    pill.title = '10초간 활동이 없으면 ' + SESSION_COUNTDOWN_LABEL + '부터 자동 로그아웃 카운트다운이 시작됩니다.';
+    pill.innerHTML = '<i class="fa-regular fa-clock" aria-hidden="true"></i><span class="nano-session-timer-text">' + SESSION_COUNTDOWN_LABEL + '</span>';
 
     // 부모 flex 컨테이너에 gap이 없으면 버튼 좌측 여백을 직접 확보
     try {
@@ -302,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="nano-session-icon">⏳</div>
         <div class="nano-session-title" id="nanoSessionTitle">로그인을 유지하시겠습니까?</div>
         <div class="nano-session-desc">
-          30분 동안 활동이 감지되지 않아 안내해 드립니다.<br>
+          ` + SESSION_COUNTDOWN_MINUTES + `분 동안 활동이 감지되지 않아 안내해 드립니다.<br>
           계속 이용하시려면 아래 <strong>[로그인 유지]</strong> 버튼을 눌러주세요.
         </div>
         <div class="nano-session-timer-box">
@@ -362,14 +371,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (overlay) overlay.style.display = 'none';
 
     // 토스트 안내 지원
+    var extendMsg = '로그인 상태가 ' + SESSION_COUNTDOWN_MINUTES + '분 연장되었습니다.';
     if (typeof window.toast === 'function') {
-      window.toast('로그인 상태가 30분 연장되었습니다.');
+      window.toast(extendMsg);
     } else if (typeof window.showToast === 'function') {
-      window.showToast('로그인 상태가 30분 연장되었습니다.');
+      window.showToast(extendMsg);
     } else if (typeof window.showAcademyToast === 'function') {
-      window.showAcademyToast('로그인 상태가 30분 연장되었습니다.');
+      window.showAcademyToast(extendMsg);
     } else if (typeof window.showMasterToast === 'function') {
-      window.showMasterToast('로그인 상태가 30분 연장되었습니다.');
+      window.showMasterToast(extendMsg);
     }
   }
 
