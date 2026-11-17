@@ -1081,19 +1081,21 @@ function updateClassSelectOptions() {
   if (stdClassSelect) {
     var curVal = stdClassSelect.value;
     stdClassSelect.innerHTML = '';
+    var unassignedOpt = document.createElement('option');
+    unassignedOpt.value = '미지정';
+    unassignedOpt.innerText = '미지정 (학급 없음)';
+    stdClassSelect.appendChild(unassignedOpt);
     academyClassList.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.name;
       opt.innerText = c.name;
       stdClassSelect.appendChild(opt);
     });
-    var unassignedOpt = document.createElement('option');
-    unassignedOpt.value = '미지정';
-    unassignedOpt.innerText = '미지정 (학급 없음)';
-    stdClassSelect.appendChild(unassignedOpt);
 
     if (curVal && (academyClassList.some(function(c) { return c.name === curVal; }) || curVal === '미지정')) {
       stdClassSelect.value = curVal;
+    } else {
+      stdClassSelect.value = '미지정';
     }
   }
 
@@ -1602,7 +1604,7 @@ function openStudentAddModal() {
   }
 
   var classEl = document.getElementById('newStdClass');
-  if (classEl) classEl.value = academyClassList.length > 0 ? academyClassList[0].name : '지혜반';
+  if (classEl) classEl.value = '미지정';
 
   var statusEl = document.getElementById('newStdStatus');
   if (statusEl) statusEl.value = '승인';
@@ -1691,7 +1693,11 @@ function openStudentEditModal(id) {
   if (gradeEl) gradeEl.value = std.grade || '초등 5학년';
 
   var classEl = document.getElementById('newStdClass');
-  if (classEl) classEl.value = std.classGroup || '미지정';
+  if (classEl) {
+    var targetClass = (std.classGroup && std.classGroup !== '-') ? std.classGroup : '미지정';
+    var hasClassOption = Array.from(classEl.options).some(function(opt) { return opt.value === targetClass; });
+    classEl.value = hasClassOption ? targetClass : '미지정';
+  }
 
   var statusEl = document.getElementById('newStdStatus');
   if (statusEl) statusEl.value = std.status || '승인';

@@ -43,6 +43,11 @@ html[data-brand="JD"] .res-score {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
+/* JD 도메인 초기 파싱 중 기본(나노) 로고 번쩍임(FOUC) 차단: JD 로고 치환 완료 전까지 비노출 */
+html[data-brand="JD"] img[src*="images/common/logo"]:not([data-jd-logo]),
+html[data-brand="JD"] img[data-portal-logo]:not([data-jd-logo]) {
+  visibility: hidden !important;
+}
 html[data-brand="JD"] img[data-jd-logo] { height: 54px !important; width: auto !important; max-width: 180px; object-fit: contain; }
 html[data-brand="JD"] .nav-item-btn.active,
 html[data-brand="JD"] .sidebar .active { background: #eff4ff !important; color: #1649db !important; border-color: #c7d7fe !important; }

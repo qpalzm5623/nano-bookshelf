@@ -292,27 +292,27 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 범위별 이름·아이�
   });
   vm.runInContext(escapeMatch[0] + '\n' + scriptMatch[0], ctx);
 
-  // 1) 학원 전체 랭킹: 이름은 전체 표기, 아이디는 앞 두 글자만 표기, 0P 학생 제외
+  // 1) 학원 전체 랭킹: 이름은 전체 표기, 아이디는 앞 두 글자 + 나머지 * 처리, 0P 학생 제외
   ctx.renderRank();
   const academyHtml = elements.rankList.innerHTML;
   assert.equal(academyHtml.includes('독서왕'), false, '랭킹 목록 카드에 독서왕 딱지가 남아있으면 안 됩니다');
   assert.equal(academyHtml.includes('rank-card-academy'), false, '학원 전체 랭킹에서는 이름 위에 학원명을 표시하지 않습니다');
   assert.equal(academyHtml.includes('영점학생'), false, '포인트가 0인 학생은 랭킹 목록에 표시되지 않아야 합니다');
   assert.equal(elements.podiumName1.innerText, '박진호');
-  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
-  assert.match(academyHtml, /<span>남궁민수<\/span><span class="rank-card-id">\(mi\)<\/span>/);
-  assert.match(academyHtml, /<span class="rank-card-id">\(bb\)<\/span><span class="rank-card-class">학급 미지정<\/span>/);
+  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\*\*\*\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
+  assert.match(academyHtml, /<span>남궁민수<\/span><span class="rank-card-id">\(mi\*\*\*\*\*\)<\/span>/);
+  assert.match(academyHtml, /<span class="rank-card-id">\(bb\*\*\*\*\*\*\)<\/span><span class="rank-card-class">학급 미지정<\/span>/);
   assert.match(academyHtml, /83<span class="rank-card-pt-unit">P<\/span><\/span><span class="rank-card-books">\(완독 4권\)<\/span>/);
   assert.equal(academyHtml.includes('<김빵빵>') || academyHtml.includes('<1>'), false, 'XSS 위험 문자는 이스케이프되어야 합니다');
 
-  // 2) 우리 반 랭킹: 이름 전체 표기, 아이디 앞 두 글자만, 0P 제외
+  // 2) 우리 반 랭킹: 이름 전체 표기, 아이디 앞 두 글자 + 나머지 * 처리, 0P 제외
   ctx.currentRankScope = 'class';
   ctx.renderRank();
   const classHtml = elements.rankList.innerHTML;
   assert.equal(classHtml.includes('영점학생'), false);
-  assert.match(classHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\)<\/span>/);
+  assert.match(classHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\*\*\*\)<\/span>/);
 
-  // 3) 전국 랭킹: 학원명 위에 표시 + 이름 가운데 글자만 * 처리 + 아이디 앞 두 글자만 + 0P 제외
+  // 3) 전국 랭킹: 학원명 위에 표시 + 이름 가운데 글자만 * 처리 + 아이디 앞 두 글자 + 나머지 * 처리 + 0P 제외
   ctx.currentRankScope = 'national';
   ctx.renderRank();
   const nationalHtml = elements.rankList.innerHTML;
@@ -323,13 +323,13 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 범위별 이름·아이�
   assert.equal(nationalHtml.includes('영점학생'), false, '전국 랭킹에서도 포인트가 0인 학생은 제외되어야 합니다');
   assert.equal(elements.podiumName1.innerText, '박*호');
   assert.equal(elements.podiumName2.innerText, '남**수');
-  assert.match(nationalHtml, /<span>박\*호<\/span><span class="rank-card-id">\(lo\)<\/span>/);
-  assert.match(nationalHtml, /<span>남\*\*수<\/span><span class="rank-card-id">\(mi\)<\/span>/);
-  assert.match(nationalHtml, /<span>김\*<\/span><span class="rank-card-id">\(ch\)<\/span>/);
+  assert.match(nationalHtml, /<span>박\*호<\/span><span class="rank-card-id">\(lo\*\*\*\)<\/span>/);
+  assert.match(nationalHtml, /<span>남\*\*수<\/span><span class="rank-card-id">\(mi\*\*\*\*\*\)<\/span>/);
+  assert.match(nationalHtml, /<span>김\*<\/span><span class="rank-card-id">\(ch\*\*\*\*\)<\/span>/);
   assert.equal(nationalHtml.includes('독서왕'), false);
 });
 
-test('학생 랭킹 API는 전국에서 이름 가운데 글자만 * 처리하고 전 범위에서 아이디 앞 2글자·0점 학생 제외를 적용한다', async () => {
+test('학생 랭킹 API는 전국에서 이름 가운데 글자만 * 처리하고 전 범위에서 아이디 앞 2글자+나머지 *·0점 학생 제외를 적용한다', async () => {
   const http = load('lib/portal-http.ts', { './prisma': {}, './portal-auth': {} });
   const user = {
     id: 'stu-me',
@@ -371,21 +371,21 @@ test('학생 랭킹 API는 전국에서 이름 가운데 글자만 * 처리하�
   assert.match(capturedSql, /HAVING SUM\(p\.amount\) > 0/, 'DB 쿼리 단계에서 0포인트 학생을 제외해야 합니다');
   assert.match(capturedSql, /FROM eligible e JOIN points p ON p\."memberId" = e\.id/, '포인트 보유 학생만 INNER JOIN 해야 합니다');
   assert.deepEqual(natRes.data.rows.map(r => ({ name: r.name, username: r.username, pt: r.pt })), [
-    { name: '박*호', username: 'lo', pt: 117 },
-    { name: '남**수', username: 'st', pt: 88 },
-    { name: '이*', username: 'le', pt: 15 }
+    { name: '박*호', username: 'lo***', pt: 117 },
+    { name: '남**수', username: 'st****', pt: 88 },
+    { name: '이*', username: 'le***', pt: 15 }
   ]);
   assert.equal(natRes.data.myRank, 1);
 
-  // 2) 우리 반 / 우리 학원 랭킹: 이름 전체, 아이디 앞 2글자
+  // 2) 우리 반 / 우리 학원 랭킹: 이름 전체, 아이디 앞 2글자 + 나머지 * 처리
   for (const scope of ['class', 'academy']) {
     const res = response();
     await run({ method: 'GET', query: { action: 'rankings', scope, period: 'month' } }, res);
     assert.equal(res.code, 200);
     assert.deepEqual(res.data.rows.map(r => ({ name: r.name, username: r.username })), [
-      { name: '박진호', username: 'lo' },
-      { name: '남궁민수', username: 'st' },
-      { name: '이산', username: 'le' }
+      { name: '박진호', username: 'lo***' },
+      { name: '남궁민수', username: 'st****' },
+      { name: '이산', username: 'le***' }
     ]);
   }
 
@@ -397,5 +397,5 @@ test('학생 랭킹 API는 전국에서 이름 가운데 글자만 * 처리하�
   assert.equal(zeroMeRes.data.myRank, null);
   assert.equal(zeroMeRes.data.myPoints, 0);
   assert.equal(zeroMeRes.data.myBooks, 5);
-  assert.deepEqual(zeroMeRes.data.rows.map(r => r.username), ['st']);
+  assert.deepEqual(zeroMeRes.data.rows.map(r => r.username), ['st****']);
 });

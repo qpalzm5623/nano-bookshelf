@@ -4,10 +4,11 @@ import { authenticate, need, failure, academyScope, staff } from '../lib/portal-
 import { monthWindow, getTodayStartUtc, readingProgress } from '../lib/portal-learning';
 import Reading = require('../public_html/js/reading-progress');
 
-/** 랭킹에서 아이디는 앞 두 글자만 표기하여 계정 식별 정보 노출을 최소화합니다. */
+/** 랭킹에서 아이디는 앞 두 글자만 표기하고 나머지는 자릿수에 맞게 * 처리하여 계정 식별 정보 노출을 최소화합니다. */
 function maskRankingUsername(username: unknown): string {
-  const raw = String(username || '').trim();
-  return raw ? Array.from(raw).slice(0, 2).join('') : '';
+  const chars = Array.from(String(username || '').trim());
+  if (chars.length <= 2) return chars.join('');
+  return chars.slice(0, 2).join('') + '*'.repeat(chars.length - 2);
 }
 
 /** 전국 랭킹에서 이름은 첫 글자와 끝 글자만 남기고 가운데 글자만 * 로 마스킹합니다. */
