@@ -2194,21 +2194,41 @@ function updateMasterAiSidebarBadge(modelId) {
 }
 
 function renderMasterGeminiModelOptions(models, currentModel) {
-  var datalist = document.getElementById('geminiModelOptions');
-  if (!datalist) return;
-  var list = Array.isArray(models) ? models.slice() : [];
+  var selectEl = document.getElementById('masterGeminiModel');
+  if (!selectEl) return { selectedModel: '', replacedMissing: false };
+  var list = Array.isArray(models) ? models.filter(function(m) { return m && m.id; }) : [];
   var activeId = String(currentModel || '').trim().replace(/^models\//i, '');
-  if (activeId && !list.some(function(m) { return m && m.id === activeId; })) {
-    list.unshift({ id: activeId, displayName: activeId + ' (현재 설정 모델)' });
+
+  selectEl.innerHTML = '';
+  if (list.length === 0) {
+    var emptyOpt = document.createElement('option');
+    emptyOpt.value = '';
+    emptyOpt.textContent = 'Google AI Studio에서 모델 목록을 먼저 불러와 주세요';
+    selectEl.appendChild(emptyOpt);
+    selectEl.disabled = true;
+    return { selectedModel: '', replacedMissing: false };
   }
-  datalist.innerHTML = '';
+
+  selectEl.disabled = false;
   list.forEach(function(m) {
-    if (!m || !m.id) return;
     var opt = document.createElement('option');
     opt.value = m.id;
     opt.textContent = (m.displayName && m.displayName !== m.id) ? (m.id + ' (' + m.displayName + ')') : m.id;
-    datalist.appendChild(opt);
+    selectEl.appendChild(opt);
   });
+
+  var hasExact = activeId && list.some(function(m) { return m.id === activeId; });
+  if (hasExact) {
+    selectEl.value = activeId;
+    return { selectedModel: activeId, replacedMissing: false };
+  }
+
+  // 기존 설정 모델이 AI Studio 목록에 없는 경우(예: gemini-3.8-flash-lite 등 미지원 모델) 목록에 넣지 않고 실제 존재하는 모델로 선택
+  var preferred = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'].find(function(id) {
+    return list.some(function(m) { return m.id === id; });
+  }) || list[0].id;
+  selectEl.value = preferred;
+  return { selectedModel: preferred, replacedMissing: Boolean(activeId) };
 }
 
 async function fetchGoogleAiStudioModelsDirect(apiKey) {
@@ -2223,7 +2243,7 @@ async function fetchGoogleAiStudioModelsDirect(apiKey) {
   }
   var payload = await resp.json();
   var rows = Array.isArray(payload && payload.models) ? payload.models : [];
-  var excluded = /(embedding|aqa|imagen|veo|-tts\b|native-audio|robotics|computer-use|deep-research)/i;
+  var excluded = /(embedding|aqa|imagen|veo|-tts\b|-image\b|-image-preview\b|-transcribe\b|native-audio|robotics|computer-use|deep-research|customtools)/i;
   return rows.map(function(m) {
     var id = String((m && m.name) || '').trim().replace(/^models\//i, '');
     var methods = Array.isArray(m && m.supportedGenerationMethods) ? m.supportedGenerationMethods : [];
@@ -2264,9 +2284,13 @@ async function refreshMasterGeminiModels(isManual) {
       models = await fetchGoogleAiStudioModelsDirect(localKey);
     }
 
-    renderMasterGeminiModelOptions(models, curModel);
+    var renderInfo = renderMasterGeminiModelOptions(models, curModel);
     if (syncEl) {
-      syncEl.innerHTML = '<i class="fa-solid fa-circle-check mr-1 text-success"></i>Google AI Studio 최신 모델 <strong>' + models.length + '종</strong> 동기화 완료';
+      if (renderInfo.replacedMissing) {
+        syncEl.innerHTML = '<i class="fa-solid fa-circle-info mr-1 text-primary"></i>Google AI Studio 최신 모델 <strong>' + models.length + '종</strong> 동기화 완료 (목록에 없는 기존 값 <code>' + curModel + '</code> 제외됨, 저장 필요)';
+      } else {
+        syncEl.innerHTML = '<i class="fa-solid fa-circle-check mr-1 text-success"></i>Google AI Studio 최신 모델 <strong>' + models.length + '종</strong> 동기화 완료';
+      }
       syncEl.className = 'text-success d-block mt-1';
     }
     if (isManual) showMasterToast('Google AI Studio에서 최신 모델 ' + models.length + '종을 불러왔습니다.');
@@ -2316,16 +2340,18 @@ async function openMasterAiSettingsModal() {
     var res = await fetch('/api/manage?entity=ai_config');
     if (res.ok) {
       var data = await res.json();
-      var savedModel = (data.model && String(data.model).trim()) || 'gemini-2.5-flash';
-      if (modelSelect) {
-        modelSelect.value = savedModel;
-      }
-      updateMasterAiSidebarBadge(savedModel);
-      renderMasterGeminiModelOptions(data.models, savedModel);
+      var savedModel = (data.model && String(data.model).trim()) || '';
+      var renderInfo = renderMasterGeminiModelOptions(data.models, savedModel);
+      updateMasterAiSidebarBadge(renderInfo.selectedModel || savedModel);
       if (syncElem) {
         if (Array.isArray(data.models) && data.models.length > 0) {
-          syncElem.innerHTML = '<i class="fa-solid fa-circle-check mr-1 text-success"></i>Google AI Studio 최신 모델 <strong>' + data.models.length + '종</strong> 동기화 완료';
-          syncElem.className = 'text-success d-block mt-1';
+          if (renderInfo.replacedMissing) {
+            syncElem.innerHTML = '<i class="fa-solid fa-circle-info mr-1 text-warning"></i>기존 설정(<code>' + savedModel + '</code>)이 AI Studio 목록에 없어 <strong>' + renderInfo.selectedModel + '</strong>로 전환되었습니다. [설정 저장]을 눌러 확정해 주세요.';
+            syncElem.className = 'text-warning d-block mt-1';
+          } else {
+            syncElem.innerHTML = '<i class="fa-solid fa-circle-check mr-1 text-success"></i>Google AI Studio 최신 모델 <strong>' + data.models.length + '종</strong> 동기화 완료';
+            syncElem.className = 'text-success d-block mt-1';
+          }
         } else if (data.modelsError) {
           syncElem.innerHTML = '<i class="fa-solid fa-circle-exclamation mr-1 text-warning"></i>' + data.modelsError;
           syncElem.className = 'text-warning d-block mt-1';
@@ -2364,11 +2390,16 @@ async function saveMasterAiSettings() {
   var keyInput = document.getElementById('masterGeminiApiKey');
   var modelSelect = document.getElementById('masterGeminiModel');
   var apiKey = keyInput ? keyInput.value.trim() : '';
-  var model = (modelSelect && modelSelect.value) ? modelSelect.value.trim().replace(/^models\//i, '') : 'gemini-2.5-flash';
+  var model = (modelSelect && modelSelect.value) ? modelSelect.value.trim().replace(/^models\//i, '') : '';
 
   if (apiKey && apiKey.startsWith('sk-')) {
     alert('⚠️ 입력하신 키는 OpenAI API 키(sk-...)입니다.\n\n구글 제미나이(Google Gemini) 엔진은 "AIzaSy..."로 시작하는 Google AI Studio API 키를 사용해야 합니다.\n\nGoogle AI Studio(https://aistudio.google.com)에서 발급받은 Gemini API 키를 입력해 주세요.');
     if (keyInput) keyInput.focus();
+    return;
+  }
+  if (!model) {
+    alert('Google AI Studio에서 사용 가능한 모델을 먼저 선택해 주세요.');
+    if (modelSelect) modelSelect.focus();
     return;
   }
 

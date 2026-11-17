@@ -7,7 +7,7 @@ import { monthWindow } from '../lib/portal-learning';
 import { loadContentAccess, quizContent, canReadContent, ownsContent, bookSheets, sheetView } from '../lib/portal-content';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|native-audio|robotics|computer-use|deep-research)/i;
+const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|-image\b|-image-preview\b|-transcribe\b|native-audio|robotics|computer-use|deep-research|customtools)/i;
 
 function normalizeManageGeminiModel(rawModel?: unknown): string {
   const trimmed = typeof rawModel === 'string' ? rawModel.trim().replace(/^models\//i, '') : '';

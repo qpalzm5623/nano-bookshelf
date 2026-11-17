@@ -3112,9 +3112,9 @@
               <i class="fa-solid fa-arrows-rotate mr-1"></i>AI Studio 모델 최신화
             </button>
           </div>
-          <input list="geminiModelOptions" id="masterGeminiModel" class="form-control" value="gemini-2.5-flash" placeholder="모델명을 선택하거나 직접 입력하세요" style="font-size: 13px; border-radius: 8px; border: 1.5px solid #dcdad5; height: 42px;">
-          <datalist id="geminiModelOptions">
-          </datalist>
+          <select id="masterGeminiModel" class="form-control" style="font-size: 13px; border-radius: 8px; border: 1.5px solid #dcdad5; height: 42px;">
+            <option value="">Google AI Studio에서 모델 목록을 불러오는 중...</option>
+          </select>
           <small id="masterGeminiModelSyncStatus" class="text-muted d-block mt-1" style="font-size: 11.5px;">
             <i class="fa-solid fa-wand-magic-sparkles mr-1 text-primary"></i>Google AI Studio에서 사용 가능한 최신 모델 목록을 자동으로 불러옵니다.
           </small>

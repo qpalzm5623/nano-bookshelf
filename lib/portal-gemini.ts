@@ -28,7 +28,7 @@ export function resolveGeminiModelCandidates(rawModel?: string | null): string[]
   return [normalizeGeminiModel(rawModel)];
 }
 
-const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|native-audio|robotics|computer-use|deep-research)/i;
+const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|-image\b|-image-preview\b|-transcribe\b|native-audio|robotics|computer-use|deep-research|customtools)/i;
 
 function compareGeminiModelVersion(aId: string, bId: string): number {
   const parseNums = (id: string) => {
