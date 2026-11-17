@@ -11,7 +11,8 @@ async function run() {
   const hashed = hashPassword(password);
   password = '';
   await prisma.$transaction(async tx => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(18521016)`;
+    // PostgreSQL의 advisory lock 함수는 void를 반환하므로 Prisma가 읽을 수 있게 문자열로 변환합니다.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(18521016)::text AS lock_result`;
     const existing = await tx.member.findUnique({ where: { username: 'jdmaster' } });
     if (existing) {
       const policy = await tx.portalSetting.findUnique({ where: { key: 'member_policy:' + existing.id } });
