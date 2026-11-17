@@ -190,20 +190,85 @@ function renderAcademyNoticeViewList() {
       '<div class="notice-body">' + esc(n.content || '') + '</div>' + link + '</div></details>';
   }).join('');
 }
+function getAcademyNoticeKstTodayStr() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function getAcademyNoticeUserScope() {
+  try {
+    if (window.NANO_BOOTSTRAP_MEMBER_ID) return String(window.NANO_BOOTSTRAP_MEMBER_ID);
+    const auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null');
+    if (auth && (auth.memberId || auth.id)) return String(auth.memberId || auth.id);
+  } catch (e) {}
+  return 'local';
+}
+
+function isAcademyNoticeHiddenToday(noticeId, todayStr) {
+  const idStr = String(noticeId || '').trim();
+  if (!idStr) return false;
+  if (window.NANO_SERVER_HIDDEN_NOTICES && window.NANO_SERVER_HIDDEN_NOTICES[idStr] >= todayStr) {
+    return true;
+  }
+  try {
+    const scopedKey = 'NANO_HIDE_ADMIN_POPUP_' + getAcademyNoticeUserScope() + '_' + idStr;
+    if (localStorage.getItem(scopedKey) === todayStr) return true;
+    if (!window.NANO_SERVER_DATA && localStorage.getItem('NANO_HIDE_ADMIN_POPUP_' + idStr) === todayStr) return true;
+  } catch (e) {}
+  return false;
+}
+
+function persistAcademyNoticeHideToday(noticeId, shouldHide) {
+  const idStr = String(noticeId || '').trim();
+  if (!idStr) return;
+  const todayStr = getAcademyNoticeKstTodayStr();
+  window.NANO_SERVER_HIDDEN_NOTICES = window.NANO_SERVER_HIDDEN_NOTICES || {};
+  if (shouldHide) {
+    window.NANO_SERVER_HIDDEN_NOTICES[idStr] = todayStr;
+  } else {
+    delete window.NANO_SERVER_HIDDEN_NOTICES[idStr];
+  }
+  try {
+    const scopedKey = 'NANO_HIDE_ADMIN_POPUP_' + getAcademyNoticeUserScope() + '_' + idStr;
+    if (shouldHide) {
+      localStorage.setItem(scopedKey, todayStr);
+      if (!window.NANO_SERVER_DATA) localStorage.setItem('NANO_HIDE_ADMIN_POPUP_' + idStr, todayStr);
+    } else {
+      localStorage.removeItem(scopedKey);
+      if (!window.NANO_SERVER_DATA) localStorage.removeItem('NANO_HIDE_ADMIN_POPUP_' + idStr);
+    }
+  } catch (e) {}
+  if (window.NanoPortal && window.NanoPortal.remote && typeof fetch === 'function') {
+    fetch('/api/activity?action=hide_notice', {
+      method: 'POST',
+      credentials: 'same-origin',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ noticeId: idStr, hide: !!shouldHide })
+    }).catch(function() {});
+  }
+}
+
+function onToggleAcademyNoticeHideToday(checked) {
+  const modal = document.getElementById('academyNoticePopupModal');
+  if (!modal) return;
+  const notId = modal.getAttribute('data-current-notice-id');
+  if (notId) {
+    persistAcademyNoticeHideToday(notId, !!checked);
+  }
+}
+
 function checkAcademyNoticePopups() {
+  const existingModal = document.getElementById('academyNoticePopupModal');
+  if (existingModal && existingModal.classList.contains('show')) return;
+
   const notices = getAcademySystemNotices();
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  const todayStr = yyyy + '-' + mm + '-' + dd;
+  const todayStr = getAcademyNoticeKstTodayStr();
 
   const activePopups = notices.filter(n => {
     if (!n.isPopup) return false;
     if (n.popupStartDate && n.popupStartDate > todayStr) return false;
     if (n.popupEndDate && n.popupEndDate < todayStr) return false;
-    const hideKey = "NANO_HIDE_ADMIN_POPUP_" + n.id;
-    if (localStorage.getItem(hideKey) === todayStr) return false;
+    if (isAcademyNoticeHiddenToday(n.id, todayStr)) return false;
     return true;
   });
 
@@ -240,6 +305,16 @@ function showAcademyNoticePopup(not) {
   }
 
   modal.setAttribute('data-current-notice-id', not.id);
+  if (window.jQuery && !modal.dataset.hideBound) {
+    modal.dataset.hideBound = '1';
+    window.jQuery(modal).on('hide.bs.modal', function() {
+      const curId = modal.getAttribute('data-current-notice-id');
+      const curChk = document.getElementById('anpDoNotShowToday');
+      if (curChk && curChk.checked && curId) {
+        persistAcademyNoticeHideToday(curId, true);
+      }
+    });
+  }
   if (window.jQuery && typeof $('#academyNoticePopupModal').modal === 'function') {
     $('#academyNoticePopupModal').modal('show');
   } else {
@@ -254,12 +329,7 @@ function closeAcademyNoticePopup() {
   const notId = modal.getAttribute('data-current-notice-id');
   const chk = document.getElementById('anpDoNotShowToday');
   if (chk && chk.checked && notId) {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const todayStr = yyyy + '-' + mm + '-' + dd;
-    localStorage.setItem("NANO_HIDE_ADMIN_POPUP_" + notId, todayStr);
+    persistAcademyNoticeHideToday(notId, true);
   }
   if (window.jQuery && typeof $('#academyNoticePopupModal').modal === 'function') {
     $('#academyNoticePopupModal').modal('hide');

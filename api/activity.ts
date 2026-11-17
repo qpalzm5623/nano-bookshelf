@@ -65,6 +65,30 @@ export default async function handler(req: any, res: any) {
       });
       return res.json({ ok: true, status });
     }
+    if (action === 'hide_notice') {
+      need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
+      const noticeId = String(req.body?.noticeId || '').trim();
+      need(noticeId && noticeId.length <= 120 && !/[<>]/.test(noticeId), '공지사항 정보를 확인해 주세요.');
+      const shouldHide = req.body?.hide !== false;
+      const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const key = 'notice_hide:' + user.id;
+      const existing = await prisma.portalSetting.findUnique({ where: { key } });
+      const prevMap = (existing?.value && typeof existing.value === 'object' && !Array.isArray(existing.value))
+        ? (existing.value as Record<string, any>)
+        : {};
+      const nextMap: Record<string, string> = {};
+      for (const [k, v] of Object.entries(prevMap)) {
+        if (typeof v === 'string' && v >= todayKst) nextMap[k] = v;
+      }
+      if (shouldHide) nextMap[noticeId] = todayKst;
+      else delete nextMap[noticeId];
+      await prisma.portalSetting.upsert({
+        where: { key },
+        create: { key, scope: 'notice_hide', value: nextMap },
+        update: { value: nextMap }
+      });
+      return res.json({ ok: true, hiddenNotices: nextMap, hideDate: todayKst });
+    }
     if (action === 'recommend') {
       const key = 'recommends:' + user.id;
       if (req.method === 'GET') {

@@ -3494,15 +3494,21 @@ function getInitialAcadQuizList(book) {
 }
 
 // 도서별 퀴즈 세트 다중 관리 (본사, 타 가맹점, 우리 학원 세트)
+// 미등록 도서인 경우 임의의 빈 세트를 자동 생성하지 않고 빈 배열([])을 반환하여 [+ 새 북퀴즈 추가] 클릭 시 생성되도록 유지
 function ensureAcadBookQuizSets(book) {
   if (book && Array.isArray(book.quizSets) && book.quizSets.length > 0) {
     return JSON.parse(JSON.stringify(book.quizSets));
   }
   if (window.NANO_SERVER_DATA) {
-    var acadLabel = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name)
-      ? currentAcademyInfo.name
-      : '우리 학원';
-    return [{ id: 'new', authorType: 'ACADEMY', authorName: acadLabel, academyName: acadLabel, isMine: true, isPublic: 'Y', questions: [createBlankAcadQuizQuestion()] }];
+    return [];
+  }
+
+  if (book && Array.isArray(book.quizSets) && book.quizSets.length === 0) {
+    return [];
+  }
+
+  if (book && typeof getAcademyBookQuizSetCount === 'function' && getAcademyBookQuizSetCount(book) === 0) {
+    return [];
   }
 
   var defaultHQQuizzes = getInitialAcadQuizList(book);
@@ -4644,10 +4650,12 @@ async function openAcademyStandaloneQuizModal(bookId = null) {
     }
   }
 
-  // 북퀴즈 데이터 다중 세트 초기화
+  // 북퀴즈 데이터 다중 세트 초기화 (미등록 도서는 빈 배열 유지)
   editingAcadQuizSets = ensureAcadBookQuizSets(book);
-  currentAcadQuizSetIdx = 0;
-  editingAcadQuizzes = editingAcadQuizSets[0].questions;
+  currentAcadQuizSetIdx = editingAcadQuizSets.length > 0 ? 0 : -1;
+  editingAcadQuizzes = (editingAcadQuizSets.length > 0 && Array.isArray(editingAcadQuizSets[0].questions))
+    ? editingAcadQuizSets[0].questions
+    : [];
   currentAcadQuizIdx = 0;
 
   renderAcadQuizSetTabs();
@@ -4695,8 +4703,10 @@ async function onSelectAcadQuizTargetBook(newBookId) {
   }
 
   editingAcadQuizSets = ensureAcadBookQuizSets(book);
-  currentAcadQuizSetIdx = 0;
-  editingAcadQuizzes = editingAcadQuizSets[0].questions;
+  currentAcadQuizSetIdx = editingAcadQuizSets.length > 0 ? 0 : -1;
+  editingAcadQuizzes = (editingAcadQuizSets.length > 0 && Array.isArray(editingAcadQuizSets[0].questions))
+    ? editingAcadQuizSets[0].questions
+    : [];
   currentAcadQuizIdx = 0;
 
   renderAcadQuizSetTabs();
@@ -4718,18 +4728,49 @@ function bindAcadQuizTargetBookInfo(book) {
   if (authorEl) authorEl.innerHTML = `저자: ${book.author} | 출판사: ${book.publisher || '열린책들'} | 도서코드: <span id="aqTargetBookId">${book.id}</span>`;
 }
 
+// 퀴즈 세트 유무에 따라 편집 워크스페이스 / 빈 상태 안내 / 공개 설정 / 저장 버튼 노출 동기화
+function syncAcadQuizWorkspaceVisibility() {
+  var hasSets = Array.isArray(editingAcadQuizSets) && editingAcadQuizSets.length > 0;
+  var workspace = document.getElementById('abQuizEditorWorkspace');
+  var emptyState = document.getElementById('abQuizEmptyState');
+  var publicWrap = document.getElementById('abQuizSetPublicWrap');
+  var saveBtn = document.getElementById('btnSaveAcadQuizOnly');
+  var countBadge = document.getElementById('aqQuizCountBadge');
+
+  if (workspace) workspace.style.display = hasSets ? 'block' : 'none';
+  if (emptyState) emptyState.style.display = hasSets ? 'none' : 'block';
+  if (publicWrap) publicWrap.style.display = hasSets ? 'flex' : 'none';
+  if (saveBtn) saveBtn.style.display = hasSets ? 'inline-block' : 'none';
+
+  if (countBadge) {
+    if (!hasSets) {
+      countBadge.innerText = '미등록 (0문항)';
+      countBadge.style.background = '#f5f0e6';
+      countBadge.style.color = '#786d63';
+      countBadge.style.borderColor = '#dcd3c4';
+    } else {
+      countBadge.innerText = `총 ${editingAcadQuizzes.length}문항 구성됨`;
+      countBadge.style.background = '#e8f5e9';
+      countBadge.style.color = '#1b5e20';
+      countBadge.style.borderColor = '#a3d9b8';
+    }
+  }
+}
+
 // 출제 기관 탭 전환
 function switchAcadQuizSet(idx) {
   var prevSet = editingAcadQuizSets[currentAcadQuizSetIdx];
   var wasReadOnly = prevSet && !prevSet.isMine && (window.NANO_SERVER_DATA || prevSet.authorType === 'HQ' || prevSet.authorName === '본사' || prevSet.authorName === 'A 학원');
 
-  if (!wasReadOnly) {
+  if (prevSet && !wasReadOnly) {
     saveCurrentAcadQuizInput();
   }
 
   currentAcadQuizSetIdx = idx;
   currentAcadQuizIdx = 0;
-  editingAcadQuizzes = editingAcadQuizSets[currentAcadQuizSetIdx].questions;
+  editingAcadQuizzes = (editingAcadQuizSets[currentAcadQuizSetIdx] && Array.isArray(editingAcadQuizSets[currentAcadQuizSetIdx].questions))
+    ? editingAcadQuizSets[currentAcadQuizSetIdx].questions
+    : [];
 
   renderAcadQuizSetTabs();
   renderAcadQuizTabs();
@@ -4803,32 +4844,39 @@ function renderAcadQuizSetTabs() {
   var container = document.getElementById('abQuizSetTabs');
   if (!container) return;
 
-  var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  syncAcadQuizWorkspaceVisibility();
+
+  var hasSets = Array.isArray(editingAcadQuizSets) && editingAcadQuizSets.length > 0;
+  var curSet = hasSets ? editingAcadQuizSets[currentAcadQuizSetIdx] : null;
   var isReadOnly = curSet && !curSet.isMine && (window.NANO_SERVER_DATA || curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
 
-  container.innerHTML = editingAcadQuizSets.map(function(set, idx) {
-    var isActive = idx === currentAcadQuizSetIdx;
-    var isHQ = set.authorType === 'HQ' || set.authorName === '본사';
-    var icon = isHQ ? 'fa-solid fa-building' : 'fa-solid fa-school';
-    var isSetPub = set.isPublic !== 'N';
-    var pubBadge = isSetPub
-      ? `<span class="badge ${isActive ? 'badge-light text-success' : 'badge-success text-white'}" style="font-size: 10px; padding: 1px 5px; border-radius: 6px; margin-left: 5px; font-weight: 700;">공개</span>`
-      : `<span class="badge ${isActive ? 'badge-light text-secondary' : 'badge-secondary text-white'}" style="font-size: 10px; padding: 1px 5px; border-radius: 6px; margin-left: 5px; font-weight: 700;"><i class="fa-solid fa-lock mr-0.5" style="font-size: 9px;"></i>비공개</span>`;
+  if (!hasSets) {
+    container.innerHTML = '<span class="text-muted" style="font-size: 12px; font-weight: 500;">등록된 출제 세트가 없습니다.</span>';
+  } else {
+    container.innerHTML = editingAcadQuizSets.map(function(set, idx) {
+      var isActive = idx === currentAcadQuizSetIdx;
+      var isHQ = set.authorType === 'HQ' || set.authorName === '본사';
+      var icon = isHQ ? 'fa-solid fa-building' : 'fa-solid fa-school';
+      var isSetPub = set.isPublic !== 'N';
+      var pubBadge = isSetPub
+        ? `<span class="badge ${isActive ? 'badge-light text-success' : 'badge-success text-white'}" style="font-size: 10px; padding: 1px 5px; border-radius: 6px; margin-left: 5px; font-weight: 700;">공개</span>`
+        : `<span class="badge ${isActive ? 'badge-light text-secondary' : 'badge-secondary text-white'}" style="font-size: 10px; padding: 1px 5px; border-radius: 6px; margin-left: 5px; font-weight: 700;"><i class="fa-solid fa-lock mr-0.5" style="font-size: 9px;"></i>비공개</span>`;
 
-    var tabStyle = isActive
-      ? 'background: #2d6a4f; color: #ffffff; border: 1.5px solid #2d6a4f; border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; box-shadow: 0 2px 6px rgba(45,106,79,0.25);'
-      : 'background: #ffffff; color: #5c4f43; border: 1.5px solid #ded6c9; border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 600;';
+      var tabStyle = isActive
+        ? 'background: #2d6a4f; color: #ffffff; border: 1.5px solid #2d6a4f; border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 700; box-shadow: 0 2px 6px rgba(45,106,79,0.25);'
+        : 'background: #ffffff; color: #5c4f43; border: 1.5px solid #ded6c9; border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 600;';
 
-    var badgeStyle = isActive
-      ? 'background: rgba(255,255,255,0.25); color: #ffffff; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; font-weight: 700;'
-      : 'background: #ede6dc; color: #786d63; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; font-weight: 700;';
+      var badgeStyle = isActive
+        ? 'background: rgba(255,255,255,0.25); color: #ffffff; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; font-weight: 700;'
+        : 'background: #ede6dc; color: #786d63; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 6px; font-weight: 700;';
 
-    return `<button type="button" class="btn btn-xs d-inline-flex align-items-center" onclick="switchAcadQuizSet(${idx})" style="${tabStyle}">
-      <i class="${icon} mr-1.5" style="font-size: 12px;"></i>${set.authorName}
-      <span style="${badgeStyle}">${set.questions ? set.questions.length : 0}</span>
-      ${pubBadge}
-    </button>`;
-  }).join('');
+      return `<button type="button" class="btn btn-xs d-inline-flex align-items-center" onclick="switchAcadQuizSet(${idx})" style="${tabStyle}">
+        <i class="${icon} mr-1.5" style="font-size: 12px;"></i>${set.authorName}
+        <span style="${badgeStyle}">${set.questions ? set.questions.length : 0}</span>
+        ${pubBadge}
+      </button>`;
+    }).join('');
+  }
 
   // 퀴즈 공개 상태 라디오 및 권한 제어 (출제 기관만 변경 가능)
   var isPub = curSet && curSet.isPublic !== 'N';
@@ -4838,21 +4886,21 @@ function renderAcadQuizSetTabs() {
   if (radY && radN) {
     radY.checked = isPub;
     radN.checked = !isPub;
-    radY.disabled = isReadOnly;
-    radN.disabled = isReadOnly;
+    radY.disabled = !curSet || isReadOnly;
+    radN.disabled = !curSet || isReadOnly;
   }
   if (lockNotice) {
-    lockNotice.style.display = isReadOnly ? 'inline' : 'none';
+    lockNotice.style.display = (curSet && isReadOnly) ? 'inline' : 'none';
   }
 
   var noticeEl = document.getElementById('abQuizReadOnlyNotice');
   if (noticeEl) {
-    noticeEl.style.display = isReadOnly ? 'block' : 'none';
+    noticeEl.style.display = (curSet && isReadOnly) ? 'block' : 'none';
   }
 
   var btnDelSet = document.getElementById('btnDeleteAcadQuizSet');
   if (btnDelSet) {
-    btnDelSet.style.display = (!isReadOnly && editingAcadQuizSets.length > 1) ? 'inline-block' : 'none';
+    btnDelSet.style.display = (curSet && !isReadOnly && editingAcadQuizSets.length > 1) ? 'inline-block' : 'none';
   }
 }
 
@@ -4876,10 +4924,16 @@ function renderAcadQuizTabs() {
   var container = document.getElementById('abQuizTabButtons');
   if (!container) return;
 
-  var countBadge = document.getElementById('aqQuizCountBadge');
-  if (countBadge) countBadge.innerText = `총 ${editingAcadQuizzes.length}문항 구성됨`;
+  syncAcadQuizWorkspaceVisibility();
 
   var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  if (!curSet || !Array.isArray(editingAcadQuizzes) || editingAcadQuizzes.length === 0) {
+    container.innerHTML = '';
+    var btnDelEmpty = document.getElementById('btnDeleteAcadQuiz');
+    if (btnDelEmpty) btnDelEmpty.style.display = 'none';
+    return;
+  }
+
   var isReadOnly = curSet && !curSet.isMine && (window.NANO_SERVER_DATA || curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
 
   container.innerHTML = editingAcadQuizzes.map(function(q, idx) {
@@ -5252,6 +5306,7 @@ function setAcadQuizFormReadOnly(isReadOnly) {
 // 현재 퀴즈 입력 임시 저장
 function saveCurrentAcadQuizInput() {
   var curSet = editingAcadQuizSets[currentAcadQuizSetIdx];
+  if (!curSet) return;
   var isReadOnly = curSet && !curSet.isMine && (window.NANO_SERVER_DATA || curSet.authorType === 'HQ' || curSet.authorName === '본사' || curSet.authorName === 'A 학원');
   if (isReadOnly) return;
 
@@ -5456,6 +5511,11 @@ function validateAcadQuizQuestions(questions) {
 // 북퀴즈 독립 저장 핸들러
 async function handleSaveAcademyQuizOnly(event) {
   if (event) event.preventDefault();
+
+  if (!Array.isArray(editingAcadQuizSets) || editingAcadQuizSets.length === 0) {
+    showAcademyToast('먼저 [+ 새 북퀴즈 추가] 버튼을 눌러 북퀴즈를 작성해 주세요.');
+    return;
+  }
 
   saveCurrentAcadQuizInput();
 

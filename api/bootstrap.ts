@@ -124,7 +124,7 @@ export default async function handler(req: any, res: any) {
     const isStudent = user.role === 'STUDENT';
 
     // 공통 도서 카탈로그는 인메모리 SWR 캐시에서 조회하고, 운영 배너/테마·사용자별 데이터는 실시간 DB 조회로 불일치를 방지합니다.
-    const [catalog, bannerRows, themeRows, opMetaRows, members, academies, classes, notices, owned, payments, dispatches, classMetaRows, charSettingRows, studentSettingRows] = await Promise.all([
+    const [catalog, bannerRows, themeRows, opMetaRows, members, academies, classes, notices, owned, payments, dispatches, classMetaRows, charSettingRows, studentSettingRows, noticeHideRow] = await Promise.all([
       getCachedCatalog(),
       prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }),
       prisma.themeCategory.findMany(),
@@ -147,7 +147,8 @@ export default async function handler(req: any, res: any) {
         : Promise.resolve([]),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { OR: [{ key: { startsWith: 'class_meta:' } }, { key: { startsWith: 'academy_meta:' } }] }, select: { key: true, value: true } }),
       prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
-      isStudent ? prisma.portalSetting.findMany({ where: { key: { in: ['preferences:' + user.id, 'onboarding_interest:' + user.id] } }, select: { key: true, value: true, revision: true } }) : Promise.resolve([])
+      isStudent ? prisma.portalSetting.findMany({ where: { key: { in: ['preferences:' + user.id, 'onboarding_interest:' + user.id] } }, select: { key: true, value: true, revision: true } }) : Promise.resolve([]),
+      prisma.portalSetting.findUnique({ where: { key: 'notice_hide:' + user.id }, select: { value: true } })
     ]);
 
     const recommendationRows = await prisma.portalSetting.findMany({ where: { scope: 'brand_recommend:' + brand } });
@@ -258,11 +259,21 @@ export default async function handler(req: any, res: any) {
       onboardingVal.sessionId === session.sid
     );
 
+    const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const rawNoticeHide = ((noticeHideRow as any)?.value && typeof (noticeHideRow as any).value === 'object') ? (noticeHideRow as any).value as Record<string, any> : {};
+    const activeHiddenNotices: Record<string, string> = {};
+    for (const [nid, hideDate] of Object.entries(rawNoticeHide)) {
+      if (typeof hideDate === 'string' && hideDate >= todayKst) {
+        activeHiddenNotices[nid] = hideDate;
+      }
+    }
+
     const data = {
       NANO_SERVER_DATA: true,
       NANO_BRAND: brand,
       NANO_RESTRICTED_MASTER: limited,
       NANO_BOOTSTRAP_MEMBER_ID: user.id,
+      NANO_SERVER_HIDDEN_NOTICES: activeHiddenNotices,
       NANO_MEDIA_BASE_URL: r2PublicBase,
       NANO_USER_RECOMMENDS: myRecommends,
       NANO_SERVER_PREFERENCES: isStudent ? {

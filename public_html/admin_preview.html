@@ -1724,23 +1724,75 @@
       flex-shrink: 0;
     }
 
-    .assign-catalog-filter-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 8px;
+    /* 도서 배정 카탈로그 1줄 검색·필터 바 및 하단 보조 옵션 행 */
+    .assign-catalog-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
     }
 
     .assign-catalog-select {
       width: 100%;
-      height: 33px;
+      height: 34px;
       border-radius: 8px;
       border: 1px solid var(--border-medium, #dcd6cb);
       background: #ffffff;
       font-size: 12px;
       font-weight: 600;
       color: var(--text-main, #1e242b);
-      padding: 0 8px;
+      padding: 0 6px;
+    }
+
+    .assign-catalog-filter-row .assign-catalog-select {
+      width: auto;
+      min-width: 0;
+      font-size: 11.5px;
+      padding: 0 4px 0 7px;
+      text-overflow: ellipsis;
+    }
+
+    .assign-catalog-select-origin {
+      flex: 0 0 92px;
+    }
+
+    .assign-catalog-select-grade {
+      flex: 0 0 104px;
+    }
+
+    .assign-catalog-select-category {
+      flex: 0 0 108px;
+    }
+
+    .assign-catalog-search-wrap {
+      position: relative;
+      flex: 1 1 120px;
+      min-width: 0;
+    }
+
+    .assign-catalog-filter-subrow {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-top: 8px;
+      padding-top: 7px;
+      border-top: 1px dashed var(--border-light, #ebe6df);
+    }
+
+    @media (max-width: 1199.98px) {
+      .assign-catalog-filter-row {
+        flex-wrap: wrap;
+      }
+
+      .assign-catalog-select-origin,
+      .assign-catalog-select-grade,
+      .assign-catalog-select-category {
+        flex: 1 1 calc(33.333% - 6px);
+      }
+
+      .assign-catalog-search-wrap {
+        flex: 1 1 160px;
+      }
     }
 
     .assign-catalog-select:focus {
@@ -5944,26 +5996,33 @@
                 </div>
               </div>
 
-              <!-- 우측: 신규 도서 배정 추가 (학년, 출제처, 주제 필터 탑재) -->
+              <!-- 우측: 신규 도서 배정 추가 (출제처, 학년, 주제 필터 및 검색바 통합) -->
               <div class="col-md-7 pl-md-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h6 class="font-weight-bold mb-0" style="color: var(--text-main); font-size: 13.5px;">
                     <i class="fa-solid fa-book-medical mr-1 text-success"></i>신규 도서 배정 추가
                   </h6>
-                  <!-- 학원 보유 도서만 검색 토글 체크박스 -->
-                  <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="indivOnlyAcademyOwned">
-                    <label class="custom-control-label font-weight-bold text-success" for="indivOnlyAcademyOwned"
-                      style="font-size: 12px; cursor: pointer;">
-                      <i class="fa-solid fa-building-circle-check mr-1"></i>학원 보유 도서만 검색
-                    </label>
-                  </div>
                 </div>
 
-                <!-- 검색창 및 상세 필터 (학년, 출제처, 주제 분류 태그) -->
+                <!-- 검색창 및 상세 필터 (출제처 · 학년 · 주제 분류 · 검색박스 · 조회버튼 한 줄 배치) -->
                 <div class="assign-catalog-filter-box mb-3">
-                  <div class="d-flex align-items-center" style="gap: 6px;">
-                    <div style="position: relative; flex: 1; min-width: 0;">
+                  <div class="assign-catalog-filter-row">
+                    <select class="form-control form-control-sm assign-catalog-select assign-catalog-select-origin" id="indivFilterOrigin" aria-label="출제처 필터">
+                      <option value="ALL">전체 출제처</option>
+                      <option value="HQ">본사 직속</option>
+                      <option value="ACADEMY">자체 등록</option>
+                    </select>
+                    <select class="form-control form-control-sm assign-catalog-select assign-catalog-select-grade" id="indivFilterGrade" aria-label="학년 필터">
+                      <option value="ALL">전체 학년</option>
+                      <option value="초등 1~2학년">초등 1~2학년</option>
+                      <option value="초등 3~4학년">초등 3~4학년</option>
+                      <option value="초등 5~6학년">초등 5~6학년</option>
+                      <option value="중등 1~3학년">중등 1~3학년</option>
+                    </select>
+                    <select class="form-control form-control-sm assign-catalog-select assign-catalog-select-category" id="indivFilterCategory" aria-label="주제 분류 태그 필터">
+                      <option value="ALL">전체 주제 분류</option>
+                    </select>
+                    <div class="assign-catalog-search-wrap">
                       <input type="search" class="form-control form-control-sm assign-catalog-input" id="indivBookSearchInput"
                         name="indiv_book_search_no_autofill" autocomplete="off" autocorrect="off" autocapitalize="off"
                         spellcheck="false" data-lpignore="true" onkeydown="if(event.key==='Enter'){event.preventDefault();filterIndivBookCatalog();}"
@@ -5972,22 +6031,15 @@
                     <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold assign-catalog-search-btn"
                       onclick="filterIndivBookCatalog()"><i class="fa-solid fa-search"></i><span>조회</span></button>
                   </div>
-                  <div class="assign-catalog-filter-grid">
-                    <select class="form-control form-control-sm assign-catalog-select" id="indivFilterGrade" aria-label="학년 필터">
-                      <option value="ALL">전체 학년</option>
-                      <option value="초등 1~2학년">초등 1~2학년</option>
-                      <option value="초등 3~4학년">초등 3~4학년</option>
-                      <option value="초등 5~6학년">초등 5~6학년</option>
-                      <option value="중등 1~3학년">중등 1~3학년</option>
-                    </select>
-                    <select class="form-control form-control-sm assign-catalog-select" id="indivFilterOrigin" aria-label="출제처 필터">
-                      <option value="ALL">전체 출제처</option>
-                      <option value="HQ">본사 직속</option>
-                      <option value="ACADEMY">자체 등록</option>
-                    </select>
-                    <select class="form-control form-control-sm assign-catalog-select" id="indivFilterCategory" aria-label="주제 분류 태그 필터">
-                      <option value="ALL">전체 주제 분류</option>
-                    </select>
+                  <!-- 검색바 하단: 학원 보유 도서만 검색 체크박스 -->
+                  <div class="assign-catalog-filter-subrow">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="indivOnlyAcademyOwned">
+                      <label class="custom-control-label font-weight-bold text-success" for="indivOnlyAcademyOwned"
+                        style="font-size: 12px; cursor: pointer;">
+                        <i class="fa-solid fa-building-circle-check mr-1"></i>학원 보유 도서만 검색
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -6150,19 +6202,15 @@
                   <span class="text-muted" style="font-size: 11.5px;">[+ 도서 담기]를 눌러 좌측 목록에 추가</span>
                 </div>
 
-                <!-- 검색 및 필터 바 -->
+                <!-- 검색 및 필터 바 (출제처 · 학년 · 주제 분류 · 검색박스 · 조회버튼 한 줄 배치) -->
                 <div class="assign-catalog-filter-box mb-3">
-                  <div class="d-flex align-items-center" style="gap: 6px;">
-                    <div style="position: relative; flex: 1; min-width: 0;">
-                      <input type="search" class="form-control form-control-sm assign-catalog-input" id="batchBookSearchInput"
-                        onkeydown="if(event.key==='Enter'){event.preventDefault();filterBatchBookCatalog();}" placeholder="도서명, 저자, 출판사, 주제 분류 검색...">
-                    </div>
-                    <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold assign-catalog-search-btn" onclick="filterBatchBookCatalog()">
-                      <i class="fa-solid fa-search"></i><span>조회</span>
-                    </button>
-                  </div>
-                  <div class="assign-catalog-filter-grid">
-                    <select class="form-control form-control-sm assign-catalog-select" id="batchBookFilterGrade" aria-label="학년 필터">
+                  <div class="assign-catalog-filter-row">
+                    <select class="form-control form-control-sm assign-catalog-select assign-catalog-select-origin" id="batchBookFilterOrigin" aria-label="출제처 필터">
+                      <option value="ALL">전체 출제처</option>
+                      <option value="HQ">본사 직속</option>
+                      <option value="ACADEMY">자체 등록</option>
+                    </select>
+                    <select class="form-control form-control-sm assign-catalog-select assign-catalog-select-grade" id="batchBookFilterGrade" aria-label="학년 필터">
                       <option value="ALL">전체 학년</option>
                       <option value="유치부">유치부</option>
                       <option value="초등 1학년">초등 1학년</option>
@@ -6175,14 +6223,16 @@
                       <option value="중학교 2학년">중학교 2학년</option>
                       <option value="중학교 3학년">중학교 3학년</option>
                     </select>
-                    <select class="form-control form-control-sm assign-catalog-select" id="batchBookFilterOrigin" aria-label="출제처 필터">
-                      <option value="ALL">전체 출제처</option>
-                      <option value="HQ">본사 직속</option>
-                      <option value="ACADEMY">자체 등록</option>
-                    </select>
-                    <select class="form-control form-control-sm assign-catalog-select" id="batchBookFilterCategory" aria-label="주제 분류 태그 필터">
+                    <select class="form-control form-control-sm assign-catalog-select assign-catalog-select-category" id="batchBookFilterCategory" aria-label="주제 분류 태그 필터">
                       <option value="ALL">전체 주제 분류</option>
                     </select>
+                    <div class="assign-catalog-search-wrap">
+                      <input type="search" class="form-control form-control-sm assign-catalog-input" id="batchBookSearchInput"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();filterBatchBookCatalog();}" placeholder="도서명, 저자, 출판사, 주제 분류 검색...">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-beige-primary font-weight-bold assign-catalog-search-btn" onclick="filterBatchBookCatalog()">
+                      <i class="fa-solid fa-search"></i><span>조회</span>
+                    </button>
                   </div>
                 </div>
 
@@ -8860,6 +8910,23 @@
               </div>
             </div>
 
+            <!-- 등록된 북퀴즈가 없을 때 안내 영역 (새 북퀴즈 추가 전까지 문항 입력 영역 비노출) -->
+            <div id="abQuizEmptyState" class="text-center p-5 bg-white mb-2"
+              style="display: none; border: 1.5px dashed #dcd3c4; border-radius: 16px;">
+              <div style="width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 50%; background: #f5f0e6; color: #8c7a66; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="fa-solid fa-circle-question"></i>
+              </div>
+              <div class="font-weight-bold mb-1" style="font-size: 14.5px; color: #3d342d;">
+                등록된 북퀴즈가 없습니다.
+              </div>
+              <div class="text-muted" style="font-size: 12.5px;">
+                우측 상단의 <strong>[+ 새 북퀴즈 추가]</strong> 버튼을 눌러 북퀴즈를 출제해 주세요.
+              </div>
+            </div>
+
+            <!-- 문항 편집 워크스페이스 (등록된 퀴즈 세트가 있을 때만 노출) -->
+            <div id="abQuizEditorWorkspace">
+
             <!-- 3) 문항 번호 탭 헤더 + 문항 추가/삭제 -->
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap: 10px;">
               <div class="d-flex align-items-center flex-wrap" id="abQuizTabButtons" style="gap: 6px;">
@@ -9192,6 +9259,8 @@
               </div>
             </div>
 
+            </div> <!-- /#abQuizEditorWorkspace -->
+
             <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top"
               style="border-color: #ebd9c8 !important;">
               <small class="text-muted" style="font-size: 12px; font-weight: 500;">
@@ -9200,7 +9269,7 @@
               <div class="d-flex" style="gap: 8px;">
                 <button type="button" class="btn btn-beige-secondary px-3 font-weight-bold" data-dismiss="modal"
                   style="height: 40px; border-radius: 10px; font-size: 13px;">취소</button>
-                <button type="submit" class="btn btn-beige-primary px-4 font-weight-bold"
+                <button type="submit" id="btnSaveAcadQuizOnly" class="btn btn-beige-primary px-4 font-weight-bold"
                   style="height: 40px; border-radius: 10px; font-size: 13.5px; box-shadow: 0 3px 8px rgba(45,106,79,0.25);">
                   <i class="fa-solid fa-floppy-disk mr-1"></i>선택한 퀴즈 세트 저장
                 </button>
@@ -9517,264 +9586,4 @@
             <span style="font-size: 12px; color: var(--text-muted);" id="anpDate">2026-10-01</span>
           </div>
           <button type="button" class="close text-muted" onclick="closeAcademyNoticePopup()" aria-label="Close"
-            style="font-size: 22px; line-height: 1;">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body p-4">
-          <h5 class="font-weight-bold mb-3" style="font-size: 16.5px; color: var(--text-main); line-height: 1.45;"
-            id="anpTitle">공지 제목</h5>
-          <div id="anpContent"
-            style="font-size: 13px; color: var(--text-main); line-height: 1.7; white-space: normal; word-break: break-word; background: #faf8f5; padding: 16px; border-radius: 12px; border: 1px solid var(--border-light);">
-          </div>
-          <div id="anpLinkBox" class="mt-3" style="display: none;"></div>
-        </div>
-        <div class="modal-footer py-2 px-4 d-flex justify-content-between align-items-center"
-          style="background: #faf8f5; border-top: 1px solid var(--border-light);">
-          <label class="mb-0 font-weight-normal text-muted"
-            style="font-size: 12.5px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            <input type="checkbox" id="anpDoNotShowToday" style="cursor: pointer;">
-            <span>오늘 하루 보지 않기</span>
-          </label>
-          <button type="button" class="btn btn-sm btn-dark" onclick="closeAcademyNoticePopup()"
-            style="font-weight: 700; border-radius: 8px; padding: 6px 18px;">닫기</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 본사 전체 공지사항 목록 모달 -->
-  <div class="modal fade" id="academyNoticeListModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-      <div class="modal-content border-beige shadow-lg" style="border-radius: 18px; overflow: hidden;">
-        <div class="modal-header modal-header-beige py-3 px-4 d-flex align-items-center justify-content-between"
-          style="border-bottom: 1px solid var(--border-light);">
-          <h5 class="modal-title font-weight-bold" style="font-size: 16px; color: var(--text-main);">
-            <i class="fa-solid fa-bullhorn mr-2 text-warning"></i>본사 시스템 공지사항
-          </h5>
-          <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close"
-            style="font-size: 22px; line-height: 1;">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
-          <div class="alert alert-light border mb-3 py-2 px-3 d-flex align-items-center"
-            style="border-radius: 10px; font-size: 12px; color: var(--text-muted);">
-            <i class="fa-solid fa-circle-info text-info mr-2" style="font-size: 14px;"></i>
-            <span>본사 운영팀에서 전국 가맹 학원에 전달하는 시스템 공지 및 안내사항 목록입니다.</span>
-          </div>
-          <div id="academyNoticeListContainer">
-            <!-- JS 렌더링 -->
-          </div>
-        </div>
-        <div class="modal-footer py-2 px-4" style="background: #faf8f5; border-top: 1px solid var(--border-light);">
-          <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal"
-            style="border-radius: 8px; font-weight: 700; padding: 6px 18px;">닫기</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 원생 독서 포인트 수동 부여 / 차감 모달 (-100pt ~ +100pt) -->
-  <div class="modal fade" id="modalManualPointAdjustment" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
-      <div class="modal-content border-beige shadow-lg" style="border-radius: 20px; overflow: hidden; border: 1.5px solid var(--border-medium);">
-        <!-- 헤더 -->
-        <div class="modal-header py-3 px-4 d-flex align-items-center justify-content-between"
-          style="background: linear-gradient(135deg, #fefce8 0%, #fffbeb 100%); border-bottom: 1px solid #fef08a;">
-          <div class="d-flex align-items-center gap-2">
-            <div style="width: 36px; height: 36px; border-radius: 10px; background: #fef08a; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 16px;">
-              <i class="fa-solid fa-coins"></i>
-            </div>
-            <div>
-              <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: #78350f;">
-                원생 독서 포인트 수동 관리
-              </h5>
-              <div style="font-size: 11px; color: #92400e; margin-top: 1px;">
-                학원장 및 담당 선생님 권한으로 -100pt ~ +100pt 포인트를 수동 부여/차감합니다.
-              </div>
-            </div>
-          </div>
-          <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close"
-            style="font-size: 24px; line-height: 1;">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-
-        <!-- 본문 -->
-        <div class="modal-body p-4" style="background: #ffffff;">
-          <!-- 1. 원생 기본 정보 요약 박스 -->
-          <div class="d-flex align-items-center justify-content-between p-3 mb-3"
-            style="background: #faf8f5; border: 1px solid #e8e1d5; border-radius: 14px;">
-            <div class="d-flex align-items-center gap-3">
-              <div id="manualPointStudentAvatar"
-                style="width: 44px; height: 44px; border-radius: 50%; background: #ffffff; border: 1.5px solid #d4c7b5; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #2d6a4f;">
-                <i class="fa-solid fa-user-graduate"></i>
-              </div>
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <strong style="font-size: 16px; color: var(--text-main);" id="manualPointStudentName">-</strong>
-                  <span class="badge badge-pill badge-light border text-muted px-2 py-0.5" style="font-size: 11px;" id="manualPointStudentId">ID: -</span>
-                </div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" id="manualPointStudentInfo">
-                  초등 4학년 · 나노 A반
-                </div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div style="font-size: 11px; color: #64748b; font-weight: 700;">현재 보유 포인트</div>
-              <div style="font-size: 18px; font-weight: 900; color: #0284c7;" id="manualPointCurrentPoints">
-                0 P
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. 포인트 부여/차감 수치 설정 -->
-          <div class="mb-3">
-            <label class="font-weight-bold d-flex justify-content-between align-items-center" style="font-size: 13px; color: #334155;">
-              <span><i class="fa-solid fa-sliders mr-1 text-primary"></i>포인트 부여 / 차감 수치</span>
-              <span class="badge badge-pill badge-secondary font-weight-bold" style="font-size: 10px;">범위: -100 ~ +100 pt</span>
-            </label>
-
-            <!-- 빠른 원클릭 프리셋 칩 -->
-            <div class="mb-2 d-flex flex-wrap gap-1" style="gap: 5px;">
-              <span style="font-size: 11px; font-weight: 700; color: #059669; align-self: center; margin-right: 2px;">+부여:</span>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(10)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+10</button>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(30)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+30</button>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(50)" style="font-size: 11px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px;">+50</button>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(100)" style="font-size: 11px; background: #10b981; color: #ffffff; border: 1px solid #059669; border-radius: 8px;">+100</button>
-
-              <span style="font-size: 11px; font-weight: 700; color: #e11d48; align-self: center; margin-left: 8px; margin-right: 2px;">-차감:</span>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-10)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-10</button>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-30)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-30</button>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-50)" style="font-size: 11px; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; border-radius: 8px;">-50</button>
-              <button type="button" class="btn btn-sm py-1 px-2 font-weight-bold" onclick="setManualPointDelta(-100)" style="font-size: 11px; background: #f43f5e; color: #ffffff; border: 1px solid #e11d48; border-radius: 8px;">-100</button>
-            </div>
-
-            <!-- 슬라이더 및 인풋 연동 -->
-            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-              <input type="range" class="custom-range flex-grow-1" id="manualPointRangeSlider"
-                min="-100" max="100" step="5" value="10" oninput="syncManualPointFromSlider(this.value)">
-              <div class="input-group input-group-sm" style="width: 130px; flex-shrink: 0;">
-                <input type="number" class="form-control text-center font-weight-bold" id="manualPointInputNumber"
-                  min="-100" max="100" step="1" value="10" oninput="syncManualPointFromInput(this.value)"
-                  style="font-size: 15px; border-radius: 8px 0 0 8px; color: #047857;">
-                <div class="input-group-append">
-                  <span class="input-group-text font-weight-bold" style="border-radius: 0 8px 8px 0; background: #e2e8f0;">pt</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. 실시간 변경 예상 결과 프리뷰 -->
-          <div class="p-3 mb-3 d-flex align-items-center justify-content-around text-center"
-            style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;">
-            <div>
-              <div style="font-size: 11px; color: #64748b; font-weight: 700;">현재 포인트</div>
-              <div style="font-size: 15px; font-weight: 800; color: #334155;" id="previewPrevPoints">0 P</div>
-            </div>
-            <div style="font-size: 16px; color: #94a3b8;"><i class="fa-solid fa-arrow-right"></i></div>
-            <div>
-              <div style="font-size: 11px; font-weight: 700;" id="previewDeltaLabel">조정 수치</div>
-              <div style="font-size: 16px; font-weight: 900; color: #16a34a;" id="previewDeltaPoints">+10 P</div>
-            </div>
-            <div style="font-size: 16px; color: #94a3b8;"><i class="fa-solid fa-equals"></i></div>
-            <div>
-              <div style="font-size: 11px; color: #166534; font-weight: 800;">조정 후 포인트</div>
-              <div style="font-size: 17px; font-weight: 900; color: #15803d;" id="previewFinalPoints">10 P</div>
-            </div>
-          </div>
-
-          <!-- 4. 사유 선택 및 입력 -->
-          <div>
-            <label class="font-weight-bold" style="font-size: 13px; color: #334155; margin-bottom: 6px;">
-              <i class="fa-solid fa-file-signature mr-1 text-primary"></i>부여 / 차감 사유
-            </label>
-            <!-- 사유 추천 프리셋 -->
-            <div class="mb-2 d-flex flex-wrap gap-1" style="gap: 5px;">
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('독서 퀴즈 챌린지 성실 참여 칭찬')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">독서 챌린지 칭찬</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('독후활동(생각담기) 우수 보너스')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">생각담기 우수</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('학원 독서 행사 참여 리워드')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">학원 행사 리워드</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('과제 미제출 패널티 차감')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">과제 미제출 감점</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="setManualPointReason('시스템 오지급 포인트 정정')" style="font-size: 10.5px; border-radius: 6px; padding: 2px 7px;">오지급 정정</button>
-            </div>
-            <input type="text" class="form-control" id="manualPointReasonInput"
-              placeholder="직접 사유를 입력하거나 위의 추천 사유를 클릭하세요"
-              style="font-size: 13px; border-radius: 10px; border-color: var(--border-medium);">
-            <small class="text-muted mt-1 d-block" style="font-size: 11px;">
-              * 학생의 포인트 적립 내역에 작성하신 사유가 투명하게 기록됩니다.
-            </small>
-          </div>
-        </div>
-
-        <!-- 푸터 -->
-        <div class="modal-footer py-3 px-4 d-flex justify-content-between align-items-center"
-          style="background: #faf8f5; border-top: 1px solid var(--border-light);">
-          <button type="button" class="btn btn-sm btn-secondary font-weight-bold px-3 py-2" data-dismiss="modal"
-            style="border-radius: 10px; font-size: 12.5px;">
-            취소
-          </button>
-          <button type="button" class="btn btn-sm btn-success font-weight-bold px-4 py-2" onclick="submitManualPointAdjustment()"
-            id="btnConfirmManualPoint"
-            style="border-radius: 10px; font-size: 13px; background: #16a34a; border-color: #15803d; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);">
-            <i class="fa-solid fa-check mr-1"></i>포인트 적용하기
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 토스트 알림 -->
-  <div id="academyToast"
-    style="position: fixed; bottom: 28px; right: 28px; z-index: 9999; display: none; min-width: 280px;"
-    class="alert alert-dark shadow-lg border-0 rounded-lg p-3">
-    <div class="d-flex align-items-center">
-      <i class="fa-solid fa-circle-check text-warning mr-2" style="font-size: 18px;"></i>
-      <span id="academyToastText" style="font-size: 13.5px; font-weight: 600;">알림 내용</span>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- SheetJS for Excel Download & Upload Parsing (비동기 지연 로딩) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <!-- PDF.js library for secure worksheet viewer (비동기 지연 로딩) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-  <!-- Kakao(구 Daum) 우편번호 서비스 (t1.daumcdn.net 종료 대응 -> t1.kakaocdn.net, 비동기 지연 로딩) -->
-  <script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js" defer></script>
-  <script src="js/nano-dialog.js?v=20261113_center"></script>
-  <script src="js/learning-storage.js?v=20261014_ux2"></script>
-  <script src="js/quiz-result-art.js?v=20261110-characters"></script>
-  <link rel="stylesheet" href="css/literacy-report.css?v=20261105_layout">
-<script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
-<script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-admin.js?v=20261116_limit3"></script>
-<script src="js/portfolio-renderer.js?v=20261117_pf_footer"></script>
-<script src="js/admin_members.js?v=20261113_init_fix"></script>
-<script src="admin_preview.js?v=20261117_quiz_blank"></script>
-<script src="js/content-sharing.js?v=20261113_center"></script>
-<script src="js/admin_books.js?v=20261117_quiz_blank"></script>
-<script src="js/admin_payment.js?v=20261113_init_fix"></script>
-<script src="js/admin_notices.js?v=20261116"></script>
-<script src="js/admin_worksheet_ai.js?v=20261113_center"></script>
-<script src="js/admin_myinfo.js?v=20261117_myinfo_id"></script>
-
-  <!-- PWA Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then((reg) => console.log('[PWA] Service Worker registered scope:', reg.scope))
-          .catch((err) => console.warn('[PWA] Service Worker register failed:', err));
-      });
-    }
-  </script>
-  <!-- PWA 모바일 설치 유도 스크립트 -->
-  <script src="js/pwa-install.js"></script>
-
-<script src="js/portal-extras.js?v=20261117_toast_msg"></script>
-<script src="js/billing-ui.js?v=20261116_dispatch"></script>
-</body>
-
-</html>
+... [truncated for diff preview]
