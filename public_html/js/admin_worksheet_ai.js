@@ -271,12 +271,7 @@ async function runWorksheetAiAnalysis() {
     // 2. 클라이언트 직접 호출 폴백 (오프라인/프로토타입 환경 전용)
     if (!aiData) {
       var apiKey = localStorage.getItem('NANO_GEMINI_API_KEY') || '';
-      var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash';
-      var model = rawModel.includes('3.8-pro') || rawModel.includes('3.5-pro')
-        ? 'gemini-2.5-pro'
-        : ((rawModel.includes('3.8-flash-lite') || rawModel.includes('3.0-flash-lite'))
-          ? 'gemini-2.5-flash-lite'
-          : ((rawModel.includes('3.8') || rawModel.includes('3.0')) ? 'gemini-2.5-flash' : rawModel));
+      var model = (localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash').trim().replace(/^models\//i, '') || 'gemini-2.5-flash';
 
       // 오프라인/프로토타입 직접 호출 모드에서도 사진 없는 허위/추측 칭찬은 생성하지 않음
       if (!apiKey || apiKey.startsWith('sk-')) {
@@ -320,52 +315,37 @@ JSON 출력 형식:
         });
       });
 
-      var clientCandidates = [model];
-      ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].forEach(function(fallbackModel) {
-        if (!clientCandidates.includes(fallbackModel)) clientCandidates.push(fallbackModel);
+      var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
+      var resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: parts }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2500, responseMimeType: 'application/json' }
+        })
       });
 
-      var lastClientErr = '나노시트 사진 AI 분석에 실패했습니다.';
-      for (var mIdx = 0; mIdx < clientCandidates.length; mIdx++) {
-        var candidateModel = clientCandidates[mIdx];
-        var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(candidateModel) + ':generateContent';
-        var resp = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey
-          },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: parts }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 2500, responseMimeType: 'application/json' }
-          })
-        });
-
-        if (resp.ok) {
-          var geminiRes = await resp.json();
-          var respParts = ((((geminiRes.candidates || [])[0] || {}).content || {}).parts) || [];
-          var rawTxt = respParts
-            .filter(function(pt) { return pt && !pt.thought && typeof pt.text === 'string'; })
-            .map(function(pt) { return pt.text; })
-            .join('\n')
-            .trim();
-          var tb = String.fromCharCode(96).repeat(3);
-          var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
-          aiData = JSON.parse(cleanJson);
-          break;
-        }
-
+      if (!resp.ok) {
         var errObj = await resp.json().catch(function(){ return {}; });
         var errMessage = (errObj.error && errObj.error.message) || ('Gemini API 호출 실패 (' + resp.status + ')');
-        lastClientErr = errMessage;
-        var hasMoreCandidates = mIdx < clientCandidates.length - 1;
-        if (hasMoreCandidates && (resp.status === 404 || /not found|not supported/i.test(errMessage))) {
-          continue;
-        }
-        throw new Error(errMessage);
+        throw new Error('Gemini API (' + model + ', HTTP ' + resp.status + '): ' + errMessage);
       }
+
+      var geminiRes = await resp.json();
+      var respParts = ((((geminiRes.candidates || [])[0] || {}).content || {}).parts) || [];
+      var rawTxt = respParts
+        .filter(function(pt) { return pt && !pt.thought && typeof pt.text === 'string'; })
+        .map(function(pt) { return pt.text; })
+        .join('\n')
+        .trim();
+      var tb = String.fromCharCode(96).repeat(3);
+      var cleanJson = rawTxt.split(tb + 'json').join('').split(tb).join('').trim();
+      aiData = JSON.parse(cleanJson);
       if (!aiData || !String(aiData.summary || '').trim()) {
-        throw new Error(lastClientErr);
+        throw new Error('나노시트 사진 AI 분석 결과가 비어 있습니다.');
       }
     }
 

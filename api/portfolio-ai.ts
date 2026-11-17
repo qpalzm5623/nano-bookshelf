@@ -4,16 +4,8 @@ import { authenticate, staff, need, text, failure, academyScope, PortalError } f
 const DEFAULT_PORTFOLIO_GEMINI_MODEL = 'gemini-2.5-flash';
 
 function normalizePortfolioGeminiModel(rawModel?: string | null): string {
-  const trimmed = typeof rawModel === 'string' ? rawModel.trim() : '';
+  const trimmed = typeof rawModel === 'string' ? rawModel.trim().replace(/^models\//i, '') : '';
   if (!trimmed) return DEFAULT_PORTFOLIO_GEMINI_MODEL;
-  const lower = trimmed.toLowerCase();
-  if (lower.includes('3.8-flash-lite') || lower.includes('3.0-flash-lite') || lower.includes('2.5-flash-lite')) return 'gemini-2.5-flash-lite';
-  if (lower.includes('3.8-pro') || lower.includes('3.5-pro') || lower === 'gemini-3.5' || lower.includes('2.5-pro')) return 'gemini-2.5-pro';
-  if (lower.includes('3.8') || lower.includes('3.0') || lower.includes('2.5-flash') || lower === 'gemini-2.5') return 'gemini-2.5-flash';
-  if (lower.includes('2.0-flash-lite')) return 'gemini-2.0-flash-lite';
-  if (lower.includes('2.0-flash') || lower === 'gemini-2.0') return 'gemini-2.0-flash';
-  if (lower.includes('1.5-pro')) return 'gemini-1.5-pro';
-  if (lower.includes('1.5-flash')) return 'gemini-1.5-flash';
   return trimmed;
 }
 
@@ -75,10 +67,6 @@ export default async function handler(req: any, res: any) {
     let generated: any;
     let usedModel = model;
     try {
-      const candidates = [model];
-      for (const fallback of ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']) {
-        if (!candidates.includes(fallback)) candidates.push(fallback);
-      }
       const reqBody = JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: JSON.stringify({ grade: student.grade, period: { from: value.from, to: value.to }, books }) }] }],
@@ -96,25 +84,16 @@ export default async function handler(req: any, res: any) {
         }
       });
 
-      let data: any = null;
-      for (let i = 0; i < candidates.length; i++) {
-        const candidateModel = candidates[i];
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(candidateModel) + ':generateContent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          signal: AbortSignal.timeout(45000),
-          body: reqBody
-        });
-        if (response.ok) {
-          usedModel = candidateModel;
-          data = await response.json();
-          break;
-        }
-        if (response.status === 404 && i < candidates.length - 1) {
-          continue;
-        }
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        signal: AbortSignal.timeout(45000),
+        body: reqBody
+      });
+      if (!response.ok) {
         throw new Error('AI_RESPONSE');
       }
+      const data = await response.json();
       const candidate = data?.candidates?.[0];
       if (candidate?.finishReason !== 'STOP') throw new Error('AI_INCOMPLETE');
       const output = (candidate.content?.parts || []).filter((part: any) => !part.thought && typeof part.text === 'string').map((part: any) => part.text).join('');

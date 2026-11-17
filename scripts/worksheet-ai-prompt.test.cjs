@@ -38,18 +38,31 @@ test('worksheet-ai.ts는 온라인 생각담기를 혼입하지 않고 오직 �
   assert.ok(code.includes('res.status(502)'), 'Vision failure should surface 502 error instead of silent fallback');
 });
 
-test('portal-gemini.ts가 존재하지 않는 3.8 모델명을 실제 Gemini 모델로 매핑하고 404 시 폴백 모델로 재시도한다', async () => {
+test('portal-gemini.ts는 설정된 모델 버전을 임의로 변경하지 않고 그대로 호출하며 Google AI Studio 모델 목록을 최신순으로 조회한다', async () => {
   const gemini = loadPortalGemini();
-  assert.equal(gemini.normalizeGeminiModel('gemini-3.8-flash'), 'gemini-2.5-flash');
-  assert.equal(gemini.normalizeGeminiModel('gemini-3.8-pro'), 'gemini-2.5-pro');
-  assert.equal(gemini.normalizeGeminiModel('gemini-3.8-flash-lite'), 'gemini-2.5-flash-lite');
+  assert.equal(gemini.normalizeGeminiModel('gemini-3.0-flash'), 'gemini-3.0-flash');
+  assert.equal(gemini.normalizeGeminiModel('models/gemini-2.5-pro'), 'gemini-2.5-pro');
+  assert.equal(gemini.normalizeGeminiModel('gemini-2.5-flash-lite'), 'gemini-2.5-flash-lite');
 
   const calledUrls = [];
   const origFetch = global.fetch;
   global.fetch = async (url) => {
-    calledUrls.push(String(url));
-    if (String(url).includes('gemini-2.5-flash:')) {
-      return { ok: false, status: 404, text: async () => JSON.stringify({ error: { message: 'models/gemini-2.5-flash not found' } }) };
+    const u = String(url);
+    calledUrls.push(u);
+    if (u.includes('/v1beta/models?')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          models: [
+            { name: 'models/gemini-2.0-flash', displayName: 'Gemini 2.0 Flash', supportedGenerationMethods: ['generateContent'] },
+            { name: 'models/text-embedding-004', displayName: 'Embedding', supportedGenerationMethods: ['embedContent'] },
+            { name: 'models/gemini-3.0-flash', displayName: 'Gemini 3.0 Flash', supportedGenerationMethods: ['generateContent'] },
+            { name: 'models/gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', supportedGenerationMethods: ['generateContent'] },
+            { name: 'models/gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', supportedGenerationMethods: ['generateContent'] }
+          ]
+        })
+      };
     }
     return {
       ok: true,
@@ -60,14 +73,16 @@ test('portal-gemini.ts가 존재하지 않는 3.8 모델명을 실제 Gemini 모
     };
   };
   try {
+    const models = await gemini.fetchGoogleAiStudioModels('AIzaTestKey');
+    assert.equal(JSON.stringify(models.map(m => m.id)), JSON.stringify(['gemini-3.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash']));
+
     const call = await gemini.callGeminiWithFallback({
       apiKey: 'AIzaTestKey',
-      rawModel: 'gemini-3.8-flash',
+      rawModel: 'gemini-3.0-flash',
       body: { contents: [] }
     });
-    assert.equal(calledUrls.length, 2);
-    assert.ok(calledUrls[0].includes('gemini-2.5-flash:generateContent'));
-    assert.ok(calledUrls[1].includes('gemini-2.0-flash:generateContent'));
+    assert.equal(call.model, 'gemini-3.0-flash');
+    assert.ok(calledUrls.some(u => u.includes('gemini-3.0-flash:generateContent')));
     const parsed = gemini.parseGeminiJson(call.data);
     assert.equal(parsed.summary, '손글씨 분석 결과');
   } finally {

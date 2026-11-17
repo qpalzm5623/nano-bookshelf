@@ -7,14 +7,74 @@ import { monthWindow } from '../lib/portal-learning';
 import { loadContentAccess, quizContent, canReadContent, ownsContent, bookSheets, sheetView } from '../lib/portal-content';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|native-audio|robotics|computer-use|deep-research)/i;
+
 function normalizeManageGeminiModel(rawModel?: unknown): string {
-  const trimmed = typeof rawModel === 'string' ? rawModel.trim() : '';
+  const trimmed = typeof rawModel === 'string' ? rawModel.trim().replace(/^models\//i, '') : '';
   if (!trimmed) return DEFAULT_GEMINI_MODEL;
-  const lower = trimmed.toLowerCase();
-  if (lower.includes('3.8-flash-lite') || lower.includes('3.0-flash-lite') || lower.includes('2.5-flash-lite')) return 'gemini-2.5-flash-lite';
-  if (lower.includes('3.8-pro') || lower.includes('3.5-pro') || lower === 'gemini-3.5' || lower.includes('2.5-pro')) return 'gemini-2.5-pro';
-  if (lower.includes('3.8') || lower.includes('3.0') || lower.includes('2.5-flash') || lower === 'gemini-2.5') return 'gemini-2.5-flash';
-  return trimmed.startsWith('gemini-') ? trimmed : DEFAULT_GEMINI_MODEL;
+  return /^[a-zA-Z0-9._-]+$/.test(trimmed) ? trimmed : DEFAULT_GEMINI_MODEL;
+}
+
+function compareManageGeminiModel(aId: string, bId: string): number {
+  const parseNums = (id: string) => {
+    const m = id.match(/^gemini-(\d+)(?:\.(\d+))?/i);
+    if (!m) return [0, 0];
+    return [parseInt(m[1], 10) || 0, parseInt(m[2] || '0', 10) || 0];
+  };
+  const [aMaj, aMin] = parseNums(aId);
+  const [bMaj, bMin] = parseNums(bId);
+  if (bMaj !== aMaj) return bMaj - aMaj;
+  if (bMin !== aMin) return bMin - aMin;
+  const rankVariant = (id: string) => {
+    const lower = id.toLowerCase();
+    if (lower.endsWith('-flash')) return 0;
+    if (lower.includes('-flash') && !lower.includes('lite')) return 1;
+    if (lower.endsWith('-pro')) return 2;
+    if (lower.includes('-pro')) return 3;
+    if (lower.includes('flash-lite')) return 4;
+    return 5;
+  };
+  const vr = rankVariant(aId) - rankVariant(bId);
+  return vr !== 0 ? vr : aId.localeCompare(bId);
+}
+
+async function fetchManageGoogleAiStudioModels(apiKey: string): Promise<Array<{ id: string; displayName: string; description: string }>> {
+  const cleanKey = String(apiKey || '').trim();
+  if (!cleanKey || cleanKey.startsWith('sk-')) return [];
+  const collected: Array<{ id: string; displayName: string; description: string }> = [];
+  const seen = new Set<string>();
+  let pageToken = '';
+
+  for (let page = 0; page < 5; page++) {
+    const queryStr = pageToken ? `pageSize=100&pageToken=${encodeURIComponent(pageToken)}` : 'pageSize=100';
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?${queryStr}`, {
+      method: 'GET',
+      headers: { 'x-goog-api-key': cleanKey },
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`Google AI Studio 모델 조회 실패 (HTTP ${resp.status}): ${errText.slice(0, 200)}`);
+    }
+    const payload: any = await resp.json();
+    const rows = Array.isArray(payload?.models) ? payload.models : [];
+    for (const m of rows) {
+      const id = String(m?.name || '').trim().replace(/^models\//i, '');
+      if (!/^gemini-/i.test(id) || EXCLUDED_GEMINI_MODEL_PATTERN.test(id)) continue;
+      const methods = Array.isArray(m?.supportedGenerationMethods) ? m.supportedGenerationMethods : [];
+      if (!methods.includes('generateContent') || seen.has(id)) continue;
+      seen.add(id);
+      collected.push({
+        id,
+        displayName: String(m?.displayName || id).trim(),
+        description: String(m?.description || '').trim()
+      });
+    }
+    pageToken = typeof payload?.nextPageToken === 'string' ? payload.nextPageToken.trim() : '';
+    if (!pageToken) break;
+  }
+
+  return collected.sort((a, b) => compareManageGeminiModel(a.id, b.id));
 }
 
 let quizAuthorMap: Record<string, any> = {};
@@ -541,12 +601,36 @@ export default async function handler(req: any, res: any) {
         const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
         const val = ((row?.value as any) || {}) as Record<string, any>;
         const rawKey = typeof val.apiKey === 'string' ? val.apiKey.trim() : '';
+        const effectiveKey = rawKey || (process.env.GEMINI_API_KEY || '').trim();
+        let models: Array<{ id: string; displayName: string; description: string }> = [];
+        let modelsError = '';
+        let modelsSyncedAt = '';
+        if (effectiveKey) {
+          try {
+            models = await fetchManageGoogleAiStudioModels(effectiveKey);
+            modelsSyncedAt = new Date().toISOString();
+          } catch (err: any) {
+            modelsError = err?.message || 'Google AI Studio 모델 목록 조회 실패';
+          }
+        }
         return res.json({
           hasKey: Boolean(rawKey),
           maskedKey: rawKey ? (rawKey.slice(0, 6) + '...' + rawKey.slice(-4)) : '',
           model: normalizeManageGeminiModel(val.model || DEFAULT_GEMINI_MODEL),
-          updatedAt: val.updatedAt || ''
+          updatedAt: val.updatedAt || '',
+          models,
+          modelsSyncedAt,
+          modelsError
         });
+      }
+      if (entity === 'ai_models') {
+        master(user);
+        const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
+        const val = ((row?.value as any) || {}) as Record<string, any>;
+        const effectiveKey = (typeof val.apiKey === 'string' && val.apiKey.trim()) || (process.env.GEMINI_API_KEY || '').trim();
+        need(effectiveKey, 'Google Gemini API 키가 등록되지 않았습니다.', 400);
+        const models = await fetchManageGoogleAiStudioModels(effectiveKey);
+        return res.json({ ok: true, models, syncedAt: new Date().toISOString() });
       }
       throw new Error('Unknown collection');
     }
@@ -1299,6 +1383,17 @@ export default async function handler(req: any, res: any) {
       });
       return res.json(result);
     }
+    if (entity === 'ai_models') {
+      master(user);
+      const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
+      const prev = ((row?.value as any) || {}) as Record<string, any>;
+      const inputKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : (typeof body?.apiKey === 'string' ? body.apiKey.trim() : '');
+      const effectiveKey = inputKey || (prev.apiKey ? String(prev.apiKey).trim() : '') || (process.env.GEMINI_API_KEY || '').trim();
+      need(effectiveKey, 'Google Gemini API 키가 필요합니다.', 400);
+      need(!effectiveKey.startsWith('sk-'), 'OpenAI 키(sk-...)가 아닌 Google Gemini API 키(AIzaSy...)를 입력해 주세요.', 400);
+      const models = await fetchManageGoogleAiStudioModels(effectiveKey);
+      return res.json({ ok: true, models, syncedAt: new Date().toISOString() });
+    }
     if (entity === 'ai_config') {
       master(user);
       const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
@@ -1328,7 +1423,7 @@ export default async function handler(req: any, res: any) {
       const configRow = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
       const aiConfig = ((configRow?.value as any) || {}) as Record<string, any>;
       const apiKey = (typeof input.apiKey === 'string' && input.apiKey.trim()) || (typeof aiConfig.apiKey === 'string' && aiConfig.apiKey.trim()) || (process.env.GEMINI_API_KEY || '');
-      let model = (typeof aiConfig.model === 'string' && aiConfig.model.trim()) || (process.env.GEMINI_MODEL || 'gemini-1.5-flash');
+      let model = (typeof aiConfig.model === 'string' && aiConfig.model.trim()) || (process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL);
       model = normalizeManageGeminiModel(model);
 
       const cleaned = rawText

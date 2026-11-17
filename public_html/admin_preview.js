@@ -7246,17 +7246,7 @@ async function generatePortfolioWithGeminiClient(studentId, pfId, pfData, std) {
     return;
   }
 
-  var rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash';
-  var model = rawModel;
-  var mLower = rawModel.toLowerCase();
-  if (mLower.includes('3.8-flash-lite') || mLower.includes('3.0-flash-lite') || mLower.includes('2.5-flash-lite')) model = 'gemini-2.5-flash-lite';
-  else if (mLower.includes('3.8-pro') || mLower.includes('3.5-pro') || mLower.includes('2.5-pro')) model = 'gemini-2.5-pro';
-  else if (mLower.includes('3.8') || mLower.includes('3.0') || mLower.includes('2.5-flash')) model = 'gemini-2.5-flash';
-  else if (mLower.includes('flash-lite')) model = 'gemini-2.0-flash-lite';
-  else if (mLower.includes('2.0')) model = 'gemini-2.0-flash';
-  else if (mLower.includes('1.5-pro') || mLower.includes('pro')) model = 'gemini-1.5-pro';
-  else if (mLower.includes('1.5-flash')) model = 'gemini-1.5-flash';
-  else if (!model.startsWith('gemini-')) model = 'gemini-2.5-flash';
+  var model = (localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash').trim().replace(/^models\//i, '') || 'gemini-2.5-flash';
 
   var books = pfData.books || [];
   var bookSummary = books.map(function(b, i) {

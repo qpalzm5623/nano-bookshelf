@@ -2270,12 +2270,7 @@ async function summarizeSynopsisWithGemini(rawText, title, author) {
   // 2. 브라우저 로컬 저장소 Gemini API 키로 직접 호출
   const localKey = localStorage.getItem('NANO_GEMINI_API_KEY') || '';
   if (localKey && !localKey.startsWith('sk-')) {
-    const rawModel = localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash';
-    const model = rawModel.includes('3.8-pro') || rawModel.includes('3.5-pro')
-      ? 'gemini-2.5-pro'
-      : (rawModel.includes('3.8-flash-lite') || rawModel.includes('3.0-flash-lite')
-        ? 'gemini-2.5-flash-lite'
-        : ((rawModel.includes('3.8') || rawModel.includes('3.0')) ? 'gemini-2.5-flash' : rawModel));
+    const model = (localStorage.getItem('NANO_GEMINI_MODEL') || 'gemini-2.5-flash').trim().replace(/^models\//i, '') || 'gemini-2.5-flash';
     const prompt = `당신은 어린이·청소년 독서교육 전문가입니다.
 다음 도서의 출판사 소개/줄거리 정보를 바탕으로, 학생과 지도교사가 도서의 핵심 내용과 흥미를 쉽게 파악할 수 있도록 정확히 3문장 이내의 읽기 쉬운 줄거리(도서 소개)로 재구성하여 요약해 주세요.
 

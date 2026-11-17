@@ -1,85 +1,106 @@
-// Gemini API 모델 매핑, 다중 모델 폴백 및 응답 파싱 유틸리티
-// 존재하지 않는 내부 버전명(예: gemini-3.8-flash)을 실제 Google Gemini API 모델로 정규화하고,
-// 404/미지원 모델 오류 시 지원 모델로 자동 폴백한다.
+// Gemini API 모델 정규화, Google AI Studio 실시간 모델 조회 및 호출 유틸리티
+// 관리자가 지정한 모델 버전을 임의로 변경·폴백하지 않고 그대로 사용한다.
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
-const FALLBACK_GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-2.5-pro',
-  'gemini-1.5-flash',
-];
+export interface GoogleAiStudioModel {
+  id: string;
+  displayName: string;
+  description: string;
+  inputTokenLimit?: number;
+  outputTokenLimit?: number;
+}
 
 /**
- * UI/DB에 저장된 모델명을 실제 Gemini v1beta API 모델명으로 정규화한다.
+ * UI/DB에 저장된 모델명을 정제한다. 사용자가 지정한 버전은 임의로 바꾸지 않는다.
  */
 export function normalizeGeminiModel(rawModel?: string | null): string {
-  const trimmed = typeof rawModel === 'string' ? rawModel.trim() : '';
+  const trimmed = typeof rawModel === 'string' ? rawModel.trim().replace(/^models\//i, '') : '';
   if (!trimmed) return DEFAULT_GEMINI_MODEL;
-
-  const lower = trimmed.toLowerCase();
-  if (
-    lower.includes('3.8-flash-lite') ||
-    lower.includes('3.0-flash-lite') ||
-    lower.includes('2.5-flash-lite')
-  ) {
-    return 'gemini-2.5-flash-lite';
-  }
-  if (
-    lower.includes('3.8-pro') ||
-    lower.includes('3.5-pro') ||
-    lower === 'gemini-3.5' ||
-    lower.includes('2.5-pro')
-  ) {
-    return 'gemini-2.5-pro';
-  }
-  if (
-    lower.includes('3.8') ||
-    lower.includes('3.0') ||
-    lower.includes('2.5-flash') ||
-    lower === 'gemini-2.5'
-  ) {
-    return 'gemini-2.5-flash';
-  }
-  if (lower.includes('2.0-flash-lite')) {
-    return 'gemini-2.0-flash-lite';
-  }
-  if (lower.includes('2.0-flash') || lower.includes('2.0')) {
-    return 'gemini-2.0-flash';
-  }
-  if (lower.includes('1.5-pro')) {
-    return 'gemini-1.5-pro';
-  }
-  if (lower.includes('1.5-flash')) {
-    return 'gemini-1.5-flash';
-  }
-  if (lower.startsWith('gemini-')) {
-    return trimmed;
-  }
+  if (/^[a-zA-Z0-9._-]+$/.test(trimmed)) return trimmed;
   return DEFAULT_GEMINI_MODEL;
 }
 
 /**
- * 기본 모델과 폴백 모델 후보 목록을 중복 없이 순서대로 반환한다.
+ * 모델 목록을 반환한다 (임의 버전 폴백 없이 지정된 모델만 사용).
  */
 export function resolveGeminiModelCandidates(rawModel?: string | null): string[] {
-  const primary = normalizeGeminiModel(rawModel);
-  const candidates: string[] = [primary];
-  for (const fallback of FALLBACK_GEMINI_MODELS) {
-    if (!candidates.includes(fallback)) {
-      candidates.push(fallback);
-    }
-  }
-  return candidates;
+  return [normalizeGeminiModel(rawModel)];
 }
 
-function isModelNotFoundOrUnsupported(status: number, detail: string): boolean {
-  if (status === 404) return true;
-  if (status === 400 && /not found|not supported|unknown model|invalid model|deprecated/i.test(detail)) {
-    return true;
+const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|native-audio|robotics|computer-use|deep-research)/i;
+
+function compareGeminiModelVersion(aId: string, bId: string): number {
+  const parseNums = (id: string) => {
+    const m = id.match(/^gemini-(\d+)(?:\.(\d+))?/i);
+    if (!m) return [0, 0];
+    return [parseInt(m[1], 10) || 0, parseInt(m[2] || '0', 10) || 0];
+  };
+  const [aMaj, aMin] = parseNums(aId);
+  const [bMaj, bMin] = parseNums(bId);
+  if (bMaj !== aMaj) return bMaj - aMaj;
+  if (bMin !== aMin) return bMin - aMin;
+  const rankVariant = (id: string) => {
+    const lower = id.toLowerCase();
+    if (lower.endsWith('-flash')) return 0;
+    if (lower.includes('-flash') && !lower.includes('lite')) return 1;
+    if (lower.endsWith('-pro')) return 2;
+    if (lower.includes('-pro')) return 3;
+    if (lower.includes('flash-lite')) return 4;
+    return 5;
+  };
+  const vr = rankVariant(aId) - rankVariant(bId);
+  if (vr !== 0) return vr;
+  return aId.localeCompare(bId);
+}
+
+/**
+ * Google AI Studio (generativelanguage.googleapis.com/v1beta/models)에서
+ * 현재 API 키로 사용 가능한 generateContent 지원 Gemini 모델 목록을 실시간 조회한다.
+ */
+export async function fetchGoogleAiStudioModels(apiKey: string, timeoutMs = 8000): Promise<GoogleAiStudioModel[]> {
+  const cleanKey = String(apiKey || '').trim();
+  if (!cleanKey) return [];
+
+  const collected: GoogleAiStudioModel[] = [];
+  const seen = new Set<string>();
+  let pageToken = '';
+
+  for (let page = 0; page < 5; page++) {
+    const queryStr = pageToken ? `pageSize=100&pageToken=${encodeURIComponent(pageToken)}` : 'pageSize=100';
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?${queryStr}`, {
+      method: 'GET',
+      headers: { 'x-goog-api-key': cleanKey },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`Google AI Studio 모델 조회 실패 (HTTP ${resp.status}): ${errText.slice(0, 200)}`);
+    }
+    const payload: any = await resp.json();
+    const rows = Array.isArray(payload?.models) ? payload.models : [];
+    for (const m of rows) {
+      const rawName = String(m?.name || '').trim();
+      const id = rawName.replace(/^models\//i, '');
+      if (!/^gemini-/i.test(id)) continue;
+      if (EXCLUDED_GEMINI_MODEL_PATTERN.test(id)) continue;
+      const methods = Array.isArray(m?.supportedGenerationMethods) ? m.supportedGenerationMethods : [];
+      if (!methods.includes('generateContent')) continue;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      collected.push({
+        id,
+        displayName: String(m?.displayName || id).trim(),
+        description: String(m?.description || '').trim(),
+        inputTokenLimit: typeof m?.inputTokenLimit === 'number' ? m.inputTokenLimit : undefined,
+        outputTokenLimit: typeof m?.outputTokenLimit === 'number' ? m.outputTokenLimit : undefined,
+      });
+    }
+    pageToken = typeof payload?.nextPageToken === 'string' ? payload.nextPageToken.trim() : '';
+    if (!pageToken) break;
   }
-  return false;
+
+  return collected.sort((a, b) => compareGeminiModelVersion(a.id, b.id));
 }
 
 /**
@@ -136,52 +157,42 @@ export interface GeminiCallResult {
 }
 
 /**
- * 모델 404/미지원 오류 시 다음 폴백 모델로 재시도하며 Gemini generateContent API를 호출한다.
+ * 관리자가 설정한 정확한 Gemini 모델로 generateContent API를 호출한다 (임의 버전 변경 없음).
  */
 export async function callGeminiWithFallback(options: GeminiCallOptions): Promise<GeminiCallResult> {
   const { apiKey, rawModel, body, timeoutMs = 55000 } = options;
-  const candidates = resolveGeminiModelCandidates(rawModel);
-  const triedModels: string[] = [];
-  let lastError = 'Gemini API 호출에 실패했습니다.';
+  const model = normalizeGeminiModel(rawModel);
+  const triedModels: string[] = [model];
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
-  for (let i = 0; i < candidates.length; i++) {
-    const model = candidates[i];
-    triedModels.push(model);
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
 
-    const resp = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-
-    if (resp.ok) {
-      const data = await resp.json();
-      return { data, model, triedModels };
-    }
-
-    const errText = await resp.text().catch(() => '');
-    let apiMessage = errText.slice(0, 300);
-    try {
-      const parsedErr = JSON.parse(errText);
-      if (parsedErr?.error?.message) {
-        apiMessage = String(parsedErr.error.message).slice(0, 300);
-      }
-    } catch {
-      // 원문 텍스트 일부만 유지한다.
-    }
-
-    lastError = `Gemini API (${model}, HTTP ${resp.status}): ${apiMessage || '요청 처리 실패'}`;
-    const hasNext = i < candidates.length - 1;
-    if (hasNext && isModelNotFoundOrUnsupported(resp.status, apiMessage || errText)) {
-      continue;
-    }
-    throw new Error(lastError);
+  if (resp.ok) {
+    const data = await resp.json();
+    return { data, model, triedModels };
   }
 
-  throw new Error(lastError);
+  const errText = await resp.text().catch(() => '');
+  let apiMessage = errText.slice(0, 300);
+  try {
+    const parsedErr = JSON.parse(errText);
+    if (parsedErr?.error?.message) {
+      apiMessage = String(parsedErr.error.message).slice(0, 300);
+    }
+  } catch {
+    // 원문 텍스트 일부만 유지한다.
+  }
+
+  if (resp.status === 404) {
+    throw new Error(`Gemini API (${model}, HTTP 404): ${apiMessage || '해당 모델을 찾을 수 없습니다.'} — 본사 [AI 엔진 설정]에서 Google AI Studio 최신 모델 목록을 동기화해 확인해 주세요.`);
+  }
+  throw new Error(`Gemini API (${model}, HTTP ${resp.status}): ${apiMessage || '요청 처리 실패'}`);
 }

@@ -3106,17 +3106,17 @@
         </div>
 
         <div class="form-group mb-4">
-          <label style="font-size: 13px; font-weight: 700; color: #333333; margin-bottom: 6px;">기본 생성 모델 (Gemini Model)</label>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label style="font-size: 13px; font-weight: 700; color: #333333; margin-bottom: 0;">기본 생성 모델 (Gemini Model)</label>
+            <button type="button" id="btnRefreshGeminiModels" class="btn btn-xs btn-outline-success font-weight-bold" onclick="refreshMasterGeminiModels(true)" style="border-radius: 6px; font-size: 11px; padding: 3px 9px;">
+              <i class="fa-solid fa-arrows-rotate mr-1"></i>AI Studio 모델 최신화
+            </button>
+          </div>
           <input list="geminiModelOptions" id="masterGeminiModel" class="form-control" value="gemini-2.5-flash" placeholder="모델명을 선택하거나 직접 입력하세요" style="font-size: 13px; border-radius: 8px; border: 1.5px solid #dcdad5; height: 42px;">
           <datalist id="geminiModelOptions">
-            <option value="gemini-2.5-flash">gemini-2.5-flash (권장 · 기본 - 2.5 멀티모달 &amp; 고정밀 나노시트 첨삭)</option>
-            <option value="gemini-2.5-pro">gemini-2.5-pro (최고 사양 - 2.5 심층 사고력 추론 &amp; 정밀 분석)</option>
-            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (초경량 고속형 - 빠른 경량 응답)</option>
-            <option value="gemini-2.0-flash">gemini-2.0-flash (2.0 세대 호환 멀티모달 모델)</option>
-            <option value="gemini-1.5-pro">gemini-1.5-pro (1.5 안정형 프로 모델)</option>
           </datalist>
-          <small class="text-muted d-block mt-1" style="font-size: 11.5px;">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-primary"></i>실제 Gemini API 지원 모델(2.5 Flash 권장)을 선택하거나 직접 입력할 수 있습니다.
+          <small id="masterGeminiModelSyncStatus" class="text-muted d-block mt-1" style="font-size: 11.5px;">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1 text-primary"></i>Google AI Studio에서 사용 가능한 최신 모델 목록을 자동으로 불러옵니다.
           </small>
         </div>
       </div>
