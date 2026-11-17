@@ -321,7 +321,11 @@
       sub: item.sub || '', bookIds: bookIds, clicks: Number(item.clicks) || 0, createdAt: item.createdAt || '' });
     if (result.item) {
       item.id = result.item.id;
-      item.bookIds = Array.isArray(result.item.bookIds) && result.item.bookIds.length > 0 ? result.item.bookIds : bookIds;
+      var returnedIds = Array.isArray(result.item.bookIds)
+        ? result.item.bookIds.map(function(id) { return String(id).trim(); }).filter(Boolean)
+        : null;
+      item.bookIds = returnedIds !== null ? returnedIds : bookIds;
+      item.updatedAt = result.item.updatedAt || Date.now();
       item.linkUrl = encodedLink;
       item.link = encodedLink;
     }
@@ -353,6 +357,10 @@
   async function fetchThemes(since) {
     var qs = since && Number(since) > 0 ? '&since=' + encodeURIComponent(String(since)) : '';
     return api('/api/activity?action=themes' + qs);
+  }
+  async function fetchBanners(since) {
+    var qs = since && Number(since) > 0 ? '&since=' + encodeURIComponent(String(since)) : '';
+    return api('/api/activity?action=banners' + qs);
   }
   function noticeTarget(value) { return ({ 학생: 'STUDENT', 선생님: 'TEACHER', 원장: 'DIRECTOR', 본사: 'MASTER', 학원: 'DIRECTOR', '가맹 학원': 'DIRECTOR' })[value] || null; }
   async function saveNotice(item) {
@@ -439,6 +447,11 @@
     }, { academy: academyCode });
   }
   async function deleteAssignment(id, academyCode) { return manage('assignments', 'delete', { id: id }, { academy: academyCode }); }
+  async function deleteAssignments(ids, academyCode) {
+    var cleanIds = Array.from(new Set((Array.isArray(ids) ? ids : []).map(function(id) { return String(id || '').trim(); }).filter(Boolean)));
+    if (cleanIds.length === 0) return { ok: true, deletedCount: 0 };
+    return manage('assignments', 'delete', { ids: cleanIds }, { academy: academyCode });
+  }
   async function saveClassAssignments(books, classGroup, academyCode) {
     return api(manageUrl('assignments', academyCode), { operation: 'save', data: {
       bookIds: books.map(function(book) { return book.serverId || book.id; }),
@@ -571,6 +584,12 @@
       });
       classAssignmentList = result.classes || [];
       assignmentLoadError = false;
+      if (typeof syncStudentAssignmentsWithLearningLogs === 'function') syncStudentAssignmentsWithLearningLogs(studentAssignmentList);
+      try {
+        if (typeof NanoPreviewData !== 'undefined' && typeof NanoPreviewData.saveAssignments === 'function') {
+          NanoPreviewData.saveAssignments(academy(), studentAssignmentList, classAssignmentList);
+        }
+      } catch (e) {}
     }
     if (typeof renderStudentAssignmentTable === 'function') renderStudentAssignmentTable();
     if (typeof renderClassAssignmentTable === 'function') renderClassAssignmentTable();
@@ -649,8 +668,8 @@
   }
   global.NanoPortal = { remote: remote, request: request, api: api, manage: manage, manageList: manageList, academy: academy, uploadMedia: uploadMedia,
     saveMember: saveMember, deleteMember: deleteMember, saveAcademy: saveAcademy, deleteAcademy: deleteAcademy, restoreAcademy: restoreAcademy, saveClass: saveClass, deleteClass: deleteClass,
-    saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
-    saveRecommendation: saveRecommendation, saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
+    saveBanner: saveBanner, deleteBanner: deleteBanner, fetchBanners: fetchBanners, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
+    saveRecommendation: saveRecommendation, saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment, deleteAssignments: deleteAssignments,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     formatKstDateTime: toKst24String,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,

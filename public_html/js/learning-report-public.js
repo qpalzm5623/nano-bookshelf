@@ -34,7 +34,7 @@
       html += '<p class="msg">저장된 문항별 답안이 없습니다.</p>';
     }
     if (data.thoughtQuestion || data.thoughtAnswer || data.comment) {
-      html += '<section class="report-thought-card"><h2>나노시트 생각 담기</h2>' + textCard('질문', data.thoughtQuestion) + textCard('학생 답안', data.thoughtAnswer) + textCard('지도교사 코멘트', data.comment) + '</section>';
+      html += '<section class="report-thought-card"><h2>생각 담기</h2>' + textCard('질문', data.thoughtQuestion) + textCard('학생 답안', data.thoughtAnswer) + textCard('지도교사 코멘트', data.comment) + '</section>';
     }
     var ai = data.worksheetAiResult || {}, photos = Array.isArray(data.worksheetPhotos) ? data.worksheetPhotos : [];
     if (data.worksheetAiResult || photos.length) {

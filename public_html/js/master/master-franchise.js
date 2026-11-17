@@ -1699,8 +1699,49 @@ function handleRegPlanChange(plan) {
   }
 }
 
+function getRegDirectorPasswordChecks(rawPw) {
+  const val = String(rawPw || "");
+  return {
+    hasValue: val.length > 0,
+    minLen: val.length >= 8 && val.length <= 128,
+    hasLetter: /[A-Za-z]/.test(val),
+    hasDigit: /\d/.test(val),
+    noSpace: !/\s/.test(val),
+  };
+}
+
+function validateRegDirectorPassword(rawPw) {
+  const inputEl = document.getElementById("regDirectorPw");
+  const condEl = document.getElementById("regDirectorPwConditions");
+  const val = rawPw !== undefined ? String(rawPw) : String(inputEl ? inputEl.value : "");
+  const c = getRegDirectorPasswordChecks(val);
+  const allValid = c.hasValue && c.minLen && c.hasLetter && c.hasDigit && c.noSpace;
+
+  if (condEl) {
+    const itemHtml = (ok, label) => {
+      const cls = !c.hasValue ? "text-muted" : (ok ? "text-success font-weight-bold" : "text-danger");
+      const icon = !c.hasValue ? "fa-regular fa-circle" : (ok ? "fa-solid fa-circle-check" : "fa-solid fa-circle-xmark");
+      return `<span class="${cls}" style="margin-right: 8px;"><i class="${icon} mr-1"></i>${label}</span>`;
+    };
+    condEl.innerHTML =
+      itemHtml(c.minLen, "8~128자") +
+      itemHtml(c.hasLetter, "영문 포함") +
+      itemHtml(c.hasDigit, "숫자 포함") +
+      itemHtml(c.noSpace, "공백 불가") +
+      '<span class="text-muted">(특수문자 가능)</span>';
+  }
+  if (inputEl) {
+    if (c.hasValue && !allValid) inputEl.classList.add("is-invalid");
+    else inputEl.classList.remove("is-invalid");
+  }
+  return allValid;
+}
+
 // 신규 가맹 학원 등록 모달 열기
 function openAcademyRegisterModal() {
+  const form = document.getElementById("academyRegisterForm");
+  if (form) form.reset();
+
   const today = new Date().toISOString().split('T')[0];
   const nextYear = new Date();
   nextYear.setFullYear(nextYear.getFullYear() + 1);
@@ -1712,6 +1753,12 @@ function openAcademyRegisterModal() {
   if (document.getElementById("regPlan")) document.getElementById("regPlan").value = "Standard";
   if (document.getElementById("regMonthlyFee")) document.getElementById("regMonthlyFee").value = PLAN_MONTHLY_FEES["Standard"] || "120,000원";
   if (document.getElementById("regMaxStudents")) document.getElementById("regMaxStudents").value = PLAN_MAX_STUDENTS["Standard"] || 50;
+  if (document.getElementById("regDirectorPw")) document.getElementById("regDirectorPw").value = "";
+  if (document.getElementById("regDirectorIdStatus")) document.getElementById("regDirectorIdStatus").textContent = "";
+  if (document.getElementById("regMemoCount")) document.getElementById("regMemoCount").textContent = "0 / 100자";
+  document.getElementById("regDirectorNameError")?.classList.add("d-none");
+  document.getElementById("regEmailError")?.classList.add("d-none");
+  validateRegDirectorPassword("");
   setRegAutoUnapprove(false);
 
   $('#academyRegisterModal').modal('show');
@@ -1720,6 +1767,19 @@ function openAcademyRegisterModal() {
 // 신규 학원 등록 제출 처리 (등록일, 계약시작일, 계약만료일, 월결제금액 등 반영)
 function handleRegisterAcademy(e) {
   e.preventDefault();
+  // 비밀번호 형식 검증 (8~128자, 영문·숫자 포함, 공백 불가)
+  const pwEl = document.getElementById("regDirectorPw");
+  const adminPw = pwEl ? pwEl.value : "";
+  if (!validateRegDirectorPassword(adminPw)) {
+    if (typeof showMasterToast === "function") {
+      showMasterToast("비밀번호 조건(8~128자, 영문·숫자 포함, 공백 불가)을 확인해 주세요.");
+    } else {
+      alert("비밀번호 조건(8~128자, 영문·숫자 포함, 공백 불가)을 확인해 주세요.");
+    }
+    if (pwEl) pwEl.focus();
+    return;
+  }
+
   const name = document.getElementById("regAcademyName").value.trim();
   const bizNumber = document.getElementById("regBizNumber")?.value.trim() || "";
   const director = document.getElementById("regDirectorName").value.trim();
@@ -1751,7 +1811,7 @@ function handleRegisterAcademy(e) {
     address: address,
     addressDetail: addressDetail,
     adminId: adminId,
-    adminPw: document.getElementById("regDirectorPw")?.value.trim() || "nano1234!",
+    adminPw: adminPw,
     plan: plan,
     joinDate: joinDate,
     startDate: startDate,
@@ -1767,6 +1827,9 @@ function handleRegisterAcademy(e) {
   saveFranchisesToStorage();
   $('#academyRegisterModal').modal('hide');
   document.getElementById("academyRegisterForm").reset();
+  if (document.getElementById("regDirectorIdStatus")) document.getElementById("regDirectorIdStatus").textContent = "";
+  if (document.getElementById("regMemoCount")) document.getElementById("regMemoCount").textContent = "0 / 100자";
+  validateRegDirectorPassword("");
 
   renderFranchiseTable();
   updateFranchiseStats();
@@ -2390,6 +2453,19 @@ async function handleRegisterAcademy(e) {
     }
   }
 
+  // 비밀번호 형식 검증 (8~128자, 영문·숫자 포함, 공백 불가)
+  const pwEl = document.getElementById("regDirectorPw");
+  const adminPw = pwEl ? pwEl.value : "";
+  if (!validateRegDirectorPassword(adminPw)) {
+    if (typeof showMasterToast === "function") {
+      showMasterToast("비밀번호 조건(8~128자, 영문·숫자 포함, 공백 불가)을 확인해 주세요.");
+    } else {
+      alert("비밀번호 조건(8~128자, 영문·숫자 포함, 공백 불가)을 확인해 주세요.");
+    }
+    if (pwEl) pwEl.focus();
+    return;
+  }
+
   const name = document.getElementById("regAcademyName").value.trim();
   const bizNumber = document.getElementById("regBizNumber")?.value.trim() || "";
   const email = emailEl?.value.trim() || "";
@@ -2425,7 +2501,7 @@ async function handleRegisterAcademy(e) {
     region: region,
     address: fullAddress,
     adminId: adminId,
-    adminPw: document.getElementById("regDirectorPw")?.value.trim() || "nano1234!",
+    adminPw: adminPw,
     plan: plan,
     joinDate: joinDate,
     startDate: startDate,
@@ -2482,6 +2558,9 @@ async function handleRegisterAcademy(e) {
 
   $('#academyRegisterModal').modal('hide');
   document.getElementById("academyRegisterForm").reset();
+  if (document.getElementById("regDirectorIdStatus")) document.getElementById("regDirectorIdStatus").textContent = "";
+  if (document.getElementById("regMemoCount")) document.getElementById("regMemoCount").textContent = "0 / 100자";
+  validateRegDirectorPassword("");
 
   renderFranchiseTable();
   updateFranchiseStats();

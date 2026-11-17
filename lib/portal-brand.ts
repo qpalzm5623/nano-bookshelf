@@ -53,7 +53,51 @@ export function guardRestrictedRequest(req: any, user: any) {
   } else if (route === '/api/content') permitted = true;
   else if (route === '/api/files') permitted = req.method === 'GET' || req.body?.scope === 'media';
   else if (route === '/api/services') permitted = req.method === 'GET' && action === 'dispatch_stats';
-  else if (route === '/api/activity') permitted = req.method === 'GET' && ['rankings', 'themes', 'popular', 'summary', 'characters', 'preferences', 'recommend'].includes(action);
+  else if (route === '/api/activity') permitted = req.method === 'GET' && ['rankings', 'themes', 'banners', 'onboarding_interest', 'popular', 'summary', 'characters', 'preferences', 'recommend'].includes(action);
   else if (route === '/api/literacy') permitted = req.method === 'GET';
   if (!permitted) throw brandError('JD 전용 관리자에게 허용되지 않은 기능입니다.');
+}
+
+
+/** DB main_banner + portal_settings(banner_meta) 레코드를 포털 공통 배너 객체로 정규화합니다. */
+export function mapBannerRecord(b: any, meta: Record<string, any> = {}) {
+  let linkBookIds: string[] = [];
+  let hasBooksParam = false;
+  let linkSub = '';
+  if (typeof b?.linkUrl === 'string' && b.linkUrl.startsWith('#')) {
+    try {
+      const params = new URLSearchParams(b.linkUrl.slice(1));
+      if (params.has('books')) {
+        hasBooksParam = true;
+        const rawBooks = params.get('books') || '';
+        if (rawBooks) linkBookIds = rawBooks.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      linkSub = params.get('sub') || '';
+    } catch {}
+  }
+  const metaBookIds = Array.isArray(meta.bookIds)
+    ? meta.bookIds.map((id: any) => String(id || '').trim()).filter(Boolean)
+    : null;
+  const bookIds = metaBookIds !== null
+    ? ((metaBookIds.length > 0 || !hasBooksParam || linkBookIds.length === 0) ? metaBookIds : linkBookIds)
+    : linkBookIds;
+  const updatedAt = Math.max(
+    b?.updatedAt ? +new Date(b.updatedAt) : 0,
+    Number(meta._updatedAt) || 0,
+    Number(meta.updatedAt) || 0
+  );
+  return {
+    ...b,
+    active: b.isActive ? 'Y' : 'N',
+    order: b.orderNo,
+    image: b.imageUrl || '',
+    imageUrl: b.imageUrl || '',
+    link: b.linkUrl || '',
+    sub: meta.sub || linkSub || '',
+    bookIds,
+    clicks: typeof meta.clicks === 'number' ? meta.clicks : 0,
+    createdAt: meta.createdAt || '2026-09-01',
+    updatedAt,
+    type: 'image'
+  };
 }

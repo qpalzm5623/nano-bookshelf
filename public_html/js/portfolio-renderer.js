@@ -619,7 +619,7 @@
            '<textarea id="pfTeacherNoteInput" class="form-control" rows="4" style="font-size:13px; border-color:#1f8a7e; line-height:1.6; resize:vertical;">' + escapePortfolioText(currentTeacherNote) + '</textarea>' +
            '<div class="d-flex justify-content-end mt-2" style="gap:8px;">' +
              '<button type="button" class="btn btn-sm btn-secondary" style="font-size:12px; padding:3px 10px;" onclick="togglePfTeacherNoteEdit(false)">취소</button>' +
-             '<button type="button" class="btn btn-sm btn-success" style="font-size:12px; padding:3px 12px; background:#1f8a7e; border-color:#1f8a7e;" onclick="saveViewingPortfolioTeacherNote(' + JSON.stringify(studentId) + ', ' + JSON.stringify(pfId) + ')">' +
+             '<button type="button" id="btnPfTeacherNoteSave" class="btn btn-sm btn-success" style="font-size:12px; padding:3px 12px; background:#1f8a7e; border-color:#1f8a7e;" data-student-id="' + escapePortfolioText(studentId) + '" data-pf-id="' + escapePortfolioText(pfId) + '" onclick="saveViewingPortfolioTeacherNote(this.dataset.studentId, this.dataset.pfId)">' +
                '<i class="fa-solid fa-check mr-1"></i>저장' +
              '</button>' +
            '</div>' +
@@ -746,12 +746,12 @@
                 teacherNoteEditBtnHtml +
               '</div>' +
             '</div>' +
-            '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13px; color:#374151;">' +
+            '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13px; color:#374151; white-space:pre-wrap;">' +
               escapePortfolioText(currentTeacherNote) +
             '</div>' +
             teacherNoteEditWrapHtml +
             '<div class="pf-signature mt-3 pt-2 border-top">' +
-              '<span style="font-size:11px; color:#6b7280;">나노의 책장 독서 교육 연구소 인증 지도교사</span>' +
+              '<span style="font-size:11px; color:#6b7280;">나노의 책장 인증 지도교사</span>' +
               '<div style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#124e47; font-size:12.5px;">' +
                 '<span>' + escapePortfolioText(teacher) + '</span>' +
               '</div>' +
@@ -760,8 +760,7 @@
         '</div>' +
 
         '<div class="pf-footer text-muted">' +
-          '<div><span class="font-weight-bold" style="color:#1f8a7e;">나노의 책장</span> · 독서 교육 연구소 공식 발급 인증서</div>' +
-          '<div>아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +
+          '<div style="margin-left:auto;">아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +
         '</div>' +
       '</div>'
     );

@@ -16,7 +16,7 @@ let curBannerBooks = [];
 let curBannerUploadedImgData = "";
 let curBannerExistingImgUrl = "";
 
-// 배너 연결 도서 ID로 masterBooks 도서 객체 탐색 헬퍼 (타입/포맷 차이 방어)
+// 배너 연결 도서 ID로 masterBooks 도서 객체 탐색 헬퍼 (접두사 교차 오매칭 차단)
 function findMasterBookByBannerBookId(rawId) {
   if (rawId === null || rawId === undefined || rawId === "") return null;
   if ((!Array.isArray(masterBooks) || masterBooks.length === 0) && typeof window !== "undefined" && Array.isArray(window.MIGRATED_BOOKS) && window.MIGRATED_BOOKS.length > 0) {
@@ -24,21 +24,38 @@ function findMasterBookByBannerBookId(rawId) {
   }
   const s = String(rawId).trim();
   if (!s) return null;
-  let found = masterBooks.find(b =>
-    String(b.id || "").trim() === s ||
-    String(b.bookNo || "").trim() === s ||
-    String(b.serverId || "").trim() === s
-  );
+  const sUpper = s.toUpperCase();
+  let found = masterBooks.find(b => {
+    const id = String(b.id || "").trim();
+    const bookNo = String(b.bookNo || "").trim();
+    const serverId = String(b.serverId || "").trim();
+    return id === s || bookNo === s || serverId === s ||
+      (id && id.toUpperCase() === sUpper) || (bookNo && bookNo.toUpperCase() === sUpper);
+  });
   if (found) return found;
-  const cleanNum = s.replace(/[^0-9]/g, "");
+  // 순수 숫자(1001) 또는 레거시 Mock 코드(MB-001)에 한해 숫자 기반 하위 호환 허용 (KA/FA 등 실도서 코드 교차 매칭 방지)
+  const isLegacyNumeric = /^\d+$/.test(s) || /^(?:MB-?)?\d+$/i.test(s);
+  const cleanNum = isLegacyNumeric ? String(parseInt(s.replace(/[^0-9]/g, ""), 10) || "") : "";
   if (cleanNum) {
     found = masterBooks.find(b => {
-      const bIdNum = String(b.id || "").replace(/[^0-9]/g, "");
-      const bNoNum = String(b.bookNo || "").replace(/[^0-9]/g, "");
+      const bId = String(b.id || "").trim();
+      const bNo = String(b.bookNo || "").trim();
+      const isLegacyCandidate = /^\d+$/.test(bId) || /^MB-\d+$/i.test(bId) || /^\d+$/.test(bNo) || /^MB-\d+$/i.test(bNo);
+      if (!isLegacyCandidate) return false;
+      const bIdNum = String(parseInt(bId.replace(/[^0-9]/g, ""), 10) || "");
+      const bNoNum = String(parseInt(bNo.replace(/[^0-9]/g, ""), 10) || "");
       return (bIdNum && bIdNum === cleanNum) || (bNoNum && bNoNum === cleanNum);
     });
   }
   return found || null;
+}
+
+function isMasterBannerBookVisibleToStudent(b) {
+  if (!b) return false;
+  if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
+    return b.quizSets.some(qs => qs && qs.isPublic !== "N" && Array.isArray(qs.questions) && qs.questions.length > 0);
+  }
+  return b.hasQuiz === true || b.hasQuiz === "Y" || Number(b.quizCount || b.quizzes || 0) > 0;
 }
 
 function renderBannerList() {
@@ -315,8 +332,13 @@ function renderBmMappedBooks() {
   if (!container) return;
 
   const mapped = curBannerBooks.map(id => findMasterBookByBannerBookId(id)).filter(Boolean);
+  const visibleCount = mapped.filter(isMasterBannerBookVisibleToStudent).length;
   if (countEl) countEl.innerText = mapped.length;
-  if (leftCountEl) leftCountEl.innerText = mapped.length;
+  if (leftCountEl) {
+    leftCountEl.innerHTML = visibleCount < mapped.length
+      ? `${mapped.length} <span class="text-warning font-weight-normal" style="font-size:11px;">(학생 노출 ${visibleCount}권)</span>`
+      : String(mapped.length);
+  }
 
   if (mapped.length === 0) {
     container.innerHTML = `
@@ -345,7 +367,10 @@ function renderBmMappedBooks() {
         </div>
         <div style="min-width: 0; flex: 1;">
           <div class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main); margin-bottom: 2px;">${b.title}</div>
-          <div class="text-truncate text-muted" style="font-size: 11.5px;">${b.author || '저자 미상'} · ${b.publisher || '출판사 미상'}</div>
+          <div class="text-truncate text-muted" style="font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
+            <span class="text-truncate">${b.author || '저자 미상'} · ${b.publisher || '출판사 미상'}</span>
+            ${isMasterBannerBookVisibleToStudent(b) ? '' : '<span class="badge-soft badge-soft-warning flex-shrink-0" style="font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 700;">퀴즈 미등록·학생 미노출</span>'}
+          </div>
         </div>
       </div>
       <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBookFromCurBanner('${b.id}')" style="border-radius: 7px; font-size: 11.5px; padding: 4px 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0;">
@@ -430,6 +455,7 @@ function renderBmAvailableBooks() {
             <div class="text-truncate text-muted" style="font-size: 11.5px; display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;">
               <span class="text-truncate">${b.author || '저자 미상'} · ${b.publisher || '출판사'}</span>
               ${tagDisplay ? `<span class="badge-soft badge-soft-neutral flex-shrink-0" style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; font-weight: 600;">${tagDisplay}</span>` : ''}
+              ${isMasterBannerBookVisibleToStudent(b) ? '' : '<span class="badge-soft badge-soft-warning flex-shrink-0" style="font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 700;">퀴즈 미등록·학생 미노출</span>'}
             </div>
           </div>
         </div>
@@ -542,10 +568,25 @@ async function handleSaveBanner(e) {
 
   const nowTime = Date.now();
   let savedBanner = null;
+  let prevSnapshot = null;
   let bannerMessage = '';
   if (editId) {
     const target = bannerList.find(b => String(b.id) === String(editId));
     if (target) {
+      prevSnapshot = {
+        target,
+        data: {
+          title: target.title,
+          sub: target.sub,
+          imageUrl: target.imageUrl,
+          order: target.order,
+          active: target.active,
+          bookIds: Array.isArray(target.bookIds) ? [...target.bookIds] : [],
+          linkUrl: target.linkUrl,
+          link: target.link,
+          updatedAt: target.updatedAt
+        }
+      };
       target.title = title;
       target.sub = sub;
       target.imageUrl = imageUrl;
@@ -592,7 +633,13 @@ async function handleSaveBanner(e) {
       savedBanner.linkUrl = encodedLinkUrl;
       savedBanner.link = encodedLinkUrl;
     } catch (error) {
-      console.warn("[배너 서버 저장 경고] 로컬 스토리지에 배너 도서 구성을 유지합니다:", error);
+      if (prevSnapshot && prevSnapshot.target) {
+        Object.assign(prevSnapshot.target, prevSnapshot.data);
+      } else {
+        bannerList = bannerList.filter(b => b !== savedBanner);
+      }
+      showMasterToast('배너 서버 저장에 실패했습니다: ' + (error?.message || '다시 시도해 주세요.'), 'danger');
+      return;
     }
   }
 

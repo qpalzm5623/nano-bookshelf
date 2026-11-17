@@ -231,8 +231,8 @@ test('jd.nanosbook.co.kr 및 JD_MASTER 마스터 포털에서는 수납·결제 
 
   assert.match(masterHtml, /id="sidebar-section-master-payment"[^>]*>수납 & 결제 관리</);
   assert.match(masterHtml, /id="sidebar-section-master-system"[^>]*>시스템 설정</);
-  assert.match(masterHtml, /\/css\/portal-brand\.css\?v=20261117jd/);
-  assert.match(masterHtml, /js\/master\/master-core\.js\?v=20261117jd/);
+  assert.match(masterHtml, /\/css\/portal-brand\.css\?v=20261117_jd_theme/);
+  assert.match(masterHtml, /js\/master\/master-core\.js\?v=20261117_banner_sync/);
 
   for (const selectorPrefix of ['html[data-brand="JD"]', 'html[data-restricted-master="true"]']) {
     for (const id of [
@@ -248,4 +248,61 @@ test('jd.nanosbook.co.kr 및 JD_MASTER 마스터 포털에서는 수납·결제 
 
   assert.match(masterCore, /isJdBrand\s*&&\s*\['payment', 'ai-settings'\]\.includes\(tabName\)/);
   assert.match(masterCore, /async function openMasterAiSettingsModal\(\)[\s\S]{0,400}if \(window\.NANO_RESTRICTED_MASTER \|\| isJdBrand\) return;/);
+});
+
+test('jd.nanosbook.co.kr은 코발트 블루 계열 포인트 컬러와 Pretendard Variable 타이포그래피로 통일된다', () => {
+  const brandCss = fs.readFileSync(path.join(root, 'public_html/css/portal-brand.css'), 'utf8');
+  const sharingCss = fs.readFileSync(path.join(root, 'public_html/css/content-sharing.css'), 'utf8');
+  const studentHtml = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
+
+  for (const page of [
+    'public_html/index.html',
+    'public_html/student_preview.html',
+    'public_html/admin_preview.html',
+    'public_html/master_preview.html',
+    'public_html/literacy_report.html',
+    'public_html/portfolio_report.html',
+    'public_html/quiz_result.html',
+  ]) {
+    const html = fs.readFileSync(path.join(root, page), 'utf8');
+    assert.match(html, /pretendardvariable-dynamic-subset\.min\.css/, `${page}에 Pretendard Variable CDN이 필요합니다`);
+    assert.doesNotMatch(html, /static\/pretendard(?:\.min)?\.css/, `${page}의 구형 static Pretendard 링크를 제거해야 합니다`);
+    assert.match(html, /\/css\/portal-brand\.css\?v=20261117_jd_theme/, `${page}에 최신 portal-brand.css 캐시 키가 필요합니다`);
+  }
+
+  assert.doesNotMatch(studentHtml, /NanumSquareRound/);
+  assert.doesNotMatch(studentHtml, /letter-spacing:\s*-0\.35px/);
+  assert.match(sharingCss, /font-family:\s*'Pretendard Variable'/);
+  assert.match(sharingCss, /font-variant-numeric:\s*tabular-nums/);
+
+  for (const selector of [
+    'html[data-brand="JD"] .s-header::before',
+    'html[data-brand="JD"] .btn-drawer-hamburger',
+    'html[data-brand="JD"] .user-info-pill',
+    'html[data-brand="JD"] .drawer-header',
+    'html[data-brand="JD"] #homeCharWelcomeBanner',
+    'html[data-brand="JD"] .grade-chip.active',
+    'html[data-brand="JD"] .act-btn.start',
+    'html[data-brand="JD"] .qopt.selected',
+    'html[data-brand="JD"] .bookshelf-main-tabs',
+    'html[data-brand="JD"] .point-summary-card',
+    'html[data-brand="JD"] .my-rank-banner',
+    'html[data-brand="JD"] .myinfo-hero-card',
+    'html[data-brand="JD"] .btn-login',
+    'html[data-brand="JD"] .btn-beige-secondary:hover',
+  ]) {
+    assert.ok(brandCss.includes(selector), `${selector} JD 테마 규칙이 필요합니다`);
+  }
+});
+
+test('학생 포털에서 캐릭터 선택은 홈 메인 화면(#homeCharWelcomeBanner)에서만 열리며 내 정보 아이디 배지는 본문 폰트를 따른다', () => {
+  const studentHtml = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
+  const openTriggers = studentHtml.match(/openCharacterSelectModal\(/g) || [];
+  // 함수 정의 1곳 + 홈 메인 화면 배너(#homeCharWelcomeBanner) 1곳만 존재해야 합니다.
+  assert.equal(openTriggers.length, 2);
+  assert.match(studentHtml, /id="homeCharWelcomeBanner"[\s\S]{0,400}onclick="openCharacterSelectModal\(\)"/);
+  assert.doesNotMatch(studentHtml, /id="btnDrawerNav_char"/);
+  assert.doesNotMatch(studentHtml, /id="drawerCharAvatar"[\s\S]{0,160}char-edit-badge/);
+  assert.match(studentHtml, /class="myinfo-id-pill"/);
+  assert.doesNotMatch(studentHtml, /identity\.studentId[\s\S]{0,80}monospace|monospace[\s\S]{0,140}identity\.studentId/);
 });

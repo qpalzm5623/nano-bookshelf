@@ -253,17 +253,25 @@ test('추천 API는 60점 이상 인증 도서만 허용하며 기존 마스터 
 });
 
 
-test('학생 랭킹 목록은 독서왕 딱지 없이 이름(아이디)·학급명·포인트(완독 권수)를 표시하고 전국 랭킹에서만 이름 위에 학원명을 노출한다', () => {
+test('학생 랭킹 목록은 독서왕 딱지 없이 범위별 이름·아이디 규칙과 0점 제외를 적용해 표시하고 전국 랭킹에서만 이름 위에 학원명을 노출한다', () => {
   const html = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
   const scriptMatch = html.match(/function renderRank\(\) \{[\s\S]*?\n\}/);
   assert.ok(scriptMatch, 'student_preview.html에 renderRank 함수가 있어야 합니다');
   const escapeMatch = html.match(/function escapeStudentQuizText\([\s\S]*?\n\}/);
   assert.ok(escapeMatch, 'student_preview.html에 escapeStudentQuizText 함수가 있어야 합니다');
 
-  const elements = { rankList: { innerHTML: '', textContent: '' } };
+  const elements = {
+    rankList: { innerHTML: '', textContent: '' },
+    podiumAvatar1: { innerHTML: '' }, podiumName1: { innerText: '' }, podiumPoints1: { innerText: '' },
+    podiumAvatar2: { innerHTML: '' }, podiumName2: { innerText: '' }, podiumPoints2: { innerText: '' },
+    podiumAvatar3: { innerHTML: '' }, podiumName3: { innerText: '' }, podiumPoints3: { innerText: '' }
+  };
   const rowsData = [
     { rank: 1, name: '박진호', username: 'look1', className: 'A Class', academyName: '주식회사 루크러닝', pt: 83, books: 4, me: true, charId: 'nano', stage: 1 },
-    { rank: 2, name: '<김빵빵>', username: 'bbang<1>', className: '', academyName: '행복학원', pt: 0, books: 0, me: false, charId: 'nano', stage: 1 }
+    { rank: 2, name: '남궁민수', username: 'minsu99', className: 'B Class', academyName: '행복학원', pt: 40, books: 2, me: false, charId: 'nano', stage: 1 },
+    { rank: 3, name: '<김빵빵>', username: 'bbang<1>', className: '', academyName: '행복학원', pt: 12, books: 1, me: false, charId: 'nano', stage: 1 },
+    { rank: 4, name: '김철', username: 'chul02', className: 'C Class', academyName: '별빛학원', pt: 5, books: 0, me: false, charId: 'nano', stage: 1 },
+    { rank: 5, name: '영점학생', username: 'zero01', className: 'A Class', academyName: '주식회사 루크러닝', pt: 0, books: 0, me: false, charId: 'nano', stage: 1 }
   ];
   const ctx = vm.createContext({
     window: {},
@@ -271,6 +279,7 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 이름(아이디)·학급�
     currentRankScope: 'academy',
     currentRankPeriod: 'month',
     fullRankDatabase: {
+      class: { month: rowsData.map(r => ({ ...r })) },
       academy: { month: rowsData.map(r => ({ ...r })) },
       national: { month: rowsData.map(r => ({ ...r })) }
     },
@@ -283,17 +292,27 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 이름(아이디)·학급�
   });
   vm.runInContext(escapeMatch[0] + '\n' + scriptMatch[0], ctx);
 
-  // 1) 학원 전체 랭킹: 독서왕 딱지 없음, 이름 위 학원명 없음, 이름(아이디) + 학급명 + 포인트(완독 권수)
+  // 1) 학원 전체 랭킹: 이름은 전체 표기, 아이디는 앞 두 글자만 표기, 0P 학생 제외
   ctx.renderRank();
   const academyHtml = elements.rankList.innerHTML;
   assert.equal(academyHtml.includes('독서왕'), false, '랭킹 목록 카드에 독서왕 딱지가 남아있으면 안 됩니다');
   assert.equal(academyHtml.includes('rank-card-academy'), false, '학원 전체 랭킹에서는 이름 위에 학원명을 표시하지 않습니다');
-  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(look1\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
-  assert.match(academyHtml, /<span class="rank-card-class">학급 미지정<\/span>/);
+  assert.equal(academyHtml.includes('영점학생'), false, '포인트가 0인 학생은 랭킹 목록에 표시되지 않아야 합니다');
+  assert.equal(elements.podiumName1.innerText, '박진호');
+  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
+  assert.match(academyHtml, /<span>남궁민수<\/span><span class="rank-card-id">\(mi\)<\/span>/);
+  assert.match(academyHtml, /<span class="rank-card-id">\(bb\)<\/span><span class="rank-card-class">학급 미지정<\/span>/);
   assert.match(academyHtml, /83<span class="rank-card-pt-unit">P<\/span><\/span><span class="rank-card-books">\(완독 4권\)<\/span>/);
   assert.equal(academyHtml.includes('<김빵빵>') || academyHtml.includes('<1>'), false, 'XSS 위험 문자는 이스케이프되어야 합니다');
 
-  // 2) 전국 랭킹: 학원명이 이름(.rank-card-title)보다 위에 배치됨
+  // 2) 우리 반 랭킹: 이름 전체 표기, 아이디 앞 두 글자만, 0P 제외
+  ctx.currentRankScope = 'class';
+  ctx.renderRank();
+  const classHtml = elements.rankList.innerHTML;
+  assert.equal(classHtml.includes('영점학생'), false);
+  assert.match(classHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\)<\/span>/);
+
+  // 3) 전국 랭킹: 학원명 위에 표시 + 이름 가운데 글자만 * 처리 + 아이디 앞 두 글자만 + 0P 제외
   ctx.currentRankScope = 'national';
   ctx.renderRank();
   const nationalHtml = elements.rankList.innerHTML;
@@ -301,5 +320,82 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 이름(아이디)·학급�
   const titleIdx = nationalHtml.indexOf('rank-card-title');
   assert.ok(acadIdx !== -1 && acadIdx < titleIdx, '전국 랭킹에서는 학원명이 이름보다 먼저(위에) 렌더링되어야 합니다');
   assert.ok(nationalHtml.includes('주식회사 루크러닝'), '전국 랭킹에 학원명이 표시되어야 합니다');
+  assert.equal(nationalHtml.includes('영점학생'), false, '전국 랭킹에서도 포인트가 0인 학생은 제외되어야 합니다');
+  assert.equal(elements.podiumName1.innerText, '박*호');
+  assert.equal(elements.podiumName2.innerText, '남**수');
+  assert.match(nationalHtml, /<span>박\*호<\/span><span class="rank-card-id">\(lo\)<\/span>/);
+  assert.match(nationalHtml, /<span>남\*\*수<\/span><span class="rank-card-id">\(mi\)<\/span>/);
+  assert.match(nationalHtml, /<span>김\*<\/span><span class="rank-card-id">\(ch\)<\/span>/);
   assert.equal(nationalHtml.includes('독서왕'), false);
+});
+
+test('학생 랭킹 API는 전국에서 이름 가운데 글자만 * 처리하고 전 범위에서 아이디 앞 2글자·0점 학생 제외를 적용한다', async () => {
+  const http = load('lib/portal-http.ts', { './prisma': {}, './portal-auth': {} });
+  const user = {
+    id: 'stu-me',
+    role: 'STUDENT',
+    academyId: 'acad-1',
+    classGroupId: 'class-1',
+    points: 117,
+    academy: { name: '주식회사 루크러닝' },
+    classGroup: { name: 'A Class' }
+  };
+  let capturedSql = '';
+  let mockRankedRows = [
+    { id: 'stu-me', name: '박진호', username: 'look1', points: 244, academyName: '주식회사 루크러닝', className: 'A Class', amount: 117, books: 5, rank: 1, participants: 3 },
+    { id: 'stu-2', name: '남궁민수', username: 'st5956', points: 100, academyName: '나노책장학원', className: '소리반', amount: 88, books: 3, rank: 2, participants: 3 },
+    { id: 'stu-3', name: '이산', username: 'lee99', points: 40, academyName: '나노책장학원', className: '하늘반', amount: 15, books: 1, rank: 3, participants: 3 },
+    { id: 'stu-zero', name: '영점학생', username: 'zero88', points: 0, academyName: '주식회사 루크러닝', className: 'A Class', amount: 0, books: 0, rank: 4, participants: 3 }
+  ];
+  const db = {
+    $queryRaw: async (strings, ..._values) => {
+      capturedSql = Array.isArray(strings) ? strings.join(' ? ') : String(strings);
+      return mockRankedRows;
+    },
+    portalSetting: { findMany: async () => [] },
+    quizAttempt: { findMany: async () => [] },
+    readingDiary: { findMany: async () => [] }
+  };
+  const learning = load('lib/portal-learning.ts', {});
+  const run = load('api/activity.ts', {
+    '../lib/prisma': { prisma: db },
+    '../lib/portal-http': { ...http, authenticate: async () => user },
+    '../lib/portal-learning': { ...learning, readingProgress: async (_db, ids) => new Map(ids.map(id => [id, { totalRead: id === 'stu-me' ? 5 : 1 }])) }
+  }).default;
+  const response = () => ({ code: 200, setHeader() {}, status(code) { this.code = code; return this; }, json(data) { this.data = data; } });
+
+  // 1) 전국 랭킹
+  const natRes = response();
+  await run({ method: 'GET', query: { action: 'rankings', scope: 'national', period: 'month' } }, natRes);
+  assert.equal(natRes.code, 200);
+  assert.match(capturedSql, /HAVING SUM\(p\.amount\) > 0/, 'DB 쿼리 단계에서 0포인트 학생을 제외해야 합니다');
+  assert.match(capturedSql, /FROM eligible e JOIN points p ON p\."memberId" = e\.id/, '포인트 보유 학생만 INNER JOIN 해야 합니다');
+  assert.deepEqual(natRes.data.rows.map(r => ({ name: r.name, username: r.username, pt: r.pt })), [
+    { name: '박*호', username: 'lo', pt: 117 },
+    { name: '남**수', username: 'st', pt: 88 },
+    { name: '이*', username: 'le', pt: 15 }
+  ]);
+  assert.equal(natRes.data.myRank, 1);
+
+  // 2) 우리 반 / 우리 학원 랭킹: 이름 전체, 아이디 앞 2글자
+  for (const scope of ['class', 'academy']) {
+    const res = response();
+    await run({ method: 'GET', query: { action: 'rankings', scope, period: 'month' } }, res);
+    assert.equal(res.code, 200);
+    assert.deepEqual(res.data.rows.map(r => ({ name: r.name, username: r.username })), [
+      { name: '박진호', username: 'lo' },
+      { name: '남궁민수', username: 'st' },
+      { name: '이산', username: 'le' }
+    ]);
+  }
+
+  // 3) 본인이 0점인 경우: rows에서 제외되고 myRank는 null, myPoints는 0
+  mockRankedRows = [{ id: 'stu-2', name: '남궁민수', username: 'st5956', points: 100, academyName: '주식회사 루크러닝', className: 'A Class', amount: 50, books: 2, rank: 1, participants: 1 }];
+  const zeroMeRes = response();
+  await run({ method: 'GET', query: { action: 'rankings', scope: 'academy', period: 'month' } }, zeroMeRes);
+  assert.equal(zeroMeRes.code, 200);
+  assert.equal(zeroMeRes.data.myRank, null);
+  assert.equal(zeroMeRes.data.myPoints, 0);
+  assert.equal(zeroMeRes.data.myBooks, 5);
+  assert.deepEqual(zeroMeRes.data.rows.map(r => r.username), ['st']);
 });

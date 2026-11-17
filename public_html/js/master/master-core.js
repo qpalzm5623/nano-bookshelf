@@ -950,38 +950,27 @@ function saveOperationsToStorage() {
 }
 
 function loadOperationsFromStorage() {
-  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') {
-    bannerList = (window.NANO_SERVER_BANNERS || []).map(function(b) { return { ...b }; });
-    themeList = (window.NANO_SERVER_THEMES || []).map(function(t) { return { ...t }; });
-    return;
-  }
   if (window.NANO_SERVER_DATA) {
-    var localBanners = [];
-    var localThemes = [];
-    try {
-      localBanners = JSON.parse(localStorage.getItem("NANO_MASTER_BANNERS") || "[]");
-      localThemes = JSON.parse(localStorage.getItem("NANO_MASTER_THEMES") || "[]");
-    } catch (e) {}
     bannerList = (window.NANO_SERVER_BANNERS || []).map(function(sb) {
-      var lb = Array.isArray(localBanners) ? localBanners.find(function(x) { return String(x.id) === String(sb.id) || (x.title && x.title === sb.title); }) : null;
-      var linkMeta = parseBannerMetaFromLink(sb.linkUrl || sb.link || (lb && (lb.linkUrl || lb.link)) || "");
-      var serverBookIds = (Array.isArray(sb.bookIds) && sb.bookIds.length > 0)
-        ? sb.bookIds
-        : (linkMeta.hasBooksParam ? linkMeta.bookIds : []);
-      var localBookIds = (lb && Array.isArray(lb.bookIds)) ? lb.bookIds : [];
-      var finalBookIds = serverBookIds.length > 0 ? serverBookIds : localBookIds;
-      if (lb && lb.updatedAt && (!sb.updatedAt || lb.updatedAt >= sb.updatedAt) && Array.isArray(lb.bookIds)) {
-        finalBookIds = lb.bookIds;
-      }
+      var linkMeta = parseBannerMetaFromLink(sb.linkUrl || sb.link || "");
+      var effectiveIds = getEffectiveBannerBookIds(sb);
       return Object.assign({}, sb, {
-        sub: sb.sub || linkMeta.sub || (lb && lb.sub) || "",
-        bookIds: finalBookIds.map(function(id) { return String(id).trim(); }).filter(Boolean),
-        imageUrl: sb.imageUrl || sb.image || (lb && (lb.imageUrl || lb.image)) || "",
-        clicks: sb.clicks || (lb && lb.clicks) || 0,
-        createdAt: sb.createdAt || (lb && lb.createdAt) || "2026-09-01"
+        sub: sb.sub || linkMeta.sub || "",
+        bookIds: effectiveIds,
+        imageUrl: sb.imageUrl || sb.image || "",
+        clicks: sb.clicks || 0,
+        createdAt: sb.createdAt || "2026-09-01"
       });
     });
     window.NANO_SERVER_BANNERS = bannerList.slice();
+    if (window.NANO_BRAND === 'JD') {
+      themeList = (window.NANO_SERVER_THEMES || []).map(function(t) { return { ...t }; });
+      return;
+    }
+    var localThemes = [];
+    try {
+      localThemes = JSON.parse(localStorage.getItem("NANO_MASTER_THEMES") || "[]");
+    } catch (e) {}
     var hadUnsyncedLocalOrder = false;
     themeList = (window.NANO_SERVER_THEMES || []).map(function(st) {
       var lt = Array.isArray(localThemes) ? localThemes.find(function(x) { return String(x.id) === String(st.id) || (x.title && x.title === st.title) || (x.tag && x.tag === st.tag); }) : null;
@@ -2028,11 +2017,22 @@ function validateEmailField(input) {
 // prefix: 'reg' (신규등록), 'edit' (수정)
 // -----------------------------------------------------------
 function openKakaoAddressSearch(prefix) {
-  // Daum 우편번호 서비스 스크립트 동적 로드
-  if (typeof daum === "undefined" || !daum.Postcode) {
+  // Kakao(구 Daum) 우편번호 서비스 스크립트 동적 로드 (t1.daumcdn.net 종료 대응)
+  const PostcodeCtor = (typeof kakao !== "undefined" && kakao.Postcode) || (typeof daum !== "undefined" && daum.Postcode);
+  if (!PostcodeCtor) {
+    const existing = document.querySelector('script[data-kakao-postcode="1"]');
+    if (existing) {
+      existing.addEventListener("load", () => _execKakaoSearch(prefix), { once: true });
+      return;
+    }
     const script = document.createElement("script");
-    script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    script.src = "https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    script.setAttribute("data-kakao-postcode", "1");
     script.onload = () => _execKakaoSearch(prefix);
+    script.onerror = () => {
+      if (typeof showMasterToast === "function") showMasterToast("우편번호 검색 스크립트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      else alert("우편번호 검색 스크립트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    };
     document.head.appendChild(script);
   } else {
     _execKakaoSearch(prefix);
@@ -2040,7 +2040,9 @@ function openKakaoAddressSearch(prefix) {
 }
 
 function _execKakaoSearch(prefix) {
-  new daum.Postcode({
+  const PostcodeCtor = (typeof kakao !== "undefined" && kakao.Postcode) || (typeof daum !== "undefined" && daum.Postcode);
+  if (!PostcodeCtor) return;
+  new PostcodeCtor({
     oncomplete: function(data) {
       const postcodeEl = document.getElementById(prefix + "Postcode");
       const addressEl = document.getElementById(prefix + "Address");

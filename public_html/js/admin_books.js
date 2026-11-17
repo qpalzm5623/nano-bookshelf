@@ -78,6 +78,143 @@ function checkBookHasAvailableSheet(b) {
   return candidates.some(function(k) { return k && sheetSet.has(k); });
 }
 
+function countValidAcadQuizSets(sets) {
+  if (!Array.isArray(sets)) return 0;
+  return sets.filter(function(s) {
+    if (!s) return false;
+    var qLen = Array.isArray(s.questions)
+      ? s.questions.length
+      : (Array.isArray(s.quizzes) ? s.quizzes.length : 0);
+    return qLen > 0;
+  }).length;
+}
+
+// 학원 콘텐츠 관리 '북퀴즈 현황' 컬럼용 등록 세트 수 계산 (모달/서버/로컬 데이터 통합 판정)
+function getAcademyBookQuizSetCount(b) {
+  if (!b) return 0;
+
+  if (b._quizLoadedFromServer && Array.isArray(b.quizSets)) {
+    return countValidAcadQuizSets(b.quizSets);
+  }
+
+  if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
+    var validCount = countValidAcadQuizSets(b.quizSets);
+    if (validCount > 0) return validCount;
+  }
+
+  if (typeof b.quizSetCount === 'number' && b.quizSetCount >= 0) {
+    return b.quizSetCount;
+  }
+
+  if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES) {
+    var qList = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
+    if (Array.isArray(qList) && qList.length > 0) {
+      if (qList[0] && (qList[0].questions || qList[0].quizzes || qList[0].authorName || qList[0].authorType)) {
+        var migValid = countValidAcadQuizSets(qList);
+        return migValid > 0 ? migValid : qList.length;
+      }
+      return 1;
+    }
+  }
+
+  if (b.title && String(b.title).indexOf('어린 왕자') !== -1) {
+    return 2;
+  }
+
+  if (Array.isArray(b.quizList) && b.quizList.length > 0) return 1;
+  if (typeof b.quizCount === 'number' && b.quizCount > 0) return 1;
+  if (typeof b.quizzes === 'number' && b.quizzes > 0) return 1;
+  if (Array.isArray(b.quizzes) && b.quizzes.length > 0) return 1;
+  if (b.hasQuiz === true || b.hasQuiz === 'Y') return 1;
+
+  if (b.quizStatus && (String(b.quizStatus).indexOf('미등록') !== -1 || String(b.quizStatus).indexOf('미출제') !== -1 || String(b.quizStatus).indexOf('0문항') !== -1)) {
+    return 0;
+  }
+
+  if (b.id === 'FA000001' || (b.title && String(b.title).indexOf('고양이 목욕탕') !== -1)) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function formatAcadQuizSetStatusText(setCount) {
+  var cnt = Number(setCount) > 0 ? Number(setCount) : 0;
+  return cnt > 0 ? (cnt + '세트 등록') : '미등록';
+}
+
+function buildAcadQuizSetBadgeHtml(setCount) {
+  var cnt = Number(setCount) > 0 ? Number(setCount) : 0;
+  if (cnt > 0) {
+    return `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-check mr-1"></i>${cnt}세트 등록</span>`;
+  }
+  return `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-xmark mr-1"></i>미등록</span>`;
+}
+
+// 모달/엑셀 퀴즈 변경 후 academyBookList와 MIGRATED_BOOKS·MIGRATED_QUIZZES의 세트 수 메타를 일괄 동기화
+function syncAcademyBookQuizMeta(book, sets, opts) {
+  if (!book) return 0;
+  var options = opts || {};
+  var validCount = typeof options.overrideSetCount === 'number'
+    ? options.overrideSetCount
+    : countValidAcadQuizSets(sets);
+  var totalQuestions = Array.isArray(sets)
+    ? sets.reduce(function(n, s) { return n + (Array.isArray(s && s.questions) ? s.questions.length : 0); }, 0)
+    : 0;
+  var statusLabel = formatAcadQuizSetStatusText(validCount);
+
+  var applyMeta = function(target) {
+    if (!target) return;
+    if (Array.isArray(sets)) target.quizSets = sets;
+    target.quizSetCount = validCount;
+    target.hasQuiz = validCount > 0;
+    if (totalQuestions > 0 || validCount === 0) {
+      target.quizCount = totalQuestions;
+      if (Array.isArray(sets) && sets[0] && Array.isArray(sets[0].questions)) {
+        target.quizzes = sets[0].questions.length;
+        target.quizList = sets[0].questions;
+      } else if (validCount === 0) {
+        target.quizzes = 0;
+        target.quizList = [];
+      }
+    }
+    target.quizStatus = statusLabel;
+    if (options.loadedFromServer !== undefined) {
+      target._quizLoadedFromServer = !!options.loadedFromServer;
+    }
+  };
+
+  applyMeta(book);
+
+  var matchTarget = function(other) {
+    if (!other || other === book) return false;
+    return Boolean(
+      (book.id && (other.id === book.id || other.bookNo === book.id)) ||
+      (book.bookNo && (other.id === book.bookNo || other.bookNo === book.bookNo)) ||
+      (book.serverId && other.serverId === book.serverId)
+    );
+  };
+
+  if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
+    academyBookList.forEach(function(item) {
+      if (matchTarget(item)) applyMeta(item);
+    });
+  }
+  if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) {
+    window.MIGRATED_BOOKS.forEach(function(item) {
+      if (matchTarget(item)) applyMeta(item);
+    });
+  }
+  if (typeof window !== 'undefined' && Array.isArray(sets)) {
+    window.MIGRATED_QUIZZES = window.MIGRATED_QUIZZES || {};
+    if (book.id) window.MIGRATED_QUIZZES[book.id] = sets;
+    if (book.bookNo) window.MIGRATED_QUIZZES[book.bookNo] = sets;
+    if (book.serverId) window.MIGRATED_QUIZZES[book.serverId] = sets;
+  }
+
+  return validCount;
+}
+
 function createAcademyBookItem(b) {
   if (!b) return null;
 
@@ -118,6 +255,9 @@ function createAcademyBookItem(b) {
       b.series = canon.series || b.series;
       b.cover = canon.cover || b.cover;
       b.quizzes = canon.quizzes || b.quizzes;
+      if (typeof canon.quizSetCount === 'number' && typeof b.quizSetCount !== 'number') b.quizSetCount = canon.quizSetCount;
+      if (canon.hasQuiz !== undefined && b.hasQuiz === undefined) b.hasQuiz = canon.hasQuiz;
+      if (canon.quizCount !== undefined && b.quizCount === undefined) b.quizCount = canon.quizCount;
       if (canon.sheet !== undefined) b.sheet = canon.sheet;
       if (canon.worksheet !== undefined) b.worksheet = canon.worksheet;
       if (canon.worksheetUrl !== undefined) b.worksheetUrl = canon.worksheetUrl;
@@ -186,13 +326,17 @@ function createAcademyBookItem(b) {
     materialName: hasSheet ? (b.materialName || (title + '_나노시트.pdf')) : null,
     materialSize: hasSheet ? (b.materialSize || '1.45 MB') : null,
     materialType: hasSheet ? '나노 시트 (PDF)' : null,
-    quizStatus: (b.quizzes || 5) + '문항 완비',
+    hasQuiz: typeof b.hasQuiz === 'boolean' ? b.hasQuiz : (b.hasQuiz === 'Y' || getAcademyBookQuizSetCount(b) > 0),
+    quizCount: typeof b.quizCount === 'number' ? b.quizCount : (typeof b.quizzes === 'number' ? b.quizzes : 0),
+    quizSetCount: typeof b.quizSetCount === 'number' ? b.quizSetCount : undefined,
+    quizStatus: formatAcadQuizSetStatusText(getAcademyBookQuizSetCount(b)),
     readCount: (b.quizCompletions || 0) + '회',
     answerGuide: '【나노 시트 핵심 정답 및 생각담기 가이드】\n\n' + (b.thinkInsert ? ('▶ 생각담기: ' + b.thinkInsert) : '정규 독서논술 답안'),
     thinkExtract: b.thinkExtract,
     thinkInsert: b.thinkInsert,
     createdAt: b.createdAt || b.date || b.regDate || '',
-    quizSets: b.quizSets || []
+    quizSets: b.quizSets || [],
+    _quizLoadedFromServer: !!b._quizLoadedFromServer
   };
 }
 
@@ -229,7 +373,9 @@ var academyBookList = (function() {
       materialName: '고양이목욕탕_나노시트.pdf',
       materialSize: '1.45 MB',
       materialType: '나노 시트 (PDF)',
-      quizStatus: '5문항 완비',
+      hasQuiz: true,
+      quizSetCount: 1,
+      quizStatus: '1세트 등록',
       readCount: '42회',
       answerGuide: '【나노 시트 생각담기】\n▶ 이야기는 끝났지만, 그 이후 어떤 일이 벌어졌는지 상상해서 이야기를 만들어주세요.'
     }
@@ -850,6 +996,12 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
            <i class="fa-solid fa-circle-info mr-1 text-info"></i>정보 보기
          </button>`;
 
+    var quizSetCount = getAcademyBookQuizSetCount(b);
+    var quizSetTitle = quizSetCount > 0
+      ? ('현재 ' + quizSetCount + '세트의 북퀴즈가 등록되어 있습니다 (클릭하여 관리)')
+      : '등록된 북퀴즈 세트가 없습니다 (클릭하여 출제)';
+    var quizBadgeHtml = buildAcadQuizSetBadgeHtml(quizSetCount);
+
     tr.innerHTML = 
       `<td class="text-center font-weight-bold text-muted" style="font-size: 12px;">${numDesc}</td>
       <td class="text-center">
@@ -878,8 +1030,8 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
       <td class="text-center" style="white-space: nowrap; width: 100px; padding: 6px 8px;">
         ${pdfBtn}
       </td>
-      <td class="text-center" style="cursor: pointer;" onclick="openAcademyStandaloneQuizModal('${b.id}')" title="북퀴즈 문항 세트 바로 열기">
-        <span class="badge-soft badge-soft-success"><i class="fa-solid fa-check mr-1"></i>${b.quizStatus || '5문항 완비'}</span>
+      <td class="text-center" style="cursor: pointer; white-space: nowrap;" onclick="openAcademyStandaloneQuizModal('${b.id}')" title="${quizSetTitle}">
+        ${quizBadgeHtml}
       </td>
       <td class="text-center font-weight-bold">${b.readCount || '0회'}</td>
       <td class="text-center" style="white-space: nowrap; font-size: 11.5px; color: #64748b; font-weight: 600;">
@@ -1128,23 +1280,11 @@ function exportAcademyBooksToExcel() {
 
   // 북퀴즈 등록 세트 수 산출 헬퍼 (몇 곳에서 등록했는지 기준)
   var getQuizSetCount = function(b) {
-    if (!b) return "0";
-    if (typeof getBookQuizSetCount === "function") {
-      var cnt = getBookQuizSetCount(b);
-      return cnt > 0 ? (cnt + "Set") : "0";
-    }
-    if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
-      var valid = b.quizSets.filter(function(s) {
-        return (Array.isArray(s.questions) && s.questions.length > 0) || (Array.isArray(s.quizzes) && s.quizzes.length > 0);
-      });
-      return valid.length > 0 ? (valid.length + "Set") : "0";
-    }
-    if (b.title && b.title.indexOf("어린 왕자") !== -1) return "2Set";
-    if (b.hasQuiz === true || b.hasQuiz === "Y" || (typeof b.quizzes === "number" && b.quizzes > 0) || (b.quizStatus && b.quizStatus.indexOf('완비') !== -1) || (Array.isArray(b.quizList) && b.quizList.length > 0)) {
-      return "1Set";
-    }
-    if (b.id === "FA000001" || (b.title && b.title.indexOf("고양이 목욕탕") !== -1)) return "1Set";
-    return "0";
+    if (!b) return '0';
+    var cnt = typeof getBookQuizSetCount === 'function'
+      ? getBookQuizSetCount(b)
+      : getAcademyBookQuizSetCount(b);
+    return cnt > 0 ? (cnt + 'Set') : '0';
   };
 
   // 도서 ISBN 추출 헬퍼 (13자리 숫자 유지)
@@ -1724,7 +1864,8 @@ async function executeBulkBookUpload() {
           isMyCreation: true,
           isOwned: false,
           hasQuiz: false,
-          quizStatus: '미출제',
+          quizSetCount: 0,
+          quizStatus: '미등록',
           readCount: '0회',
           createdAt: new Date().toISOString()
         });
@@ -1762,7 +1903,8 @@ async function executeBulkBookUpload() {
           isMyCreation: true,
           isOwned: false,
           hasQuiz: false,
-          quizStatus: '미출제',
+          quizSetCount: 0,
+          quizStatus: '미등록',
           readCount: '0회',
           createdAt: new Date().toISOString()
         });
@@ -2281,6 +2423,7 @@ async function executeAcadBulkQuizUpload() {
 
     var groups = Array.from(groupedMap.values());
 
+    var bulkQuizSetCounts = null;
     // 1. 운영 서버 연동 시 백엔드 API(/api/manage?entity=quizzes)로 학원 전용 세트 일괄 저장
     if (window.NanoPortal && typeof NanoPortal.api === 'function' && window.NANO_SERVER_DATA) {
       if (progressEl) {
@@ -2313,7 +2456,10 @@ async function executeAcadBulkQuizUpload() {
             };
           })
         };
-        await NanoPortal.api('/api/manage?entity=quizzes', payload);
+        var bulkRes = await NanoPortal.api('/api/manage?entity=quizzes', payload);
+        if (bulkRes && bulkRes.bookQuizSetCounts && typeof bulkRes.bookQuizSetCounts === 'object') {
+          bulkQuizSetCounts = bulkRes.bookQuizSetCounts;
+        }
       } catch (apiErr) {
         console.error('학원 북퀴즈 일괄 서버 저장 오류:', apiErr);
         alert('[서버 북퀴즈 저장 오류]\n' + (apiErr.message || '서버 통신 중 오류가 발생했습니다.'));
@@ -2370,36 +2516,15 @@ async function executeAcadBulkQuizUpload() {
       }) : [];
       existingSets.push(newAcadSet);
 
-      book.quizSets = existingSets;
-      book.quizList = formattedQuestions;
-      book.hasQuiz = true;
-      book.quizzes = formattedQuestions.length;
-      book.quizCount = formattedQuestions.length;
-      book.quizSetCount = existingSets.length;
-      book.quizStatus = formattedQuestions.length + '문항 완비';
-      // 다음 모달 오픈 시 최신 서버 문항 세트를 다시 조회할 수 있도록 플래그 리셋
-      book._quizLoadedFromServer = false;
-
-      // academyBookList 내 동일 도서 객체에도 동기화
-      if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
-        var listMatch = academyBookList.find(function(ab) {
-          return ab && (ab.id === book.id || ab.bookNo === book.bookNo);
-        });
-        if (listMatch && listMatch !== book) {
-          listMatch.quizSets = existingSets;
-          listMatch.quizList = formattedQuestions;
-          listMatch.hasQuiz = true;
-          listMatch.quizzes = formattedQuestions.length;
-          listMatch.quizCount = formattedQuestions.length;
-          listMatch.quizSetCount = existingSets.length;
-          listMatch.quizStatus = formattedQuestions.length + '문항 완비';
-          listMatch._quizLoadedFromServer = false;
-        }
-      }
-
-      if (book.id) window.MIGRATED_QUIZZES[book.id] = existingSets;
-      if (book.bookNo) window.MIGRATED_QUIZZES[book.bookNo] = existingSets;
-      if (book.serverId) window.MIGRATED_QUIZZES[book.serverId] = existingSets;
+      var serverSetCount = bulkQuizSetCounts
+        ? (bulkQuizSetCounts[book.serverId] !== undefined
+            ? bulkQuizSetCounts[book.serverId]
+            : (bulkQuizSetCounts[book.bookNo] !== undefined ? bulkQuizSetCounts[book.bookNo] : bulkQuizSetCounts[book.id]))
+        : undefined;
+      syncAcademyBookQuizMeta(book, existingSets, {
+        overrideSetCount: typeof serverSetCount === 'number' ? serverSetCount : existingSets.length,
+        loadedFromServer: false
+      });
     });
 
     selectedBulkQuizFile = null;
@@ -3269,7 +3394,9 @@ function saveAcademyBook() {
     materialSize: matSize,
     materialType: matType,
     pdfBlob: currentUploadedPdfBlob,
-    quizStatus: '5문항 완비',
+    hasQuiz: false,
+    quizSetCount: 0,
+    quizStatus: '미등록',
     readCount: '0회',
     answerGuide: memo || '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
   };
@@ -3339,43 +3466,31 @@ if (typeof pdfjsLib !== 'undefined') {
 }
 var curActiveAcadQuizInput = null;
 
+function createBlankAcadQuizQuestion() {
+  return {
+    question: '',
+    type: 'CHOICE',
+    optionCount: 3,
+    mediaType: 'none',
+    mediaUrl: '',
+    mediaCaption: '',
+    mediaName: '',
+    opt1: '',
+    opt2: '',
+    opt3: '',
+    opt4: '',
+    opt5: '',
+    subjectiveAnswer: '',
+    ans: '1',
+    hint: ''
+  };
+}
+
 function getInitialAcadQuizList(book) {
   if (book && Array.isArray(book.quizList) && book.quizList.length > 0) {
     return JSON.parse(JSON.stringify(book.quizList));
   }
-  // 기존 기본 5문항 또는 샘플 문항 복사
-  if (Array.isArray(quizDataList) && quizDataList.length > 0) {
-    return JSON.parse(JSON.stringify(quizDataList));
-  }
-  return [
-    {
-      question: "『어린 왕자』에서 사막여우가 어린 왕자에게 전해준 가장 소중한 비밀인 ㉠에 들어갈 알맞은 낱말은?\n\n[지문]\n\"오로지 ㉠(으)로 보아야만 분명하게 볼 수 있어. 가장 중요한 것은 눈에 보이지 않거든.\"",
-      opt1: "마음",
-      opt2: "눈동자",
-      opt3: "장미꽃",
-      opt4: "여우",
-      ans: "1",
-      hint: "마음으로 보아야만 분명하게 볼 수 있다는 여우의 교훈"
-    },
-    {
-      question: "어린 왕자가 살던 고향 별의 명칭으로 알맞은 것은 무엇인가요?",
-      opt1: "A-101 소행성",
-      opt2: "B-612 소행성",
-      opt3: "C-303 소행성",
-      opt4: "별똥별 404호",
-      ans: "2",
-      hint: "소행성 B-612"
-    },
-    {
-      question: "여우가 어린 왕자에게 알려준 '길들인다'의 참된 의미로 가장 알맞은 것은?",
-      opt1: "상대방을 내 뜻대로 복종시키는 것",
-      opt2: "서로에게 특별한 관계를 맺고 끝까지 책임을 지는 것",
-      opt3: "매일 정해진 시간에 먹이를 주는 것",
-      opt4: "상대방의 약점을 모두 알아내는 것",
-      ans: "2",
-      hint: "서로에게 세상에서 유일한 존재가 되는 것"
-    }
-  ];
+  return [createBlankAcadQuizQuestion()];
 }
 
 // 도서별 퀴즈 세트 다중 관리 (본사, 타 가맹점, 우리 학원 세트)
@@ -3384,7 +3499,10 @@ function ensureAcadBookQuizSets(book) {
     return JSON.parse(JSON.stringify(book.quizSets));
   }
   if (window.NANO_SERVER_DATA) {
-    return [{ id: 'new', authorType: 'ACADEMY', authorName: '우리 학원', academyName: '우리 학원', isMine: true, isPublic: 'Y', questions: [{ question: '', type: 'CHOICE', optionCount: 3, opt1: '', opt2: '', opt3: '', ans: '1' }] }];
+    var acadLabel = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name)
+      ? currentAcademyInfo.name
+      : '우리 학원';
+    return [{ id: 'new', authorType: 'ACADEMY', authorName: acadLabel, academyName: acadLabel, isMine: true, isPublic: 'Y', questions: [createBlankAcadQuizQuestion()] }];
   }
 
   var defaultHQQuizzes = getInitialAcadQuizList(book);
@@ -4452,7 +4570,9 @@ async function handleSaveAcademyBookOnly(event) {
       sheetFile: null,
       pdfBlob: null,
       pdfDataUrl: null,
-      quizStatus: '0문항 (미등록)',
+      hasQuiz: false,
+      quizSetCount: 0,
+      quizStatus: '미등록',
       readCount: '0회',
       answerGuide: '【나노 시트 핵심 정답】\n교사용 지도 가이드 및 정답안 등록 완료.'
     };
@@ -4514,11 +4634,10 @@ async function openAcademyStandaloneQuizModal(bookId = null) {
     try {
       var lookupId = book.serverId || book.bookNo || book.id;
       var res = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupId));
-      book._quizLoadedFromServer = true;
       if (Array.isArray(res.quizSets)) {
-        book.quizSets = res.quizSets;
-        if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
-        window.MIGRATED_QUIZZES[book.id] = res.quizSets;
+        syncAcademyBookQuizMeta(book, res.quizSets, { loadedFromServer: true });
+      } else {
+        book._quizLoadedFromServer = true;
       }
     } catch (err) {
       showAcademyToast(err.message || '퀴즈를 불러오지 못했습니다.'); return;
@@ -4565,11 +4684,10 @@ async function onSelectAcadQuizTargetBook(newBookId) {
     try {
       var lookupId = book.serverId || book.bookNo || book.id;
       var res = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupId));
-      book._quizLoadedFromServer = true;
       if (Array.isArray(res.quizSets)) {
-        book.quizSets = res.quizSets;
-        if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
-        window.MIGRATED_QUIZZES[book.id] = res.quizSets;
+        syncAcademyBookQuizMeta(book, res.quizSets, { loadedFromServer: true });
+      } else {
+        book._quizLoadedFromServer = true;
       }
     } catch (err) {
       showAcademyToast(err.message || '퀴즈를 불러오지 못했습니다.'); return;
@@ -4640,20 +4758,7 @@ function addNewAcadQuizSet() {
     isMine: true,
     isPublic: 'Y',
     createdAt: new Date().toISOString().slice(0, 10),
-    questions: [
-      {
-        question: '',
-        type: 'CHOICE',
-        optionCount: 3,
-        opt1: '',
-        opt2: '',
-        opt3: '',
-        opt4: '',
-        opt5: '',
-        ans: '1',
-        hint: ''
-      }
-    ]
+    questions: [createBlankAcadQuizQuestion()]
   };
 
   editingAcadQuizSets.push(newSet);
@@ -4797,7 +4902,7 @@ function renderAcadQuizTabs() {
 }
 
 // 문항 유형 전환 (객관식 vs 주관식)
-function onAcadQuizTypeChanged(type) {
+function onAcadQuizTypeChanged(type, skipSave) {
   var choiceArea = document.getElementById('abChoiceArea');
   var optCountWrap = document.getElementById('abQuizOptionCountWrap');
   var subjArea = document.getElementById('abSubjectiveArea');
@@ -4812,6 +4917,7 @@ function onAcadQuizTypeChanged(type) {
     if (subjArea) subjArea.style.display = 'block';
   }
 
+  if (skipSave) return;
   var q = editingAcadQuizzes[currentAcadQuizIdx];
   if (q) q.type = type;
   saveCurrentAcadQuizDraft();
@@ -5007,13 +5113,13 @@ function removeAcadQuizMedia() {
   if (typeof renderAcadQuizTabs === 'function') renderAcadQuizTabs();
 }
 
-function changeAcadQuizOptionCount(countVal) {
+function changeAcadQuizOptionCount(countVal, skipSave) {
   var count = parseInt(countVal, 10);
   if (isNaN(count) || count < 3) count = 3;
   if (count > 5) count = 5;
 
   var q = editingAcadQuizzes[currentAcadQuizIdx];
-  if (q) {
+  if (q && !skipSave) {
     q.optionCount = count;
   }
 
@@ -5032,11 +5138,13 @@ function changeAcadQuizOptionCount(countVal) {
     if (checkedVal > count) {
       var r1 = document.getElementById('abAnsRadio1');
       if (r1) r1.checked = true;
-      if (q) q.ans = '1';
+      if (q && !skipSave) q.ans = '1';
     }
   }
 
-  saveCurrentAcadQuizDraft();
+  if (!skipSave) {
+    saveCurrentAcadQuizDraft();
+  }
 }
 
 // 문항 폼 로드
@@ -5055,28 +5163,12 @@ function loadAcadQuizForm() {
     titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-2" style="font-size: 17px;"></i>문제 ${currentAcadQuizIdx + 1}번 문항 <span class="text-muted ml-1" style="font-size: 13.5px; font-weight: 500;">(${curSet ? curSet.authorName : '퀴즈'})</span> ${modeBadge}`;
   }
 
-  // 문항 유형 (객관식 vs 주관식)
-  var qType = q.type || 'CHOICE';
-  if (qType === 'SUBJECTIVE') {
-    var rSubj = document.getElementById('abQuizTypeSubjective');
-    if (rSubj) rSubj.checked = true;
-  } else {
-    var rChoice = document.getElementById('abQuizTypeChoice');
-    if (rChoice) rChoice.checked = true;
-  }
-  onAcadQuizTypeChanged(qType);
-
-  // 질문 (더미 안내 문구는 실제 텍스트가 아닌 placeholder로 디스플레이되도록 처리)
-  var cleanQ = (q.question === '문제를 입력해주세요' || q.question === '문제를 입력해 주세요') ? '' : (q.question || '');
+  // 먼저 모든 입력값을 대상 문항 데이터로 채운 뒤 UI 상태를 전환해 이전 DOM 잔존값이 새 문항에 저장되지 않도록 차단합니다.
+  var rawQStr = typeof q.question === 'string' ? q.question.trim() : '';
+  var isDummyQuestion = rawQStr === '문제를 입력해주세요' || rawQStr === '문제를 입력해 주세요' || /^문제\s*\d+\.\s*지문\s*또는\s*문제\s*내용을\s*입력하세요\.?$/.test(rawQStr);
+  var cleanQ = isDummyQuestion ? '' : (q.question || '');
   if (document.getElementById('abQuizQuestion')) document.getElementById('abQuizQuestion').value = cleanQ;
 
-  // 보기 개수 설정: 디폴트 3개 (3지선다 기본)
-  var optCount = q.optionCount || (q.opt5 ? 5 : (q.opt4 ? 4 : 3));
-  var selOptCount = document.getElementById('abQuizOptionCountSelect');
-  if (selOptCount) selOptCount.value = String(optCount);
-  changeAcadQuizOptionCount(optCount);
-
-  // 보기 1~5 바인딩 (더미 텍스트는 빈 값으로 바인딩하여 placeholder 노출)
   function cleanOptText(opt) {
     if (!opt || typeof opt !== 'string') return '';
     return /^[1-5]번\s*선택지를\s*입력해\s*주세요$/.test(opt.trim()) ? '' : opt;
@@ -5087,15 +5179,28 @@ function loadAcadQuizForm() {
   if (document.getElementById('abOpt4')) document.getElementById('abOpt4').value = cleanOptText(q.opt4);
   if (document.getElementById('abOpt5')) document.getElementById('abOpt5').value = cleanOptText(q.opt5);
 
-  // 주관식 답안
   if (document.getElementById('abSubjectiveAnswer')) {
     document.getElementById('abSubjectiveAnswer').value = q.subjectiveAnswer || '';
   }
 
-  // 정답 라디오 바인딩
   var ansVal = q.ans || '1';
   var targetRadio = document.querySelector(`input[name="abQuizCorrectAns"][value="${ansVal}"]`);
   if (targetRadio) targetRadio.checked = true;
+
+  var qType = q.type || 'CHOICE';
+  if (qType === 'SUBJECTIVE') {
+    var rSubj = document.getElementById('abQuizTypeSubjective');
+    if (rSubj) rSubj.checked = true;
+  } else {
+    var rChoice = document.getElementById('abQuizTypeChoice');
+    if (rChoice) rChoice.checked = true;
+  }
+  onAcadQuizTypeChanged(qType, true);
+
+  var optCount = q.optionCount || (q.opt5 ? 5 : (q.opt4 ? 4 : 3));
+  var selOptCount = document.getElementById('abQuizOptionCountSelect');
+  if (selOptCount) selOptCount.value = String(optCount);
+  changeAcadQuizOptionCount(optCount, true);
 
   // 미디어 데이터 바인딩
   var mediaType = q.mediaType || "none";
@@ -5202,27 +5307,10 @@ function addAcadQuizItem() {
   }
 
   saveCurrentAcadQuizInput();
-  var nextNum = editingAcadQuizzes.length + 1;
-  editingAcadQuizzes.push({
-    question: "",
-    type: 'CHOICE',
-    optionCount: 3,
-    mediaType: "none",
-    mediaUrl: "",
-    mediaCaption: "",
-    mediaName: "",
-    opt1: "",
-    opt2: "",
-    opt3: "",
-    opt4: "",
-    opt5: "",
-    ans: "1",
-    hint: ""
-  });
+  editingAcadQuizzes.push(createBlankAcadQuizQuestion());
   currentAcadQuizIdx = editingAcadQuizzes.length - 1;
   renderAcadQuizTabs();
   loadAcadQuizForm();
-  if (document.getElementById('abQuizQuestion')) document.getElementById('abQuizQuestion').focus();
 }
 
 // 문항 삭제
@@ -5390,9 +5478,7 @@ async function handleSaveAcademyQuizOnly(event) {
       await NanoPortal.api('/api/content?action=quiz', { bookId: book.serverId || book.id, seq: currentSet.seq, revision: currentSet.revision || 0, isPublic: currentSet.isPublic || 'Y',
         questions: editingAcadQuizzes.map(function (q) { return { question: q.question, type: q.type || 'CHOICE', options: [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(Boolean), answer: q.type === 'SUBJECTIVE' ? (q.subjectiveAnswer || q.subjectiveAns) : String(q.ans), similarAns: q.similarAns || '', hint: q.hint || '' }; }) });
       var fresh = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(book.serverId || book.id));
-      book.quizSets = fresh.quizSets; book.hasQuiz = fresh.quizSets.length > 0;
-      book.quizCount = fresh.quizSets.reduce(function (n, s) { return n + s.questions.length; }, 0);
-      window.MIGRATED_QUIZZES = window.MIGRATED_QUIZZES || {}; window.MIGRATED_QUIZZES[book.id] = fresh.quizSets;
+      syncAcademyBookQuizMeta(book, Array.isArray(fresh.quizSets) ? fresh.quizSets : [], { loadedFromServer: true });
       renderAcademyBookTable();
       showAcademyToast('선택한 북퀴즈와 공개 범위를 저장했습니다.');
       $('#academyQuizManageModal').modal('hide');
@@ -5401,9 +5487,9 @@ async function handleSaveAcademyQuizOnly(event) {
     return;
   }
 
-  book.quizSets = JSON.parse(JSON.stringify(editingAcadQuizSets));
+  var savedSets = JSON.parse(JSON.stringify(editingAcadQuizSets));
+  syncAcademyBookQuizMeta(book, savedSets);
   book.quizList = JSON.parse(JSON.stringify(editingAcadQuizzes));
-  book.quizStatus = `${editingAcadQuizzes.length}문항 완비`;
 
   renderAcademyBookTable();
 

@@ -211,6 +211,25 @@ export default async function handler(req: any, res: any) {
         }
       }
 
+      const isFirstStudentLogin = member!.role === 'STUDENT' && !member!.lastLoginAt;
+      if (isFirstStudentLogin && prisma.portalSetting?.upsert) {
+        try {
+          await prisma.portalSetting.upsert({
+            where: { key: 'onboarding_interest:' + member!.id },
+            create: {
+              key: 'onboarding_interest:' + member!.id,
+              scope: 'student_onboarding',
+              value: { status: 'PENDING', sessionId: newSid, triggeredAt: new Date().toISOString() }
+            },
+            update: {
+              value: { status: 'PENDING', sessionId: newSid, triggeredAt: new Date().toISOString() }
+            }
+          });
+        } catch (e) {
+          console.warn('최초 로그인 관심 주제 온보딩 플래그 저장 실패:', e);
+        }
+      }
+
       await prisma.member.update({ where: { id: member!.id }, data: { lastLoginAt: new Date() } });
       res.setHeader('Set-Cookie', cookie(signSession(member!.id, member!.password!, Date.now(), newSid)));
       return res.status(200).json({ user: publicUser(member) });

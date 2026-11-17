@@ -19,7 +19,8 @@
   <link rel="shortcut icon" href="resources/images/icons/icon-192.png" type="image/png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
@@ -76,7 +77,7 @@
       color: var(--text);
       min-height: 100vh;
       margin: 0;
-      letter-spacing: -0.35px;
+      letter-spacing: -0.015em;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
@@ -836,10 +837,14 @@
       align-items: center;
       justify-content: center;
       border-radius: 50%;
-      cursor: pointer;
+      cursor: default;
       transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .char-avatar-box:hover {
+    .char-avatar-box[onclick] {
+      cursor: pointer;
+    }
+    .char-avatar-box[onclick]:hover,
+    #homeCharWelcomeBanner:hover .char-avatar-box {
       transform: scale(1.08);
     }
     .char-avatar-box.bounce {
@@ -914,19 +919,6 @@
       background: rgba(255,255,255,0.1);
       border-radius: 50%;
       pointer-events: none;
-    }
-    .my-rank-speech {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 12px;
-      padding: 7px 12px;
-      font-size: 11.5px;
-      font-weight: 700;
-      color: #0f766e;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-      margin-top: 8px;
     }
 
     /* TOP 3 명예의 전당 포디움 단상 */
@@ -2054,7 +2046,7 @@
       flex-wrap: wrap;
       gap: 12px;
       box-shadow: 0 3px 12px rgba(100, 70, 40, 0.04);
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'NanumSquareRound', system-ui, sans-serif;
+      font-family: inherit;
     }
     .theme-selected-bar {
       display: flex;
@@ -2063,7 +2055,7 @@
       flex-wrap: wrap;
       margin-bottom: 10px;
       padding: 4px 2px;
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'NanumSquareRound', system-ui, sans-serif;
+      font-family: inherit;
     }
     .btn-theme-back {
       background: #ffffff;
@@ -2858,7 +2850,9 @@
     }
     .bs-stat-num {
       font-size: 22px;
-      font-weight: 900;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
       line-height: 1.2;
     }
     .bs-stat-label {
@@ -3029,6 +3023,77 @@
       border-color: var(--leaf);
       color: var(--leaf);
       font-weight: 800;
+    }
+    .first-interest-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+    .first-interest-chip {
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.16s ease;
+      text-align: center;
+      word-break: keep-all;
+    }
+    .first-interest-chip:hover {
+      border-color: var(--leaf-mid);
+      background: #ffffff;
+      color: var(--leaf);
+    }
+    .first-interest-chip.selected {
+      background: var(--leaf-soft);
+      border-color: var(--leaf);
+      color: var(--leaf);
+      font-weight: 800;
+      box-shadow: 0 3px 10px rgba(0, 168, 150, 0.14);
+    }
+    .first-interest-skip-btn {
+      flex: 0 0 34%;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: #64748b;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13.5px;
+      padding: 11px 12px;
+      cursor: pointer;
+    }
+    .first-interest-skip-btn:hover {
+      background: #f1f5f9;
+      color: #334155;
+    }
+    .first-interest-save-btn {
+      flex: 1;
+      border: none;
+      background: linear-gradient(135deg, #02c39a 0%, #00a896 100%);
+      color: #ffffff;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 13.5px;
+      padding: 11px 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 168, 150, 0.28);
+      transition: all 0.16s ease;
+    }
+    .first-interest-save-btn:disabled {
+      background: #cbd5e1 !important;
+      color: #64748b !important;
+      box-shadow: none !important;
+      cursor: not-allowed;
     }
     .interest-rec-scroll {
       display: flex;
@@ -3710,16 +3775,16 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261112_content_sharing"></script>
+<script src="js/portal-client.js?v=20261117_banner_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
-<link rel="stylesheet" href="css/quiz-result.css?v=20261110-characters">
+<link rel="stylesheet" href="css/quiz-result.css?v=20261117_jd_theme">
 <script src="js/reading-progress.js?v=20261029-integrity"></script>
 <script src="js/quiz-result-art.js?v=20261110-characters"></script>
-<link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_ui">
+<link rel="stylesheet" href="css/content-sharing.css?v=20261117_jd_theme">
 <script src="js/nano-dialog.js?v=20261113_center"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
-<link rel="stylesheet" href="/css/portal-brand.css?v=20261116jd">
+<link rel="stylesheet" href="/css/portal-brand.css?v=20261117_jd_theme">
 <script src="/js/portal-brand.js?v=20261116jd"></script>
 </head>
 <body>
@@ -3730,9 +3795,8 @@
   <div class="drawer-header" style="padding: 20px 18px 16px;">
     <button type="button" class="btn-drawer-close" onclick="closeStudentDrawer()" title="메뉴 닫기">&times;</button>
     <div style="display: flex; align-items: center; gap: 14px;">
-      <div class="char-avatar-box bounce" onclick="openCharacterSelectModal()" title="캐릭터 프로필 변경하기" style="width: 58px; height: 58px; flex-shrink: 0;">
+      <div class="char-avatar-box bounce" style="width: 58px; height: 58px; flex-shrink: 0;">
         <div id="drawerCharAvatar" style="width: 100%; height: 100%;"></div>
-        <div class="char-edit-badge" title="프로필 변경"><i class="fa-solid fa-pen"></i></div>
       </div>
       <div class="drawer-profile-info" style="flex: 1; min-width: 0;">
         <div class="drawer-user-name" style="display: flex; align-items: center; gap: 6px;">
@@ -3747,22 +3811,10 @@
         </div>
       </div>
     </div>
-    <button type="button" onclick="openCharacterSelectModal()" style="width: 100%; margin-top: 14px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); border-radius: 10px; padding: 7px 10px; color: #fff; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: background 0.2s;">
-      <i class="fa-solid fa-wand-magic-sparkles" style="color: #fde047;"></i> 나노 프렌즈 캐릭터 변경하기
-    </button>
   </div>
 
   <!-- 2. 메뉴 목록 -->
   <div class="drawer-nav-list">
-    <!-- [NEW 1순위] 내 캐릭터 프로필 설정 -->
-    <button type="button" class="drawer-nav-item" id="btnDrawerNav_char" onclick="openCharacterSelectModal()" style="background: #f0fdfa; border-color: #99f6e4;">
-      <div class="drawer-nav-left">
-        <i class="fa-solid fa-icons" style="color: #0d9488;"></i>
-        <span style="color: #0f766e; font-weight: 800;">내 캐릭터 프로필 설정</span>
-      </div>
-      <div class="drawer-nav-right"><span style="font-size: 10px; font-weight: 700; background: #00a896; color: #fff; padding: 2px 6px; border-radius: 6px;">9종</span> <i class="fa-solid fa-chevron-right ml-1"></i></div>
-    </button>
-
     <!-- [신규 이동] 문해력 테스트 -->
     <button type="button" class="drawer-nav-item" id="btnDrawerNav_literacy" onclick="closeStudentDrawer(); switchPanel('literacy');">
       <div class="drawer-nav-left">
@@ -4498,9 +4550,8 @@
     <div class="my-rank-banner">
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="char-avatar-box" onclick="openCharacterSelectModal()" title="캐릭터 변경하기" style="width: 52px; height: 52px; background: rgba(255,255,255,0.2); border-radius: 50%;">
+          <div class="char-avatar-box" style="width: 52px; height: 52px; background: rgba(255,255,255,0.2); border-radius: 50%;">
             <div id="rankMyCharAvatar" style="width: 100%; height: 100%;"></div>
-            <div class="char-edit-badge" style="background:#f59e0b;"><i class="fa-solid fa-crown" style="font-size:8px;"></i></div>
           </div>
           <div>
             <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;" id="myRankScopeTitle">포인트 순위 불러오는 중</div>
@@ -4514,10 +4565,6 @@
           <div style="font-size: 24px; font-weight: 900; color: #fde047; text-shadow: 0 2px 8px rgba(0,0,0,0.2);" id="myRankPeriodPoints">0 P</div>
           <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 6px; font-weight: 700;" id="myRankReadCountBadge">완독 0권 · 누적 0P</span>
         </div>
-      </div>
-      <div class="my-rank-speech" id="rankMyCharSpeech">
-        <i class="fa-solid fa-sparkles" style="color: #f59e0b;"></i>
-        <span>실제 학습 포인트를 집계하고 있어요.</span>
       </div>
     </div>
 
@@ -4646,6 +4693,35 @@
       <button type="button" class="btn btn-secondary w-50" onclick="closeCharacterSelectModal()" style="border-radius: 12px; font-weight: 700; padding: 10px;">취소</button>
       <button type="button" class="btn btn-primary w-50" id="btnApplyCharacter" onclick="applySelectedCharacter()" style="border-radius: 12px; font-weight: 800; padding: 10px; background: #00a896; border-color: #00a896; box-shadow: 0 4px 12px rgba(0,168,150,0.3);">
         <i class="fa-solid fa-check mr-1"></i> 이 캐릭터로 설정
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- [NEW] 최초 로그인 1회 이벤트: 관심 주제 선택 중앙 팝업 -->
+<div id="firstLoginInterestModal" class="student-modal-overlay" style="display:none; z-index: 10015;" role="dialog" aria-modal="true" aria-labelledby="firstLoginInterestTitle">
+  <div class="student-modal-dialog" style="max-width: 460px;">
+    <div class="student-modal-header" style="background: linear-gradient(135deg, #f0fdfa, #ccfbf1); border-bottom: 1px solid #99f6e4;">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+          <span class="first-interest-badge" style="font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 8px; background: #00a896; color: #fff;">첫 로그인 환영 이벤트</span>
+          <h5 id="firstLoginInterestTitle" class="first-interest-title" style="margin:0; font-size: 16px; font-weight: 900; color: #0f766e;">관심 주제 선택하기</h5>
+        </div>
+        <small style="color: #475569; font-weight: 600;">좋아하는 주제를 1~3가지 선택하면 딱 맞는 도서를 추천해드려요!</small>
+      </div>
+      <button type="button" class="btn-modal-close" onclick="skipFirstLoginInterestModal()" title="Skip">&times;</button>
+    </div>
+    <div class="student-modal-body" style="padding: 16px 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 12.5px; font-weight: 800; color: #334155;">원하는 주제를 눌러 선택해 주세요 (1~3개)</span>
+        <span id="firstInterestCountBadge" class="first-interest-count-pill" style="font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 12px; background: var(--leaf-soft); color: var(--leaf); border: 1px solid #cce3dd;">0 / 3개 선택</span>
+      </div>
+      <div id="firstInterestTopicGrid" class="first-interest-grid"></div>
+    </div>
+    <div style="padding: 12px 18px 16px; display: flex; gap: 8px; background: #faf8f5; border-top: 1px solid #f0ebe4; border-radius: 0 0 20px 20px;">
+      <button type="button" id="btnFirstInterestSkip" class="first-interest-skip-btn" onclick="skipFirstLoginInterestModal()">Skip</button>
+      <button type="button" id="btnFirstInterestSave" class="first-interest-save-btn" onclick="saveFirstLoginInterestModal()" disabled>
+        <i class="fa-solid fa-check mr-1"></i>선택 저장하기
       </button>
     </div>
   </div>
@@ -5714,12 +5790,14 @@ var libData = [
 function initStudentMigratedData() {
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && (window.NANO_SERVER_DATA || window.MIGRATED_BOOKS.length > 0)) {
     var rawList = window.MIGRATED_BOOKS.slice();
-    try {
-      var customBooks = JSON.parse(localStorage.getItem('nano_custom_academy_books') || '[]');
-      if (Array.isArray(customBooks) && customBooks.length > 0) {
-        rawList = customBooks.concat(rawList);
-      }
-    } catch(e) {}
+    if (!window.NANO_SERVER_DATA) {
+      try {
+        var customBooks = JSON.parse(localStorage.getItem('nano_custom_academy_books') || '[]');
+        if (Array.isArray(customBooks) && customBooks.length > 0) {
+          rawList = customBooks.concat(rawList);
+        }
+      } catch(e) {}
+    }
 
     var seenStudent = {};
     var dedupedBooks = rawList.filter(function(b) {
@@ -5760,6 +5838,8 @@ function initStudentMigratedData() {
 
       return {
         id: b.id,
+        bookNo: b.bookNo || b.id,
+        serverId: b.serverId || '',
         title: b.title,
         subtitle: subtitleStr,
         author: b.author || '작가 미상',
@@ -5797,6 +5877,11 @@ function initStudentMigratedData() {
       };
     });
 
+    // 북퀴즈가 없거나 타 학원 비공개로 이용 불가능한 콘텐츠는 학생 페이지 목록에서 제외
+    if (typeof isBookQuizReady === 'function') {
+      libData = libData.filter(isBookQuizReady);
+    }
+
     // 전역 QB 딕셔너리에 실데이터 북퀴즈 동적 주입 (고양이 목욕탕 등 실문항 100% 매핑)
     if (typeof QB !== 'undefined') {
       libData.forEach(function(b) {
@@ -5817,6 +5902,8 @@ function initStudentMigratedData() {
 
     // 독서 이력 (histData) - 실도서 15권 연동
     histData = [];
+  } else if (typeof isBookQuizReady === 'function') {
+    libData = libData.filter(isBookQuizReady);
   }
 }
 initStudentMigratedData();
@@ -6320,22 +6407,36 @@ function goToGradeLibrary(grade) {
   selectGradeFilter(targetGrade);
 }
 
-// 도서의 북퀴즈 준비 상태 판정 (실제 퀴즈 등록 여부 엄격 판정)
+function isQuizSetAccessibleForStudent(s, identity) {
+  if (!s) return false;
+  var qLen = Array.isArray(s.questions) ? s.questions.length : (Array.isArray(s.quizzes) ? s.quizzes.length : 0);
+  if (qLen <= 0) return false;
+  if (typeof s.canAccess === 'boolean') return s.canAccess === true;
+  if (s.isPublic !== 'N') return true;
+  var myAcadId = identity && identity.academyId ? String(identity.academyId).trim() : '';
+  var myAcadName = identity && identity.academyName ? String(identity.academyName).trim() : '';
+  if (!myAcadId && !myAcadName) return false;
+  if (s.isMine === true) return true;
+  if (myAcadId && (String(s.academyId || '').trim() === myAcadId || String(s.ownerAcademyId || '').trim() === myAcadId)) return true;
+  if (myAcadName && String(s.academyName || '').trim() === myAcadName) return true;
+  return false;
+}
+
+// 도서의 북퀴즈 준비 상태 판정 (실제 이용 가능한 퀴즈 등록 여부 엄격 판정)
 function isBookQuizReady(b) {
   if (!b) return false;
-  // 1. quizSets 배열에 문항이 있는 세트가 존재하는가?
+  var studentIdent = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  // 1. quizSets 배열이 로드된 경우: 접근 가능한(공개 또는 소속 학원·공유) 세트에 문항이 존재하는지 확인
   if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
-    var hasAnyQ = b.quizSets.some(function(s) {
-      return (Array.isArray(s.questions) && s.questions.length > 0) ||
-             (Array.isArray(s.quizzes) && s.quizzes.length > 0);
+    return b.quizSets.some(function(s) {
+      return isQuizSetAccessibleForStudent(s, studentIdent);
     });
-    if (hasAnyQ) return true;
   }
   // 2. MIGRATED_QUIZZES 글로벌 데이터셋에 등록되어 있는가?
   if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES) {
     var mq = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
-    if (Array.isArray(mq) && mq.length > 0 && mq.some(function(s) { return Array.isArray(s.questions) && s.questions.length > 0; })) {
-      return true;
+    if (Array.isArray(mq) && mq.length > 0) {
+      return mq.some(function(s) { return isQuizSetAccessibleForStudent(s, studentIdent); });
     }
   }
   // 3. 전역 QB 딕셔너리에 실문항이 있는가? (레거시 기본 도서)
@@ -6356,16 +6457,26 @@ function isBookQuizReady(b) {
 // 실제 북퀴즈 문항 수 산출
 function getBookActualQuizCount(b) {
   if (!b) return 0;
+  var studentIdent = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
   if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
     for (var i = 0; i < b.quizSets.length; i++) {
       var s = b.quizSets[i];
+      if (!isQuizSetAccessibleForStudent(s, studentIdent)) continue;
       if (Array.isArray(s.questions) && s.questions.length > 0) return s.questions.length;
       if (Array.isArray(s.quizzes) && s.quizzes.length > 0) return s.quizzes.length;
     }
+    return 0;
   }
   if (typeof window !== 'undefined' && window.MIGRATED_QUIZZES) {
     var mq = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
-    if (Array.isArray(mq) && mq.length > 0 && mq[0].questions) return mq[0].questions.length;
+    if (Array.isArray(mq) && mq.length > 0) {
+      for (var j = 0; j < mq.length; j++) {
+        if (isQuizSetAccessibleForStudent(mq[j], studentIdent) && Array.isArray(mq[j].questions)) {
+          return mq[j].questions.length;
+        }
+      }
+      return 0;
+    }
   }
   if (typeof QB !== 'undefined') {
     var qbEntry = QB[b.id] || QB[b.bookNo] || (b.title ? QB[b.title] : null);
@@ -6676,6 +6787,9 @@ function switchAllLibSubTab(tab) {
     renderThemeTagBoxes();
   } else if (isBannerTab) {
     var bannerId = String(currentAllLibSubTab).slice(7);
+    if (typeof syncStudentBannersFromServer === 'function') {
+      syncStudentBannersFromServer();
+    }
     if (typeof renderBannerSubTabBooks === 'function') {
       renderBannerSubTabBooks(bannerId);
     }
@@ -8027,7 +8141,7 @@ var defaultStudentBanners = [
 ];
 
 function parseStudentBannerLinkMeta(linkStr) {
-  var result = { bookIds: [], sub: "" };
+  var result = { hasBooksParam: false, bookIds: [], sub: "" };
   var s = String(linkStr || "").trim();
   var hashIdx = s.indexOf("#books=");
   if (hashIdx === -1) return result;
@@ -8036,11 +8150,14 @@ function parseStudentBannerLinkMeta(linkStr) {
     var kv = part.split("=");
     var k = kv[0];
     var v = kv.slice(1).join("=");
-    if (k === "books" && v) {
-      try {
-        result.bookIds = decodeURIComponent(v).split(",").map(function(id){ return id.trim(); }).filter(Boolean);
-      } catch(e) {
-        result.bookIds = v.split(",").map(function(id){ return id.trim(); }).filter(Boolean);
+    if (k === "books") {
+      result.hasBooksParam = true;
+      if (v) {
+        try {
+          result.bookIds = decodeURIComponent(v).split(",").map(function(id){ return id.trim(); }).filter(Boolean);
+        } catch(e) {
+          result.bookIds = v.split(",").map(function(id){ return id.trim(); }).filter(Boolean);
+        }
       }
     } else if (k === "sub" && v) {
       try { result.sub = decodeURIComponent(v); } catch(e) { result.sub = v; }
@@ -8050,7 +8167,23 @@ function parseStudentBannerLinkMeta(linkStr) {
 }
 
 function getStudentBanners() {
-  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') return (window.NANO_SERVER_BANNERS || []).slice();
+  if (window.NANO_SERVER_DATA) {
+    return (window.NANO_SERVER_BANNERS || []).map(function(sb) {
+      var linkMeta = typeof parseStudentBannerLinkMeta === 'function'
+        ? parseStudentBannerLinkMeta(sb.linkUrl || sb.link || "")
+        : { hasBooksParam: false, bookIds: [], sub: "" };
+      var serverIds = Array.isArray(sb.bookIds)
+        ? sb.bookIds.map(function(id){ return String(id || "").trim(); }).filter(Boolean)
+        : null;
+      var finalBookIds = serverIds !== null
+        ? ((serverIds.length > 0 || !linkMeta.hasBooksParam || linkMeta.bookIds.length === 0) ? serverIds : linkMeta.bookIds)
+        : linkMeta.bookIds;
+      return Object.assign({}, sb, {
+        sub: sb.sub || linkMeta.sub || "",
+        bookIds: finalBookIds
+      });
+    });
+  }
   var localBanners = [];
   try {
     var raw = localStorage.getItem("NANO_MASTER_BANNERS");
@@ -8059,41 +8192,6 @@ function getStudentBanners() {
       if(Array.isArray(parsed)) localBanners = parsed;
     }
   } catch(e) {}
-
-  if (window.NANO_SERVER_DATA && Array.isArray(window.NANO_SERVER_BANNERS) && window.NANO_SERVER_BANNERS.length > 0) {
-    var merged = window.NANO_SERVER_BANNERS.map(function(sb) {
-      var linkMeta = parseStudentBannerLinkMeta(sb.linkUrl || sb.link || "");
-      var matchedLocal = localBanners.find(function(lb) {
-        return String(lb.id) === String(sb.id) || (lb.title && sb.title && String(lb.title).trim() === String(sb.title).trim());
-      });
-      var localMeta = matchedLocal ? parseStudentBannerLinkMeta(matchedLocal.linkUrl || matchedLocal.link || "") : { bookIds: [], sub: "" };
-      var finalBookIds = (Array.isArray(sb.bookIds) && sb.bookIds.length > 0)
-        ? sb.bookIds
-        : (linkMeta.bookIds.length > 0
-            ? linkMeta.bookIds
-            : ((matchedLocal && Array.isArray(matchedLocal.bookIds) && matchedLocal.bookIds.length > 0)
-                ? matchedLocal.bookIds
-                : localMeta.bookIds));
-      return Object.assign({}, sb, {
-        sub: sb.sub || linkMeta.sub || (matchedLocal && matchedLocal.sub) || localMeta.sub || "",
-        bookIds: (finalBookIds || []).map(function(id){ return String(id).trim(); }).filter(Boolean),
-        clicks: (matchedLocal && typeof matchedLocal.clicks === "number") ? Math.max(sb.clicks || 0, matchedLocal.clicks) : (sb.clicks || 0)
-      });
-    });
-    localBanners.forEach(function(lb) {
-      var exists = merged.some(function(mb) {
-        return String(mb.id) === String(lb.id) || (mb.title && lb.title && String(mb.title).trim() === String(lb.title).trim());
-      });
-      if (!exists) {
-        var lm = parseStudentBannerLinkMeta(lb.linkUrl || lb.link || "");
-        merged.push(Object.assign({}, lb, {
-          bookIds: (Array.isArray(lb.bookIds) && lb.bookIds.length > 0) ? lb.bookIds : lm.bookIds,
-          sub: lb.sub || lm.sub || ""
-        }));
-      }
-    });
-    return merged;
-  }
 
   // 1순위: 로컬스토리지에 저장된 배너 목록
   if (localBanners.length > 0) {
@@ -8124,23 +8222,43 @@ function getStudentBanners() {
   return defaultStudentBanners;
 }
 
-// 배너의 bookIds를 학생 도서관 libData 도서 객체 리스트로 변환
+// 배너의 bookIds를 학생 도서관 libData 도서 객체 리스트로 변환 (정확 일치 우선, 접두사 교차 오매칭 방지)
 function resolveBannerBooks(b) {
   var mappedBooks = [];
   if (!b) return mappedBooks;
   var linkMeta = parseStudentBannerLinkMeta(b.linkUrl || b.link || "");
-  var ids = (Array.isArray(b.bookIds) && b.bookIds.length > 0) ? b.bookIds : linkMeta.bookIds;
+  var hasArr = Array.isArray(b.bookIds);
+  var ids = hasArr
+    ? ((b.bookIds.length > 0 || !linkMeta.hasBooksParam || linkMeta.bookIds.length === 0) ? b.bookIds : linkMeta.bookIds)
+    : linkMeta.bookIds;
   if (ids && ids.length > 0) {
     ids.forEach(function(bid) {
       var sBid = String(bid || "").trim();
       if (!sBid) return;
-      var cleanNum = sBid.replace(/[^0-9]/g, '');
+      var sBidUpper = sBid.toUpperCase();
+      // 1단계: id / bookNo / serverId 정확 일치 (대소문자 무시 포함)
       var book = libData.find(function(item) {
-        if (String(item.id) === sBid || String(item.bookNo || '') === sBid || String(item.serverId || '') === sBid) return true;
-        var itemNum = String(item.id || '').replace(/[^0-9]/g, '');
-        var itemNoNum = String(item.bookNo || '').replace(/[^0-9]/g, '');
-        return (cleanNum && ((itemNum && itemNum === cleanNum) || (itemNoNum && itemNoNum === cleanNum)));
+        var iId = String(item.id || '').trim();
+        var iNo = String(item.bookNo || '').trim();
+        var iSid = String(item.serverId || '').trim();
+        return iId === sBid || iNo === sBid || iSid === sBid ||
+          (iId && iId.toUpperCase() === sBidUpper) || (iNo && iNo.toUpperCase() === sBidUpper);
       });
+      // 2단계: 순수 숫자(1001) 또는 레거시 Mock ID(MB-001)만 숫자 호환 매칭 (KA/FA 등 실도서 접두사 교차 오매칭 차단)
+      if (!book && (/^\d+$/.test(sBid) || /^(?:MB-?)?\d+$/i.test(sBid))) {
+        var cleanNum = String(parseInt(sBid.replace(/[^0-9]/g, ''), 10) || '');
+        if (cleanNum) {
+          book = libData.find(function(item) {
+            var iId = String(item.id || '').trim();
+            var iNo = String(item.bookNo || '').trim();
+            var isLegacyCandidate = /^\d+$/.test(iId) || /^MB-\d+$/i.test(iId) || /^\d+$/.test(iNo) || /^MB-\d+$/i.test(iNo);
+            if (!isLegacyCandidate) return false;
+            var itemNum = String(parseInt(iId.replace(/[^0-9]/g, ''), 10) || '');
+            var itemNoNum = String(parseInt(iNo.replace(/[^0-9]/g, ''), 10) || '');
+            return (itemNum && itemNum === cleanNum) || (itemNoNum && itemNoNum === cleanNum);
+          });
+        }
+      }
       if (book && !mappedBooks.includes(book)) mappedBooks.push(book);
     });
   }
@@ -8301,7 +8419,7 @@ function filterBannerTabBooks() {
            (bk.pub && bk.pub.toLowerCase().includes(q));
   });
 
-  filtered = sortLibraryBooksForStudent(filtered);
+  // 배너 도서 목록은 서비스 운영관리에서 지정한 순서 그대로 유지합니다.
   if (filtered.length === 0) {
     listEl.innerHTML = '<div class="empty-msg"><i class="fa-solid fa-book-open"></i>' +
       (q ? ('\'' + q + '\' 검색 결과가 없습니다.') : '이 배너에 연결된 도서가 없습니다. 마스터 [메인 배너 관리]에서 도서를 추가해주세요.') +
@@ -8749,8 +8867,16 @@ async function startQuiz(id) {
     });
   }
 
-  // ★ 공개 상태인 퀴즈 세트만 학생에게 제공 (비공개 세트 제외)
-  quizSets = quizSets.filter(function(s) { return window.NANO_SERVER_DATA ? s.canAccess === true : s.isPublic !== 'N'; });
+  // ★ 공개 상태이거나 소속 학원·공유 폴더로 이용 가능한 퀴즈 세트만 학생에게 제공
+  var quizIdentity = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  quizSets = quizSets.filter(function(s) {
+    if (typeof isQuizSetAccessibleForStudent === 'function') {
+      return isQuizSetAccessibleForStudent(s, quizIdentity);
+    }
+    return window.NANO_SERVER_DATA
+      ? (typeof s.canAccess === 'boolean' ? s.canAccess === true : s.isPublic !== 'N')
+      : s.isPublic !== 'N';
+  });
   if (quizSets.length === 0) {
     toast('해당 도서의 공개된 북퀴즈 문항이 준비 중입니다.');
     return;
@@ -9142,7 +9268,7 @@ function renderQ() {
   // ★ 생각 담기 주관식 문항 처리
   if (q.isThoughtQuestion) {
     if (mediaBox) mediaBox.style.display = 'none';
-    qTextEl.innerHTML = `<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-2" style="font-size:11.5px;"><i class="fa-solid fa-lightbulb mr-1"></i>나노 시트 생각 담기 (마지막 주관식 과제)</span><div style="margin-top:6px;font-size:14.5px;line-height:1.6;">${escapeStudentQuizText(q.q)}</div>`;
+    qTextEl.innerHTML = `<span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mb-2" style="font-size:11.5px;"><i class="fa-solid fa-lightbulb mr-1"></i>생각 담기 (마지막 주관식 과제)</span><div style="margin-top:6px;font-size:14.5px;line-height:1.6;">${escapeStudentQuizText(q.q)}</div>`;
 
     var curLen = (currentStudentThoughtAnswer || '').trim().length;
     var isEnough = curLen >= 10;
@@ -9643,7 +9769,7 @@ async function showResult() {
   if (currentStudentThoughtAnswer && currentStudentThoughtAnswer.trim()) {
     thoughtSectionHtml = `
       <section class="qr-thought">
-        <h3>나노 시트 · 나의 생각 담기</h3>
+        <h3>생각 담기</h3>
         <p>${escapeStudentQuizText(currentStudentThoughtAnswer)}</p>
       </section>
     `;
@@ -9668,7 +9794,7 @@ async function showResult() {
     ` : '') + thoughtSectionHtml;
   }
 
-  toast((window.NanoPortal && NanoPortal.remote ? '답안을 서버에 저장했어요. ' : '답안을 이 기기에 저장했어요. ') + '퀴즈 결과는 ' + score + '점입니다.');
+  toast('북퀴즈를 완료했습니다. 결과를 확인해보세요.');
   window.scrollTo(0, 0);
   if (window.NanoPortal && NanoPortal.remote) {
     NanoPortal.refreshActivity().then(function() { refreshStudentLearningData(); }).catch(function(e) { toast('답안은 저장되었습니다. 포인트 요약 갱신 실패: ' + e.message); });
@@ -9877,16 +10003,67 @@ var curBookshelfMainTab = 'history'; // 'history' | 'interest' | 'points'
 // 완독 도서 마스터 데이터 (Neon DB 500권 실도서 기반 동적 연동 - 이문성 학생의 451권 완독 실적 반영)
 var readBooksMaster = [];
 
-// 학생 관심 주제 데이터 (선택 3개 기본 노출 & FIFO 최대 3개 선택)
+// 학생 관심 주제 데이터 (서버 preferences 동기화 + 선택 최대 3개)
 var isInterestTagsExpanded = false;
+var studentPreferenceRevision = 0;
 var userInterestTags = ['#학습', '#수학', '#자연'];
-try {
-  var savedTags = localStorage.getItem("NANO_USER_INTEREST_TAGS");
-  if(savedTags) {
-    var parsedTags = JSON.parse(savedTags);
-    if(Array.isArray(parsedTags) && parsedTags.length > 0) userInterestTags = parsedTags.slice(0, 3);
+(function initStudentPreferencesState() {
+  if (typeof window !== 'undefined' && window.NANO_SERVER_DATA && window.NANO_SERVER_PREFERENCES) {
+    var serverPref = window.NANO_SERVER_PREFERENCES.value || {};
+    studentPreferenceRevision = Number(window.NANO_SERVER_PREFERENCES.revision) || 0;
+    if (Array.isArray(serverPref.wishlist)) {
+      studentWishlist = serverPref.wishlist.slice();
+    }
+    if (Array.isArray(serverPref.interests) && serverPref.interests.length > 0) {
+      userInterestTags = serverPref.interests.slice(0, 3);
+    }
+    return;
   }
-} catch(e) {}
+  try {
+    var savedTags = localStorage.getItem("NANO_USER_INTEREST_TAGS");
+    if(savedTags) {
+      var parsedTags = JSON.parse(savedTags);
+      if(Array.isArray(parsedTags) && parsedTags.length > 0) userInterestTags = parsedTags.slice(0, 3);
+    }
+  } catch(e) {}
+})();
+
+async function saveStudentPreferencesToServer(nextInterests, nextWishlist) {
+  if (typeof window === 'undefined' || !window.NanoPortal || !window.NanoPortal.remote || typeof fetch === 'undefined') {
+    return;
+  }
+  var cleanInterests = Array.isArray(nextInterests) ? nextInterests.slice(0, 3) : [];
+  var cleanWishlist = Array.isArray(nextWishlist) ? nextWishlist.slice(0, 1000) : [];
+  var attemptPost = async function(rev) {
+    var res = await fetch('/api/activity?action=preferences', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: { wishlist: cleanWishlist, interests: cleanInterests }, revision: rev })
+    });
+    if (res.ok) {
+      var data = await res.json().catch(function(){ return {}; });
+      if (typeof data.revision === 'number') studentPreferenceRevision = data.revision;
+      if (typeof CustomEvent === 'function' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('nano:preferences-updated', {
+          detail: { wishlist: cleanWishlist, interests: cleanInterests, revision: studentPreferenceRevision }
+        }));
+      }
+      return true;
+    }
+    return res.status;
+  };
+  var statusOrOk = await attemptPost(studentPreferenceRevision);
+  if (statusOrOk !== true && (statusOrOk === 409 || statusOrOk === 500)) {
+    var curRes = await fetch('/api/activity?action=preferences', { credentials: 'same-origin', cache: 'no-store' });
+    if (curRes.ok) {
+      var curData = await curRes.json().catch(function(){ return {}; });
+      var latestRev = Number(curData.revision) || 0;
+      studentPreferenceRevision = latestRev;
+      await attemptPost(latestRev);
+    }
+  }
+}
 
 function getAllInterestThemes() {
   if (typeof getStudentThemes === 'function') {
@@ -9936,11 +10113,11 @@ function toggleWish(bookId, event) {
 
   if(idx > -1) {
     studentWishlist.splice(idx, 1);
-    toast((b ? '『' + b.title + '』' : '도서') + ' 찜을 해제했습니다.');
+    toast((b ? b.title : '도서') + ' 찜을 해제했습니다.');
     wishDeltaMap[bookId] = Math.max(0, (wishDeltaMap[bookId] || 1) - 1);
   } else {
     studentWishlist.unshift(bookId);
-    toast('💖 ' + (b ? '『' + b.title + '』' : '도서') + '을(를) 내 책장에 찜했습니다!');
+    toast((b ? b.title : '도서') + '을 찜했습니다.');
     wishDeltaMap[bookId] = (wishDeltaMap[bookId] || 0) + 1;
   }
 
@@ -9950,13 +10127,7 @@ function toggleWish(bookId, event) {
   } catch(e) {}
 
   try {
-    if (window.NanoPortal && typeof fetch !== 'undefined') {
-      fetch('/api/activity?action=preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: { wishlist: studentWishlist, interests: userInterestTags || [] }, revision: 0 })
-      }).catch(function(){});
-    }
+    saveStudentPreferencesToServer(userInterestTags || [], studentWishlist).catch(function(){});
   } catch(e) {}
 
   updateDetailWishUI(bookId);
@@ -10227,7 +10398,10 @@ function toggleInterestTag(tag) {
   }
 
   try {
-    localStorage.setItem("NANO_USER_INTEREST_TAGS", JSON.stringify(userInterestTags));
+    if (!window.NANO_SERVER_DATA) {
+      localStorage.setItem("NANO_USER_INTEREST_TAGS", JSON.stringify(userInterestTags));
+    }
+    saveStudentPreferencesToServer(userInterestTags, studentWishlist).catch(function(){});
   } catch(e) {}
 
   renderInterestTags();
@@ -10945,10 +11119,6 @@ function openCharacterSelectModal() {
   renderCharacterSelectModal();
   var m = document.getElementById("characterSelectModal");
   if(m) m.style.display = "flex";
-  var navItems = document.querySelectorAll('.drawer-nav-item');
-  navItems.forEach(function(item) { item.classList.remove('active'); });
-  var activeBtn = document.getElementById('btnDrawerNav_char');
-  if (activeBtn) activeBtn.classList.add('active');
   var dm = document.getElementById('studentDrawerMenuModal');
   if(dm) dm.style.display = 'none';
 }
@@ -10956,8 +11126,6 @@ function openCharacterSelectModal() {
 function closeCharacterSelectModal() {
   var m = document.getElementById("characterSelectModal");
   if(m) m.style.display = "none";
-  var activeBtn = document.getElementById('btnDrawerNav_char');
-  if (activeBtn) activeBtn.classList.remove('active');
   var drawer = document.getElementById('studentDrawer');
   if (drawer && drawer.classList.contains('open')) {
     document.body.style.overflow = 'hidden';
@@ -11371,7 +11539,6 @@ function updateRankingHeaderTexts() {
   var rankPts = 0;
   var rankNumText = '집계 중';
   var rankPercent = '';
-  var speechText = '도서 최초 완료 100P · 최초 생각담기 50P';
 
   if (window.NanoPortal && NanoPortal.remote && remoteRankResult) {
     rankPts = remoteRankResult.myPoints || 0;
@@ -11392,10 +11559,14 @@ function updateRankingHeaderTexts() {
     var scopeData = fullRankDatabase[currentRankScope] || fullRankDatabase.academy;
     var data = scopeData[currentRankPeriod] || scopeData.month || [];
     var meItem = data.find(function(d){ return d.me; });
-    if (meItem) {
+    if (meItem && Number(meItem.pt) > 0) {
       rankPts = meItem.pt || 0;
       rankNumText = meItem.rank + '위';
       if (meItem.books) readCount = meItem.books;
+    } else {
+      rankPts = 0;
+      rankNumText = '순위 밖';
+      if (meItem && meItem.books) readCount = meItem.books;
     }
   }
 
@@ -11404,8 +11575,7 @@ function updateRankingHeaderTexts() {
     myRankHighlightText: rankNumText,
     myRankHighlightPercent: rankPercent,
     myRankPeriodPoints: rankPts.toLocaleString() + ' P',
-    myRankReadCountBadge: '완독 ' + readCount + '권 · 누적 ' + totalPts.toLocaleString() + 'P',
-    rankMyCharSpeech: speechText
+    myRankReadCountBadge: '완독 ' + readCount + '권 · 누적 ' + totalPts.toLocaleString() + 'P'
   };
   Object.keys(values).forEach(function(id) { var el = document.getElementById(id); if(el) el.textContent = values[id]; });
 }
@@ -11431,6 +11601,20 @@ function switchRankPeriod(period) {
 var remoteRankKey = '', remoteRankResult = null, remoteRankSequence = 0, remoteRankLoadedAt = 0;
 function invalidateStudentRank() { remoteRankKey = ''; remoteRankResult = null; remoteRankSequence++; remoteRankLoadedAt = 0; }
 function renderRank() {
+  // 전국 랭킹은 가운데 글자만 * 처리하고 우리 반·우리 학원은 전체 이름을 노출하며, 아이디는 모든 범위에서 앞 두 글자만 표기합니다.
+  function formatRankName(name, scope) {
+    var trimmed = String(name || '').trim();
+    if (scope !== 'national') return trimmed;
+    var chars = Array.from(trimmed);
+    if (chars.length <= 1) return chars.join('');
+    if (chars.length === 2) return chars[0] + '*';
+    return chars[0] + '*'.repeat(chars.length - 2) + chars[chars.length - 1];
+  }
+  function formatRankId(username) {
+    var trimmed = String(username || '').trim();
+    return trimmed ? Array.from(trimmed).slice(0, 2).join('') : '';
+  }
+
   checkAcademyClassMode();
   if (window.NanoPortal && NanoPortal.remote) {
     var key = currentRankScope + ':' + currentRankPeriod;
@@ -11441,8 +11625,9 @@ function renderRank() {
       clearRankPodium('조회 중');
       NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod).then(function(result) {
         if(sequence !== remoteRankSequence) return;
-        // 포인트 동점 시 완독 도서 수(books) 우선 정렬
+        // 0점 이하 학생은 랭킹에서 제외하고, 포인트 동점 시 완독 도서 수(books) 우선 정렬합니다.
         if (Array.isArray(result.rows)) {
+          result.rows = result.rows.filter(function(r) { return r && Number(r.pt) > 0; });
           result.rows.sort(function(a, b) {
             if (b.pt !== a.pt) return b.pt - a.pt;
             if ((b.books || 0) !== (a.books || 0)) return (b.books || 0) - (a.books || 0);
@@ -11450,7 +11635,7 @@ function renderRank() {
           });
           result.rows.forEach(function(r, idx) { r.rank = idx + 1; });
           var myRow = result.rows.find(function(r){ return r.me; });
-          if (myRow) result.myRank = myRow.rank;
+          result.myRank = myRow ? myRow.rank : (Number(result.myPoints) > 0 ? result.myRank : null);
         }
         var resolvedScope = ['class', 'academy', 'national'].includes(result.scope) ? result.scope : currentRankScope;
         currentRankScope = resolvedScope;
@@ -11467,7 +11652,9 @@ function renderRank() {
   updateRankingHeaderTexts();
 
   var scopeData = fullRankDatabase[currentRankScope] || fullRankDatabase.academy;
-  var data = scopeData[currentRankPeriod] || scopeData.month || [];
+  var data = (scopeData[currentRankPeriod] || scopeData.month || []).filter(function(r) {
+    return r && Number(r.pt) > 0;
+  });
   if (data && data.length) {
     data.sort(function(a, b) {
       if (b.pt !== a.pt) return b.pt - a.pt;
@@ -11478,7 +11665,7 @@ function renderRank() {
   }
   if (!data.length) {
     clearRankPodium('집계 대기');
-    var empty = document.getElementById('rankList'); if(empty) empty.textContent = window.NANO_SERVER_DATA ? '현재 소속에 등록된 학생이 없습니다.' : '월별 포인트 기록이 연결되면 순위를 표시합니다.';
+    var empty = document.getElementById('rankList'); if(empty) empty.textContent = window.NANO_SERVER_DATA ? '포인트를 획득한 학생이 아직 없습니다.' : '월별 포인트 기록이 연결되면 순위를 표시합니다.';
     return;
   }
   var userChar = getUserCharacterId();
@@ -11504,21 +11691,21 @@ function renderRank() {
   if(top1 && p1Avatar) {
     var cId1 = top1.charId === 'custom' ? userChar : top1.charId;
     p1Avatar.innerHTML = getCharacterSvg(cId1, 64, top1.stage || 1);
-    if(p1Name) p1Name.innerText = top1.name;
+    if(p1Name) p1Name.innerText = formatRankName(top1.name, currentRankScope);
     if(p1Points) p1Points.innerText = top1.pt.toLocaleString() + 'P';
   }
 
   if(top2 && p2Avatar) {
     var cId2 = top2.charId === 'custom' ? userChar : top2.charId;
     p2Avatar.innerHTML = getCharacterSvg(cId2, 56, top2.stage || 1);
-    if(p2Name) p2Name.innerText = top2.name;
+    if(p2Name) p2Name.innerText = formatRankName(top2.name, currentRankScope);
     if(p2Points) p2Points.innerText = top2.pt.toLocaleString() + 'P';
   }
 
   if(top3 && p3Avatar) {
     var cId3 = top3.charId === 'custom' ? userChar : top3.charId;
     p3Avatar.innerHTML = getCharacterSvg(cId3, 52, top3.stage || 1);
-    if(p3Name) p3Name.innerText = top3.name;
+    if(p3Name) p3Name.innerText = formatRankName(top3.name, currentRankScope);
     if(p3Points) p3Points.innerText = top3.pt.toLocaleString() + 'P';
   }
 
@@ -11532,7 +11719,8 @@ function renderRank() {
     if(r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
     else if(r.change === 'down') changeHtml = '<span class="rank-card-change down"><i class="fa-solid fa-caret-down"></i>' + (r.changeNum || 1) + '</span>';
 
-    var rawId = String(r.username || r.studentId || '').trim();
+    var rawName = formatRankName(r.name, currentRankScope);
+    var rawId = formatRankId(r.username || r.studentId || '');
     var rawCls = String(r.cls || '').trim();
     // 전국 랭킹일 때만 이름 위에 학원명을 별도 줄로 표기하고, 학급명은 항상 이름·아이디 우측에 배치합니다.
     var academyText = currentRankScope === 'national'
@@ -11555,7 +11743,7 @@ function renderRank() {
       + '<div class="rank-card-info">'
       +   (academyText ? '<div class="rank-card-academy"><i class="fa-solid fa-school" style="font-size:10px;margin-right:4px;opacity:0.8;"></i>' + escapeStudentQuizText(academyText) + '</div>' : '')
       +   '<div class="rank-card-title">'
-      +     '<span>' + escapeStudentQuizText(r.name) + '</span>'
+      +     '<span>' + escapeStudentQuizText(rawName) + '</span>'
       +     (rawId ? '<span class="rank-card-id">(' + escapeStudentQuizText(rawId) + ')</span>' : '')
       +     '<span class="rank-card-class">' + escapeStudentQuizText(classText) + '</span>'
       +     (r.me ? '<span class="rank-card-me">나</span>' : '')
@@ -11677,9 +11865,29 @@ function renderStudentBanners() {
   box.onmouseleave = startBannerTimer;
 }
 
-// [태블릿/외부기기 실시간 배너 동기화] 서버 중앙 저장소(api/sync_banners.php)에서 최신 배너 즉각 로드
+// [실시간 배너 동기화] 서버 최신 배너 및 연결 도서 목록 동기화
+var _syncingStudentBanners = false;
 function syncStudentBannersFromServer() {
-  if (window.NANO_SERVER_DATA) return;
+  if (window.NANO_SERVER_DATA) {
+    if (!window.NanoPortal || !NanoPortal.remote || typeof NanoPortal.fetchBanners !== 'function' || _syncingStudentBanners) return;
+    _syncingStudentBanners = true;
+    var since = (window.NANO_SERVER_BANNERS || []).reduce(function(max, item) {
+      return Math.max(max, Number(item && item.updatedAt) || 0);
+    }, 0);
+    NanoPortal.fetchBanners(since)
+      .then(function(res) {
+        if (res && !res.unchanged && Array.isArray(res.items)) {
+          window.NANO_SERVER_BANNERS = res.items;
+          renderStudentBanners();
+          if (typeof currentAllLibSubTab === 'string' && currentAllLibSubTab.indexOf('banner:') === 0 && typeof renderBannerSubTabBooks === 'function') {
+            renderBannerSubTabBooks(currentSelectedBannerId || currentAllLibSubTab.slice(7));
+          }
+        }
+      })
+      .catch(function() {})
+      .finally(function() { _syncingStudentBanners = false; });
+    return;
+  }
   var apiUrl = 'api/sync_banners.php?t=' + Date.now();
   fetch(apiUrl)
     .then(function(res){
@@ -11907,20 +12115,20 @@ function openDrawerMenuItem(type) {
     contentHtml =
       '<div style="display:flex;flex-direction:column;gap:14px;padding:4px 2px;">'
       + '  <!-- 1. 프로필 히어로 카드 -->'
-      + '  <div style="background:linear-gradient(135deg, #f0fdfa 0%, #e6fffa 50%, #fef3c7 100%);border:1.5px solid #99f6e4;border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 12px rgba(0,168,150,0.08);">'
-      + '    <div style="width:72px;height:72px;border-radius:50%;background:#ffffff;border:3px solid #ffffff;box-shadow:0 4px 10px rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;cursor:pointer;" onclick="closeDrawerModal();openCharacterSelectModal();" title="캐릭터 변경하기">'
+      + '  <div class="myinfo-hero-card" style="background:linear-gradient(135deg, #f0fdfa 0%, #e6fffa 50%, #fef3c7 100%);border:1.5px solid #99f6e4;border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 12px rgba(0,168,150,0.08);">'
+      + '    <div style="width:72px;height:72px;border-radius:50%;background:#ffffff;border:3px solid #ffffff;box-shadow:0 4px 10px rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
       +        avatarSvg
-      + '      <div style="position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;background:#00a896;color:#ffffff;border-radius:50%;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;font-size:10px;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>'
       + '    </div>'
       + '    <div style="flex:1;min-width:0;">'
-      + '      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">'
-      + '        <span style="font-size:19px;font-weight:900;color:#134e4a;letter-spacing:-0.3px;">' + escapeStudentQuizText(identity.studentName) + '</span>'
+      + '      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px;">'
+      + '        <span class="myinfo-student-name" style="font-size:19px;font-weight:800;color:#134e4a;letter-spacing:-0.02em;">' + escapeStudentQuizText(identity.studentName) + '</span>'
       + '        <span style="' + genderBadgeStyle + 'padding:2.5px 8px;border-radius:7px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid ' + genderIcon + '"></i>' + genderLabel + '</span>'
       + '        <span style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;padding:2.5px 8px;border-radius:7px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-graduation-cap"></i>' + gradeLabel + '</span>'
       + '      </div>'
-      + '      <div style="font-size:12.5px;color:#475569;display:flex;align-items:center;gap:6px;font-weight:600;">'
-      + '        <span style="color:#64748b;"><i class="fa-solid fa-id-badge mr-1" style="color:#94a3b8;"></i>아이디</span>'
-      + '        <span style="font-family:monospace;background:rgba(255,255,255,0.7);padding:1px 6px;border-radius:4px;border:1px solid #cbd5e1;color:#0f172a;font-weight:700;">' + escapeStudentQuizText(identity.studentId) + '</span>'
+      + '      <div class="myinfo-id-pill" style="display:inline-flex;align-items:center;gap:6px;width:fit-content;max-width:100%;padding:3px 10px;border-radius:7px;background:rgba(255,255,255,0.85);border:1px solid var(--soft, #dce5e3);font-size:11.5px;line-height:1.35;">'
+      + '        <span style="display:inline-flex;align-items:center;gap:4px;color:var(--muted, #64748b);font-weight:700;"><i class="fa-regular fa-id-card" style="color:var(--leaf, #0d9488);font-size:11px;"></i>아이디</span>'
+      + '        <span style="width:1px;height:10px;background:var(--border-medium, #cbd5e1);opacity:0.7;display:inline-block;"></span>'
+      + '        <span class="myinfo-id-value" style="color:var(--wood-dark, #1e293b);font-weight:700;letter-spacing:-0.01em;word-break:break-all;">' + escapeStudentQuizText(identity.studentId) + '</span>'
       + '      </div>'
       + '    </div>'
       + '  </div>'
@@ -11931,20 +12139,20 @@ function openDrawerMenuItem(type) {
       + '      <div style="width:40px;height:40px;border-radius:12px;background:#fef3c7;display:flex;align-items:center;justify-content:center;color:#d97706;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-coins"></i></div>'
       + '      <div style="min-width:0;">'
       + '        <div style="font-size:11px;color:#854d0e;font-weight:700;">리딩 포인트</div>'
-      + '        <div style="font-size:16px;font-weight:900;color:#78350f;">' + pointsVal.toLocaleString() + ' <span style="font-size:11.5px;font-weight:700;">P</span></div>'
+      + '        <div style="font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;color:#78350f;">' + pointsVal.toLocaleString() + ' <span style="font-size:11.5px;font-weight:700;">P</span></div>'
       + '      </div>'
       + '    </div>'
-      + '    <div style="background:#ecfdf5;border:1.5px solid #a7f3d0;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(16,185,129,0.06);">'
-      + '      <div style="width:40px;height:40px;border-radius:12px;background:#ccfbf1;display:flex;align-items:center;justify-content:center;color:#0d9488;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-book-bookmark"></i></div>'
+      + '    <div class="myinfo-stat-books" style="background:#ecfdf5;border:1.5px solid #a7f3d0;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(16,185,129,0.06);">'
+      + '      <div class="myinfo-stat-books-icon" style="width:40px;height:40px;border-radius:12px;background:#ccfbf1;display:flex;align-items:center;justify-content:center;color:#0d9488;font-size:18px;flex-shrink:0;"><i class="fa-solid fa-book-bookmark"></i></div>'
       + '      <div style="min-width:0;">'
-      + '        <div style="font-size:11px;color:#065f46;font-weight:700;">완독 인증 도서</div>'
-      + '        <div style="font-size:16px;font-weight:900;color:#064e3b;">' + bookCountVal.toLocaleString() + ' <span style="font-size:11.5px;font-weight:700;">권</span></div>'
+      + '        <div class="myinfo-stat-books-label" style="font-size:11px;color:#065f46;font-weight:700;">완독 인증 도서</div>'
+      + '        <div class="myinfo-stat-books-value" style="font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;color:#064e3b;">' + bookCountVal.toLocaleString() + ' <span style="font-size:11.5px;font-weight:700;">권</span></div>'
       + '      </div>'
       + '    </div>'
       + '  </div>'
 
       + '  <!-- 3. 상세 정보 인포 카드 그리드 -->'
-      + '  <div style="background:#faf8f5;border:1.5px solid var(--soft);border-radius:16px;padding:14px 16px;">'
+      + '  <div class="myinfo-detail-card" style="background:#faf8f5;border:1.5px solid var(--soft);border-radius:16px;padding:14px 16px;">'
       + '    <div style="font-size:12px;font-weight:800;color:var(--wood-dark);margin-bottom:12px;display:flex;align-items:center;gap:6px;">'
       + '      <i class="fa-solid fa-address-card" style="color:var(--leaf);"></i> 기본 학습 소속 정보'
       + '    </div>'
@@ -11970,18 +12178,15 @@ function openDrawerMenuItem(type) {
       + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);">' + escapeStudentQuizText(identity.school || '미등록') + '</div>'
       + '      </div>'
       + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
-      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-circle-check" style="color:#0d9488;font-size:11px;"></i>학습 상태</div>'
-      + '        <div style="font-size:13px;font-weight:800;color:#0d9488;">정상 이용 중</div>'
+      + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-circle-check" style="color:var(--leaf, #0d9488);font-size:11px;"></i>학습 상태</div>'
+      + '        <div class="myinfo-status-ok" style="font-size:13px;font-weight:800;color:var(--leaf, #0d9488);">정상 이용 중</div>'
       + '      </div>'
       + '    </div>'
       + '  </div>'
 
       + '  <!-- 4. 하단 빠른 메뉴 버튼 -->'
       + '  <div style="display:flex;gap:10px;margin-top:2px;">'
-      + '    <button type="button" class="btn flex-1" onclick="closeDrawerModal();openCharacterSelectModal();" style="background:#f0fdfa;color:#0d9488;border:1.5px solid #99f6e4;border-radius:12px;font-weight:800;font-size:12.5px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">'
-      + '      <i class="fa-solid fa-wand-magic-sparkles" style="color:#00a896;"></i> 캐릭터 변경'
-      + '    </button>'
-      + '    <button type="button" class="btn flex-1" onclick="openDrawerMenuItem(\'password\');" style="background:#faf8f5;color:var(--wood-dark);border:1.5px solid var(--soft);border-radius:12px;font-weight:800;font-size:12.5px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">'
+      + '    <button type="button" class="btn flex-1 myinfo-pw-btn" onclick="openDrawerMenuItem(\'password\');" style="width:100%;background:var(--surface-warm, #faf8f5);color:var(--wood-dark);border:1.5px solid var(--soft);border-radius:12px;font-weight:800;font-size:12.5px;padding:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">'
       + '      <i class="fa-solid fa-key" style="color:var(--muted);"></i> 비밀번호 변경'
       + '    </button>'
       + '  </div>'
@@ -12250,6 +12455,135 @@ function closeStudentNoticePopup() {
   modal.style.display = 'none';
 }
 
+// ==============================================================
+// 최초 로그인 1회 이벤트: 홈 메인 관심 주제 선택 팝업
+// ==============================================================
+var firstLoginSelectedTopics = [];
+var firstLoginAvailableTopics = [];
+var _deferredNoticeAfterFirstInterest = false;
+
+function getFirstLoginInterestStorageKey() {
+  var ident = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  var sid = (ident && (ident.memberId || ident.studentId)) || 'guest';
+  return 'NANO_FIRST_INTEREST_DONE_' + sid;
+}
+
+function shouldShowFirstLoginInterestPopup() {
+  var homePanel = document.getElementById('p-home');
+  if (homePanel && !homePanel.classList.contains('active')) return false;
+  if (typeof window !== 'undefined' && window.NANO_SERVER_DATA) {
+    return window.NANO_FIRST_INTEREST_POPUP === true;
+  }
+  var demoFlag = (typeof window !== 'undefined' && window.NANO_FORCE_FIRST_INTEREST_POPUP === true) ||
+    (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('nano_demo_first_login') === '1');
+  if (!demoFlag) return false;
+  try {
+    return !localStorage.getItem(getFirstLoginInterestStorageKey());
+  } catch (e) {
+    return true;
+  }
+}
+
+function renderFirstLoginInterestTopics() {
+  var grid = document.getElementById('firstInterestTopicGrid');
+  var badge = document.getElementById('firstInterestCountBadge');
+  var saveBtn = document.getElementById('btnFirstInterestSave');
+  if (badge) badge.textContent = firstLoginSelectedTopics.length + ' / 3개 선택';
+  if (saveBtn) saveBtn.disabled = firstLoginSelectedTopics.length < 1 || firstLoginSelectedTopics.length > 3;
+  if (!grid) return;
+
+  firstLoginAvailableTopics = typeof getAllInterestTags === 'function' ? getAllInterestTags() : [];
+  grid.innerHTML = firstLoginAvailableTopics.map(function(tag, idx) {
+    var selected = firstLoginSelectedTopics.indexOf(tag) !== -1;
+    var safeTag = String(tag || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var icon = selected ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-hashtag" style="font-size:11px;opacity:0.55;"></i>';
+    return '<button type="button" class="first-interest-chip' + (selected ? ' selected' : '') + '" data-topic-idx="' + idx + '" onclick="toggleFirstLoginInterestTopicByIndex(' + idx + ')">'
+      + icon + '<span>' + safeTag.replace(/^#/, '') + '</span></button>';
+  }).join('');
+}
+
+function toggleFirstLoginInterestTopicByIndex(idx) {
+  var tag = firstLoginAvailableTopics[idx];
+  if (!tag) return;
+  var curIdx = firstLoginSelectedTopics.indexOf(tag);
+  if (curIdx > -1) {
+    firstLoginSelectedTopics.splice(curIdx, 1);
+  } else {
+    if (firstLoginSelectedTopics.length >= 3) {
+      if (typeof toast === 'function') toast('관심 주제는 최대 3개까지 선택할 수 있어요.');
+      return;
+    }
+    firstLoginSelectedTopics.push(tag);
+  }
+  renderFirstLoginInterestTopics();
+}
+
+function openFirstLoginInterestModal() {
+  firstLoginSelectedTopics = [];
+  renderFirstLoginInterestTopics();
+  var modal = document.getElementById('firstLoginInterestModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeFirstLoginInterestModal() {
+  var modal = document.getElementById('firstLoginInterestModal');
+  if (modal) modal.style.display = 'none';
+  if (_deferredNoticeAfterFirstInterest) {
+    _deferredNoticeAfterFirstInterest = false;
+    setTimeout(checkStudentNoticePopups, 150);
+  }
+}
+
+function markFirstLoginInterestDone(status) {
+  if (typeof window !== 'undefined') {
+    window.NANO_FIRST_INTEREST_POPUP = false;
+    window.NANO_FORCE_FIRST_INTEREST_POPUP = false;
+  }
+  try {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('nano_demo_first_login');
+    if (typeof window === 'undefined' || !window.NANO_SERVER_DATA) {
+      localStorage.setItem(getFirstLoginInterestStorageKey(), status || 'SKIPPED');
+    } else if (window.NanoPortal && window.NanoPortal.remote && typeof fetch !== 'undefined') {
+      fetch('/api/activity?action=onboarding_interest', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status === 'SAVED' ? 'SAVED' : 'SKIPPED' })
+      }).catch(function(){});
+    }
+  } catch (e) {}
+}
+
+function saveFirstLoginInterestModal() {
+  if (firstLoginSelectedTopics.length < 1 || firstLoginSelectedTopics.length > 3) {
+    if (typeof toast === 'function') toast('관심 주제를 1~3가지 선택해 주세요.');
+    return;
+  }
+  userInterestTags = firstLoginSelectedTopics.slice(0, 3);
+  try {
+    if (typeof window === 'undefined' || !window.NANO_SERVER_DATA) {
+      localStorage.setItem('NANO_USER_INTEREST_TAGS', JSON.stringify(userInterestTags));
+    }
+    saveStudentPreferencesToServer(userInterestTags, studentWishlist).catch(function(){});
+  } catch (e) {}
+  markFirstLoginInterestDone('SAVED');
+  if (typeof renderInterestTags === 'function') renderInterestTags();
+  if (typeof renderInterestRecommendations === 'function') renderInterestRecommendations();
+  closeFirstLoginInterestModal();
+  if (typeof toast === 'function') toast('관심 주제가 저장되었습니다! 맞춤 도서를 추천해 드려요.');
+}
+
+function skipFirstLoginInterestModal() {
+  markFirstLoginInterestDone('SKIPPED');
+  closeFirstLoginInterestModal();
+}
+
+function checkFirstLoginInterestPopup() {
+  if (!shouldShowFirstLoginInterestPopup()) return false;
+  openFirstLoginInterestModal();
+  return true;
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   updateStudentSessionLabels();
   initStudentMigratedData();
@@ -12260,8 +12594,14 @@ document.addEventListener('DOMContentLoaded',function(){
   syncStudentThemesFromServer();
   if (typeof bindLibSubNavDrag === 'function') bindLibSubNavDrag();
 
-  // 로그인/접속 시 본사 시스템 공지 팝업 점검 및 노출
-  setTimeout(checkStudentNoticePopups, 400);
+  // 최초 로그인 1회 관심 주제 선택 팝업 우선 노출 (미해당/완료 시 시스템 공지 팝업 점검)
+  setTimeout(function() {
+    if (checkFirstLoginInterestPopup()) {
+      _deferredNoticeAfterFirstInterest = true;
+    } else {
+      checkStudentNoticePopups();
+    }
+  }, 400);
 });
 
 // 마스터 관리자에서 공지사항 저장 시 실시간 동기화
@@ -12496,13 +12836,15 @@ function refreshStudentLearningData() {
     });
     var summary = window.NanoPortal && NanoPortal.remote ? NanoPortal.activity() : null;
     var assigned = summary ? summary.assignedBookIds.map(String) : NanoPreviewData.assignedBookIds(identity);
+    var visibleBookIds = new Set(libData.map(function(book) { return String(book.id); }));
+    var visibleAssigned = assigned.filter(function(id) { return visibleBookIds.has(String(id)); });
     libData.forEach(function(book) { book.assigned = assigned.includes(String(book.id)); });
     var member = (window.MIGRATED_MEMBERS || []).find(function(m) { return m.username === identity.studentId && String(m.academyId) === String(identity.academyId); });
     var points = summary ? summary.totalPoints : member ? Number(member.points) || 0 : 0;
     var summaryPoints = document.getElementById('bookshelfTotalPoints'); if(summaryPoints) summaryPoints.textContent = points.toLocaleString() + ' P';
     var uniqueReadCount = new Set(readBooksMaster.map(function(book) { return book.id; })).size;
     var count = uniqueReadCount > 0 ? uniqueReadCount : (summary ? summary.bookCount : (member ? Number(member.bookCount) || 0 : 0));
-    [['mainCertifiedBooksCount',count],['mainPendingBooksCount',assigned.filter(function(id) { return !readBooksMaster.some(function(b) { return String(b.id) === id; }); }).length],['mainPointsCount',points.toLocaleString()],['drawerStudentPoints',points.toLocaleString() + ' P']].forEach(function(item) {
+    [['mainCertifiedBooksCount',count],['mainPendingBooksCount',visibleAssigned.filter(function(id) { return !readBooksMaster.some(function(b) { return String(b.id) === id; }); }).length],['mainPointsCount',points.toLocaleString()],['drawerStudentPoints',points.toLocaleString() + ' P']].forEach(function(item) {
       var el = document.getElementById(item[0]); if(el) el.textContent = item[1];
     });
     if (typeof updateAllCharacterAvatars === 'function') updateAllCharacterAvatars();
@@ -12519,7 +12861,7 @@ document.addEventListener('click', function(event) {
   if (window.studentSubmissionPending && event.target.closest('#qscreen-ing')) { event.preventDefault(); event.stopImmediatePropagation(); }
 }, true);
 </script>
-<script src="js/portal-extras.js?v=20261029-integrity"></script>
+<script src="js/portal-extras.js?v=20261117_toast_msg"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_finish_art"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-student.js?v=20261113_center"></script>

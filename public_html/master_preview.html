@@ -20,7 +20,8 @@
   <link rel="shortcut icon" href="resources/images/icons/icon-192.png" type="image/png">
 
   <!-- Modern Clean Korean Typography: Pretendard Variable + Noto Sans KR -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -35,17 +36,17 @@
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
 
-  <link rel="stylesheet" href="css/master_preview.css?v=20261113_print_compact">
+  <link rel="stylesheet" href="css/master_preview.css?v=20261117_quiz_blank">
   <link rel="stylesheet" href="css/portfolio.css?v=20261113_pf_flow">
   <script src="js/preview-data.js?v=20261014"></script>
-  <script src="js/portal-client.js?v=20261116_kst24"></script>
+  <script src="js/portal-client.js?v=20261117_banner_sync"></script>
   <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
   <script src="js/preview-ux.js?v=20261111_phone_fix" defer></script>
   <link rel="stylesheet" href="css/portal-search.css?v=20261113_dropdown_fix">
-  <link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_v7">
+  <link rel="stylesheet" href="css/content-sharing.css?v=20261117_jd_theme">
   <script src="js/nano-dialog.js?v=20261113_center"></script>
   <script src="js/content-sharing.js?v=20261113_center"></script>
-<link rel="stylesheet" href="/css/portal-brand.css?v=20261117jd">
+<link rel="stylesheet" href="/css/portal-brand.css?v=20261117_jd_theme">
 <script src="/js/portal-brand.js?v=20261116jd"></script>
 </head>
 <body>
@@ -1316,7 +1317,7 @@
                 <th>저자 / 출판사</th>
                 <th>권장 학년</th>
                 <th>주제 분류</th>
-                <th style="width: 105px; text-align: center; white-space: nowrap;">퀴즈 등록 여부</th>
+                <th style="width: 110px; text-align: center; white-space: nowrap;">북퀴즈 현황</th>
                 <th style="width: 88px; text-align: center; white-space: nowrap;">나노시트</th>
                 <th style="width: 48px; text-align: center; padding-left: 2px; padding-right: 2px; white-space: nowrap; cursor: pointer; user-select: none;" id="thSortLikes" onclick="toggleMasterBookSort('likes')" title="클릭 시 찜 많은 순으로 정렬">
                   <span class="d-inline-flex align-items-center justify-content-center">찜<i class="fa-solid fa-sort ml-1 text-muted" id="sortIconLikes" style="font-size: 10px;"></i></span>
@@ -2028,15 +2029,15 @@
 
 <script src="js/quiz-result-art.js?v=20261029-integrity"></script>
 <!-- 나노의 책장 B2B 마스터 관리자 모듈형 스크립트 시스템 -->
-<script src="js/master/master-core.js?v=20261117jd"></script>
-<script src="js/master/master-franchise.js?v=20261113_center"></script>
+<script src="js/master/master-core.js?v=20261117_banner_sync"></script>
+<script src="js/master/master-franchise.js?v=20261117_reg_layout"></script>
 <script src="js/master/master-members.js?v=20261113_center"></script>
-<script src="js/master/master-operations.js?v=20261113_center"></script>
+<script src="js/master/master-operations.js?v=20261117_banner_sync"></script>
 <script src="js/master/master-learning.js?v=20261113_query_only"></script>
-<script src="js/portfolio-renderer.js?v=20261113_pf_unify"></script>
+<script src="js/portfolio-renderer.js?v=20261117_pf_footer"></script>
 <script src="js/master/master-portfolio.js?v=20261113_query_only"></script>
 <script src="js/master/master-ranking.js?v=20261113_query_only"></script>
-<script src="js/master/master-contents.js?v=20261113_center"></script>
+<script src="js/master/master-contents.js?v=20261117_quiz_blank"></script>
 <script src="js/master/master-dispatch.js?v=20261116_dispatch"></script>
 <script src="js/master/master-payment.js?v=20261110_payment_routine"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_bank"></script>
@@ -2056,13 +2057,13 @@
 <!-- PWA 모바일 설치 유도 스크립트 -->
 <script src="js/pwa-install.js"></script>
 
-<script src="js/portal-extras.js?v=20261029-integrity"></script>
+<script src="js/portal-extras.js?v=20261117_toast_msg"></script>
 
 <!-- 마스터 관리자 모달 파셜 템플릿 로더 (비동기 1회 자동 로드 및 DOM 주입) -->
 <script>
   (function() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'modals/master_modals.html?v=20261113_nanosheet_mgr', true);
+    xhr.open('GET', 'modals/master_modals.html?v=20261117_quiz_blank', true);
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4 && (xhr.status === 200 || xhr.status === 0)) {
         var container = document.getElementById('masterModalsContainer');

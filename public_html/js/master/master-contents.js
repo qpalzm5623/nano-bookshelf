@@ -260,43 +260,64 @@ function getQuizCountForBook(b) {
   return getBookQuizCount(b);
 }
 
-// 도서별 출제 기관(세트) 수 산출 (몇군데서 등록했는지 기준: 1Set, 2Set, 없음=0)
+function countValidMasterQuizSets(sets) {
+  if (!Array.isArray(sets)) return 0;
+  return sets.filter(function(s) {
+    if (!s) return false;
+    const qLen = Array.isArray(s.questions)
+      ? s.questions.length
+      : (Array.isArray(s.quizzes) ? s.quizzes.length : 0);
+    return qLen > 0;
+  }).length;
+}
+
+function buildMasterQuizSetBadgeHtml(setCount) {
+  const count = Number(setCount) > 0 ? Number(setCount) : 0;
+  if (count > 0) {
+    return `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;" title="현재 ${count}세트의 북퀴즈가 등록되어 있습니다"><i class="fa-solid fa-circle-check mr-1"></i>${count}세트 등록</span>`;
+  }
+  return `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;" title="등록된 북퀴즈 세트가 없습니다"><i class="fa-solid fa-circle-xmark mr-1"></i>미등록</span>`;
+}
+
+// 도서별 출제 기관(세트) 수 산출 (실제 등록 세트 수 기준: N세트, 없음=0)
 function getBookQuizSetCount(b) {
   if (!b) return 0;
 
-  // 0. 도서 객체에 백엔드/데이터셋에서 계산된 quizSetCount 속성이 직접 있는 경우 최우선 적용
-  if (typeof b.quizSetCount === "number" && b.quizSetCount > 0) {
-    return b.quizSetCount;
+  // 0. 서버 지연 조회를 통해 실제 quizSets가 동기화된 경우 최우선 계산
+  if (b._quizLoadedFromServer && Array.isArray(b.quizSets)) {
+    return countValidMasterQuizSets(b.quizSets);
   }
 
   // 1. 이미 초기화된 다중 퀴즈 세트(quizSets)가 존재하는 경우 유효 세트 수 계산
   if (Array.isArray(b.quizSets) && b.quizSets.length > 0) {
-    const validSets = b.quizSets.filter(s => {
-      const qLen = Array.isArray(s.questions) ? s.questions.length : (Array.isArray(s.quizzes) ? s.quizzes.length : 0);
-      return qLen > 0;
-    });
-    if (validSets.length > 0) return validSets.length;
+    const validCount = countValidMasterQuizSets(b.quizSets);
+    if (validCount > 0) return validCount;
   }
 
-  // 2. 어린 왕자 등 다중 기관(본사 + A 학원) 출제 도서 보장
+  // 2. 도서 객체에 백엔드/데이터셋에서 계산된 quizSetCount 속성이 직접 있는 경우 적용 (0 포함)
+  if (typeof b.quizSetCount === "number" && b.quizSetCount >= 0) {
+    return b.quizSetCount;
+  }
+
+  // 3. 어린 왕자 등 로컬 데모 다중 기관(본사 + A 학원) 출제 도서 보장
   if (b.title && b.title.includes("어린 왕자")) {
     return 2;
   }
 
-  // 3. MIGRATED_QUIZZES 글로벌 데이터셋에 등록되어 있는 세트 수
+  // 4. MIGRATED_QUIZZES 글로벌 데이터셋에 등록되어 있는 세트 수
   if (typeof window !== "undefined" && window.MIGRATED_QUIZZES) {
     const list = window.MIGRATED_QUIZZES[b.id] || window.MIGRATED_QUIZZES[b.bookNo] || window.MIGRATED_QUIZZES[b.serverId];
     if (Array.isArray(list) && list.length > 0) {
-      if (list[0] && (list[0].questions || list[0].authorName || list[0].authorType)) {
-        const validSets = list.filter(s => Array.isArray(s.questions) && s.questions.length > 0);
-        if (validSets.length > 0) return validSets.length;
+      if (list[0] && (list[0].questions || list[0].quizzes || list[0].authorName || list[0].authorType)) {
+        const validCount = countValidMasterQuizSets(list);
+        if (validCount > 0) return validCount;
         return list.length;
       }
       return 1;
     }
   }
 
-  // 4. 단일 퀴즈 문항 목록 또는 플래그가 있는 경우 (1군데 등록 = 1Set)
+  // 5. 단일 퀴즈 문항 목록 또는 플래그가 있는 경우 (1군데 등록 = 1세트)
   if (Array.isArray(b.quizList) && b.quizList.length > 0) return 1;
   if (typeof b.quizCount === "number" && b.quizCount > 0) return 1;
   if (typeof b.quizzes === "number" && b.quizzes > 0) return 1;
@@ -629,11 +650,9 @@ function renderMasterContents() {
       ? `<span class="badge-soft badge-soft-warning" style="font-weight: 700; white-space: nowrap;"><i class="fa-solid fa-crown mr-1"></i>본사 직속(HQ)</span>`
       : `<span class="badge-soft badge-soft-primary" style="font-weight: 700; white-space: nowrap;" title="${academyName}"><i class="fa-solid fa-school mr-1"></i>${academyName}</span>`;
 
-    // 퀴즈 등록 여부 뱃지 (출제 기관/세트 수 판정: 1Set, 2Set, 없으면 No)
+    // 북퀴즈 현황 뱃지 (등록된 퀴즈 세트 수 표시)
     const setCount = getBookQuizSetCount(b);
-    const hasQuizBadge = (setCount > 0)
-      ? `<span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-check mr-1"></i>${setCount}Set</span>`
-      : `<span class="badge-soft badge-soft-warn font-weight-bold" style="font-size: 11.5px; padding: 3px 8px; white-space: nowrap;"><i class="fa-solid fa-circle-xmark mr-1"></i>No</span>`;
+    const hasQuizBadge = buildMasterQuizSetBadgeHtml(setCount);
 
     // 나노시트 단독 버튼 판정 (실제 등록된 나노시트가 존재하는 경우에만 활성화)
     let hasSheet = false;
@@ -761,7 +780,7 @@ function renderMasterContents() {
           <td class="text-center"><div>${b.author || '-'}</div><small class="text-muted">${b.publisher || '-'}</small></td>
           <td class="text-center"><span class="badge-soft badge-soft-neutral font-weight-bold">${b.grade || '전체'}</span></td>
           <td class="text-center"><span class="badge-soft badge-soft-primary" style="font-size:11px;">${b.category || '국내서'}</span></td>
-          <td class="text-center"><span class="badge-soft badge-soft-success font-weight-bold" style="font-size:11.5px;">1Set</span></td>
+          <td class="text-center">${buildMasterQuizSetBadgeHtml(getBookQuizSetCount(b))}</td>
           <td class="text-center"><button type="button" class="btn-sheet-action btn-sheet-nanosheet w-100" onclick="openMasterPdfModal('${b.id}')" style="padding:3px 8px;font-size:11.5px;">나노시트</button></td>
           <td class="text-center font-weight-bold text-danger">${b.likes || 12}</td>
           <td class="text-center font-weight-bold text-primary">${b.recommends || 25}</td>
@@ -2738,6 +2757,7 @@ function handleSaveMasterBookOnly(e) {
     pdfDataUrl: null,
     hasQuiz: false,
     quizzes: 0,
+    quizSetCount: 0,
     likes: 0,
     recommends: 0,
     quizCompletions: 0,
@@ -2794,7 +2814,13 @@ async function saveBookDataDirectly(bookData) {
         materialType: prevBook.materialType || null,
         sheetFile: prevBook.sheetFile || null,
         pdfBlob: prevBook.pdfBlob || null,
-        pdfDataUrl: prevBook.pdfDataUrl || null
+        pdfDataUrl: prevBook.pdfDataUrl || null,
+        hasQuiz: prevBook.hasQuiz,
+        quizzes: prevBook.quizzes,
+        quizCount: prevBook.quizCount,
+        quizSetCount: prevBook.quizSetCount,
+        quizSets: prevBook.quizSets,
+        _quizLoadedFromServer: prevBook._quizLoadedFromServer
       };
     }
   }
@@ -2894,6 +2920,25 @@ function insertQuizSymbol(sym) {
   saveCurrentQuizDraft();
 }
 
+// 빈 북퀴즈 문항 기본 템플릿 (하드코딩 예시 문구 없이 placeholder만 표시)
+function createBlankMasterQuizQuestion() {
+  return {
+    type: "CHOICE",
+    question: "",
+    mediaType: "none",
+    mediaUrl: "",
+    mediaCaption: "",
+    mediaName: "",
+    mediaSizeInfo: "",
+    choices: ["", "", ""],
+    opt1: "",
+    opt2: "",
+    opt3: "",
+    ans: "1",
+    hint: ""
+  };
+}
+
 // 도서별 다중 퀴즈 세트 무결성 보장 함수 (본사 출제 + 가맹점 출제 세트 구성)
 function ensureMasterQuizSets(book) {
   if (!book.quizSets || !Array.isArray(book.quizSets) || book.quizSets.length === 0) {
@@ -2906,9 +2951,10 @@ function ensureMasterQuizSets(book) {
       }
     }
 
+    const isLiveServer = typeof window !== "undefined" && (window.NANO_SERVER_DATA || (window.NanoPortal && window.NanoPortal.remote));
     let defaultHQQuestions = [];
-    if (book.title && book.title.includes("어린 왕자")) {
-      // 어린 왕자: 스크린샷과 100% 일치하는 질문 및 이미지·영상 미디어 탑재 샘플
+    if (!isLiveServer && book.title && book.title.includes("어린 왕자")) {
+      // 어린 왕자: 스크린샷과 100% 일치하는 질문 및 이미지·영상 미디어 탑재 샘플 (로컬 미리보기 전용)
       defaultHQQuestions = [
         {
           type: "CHOICE",
@@ -2978,47 +3024,7 @@ function ensureMasterQuizSets(book) {
     } else {
       defaultHQQuestions = (book.quizList && Array.isArray(book.quizList) && book.quizList.length > 0)
         ? JSON.parse(JSON.stringify(book.quizList))
-        : [
-            {
-              type: "CHOICE",
-              question: `[${book.title}] 1. 도서의 중심 인물과 배경에 대한 올바른 설명은 무엇인가요?`,
-              mediaType: "none",
-              mediaUrl: "",
-              mediaCaption: "",
-              opt1: "주인공이 겪는 핵심 갈등의 배경과 정확히 일치한다",
-              opt2: "전혀 다른 시대적 배경에서 펼쳐진다",
-              opt3: "주인공이 등장하지 않는 허구의 서술이다",
-              opt4: "결말과 정반대되는 인물 관계이다",
-              ans: "1",
-              hint: "도서 전반부 1장의 배경을 참고하세요."
-            },
-            {
-              type: "CHOICE",
-              question: `[${book.title}] 2. 작품의 전개 과정에서 가장 중요한 사건이나 핵심 내용은 무엇인가요?`,
-              mediaType: "none",
-              mediaUrl: "",
-              mediaCaption: "",
-              opt1: "주인공이 인내와 지혜를 발휘하여 당면한 문제를 해결해 나간다",
-              opt2: "아무런 노력 없이 저절로 문제가 해결된다",
-              opt3: "모든 인물이 도전을 포기하고 도망친다",
-              opt4: "상황이 점점 더 악화되어 비극으로 끝난다",
-              ans: "1",
-              hint: "주인공의 선택과 극복 과정을 참고하세요."
-            },
-            {
-              type: "CHOICE",
-              question: `[${book.title}] 3. 작가가 이 책을 통해 독자에게 전달하고자 한 가장 중요한 교훈이나 가치는 무엇인가요?`,
-              mediaType: "none",
-              mediaUrl: "",
-              mediaCaption: "",
-              opt1: "진정한 배려와 공감, 따뜻한 마음의 가치",
-              opt2: "물질적 성공과 이기적인 태도",
-              opt3: "규칙을 무조건 어기는 용기",
-              opt4: "혼자만의 이익을 추구하는 삶",
-              ans: "1",
-              hint: "작가의 말 또는 책의 결말 후기를 참고하세요."
-            }
-          ];
+        : [createBlankMasterQuizQuestion()];
     }
 
     book.quizSets = [
@@ -3097,8 +3103,14 @@ async function openMasterQuizModal(bookId) {
       book._quizLoadedFromServer = true;
       if (Array.isArray(res.quizSets) && res.quizSets.length > 0) {
         book.quizSets = res.quizSets;
+        book.quizSetCount = countValidMasterQuizSets(res.quizSets);
+        book.hasQuiz = book.quizSetCount > 0;
         if (!window.MIGRATED_QUIZZES) window.MIGRATED_QUIZZES = {};
         window.MIGRATED_QUIZZES[book.id] = res.quizSets;
+      } else if (Array.isArray(res.quizSets)) {
+        book.quizSets = [];
+        book.quizSetCount = 0;
+        book.hasQuiz = false;
       }
     } catch (err) {
       console.warn('마스터 북퀴즈 지연 조회 실패:', err);
@@ -3285,18 +3297,7 @@ function openNewQuizSetModal() {
     academyName: "본사 직속 (공용)",
     createdAt: new Date().toISOString().slice(0, 10),
     isPublic: "Y",
-    questions: [
-      {
-        type: "CHOICE",
-        question: "",
-        choices: ["", "", ""],
-        opt1: "",
-        opt2: "",
-        opt3: "",
-        ans: "1",
-        hint: ""
-      }
-    ]
+    questions: [createBlankMasterQuizQuestion()]
   };
 
   if (!book.quizSets) book.quizSets = [];
@@ -3330,10 +3331,13 @@ async function deleteCurQuizSet() {
   }
 
   book.quizSets.splice(curQuizSetIdx, 1);
+  book.quizSetCount = countValidMasterQuizSets(book.quizSets);
+  book.hasQuiz = book.quizSetCount > 0;
   curQuizSetIdx = 0;
   curQuizQuestionIdx = 0;
   renderQuizSetTabs();
   loadCurrentQuizSet();
+  renderMasterContents();
   showMasterToast("선택한 북퀴즈 세트가 삭제되었습니다.");
 }
 
@@ -3709,7 +3713,7 @@ function getChoicesFromQuestion(q) {
   }
   const list = [q.opt1, q.opt2, q.opt3, q.opt4, q.opt5].filter(x => x !== undefined && x !== "");
   if (list.length < 2) {
-    return [q.opt1 || "1번 선택지를 입력해주세요", q.opt2 || "2번 선택지를 입력해주세요", q.opt3 || "3번 선택지를 입력해주세요"];
+    return [q.opt1 || "", q.opt2 || "", q.opt3 || ""];
   }
   return list.slice(0, 5);
 }
@@ -3753,7 +3757,7 @@ function renderDynamicChoices(choices, ans) {
             <label for="mqRadio${num}" class="mb-0 ml-1 font-weight-bold text-dark" style="font-size: 12.5px; cursor: pointer;">${circle}번</label>
           </div>
         </div>
-        <input type="text" class="form-control form-control-beige choice-opt-input" id="mqOpt${num}" data-opt-idx="${idx}" value="${String(cleanVal || '').replace(/"/g, '&quot;')}" placeholder="${num}번 선택지를 입력해주세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()" style="${canDelete ? 'border-radius: 0;' : 'border-radius: 0 8px 8px 0;'}">
+        <input type="text" class="form-control form-control-beige choice-opt-input" id="mqOpt${num}" data-opt-idx="${idx}" value="${String(cleanVal || '').replace(/"/g, '&quot;')}" placeholder="예: ${num}번 선택지 내용을 입력하세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()" style="${canDelete ? 'border-radius: 0;' : 'border-radius: 0 8px 8px 0;'}">
         ${canDelete ? `
         <div class="input-group-append">
           <button type="button" class="btn btn-outline-danger" onclick="deleteQuizChoiceOption(${idx})" title="보기 삭제" style="border-radius: 0 8px 8px 0; font-size: 12px; padding: 0 10px;">
@@ -3849,24 +3853,24 @@ function loadCurrentQuizQuestionForm() {
     document.getElementById("mqTypeSubjective").checked = true;
   }
 
-  onQuizTypeChanged(q.type || "CHOICE");
-
   const titleEl = document.getElementById("mqCurrentQuestionTitle");
   if (titleEl) {
     titleEl.innerHTML = `<i class="fa-solid fa-circle-question text-warning mr-1"></i>문제 ${curQuizQuestionIdx + 1}번 문항 설정 (${isChoice ? '객관식' : '주관식 단답/서술'})`;
   }
 
   const rawQ = q.question || "";
-  const isDummyQ = (rawQ.trim() === "문제를 입력해주세요" || rawQ.trim() === "문제를 입력해 주세요");
+  const trimmedQ = rawQ.trim();
+  const isDummyQ = (trimmedQ === "문제를 입력해주세요" || trimmedQ === "문제를 입력해 주세요" || /^문제\s*\d+\.\s*지문\s*또는\s*문제\s*내용을\s*입력하세요\.?$/.test(trimmedQ));
   document.getElementById("mqQuestionText").value = isDummyQ ? "" : rawQ;
   if (document.getElementById("mqQuizHint")) {
     document.getElementById("mqQuizHint").value = q.hint || "";
   }
 
-  // 미디어 UI 동기화
-  updateQuizMediaUI();
-
   if (isChoice) {
+    const subjAnsEl = document.getElementById("mqSubjectiveAns");
+    const subjSimEl = document.getElementById("mqSubjectiveSimilar");
+    if (subjAnsEl) subjAnsEl.value = "";
+    if (subjSimEl) subjSimEl.value = "";
     const choices = getChoicesFromQuestion(q);
     q.choices = choices;
     renderDynamicChoices(choices, q.ans || "1");
@@ -3874,6 +3878,10 @@ function loadCurrentQuizQuestionForm() {
     document.getElementById("mqSubjectiveAns").value = q.subjectiveAns || "";
     document.getElementById("mqSubjectiveSimilar").value = q.similarAns || "";
   }
+
+  // 미디어 UI 동기화 및 유형 전환 (모든 입력 DOM 동기화 완료 후 실행)
+  updateQuizMediaUI();
+  onQuizTypeChanged(q.type || "CHOICE");
 }
 
 function onQuizTypeChanged(type) {
@@ -3933,26 +3941,10 @@ function addNewQuizQuestion() {
     showMasterToast("북퀴즈는 최대 20문항까지 등록할 수 있습니다.");
     return;
   }
-  const nextNum = currentQuizQuestions.length + 1;
-  currentQuizQuestions.push({
-    type: "CHOICE",
-    question: "",
-    mediaType: "none",
-    mediaUrl: "",
-    mediaCaption: "",
-    mediaName: "",
-    mediaSizeInfo: "",
-    choices: ["", "", ""],
-    opt1: "",
-    opt2: "",
-    opt3: "",
-    ans: "1",
-    hint: ""
-  });
+  currentQuizQuestions.push(createBlankMasterQuizQuestion());
   curQuizQuestionIdx = currentQuizQuestions.length - 1;
   renderQuizTabButtons();
   loadCurrentQuizQuestionForm();
-  document.getElementById("mqQuestionText")?.focus();
 }
 
 function deleteCurQuizQuestion() {
@@ -4128,10 +4120,14 @@ async function persistMasterQuizToServer(book, curSet, targetIsPublic, questions
   const primarySet = book.quizSets[0] || savedSet;
   const primaryQuestions = Array.isArray(primarySet.questions) ? primarySet.questions : questions;
 
-  // 기본 목록 표시용 하위 호환
+  // 기본 목록 표시용 하위 호환 및 세트 수 동기화
   book.quizList = JSON.parse(JSON.stringify(primaryQuestions));
   book.quizzes = primaryQuestions.length;
-  book.hasQuiz = primaryQuestions.length > 0;
+  book.quizCount = book.quizSets.reduce((n, s) => n + (Array.isArray(s.questions) ? s.questions.length : 0), 0);
+  book.quizSetCount = typeof countValidMasterQuizSets === 'function'
+    ? countValidMasterQuizSets(book.quizSets)
+    : book.quizSets.filter(s => s && Array.isArray(s.questions) && s.questions.length > 0).length;
+  book.hasQuiz = book.quizSetCount > 0;
 
   if (window.ContentSharing && typeof ContentSharing.refresh === 'function') {
     try { ContentSharing.refresh(); } catch (_e) {}
@@ -4189,7 +4185,11 @@ async function handleSaveMasterQuizOnly() {
     const primaryQuestions = Array.isArray(primarySet.questions) ? primarySet.questions : currentQuizQuestions;
     book.quizList = JSON.parse(JSON.stringify(primaryQuestions));
     book.quizzes = primaryQuestions.length;
-    book.hasQuiz = primaryQuestions.length > 0;
+    book.quizCount = book.quizSets.reduce((n, s) => n + (Array.isArray(s.questions) ? s.questions.length : 0), 0);
+    book.quizSetCount = typeof countValidMasterQuizSets === 'function'
+      ? countValidMasterQuizSets(book.quizSets)
+      : book.quizSets.filter(s => s && Array.isArray(s.questions) && s.questions.length > 0).length;
+    book.hasQuiz = book.quizSetCount > 0;
     if (window.ContentSharing && typeof ContentSharing.refresh === 'function') {
       try { ContentSharing.refresh(); } catch (_e) {}
     }
@@ -4816,6 +4816,7 @@ async function handleMasterBookExcelUpload() {
         isPublic: "Y",
         hasQuiz: false,
         quizzes: 0,
+        quizSetCount: 0,
         likes: 0,
         recommends: 0,
         quizCompletions: 0,
@@ -5358,6 +5359,7 @@ async function handleMasterQuizExcelUpload() {
 
     const groups = Array.from(groupedMap.values());
 
+    let bulkQuizSetCounts = null;
     // 1. 서버 연동 환경인 경우 백엔드 API 일괄 저장 실행 (/api/manage?entity=quizzes)
     if (window.NanoPortal && typeof NanoPortal.api === "function" && window.NANO_SERVER_DATA) {
       try {
@@ -5383,7 +5385,10 @@ async function handleMasterQuizExcelUpload() {
             }))
           }))
         };
-        await NanoPortal.api("/api/manage?entity=quizzes", payload);
+        const bulkRes = await NanoPortal.api("/api/manage?entity=quizzes", payload);
+        if (bulkRes && bulkRes.bookQuizSetCounts && typeof bulkRes.bookQuizSetCounts === "object") {
+          bulkQuizSetCounts = bulkRes.bookQuizSetCounts;
+        }
       } catch (apiErr) {
         console.error("서버 북퀴즈 일괄 저장 오류:", apiErr);
         alert(`[서버 북퀴즈 저장 오류]\n${apiErr.message || "서버 통신 중 오류가 발생했습니다."}`);
@@ -5416,7 +5421,10 @@ async function handleMasterQuizExcelUpload() {
         score: q.score
       }));
 
-      // 본사 퀴즈 세트로 구성 (다음 모달 열기 시 서버 seq/revision/isPublic 동기화를 위해 플래그 초기화)
+      // 본사 퀴즈 세트로 구성 (가맹점 세트는 보존하고 서버 세트 수 반영)
+      const preservedOtherSets = Array.isArray(book.quizSets)
+        ? book.quizSets.filter(s => s && s.authorType === "ACADEMY")
+        : [];
       book.hasQuiz = true;
       book.quizzes = formattedQuestions.length;
       book._quizLoadedFromServer = false;
@@ -5429,8 +5437,15 @@ async function handleMasterQuizExcelUpload() {
           isPublic: "Y",
           createdAt: today,
           questions: formattedQuestions
-        }
+        },
+        ...preservedOtherSets
       ];
+      const serverCount = bulkQuizSetCounts
+        ? (bulkQuizSetCounts[book.serverId] ?? bulkQuizSetCounts[book.bookNo] ?? bulkQuizSetCounts[book.id])
+        : undefined;
+      book.quizSetCount = typeof serverCount === "number"
+        ? serverCount
+        : countValidMasterQuizSets(book.quizSets);
 
       // MIGRATED_QUIZZES 동기화
       window.MIGRATED_QUIZZES[book.id] = book.quizSets;

@@ -1,4 +1,4 @@
-import { restrictedMaster, brandAcademyIds, brandOf, operationInBrand } from '../lib/portal-brand';
+import { restrictedMaster, brandAcademyIds, brandOf, operationInBrand, mapBannerRecord } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, master, need, text, failure, academyScope } from '../lib/portal-http';
 import { hashPassword } from '../lib/portal-auth';
@@ -295,7 +295,10 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'POST') {
       need(['save','delete','import','restore'].includes(body.operation) || (entity === 'themes' && body.operation === 'reorder') || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')) || entity === 'summarize_synopsis', '요청 작업을 확인해 주세요.');
       if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
-      if (body.operation === 'delete' || body.operation === 'restore') need(typeof input.id === 'string' && input.id.length > 0, '대상 항목을 선택해 주세요.');
+      if (body.operation === 'delete' || body.operation === 'restore') {
+        const hasBatchIds = body.operation === 'delete' && entity === 'assignments' && Array.isArray(input.ids) && input.ids.length > 0;
+        need((typeof input.id === 'string' && input.id.length > 0) || hasBatchIds, '대상 항목을 선택해 주세요.');
+      }
     }
     if (req.method === 'GET') {
       if (entity === 'rankings') {
@@ -518,27 +521,11 @@ export default async function handler(req: any, res: any) {
           prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }),
           prisma.portalSetting.findMany({ where: { scope: 'banner_meta' } })
         ]);
-        const metaMap = new Map(metaRows.map(m => [m.key.replace(/^banner_meta:/, ''), (m.value || {}) as Record<string, any>]));
+        const metaMap = new Map(metaRows.map((m: any) => [m.key.replace(/^banner_meta:/, ''), { ...((m.value || {}) as Record<string, any>), _updatedAt: m.updatedAt ? +new Date(m.updatedAt) : 0 }]));
         return res.json({
-          items: bannerRows.filter(b => brandOf(metaMap.get(b.id)) === user.portalBrand).map(b => {
-            const meta = metaMap.get(b.id) || {};
-            let linkBookIds: string[] = [];
-            let linkSub = '';
-            if (typeof b.linkUrl === 'string' && b.linkUrl.startsWith('#')) {
-              try {
-                const params = new URLSearchParams(b.linkUrl.slice(1));
-                const rawBooks = params.get('books') || '';
-                if (rawBooks) linkBookIds = rawBooks.split(',').map(s => s.trim()).filter(Boolean);
-                linkSub = params.get('sub') || '';
-              } catch {}
-            }
-            return {
-              ...b,
-              ...meta,
-              sub: meta.sub || linkSub || '',
-              bookIds: Array.isArray(meta.bookIds) && meta.bookIds.length > 0 ? meta.bookIds : linkBookIds
-            };
-          })
+          items: bannerRows.filter(b => brandOf(metaMap.get(b.id)) === user.portalBrand).map(b => ({
+            ...mapBannerRecord(b, metaMap.get(b.id) || {})
+          }))
         });
       }
       if (entity === 'quizzes') {
@@ -722,7 +709,19 @@ export default async function handler(req: any, res: any) {
       return res.json({ item: { ...item, teacher: teacherStr } });
     }
     if (entity === 'assignments') {
-      if (body.operation === 'delete') { const result = await prisma.bookAssignment.deleteMany({ where: { id: input.id, academyId } }); need(result.count, '배정 내역을 찾을 수 없습니다.', 404); return res.json({ ok: true }); }
+      if (body.operation === 'delete') {
+        const isBatchDelete = Array.isArray(input.ids);
+        const rawIds: string[] = isBatchDelete
+          ? input.ids.map((v: any) => String(v || '').trim()).filter(Boolean)
+          : (input.id ? [String(input.id).trim()] : []);
+        const deleteIds: string[] = [...new Set(rawIds)];
+        need(deleteIds.length > 0 && deleteIds.length <= 500, '삭제할 배정 내역을 선택해 주세요.');
+        const result = await prisma.bookAssignment.deleteMany({
+          where: { id: deleteIds.length === 1 && !isBatchDelete ? deleteIds[0] : { in: deleteIds }, academyId },
+        });
+        need(result.count, '배정 내역을 찾을 수 없습니다.', 404);
+        return res.json({ ok: true, deletedCount: result.count });
+      }
       const requestedBooks = input.bookIds === undefined ? [input.bookId] : input.bookIds;
       need(Array.isArray(requestedBooks) && requestedBooks.length > 0 && requestedBooks.length <= 100, '배정할 도서는 한 번에 1~100권 선택해 주세요.');
       const bookIds = [...new Set(requestedBooks.map((id: any) => text(id, '도서 번호', 100, true)))];
@@ -1113,7 +1112,34 @@ export default async function handler(req: any, res: any) {
           };
         });
 
-        return res.json(result);
+        // 엑셀 일괄 업로드 직후 각 도서별 노출 가능한 총 퀴즈 세트 수를 계산해 프런트 목록 배지를 즉시 동기화합니다.
+        const bookQuizSetCounts: Record<string, number> = {};
+        const importedBookIds = Array.from(new Set(matchedBooks.map(b => b.id)));
+        if (importedBookIds.length > 0 && typeof prisma.bookQuiz?.groupBy === 'function') {
+          const [latestAccess, groupedSets] = await Promise.all([
+            loadContentAccess(prisma),
+            prisma.bookQuiz.groupBy({
+              by: ['bookId', 'legacyQuizSeq'],
+              where: { bookId: { in: importedBookIds } },
+              _count: { id: true }
+            })
+          ]);
+          const seenPerBook = new Map<string, Set<number>>();
+          for (const grp of groupedSets) {
+            const seq = grp.legacyQuizSeq || 0;
+            if (!canReadContent(user, quizContent(latestAccess, grp.bookId, seq), latestAccess)) continue;
+            let seqSet = seenPerBook.get(grp.bookId);
+            if (!seqSet) { seqSet = new Set<number>(); seenPerBook.set(grp.bookId, seqSet); }
+            seqSet.add(seq);
+          }
+          for (const bk of matchedBooks) {
+            const cnt = seenPerBook.get(bk.id)?.size || 0;
+            bookQuizSetCounts[bk.id] = cnt;
+            if (bk.bookNo) bookQuizSetCounts[bk.bookNo] = cnt;
+          }
+        }
+
+        return res.json({ ...result, bookQuizSetCounts });
       }
       // 학원 편집은 소유 세트를 검증하는 콘텐츠 API를 사용합니다.
       master(user);
@@ -1252,8 +1278,8 @@ export default async function handler(req: any, res: any) {
         const bookIds = Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : [];
         const subText = text(input.sub || '', '배너 서브 설명', 1000);
         const effectiveLinkUrl = (input.linkUrl && /^https?:\/\//i.test(String(input.linkUrl)))
-          ? text(input.linkUrl, '연결 주소', 2000)
-          : text('#books=' + encodeURIComponent(bookIds.join(',')) + (subText ? '&sub=' + encodeURIComponent(subText) : ''), '연결 주소', 2000);
+          ? text(input.linkUrl, '연결 주소', 10000)
+          : text('#books=' + encodeURIComponent(bookIds.join(',')) + (subText ? '&sub=' + encodeURIComponent(subText) : ''), '연결 주소', 10000);
         const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: effectiveLinkUrl, isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
         const saved = input.id ? await tx.mainBanner.update({ where: { id: input.id }, data }) : await tx.mainBanner.create({ data });
         const meta = {
@@ -1261,7 +1287,8 @@ export default async function handler(req: any, res: any) {
           sub: subText,
           bookIds,
           clicks: Number(input.clicks) || 0,
-          createdAt: text(input.createdAt || new Date().toISOString().slice(0, 10), '등록일', 20)
+          createdAt: text(input.createdAt || new Date().toISOString().slice(0, 10), '등록일', 20),
+          updatedAt: Date.now()
         };
         await tx.portalSetting.upsert({
           where: { key: 'banner_meta:' + saved.id },

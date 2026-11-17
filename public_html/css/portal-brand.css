@@ -1,35 +1,175 @@
 /* JD 호스트에만 적용하는 공통 브랜드 토큰. 상태/위험 색상은 유지합니다. */
 html[data-brand="JD"] {
-  --bg-base: #f3f6fc; --bg-surface: #fff; --bg-subtle: #f7f9ff; --bg-hover: #eaf0ff;
-  --border-light: #e0e7f5; --border-medium: #c6d3eb;
-  --text-main: #172c50; --text-muted: #5d6d87; --text-soft: #73839d;
+  --bg-base: #f4f7fd; --bg-surface: #fff; --bg-subtle: #f7f9ff; --bg-hover: #edf2ff;
+  --border-light: #e0e7f5; --border-medium: #c7d7fe;
+  --text-main: #172c50; --text-muted: #586985; --text-soft: #7b8ca8;
   --btn-primary: #1649db; --btn-primary-hover: #123bb1;
-  --btn-secondary: #edf2ff; --btn-secondary-text: #224899;
+  --btn-secondary: #eff4ff; --btn-secondary-text: #173f9b;
   --badge-neutral-bg: #edf2fc; --badge-neutral-text: #46618d;
   --badge-master-bg: #173f9b; --badge-master-text: #fff;
-  --primary: #1649db; --primary-dark: #123bb1; --primary-light: #eaf0ff;
-  --brand: #1649db; --accent: #1649db; --teal: #1649db;
-  --bg: #f3f6fc; --surface: #fff; --surface-warm: #f7f9ff;
-  --leaf-dark: #173f9b; --leaf-deep: #1645bd; --leaf: #2455d7;
-  --leaf-mid: #3568e8; --leaf-light: #628afa; --leaf-soft: #eaf0ff; --leaf-pale: #f5f8ff;
-  --wood-dark: #172c50; --wood-mid: #32486b; --wood-warm: #5d6d87; --wood-light: #edf2fc;
-  --soft: #e0e7f5; --text: #172c50; --muted: #5d6d87;
-  --blue: #1649db; --blue-lt: #eaf0ff; --accent-teal: #1649db;
+  --primary: #1649db; --primary-dark: #123bb1; --primary-light: #edf2ff;
+  --brand: #1649db; --accent: #2563eb; --teal: #1649db;
+  --bg: #f4f7fd; --surface: #fff; --surface-warm: #f7f9ff;
+  --leaf-dark: #173f9b; --leaf-deep: #1645bd; --leaf: #1649db;
+  --leaf-mid: #2563eb; --leaf-light: #60a5fa; --leaf-soft: #eff4ff; --leaf-pale: #f7f9ff;
+  --wood-dark: #172c50; --wood-mid: #32486b; --wood-warm: #586985; --wood-light: #edf2fc;
+  --soft: #dfe7f6; --text: #172c50; --muted: #586985;
+  --blue: #1649db; --blue-lt: #eff4ff; --accent-teal: #1649db;
+  --bg-gradient: linear-gradient(145deg, #f4f7fd 0%, #e4ecfb 100%);
+  --primary-brown: #1649db; --primary-brown-hover: #123bb1;
+  --text-subtle: #8394b0;
+  --shadow-card: 0 20px 45px -10px rgba(22, 73, 219, 0.14), 0 10px 20px -8px rgba(22, 73, 219, 0.08);
   --card-bg: #fff; --border-color: #d5dff2;
 }
-html[data-brand="JD"] body { background-color: #f3f6fc; color: #172c50; }
+html[data-brand="JD"] body {
+  background-color: #f4f7fd;
+  color: #172c50;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  letter-spacing: -0.015em;
+}
+html[data-brand="JD"] button,
+html[data-brand="JD"] input,
+html[data-brand="JD"] select,
+html[data-brand="JD"] textarea {
+  font-family: inherit;
+}
+html[data-brand="JD"] .bs-stat-num,
+html[data-brand="JD"] .sharing-kpi-num,
+html[data-brand="JD"] .sharing-kpi-subcount strong,
+html[data-brand="JD"] .rank-card-num,
+html[data-brand="JD"] .rank-card-pt,
+html[data-brand="JD"] .res-score {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
 html[data-brand="JD"] img[data-jd-logo] { height: 54px !important; width: auto !important; max-width: 180px; object-fit: contain; }
 html[data-brand="JD"] .nav-item-btn.active,
-html[data-brand="JD"] .sidebar .active { background: #eaf0ff !important; color: #1649db !important; border-color: #bbccfa !important; }
+html[data-brand="JD"] .sidebar .active { background: #eff4ff !important; color: #1649db !important; border-color: #c7d7fe !important; }
 html[data-brand="JD"] .btn-beige-primary,
 html[data-brand="JD"] .btn-primary { background: #1649db; border-color: #1649db; color: #fff; }
 html[data-brand="JD"] .btn-beige-primary:hover,
 html[data-brand="JD"] .btn-primary:hover { background: #123bb1; border-color: #123bb1; }
-html[data-brand="JD"] .form-control:focus { border-color: #6c92f0; box-shadow: 0 0 0 3px #1649db20; }
+html[data-brand="JD"] .btn-beige-secondary { background: #eff4ff; color: #173f9b; border-color: #c7d7fe; }
+html[data-brand="JD"] .btn-beige-secondary:hover { background: #dfe9ff; color: #123bb1; border-color: #9bb8fc; }
+html[data-brand="JD"] .brand-icon { background: #1649db; color: #ffffff; border-color: #1649db; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.22); }
+html[data-brand="JD"] .simple-sidebar::-webkit-scrollbar-thumb,
+html[data-brand="JD"] .interest-rec-scroll::-webkit-scrollbar-thumb { background: #c6d3eb; }
+html[data-brand="JD"] .simple-sidebar::-webkit-scrollbar-thumb:hover { background: #9db4dc; }
+html[data-brand="JD"] .simple-table th,
+html[data-brand="JD"] .simple-table thead th,
+html[data-brand="JD"] .table thead th,
+html[data-brand="JD"] table thead th,
+html[data-brand="JD"] table th { background: #f5f8ff; color: #172c50; border-bottom-color: #c7d7fe; }
+html[data-brand="JD"] .simple-table tr:hover td { background: #f8faff; }
+html[data-brand="JD"] .form-control-beige,
+html[data-brand="JD"] .select-beige { background: #f8faff; border-color: #cdd9ee; color: #172c50; }
+html[data-brand="JD"] .form-control-beige:focus,
+html[data-brand="JD"] .select-beige:focus,
+html[data-brand="JD"] .form-control:focus { background: #ffffff; border-color: #6c92f0; box-shadow: 0 0 0 3px #1649db20; }
+html[data-brand="JD"] .modal-content-beige { border-color: #cdd9ee; box-shadow: 0 15px 40px rgba(22, 73, 219, 0.16); }
+html[data-brand="JD"] .modal-header-beige { background: #f5f8ff; border-bottom-color: #e0e7f5; color: #172c50; }
+html[data-brand="JD"] .master-report-photo-btn { background: #f5f8ff; border-color: #c7d7fe; }
+html[data-brand="JD"] .master-report-photo-btn:hover { border-color: #1649db; }
+html[data-brand="JD"] .slot-progress-wrap { background: #e6eefc; }
+html[data-brand="JD"] .slot-progress-fill { background: #1649db; }
+html[data-brand="JD"] .acad-page-btn:hover:not(:disabled) { background: #eff4ff; color: #1649db; border-color: #93b4fb; }
+html[data-brand="JD"] .acad-page-btn.active { background: #1649db !important; border-color: #1649db !important; box-shadow: 0 2px 6px rgba(22, 73, 219, 0.28); }
+html[data-brand="JD"] .assign-catalog-filter-box { background: #f7f9ff; border-color: #e0e7f5; }
+html[data-brand="JD"] .assign-catalog-input:focus,
+html[data-brand="JD"] .assign-catalog-select:focus { border-color: #6c92f0; box-shadow: 0 0 0 3px #1649db20; }
 html[data-brand="JD"] :focus-visible { outline-color: #1649db !important; }
 html[data-brand="JD"] .brand-logo-img[data-jd-logo] { height: 110px !important; max-width: 240px; }
 html[data-brand="JD"] .bg-shape-1,
-html[data-brand="JD"] .bg-shape-2 { background: radial-gradient(circle, #1649db12 0%, transparent 70%); }
+html[data-brand="JD"] .bg-shape-2 { background: radial-gradient(circle, #1649db14 0%, transparent 70%); }
+html[data-brand="JD"] .btn-login { background: linear-gradient(135deg, #2563eb 0%, #1649db 100%); box-shadow: 0 8px 20px -4px rgba(22, 73, 219, 0.34); }
+html[data-brand="JD"] .btn-login:hover { background: linear-gradient(135deg, #1d4ed8 0%, #123bb1 100%); box-shadow: 0 10px 24px -4px rgba(22, 73, 219, 0.42); }
+/* JD 학생 포털: 코발트 블루 & 아이스 블루 팔레트 통일 */
+html[data-brand="JD"] .s-header { border-bottom-color: #e0e7f5; box-shadow: 0 2px 14px rgba(22, 73, 219, 0.08); }
+html[data-brand="JD"] .s-header::before { background: linear-gradient(90deg, #173f9b 0%, #1649db 48%, #3b82f6 100%); }
+html[data-brand="JD"] .leaf-wind-scene .wind-leaf:nth-child(odd) svg { fill: #2563eb; opacity: 0.48; }
+html[data-brand="JD"] .leaf-wind-scene .wind-leaf:nth-child(even) svg { fill: #60a5fa; opacity: 0.42; }
+html[data-brand="JD"] .btn-drawer-hamburger { background: #eff4ff; border-color: #c7d7fe; color: #1649db; box-shadow: 0 1px 3px rgba(22, 73, 219, 0.08); }
+html[data-brand="JD"] .btn-drawer-hamburger:hover { background: #dfe9ff; color: #123bb1; border-color: #93b4fb; box-shadow: 0 3px 8px rgba(22, 73, 219, 0.16); }
+html[data-brand="JD"] .user-info-pill { background: rgba(239, 244, 255, 0.96) !important; border-color: #c7d7fe !important; box-shadow: 0 1px 4px rgba(22, 73, 219, 0.08) !important; }
+html[data-brand="JD"] #headerStudentName { color: #172c50 !important; font-weight: 700 !important; }
+html[data-brand="JD"] .drawer-header { background: linear-gradient(135deg, #123bb1 0%, #1649db 55%, #2563eb 100%); }
+html[data-brand="JD"] .drawer-user-class { color: #dbeafe; }
+html[data-brand="JD"] #drawerCharBadge { background: #eff4ff !important; color: #1649db !important; }
+html[data-brand="JD"] .drawer-nav-item:hover { background: #eff4ff; color: #1649db; }
+html[data-brand="JD"] .drawer-nav-item.active { background: #eff4ff !important; color: #1649db !important; border-color: #bfdbfe !important; }
+html[data-brand="JD"] .drawer-nav-item.active .drawer-nav-left i,
+html[data-brand="JD"] .drawer-nav-item.active .drawer-nav-right { color: #1649db !important; }
+html[data-brand="JD"] #homeCharWelcomeBanner { background: linear-gradient(135deg, #ffffff 0%, #eff4ff 100%) !important; border-color: #c7d7fe !important; box-shadow: 0 4px 14px rgba(22, 73, 219, 0.08) !important; }
+html[data-brand="JD"] #homeCharNameTag { background: #1649db !important; color: #ffffff !important; }
+html[data-brand="JD"] #homeCharQuote { color: #173f9b !important; }
+html[data-brand="JD"] .welcome-banner { background: linear-gradient(135deg, #173f9b 0%, #1649db 60%, #2563eb 100%); box-shadow: 0 6px 20px rgba(22, 73, 219, 0.22); }
+html[data-brand="JD"] .tab2-btn.on,
+html[data-brand="JD"] .lib-sub-pill.active,
+html[data-brand="JD"] .popular-period-btn.active { background: #1649db; color: #ffffff; border-color: #1649db; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.22); }
+html[data-brand="JD"] .tab2-btn.off,
+html[data-brand="JD"] .lib-sub-pill,
+html[data-brand="JD"] .popular-period-btn { background: #ffffff; color: #586985; border-color: #dce5f5; }
+html[data-brand="JD"] .lib-sub-pill:hover,
+html[data-brand="JD"] .popular-period-btn:hover { background: #eff4ff; color: #1649db; border-color: #c7d7fe; }
+html[data-brand="JD"] .grade-chip { background: #edf2fb; color: #4b5e80; }
+html[data-brand="JD"] .grade-chip:hover { background: #dfe8f9; color: #173f9b; }
+html[data-brand="JD"] .grade-chip.active { background: #173f9b; color: #ffffff; border-color: #173f9b; box-shadow: 0 2px 8px rgba(23, 63, 155, 0.22); }
+html[data-brand="JD"] .book-row:hover,
+html[data-brand="JD"] .lib-row:hover { border-color: #60a5fa; box-shadow: 0 4px 14px rgba(22, 73, 219, 0.10); }
+html[data-brand="JD"] .book-row.priority { border-color: #93c5fd; background: linear-gradient(to right, #eff4ff, #ffffff); }
+html[data-brand="JD"] .pflag { background: linear-gradient(135deg, #2563eb 0%, #1649db 100%); box-shadow: 0 2px 6px rgba(22, 73, 219, 0.24); }
+html[data-brand="JD"] .act-btn.start { background: linear-gradient(135deg, #2563eb 0%, #1649db 100%); box-shadow: 0 2px 8px rgba(22, 73, 219, 0.26); }
+html[data-brand="JD"] .act-btn.start:hover { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); box-shadow: 0 4px 12px rgba(22, 73, 219, 0.34); }
+html[data-brand="JD"] .act-btn.done-btn { background: #eff4ff; color: #173f9b; border: 1px solid #c7d7fe; }
+html[data-brand="JD"] .act-btn[disabled]:not(.done-btn) { background: #f1f5f9 !important; color: #64748b !important; border-color: #dce5f2 !important; }
+html[data-brand="JD"] .qopt.selected { border-color: #1649db !important; background: #eff4ff !important; color: #173f9b !important; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.16) !important; }
+html[data-brand="JD"] .qopt.selected .onum { background: #1649db !important; color: #ffffff !important; }
+html[data-brand="JD"] .quiz-char-avatar-box { border-color: #1649db; box-shadow: 0 3px 10px rgba(22, 73, 219, 0.16); }
+html[data-brand="JD"] .quiz-char-name-tag { color: #1649db; border-color: #c7d7fe; }
+html[data-brand="JD"] .bookshelf-main-tabs { background: #e8eef9; border: 1px solid #d5e0f4; }
+html[data-brand="JD"] .bookshelf-main-tab-btn { color: #5b6d8d; font-weight: 700; }
+html[data-brand="JD"] .bookshelf-main-tab-btn.active { background: #ffffff; color: #1649db; font-weight: 800; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.10); }
+html[data-brand="JD"] .bs-stat-card { border-color: #dce5f5; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.04); }
+html[data-brand="JD"] .theme-selected-header { background: linear-gradient(135deg, #f8faff 0%, #eff4ff 100%); border-color: #c7d7fe; font-family: inherit; }
+html[data-brand="JD"] .theme-selected-bar { font-family: inherit; }
+html[data-brand="JD"] .btn-theme-back { border-color: #cdd9ee; color: #172c50; }
+html[data-brand="JD"] .btn-theme-back:hover { background: #eff4ff; border-color: #1649db; color: #1649db; }
+html[data-brand="JD"] .interest-tag-chip:hover,
+html[data-brand="JD"] .interest-tag-chip.active { background: #eff4ff; color: #1649db; border-color: #93c5fd; }
+html[data-brand="JD"] #firstLoginInterestModal .student-modal-header { background: linear-gradient(135deg, #f5f8ff 0%, #dbeafe 100%) !important; border-bottom-color: #bfdbfe !important; }
+html[data-brand="JD"] #firstLoginInterestModal .first-interest-badge { background: #1649db !important; }
+html[data-brand="JD"] #firstLoginInterestModal .first-interest-title { color: #173f9b !important; }
+html[data-brand="JD"] #firstLoginInterestModal .first-interest-count-pill { background: #eff4ff !important; color: #1649db !important; border-color: #bfdbfe !important; }
+html[data-brand="JD"] .first-interest-chip:hover { border-color: #93c5fd; background: #f5f8ff; color: #1649db; }
+html[data-brand="JD"] .first-interest-chip.selected { background: #eff4ff; border-color: #1649db; color: #173f9b; box-shadow: 0 3px 10px rgba(22, 73, 219, 0.14); }
+html[data-brand="JD"] .first-interest-save-btn:not(:disabled) { background: linear-gradient(135deg, #2563eb 0%, #1649db 100%); box-shadow: 0 4px 12px rgba(22, 73, 219, 0.28); }
+html[data-brand="JD"] .point-summary-card,
+html[data-brand="JD"] .pt-hdr { background: linear-gradient(135deg, #173f9b 0%, #1649db 100%); box-shadow: 0 4px 16px rgba(22, 73, 219, 0.24); }
+html[data-brand="JD"] #currentMonthEarnedPoints { color: #bfdbfe !important; }
+html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] { background: linear-gradient(135deg, #eff4ff 0%, #f5f8ff 100%) !important; border-color: #c7d7fe !important; }
+html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] > div:first-child { background: #dbeafe !important; color: #1649db !important; }
+html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] > div:last-child,
+html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] > div:last-child > div:first-child { color: #173f9b !important; }
+html[data-brand="JD"] .point-month-chip.active { background: #1649db; border-color: #1649db; color: #ffffff; }
+html[data-brand="JD"] .my-rank-banner { background: linear-gradient(135deg, #173f9b 0%, #1649db 58%, #2563eb 100%); box-shadow: 0 8px 24px rgba(22, 73, 219, 0.24); }
+html[data-brand="JD"] .rank-tab-btn.active { color: #1649db; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.12); }
+html[data-brand="JD"] .rank-card:hover { border-color: #3b82f6; }
+html[data-brand="JD"] .rank-card.me { border-color: #1649db; background: linear-gradient(90deg, #eff4ff 0%, #f5f8ff 100%); box-shadow: 0 4px 14px rgba(22, 73, 219, 0.12); }
+html[data-brand="JD"] .char-edit-badge,
+html[data-brand="JD"] .char-select-badge { background: #1649db; }
+html[data-brand="JD"] .char-select-card.selected { border-color: #1649db; background: #eff4ff; }
+html[data-brand="JD"] .bnav { border-top-color: #dfe7f6; box-shadow: 0 -4px 20px rgba(22, 73, 219, 0.06); }
+html[data-brand="JD"] .bnav-btn.active { color: #1649db; }
+html[data-brand="JD"] .myinfo-hero-card { background: linear-gradient(135deg, #f8faff 0%, #eff4ff 62%, #e4ecff 100%) !important; border-color: #c7d7fe !important; box-shadow: 0 4px 12px rgba(22, 73, 219, 0.08) !important; }
+html[data-brand="JD"] .myinfo-student-name { color: #172c50 !important; }
+html[data-brand="JD"] .myinfo-stat-books { background: #eff4ff !important; border-color: #c7d7fe !important; }
+html[data-brand="JD"] .myinfo-stat-books-icon { background: #dbeafe !important; color: #1649db !important; }
+html[data-brand="JD"] .myinfo-stat-books-label { color: #1e40af !important; }
+html[data-brand="JD"] .myinfo-stat-books-value { color: #173f9b !important; }
+html[data-brand="JD"] .myinfo-detail-card { background: #f7f9ff !important; }
+html[data-brand="JD"] .myinfo-detail-card > div:last-child > div { border-color: #e0e7f5 !important; }
+html[data-brand="JD"] #studentToast { background: #172c50; }
 /* jd.nanosbook.co.kr 및 제한형 마스터(JD_MASTER)에서는 수납·결제 및 시스템 설정 메뉴(섹션 제목 포함)를 숨깁니다. */
 html[data-brand="JD"] #sidebar-section-master-payment,
 html[data-brand="JD"] #nav-master-payment,

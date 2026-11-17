@@ -178,11 +178,11 @@
 .qr-summary { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 16px; margin: 22px 28px 0; }
 .qr-label { display: block; font-size: 12px; font-weight: 650; color: #65716d; }
 .qr-score > div { display: flex; align-items: baseline; gap: 5px; }
-.qr-score strong { font-family: 'Nunito', 'Pretendard', sans-serif; font-size: 64px; font-weight: 800; letter-spacing: -.065em; color: #253e35; line-height: 1.14; font-variant-numeric: tabular-nums; }
+.qr-score strong { font-family: 'Nunito', 'Pretendard Variable', 'Pretendard', sans-serif; font-size: 64px; font-weight: 800; letter-spacing: -.065em; color: #253e35; line-height: 1.14; font-variant-numeric: tabular-nums; }
 .qr-score-unit { color: #4f6159; font-size: 16px; font-weight: 650; white-space: nowrap; }
 .qr-score-unit > span { color: #7b847f; font-size: 12px; font-weight: 400; margin-left: 3px; }
 .qr-reward { background: var(--qr-paper); padding: 14px 16px; border-radius: 15px; min-width: 0; }
-.qr-reward > strong { display: flex; align-items: center; gap: 5px; margin-top: 3px; color: var(--qr-ink); font-family: 'Nunito', 'Pretendard', sans-serif; font-size: 28px; line-height: 1.3; font-weight: 800; overflow-wrap: anywhere; }
+.qr-reward > strong { display: flex; align-items: center; gap: 5px; margin-top: 3px; color: var(--qr-ink); font-family: 'Nunito', 'Pretendard Variable', 'Pretendard', sans-serif; font-size: 28px; line-height: 1.3; font-weight: 800; overflow-wrap: anywhere; }
 #qscreen-result .qr-reward svg { flex: 0 0 20px; width: 20px; height: 20px; margin-right: 1px; }
 .qr-reward small { font-size: 15px; }
 .qr-reward-note { display: block; margin-top: 4px; font-size: 10px; color: var(--qr-ink); line-height: 1.5; word-break: keep-all; }

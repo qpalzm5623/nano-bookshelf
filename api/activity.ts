@@ -1,16 +1,21 @@
-import { brandOf } from '../lib/portal-brand';
+import { brandOf, mapBannerRecord } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { authenticate, need, failure, academyScope, staff } from '../lib/portal-http';
 import { monthWindow, getTodayStartUtc, readingProgress } from '../lib/portal-learning';
 import Reading = require('../public_html/js/reading-progress');
 
-/** 전국 랭킹에서 타 원생 아이디 뒷자리를 가려 개인정보·계정 노출을 방지합니다. */
+/** 랭킹에서 아이디는 앞 두 글자만 표기하여 계정 식별 정보 노출을 최소화합니다. */
 function maskRankingUsername(username: unknown): string {
   const raw = String(username || '').trim();
-  if (!raw) return '';
-  if (raw.length <= 2) return raw[0] + '*';
-  const prefix = raw.length >= 4 ? raw.slice(0, 2) : raw.slice(0, 1);
-  return prefix + '*'.repeat(Math.min(4, Math.max(2, raw.length - prefix.length)));
+  return raw ? Array.from(raw).slice(0, 2).join('') : '';
+}
+
+/** 전국 랭킹에서 이름은 첫 글자와 끝 글자만 남기고 가운데 글자만 * 로 마스킹합니다. */
+function maskRankingName(name: unknown): string {
+  const chars = Array.from(String(name || '').trim());
+  if (chars.length <= 1) return chars.join('');
+  if (chars.length === 2) return chars[0] + '*';
+  return chars[0] + '*'.repeat(chars.length - 2) + chars[chars.length - 1];
 }
 
 export default async function handler(req: any, res: any) {
@@ -42,6 +47,23 @@ export default async function handler(req: any, res: any) {
       if (revision === 0) await prisma.portalSetting.create({ data: { key, scope: user.id, value: { wishlist: value.wishlist, interests: value.interests } } });
       else { const result = await prisma.portalSetting.updateMany({ where: { key, scope: user.id, revision }, data: { value: { wishlist: value.wishlist, interests: value.interests }, revision: { increment: 1 } } }); need(result.count === 1, '다른 기기에서 목록이 변경되었습니다. 새로고침해 주세요.', 409); }
       return res.json({ revision: revision + 1 });
+    }
+    if (action === 'onboarding_interest') {
+      need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
+      const status = req.body?.status === 'SAVED' ? 'SAVED' : req.body?.status === 'SKIPPED' ? 'SKIPPED' : '';
+      need(status, '온보딩 처리 상태를 확인해 주세요.');
+      await prisma.portalSetting.upsert({
+        where: { key: 'onboarding_interest:' + user.id },
+        create: {
+          key: 'onboarding_interest:' + user.id,
+          scope: 'student_onboarding',
+          value: { status, completedAt: new Date().toISOString() }
+        },
+        update: {
+          value: { status, completedAt: new Date().toISOString() }
+        }
+      });
+      return res.json({ ok: true, status });
     }
     if (action === 'recommend') {
       const key = 'recommends:' + user.id;
@@ -175,28 +197,32 @@ export default async function handler(req: any, res: any) {
             AND (${scope !== 'class'} OR m."classGroupId" = ${user.classGroupId || ''})
         ), points AS (
           SELECT p."memberId", SUM(p.amount) AS amount FROM point_histories p JOIN eligible e ON e.id = p."memberId"
-          WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%') GROUP BY p."memberId"
+          WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%')
+          GROUP BY p."memberId"
+          HAVING SUM(p.amount) > 0
         ), books AS (
           SELECT q."memberId", COUNT(DISTINCT q."bookId") AS count FROM quiz_attempts q JOIN eligible e ON e.id = q."memberId"
           WHERE q.score >= 60 AND q."completedAt" >= ${periodWindow.gte} AND q."completedAt" < ${periodWindow.lt} GROUP BY q."memberId"
         ), ranked AS (
-          SELECT e.*, COALESCE(p.amount, 0) AS amount, COALESCE(b.count, 0) AS books,
-            ROW_NUMBER() OVER (ORDER BY COALESCE(p.amount, 0) DESC, COALESCE(b.count, 0) DESC, e.name, e.id) AS rank,
+          -- 포인트가 0 이하인 학생은 랭킹 및 참여자 집계에서 제외합니다.
+          SELECT e.*, p.amount AS amount, COALESCE(b.count, 0) AS books,
+            ROW_NUMBER() OVER (ORDER BY p.amount DESC, COALESCE(b.count, 0) DESC, e.name, e.id) AS rank,
             COUNT(*) OVER () AS participants
-          FROM eligible e LEFT JOIN points p ON p."memberId" = e.id LEFT JOIN books b ON b."memberId" = e.id
+          FROM eligible e JOIN points p ON p."memberId" = e.id LEFT JOIN books b ON b."memberId" = e.id
         ) SELECT * FROM ranked WHERE rank <= 100 OR id = ${user.id} ORDER BY rank`;
       const ids = ranked.map(r => r.id);
+      const progressIds = Array.from(new Set(ids.concat(user.id)));
       const [settings, progress] = await Promise.all([
-        prisma.portalSetting.findMany({ where: { key: { in: ids.map(id => 'character:' + id) } }, select: { key: true, value: true } }),
-        readingProgress(prisma, ids)
+        ids.length ? prisma.portalSetting.findMany({ where: { key: { in: ids.map(id => 'character:' + id) } }, select: { key: true, value: true } }) : Promise.resolve([]),
+        readingProgress(prisma, progressIds)
       ]);
       const characters = new Map(settings.map(r => [r.key.slice(10), (r.value as any)?.characterId]));
-      const rows = ranked.filter(r => Number(r.rank) <= 100).map(r => {
+      const rows = ranked.filter(r => Number(r.rank) <= 100 && Number(r.amount) > 0).map(r => {
         const counts = progress.get(r.id);
         const selected = characters.get(r.id) || 'nano';
         const charId = Object.prototype.hasOwnProperty.call(Reading.rules, selected) && Reading.stage(selected, counts) > 0 ? selected : 'nano';
-        return { rank: Number(r.rank), name: scope === 'national' && r.id !== user.id ? r.name.slice(0, 1) + '**' : r.name,
-          username: scope === 'national' && r.id !== user.id ? maskRankingUsername(r.username) : String(r.username || '').trim(),
+        return { rank: Number(r.rank), name: scope === 'national' ? maskRankingName(r.name) : String(r.name || '').trim(),
+          username: maskRankingUsername(r.username),
           pt: Number(r.amount), books: Number(r.books), me: r.id === user.id, charId, stage: Reading.stage(charId, counts),
           cls: scope === 'national' ? [r.academyName, r.className].filter(Boolean).join(' · ') : r.className || '학급 미지정',
           academyName: r.academyName, className: r.className || '', change: 'same', changeNum: 0 };
@@ -205,6 +231,24 @@ export default async function handler(req: any, res: any) {
       return res.json({ scope, academyName: user.academy.name, className: user.classGroup?.name || '', hasClass: !!user.classGroupId,
         rows, myRank: own ? Number(own.rank) : null, participants: Number(ranked[0]?.participants || 0),
         myPoints: Number(own?.amount || 0), myTotalPoints: own?.points ?? user.points, myBooks: progress.get(user.id)?.totalRead || 0 });
+    }
+    if (action === 'banners') {
+      const since = Number(req.query.since) || 0;
+      const [bannerRows, metaRows] = await Promise.all([
+        prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }),
+        prisma.portalSetting.findMany({ where: { scope: 'banner_meta' } })
+      ]);
+      const metaMap = new Map<string, any>(metaRows.map((r: any) => [String(r.key || '').replace(/^banner_meta:/, ''), { ...(r.value || {}), _updatedAt: r.updatedAt ? +new Date(r.updatedAt) : 0 }]));
+      const nowDate = new Date();
+      const items = bannerRows
+        .filter(b => brandOf(metaMap.get(b.id)) === user.portalBrand)
+        .filter(b => user.role === 'MASTER' || (b.isActive && (!b.startDate || b.startDate <= nowDate) && (!b.endDate || b.endDate >= nowDate)))
+        .map(b => mapBannerRecord(b, metaMap.get(b.id) || {}));
+      const latestUpdatedAt = items.reduce((max, item: any) => Math.max(max, Number(item.updatedAt) || 0), 0);
+      if (since > 0 && latestUpdatedAt > 0 && latestUpdatedAt <= since) {
+        return res.json({ unchanged: true, latestUpdatedAt });
+      }
+      return res.json({ unchanged: false, latestUpdatedAt, items });
     }
     if (action === 'themes') {
       const since = Number(req.query.since) || 0;

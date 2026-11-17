@@ -30,15 +30,44 @@
     renderWishList(); renderInterestTags(); renderInterestRecommendations();
     if(typeof currentDetailBookId !== 'undefined' && currentDetailBookId) updateDetailWishUI(currentDetailBookId);
   }
+  function resolveWishlistBookTitle(bookId) {
+    const sId = String(bookId || '').trim();
+    if (!sId) return '도서';
+    const sources = [];
+    if (typeof libData !== 'undefined' && Array.isArray(libData)) sources.push(libData);
+    if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS)) sources.push(window.MIGRATED_BOOKS);
+    for (const list of sources) {
+      const found = list.find(b => b && (String(b.id || '').trim() === sId || String(b.bookNo || '').trim() === sId));
+      if (found && found.title) return String(found.title);
+    }
+    return '도서';
+  }
   async function changePreference(kind, value) {
     if(saving) return; saving=true;
     const next = {wishlist:preferences.wishlist.slice(),interests:preferences.interests.slice()};
     const index=next[kind].indexOf(String(value));
-    if(index<0) { next[kind].push(String(value)); if(kind==='interests'&&next[kind].length>3)next[kind].shift(); }
+    const wasAdded = index < 0;
+    if(wasAdded) { next[kind].push(String(value)); if(kind==='interests'&&next[kind].length>3)next[kind].shift(); }
     else next[kind].splice(index,1);
-    try { const result=await NanoPortal.api('/api/activity?action=preferences',{value:next,revision}); preferences=next;revision=result.revision;applyPreferences();notice('서버에 저장했습니다.'); }
+    try {
+      const result=await NanoPortal.api('/api/activity?action=preferences',{value:next,revision});
+      preferences=next;revision=result.revision;applyPreferences();
+      if (kind === 'wishlist') {
+        const bookTitle = resolveWishlistBookTitle(value);
+        notice(wasAdded ? (bookTitle + '을 찜했습니다.') : (bookTitle + ' 찜을 해제했습니다.'));
+      } else {
+        notice('관심 주제가 저장되었습니다.');
+      }
+    }
     catch(e) { notice(e.message); } finally { saving=false; }
   }
+  window.addEventListener('nano:preferences-updated', event => {
+    const detail = event && event.detail;
+    if (!detail) return;
+    if (Array.isArray(detail.wishlist)) preferences.wishlist = detail.wishlist.slice();
+    if (Array.isArray(detail.interests)) preferences.interests = detail.interests.slice(0, 3);
+    if (typeof detail.revision === 'number') revision = detail.revision;
+  });
   let pointPages = new Map(), pointGeneration = 0, pointMonths = [], monthEarned = 0;
   function pointView(p) {
     const korea = new Date(+new Date(p.createdAt) + 9 * 3600000).toISOString();

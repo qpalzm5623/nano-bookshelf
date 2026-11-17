@@ -1476,3 +1476,9 @@
         grid-template-columns: 1fr;
       }
     }
+
+/* 북퀴즈 모달 포커스 시 예시 placeholder 자동 숨김 */
+#masterQuizModal input:focus::placeholder,
+#masterQuizModal textarea:focus::placeholder {
+  color: transparent;
+}

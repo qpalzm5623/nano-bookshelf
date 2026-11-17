@@ -8,7 +8,7 @@
   --ink: #182c37;
   --ink-soft: #4b606b;
   --line: #d9e3e7;
-  font: 14px/1.65 Pretendard, -apple-system, 'Malgun Gothic', sans-serif;
+  font: 14px/1.65 'Pretendard Variable', Pretendard, -apple-system, 'Malgun Gothic', sans-serif;
   color: var(--ink);
   word-break: keep-all;
   overflow-wrap: anywhere;

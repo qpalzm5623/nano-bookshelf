@@ -229,59 +229,67 @@
       <div class="modal-body p-4">
         <form id="academyRegisterForm" onsubmit="handleRegisterAcademy(event)">
           <div class="row">
-            <div class="col-12 form-group"><label for="regAcademyBrand" class="font-weight-bold">구분</label><select id="regAcademyBrand" class="form-control form-control-beige"><option value="NANO">나노의 책장</option><option value="JD">정답이 있는 독서</option></select></div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">가맹 학원명 <span class="text-danger">*</span></label>
-              <input type="text" id="regAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서논술 대치본원" required>
-            </div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">사업자 등록번호 <span class="text-muted" style="font-size: 11px;">(선택)</span></label>
-              <input type="text" id="regBizNumber" class="form-control form-control-beige" placeholder="예: 123-45-67890 (숫자만 입력)" maxlength="12" oninput="formatBizNumber(this)">
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">원장님 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="regDirectorName" class="form-control form-control-beige" placeholder="예: 김원장 (한글, 영문만 가능)" required oninput="validateKoreanEngName(this, 'regDirectorNameError')">
-              <small class="text-danger d-none" id="regDirectorNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다 (특수문자 및 숫자 입력 불가).</small>
-            </div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">원장님 이메일 <span class="text-danger">*</span></label>
-              <input type="text" id="regDirectorEmail" class="form-control form-control-beige" placeholder="예: director@nano.kr" required onblur="validateEmailField(this)">
-              <small class="text-danger d-none" id="regEmailError">올바른 이메일 형식(@포함)을 입력해주세요.</small>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">원장님 연락처 (휴대폰) <span class="text-danger">*</span></label>
-              <input type="tel" id="regDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" oninput="formatPhoneInput(this)" maxlength="13" required>
-            </div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 (주소) <span class="text-danger">*</span></label>
-              <div class="d-flex gap-2 mb-1">
-                <input type="text" id="regPostcode" class="form-control form-control-beige" placeholder="우편번호" style="width: 110px; flex-shrink: 0;" readonly>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openKakaoAddressSearch('reg')" style="white-space: nowrap; border-radius: 8px;"><i class="fa-solid fa-search mr-1"></i>우편번호 검색</button>
+            <!-- 좌측 영역: 구분, 가맹 학원명, 원장님 성함, 원장님 연락처, 아이디, 비밀번호 -->
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="regAcademyBrand" class="font-weight-bold" style="font-size: 13px;">구분</label>
+                <select id="regAcademyBrand" class="form-control form-control-beige">
+                  <option value="NANO">나노의 책장</option>
+                  <option value="JD">정답이 있는 독서</option>
+                </select>
               </div>
-              <input type="text" id="regAddress" class="form-control form-control-beige mb-1" placeholder="기본 주소" readonly>
-              <input type="text" id="regAddressDetail" class="form-control form-control-beige" placeholder="상세 주소 입력 (예: 3층 나노학원)">
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">가맹 학원명 <span class="text-danger">*</span></label>
+                <input type="text" id="regAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서논술 대치본원" required>
+              </div>
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">원장님 성함 <span class="text-danger">*</span></label>
+                <input type="text" id="regDirectorName" class="form-control form-control-beige" placeholder="예: 김원장 (한글, 영문만 가능)" required oninput="validateKoreanEngName(this, 'regDirectorNameError')">
+                <small class="text-danger d-none" id="regDirectorNameError" style="font-size: 11px;">한글, 영문, 띄어쓰기만 입력 가능합니다 (특수문자 및 숫자 입력 불가).</small>
+              </div>
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">원장님 연락처 (휴대폰) <span class="text-danger">*</span></label>
+                <input type="tel" id="regDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-1234-5678" oninput="formatPhoneInput(this)" maxlength="13" required>
+              </div>
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">아이디 <span class="text-danger">*</span></label>
+                <input type="text" id="regDirectorId" class="form-control form-control-beige" placeholder="예: director_daechi" autocomplete="off" required onblur="checkAdminIdDuplicate(this.value, 'regDirectorIdStatus')">
+                <small id="regDirectorIdStatus" class="text-muted" style="font-size: 11.5px;"></small>
+              </div>
+              <div class="form-group">
+                <label for="regDirectorPw" class="font-weight-bold" style="font-size: 13px;">비밀번호 <span class="text-danger">*</span></label>
+                <input type="text" id="regDirectorPw" class="form-control form-control-beige" placeholder="예: nano1234!" autocomplete="new-password" oninput="validateRegDirectorPassword(this.value)" required>
+                <small id="regDirectorPwConditions" class="form-text text-muted" style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
+                  <span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>8~128자</span><span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>영문 포함</span><span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>숫자 포함</span><span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>공백 불가</span><span class="text-muted">(특수문자 가능)</span>
+                </small>
+              </div>
             </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">원장님 관리자 아이디 <span class="text-danger">*</span></label>
-              <input type="text" id="regDirectorId" class="form-control form-control-beige" placeholder="예: director_daechi" required onblur="checkAdminIdDuplicate(this.value, 'regDirectorIdStatus')">
-              <small id="regDirectorIdStatus" class="text-muted" style="font-size: 11.5px;"></small>
-            </div>
-            <div class="col-md-6 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">초기 비밀번호 <span class="text-danger">*</span></label>
-              <input type="text" id="regDirectorPw" class="form-control form-control-beige" value="nano1234!" required>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-12 form-group">
-              <label class="font-weight-bold" style="font-size: 13px;">메모 <span class="text-muted" style="font-size: 11px;">(선택, 100자 이내)</span></label>
-              <textarea id="regMemo" class="form-control form-control-beige" rows="2" maxlength="100" placeholder="학원 관련 특이사항이나 담당자 메모를 입력합니다."></textarea>
-              <small class="text-muted d-flex justify-content-end" id="regMemoCount">0 / 100자</small>
+
+            <!-- 우측 영역: 사업자등록번호, 이메일, 소재지, 메모 -->
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">사업자 등록번호 <span class="text-muted" style="font-size: 11px;">(선택)</span></label>
+                <input type="text" id="regBizNumber" class="form-control form-control-beige" placeholder="예: 123-45-67890 (숫자만 입력)" maxlength="12" oninput="formatBizNumber(this)">
+              </div>
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">원장님 이메일 <span class="text-danger">*</span></label>
+                <input type="text" id="regDirectorEmail" class="form-control form-control-beige" placeholder="예: director@nano.kr" required onblur="validateEmailField(this)">
+                <small class="text-danger d-none" id="regEmailError">올바른 이메일 형식(@포함)을 입력해주세요.</small>
+              </div>
+              <div class="form-group">
+                <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 (주소) <span class="text-danger">*</span></label>
+                <div class="d-flex gap-2 mb-1">
+                  <input type="text" id="regPostcode" class="form-control form-control-beige" placeholder="우편번호" style="width: 110px; flex-shrink: 0;" readonly>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openKakaoAddressSearch('reg')" style="white-space: nowrap; border-radius: 8px;"><i class="fa-solid fa-search mr-1"></i>우편번호 검색</button>
+                </div>
+                <input type="text" id="regAddress" class="form-control form-control-beige mb-1" placeholder="기본 주소" readonly>
+                <input type="text" id="regAddressDetail" class="form-control form-control-beige" placeholder="상세 주소 입력 (예: 3층 나노학원)">
+              </div>
+              <div class="form-group mb-0">
+                <label class="font-weight-bold" style="font-size: 13px;">메모 <span class="text-muted" style="font-size: 11px;">(선택, 100자 이내)</span></label>
+                <textarea id="regMemo" class="form-control form-control-beige" rows="5" maxlength="100" oninput="var c=document.getElementById('regMemoCount');if(c)c.textContent=this.value.length+' / 100자';" placeholder="학원 관련 특이사항이나 담당자 메모를 입력합니다."></textarea>
+                <small class="text-muted d-flex justify-content-end" id="regMemoCount">0 / 100자</small>
+              </div>
             </div>
           </div>
 
@@ -2592,7 +2600,7 @@
               </div>
             </div>
             <!-- 질문 입력창 height 2.5배 확대 -->
-            <textarea id="mqQuestionText" class="form-control form-control-beige" rows="5" style="min-height: 130px; font-size: 13px; line-height: 1.6;" placeholder="문제를 입력해주세요" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
+            <textarea id="mqQuestionText" class="form-control form-control-beige" rows="5" style="min-height: 130px; font-size: 13px; line-height: 1.6;" placeholder="예: 주인공이 여행을 떠나며 가장 먼저 결심한 일은 무엇인가요?" onfocus="setCurrentQuizTargetInput(this)" oninput="saveCurrentQuizDraft()"></textarea>
             <!-- 첨부된 미디어 정보 요약 칩 (등록 시 노출) -->
             <div id="mqMediaSummaryBox" class="mt-2 p-2 rounded bg-light border align-items-center justify-content-between" style="display: none; border-color: #cbd5e1 !important;">
               <div class="d-flex align-items-center gap-2">

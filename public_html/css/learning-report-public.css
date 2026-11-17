@@ -1,5 +1,5 @@
 /* 카톡 공유 링크는 관리자 미리보기와 같은 440px 단일 열 리포트로 표시합니다. */
-body { margin:0; background:#f1f5f9; font-family:Pretendard,sans-serif; color:#243b38; }
+body { margin:0; background:#f1f5f9; font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif; color:#243b38; }
 #learningReportModalDialog { max-width:440px; margin:8px auto; background:white; border-radius:18px; overflow:hidden; }
 #learningReportModalDialog .modal-title { margin:0 0 6px; }
 #learningReportModalBody { padding:16px; }

@@ -5,7 +5,7 @@
  * ============================================================ */
 
 .content-sharing {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Noto Sans KR', 'Segoe UI', Roboto, sans-serif;
   color: var(--text-main, #2e2620);
 }
 
@@ -54,9 +54,10 @@
 
 .sharing-kpi-num {
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 800;
   color: var(--text-main, #2e2620);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
   display: flex;
   align-items: baseline;
@@ -89,9 +90,10 @@
 }
 
 .sharing-kpi-subcount strong {
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: -0.4px;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .sharing-kpi-sub {
@@ -339,7 +341,7 @@ dialog.sharing-dialog {
   box-shadow: 0 22px 60px rgba(28, 22, 16, 0.25);
   margin: auto;
   overflow: hidden;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Noto Sans KR', 'Segoe UI', Roboto, sans-serif;
 }
 
 dialog.sharing-dialog.is-compact {

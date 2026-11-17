@@ -86,6 +86,29 @@ function getAcademyContactInfo() {
   };
 }
 
+function getMyInfoAuthUser() {
+  if (typeof getCurrentAuthUser === 'function') {
+    try {
+      var u = getCurrentAuthUser();
+      if (u && typeof u === 'object') return u;
+    } catch (e) {}
+  }
+  try {
+    var raw = sessionStorage.getItem('nano_auth_user');
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (e) {}
+  if (typeof window !== 'undefined' && window.NanoPortal && typeof window.NanoPortal.user === 'function') {
+    try {
+      var portalUser = window.NanoPortal.user();
+      if (portalUser && typeof portalUser === 'object') return portalUser;
+    } catch (e) {}
+  }
+  return null;
+}
+
 /**
  * '내 정보 관리' 모달 열기
  * - 이유: 최신 상태값을 폼에 바인딩하고, 이전 입력 중이던 비밀번호 등 민감 정보를 안전하게 초기화하기 위함
@@ -101,11 +124,19 @@ function openMyInfoModal() {
   var elEDate = document.getElementById('infoDisplayExpireDate');
 
   var rawInfo = (typeof currentAcademyInfo !== 'undefined') ? currentAcademyInfo : {};
+  var authUser = getMyInfoAuthUser();
+  var isTeacher = (typeof isCurrentLoggedInTeacher === 'function')
+    ? isCurrentLoggedInTeacher()
+    : !!(authUser && ['teacher', 'staff'].includes(String(authUser.role || '').toLowerCase()));
+  var loggedInUserId = (authUser && (authUser.username || authUser.id || authUser.studentId))
+    ? String(authUser.username || authUser.id || authUser.studentId).trim()
+    : '';
   var curCount = (typeof studentDataList !== 'undefined' && Array.isArray(studentDataList)) ? studentDataList.length : 0;
   var maxCount = rawInfo.maxStudents || 50;
   var slotRate = Math.round((curCount / maxCount) * 100);
 
-  if (elId) elId.innerText = rawInfo.adminId || rawInfo.id || myAcademyInfo.id;
+  // 로그인한 계정의 아이디(선생님/원장님)를 우선 표시하고, 세션 정보가 없을 때만 학원 기본 adminId로 폴백합니다.
+  if (elId) elId.innerText = loggedInUserId || rawInfo.adminId || rawInfo.id || myAcademyInfo.id;
   if (elBiz) elBiz.innerText = rawInfo.bizNumber || myAcademyInfo.bizNumber;
   if (elAcad) elAcad.innerText = rawInfo.name || myAcademyInfo.academyName;
   var cleanDir = (rawInfo.director || myAcademyInfo.directorName).replace(/\s*원장님?$/, '');
@@ -118,10 +149,29 @@ function openMyInfoModal() {
   if (elCDate) elCDate.innerText = rawInfo.contractDate || myAcademyInfo.contractDate;
   if (elEDate) elEDate.innerText = rawInfo.expireDate || myAcademyInfo.expireDate;
 
-  // 상단 배너 텍스트 및 정원 슬롯 동기화
+  // 상단 배너 텍스트 및 정원 슬롯 동기화 (선생님 로그인 시 본인 이름·역할 배지 반영)
   var bannerDir = document.getElementById('bannerDirectorName');
   var bannerAcad = document.getElementById('bannerAcademyName');
-  if (bannerDir) bannerDir.innerText = cleanDir + ' 원장님';
+  var bannerRole = document.getElementById('bannerUserRoleBadge');
+  if (bannerDir) {
+    if (isTeacher) {
+      var rawTeacherName = (authUser && authUser.name) ? String(authUser.name).trim() : (loggedInUserId || '지도교사');
+      bannerDir.innerText = rawTeacherName.indexOf('선생님') !== -1 ? rawTeacherName : (rawTeacherName + ' 선생님');
+    } else {
+      bannerDir.innerText = cleanDir + ' 원장님';
+    }
+  }
+  if (bannerRole) {
+    if (isTeacher) {
+      bannerRole.className = 'badge-soft ml-1';
+      bannerRole.style.cssText = 'font-size: 11px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; font-weight: 700;';
+      bannerRole.innerHTML = '<i class="fa-solid fa-chalkboard-user mr-1"></i>선생님';
+    } else {
+      bannerRole.className = 'badge-soft badge-soft-master ml-1';
+      bannerRole.style.cssText = 'font-size: 11px;';
+      bannerRole.innerText = '최고 관리자';
+    }
+  }
   if (bannerAcad) bannerAcad.innerText = (rawInfo.name || myAcademyInfo.academyName);
 
   var slotEl = document.getElementById('myInfoSlotStatus');
@@ -204,7 +254,8 @@ function formatPhoneNumber(input) {
  * - 이유: 원장님이 주소를 오탈자 없이 신속하고 정확하게 입력할 수 있도록 표준 주소 API 연동
  */
 function searchPostcode() {
-  if (typeof daum === 'undefined' || !daum.Postcode) {
+  var PostcodeCtor = (typeof kakao !== 'undefined' && kakao.Postcode) || (typeof daum !== 'undefined' && daum.Postcode);
+  if (!PostcodeCtor) {
     // CDN 로드 실패 또는 오프라인 환경을 위한 안전한 Fallback
     var manualAddr = prompt('우편번호 검색 서비스에 연결할 수 없습니다. 주소를 직접 입력해 주세요:', document.getElementById('myInfoAddress').value);
     if (manualAddr) {
@@ -213,7 +264,7 @@ function searchPostcode() {
     return;
   }
 
-  new daum.Postcode({
+  new PostcodeCtor({
     oncomplete: function(data) {
       // 도로명 주소 또는 지번 주소 선택
       var fullAddr = data.roadAddress ? data.roadAddress : data.jibunAddress;

@@ -159,9 +159,11 @@ function updateCurrentQuizData() {
 }
 
 function addNewQuiz() {
-  var newIdx = quizDataList.length + 1;
+  if (typeof updateCurrentQuizData === "function") {
+    updateCurrentQuizData();
+  }
   quizDataList.push({
-    question: "문제 " + newIdx + ". 지문 또는 문제 내용을 입력하세요.",
+    question: "",
     opt1: "",
     opt2: "",
     opt3: "",
@@ -171,8 +173,6 @@ function addNewQuiz() {
   currentQuizIndex = quizDataList.length - 1;
   renderQuizTabs();
   loadCurrentQuizForm();
-  var input = document.getElementById('quiz_target_q');
-  if (input) input.focus();
 }
 
 function deleteCurrentQuiz(forceDirect) {
@@ -2894,7 +2894,7 @@ function renderStudentAssignmentTable(list) {
 
     var booksHtml = displayBooks.map(function(b) {
       var pubName = b.pub || b.publisher || '출판사';
-      var isCert = !!(b.certDate || b.certified);
+      var isCert = isAssignmentBookCertified(b);
       var certDateStr = b.certDate || (b.certified ? '인증 완료' : '');
       var certIcon = isCert
         ? `<i class="fa-solid fa-circle-check text-success ml-1" title="북퀴즈 인증 완료${certDateStr ? ' (' + certDateStr + ')' : ''}" style="font-size: 11px; flex-shrink: 0;"></i>`
@@ -2984,27 +2984,27 @@ function renderAssignStudentPagination(total, page, totalPages) {
   var endP = Math.min(totalPages, page + 2);
 
   var prevDisabled = page <= 1 ? 'disabled' : '';
-  pagesHtml += `<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="goAssignStudentPage(${page - 1})" ${prevDisabled} style="border-radius: 6px; padding: 4px 8px;"><i class="fa-solid fa-chevron-left"></i></button>`;
+  pagesHtml += `<button type="button" class="acad-page-btn" onclick="goAssignStudentPage(${page - 1})" ${prevDisabled} title="이전 페이지"><i class="fa-solid fa-chevron-left" style="font-size: 10px;"></i></button>`;
 
   if (startP > 1) {
-    pagesHtml += `<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="goAssignStudentPage(1)" style="border-radius: 6px; padding: 4px 8px;">1</button>`;
+    pagesHtml += `<button type="button" class="acad-page-btn" onclick="goAssignStudentPage(1)">1</button>`;
     if (startP > 2) pagesHtml += `<span class="px-1 text-muted">...</span>`;
   }
 
   for (var i = startP; i <= endP; i++) {
-    var activeClass = i === page ? 'btn-beige-primary font-weight-bold' : 'btn-outline-secondary';
-    pagesHtml += `<button type="button" class="btn btn-xs ${activeClass} mr-1" onclick="goAssignStudentPage(${i})" style="border-radius: 6px; min-width: 28px; padding: 4px 8px;">${i}</button>`;
+    var activeClass = i === page ? 'active' : '';
+    pagesHtml += `<button type="button" class="acad-page-btn ${activeClass}" onclick="goAssignStudentPage(${i})" ${i === page ? 'aria-current="page"' : ''}>${i}</button>`;
   }
 
   if (endP < totalPages) {
     if (endP < totalPages - 1) pagesHtml += `<span class="px-1 text-muted">...</span>`;
-    pagesHtml += `<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="goAssignStudentPage(${totalPages})" style="border-radius: 6px; padding: 4px 8px;">${totalPages}</button>`;
+    pagesHtml += `<button type="button" class="acad-page-btn" onclick="goAssignStudentPage(${totalPages})">${totalPages}</button>`;
   }
 
   var nextDisabled = page >= totalPages ? 'disabled' : '';
-  pagesHtml += `<button type="button" class="btn btn-xs btn-outline-secondary" onclick="goAssignStudentPage(${page + 1})" ${nextDisabled} style="border-radius: 6px; padding: 4px 8px;"><i class="fa-solid fa-chevron-right"></i></button>`;
+  pagesHtml += `<button type="button" class="acad-page-btn" onclick="goAssignStudentPage(${page + 1})" ${nextDisabled} title="다음 페이지"><i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></button>`;
 
-  wrap.innerHTML = infoHtml + `<div class="d-flex align-items-center">${pagesHtml}</div>`;
+  wrap.innerHTML = infoHtml + `<div class="d-flex align-items-center" style="gap: 4px;">${pagesHtml}</div>`;
 }
 
 function goAssignStudentPage(p) {
@@ -3044,14 +3044,47 @@ function filterStudentAssignments() {
 // ==============================================================
 function isAssignmentBookCertified(b) {
   if (!b) return false;
-  return b.certified === true || !!b.certDate || b.status === '완료' || b.status === '합격';
+  return b.certified === true || b.isCompleted === true || !!b.certDate || b.status === '완료' || b.status === '합격';
+}
+
+async function deleteServerAssignmentsByIds(ids) {
+  var cleanIds = [];
+  (ids || []).forEach(function(id) {
+    var val = String(id || '').trim();
+    if (val && cleanIds.indexOf(val) === -1) cleanIds.push(val);
+  });
+  if (cleanIds.length === 0) return { ok: true, deletedCount: 0 };
+  if (typeof NanoPortal.deleteAssignments === 'function') {
+    await NanoPortal.deleteAssignments(cleanIds, currentAcademyInfo.id);
+  } else {
+    await Promise.all(cleanIds.map(function(id) {
+      return NanoPortal.deleteAssignment(id, currentAcademyInfo.id);
+    }));
+  }
+  currentFilteredStudentAssignments = null;
+  await NanoPortal.refreshAssignments();
+  return { ok: true, deletedCount: cleanIds.length };
+}
+
+function getScopedStudentAssignmentsForTeacher() {
+  var isT = typeof isCurrentLoggedInTeacher === 'function' && isCurrentLoggedInTeacher();
+  if (!isT) return studentAssignmentList;
+  var assignedClasses = typeof getTeacherAssignedClasses === 'function' ? getTeacherAssignedClasses() : [];
+  var assignedNames = assignedClasses.map(function(c) { return c.name; });
+  return studentAssignmentList.filter(function(item) {
+    return item.classGroup && assignedNames.indexOf(item.classGroup) !== -1;
+  });
 }
 
 async function cleanCertifiedStudentAssignments() {
+  if (typeof syncStudentAssignmentsWithLearningLogs === 'function') {
+    syncStudentAssignmentsWithLearningLogs(studentAssignmentList);
+  }
+  var scopedItems = getScopedStudentAssignmentsForTeacher();
   var totalCertCount = 0;
   var affectedStudentCount = 0;
 
-  studentAssignmentList.forEach(function(item) {
+  scopedItems.forEach(function(item) {
     if (!item.books || !item.books.length) return;
     var certBooks = item.books.filter(isAssignmentBookCertified);
     if (certBooks.length > 0) {
@@ -3072,7 +3105,37 @@ async function cleanCertifiedStudentAssignments() {
 
   if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(msg) : confirm(msg))) return;
 
-  studentAssignmentList.forEach(function(item) {
+  if (typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote) {
+    try {
+      var collectCertIds = function() {
+        var ids = [], missing = false;
+        getScopedStudentAssignmentsForTeacher().forEach(function(item) {
+          (item.books || []).filter(isAssignmentBookCertified).forEach(function(b) {
+            if (b.assignmentId) ids.push(b.assignmentId);
+            else missing = true;
+          });
+        });
+        return { ids: ids, missing: missing };
+      };
+      var collected = collectCertIds();
+      if (collected.missing) {
+        await NanoPortal.refreshAssignments();
+        if (typeof syncStudentAssignmentsWithLearningLogs === 'function') {
+          syncStudentAssignmentsWithLearningLogs(studentAssignmentList);
+        }
+        collected = collectCertIds();
+      }
+      if (collected.ids.length === 0) throw new Error('배정 정보를 새로고침한 뒤 다시 시도해 주세요.');
+      await deleteServerAssignmentsByIds(collected.ids);
+      showAcademyToast(`인증 완료 도서 총 ${collected.ids.length}권이 배정 목록에서 일괄 정리되었습니다.`);
+      return;
+    } catch (error) {
+      showAcademyToast('인증 도서 일괄 삭제에 실패했습니다: ' + error.message);
+      return;
+    }
+  }
+
+  scopedItems.forEach(function(item) {
     if (!item.books || !item.books.length) return;
     item.books = item.books.filter(function(b) {
       return !isAssignmentBookCertified(b);
@@ -3272,6 +3335,190 @@ function updateBatchClassSelectionUI() {
   }
 }
 
+function normalizeAssignThemeTag(raw) {
+  return String(raw || '').replace(/^#+/, '').trim().toLowerCase();
+}
+
+function escapeAssignAttrText(raw) {
+  return String(raw || '').replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
+}
+
+// 도서 '주제 분류 태그' 관리 소스와 동일한 우선순위로 테마 목록 조회
+function getAssignThemeCatalogList() {
+  var currentThemes = [];
+  if (typeof window !== 'undefined' && window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') {
+    currentThemes = Array.isArray(window.NANO_SERVER_THEMES) ? window.NANO_SERVER_THEMES : [];
+  } else {
+    try {
+      var raw = localStorage.getItem('NANO_MASTER_THEMES');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) currentThemes = parsed;
+      }
+    } catch (e) {}
+    if (currentThemes.length === 0 && typeof window !== 'undefined' && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
+      currentThemes = window.NANO_SERVER_THEMES;
+    }
+    if (currentThemes.length === 0 && typeof themeList !== 'undefined' && Array.isArray(themeList) && themeList.length > 0) {
+      currentThemes = themeList;
+    }
+  }
+  return Array.isArray(currentThemes) ? currentThemes : [];
+}
+
+// 도서의 실제 '주제 분류 태그' 추출 (세부 태그·구형 category보다 themeTag·subject 우선)
+function getAssignBookThemeTag(b, themes) {
+  if (!b) return '';
+  if (b.themeTag && typeof b.themeTag === 'string' && b.themeTag.trim()) {
+    var t = b.themeTag.trim();
+    return t.indexOf('#') === 0 ? t : ('#' + t);
+  }
+  if (b.subject && typeof b.subject === 'string' && b.subject.trim()) {
+    var s = b.subject.trim();
+    return s.indexOf('#') === 0 ? s : ('#' + s);
+  }
+  var list = Array.isArray(themes) ? themes : getAssignThemeCatalogList();
+  var bId = String(b.id || b.bookNo || '');
+  for (var i = 0; i < list.length; i++) {
+    var th = list[i];
+    if (!th) continue;
+    var tagOut = th.tag ? (th.tag.indexOf('#') === 0 ? th.tag : ('#' + th.tag)) : (th.title ? ('#' + th.title.replace(/s+/g, '')) : '');
+    if (bId && Array.isArray(th.bookIds) && th.bookIds.map(String).indexOf(bId) !== -1) {
+      return tagOut;
+    }
+    var cleanTh = normalizeAssignThemeTag(th.tag || th.title);
+    if (!cleanTh) continue;
+    if (Array.isArray(b.tags)) {
+      for (var j = 0; j < b.tags.length; j++) {
+        if (normalizeAssignThemeTag(b.tags[j]) === cleanTh) return tagOut;
+      }
+    }
+  }
+  if (Array.isArray(b.tags) && b.tags.length > 0 && typeof b.tags[0] === 'string') {
+    var first = b.tags[0].trim();
+    if (first.indexOf('#') === 0) return first;
+  }
+  if (b.category && typeof b.category === 'string' && !/^[A-Z]$/.test(b.category.trim())) {
+    var c = b.category.trim();
+    return c.indexOf('#') === 0 ? c : ('#' + c);
+  }
+  return '';
+}
+
+function bookMatchesAssignThemeFilter(b, filterVal, themes) {
+  var target = normalizeAssignThemeTag(filterVal);
+  if (!target || target === 'all') return true;
+  if (!b) return false;
+  var resolved = normalizeAssignThemeTag(getAssignBookThemeTag(b, themes));
+  if (resolved && resolved === target) return true;
+  if (b.themeTag && normalizeAssignThemeTag(b.themeTag) === target) return true;
+  if (b.subject && normalizeAssignThemeTag(b.subject) === target) return true;
+  if (Array.isArray(b.tags) && b.tags.some(function(tg) { return normalizeAssignThemeTag(tg) === target; })) return true;
+  var list = Array.isArray(themes) ? themes : getAssignThemeCatalogList();
+  var bId = String(b.id || b.bookNo || '');
+  for (var i = 0; i < list.length; i++) {
+    var th = list[i];
+    if (!th) continue;
+    if ((normalizeAssignThemeTag(th.tag) === target || normalizeAssignThemeTag(th.title) === target) && bId && Array.isArray(th.bookIds) && th.bookIds.map(String).indexOf(bId) !== -1) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// 개별·학급 배정 모달의 주제 분류 드롭다운을 '주제 분류 태그' 목록으로 동기화
+function populateAssignThemeFilterSelects() {
+  var themes = getAssignThemeCatalogList();
+  var seen = {};
+  var options = [];
+  var pushTag = function(rawTag, rawTitle) {
+    var clean = String(rawTag || rawTitle || '').trim();
+    if (!clean) return;
+    var tagVal = clean.indexOf('#') === 0 ? clean : ('#' + clean.replace(/s+/g, ''));
+    var key = normalizeAssignThemeTag(tagVal);
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    var titleText = String(rawTitle || '').trim();
+    var label = (titleText && normalizeAssignThemeTag(titleText) !== key) ? (tagVal + ' (' + titleText + ')') : tagVal;
+    options.push({ value: tagVal, label: label });
+  };
+
+  themes.forEach(function(t) {
+    if (t && t.active !== 'N') pushTag(t.tag, t.title);
+  });
+
+  if (typeof academyBookList !== 'undefined' && Array.isArray(academyBookList)) {
+    academyBookList.forEach(function(b) {
+      if (b && b.themeTag) pushTag(b.themeTag, '');
+      else if (b && b.subject) pushTag(b.subject, '');
+    });
+  }
+
+  ['indivFilterCategory', 'batchBookFilterCategory'].forEach(function(selectId) {
+    var select = document.getElementById(selectId);
+    if (!select) return;
+    var prevVal = select.value || 'ALL';
+    select.innerHTML = '';
+    var defaultOpt = document.createElement('option');
+    defaultOpt.value = 'ALL';
+    defaultOpt.textContent = '전체 주제 분류';
+    select.appendChild(defaultOpt);
+    options.forEach(function(opt) {
+      var el = document.createElement('option');
+      el.value = opt.value;
+      el.textContent = opt.label;
+      select.appendChild(el);
+    });
+    if (prevVal !== 'ALL' && options.some(function(o) { return o.value === prevVal; })) {
+      select.value = prevVal;
+    } else {
+      select.value = 'ALL';
+    }
+  });
+}
+
+// 개별·학급 배정 카탈로그 공용 페이징 바 (.acad-page-btn 통일)
+function renderAssignCatalogPagination(opts) {
+  var container = document.getElementById(opts.containerId);
+  if (!container) return;
+
+  var total = Number(opts.total || 0);
+  var page = Number(opts.page || 1);
+  var totalPages = Number(opts.totalPages || 1);
+  var pageSize = Number(opts.pageSize || 20);
+  var goFnName = opts.goFnName;
+
+  if (total === 0 || totalPages <= 1) {
+    container.innerHTML = `<span class="text-muted" style="font-size: 12px;">총 <strong class="text-dark">${total.toLocaleString()}</strong>권</span>`;
+    return;
+  }
+
+  var startItem = (page - 1) * pageSize + 1;
+  var endItem = Math.min(page * pageSize, total);
+
+  var infoHtml = `<span class="text-muted" style="font-size: 12px;">총 <strong class="text-dark">${total.toLocaleString()}</strong>권 <span class="ml-1" style="font-size: 11px;">(${startItem}-${endItem} · ${page}/${totalPages}p)</span></span>`;
+
+  var blockSize = 5;
+  var startP = Math.floor((page - 1) / blockSize) * blockSize + 1;
+  var endP = Math.min(startP + blockSize - 1, totalPages);
+
+  var buttons = [];
+  buttons.push(`<button type="button" class="acad-page-btn acad-page-btn-sm" onclick="${goFnName}(1)" ${page <= 1 ? 'disabled' : ''} title="첫 페이지"><i class="fa-solid fa-angles-left" style="font-size: 10px;"></i></button>`);
+  buttons.push(`<button type="button" class="acad-page-btn acad-page-btn-sm" onclick="${goFnName}(${page - 1})" ${page <= 1 ? 'disabled' : ''} title="이전 20권"><i class="fa-solid fa-chevron-left" style="font-size: 10px;"></i></button>`);
+
+  for (var p = startP; p <= endP; p++) {
+    var activeAttr = p === page ? 'aria-current="page"' : '';
+    buttons.push(`<button type="button" class="acad-page-btn acad-page-btn-sm ${p === page ? 'active' : ''}" onclick="${goFnName}(${p})" ${activeAttr}>${p}</button>`);
+  }
+
+  buttons.push(`<button type="button" class="acad-page-btn acad-page-btn-sm" onclick="${goFnName}(${page + 1})" ${page >= totalPages ? 'disabled' : ''} title="다음 20권"><i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i></button>`);
+  buttons.push(`<button type="button" class="acad-page-btn acad-page-btn-sm" onclick="${goFnName}(${totalPages})" ${page >= totalPages ? 'disabled' : ''} title="마지막 페이지"><i class="fa-solid fa-angles-right" style="font-size: 10px;"></i></button>`);
+
+  container.innerHTML = infoHtml + `<div class="d-flex align-items-center" style="gap: 4px;">${buttons.join('')}</div>`;
+}
+
 function goToBatchClassDepth2() {
   if (!batchSelectedClassName) {
     showAcademyToast('도서를 배정할 학급을 먼저 선택해 주세요.');
@@ -3289,6 +3536,7 @@ function goToBatchClassDepth2() {
   var metaEl = document.getElementById('batchTargetClassMeta');
   if (metaEl) metaEl.innerText = `대상 원생 총 ${classStudents.length}명 · 일괄 배정할 도서를 우측 목록에서 담아주세요.`;
 
+  populateAssignThemeFilterSelects();
   if (document.getElementById('batchBookSearchInput')) document.getElementById('batchBookSearchInput').value = '';
   if (document.getElementById('batchBookFilterGrade')) document.getElementById('batchBookFilterGrade').value = 'ALL';
   if (document.getElementById('batchBookFilterOrigin')) document.getElementById('batchBookFilterOrigin').value = 'ALL';
@@ -3386,12 +3634,15 @@ function renderBatchBookCatalog() {
   var categoryVal = document.getElementById('batchBookFilterCategory') ? document.getElementById('batchBookFilterCategory').value : 'ALL';
 
   var selectedIds = batchSelectedBooks.map(function(b) { return String(b.id); });
+  var themes = getAssignThemeCatalogList();
 
   var books = academyBookList.filter(function(b) {
+    var bookThemeTag = getAssignBookThemeTag(b, themes);
     var matchQuery = !query || 
       b.title.toLowerCase().indexOf(query) !== -1 || 
       (b.author && b.author.toLowerCase().indexOf(query) !== -1) || 
       (b.publisher && b.publisher.toLowerCase().indexOf(query) !== -1) ||
+      (bookThemeTag && bookThemeTag.toLowerCase().indexOf(query) !== -1) ||
       (b.category && b.category.toLowerCase().indexOf(query) !== -1);
 
     var matchGrade = true;
@@ -3405,10 +3656,7 @@ function renderBatchBookCatalog() {
       else if (originVal === 'ACADEMY') matchOrigin = !!b.isCustom;
     }
 
-    var matchCategory = true;
-    if (categoryVal !== 'ALL') {
-      matchCategory = b.category && b.category.indexOf(categoryVal) !== -1;
-    }
+    var matchCategory = bookMatchesAssignThemeFilter(b, categoryVal, themes);
 
     return matchQuery && matchGrade && matchOrigin && matchCategory;
   });
@@ -3420,6 +3668,7 @@ function renderBatchBookCatalog() {
 
   if (totalCount === 0) {
     container.innerHTML = '<div class="text-center py-4 text-muted"><i class="fa-solid fa-magnifying-glass mb-2" style="font-size:20px;"></i><br>조건에 맞는 도서가 없습니다.</div>';
+    renderBatchCatalogPagination(0, 1, 1);
     return;
   }
 
@@ -3428,6 +3677,7 @@ function renderBatchBookCatalog() {
 
   pageBooks.forEach(function(b) {
     var isSelected = selectedIds.indexOf(String(b.id)) !== -1;
+    var themeBadge = getAssignBookThemeTag(b, themes);
     var card = document.createElement('div');
     card.className = 'assign-catalog-card' + (isSelected ? ' in-cart' : '');
     card.style.background = '#ffffff';
@@ -3439,13 +3689,14 @@ function renderBatchBookCatalog() {
       </div>
       <div style="flex: 1; min-width: 0;">
         <div class="d-flex align-items-center mb-0.5">
-          <strong class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main);" title="${b.title}">${b.title}</strong>
+          <strong class="text-truncate font-weight-bold" style="font-size: 13px; color: var(--text-main);" title="${escapeAssignAttrText(b.title)}">${escapeAssignAttrText(b.title)}</strong>
         </div>
         <div class="text-muted text-truncate mb-1" style="font-size: 11px;">
-          <span>${b.publisher || b.pub || '출판사'}</span> &middot; <span>${b.author || '저자'}</span>
+          <span>${escapeAssignAttrText(b.publisher || b.pub || '출판사')}</span> &middot; <span>${escapeAssignAttrText(b.author || '저자')}</span>
         </div>
         <div class="d-flex align-items-center gap-1 flex-wrap" style="font-size: 10.5px;">
-          <span class="badge-soft badge-soft-neutral">${b.grade || '전체'}</span>
+          <span class="badge-soft badge-soft-neutral">${escapeAssignAttrText(b.grade || '전체')}</span>
+          ${themeBadge ? `<span class="badge-soft badge-soft-neutral">${escapeAssignAttrText(themeBadge)}</span>` : ''}
           <span class="badge badge-light text-success border"><i class="fa-solid fa-circle-check mr-1"></i>북퀴즈 완비</span>
         </div>
       </div>
@@ -3467,35 +3718,14 @@ function renderBatchBookCatalog() {
 }
 
 function renderBatchCatalogPagination(total, page, totalPages) {
-  var container = document.getElementById('batchBookCatalogPagination');
-  if (!container) return;
-
-  if (total === 0 || totalPages <= 1) {
-    container.innerHTML = `<span class="text-muted" style="font-size: 11.5px;">총 <strong>${total}</strong>권</span>`;
-    return;
-  }
-
-  var startItem = (page - 1) * BATCH_CATALOG_PAGE_SIZE + 1;
-  var endItem = Math.min(page * BATCH_CATALOG_PAGE_SIZE, total);
-
-  var infoHtml = `<span class="text-muted" style="font-size: 11.5px;"><strong>${total}</strong>권 중 <strong>${startItem}-${endItem}</strong></span>`;
-
-  var pagesHtml = '';
-  var startP = Math.max(1, page - 1);
-  var endP = Math.min(totalPages, page + 1);
-
-  var prevDisabled = page <= 1 ? 'disabled' : '';
-  pagesHtml += `<button type="button" class="btn btn-xs btn-outline-secondary mr-1" onclick="goBatchCatalogPage(${page - 1})" ${prevDisabled} style="border-radius: 4px; padding: 2px 6px;"><i class="fa-solid fa-chevron-left"></i></button>`;
-
-  for (var i = startP; i <= endP; i++) {
-    var activeClass = i === page ? 'btn-beige-primary font-weight-bold' : 'btn-outline-secondary';
-    pagesHtml += `<button type="button" class="btn btn-xs ${activeClass} mr-1" onclick="goBatchCatalogPage(${i})" style="border-radius: 4px; min-width: 22px; padding: 2px 6px;">${i}</button>`;
-  }
-
-  var nextDisabled = page >= totalPages ? 'disabled' : '';
-  pagesHtml += `<button type="button" class="btn btn-xs btn-outline-secondary" onclick="goBatchCatalogPage(${page + 1})" ${nextDisabled} style="border-radius: 4px; padding: 2px 6px;"><i class="fa-solid fa-chevron-right"></i></button>`;
-
-  container.innerHTML = infoHtml + `<div>${pagesHtml}</div>`;
+  renderAssignCatalogPagination({
+    containerId: 'batchBookCatalogPagination',
+    total: total,
+    page: page,
+    totalPages: totalPages,
+    pageSize: BATCH_CATALOG_PAGE_SIZE,
+    goFnName: 'goBatchCatalogPage'
+  });
 }
 
 function goBatchCatalogPage(p) {
@@ -3781,9 +4011,13 @@ function enterStudentAssignDepth2(studentId) {
     document.getElementById('indivTargetStudentMeta').innerText = stdMeta;
   }
 
-  // 검색 조건 초기화
+  // 검색 조건 초기화 및 주제 분류 태그 목록 동기화
+  populateAssignThemeFilterSelects();
   if (document.getElementById('indivBookSearchInput')) document.getElementById('indivBookSearchInput').value = '';
   if (document.getElementById('indivOnlyAcademyOwned')) document.getElementById('indivOnlyAcademyOwned').checked = false;
+  if (document.getElementById('indivFilterGrade')) document.getElementById('indivFilterGrade').value = 'ALL';
+  if (document.getElementById('indivFilterOrigin')) document.getElementById('indivFilterOrigin').value = 'ALL';
+  if (document.getElementById('indivFilterCategory')) document.getElementById('indivFilterCategory').value = 'ALL';
   currentIndivCategory = 'ALL';
   indivCatalogCurrentPage = 1;
 
@@ -3799,6 +4033,9 @@ function renderIndivStudentAssignedBooks(studentId) {
   container.innerHTML = '';
 
   var assignRec = studentAssignmentList.find(function(a) { return a.studentId === studentId; });
+  if (assignRec && typeof syncStudentAssignmentsWithLearningLogs === 'function') {
+    syncStudentAssignmentsWithLearningLogs([assignRec]);
+  }
   var books = assignRec ? assignRec.books : [];
 
   var countBadge = document.getElementById('indivTargetStudentBookCount');
@@ -3826,7 +4063,7 @@ function renderIndivStudentAssignedBooks(studentId) {
     card.style.justifyContent = 'space-between';
 
     var assignedTimeStr = b.assignedAt || '배정일자';
-    var certBadge = (b.certDate || b.certified)
+    var certBadge = isAssignmentBookCertified(b)
       ? `<span class="badge badge-success px-2 py-0.5 ml-1" style="font-size: 10.5px; font-weight: 700;">
            <i class="fa-solid fa-award mr-1"></i>인증일 : ${b.certDate || '09월 12일'}
          </span>`
@@ -3860,34 +4097,58 @@ function renderIndivStudentAssignedBooks(studentId) {
 async function releaseIndivCertifiedBooks() {
   if (!currentIndivStudentId) return;
 
-  var assignRec = studentAssignmentList.find(function(a) { return a.studentId === currentIndivStudentId; });
+  var findTargetAssign = function() {
+    var rec = studentAssignmentList.find(function(a) { return a.studentId === currentIndivStudentId; });
+    if (rec && typeof syncStudentAssignmentsWithLearningLogs === 'function') {
+      syncStudentAssignmentsWithLearningLogs([rec]);
+    }
+    return rec;
+  };
+
+  var assignRec = findTargetAssign();
   if (!assignRec || !assignRec.books || assignRec.books.length === 0) {
     showAcademyToast('현재 배정된 도서가 없습니다.');
     return;
   }
 
-  var beforeCount = assignRec.books.length;
-  // 인증완료된 도서 필터링 제거 (certDate 또는 certified)
-  assignRec.books = assignRec.books.filter(function(b) {
-    return !(b.certDate || b.certified);
-  });
-  var removedCount = beforeCount - assignRec.books.length;
+  var certifiedBooks = assignRec.books.filter(isAssignmentBookCertified);
+  if (certifiedBooks.length === 0) {
+    showAcademyToast('현재 배정 목록에 인증 완료된 도서가 없습니다.');
+    return;
+  }
 
-  if (removedCount === 0) {
-    // 모든 도서 중 1권을 예시로 인증완료 해제 처리
-    if (typeof nanoConfirm === 'function' ? await nanoConfirm('현재 인증 완료된 도서가 없습니다. 독서 완료된 도서를 배정 해제하시겠습니까?') : confirm('현재 인증 완료된 도서가 없습니다. 독서 완료된 도서를 배정 해제하시겠습니까?')) {
-      assignRec.books.pop();
-      removedCount = 1;
-    } else {
+  var confirmMsg = `[${assignRec.studentName || '해당 원생'}] 원생의 북퀴즈 인증 완료 도서 ${certifiedBooks.length}권을 배정 해제하시겠습니까?`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(confirmMsg) : confirm(confirmMsg))) return;
+
+  if (typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote) {
+    try {
+      if (certifiedBooks.some(function(b) { return !b.assignmentId; })) {
+        await NanoPortal.refreshAssignments();
+        assignRec = findTargetAssign();
+        certifiedBooks = assignRec ? (assignRec.books || []).filter(isAssignmentBookCertified) : [];
+      }
+      var certIds = certifiedBooks.map(function(b) { return b.assignmentId; }).filter(Boolean);
+      if (certIds.length === 0) throw new Error('배정 정보를 새로고침한 뒤 다시 시도해 주세요.');
+      await deleteServerAssignmentsByIds(certIds);
+      showAcademyToast(`인증 완료된 도서 ${certIds.length}권이 배정 해제되었습니다.`);
+      return;
+    } catch (error) {
+      showAcademyToast('인증 도서 배정 해제에 실패했습니다: ' + error.message);
       return;
     }
   }
+
+  assignRec.books = assignRec.books.filter(function(b) {
+    return !isAssignmentBookCertified(b);
+  });
+  assignRec.completedBooks = 0;
+  assignRec.status = assignRec.books.length > 0 ? `읽는 중 (0/${assignRec.books.length}권)` : '배정 없음';
 
   renderIndivStudentAssignedBooks(currentIndivStudentId);
   renderIndivBookCatalog();
   renderStudentAssignmentTable();
   if (!syncAssignmentsData()) return;
-  showAcademyToast(`인증 완료된 도서 ${removedCount}권이 배정 해제되었습니다.`);
+  showAcademyToast(`인증 완료된 도서 ${certifiedBooks.length}권이 배정 해제되었습니다.`);
 }
 
 // Depth 2 우측: 신규 도서 검색 카탈로그 렌더링 (20권씩 페이징 처리 & 학년, 출제처, 주제 필터 지원)
@@ -3916,13 +4177,16 @@ function renderIndivBookCatalog() {
   // 현재 이 학생에게 이미 배정된 도서 ID 목록
   var assignRec = studentAssignmentList.find(function(a) { return a.studentId === currentIndivStudentId; });
   var assignedBookIds = assignRec ? assignRec.books.map(function(b) { return String(b.id); }) : [];
+  var themes = getAssignThemeCatalogList();
 
   var books = academyBookList.filter(function(b) {
+    var bookThemeTag = getAssignBookThemeTag(b, themes);
     // 키워드 검색
     var matchQuery = !query || 
       b.title.toLowerCase().indexOf(query) !== -1 || 
       (b.author && b.author.toLowerCase().indexOf(query) !== -1) || 
       (b.publisher && b.publisher.toLowerCase().indexOf(query) !== -1) ||
+      (bookThemeTag && bookThemeTag.toLowerCase().indexOf(query) !== -1) ||
       (b.category && b.category.toLowerCase().indexOf(query) !== -1);
 
     // 학년 필터
@@ -3941,11 +4205,8 @@ function renderIndivBookCatalog() {
       else if (originVal === 'ACADEMY') matchOrigin = !!b.isCustom;
     }
 
-    // 주제 필터
-    var matchCategory = true;
-    if (categoryVal !== 'ALL') {
-      matchCategory = b.category && b.category.indexOf(categoryVal) !== -1;
-    }
+    // 주제 분류 태그 필터
+    var matchCategory = bookMatchesAssignThemeFilter(b, categoryVal, themes);
 
     // 학원 보유 도서만 검색 조건
     var matchOwned = !onlyAcademyOwned || isBookOwnedByAcademy(b);
@@ -3960,7 +4221,7 @@ function renderIndivBookCatalog() {
 
   if (totalCount === 0) {
     container.innerHTML = '<div class="text-center py-5 text-muted"><i class="fa-solid fa-magnifying-glass mb-2" style="font-size:24px;"></i><br>조건에 맞는 도서가 없습니다.</div>';
-    if (paginationContainer) paginationContainer.innerHTML = '';
+    renderIndivCatalogPagination(0, 1, 1);
     return;
   }
 
@@ -3971,6 +4232,7 @@ function renderIndivBookCatalog() {
   pageBooks.forEach(function(b) {
     var isAssigned = assignedBookIds.indexOf(String(b.id)) !== -1;
     var isOwned = isBookOwnedByAcademy(b);
+    var themeBadge = getAssignBookThemeTag(b, themes);
 
     var card = document.createElement('div');
     card.className = 'assign-catalog-card' + (isAssigned ? ' in-cart' : '');
@@ -3987,14 +4249,15 @@ function renderIndivBookCatalog() {
       </div>
       <div style="flex: 1; min-width: 0;">
         <div class="d-flex align-items-center mb-1">
-          <strong class="text-truncate font-weight-bold" style="font-size: 13.5px; color: var(--text-main);" title="${b.title}">${b.title}</strong>
+          <strong class="text-truncate font-weight-bold" style="font-size: 13.5px; color: var(--text-main);" title="${escapeAssignAttrText(b.title)}">${escapeAssignAttrText(b.title)}</strong>
           ${ownedBadge}
         </div>
         <div class="text-muted text-truncate mb-1" style="font-size: 11.5px;">
-          <span>${b.publisher || b.pub || '출판사'}</span> &middot; <span>${b.author || '저자'}</span>
+          <span>${escapeAssignAttrText(b.publisher || b.pub || '출판사')}</span> &middot; <span>${escapeAssignAttrText(b.author || '저자')}</span>
         </div>
         <div class="d-flex align-items-center gap-1 flex-wrap" style="font-size: 10.5px;">
-          <span class="badge-soft badge-soft-neutral">${b.grade || '전체'}</span>
+          <span class="badge-soft badge-soft-neutral">${escapeAssignAttrText(b.grade || '전체')}</span>
+          ${themeBadge ? `<span class="badge-soft badge-soft-neutral">${escapeAssignAttrText(themeBadge)}</span>` : ''}
           <span class="badge badge-light text-success border"><i class="fa-solid fa-circle-check mr-1"></i>북퀴즈 완비</span>
         </div>
       </div>
@@ -4017,49 +4280,14 @@ function renderIndivBookCatalog() {
 
 // 20권 페이징 네비게이션 렌더링
 function renderIndivCatalogPagination(total, page, totalPages) {
-  var container = document.getElementById('indivBookCatalogPagination');
-  if (!container) return;
-
-  if (total === 0 || totalPages <= 1) {
-    container.innerHTML = `<span class="text-muted" style="font-size: 11.5px;">총 <strong>${total}</strong>권</span>`;
-    return;
-  }
-
-  var html = `
-    <span class="text-muted" style="font-size: 11.5px;">총 <strong>${total}</strong>권 (${page}/${totalPages}p)</span>
-    <div class="d-flex align-items-center" style="gap: 3px;">
-      <button type="button" class="btn btn-xs btn-outline-secondary" onclick="goIndivCatalogPage(1)" ${page <= 1 ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''} style="border-radius: 4px; padding: 2px 6px;" title="첫 페이지">
-        <i class="fa-solid fa-angles-left" style="font-size: 9.5px;"></i>
-      </button>
-      <button type="button" class="btn btn-xs btn-outline-secondary" onclick="goIndivCatalogPage(${page - 1})" ${page <= 1 ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''} style="border-radius: 4px; padding: 2px 6px;" title="이전 20권">
-        <i class="fa-solid fa-chevron-left" style="font-size: 9.5px;"></i>
-      </button>
-  `;
-
-  var startP = Math.max(1, page - 2);
-  var endP = Math.min(totalPages, startP + 4);
-  if (endP - startP < 4) startP = Math.max(1, endP - 4);
-
-  for (var p = startP; p <= endP; p++) {
-    var isActive = p === page;
-    html += `
-      <button type="button" class="btn btn-xs ${isActive ? 'btn-beige-primary text-white font-weight-bold' : 'btn-outline-secondary'}" onclick="goIndivCatalogPage(${p})" style="border-radius: 4px; min-width: 24px; padding: 2px 6px; font-size: 11px;">
-        ${p}
-      </button>
-    `;
-  }
-
-  html += `
-      <button type="button" class="btn btn-xs btn-outline-secondary" onclick="goIndivCatalogPage(${page + 1})" ${page >= totalPages ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''} style="border-radius: 4px; padding: 2px 6px;" title="다음 20권">
-        <i class="fa-solid fa-chevron-right" style="font-size: 9.5px;"></i>
-      </button>
-      <button type="button" class="btn btn-xs btn-outline-secondary" onclick="goIndivCatalogPage(${totalPages})" ${page >= totalPages ? 'disabled style="opacity: 0.35; cursor: not-allowed;"' : ''} style="border-radius: 4px; padding: 2px 6px;" title="마지막 페이지">
-        <i class="fa-solid fa-angles-right" style="font-size: 9.5px;"></i>
-      </button>
-    </div>
-  `;
-
-  container.innerHTML = html;
+  renderAssignCatalogPagination({
+    containerId: 'indivBookCatalogPagination',
+    total: total,
+    page: page,
+    totalPages: totalPages,
+    pageSize: INDIV_CATALOG_PAGE_SIZE,
+    goFnName: 'goIndivCatalogPage'
+  });
 }
 
 function goIndivCatalogPage(page) {
@@ -4563,6 +4791,30 @@ async function batchUnassignBookFromClass(className, bookId) {
   }
 
   var classStudents = studentDataList.filter(function(s) { return s.classGroup === className; });
+  if (typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote) {
+    try {
+      var targetIds = [];
+      classStudents.forEach(function(std) {
+        var assignRec = studentAssignmentList.find(function(a) { return a.studentId === std.id; });
+        if (!assignRec || !assignRec.books) return;
+        assignRec.books.forEach(function(item) {
+          if (String(item.id) === String(bookId) && item.assignmentId) targetIds.push(item.assignmentId);
+        });
+      });
+      if (targetIds.length === 0) {
+        showAcademyToast(`[${className}] 학급에서 해제할 서버 배정 내역이 없습니다.`);
+        return;
+      }
+      await deleteServerAssignmentsByIds(targetIds);
+      renderClassAssignModalContent(className);
+      showAcademyToast(`[${className}] 소속 ${targetIds.length}명의 학생에게서 <${bookTitle}> 배정이 일괄 해제되었습니다.`);
+      return;
+    } catch (error) {
+      showAcademyToast('학급 도서 일괄 배정 해제에 실패했습니다: ' + error.message);
+      return;
+    }
+  }
+
   var removedCount = 0;
 
   classStudents.forEach(function(std) {
@@ -7496,20 +7748,20 @@ function renderPortfolioDocument(studentId, pfId) {
               '</button>' +
             '</div>' +
           '</div>' +
-          '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13px; color:#374151;">' +
+          '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13px; color:#374151; white-space:pre-wrap;">' +
             escapePortfolioText(currentTeacherNote) +
           '</div>' +
           '<div id="pfTeacherNoteEditWrap" style="display:none;" class="pf-print-hide mt-2">' +
             '<textarea id="pfTeacherNoteInput" class="form-control" rows="4" style="font-size:13px; border-color:#1f8a7e; line-height:1.6; resize:vertical;">' + escapePortfolioText(currentTeacherNote) + '</textarea>' +
             '<div class="d-flex justify-content-end mt-2" style="gap:8px;">' +
               '<button type="button" class="btn btn-sm btn-secondary" style="font-size:12px; padding:3px 10px;" onclick="togglePfTeacherNoteEdit(false)">취소</button>' +
-              '<button type="button" class="btn btn-sm btn-success" style="font-size:12px; padding:3px 12px; background:#1f8a7e; border-color:#1f8a7e;" onclick="saveViewingPortfolioTeacherNote(' + JSON.stringify(studentId) + ', ' + JSON.stringify(pfId) + ')">' +
+              '<button type="button" id="btnPfTeacherNoteSave" class="btn btn-sm btn-success" style="font-size:12px; padding:3px 12px; background:#1f8a7e; border-color:#1f8a7e;" data-student-id="' + escapePortfolioText(studentId) + '" data-pf-id="' + escapePortfolioText(pfId) + '" onclick="saveViewingPortfolioTeacherNote(this.dataset.studentId, this.dataset.pfId)">' +
                 '<i class="fa-solid fa-check mr-1"></i>저장' +
               '</button>' +
             '</div>' +
           '</div>' +
           '<div class="pf-signature mt-3 pt-2 border-top">' +
-            '<span style="font-size:11px; color:#6b7280;">나노의 책장 독서 교육 연구소 인증 지도교사</span>' +
+            '<span style="font-size:11px; color:#6b7280;">나노의 책장 인증 지도교사</span>' +
             '<div style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#124e47; font-size:12.5px;">' +
               '<span>' + escapePortfolioText(teacher) + '</span>' +
             '</div>' +
@@ -7519,8 +7771,7 @@ function renderPortfolioDocument(studentId, pfId) {
 
       '<!-- 리포트 푸터 -->' +
       '<div class="pf-footer text-muted">' +
-        '<div><span class="font-weight-bold" style="color:#1f8a7e;">나노의 책장</span> · 독서 교육 연구소 공식 발급 인증서</div>' +
-        '<div>아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +
+        '<div style="margin-left:auto;">아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +
       '</div>' +
     '</div>';
 
@@ -7538,7 +7789,7 @@ function togglePfTeacherNoteEdit(show) {
     if (editWrap) editWrap.style.display = 'block';
     if (editBtn) editBtn.style.display = 'none';
     if (inputEl && displayEl) {
-      inputEl.value = displayEl.innerText.trim();
+      inputEl.value = String(displayEl.textContent || displayEl.innerText || '').trim();
       inputEl.focus();
     }
   } else {
@@ -7556,25 +7807,86 @@ async function saveViewingPortfolioTeacherNote(studentId, pfId) {
     return;
   }
 
-  var targetData = (pfId && portfolioDataMap[pfId]) || portfolioDataMap[studentId] || null;
-  if (targetData) {
-    targetData.teacherNote = newText;
-  }
-  if (portfolioDataMap[studentId]) {
-    portfolioDataMap[studentId].teacherNote = newText;
-  }
+  var targetPfId = pfId || (typeof currentViewingPortfolioId !== 'undefined' ? currentViewingPortfolioId : '');
+  var portfolio = (typeof portfolioList !== 'undefined' && Array.isArray(portfolioList))
+    ? portfolioList.find(function(item) {
+        if (!item) return false;
+        if (targetPfId && String(item.id) === String(targetPfId)) return true;
+        return !!(studentId && (String(item.studentId) === String(studentId) || String(item.memberId) === String(studentId)));
+      })
+    : null;
 
-  // 서버 모드 동기화
-  if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.updatePortfolioComment === 'function') {
+  var saveBtn = document.getElementById('btnPfTeacherNoteSave');
+  var prevBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+
+  // 서버 모드 동기화: 실제 포트폴리오 저장 API(NanoPortal.savePortfolio) 호출 후 최신 리비전 재동기화
+  if (typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote) {
+    if (!portfolio || !portfolio.id) {
+      showAcademyToast('저장할 포트폴리오 정보를 찾을 수 없습니다. 목록을 새로고침한 뒤 다시 시도해 주세요.');
+      return;
+    }
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>저장 중';
+    }
     try {
-      await NanoPortal.updatePortfolioComment(pfId, newText);
-    } catch (e) {
-      console.warn('[saveViewingPortfolioTeacherNote] Remote sync failed:', e.message);
+      await NanoPortal.savePortfolio({
+        id: portfolio.id,
+        revision: Number(portfolio.revision || 0),
+        memberId: portfolio.memberId,
+        from: portfolio.from,
+        to: portfolio.to,
+        comment: newText
+      }, (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) ? currentAcademyInfo.id : undefined);
+      if (typeof NanoPortal.refreshPortfolios === 'function') {
+        await NanoPortal.refreshPortfolios();
+      }
+      if (typeof portfolioDataMap !== 'undefined' && portfolioDataMap) {
+        [targetPfId, portfolio.id, studentId].forEach(function(key) {
+          if (key && portfolioDataMap[key]) {
+            portfolioDataMap[key]._aiRequested = true;
+            portfolioDataMap[key]._aiPending = false;
+            portfolioDataMap[key].teacherNote = newText;
+            portfolioDataMap[key].comment = newText;
+            portfolioDataMap[key].commentSource = 'teacher';
+          }
+        });
+      }
+    } catch (error) {
+      showAcademyToast('선생님의 한마디를 저장하지 못했습니다: ' + error.message);
+      return;
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = prevBtnHtml;
+      }
+    }
+  } else {
+    if (portfolio) {
+      portfolio.comment = newText;
+      portfolio.teacherNote = newText;
+      portfolio.commentSource = 'teacher';
+    }
+    if (typeof portfolioDataMap !== 'undefined' && portfolioDataMap) {
+      var targetData = (targetPfId && portfolioDataMap[targetPfId]) || portfolioDataMap[studentId] || null;
+      if (targetData) {
+        targetData.teacherNote = newText;
+        targetData.comment = newText;
+        targetData.commentSource = 'teacher';
+      }
+      if (studentId && portfolioDataMap[studentId]) {
+        portfolioDataMap[studentId].teacherNote = newText;
+        portfolioDataMap[studentId].comment = newText;
+        portfolioDataMap[studentId].commentSource = 'teacher';
+      }
     }
   }
 
   var displayEl = document.getElementById('pfTeacherNoteDisplay');
-  if (displayEl) displayEl.innerText = newText;
+  if (displayEl) {
+    displayEl.textContent = newText;
+    displayEl.innerText = newText;
+  }
   togglePfTeacherNoteEdit(false);
   showAcademyToast('선생님의 한마디가 성공적으로 저장되었습니다.');
 }
@@ -8624,6 +8936,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderPortfolioTable(portfolioList);
   renderTeacherTable();
   renderLearningTable();
+  populateAssignThemeFilterSelects();
   renderAssignmentTable();
   renderAcademyDispatchTable();
   renderAdminRankingView();
