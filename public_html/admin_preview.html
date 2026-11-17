@@ -3487,7 +3487,7 @@
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261117_banner_sync"></script>
-<link rel="stylesheet" href="css/preview-ux.css?v=20261014">
+<link rel="stylesheet" href="css/preview-ux.css?v=20261117_print_btn">
 <script src="js/preview-ux.js?v=20261117_session_timer" defer></script>
 <link rel="stylesheet" href="css/portfolio.css?v=20261113_pf_flow">
   <style>
@@ -3515,10 +3515,10 @@
   </style>
   <link rel="stylesheet" href="css/portal-search.css?v=20261113_dropdown_fix">
 <link rel="stylesheet" href="css/academy-payment.css?v=20261111-compact">
-<link rel="stylesheet" href="css/learning-report.css?v=20261113_print_compact">
+<link rel="stylesheet" href="css/learning-report.css?v=20261117_print_btn">
 <link rel="stylesheet" href="css/admin-notices.css?v=20261116">
 <link rel="stylesheet" href="css/content-sharing.css?v=20261117_jd_theme">
-<link rel="stylesheet" href="/css/portal-brand.css?v=20261117_jd_theme">
+<link rel="stylesheet" href="/css/portal-brand.css?v=20261117_print_btn">
 <script src="/js/portal-brand.js?v=20261117_jd_nofouc"></script>
 </head>
 
@@ -6291,8 +6291,8 @@
           <div class="d-flex align-items-center" style="gap: 10px;">
             <div class="d-flex align-items-center d-print-none" style="gap: 8px;">
               <span id="modalKakaoSendBtnContainer"></span>
-              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printLearningReport()">
-                <i class="fa-solid fa-print mr-1"></i>리포트 인쇄
+              <button type="button" class="btn-report-print" onclick="printLearningReport()">
+                <i class="fa-solid fa-print" aria-hidden="true"></i><span>리포트 인쇄</span>
               </button>
             </div>
             <!-- PC 리포트 뷰 vs 카톡 화면 뷰 토글 -->

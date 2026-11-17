@@ -8,7 +8,16 @@
 #learningReportModalDialog .modal-header .modal-title { font-size: 23px !important; letter-spacing: -.6px; color: #164f47 !important; }
 #learningReportModalDialog .modal-header > div:first-child > div:first-child { background: #e8f4ef !important; color: #187e73 !important; flex-shrink: 0; width: 44px !important; height: 44px !important; }
 #learningReportModalDialog .modal-header small { display: block; margin-top: 4px; }
-#learningReportModalDialog .modal-header button { min-height: 36px; white-space: nowrap; }
+#learningReportModalDialog .modal-header button { min-height: 34px; white-space: nowrap; }
+#learningReportModalDialog .modal-header #btnReportViewPc,
+#learningReportModalDialog .modal-header #btnReportViewKakao { min-height: 28px; }
+#learningReportModalDialog .modal-header .btn-kakao-report {
+  min-height: 34px;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  box-shadow: 0 1px 3px rgba(229, 206, 0, 0.25);
+}
 #learningReportModalDialog .close { min-width: 32px; }
 #learningReportModalBody { background: #f5f7f6 !important; overflow-wrap: anywhere; word-break: keep-all; container-type: inline-size; container-name: learning-report; }
 #learningReportModalBody .report-overview-card { background: #edf5f1; border: 1px solid #cddfd6; border-top: 4px solid #187e73; border-radius: 14px; padding: 22px; margin-bottom: 28px; box-shadow: none; }
@@ -46,8 +55,14 @@
 #learningReportModalBody .report-worksheet-layout > div:last-child > div:last-child { background: #f4f6fa !important; }
 #learningReportModalBody .worksheet-photos img { max-width: 100%; object-fit: contain; }
 @media screen {
-  #learningReportModalDialog.view-mode-kakao .modal-header { flex-wrap: wrap; padding: 16px !important; gap: 12px; }
-  #learningReportModalDialog.view-mode-kakao .modal-header > div:last-child { width: 100%; justify-content: space-between; }
+  #learningReportModalDialog.view-mode-kakao .modal-header { position: relative; flex-wrap: wrap; padding: 16px 16px 14px !important; gap: 11px; }
+  #learningReportModalDialog.view-mode-kakao .modal-header > div:first-child { padding-right: 36px; }
+  #learningReportModalDialog.view-mode-kakao .modal-header > div:last-child { width: 100%; justify-content: space-between; gap: 6px !important; flex-wrap: nowrap; }
+  #learningReportModalDialog.view-mode-kakao .modal-header .close { position: absolute; top: 15px; right: 14px; margin: 0 !important; min-height: 32px; }
+  #learningReportModalDialog.view-mode-kakao .modal-header .btn-kakao-report,
+  #learningReportModalDialog.view-mode-kakao .modal-header .btn-report-print { padding: 5px 10px !important; font-size: 11.5px !important; min-height: 32px; border-radius: 9px !important; gap: 4px; }
+  #learningReportModalDialog.view-mode-kakao .modal-header #btnReportViewPc,
+  #learningReportModalDialog.view-mode-kakao .modal-header #btnReportViewKakao { padding: 4px 8px !important; font-size: 11.5px !important; min-height: 26px; }
   #learningReportModalDialog.view-mode-kakao .modal-title { font-size: 20px !important; }
   #learningReportModalDialog.view-mode-kakao #learningReportModalBody .report-overview-split { grid-template-columns: minmax(0, 1fr) !important; }
   #learningReportModalDialog.view-mode-kakao #learningReportModalBody .report-overview-left { padding: 0 !important; }
@@ -65,8 +80,10 @@
     #learningReportModalBody .report-choice-val { flex-basis: 100%; margin-left: 0; text-align: left; }
   }
   @media (max-width: 600px) {
-    #learningReportModalDialog .modal-header { flex-wrap: wrap; padding: 16px !important; }
-    #learningReportModalDialog .modal-header > div:last-child { width: 100%; justify-content: space-between; }
+    #learningReportModalDialog .modal-header { position: relative; flex-wrap: wrap; padding: 16px !important; gap: 10px; }
+    #learningReportModalDialog .modal-header > div:first-child { padding-right: 36px; }
+    #learningReportModalDialog .modal-header > div:last-child { width: 100%; justify-content: space-between; gap: 6px !important; flex-wrap: wrap; }
+    #learningReportModalDialog .modal-header .close { position: absolute; top: 15px; right: 14px; margin: 0 !important; min-height: 32px; }
     #learningReportModalBody { padding: 14px !important; }
   }
 }

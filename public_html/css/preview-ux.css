@@ -97,3 +97,45 @@
   background: #fca5a5;
   color: #b91c1c;
 }
+
+/* 학습·포트폴리오 리포트 인쇄 전용 버튼 (본사·학원 공통) */
+.btn-report-print {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 13px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f3fbf8 0%, #e4f4ee 100%);
+  border: 1px solid #9bd4c7;
+  color: #146c62;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(20, 108, 98, 0.10);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+.btn-report-print i {
+  font-size: 12.5px;
+  color: #187e73;
+  transition: color 0.18s ease;
+}
+.btn-report-print:hover {
+  background: linear-gradient(135deg, #1f8a7e 0%, #166e64 100%);
+  border-color: #166e64;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 126, 115, 0.24);
+}
+.btn-report-print:hover i {
+  color: #ffffff;
+}
+.btn-report-print:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(24, 126, 115, 0.18);
+}

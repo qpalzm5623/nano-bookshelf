@@ -57,6 +57,20 @@ html[data-brand="JD"] .btn-beige-primary:hover,
 html[data-brand="JD"] .btn-primary:hover { background: #123bb1; border-color: #123bb1; }
 html[data-brand="JD"] .btn-beige-secondary { background: #eff4ff; color: #173f9b; border-color: #c7d7fe; }
 html[data-brand="JD"] .btn-beige-secondary:hover { background: #dfe9ff; color: #123bb1; border-color: #9bb8fc; }
+html[data-brand="JD"] .btn-report-print {
+  background: linear-gradient(135deg, #f5f8ff 0%, #e7effe 100%);
+  border-color: #b4cbfe;
+  color: #1649db;
+  box-shadow: 0 1px 3px rgba(22, 73, 219, 0.10);
+}
+html[data-brand="JD"] .btn-report-print i { color: #1649db; }
+html[data-brand="JD"] .btn-report-print:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1649db 100%);
+  border-color: #123bb1;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 73, 219, 0.26);
+}
+html[data-brand="JD"] .btn-report-print:hover i { color: #ffffff; }
 html[data-brand="JD"] .brand-icon { background: #1649db; color: #ffffff; border-color: #1649db; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.22); }
 html[data-brand="JD"] .simple-sidebar::-webkit-scrollbar-thumb,
 html[data-brand="JD"] .interest-rec-scroll::-webkit-scrollbar-thumb { background: #c6d3eb; }
