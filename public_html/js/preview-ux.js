@@ -33,27 +33,88 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ==============================================================
-// 15분 미활동 자동 로그아웃 확인 모달 & 뒤로가기 세션 유지 공통 모듈
+// 10초 무동작 후 30:00 카운트다운 · 로그아웃 좌측 타이머 · 유지 확인 모달 공통 모듈
 // ==============================================================
 (function () {
-  // 15분 = 900초 = 900,000ms
-  var INACTIVITY_LIMIT = 15 * 60 * 1000;
-  // 카운트다운 대기 시간 = 60초
-  var COUNTDOWN_TOTAL = 60;
+  // 아무 동작 없이 10초 경과 시 30:00(1800초) 카운트다운 시작
+  var IDLE_GRACE_MS = 10 * 1000;
+  var SESSION_COUNTDOWN_SEC = 30 * 60;
+  // 00:00 도달 후 모달 확인 대기 시간 = 60초 (미응답 시 자동 로그아웃)
+  var MODAL_GRACE_SEC = 60;
 
   var lastActivity = Date.now();
-  var checkInterval = null;
+  var tickInterval = null;
   var countdownInterval = null;
-  var countdownRemaining = COUNTDOWN_TOTAL;
+  var modalGraceRemaining = MODAL_GRACE_SEC;
   var isModalVisible = false;
+  var timerPillEl = null;
+  var timerTextEl = null;
 
-  // 세션 타임아웃 확인 모달 동적 생성 및 주입
-  function createTimeoutModal() {
-    if (document.getElementById('nanoSessionModalOverlay')) return;
+  function formatMmSs(totalSec) {
+    var sec = Math.max(0, Math.floor(totalSec));
+    var mm = String(Math.floor(sec / 60)).padStart(2, '0');
+    var ss = String(sec % 60).padStart(2, '0');
+    return mm + ':' + ss;
+  }
 
+  function ensureSessionStyles() {
+    if (document.getElementById('nanoSessionModalStyle')) return;
     var style = document.createElement('style');
     style.id = 'nanoSessionModalStyle';
     style.textContent = `
+      .nano-session-timer-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 9px;
+        background: #f5f3ef;
+        border: 1px solid #e2ddd4;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+        white-space: nowrap;
+        flex-shrink: 0;
+        user-select: none;
+        transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+      }
+      .nano-session-timer-pill i {
+        font-size: 11.5px;
+        opacity: 0.85;
+      }
+      .nano-session-timer-pill.is-counting {
+        background: #f0fdfa;
+        border-color: #99f6e4;
+        color: #0f766e;
+      }
+      html[data-brand="JD"] .nano-session-timer-pill.is-counting {
+        background: #eff4ff;
+        border-color: #bfdbfe;
+        color: #1649db;
+      }
+      .nano-session-timer-pill.is-warning {
+        background: #fff7ed;
+        border-color: #fdba74;
+        color: #c2410c;
+      }
+      .nano-session-timer-pill.is-critical {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #dc2626;
+      }
+      @media (max-width: 575.98px) {
+        .nano-session-timer-pill {
+          padding: 4px 7px;
+          font-size: 11px;
+          gap: 4px;
+          border-radius: 8px;
+        }
+        .nano-session-timer-pill i {
+          font-size: 10.5px;
+        }
+      }
       #nanoSessionModalOverlay {
         position: fixed;
         top: 0; left: 0; width: 100vw; height: 100vh;
@@ -170,6 +231,69 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     `;
     document.head.appendChild(style);
+  }
+
+  function findHeaderLogoutTarget() {
+    return (
+      document.querySelector('header button[onclick*="handleMasterLogout"]') ||
+      document.querySelector('header a[href="index.html"]') ||
+      document.querySelector('header .btn-student-logout') ||
+      document.querySelector('header button[onclick*="Logout"]')
+    );
+  }
+
+  function mountTimerPill() {
+    if (timerPillEl && document.contains(timerPillEl)) return;
+    var logoutBtn = findHeaderLogoutTarget();
+    if (!logoutBtn || !logoutBtn.parentElement) return;
+
+    ensureSessionStyles();
+
+    var existing = document.getElementById('nanoSessionTimerPill');
+    if (existing) {
+      timerPillEl = existing;
+      timerTextEl = existing.querySelector('.nano-session-timer-text');
+      return;
+    }
+
+    var pill = document.createElement('span');
+    pill.id = 'nanoSessionTimerPill';
+    pill.className = 'nano-session-timer-pill';
+    pill.title = '10초간 활동이 없으면 30:00부터 자동 로그아웃 카운트다운이 시작됩니다.';
+    pill.innerHTML = '<i class="fa-regular fa-clock" aria-hidden="true"></i><span class="nano-session-timer-text">30:00</span>';
+
+    // 부모 flex 컨테이너에 gap이 없으면 버튼 좌측 여백을 직접 확보
+    try {
+      var parentStyle = window.getComputedStyle(logoutBtn.parentElement);
+      var gapVal = parseFloat(parentStyle && (parentStyle.columnGap || parentStyle.gap)) || 0;
+      if (!gapVal) pill.style.marginRight = '8px';
+    } catch (e) {
+      pill.style.marginRight = '8px';
+    }
+
+    logoutBtn.parentElement.insertBefore(pill, logoutBtn);
+    timerPillEl = pill;
+    timerTextEl = pill.querySelector('.nano-session-timer-text');
+  }
+
+  function updateTimerPillDisplay(remainingSec, isCounting) {
+    if (!timerPillEl || !timerTextEl) mountTimerPill();
+    if (!timerPillEl || !timerTextEl) return;
+
+    var formatted = formatMmSs(remainingSec);
+    if (timerTextEl.textContent !== formatted) {
+      timerTextEl.textContent = formatted;
+    }
+
+    timerPillEl.classList.toggle('is-counting', isCounting && remainingSec > 300);
+    timerPillEl.classList.toggle('is-warning', isCounting && remainingSec <= 300 && remainingSec > 60);
+    timerPillEl.classList.toggle('is-critical', isCounting && remainingSec <= 60);
+  }
+
+  // 세션 타임아웃 확인 모달 동적 생성 및 주입
+  function createTimeoutModal() {
+    if (document.getElementById('nanoSessionModalOverlay')) return;
+    ensureSessionStyles();
 
     var overlay = document.createElement('div');
     overlay.id = 'nanoSessionModalOverlay';
@@ -178,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="nano-session-icon">⏳</div>
         <div class="nano-session-title" id="nanoSessionTitle">로그인을 유지하시겠습니까?</div>
         <div class="nano-session-desc">
-          15분 동안 활동이 감지되지 않아 안내해 드립니다.<br>
+          30분 동안 활동이 감지되지 않아 안내해 드립니다.<br>
           계속 이용하시려면 아래 <strong>[로그인 유지]</strong> 버튼을 눌러주세요.
         </div>
         <div class="nano-session-timer-box">
@@ -211,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function executeSafeLogout() {
     isModalVisible = false;
     if (countdownInterval) clearInterval(countdownInterval);
-    if (checkInterval) clearInterval(checkInterval);
+    if (tickInterval) clearInterval(tickInterval);
 
     var overlay = document.getElementById('nanoSessionModalOverlay');
     if (overlay) overlay.style.display = 'none';
@@ -232,66 +356,90 @@ document.addEventListener('DOMContentLoaded', function () {
     isModalVisible = false;
     if (countdownInterval) clearInterval(countdownInterval);
     lastActivity = Date.now();
+    updateTimerPillDisplay(SESSION_COUNTDOWN_SEC, false);
 
     var overlay = document.getElementById('nanoSessionModalOverlay');
     if (overlay) overlay.style.display = 'none';
 
     // 토스트 안내 지원
     if (typeof window.toast === 'function') {
-      window.toast('로그인 상태가 15분 연장되었습니다.');
+      window.toast('로그인 상태가 30분 연장되었습니다.');
     } else if (typeof window.showToast === 'function') {
-      window.showToast('로그인 상태가 15분 연장되었습니다.');
+      window.showToast('로그인 상태가 30분 연장되었습니다.');
+    } else if (typeof window.showAcademyToast === 'function') {
+      window.showAcademyToast('로그인 상태가 30분 연장되었습니다.');
+    } else if (typeof window.showMasterToast === 'function') {
+      window.showMasterToast('로그인 상태가 30분 연장되었습니다.');
     }
   }
 
-  // 타임아웃 경고 모달 표시 (15분 미활동 도달 시)
+  // 타임아웃 경고 모달 표시 (카운트다운 00:00 도달 시)
   function showTimeoutModal() {
     if (isModalVisible) return;
     createTimeoutModal();
 
     isModalVisible = true;
-    countdownRemaining = COUNTDOWN_TOTAL;
+    modalGraceRemaining = MODAL_GRACE_SEC;
+    updateTimerPillDisplay(0, true);
 
     var numEl = document.getElementById('nanoSessionCountdown');
-    if (numEl) numEl.textContent = String(countdownRemaining);
+    if (numEl) numEl.textContent = String(modalGraceRemaining);
 
     var overlay = document.getElementById('nanoSessionModalOverlay');
     if (overlay) overlay.style.display = 'flex';
 
+    var modalOpenedAt = Date.now();
     if (countdownInterval) clearInterval(countdownInterval);
     countdownInterval = setInterval(function () {
-      countdownRemaining--;
-      if (numEl) numEl.textContent = String(countdownRemaining);
+      var elapsedGrace = Math.floor((Date.now() - modalOpenedAt) / 1000);
+      modalGraceRemaining = Math.max(0, MODAL_GRACE_SEC - elapsedGrace);
+      if (numEl) numEl.textContent = String(modalGraceRemaining);
 
-      if (countdownRemaining <= 0) {
+      if (modalGraceRemaining <= 0) {
         clearInterval(countdownInterval);
         executeSafeLogout();
       }
-    }, 1000);
+    }, 500);
   }
 
-  // 사용자 활동 감지 리스너 (모달이 떠있지 않을 때만 타이머 갱신)
-  var activityThrottle = 0;
-  function registerActivity() {
-    if (isModalVisible) return; // 모달이 뜬 상태에서는 반드시 확인 버튼을 눌러야 연장됨
-    var now = Date.now();
-    if (now - activityThrottle > 1000) {
-      activityThrottle = now;
-      lastActivity = now;
-    }
-  }
-
-  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function (eventName) {
-    window.addEventListener(eventName, registerActivity, { passive: true });
-  });
-
-  // 15분 경과 여부 주기적 체크 (5초마다 점검)
-  checkInterval = setInterval(function () {
+  function tickSessionTimer() {
     if (isModalVisible) return;
-    if (Date.now() - lastActivity >= INACTIVITY_LIMIT) {
+    var idleMs = Date.now() - lastActivity;
+    if (idleMs < IDLE_GRACE_MS) {
+      updateTimerPillDisplay(SESSION_COUNTDOWN_SEC, false);
+      return;
+    }
+    var countingSec = Math.floor((idleMs - IDLE_GRACE_MS) / 1000);
+    var remainingSec = Math.max(0, SESSION_COUNTDOWN_SEC - countingSec);
+    updateTimerPillDisplay(remainingSec, true);
+    if (remainingSec <= 0) {
       showTimeoutModal();
     }
-  }, 5000);
+  }
+
+  // 사용자 활동 감지 리스너 (모달이 떠있지 않을 때만 타이머를 30:00으로 즉시 초기화)
+  var activityThrottle = 0;
+  function registerActivity() {
+    if (isModalVisible) return; // 모달이 뜬 상태에서는 반드시 [로그인 유지] 버튼을 눌러야 연장됨
+    var now = Date.now();
+    if (now - activityThrottle > 300) {
+      activityThrottle = now;
+      lastActivity = now;
+      updateTimerPillDisplay(SESSION_COUNTDOWN_SEC, false);
+    }
+  }
+
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click', 'input'].forEach(function (eventName) {
+    window.addEventListener(eventName, registerActivity, eventName === 'scroll' ? { passive: true, capture: true } : { passive: true });
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      tickSessionTimer();
+    }
+  });
+
+  tickInterval = setInterval(tickSessionTimer, 500);
 
   // 뒤로가기 시 로그인 풀림 방지 (히스토리 가드)
   function initHistoryGuard() {
@@ -299,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!history.state || !history.state.nanoSessionGuard) {
         history.pushState({ nanoSessionGuard: true }, '', location.href);
       }
-      window.addEventListener('popstate', function (event) {
+      window.addEventListener('popstate', function () {
         var pathname = window.location.pathname.toLowerCase();
         // student_preview.html은 자체 SPA 패널 히스토리 관리에서 유연하게 처리
         if (pathname.includes('student_preview')) return;
@@ -310,12 +458,16 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) {}
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      initHistoryGuard();
-    });
-  } else {
+  function initSessionModule() {
+    mountTimerPill();
+    tickSessionTimer();
     initHistoryGuard();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSessionModule);
+  } else {
+    initSessionModule();
   }
 })();
 
