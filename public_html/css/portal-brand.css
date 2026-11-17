@@ -30,8 +30,16 @@ html[data-brand="JD"] :focus-visible { outline-color: #1649db !important; }
 html[data-brand="JD"] .brand-logo-img[data-jd-logo] { height: 110px !important; max-width: 240px; }
 html[data-brand="JD"] .bg-shape-1,
 html[data-brand="JD"] .bg-shape-2 { background: radial-gradient(circle, #1649db12 0%, transparent 70%); }
+/* jd.nanosbook.co.kr 및 제한형 마스터(JD_MASTER)에서는 수납·결제 및 시스템 설정 메뉴(섹션 제목 포함)를 숨깁니다. */
+html[data-brand="JD"] #sidebar-section-master-payment,
+html[data-brand="JD"] #nav-master-payment,
+html[data-brand="JD"] #tab-master-payment,
+html[data-brand="JD"] #sidebar-section-master-system,
+html[data-brand="JD"] #nav-master-ai-settings,
+html[data-restricted-master="true"] #sidebar-section-master-payment,
 html[data-restricted-master="true"] #nav-master-payment,
 html[data-restricted-master="true"] #tab-master-payment,
+html[data-restricted-master="true"] #sidebar-section-master-system,
 html[data-restricted-master="true"] #nav-master-ai-settings,
 html[data-restricted-master="true"] #nav-master-literacy,
 html[data-restricted-master="true"] #tab-master-literacy,

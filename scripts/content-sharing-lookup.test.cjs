@@ -245,7 +245,7 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
   assert.match(masterHtml, /id="tab-master-content-sharing"/);
   assert.match(masterHtml, /id="view-content-sharing"/);
   assert.doesNotMatch(masterHtml, /master-core\.js\?v=20261112_pf_v2/);
-  assert.match(masterHtml, /master-core\.js\?v=20261113_center/);
+  assert.match(masterHtml, /master-core\.js\?v=20261117jd/);
   assert.match(masterHtml, /content-sharing\.css\?v=20261113_sharing_v7/);
   assert.match(masterHtml, /content-sharing\.js\?v=20261113_center/);
   assert.match(adminHtml, /content-sharing\.css\?v=20261113_sharing_v7/);

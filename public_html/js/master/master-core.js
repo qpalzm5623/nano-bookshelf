@@ -1882,7 +1882,13 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
-  if (window.NANO_RESTRICTED_MASTER && ['payment', 'ai-settings', 'literacy'].includes(tabName)) tabName = 'franchise';
+  const isJdBrand = window.NANO_BRAND === 'JD' ||
+    (document.documentElement && document.documentElement.dataset && document.documentElement.dataset.brand === 'JD') ||
+    (typeof location !== 'undefined' && String(location.hostname || '').toLowerCase() === 'jd.nanosbook.co.kr');
+  if ((window.NANO_RESTRICTED_MASTER && ['payment', 'ai-settings', 'literacy'].includes(tabName)) ||
+      (isJdBrand && ['payment', 'ai-settings'].includes(tabName))) {
+    tabName = 'franchise';
+  }
   if (!document.getElementById('tab-master-' + tabName) || !document.getElementById('nav-master-' + tabName)) tabName = 'franchise';
   // 저장소가 차단되어도 URL에는 현재 메뉴를 남깁니다.
   try { sessionStorage.setItem('nano_master_active_tab', tabName); } catch(e) {}
@@ -2178,6 +2184,10 @@ function toggleGeminiKeyVisibility() {
 }
 
 async function openMasterAiSettingsModal() {
+  var isJdBrand = window.NANO_BRAND === 'JD' ||
+    (document.documentElement && document.documentElement.dataset && document.documentElement.dataset.brand === 'JD') ||
+    (typeof location !== 'undefined' && String(location.hostname || '').toLowerCase() === 'jd.nanosbook.co.kr');
+  if (window.NANO_RESTRICTED_MASTER || isJdBrand) return;
   var keyInput = document.getElementById('masterGeminiApiKey');
   var modelSelect = document.getElementById('masterGeminiModel');
   var statusElem = document.getElementById('masterGeminiKeyStatus');

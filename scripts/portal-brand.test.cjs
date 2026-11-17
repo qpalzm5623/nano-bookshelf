@@ -223,3 +223,29 @@ test('다른 발급본 ID를 직접 지정해도 포트폴리오 조회 범위�
   assert.equal(JSON.stringify(filter.scope.in), '["portfolio:jd"]');
   assert.equal(filter.key, 'nano-portfolio');
 });
+
+test('jd.nanosbook.co.kr 및 JD_MASTER 마스터 포털에서는 수납·결제 관리와 시스템 설정 섹션·메뉴가 숨겨진다', () => {
+  const masterHtml = fs.readFileSync(path.join(root, 'public_html/master_preview.html'), 'utf8');
+  const brandCss = fs.readFileSync(path.join(root, 'public_html/css/portal-brand.css'), 'utf8');
+  const masterCore = fs.readFileSync(path.join(root, 'public_html/js/master/master-core.js'), 'utf8');
+
+  assert.match(masterHtml, /id="sidebar-section-master-payment"[^>]*>수납 & 결제 관리</);
+  assert.match(masterHtml, /id="sidebar-section-master-system"[^>]*>시스템 설정</);
+  assert.match(masterHtml, /\/css\/portal-brand\.css\?v=20261117jd/);
+  assert.match(masterHtml, /js\/master\/master-core\.js\?v=20261117jd/);
+
+  for (const selectorPrefix of ['html[data-brand="JD"]', 'html[data-restricted-master="true"]']) {
+    for (const id of [
+      '#sidebar-section-master-payment',
+      '#nav-master-payment',
+      '#tab-master-payment',
+      '#sidebar-section-master-system',
+      '#nav-master-ai-settings',
+    ]) {
+      assert.ok(brandCss.includes(`${selectorPrefix} ${id}`), `${selectorPrefix} ${id} 숨김 규칙이 필요합니다`);
+    }
+  }
+
+  assert.match(masterCore, /isJdBrand\s*&&\s*\['payment', 'ai-settings'\]\.includes\(tabName\)/);
+  assert.match(masterCore, /async function openMasterAiSettingsModal\(\)[\s\S]{0,400}if \(window\.NANO_RESTRICTED_MASTER \|\| isJdBrand\) return;/);
+});
