@@ -1,9 +1,10 @@
+import { restrictedMaster, brandAcademyIds, brandOf, operationInBrand } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, master, need, text, failure, academyScope } from '../lib/portal-http';
 import { hashPassword } from '../lib/portal-auth';
 import { randomUUID } from 'node:crypto';
 import { monthWindow } from '../lib/portal-learning';
-import { loadContentAccess, quizContent, canReadContent, bookSheets, sheetView } from '../lib/portal-content';
+import { loadContentAccess, quizContent, canReadContent, ownsContent, bookSheets, sheetView } from '../lib/portal-content';
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 function normalizeManageGeminiModel(rawModel?: unknown): string {
@@ -37,10 +38,10 @@ const memberFields = { id: true, username: true, name: true, role: true, status:
 function enumValue(value: any, values: string[], label: string) { need(values.includes(value), label + ' 값을 확인해 주세요.'); return value; }
 function date(value: any, label: string) { const result = new Date(value); need(Number.isFinite(+result), label + ' 날짜를 입력해 주세요.'); return result; }
 // 마스터(전국/특정 가맹점) 및 학원 관리자 포트폴리오 조회·보강 헬퍼
-async function queryPortfolios(academyId: string, isMasterAll: boolean, query: any) {
+async function queryPortfolios(academyId: string, isMasterAll: boolean, query: any, allowedIds?: string[]) {
   const targetId = typeof query?.id === 'string' ? query.id.trim() : '';
   const where: any = isMasterAll
-    ? { scope: { startsWith: 'portfolio:' }, ...(targetId ? { key: targetId } : {}) }
+    ? { scope: allowedIds ? { in: allowedIds.map(id => 'portfolio:' + id) } : { startsWith: 'portfolio:' }, ...(targetId ? { key: targetId } : {}) }
     : { scope: 'portfolio:' + academyId, ...(targetId ? { key: targetId } : {}) };
 
   const rows = await prisma.portalSetting.findMany({
@@ -273,6 +274,24 @@ export default async function handler(req: any, res: any) {
     const isMasterAllPortfolios = entity === 'portfolios' && req.method === 'GET' && user.role === 'MASTER' && (!req.query.academy || String(req.query.academy).trim().toUpperCase() === 'ALL');
     const academyId = (entity === 'academies' || isMasterAllPortfolios) ? user.academyId : await academyScope(user, req.query.academy);
     const body = req.body || {}; const input = body.data || body;
+    const operationScope = ({ notices: 'notice_meta', themes: 'theme_meta', banners: 'banner_meta' } as Record<string, string>)[entity];
+    if (entity === 'recommendations') {
+      master(user);
+      const scope = 'brand_recommend:' + user.portalBrand;
+      if (req.method === 'GET') return res.json({ items: await prisma.portalSetting.findMany({ where: { scope } }) });
+      const book = await prisma.book.findUnique({ where: { id: String(input.bookId || '') } });
+      need(book && typeof input.recommended === 'boolean', '추천 도서와 상태를 확인해 주세요.');
+      const value = { recommended: input.recommended, bookId: book.id };
+      const key = scope + ':' + book.id;
+      await prisma.portalSetting.upsert({ where: { key }, create: { key, scope, value }, update: { value } });
+      return res.json({ ok: true });
+    }
+    if (req.method === 'POST' && operationScope) {
+      if (input.id) await operationInBrand(operationScope, String(input.id), user.portalBrand);
+      if (body.operation === 'reorder' && Array.isArray(input.orders)) {
+        for (const entry of input.orders) await operationInBrand(operationScope, String(entry.id), user.portalBrand);
+      }
+    }
     if (req.method === 'POST') {
       need(['save','delete','import','restore'].includes(body.operation) || (entity === 'themes' && body.operation === 'reorder') || (entity === 'quizzes' && (body.operation === 'replace' || body.operation === 'bulk_import')) || entity === 'summarize_synopsis', '요청 작업을 확인해 주세요.');
       if (body.operation === 'restore') need(entity === 'academies', '복구할 수 없는 항목입니다.');
@@ -449,13 +468,21 @@ export default async function handler(req: any, res: any) {
       }
       if (entity === 'members') return res.json({ items: await prisma.member.findMany({ where: { academyId }, select: memberFields, orderBy: { name: 'asc' } }) });
       if (entity === 'classes') return res.json({ items: await prisma.classGroup.findMany({ where: { academyId }, orderBy: { name: 'asc' } }) });
-      if (entity === 'academies') { master(user); return res.json({ items: await prisma.academy.findMany({ where: { deletedAt: null }, orderBy: { name: 'asc' } }) }); }
+      if (entity === 'academies') {
+        master(user);
+        const rows = await prisma.academy.findMany({ where: { deletedAt: null, ...(restrictedMaster(user) ? { id: { in: await brandAcademyIds('JD') } } : {}) }, orderBy: { name: 'asc' } });
+        const metadata = await prisma.portalSetting.findMany({ where: { scope: 'academy_meta' } });
+        const brands = new Map(metadata.map(row => [row.key.slice('academy_meta:'.length), brandOf(row.value)]));
+        return res.json({ items: rows.map(row => ({ ...row, brand: brands.get(row.id) || 'NANO' })) });
+      }
       if (entity === 'books') {
         const access = await loadContentAccess(prisma);
         const books = await prisma.book.findMany({ orderBy: { bookNo: 'asc' }, take: 1000, where: req.query.search ? { title: { contains: String(req.query.search), mode: 'insensitive' } } : {} });
+        const recRows = await prisma.portalSetting.findMany({ where: { scope: 'brand_recommend:' + user.portalBrand } });
+        const recommendations = new Map(recRows.map(row => [(row.value as any).bookId, (row.value as any).recommended === true]));
         return res.json({ items: books.map(book => {
           const sheets = bookSheets(access, book).filter(sheet => canReadContent(user, sheet, access)).map(sheet => sheetView(sheet, user));
-          return { ...book, worksheetUrl: sheets[0]?.url || null, worksheetList: sheets, hasSheet: sheets.length > 0 };
+          return { ...book, canEdit: !restrictedMaster(user) || access.byKey.get('book_creator:' + book.bookNo)?.ownerMemberId === user.id, isRecommended: recommendations.has(book.id) ? recommendations.get(book.id) : user.portalBrand === 'NANO' && book.isRecommended, worksheetUrl: sheets[0]?.url || null, worksheetList: sheets, hasSheet: sheets.length > 0 };
         }) });
       }
       if (entity === 'owned') return res.json({ items: await prisma.academyBook.findMany({ where: { academyId }, include: { book: { select: { bookNo: true, title: true } } } }) });
@@ -467,7 +494,7 @@ export default async function handler(req: any, res: any) {
           prisma.portalSetting.findMany({ where: { scope: 'notice_meta' } })
         ]);
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^notice_meta:/, ''), (m.value || {}) as Record<string, any>]));
-        return res.json({ items: noticeRows.map(n => ({ ...n, ...(metaMap.get(n.id) || {}) })) });
+        return res.json({ items: noticeRows.filter(n => brandOf(metaMap.get(n.id)) === user.portalBrand).map(n => ({ ...n, ...(metaMap.get(n.id) || {}) })) });
       }
       if (entity === 'themes') {
         const [themeRows, metaRows] = await Promise.all([
@@ -475,7 +502,7 @@ export default async function handler(req: any, res: any) {
           prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } })
         ]);
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^theme_meta:/, ''), (m.value || {}) as Record<string, any>]));
-        const items = themeRows.map(t => {
+        const items = themeRows.filter(t => brandOf(metaMap.get(t.id)) === user.portalBrand).map(t => {
           const meta = metaMap.get(t.id) || {};
           const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);
           return { ...t, ...meta, order: parsedOrder };
@@ -493,7 +520,7 @@ export default async function handler(req: any, res: any) {
         ]);
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^banner_meta:/, ''), (m.value || {}) as Record<string, any>]));
         return res.json({
-          items: bannerRows.map(b => {
+          items: bannerRows.filter(b => brandOf(metaMap.get(b.id)) === user.portalBrand).map(b => {
             const meta = metaMap.get(b.id) || {};
             let linkBookIds: string[] = [];
             let linkSub = '';
@@ -521,7 +548,7 @@ export default async function handler(req: any, res: any) {
         return res.json({ items: items.filter(q => canReadContent(user, quizContent(access, q.bookId, q.legacyQuizSeq || 0), access)) });
       }
       if (entity === 'dispatch') return res.json({ items: await prisma.aligoDispatchLog.findMany({ where: { academyId }, orderBy: { sentAt: 'desc' }, take: 200 }) });
-      if (entity === 'portfolios') return res.json(await queryPortfolios(academyId, isMasterAllPortfolios, req.query));
+      if (entity === 'portfolios') return res.json(await queryPortfolios(academyId, isMasterAllPortfolios, req.query, restrictedMaster(user) ? await brandAcademyIds('JD') : undefined));
       if (entity === 'ai_config') {
         master(user);
         const row = await prisma.portalSetting.findUnique({ where: { key: 'gemini_api_config' } });
@@ -759,6 +786,7 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'academies') {
       master(user);
+      need(input.brand === undefined || ['NANO', 'JD'].includes(input.brand), '구분을 확인해 주세요.');
       const existing = input.id && await prisma.academy.findUnique({ where: { id: input.id } }); need(!input.id || existing, '학원을 찾을 수 없습니다.', 404);
       if (body.operation === 'delete') { need(existing.id !== user.academyId, '본사 계정의 소속 학원은 삭제할 수 없습니다.'); await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: new Date(), status: 'SUSPENDED' } }); return res.json({ ok: true }); }
       if (body.operation === 'restore') { need(existing.deletedAt, '삭제된 학원이 아닙니다.'); return res.json({ item: await prisma.academy.update({ where: { id: existing.id }, data: { deletedAt: null, status: 'ACTIVE' } }) }); }
@@ -772,7 +800,10 @@ export default async function handler(req: any, res: any) {
       if (existing) need(data.maxStudents >= await prisma.member.count({ where: { academyId: existing.id, role: 'STUDENT', status: 'APPROVED' } }), '재원생 수보다 정원을 줄일 수 없습니다.');
       const academy = existing ? await prisma.academy.update({ where: { id: existing.id }, data }) : await prisma.academy.create({ data });
       if (prisma.portalSetting) {
-        const acadMeta = { autoUnapprove: input.autoUnapprove === true, uiStatus: rawUiStatus };
+        const previousMeta = await prisma.portalSetting.findUnique({ where: { key: 'academy_meta:' + academy.id } });
+        const brand = input.brand === undefined ? brandOf(previousMeta?.value) : input.brand;
+        need(['NANO', 'JD'].includes(brand), '구분을 확인해 주세요.');
+        const acadMeta = { ...((previousMeta?.value as any) || {}), brand, autoUnapprove: input.autoUnapprove === true, uiStatus: rawUiStatus };
         await prisma.portalSetting.upsert({
           where: { key: 'academy_meta:' + academy.id },
           update: { scope: 'academy_meta', value: acadMeta },
@@ -810,10 +841,15 @@ export default async function handler(req: any, res: any) {
       if (body.operation === 'delete') {
         const targetBook = await prisma.book.findUnique({ where: { id: input.id } });
         need(targetBook, '도서를 찾을 수 없습니다.', 404);
-        if (user.role !== 'MASTER' && prisma.portalSetting) {
+        if ((user.role !== 'MASTER' || restrictedMaster(user)) && prisma.portalSetting) {
           const creatorSetting = await prisma.portalSetting.findUnique({ where: { key: `book_creator:${targetBook.bookNo}` } });
           const creatorData = creatorSetting?.value as any;
-          need(creatorData && creatorData.academyId === academyId, '본사 도서 또는 타 학원의 도서는 삭제할 수 없습니다.', 403);
+          need(creatorData && (restrictedMaster(user) ? creatorData.ownerMemberId === user.id : creatorData.academyId === academyId), '본사 도서 또는 타 학원의 도서는 삭제할 수 없습니다.', 403);
+        }
+        if (restrictedMaster(user)) {
+          const access = await loadContentAccess(prisma);
+          const sets = await prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'], where: { bookId: input.id } });
+          need(sets.every(set => ownsContent(user, quizContent(access, set.bookId, set.legacyQuizSeq || 0))) && bookSheets(access, targetBook).every(sheet => ownsContent(user, sheet)), '다른 작성자의 퀴즈 또는 나노시트가 연결된 도서는 삭제할 수 없습니다.', 403);
         }
         need(!await prisma.quizAttempt.count({ where: { bookId: input.id } }), '학습 기록이 있는 도서는 삭제할 수 없습니다.');
         await prisma.book.delete({ where: { id: input.id } });
@@ -865,30 +901,42 @@ export default async function handler(req: any, res: any) {
       need(!existingCodeBook, `이미 등록된 도서 코드입니다. (도서명: ${existingCodeBook?.title || ''}, 코드: ${data.bookNo})`, 409);
 
       // 3) 도서 수정 시 권한 검사 (학원 사용자는 타 학원/본사 도서 수정 불가)
-      if (input.id && user.role !== 'MASTER' && prisma.portalSetting) {
+      if (input.id && (user.role !== 'MASTER' || restrictedMaster(user)) && prisma.portalSetting) {
         const currentBook = await prisma.book.findUnique({ where: { id: input.id } });
         if (currentBook) {
           const creatorSetting = await prisma.portalSetting.findUnique({ where: { key: `book_creator:${currentBook.bookNo}` } });
           const creatorData = creatorSetting?.value as any;
-          need(creatorData && creatorData.academyId === academyId, '본사 도서 또는 다른 학원의 도서는 수정할 수 없습니다.', 403);
+          need(creatorData && (restrictedMaster(user) ? creatorData.ownerMemberId === user.id : creatorData.academyId === academyId), '본사 도서 또는 다른 학원의 도서는 수정할 수 없습니다.', 403);
         }
       }
 
-      const savedBook = input.id
-        ? await prisma.book.update({ where: { id: input.id }, data: { ...data, ...extra } })
-        : await prisma.book.create({ data: { ...data, ...extra } });
-      if (!input.id && user.role !== 'MASTER' && prisma.portalSetting) {
-        const acad = await prisma.academy.findUnique({ where: { id: academyId }, select: { id: true, code: true, name: true } });
-        if (acad) {
-          const creatorKey = `book_creator:${savedBook.bookNo}`;
-          await prisma.portalSetting.upsert({
-            where: { key: creatorKey },
-            update: { scope: 'book_creator', value: { academyId: acad.id, academyCode: acad.code, academyName: acad.name } },
-            create: { key: creatorKey, scope: 'book_creator', value: { academyId: acad.id, academyCode: acad.code, academyName: acad.name } }
-          });
-        }
+      if (user.portalBrand === 'JD' && input.id) {
+        const original = await prisma.book.findUnique({ where: { id: input.id } });
+        need(original && (!restrictedMaster(user) || original.bookNo === data.bookNo), '등록한 도서의 코드는 변경할 수 없습니다.');
+        extra.isRecommended = original.isRecommended;
+        extra.themeId = original.themeId;
+      } else if (user.portalBrand === 'JD') {
+        extra.isRecommended = false;
+        extra.themeId = null;
       }
-      return res.json({ item: savedBook });
+      const savedBook = await prisma.$transaction(async tx => {
+        const saved = input.id
+          ? await tx.book.update({ where: { id: input.id }, data: { ...data, ...extra } })
+          : await tx.book.create({ data: { ...data, ...extra } });
+        if (!input.id && prisma.portalSetting) {
+          const acad = await tx.academy.findUnique({ where: { id: academyId }, select: { id: true, code: true, name: true } });
+          if (acad) {
+            const creatorKey = `book_creator:${saved.bookNo}`;
+            await tx.portalSetting.upsert({
+              where: { key: creatorKey },
+              update: { scope: 'book_creator', value: { ownerMemberId: user.id, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY', academyId: acad.id, academyCode: acad.code, academyName: acad.name } },
+              create: { key: creatorKey, scope: 'book_creator', value: { ownerMemberId: user.id, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY', academyId: acad.id, academyCode: acad.code, academyName: acad.name } }
+            });
+          }
+        }
+        return saved;
+      });
+      return res.json({ item: { ...savedBook, canEdit: true } });
     }
     if (entity === 'quizzes') {
       if (body.operation === 'bulk_import' || (body.operation === 'import' && Array.isArray(body.items || body.rows))) {
@@ -1106,111 +1154,123 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'notices') {
       master(user);
-      if (body.operation === 'delete') {
-        await prisma.notice.delete({ where: { id: input.id } });
-        await prisma.portalSetting.deleteMany({ where: { key: 'notice_meta:' + input.id, scope: 'notice_meta' } });
-        return res.json({ ok: true });
-      }
-      const data = { title: text(input.title, '제목', 300, true), content: text(input.content, '내용', 20000, true), isPinned: input.isPinned === true, targetRole: input.targetRole ? enumValue(input.targetRole, ['STUDENT','TEACHER','DIRECTOR','MASTER'], '대상') as any : null };
-      const saved = input.id ? await prisma.notice.update({ where: { id: input.id }, data }) : await prisma.notice.create({ data });
-      const meta = {
-        isPinned: input.isPinned === true,
-        isPopup: input.isPopup === true,
-        popupStartDate: input.isPopup === true ? text(input.popupStartDate || '', '팝업 시작일', 20) : '',
-        popupEndDate: input.isPopup === true ? text(input.popupEndDate || '', '팝업 종료일', 20) : '',
-        category: text(input.category || '일반 공지', '분류', 50),
-        status: text(input.status || '게시중', '상태', 30),
-        target: text(input.target || '전체', '대상', 50),
-        link: text(input.link || '', '링크', 2000)
-      };
-      await prisma.portalSetting.upsert({
-        where: { key: 'notice_meta:' + saved.id },
-        update: { scope: 'notice_meta', value: meta },
-        create: { key: 'notice_meta:' + saved.id, scope: 'notice_meta', value: meta }
+      const result = await prisma.$transaction(async tx => {
+        if (body.operation === 'delete') {
+          await tx.notice.delete({ where: { id: input.id } });
+          await tx.portalSetting.deleteMany({ where: { key: 'notice_meta:' + input.id, scope: 'notice_meta' } });
+          return { ok: true };
+        }
+        const data = { title: text(input.title, '제목', 300, true), content: text(input.content, '내용', 20000, true), isPinned: input.isPinned === true, targetRole: input.targetRole ? enumValue(input.targetRole, ['STUDENT','TEACHER','DIRECTOR','MASTER'], '대상') as any : null };
+        const saved = input.id ? await tx.notice.update({ where: { id: input.id }, data }) : await tx.notice.create({ data });
+        const meta = {
+          brand: user.portalBrand,
+          isPinned: input.isPinned === true,
+          isPopup: input.isPopup === true,
+          popupStartDate: input.isPopup === true ? text(input.popupStartDate || '', '팝업 시작일', 20) : '',
+          popupEndDate: input.isPopup === true ? text(input.popupEndDate || '', '팝업 종료일', 20) : '',
+          category: text(input.category || '일반 공지', '분류', 50),
+          status: text(input.status || '게시중', '상태', 30),
+          target: text(input.target || '전체', '대상', 50),
+          link: text(input.link || '', '링크', 2000)
+        };
+        await tx.portalSetting.upsert({
+          where: { key: 'notice_meta:' + saved.id },
+          update: { scope: 'notice_meta', value: meta },
+          create: { key: 'notice_meta:' + saved.id, scope: 'notice_meta', value: meta }
+        });
+        return { item: { ...saved, ...meta } };
       });
-      return res.json({ item: { ...saved, ...meta } });
+      return res.json(result);
     }
     if (entity === 'themes') {
       master(user);
-      if (body.operation === 'delete') {
-        await prisma.themeCategory.delete({ where: { id: input.id } });
-        await prisma.portalSetting.deleteMany({ where: { key: 'theme_meta:' + input.id, scope: 'theme_meta' } });
-        return res.json({ ok: true });
-      }
-      if (body.operation === 'reorder') {
-        const orders = Array.isArray(input.orders) ? input.orders : [];
-        need(orders.length > 0 && orders.length <= 200, '변경할 테마 노출 순서 정보를 확인해 주세요.');
-        const existingRows = await prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } });
-        const existingMap = new Map<string, Record<string, any>>(
-          existingRows.map(r => [r.key.replace(/^theme_meta:/, ''), (r.value || {}) as Record<string, any>])
-        );
-        await prisma.$transaction(
-          orders.map((entry: any, idx: number) => {
-            const themeId = text(entry?.id, '테마 ID', 100, true);
-            const nextOrder = typeof entry?.order === 'number' && Number.isFinite(entry.order)
-              ? entry.order
-              : (parseInt(entry?.order, 10) || (idx + 1));
-            const prevMeta = existingMap.get(themeId) || {};
-            const nextMeta = { ...prevMeta, order: nextOrder, active: prevMeta.active === 'N' ? 'N' : 'Y' };
-            return prisma.portalSetting.upsert({
-              where: { key: 'theme_meta:' + themeId },
-              update: { scope: 'theme_meta', value: nextMeta },
-              create: { key: 'theme_meta:' + themeId, scope: 'theme_meta', value: nextMeta }
-            });
-          })
-        );
-        return res.json({ ok: true });
-      }
-      const data = { code: text(input.code, '코드', 60, true), name: text(input.name, '테마명', 200, true), description: text(input.description, '설명', 3000) };
-      const saved = input.id ? await prisma.themeCategory.update({ where: { id: input.id }, data }) : await prisma.themeCategory.create({ data });
-      const prevMetaRow = await prisma.portalSetting.findUnique({ where: { key: 'theme_meta:' + saved.id } });
-      const prevMeta = ((prevMetaRow?.value as any) || {}) as Record<string, any>;
-      const parsedOrder = typeof input.order === 'number' && Number.isFinite(input.order)
-        ? input.order
-        : (parseInt(input.order, 10) || (typeof prevMeta.order === 'number' ? prevMeta.order : null));
-      const meta = {
-        subTag: text(input.subTag || '', '서브 태그', 500),
-        desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
-        image: text(input.image || '', '테마 이미지', 1500000),
-        order: parsedOrder,
-        active: input.active === 'N' ? 'N' : 'Y',
-        bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : []
-      };
-      if (meta.image) need(!/^javascript:/i.test(meta.image), '유효한 이미지 주소를 입력해 주세요.');
-      await prisma.portalSetting.upsert({
-        where: { key: 'theme_meta:' + saved.id },
-        update: { scope: 'theme_meta', value: meta },
-        create: { key: 'theme_meta:' + saved.id, scope: 'theme_meta', value: meta }
+      const result = await prisma.$transaction(async tx => {
+        if (body.operation === 'delete') {
+          await tx.themeCategory.delete({ where: { id: input.id } });
+          await tx.portalSetting.deleteMany({ where: { key: 'theme_meta:' + input.id, scope: 'theme_meta' } });
+          return { ok: true };
+        }
+        if (body.operation === 'reorder') {
+          const orders = Array.isArray(input.orders) ? input.orders : [];
+          need(orders.length > 0 && orders.length <= 200, '변경할 테마 노출 순서 정보를 확인해 주세요.');
+          const existingRows = await tx.portalSetting.findMany({ where: { scope: 'theme_meta' } });
+          const existingMap = new Map<string, Record<string, any>>(
+            existingRows.map(r => [r.key.replace(/^theme_meta:/, ''), (r.value || {}) as Record<string, any>])
+          );
+          await Promise.all(
+            orders.map((entry: any, idx: number) => {
+              const themeId = text(entry?.id, '테마 ID', 100, true);
+              const nextOrder = typeof entry?.order === 'number' && Number.isFinite(entry.order)
+                ? entry.order
+                : (parseInt(entry?.order, 10) || (idx + 1));
+              const prevMeta = existingMap.get(themeId) || {};
+              const nextMeta = { ...prevMeta, brand: user.portalBrand, order: nextOrder, active: prevMeta.active === 'N' ? 'N' : 'Y' };
+              return tx.portalSetting.upsert({
+                where: { key: 'theme_meta:' + themeId },
+                update: { scope: 'theme_meta', value: nextMeta },
+                create: { key: 'theme_meta:' + themeId, scope: 'theme_meta', value: nextMeta }
+              });
+            })
+          );
+          return { ok: true };
+        }
+        const data = { code: text(input.code, '코드', 60, true), name: text(input.name, '테마명', 200, true), description: text(input.description, '설명', 3000) };
+        const saved = input.id ? await tx.themeCategory.update({ where: { id: input.id }, data }) : await tx.themeCategory.create({ data });
+        const prevMetaRow = await tx.portalSetting.findUnique({ where: { key: 'theme_meta:' + saved.id } });
+        const prevMeta = ((prevMetaRow?.value as any) || {}) as Record<string, any>;
+        const parsedOrder = typeof input.order === 'number' && Number.isFinite(input.order)
+          ? input.order
+          : (parseInt(input.order, 10) || (typeof prevMeta.order === 'number' ? prevMeta.order : null));
+        const meta = {
+          brand: user.portalBrand,
+          subTag: text(input.subTag || '', '서브 태그', 500),
+          desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
+          image: text(input.image || '', '테마 이미지', 1500000),
+          order: parsedOrder,
+          active: input.active === 'N' ? 'N' : 'Y',
+          bookIds: Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : []
+        };
+        if (meta.image) need(!/^javascript:/i.test(meta.image), '유효한 이미지 주소를 입력해 주세요.');
+        await tx.portalSetting.upsert({
+          where: { key: 'theme_meta:' + saved.id },
+          update: { scope: 'theme_meta', value: meta },
+          create: { key: 'theme_meta:' + saved.id, scope: 'theme_meta', value: meta }
+        });
+        return { item: { ...saved, ...meta } };
       });
-      return res.json({ item: { ...saved, ...meta } });
+      return res.json(result);
     }
     if (entity === 'banners') {
       master(user);
-      if (body.operation === 'delete') {
-        await prisma.mainBanner.delete({ where: { id: input.id } });
-        await prisma.portalSetting.deleteMany({ where: { key: 'banner_meta:' + input.id, scope: 'banner_meta' } });
-        return res.json({ ok: true });
-      }
-      for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|upload\/|resources\/|images\/|assets\/|data:image\/|#)/i.test(url), '유효한 이미지 또는 연결 주소를 입력해 주세요.');
-      const bookIds = Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : [];
-      const subText = text(input.sub || '', '배너 서브 설명', 1000);
-      const effectiveLinkUrl = (input.linkUrl && /^https?:\/\//i.test(String(input.linkUrl)))
-        ? text(input.linkUrl, '연결 주소', 2000)
-        : text('#books=' + encodeURIComponent(bookIds.join(',')) + (subText ? '&sub=' + encodeURIComponent(subText) : ''), '연결 주소', 2000);
-      const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: effectiveLinkUrl, isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
-      const saved = input.id ? await prisma.mainBanner.update({ where: { id: input.id }, data }) : await prisma.mainBanner.create({ data });
-      const meta = {
-        sub: subText,
-        bookIds,
-        clicks: Number(input.clicks) || 0,
-        createdAt: text(input.createdAt || new Date().toISOString().slice(0, 10), '등록일', 20)
-      };
-      await prisma.portalSetting.upsert({
-        where: { key: 'banner_meta:' + saved.id },
-        update: { scope: 'banner_meta', value: meta },
-        create: { key: 'banner_meta:' + saved.id, scope: 'banner_meta', value: meta }
+      const result = await prisma.$transaction(async tx => {
+        if (body.operation === 'delete') {
+          await tx.mainBanner.delete({ where: { id: input.id } });
+          await tx.portalSetting.deleteMany({ where: { key: 'banner_meta:' + input.id, scope: 'banner_meta' } });
+          return { ok: true };
+        }
+        for (const url of [input.imageUrl,input.linkUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|upload\/|resources\/|images\/|assets\/|data:image\/|#)/i.test(url), '유효한 이미지 또는 연결 주소를 입력해 주세요.');
+        const bookIds = Array.isArray(input.bookIds) ? input.bookIds.map((id: any) => String(id).trim()).filter(Boolean) : [];
+        const subText = text(input.sub || '', '배너 서브 설명', 1000);
+        const effectiveLinkUrl = (input.linkUrl && /^https?:\/\//i.test(String(input.linkUrl)))
+          ? text(input.linkUrl, '연결 주소', 2000)
+          : text('#books=' + encodeURIComponent(bookIds.join(',')) + (subText ? '&sub=' + encodeURIComponent(subText) : ''), '연결 주소', 2000);
+        const data = { title: text(input.title, '배너명', 200, true), imageUrl: text(input.imageUrl, '이미지 주소', 500000), linkUrl: effectiveLinkUrl, isActive: input.isActive === true, orderNo: Number(input.orderNo) || 0 };
+        const saved = input.id ? await tx.mainBanner.update({ where: { id: input.id }, data }) : await tx.mainBanner.create({ data });
+        const meta = {
+          brand: user.portalBrand,
+          sub: subText,
+          bookIds,
+          clicks: Number(input.clicks) || 0,
+          createdAt: text(input.createdAt || new Date().toISOString().slice(0, 10), '등록일', 20)
+        };
+        await tx.portalSetting.upsert({
+          where: { key: 'banner_meta:' + saved.id },
+          update: { scope: 'banner_meta', value: meta },
+          create: { key: 'banner_meta:' + saved.id, scope: 'banner_meta', value: meta }
+        });
+        return { item: { ...saved, ...meta } };
       });
-      return res.json({ item: { ...saved, ...meta } });
+      return res.json(result);
     }
     if (entity === 'ai_config') {
       master(user);

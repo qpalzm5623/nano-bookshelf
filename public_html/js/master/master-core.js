@@ -950,6 +950,11 @@ function saveOperationsToStorage() {
 }
 
 function loadOperationsFromStorage() {
+  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') {
+    bannerList = (window.NANO_SERVER_BANNERS || []).map(function(b) { return { ...b }; });
+    themeList = (window.NANO_SERVER_THEMES || []).map(function(t) { return { ...t }; });
+    return;
+  }
   if (window.NANO_SERVER_DATA) {
     var localBanners = [];
     var localThemes = [];
@@ -1877,6 +1882,7 @@ document.addEventListener("visibilitychange", () => {
 
 // 마스터 대메뉴 탭 전환 (지연 렌더링 지원)
 function switchMasterTab(tabName) {
+  if (window.NANO_RESTRICTED_MASTER && ['payment', 'ai-settings', 'literacy'].includes(tabName)) tabName = 'franchise';
   if (!document.getElementById('tab-master-' + tabName) || !document.getElementById('nav-master-' + tabName)) tabName = 'franchise';
   // 저장소가 차단되어도 URL에는 현재 메뉴를 남깁니다.
   try { sessionStorage.setItem('nano_master_active_tab', tabName); } catch(e) {}

@@ -3719,6 +3719,8 @@
 <link rel="stylesheet" href="css/content-sharing.css?v=20261113_sharing_ui">
 <script src="js/nano-dialog.js?v=20261113_center"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
+<link rel="stylesheet" href="/css/portal-brand.css?v=20261116jd">
+<script src="/js/portal-brand.js?v=20261116jd"></script>
 </head>
 <body>
 <!-- 좌측 슬라이딩 드로어 메뉴 오버레이 & 패널 (화면의 절반 정도 가림) -->
@@ -7424,6 +7426,7 @@ var defaultStudentThemes = [
 ];
 
 function getStudentThemes() {
+  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') return (window.NANO_SERVER_THEMES || []).slice().sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
   var list = defaultStudentThemes;
   if (window.NANO_SERVER_DATA && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
     var serverList = window.NANO_SERVER_THEMES;
@@ -8047,6 +8050,7 @@ function parseStudentBannerLinkMeta(linkStr) {
 }
 
 function getStudentBanners() {
+  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') return (window.NANO_SERVER_BANNERS || []).slice();
   var localBanners = [];
   try {
     var raw = localStorage.getItem("NANO_MASTER_BANNERS");
@@ -11631,7 +11635,8 @@ function renderStudentBanners() {
   var box = document.getElementById("studentBannerBox");
   if(!box) return;
   var banners = getStudentBanners().filter(function(b){ return b.active !== 'N'; }).sort(function(a, b){ return (a.order || 0) - (b.order || 0); });
-  if(banners.length === 0) return;
+  if(banners.length === 0) { box.innerHTML = ""; box.hidden = true; return; }
+  box.hidden = false;
 
   var slidesHtml = banners.map(function(b, idx){
     var activeClass = idx === 0 ? 'active' : '';

@@ -1,3 +1,4 @@
+import { assertBrandAcademy } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash } from 'node:crypto';
@@ -70,6 +71,7 @@ export default async function handler(req: any, res: any) {
       // 2) 기존 학생 북퀴즈 첨삭 파일 다운로드 (학원 및 본인 권한 검증 유지)
       const file = await prisma.portalFile.findUnique({ where: { id: String(req.query.id || '') } });
       need(file && (user.role === 'MASTER' || file.academyId === user.academyId), '파일을 찾을 수 없습니다.', 404);
+      await assertBrandAcademy(user, file.academyId);
       const attempt = await prisma.quizAttempt.findUnique({ where: { id: file.attemptId } });
       need(attempt && (user.role !== 'STUDENT' || attempt.memberId === user.id), '파일을 열 수 없습니다.', 403);
       res.setHeader('Content-Type', file.mime);

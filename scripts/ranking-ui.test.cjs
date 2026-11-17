@@ -97,6 +97,8 @@ test('지난달·지지난달 드롭다운 변경 시 선택 월이 초기화되
 });
 
 function load(file, deps) {
+  const brand = require('./test-portal-brand.cjs')((deps['../lib/prisma'] || deps['./prisma'] || {}).prisma);
+  deps = { '../lib/portal-brand': brand, './portal-brand': brand, ...deps };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require: name => deps[name] || require(name), console });

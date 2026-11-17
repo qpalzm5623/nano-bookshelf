@@ -1,3 +1,4 @@
+import { academyBrand } from '../lib/portal-brand';
 import {
   reserveDispatch,
   reportDispatchHistory,
@@ -123,9 +124,9 @@ function tokenOk(resultId: string, token: string) {
     return a.length === b.length && timingSafeEqual(a, b);
   } catch { return false; }
 }
-function shareUrl(req: any, resultId: string) {
-  const host = String(req.headers.host || '').trim();
-  const base = host.includes('nanosbook.co.kr') || host.includes('vercel.app')
+async function shareUrl(req: any, resultId: string, academyId: string) {
+  const host = await academyBrand(academyId) === 'JD' ? 'jd.nanosbook.co.kr' : String(req.headers.host || '').trim().replace(/^jd\.nanosbook\.co\.kr$/, 'nanosbook.co.kr');
+  const base = host.toLowerCase() === 'jd.nanosbook.co.kr' ? 'https://jd.nanosbook.co.kr' : host.includes('nanosbook.co.kr') || host.includes('vercel.app')
     ? 'https://nanosbook.co.kr'
     : `${String(req.headers['x-forwarded-proto'] || 'https').split(',')[0]}://${host || 'nanosbook.co.kr'}`;
   return `${base}/literacy_report.html?r=${encodeURIComponent(resultId)}&t=${shareToken(resultId)}`;
@@ -401,7 +402,7 @@ export default async function handler(req: any, res: any) {
         const history = historyOf(await listAssignments(academyId, record.memberId), record.memberId);
         return res.json({ record, history });
       }
-      if (action === 'share_link') return res.json({ url: shareUrl(req, id) });
+      if (action === 'share_link') return res.json({ url: await shareUrl(req, id, academyId) });
       return await sendKakao(req, res, academyId, record, !!body.preview, String(body.fingerprint || ''));
     }
     return res.status(404).json({ error: '지원하지 않는 요청입니다.' });
@@ -443,7 +444,7 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
   need(member.reportYn && member.parentPhone, '보호자 연락처와 리포트 발송 동의를 확인해 주세요.');
   const phone = member.parentPhone!.replace(/\D/g, '');
   need(/^0\d{8,10}$/.test(phone), '보호자 연락처 형식을 확인해 주세요.');
-  const targetUrl = shareUrl(req, record.id);
+  const targetUrl = await shareUrl(req, record.id, academyId);
   const diagDate = formatKstDateTime24(record.finishedAt);
   const resolvedTpl = await resolveAligoTemplate(tplCode, fallbackTpl, '진단 결과 확인', {
     apikey: apiKey!,

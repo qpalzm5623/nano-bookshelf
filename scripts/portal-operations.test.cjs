@@ -14,6 +14,8 @@ function load(file, deps = {}, extra = {}) {
   if (file === 'api/files.ts') {
     deps = { '../lib/r2-storage': load('lib/r2-storage.ts'), ...deps };
   }
+  const brand = require('./test-portal-brand.cjs')((deps['../lib/prisma'] || deps['./prisma'] || {}).prisma);
+  deps = { '../lib/portal-brand': brand, './portal-brand': brand, ...deps };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(code,{exports,require:name=>deps[name]||require(name),Buffer,process,console,URL,URLSearchParams,AbortSignal,Date,...extra});return exports;

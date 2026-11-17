@@ -7,7 +7,7 @@ module.exports = function (http) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true }
   }).outputText;
   const exports = {};
-  new Function('require', 'exports', code)(name => name === './portal-http' ? (http || {
+  new Function('require', 'exports', code)(name => name === './portal-brand' ? require('./test-portal-brand.cjs')() : name === './portal-http' ? (http || {
     need(condition, message, status = 400) { if (!condition) throw Object.assign(new Error(message), { status }); }
   }) : require('../lib/quiz-authors.json'), exports);
   const load = exports.loadContentAccess;

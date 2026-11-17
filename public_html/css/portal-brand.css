@@ -1,0 +1,39 @@
+/* JD 호스트에만 적용하는 공통 브랜드 토큰. 상태/위험 색상은 유지합니다. */
+html[data-brand="JD"] {
+  --bg-base: #f3f6fc; --bg-surface: #fff; --bg-subtle: #f7f9ff; --bg-hover: #eaf0ff;
+  --border-light: #e0e7f5; --border-medium: #c6d3eb;
+  --text-main: #172c50; --text-muted: #5d6d87; --text-soft: #73839d;
+  --btn-primary: #1649db; --btn-primary-hover: #123bb1;
+  --btn-secondary: #edf2ff; --btn-secondary-text: #224899;
+  --badge-neutral-bg: #edf2fc; --badge-neutral-text: #46618d;
+  --badge-master-bg: #173f9b; --badge-master-text: #fff;
+  --primary: #1649db; --primary-dark: #123bb1; --primary-light: #eaf0ff;
+  --brand: #1649db; --accent: #1649db; --teal: #1649db;
+  --bg: #f3f6fc; --surface: #fff; --surface-warm: #f7f9ff;
+  --leaf-dark: #173f9b; --leaf-deep: #1645bd; --leaf: #2455d7;
+  --leaf-mid: #3568e8; --leaf-light: #628afa; --leaf-soft: #eaf0ff; --leaf-pale: #f5f8ff;
+  --wood-dark: #172c50; --wood-mid: #32486b; --wood-warm: #5d6d87; --wood-light: #edf2fc;
+  --soft: #e0e7f5; --text: #172c50; --muted: #5d6d87;
+  --blue: #1649db; --blue-lt: #eaf0ff; --accent-teal: #1649db;
+  --card-bg: #fff; --border-color: #d5dff2;
+}
+html[data-brand="JD"] body { background-color: #f3f6fc; color: #172c50; }
+html[data-brand="JD"] img[data-jd-logo] { height: 54px !important; width: auto !important; max-width: 180px; object-fit: contain; }
+html[data-brand="JD"] .nav-item-btn.active,
+html[data-brand="JD"] .sidebar .active { background: #eaf0ff !important; color: #1649db !important; border-color: #bbccfa !important; }
+html[data-brand="JD"] .btn-beige-primary,
+html[data-brand="JD"] .btn-primary { background: #1649db; border-color: #1649db; color: #fff; }
+html[data-brand="JD"] .btn-beige-primary:hover,
+html[data-brand="JD"] .btn-primary:hover { background: #123bb1; border-color: #123bb1; }
+html[data-brand="JD"] .form-control:focus { border-color: #6c92f0; box-shadow: 0 0 0 3px #1649db20; }
+html[data-brand="JD"] :focus-visible { outline-color: #1649db !important; }
+html[data-brand="JD"] .brand-logo-img[data-jd-logo] { height: 110px !important; max-width: 240px; }
+html[data-brand="JD"] .bg-shape-1,
+html[data-brand="JD"] .bg-shape-2 { background: radial-gradient(circle, #1649db12 0%, transparent 70%); }
+html[data-restricted-master="true"] #nav-master-payment,
+html[data-restricted-master="true"] #tab-master-payment,
+html[data-restricted-master="true"] #nav-master-ai-settings,
+html[data-restricted-master="true"] #nav-master-literacy,
+html[data-restricted-master="true"] #tab-master-literacy,
+html[data-restricted-master="true"] [hidden] { display: none !important; }
+@media (max-width: 600px) { html[data-brand="JD"] img[data-jd-logo] { height: 42px !important; max-width: 110px; } }

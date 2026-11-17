@@ -725,10 +725,10 @@ function renderMasterContents() {
         <td class="text-center" style="white-space: nowrap; padding: 4px 6px;">
           <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
             <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
-              <button type="button" class="btn btn-xs btn-outline-secondary flex-fill" onclick="openMasterBookAddModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 서지 정보 수정">
+              <button type="button" class="btn btn-xs btn-outline-secondary flex-fill" ${window.NANO_RESTRICTED_MASTER && !b.canEdit ? 'disabled title="본인이 등록한 도서만 수정할 수 있습니다."' : ''} onclick="openMasterBookAddModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 서지 정보 수정">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button type="button" class="btn btn-xs btn-outline-danger flex-fill" onclick="deleteMasterBook('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 삭제">
+              <button type="button" class="btn btn-xs btn-outline-danger flex-fill" ${window.NANO_RESTRICTED_MASTER && !b.canEdit ? 'disabled' : ''} onclick="deleteMasterBook('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 삭제">
                 <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>

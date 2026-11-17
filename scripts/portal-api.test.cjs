@@ -12,6 +12,8 @@ function load(file, dependencies = {}) {
     const dispatchView = load('lib/dispatch-view.ts');
     dependencies = { '../lib/dispatch-view': dispatchView, '../lib/payment-view': load('lib/payment-view.ts', { './dispatch-view': dispatchView, './billing-policy': load('lib/billing-policy.ts') }), ...dependencies };
   }
+  const brand = require('./test-portal-brand.cjs')((dependencies['../lib/prisma'] || dependencies['./prisma'] || {}).prisma);
+  dependencies = { '../lib/portal-brand': brand, './portal-brand': brand, ...dependencies };
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(code, { exports, require: name => dependencies[name] || require(name), Buffer, process, console, URL, Date });

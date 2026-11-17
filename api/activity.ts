@@ -1,3 +1,4 @@
+import { brandOf } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { authenticate, need, failure, academyScope, staff } from '../lib/portal-http';
 import { monthWindow, getTodayStartUtc, readingProgress } from '../lib/portal-learning';
@@ -217,7 +218,7 @@ export default async function handler(req: any, res: any) {
         prisma.book.findMany({ where: { themeId: { not: null } }, select: { themeId: true, bookNo: true } })
       ]);
       const metaMap = new Map<string, any>(metaRows.map((r: any) => [String(r.key || '').replace(/^theme_meta:/, ''), { ...(r.value || {}), _updatedAt: r.updatedAt ? +new Date(r.updatedAt) : 0 }]));
-      const items = themes.map(t => {
+      const items = themes.filter(t => brandOf(metaMap.get(t.id)) === user.portalBrand).map(t => {
         const meta = metaMap.get(t.id) || {};
         const autoBookIds = themeBooks.filter(b => b.themeId === t.id).map(b => b.bookNo);
         const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);

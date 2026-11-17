@@ -1297,6 +1297,7 @@ function loadNoticesFromStorage() {
 
   if (window.NANO_SERVER_DATA) {
     var serverNotices = window.NANO_SERVER_NOTICES || [];
+    if (window.NANO_BRAND === 'JD') return serverNotices;
     // 서버 공지에 팝업 시작/종료일 등 메타데이터가 비어있는 경우 로컬 스토리지 캐시와 병합하여 유실 방지
     return serverNotices.map(function(sn) {
       var matchedLocal = localCached.find(function(ln) {

@@ -595,7 +595,7 @@ async function addBookToRecommended(bookId) {
     const previousRecommended = book.isRecommended;
     book.isRecommended = true;
     try {
-      await NanoPortal.saveBook(book);
+      await NanoPortal.saveRecommendation(book);
     } catch (error) {
       book.isRecommended = previousRecommended;
       showMasterToast('권장도서로 지정하지 못했습니다: ' + error.message, 'danger');
@@ -680,7 +680,7 @@ async function saveDirectRecommendedBook(event) {
     isRecommended: true, isPublic: "Y", hasQuiz: false, quizzes: 0, likes: 0, recommends: 1, date: new Date().toISOString().slice(0, 10)
   };
   if (window.NanoPortal && NanoPortal.remote) {
-    try { await NanoPortal.saveBook(newMasterBook); }
+    try { await NanoPortal.saveBook(newMasterBook); await NanoPortal.saveRecommendation(newMasterBook); }
     catch (error) { showMasterToast('권장도서를 등록하지 못했습니다: ' + error.message); return; }
   }
 
@@ -718,7 +718,7 @@ async function deleteRecommendedBook(recId) {
     if (book) {
       const previousRecommended = book.isRecommended;
       book.isRecommended = false;
-      try { await NanoPortal.saveBook(book); }
+      try { await NanoPortal.saveRecommendation(book); }
       catch (error) { book.isRecommended = previousRecommended; showMasterToast('권장도서를 해제하지 못했습니다: ' + error.message); return; }
     }
   }
@@ -1741,6 +1741,7 @@ function handleRegisterAcademy(e) {
   const newAcad = {
     id: newId,
     name: name,
+    brand: document.getElementById("regAcademyBrand")?.value || "NANO",
     bizNumber: bizNumber,
     director: director.includes("원장") ? director : director + " 원장",
     email: email,
@@ -1796,6 +1797,7 @@ function openAcademyEditModal(id) {
   if (badge) badge.innerText = `아이디: ${currentAdminId}`;
 
   document.getElementById("editAcademyName").value = acad.name || "";
+  document.getElementById("editAcademyBrand").value = acad.brand || "NANO";
   document.getElementById("editBizNumber").value = acad.bizNumber || "";
   document.getElementById("editDirectorName").value = acad.director || "";
   if (document.getElementById("editDirectorEmail")) {
@@ -1872,6 +1874,7 @@ async function saveAcademyEdit(e) {
   const previousAcademy = { ...acad };
 
   const oldName = acad.name;
+  acad.brand = document.getElementById("editAcademyBrand")?.value || "NANO";
   const newName = document.getElementById("editAcademyName").value.trim() || oldName;
 
   const directorEl = document.getElementById("editDirectorName");
@@ -2413,6 +2416,7 @@ async function handleRegisterAcademy(e) {
   const newAcad = {
     id: newId,
     name: name,
+    brand: document.getElementById("regAcademyBrand")?.value || "NANO",
     bizNumber: bizNumber,
     director: director.includes("원장") ? director : director + " 원장",
     email: email,

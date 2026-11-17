@@ -1,3 +1,4 @@
+import { restrictedMaster, brandAcademyIds, academyBrand } from '../lib/portal-brand';
 import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import { prisma } from '../lib/prisma';
 import {
@@ -98,6 +99,7 @@ function formatKstDateTime24(dateInput: any): string {
 function getBaseHost(req: any): string {
   const host = String(req.headers.host || '').trim();
   // 실운영 도메인이거나 Vercel 환경일 때 nanosbook.co.kr 기본 보장
+  if (host.toLowerCase() === 'jd.nanosbook.co.kr') return 'https://jd.nanosbook.co.kr';
   if (host.includes('nanosbook.co.kr') || host.includes('vercel.app')) {
     return 'https://nanosbook.co.kr';
   }
@@ -218,6 +220,16 @@ export default async function handler(req: any, res: any) {
     const aligoReady = process.env.ALIGO_ENABLED !== 'false' && Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER_KEY && process.env.ALIGO_SENDER);
     if (req.method === 'GET') {
       if (action === 'dispatch_stats') {
+        if (restrictedMaster(user)) {
+          const ids = await brandAcademyIds('JD');
+          const logs = await prisma.aligoDispatchLog.findMany({ where: { academyId: { in: ids } }, include: { academy: true }, orderBy: { sentAt: 'desc' } });
+          const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt.toISOString(), academyId: d.academy?.code || '', academyName: d.academy?.name || '', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, resultMessage: d.resultMessage || '', canRetry: false }));
+          const success = logs.filter(d => ['SUCCESS', 'SMS_FALLBACK'].includes(d.status)).length;
+          const failed = logs.filter(d => d.status === 'FAILED').length;
+          const month = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+          return res.json({ items, total: logs.length, success, failed, pending: logs.length - success - failed, monthly: logs.filter(d => d.sentAt >= new Date(month + '-01T00:00:00+09:00')).length, readOnly: true });
+        }
+
         const refreshCutoff = String(req.query.refresh || '') === '1' ? new Date(Date.now() - 3000) : undefined;
         const pendingDiagnostics: Record<string, string> = {};
         const reconciledCount = await reconcileDispatches(
@@ -307,7 +319,7 @@ export default async function handler(req: any, res: any) {
       need(/^0\d{8,10}$/.test(phone), '학부모 연락처 형식을 확인해 주세요.');
 
       const token = generatePublicToken(log.id);
-      const targetUrl = `${baseHost}/quiz_result.html?id=${encodeURIComponent(log.id)}&t=${token}`;
+      const targetUrl = `${await academyBrand(log.member.academyId) === 'JD' ? 'https://jd.nanosbook.co.kr' : baseHost === 'https://jd.nanosbook.co.kr' ? 'https://nanosbook.co.kr' : baseHost}/quiz_result.html?id=${encodeURIComponent(log.id)}&t=${token}`;
       const activityDate = formatKstDateTime24(log.completedAt);
 
       const resolvedTpl = await resolveTemplateWithCreds(ALIGO_QUIZ_TEMPLATE_CODE, ALIGO_QUIZ_TEMPLATE, '북퀴즈결과 확인');
@@ -380,7 +392,7 @@ export default async function handler(req: any, res: any) {
       need(/^0\d{8,10}$/.test(phone), '학부모 연락처 형식을 확인해 주세요.');
 
       const token = generatePublicToken(pfId);
-      const targetUrl = `${baseHost}/portfolio_report.html?pf=${encodeURIComponent(pfId)}&t=${token}`;
+      const targetUrl = `${await academyBrand(student.academyId) === 'JD' ? 'https://jd.nanosbook.co.kr' : baseHost === 'https://jd.nanosbook.co.kr' ? 'https://nanosbook.co.kr' : baseHost}/portfolio_report.html?pf=${encodeURIComponent(pfId)}&t=${token}`;
       const bookCount = Array.isArray(pfData.books) ? pfData.books.length : (pfData.bookCount || 0);
 
       const resolvedTpl = await resolveTemplateWithCreds(ALIGO_PORTFOLIO_TEMPLATE_CODE, ALIGO_PORTFOLIO_TEMPLATE, '포트폴리오 확인');
@@ -453,7 +465,7 @@ export default async function handler(req: any, res: any) {
 
       const secret = process.env.PORTAL_AUTH_SECRET || 'nano-bookshelf-public-secret-key-2026';
       const token = createHmac('sha256', secret).update(recordId).digest('hex').slice(0, 24);
-      const targetUrl = `${baseHost}/literacy_report.html?r=${encodeURIComponent(recordId)}&t=${token}`;
+      const targetUrl = `${await academyBrand(member.academyId) === 'JD' ? 'https://jd.nanosbook.co.kr' : baseHost === 'https://jd.nanosbook.co.kr' ? 'https://nanosbook.co.kr' : baseHost}/literacy_report.html?r=${encodeURIComponent(recordId)}&t=${token}`;
       const diagDate = formatKstDateTime24(record.finishedAt);
 
       const resolvedTpl = await resolveTemplateWithCreds(ALIGO_LITERACY_TEMPLATE_CODE, ALIGO_LITERACY_TEMPLATE, '진단 결과 확인');

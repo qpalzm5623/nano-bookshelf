@@ -1,3 +1,4 @@
+import { restrictedMaster } from './portal-brand';
 import { need } from './portal-http';
 import legacyAuthors from './quiz-authors.json';
 
@@ -41,9 +42,11 @@ export function quizContent(access: ContentAccess, bookId: string, seq: number):
 }
 
 export function ownsContent(user: any, item: ContentItem) {
+  if (restrictedMaster(user)) return item.ownerMemberId === user.id;
   return user.role === 'MASTER' || (!!item.ownerAcademyId && item.ownerAcademyId === user.academyId);
 }
 export function isOwnSheet(user: any, item: ContentItem) {
+  if (restrictedMaster(user)) return item?.ownerMemberId === user.id;
   // 마스터는 본사 등록/기본 나노시트만, 학원은 자사 기관이 등록한 나노시트만 수정·삭제할 수 있습니다.
   if (!user || user.role === 'STUDENT' || !item) return false;
   if (user.role === 'MASTER') {
@@ -54,6 +57,7 @@ export function isOwnSheet(user: any, item: ContentItem) {
   return !!item.ownerAcademyId && item.ownerAcademyId === user.academyId;
 }
 export function canShareContent(user: any, item: ContentItem) {
+  if (restrictedMaster(user)) return item.ownerMemberId === user.id;
   // 마스터는 본사 콘텐츠만 공유 대상으로 노출하고, 타 가맹 학원의 등록물은 제외합니다.
   if (user.role === 'MASTER') {
     if (item.authorType === 'ACADEMY') return false;
@@ -83,7 +87,7 @@ export function bookSheets(access: ContentAccess, book: any): ContentItem[] {
   if (book.worksheetUrl && !list.some(s => s.id === 'legacy-' + book.id)) {
     const creator = access.byKey.get('book_creator:' + book.bookNo) || access.byKey.get('book_creator:' + book.id) || {};
     list.unshift({ id: 'legacy-' + book.id, bookId: book.id, ownerAcademyId: resolveCreatorAcademyId(access, creator),
-      academyName: creator.academyName || '본사', name: book.title + '_나노시트.pdf', isPublic: 'Y', legacyUrl: book.worksheetUrl, revision: 0 });
+      ownerMemberId: creator.ownerMemberId, academyName: creator.academyName || '본사', name: book.title + '_나노시트.pdf', isPublic: 'Y', legacyUrl: book.worksheetUrl, revision: 0 });
   }
   return list;
 }

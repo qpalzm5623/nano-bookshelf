@@ -1,3 +1,4 @@
+import { authorizeBrand, assertBrandAcademy, guardRestrictedRequest } from './portal-brand';
 import { prisma } from './prisma';
 import { passwordVersion, readSession } from './portal-auth';
 export class PortalError extends Error { constructor(public status: number, message: string) { super(message); } }
@@ -25,7 +26,9 @@ export async function authenticate(req: any) {
       if (e instanceof PortalError) throw e;
     }
   }
-  return user;
+  const brandedUser = await authorizeBrand(req, user);
+  guardRestrictedRequest(req, brandedUser);
+  return brandedUser;
 }
 export function staff(user: any) { need(['MASTER','DIRECTOR','TEACHER'].includes(user.role), '관리자 권한이 필요합니다.', 403); }
 export function master(user: any) { need(user.role === 'MASTER', '본사 관리자 권한이 필요합니다.', 403); }
@@ -36,7 +39,7 @@ export function text(value: any, label: string, max = 200, required = false) {
   return result;
 }
 export function failure(res: any, error: any) {
-  if (error instanceof PortalError) return res.status(error.status).json({ error: error.message });
+  if (error instanceof PortalError || error.brandAccess === true) return res.status(error.status).json({ error: error.message });
   if (error.code === 'P2002') return res.status(409).json({ error: '이미 등록된 아이디 또는 코드입니다.' });
   if (error.code === 'P2025') return res.status(404).json({ error: '항목이 삭제되거나 변경되었습니다. 새로고침해 주세요.' });
   if (error.code === 'P2021') return res.status(503).json({ error: '추가 서버 테이블 설정이 필요합니다. 관리자에게 문의해 주세요.' });
@@ -48,5 +51,6 @@ export async function academyScope(user: any, code?: string) {
   master(user);
   const academy = await prisma.academy.findUnique({ where: { code } });
   need(academy && !academy.deletedAt, '학원을 찾을 수 없습니다.', 404);
+  await assertBrandAcademy(user, academy.id);
   return academy.id;
 }

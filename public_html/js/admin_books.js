@@ -3645,6 +3645,7 @@ function renderThemeSelectForAcademyBook(selectedTag = "") {
     currentThemes = themeList;
   }
 
+  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') currentThemes = window.NANO_SERVER_THEMES || [];
   var targetVal = Array.isArray(selectedTag) ? (selectedTag[0] || "") : selectedTag;
 
   select.innerHTML = currentThemes.map(function(t) {

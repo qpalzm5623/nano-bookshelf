@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "incremental": false },
-  "include": ["api/**/*.ts", "lib/portal*.ts", "lib/prisma.ts", "scripts/set-portal-password.ts"]
+  "include": ["api/**/*.ts", "lib/portal*.ts", "lib/prisma.ts", "scripts/set-portal-password.ts", "scripts/provision-jd-master.ts"]
 }

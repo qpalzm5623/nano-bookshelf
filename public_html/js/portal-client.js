@@ -124,7 +124,7 @@
   function academyPayload(item) {
     return { id: item.serverId || undefined, code: item.id, name: item.name, bizNo: item.bizNumber || '', directorName: item.director || '', phone: item.phone || '', email: item.email || '',
       address: item.address || item.region || '', memo: item.memo || '', maxStudents: Number(item.maxStudents) || 50, monthlyFee: money(item.monthlyFee), plan: plan(item.plan), status: item.status || 'ACTIVE',
-      autoUnapprove: item.autoUnapprove === true,
+      brand: item.brand || "NANO", autoUnapprove: item.autoUnapprove === true,
       joinDate: item.joinDate || item.startDate, startDate: item.startDate, endDate: item.endDate,
       adminId: item.adminId || item.username || '', adminPw: item.adminPw || item.password || '' };
   }
@@ -408,6 +408,7 @@
       awards: item.awards || item.award || '', themeTag: item.themeTag || item.tag || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
     if (result.item) {
       item.serverId = result.item.id;
+      item.canEdit = result.item.canEdit !== false;
       if (result.item.coverUrl) { item.cover = result.item.coverUrl; item.coverUrl = result.item.coverUrl; }
       if (result.item.worksheetUrl) { item.worksheetUrl = result.item.worksheetUrl; item.pdfUrl = result.item.worksheetUrl; item.hasSheet = true; item.sheet = true; }
       delete item.coverFile;
@@ -418,6 +419,7 @@
     }
     return result.item;
   }
+  async function saveRecommendation(item) { return manage('recommendations', 'save', { bookId: item.serverId, recommended: item.isRecommended === true }); }
   async function deleteBook(item) { return manage('books', 'delete', { id: item.serverId }); }
   async function syncQuizzes(book, questions) {
     if (!book.serverId) throw new Error('도서 정보를 새로고침한 뒤 다시 시도해 주세요.');
@@ -648,7 +650,7 @@
   global.NanoPortal = { remote: remote, request: request, api: api, manage: manage, manageList: manageList, academy: academy, uploadMedia: uploadMedia,
     saveMember: saveMember, deleteMember: deleteMember, saveAcademy: saveAcademy, deleteAcademy: deleteAcademy, restoreAcademy: restoreAcademy, saveClass: saveClass, deleteClass: deleteClass,
     saveBanner: saveBanner, deleteBanner: deleteBanner, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
-    saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
+    saveRecommendation: saveRecommendation, saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     formatKstDateTime: toKst24String,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,

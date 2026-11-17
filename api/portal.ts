@@ -1,3 +1,4 @@
+import { authorizeBrand, restrictedMaster, brandAcademyIds, brandError } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { loadContentAccess, quizContent, canReadContent, ownsContent } from '../lib/portal-content';
 import { saveAttempt, earnedForAttempt, estimateAttemptPoints } from '../lib/portal-learning';
@@ -24,7 +25,7 @@ const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
 function cookie(value: string, age = 28800) { return `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${secure}`; }
 function publicUser(member: any) {
   return { id: member.username, memberId: member.id, role: member.role === 'MASTER' ? 'master' : member.role === 'STUDENT' ? 'student' : member.role === 'TEACHER' ? 'teacher' : 'admin',
-    name: member.name, studentName: member.name, studentId: member.username, academyId: member.academy.code,
+    brand: member.brand, brandPolicy: member.brandPolicy, name: member.name, studentName: member.name, studentId: member.username, academyId: member.academy.code,
     academyName: member.academy.name, classGroup: member.classGroup?.name || '미지정',
     grade: member.grade || '', gender: member.gender || '', school: member.school || '', server: true };
 }
@@ -60,7 +61,7 @@ async function queryLearningLogs(user: any, query: any) {
   if (user.role === 'MASTER') {
     const requestedAcademy = typeof query?.academy === 'string' ? query.academy.trim() : '';
     if (!requestedAcademy || requestedAcademy.toUpperCase() === 'ALL') {
-      memberWhere = { academy: { deletedAt: null } };
+      memberWhere = { academy: { deletedAt: null }, ...(restrictedMaster(user) ? { academyId: { in: await brandAcademyIds('JD') } } : {}) };
     } else {
       const academyId = await academyScope(user, requestedAcademy);
       memberWhere = { academyId };
@@ -170,6 +171,7 @@ export default async function handler(req: any, res: any) {
       const member = await prisma.member.findUnique({ where: { username: body.username.trim() }, include: { academy: true, classGroup: true } });
       if (!allowed(member) || !verifyPassword(body.password, member!.password || '')) return res.status(401).json({ error: '아이디·비밀번호 또는 계정 승인 상태를 확인해 주세요.' });
 
+      await authorizeBrand(req, member!);
       // master 계정 제외: 학원/학생 계정 중복 로그인 감지
       if (member!.role !== 'MASTER' && prisma.portalSetting?.findUnique) {
         try {
@@ -238,7 +240,8 @@ export default async function handler(req: any, res: any) {
         }
       } catch (e) {}
     }
-    const user = member!;
+    const user = await authorizeBrand(req, member!);
+    if (restrictedMaster(user) && req.method === 'POST' && action !== 'password') throw brandError('이 계정은 학습 정보를 조회만 할 수 있습니다.');
     if (action === 'session' && req.method === 'GET') return res.status(200).json({ user: publicUser(user) });
     if (action === 'password' && req.method === 'POST') {
       const minLen = 6;
@@ -440,7 +443,7 @@ export default async function handler(req: any, res: any) {
     if (error.message === 'DAILY_LIMIT_EXCEEDED') return res.status(429).json({ error: '해당 도서의 오늘 인증 실패 횟수(3회)를 초과하여 오늘 자정까지 재도전할 수 없습니다.' });
     if (error.message === 'QUIZ_MISMATCH') return res.status(409).json({ error: '서버 문항과 답안이 일치하지 않습니다. 답안은 기기에 유지됩니다.' });
     // 중복 클릭/재시도 시 고유 ID 제약으로 두 번 저장되지 않습니다.
-    if (error instanceof PortalError) return res.status(error.status).json({ error: error.message });
+    if (error instanceof PortalError || error.brandAccess === true) return res.status(error.status).json({ error: error.message });
     if (error.code === 'P2002') return res.status(409).json({ error: '이미 처리 중인 답안입니다. 잠시 후 다시 시도해 주세요.' });
     console.error('Portal request failed', error.code || error.name);
     return res.status(500).json({ error: '서버 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.' });

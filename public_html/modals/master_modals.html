@@ -229,6 +229,7 @@
       <div class="modal-body p-4">
         <form id="academyRegisterForm" onsubmit="handleRegisterAcademy(event)">
           <div class="row">
+            <div class="col-12 form-group"><label for="regAcademyBrand" class="font-weight-bold">구분</label><select id="regAcademyBrand" class="form-control form-control-beige"><option value="NANO">나노의 책장</option><option value="JD">정답이 있는 독서</option></select></div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">가맹 학원명 <span class="text-danger">*</span></label>
               <input type="text" id="regAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서논술 대치본원" required>
@@ -374,6 +375,7 @@
           </div>
 
           <div class="row">
+            <div class="col-12 form-group"><label for="editAcademyBrand" class="font-weight-bold">구분</label><select id="editAcademyBrand" class="form-control form-control-beige"><option value="NANO">나노의 책장</option><option value="JD">정답이 있는 독서</option></select></div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학원명 <span class="text-danger">*</span></label>
               <input type="text" id="editAcademyName" class="form-control form-control-beige" placeholder="예: 나노 독서아카데미 목동본원" required>

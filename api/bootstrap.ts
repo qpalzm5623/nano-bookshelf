@@ -1,3 +1,4 @@
+import { authorizeBrand, restrictedMaster, brandAcademyIds, brandOf } from '../lib/portal-brand';
 import { paymentView } from '../lib/payment-view';
 import { prisma } from '../lib/prisma';
 import { loadContentAccess, quizContent, canReadContent, bookSheets, sheetView } from '../lib/portal-content';
@@ -129,32 +130,39 @@ export default async function handler(req: any, res: any) {
     const session = readSession(token);
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
+    await authorizeBrand(req, user);
+    const limited = restrictedMaster(user);
+    const brand = (user as any).portalBrand;
+    const allowedAcademies = limited ? await brandAcademyIds('JD') : [];
+    const masterMemberFilter = limited ? { academyId: { in: allowedAcademies } } : {};
     const isStudent = user.role === 'STUDENT';
 
     // 공통 도서 카탈로그는 인메모리 SWR 캐시에서 즉시 조회(0ms), 사용자별 고유 데이터만 병렬 조회하여 응답 속도 극대화
     const [catalog, members, academies, classes, notices, owned, payments, dispatches, classMetaRows, charSettingRows] = await Promise.all([
       getCachedCatalog(),
-      prisma.member.findMany({ where: user.role === 'MASTER' ? {} : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
+      prisma.member.findMany({ where: user.role === 'MASTER' ? masterMemberFilter : user.role === 'STUDENT' ? { id: user.id } : { academyId: user.academyId },
       select: { id: true, legacySeq: true, username: true, name: true, role: true, grade: true, gender: true, school: true, parentName: true, parentPhone: true,
         phone: true, parentEmail: true, status: true, points: true, bookCount: true, quizAvg: true, reportYn: true, teacherName: true,
         lastLoginAt: true, createdAt: true, updatedAt: true, academy: { select: { code: true, name: true } }, classGroup: { select: { id: true, name: true } } } }),
-      prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { id: user.academyId }) },
+      prisma.academy.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? (limited ? { id: { in: allowedAcademies } } : {}) : { id: user.academyId }) },
       select: { id: true, code: true, name: true, bizNo: true, directorName: true, phone: true, email: true, maxStudents: true, monthlyFee: true, kakaoBalance: true, plan: true, address: true, memo: true, joinDate: true, status: true, startDate: true, endDate: true,
         _count: { select: { members: { where: { role: 'STUDENT', status: 'APPROVED' } } } } } }),
-      prisma.classGroup.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: { select: { code: true } } } }),
+      prisma.classGroup.findMany({ where: user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }, include: { academy: { select: { code: true } } } }),
       prisma.notice.findMany({ where: user.role === 'MASTER' ? {} : { OR: [{ targetRole: null }, { targetRole: user.role }] }, orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }] }),
       prisma.academyBook.findMany({ where: { academyId: user.academyId }, include: { book: { select: { bookNo: true } } } }),
-      user.role === 'MASTER' || user.role === 'DIRECTOR'
-        ? prisma.payment.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 })
+      !limited && (user.role === 'MASTER' || user.role === 'DIRECTOR')
+        ? prisma.payment.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }) }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
       user.role === 'MASTER' || user.role === 'DIRECTOR' || user.role === 'TEACHER'
-        ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? {} : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
+        ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
       isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { OR: [{ key: { startsWith: 'class_meta:' } }, { key: { startsWith: 'academy_meta:' } }] }, select: { key: true, value: true } }),
       prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } })
     ]);
 
-    const books = catalog.books;
+    const recommendationRows = await prisma.portalSetting.findMany({ where: { scope: 'brand_recommend:' + brand } });
+    const recommendationMap = new Map(recommendationRows.map(r => [(r.value as any).bookId, (r.value as any).recommended === true]));
+    const books = catalog.books.map(b => ({ ...b, isRecommended: recommendationMap.has(b.id) ? recommendationMap.get(b.id) === true : brand === 'NANO' && b.isRecommended }));
     const [contentAccess, contentQuizGroups] = await Promise.all([
       loadContentAccess(prisma, academies), prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'], _count: { id: true } })
     ]);
@@ -174,8 +182,8 @@ export default async function handler(req: any, res: any) {
     const wishCountMap = catalog.wishCountMap;
     const recCountMap = catalog.globalRecCountMap;
     const socialStats = catalog.socialStats;
-    const banners = catalog.banners;
-    const themes = catalog.themes;
+    const banners = catalog.banners.filter(b => brandOf(bannerMetaMap.get(b.id)) === brand);
+    const themes = catalog.themes.filter(t => brandOf(themeMetaMap.get(t.id)) === brand);
 
     const memberCharMap = new Map<string, string>();
     for (const crow of (((charSettingRows as any[]) || []))) {
@@ -237,6 +245,8 @@ export default async function handler(req: any, res: any) {
 
     const data = {
       NANO_SERVER_DATA: true,
+      NANO_BRAND: brand,
+      NANO_RESTRICTED_MASTER: limited,
       NANO_BOOTSTRAP_MEMBER_ID: user.id,
       NANO_MEDIA_BASE_URL: r2PublicBase,
       NANO_USER_RECOMMENDS: myRecommends,
@@ -292,6 +302,7 @@ export default async function handler(req: any, res: any) {
           const visibleQuizCount = accessibleQuizCounts.get(b.id) || { sets: 0, questions: 0 };
           bookMap.set(finalBookId, {
             ...b,
+            canEdit: !limited || bookCreatorMap.get(b.bookNo)?.ownerMemberId === user.id,
             serverId: b.id,
             id: finalBookId,
             bookNo: finalBookId,
@@ -304,7 +315,7 @@ export default async function handler(req: any, res: any) {
             createdAt: bookCreatedAt,
             date: bookDate,
             ...(creatorMeta ? {
-              creatorType: 'ACADEMY',
+              creatorType: creatorMeta.authorType || 'ACADEMY',
               academyId: creatorMeta.academyCode || creatorMeta.academyId || '',
               academyName: creatorMeta.academyName || '가맹 학원'
             } : {}),
@@ -397,7 +408,7 @@ export default async function handler(req: any, res: any) {
         const ob = b.order != null ? b.order : 9999;
         return oa !== ob ? oa - ob : String(a.id).localeCompare(String(b.id));
       }),
-      NANO_SERVER_NOTICES: notices.map(n => {
+      NANO_SERVER_NOTICES: notices.filter(n => brandOf(noticeMetaMap.get(n.id)) === brand).map(n => {
         const meta = noticeMetaMap.get(n.id) || {};
         const defaultTarget = n.targetRole === 'STUDENT' ? '학생' : n.targetRole === 'TEACHER' ? '가맹 학원' : n.targetRole === 'DIRECTOR' ? '가맹 학원' : n.targetRole === 'MASTER' ? '본사' : '전체';
         return {
@@ -480,7 +491,7 @@ export default async function handler(req: any, res: any) {
           currentStudents: a._count.members,
           monthlyFee: a.monthlyFee,
           plan: a.plan,
-          status: academyMetaMap.get(a.id)?.uiStatus || a.status, autoUnapprove: academyMetaMap.get(a.id)?.autoUnapprove === true,
+          brand: brandOf(academyMetaMap.get(a.id)), status: academyMetaMap.get(a.id)?.uiStatus || a.status, autoUnapprove: academyMetaMap.get(a.id)?.autoUnapprove === true,
           joinDate: (a.joinDate || a.startDate).toISOString().slice(0, 10),
           startDate: a.startDate.toISOString().slice(0, 10),
           endDate: a.endDate.toISOString().slice(0, 10)
@@ -512,13 +523,13 @@ export default async function handler(req: any, res: any) {
       }),
       MIGRATED_ACADEMY_RANKINGS: academyRankings
     };
-    const sessionUser = { id: user.username, memberId: user.id, name: user.name, studentName: user.name, studentId: user.username,
+    const sessionUser = { brand, brandPolicy: (user as any).brandPolicy, id: user.username, memberId: user.id, name: user.name, studentName: user.name, studentId: user.username,
       role: user.role === 'MASTER' ? 'master' : user.role === 'STUDENT' ? 'student' : user.role === 'TEACHER' ? 'teacher' : 'admin',
       academyId: user.academy.code, academyName: user.academy.name, classGroup: members.find(m => m.id === user.id)?.classGroup?.name || '미지정', server: true };
     // 큰 퀴즈 배열은 한 번만 전송하고, 불필요한 전체 deep clone 대신 직접 참조하여 브라우저 메인 스레드 프리징 방지
     return res.status(200).send('sessionStorage.setItem("nano_auth_user", ' + JSON.stringify(JSON.stringify(sessionUser)).replace(/</g, '\\u003c') + ');\n' + Object.entries(data).map(([key, value]) => `window.${key} = ${JSON.stringify(value).replace(/</g, '\\u003c')};`).join('\n')
       + '\nwindow.MIGRATED_BOOKS.forEach(function(book) { var qs = (window.MIGRATED_QUIZZES && (window.MIGRATED_QUIZZES[book.id] || window.MIGRATED_QUIZZES[book.bookNo])) || null; if (qs && qs.length > 0) { book.quizSets = qs; book.hasQuiz = true; if (qs[0].questions) { book.quizCount = qs.reduce(function(sum, s) { return sum + (s.questions ? s.questions.length : 0); }, 0); } } else { book.quizSets = []; } });');
-  } catch {
-    return res.status(503).send('window.NANO_BOOTSTRAP_FAILED = true;');
+  } catch (error: any) {
+    return res.status(error.brandAccess ? 403 : 503).send('window.NANO_BOOTSTRAP_FAILED = true;');
   }
 }
