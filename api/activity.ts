@@ -307,7 +307,8 @@ export default async function handler(req: any, res: any) {
         prisma.book.findMany({ where: { themeId: { not: null } }, select: { themeId: true, bookNo: true } })
       ]);
       const metaMap = new Map<string, any>(metaRows.map((r: any) => [String(r.key || '').replace(/^theme_meta:/, ''), { ...(r.value || {}), _updatedAt: r.updatedAt ? +new Date(r.updatedAt) : 0 }]));
-      const items = themes.filter(t => brandOf(metaMap.get(t.id)) === user.portalBrand).map(t => {
+      // 테마는 nanos 마스터에서 일괄 관리하므로 jd.nanos 학생 앱에도 NANO 기준 테마 목록을 동일하게 제공합니다.
+      const items = themes.filter(t => brandOf(metaMap.get(t.id)) === 'NANO').map(t => {
         const meta = metaMap.get(t.id) || {};
         const autoBookIds = themeBooks.filter(b => b.themeId === t.id).map(b => b.bookNo);
         const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);

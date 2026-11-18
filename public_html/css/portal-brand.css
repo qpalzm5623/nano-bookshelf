@@ -202,5 +202,7 @@ html[data-restricted-master="true"] #sidebar-section-master-system,
 html[data-restricted-master="true"] #nav-master-ai-settings,
 html[data-restricted-master="true"] #nav-master-literacy,
 html[data-restricted-master="true"] #tab-master-literacy,
+html[data-restricted-master="true"] #btn-op-themes,
+html[data-restricted-master="true"] #op-sub-themes,
 html[data-restricted-master="true"] [hidden] { display: none !important; }
 @media (max-width: 600px) { html[data-brand="JD"] img[data-jd-logo] { height: 42px !important; max-width: 110px; } }

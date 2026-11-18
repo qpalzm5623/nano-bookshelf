@@ -197,7 +197,8 @@ export default async function handler(req: any, res: any) {
     const recCountMap = catalog.globalRecCountMap;
     const socialStats = catalog.socialStats;
     const banners = (bannerRows || []).filter(b => brandOf(bannerMetaMap.get(b.id)) === brand);
-    const themes = (themeRows || []).filter(t => brandOf(themeMetaMap.get(t.id)) === brand);
+    // 테마관리는 본사(NANO) 마스터에서 일괄 관리하며, jd.nanos 학생·관리자 화면에도 동일하게 반영합니다.
+    const themes = (themeRows || []).filter(t => brandOf(themeMetaMap.get(t.id)) === 'NANO');
 
     const memberCharMap = new Map<string, string>();
     for (const crow of (((charSettingRows as any[]) || []))) {

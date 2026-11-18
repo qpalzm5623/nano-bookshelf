@@ -49,7 +49,7 @@ export function guardRestrictedRequest(req: any, user: any) {
   if (route === '/api/manage') {
     permitted = req.method === 'GET'
       ? ['academies', 'members', 'classes', 'books', 'quizzes', 'owned', 'assignments', 'notices', 'themes', 'banners', 'dispatch', 'portfolios', 'rankings', 'recommendations'].includes(entity)
-      : ['books', 'notices', 'themes', 'banners', 'recommendations', 'summarize_synopsis'].includes(entity);
+      : ['books', 'notices', 'banners', 'recommendations', 'summarize_synopsis'].includes(entity);
   } else if (route === '/api/content') permitted = true;
   else if (route === '/api/files') permitted = req.method === 'GET' || req.body?.scope === 'media';
   else if (route === '/api/services') permitted = req.method === 'GET' && action === 'dispatch_stats';

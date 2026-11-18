@@ -964,7 +964,11 @@ function loadOperationsFromStorage() {
     });
     window.NANO_SERVER_BANNERS = bannerList.slice();
     if (window.NANO_BRAND === 'JD') {
-      themeList = (window.NANO_SERVER_THEMES || []).map(function(t) { return { ...t }; });
+      themeList = (window.NANO_SERVER_THEMES || []).map(function(t) { return { ...t }; }).sort(function(a, b) {
+        var oa = (a && a.order != null && !isNaN(Number(a.order))) ? Number(a.order) : 9999;
+        var ob = (b && b.order != null && !isNaN(Number(b.order))) ? Number(b.order) : 9999;
+        return oa - ob;
+      });
       return;
     }
     var localThemes = [];
@@ -1941,6 +1945,7 @@ function switchMasterTab(tabName) {
 
 // 운영 관리 서브탭 전환
 function switchOpSubTab(subName) {
+  if (window.NANO_RESTRICTED_MASTER && subName === "themes") subName = "banners";
   const subs = ["banners", "themes", "notices", "recommended"];
   subs.forEach(s => {
     const btn = document.getElementById(`btn-op-${s}`);

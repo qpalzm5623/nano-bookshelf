@@ -7547,7 +7547,7 @@ var defaultStudentThemes = [
 ];
 
 function getStudentThemes() {
-  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') return (window.NANO_SERVER_THEMES || []).slice().sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+  if (window.NANO_SERVER_DATA && window.NANO_BRAND === 'JD') return (window.NANO_SERVER_THEMES || []).slice().sort(function(a, b) { return ((a && a.order != null && !isNaN(Number(a.order))) ? Number(a.order) : 9999) - ((b && b.order != null && !isNaN(Number(b.order))) ? Number(b.order) : 9999); });
   var list = defaultStudentThemes;
   if (window.NANO_SERVER_DATA && Array.isArray(window.NANO_SERVER_THEMES) && window.NANO_SERVER_THEMES.length > 0) {
     var serverList = window.NANO_SERVER_THEMES;
@@ -8071,7 +8071,7 @@ function syncStudentThemesFromServer() {
     }, 0);
     NanoPortal.fetchThemes(since)
       .then(function(res) {
-        if (res && !res.unchanged && Array.isArray(res.items) && res.items.length > 0) {
+        if (res && !res.unchanged && Array.isArray(res.items)) {
           window.NANO_SERVER_THEMES = res.items;
           clearThemeMappedBooksCache();
           renderThemeTagBoxes(true);

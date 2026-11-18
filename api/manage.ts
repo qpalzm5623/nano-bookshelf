@@ -347,9 +347,10 @@ export default async function handler(req: any, res: any) {
       return res.json({ ok: true });
     }
     if (req.method === 'POST' && operationScope) {
-      if (input.id) await operationInBrand(operationScope, String(input.id), user.portalBrand);
+      const effectiveOpBrand = entity === 'themes' ? 'NANO' : user.portalBrand;
+      if (input.id) await operationInBrand(operationScope, String(input.id), effectiveOpBrand);
       if (body.operation === 'reorder' && Array.isArray(input.orders)) {
-        for (const entry of input.orders) await operationInBrand(operationScope, String(entry.id), user.portalBrand);
+        for (const entry of input.orders) await operationInBrand(operationScope, String(entry.id), effectiveOpBrand);
       }
     }
     if (req.method === 'POST') {
@@ -565,7 +566,7 @@ export default async function handler(req: any, res: any) {
           prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } })
         ]);
         const metaMap = new Map(metaRows.map(m => [m.key.replace(/^theme_meta:/, ''), (m.value || {}) as Record<string, any>]));
-        const items = themeRows.filter(t => brandOf(metaMap.get(t.id)) === user.portalBrand).map(t => {
+        const items = themeRows.filter(t => brandOf(metaMap.get(t.id)) === 'NANO').map(t => {
           const meta = metaMap.get(t.id) || {};
           const parsedOrder = typeof meta.order === 'number' && Number.isFinite(meta.order) ? meta.order : (parseInt(meta.order, 10) || null);
           return { ...t, ...meta, order: parsedOrder };
@@ -1294,6 +1295,7 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'themes') {
       master(user);
+      need(!restrictedMaster(user), '테마 관리는 본사(nanos) 마스터 관리자에서만 관리할 수 있습니다.', 403);
       const result = await prisma.$transaction(async tx => {
         if (body.operation === 'delete') {
           await tx.themeCategory.delete({ where: { id: input.id } });
@@ -1314,7 +1316,7 @@ export default async function handler(req: any, res: any) {
                 ? entry.order
                 : (parseInt(entry?.order, 10) || (idx + 1));
               const prevMeta = existingMap.get(themeId) || {};
-              const nextMeta = { ...prevMeta, brand: user.portalBrand, order: nextOrder, active: prevMeta.active === 'N' ? 'N' : 'Y' };
+              const nextMeta = { ...prevMeta, brand: 'NANO', order: nextOrder, active: prevMeta.active === 'N' ? 'N' : 'Y' };
               return tx.portalSetting.upsert({
                 where: { key: 'theme_meta:' + themeId },
                 update: { scope: 'theme_meta', value: nextMeta },
@@ -1332,7 +1334,7 @@ export default async function handler(req: any, res: any) {
           ? input.order
           : (parseInt(input.order, 10) || (typeof prevMeta.order === 'number' ? prevMeta.order : null));
         const meta = {
-          brand: user.portalBrand,
+          brand: 'NANO',
           subTag: text(input.subTag || '', '서브 태그', 500),
           desc: text(input.desc || input.description || '', '테마 상세 설명', 3000),
           image: text(input.image || '', '테마 이미지', 1500000),

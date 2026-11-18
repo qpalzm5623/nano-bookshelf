@@ -55,19 +55,20 @@ test('JD 관리자 정책은 서버 저장값에서 결정하며 Nano 호스트�
   await assert.rejects(() => brand.authorizeBrand({ headers: { host: 'nanosbook.co.kr' } }, user()), { status: 403 });
   assert.equal(brand.restrictedMaster(await brand.authorizeBrand(req('/api/manage'), user())), true);
 });
-test('JD 관리자의 변경 요청과 결제·AI 접근을 거부하지만 공유 및 운영 변경은 허용한다', () => {
+test('JD 관리자의 변경 요청과 결제·AI·테마 변경 접근을 거부하지만 공유 및 허용된 운영 변경은 허용한다', () => {
   const { brand } = fixture();
-  for (const entity of ['members', 'academies', 'portfolios', 'payments', 'ai_config', 'quizzes']) {
+  for (const entity of ['members', 'academies', 'portfolios', 'payments', 'ai_config', 'quizzes', 'themes']) {
     assert.throws(() => brand.guardRestrictedRequest(req('/api/manage', 'POST', { entity }), user()), { status: 403 });
   }
   for (const endpoint of ['/api/billing', '/api/portfolio-ai', '/api/worksheet-ai']) {
     assert.throws(() => brand.guardRestrictedRequest(req(endpoint, 'POST'), user()), { status: 403 });
   }
-  for (const entity of ['books', 'banners', 'themes', 'notices', 'recommendations']) {
+  for (const entity of ['books', 'banners', 'notices', 'recommendations']) {
     assert.doesNotThrow(() => brand.guardRestrictedRequest(req('/api/manage', 'POST', { entity }), user()));
   }
   assert.doesNotThrow(() => brand.guardRestrictedRequest(req('/api/content', 'POST', { action: 'quiz' }), user()));
   assert.doesNotThrow(() => brand.guardRestrictedRequest(req('/api/manage', 'GET', { entity: 'rankings' }), user()));
+  assert.doesNotThrow(() => brand.guardRestrictedRequest(req('/api/manage', 'GET', { entity: 'themes' }), user()));
 });
 test('직접 지정한 다른 브랜드 학원과 운영 항목 ID를 거부한다', async () => {
   const { brand } = fixture();
@@ -124,11 +125,14 @@ test('초기 페이지는 JD 회원·공지·배너만 제공하며 결제 데�
   const other = { ...current, id: 'other', username: 'nano-only', academyId: 'nano', academy: { code: 'NANO', name: '나노 학원' } };
   f.db.member = { findUnique: async () => current, findMany: async ({ where }) => [current, other].filter(m => !where.academyId || where.academyId.in.includes(m.academyId)) };
   f.db.academy = { findMany: async ({ where }) => ['jd', 'nano'].filter(id => !where.id || where.id.in.includes(id)).map(id => ({ id, code: id, name: id, _count: { members: 0 }, joinDate: date, startDate: date, endDate: date })) };
-  for (const name of ['book', 'classGroup', 'academyBook', 'aligoDispatchLog', 'themeCategory']) f.db[name] = { findMany: async () => [] };
+  for (const name of ['book', 'classGroup', 'academyBook', 'aligoDispatchLog']) f.db[name] = { findMany: async () => [] };
   f.db.quizAttempt = { groupBy: async () => [] };
   f.db.bookQuiz = { groupBy: async () => [] };
   f.db.payment = { findMany: async () => assert.fail('조회 전용 계정에 결제 목록 조회') };
   f.db.mainBanner = { findMany: async () => [{ id: 'jd-banner', title: 'JD 배너' }, { id: 'nano-banner', title: 'NANO 배너' }] };
+  f.db.themeCategory = { findMany: async () => [{ id: 'nano-theme', code: 'T1', name: '이야기', description: '' }, { id: 'jd-only-theme', code: 'T2', name: 'JD전용', description: '' }] };
+  f.records.set('theme_meta:jd-only-theme', { brand: 'JD', order: 2 });
+  f.records.set('theme_meta:nano-theme', { brand: 'NANO', order: 1 });
   f.db.notice = { findMany: async () => [{ id: 'jd-notice', title: 'JD 공지', createdAt: date }, { id: 'nano-notice', title: 'NANO 공지', createdAt: date }] };
   f.records.set('notice_meta:jd-notice', { brand: 'JD' });
   f.db.portalSetting.findMany = async ({ where }) => [...f.records].map(([key, value]) => ({ key, value, scope: key.split(':')[0] })).filter(r => {
@@ -149,6 +153,8 @@ test('초기 페이지는 JD 회원·공지·배너만 제공하며 결제 데�
   assert.equal(context.window.MIGRATED_FRANCHISES.length, 1);
   assert.equal(context.window.NANO_SERVER_NOTICES.length, 1);
   assert.equal(context.window.NANO_SERVER_NOTICES[0].title, 'JD 공지');
+  assert.equal(context.window.NANO_SERVER_THEMES.length, 1);
+  assert.equal(context.window.NANO_SERVER_THEMES[0].id, 'nano-theme');
   assert.ok(!res.data.includes('NANO 배너'));
   assert.ok(!res.data.includes('nano-only'));
 });
@@ -231,8 +237,8 @@ test('jd.nanosbook.co.kr 및 JD_MASTER 마스터 포털에서는 수납·결제 
 
   assert.match(masterHtml, /id="sidebar-section-master-payment"[^>]*>수납 & 결제 관리</);
   assert.match(masterHtml, /id="sidebar-section-master-system"[^>]*>시스템 설정</);
-  assert.match(masterHtml, /\/css\/portal-brand\.css\?v=20261117_jd_theme/);
-  assert.match(masterHtml, /js\/master\/master-core\.js\?v=20261117_banner_sync/);
+  assert.match(masterHtml, /\/css\/portal-brand\.css\?v=20261118_themes/);
+  assert.match(masterHtml, /js\/master\/master-core\.js\?v=20261118_themes/);
 
   for (const selectorPrefix of ['html[data-brand="JD"]', 'html[data-restricted-master="true"]']) {
     for (const id of [
@@ -245,8 +251,11 @@ test('jd.nanosbook.co.kr 및 JD_MASTER 마스터 포털에서는 수납·결제 
       assert.ok(brandCss.includes(`${selectorPrefix} ${id}`), `${selectorPrefix} ${id} 숨김 규칙이 필요합니다`);
     }
   }
+  assert.ok(brandCss.includes('html[data-restricted-master="true"] #btn-op-themes'), 'jdmaster에서 테마 관리 버튼 숨김 규칙이 필요합니다');
+  assert.ok(brandCss.includes('html[data-restricted-master="true"] #op-sub-themes'), 'jdmaster에서 테마 관리 패널 숨김 규칙이 필요합니다');
 
   assert.match(masterCore, /isJdBrand\s*&&\s*\['payment', 'ai-settings'\]\.includes\(tabName\)/);
+  assert.match(masterCore, /window\.NANO_RESTRICTED_MASTER\s*&&\s*subName\s*===\s*["']themes["']/);
   assert.match(masterCore, /async function openMasterAiSettingsModal\(\)[\s\S]{0,400}if \(window\.NANO_RESTRICTED_MASTER \|\| isJdBrand\) return;/);
 });
 
@@ -255,6 +264,10 @@ test('jd.nanosbook.co.kr은 코발트 블루 계열 포인트 컬러와 Pretenda
   const sharingCss = fs.readFileSync(path.join(root, 'public_html/css/content-sharing.css'), 'utf8');
   const studentHtml = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
 
+  const expectedBrandCssByPage = {
+    'public_html/admin_preview.html': /\/css\/portal-brand\.css\?v=20261117_print_btn/,
+    'public_html/master_preview.html': /\/css\/portal-brand\.css\?v=20261118_themes/,
+  };
   for (const page of [
     'public_html/index.html',
     'public_html/student_preview.html',
@@ -267,7 +280,7 @@ test('jd.nanosbook.co.kr은 코발트 블루 계열 포인트 컬러와 Pretenda
     const html = fs.readFileSync(path.join(root, page), 'utf8');
     assert.match(html, /pretendardvariable-dynamic-subset\.min\.css/, `${page}에 Pretendard Variable CDN이 필요합니다`);
     assert.doesNotMatch(html, /static\/pretendard(?:\.min)?\.css/, `${page}의 구형 static Pretendard 링크를 제거해야 합니다`);
-    assert.match(html, /\/css\/portal-brand\.css\?v=20261117_jd_theme/, `${page}에 최신 portal-brand.css 캐시 키가 필요합니다`);
+    assert.match(html, expectedBrandCssByPage[page] || /\/css\/portal-brand\.css\?v=20261117_jd_theme/, `${page}에 최신 portal-brand.css 캐시 키가 필요합니다`);
   }
 
   assert.doesNotMatch(studentHtml, /NanumSquareRound/);
