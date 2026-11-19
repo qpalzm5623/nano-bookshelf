@@ -3775,7 +3775,7 @@
     }
   </style>
 <script src="js/preview-data.js?v=20261014"></script>
-<script src="js/portal-client.js?v=20261117_banner_sync"></script>
+<script src="js/portal-client.js?v=20261119_transfer_opt"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
 <script src="js/preview-ux.js?v=20261117_student_10m" defer></script>
 <link rel="stylesheet" href="css/quiz-result.css?v=20261117_jd_theme">
@@ -8062,10 +8062,14 @@ function backToThemeTagList() {
 
 // [실시간 테마 동기화] 마스터 관리자에서 등록/순서 조정된 최신 테마를 서버로부터 즉각 로드
 var _syncingStudentThemes = false;
-function syncStudentThemesFromServer() {
+var _lastThemeSyncAt = (typeof window !== 'undefined' && window.NANO_SERVER_DATA) ? Date.now() : 0;
+function syncStudentThemesFromServer(force) {
   if (window.NANO_SERVER_DATA) {
     if (!window.NanoPortal || !NanoPortal.remote || typeof NanoPortal.fetchThemes !== 'function' || _syncingStudentThemes) return;
+    if (!force && document.hidden) return;
+    if (!force && (Date.now() - _lastThemeSyncAt) < 60000) return;
     _syncingStudentThemes = true;
+    _lastThemeSyncAt = Date.now();
     var since = (window.NANO_SERVER_THEMES || []).reduce(function(max, item) {
       return Math.max(max, Number(item && item.updatedAt) || 0);
     }, 0);
@@ -11875,10 +11879,14 @@ function renderStudentBanners() {
 
 // [실시간 배너 동기화] 서버 최신 배너 및 연결 도서 목록 동기화
 var _syncingStudentBanners = false;
-function syncStudentBannersFromServer() {
+var _lastBannerSyncAt = (typeof window !== 'undefined' && window.NANO_SERVER_DATA) ? Date.now() : 0;
+function syncStudentBannersFromServer(force) {
   if (window.NANO_SERVER_DATA) {
     if (!window.NanoPortal || !NanoPortal.remote || typeof NanoPortal.fetchBanners !== 'function' || _syncingStudentBanners) return;
+    if (!force && document.hidden) return;
+    if (!force && (Date.now() - _lastBannerSyncAt) < 60000) return;
     _syncingStudentBanners = true;
+    _lastBannerSyncAt = Date.now();
     var since = (window.NANO_SERVER_BANNERS || []).reduce(function(max, item) {
       return Math.max(max, Number(item && item.updatedAt) || 0);
     }, 0);
@@ -11956,11 +11964,12 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
-// 주기적 서버 배너 및 테마 동기화 (30초마다 최신 배너 & 테마 확인)
+// 주기적 서버 배너 및 테마 동기화 (3분마다 최신 배너 & 테마 확인, 비활성 탭 건너뜀)
 setInterval(function() {
+  if (document.hidden) return;
   syncStudentBannersFromServer();
   syncStudentThemesFromServer();
-}, 30000);
+}, 180000);
 
 var toastT;
 function toast(msg){

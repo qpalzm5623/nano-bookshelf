@@ -222,7 +222,7 @@ export default async function handler(req: any, res: any) {
       if (action === 'dispatch_stats') {
         if (restrictedMaster(user)) {
           const ids = await brandAcademyIds('JD');
-          const logs = await prisma.aligoDispatchLog.findMany({ where: { academyId: { in: ids } }, include: { academy: true }, orderBy: { sentAt: 'desc' } });
+          const logs = await prisma.aligoDispatchLog.findMany({ where: { academyId: { in: ids } }, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' } });
           const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt.toISOString(), academyId: d.academy?.code || '', academyName: d.academy?.name || '', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, resultMessage: d.resultMessage || '', canRetry: false }));
           const success = logs.filter(d => ['SUCCESS', 'SMS_FALLBACK'].includes(d.status)).length;
           const failed = logs.filter(d => d.status === 'FAILED').length;
@@ -247,7 +247,7 @@ export default async function handler(req: any, res: any) {
           prisma.aligoDispatchLog.count({ where: { ...where, status: { in: ['SUCCESS', 'SMS_FALLBACK'] } } }),
           prisma.aligoDispatchLog.count({ where: { ...where, status: 'FAILED' } }),
         ]);
-        const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: true }, orderBy: { sentAt: 'desc' } });
+        const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' } });
         const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt ? new Date(d.sentAt).toISOString() : '', academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, providerId: d.providerId || '', code: d.resultCode || '', resultMessage: d.resultMessage || '', statusDetail: buildPendingStatusDetail(d, pendingDiagnostics), canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
         let connected = false;
         let remainingCount: number | null = null;

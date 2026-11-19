@@ -638,7 +638,7 @@
     task.promise = (async function() {
       var collected = [], cursor = '', isFirstPage = true;
       do {
-        var result = await api('/api/portal?action=learning&limit=500&academy=' + encodeURIComponent(scope || '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
+        var result = await api('/api/portal?action=learning&summary=1&limit=500&academy=' + encodeURIComponent(scope || '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''));
         collected = collected.concat(result.logs); cursor = result.nextCursor;
         if (isFirstPage && cursor && scope === academy()) {
           isFirstPage = false;
@@ -661,6 +661,27 @@
     learningRefresh = task;
     try { return await task.promise; } finally { if (learningRefresh === task) learningRefresh = null; }
   }
+  var learningDetailInflight = {};
+  async function fetchLearningDetail(id) {
+    if (!id) return null;
+    if (!remote) {
+      return (memoryLogs || []).find(function (item) { return item.id === id; }) || null;
+    }
+    if (learningDetailInflight[id]) return learningDetailInflight[id];
+    learningDetailInflight[id] = (async function () {
+      try {
+        var result = await api('/api/portal?action=learning&id=' + encodeURIComponent(id));
+        var full = result && Array.isArray(result.logs) ? result.logs[0] : null;
+        if (full && memoryLogs) {
+          memoryLogs = memoryLogs.map(function (item) { return item.id === full.id ? full : item; });
+        }
+        return full;
+      } finally {
+        delete learningDetailInflight[id];
+      }
+    })();
+    return learningDetailInflight[id];
+  }
   async function logout() {
     if (remote) await request('logout', {});
     sessionStorage.removeItem('nano_auth_user');
@@ -673,7 +694,7 @@
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     formatKstDateTime: toKst24String,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,
-    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, logout: logout, handleConcurrentLogout: handleConcurrentLogout,
+    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, fetchLearningDetail: fetchLearningDetail, logout: logout, handleConcurrentLogout: handleConcurrentLogout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
     logs: function () { return memoryLogs; } };
   var page = location.pathname.split('/').pop().replace(/\.html$/, '');
@@ -698,21 +719,34 @@
   }
 
   var sessionWatcherTimer = null;
+  var lastSessionCheckAt = Date.now();
+  var sessionCheckInFlight = null;
   function startSessionWatcher() {
     if (sessionWatcherTimer) return;
-    async function checkConcurrentSession() {
-      try {
-        var res = await fetch('/api/portal?action=session', { credentials: 'same-origin', cache: 'no-store' });
-        if (res.status === 401) {
-          var data = await res.json().catch(function() { return {}; });
-          if (data && (data.concurrentLoggedOut || (typeof data.error === 'string' && data.error.indexOf('다른 기기에서 로그인하여') !== -1))) {
-            if (sessionWatcherTimer) { clearInterval(sessionWatcherTimer); sessionWatcherTimer = null; }
-            handleConcurrentLogout(data.error);
+    lastSessionCheckAt = Date.now();
+    // visibilitychange와 focus가 동시에 발생할 때 중복 호출되지 않도록 10초 쿨다운 적용
+    function checkConcurrentSession() {
+      if (document.hidden) return Promise.resolve();
+      var now = Date.now();
+      if (now - lastSessionCheckAt < 10000) return Promise.resolve();
+      if (sessionCheckInFlight) return sessionCheckInFlight;
+      lastSessionCheckAt = now;
+      sessionCheckInFlight = (async function () {
+        try {
+          var res = await fetch('/api/portal?action=session', { credentials: 'same-origin', cache: 'no-store' });
+          if (res.status === 401) {
+            var data = await res.json().catch(function() { return {}; });
+            if (data && (data.concurrentLoggedOut || (typeof data.error === 'string' && data.error.indexOf('다른 기기에서 로그인하여') !== -1))) {
+              if (sessionWatcherTimer) { clearInterval(sessionWatcherTimer); sessionWatcherTimer = null; }
+              handleConcurrentLogout(data.error);
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+        finally { sessionCheckInFlight = null; }
+      })();
+      return sessionCheckInFlight;
     }
-    sessionWatcherTimer = setInterval(checkConcurrentSession, 5000);
+    sessionWatcherTimer = setInterval(checkConcurrentSession, 30000);
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'visible') checkConcurrentSession();
     });

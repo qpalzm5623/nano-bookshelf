@@ -1163,9 +1163,9 @@ async function saveCustomLearningLogs(logs) {
     window.nanoReviewSaving = true;
     try {
       for (var log of changes) {
-        var response = await NanoPortal.request('review', { id: log.id, comment: log.comment || '', thoughtTeacherComment: log.thoughtTeacherComment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, worksheetPhotos: log.worksheetPhotos, reviewRevision: log.reviewRevision || '' });
+        var shouldSendPhotos = log.photosLoaded !== false || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0); var reviewPayload = { id: log.id, comment: log.comment || '', thoughtTeacherComment: log.thoughtTeacherComment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, reviewRevision: log.reviewRevision || '' }; if (shouldSendPhotos) reviewPayload.worksheetPhotos = log.worksheetPhotos; var response = await NanoPortal.request('review', reviewPayload);
         log.reviewRevision = response.reviewRevision; NanoPortal.applyReview(log);
-        saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos);
+        saveWorksheetStore(log.id, log.worksheetAiResult, shouldSendPhotos ? log.worksheetPhotos : undefined);
       }
       return true;
     } catch(e) { showAcademyToast('첨삭 저장 실패: ' + e.message); return false; }
@@ -1173,7 +1173,7 @@ async function saveCustomLearningLogs(logs) {
   }
   try {
     window.NanoLearningStore.save(getLearningAcademyId(), logs);
-    logs.forEach(function(log) { saveWorksheetStore(log.id, log.worksheetAiResult, log.worksheetPhotos); });
+    logs.forEach(function(log) { saveWorksheetStore(log.id, log.worksheetAiResult, log.photosLoaded === false ? undefined : log.worksheetPhotos); });
     return true;
   } catch(e) {
     console.error('학습 기록 저장 실패:', e);
@@ -1398,8 +1398,72 @@ function syncWorksheetCorrectionActions() {
   });
 }
 
+// summary=1 목록에는 사진 dataUrl이 제외되어 있으므로 상세 모달 진입 시에만 단건 원본 사진을 지연 로드합니다.
+function ensureLearningDetailPhotos(log, onDone) {
+  if (!log || !log.id) return;
+  if (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) {
+    log.photosLoaded = true;
+    return;
+  }
+  var expectedCount = Number(log.worksheetPhotoCount) || 0;
+  if (expectedCount <= 0 || log.photosLoaded !== false) return;
+  if (!window.NanoPortal || !NanoPortal.remote || typeof NanoPortal.fetchLearningDetail !== 'function') return;
+  var targetId = log.id;
+  NanoPortal.fetchLearningDetail(targetId).then(function(full) {
+    if (!full) return;
+    var photos = Array.isArray(full.worksheetPhotos) ? full.worksheetPhotos : [];
+    log.worksheetPhotos = photos;
+    log.worksheetPhotoCount = photos.length;
+    log.photosLoaded = true;
+    if (full.reviewRevision) log.reviewRevision = full.reviewRevision;
+    saveWorksheetStore(targetId, undefined, photos);
+    if (typeof onDone === 'function') onDone(full);
+  }).catch(function(err) {
+    console.warn('[ensureLearningDetailPhotos] 원본 사진 로드 실패:', err);
+  });
+}
+
 // 첨삭 모달 열기
 function openCorrectionModal(logId) {
+  function renderDonePhotosPreview(targetLog) {
+    var donePhotosBox = document.getElementById('worksheetDonePhotosPreview');
+    if (!donePhotosBox) return;
+    if (!currentWorksheetCorrectionDone) {
+      donePhotosBox.style.display = 'none';
+      donePhotosBox.innerHTML = '';
+      return;
+    }
+    donePhotosBox.style.display = 'block';
+    var expectedCount = Number(targetLog && targetLog.worksheetPhotoCount) || 0;
+    if (targetLog && targetLog.photosLoaded === false && expectedCount > 0 && currentWorksheetPhotos.length === 0) {
+      donePhotosBox.innerHTML = '<div class="corr-photos-box text-center" style="background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:12px;padding:18px;margin-bottom:18px;color:#64748b;font-size:12.5px;">' +
+        '<i class="fa-solid fa-spinner fa-spin mr-2 text-primary"></i>등록된 나노시트 원본 사진(' + expectedCount + '장)을 불러오는 중입니다...' +
+        '</div>';
+      return;
+    }
+    if (currentWorksheetPhotos.length > 0) {
+      donePhotosBox.innerHTML = '<div class="corr-photos-box" style="background:#faf9f6;border:1px solid #e6dfd5;border-radius:12px;padding:16px 18px;margin-bottom:18px;">' +
+        '<div class="corr-photos-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #ece4d8;">' +
+        '<div class="font-weight-bold" style="font-size:13px;color:#3d342d;">' +
+        '<i class="fa-solid fa-camera text-primary mr-2"></i><strong>아이가 작성한 나노시트 원본</strong>' +
+        '</div>' +
+        '<span class="badge badge-pill badge-light border text-muted" style="font-size:11.5px;padding:4px 10px;">총 ' + currentWorksheetPhotos.length + '장 · 눌러서 크게 보기</span>' +
+        '</div>' +
+        '<div class="d-flex flex-wrap" style="gap:12px;">' +
+        currentWorksheetPhotos.map(function(p, idx) {
+          var src = escapePortfolioText((p && (p.dataUrl || p.url)) || '');
+          return src ? '<div class="position-relative" style="cursor:pointer;" onclick="openWorksheetPhotoLightbox(\'' + src + '\')" title="클릭하여 원본 크게 보기">' +
+            '<img src="' + src + '" alt="나노시트 ' + (idx + 1) + '페이지" style="width:92px;height:122px;object-fit:cover;border-radius:9px;border:1.5px solid #d8cebf;box-shadow:0 3px 8px rgba(0,0,0,0.08);">' +
+            '<span class="badge badge-dark position-absolute" style="bottom:6px;right:6px;font-size:10px;opacity:0.88;padding:2px 6px;">' + (idx + 1) + 'p</span>' +
+            '</div>' : '';
+        }).join('') +
+        '</div></div>';
+    } else {
+      donePhotosBox.innerHTML = '<div class="corr-photos-box text-center" style="background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:12px;padding:18px;margin-bottom:18px;color:#64748b;font-size:12.5px;">' +
+        '<i class="fa-solid fa-camera mr-2 text-muted"></i>등록된 나노시트 원본 사진이 없습니다.' +
+        '</div>';
+    }
+  }
   var log = getLoadedLearningLogs().find(function(l) { return l.id === logId; });
   if (!log) return;
   currentOpenCorrectionLogId = logId;
@@ -1447,37 +1511,7 @@ function openCorrectionModal(logId) {
     }
   }
 
-  var donePhotosBox = document.getElementById('worksheetDonePhotosPreview');
-  if (donePhotosBox) {
-    if (currentWorksheetCorrectionDone) {
-      donePhotosBox.style.display = 'block';
-      if (currentWorksheetPhotos.length > 0) {
-        donePhotosBox.innerHTML = '<div class="corr-photos-box" style="background:#faf9f6;border:1px solid #e6dfd5;border-radius:12px;padding:16px 18px;margin-bottom:18px;">' +
-          '<div class="corr-photos-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #ece4d8;">' +
-          '<div class="font-weight-bold" style="font-size:13px;color:#3d342d;">' +
-          '<i class="fa-solid fa-camera text-primary mr-2"></i><strong>아이가 작성한 나노시트 원본</strong>' +
-          '</div>' +
-          '<span class="badge badge-pill badge-light border text-muted" style="font-size:11.5px;padding:4px 10px;">총 ' + currentWorksheetPhotos.length + '장 · 눌러서 크게 보기</span>' +
-          '</div>' +
-          '<div class="d-flex flex-wrap" style="gap:12px;">' +
-          currentWorksheetPhotos.map(function(p, idx) {
-            var src = escapePortfolioText((p && (p.dataUrl || p.url)) || '');
-            return src ? '<div class="position-relative" style="cursor:pointer;" onclick="openWorksheetPhotoLightbox(\'' + src + '\')" title="클릭하여 원본 크게 보기">' +
-              '<img src="' + src + '" alt="나노시트 ' + (idx + 1) + '페이지" style="width:92px;height:122px;object-fit:cover;border-radius:9px;border:1.5px solid #d8cebf;box-shadow:0 3px 8px rgba(0,0,0,0.08);">' +
-              '<span class="badge badge-dark position-absolute" style="bottom:6px;right:6px;font-size:10px;opacity:0.88;padding:2px 6px;">' + (idx + 1) + 'p</span>' +
-              '</div>' : '';
-          }).join('') +
-          '</div></div>';
-      } else {
-        donePhotosBox.innerHTML = '<div class="corr-photos-box text-center" style="background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:12px;padding:18px;margin-bottom:18px;color:#64748b;font-size:12.5px;">' +
-          '<i class="fa-solid fa-camera mr-2 text-muted"></i>등록된 나노시트 원본 사진이 없습니다.' +
-          '</div>';
-      }
-    } else {
-      donePhotosBox.style.display = 'none';
-      donePhotosBox.innerHTML = '';
-    }
-  }
+  renderDonePhotosPreview(log);
 
   // 상단 도서 표지·서지 정보 + 학원명·클래스명·학생명 바인딩
   var bookMeta = typeof getLearningLogBookMeta === 'function' ? getLearningLogBookMeta(log) : { cover: log.cover || '', publisher: log.bookPub || '', book: null };
@@ -1530,9 +1564,23 @@ function openCorrectionModal(logId) {
   var badge = document.getElementById('modalCorrectionBadge');
   badge.className = 'badge-soft ' + (currentWorksheetCorrectionDone ? 'badge-soft-success' : 'badge-soft-warn') + ' font-weight-bold';
   badge.innerText = currentWorksheetCorrectionDone ? '첨삭 완료' : '첨삭 전';
+  var isLoadingPhotos = !!(log.photosLoaded === false && (Number(log.worksheetPhotoCount) || 0) > 0 && currentWorksheetPhotos.length === 0);
   if (currentWorksheetCorrectionDone) renderWorksheetCorrectionEditor();
   renderWorksheetPhotoThumbnails();
   syncWorksheetCorrectionActions();
+  if (isLoadingPhotos && typeof ensureLearningDetailPhotos === 'function') {
+    var loadingPhotoBadge = document.getElementById('worksheetPhotoCountBadge');
+    if (loadingPhotoBadge) loadingPhotoBadge.innerText = '사진 불러오는 중 (' + Number(log.worksheetPhotoCount) + '장)';
+    ensureLearningDetailPhotos(log, function(fullLog) {
+      if (currentOpenCorrectionLogId !== logId) return;
+      var serverPhotos = Array.isArray(fullLog && fullLog.worksheetPhotos) ? fullLog.worksheetPhotos.slice() : [];
+      if (currentWorksheetPhotos.length === 0) currentWorksheetPhotos = serverPhotos;
+      if (fullLog && fullLog.reviewRevision) currentWorksheetReviewRevision = fullLog.reviewRevision;
+      renderDonePhotosPreview(log);
+      renderWorksheetPhotoThumbnails();
+      syncWorksheetCorrectionActions();
+    });
+  }
   document.getElementById('correctionFileInput').value = '';
   if (window.jQuery) $('#modalCorrection').modal('show');
 }
@@ -2199,7 +2247,7 @@ function openLearningDetailModal(id) {
   var storedWs = getWorksheetStore(id);
   if (storedWs) {
     if (!(window.NanoPortal && NanoPortal.remote) && log.worksheetAiResult === undefined && storedWs.aiResult) log.worksheetAiResult = storedWs.aiResult;
-    if ((!log.worksheetPhotos || log.worksheetPhotos.length === 0) && Array.isArray(storedWs.photos) && storedWs.photos.length > 0) {
+    if ((!log.worksheetPhotos || log.worksheetPhotos.length === 0) && !(window.NanoPortal && NanoPortal.remote && log.photosLoaded === false && Number(log.worksheetPhotoCount) === 0) && Array.isArray(storedWs.photos) && storedWs.photos.length > 0) {
       log.worksheetPhotos = storedWs.photos;
     }
   }
@@ -2339,7 +2387,7 @@ function openLearningDetailModal(id) {
 
   // 3. 생각 담기 영역 (질문, 학생 답안, 숨기기/보이기 토글, 교사 코멘트 직접 타이핑)
   var thoughtSec = document.getElementById('learnModalThoughtSection');
-  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer || (log.comment && log.comment.trim() !== '') || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0)));
+  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer || (log.comment && log.comment.trim() !== '') || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0));
   
   if (thoughtSec) {
     if (!hasThought) {
@@ -2379,7 +2427,7 @@ function openLearningDetailModal(id) {
   }
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
 
-  if (log.worksheetAiResult || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0)) {
+  if (log.worksheetAiResult || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0) {
     var res = log.worksheetAiResult || {};
     var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
     var sName = log.studentName || log.name || '원생';
@@ -2397,8 +2445,21 @@ function openLearningDetailModal(id) {
       // 좌측 원본 사진 썸네일
       var thumbsEl = document.getElementById('worksheetAiThumbnails');
       if (thumbsEl) {
+        var expectedPhotoCount = Number(log.worksheetPhotoCount) || 0;
         if (photos.length > 0) {
           thumbsEl.innerHTML = renderWorksheetReportPhotos(photos);
+        } else if (log.photosLoaded === false && expectedPhotoCount > 0 && typeof ensureLearningDetailPhotos === 'function') {
+          thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;"><i class="fa-solid fa-spinner fa-spin mr-1"></i>원본 사진을 불러오는 중입니다... (' + expectedPhotoCount + '장)</span>';
+          ensureLearningDetailPhotos(log, function(fullLog) {
+            if (currentOpenLearningLogId !== id) return;
+            var loadedPhotos = Array.isArray(fullLog && fullLog.worksheetPhotos) ? fullLog.worksheetPhotos : [];
+            var targetThumbsEl = document.getElementById('worksheetAiThumbnails');
+            if (targetThumbsEl) {
+              targetThumbsEl.innerHTML = loadedPhotos.length > 0
+                ? renderWorksheetReportPhotos(loadedPhotos)
+                : '<span class="text-muted" style="font-size: 11px;">등록된 원본 사진이 없습니다.</span>';
+            }
+          });
         } else {
           thumbsEl.innerHTML = '<span class="text-muted" style="font-size: 11px;">등록된 원본 사진이 없습니다.</span>';
         }
@@ -8971,12 +9032,6 @@ window.addEventListener('pageshow', function() {
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
     clearAdminSearchAutofill();
-    // 브라우저 탭이 다시 활성화되면 현재 학원 관리 탭 데이터를 즉시 재갱신
-    var activeNavBtn = document.querySelector('.nav-link.active[id^="btn-nav-"]');
-    if (activeNavBtn) {
-      var currentTab = activeNavBtn.id.replace('btn-nav-', '');
-      switchTab(currentTab);
-    }
   }
 });
 

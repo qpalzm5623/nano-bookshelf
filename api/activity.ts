@@ -279,6 +279,19 @@ export default async function handler(req: any, res: any) {
     }
     if (action === 'banners') {
       const since = Number(req.query.since) || 0;
+      if (since > 0) {
+        // 변경 여부 확인 전까지 본문(value/imageUrl)을 전송하지 않고 생성/수정 시각만 조회합니다.
+        const [bannerTimes, metaTimes] = await Promise.all([
+          prisma.mainBanner.findMany({ select: { createdAt: true } }),
+          prisma.portalSetting.findMany({ where: { scope: 'banner_meta' }, select: { updatedAt: true } })
+        ]);
+        let maxUpdated = 0;
+        for (const r of bannerTimes) maxUpdated = Math.max(maxUpdated, r?.createdAt ? +new Date(r.createdAt) : 0);
+        for (const r of metaTimes) maxUpdated = Math.max(maxUpdated, r?.updatedAt ? +new Date(r.updatedAt) : 0);
+        if (maxUpdated > 0 && maxUpdated <= since) {
+          return res.json({ unchanged: true, latestUpdatedAt: maxUpdated });
+        }
+      }
       const [bannerRows, metaRows] = await Promise.all([
         prisma.mainBanner.findMany({ orderBy: { orderNo: 'asc' } }),
         prisma.portalSetting.findMany({ where: { scope: 'banner_meta' } })
@@ -297,6 +310,14 @@ export default async function handler(req: any, res: any) {
     }
     if (action === 'themes') {
       const since = Number(req.query.since) || 0;
+      if (since > 0) {
+        // 변경이 없을 때는 대용량 이미지/메타 value를 읽지 않고 updatedAt만 확인합니다.
+        const metaTimes = await prisma.portalSetting.findMany({ where: { scope: 'theme_meta' }, select: { updatedAt: true } });
+        const maxUpdated = metaTimes.reduce((max, r: any) => Math.max(max, r?.updatedAt ? +new Date(r.updatedAt) : 0), 0);
+        if (maxUpdated > 0 && maxUpdated <= since) {
+          return res.json({ unchanged: true, latestUpdatedAt: maxUpdated });
+        }
+      }
       const metaRows = await prisma.portalSetting.findMany({ where: { scope: 'theme_meta' } });
       const latestUpdatedAt = metaRows.reduce((max, r: any) => Math.max(max, r.updatedAt ? +new Date(r.updatedAt) : 0), 0);
       if (since > 0 && latestUpdatedAt > 0 && latestUpdatedAt <= since) {
@@ -343,7 +364,26 @@ export default async function handler(req: any, res: any) {
     }
     if (action === 'assignments') {
       const academyId = await academyScope(user, req.query.academy);
-      const rows = await prisma.bookAssignment.findMany({ where: { academyId, ...(user.role === 'STUDENT' ? { memberId: user.id } : {}) }, include: { member: { include: { classGroup: true } }, book: true }, orderBy: { createdAt: 'desc' } });
+      const rows = await prisma.bookAssignment.findMany({
+        where: { academyId, ...(user.role === 'STUDENT' ? { memberId: user.id } : {}) },
+        select: {
+          id: true,
+          memberId: true,
+          isCompleted: true,
+          createdAt: true,
+          member: {
+            select: {
+              username: true,
+              name: true,
+              school: true,
+              grade: true,
+              classGroup: { select: { name: true } }
+            }
+          },
+          book: { select: { bookNo: true, title: true, publisher: true, coverUrl: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
       const grouped = new Map<string, any>();
       for (const row of rows) {
         if (!row.member) continue;

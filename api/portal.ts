@@ -51,7 +51,9 @@ function logView(attempt: any, book: any, studentView = false, summaryOnly = fal
     studentThoughtAnswer: attempt.thinkReply || '', thoughtAnswer: attempt.thinkReply || '',
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
     worksheetAiResult: details.worksheetAiResult || null,
-    worksheetPhotos: summaryOnly ? [] : photos, worksheetPhotoCount: photos.length,
+    worksheetPhotos: summaryOnly ? [] : photos,
+    worksheetPhotoCount: typeof attempt._worksheetPhotoCount === 'number' ? attempt._worksheetPhotoCount : photos.length,
+    photosLoaded: !summaryOnly,
     thoughtTeacherComment: details.thoughtTeacherComment || '',
     comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
 }
@@ -120,14 +122,66 @@ async function queryLearningLogs(user: any, query: any) {
     ...(searchOr ? { OR: searchOr } : {})
   };
 
-  const attempts = await prisma.quizAttempt.findMany({
-    where,
-    include: { member: { include: { academy: true, classGroup: true } } },
-    orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
-    take: limit + 1,
-    ...(typeof query?.cursor === 'string' && !targetId ? { cursor: { id: query.cursor }, skip: 1 } : {})
-  });
+  const memberSelect = {
+    username: true,
+    name: true,
+    school: true,
+    grade: true,
+    academyId: true,
+    academy: { select: { code: true, name: true } },
+    classGroup: { select: { name: true } }
+  };
+  const canStripPhotosInSql = summaryOnly && typeof (prisma as any).$queryRaw === 'function';
+  const cursorId = typeof query?.cursor === 'string' && !targetId ? query.cursor : '';
+  const paginationArgs = (cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}) as { cursor?: { id: string }; skip?: number };
+  const attempts: any[] = canStripPhotosInSql
+    ? await prisma.quizAttempt.findMany({
+        where,
+        select: {
+          id: true,
+          memberId: true,
+          bookId: true,
+          score: true,
+          totalScore: true,
+          correctCount: true,
+          questionCount: true,
+          thinkReply: true,
+          completedAt: true,
+          member: { select: memberSelect }
+        },
+        orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        ...paginationArgs
+      })
+    : await prisma.quizAttempt.findMany({
+        where,
+        include: { member: { select: memberSelect } },
+        orderBy: [{ completedAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        ...paginationArgs
+      });
   const page = attempts.slice(0, limit);
+  if (canStripPhotosInSql && page.length > 0) {
+    // 요약 목록 조회 시 PostgreSQL 내부에서 worksheetPhotos 대용량 이미지를 제거해 DB 전송량을 절감합니다.
+    const pageIds = page.map((a: any) => a.id);
+    const strippedRows = await prisma.$queryRaw<Array<{ id: string; strippedAnswers: any; photoCount: number }>>`
+      SELECT id,
+        CASE WHEN answers IS NULL THEN '{}'::jsonb ELSE answers::jsonb - 'worksheetPhotos' END AS "strippedAnswers",
+        COALESCE(CASE WHEN jsonb_typeof(answers::jsonb->'worksheetPhotos') = 'array' THEN jsonb_array_length(answers::jsonb->'worksheetPhotos') ELSE 0 END, 0)::int AS "photoCount"
+      FROM quiz_attempts
+      WHERE id = ANY(${pageIds})
+    `.catch(() => []);
+    if (Array.isArray(strippedRows) && strippedRows.length > 0) {
+      const strippedMap = new Map(strippedRows.map(r => [r.id, r]));
+      for (const a of page as any[]) {
+        const s = strippedMap.get(a.id);
+        if (s) {
+          a.answers = s.strippedAnswers || {};
+          a._worksheetPhotoCount = Number(s.photoCount) || 0;
+        }
+      }
+    }
+  }
   const bookKeys = [...new Set(page.map((a: any) => a.bookId).filter(Boolean))];
   const [books, files] = await Promise.all([
     bookKeys.length
@@ -244,7 +298,23 @@ export default async function handler(req: any, res: any) {
     }
     const token = String(req.headers.cookie || '').split(';').map((v: string) => v.trim()).find((v: string) => v.startsWith(cookieName + '='))?.slice(cookieName.length + 1) || '';
     const session = readSession(token);
-    const member = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true, classGroup: true } }) : null;
+    const member = session ? await prisma.member.findUnique({
+      where: { id: session.sub },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        status: true,
+        password: true,
+        academyId: true,
+        grade: true,
+        gender: true,
+        school: true,
+        academy: { select: { id: true, code: true, name: true, status: true, deletedAt: true } },
+        classGroup: { select: { name: true } }
+      }
+    }) : null;
     if (!allowed(member) || !session || session.version !== passwordVersion(member!.password || '')) return res.status(401).json({ error: '로그인이 만료되었습니다. 다시 로그인해 주세요.' });
 
     // master 계정 제외: 다른 기기 로그인으로 이전 세션이 무효화된 경우 차단

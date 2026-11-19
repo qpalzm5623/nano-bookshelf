@@ -25,29 +25,46 @@ let catalogPromise: Promise<CachedCatalog> | null = null;
 
 async function getCachedCatalog(): Promise<CachedCatalog> {
   const now = Date.now();
-  if (catalogCache && now - catalogCache.cachedAt < 5 * 60 * 1000) {
+  // 도서 카탈로그·소셜 통계 인메모리 캐시 TTL을 15분으로 유지해 반복 DB 풀스캔을 줄입니다.
+  if (catalogCache && now - catalogCache.cachedAt < 15 * 60 * 1000) {
     return catalogCache;
   }
   if (catalogPromise) return catalogPromise;
 
   catalogPromise = (async () => {
     try {
-      const [bookRows, certAttempts, prefRows, settingRows, quizSetRows, recSettingRows] = await Promise.all([
+      const [bookRows, certAttempts, prefRows, settingRows, recSettingRows] = await Promise.all([
         prisma.book.findMany({
           orderBy: { bookNo: 'asc' },
-          include: { _count: { select: { quizzes: true } }, theme: true }
+          select: {
+            id: true,
+            bookNo: true,
+            title: true,
+            author: true,
+            publisher: true,
+            grade: true,
+            category: true,
+            subCategory: true,
+            series: true,
+            coverUrl: true,
+            worksheetUrl: true,
+            tags: true,
+            thinkTitle: true,
+            thinkQuiz: true,
+            description: true,
+            isRecommended: true,
+            themeId: true,
+            createdAt: true,
+            theme: { select: { name: true } }
+          }
         }),
         prisma.quizAttempt.groupBy({ by: ['bookId'], where: { score: { gte: 60 } }, _count: { id: true } }),
         prisma.portalSetting.findMany({ where: { key: { startsWith: 'preferences:' } }, select: { value: true } }),
         prisma.portalSetting.findMany({ where: { scope: { in: ['notice_meta', 'book_creator', 'system'] } }, select: { key: true, scope: true, value: true, updatedAt: true } }),
-        prisma.bookQuiz ? prisma.bookQuiz.groupBy({ by: ['bookId', 'legacyQuizSeq'] }) : Promise.resolve([]),
         prisma.portalSetting.findMany({ where: { scope: 'book_recommend' }, select: { key: true, value: true } })
       ]);
 
       const quizSetCountMap = new Map<string, number>();
-      for (const qsr of ((quizSetRows as any[]) || [])) {
-        quizSetCountMap.set(qsr.bookId, (quizSetCountMap.get(qsr.bookId) || 0) + 1);
-      }
 
       const noticeMetaMap = new Map<string, Record<string, any>>();
       const bookCreatorMap = new Map<string, Record<string, any>>();
@@ -140,13 +157,13 @@ export default async function handler(req: any, res: any) {
       prisma.notice.findMany({ where: user.role === 'MASTER' ? {} : { OR: [{ targetRole: null }, { targetRole: user.role }] }, orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }] }),
       prisma.academyBook.findMany({ where: { academyId: user.academyId }, include: { book: { select: { bookNo: true } } } }),
       !limited && (user.role === 'MASTER' || user.role === 'DIRECTOR')
-        ? prisma.payment.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }) }, include: { academy: true }, orderBy: { createdAt: 'desc' }, take: 500 })
+        ? prisma.payment.findMany({ where: { deletedAt: null, ...(user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }) }, include: { academy: { select: { code: true, name: true, directorName: true, phone: true } } }, orderBy: { createdAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
       user.role === 'MASTER' || user.role === 'DIRECTOR' || user.role === 'TEACHER'
-        ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }, include: { academy: true }, orderBy: { sentAt: 'desc' }, take: 500 })
+        ? prisma.aligoDispatchLog.findMany({ where: user.role === 'MASTER' ? masterMemberFilter : { academyId: user.academyId }, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' }, take: 500 })
         : Promise.resolve([]),
-      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: { OR: [{ key: { startsWith: 'class_meta:' } }, { key: { startsWith: 'academy_meta:' } }] }, select: { key: true, value: true } }),
-      prisma.portalSetting.findMany({ where: { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
+      isStudent ? Promise.resolve([]) : prisma.portalSetting.findMany({ where: user.role === 'MASTER' ? { OR: [{ key: { startsWith: 'class_meta:' } }, { key: { startsWith: 'academy_meta:' } }] } : { OR: [{ key: 'academy_meta:' + user.academyId }, { key: { startsWith: 'class_meta:' } }] }, select: { key: true, value: true } }),
+      prisma.portalSetting.findMany({ where: isStudent ? { key: 'character:' + user.id } : { key: { startsWith: 'character:' } }, select: { key: true, value: true } }),
       prisma.portalSetting.findMany({
         where: {
           key: {
@@ -518,7 +535,8 @@ export default async function handler(req: any, res: any) {
         };
       }),
       MIGRATED_LEARNING_LOGS: [],
-      MIGRATED_RANKINGS: rankedMembers.map((m, index) => {
+      // 학생·일반 학원은 실시간 랭킹 API(/api/activity, /api/manage)를 사용하므로 초기 스크립트에 전체 랭킹 덤프를 싣지 않습니다.
+      MIGRATED_RANKINGS: (isStudent ? [] : (user.role === 'MASTER' ? rankedMembers.slice(0, 200) : rankedMembers.filter(m => m.academy.code === user.academy.code).slice(0, 100))).map((m, index) => {
         let recent = '-';
         if (m.lastLoginAt) {
           try {
@@ -541,7 +559,7 @@ export default async function handler(req: any, res: any) {
           recent
         };
       }),
-      MIGRATED_ACADEMY_RANKINGS: academyRankings
+      MIGRATED_ACADEMY_RANKINGS: user.role === 'MASTER' ? academyRankings : []
     };
     const sessionUser = { brand, brandPolicy: (user as any).brandPolicy, id: user.username, memberId: user.id, name: user.name, studentName: user.name, studentId: user.username,
       role: user.role === 'MASTER' ? 'master' : user.role === 'STUDENT' ? 'student' : user.role === 'TEACHER' ? 'teacher' : 'admin',

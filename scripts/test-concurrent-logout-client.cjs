@@ -3,10 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-test('portal-client.js는 handleConcurrentLogout를 NanoPortal에 노출하고 세션 워처를 5초 주기로 실행한다', () => {
+test('portal-client.js는 handleConcurrentLogout를 NanoPortal에 노출하고 세션 워처를 30초 주기와 쿨다운으로 실행한다', () => {
   const content = fs.readFileSync(path.join(__dirname, '../public_html/js/portal-client.js'), 'utf8');
   assert.ok(content.includes('handleConcurrentLogout: handleConcurrentLogout'), 'handleConcurrentLogout should be exported to NanoPortal');
-  assert.ok(content.includes('sessionWatcherTimer = setInterval(checkConcurrentSession, 5000);'), 'sessionWatcherTimer should run every 5s');
+  assert.ok(content.includes('sessionWatcherTimer = setInterval(checkConcurrentSession, 30000);'), 'sessionWatcherTimer should run every 30s');
+  assert.ok(content.includes('if (document.hidden) return Promise.resolve();'), 'sessionWatcher should skip hidden tabs');
+  assert.ok(content.includes('now - lastSessionCheckAt < 10000'), 'sessionWatcher should debounce rapid visibility/focus events');
   assert.ok(content.includes("window.addEventListener('focus', function() {"), 'should attach focus listener');
 });
 
