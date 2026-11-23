@@ -35,20 +35,6 @@
       box-sizing: border-box;
     }
 
-    /* [권한 설정] 선생님 계정 접속 시 초기 렌더링 깜빡임 없이 원장 전용 메뉴·회원 변경 버튼 즉시 숨김 */
-    html.nano-teacher-role #btn-nav-content-sharing,
-    html.nano-teacher-role #btn-nav-payment,
-    html.nano-teacher-role #sidebar-section-payment,
-    html.nano-teacher-role #btn-member-teachers,
-    html.nano-teacher-role #btnOpenDeletedStudentsModal,
-    html.nano-teacher-role #btnOpenClassManageModal,
-    html.nano-teacher-role #btnOpenStudentExcelModal,
-    html.nano-teacher-role #btnOpenStudentAddModal,
-    html.nano-teacher-role #btnModalClassManageWrapper,
-    html.nano-teacher-role #btnModalClassManage {
-      display: none !important;
-    }
-
     html {
       height: 100%;
       overflow: hidden;
@@ -476,111 +462,6 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 12px 14px;
       margin-bottom: 16px;
-    }
-
-    /* ============================================================== */
-    /* [학습 리포트 모달] PC 뷰 (기본) vs 카카오톡 화면 뷰 전환 스타일 */
-    /* ============================================================== */
-    #learningReportModalDialog {
-      max-width: 1040px !important;
-      width: 95% !important;
-      transition: max-width 0.22s ease-in-out;
-    }
-
-    /* 카카오톡 화면 뷰 모드 활성화 시 (모바일 1열 스마트 레이아웃) */
-    #learningReportModalDialog.view-mode-kakao {
-      max-width: 440px !important;
-      width: 100% !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao #learningReportModalBody {
-      padding: 14px 12px !important;
-      background: #f1f5f9 !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-overview-split {
-      grid-template-columns: 1fr !important;
-      gap: 10px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-overview-left {
-      flex-direction: row !important;
-      text-align: left !important;
-      padding: 10px 12px !important;
-      align-items: center !important;
-      gap: 12px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-cover-wrapper {
-      width: 60px !important;
-      height: 84px !important;
-      min-width: 60px !important;
-      margin: 0 !important;
-      flex-shrink: 0;
-    }
-
-    #learningReportModalDialog.view-mode-kakao #learnModalBook {
-      font-size: 15px !important;
-      white-space: normal !important;
-      line-height: 1.35 !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-overview-card {
-      padding: 12px !important;
-      border-radius: 12px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-quiz-grid {
-      grid-template-columns: 1fr !important;
-      gap: 8px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-quiz-card {
-      padding: 10px 12px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .report-quiz-question {
-      font-size: 12.5px !important;
-      min-height: auto !important;
-      margin-bottom: 8px !important;
-      white-space: normal !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .row.no-gutters {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 10px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao [style*="min-width: 300px"],
-    #learningReportModalDialog.view-mode-kakao [style*="min-width: 280px"],
-    #learningReportModalDialog.view-mode-kakao [style*="min-width: 240px"],
-    #learningReportModalDialog.view-mode-kakao [style*="max-width: 320px"] {
-      min-width: 100% !important;
-      max-width: 100% !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .modal-footer {
-      flex-direction: column !important;
-      align-items: stretch !important;
-      gap: 8px !important;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .modal-footer > small {
-      text-align: center;
-      font-size: 11px;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .modal-footer > div {
-      width: 100%;
-      display: flex;
-      gap: 6px;
-    }
-
-    #learningReportModalDialog.view-mode-kakao .modal-footer .btn {
-      flex: 1;
-      padding: 7px 6px;
-      font-size: 12px;
     }
 
     /* ==============================================================
