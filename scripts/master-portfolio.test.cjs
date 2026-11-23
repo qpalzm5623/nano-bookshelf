@@ -546,25 +546,30 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
   for (const name of pages) {
     const html = fs.readFileSync(path.join(pubDir, name), 'utf8');
     assert.equal(html.includes('truncated for diff preview'), false, `${name}에 diff 축약 문자열이 남아 있습니다`);
+    assert.ok(Buffer.byteLength(html, 'utf8') < 500 * 1024, `${name} 크기가 500KB 이상(${Buffer.byteLength(html, 'utf8')}B)이어서 diff 축약 위험이 있습니다`);
     assert.match(html, /<\/body>/i, `${name}에 </body> 태그가 누락되었습니다`);
     assert.match(html, /<\/html>/i, `${name}에 </html> 태그가 누락되었습니다`);
   }
 
   const adminHtml = fs.readFileSync(path.join(pubDir, 'admin_preview.html'), 'utf8');
   const masterHtml = fs.readFileSync(path.join(pubDir, 'master_preview.html'), 'utf8');
+  const studentHtml = fs.readFileSync(path.join(pubDir, 'student_preview.html'), 'utf8');
+  assert.match(adminHtml, /css\/admin_preview\.css\?v=20261123_split/);
+  assert.match(studentHtml, /css\/student_preview\.css\?v=20261123_split/);
   assert.match(adminHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
   assert.match(adminHtml, /css\/portfolio\.css\?v=20261113_pf_flow/);
   assert.match(adminHtml, /js\/portfolio-renderer\.js\?v=20261117_pf_footer/);
   assert.match(adminHtml, /admin_preview\.js\?v=20261119_transfer_opt/);
-  assert.match(adminHtml, /js\/admin_members\.js\?v=20261113_init_fix/);
+  assert.match(adminHtml, /js\/admin_members\.js\?v=20261123_class_sync/);
   assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_center/);
-  assert.match(adminHtml, /js\/admin_books\.js\?v=20261117_quiz_blank/);
+  assert.match(adminHtml, /js\/admin_books\.js\?v=20261123_scroll_print/);
+  assert.match(adminHtml, /js\/literacy\/literacy-admin\.js\?v=20261123_class/);
   assert.match(masterHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
   assert.match(masterHtml, /css\/master_preview\.css\?v=20261117_quiz_blank/);
   assert.match(masterHtml, /js\/master\/master-portfolio\.js\?v=20261113_query_only/);
   assert.match(masterHtml, /js\/master\/master-franchise\.js\?v=20261117_reg_layout/);
   assert.match(masterHtml, /js\/master\/master-ranking\.js\?v=20261113_query_only/);
-  assert.match(masterHtml, /js\/master\/master-contents\.js\?v=20261117_quiz_blank/);
+  assert.match(masterHtml, /js\/master\/master-contents\.js\?v=20261123_scroll_print/);
   assert.match(masterHtml, /<select[^>]+id="masterPfClassFilter"[^>]+disabled/);
 
   // 마스터/학원 HTML 내 모든 날짜 입력(<input type="date">)에 즉시 필터 onchange가 없고, 검색바 자동조회 핸들러가 제거되었는지 검증
