@@ -30,7 +30,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261123_split">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261123_redpen">
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -9090,15 +9090,19 @@ function openStudentLearningReportModal(bookId, selectedLogId) {
   var bookMeta = log.bookPub || (book ? ((book.pub || '') + (book.author ? ' · ' + book.author : '')) : '');
   if (titleEl) titleEl.textContent = bookTitle;
 
+  // 여러 회차 인증 기록이 있을 때는 상단 공간을 차지하지 않도록 드롭박스로 회차를 선택
   var selectorHtml = '';
   if (logs.length > 1) {
-    selectorHtml = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'
+    selectorHtml = '<div class="slr-round-bar">'
+      + '<label class="slr-round-label" for="slrRoundSelect"><i class="fa-solid fa-clock-rotate-left"></i>인증 회차 <span class="slr-round-badge">총 ' + logs.length + '회</span></label>'
+      + '<select id="slrRoundSelect" class="slr-round-select" data-book-id="' + escapeStudentQuizText(String(bookId)) + '" aria-label="인증 회차 선택" onchange="openStudentLearningReportModal(this.getAttribute(\'data-book-id\'), this.value)">'
       + logs.map(function(item, idx) {
           var active = String(item.id) === String(log.id);
-          return '<button type="button" onclick="openStudentLearningReportModal(\'' + bookId + '\', \'' + item.id + '\')" style="border-radius:8px;padding:4px 10px;font-size:11.5px;font-weight:800;cursor:pointer;border:1px solid ' + (active ? '#0d9488' : '#cbd5e1') + ';background:' + (active ? '#0d9488' : '#ffffff') + ';color:' + (active ? '#ffffff' : '#475569') + ';">'
+          return '<option value="' + escapeStudentQuizText(String(item.id)) + '"' + (active ? ' selected' : '') + '>'
             + (logs.length - idx) + '회차 (' + escapeStudentQuizText(item.date || '') + ' · ' + item.score + '점)'
-            + '</button>';
+            + '</option>';
         }).join('')
+      + '</select>'
       + '</div>';
   }
 
@@ -9106,18 +9110,19 @@ function openStudentLearningReportModal(bookId, selectedLogId) {
   var okCnt = quizzes.filter(function(q) { return q.isCorrect; }).length;
   var totCnt = quizzes.length;
 
-  // 맞춘 문제는 초록 동그라미(O표), 틀린 문제는 붉은 별표(★) 채점 디자인 적용
+  // 맞춘 문제는 빨간펜 손그림 동그라미(O표), 틀린 문제는 빨간펜 손그림 별표(☆) 채점 디자인 적용
   function renderQuizReportCard(q, idx) {
     var qNo = q.qNum || (idx + 1);
     var paddedNo = String(qNo).padStart(2, '0');
     var isOk = !!q.isCorrect;
     var gradeSvg = isOk
-      ? '<svg class="slr-grade-svg" viewBox="0 0 40 40" aria-hidden="true">'
-          + '<circle cx="20" cy="20" r="15.5" fill="rgba(22, 163, 74, 0.08)" stroke="#16a34a" stroke-width="2.6"></circle>'
-          + '<path d="M12.5 7.2 A15 15 0 1 1 8.4 13.8" fill="none" stroke="#15803d" stroke-width="2.1" stroke-linecap="round" opacity="0.72"></path>'
+      ? '<svg class="slr-grade-svg is-redpen-circle" viewBox="0 0 46 46" aria-hidden="true">'
+          + '<path d="M27.8 7.6 C15.2 4.8, 5.4 13.6, 6.4 25.0 C7.3 35.6, 17.2 41.2, 28.4 38.6 C38.6 36.2, 41.8 25.6, 38.8 15.6 C36.2 7.2, 25.8 5.2, 16.8 9.6" fill="none" stroke="#e11d48" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"></path>'
+          + '<path d="M24.2 8.2 C33.8 9.2, 39.2 17.4, 37.6 26.8 C36.4 33.4, 30.2 38.0, 22.8 38.2" fill="none" stroke="#f43f5e" stroke-width="1.4" stroke-linecap="round" opacity="0.48"></path>'
         + '</svg>'
-      : '<svg class="slr-grade-svg" viewBox="0 0 40 40" aria-hidden="true">'
-          + '<polygon points="20,1.6 26.2,11.4 37.6,14.3 30.1,23.3 30.9,35.0 20,29.9 9.1,35.0 9.9,23.3 2.4,14.3 13.8,11.4" fill="#fff1f2" stroke="#dc2626" stroke-width="2.2" stroke-linejoin="round"></polygon>'
+      : '<svg class="slr-grade-svg is-redpen-star" viewBox="0 0 46 46" aria-hidden="true">'
+          + '<path d="M24.2 2.8 Q27.6 8.2 29.8 14.0 Q36.4 14.2 42.6 15.6 Q38.0 20.8 33.0 25.2 Q35.4 32.0 36.6 39.2 Q29.8 36.8 23.0 33.2 Q16.0 36.6 9.8 39.8 Q10.6 32.6 12.6 25.4 Q7.6 20.6 3.4 16.6 Q9.6 14.8 16.2 13.8 Q20.2 8.0 24.2 2.8 L25.8 7.0" fill="none" stroke="#e11d48" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"></path>'
+          + '<path d="M16.2 13.8 Q20.2 8.0 24.2 2.8 Q27.4 8.6 29.8 14.0" fill="none" stroke="#f43f5e" stroke-width="1.35" stroke-linecap="round" opacity="0.46"></path>'
         + '</svg>';
 
     var ansHtml = isOk

@@ -231,6 +231,10 @@ function saveAllQuizzes() {
 // 2. 7대 탭 네비게이션 제어
 // ==============================================================
 function switchTab(tab) {
+  // 학원 페이지 '결제 관리' 메뉴 우선 숨김 처리: URL 해시/세션 복원 등으로 진입 시 회원 관리로 이동
+  if (tab === 'payment') {
+    tab = 'members';
+  }
   // 선생님 계정 접속 시 원장 전용 메뉴(결제 관리·콘텐츠 공유) 접근 차단
   var isTeacherUser = typeof isCurrentLoggedInTeacher === 'function' && isCurrentLoggedInTeacher();
   if (isTeacherUser && (tab === 'payment' || tab === 'content-sharing')) {
@@ -650,11 +654,12 @@ function updateHeaderUserInfo() {
     if (btnModalClassManage) {
       btnModalClassManage.style.display = '';
     }
+    // 학원 페이지 '결제 관리' 메뉴 우선 숨김 처리 (원장 계정에서도 비노출 유지)
     if (navPaymentBtn) {
-      navPaymentBtn.style.display = '';
+      navPaymentBtn.style.display = 'none';
     }
     if (navPaymentSection) {
-      navPaymentSection.style.display = '';
+      navPaymentSection.style.display = 'none';
     }
   }
 

@@ -449,7 +449,8 @@ function buildNanoSheetPrintHtml(imageList, acadName, printTime, ipAddr) {
       '<div class="wm-sub">' + printTime + ' &middot; IP: ' + ipAddr + '</div>' +
       '<div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
     '</div>';
-  var wmOverlayHtml = '<div class="wm-overlay">' + wmBlock + wmBlock + wmBlock + '</div>';
+  // 페이지당 중앙 1회만 워터마크가 표시되도록 단일 블록과 중앙 정렬 사용
+  var wmOverlayHtml = '<div class="wm-overlay">' + wmBlock + '</div>';
   var pagesHtml = imageList.map(function(imgData) {
     return (
       '<div class="sheet-wrapper">' +
@@ -469,8 +470,8 @@ function buildNanoSheetPrintHtml(imageList, acadName, printTime, ipAddr) {
       '.sheet-wrapper { position: relative; width: 210mm; height: 296mm; margin: 0 auto; overflow: hidden; background: #fff; display: flex; justify-content: center; align-items: center; page-break-inside: avoid; break-inside: avoid; page-break-after: always; break-after: page; }' +
       '.sheet-wrapper:last-child { page-break-after: auto; break-after: auto; }' +
       'img.sheet-canvas-img { width: 100%; height: 100%; max-width: 210mm; max-height: 296mm; object-fit: contain; display: block; }' +
-      '.wm-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-around; align-items: center; user-select: none; }' +
-      '.wm-block { transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 35px 0; }' +
+      '.wm-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; user-select: none; }' +
+      '.wm-block { transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 0; }' +
       '.wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }' +
       '.wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }' +
       '.wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }' +

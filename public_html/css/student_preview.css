@@ -677,7 +677,62 @@
     .quiz-res-item.is-wrong {
       border-left: 4px solid #ef4444;
     }
-    /* 학생 북퀴즈 리포트 문항별 채점 디자인 (O표 / 별표 + 오답 시 붉은색 내 답 · 초록색 정답) */
+    /* 학생 북퀴즈 리포트 문항별 채점 디자인 (빨간펜 손글씨 O표 / 별표 + 회차 드롭박스) */
+    .slr-round-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 9px 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+    }
+    .slr-round-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f766e;
+      white-space: nowrap;
+    }
+    .slr-round-badge {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0d9488;
+      background: #ccfbf1;
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+    .slr-round-select {
+      flex: 1;
+      min-width: 195px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1.5px solid #99f6e4;
+      background-color: #f0fdfa;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%230f766e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 15px 15px;
+      color: #134e4a;
+      font-size: 12.5px;
+      font-weight: 800;
+      padding: 0 32px 0 11px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .slr-round-select:focus {
+      outline: none;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
+    }
     .slr-qcard {
       background: #ffffff;
       border: 1.5px solid #e2e8f0;
@@ -701,20 +756,27 @@
     }
     .slr-qnum-wrap {
       position: relative;
-      width: 40px;
-      height: 40px;
-      flex: 0 0 40px;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-top: -3px;
+      margin-top: -5px;
     }
     .slr-grade-svg {
       position: absolute;
       inset: 0;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
+      overflow: visible;
       pointer-events: none;
+    }
+    .slr-qnum-wrap.is-correct .slr-grade-svg {
+      transform: rotate(-4deg);
+    }
+    .slr-qnum-wrap.is-wrong .slr-grade-svg {
+      transform: rotate(-6deg);
     }
     .slr-qnum-text {
       position: relative;
@@ -724,12 +786,13 @@
       font-weight: 900;
       letter-spacing: -0.02em;
       line-height: 1;
+      color: #1e293b;
     }
     .slr-qnum-wrap.is-correct .slr-qnum-text {
-      color: #166534;
+      color: #1e293b;
     }
     .slr-qnum-wrap.is-wrong .slr-qnum-text {
-      color: #b91c1c;
+      color: #1e293b;
     }
     .slr-qtitle {
       flex: 1;

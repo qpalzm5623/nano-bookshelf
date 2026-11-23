@@ -4779,15 +4779,7 @@ async function openAcademyStandaloneQuizModal(bookId = null) {
 
   curQuizTargetBookId = book.id;
 
-  // 대상 도서 셀렉트박스 옵션 구성
-  var selectEl = document.getElementById('aqTargetBookSelect');
-  if (selectEl) {
-    selectEl.innerHTML = academyBookList.map(function(b) {
-      return `<option value="${b.id}" ${b.id === book.id ? 'selected' : ''}>[${b.id}] ${b.title}</option>`;
-    }).join('');
-  }
-
-  // 상단 도서 요약 바 갱신
+  // 대상 도서는 모달 내에서 변경할 수 없고 해당 도서 요약 정보만 고정 표시
   bindAcadQuizTargetBookInfo(book);
 
   // 운영 서버 환경에서 아직 문항이 로드되지 않은 경우 지연 조회(/api/portal?action=quiz) 실행
@@ -4823,50 +4815,6 @@ async function openAcademyStandaloneQuizModal(bookId = null) {
   var modalEl = document.getElementById('academyQuizManageModal');
   if (modalEl) modalEl.style.zIndex = '1060';
   $('#academyQuizManageModal').modal({ backdrop: true, show: true });
-}
-
-// 대상 도서 드롭다운 변경 핸들러
-async function onSelectAcadQuizTargetBook(newBookId) {
-  var book = academyBookList.find(function(b) { return b.id === newBookId; });
-  if (!book) return;
-
-  // 이전 도서의 변경사항 저장
-  saveCurrentAcadQuizInput();
-  if (curQuizTargetBookId) {
-    var prevBook = academyBookList.find(function(b) { return b.id === curQuizTargetBookId; });
-    if (prevBook) {
-      prevBook.quizSets = JSON.parse(JSON.stringify(editingAcadQuizSets));
-    }
-  }
-
-  curQuizTargetBookId = book.id;
-  bindAcadQuizTargetBookInfo(book);
-
-  // 운영 서버 환경에서 아직 문항이 로드되지 않은 경우 지연 조회(/api/portal?action=quiz) 실행
-  if (window.NANO_SERVER_DATA && window.NanoPortal && typeof NanoPortal.api === 'function') {
-    try {
-      var lookupId = book.serverId || book.bookNo || book.id;
-      var res = await NanoPortal.api('/api/portal?action=quiz&bookId=' + encodeURIComponent(lookupId));
-      if (Array.isArray(res.quizSets)) {
-        syncAcademyBookQuizMeta(book, res.quizSets, { loadedFromServer: true });
-      } else {
-        book._quizLoadedFromServer = true;
-      }
-    } catch (err) {
-      showAcademyToast(err.message || '퀴즈를 불러오지 못했습니다.'); return;
-    }
-  }
-
-  editingAcadQuizSets = ensureAcadBookQuizSets(book);
-  currentAcadQuizSetIdx = editingAcadQuizSets.length > 0 ? 0 : -1;
-  editingAcadQuizzes = (editingAcadQuizSets.length > 0 && Array.isArray(editingAcadQuizSets[0].questions))
-    ? editingAcadQuizSets[0].questions
-    : [];
-  currentAcadQuizIdx = 0;
-
-  renderAcadQuizSetTabs();
-  renderAcadQuizTabs();
-  loadAcadQuizForm();
 }
 
 function bindAcadQuizTargetBookInfo(book) {
@@ -5045,7 +4993,7 @@ function renderAcadQuizSetTabs() {
     radN.disabled = !curSet || isReadOnly;
   }
   if (lockNotice) {
-    lockNotice.style.display = (curSet && isReadOnly) ? 'inline' : 'none';
+    lockNotice.style.display = (curSet && isReadOnly) ? 'inline-flex' : 'none';
   }
 
   var noticeEl = document.getElementById('abQuizReadOnlyNotice');

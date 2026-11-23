@@ -557,13 +557,43 @@ test('내 책장에서는 인증도서에 한해서만 리포트 보기 버튼�
   const modalBody = ctx.document.getElementById('slrModalBody').innerHTML;
   assert.equal(ctx.document.getElementById('studentLearningReportModal').style.display, 'flex');
   assert.match(modalBody, /첫째 질문/);
-  assert.match(modalBody, /data-grade-mark="O"[^>]*>01</);
+  assert.match(modalBody, /is-redpen-circle[^>]*>[\s\S]*stroke="#e11d48"[\s\S]*data-grade-mark="O"[^>]*>01</);
   assert.match(modalBody, /✓ 정답/);
   assert.match(modalBody, /둘째 질문/);
-  assert.match(modalBody, /data-grade-mark="star"[^>]*>02</);
+  assert.match(modalBody, /is-redpen-star[^>]*>[\s\S]*stroke="#e11d48"[\s\S]*data-grade-mark="star"[^>]*>02</);
+  assert.doesNotMatch(modalBody, /<(?:circle|polygon)\b/);
   assert.match(modalBody, /✕ 오답/);
   assert.match(modalBody, /is-wrong-mine[\s\S]*틀린 보기/);
   assert.match(modalBody, /is-wrong-correct[\s\S]*진짜 정답/);
+  assert.doesNotMatch(modalBody, /id="slrRoundSelect"/);
+
+  // 다회차 인증 도서는 상단 회차 선택을 버튼 목록 대신 드롭박스로 표시하고 선택 시 해당 회차로 전환한다
+  ctx.NanoPortal.logs = () => ([
+    {
+      id: 'L-CERT-2', academyId: 'A', studentId: 'student-a', bookId: 'CERT-1', bookTitle: '인증 완료 책',
+      date: '2026-11-23', score: 100,
+      quizResults: [{ qNum: 1, question: '2회차 첫 질문', isCorrect: true, userChoiceText: '맞은 답', correctChoiceText: '맞은 답' }]
+    },
+    {
+      id: 'L-CERT-1', academyId: 'A', studentId: 'student-a', bookId: 'CERT-1', bookTitle: '인증 완료 책',
+      date: '2026-11-20', score: 80,
+      quizResults: [
+        { qNum: 1, question: '첫째 질문', isCorrect: true, userChoiceText: '맞은 보기', correctChoiceText: '맞은 보기' },
+        { qNum: 2, question: '둘째 질문', isCorrect: false, userChoiceText: '틀린 보기', correctChoiceText: '진짜 정답' }
+      ]
+    }
+  ]);
+  ctx.openStudentLearningReportModal('CERT-1');
+  const multiBody = ctx.document.getElementById('slrModalBody').innerHTML;
+  assert.match(multiBody, /<select id="slrRoundSelect" class="slr-round-select"/);
+  assert.match(multiBody, /<option value="L-CERT-2" selected>2회차 \(2026-11-23 · 100점\)<\/option>/);
+  assert.match(multiBody, /<option value="L-CERT-1">1회차 \(2026-11-20 · 80점\)<\/option>/);
+  assert.match(multiBody, /2회차 첫 질문/);
+
+  ctx.openStudentLearningReportModal('CERT-1', 'L-CERT-1');
+  const switchedBody = ctx.document.getElementById('slrModalBody').innerHTML;
+  assert.match(switchedBody, /<option value="L-CERT-1" selected>1회차 \(2026-11-20 · 80점\)<\/option>/);
+  assert.match(switchedBody, /둘째 질문/);
 });
 
 test('서버 저장 실패 시 완료 처리하지 않고 초안을 유지한다', async () => {

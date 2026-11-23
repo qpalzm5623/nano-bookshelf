@@ -211,6 +211,8 @@ test('학원 관리자 나노 시트 워터마크 및 인쇄 화면이 로그인
   ctx.printNanoSheetViewer();
   assert.ok(printedHtml.includes('주식회사 루크러닝'));
   assert.ok(printedHtml.includes('211.36.132.14'));
+  assert.equal((printedHtml.match(/class="wm-block"/g) || []).length, 1, '단일 페이지 인쇄 시 워터마크가 1회만 삽입되어야 합니다');
+  assert.ok(printedHtml.includes('justify-content: center;'));
 
   // 특수문자(<script>, &) 포함 학원명 이스케이프 검증
   ctx.currentAcademyInfo.name = '루크<A&B>학원';
@@ -276,6 +278,8 @@ test('마스터 관리자 나노 시트 워터마크 및 인쇄 화면이 실제
   ctx.printNanoSheetViewer();
   assert.ok(printedHtml.includes('정답이 있는 독서 본사'));
   assert.ok(printedHtml.includes('198.51.100.5'));
+  assert.equal((printedHtml.match(/class="wm-block"/g) || []).length, 1, '마스터 단일 페이지 인쇄 시 워터마크가 1회만 삽입되어야 합니다');
+  assert.ok(printedHtml.includes('justify-content: center;'));
 });
 
 function createMultiPageDomMock() {
@@ -438,6 +442,8 @@ test('3페이지 나노 시트 PDF가 페이지 넘김 없이 스크롤 전체 �
     assert.ok(printedHtml.includes('data:image/png;base64,PAGE_2'));
     assert.ok(printedHtml.includes('data:image/png;base64,PAGE_3'));
     assert.equal((printedHtml.match(/class="sheet-wrapper"/g) || []).length, 3, '인쇄 문서에 3페이지가 모두 포함되어야 합니다');
+    assert.equal((printedHtml.match(/class="wm-block"/g) || []).length, 3, '인쇄 시 페이지당 1개씩 총 3개의 워터마크만 삽입되어야 합니다');
+    assert.ok(printedHtml.includes('justify-content: center;'));
     assert.ok(printedHtml.includes('page-break-after: always'));
   }
 });
