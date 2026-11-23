@@ -1290,6 +1290,14 @@ function openMemberDetailModal(id) {
     const acadName = mem.academyName || "";
     const acadId = mem.academyId || "";
 
+    if (typeof window !== "undefined" && Array.isArray(window.NANO_SERVER_CLASSES)) {
+      window.NANO_SERVER_CLASSES.forEach(c => {
+        if (c && (!acadId || c.academyId === acadId) && c.name && c.name !== "-" && c.name !== "미지정") {
+          existingClasses.add(c.name);
+        }
+      });
+    }
+
     if (Array.isArray(memberList)) {
       memberList.forEach(m => {
         if ((m.academyName === acadName || (acadId && m.academyId === acadId)) && 
@@ -1428,7 +1436,18 @@ async function saveMemberDetailEdit() {
     else if (g === "중등 3학년") g = "중3";
     mem.grade = g;
   }
-  if (classEl) mem.className = classEl.value.trim();
+  if (classEl) {
+    const nextClassName = classEl.value.trim() || "미지정";
+    mem.className = nextClassName;
+    if (!nextClassName || nextClassName === "미지정" || nextClassName === "-") {
+      mem.classGroupId = null;
+    } else if (typeof window !== "undefined" && Array.isArray(window.NANO_SERVER_CLASSES)) {
+      const matchedCls = window.NANO_SERVER_CLASSES.find(c => c && c.academyId === mem.academyId && c.name === nextClassName);
+      mem.classGroupId = matchedCls ? (matchedCls.serverId || matchedCls.id) : null;
+    } else {
+      mem.classGroupId = null;
+    }
+  }
   if (statusEl) mem.status = statusEl.value;
   if (parentNameEl) mem.parentName = parentNameEl.value.trim();
   if (parentPhoneEl) mem.parentPhone = parentPhoneEl.value.trim();
@@ -1440,7 +1459,20 @@ async function saveMemberDetailEdit() {
 
   if (window.NanoPortal && NanoPortal.remote) {
     try {
-      await NanoPortal.saveMember(mem, mem.academyId);
+      const savedMem = await NanoPortal.saveMember(mem, mem.academyId);
+      if (savedMem) {
+        mem.serverId = savedMem.id || mem.serverId;
+        mem.updatedAt = savedMem.updatedAt || mem.updatedAt;
+        mem.classGroupId = Object.prototype.hasOwnProperty.call(savedMem, "classGroupId") ? (savedMem.classGroupId || null) : mem.classGroupId;
+      }
+      if (typeof window !== "undefined" && Array.isArray(window.MIGRATED_MEMBERS)) {
+        const mTarget = window.MIGRATED_MEMBERS.find(m => m && ((mem.serverId && m.serverId === mem.serverId) || (mem.username && m.username === mem.username)));
+        if (mTarget) {
+          mTarget.className = mem.className || "미지정";
+          mTarget.classGroupId = mem.classGroupId || null;
+          if (mem.updatedAt) mTarget.updatedAt = mem.updatedAt;
+        }
+      }
     } catch (error) {
       Object.assign(mem, previousMember);
       showMasterToast('회원 정보를 저장하지 못했습니다: ' + error.message);

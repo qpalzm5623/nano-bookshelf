@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma';
 import { loadContentAccess, quizContent, canReadContent, ownsContent } from '../lib/portal-content';
 import { saveAttempt, earnedForAttempt, estimateAttemptPoints } from '../lib/portal-learning';
 import { academyScope, PortalError } from '../lib/portal-http';
+import ClientIp = require('../lib/client-ip');
 import { randomUUID } from 'node:crypto';
 import { hashPassword, verifyPassword, signSession, readSession, passwordVersion } from '../lib/portal-auth';
 
@@ -23,11 +24,11 @@ function allowLogin(key: string, limit = 10) {
 }
 const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
 function cookie(value: string, age = 28800) { return `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${secure}`; }
-function publicUser(member: any) {
+function publicUser(member: any, clientIp = '') {
   return { id: member.username, memberId: member.id, role: member.role === 'MASTER' ? 'master' : member.role === 'STUDENT' ? 'student' : member.role === 'TEACHER' ? 'teacher' : 'admin',
     brand: member.brand, brandPolicy: member.brandPolicy, name: member.name, studentName: member.name, studentId: member.username, academyId: member.academy.code,
     academyName: member.academy.name, classGroup: member.classGroup?.name || '미지정',
-    grade: member.grade || '', gender: member.gender || '', school: member.school || '', server: true };
+    grade: member.grade || '', gender: member.gender || '', school: member.school || '', clientIp, server: true };
 }
 function allowed(member: any) {
   return member && member.status === 'APPROVED' && member.academy?.status === 'ACTIVE' && !member.academy.deletedAt;
@@ -219,7 +220,8 @@ export default async function handler(req: any, res: any) {
     const maxBodyLength = action === 'review' ? 4500000 : 100000;
     if (JSON.stringify(body).length > maxBodyLength) return res.status(413).json({ error: '요청 크기가 너무 큽니다.' });
     if (action === 'login' && req.method === 'POST') {
-      const ip = String(req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown');
+      const clientIp = ClientIp.extractClientIp(req);
+      const ip = clientIp || 'unknown';
       if (typeof body.username !== 'string' || typeof body.password !== 'string' || body.username.length > 100 || body.password.length > 256) return res.status(400).json({ error: '아이디와 비밀번호를 확인해 주세요.' });
       if (!allowLogin('ip:' + ip, 200) || !allowLogin(ip + ':' + body.username.trim())) return res.status(429).json({ error: '로그인 시도가 많습니다. 15분 후 다시 시도해 주세요.' });
       const member = await prisma.member.findUnique({ where: { username: body.username.trim() }, include: { academy: true, classGroup: true } });
@@ -286,7 +288,7 @@ export default async function handler(req: any, res: any) {
 
       await prisma.member.update({ where: { id: member!.id }, data: { lastLoginAt: new Date() } });
       res.setHeader('Set-Cookie', cookie(signSession(member!.id, member!.password!, Date.now(), newSid)));
-      return res.status(200).json({ user: publicUser(member) });
+      return res.status(200).json({ user: publicUser(member, clientIp) });
     }
     if (action === 'logout' && req.method === 'POST') {
       const token = String(req.headers.cookie || '').split(';').map((v: string) => v.trim()).find((v: string) => v.startsWith(cookieName + '='))?.slice(cookieName.length + 1) || '';
@@ -331,7 +333,7 @@ export default async function handler(req: any, res: any) {
     }
     const user = await authorizeBrand(req, member!);
     if (restrictedMaster(user) && req.method === 'POST' && action !== 'password') throw brandError('이 계정은 학습 정보를 조회만 할 수 있습니다.');
-    if (action === 'session' && req.method === 'GET') return res.status(200).json({ user: publicUser(user) });
+    if (action === 'session' && req.method === 'GET') return res.status(200).json({ user: publicUser(user, ClientIp.extractClientIp(req)) });
     if (action === 'password' && req.method === 'POST') {
       const minLen = 6;
       if (typeof body.newPassword !== 'string' || body.newPassword.length < minLen || body.newPassword.length > 128 || !verifyPassword(body.currentPassword, user.password || '')) return res.status(400).json({ error: `현재 비밀번호와 새 비밀번호(6~128자)를 확인해 주세요.` });

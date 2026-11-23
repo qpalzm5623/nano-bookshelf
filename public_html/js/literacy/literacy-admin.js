@@ -11,7 +11,96 @@
   var L = global.NanoLiteracy;
   var esc = L.esc;
   var STATUS = { PENDING: ['대기', '#b45309', '#fef3c7'], IN_PROGRESS: ['진행 중', '#1d4ed8', '#dbeafe'], COMPLETED: ['완료', '#166534', '#dcfce7'], CANCELLED: ['취소', '#6b7280', '#f3f4f6'] };
-  var state = { items: [], students: [], built: false, loading: false, current: null, mode: 'regular' };
+  var state = { items: [], students: [], classes: [], hasServerClasses: false, built: false, loading: false, current: null, mode: 'regular' };
+
+  function api(action, opts) {
+    opts = opts || {};
+    var acadId = global.currentAcademyInfo && global.currentAcademyInfo.id;
+    if (acadId) {
+      opts.params = Object.assign({ academy: acadId }, opts.params || {});
+    }
+    return L.api(action, opts);
+  }
+
+  function getTeacherScopeNames() {
+    if (typeof global.isCurrentLoggedInTeacher === 'function' && global.isCurrentLoggedInTeacher() &&
+        typeof global.getTeacherAssignedClasses === 'function') {
+      return (global.getTeacherAssignedClasses() || [])
+        .map(function (c) { return String((c && c.name) || c || '').trim(); })
+        .filter(Boolean);
+    }
+    return null;
+  }
+
+  // 학원 관리의 최신 학급(academyClassList/NANO_SERVER_CLASSES)과 서버 응답(state.classes)·실제 배정/원생 학급을 통합해 드롭다운 옵션 생성
+  function resolveClassOptions(extraNames, includeUnassigned) {
+    var teacherNames = getTeacherScopeNames();
+    var isTeacher = teacherNames !== null;
+    var byName = {};
+    var ordered = [];
+    var hasUnassigned = false;
+
+    function addClass(name, grade) {
+      var cleanName = String(name == null ? '' : name).trim();
+      if (!cleanName || cleanName === '-') return;
+      if (cleanName === '미지정') { hasUnassigned = true; return; }
+      if (teacherNames && teacherNames.indexOf(cleanName) === -1) return;
+      if (!byName[cleanName]) {
+        byName[cleanName] = { name: cleanName, grade: String(grade || '').trim() };
+        ordered.push(byName[cleanName]);
+      } else if (!byName[cleanName].grade && grade) {
+        byName[cleanName].grade = String(grade).trim();
+      }
+    }
+
+    var uiClasses = [];
+    if (isTeacher && typeof global.getTeacherAssignedClasses === 'function') {
+      uiClasses = global.getTeacherAssignedClasses() || [];
+    } else if (Array.isArray(global.academyClassList)) {
+      uiClasses = global.academyClassList;
+    } else if (typeof global.getActualAcademyClassList === 'function') {
+      uiClasses = global.getActualAcademyClassList() || [];
+    } else if (Array.isArray(global.NANO_SERVER_CLASSES)) {
+      var acadCode = global.currentAcademyInfo ? global.currentAcademyInfo.id : '';
+      uiClasses = global.NANO_SERVER_CLASSES.filter(function (c) { return !acadCode || c.academyId === acadCode; });
+    }
+
+    // 서버 API로 받은 최신 classes가 있으면 우선 등록하고, UI에서 방금 생성/수정된 학급도 누락 없이 보완
+    if (state.hasServerClasses) {
+      (state.classes || []).forEach(function (c) { addClass(c && c.name, c && c.grade); });
+    }
+    uiClasses.forEach(function (c) { addClass(c && c.name, c && c.grade); });
+    if (!state.hasServerClasses) {
+      (state.classes || []).forEach(function (c) { addClass(c && c.name, c && c.grade); });
+    }
+    (extraNames || []).forEach(function (n) { addClass(n, ''); });
+
+    ordered.sort(function (a, b) { return a.name.localeCompare(b.name, 'ko'); });
+    return {
+      options: ordered,
+      hasUnassigned: !isTeacher && (includeUnassigned || hasUnassigned),
+      isTeacher: isTeacher,
+      teacherNames: teacherNames
+    };
+  }
+
+  function fillClassSelect(sel, defaultLabel, resolved) {
+    if (!sel) return;
+    var cur = sel.value || 'ALL';
+    var opts = ['<option value="ALL">' + esc(resolved.isTeacher ? '전체 담당 학급' : defaultLabel) + '</option>'];
+    var valid = { ALL: true };
+    resolved.options.forEach(function (c) {
+      valid[c.name] = true;
+      var label = c.grade ? (c.name + ' (' + c.grade + ')') : c.name;
+      opts.push('<option value="' + esc(c.name) + '">' + esc(label) + '</option>');
+    });
+    if (resolved.hasUnassigned) {
+      valid['미지정'] = true;
+      opts.push('<option value="미지정">미지정</option>');
+    }
+    sel.innerHTML = opts.join('');
+    sel.value = valid[cur] ? cur : 'ALL';
+  }
 
   function toast(msg, isError) {
     var el = document.createElement('div');
@@ -32,8 +121,8 @@
       '<div><button type="button" class="btn btn-beige-primary font-weight-bold" onclick="NanoLiteracyAdmin.openAssign()"><i class="fa-solid fa-paper-plane mr-1"></i>테스트 부여</button></div></div>' +
       '<div class="row mb-4" id="litStats"></div>' +
       '<div class="simple-card p-3 mb-4"><div class="portal-search-toolbar d-flex flex-wrap align-items-end" style="gap:12px">' +
-      '<div style="width:150px"><label class="lit-lbl">학급</label><select id="litClassFilter" class="form-control lit-ctl"><option value="ALL">전체 학급</option></select></div>' +
-      '<div style="width:140px"><label class="lit-lbl">상태</label><select id="litStatusFilter" class="form-control lit-ctl">' +
+      '<div style="width:150px"><label class="lit-lbl">학급</label><select id="litClassFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()"><option value="ALL">전체 학급</option></select></div>' +
+      '<div style="width:140px"><label class="lit-lbl">상태</label><select id="litStatusFilter" class="form-control lit-ctl" onchange="NanoLiteracyAdmin.render()">' +
       '<option value="ALL">전체 상태</option><option value="PENDING">대기</option><option value="IN_PROGRESS">진행 중</option><option value="COMPLETED">완료</option><option value="CANCELLED">취소</option></select></div>' +
       '<div class="portal-search-field"><label class="lit-lbl" for="litSearch">원생 검색</label><input type="search" id="litSearch" class="form-control lit-ctl" placeholder="원생 이름, 아이디 검색..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();NanoLiteracyAdmin.render();}" autocomplete="off"></div>' +
       '<button type="button" class="btn btn-beige-primary font-weight-bold" onclick="NanoLiteracyAdmin.render()" style="height:38px;white-space:nowrap"><i class="fa-solid fa-magnifying-glass mr-1"></i>검색</button>' +
@@ -67,7 +156,7 @@
       '<div class="modal fade" id="litAssignModal" tabindex="-1" aria-labelledby="litAssignTitle"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">' +
       '<div class="modal-header"><h5 class="modal-title font-weight-bold" id="litAssignTitle"><i class="fa-solid fa-paper-plane mr-2"></i>문해력 진단 테스트 부여</h5><button type="button" class="close" data-dismiss="modal" aria-label="닫기">&times;</button></div>' +
       '<div class="modal-body"><div class="text-muted mb-2" style="font-size:12.5px">검사지(밴드)는 등록된 학년으로 자동 추천됩니다. 필요하면 학생별로 한 단계 위/아래 검사지로 바꿀 수 있어요.</div>' +
-      '<div class="lit-pick-toolbar"><select id="litPickClass" class="form-control lit-ctl" style="max-width:160px" aria-label="학급 필터"><option value="ALL">전체 학급</option></select>' +
+      '<div class="lit-pick-toolbar"><select id="litPickClass" class="form-control lit-ctl" style="min-width:150px;max-width:240px" aria-label="학급 필터" onchange="NanoLiteracyAdmin.renderPick()"><option value="ALL">전체 학급</option></select>' +
       '<input id="litPickSearch" class="form-control lit-ctl" style="flex:1;min-width:180px" aria-label="원생 이름 또는 아이디 검색" placeholder="이름·아이디 검색" onkeydown="if(event.key===\'Enter\'){event.preventDefault();NanoLiteracyAdmin.renderPick();}">' +
       '<button type="button" class="btn btn-beige-primary" onclick="NanoLiteracyAdmin.renderPick()" style="height:40px;white-space:nowrap"><i class="fa-solid fa-magnifying-glass mr-1"></i>검색</button></div>' +
       '<div class="d-flex align-items-center mb-3" style="gap:12px">' +
@@ -101,7 +190,12 @@
     state.loading = true;
     document.getElementById('litTableBody').innerHTML = '<tr><td colspan="10" class="text-center py-5" role="status">진단 내역을 불러오는 중입니다…</td></tr>';
     try {
-      state.items = (await L.api('assignments')).items || [];
+      var res = await api('assignments');
+      state.items = res.items || [];
+      if (Array.isArray(res.classes)) {
+        state.classes = res.classes;
+        state.hasServerClasses = true;
+      }
       syncClassFilter();
       render();
       if (showDone) toast('최신 내역으로 갱신했습니다.');
@@ -111,16 +205,33 @@
     } finally { state.loading = false; }
   }
   function syncClassFilter() {
-    var sel = document.getElementById('litClassFilter'), cur = sel.value;
-    var names = Array.from(new Set(state.items.map(function (a) { return a.classGroup; }).filter(Boolean))).sort();
-    sel.innerHTML = '<option value="ALL">전체 학급</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
-    sel.value = names.indexOf(cur) >= 0 ? cur : 'ALL';
+    var sel = document.getElementById('litClassFilter');
+    if (!sel) return;
+    fillClassSelect(sel, '전체 학급', resolveClassOptions(state.items.map(function (a) { return a.classGroup; }), false));
+  }
+  function syncPickClassFilter() {
+    var sel = document.getElementById('litPickClass');
+    if (!sel) return;
+    fillClassSelect(sel, '전체 학급', resolveClassOptions(state.students.map(function (s) { return s.classGroup; }), false));
+  }
+  function syncClasses(list) {
+    if (Array.isArray(list)) {
+      state.classes = list.map(function (c) {
+        return { id: (c && (c.serverId || c.id || c.name)) || '', name: c && c.name, grade: (c && (c.grade || c.targetGrade)) || '' };
+      }).filter(function (c) { return !!c.name; });
+      state.hasServerClasses = true;
+    }
+    if (document.getElementById('litClassFilter')) syncClassFilter();
+    if (document.getElementById('litPickClass')) syncPickClassFilter();
   }
   function filtered() {
     var cls = document.getElementById('litClassFilter').value, st = document.getElementById('litStatusFilter').value;
     var q = document.getElementById('litSearch').value.trim().toLowerCase();
+    var teacherNames = getTeacherScopeNames();
     return state.items.filter(function (a) {
-      return (cls === 'ALL' || a.classGroup === cls) && (st === 'ALL' || a.status === st) &&
+      var aClass = a.classGroup || '미지정';
+      if (teacherNames && teacherNames.indexOf(aClass) === -1) return false;
+      return (cls === 'ALL' || aClass === cls) && (st === 'ALL' || a.status === st) &&
         (!q || String(a.studentName).toLowerCase().indexOf(q) >= 0 || String(a.username).toLowerCase().indexOf(q) >= 0);
     }).sort(function (x, y) { return String(y.assignedAt).localeCompare(String(x.assignedAt)); });
   }
@@ -167,31 +278,44 @@
     // 결과지 모달에서 "다시 배정"으로 넘어온 경우 모달이 겹치지 않도록 먼저 닫는다
     global.jQuery('#litReportModal').modal('hide');
     try {
-      state.students = (await L.api('students')).items || [];
+      var res = await api('students');
+      state.students = res.items || [];
+      if (Array.isArray(res.classes)) {
+        state.classes = res.classes;
+        state.hasServerClasses = true;
+      }
     } catch (e) { fail(e); return; }
+    var teacherNames = getTeacherScopeNames();
     pick = {};
     state.students.forEach(function (s) {
+      if (teacherNames && teacherNames.indexOf(s.classGroup || '미지정') === -1) return;
       pick[s.id] = { checked: false, band: s.band, gradeStep: s.gradeStep };
     });
     // 결과지의 "다시 배정" 버튼에서 넘어온 경우: 해당 학생과 권장 밴드를 미리 채운다
     if (memberId && pick[memberId]) { pick[memberId].checked = true; if (band !== undefined && band !== null) pick[memberId].band = Number(band); }
     var sel = document.getElementById('litPickClass');
-    var names = Array.from(new Set(state.students.map(function (s) { return s.classGroup; }))).sort();
-    sel.innerHTML = '<option value="ALL">전체 학급</option>' + names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    if (sel) sel.value = 'ALL';
+    syncPickClassFilter();
     document.getElementById('litPickSearch').value = ''; document.getElementById('litMemo').value = ''; document.getElementById('litDue').value = '';
     document.getElementById('litPickAll').checked = false;
     renderPick();
     global.jQuery('#litAssignModal').modal('show');
   }
   function visibleStudents() {
-    var cls = document.getElementById('litPickClass').value, q = document.getElementById('litPickSearch').value.trim().toLowerCase();
-    return state.students.filter(function (s) { return (cls === 'ALL' || s.classGroup === cls) && (!q || s.name.toLowerCase().indexOf(q) >= 0 || s.username.toLowerCase().indexOf(q) >= 0); });
+    var cls = (document.getElementById('litPickClass') && document.getElementById('litPickClass').value) || 'ALL';
+    var q = ((document.getElementById('litPickSearch') && document.getElementById('litPickSearch').value) || '').trim().toLowerCase();
+    var teacherNames = getTeacherScopeNames();
+    return state.students.filter(function (s) {
+      var sClass = s.classGroup || '미지정';
+      if (teacherNames && teacherNames.indexOf(sClass) === -1) return false;
+      return (cls === 'ALL' || sClass === cls) && (!q || s.name.toLowerCase().indexOf(q) >= 0 || s.username.toLowerCase().indexOf(q) >= 0);
+    });
   }
   function renderPick() {
     var list = visibleStudents(), box = document.getElementById('litPickList');
     if (!list.length) box.innerHTML = '<div class="text-center text-muted py-4" style="font-size:13px">조건에 맞는 원생이 없습니다.</div>';
     else box.innerHTML = list.map(function (s) {
-      var p = pick[s.id];
+      var p = pick[s.id] || { checked: false, band: s.band, gradeStep: s.gradeStep };
       var gradeSel = '<select class="form-control form-control-sm" aria-label="' + esc(s.name) + ' 진단 기준 학년" ' + (s.hasActive ? 'disabled' : '') + ' onchange="NanoLiteracyAdmin.setPick(\'' + esc(s.id) + '\',\'gradeStep\',this.value)">' +
         (p.gradeStep === null ? '<option value="">학년 선택</option>' : '') +
         [0, 1, 2, 3, 4].map(function (g) { return '<option value="' + g + '"' + (p.gradeStep === g ? ' selected' : '') + '>' + L.GRADE_LABEL[g] + '</option>'; }).join('') + '</select>';
@@ -202,6 +326,11 @@
         '<span class="lit-pick-class">' + esc(s.classGroup || '미지정') + '</span>' +
         '<span class="lit-pick-name"><b>' + esc(s.name) + '</b> <span class="lit-pick-id">(' + esc(s.username || '아이디 없음') + ')</span><small class="text-muted">' + esc(s.grade || '학년 미등록') + '</small>' + (s.hasActive ? ' <span class="lit-pill" style="color:#b45309;background:#fef3c7">이미 배정됨</span>' : '') + '</span>' + gradeSel + bandSel + '</div>';
     }).join('');
+    var pickAllEl = document.getElementById('litPickAll');
+    if (pickAllEl) {
+      var selectable = list.filter(function (s) { return !s.hasActive; });
+      pickAllEl.checked = selectable.length > 0 && selectable.every(function (s) { return !!(pick[s.id] && pick[s.id].checked); });
+    }
     updatePickCount();
   }
   function updatePickCount() {
@@ -234,7 +363,7 @@
     }
     var btn = document.getElementById('litAssignBtn'); btn.disabled = true;
     try {
-      var res = await L.api('assign', { body: { items: chosen.map(function (id) { return { memberId: id, band: pick[id].band, gradeStep: pick[id].gradeStep }; }), dueDate: document.getElementById('litDue').value, memo: document.getElementById('litMemo').value } });
+      var res = await api('assign', { body: { items: chosen.map(function (id) { return { memberId: id, band: pick[id].band, gradeStep: pick[id].gradeStep }; }), dueDate: document.getElementById('litDue').value, memo: document.getElementById('litMemo').value } });
       global.jQuery('#litAssignModal').modal('hide');
       toast(res.created.length + '명에게 테스트를 부여했습니다.' + (res.skipped.length ? ' (제외: ' + res.skipped.join(', ') + ')' : ''));
       refresh();
@@ -243,14 +372,14 @@
   async function cancel(id) {
     var cancelLitMsg = '이 테스트 배정을 취소할까요?\n학생 화면에서 테스트 시작 버튼이 사라집니다.';
     if (!(typeof global.nanoConfirm === 'function' ? await global.nanoConfirm(cancelLitMsg) : global.confirm(cancelLitMsg))) return;
-    try { await L.api('cancel', { body: { id: id } }); toast('배정을 취소했습니다.'); refresh(); } catch (e) { fail(e); }
+    try { await api('cancel', { body: { id: id } }); toast('배정을 취소했습니다.'); refresh(); } catch (e) { fail(e); }
   }
 
   /* ---------- 결과지 ---------- */
   async function openReport(resultId) {
     ensureModals();
     try {
-      var data = await L.api('result', { params: { id: resultId } });
+      var data = await api('result', { params: { id: resultId } });
       state.current = data; state.mode = 'regular';
       global.jQuery('#litHistoryModal').modal('hide');
       document.getElementById('litReportTitle').textContent = data.record.student.name + ' 학생 결과지';
@@ -269,7 +398,7 @@
   async function copyLink() {
     var d = state.current; if (!d) return;
     try {
-      var url = (await L.api('share_link', { params: { id: d.record.id } })).url;
+      var url = (await api('share_link', { params: { id: d.record.id } })).url;
       try { await navigator.clipboard.writeText(url); toast('학부모 공유 링크를 복사했습니다. 카톡 등에 붙여넣어 보내세요.'); }
       catch (e) { global.prompt('아래 링크를 복사해 학부모에게 전달해 주세요.', url); }
     } catch (e) { fail(e); }
@@ -277,11 +406,11 @@
   async function sendKakao() {
     var d = state.current; if (!d) return;
     try {
-      var pv = await L.api('kakao', { body: { id: d.record.id, preview: true } });
+      var pv = await api('kakao', { body: { id: d.record.id, preview: true } });
       var litKakaoMsg = '[문해력 진단 결과 알림톡 발송 미리보기]\n\n' + global.buildKakaoHistoryNotice(pv) + '받는 분: ' + pv.name + ' (' + pv.recipient + ')\n\n' + pv.message + '\n\n연결 링크: ' + pv.targetUrl + '\n\n학부모님께 이 내용으로 발송할까요?';
       var ok = typeof global.nanoConfirm === 'function' ? await global.nanoConfirm(litKakaoMsg) : global.confirm(litKakaoMsg);
       if (!ok) return;
-      var res = await L.api('kakao', { body: { id: d.record.id, fingerprint: pv.fingerprint, attemptNumber: pv.attemptNumber } });
+      var res = await api('kakao', { body: { id: d.record.id, fingerprint: pv.fingerprint, attemptNumber: pv.attemptNumber } });
       if (global.NanoBilling && typeof global.NanoBilling.invalidateDispatchCache === 'function') global.NanoBilling.invalidateDispatchCache();
       var resMsg = res.resultMessage ? ' (' + res.resultMessage + ')' : '';
       toast(res.duplicate ? '이미 발송 접수된 내역입니다. (' + res.status + resMsg + ')' : res.status === 'ACCEPTED' ? '📨 문해력 결과지 알림톡 발송이 알리고에 접수되었습니다. ([카톡 발송 내역]에서 결과 확인)' : (res.status === 'SUCCESS' || res.status === 'SMS_FALLBACK') ? '🎉 문해력 결과지 알림톡이 발송되었습니다!' : '❌ 발송 실패' + (resMsg || ': 카톡 발송 내역을 확인해 주세요.'), res.status === 'FAILED');
@@ -313,7 +442,7 @@
   }
 
   global.NanoLiteracyAdmin = {
-    show: function () { build(); refresh(); }, refresh: refresh, render: render,
+    show: function () { build(); refresh(); }, refresh: refresh, render: render, syncClasses: syncClasses,
     openAssign: openAssign, renderPick: renderPick, setPick: setPick, pickAll: pickAll, submitAssign: submitAssign, cancel: cancel,
     openReport: openReport, setMode: setMode, printCurrent: printCurrent, copyLink: copyLink, sendKakao: sendKakao, openHistory: openHistory
   };

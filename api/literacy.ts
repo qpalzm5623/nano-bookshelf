@@ -330,14 +330,42 @@ export default async function handler(req: any, res: any) {
     staff(user);
     const academyId = await academyScope(user, req.query.academy);
 
+    // 배정 목록·원생 목록 공통: 학원의 최신 개설 학급 목록 조회 (테스트 목업 호환 가드 포함)
+    const listAcademyClasses = async () => (
+      typeof prisma.classGroup?.findMany === 'function'
+        ? (await prisma.classGroup.findMany({ where: { academyId }, orderBy: { name: 'asc' } })).map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            grade: c.targetGrade || '',
+          }))
+        : []
+    );
+
     if (action === 'assignments' && req.method === 'GET') {
-      return res.json({ items: await listAssignments(academyId) });
+      const [items, classes, members] = await Promise.all([
+        listAssignments(academyId),
+        listAcademyClasses(),
+        typeof prisma.member?.findMany === 'function'
+          ? prisma.member.findMany({ where: { academyId, role: 'STUDENT' }, select: { id: true, classGroup: { select: { name: true } } } })
+          : Promise.resolve([]),
+      ]);
+      const liveClassMap = new Map<string, string>(
+        (members || []).map((m: any) => [String(m.id), m.classGroup?.name || '미지정'])
+      );
+      return res.json({
+        items: items.map((a: any) => ({
+          ...a,
+          classGroup: liveClassMap.has(String(a.memberId)) ? liveClassMap.get(String(a.memberId))! : (a.classGroup || '미지정'),
+        })),
+        classes,
+      });
     }
     // 배정 화면용 원생 목록: 등록 학년으로 추천 검사지(밴드)를 계산해 내려준다 (원장이 화면에서 조정 가능)
     if (action === 'students' && req.method === 'GET') {
-      const [members, current] = await Promise.all([
+      const [members, current, classes] = await Promise.all([
         prisma.member.findMany({ where: { academyId, role: 'STUDENT', status: 'APPROVED' }, include: { classGroup: true }, orderBy: { name: 'asc' } }),
         listAssignments(academyId),
+        listAcademyClasses(),
       ]);
       return res.json({
         items: members.map((m) => {
@@ -348,6 +376,7 @@ export default async function handler(req: any, res: any) {
             hasActive: current.some((a) => a.memberId === m.id && ACTIVE.includes(a.status)),
           };
         }),
+        classes,
       });
     }
     if (action === 'assign' && req.method === 'POST') {

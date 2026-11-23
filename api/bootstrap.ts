@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { loadContentAccess, quizContent, canReadContent, bookSheets, sheetView } from '../lib/portal-content';
 import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import Reading = require('../public_html/js/reading-progress');
+import ClientIp = require('../lib/client-ip');
 import { readSession, passwordVersion } from '../lib/portal-auth';
 
 // 공개 JS 파일로 배포하던 회원 정보를 로그인한 사용자의 범위로만 제공합니다.
@@ -134,6 +135,7 @@ export default async function handler(req: any, res: any) {
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
     await authorizeBrand(req, user);
+    const clientIp = ClientIp.extractClientIp(req);
     const limited = restrictedMaster(user);
     const brand = (user as any).portalBrand;
     const allowedAcademies = limited ? await brandAcademyIds('JD') : [];
@@ -277,12 +279,14 @@ export default async function handler(req: any, res: any) {
 
     const studentPrefRow = (studentSettingRows || []).find((r: any) => r.key === 'preferences:' + user.id);
     const onboardingRow = (studentSettingRows || []).find((r: any) => r.key === 'onboarding_interest:' + user.id);
+    const prefVal = ((studentPrefRow as any)?.value || {}) as Record<string, any>;
     const onboardingVal = ((onboardingRow as any)?.value || {}) as Record<string, any>;
+    // 관심 주제가 1개라도 저장되기 전에는 skip 했더라도 재접속(/api/bootstrap) 시 팝업을 다시 노출
+    const hasSavedInterests = Array.isArray(prefVal.interests) && prefVal.interests.length > 0;
     const showFirstInterestModal = Boolean(
       isStudent &&
-      onboardingVal.status === 'PENDING' &&
-      onboardingVal.sessionId &&
-      onboardingVal.sessionId === session.sid
+      !hasSavedInterests &&
+      onboardingVal.status !== 'SAVED'
     );
 
     const noticeHideRow = (studentSettingRows || []).find((r: any) => r.key === 'notice_hide:' + user.id);
@@ -298,6 +302,7 @@ export default async function handler(req: any, res: any) {
     const data = {
       NANO_SERVER_DATA: true,
       NANO_BRAND: brand,
+      NANO_CLIENT_IP: clientIp,
       NANO_RESTRICTED_MASTER: limited,
       NANO_BOOTSTRAP_MEMBER_ID: user.id,
       NANO_SERVER_HIDDEN_NOTICES: activeHiddenNotices,
@@ -563,7 +568,7 @@ export default async function handler(req: any, res: any) {
     };
     const sessionUser = { brand, brandPolicy: (user as any).brandPolicy, id: user.username, memberId: user.id, name: user.name, studentName: user.name, studentId: user.username,
       role: user.role === 'MASTER' ? 'master' : user.role === 'STUDENT' ? 'student' : user.role === 'TEACHER' ? 'teacher' : 'admin',
-      academyId: user.academy.code, academyName: user.academy.name, classGroup: members.find(m => m.id === user.id)?.classGroup?.name || '미지정', server: true };
+      academyId: user.academy.code, academyName: user.academy.name, classGroup: members.find(m => m.id === user.id)?.classGroup?.name || '미지정', clientIp, server: true };
     // 큰 퀴즈 배열은 한 번만 전송하고, 불필요한 전체 deep clone 대신 직접 참조하여 브라우저 메인 스레드 프리징 방지
     return res.status(200).send('sessionStorage.setItem("nano_auth_user", ' + JSON.stringify(JSON.stringify(sessionUser)).replace(/</g, '\\u003c') + ');\n' + Object.entries(data).map(([key, value]) => `window.${key} = ${JSON.stringify(value).replace(/</g, '\\u003c')};`).join('\n')
       + '\nwindow.MIGRATED_BOOKS.forEach(function(book) { var qs = (window.MIGRATED_QUIZZES && (window.MIGRATED_QUIZZES[book.id] || window.MIGRATED_QUIZZES[book.bookNo])) || null; if (qs && qs.length > 0) { book.quizSets = qs; book.hasQuiz = true; if (qs[0].questions) { book.quizCount = qs.reduce(function(sum, s) { return sum + (s.questions ? s.questions.length : 0); }, 0); } } else { book.quizSets = []; } });');

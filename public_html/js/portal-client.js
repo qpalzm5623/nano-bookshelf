@@ -67,10 +67,21 @@
     return ({ '승인': 'APPROVED', '정상': 'APPROVED', '정상 승인': 'APPROVED', '미승인': 'PENDING', '승인대기': 'PENDING', '정지': 'SUSPENDED', '일시정지': 'SUSPENDED', '퇴원': 'WITHDRAWN', '탈퇴': 'WITHDRAWN', NORMAL: 'APPROVED', PAUSED: 'SUSPENDED' })[value] || value || 'PENDING';
   }
   function classIdFor(item, academyCode) {
-    if (item.classGroupId) return item.classGroupId;
-    var name = item.classGroup || item.className;
-    var match = (global.NANO_SERVER_CLASSES || []).find(function (entry) { return entry.academyId === academyCode && entry.name === name; });
-    return match ? (match.serverId || match.id) : null;
+    var hasName = item && (Object.prototype.hasOwnProperty.call(item, 'classGroup') || Object.prototype.hasOwnProperty.call(item, 'className'));
+    if (hasName) {
+      var rawName = Object.prototype.hasOwnProperty.call(item, 'classGroup') ? item.classGroup : item.className;
+      var name = String(rawName == null ? '' : rawName).trim();
+      if (!name || name === '미지정' || name === '-') return null;
+      var serverClasses = global.NANO_SERVER_CLASSES || [];
+      var match = serverClasses.find(function (entry) { return entry.academyId === academyCode && entry.name === name; });
+      if (match) return match.serverId || match.id;
+      // 이름 변경 후 아직 캐시 목록에 없으면 기존 classGroupId가 다른 학급을 가리킬 때 재사용을 차단합니다.
+      if (item.classGroupId) {
+        var prev = serverClasses.find(function (entry) { return (entry.serverId || entry.id) === item.classGroupId; });
+        if (prev && prev.name !== name) return null;
+      }
+    }
+    return item && item.classGroupId ? item.classGroupId : null;
   }
   function memberPayload(item, academyCode, opts) {
     var role = item.role === '학원 원장' ? 'DIRECTOR' : item.role === '지도교사' ? 'TEACHER' : (item.role || 'STUDENT');
@@ -84,11 +95,14 @@
     // 학생의 경우 학원 UI의 phone/stdPhone/parentPhone 필드 혼용을 안전하게 정규화
     var finalPhone = isStudent ? (item.stdPhone || '') : (item.phone || '');
     var finalParentPhone = isStudent ? (item.parentPhone || item.phone || '') : (item.parentPhone || '');
+    var rawClassName = Object.prototype.hasOwnProperty.call(item, 'classGroup') ? item.classGroup : item.className;
+    var cleanClassName = String(rawClassName == null ? '' : rawClassName).trim();
     var payload = {
       id: item.serverId || undefined, updatedAt: safeUpdatedAt, username: item.username || item.id, name: item.name, role: role,
       status: enumStatus(item.status || 'APPROVED'), grade: item.grade || '', school: item.school || '', gender: item.gender || '',
       phone: finalPhone, parentName: item.parentName || '', parentPhone: finalParentPhone,
       parentEmail: item.parentEmail || '', reportYn: item.reportYn !== false, classGroupId: classIdFor(item, academyCode),
+      className: (cleanClassName && cleanClassName !== '-' && cleanClassName !== '미지정') ? cleanClassName : undefined,
       force: (opts && opts.force === true) ? true : undefined
     };
     if (item.password && typeof item.password === 'string') {
@@ -110,7 +124,7 @@
       }
     }
     var saved = result && result.items && result.items[0];
-    if (saved) { item.serverId = saved.id; item.updatedAt = saved.updatedAt; item.classGroupId = saved.classGroupId; }
+    if (saved) { item.serverId = saved.id; item.updatedAt = saved.updatedAt; item.classGroupId = saved.classGroupId || null; }
     return saved;
   }
   async function deleteMember(item, academyCode) {
@@ -136,15 +150,39 @@
   async function deleteAcademy(item) { return manage('academies', 'delete', { id: item.serverId }, { academy: item.id }); }
   async function restoreAcademy(item) { return manage('academies', 'restore', { id: item.serverId }, { academy: item.id }); }
   async function saveClass(item, academyCode) {
-    var result = await manage('classes', 'save', { id: item.serverId || undefined, name: item.name, targetGrade: item.grade || item.targetGrade || '', teacher: item.teacher || '' }, { academy: academyCode });
+    var scopeCode = academyCode || academy();
+    var result = await manage('classes', 'save', { id: item.serverId || undefined, name: item.name, targetGrade: item.grade || item.targetGrade || '', teacher: item.teacher || '' }, { academy: scopeCode });
     if (result.item) {
       item.serverId = result.item.id;
       item.id = result.item.id;
       if (result.item.teacher) item.teacher = result.item.teacher;
+      if (!Array.isArray(global.NANO_SERVER_CLASSES)) global.NANO_SERVER_CLASSES = [];
+      var entry = {
+        id: result.item.id,
+        serverId: result.item.id,
+        name: result.item.name,
+        grade: result.item.targetGrade || item.grade || '',
+        teacher: result.item.teacher || item.teacher || '',
+        academyId: scopeCode
+      };
+      var idx = global.NANO_SERVER_CLASSES.findIndex(function (c) {
+        return (c.serverId || c.id) === entry.id;
+      });
+      if (idx >= 0) global.NANO_SERVER_CLASSES[idx] = entry;
+      else global.NANO_SERVER_CLASSES.push(entry);
     }
     return result.item;
   }
-  async function deleteClass(item, academyCode) { return manage('classes', 'delete', { id: item.serverId || item.id }, { academy: academyCode }); }
+  async function deleteClass(item, academyCode) {
+    var targetId = item.serverId || item.id;
+    var res = await manage('classes', 'delete', { id: targetId }, { academy: academyCode });
+    if (Array.isArray(global.NANO_SERVER_CLASSES)) {
+      global.NANO_SERVER_CLASSES = global.NANO_SERVER_CLASSES.filter(function (c) {
+        return (c.serverId || c.id) !== targetId;
+      });
+    }
+    return res;
+  }
   function dataUrlToBlob(dataUrl) {
     var parts = String(dataUrl || '').split(',');
     if (parts.length < 2) return null;
@@ -626,6 +664,11 @@
     finally { clearTimeout(timer); }
   }
   function user() { try { return JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null'); } catch(e) { return null; } }
+  function clientIp() {
+    var u = user();
+    var ip = (typeof global.NANO_CLIENT_IP === 'string' && global.NANO_CLIENT_IP) ? global.NANO_CLIENT_IP : (u && typeof u.clientIp === 'string' ? u.clientIp : '');
+    return String(ip || '').trim();
+  }
   function applyLearning(log) {
     if (!log) return;
     learningOverlay.set(log.id, log);
@@ -694,7 +737,7 @@
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     formatKstDateTime: toKst24String,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,
-    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, refreshLearning: refreshLearning, fetchLearningDetail: fetchLearningDetail, logout: logout, handleConcurrentLogout: handleConcurrentLogout,
+    refreshActivity: refreshActivity, refreshAssignments: refreshAssignments, activity: function() { return activity; }, applyLearning: applyLearning, user: user, clientIp: clientIp, refreshLearning: refreshLearning, fetchLearningDetail: fetchLearningDetail, logout: logout, handleConcurrentLogout: handleConcurrentLogout,
     applyReview: function (log) { if (memoryLogs) memoryLogs = memoryLogs.map(function (item) { return item.id === log.id ? log : item; }); },
     logs: function () { return memoryLogs; } };
   var page = location.pathname.split('/').pop().replace(/\.html$/, '');

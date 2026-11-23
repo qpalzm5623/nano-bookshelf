@@ -145,8 +145,10 @@ function student(localStorage, account = 'student-a', academyId = 'A') {
   loadFunctions(ctx, 'student_preview.html', [
     'getStudentQuizIdentity', 'updateStudentSessionLabels', 'setQuizDraftStatus', 'escapeStudentQuizText', 'saveStudentQuizDraft',
     'shuffleQuizOptions', 'startQuizWithSet', 'renderQ', 'onThoughtTextareaInput', 'selectAns', 'goNext',
-    'goPreviousQuestion', 'showResult', 'syncQuizResultToAdminLearning', 'backToSelect', 'checkDailyQuizLimit'
+    'goPreviousQuestion', 'getStudentBookCertifiedPassCount', 'showResult', 'syncQuizResultToAdminLearning', 'backToSelect', 'checkDailyQuizLimit'
   ]);
+  ctx.syncAllBooksQuizCounts = () => {};
+  ctx.renderHomeSliders = () => {};
   return ctx;
 }
 
@@ -473,29 +475,95 @@ test('원생이 없는 학원은 다른 학원 원생을 가져오지 않고 저
   ctx.localStorage.setItem('students-A', '[]'); assert.equal(ctx.loadStudentsFromStorage().length,0);
 });
 
-test('60점 미만은 문항별 내역을 비우고 60점 이상에서만 다시 표시한다', async () => {
+test('북퀴즈 완료 직후에는 60점 미만·이상 모두 문항별 정답·오답 내역을 숨기고 점수만 표시한다', async () => {
   const ctx = student();
   const set = { id: 'SET-REVIEW', questions: Array.from({ length: 5 }, (_, i) => ({
     question: '검토용 문항 ' + (i + 1), options: ['정답 보기', '오답 보기'], ans: '1'
   })) };
   ctx.document.querySelector = selector => selector === '.result-box' ? {} : null;
-  // 성공 → 실패 → 경계 점수: 앞서 표시했던 정답이 다음 결과에 남지 않아야 합니다.
+  // 불합격(0, 40점)과 합격(60, 100점) 모두 퀴즈 직후에는 점수·생각담기만 보이고 문항별 정답·오답은 보이지 않아야 합니다.
   for (const correctCount of [5, 2, 0, 3]) {
     ctx.startQuizWithSet(book, set);
-    ctx.studentSelectedAnsMap = Object.fromEntries(set.questions.map((_, i) => [i, i < correctCount ? 0 : 1]));
+    ctx.studentSelectedAnsMap = Object.fromEntries(ctx.curData.qs.map((q, i) => [i, i < correctCount ? q.a : (q.a === 0 ? 1 : 0)]));
     ctx.currentStudentThoughtAnswer = '직접 작성한 생각은 유지합니다.';
     await ctx.showResult();
     const html = ctx.document.getElementById('quizResultDetailWrap').innerHTML;
     assert.equal(ctx.document.getElementById('rScore').innerText, correctCount * 20 + '점');
     assert.ok(html.includes(ctx.currentStudentThoughtAnswer));
-    if (correctCount < 3) {
-      assert.doesNotMatch(html, /차근차근 돌아보기|문항별 결과|quiz-res-item|qr-answer|검토용 문항|정답 보기|오답 보기/);
-    } else {
-      assert.match(html, /차근차근 돌아보기/);
-      assert.equal((html.match(/quiz-res-item/g) || []).length, 5);
-      assert.match(html, /정답 보기/);
-    }
+    assert.doesNotMatch(html, /차근차근 돌아보기|문항별 결과|quiz-res-item|qr-answer|검토용 문항|정답 보기|오답 보기/);
   }
+});
+
+test('내 책장에서는 인증도서에 한해서만 리포트 보기 버튼을 노출하고 리포트 모달에 정답·오답 내역을 표시한다', () => {
+  const ctx = context();
+  const certBook = { id: 'CERT-1', bookNo: 'CERT-1', title: '인증 완료 책', author: '작가1', pub: '출판1', cat: '문학', grade: '초3', tags: [], synopsis: '줄거리' };
+  const uncertBook = { id: 'FAIL-1', bookNo: 'FAIL-1', title: '미인증 책', author: '작가2', pub: '출판2', cat: '과학', grade: '초4', tags: [], synopsis: '줄거리' };
+  const logs = [
+    {
+      id: 'L_cert_1', academyId: 'A', studentId: 'student-a', bookId: 'CERT-1',
+      bookTitle: '인증 완료 책', bookPub: '출판1 · 작가1', date: '2026-11-20', submittedAt: '2026-11-20T05:00:00Z',
+      score: 80, thoughtQuestion: '기억에 남는 장면은?', studentThoughtAnswer: '주인공의 선택이 인상 깊었어요.',
+      quizResults: [
+        { qNum: 1, question: '첫째 질문', userChoiceText: '맞힌 보기', correctChoiceText: '맞힌 보기', isCorrect: true },
+        { qNum: 2, question: '둘째 질문', userChoiceText: '틀린 보기', correctChoiceText: '진짜 정답', isCorrect: false }
+      ]
+    },
+    {
+      id: 'L_fail_1', academyId: 'A', studentId: 'student-a', bookId: 'FAIL-1',
+      bookTitle: '미인증 책', date: '2026-11-21', submittedAt: '2026-11-21T05:00:00Z', score: 40, quizResults: []
+    }
+  ];
+  ctx.sessionStorage.setItem('nano_auth_user', JSON.stringify({ id: 'student-a', role: 'student', studentName: '검증 학생', academyId: 'A' }));
+  Object.assign(ctx, {
+    NanoPortal: { remote: true, logs: () => logs, activity: () => null },
+    libData: [certBook, uncertBook],
+    readBooksMaster: [{ id: 'CERT-1', title: '인증 완료 책', score: 80, date: '2026.11.20', pub: '출판1', series: '문학' }],
+    studentWishlist: ['CERT-1', 'FAIL-1'],
+    getBookCoverHtml: () => '<div>cover</div>',
+    sortLibraryBooksForStudent: items => items,
+    getBookQuizActionBtnHtml: b => `<button type="button">${b.id}-퀴즈</button>`,
+    isBookQuizReady: () => true,
+    getBookActualQuizCount: () => 2,
+    updateDetailWishUI() {},
+    switchPanel() {}, scrollTo() {}
+  });
+  loadFunctions(ctx, 'student_preview.html', [
+    'escapeStudentQuizText', 'getStudentQuizIdentity', 'getStudentAllLogs',
+    'getStudentCertifiedLogsForBook', 'renderReadingHistoryGrid', 'renderWishList',
+    'openBookDetail', 'openStudentLearningReportModal'
+  ]);
+
+  ctx.renderReadingHistoryGrid();
+  const historyHtml = ctx.document.getElementById('readingHistoryMonthContainer').innerHTML;
+  assert.match(historyHtml, /openStudentLearningReportModal\('CERT-1'\)/);
+  assert.match(historyHtml, /리포트 보기/);
+  assert.doesNotMatch(historyHtml, /FAIL-1/);
+
+  ctx.renderWishList();
+  const wishHtml = ctx.document.getElementById('wishList').innerHTML;
+  assert.match(wishHtml, /openStudentLearningReportModal\('CERT-1'\)/);
+  assert.doesNotMatch(wishHtml, /openStudentLearningReportModal\('FAIL-1'\)/);
+
+  ctx.openBookDetail('CERT-1', 'history');
+  const detailFromHistory = ctx.document.getElementById('detailMyLearningReportBox').innerHTML;
+  assert.match(detailFromHistory, /openStudentLearningReportModal\('CERT-1'\)/);
+  assert.match(detailFromHistory, /리포트 보기/);
+
+  ctx.openBookDetail('CERT-1', 'books');
+  const detailFromLibrary = ctx.document.getElementById('detailMyLearningReportBox').innerHTML;
+  assert.doesNotMatch(detailFromLibrary, /리포트 보기/);
+
+  ctx.openStudentLearningReportModal('CERT-1');
+  const modalBody = ctx.document.getElementById('slrModalBody').innerHTML;
+  assert.equal(ctx.document.getElementById('studentLearningReportModal').style.display, 'flex');
+  assert.match(modalBody, /첫째 질문/);
+  assert.match(modalBody, /data-grade-mark="O"[^>]*>01</);
+  assert.match(modalBody, /✓ 정답/);
+  assert.match(modalBody, /둘째 질문/);
+  assert.match(modalBody, /data-grade-mark="star"[^>]*>02</);
+  assert.match(modalBody, /✕ 오답/);
+  assert.match(modalBody, /is-wrong-mine[\s\S]*틀린 보기/);
+  assert.match(modalBody, /is-wrong-correct[\s\S]*진짜 정답/);
 });
 
 test('서버 저장 실패 시 완료 처리하지 않고 초안을 유지한다', async () => {

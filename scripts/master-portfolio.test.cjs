@@ -1936,7 +1936,7 @@ test('서비스 운영관리 배너 지정 도서 리스트와 학생앱 도서 
   assert.equal(bannerListDom.innerHTML, '<row>KA300010:산타 할아버지의 지도</row><row>FA300010:붉은 모자와 까만 원숭이</row>');
 });
 
-test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제(1~3개·Skip) 팝업이 뜨고 저장·스킵 또는 2차 로그인 후 재노출되지 않는다', async () => {
+test('학생 관심 주제 미설정 온보딩: Skip 후 재접속·재로그인 시 관심 주제 팝업이 다시 뜨고 임의 3개가 자동 선택되지 않으며 저장 후에만 비노출된다', async () => {
   const rootDir = path.join(__dirname, '..');
   const auth = loadTs('lib/portal-auth.ts');
   const pwHash = auth.hashPassword('pass-1234');
@@ -2069,7 +2069,7 @@ test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제
   const firstBoot = await callBoot(firstCookie);
   assert.equal(firstBoot.NANO_FIRST_INTEREST_POPUP, true);
 
-  // Skip 처리 -> 1회 완료되어 동일 세션 재조회에서도 재노출되지 않음
+  // Skip 처리 -> 1회 응답은 SKIPPED이지만 아직 관심 주제를 저장하지 않았으므로 재접속(bootstrap)·재로그인 시 다시 팝업 노출
   const actRes = { statusCode: 200, body: null, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(v) { this.body = v; return this; } };
   await activityHandler({
     method: 'POST', query: { action: 'onboarding_interest' },
@@ -2077,13 +2077,34 @@ test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제
     body: { status: 'SKIPPED' },
   }, actRes);
   assert.equal(actRes.body.status, 'SKIPPED');
-  assert.equal((await callBoot(firstCookie)).NANO_FIRST_INTEREST_POPUP, false);
+  const reconnectBoot = await callBoot(firstCookie);
+  assert.equal(reconnectBoot.NANO_FIRST_INTEREST_POPUP, true);
+  assert.deepEqual(Array.from(reconnectBoot.NANO_SERVER_PREFERENCES?.value?.interests || []), []);
 
-  // 2차 로그인 -> lastLoginAt 존재하므로 재발동하지 않음
+  // 2차 로그인(재접속) -> 아직 관심 주제를 저장하지 않았으므로 계속 팝업 노출
   const secondCookie = await login('newstd1');
-  assert.equal((await callBoot(secondCookie)).NANO_FIRST_INTEREST_POPUP, false);
+  assert.equal((await callBoot(secondCookie)).NANO_FIRST_INTEREST_POPUP, true);
 
-  // 프런트엔드 UI / 최대 3개 선택 / 저장 / Skip / JD 브랜드 스타일 검증
+  // 관심 주제 2개 저장 + SAVED 처리 -> 이후 재접속 및 3차 로그인에서 팝업 재노출되지 않음
+  const prefSaveRes = { statusCode: 200, body: null, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(v) { this.body = v; return this; } };
+  await activityHandler({
+    method: 'POST', query: { action: 'preferences' },
+    headers: { cookie: secondCookie, host: 'nanosbook.co.kr', origin: 'https://nanosbook.co.kr', 'content-type': 'application/json' },
+    body: { value: { wishlist: [], interests: ['#이야기', '#과학'] }, revision: 0 },
+  }, prefSaveRes);
+  assert.equal(prefSaveRes.statusCode, 200);
+  const actSaveRes = { statusCode: 200, body: null, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(v) { this.body = v; return this; } };
+  await activityHandler({
+    method: 'POST', query: { action: 'onboarding_interest' },
+    headers: { cookie: secondCookie, host: 'nanosbook.co.kr', origin: 'https://nanosbook.co.kr', 'content-type': 'application/json' },
+    body: { status: 'SAVED' },
+  }, actSaveRes);
+  assert.equal(actSaveRes.body.status, 'SAVED');
+  assert.equal((await callBoot(secondCookie)).NANO_FIRST_INTEREST_POPUP, false);
+  const thirdCookie = await login('newstd1');
+  assert.equal((await callBoot(thirdCookie)).NANO_FIRST_INTEREST_POPUP, false);
+
+  // 프런트엔드 UI / Skip 시 빈 배열 유지(자동 3개 미선택) / 최대 3개 선택 / 저장 / JD 브랜드 스타일 검증
   const studentHtml = fs.readFileSync(path.join(rootDir, 'public_html/student_preview.html'), 'utf8');
   const brandCss = fs.readFileSync(path.join(rootDir, 'public_html/css/portal-brand.css'), 'utf8');
   assert.match(studentHtml, /id="firstLoginInterestModal"\s+class="student-modal-overlay"/);
@@ -2094,9 +2115,11 @@ test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제
 
   const prefStart = studentHtml.indexOf('var isInterestTagsExpanded = false;');
   const prefEnd = studentHtml.indexOf('// 포인트 적립 내역 데이터');
+  const tagStart = studentHtml.indexOf('function toggleInterestTagsExpand()');
+  const tagEnd = studentHtml.indexOf('function renderInterestRecommendations()', tagStart);
   const modalStart = studentHtml.indexOf('// 최초 로그인 1회 이벤트: 홈 메인 관심 주제 선택 팝업');
   const modalEnd = studentHtml.indexOf('document.addEventListener(\'DOMContentLoaded\'', modalStart);
-  assert.ok(prefStart > 0 && prefEnd > prefStart && modalStart > 0 && modalEnd > modalStart);
+  assert.ok(prefStart > 0 && prefEnd > prefStart && tagStart > 0 && tagEnd > tagStart && modalStart > 0 && modalEnd > modalStart);
 
   const els = {
     'p-home': { classList: { contains: (c) => c === 'active' } },
@@ -2104,6 +2127,8 @@ test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제
     firstInterestTopicGrid: { innerHTML: '' },
     firstInterestCountBadge: { textContent: '' },
     btnFirstInterestSave: { disabled: true },
+    libInterestTagsContainer: { innerHTML: '' },
+    libUserInterestTagCount: { innerText: '' },
   };
   const postedCalls = [];
   const toasts = [];
@@ -2115,15 +2140,16 @@ test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제
       NanoPortal: { remote: true },
     },
     studentWishlist: [],
+    allInterestTags: [],
     getStudentThemes: () => [
       { active: 'Y', title: '이야기' },
       { active: 'Y', title: '과학' },
       { active: 'Y', title: '역사' },
       { active: 'Y', title: '자연' },
     ],
+    getAllInterestTags: () => ['#이야기', '#과학', '#역사', '#자연'],
     getStudentQuizIdentity: () => ({ memberId: 'std-first', studentId: 'newstd1' }),
     toast: (m) => toasts.push(m),
-    renderInterestTags: () => {},
     renderInterestRecommendations: () => {},
     checkStudentNoticePopups: () => {},
     setTimeout: (fn) => fn(),
@@ -2132,14 +2158,37 @@ test('학생 최초 로그인 1회 이벤트: 홈 메인 중앙에 관심 주제
       return { ok: true, json: async () => ({ ok: true, revision: 1 }) };
     },
     document: { getElementById: (id) => els[id] || null },
-    localStorage: { getItem: () => null, setItem() {} },
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     sessionStorage: { getItem: () => null, removeItem() {} },
   });
-  vm.runInContext(studentHtml.slice(prefStart, prefEnd) + '\n' + studentHtml.slice(modalStart, modalEnd), uiCtx);
+  vm.runInContext(
+    studentHtml.slice(prefStart, prefEnd) + '\n' +
+    studentHtml.slice(tagStart, tagEnd) + '\n' +
+    studentHtml.slice(modalStart, modalEnd),
+    uiCtx
+  );
 
+  // 초기 상태: 관심 주제가 비어 있고, 맨 앞 3개 주제가 자동으로 들어가 있지 않아야 함
+  assert.deepEqual(Array.from(uiCtx.userInterestTags), []);
   assert.equal(uiCtx.checkFirstLoginInterestPopup(), true);
   assert.equal(els.firstLoginInterestModal.style.display, 'flex');
   assert.equal(els.btnFirstInterestSave.disabled, true);
+
+  // Skip 실행 -> 현재 화면 세션에서는 닫히되 userInterestTags 및 renderInterestTags 이후에도 빈 배열([]) 유지
+  uiCtx.skipFirstLoginInterestModal();
+  assert.equal(els.firstLoginInterestModal.style.display, 'none');
+  assert.equal(uiCtx.checkFirstLoginInterestPopup(), false);
+  assert.ok(postedCalls.some(c => c.url.includes('action=onboarding_interest') && c.body.status === 'SKIPPED'));
+  assert.ok(!postedCalls.some(c => c.url.includes('action=preferences')));
+  uiCtx.renderInterestTags();
+  assert.deepEqual(Array.from(uiCtx.userInterestTags), []);
+  assert.equal(els.libUserInterestTagCount.innerText, '0개 선택');
+  assert.ok(!els.libInterestTagsContainer.innerHTML.includes('interest-tag-chip active'));
+
+  // 재접속 시뮬레이션(NANO_FIRST_INTEREST_POPUP === true) -> 팝업이 다시 열리고 1~3개 선택/저장 동작
+  uiCtx.window.NANO_FIRST_INTEREST_POPUP = true;
+  assert.equal(uiCtx.checkFirstLoginInterestPopup(), true);
+  assert.equal(els.firstLoginInterestModal.style.display, 'flex');
 
   // 1~3개 선택 및 4번째 선택 차단 확인
   uiCtx.toggleFirstLoginInterestTopicByIndex(0);

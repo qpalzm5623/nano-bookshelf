@@ -886,6 +886,24 @@ var activePdfDoc = null;
 var activePdfPageNum = 1;
 var activePdfTotalPages = 1;
 var activePdfRenderTask = null;
+var activePdfRenderTasks = [];
+var activePdfRenderSessionId = 0;
+var activePdfRenderPromise = null;
+
+function cancelActivePdfRender() {
+  activePdfRenderSessionId++;
+  activePdfRenderPromise = null;
+  if (activePdfRenderTask) {
+    try { activePdfRenderTask.cancel(); } catch(e) {}
+    activePdfRenderTask = null;
+  }
+  if (Array.isArray(activePdfRenderTasks) && activePdfRenderTasks.length > 0) {
+    activePdfRenderTasks.forEach(function(task) {
+      try { if (task && typeof task.cancel === 'function') task.cancel(); } catch(e) {}
+    });
+    activePdfRenderTasks = [];
+  }
+}
 
 function escapeMasterHtml(str) {
   if (!str) return '';
@@ -897,43 +915,106 @@ function escapeMasterHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function escapeMasterWatermarkHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getMasterWatermarkAcademyName() {
+  var auth = null;
+  try {
+    if (window.NanoPortal && typeof window.NanoPortal.user === 'function') auth = window.NanoPortal.user();
+  } catch (e) {}
+  if (!auth) {
+    try { auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null'); } catch (e) {}
+  }
+  var authAcad = (auth && auth.academyName) ? String(auth.academyName).trim() : '';
+  if (authAcad && authAcad !== 'HQ' && authAcad !== '본사' && authAcad !== '나노 독서아카데미 목동본원') {
+    return authAcad;
+  }
+  if ((auth && auth.brand === 'JD') || window.NANO_BRAND === 'JD') {
+    return '정답이 있는 독서 본사';
+  }
+  return '나노의 책장 B2B 본사 (HQ)';
+}
+
+function getMasterWatermarkClientIp() {
+  var ip = '';
+  try {
+    if (window.NanoPortal && typeof window.NanoPortal.clientIp === 'function') {
+      ip = window.NanoPortal.clientIp();
+    }
+  } catch (e) {}
+  if (!ip && typeof window.NANO_CLIENT_IP === 'string') ip = window.NANO_CLIENT_IP.trim();
+  if (!ip) {
+    try {
+      var auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null');
+      if (auth && typeof auth.clientIp === 'string') ip = auth.clientIp.trim();
+    } catch (e) {}
+  }
+  return ip || 'IP 미확인';
+}
+
 function updateWatermarkInfo() {
   var acadElem = document.getElementById('wmAcademyName');
   var timeElem = document.getElementById('wmPrintTime');
   var ipElem = document.getElementById('wmIpAddress');
-  if (acadElem) acadElem.innerText = '나노의 책장 B2B 본사 (HQ)';
+  var sheetAcadElem = document.getElementById('pdfSheetAcademyName');
+  var academyName = getMasterWatermarkAcademyName();
+  if (acadElem) acadElem.innerText = academyName;
+  if (sheetAcadElem) sheetAcadElem.innerText = academyName;
   if (timeElem) {
     var now = new Date();
     var pad = function(n) { return String(n).padStart(2, '0'); };
     timeElem.innerText = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
   if (ipElem) {
-    ipElem.innerText = '118.235.12.89';
+    ipElem.innerText = getMasterWatermarkClientIp();
   }
 }
 
-function updateRealPdfWatermarkOverlay() {
-  var overlay = document.getElementById('realPdfWatermarkOverlay');
-  if (!overlay) return;
-  overlay.style.justifyContent = 'center'; // 중앙 단일 배치
-
+function buildMasterRealPdfWatermarkTileHtml() {
   var acadElem = document.getElementById('wmAcademyName');
   var timeElem = document.getElementById('wmPrintTime');
   var ipElem = document.getElementById('wmIpAddress');
 
-  var acad = (acadElem && acadElem.innerText) ? acadElem.innerText : '나노의 책장 B2B 본사 (HQ)';
-  var time = (timeElem && timeElem.innerText) ? timeElem.innerText : new Date().toISOString().slice(0, 16).replace('T', ' ');
-  var ip = (ipElem && ipElem.innerText) ? ipElem.innerText : '118.235.12.89';
+  var resolvedAcad = getMasterWatermarkAcademyName();
+  var resolvedIp = getMasterWatermarkClientIp();
+  var rawAcad = (acadElem && acadElem.innerText && acadElem.innerText.trim()) ? acadElem.innerText.trim() : resolvedAcad;
+  var rawTime = (timeElem && timeElem.innerText && timeElem.innerText.trim() && timeElem.innerText.trim() !== '-') ? timeElem.innerText.trim() : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var rawIp = (ipElem && ipElem.innerText && ipElem.innerText.trim() && ipElem.innerText.trim() !== '-') ? ipElem.innerText.trim() : resolvedIp;
+  var acad = escapeMasterWatermarkHtml(rawAcad);
+  var time = escapeMasterWatermarkHtml(rawTime);
+  var ip = escapeMasterWatermarkHtml(rawIp);
 
-  var tileHtml = 
+  return (
     '<div style="transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 0;">' +
       '<div style="font-size: 21px; letter-spacing: -0.5px; color: #1e293b;">' + acad + '</div>' +
       '<div style="font-size: 14.5px; font-family: monospace; color: #334155;">' + time + ' &middot; IP: ' + ip + '</div>' +
       '<div style="font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px;">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
-    '</div>';
+    '</div>'
+  );
+}
 
-  // 위아래 워터마크를 제거하고 가운데 1개만 단독 노출
-  overlay.innerHTML = tileHtml;
+function updateRealPdfWatermarkOverlay() {
+  var tileHtml = buildMasterRealPdfWatermarkTileHtml();
+  var targets = [];
+  if (typeof document.querySelectorAll === 'function') {
+    var list = document.querySelectorAll('#realPdfViewerWrapper .nano-pdf-page-watermark, #realPdfWatermarkOverlay');
+    for (var i = 0; i < list.length; i++) targets.push(list[i]);
+  }
+  var fallbackOverlay = document.getElementById('realPdfWatermarkOverlay');
+  if (fallbackOverlay && targets.indexOf(fallbackOverlay) === -1) {
+    targets.push(fallbackOverlay);
+  }
+  for (var j = 0; j < targets.length; j++) {
+    if (targets[j].style) targets[j].style.justifyContent = 'center';
+    targets[j].innerHTML = tileHtml;
+  }
 }
 
 function extractBookPdfCandidates(book) {
@@ -1156,96 +1237,159 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
   });
 }
 
-function renderCurrentPdfPage() {
-  if (!activePdfDoc) return;
-  if (activePdfRenderTask) {
-    try { activePdfRenderTask.cancel(); } catch(e) {}
-    activePdfRenderTask = null;
+function resetPdfSheetPrintUi() {
+  var printBtn = document.getElementById('btnPrintNanoSheet');
+  if (printBtn) {
+    printBtn.innerHTML = '<i class="fa-solid fa-print mr-1"></i>인쇄';
+  }
+  var pageControls = document.getElementById('pdfPageControls');
+  if (pageControls) {
+    pageControls.style.display = 'none';
+  }
+}
+
+function renderAllPdfPages() {
+  if (!activePdfDoc) return Promise.resolve();
+  cancelActivePdfRender();
+  var sessionId = activePdfRenderSessionId;
+  var pdf = activePdfDoc;
+  var totalPages = pdf.numPages || 1;
+  activePdfTotalPages = totalPages;
+  activePdfPageNum = 1;
+
+  var wrapper = document.getElementById('realPdfViewerWrapper');
+  var container = document.getElementById('realPdfPagesContainer');
+  if (wrapper && wrapper.parentElement) {
+    wrapper.parentElement.scrollTop = 0;
   }
 
-  activePdfDoc.getPage(activePdfPageNum).then(function(page) {
-    var canvas = document.getElementById('pdfViewerCanvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
+  var pageControls = document.getElementById('pdfPageControls');
+  if (pageControls) {
+    pageControls.style.display = totalPages > 0 ? 'flex' : 'none';
+  }
+  var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
+  if (pageNumDisplay) {
+    pageNumDisplay.innerText = totalPages > 1
+      ? ('총 ' + totalPages + '페이지 · 전체 스크롤 열람')
+      : '총 1페이지';
+  }
+  var printBtn = document.getElementById('btnPrintNanoSheet');
+  if (printBtn) {
+    printBtn.innerHTML = totalPages > 1
+      ? ('<i class="fa-solid fa-print mr-1"></i>전체 인쇄 (' + totalPages + '장)')
+      : '<i class="fa-solid fa-print mr-1"></i>인쇄';
+  }
 
-    var wrapper = document.getElementById('realPdfViewerWrapper');
-    var targetWidth = wrapper ? (wrapper.clientWidth || 740) : 740;
-    if (targetWidth < 300) targetWidth = 740;
+  if (!container) {
+    updateRealPdfWatermarkOverlay();
+    return Promise.resolve();
+  }
 
-    var unscaledViewport = page.getViewport({ scale: 1.0 });
-    var scale = targetWidth / unscaledViewport.width;
-    if (scale < 1.2) scale = 1.2;
+  container.innerHTML = '';
+  var pageCanvases = [];
+  for (var p = 1; p <= totalPages; p++) {
+    var card = document.createElement('div');
+    card.className = 'nano-pdf-page-card';
+    card.setAttribute('data-page', String(p));
+    card.style.cssText = 'position: relative; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.12);';
 
-    var outputScale = window.devicePixelRatio || 1;
-    var viewport = page.getViewport({ scale: scale });
+    var canvas = document.createElement('canvas');
+    if (p === 1) canvas.id = 'pdfViewerCanvas';
+    canvas.className = 'nano-pdf-page-canvas';
+    canvas.setAttribute('data-page', String(p));
+    canvas.setAttribute('data-rendered', '0');
+    canvas.style.cssText = 'display: block; width: 100%; height: auto; margin: 0 auto;';
 
-    canvas.width = Math.floor(viewport.width * outputScale);
-    canvas.height = Math.floor(viewport.height * outputScale);
-    canvas.style.width = Math.floor(viewport.width) + "px";
-    canvas.style.height = Math.floor(viewport.height) + "px";
+    var overlay = document.createElement('div');
+    if (p === 1) overlay.id = 'realPdfWatermarkOverlay';
+    overlay.className = 'nano-pdf-page-watermark';
+    overlay.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; user-select: none;';
 
-    var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+    card.appendChild(canvas);
+    card.appendChild(overlay);
+    container.appendChild(card);
+    pageCanvases.push(canvas);
+  }
 
-    var renderContext = {
-      canvasContext: ctx,
-      transform: transform,
-      viewport: viewport
-    };
+  updateRealPdfWatermarkOverlay();
 
-    activePdfRenderTask = page.render(renderContext);
-    activePdfRenderTask.promise.then(function() {
+  var targetWidth = wrapper ? (wrapper.clientWidth || 740) : 740;
+  if (targetWidth < 300) targetWidth = 740;
+  var outputScale = Math.min(window.devicePixelRatio || 1, 2);
+
+  var renderChain = Promise.resolve();
+  for (var pageIdx = 1; pageIdx <= totalPages; pageIdx++) {
+    (function(pageNumber, targetCanvas) {
+      renderChain = renderChain.then(function() {
+        if (sessionId !== activePdfRenderSessionId || !activePdfDoc) return;
+        return pdf.getPage(pageNumber).then(function(page) {
+          if (sessionId !== activePdfRenderSessionId || !activePdfDoc) return;
+          var ctx = targetCanvas.getContext('2d');
+          var unscaledViewport = page.getViewport({ scale: 1.0 });
+          var scale = targetWidth / unscaledViewport.width;
+          if (scale < 1.2) scale = 1.2;
+          var viewport = page.getViewport({ scale: scale });
+
+          targetCanvas.width = Math.floor(viewport.width * outputScale);
+          targetCanvas.height = Math.floor(viewport.height * outputScale);
+          targetCanvas.style.width = Math.floor(viewport.width) + 'px';
+          targetCanvas.style.height = Math.floor(viewport.height) + 'px';
+
+          var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+          var task = page.render({ canvasContext: ctx, transform: transform, viewport: viewport });
+          activePdfRenderTask = task;
+          activePdfRenderTasks.push(task);
+
+          return task.promise.then(function() {
+            if (sessionId === activePdfRenderSessionId) {
+              targetCanvas.setAttribute('data-rendered', '1');
+            }
+          });
+        });
+      });
+    })(pageIdx, pageCanvases[pageIdx - 1]);
+  }
+
+  activePdfRenderPromise = renderChain.then(function() {
+    if (sessionId === activePdfRenderSessionId) {
       activePdfRenderTask = null;
-      var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
-      if (pageNumDisplay) {
-        pageNumDisplay.innerText = activePdfPageNum + ' / ' + activePdfTotalPages;
-      }
-      var btnPrev = document.getElementById('btnPdfPrev');
-      var btnNext = document.getElementById('btnPdfNext');
-      if (btnPrev) btnPrev.disabled = (activePdfPageNum <= 1);
-      if (btnNext) btnNext.disabled = (activePdfPageNum >= activePdfTotalPages);
-    }).catch(function(err) {
-      if (err && err.name === 'RenderingCancelledException') return;
-      console.error('PDF.js 렌더링 에러:', err);
-    });
+      activePdfRenderPromise = null;
+    }
   }).catch(function(err) {
-    console.error('PDF.js getPage 에러:', err);
+    if (err && err.name === 'RenderingCancelledException') return;
+    console.error('PDF.js 다중 페이지 렌더링 에러:', err);
+    if (sessionId === activePdfRenderSessionId) {
+      activePdfRenderPromise = null;
+    }
   });
+
+  return activePdfRenderPromise;
 }
 
-function prevPdfPage() {
-  if (activePdfDoc && activePdfPageNum > 1) {
-    activePdfPageNum--;
-    renderCurrentPdfPage();
-  }
-}
-
-function nextPdfPage() {
-  if (activePdfDoc && activePdfPageNum < activePdfTotalPages) {
-    activePdfPageNum++;
-    renderCurrentPdfPage();
-  }
+function renderCurrentPdfPage() {
+  return renderAllPdfPages();
 }
 
 function showDefaultHtmlSheetView() {
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
   var loadingInd = document.getElementById('pdfLoadingIndicator');
-  var pageControls = document.getElementById('pdfPageControls');
   if (loadingInd) loadingInd.style.display = 'none';
   if (realWrapper) realWrapper.style.display = 'none';
-  if (pageControls) pageControls.style.display = 'none';
   if (htmlContainer) htmlContainer.style.display = 'block';
 }
 
 function renderCustomNanoSheetHtml(b) {
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
-  var pageControls = document.getElementById('pdfPageControls');
   var loadingInd = document.getElementById('pdfLoadingIndicator');
 
   if (loadingInd) loadingInd.style.display = 'none';
   if (realWrapper) realWrapper.style.display = 'none';
-  if (pageControls) pageControls.style.display = 'none';
   if (!htmlContainer) return;
 
   htmlContainer.style.display = 'block';
@@ -1275,9 +1419,15 @@ function renderCustomNanoSheetHtml(b) {
     return '<span style="display: inline-block; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 5px; border: 1px solid #e2e8f0; font-weight: 600;">#' + escapeMasterHtml(t) + '</span>';
   }).join('');
 
-  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노의 책장 B2B 본사 (HQ)');
-  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : '');
-  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+  var wmAcadEl = document.getElementById('wmAcademyName');
+  var rawAcadName = (wmAcadEl && wmAcadEl.innerText && wmAcadEl.innerText.trim()) ? wmAcadEl.innerText.trim() : getMasterWatermarkAcademyName();
+  var wmTimeEl = document.getElementById('wmPrintTime');
+  var rawPrintTime = (wmTimeEl && wmTimeEl.innerText && wmTimeEl.innerText.trim() && wmTimeEl.innerText.trim() !== '-') ? wmTimeEl.innerText.trim() : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var wmIpEl = document.getElementById('wmIpAddress');
+  var rawIpAddr = (wmIpEl && wmIpEl.innerText && wmIpEl.innerText.trim() && wmIpEl.innerText.trim() !== '-') ? wmIpEl.innerText.trim() : getMasterWatermarkClientIp();
+  var acadName = escapeMasterWatermarkHtml(rawAcadName);
+  var printTime = escapeMasterWatermarkHtml(rawPrintTime);
+  var ipAddr = escapeMasterWatermarkHtml(rawIpAddr);
 
   var html = 
     '<!-- 워터마크 오버레이 -->' +
@@ -1365,19 +1515,86 @@ function renderCustomNanoSheetHtml(b) {
   htmlContainer.innerHTML = html;
 }
 
-function printNanoSheetViewer() {
-  var canvas = document.getElementById('pdfViewerCanvas');
-  var realWrapper = document.getElementById('realPdfViewerWrapper');
+function collectMasterNanoSheetPrintCanvases(realWrapper) {
+  var list = [];
+  if (realWrapper && typeof realWrapper.querySelectorAll === 'function') {
+    var nodes = realWrapper.querySelectorAll('canvas.nano-pdf-page-canvas');
+    for (var i = 0; i < nodes.length; i++) list.push(nodes[i]);
+  }
+  if (list.length === 0) {
+    var singleCanvas = document.getElementById('pdfViewerCanvas');
+    if (singleCanvas) list.push(singleCanvas);
+  }
+  return list;
+}
 
-  if (!canvas || !realWrapper || realWrapper.style.display === 'none') {
+function buildMasterNanoSheetPrintHtml(imageList, acadName, printTime, ipAddr) {
+  var wmBlock =
+    '<div class="wm-block">' +
+      '<div class="wm-title">' + acadName + '</div>' +
+      '<div class="wm-sub">' + printTime + ' &middot; IP: ' + ipAddr + '</div>' +
+      '<div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
+    '</div>';
+  var wmOverlayHtml = '<div class="wm-overlay">' + wmBlock + wmBlock + wmBlock + '</div>';
+  var pagesHtml = imageList.map(function(imgData) {
+    return (
+      '<div class="sheet-wrapper">' +
+        '<img src="' + imgData + '" class="sheet-canvas-img" />' +
+        wmOverlayHtml +
+      '</div>'
+    );
+  }).join('');
+
+  return '<!DOCTYPE html>' +
+    '<html><head><meta charset="utf-8">' +
+    '<title>나노 시트 보안 출력 - ' + acadName + '</title>' +
+    '<style>' +
+      '@page { size: A4 portrait; margin: 0; }' +
+      '* { box-sizing: border-box; }' +
+      'html, body { margin: 0; padding: 0; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }' +
+      '.sheet-wrapper { position: relative; width: 210mm; height: 296mm; margin: 0 auto; overflow: hidden; background: #fff; display: flex; justify-content: center; align-items: center; page-break-inside: avoid; break-inside: avoid; page-break-after: always; break-after: page; }' +
+      '.sheet-wrapper:last-child { page-break-after: auto; break-after: auto; }' +
+      'img.sheet-canvas-img { width: 100%; height: 100%; max-width: 210mm; max-height: 296mm; object-fit: contain; display: block; }' +
+      '.wm-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-around; align-items: center; user-select: none; }' +
+      '.wm-block { transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 35px 0; }' +
+      '.wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }' +
+      '.wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }' +
+      '.wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }' +
+    '</style></head><body>' +
+    pagesHtml +
+    '<script>' +
+      'function triggerNanoSheetPrint() {' +
+        'var imgs = Array.prototype.slice.call(document.images || []);' +
+        'Promise.all(imgs.map(function(img) {' +
+          'if (img.complete) return Promise.resolve();' +
+          'return new Promise(function(res) { img.onload = res; img.onerror = res; });' +
+        '})).then(function() {' +
+          'setTimeout(function() { window.focus(); window.print(); }, 200);' +
+        '});' +
+      '}' +
+      'window.onafterprint = function() { setTimeout(function() { window.close(); }, 300); };' +
+      'window.onload = triggerNanoSheetPrint;' +
+    '<\/script></body></html>';
+}
+
+function printNanoSheetViewer() {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var canvases = collectMasterNanoSheetPrintCanvases(realWrapper);
+
+  if (canvases.length === 0 || !realWrapper || realWrapper.style.display === 'none') {
     window.print();
     return;
   }
 
-  var imgData = canvas.toDataURL('image/png');
-  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노의 책장 B2B 본사 (HQ)');
-  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : new Date().toISOString().slice(0, 16).replace('T', ' '));
-  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+  var wmAcadEl = document.getElementById('wmAcademyName');
+  var rawAcadName = (wmAcadEl && wmAcadEl.innerText && wmAcadEl.innerText.trim()) ? wmAcadEl.innerText.trim() : getMasterWatermarkAcademyName();
+  var wmTimeEl = document.getElementById('wmPrintTime');
+  var rawPrintTime = (wmTimeEl && wmTimeEl.innerText && wmTimeEl.innerText.trim() && wmTimeEl.innerText.trim() !== '-') ? wmTimeEl.innerText.trim() : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var wmIpEl = document.getElementById('wmIpAddress');
+  var rawIpAddr = (wmIpEl && wmIpEl.innerText && wmIpEl.innerText.trim() && wmIpEl.innerText.trim() !== '-') ? wmIpEl.innerText.trim() : getMasterWatermarkClientIp();
+  var acadName = escapeMasterWatermarkHtml(rawAcadName);
+  var printTime = escapeMasterWatermarkHtml(rawPrintTime);
+  var ipAddr = escapeMasterWatermarkHtml(rawIpAddr);
 
   var printWin = window.open('', '_blank', 'width=850,height=1100');
   if (!printWin) {
@@ -1385,61 +1602,27 @@ function printNanoSheetViewer() {
     return;
   }
 
-  printWin.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>나노 시트 보안 출력 - ${acadName}</title>
-  <style>
-    @page { size: A4 portrait; margin: 0; }
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .sheet-wrapper { position: relative; width: 100%; max-width: 210mm; min-height: 297mm; overflow: hidden; background: #fff; }
-    img.sheet-canvas-img { width: 100%; height: auto; display: block; }
-    .wm-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 10;
-      display: flex; flex-direction: column; justify-content: space-around; align-items: center;
-      user-select: none;
-    }
-    .wm-block {
-      transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000;
-      line-height: 1.4; user-select: none; margin: 35px 0;
-    }
-    .wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }
-    .wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }
-    .wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }
-  </style>
-</head>
-<body>
-  <div class="sheet-wrapper">
-    <img src="${imgData}" class="sheet-canvas-img" />
-    <div class="wm-overlay">
-      <div class="wm-block">
-        <div class="wm-title">${acadName}</div>
-        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
-        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
-      </div>
-      <div class="wm-block">
-        <div class="wm-title">${acadName}</div>
-        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
-        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
-      </div>
-      <div class="wm-block">
-        <div class="wm-title">${acadName}</div>
-        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
-        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
-      </div>
-    </div>
-  </div>
-  <script>
-    window.onload = function() {
-      setTimeout(function() { window.print(); }, 250);
-    };
-  <\/script>
-</body>
-</html>`);
-  printWin.document.close();
+  var flushPrintPages = function() {
+    var currentCanvases = collectMasterNanoSheetPrintCanvases(document.getElementById('realPdfViewerWrapper'));
+    if (currentCanvases.length === 0) currentCanvases = canvases;
+    var imageList = currentCanvases.map(function(canvas) {
+      return canvas.toDataURL('image/png');
+    });
+    printWin.document.open();
+    printWin.document.write(buildMasterNanoSheetPrintHtml(imageList, acadName, printTime, ipAddr));
+    printWin.document.close();
+  };
+
+  var hasPendingRender = (typeof activePdfRenderPromise !== 'undefined' && activePdfRenderPromise)
+    || canvases.some(function(c) { return typeof c.getAttribute === 'function' && c.getAttribute('data-rendered') === '0'; });
+
+  if (hasPendingRender && typeof activePdfRenderPromise !== 'undefined' && activePdfRenderPromise) {
+    printWin.document.write('<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;text-align:center;color:#475569;">전체 나노 시트 페이지를 준비 중입니다...</body></html>');
+    printWin.document.close();
+    activePdfRenderPromise.then(flushPrintPages, flushPrintPages);
+  } else {
+    flushPrintPages();
+  }
 }
 
 // 마스터 관리자 나노시트 모달 열기 (학원관리자와 100% 동일 규격 및 API 연동)
@@ -1513,6 +1696,8 @@ function openMasterPdfModal(bookId, selectedSheet) {
   var sheetBookTitle = document.getElementById('pdfSheetBookTitle');
   if (sheetBookTitle) sheetBookTitle.innerText = title;
 
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   updateWatermarkInfo();
 
   if (window.jQuery && typeof $('#contentPdfPreviewModal').modal === 'function') {

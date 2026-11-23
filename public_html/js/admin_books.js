@@ -2562,6 +2562,24 @@ var currentUploadedPdfBlob = null; // 사용자가 첨부한 실제 PDF File/Blo
 var activePdfDoc = null;          // PDF.js 로드된 문서 객체
 var activePdfPageNum = 1;         // 현재 페이지 번호
 var activePdfTotalPages = 1;      // 전체 페이지 수
+var activePdfRenderTasks = [];    // 진행 중인 다중 페이지 렌더링 태스크 목록
+var activePdfRenderSessionId = 0; // 빠른 도서 전환 시 이전 비동기 렌더링 중단용 토큰
+var activePdfRenderPromise = null;// 전체 페이지 렌더링 완료 대기 프로미스
+
+function cancelActivePdfRender() {
+  activePdfRenderSessionId++;
+  activePdfRenderPromise = null;
+  if (typeof activePdfRenderTask !== 'undefined' && activePdfRenderTask) {
+    try { activePdfRenderTask.cancel(); } catch(e) {}
+    activePdfRenderTask = null;
+  }
+  if (Array.isArray(activePdfRenderTasks) && activePdfRenderTasks.length > 0) {
+    activePdfRenderTasks.forEach(function(task) {
+      try { if (task && typeof task.cancel === 'function') task.cancel(); } catch(e) {}
+    });
+    activePdfRenderTasks = [];
+  }
+}
 
 // PDF.js 글로벌 워커 설정
 if (typeof pdfjsLib !== 'undefined') {
@@ -2583,29 +2601,45 @@ function createMinimalSamplePdfBlob(title) {
   return new Blob([pdfSource], { type: 'application/pdf' });
 }
 
-// 전면 보안 워터마크 동적 주입 (학원명, 출력일시, IP 대각선 중앙 단일 워터마크)
-function updateRealPdfWatermarkOverlay() {
-  var overlay = document.getElementById('realPdfWatermarkOverlay');
-  if (!overlay) return;
-  overlay.style.justifyContent = 'center'; // 중앙 단일 배치
-
+// 전면 보안 워터마크 동적 주입 (학원명, 출력일시, IP 대각선 중앙 단일 워터마크 - 모든 페이지 카드 적용)
+function buildRealPdfWatermarkTileHtml() {
   var acadElem = document.getElementById('wmAcademyName');
   var timeElem = document.getElementById('wmPrintTime');
   var ipElem = document.getElementById('wmIpAddress');
 
-  var acad = (acadElem && acadElem.innerText) ? acadElem.innerText : '나노 독서아카데미 목동본원';
-  var time = (timeElem && timeElem.innerText) ? timeElem.innerText : new Date().toISOString().slice(0, 16).replace('T', ' ');
-  var ip = (ipElem && ipElem.innerText) ? ipElem.innerText : '118.235.12.89';
+  var resolvedAcad = getWatermarkAcademyName();
+  var resolvedIp = getWatermarkClientIp();
+  var rawAcad = (acadElem && acadElem.innerText && acadElem.innerText.trim() && acadElem.innerText.trim() !== '가맹 학원') ? acadElem.innerText.trim() : resolvedAcad;
+  var rawTime = (timeElem && timeElem.innerText && timeElem.innerText.trim() && timeElem.innerText.trim() !== '-') ? timeElem.innerText.trim() : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var rawIp = (ipElem && ipElem.innerText && ipElem.innerText.trim() && ipElem.innerText.trim() !== '-') ? ipElem.innerText.trim() : resolvedIp;
+  var acad = escapeWatermarkHtml(rawAcad);
+  var time = escapeWatermarkHtml(rawTime);
+  var ip = escapeWatermarkHtml(rawIp);
 
-  var tileHtml = 
+  return (
     '<div style="transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 0;">' +
       '<div style="font-size: 21px; letter-spacing: -0.5px; color: #1e293b;">' + acad + '</div>' +
       '<div style="font-size: 14.5px; font-family: monospace; color: #334155;">' + time + ' &middot; IP: ' + ip + '</div>' +
       '<div style="font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px;">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
-    '</div>';
+    '</div>'
+  );
+}
 
-  // 위아래 워터마크를 제거하고 가운데 1개만 단독 노출
-  overlay.innerHTML = tileHtml;
+function updateRealPdfWatermarkOverlay() {
+  var tileHtml = buildRealPdfWatermarkTileHtml();
+  var targets = [];
+  if (typeof document.querySelectorAll === 'function') {
+    var list = document.querySelectorAll('#realPdfViewerWrapper .nano-pdf-page-watermark, #realPdfWatermarkOverlay');
+    for (var i = 0; i < list.length; i++) targets.push(list[i]);
+  }
+  var fallbackOverlay = document.getElementById('realPdfWatermarkOverlay');
+  if (fallbackOverlay && targets.indexOf(fallbackOverlay) === -1) {
+    targets.push(fallbackOverlay);
+  }
+  for (var j = 0; j < targets.length; j++) {
+    if (targets[j].style) targets[j].style.justifyContent = 'center';
+    targets[j].innerHTML = tileHtml;
+  }
 }
 
 // 현재 열람 중인 도서 객체 보관용 전역 변수
@@ -2846,99 +2880,162 @@ function renderPdfFileWithWatermark(pdfSource, fallbackBook) {
 
 var activePdfRenderTask = null;
 
-// 현재 PDF 페이지 캔버스 렌더링 (PDF.js)
-function renderCurrentPdfPage() {
-  if (!activePdfDoc) return;
-  if (activePdfRenderTask) {
-    try { activePdfRenderTask.cancel(); } catch(e) {}
-    activePdfRenderTask = null;
+function resetPdfSheetPrintUi() {
+  var printBtn = document.getElementById('btnPrintNanoSheet');
+  if (printBtn) {
+    printBtn.innerHTML = '<i class="fa-solid fa-print mr-1"></i>인쇄';
+  }
+  var pageControls = document.getElementById('pdfPageControls');
+  if (pageControls) {
+    pageControls.style.display = 'none';
+  }
+}
+
+// 전체 PDF 페이지 세로 스크롤 일괄 렌더링 (페이지별 워터마크 동시 적용)
+function renderAllPdfPages() {
+  if (!activePdfDoc) return Promise.resolve();
+  cancelActivePdfRender();
+  var sessionId = activePdfRenderSessionId;
+  var pdf = activePdfDoc;
+  var totalPages = pdf.numPages || 1;
+  activePdfTotalPages = totalPages;
+  activePdfPageNum = 1;
+
+  var wrapper = document.getElementById('realPdfViewerWrapper');
+  var container = document.getElementById('realPdfPagesContainer');
+  if (wrapper && wrapper.parentElement) {
+    wrapper.parentElement.scrollTop = 0;
   }
 
-  activePdfDoc.getPage(activePdfPageNum).then(function(page) {
-    var canvas = document.getElementById('pdfViewerCanvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
+  var pageControls = document.getElementById('pdfPageControls');
+  if (pageControls) {
+    pageControls.style.display = totalPages > 0 ? 'flex' : 'none';
+  }
+  var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
+  if (pageNumDisplay) {
+    pageNumDisplay.innerText = totalPages > 1
+      ? ('총 ' + totalPages + '페이지 · 전체 스크롤 열람')
+      : '총 1페이지';
+  }
+  var printBtn = document.getElementById('btnPrintNanoSheet');
+  if (printBtn) {
+    printBtn.innerHTML = totalPages > 1
+      ? ('<i class="fa-solid fa-print mr-1"></i>전체 인쇄 (' + totalPages + '장)')
+      : '<i class="fa-solid fa-print mr-1"></i>인쇄';
+  }
 
-    // 뷰어 컨테이너 너비에 맞추어 고해상도 스케일 계산
-    var wrapper = document.getElementById('realPdfViewerWrapper');
-    var targetWidth = wrapper ? (wrapper.clientWidth || 740) : 740;
-    if (targetWidth < 300) targetWidth = 740;
+  if (!container) {
+    updateRealPdfWatermarkOverlay();
+    return Promise.resolve();
+  }
 
-    var unscaledViewport = page.getViewport({ scale: 1.0 });
-    var scale = targetWidth / unscaledViewport.width;
-    if (scale < 1.2) scale = 1.2;
+  container.innerHTML = '';
+  var pageCanvases = [];
+  for (var p = 1; p <= totalPages; p++) {
+    var card = document.createElement('div');
+    card.className = 'nano-pdf-page-card';
+    card.setAttribute('data-page', String(p));
+    card.style.cssText = 'position: relative; width: 100%; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.12);';
 
-    var outputScale = window.devicePixelRatio || 1;
-    var viewport = page.getViewport({ scale: scale });
+    var canvas = document.createElement('canvas');
+    if (p === 1) canvas.id = 'pdfViewerCanvas';
+    canvas.className = 'nano-pdf-page-canvas';
+    canvas.setAttribute('data-page', String(p));
+    canvas.setAttribute('data-rendered', '0');
+    canvas.style.cssText = 'display: block; width: 100%; height: auto; margin: 0 auto;';
 
-    canvas.width = Math.floor(viewport.width * outputScale);
-    canvas.height = Math.floor(viewport.height * outputScale);
-    canvas.style.width = Math.floor(viewport.width) + "px";
-    canvas.style.height = Math.floor(viewport.height) + "px";
+    var overlay = document.createElement('div');
+    if (p === 1) overlay.id = 'realPdfWatermarkOverlay';
+    overlay.className = 'nano-pdf-page-watermark';
+    overlay.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; user-select: none;';
 
-    var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+    card.appendChild(canvas);
+    card.appendChild(overlay);
+    container.appendChild(card);
+    pageCanvases.push(canvas);
+  }
 
-    var renderContext = {
-      canvasContext: ctx,
-      transform: transform,
-      viewport: viewport
-    };
+  // 모든 페이지 카드에 보안 워터마크 일괄 주입
+  updateRealPdfWatermarkOverlay();
 
-    activePdfRenderTask = page.render(renderContext);
-    activePdfRenderTask.promise.then(function() {
+  var targetWidth = wrapper ? (wrapper.clientWidth || 740) : 740;
+  if (targetWidth < 300) targetWidth = 740;
+  var outputScale = Math.min(window.devicePixelRatio || 1, 2);
+
+  var renderChain = Promise.resolve();
+  for (var pageIdx = 1; pageIdx <= totalPages; pageIdx++) {
+    (function(pageNumber, targetCanvas) {
+      renderChain = renderChain.then(function() {
+        if (sessionId !== activePdfRenderSessionId || !activePdfDoc) return;
+        return pdf.getPage(pageNumber).then(function(page) {
+          if (sessionId !== activePdfRenderSessionId || !activePdfDoc) return;
+          var ctx = targetCanvas.getContext('2d');
+          var unscaledViewport = page.getViewport({ scale: 1.0 });
+          var scale = targetWidth / unscaledViewport.width;
+          if (scale < 1.2) scale = 1.2;
+          var viewport = page.getViewport({ scale: scale });
+
+          targetCanvas.width = Math.floor(viewport.width * outputScale);
+          targetCanvas.height = Math.floor(viewport.height * outputScale);
+          targetCanvas.style.width = Math.floor(viewport.width) + 'px';
+          targetCanvas.style.height = Math.floor(viewport.height) + 'px';
+
+          var transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+          var task = page.render({ canvasContext: ctx, transform: transform, viewport: viewport });
+          activePdfRenderTask = task;
+          activePdfRenderTasks.push(task);
+
+          return task.promise.then(function() {
+            if (sessionId === activePdfRenderSessionId) {
+              targetCanvas.setAttribute('data-rendered', '1');
+            }
+          });
+        });
+      });
+    })(pageIdx, pageCanvases[pageIdx - 1]);
+  }
+
+  activePdfRenderPromise = renderChain.then(function() {
+    if (sessionId === activePdfRenderSessionId) {
       activePdfRenderTask = null;
-      var pageNumDisplay = document.getElementById('pdfPageNumDisplay');
-      if (pageNumDisplay) {
-        pageNumDisplay.innerText = activePdfPageNum + ' / ' + activePdfTotalPages;
-      }
-      var btnPrev = document.getElementById('btnPdfPrev');
-      var btnNext = document.getElementById('btnPdfNext');
-      if (btnPrev) btnPrev.disabled = (activePdfPageNum <= 1);
-      if (btnNext) btnNext.disabled = (activePdfPageNum >= activePdfTotalPages);
-    }).catch(function(err) {
-      if (err && err.name === 'RenderingCancelledException') return;
-      console.error('PDF.js 렌더링 에러:', err);
-    });
+      activePdfRenderPromise = null;
+    }
   }).catch(function(err) {
-    console.error('PDF.js getPage 에러:', err);
+    if (err && err.name === 'RenderingCancelledException') return;
+    console.error('PDF.js 다중 페이지 렌더링 에러:', err);
+    if (sessionId === activePdfRenderSessionId) {
+      activePdfRenderPromise = null;
+    }
   });
+
+  return activePdfRenderPromise;
 }
 
-function prevPdfPage() {
-  if (activePdfDoc && activePdfPageNum > 1) {
-    activePdfPageNum--;
-    renderCurrentPdfPage();
-  }
-}
-
-function nextPdfPage() {
-  if (activePdfDoc && activePdfPageNum < activePdfTotalPages) {
-    activePdfPageNum++;
-    renderCurrentPdfPage();
-  }
+function renderCurrentPdfPage() {
+  return renderAllPdfPages();
 }
 
 function showDefaultHtmlSheetView() {
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
   var loadingInd = document.getElementById('pdfLoadingIndicator');
-  var pageControls = document.getElementById('pdfPageControls');
   if (loadingInd) loadingInd.style.display = 'none';
   if (realWrapper) realWrapper.style.display = 'none';
-  if (pageControls) pageControls.style.display = 'none';
   if (htmlContainer) htmlContainer.style.display = 'block';
 }
 
 // 도서별 맞춤형 표준 동적 나노 시트 렌더러 (실제 메타데이터, 퀴즈, 서술형 발문 100% 반영)
 function renderCustomNanoSheetHtml(b) {
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   var realWrapper = document.getElementById('realPdfViewerWrapper');
   var htmlContainer = document.getElementById('nanoSheetViewerContainer');
-  var pageControls = document.getElementById('pdfPageControls');
   var loadingInd = document.getElementById('pdfLoadingIndicator');
 
   if (loadingInd) loadingInd.style.display = 'none';
   if (realWrapper) realWrapper.style.display = 'none';
-  if (pageControls) pageControls.style.display = 'none';
   if (!htmlContainer) return;
 
   htmlContainer.style.display = 'block';
@@ -2969,9 +3066,15 @@ function renderCustomNanoSheetHtml(b) {
     return '<span style="display: inline-block; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 5px; border: 1px solid #e2e8f0; font-weight: 600;">#' + escapeHtml(t) + '</span>';
   }).join('');
 
-  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노 독서아카데미 목동본원');
-  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : '');
-  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+  var wmAcadEl = document.getElementById('wmAcademyName');
+  var rawAcadName = (wmAcadEl && wmAcadEl.innerText && wmAcadEl.innerText.trim() && wmAcadEl.innerText.trim() !== '가맹 학원') ? wmAcadEl.innerText.trim() : getWatermarkAcademyName();
+  var wmTimeEl = document.getElementById('wmPrintTime');
+  var rawPrintTime = (wmTimeEl && wmTimeEl.innerText && wmTimeEl.innerText.trim() && wmTimeEl.innerText.trim() !== '-') ? wmTimeEl.innerText.trim() : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var wmIpEl = document.getElementById('wmIpAddress');
+  var rawIpAddr = (wmIpEl && wmIpEl.innerText && wmIpEl.innerText.trim() && wmIpEl.innerText.trim() !== '-') ? wmIpEl.innerText.trim() : getWatermarkClientIp();
+  var acadName = escapeWatermarkHtml(rawAcadName);
+  var printTime = escapeWatermarkHtml(rawPrintTime);
+  var ipAddr = escapeWatermarkHtml(rawIpAddr);
 
   var html = 
     '<!-- 워터마크 오버레이 -->' +
@@ -2998,7 +3101,7 @@ function renderCustomNanoSheetHtml(b) {
       '<div class="d-flex align-items-center gap-3">' +
         (coverUrl ? '<img src="' + coverUrl + '" style="width: 52px; height: 72px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">' : '') +
         '<div class="text-right" style="font-size: 11.5px; color: #64748b; line-height: 1.5; min-width: 120px;">' +
-          '<div>소속: <span class="border-bottom pb-0 px-2 font-weight-bold text-dark">목동본원</span></div>' +
+          '<div>소속: <span class="border-bottom pb-0 px-2 font-weight-bold text-dark">' + acadName + '</span></div>' +
           '<div class="mt-1">원생: <span class="border-bottom pb-0 px-2 font-weight-bold text-dark">____________</span></div>' +
           '<div class="mt-1">지도: <span class="border-bottom pb-0 px-2 font-weight-bold text-dark">담당교사</span></div>' +
         '</div>' +
@@ -3134,18 +3237,66 @@ function handleAcademyCoverUpload(input) {
 }
 
 // 워터마크 정보 갱신 (1행: 학원명, 2행: 출력일시, 3행: IP주소)
+function escapeWatermarkHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getWatermarkAcademyName() {
+  var auth = null;
+  try {
+    if (window.NanoPortal && typeof window.NanoPortal.user === 'function') auth = window.NanoPortal.user();
+  } catch (e) {}
+  if (!auth) {
+    try { auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null'); } catch (e) {}
+  }
+  var infoName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name)
+    ? String(currentAcademyInfo.name).trim()
+    : '';
+  if (infoName && infoName !== '학원 미선택') return infoName;
+  if (auth && auth.academyName && String(auth.academyName).trim()) return String(auth.academyName).trim();
+  if (typeof currentAcademyName !== 'undefined' && currentAcademyName && String(currentAcademyName).trim()) {
+    return String(currentAcademyName).trim();
+  }
+  return '가맹 학원';
+}
+
+function getWatermarkClientIp() {
+  var ip = '';
+  try {
+    if (window.NanoPortal && typeof window.NanoPortal.clientIp === 'function') {
+      ip = window.NanoPortal.clientIp();
+    }
+  } catch (e) {}
+  if (!ip && typeof window.NANO_CLIENT_IP === 'string') ip = window.NANO_CLIENT_IP.trim();
+  if (!ip) {
+    try {
+      var auth = JSON.parse(sessionStorage.getItem('nano_auth_user') || 'null');
+      if (auth && typeof auth.clientIp === 'string') ip = auth.clientIp.trim();
+    } catch (e) {}
+  }
+  return ip || 'IP 미확인';
+}
+
 function updateWatermarkInfo() {
   var acadElem = document.getElementById('wmAcademyName');
   var timeElem = document.getElementById('wmPrintTime');
   var ipElem = document.getElementById('wmIpAddress');
-  if (acadElem) acadElem.innerText = '나노 독서아카데미 목동본원';
+  var sheetAcadElem = document.getElementById('pdfSheetAcademyName');
+  var academyName = getWatermarkAcademyName();
+  if (acadElem) acadElem.innerText = academyName;
+  if (sheetAcadElem) sheetAcadElem.innerText = academyName;
   if (timeElem) {
     var now = new Date();
     var pad = function(n) { return String(n).padStart(2, '0'); };
     timeElem.innerText = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
   if (ipElem) {
-    ipElem.innerText = '118.235.12.89';
+    ipElem.innerText = getWatermarkClientIp();
   }
 }
 
@@ -3209,6 +3360,8 @@ function openContentPdfModal(bookId, selectedSheet) {
   var sheetBookTitle = document.getElementById('pdfSheetBookTitle');
   if (sheetBookTitle) sheetBookTitle.innerText = title;
 
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   updateWatermarkInfo();
 
   // 모달 먼저 열기
@@ -3324,6 +3477,8 @@ function previewCurrentUploadedPdf() {
   document.getElementById('pdfFileSizeDisplay').innerText = `(${fileSize} · 첨부 파일 검수)`;
   document.getElementById('pdfSheetBookTitle').innerText = bookName;
 
+  cancelActivePdfRender();
+  resetPdfSheetPrintUi();
   updateWatermarkInfo();
 
   // 사용자가 방금 첨부한 실제 PDF File/Blob이 있으면 PDF.js 캔버스 렌더링 + 워터마크 합성!

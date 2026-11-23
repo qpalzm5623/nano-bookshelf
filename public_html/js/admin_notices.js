@@ -428,20 +428,98 @@ if (document.readyState === 'loading') {
 
 
 
-// 보안 나노시트 인쇄 (실제 렌더링된 A4 캔버스 + 워터마크 고화질 출력)
-function printNanoSheetViewer() {
-  var canvas = document.getElementById('pdfViewerCanvas');
-  var realWrapper = document.getElementById('realPdfViewerWrapper');
+// 보안 나노시트 전체 페이지 일괄 인쇄 (렌더링된 전체 A4 캔버스 + 페이지별 워터마크 고화질 출력)
+function collectNanoSheetPrintCanvases(realWrapper) {
+  var list = [];
+  if (realWrapper && typeof realWrapper.querySelectorAll === 'function') {
+    var nodes = realWrapper.querySelectorAll('canvas.nano-pdf-page-canvas');
+    for (var i = 0; i < nodes.length; i++) list.push(nodes[i]);
+  }
+  if (list.length === 0) {
+    var singleCanvas = document.getElementById('pdfViewerCanvas');
+    if (singleCanvas) list.push(singleCanvas);
+  }
+  return list;
+}
 
-  if (!canvas || !realWrapper || realWrapper.style.display === 'none') {
+function buildNanoSheetPrintHtml(imageList, acadName, printTime, ipAddr) {
+  var wmBlock =
+    '<div class="wm-block">' +
+      '<div class="wm-title">' + acadName + '</div>' +
+      '<div class="wm-sub">' + printTime + ' &middot; IP: ' + ipAddr + '</div>' +
+      '<div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>' +
+    '</div>';
+  var wmOverlayHtml = '<div class="wm-overlay">' + wmBlock + wmBlock + wmBlock + '</div>';
+  var pagesHtml = imageList.map(function(imgData) {
+    return (
+      '<div class="sheet-wrapper">' +
+        '<img src="' + imgData + '" class="sheet-canvas-img" />' +
+        wmOverlayHtml +
+      '</div>'
+    );
+  }).join('');
+
+  return '<!DOCTYPE html>' +
+    '<html><head><meta charset="utf-8">' +
+    '<title>나노 시트 보안 출력 - ' + acadName + '</title>' +
+    '<style>' +
+      '@page { size: A4 portrait; margin: 0; }' +
+      '* { box-sizing: border-box; }' +
+      'html, body { margin: 0; padding: 0; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }' +
+      '.sheet-wrapper { position: relative; width: 210mm; height: 296mm; margin: 0 auto; overflow: hidden; background: #fff; display: flex; justify-content: center; align-items: center; page-break-inside: avoid; break-inside: avoid; page-break-after: always; break-after: page; }' +
+      '.sheet-wrapper:last-child { page-break-after: auto; break-after: auto; }' +
+      'img.sheet-canvas-img { width: 100%; height: 100%; max-width: 210mm; max-height: 296mm; object-fit: contain; display: block; }' +
+      '.wm-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-around; align-items: center; user-select: none; }' +
+      '.wm-block { transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000; line-height: 1.4; user-select: none; margin: 35px 0; }' +
+      '.wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }' +
+      '.wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }' +
+      '.wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }' +
+    '</style></head><body>' +
+    pagesHtml +
+    '<script>' +
+      'function triggerNanoSheetPrint() {' +
+        'var imgs = Array.prototype.slice.call(document.images || []);' +
+        'Promise.all(imgs.map(function(img) {' +
+          'if (img.complete) return Promise.resolve();' +
+          'return new Promise(function(res) { img.onload = res; img.onerror = res; });' +
+        '})).then(function() {' +
+          'setTimeout(function() {' +
+            'window.focus(); window.print();' +
+          '}, 200);' +
+        '});' +
+      '}' +
+      'window.onafterprint = function() { setTimeout(function() { window.close(); }, 300); };' +
+      'window.onload = triggerNanoSheetPrint;' +
+    '<\/script></body></html>';
+}
+
+function printNanoSheetViewer() {
+  var realWrapper = document.getElementById('realPdfViewerWrapper');
+  var canvases = collectNanoSheetPrintCanvases(realWrapper);
+
+  if (canvases.length === 0 || !realWrapper || realWrapper.style.display === 'none') {
     window.print();
     return;
   }
 
-  var imgData = canvas.toDataURL('image/png');
-  var acadName = (document.getElementById('wmAcademyName') ? document.getElementById('wmAcademyName').innerText : '나노 독서아카데미 목동본원');
-  var printTime = (document.getElementById('wmPrintTime') ? document.getElementById('wmPrintTime').innerText : new Date().toISOString().slice(0, 16).replace('T', ' '));
-  var ipAddr = (document.getElementById('wmIpAddress') ? document.getElementById('wmIpAddress').innerText : '118.235.12.89');
+  var escWm = typeof escapeWatermarkHtml === 'function'
+    ? escapeWatermarkHtml
+    : function(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+  var wmAcadEl = document.getElementById('wmAcademyName');
+  var rawAcadName = (wmAcadEl && wmAcadEl.innerText && wmAcadEl.innerText.trim() && wmAcadEl.innerText.trim() !== '가맹 학원')
+    ? wmAcadEl.innerText.trim()
+    : (typeof getWatermarkAcademyName === 'function' ? getWatermarkAcademyName() : '가맹 학원');
+  var wmTimeEl = document.getElementById('wmPrintTime');
+  var rawPrintTime = (wmTimeEl && wmTimeEl.innerText && wmTimeEl.innerText.trim() && wmTimeEl.innerText.trim() !== '-')
+    ? wmTimeEl.innerText.trim()
+    : new Date().toISOString().slice(0, 16).replace('T', ' ');
+  var wmIpEl = document.getElementById('wmIpAddress');
+  var rawIpAddr = (wmIpEl && wmIpEl.innerText && wmIpEl.innerText.trim() && wmIpEl.innerText.trim() !== '-')
+    ? wmIpEl.innerText.trim()
+    : (typeof getWatermarkClientIp === 'function' ? getWatermarkClientIp() : 'IP 미확인');
+  var acadName = escWm(rawAcadName);
+  var printTime = escWm(rawPrintTime);
+  var ipAddr = escWm(rawIpAddr);
 
   var printWin = window.open('', '_blank', 'width=850,height=1100');
   if (!printWin) {
@@ -449,63 +527,27 @@ function printNanoSheetViewer() {
     return;
   }
 
-  printWin.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>나노 시트 보안 출력 - ${acadName}</title>
-  <style>
-    @page { size: A4 portrait; margin: 0; }
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .sheet-wrapper { position: relative; width: 100%; max-width: 210mm; min-height: 297mm; overflow: hidden; background: #fff; }
-    img.sheet-canvas-img { width: 100%; height: auto; display: block; }
-    .wm-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 10;
-      display: flex; flex-direction: column; justify-content: space-around; align-items: center;
-      user-select: none;
-    }
-    .wm-block {
-      transform: rotate(-28deg); opacity: 0.16; font-weight: 900; text-align: center; color: #000;
-      line-height: 1.4; user-select: none; margin: 35px 0;
-    }
-    .wm-title { font-size: 22px; letter-spacing: -0.5px; color: #1e293b; }
-    .wm-sub { font-size: 14.5px; font-family: monospace; color: #334155; }
-    .wm-warn { font-size: 11px; color: #dc2626; font-weight: 800; margin-top: 2px; }
-  </style>
-</head>
-<body>
-  <div class="sheet-wrapper">
-    <img src="${imgData}" class="sheet-canvas-img" />
-    <div class="wm-overlay">
-      <div class="wm-block">
-        <div class="wm-title">${acadName}</div>
-        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
-        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
-      </div>
-      <div class="wm-block">
-        <div class="wm-title">${acadName}</div>
-        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
-        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
-      </div>
-      <div class="wm-block">
-        <div class="wm-title">${acadName}</div>
-        <div class="wm-sub">${printTime} &middot; IP: ${ipAddr}</div>
-        <div class="wm-warn">[보안 인가 문서] 무단 복제 및 캡처 배포 금지</div>
-      </div>
-    </div>
-  </div>
-  <script>
-    window.onload = function() {
-      setTimeout(function() {
-        window.print();
-        setTimeout(function() { window.close(); }, 500);
-      }, 300);
-    };
-  </script>
-</body>
-</html>`);
-  printWin.document.close();
+  var flushPrintPages = function() {
+    var currentCanvases = collectNanoSheetPrintCanvases(document.getElementById('realPdfViewerWrapper'));
+    if (currentCanvases.length === 0) currentCanvases = canvases;
+    var imageList = currentCanvases.map(function(canvas) {
+      return canvas.toDataURL('image/png');
+    });
+    printWin.document.open();
+    printWin.document.write(buildNanoSheetPrintHtml(imageList, acadName, printTime, ipAddr));
+    printWin.document.close();
+  };
+
+  // 아직 전체 페이지 캔버스 렌더링이 진행 중인 경우 완료 후 전체 페이지를 한 번에 출력
+  var hasPendingRender = (typeof activePdfRenderPromise !== 'undefined' && activePdfRenderPromise)
+    || canvases.some(function(c) { return typeof c.getAttribute === 'function' && c.getAttribute('data-rendered') === '0'; });
+
+  if (hasPendingRender && typeof activePdfRenderPromise !== 'undefined' && activePdfRenderPromise) {
+    printWin.document.write('<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;text-align:center;color:#475569;">전체 나노 시트 페이지를 준비 중입니다...</body></html>');
+    printWin.document.close();
+    activePdfRenderPromise.then(flushPrintPages, flushPrintPages);
+  } else {
+    flushPrintPages();
+  }
 }
 

@@ -91,8 +91,59 @@ var defaultAcademyClassList = [
 
 var defaultTeacherDataList = [];
 
+function findAcademyClassIdByName(className) {
+  var cleanName = String(className == null ? '' : className).trim();
+  if (!cleanName || cleanName === '미지정' || cleanName === '-') return null;
+  if (typeof academyClassList !== 'undefined' && Array.isArray(academyClassList)) {
+    var localMatch = academyClassList.find(function(c) { return c && c.name === cleanName; });
+    if (localMatch) {
+      if (localMatch.serverId) return localMatch.serverId;
+      if (localMatch.id && !/^CLS\d+$/i.test(String(localMatch.id))) return localMatch.id;
+    }
+  }
+  if (typeof window !== 'undefined' && Array.isArray(window.NANO_SERVER_CLASSES)) {
+    var acadCode = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) ? currentAcademyInfo.id : '';
+    var serverMatch = window.NANO_SERVER_CLASSES.find(function(c) {
+      return c && (!acadCode || c.academyId === acadCode) && c.name === cleanName;
+    });
+    if (serverMatch) return serverMatch.serverId || serverMatch.id || null;
+  }
+  return null;
+}
+
+function syncStudentInMigratedMembers(studentObj) {
+  if (!studentObj || typeof window === 'undefined' || !Array.isArray(window.MIGRATED_MEMBERS)) return;
+  var acadCode = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo) ? currentAcademyInfo.id : '';
+  var target = window.MIGRATED_MEMBERS.find(function(m) {
+    if (!m || m.role !== 'STUDENT') return false;
+    var sameAcad = !acadCode || m.academyId === acadCode;
+    return sameAcad && (
+      (studentObj.serverId && m.serverId === studentObj.serverId) ||
+      (studentObj.username && m.username === studentObj.username) ||
+      (studentObj.id && m.username === studentObj.id)
+    );
+  });
+  if (target) {
+    target.name = studentObj.name || target.name;
+    target.grade = studentObj.grade || target.grade;
+    target.school = studentObj.school || target.school;
+    target.className = (studentObj.classGroup && studentObj.classGroup !== '-') ? studentObj.classGroup : '미지정';
+    target.classGroupId = studentObj.classGroupId || null;
+    if (studentObj.updatedAt) target.updatedAt = studentObj.updatedAt;
+  }
+}
+
 // LocalStorage 및 Neon DB 실데이터 연동 헬퍼 함수
 function loadAcademyClassesFromStorage() {
+  // 서버 연동 모드에서는 브라우저의 이전 localStorage 캐시보다 서버 학급 목록(NANO_SERVER_CLASSES)을 우선 반영
+  if (window.NANO_SERVER_DATA && Array.isArray(window.NANO_SERVER_CLASSES)) {
+    var sClasses = window.NANO_SERVER_CLASSES
+      .filter(function(c) { return c.academyId === currentAcademyInfo.id; })
+      .map(function(c) { return Object.assign({}, c); });
+    try { localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(sClasses)); } catch (e) {}
+    return sClasses;
+  }
+
   try {
     var stored = localStorage.getItem(STORAGE_KEY_CLASSES);
     if (stored !== null) {
@@ -101,11 +152,6 @@ function loadAcademyClassesFromStorage() {
     }
   } catch (e) {
     console.warn('학급 데이터 로드 실패, 기본값 사용:', e);
-  }
-
-  if (window.NANO_SERVER_DATA) {
-    var sClasses = (window.NANO_SERVER_CLASSES || []).filter(function(c) { return c.academyId === currentAcademyInfo.id; });
-    if (sClasses.length > 0) return sClasses;
   }
 
   // Neon DB 실데이터 회원들의 className에서 해당 학원의 실제 학급 목록 추출
@@ -147,7 +193,25 @@ function saveAcademyClassesToStorage() {
 }
 
 function loadStudentsFromStorage() {
+  function mapMigratedStudent(m) {
+    return { id: m.username, serverId: m.serverId, updatedAt: m.updatedAt, username: m.username, classGroupId: m.classGroupId || null, name: m.name, gender: m.gender || '미등록', password: '••••',
+      school: m.school || '미등록', grade: m.grade || '미등록', classGroup: m.className || '미지정',
+      status: m.status === 'APPROVED' ? '승인' : (m.status === 'WITHDRAWN' ? '퇴원' : '미승인'),
+      level: m.level || '미설정', bookCount: Number(m.bookCount) || 0, quizAvg: (m.quizAvg == null || isNaN(Number(m.quizAvg))) ? '-' : Math.round(Number(m.quizAvg)),
+      parentName: m.parentName || '', phone: m.parentPhone || m.phone || '', parentPhone: m.parentPhone || m.phone || '', stdPhone: m.phone || '', parentEmail: m.parentEmail || '',
+      reportYn: m.reportYn !== false, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
+      teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0, characterId: m.characterId || null };
+  }
   try {
+    // 서버 연동 모드에서는 항상 DB에서 받아온 MIGRATED_MEMBERS를 최신 기준으로 사용
+    if (window.NANO_SERVER_DATA && Array.isArray(window.MIGRATED_MEMBERS)) {
+      var serverList = window.MIGRATED_MEMBERS.filter(function(m) {
+        return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && m.role === 'STUDENT';
+      }).map(mapMigratedStudent);
+      try { localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(serverList)); } catch (e) {}
+      return serverList;
+    }
+
     var raw = localStorage.getItem(STORAGE_KEY_STUDENTS);
     if (raw !== null) {
       try {
@@ -158,15 +222,7 @@ function loadStudentsFromStorage() {
     // 스토리지에 저장된 원생 데이터가 없는 초기 상태일 때만 MIGRATED_MEMBERS에서 추출
     var initialList = (window.MIGRATED_MEMBERS || []).filter(function(m) {
       return NanoPreviewData.belongsToAcademy(m, currentAcademyInfo) && m.role === 'STUDENT';
-    }).map(function(m) {
-      return { id: m.username, serverId: m.serverId, updatedAt: m.updatedAt, username: m.username, classGroupId: m.classGroupId || null, name: m.name, gender: m.gender || '미등록', password: '••••',
-        school: m.school || '미등록', grade: m.grade || '미등록', classGroup: m.className || '미지정',
-        status: m.status === 'APPROVED' ? '승인' : (m.status === 'WITHDRAWN' ? '퇴원' : '미승인'),
-        level: m.level || '미설정', bookCount: Number(m.bookCount) || 0, quizAvg: (m.quizAvg == null || isNaN(Number(m.quizAvg))) ? '-' : Math.round(Number(m.quizAvg)),
-        parentName: m.parentName || '', phone: m.parentPhone || m.phone || '', parentPhone: m.parentPhone || m.phone || '', stdPhone: m.phone || '', parentEmail: m.parentEmail || '',
-        reportYn: m.reportYn !== false, lastDate: m.lastLogin || '-', createdAt: m.createdAt || '-',
-        teacher: m.teacherName || '미지정', memo: m.memo || '', points: Number(m.points) || 0, characterId: m.characterId || null };
-    });
+    }).map(mapMigratedStudent);
     // 최초 1회 로컬 스토리지에 캐시 보관하여 새로고침 시에도 지속 보장
     if (initialList.length > 0) {
       try { localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(initialList)); } catch (e) {}
@@ -541,7 +597,29 @@ function autoGenStudentId() {
   return nextId;
 }
 
-// 학년 변경 시 독서 레벨 & 추천 클래스 자동 연동
+function setClassSelectIfAvailable(classSelect, preferredName, grade) {
+  if (!classSelect) return;
+  var opts = Array.from(classSelect.options || []);
+  // 기존 원생 수정 시에는 학년 변경만으로 기존 학급을 덮어쓰지 않음
+  var editTarget = document.getElementById('editStudentTargetId');
+  if (editTarget && editTarget.value && editTarget.value.trim()) return;
+
+  if (typeof academyClassList !== 'undefined' && Array.isArray(academyClassList)) {
+    var gradeMatch = academyClassList.find(function(c) {
+      return c && c.name && String(c.grade || '').indexOf(grade) !== -1 &&
+        opts.some(function(opt) { return opt.value === c.name; });
+    });
+    if (gradeMatch) {
+      classSelect.value = gradeMatch.name;
+      return;
+    }
+  }
+  if (preferredName && opts.some(function(opt) { return opt.value === preferredName; })) {
+    classSelect.value = preferredName;
+  }
+}
+
+// 학년 변경 시 독서 레벨 & 추천 클래스 자동 연동 (실제 개설된 학급 옵션이 있는 경우에만 선택)
 function onStudentGradeChange(grade) {
   var levelSelect = document.getElementById('newStdLevel');
   var classSelect = document.getElementById('newStdClass');
@@ -549,34 +627,34 @@ function onStudentGradeChange(grade) {
 
   if (grade === '유치부' || grade === '미취학') {
     if (levelSelect) levelSelect.value = '초등 입문 Lv 1';
-    if (classSelect) classSelect.value = '새싹반';
+    setClassSelectIfAvailable(classSelect, '새싹반', grade);
   } else if (grade === '초등 1학년') {
     if (levelSelect) levelSelect.value = '초등 입문 Lv 1';
-    if (classSelect) classSelect.value = '새싹반';
+    setClassSelectIfAvailable(classSelect, '새싹반', grade);
   } else if (grade === '초등 2학년') {
     if (levelSelect) levelSelect.value = '초등 입문 Lv 2';
-    if (classSelect) classSelect.value = '새싹반';
+    setClassSelectIfAvailable(classSelect, '새싹반', grade);
   } else if (grade === '초등 3학년') {
     if (levelSelect) levelSelect.value = '초등 발전 Lv 3';
-    if (classSelect) classSelect.value = '탐구반';
+    setClassSelectIfAvailable(classSelect, '탐구반', grade);
   } else if (grade === '초등 4학년') {
     if (levelSelect) levelSelect.value = '초등 발전 Lv 4';
-    if (classSelect) classSelect.value = '슬기반';
+    setClassSelectIfAvailable(classSelect, '슬기반', grade);
   } else if (grade === '초등 5학년') {
     if (levelSelect) levelSelect.value = '초등 심화 Lv 5';
-    if (classSelect) classSelect.value = '지혜반';
+    setClassSelectIfAvailable(classSelect, '지혜반', grade);
   } else if (grade === '초등 6학년') {
     if (levelSelect) levelSelect.value = '초등 완성 Lv 6';
-    if (classSelect) classSelect.value = '마스터반';
+    setClassSelectIfAvailable(classSelect, '마스터반', grade);
   } else if (grade === '중등 1학년') {
     if (levelSelect) levelSelect.value = '중등 기본 Lv 7';
-    if (classSelect) classSelect.value = '심화반';
+    setClassSelectIfAvailable(classSelect, '심화반', grade);
   } else if (grade === '중등 2학년') {
     if (levelSelect) levelSelect.value = '중등 심화 Lv 8';
-    if (classSelect) classSelect.value = '심화반';
+    setClassSelectIfAvailable(classSelect, '심화반', grade);
   } else if (grade === '중등 3학년') {
     if (levelSelect) levelSelect.value = '중등 마스터 Lv 9';
-    if (classSelect) classSelect.value = '심화반';
+    setClassSelectIfAvailable(classSelect, '심화반', grade);
   }
 }
 
@@ -998,14 +1076,6 @@ async function saveEditedClass() {
   cls.grade = newGrade;
   cls.teacher = newTeachersStr;
 
-  if (newName !== oldName) {
-    studentDataList.forEach(function(s) {
-      if (s.classGroup === oldName) {
-        s.classGroup = newName;
-      }
-    });
-  }
-
   if (window.NanoPortal && NanoPortal.remote) {
     try {
       await NanoPortal.saveClass(cls, currentAcademyInfo.id);
@@ -1014,6 +1084,16 @@ async function saveEditedClass() {
       showAcademyToast('학급 정보를 저장하지 못했습니다: ' + error.message);
       return;
     }
+  }
+  if (newName !== oldName) {
+    var updatedClassId = cls.serverId || (cls.id && !/^CLS\d+$/i.test(String(cls.id)) ? cls.id : null);
+    studentDataList.forEach(function(s) {
+      if (s.classGroup === oldName) {
+        s.classGroup = newName;
+        if (updatedClassId) s.classGroupId = updatedClassId;
+        syncStudentInMigratedMembers(s);
+      }
+    });
   }
   saveAcademyClassesToStorage();
   saveStudentsToStorage();
@@ -1061,6 +1141,8 @@ async function deleteClass(id) {
   studentDataList.forEach(function(s) {
     if (s.classGroup === cls.name) {
       s.classGroup = '미지정';
+      s.classGroupId = null;
+      syncStudentInMigratedMembers(s);
     }
   });
 
@@ -1217,6 +1299,11 @@ function updateClassSelectOptions() {
 
   // 6. 개별 원생 맞춤 도서 배정 모달 클래스 필터 동기화 (실제 학급 반영)
   syncIndivStudentClassFilterOptions();
+
+  // 7. 문해력 진단 및 테스트 부여 모달 학급 필터 동기화
+  if (window.NanoLiteracyAdmin && typeof window.NanoLiteracyAdmin.syncClasses === 'function') {
+    window.NanoLiteracyAdmin.syncClasses(typeof academyClassList !== 'undefined' ? academyClassList : null);
+  }
 }
 
 // 실제 학원에 등록된 학급 및 원생들이 소속된 실제 학급 목록 추출
@@ -1515,14 +1602,19 @@ async function restoreDeletedStudent(idx) {
 
   // 기존 소속 학급 복원
   restored.classGroup = restored.originalClass || '미지정';
+  restored.classGroupId = findAcademyClassIdByName(restored.classGroup);
   if (window.NanoPortal && NanoPortal.remote) {
     try {
-      await NanoPortal.saveMember(restored, currentAcademyInfo.id);
+      var restoredSaved = await NanoPortal.saveMember(restored, currentAcademyInfo.id);
+      if (restoredSaved && Object.prototype.hasOwnProperty.call(restoredSaved, 'classGroupId')) {
+        restored.classGroupId = restoredSaved.classGroupId || null;
+      }
     } catch (error) {
       showAcademyToast('원생을 복구하지 못했습니다: ' + error.message);
       return;
     }
   }
+  syncStudentInMigratedMembers(restored);
   deletedStudentList.splice(idx, 1);
   delete restored.originalClass;
   delete restored.deletedAt;
@@ -1776,7 +1868,8 @@ async function saveNewStudent() {
   var pw = (document.getElementById('newStdPw') ? document.getElementById('newStdPw').value : '').trim();
   var school = (document.getElementById('newStdSchool') ? document.getElementById('newStdSchool').value : '').trim();
   var grade = document.getElementById('newStdGrade') ? document.getElementById('newStdGrade').value : '';
-  var classGroup = document.getElementById('newStdClass') ? document.getElementById('newStdClass').value : '지혜반';
+  var classElVal = document.getElementById('newStdClass') ? document.getElementById('newStdClass').value : '';
+  var classGroup = (classElVal && classElVal.trim()) ? classElVal.trim() : '미지정';
   var status = document.getElementById('newStdStatus') ? document.getElementById('newStdStatus').value : '승인';
   var existingStd = editId ? studentDataList.find(function(s){ return s.id === editId; }) : null;
   var levelEl = document.getElementById('newStdLevel');
@@ -1860,6 +1953,7 @@ async function saveNewStudent() {
       std.school = school;
       std.grade = grade;
       std.classGroup = classGroup;
+      std.classGroupId = findAcademyClassIdByName(classGroup);
       std.status = status;
       std.level = level;
       std.parentName = parentName || '-';
@@ -1892,6 +1986,7 @@ async function saveNewStudent() {
       school: school,
       grade: grade,
       classGroup: classGroup,
+      classGroupId: findAcademyClassIdByName(classGroup),
       status: status,
       level: level,
       bookCount: 0,
@@ -1930,8 +2025,13 @@ async function saveNewStudent() {
       if (savedResult) {
         savedStudent.serverId = savedResult.id || savedStudent.serverId;
         savedStudent.updatedAt = savedResult.updatedAt || savedStudent.updatedAt;
-        if (savedResult.classGroupId) savedStudent.classGroupId = savedResult.classGroupId;
+        if (Object.prototype.hasOwnProperty.call(savedResult, 'classGroupId')) {
+          savedStudent.classGroupId = savedResult.classGroupId || null;
+        } else {
+          savedStudent.classGroupId = findAcademyClassIdByName(savedStudent.classGroup);
+        }
       }
+      syncStudentInMigratedMembers(savedStudent);
     } catch (error) {
       if (editId && previousStudent) Object.assign(existingStd, previousStudent);
       if (!editId) studentDataList = studentDataList.filter(function(student) { return student !== newStudent; });
@@ -2476,6 +2576,7 @@ function handleStudentExcelFileSelect(input) {
                 school: st.school,
                 grade: st.grade,
                 className: st.classGroup,
+                classGroupId: st.classGroupId || null,
                 status: 'APPROVED',
                 parentName: st.parentName,
                 parentPhone: st.phone,

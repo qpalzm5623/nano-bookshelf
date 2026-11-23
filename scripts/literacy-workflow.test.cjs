@@ -163,3 +163,135 @@ test('문항 이미지와 화면 연결 자산이 존재한다', () => {
     }
   }
 });
+
+test('문해력 진단 API는 개설 학급 전체를 반환하고 배정 내역의 학급을 최신 학생 소속으로 동기화한다', async () => {
+  const rows = new Map();
+  const s1 = { id: 'std-1', name: '김일번', username: 's1', grade: '초등 4학년', role: 'STUDENT', status: 'APPROVED', academyId: 'academy-a', classGroup: { id: 'c1', name: 'A Class' } };
+  const s2 = { id: 'std-2', name: '이번님', username: 's2', grade: '초등 5학년', role: 'STUDENT', status: 'APPROVED', academyId: 'academy-a', classGroup: null };
+  const classRows = [
+    { id: 'c1', name: 'A Class', targetGrade: '초등 4학년', academyId: 'academy-a' },
+    { id: 'c2', name: 'B Class', targetGrade: '초등 5학년', academyId: 'academy-a' },
+  ];
+  const user = { id: 'dir-1', role: 'DIRECTOR', name: '원장님', academyId: 'academy-a', academy: { code: 'ACAD-A' } };
+  const db = {
+    member: { findMany: async () => [s1, s2] },
+    classGroup: { findMany: async ({ where }) => classRows.filter(c => c.academyId === where.academyId) },
+    portalSetting: {
+      findUnique: async ({ where }) => structuredClone(rows.get(where.key) || null),
+      findMany: async ({ where }) => [...rows.values()].filter(r => r.scope === where.scope),
+      create: async ({ data }) => {
+        const row = { revision: 1, ...structuredClone(data) };
+        rows.set(data.key, row);
+        return row;
+      },
+    },
+  };
+  const brand = require('./test-portal-brand.cjs')(db);
+  const http = load('lib/portal-http.ts', { './prisma': { prisma: db }, './portal-auth': {}, './portal-brand': brand });
+  const handler = load('api/literacy.ts', {
+    '../lib/prisma': { prisma: db },
+    '../lib/portal-brand': brand,
+    '../lib/kakao-wallet': {},
+    '../lib/portal-http': { ...http, authenticate: async () => user },
+    '../lib/literacy-engine': engine,
+    '../lib/literacy-item-bank.json': seed,
+    undici: { ProxyAgent: class {} },
+  }).default;
+  const call = async (action, body) => {
+    const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(d) { this.data = d; return this; }, send(d) { this.data = d; return this; } };
+    await handler({ query: { action }, body, method: body ? 'POST' : 'GET', headers: { host: 'test.example' } }, res);
+    return res;
+  };
+
+  // 학생이 없더라도 개설된 학급(B Class)이 students 응답의 classes에 모두 포함되어야 함
+  const studentsRes = await call('students');
+  assert.equal(studentsRes.code, 200);
+  assert.deepEqual(studentsRes.data.classes.map(c => c.name), ['A Class', 'B Class']);
+  assert.equal(studentsRes.data.items.find(i => i.id === 'std-2').classGroup, '미지정');
+
+  // 배정 시점에는 미지정이었던 s2를 이후 B Class로 옮기면 assignments 응답에서도 B Class로 동기화
+  await call('assign', { items: [{ memberId: 'std-2', band: 1, gradeStep: 2 }] });
+  s2.classGroup = { id: 'c2', name: 'B Class' };
+  const assignRes = await call('assignments');
+  assert.equal(assignRes.code, 200);
+  assert.deepEqual(assignRes.data.classes.map(c => c.name), ['A Class', 'B Class']);
+  assert.equal(assignRes.data.items[0].classGroup, 'B Class');
+});
+
+test('문해력 진단 테스트 부여 모달의 학급 드롭다운·즉시 필터·실시간 학급 동기화 및 교사 권한 제한이 동작한다', async () => {
+  const elements = new Map();
+  const el = id => {
+    if (!elements.has(id)) elements.set(id, { innerHTML: '', textContent: '', value: id.includes('Filter') ? 'ALL' : '', checked: false, disabled: false, style: {}, classList: { add() {}, remove() {}, toggle() {} } });
+    return elements.get(id);
+  };
+  let isTeacher = false;
+  const apiStudents = {
+    items: [
+      { id: 's1', name: '김태환', username: 'look03', grade: '초등 4학년', classGroup: 'A Class', gradeStep: 3, band: 2, hasActive: false },
+      { id: 's2', name: '김빵빵', username: 'look4', grade: '초등 2학년', classGroup: '미지정', gradeStep: 2, band: 1, hasActive: false },
+    ],
+    classes: [
+      { id: 'c1', name: 'A Class', grade: '초등 4학년' },
+      { id: 'c2', name: 'B Class', grade: '초등 5학년' },
+    ],
+  };
+  let modalsCreated = false;
+  const ctx = vm.createContext({
+    document: {
+      getElementById: id => (id === 'litAssignModal' && !modalsCreated ? null : el(id)),
+      querySelector: () => null,
+      body: { insertAdjacentHTML: (_p, html) => { modalsCreated = true; elements.set('__modals', { innerHTML: html }); } }
+    },
+    jQuery: () => ({ modal() {} }),
+    URLSearchParams,
+    AbortSignal,
+    academyClassList: [
+      { id: 'c1', serverId: 'c1', name: 'A Class', grade: '초등 4학년' },
+      { id: 'c2', serverId: 'c2', name: 'B Class', grade: '초등 5학년' },
+    ],
+    isCurrentLoggedInTeacher: () => isTeacher,
+    getTeacherAssignedClasses: () => [{ id: 'c1', name: 'A Class', grade: '초등 4학년' }],
+    fetch: async (url) => ({
+      ok: true,
+      json: async () => (url.includes('action=students') ? apiStudents : { items: [], classes: apiStudents.classes }),
+    }),
+    scrollTo() {},
+    setTimeout,
+  });
+  ctx.window = ctx;
+  for (const file of ['literacy-common', 'literacy-admin']) vm.runInContext(read('public_html/js/literacy/' + file + '.js'), ctx);
+
+  await ctx.NanoLiteracyAdmin.openAssign();
+  const modalsHtml = elements.get('__modals').innerHTML;
+  assert.match(modalsHtml, /id="litPickClass"[^>]*onchange="NanoLiteracyAdmin\.renderPick\(\)"/);
+  assert.ok(el('litPickClass').innerHTML.includes('value="A Class"'));
+  assert.ok(el('litPickClass').innerHTML.includes('value="B Class"'), '원생이 없어도 개설된 B Class가 드롭다운에 연동되어야 함');
+  assert.ok(el('litPickClass').innerHTML.includes('value="미지정"'));
+
+  // 학급 필터 변경 시 해당 학급 원생만 즉시 노출되고 전체 선택 상태가 동기화됨
+  el('litPickClass').value = 'A Class';
+  ctx.NanoLiteracyAdmin.renderPick();
+  assert.ok(el('litPickList').innerHTML.includes('김태환'));
+  assert.ok(!el('litPickList').innerHTML.includes('김빵빵'));
+
+  el('litPickClass').value = 'B Class';
+  ctx.NanoLiteracyAdmin.renderPick();
+  assert.match(el('litPickList').innerHTML, /조건에 맞는 원생이 없습니다/);
+
+  // 회원/학급 관리에서 신규 학급 추가 시 syncClasses로 즉시 반영
+  ctx.academyClassList.push({ id: 'c3', serverId: 'c3', name: 'C Class', grade: '초등 6학년' });
+  ctx.NanoLiteracyAdmin.syncClasses(ctx.academyClassList);
+  assert.ok(el('litPickClass').innerHTML.includes('value="C Class"'));
+  assert.ok(el('litClassFilter').innerHTML.includes('value="C Class"'));
+
+  // 교사 계정 로그인 시 담당 학급(A Class)과 담당 원생만 표시
+  isTeacher = true;
+  el('litPickClass').value = 'ALL';
+  ctx.NanoLiteracyAdmin.syncClasses(ctx.academyClassList);
+  ctx.NanoLiteracyAdmin.renderPick();
+  assert.ok(el('litPickClass').innerHTML.includes('전체 담당 학급'));
+  assert.ok(!el('litPickClass').innerHTML.includes('value="B Class"'));
+  assert.ok(!el('litPickClass').innerHTML.includes('value="미지정"'));
+  assert.ok(el('litPickList').innerHTML.includes('김태환'));
+  assert.ok(!el('litPickList').innerHTML.includes('김빵빵'));
+});

@@ -733,8 +733,16 @@ export default async function handler(req: any, res: any) {
           if (user.role !== 'MASTER') need(role !== 'DIRECTOR' && existing?.role !== 'DIRECTOR', '원장·본사 계정은 본사에서 관리합니다.', 403);
           const username = text(row.username || existing?.username, '아이디', 50, true);
           need(/^[\w-]{3,50}$/.test(username), '아이디는 영문·숫자·밑줄·하이픈 3~50자로 입력해 주세요.');
-          const classGroupId = row.classGroupId || null;
-          if (classGroupId) need(await tx.classGroup.findFirst({ where: { id: classGroupId, academyId } }), '다른 학원의 학급을 선택할 수 없습니다.');
+          let classGroupId = row.classGroupId || null;
+          if (classGroupId) {
+            need(await tx.classGroup.findFirst({ where: { id: classGroupId, academyId } }), '다른 학원의 학급을 선택할 수 없습니다.');
+          } else if (typeof row.className === 'string' && typeof tx.classGroup?.findFirst === 'function') {
+            const cleanClassName = row.className.trim();
+            if (cleanClassName && cleanClassName !== '미지정' && cleanClassName !== '-') {
+              const matchedClass = await tx.classGroup.findFirst({ where: { academyId, name: cleanClassName } });
+              if (matchedClass) classGroupId = matchedClass.id;
+            }
+          }
           const data: any = { academyId, username, role, name: text(row.name, '이름', 100, true), classGroupId,
             status: enumValue(row.status || 'PENDING', ['APPROVED','PENDING','SUSPENDED','WITHDRAWN'], '승인 상태'),
             grade: text(row.grade, '학년'), school: text(row.school, '학교'), gender: text(row.gender, '성별'), phone: text(row.phone, '연락처', 30),
