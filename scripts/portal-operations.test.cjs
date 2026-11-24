@@ -282,3 +282,64 @@ test('문항 묶음은 먼저 검증하고 중간 저장 실패 시 전체 롤�
   const failed=response();await run({method:'POST',query:{entity:'quizzes'},body:{operation:'replace',data:{bookId:'b1',questions}}},failed);
   assert.equal(failed.code,500);assert.deepEqual(state.map(q=>q.question),['기존1','기존2']);assert.equal(transactions,1);
 });
+
+test('신규 도서 등록은 클라이언트 입력 코드를 무시하고 서버가 유치부 포함 규격 코드를 자동 채번하며 수정 시 코드는 불변이다', async () => {
+  const existingBooks = [{ id: 'b-fa8', bookNo: 'FA000008', title: '기존 책', author: '저자', isbn: '9788900000001', isRecommended: false, themeId: null }];
+  let conflictOnce = true;
+  const db = {
+    themeCategory: { findUnique: async () => null },
+    academy: { findUnique: async () => ({ id: 'a1', code: 'A1', name: '테스트학원' }) },
+    portalSetting: { findUnique: async () => null, upsert: async () => ({}) },
+    book: {
+      findFirst: async () => null,
+      findUnique: async ({ where }) => existingBooks.find(b => b.id === where.id) || null,
+    },
+    $transaction: async fn => fn({
+      academy: { findUnique: async () => ({ id: 'a1', code: 'A1', name: '테스트학원' }) },
+      portalSetting: { upsert: async () => ({}) },
+      book: {
+        findMany: async ({ where }) => existingBooks.filter(b => b.bookNo.startsWith(where.bookNo.startsWith)),
+        create: async ({ data }) => {
+          if (conflictOnce) {
+            conflictOnce = false;
+            existingBooks.push({ id: 'b-race', bookNo: 'FA000009', title: '경합 도서', author: '타인', isbn: '' });
+            const err = new Error('Unique constraint');
+            err.code = 'P2002';
+            err.meta = { target: ['bookNo'] };
+            throw err;
+          }
+          const created = { id: 'b-new-1', ...data };
+          existingBooks.push(created);
+          return created;
+        },
+        update: async ({ where, data }) => {
+          const target = existingBooks.find(b => b.id === where.id);
+          Object.assign(target, data);
+          return target;
+        }
+      }
+    })
+  };
+  const run = api('api/manage.ts', { ...teacher, role: 'MASTER' }, db);
+
+  // 1) 클라이언트가 bookNo를 MB-9999로 보내더라도 서버가 외서(F)+소설(A)+유치부(0)+다음순번(00010, 경합 재시도 반영) 발급
+  const createRes = response();
+  await run({
+    method: 'POST',
+    query: { entity: 'books' },
+    body: { operation: 'save', data: { bookNo: 'MB-9999', title: '새 그림책', author: '작가A', category: 'F', subCategory: 'A', grade: '유치부' } }
+  }, createRes);
+  assert.equal(createRes.code, 200);
+  assert.equal(createRes.data.item.bookNo, 'FA000010');
+
+  // 2) 기존 도서 수정 시 클라이언트가 다른 bookNo를 보내도 원래 코드 유지
+  const updateRes = response();
+  await run({
+    method: 'POST',
+    query: { entity: 'books' },
+    body: { operation: 'save', data: { id: 'b-fa8', bookNo: 'MB-0001', title: '수정된 제목', author: '저자', category: 'K', subCategory: 'C', grade: '중등 1학년' } }
+  }, updateRes);
+  assert.equal(updateRes.code, 200);
+  assert.equal(updateRes.data.item.bookNo, 'FA000008');
+  assert.equal(updateRes.data.item.title, '수정된 제목');
+});

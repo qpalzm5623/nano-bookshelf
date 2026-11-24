@@ -1827,21 +1827,16 @@
           <div class="row">
             <!-- 좌측 서지 입력 컬럼 -->
             <div class="col-md-8">
-              <!-- 도서 관리 코드 (직접 입력 + 자동생성 버튼) & 도서명 -->
+              <!-- 도서 관리 코드 (서버 자동 생성 전용) & 도서명 -->
               <div class="row">
                 <div class="col-md-12 form-group">
                   <label class="font-weight-bold" style="font-size: 13px;">
-                    도서 관리 코드 (ID) <span class="text-danger">*</span>
+                    도서 관리 코드 (자동 채번)
                   </label>
                   <div class="input-group">
-                    <input type="text" id="mbAddId" class="form-control form-control-beige font-weight-bold" placeholder="예: MB-017" required style="border-radius: 8px 0 0 8px;">
-                    <div class="input-group-append">
-                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="generateNewBookId()" style="border-radius: 0 8px 8px 0; font-size: 11.5px;">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>자동생성
-                      </button>
-                    </div>
+                    <input type="text" id="mbAddId" class="form-control font-weight-bold" placeholder="저장 시 서버에서 자동 생성" readonly style="border-radius: 8px; background: #f1f5f9; cursor: not-allowed; border-color: #cbd5e1; color: #475569;">
                   </div>
-                  <small class="text-muted" style="font-size: 11px;">직접 입력 또는 자동 생성 가능</small>
+                  <small class="text-muted" style="font-size: 11px;"><i class="fa-solid fa-lock mr-1 text-muted"></i>도서 관리 코드는 서버에서 자동 생성·관리되며 직접 입력·수정할 수 없습니다.</small>
                 </div>
               </div>
 

@@ -2039,9 +2039,10 @@ function getBookCodeComponents(isAcademy = false) {
   if (cat1Val.includes("인물") || cat1Val.includes("위인") || cat1Val === "B") c1Code = "B";
   else if (cat1Val.includes("비문학") || cat1Val.includes("정보") || cat1Val === "C") c1Code = "C";
 
-  // 3. 학년 코드 1자리 (초1~초6: 1~6, 중1~중3: 7~9)
-  let gCode = "1";
-  if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
+  // 3. 학년 코드 1자리 (유치부: 0, 초1~초6: 1~6, 중1~중3: 7~9)
+  let gCode = "3";
+  if (gradeVal.includes("유치") || gradeVal.includes("유아") || gradeVal.includes("미취학") || gradeVal === "0") gCode = "0";
+  else if (gradeVal.includes("1학년") && !gradeVal.includes("중등")) gCode = "1";
   else if (gradeVal.includes("2학년") && !gradeVal.includes("중등")) gCode = "2";
   else if (gradeVal.includes("3학년") && !gradeVal.includes("중등")) gCode = "3";
   else if (gradeVal.includes("4학년")) gCode = "4";
@@ -2059,13 +2060,21 @@ function getBookCodeComponents(isAcademy = false) {
 }
 
 function generateNewBookId() {
+  const isRemoteMode = Boolean(window.NanoPortal && NanoPortal.remote);
+  const idInput = document.getElementById("mbAddId");
+  if (isRemoteMode) {
+    // 원격 서버 연동 시 도서 관리 코드는 저장 시점 서버에서 유일 채번하므로 입력칸을 비워둠
+    if (idInput) idInput.value = "";
+    return "";
+  }
   const { prefix } = getBookCodeComponents(false);
   let maxSeq = 0;
 
   // masterBooks 목록에서 동일 prefix로 시작하는 8자리 ID 순번 계산
   masterBooks.forEach(b => {
-    if (b.id && b.id.startsWith(prefix)) {
-      const numPart = b.id.slice(prefix.length);
+    const bCode = String((b && (b.bookNo || b.id)) || "");
+    if (bCode.startsWith(prefix)) {
+      const numPart = bCode.slice(prefix.length);
       const num = parseInt(numPart, 10);
       if (!isNaN(num) && num > maxSeq) maxSeq = num;
     }
@@ -2073,9 +2082,7 @@ function generateNewBookId() {
 
   const nextSeq = String(maxSeq + 1).padStart(5, "0");
   const newId = `${prefix}${nextSeq}`;
-  const idInput = document.getElementById("mbAddId");
   if (idInput) idInput.value = newId;
-  showMasterToast(`신규 도서 관리 코드 [${newId}]가 자동 발급되었습니다.`);
   return newId;
 }
 
@@ -2805,11 +2812,11 @@ function openMasterBookAddModal(id = null) {
   document.getElementById("mbAddCat2").value = cat2;
   document.getElementById("mbAddGrade").value = grade;
 
-  // ID 세팅
+  // ID 세팅 (신규 등록 시 원격 모드에서는 저장 시 서버에서 자동 생성)
   if (isNew) {
     generateNewBookId();
   } else {
-    document.getElementById("mbAddId").value = book.id;
+    document.getElementById("mbAddId").value = book.bookNo || book.id;
   }
 
   // ISBN
@@ -2916,9 +2923,13 @@ function handleSaveMasterBookOnly(e) {
   }
 
   const isNonfiction = (cat1 === "비문학/정보글" || cat1 === "비문학" || cat1 === "C");
+  const resolvedId = originalEditingBookIdForAdd
+    ? id
+    : ((window.NanoPortal && NanoPortal.remote) ? "" : generateNewBookId());
 
   const bookData = {
-    id: id || generateNewBookId(),
+    id: resolvedId,
+    bookNo: resolvedId,
     isbn: isbn,
     isPublic: isPublic,
     title: title,
@@ -3025,26 +3036,6 @@ async function saveBookDataDirectly(bookData) {
     }
   }
 
-  // 업로드된 나노시트 정보 로컬 저장소 실시간 영구 동기화
-  try {
-    const customSheets = JSON.parse(localStorage.getItem('NANO_CUSTOM_MASTER_SHEETS') || '{}');
-    if (nextBook.hasSheet) {
-      customSheets[nextBook.id] = {
-        hasSheet: true,
-        materialName: nextBook.materialName || `${nextBook.title}_나노시트.pdf`,
-        materialSize: nextBook.materialSize || "1.45 MB",
-        dataUrl: nextBook.pdfDataUrl || (customSheets[nextBook.id] && customSheets[nextBook.id].dataUrl) || null
-      };
-      if (nextBook.isbn) customSheets[nextBook.isbn] = customSheets[nextBook.id];
-      if (nextBook.bookNo) customSheets[nextBook.bookNo] = customSheets[nextBook.id];
-    } else {
-      delete customSheets[nextBook.id];
-      if (nextBook.isbn) delete customSheets[nextBook.isbn];
-      if (nextBook.bookNo) delete customSheets[nextBook.bookNo];
-    }
-    localStorage.setItem('NANO_CUSTOM_MASTER_SHEETS', JSON.stringify(customSheets));
-  } catch(e) {}
-
   if (window.NanoPortal && NanoPortal.remote) {
     try {
       await NanoPortal.saveBook(nextBook);
@@ -3056,12 +3047,32 @@ async function saveBookDataDirectly(bookData) {
     }
   }
 
+  // 업로드된 나노시트 정보 로컬 저장소 실시간 영구 동기화 (서버 채번 완료 후 확정 코드 기준 반영)
+  try {
+    const customSheets = JSON.parse(localStorage.getItem('NANO_CUSTOM_MASTER_SHEETS') || '{}');
+    if (nextBook.hasSheet && nextBook.id) {
+      customSheets[nextBook.id] = {
+        hasSheet: true,
+        materialName: nextBook.materialName || `${nextBook.title}_나노시트.pdf`,
+        materialSize: nextBook.materialSize || "1.45 MB",
+        dataUrl: nextBook.pdfDataUrl || (customSheets[nextBook.id] && customSheets[nextBook.id].dataUrl) || null
+      };
+      if (nextBook.isbn) customSheets[nextBook.isbn] = customSheets[nextBook.id];
+      if (nextBook.bookNo) customSheets[nextBook.bookNo] = customSheets[nextBook.id];
+    } else if (nextBook.id) {
+      delete customSheets[nextBook.id];
+      if (nextBook.isbn) delete customSheets[nextBook.isbn];
+      if (nextBook.bookNo) delete customSheets[nextBook.bookNo];
+    }
+    localStorage.setItem('NANO_CUSTOM_MASTER_SHEETS', JSON.stringify(customSheets));
+  } catch(e) {}
+
   if (editIndex !== -1) {
     masterBooks[editIndex] = nextBook;
     showMasterToast(`[${bookData.title}] 도서 서지 정보 및 나노시트가 성공적으로 수정되었습니다.`);
   } else {
     masterBooks.unshift(nextBook);
-    showMasterToast(`신규 도서 [${bookData.title}] (코드: ${bookData.id})이 등록되었습니다!`);
+    showMasterToast(`신규 도서 [${nextBook.title}] (코드: ${nextBook.bookNo || nextBook.id})이 등록되었습니다!`);
   }
 
   $('#masterBookAddModal').modal('hide');
@@ -4876,7 +4887,8 @@ function generateNextMasterBookCode(cat1Val, cat2Val, gradeVal, reservedSet) {
 
   let gCode = "3";
   const gStr = String(gradeVal || "초등 3학년");
-  if (gStr.includes("1학년") && !gStr.includes("중등")) gCode = "1";
+  if (gStr.includes("유치") || gStr.includes("유아") || gStr.includes("미취학") || gStr === "0") gCode = "0";
+  else if (gStr.includes("1학년") && !gStr.includes("중등")) gCode = "1";
   else if (gStr.includes("2학년") && !gStr.includes("중등")) gCode = "2";
   else if (gStr.includes("3학년") && !gStr.includes("중등")) gCode = "3";
   else if (gStr.includes("4학년")) gCode = "4";

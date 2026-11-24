@@ -459,12 +459,17 @@
     if (coverUrl && (/^javascript:/i.test(coverUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(coverUrl))) coverUrl = '';
     if (worksheetUrl && (/^javascript:/i.test(worksheetUrl) || !/^(https?:\/\/|\/|\.\/|data:)/i.test(worksheetUrl))) worksheetUrl = '';
     var subCat = item.subCategory || (item.cat1 && item.cat1.includes('비문학') ? 'C' : (item.cat1 && item.cat1.includes('인물') ? 'B' : 'A'));
-    var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.bookNo || item.id, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
-      isbn: item.isbn || '', grade: item.grade || '', category: item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.category || '')), subCategory: subCat, description: item.description || item.synopsis || '',
+    var cat2Code = item.cat2 === '외서' ? 'F' : (item.cat2 === '국내서' ? 'K' : (item.cat2 && item.cat2.includes('구분') ? 'N' : (item.category || '')));
+    var result = await manage('books', 'save', { id: item.serverId || undefined, bookNo: item.serverId ? (item.bookNo || item.id) : undefined, title: item.title, author: item.author || '', publisher: item.publisher || item.pub || '',
+      isbn: item.isbn || '', grade: item.grade || '', category: cat2Code, subCategory: subCat, description: item.description || item.synopsis || '',
       thinkTitle: item.thinkTitle || item.thinkExtract || item.thinkOpen || '', thinkQuiz: item.thinkQuiz || item.thinkInsert || '', coverUrl: coverUrl, worksheetUrl: (worksheetUrl && !/^\/api\/content\?/.test(worksheetUrl)) ? worksheetUrl : undefined, tags: tags, series: item.series || '',
       awards: item.awards || item.award || '', themeTag: item.themeTag || item.tag || '', themeId: themeIdFor(item), isRecommended: item.isRecommended === true });
     if (result.item) {
       item.serverId = result.item.id;
+      if (result.item.bookNo) {
+        item.bookNo = result.item.bookNo;
+        item.id = result.item.bookNo;
+      }
       item.canEdit = result.item.canEdit !== false;
       if (result.item.coverUrl) { item.cover = result.item.coverUrl; item.coverUrl = result.item.coverUrl; }
       if (result.item.worksheetUrl) { item.worksheetUrl = result.item.worksheetUrl; item.pdfUrl = result.item.worksheetUrl; item.hasSheet = true; item.sheet = true; }

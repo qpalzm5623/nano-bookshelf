@@ -201,3 +201,19 @@ test('4. 마스터 및 학원 모달 UI의 .xlsx 샘플 다운로드 마크업 �
   assert.ok(r2StorageTs.includes('export async function resolveR2NanoSheetUrls'), 'lib/r2-storage.ts에 resolveR2NanoSheetUrls 함수가 구현되어야 합니다.');
 });
 
+test('5. 신규 도서 등록 모달의 관리코드 직접입력 차단 및 유치부 학년코드 매핑 검증', () => {
+  const masterModalsHtml = fs.readFileSync(path.join(root, 'public_html', 'modals', 'master_modals.html'), 'utf8');
+  const adminHtml = fs.readFileSync(path.join(root, 'public_html', 'admin_preview.html'), 'utf8');
+  const masterContentsJs = fs.readFileSync(path.join(root, 'public_html', 'js', 'master', 'master-contents.js'), 'utf8');
+  const portalClientJs = fs.readFileSync(path.join(root, 'public_html', 'js', 'portal-client.js'), 'utf8');
+
+  assert.match(masterModalsHtml, /id="mbAddId"[^>]*\breadonly\b/, '마스터 모달 도서 관리 코드 입력칸은 readonly여야 합니다.');
+  assert.doesNotMatch(masterModalsHtml, /onclick="generateNewBookId\(\)"/, '마스터 모달에서 수동 코드 생성 버튼을 제거해야 합니다.');
+  assert.doesNotMatch(masterModalsHtml, /직접 입력 또는 자동 생성 가능/, '직접 입력 안내 문구를 제거해야 합니다.');
+  assert.match(adminHtml, /id="abEditId"[^>]*\breadonly\b/, '학원 모달 도서 관리 코드 입력칸은 readonly여야 합니다.');
+
+  assert.match(masterContentsJs, /gradeVal\.includes\("유치"\).*gCode = "0"/, '마스터 모달 코드 생성에 유치부 -> 0 매핑이 있어야 합니다.');
+  assert.match(masterContentsJs, /gStr\.includes\("유치"\).*gCode = "0"/, '마스터 대량 등록 코드 생성에 유치부 -> 0 매핑이 있어야 합니다.');
+  assert.match(portalClientJs, /if\s*\(result\.item\.bookNo\)\s*\{\s*item\.bookNo\s*=\s*result\.item\.bookNo;\s*item\.id\s*=\s*result\.item\.bookNo;/, 'portal-client.js는 서버가 발급한 bookNo를 item.id/bookNo에 동기화해야 합니다.');
+});
+

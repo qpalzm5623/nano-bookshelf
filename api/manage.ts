@@ -9,6 +9,57 @@ import { loadContentAccess, quizContent, canReadContent, ownsContent, bookSheets
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const EXCLUDED_GEMINI_MODEL_PATTERN = /(embedding|aqa|imagen|veo|-tts\b|-image\b|-image-preview\b|-transcribe\b|native-audio|robotics|computer-use|deep-research|customtools)/i;
 
+/** 도서 분류(category/subCategory)와 권장 학년으로 [Cat2][Cat1][Grade] 3자리 접두어를 산출합니다. */
+function bookCodePrefixFor(category?: string | null, subCategory?: string | null, grade?: string | null): string {
+  const c2Raw = String(category || '').trim();
+  let c2Code = 'K';
+  if (c2Raw.includes('외서') || c2Raw.toUpperCase() === 'F') c2Code = 'F';
+  else if (c2Raw.includes('구분') || c2Raw.toUpperCase() === 'N') c2Code = 'N';
+
+  const c1Raw = String(subCategory || '').trim();
+  let c1Code = 'A';
+  if (c1Raw.includes('인물') || c1Raw.includes('위인') || c1Raw.toUpperCase() === 'B') c1Code = 'B';
+  else if (c1Raw.includes('비문학') || c1Raw.includes('정보') || c1Raw.toUpperCase() === 'C') c1Code = 'C';
+
+  const gStr = String(grade || '').trim();
+  let gCode = '3';
+  if (gStr.includes('유치') || gStr.includes('유아') || gStr.includes('미취학') || gStr === '0') gCode = '0';
+  else if (gStr.includes('중등 1') || gStr.includes('중1') || gStr === '7') gCode = '7';
+  else if (gStr.includes('중등 2') || gStr.includes('중2') || gStr === '8') gCode = '8';
+  else if (gStr.includes('중등 3') || gStr.includes('중3') || gStr === '9') gCode = '9';
+  else if (gStr.includes('1학년') && !gStr.includes('중등')) gCode = '1';
+  else if (gStr.includes('2학년') && !gStr.includes('중등')) gCode = '2';
+  else if (gStr.includes('3학년') && !gStr.includes('중등')) gCode = '3';
+  else if (gStr.includes('4학년')) gCode = '4';
+  else if (gStr.includes('5학년')) gCode = '5';
+  else if (gStr.includes('6학년')) gCode = '6';
+  else {
+    const gm = gStr.match(/\d/);
+    if (gm) gCode = gm[0];
+  }
+  return `${c2Code}${c1Code}${gCode}`;
+}
+
+/** DB에 저장된 동일 접두어 도서 중 가장 큰 순번 다음 번호([prefix][5자리순번])를 발급합니다. */
+async function allocateServerBookNo(tx: any, prefix: string): Promise<string> {
+  let maxSeq = 0;
+  if (tx?.book && typeof tx.book.findMany === 'function') {
+    const existing = await tx.book.findMany({
+      where: { bookNo: { startsWith: prefix } },
+      select: { bookNo: true }
+    });
+    const pattern = new RegExp(`^${prefix}(\\d+)$`);
+    for (const row of existing || []) {
+      const m = String(row?.bookNo || '').match(pattern);
+      if (m) {
+        const num = parseInt(m[1], 10);
+        if (!isNaN(num) && num < 1000000 && num > maxSeq) maxSeq = num;
+      }
+    }
+  }
+  return `${prefix}${String(maxSeq + 1).padStart(5, '0')}`;
+}
+
 function normalizeManageGeminiModel(rawModel?: unknown): string {
   const trimmed = typeof rawModel === 'string' ? rawModel.trim().replace(/^models\//i, '') : '';
   if (!trimmed) return DEFAULT_GEMINI_MODEL;
@@ -948,8 +999,7 @@ export default async function handler(req: any, res: any) {
         await prisma.book.delete({ where: { id: input.id } });
         return res.json({ ok: true });
       }
-      const data = { bookNo: text(input.bookNo, '도서 코드', 100, true), title: text(input.title, '도서명', 300, true), author: text(input.author, '저자', 200, true), publisher: text(input.publisher, '출판사'), isbn: text(input.isbn, 'ISBN'), grade: text(input.grade, '권장 학년'), category: text(input.category, '분류'), subCategory: text(input.subCategory, '세부 분류'), description: text(input.description, '소개', 20000), thinkTitle: text(input.thinkTitle, '생각꺼내기', 3000), thinkQuiz: text(input.thinkQuiz, '생각담기', 3000) };
-      need(/^[A-Za-z0-9_-]+$/.test(data.bookNo), '도서 코드는 영문·숫자·하이픈·밑줄로 입력해 주세요.');
+      const baseData = { title: text(input.title, '도서명', 300, true), author: text(input.author, '저자', 200, true), publisher: text(input.publisher, '출판사'), isbn: text(input.isbn, 'ISBN'), grade: text(input.grade, '권장 학년'), category: text(input.category, '분류'), subCategory: text(input.subCategory, '세부 분류'), description: text(input.description, '소개', 20000), thinkTitle: text(input.thinkTitle, '생각꺼내기', 3000), thinkQuiz: text(input.thinkQuiz, '생각담기', 3000) };
       for (const url of [input.coverUrl,input.worksheetUrl].filter(Boolean)) need(!/^javascript:/i.test(url) && /^(https?:\/\/|\/|\.\/|data:image\/|data:application\/pdf)/i.test(url), '자료 주소 형식을 확인해 주세요.');
       if (input.themeId) need(await prisma.themeCategory.findUnique({ where: { id: input.themeId } }), '테마를 확인해 주세요.');
       const rawSubject = String(input.subject || input.themeTag || '').replace(/^#/, '').trim();
@@ -965,14 +1015,14 @@ export default async function handler(req: any, res: any) {
       };
 
       // 1) ISBN 중복 검사
-      if (data.isbn) {
-        const cleanIsbn = data.isbn.replace(/[-\s]/g, '');
+      if (baseData.isbn) {
+        const cleanIsbn = baseData.isbn.replace(/[-\s]/g, '');
         if (cleanIsbn) {
           const existingIsbnBook = await prisma.book.findFirst({
             where: {
               OR: [
                 { isbn: cleanIsbn },
-                { isbn: data.isbn }
+                { isbn: baseData.isbn }
               ],
               ...(input.id ? { id: { not: input.id } } : {})
             }
@@ -981,54 +1031,56 @@ export default async function handler(req: any, res: any) {
         }
       }
 
-      // 2) 도서 코드(bookNo) 중복 검사
-      const existingCodeBook = await prisma.book.findFirst({
-        where: {
-          OR: [
-            { bookNo: data.bookNo },
-            { id: data.bookNo }
-          ],
-          ...(input.id ? { id: { not: input.id } } : {})
-        }
-      });
-      need(!existingCodeBook, `이미 등록된 도서 코드입니다. (도서명: ${existingCodeBook?.title || ''}, 코드: ${data.bookNo})`, 409);
-
-      // 3) 도서 수정 시 권한 검사 (학원 사용자는 타 학원/본사 도서 수정 불가)
-      if (input.id && (user.role !== 'MASTER' || restrictedMaster(user)) && prisma.portalSetting) {
-        const currentBook = await prisma.book.findUnique({ where: { id: input.id } });
-        if (currentBook) {
-          const creatorSetting = await prisma.portalSetting.findUnique({ where: { key: `book_creator:${currentBook.bookNo}` } });
+      // 2) 기존 도서 수정 시 존재 여부·권한 검사 (도서 관리 코드는 서버가 소유하며 수정 시에도 변경 불가)
+      let originalBook: any = null;
+      if (input.id) {
+        originalBook = await prisma.book.findUnique({ where: { id: input.id } });
+        need(originalBook, '도서를 찾을 수 없습니다.', 404);
+        if ((user.role !== 'MASTER' || restrictedMaster(user)) && prisma.portalSetting) {
+          const creatorSetting = await prisma.portalSetting.findUnique({ where: { key: `book_creator:${originalBook.bookNo}` } });
           const creatorData = creatorSetting?.value as any;
           need(creatorData && (restrictedMaster(user) ? creatorData.ownerMemberId === user.id : creatorData.academyId === academyId), '본사 도서 또는 다른 학원의 도서는 수정할 수 없습니다.', 403);
         }
-      }
-
-      if (user.portalBrand === 'JD' && input.id) {
-        const original = await prisma.book.findUnique({ where: { id: input.id } });
-        need(original && (!restrictedMaster(user) || original.bookNo === data.bookNo), '등록한 도서의 코드는 변경할 수 없습니다.');
-        extra.isRecommended = original.isRecommended;
-        extra.themeId = original.themeId;
+        if (user.portalBrand === 'JD') {
+          extra.isRecommended = originalBook.isRecommended;
+          extra.themeId = originalBook.themeId;
+        }
       } else if (user.portalBrand === 'JD') {
         extra.isRecommended = false;
         extra.themeId = null;
       }
-      const savedBook = await prisma.$transaction(async tx => {
-        const saved = input.id
-          ? await tx.book.update({ where: { id: input.id }, data: { ...data, ...extra } })
-          : await tx.book.create({ data: { ...data, ...extra } });
-        if (!input.id && prisma.portalSetting) {
-          const acad = await tx.academy.findUnique({ where: { id: academyId }, select: { id: true, code: true, name: true } });
-          if (acad) {
-            const creatorKey = `book_creator:${saved.bookNo}`;
-            await tx.portalSetting.upsert({
-              where: { key: creatorKey },
-              update: { scope: 'book_creator', value: { ownerMemberId: user.id, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY', academyId: acad.id, academyCode: acad.code, academyName: acad.name } },
-              create: { key: creatorKey, scope: 'book_creator', value: { ownerMemberId: user.id, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY', academyId: acad.id, academyCode: acad.code, academyName: acad.name } }
-            });
-          }
+
+      // 3) 신규 등록 시에는 클라이언트 입력값과 무관하게 서버가 유일한 도서 관리 코드를 자동 생성
+      const codePrefix = bookCodePrefixFor(baseData.category, baseData.subCategory, baseData.grade);
+      let savedBook: any = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          savedBook = await prisma.$transaction(async tx => {
+            const bookNo = originalBook ? originalBook.bookNo : await allocateServerBookNo(tx, codePrefix);
+            const data = { ...baseData, bookNo };
+            const saved = input.id
+              ? await tx.book.update({ where: { id: input.id }, data: { ...data, ...extra } })
+              : await tx.book.create({ data: { ...data, ...extra } });
+            if (!input.id && prisma.portalSetting) {
+              const acad = await tx.academy.findUnique({ where: { id: academyId }, select: { id: true, code: true, name: true } });
+              if (acad) {
+                const creatorKey = `book_creator:${saved.bookNo}`;
+                await tx.portalSetting.upsert({
+                  where: { key: creatorKey },
+                  update: { scope: 'book_creator', value: { ownerMemberId: user.id, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY', academyId: acad.id, academyCode: acad.code, academyName: acad.name } },
+                  create: { key: creatorKey, scope: 'book_creator', value: { ownerMemberId: user.id, authorType: user.role === 'MASTER' ? 'HQ' : 'ACADEMY', academyId: acad.id, academyCode: acad.code, academyName: acad.name } }
+                });
+              }
+            }
+            return saved;
+          });
+          break;
+        } catch (err: any) {
+          const isBookNoConflict = !input.id && err?.code === 'P2002' && (!err?.meta?.target || String(err.meta.target).includes('bookNo'));
+          if (isBookNoConflict && attempt < 4) continue;
+          throw err;
         }
-        return saved;
-      });
+      }
       return res.json({ item: { ...savedBook, canEdit: true } });
     }
     if (entity === 'quizzes') {

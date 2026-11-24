@@ -1116,7 +1116,7 @@ function exportMasterBooksToExcel() {
     const isbnCell = isbnVal ? `="${isbnVal}"` : '""';
 
     return [
-      escapeCsv(b.id || b.bookNo || ""),
+      escapeCsv(b.bookNo || b.id || ""),
       isbnCell,
       escapeCsv(b.title),
       escapeCsv(b.series || ""),

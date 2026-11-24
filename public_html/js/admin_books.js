@@ -4043,6 +4043,11 @@ function toggleAcadSingleBookCheckbox(isSingle) {
 // 예: 국내서(K) + 인물이야기(B) + 2학년(2) + 두번째 => KB200002
 // -------------------------------------------------------------
 function generateAcademyBookId() {
+  var idInput = document.getElementById("abEditId");
+  if (window.NanoPortal && NanoPortal.remote) {
+    if (idInput) idInput.value = "";
+    return "";
+  }
   var cat1El = document.getElementById("abEditCat1");
   var cat2El = document.getElementById("abEditCat2");
   var gradeEl = document.getElementById("abEditGrade");
@@ -4079,8 +4084,9 @@ function generateAcademyBookId() {
   var maxSeq = 0;
 
   academyBookList.forEach(function(b) {
-    if (b.id && b.id.startsWith(prefix)) {
-      var numPart = b.id.slice(prefix.length);
+    var bCode = String((b && (b.bookNo || b.id)) || '');
+    if (bCode.startsWith(prefix)) {
+      var numPart = bCode.slice(prefix.length);
       var num = parseInt(numPart, 10);
       if (!isNaN(num) && num > maxSeq) maxSeq = num;
     }
@@ -4088,9 +4094,7 @@ function generateAcademyBookId() {
 
   var nextSeq = String(maxSeq + 1).padStart(5, "0");
   var newId = `${prefix}${nextSeq}`;
-  var idInput = document.getElementById("abEditId");
   if (idInput) idInput.value = newId;
-  showAcademyToast(`신규 도서 관리 코드 [${newId}]가 자동 발급되었습니다.`);
   return newId;
 }
 
@@ -4589,7 +4593,7 @@ function openAcademyBookOnlyAddModal(id = null) {
   if (isNew) {
     generateAcademyBookId();
   } else {
-    if (document.getElementById('abEditId')) document.getElementById('abEditId').value = book.id;
+    if (document.getElementById('abEditId')) document.getElementById('abEditId').value = book.bookNo || book.id;
   }
 
   // 5. ISBN 바인딩 (신규 도서 등록 시 자동 입력 제거 -> 공란으로 초기화)
@@ -4823,8 +4827,8 @@ async function handleSaveAcademyBookOnly(event) {
     }
   }
 
-  // 신규 등록 시 지정 도서 코드 중복 사전 검사
-  if (!originalEditingAcadBookId && finalId) {
+  // 신규 등록 시 로컬 모드에서만 지정 도서 코드 중복 사전 검사 (원격 모드는 서버가 자동 채번)
+  if (!originalEditingAcadBookId && finalId && !(window.NanoPortal && NanoPortal.remote)) {
     var existingCodeBook = academyBookList.find(function(b) {
       return b.id === finalId || b.bookNo === finalId;
     });
@@ -4885,8 +4889,11 @@ async function handleSaveAcademyBookOnly(event) {
     lastAddedBookId = b.id;
     showAcademyToast(`도서 [${title}] 서지 정보 및 학습자료가 성공적으로 수정되었습니다.`);
   } else {
+    var isAcadRemote = Boolean(window.NanoPortal && NanoPortal.remote);
+    var initAcadId = isAcadRemote ? '' : (finalId || generateAcademyBookId());
     var newBook = {
-      id: finalId || generateAcademyBookId(),
+      id: initAcadId,
+      bookNo: initAcadId,
       isbn: isbn,
       isPublic: isPublic,
       title: title,
