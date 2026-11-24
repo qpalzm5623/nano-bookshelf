@@ -1059,12 +1059,12 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
       <td class="text-center" style="white-space: nowrap;">
         <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
           ${editBtnHtml}
-          <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
-            <button type="button" class="btn btn-xs flex-fill" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="border-radius: 6px; font-size: 10.5px; padding: 2.5px 5px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; white-space: nowrap;" title="북퀴즈 문항 세트 관리 및 출제">
-              <i class="fa-solid fa-clipboard-question mr-1 text-warning"></i>퀴즈 관리
+          <div style="display: inline-grid; grid-template-columns: repeat(2, 64px); grid-auto-rows: 25px; gap: 3px; justify-content: center; align-items: center;">
+            <button type="button" class="btn btn-xs" onclick="openAcademyStandaloneQuizModal('${b.id}')" style="width: 64px; height: 25px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border-radius: 6px; font-size: 10.5px; padding: 0 3px; font-weight: 700; background: #fffbeb; border: 1px solid #fde68a; color: #b45309; white-space: nowrap; box-sizing: border-box;" title="북퀴즈 문항 세트 관리 및 출제">
+              <i class="fa-solid fa-clipboard-question text-warning"></i>퀴즈 관리
             </button>
-            <button type="button" class="btn btn-xs flex-fill" onclick="openAcademySheetManageModal('${b.id}')" style="border-radius: 6px; font-size: 10.5px; padding: 2.5px 5px; font-weight: 700; background: #fff5f5; border: 1px solid #fecaca; color: #b91c1c; white-space: nowrap;" title="나노시트(PDF) 업로드·공개설정·삭제">
-              <i class="fa-solid fa-file-pdf mr-1"></i>나노시트 관리
+            <button type="button" class="btn btn-xs" onclick="openAcademySheetManageModal('${b.id}')" style="width: 64px; height: 25px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border-radius: 6px; font-size: 10.5px; padding: 0 3px; font-weight: 700; background: #fff5f5; border: 1px solid #fecaca; color: #b91c1c; white-space: nowrap; box-sizing: border-box;" title="나노시트(PDF) 업로드·공개설정·삭제">
+              <i class="fa-solid fa-file-pdf"></i>나노시트
             </button>
           </div>
         </div>

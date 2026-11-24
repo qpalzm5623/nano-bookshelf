@@ -759,25 +759,21 @@ function renderMasterContents() {
         <td class="text-center" style="white-space: nowrap; font-size: 11.5px; color: #64748b; font-weight: 600;">
           ${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}
         </td>
-        <!-- 관리 액션: [수정], [삭제] 상단 / [북퀴즈], [나노시트 관리] 하단 나란히 2단 배치 -->
+        <!-- 관리 액션: [수정], [삭제] 상단 / [북퀴즈], [나노시트] 하단 4개 버튼 동일 크기 2×2 배치 -->
         <td class="text-center" style="white-space: nowrap; padding: 4px 6px;">
-          <div class="d-flex flex-column align-items-center justify-content-center" style="gap: 3px;">
-            <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
-              <button type="button" class="btn btn-xs btn-outline-secondary flex-fill" ${window.NANO_RESTRICTED_MASTER && !b.canEdit ? 'disabled title="본인이 등록한 도서만 수정할 수 있습니다."' : ''} onclick="openMasterBookAddModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 서지 정보 수정">
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-              <button type="button" class="btn btn-xs btn-outline-danger flex-fill" ${window.NANO_RESTRICTED_MASTER && !b.canEdit ? 'disabled' : ''} onclick="deleteMasterBook('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2.5px 5px;" title="도서 삭제">
-                <i class="fa-solid fa-trash-can"></i>
-              </button>
-            </div>
-            <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
-              <button type="button" class="btn btn-xs btn-outline-warning flex-fill font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #855304; border-color: #f1c40f; background: #fffdf5; white-space: nowrap;" title="해당 도서의 북퀴즈 문항 구성 및 편집">
-                <i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈
-              </button>
-              <button type="button" class="btn btn-xs btn-outline-danger flex-fill font-weight-bold" onclick="openMasterSheetManageModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #b91c1c; border-color: #fecaca; background: #fff5f5; white-space: nowrap;" title="해당 도서의 나노시트(PDF) 업로드·공개설정·삭제">
-                <i class="fa-solid fa-file-pdf mr-1"></i>나노시트 관리
-              </button>
-            </div>
+          <div style="display: inline-grid; grid-template-columns: repeat(2, 62px); grid-auto-rows: 25px; gap: 3px; justify-content: center; align-items: center;">
+            <button type="button" class="btn btn-xs btn-outline-secondary" ${window.NANO_RESTRICTED_MASTER && !b.canEdit ? 'disabled title="본인이 등록한 도서만 수정할 수 있습니다."' : ''} onclick="openMasterBookAddModal('${b.id}')" style="width: 62px; height: 25px; display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 10.5px; padding: 0; box-sizing: border-box;" title="도서 서지 정보 수정">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-danger" ${window.NANO_RESTRICTED_MASTER && !b.canEdit ? 'disabled' : ''} onclick="deleteMasterBook('${b.id}')" style="width: 62px; height: 25px; display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 10.5px; padding: 0; box-sizing: border-box;" title="도서 삭제">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-warning font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="width: 62px; height: 25px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border-radius: 5px; font-size: 10.5px; padding: 0 3px; color: #855304; border-color: #f1c40f; background: #fffdf5; white-space: nowrap; box-sizing: border-box;" title="해당 도서의 북퀴즈 문항 구성 및 편집">
+              <i class="fa-solid fa-clipboard-question"></i>북퀴즈
+            </button>
+            <button type="button" class="btn btn-xs btn-outline-danger font-weight-bold" onclick="openMasterSheetManageModal('${b.id}')" style="width: 62px; height: 25px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border-radius: 5px; font-size: 10.5px; padding: 0 3px; color: #b91c1c; border-color: #fecaca; background: #fff5f5; white-space: nowrap; box-sizing: border-box;" title="해당 도서의 나노시트(PDF) 업로드·공개설정·삭제">
+              <i class="fa-solid fa-file-pdf"></i>나노시트
+            </button>
           </div>
         </td>
       </tr>
@@ -806,9 +802,9 @@ function renderMasterContents() {
           <td class="text-center font-weight-bold text-success">${b.quizCompletions || 42}</td>
           <td class="text-center" style="font-size: 11.5px; color: #64748b; white-space: nowrap;">${String(b.createdAt || b.date || b.regDate || b.registeredAt || '').slice(0, 10) || '-'}</td>
           <td class="text-center" style="padding: 4px 6px;">
-            <div class="d-flex align-items-center justify-content-center w-100" style="gap: 3px;">
-              <button type="button" class="btn btn-xs btn-outline-warning flex-fill font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #855304; border-color: #f1c40f; background: #fffdf5; white-space: nowrap;"><i class="fa-solid fa-clipboard-question mr-1"></i>북퀴즈</button>
-              <button type="button" class="btn btn-xs btn-outline-danger flex-fill font-weight-bold" onclick="openMasterSheetManageModal('${b.id}')" style="border-radius: 5px; font-size: 10.5px; padding: 2px 5px; color: #b91c1c; border-color: #fecaca; background: #fff5f5; white-space: nowrap;"><i class="fa-solid fa-file-pdf mr-1"></i>나노시트 관리</button>
+            <div style="display: inline-grid; grid-template-columns: repeat(2, 62px); grid-auto-rows: 25px; gap: 3px; justify-content: center; align-items: center;">
+              <button type="button" class="btn btn-xs btn-outline-warning font-weight-bold" onclick="openMasterQuizModal('${b.id}')" style="width: 62px; height: 25px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border-radius: 5px; font-size: 10.5px; padding: 0 3px; color: #855304; border-color: #f1c40f; background: #fffdf5; white-space: nowrap; box-sizing: border-box;"><i class="fa-solid fa-clipboard-question"></i>북퀴즈</button>
+              <button type="button" class="btn btn-xs btn-outline-danger font-weight-bold" onclick="openMasterSheetManageModal('${b.id}')" style="width: 62px; height: 25px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border-radius: 5px; font-size: 10.5px; padding: 0 3px; color: #b91c1c; border-color: #fecaca; background: #fff5f5; white-space: nowrap; box-sizing: border-box;"><i class="fa-solid fa-file-pdf"></i>나노시트</button>
             </div>
           </td>
         </tr>
