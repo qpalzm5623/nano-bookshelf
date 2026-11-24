@@ -70,21 +70,37 @@
   function renderPayments(items) {
     const body = document.getElementById('masterPaymentTableBody');
     if (!body) return;
+    state.renderedItems = Array.isArray(items) ? items : [];
+    global._lastRenderedMasterPaymentItems = state.renderedItems;
     text('masterPaymentFilteredCount', items.length);
     body.innerHTML = items.map((p,i) => {
+      const isPendingRow = Boolean(p.isAutoPending || String(p.status || '').toLowerCase() === 'pending');
       const statusLabel = ({paid:'결제 완료',pending:'결제 대기',cancelled:'취소',overdue:'미납'})[p.status] || p.status;
-      const statusHtml = (p.isAutoPending || p.status === 'pending')
+      const statusHtml = isPendingRow
         ? `<span class="badge px-2 py-1 font-weight-bold" style="background:#fff8e6;color:#b45309;border:1px solid #fcd34d;font-size:11.5px;"><i class="fa-solid fa-clock mr-1"></i>${esc(statusLabel)}</span>`
         : p.status === 'paid'
           ? `<span class="badge px-2 py-1 font-weight-bold" style="background:#eaf5ec;color:#1e6b35;border:1px solid #b7dfbe;font-size:11.5px;"><i class="fa-solid fa-check mr-1"></i>${esc(statusLabel)}</span>${p.taxInvoiceIssued ? '<br><small>세금계산서 발행</small>' : ''}`
           : esc(statusLabel);
+
+      const checkHtml = isPendingRow
+        ? `<input type="checkbox" class="master-payment-row-check" data-payment-check-id="${esc(p.id)}" aria-label="${esc(p.academyName)} 결제 대기 선택" onchange="if(typeof updateMasterBulkPaymentSelectionUI==='function')updateMasterBulkPaymentSelectionUI();" style="width:16px;height:16px;cursor:pointer;accent-color:#3d342d;vertical-align:middle;">`
+        : `<input type="checkbox" disabled style="width:16px;height:16px;opacity:0.22;cursor:not-allowed;vertical-align:middle;" title="결제 대기 항목만 일괄 결제 등록할 수 있습니다.">`;
+
+      const editBtnHtml = `<button type="button" data-payment-edit="${esc(p.id)}" style="display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border-radius:7px;border:1px solid #d6cbbd;background:#fbf9f5;color:#4a3f35;font-size:11.5px;font-weight:700;white-space:nowrap;cursor:pointer;transition:all 0.15s ease;"><i class="fa-solid fa-pen" style="font-size:10px;color:#7a6e63;"></i>수정</button>`;
+      const delBtnHtml = `<button type="button" data-payment-delete="${esc(p.id)}" style="display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border-radius:7px;border:1px solid #f3c5c5;background:#fff5f5;color:#c53030;font-size:11.5px;font-weight:700;white-space:nowrap;cursor:pointer;transition:all 0.15s ease;"><i class="fa-solid fa-trash-can" style="font-size:10px;"></i>삭제</button>`;
+      const regBtnHtml = `<button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" data-payment-register-academy="${esc(p.academyId)}" style="display:inline-flex;align-items:center;gap:4px;height:28px;border-radius:7px;font-size:11.5px;padding:0 11px;white-space:nowrap;"><i class="fa-solid fa-plus" style="font-size:10px;"></i>결제 등록</button>`;
+
       const manageHtml = p.isAutoPending || (p.status === 'pending' && !p.manual)
-        ? `<button type="button" class="btn btn-sm btn-beige-primary font-weight-bold" data-payment-register-academy="${esc(p.academyId)}" style="border-radius:8px;font-size:11.5px;padding:4px 10px;white-space:nowrap;"><i class="fa-solid fa-plus mr-1"></i>결제 등록</button>${p.manual && !p.isAutoPending ? ` <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}" style="font-size:11px;padding:3px 7px;">삭제</button>` : ''}`
+        ? `<div style="display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;">${regBtnHtml}${p.manual && !p.isAutoPending ? delBtnHtml : ''}</div>`
         : p.manual
-          ? `<button type="button" class="btn btn-sm btn-outline-secondary" data-payment-edit="${esc(p.id)}">수정</button> <button type="button" class="btn btn-sm btn-outline-danger" data-payment-delete="${esc(p.id)}">삭제</button>`
-          : '결제사 관리';
-      return `<tr><td>${i+1}</td><td class="font-weight-bold">${esc(p.academyName)}</td><td>${esc(p.director)}</td><td>${esc(p.planName)}</td><td>${money(p.supply)}원</td><td>${money(p.vat)}원</td><td class="font-weight-bold" style="color:#962a22;">${money(p.total)}원</td><td>${esc(methods[p.method] || p.method)}</td><td>${esc(p.date)}</td><td>${p.startDate ? esc(p.startDate + ' ~ ' + p.endDate) : '—'}</td><td>${statusHtml}</td><td>${manageHtml}</td></tr>`;
-    }).join('') || '<tr><td colspan="12" class="text-center p-4">결제 내역이 없습니다.</td></tr>';
+          ? `<div style="display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;">${editBtnHtml}${delBtnHtml}</div>`
+          : '<span class="text-muted" style="font-size:11.5px;white-space:nowrap;">결제사 관리</span>';
+      return `<tr><td>${i+1}</td><td class="font-weight-bold">${esc(p.academyName)}</td><td>${esc(p.director)}</td><td>${esc(p.planName)}</td><td>${money(p.supply)}원</td><td>${money(p.vat)}원</td><td class="font-weight-bold" style="color:#962a22;">${money(p.total)}원</td><td>${esc(methods[p.method] || p.method)}</td><td>${esc(p.date)}</td><td>${p.startDate ? esc(p.startDate + ' ~ ' + p.endDate) : '—'}</td><td class="text-center" style="white-space:nowrap;">${statusHtml}</td><td class="text-center" style="white-space:nowrap;">${checkHtml}</td><td class="text-center" style="white-space:nowrap;">${manageHtml}</td></tr>`;
+    }).join('') || '<tr><td colspan="13" class="text-center p-4">결제 내역이 없습니다.</td></tr>';
+
+    if (typeof global.updateMasterBulkPaymentSelectionUI === 'function') {
+      global.updateMasterBulkPaymentSelectionUI();
+    }
   }
 
   function dialog(title, html, submitText = '저장') {
@@ -299,21 +315,22 @@
     const calculate = () => {
       const amount = Number(form.elements.amount.value) || 0;
       const kakao = form.elements.productCode.value === 'KAKAO';
-      const supply = kakao ? Math.round((amount / 5500) * 5000) : Math.round(amount / 1.1);
+      const supply = Math.round(amount / 1.1);
       const vat = amount - supply;
+      const estKakaoCount = Math.floor((amount * 10) / 85);
       const amountsEl = el.querySelector('#billingAmounts');
       if (amountsEl) {
         amountsEl.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted">공급가액 <strong style="color:#3d342d;">${money(supply)}원</strong> · 부가세 <strong style="color:#3d342d;">${money(vat)}원</strong>${kakao ? ' <span class="text-muted">(5,500원 단위)</span>' : ''}</span>
+          <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap:4px;">
+            <span class="text-muted">공급가액 <strong style="color:#3d342d;">${money(supply)}원</strong> · 부가세 <strong style="color:#3d342d;">${money(vat)}원</strong>${kakao ? ` <span class="text-muted">(가맹점 카톡 <strong style="color:#3d342d;">${money(amount)}원</strong> 충전 · 약 ${money(estKakaoCount)}건)</span>` : ''}</span>
             <strong style="color:#962a22;font-size:13.5px;">합계 ${money(amount)}원</strong>
           </div>`;
       }
       el.querySelector('#billingPeriod').hidden = kakao;
       form.elements.startDate.required = !kakao;
       form.elements.endDate.required = !kakao;
-      form.elements.amount.step = kakao ? '5500' : '1';
-      form.elements.amount.min = kakao ? '5500' : '1';
+      form.elements.amount.step = '1';
+      form.elements.amount.min = '1';
     };
     form.elements.productCode.onchange = () => { form.elements.amount.value = state.products.find(x => x.code === form.elements.productCode.value).price; calculate(); };
     form.elements.amount.oninput = calculate;
@@ -494,6 +511,98 @@
     } catch(e) { text('editAcademyKakaoCount','충전 내역 조회 실패: '+e.message); }
   }
 
+  // 체크된 결제 대기 내역 일괄 수동 결제 등록 모달 ('결제 일시'만 확인 후 일괄 결제 완료 처리)
+  function bulkRegister(selectedItems) {
+    const items = Array.isArray(selectedItems) ? selectedItems : [];
+    if (!items.length) {
+      toast('일괄 결제 등록할 결제 대기 내역을 먼저 체크해 주세요.');
+      return;
+    }
+    const totalSum = items.reduce((acc, cur) => acc + (Number(cur.total || cur.amount) || 0), 0);
+    const previewNames = items.slice(0, 5).map(x => esc(x.academyName)).join(', ') + (items.length > 5 ? ` 외 ${items.length - 5}곳` : '');
+    const defaultPaidAt = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 16);
+
+    const el = dialog(
+      `일괄 수동 결제 등록 (${items.length}건)`,
+      `<div class="p-3 mb-3 rounded" style="background:#fdfbf7;border:1px solid #ebdcc9;font-size:12.5px;color:#3d342d;line-height:1.6;">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="font-weight-bold"><i class="fa-solid fa-check-double text-warning mr-1"></i>선택된 결제 대기 내역</span>
+          <strong style="color:#962a22;font-size:14px;">총 ${items.length}건 · ${money(totalSum)}원</strong>
+        </div>
+        <div class="text-muted text-truncate" style="font-size:11.5px;">대상: ${previewNames}</div>
+      </div>
+      ${field('결제 일시 (한국시간)', input('paidAt', defaultPaidAt, 'datetime-local', 'required'), true)}
+      <p class="text-muted mb-0" style="font-size:11.5px;">* 확인을 누르면 체크된 ${items.length}건의 내역이 지정하신 결제 일시 기준으로 일괄 <strong>수동 결제 완료</strong> 처리됩니다.</p>`,
+      `일괄 결제 등록 (${items.length}건)`
+    );
+
+    const form = el.querySelector('form');
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const button = form.querySelector('[type=submit]');
+      button.disabled = true;
+      try {
+        const paidAtVal = form.elements.paidAt.value;
+        const paidAtIso = paidAtVal ? paidAtVal + ':00+09:00' : new Date().toISOString();
+
+        if (global.NanoPortal && NanoPortal.remote) {
+          const payloadItems = items.map(item => ({
+            id: item.id,
+            revision: item.revision,
+            requestId: crypto.randomUUID(),
+            academyId: item.academyId,
+            productCode: item.productCode || mapAcademyPlanToProductCode(item.planName || item.planType),
+            amount: Number(item.total || item.amount) || 88000,
+            startDate: item.startDate || today(),
+            endDate: item.endDate || today(),
+            memo: item.targetMonth ? `${item.targetMonth}월 정기 결제 일괄 수동 완료` : (item.memo || '일괄 수동 결제 완료')
+          }));
+          await api('/api/billing', {
+            operation: 'bulk_save',
+            requestId: crypto.randomUUID(),
+            method: 'TRANSFER',
+            paidAt: paidAtIso,
+            items: payloadItems
+          });
+          el.close();
+          await load();
+          toast(`선택하신 ${items.length}건의 내역이 일괄 수동 결제 완료 처리되었습니다.`);
+        } else {
+          const displayDate = (paidAtVal || defaultPaidAt).replace('T', ' ') + ':00';
+          items.forEach(item => {
+            if (item.isAutoPending) {
+              masterPaymentList.unshift({
+                ...item,
+                id: 'PAY-BULK-' + Date.now() + '-' + Math.floor(100 + Math.random() * 900),
+                isAutoPending: false,
+                manual: true,
+                method: '현금/계좌이체',
+                date: displayDate,
+                paidAt: paidAtIso,
+                status: 'paid',
+                memo: item.targetMonth ? `${item.targetMonth}월 정기 결제 일괄 수동 완료` : '일괄 수동 결제 완료'
+              });
+            } else {
+              const found = (masterPaymentList || []).find(x => x.id === item.id);
+              if (found) {
+                found.status = 'paid';
+                found.date = displayDate;
+                found.paidAt = paidAtIso;
+              }
+            }
+          });
+          el.close();
+          if (typeof filterMasterPaymentList === 'function') filterMasterPaymentList();
+          toast(`선택하신 ${items.length}건의 내역이 일괄 수동 결제 완료 처리되었습니다.`);
+        }
+      } catch (e) {
+        text('billingError', e.message);
+      } finally {
+        button.disabled = false;
+      }
+    };
+  }
+
   document.addEventListener('click',event=>{
     const editButton=event.target.closest('[data-payment-edit]');
     const deleteButton=event.target.closest('[data-payment-delete]');
@@ -502,5 +611,5 @@
     if(deleteButton) remove(deleteButton.dataset.paymentDelete);
     if(registerButton) edit(null, registerButton.dataset.paymentRegisterAcademy);
   });
-  global.NanoBilling={load,renderPayments,edit,topup,dispatch,retry,wallet,invalidateDispatchCache};
+  global.NanoBilling={load,renderPayments,edit,bulkRegister,topup,dispatch,retry,wallet,invalidateDispatchCache};
 })(window);

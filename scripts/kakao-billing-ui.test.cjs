@@ -82,3 +82,29 @@ test('충전 입금 확인은 기존 신청 ID·금액·세금계산서 상태�
   assert.equal(app.requests[0].status, 'PAID');
   assert.equal(app.requests[0].taxInvoiceIssued, true);
 });
+
+test('카카오톡 알림 수동 결제 금액은 5,500원 단위 제한 없이 원하는 값(예: 3,000원)을 자유롭게 입력할 수 있고 일괄 결제 등록 모달이 동작한다', async () => {
+  const app = harness([purchase]);
+  await app.billing.edit(purchase.id);
+  assert.equal(app.form.elements.amount.min, '1');
+  assert.equal(app.form.elements.amount.step, '1');
+  app.form.elements.amount.value = '3000';
+  app.form.elements.amount.oninput();
+  app.form.elements.status.value = 'PAID';
+  await app.form.onsubmit({ preventDefault() {} });
+  assert.equal(app.requests[0].amount, '3000');
+
+  // 일괄 결제 등록(bulkRegister): 결제 일시만 확인하여 bulk_save 요청 전송
+  const autoItems = [
+    { id: 'AUTO-PENDING-2026-11-A1', isAutoPending: true, targetMonth: '2026-11', academyId: 'A1', academyName: '테스트 학원', productCode: 'BASIC', total: 88000, startDate: '2026-11-01', endDate: '2026-11-30', status: 'pending' }
+  ];
+  app.billing.renderPayments(autoItems);
+  assert.match(app.body.innerHTML, /master-payment-row-check/);
+  app.billing.bulkRegister(autoItems);
+  assert.ok(app.form.elements.paidAt.value.length >= 16);
+  await app.form.onsubmit({ preventDefault() {} });
+  const bulkReq = app.requests.find(r => r.operation === 'bulk_save');
+  assert.ok(bulkReq, 'bulk_save 요청이 전송되어야 합니다.');
+  assert.equal(bulkReq.items.length, 1);
+  assert.equal(bulkReq.items[0].academyId, 'A1');
+});

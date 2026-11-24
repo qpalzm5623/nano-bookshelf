@@ -2,7 +2,9 @@ import { assertBrandAcademy } from '../lib/portal-brand';
 import { prisma } from '../lib/prisma';
 import { authenticate, staff, need, failure } from '../lib/portal-http';
 import { createHash } from 'node:crypto';
-import { isR2Configured, createR2PresignedPutUrl, putR2Object } from '../lib/r2-storage';
+import fs from 'node:fs';
+import path from 'node:path';
+import { isR2Configured, createR2PresignedPutUrl, putR2Object, resolveR2NanoSheetUrls } from '../lib/r2-storage';
 
 export const config = { api: { bodyParser: { sizeLimit: '4.5mb' } } };
 
@@ -86,6 +88,61 @@ export default async function handler(req: any, res: any) {
     // A. 도서 표지 · 나노시트(PDF) · 배너 · 테마 미디어 업로드 (Cloudflare R2 우선 + DB 폴백)
     // --------------------------------------------------------------
     if (body.scope === 'media') {
+      // 0단계: 엑셀 도서 등록 시 '나노시트' 컬럼 파일명(확장자 포함)이 R2 서버(또는 로컬/DB)에 존재하는지 일괄 확인
+      if (body.operation === 'resolve-sheets') {
+        const rawList: string[] = Array.isArray(body.fileNames)
+          ? body.fileNames.slice(0, 500).map((f: any) => String(f || '').trim()).filter(Boolean)
+          : [];
+        const r2Configured = isR2Configured();
+        const items: Record<string, { exists: boolean; objectKey: string; publicUrl: string }> =
+          r2Configured && rawList.length > 0
+            ? await resolveR2NanoSheetUrls(rawList)
+            : {};
+
+        for (const rawName of rawList) {
+          if (items[rawName]?.exists) continue;
+          const cleanInput = rawName.replace(/^\/+/, '').trim();
+          const baseName = (cleanInput.split('/').pop() || cleanInput).trim();
+          if (!baseName || !/\.[A-Za-z0-9]{2,5}$/.test(baseName)) {
+            items[rawName] = { exists: false, objectKey: '', publicUrl: '' };
+            continue;
+          }
+
+          // DB(PortalFile) 폴백 확인
+          const dbMedia = await prisma.portalFile.findFirst({
+            where: { attemptId: 'BOOK_MEDIA', name: baseName },
+            select: { id: true },
+          }).catch(() => null);
+          if (dbMedia) {
+            items[rawName] = {
+              exists: true,
+              objectKey: dbMedia.id,
+              publicUrl: `/api/files?mediaId=${encodeURIComponent(dbMedia.id)}`,
+            };
+            continue;
+          }
+
+          // 로컬 public_html/upload/book 폴더 폴백 확인
+          const safeBase = path.basename(baseName);
+          const localBookPath = path.join(process.cwd(), 'public_html', 'upload', 'book', safeBase);
+          if (fs.existsSync(localBookPath)) {
+            items[rawName] = {
+              exists: true,
+              objectKey: `upload/book/${safeBase}`,
+              publicUrl: `upload/book/${encodeURIComponent(safeBase)}`,
+            };
+            continue;
+          }
+
+          items[rawName] = { exists: false, objectKey: '', publicUrl: '' };
+        }
+
+        return res.status(200).json({
+          configured: r2Configured,
+          items,
+        });
+      }
+
       const category = String(body.category || 'book-cover');
       const fileName = String(body.fileName || body.name || 'upload').replace(/[\r\n<>/\\]/g, '_').slice(0, 200);
       const keyHint = String(body.keyHint || '').slice(0, 80);

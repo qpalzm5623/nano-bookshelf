@@ -747,7 +747,7 @@
                       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"
                       data-1p-ignore="true" oninput="handleAcadBookSearchInput(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();filterAcademyBooks();}"
                       style="height: 38px; border-radius: 8px; border-color: var(--border-medium); font-size: 12.5px; padding-right: 30px;"
-                      placeholder="도서명, 저자, 출판사, 등록처(학원명)...">
+                      placeholder="도서명, 관리코드, ISBN, 저자, 출판사, 등록처...">
                     <button type="button" id="btnAcadBookSearchClear" class="btn-search-clear" onclick="clearAcadBookSearchInput()" style="display: none;" title="검색어 지우기">✕</button>
                   </div>
                   <button class="btn btn-beige-primary px-3 font-weight-bold" style="height: 38px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"
@@ -5299,6 +5299,12 @@
                       </div>
                     </td>
                   </tr>
+                  <tr>
+                    <td class="font-weight-bold text-dark">7. 나노시트 (선택)</td>
+                    <td class="text-left">
+                      <strong>나노시트</strong> (M열): R2 서버에 업로드된 나노시트 파일명(<strong>확장자까지 포함</strong>, 예: <code>9788932902708.pdf</code>)을 입력하면 일치하는 파일이 자동으로 연동됩니다.
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -5310,7 +5316,7 @@
               <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
                 <i class="fa-solid fa-file-excel text-success mr-1"></i>새로운 표준 도서 등록 서식 다운로드
               </span>
-              <small class="text-muted">ISBN(필수), 주제분류태그(필수), 세부태그(1~5), 어워드및추천, 생각꺼내기, 생각담기 규격 완비 (.xlsx)</small>
+              <small class="text-muted">ISBN(필수), 주제분류태그(필수), 세부태그(1~5), 어워드및추천, 생각꺼내기, 생각담기, 나노시트 규격 완비 (.xlsx)</small>
             </div>
             <button type="button" class="btn btn-sm btn-outline-success font-weight-bold"
               onclick="downloadAcadBookSampleExcel()" style="border-radius: 8px; font-size: 12px; padding: 5px 12px;">
@@ -5319,9 +5325,12 @@
           </div>
 
           <!-- 파일 업로드 드롭존 -->
-          <div class="p-4 rounded text-center mb-2 bg-white"
+          <div id="acadBookExcelDropZone" class="p-4 rounded text-center mb-2 bg-white"
             style="border: 2px dashed var(--border-medium); cursor: pointer; transition: all 0.2s ease;"
-            onclick="document.getElementById('acadBulkExcelFileInput').click()" ondragover="event.preventDefault()"
+            onclick="document.getElementById('acadBulkExcelFileInput').click()"
+            ondragover="handleAcadExcelDragOver(event, this, '#16a34a', '#f0fdf4')"
+            ondragenter="handleAcadExcelDragOver(event, this, '#16a34a', '#f0fdf4')"
+            ondragleave="handleAcadExcelDragLeave(event, this, 'var(--border-medium)', '#ffffff')"
             ondrop="handleBulkFileDrop(event)">
             <input type="file" id="acadBulkExcelFileInput" accept=".csv,.xlsx,.xls" class="d-none"
               onchange="handleBulkFileSelect(this)">
@@ -5468,9 +5477,12 @@
           </div>
 
           <!-- 파일 드래그 & 드롭 영역 -->
-          <div class="p-4 rounded text-center mb-2 bg-white"
-            style="border: 2px dashed #f59e0b; cursor: pointer; background: #fffdfa;"
-            onclick="document.getElementById('acadQuizExcelFileInput').click()" ondragover="event.preventDefault()"
+          <div id="acadQuizExcelDropZone" class="p-4 rounded text-center mb-2 bg-white"
+            style="border: 2px dashed #f59e0b; cursor: pointer; background: #fffdfa; transition: all 0.2s ease;"
+            onclick="document.getElementById('acadQuizExcelFileInput').click()"
+            ondragover="handleAcadExcelDragOver(event, this, '#d97706', '#fef3c7')"
+            ondragenter="handleAcadExcelDragOver(event, this, '#d97706', '#fef3c7')"
+            ondragleave="handleAcadExcelDragLeave(event, this, '#f59e0b', '#fffdfa')"
             ondrop="handleAcadQuizExcelFileDrop(event)">
             <input type="file" id="acadQuizExcelFileInput" accept=".xlsx,.xls,.csv" style="display:none;"
               onchange="handleAcadQuizExcelFileSelect(this)">
@@ -6533,7 +6545,7 @@
 <script src="js/admin_members.js?v=20261123_class_sync"></script>
 <script src="admin_preview.js?v=20261119_transfer_opt"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
-<script src="js/admin_books.js?v=20261123_quiz_ui"></script>
+<script src="js/admin_books.js?v=20261124_code_isbn_search"></script>
 <script src="js/admin_payment.js?v=20261113_init_fix"></script>
 <script src="js/admin_notices.js?v=20261123_wm_center"></script>
 <script src="js/admin_worksheet_ai.js?v=20261113_center"></script>

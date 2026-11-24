@@ -23,6 +23,9 @@ test('1. 개편 엑셀 양식 파일 존재 및 시트 구조 검증', () => {
   assert.ok(rows.length >= 3, '최소 3행 이상의 데이터가 존재해야 합니다.');
   assert.ok(String(rows[1][2]).includes('ISBN'), '2행 C열에 ISBN 컬럼 헤더가 있어야 합니다.');
   assert.ok(String(rows[1][3]).includes('주제분류태그'), '2행 D열에 주제분류태그 컬럼 헤더가 있어야 합니다.');
+  assert.equal(String(rows[1][12]).trim(), '나노시트', '2행 M열에 나노시트 컬럼 헤더가 있어야 합니다.');
+  assert.ok(String(rows[0][12]).includes('나노시트'), '1행 M열에 나노시트 파일명 안내가 있어야 합니다.');
+  assert.equal(String(rows[2][12]).trim(), '9788932902708.pdf', '3행 M열에 확장자 포함 나노시트 파일명 예시가 있어야 합니다.');
 });
 
 test('2. 3행부터 시작 및 빈 템플릿 행(4~6행) 자동 건너뛰기 검증', () => {
@@ -42,11 +45,13 @@ test('2. 3행부터 시작 및 빈 템플릿 행(4~6행) 자동 건너뛰기 검
     detail5: headerRow.findIndex(h => String(h).includes('세부태그5')),
     awards: headerRow.findIndex(h => String(h).includes('어워드')),
     thinkExtract: headerRow.findIndex(h => String(h).includes('생각꺼내기')),
-    thinkInsert: headerRow.findIndex(h => String(h).includes('생각담기'))
+    thinkInsert: headerRow.findIndex(h => String(h).includes('생각담기')),
+    nanoSheet: headerRow.findIndex(h => String(h).includes('나노시트'))
   };
 
   assert.equal(colMap.isbn, 2, 'ISBN 컬럼 인덱스는 2여야 합니다.');
   assert.equal(colMap.theme, 3, '주제분류태그 컬럼 인덱스는 3이어야 합니다.');
+  assert.equal(colMap.nanoSheet, 12, '나노시트 컬럼 인덱스는 12(M열)여야 합니다.');
 
   const parsedBooks = [];
   const skippedEmptyRows = [];
@@ -64,8 +69,9 @@ test('2. 3행부터 시작 및 빈 템플릿 행(4~6행) 자동 건너뛰기 검
     const awards = String(row[colMap.awards] ?? '').trim();
     const thinkExtract = String(row[colMap.thinkExtract] ?? '').trim();
     const rawThinkInsert = String(row[colMap.thinkInsert] ?? '').trim();
+    const nanoSheetFileName = String(row[colMap.nanoSheet] ?? '').trim();
 
-    const hasAnyContent = rawIsbn || rawTheme || detail1 || detail2 || detail3 || detail4 || detail5 || awards || thinkExtract || rawThinkInsert;
+    const hasAnyContent = rawIsbn || rawTheme || detail1 || detail2 || detail3 || detail4 || detail5 || awards || thinkExtract || rawThinkInsert || nanoSheetFileName;
     if (!hasAnyContent) {
       skippedEmptyRows.push(rowNum);
       continue;
@@ -78,6 +84,7 @@ test('2. 3행부터 시작 및 빈 템플릿 행(4~6행) 자동 건너뛰기 검
       awards,
       thinkExtract,
       thinkInsert: rawThinkInsert,
+      nanoSheetFileName,
       rowNum
     });
   }
@@ -87,6 +94,7 @@ test('2. 3행부터 시작 및 빈 템플릿 행(4~6행) 자동 건너뛰기 검
   assert.equal(parsedBooks[0].isbn, '9788932902708', '어린왕자 ISBN 확인');
   assert.equal(parsedBooks[0].theme, '#이야기', '어린왕자 주제분류태그 확인');
   assert.deepEqual(parsedBooks[0].details, ['어린왕자', '사막', '여우', '장미', '순수'], '세부태그 5종 확인');
+  assert.equal(parsedBooks[0].nanoSheetFileName, '9788932902708.pdf', '나노시트 파일명(확장자 포함) 파싱 확인');
 
   // 4, 5, 6행은 순번만 있고 내용이 없으므로 빈 행으로 skip되어야 함
   assert.deepEqual(skippedEmptyRows, [4, 5, 6], '순번만 있고 비어있는 4, 5, 6행이 정확히 스킵되어야 합니다.');
@@ -168,5 +176,28 @@ test('4. 마스터 및 학원 모달 UI의 .xlsx 샘플 다운로드 마크업 �
   assert.ok(adminHtml.includes('샘플 다운로드 (.xlsx)'), '학원 화면에 샘플 다운로드 (.xlsx) 버튼이 존재해야 합니다.');
   assert.ok(adminHtml.includes("'입력'</strong> 시트"), '학원 화면 안내에 입력 시트 안내가 있어야 합니다.');
   assert.ok(adminHtml.includes('3행부터</strong>'), '학원 화면 안내에 3행부터 등록 안내가 있어야 합니다.');
+
+  // 7. 나노시트 (선택) 안내 및 드래그앤드롭 핸들러 검증
+  assert.ok(masterModalsHtml.includes('7. 나노시트 (선택)'), '마스터 도서 엑셀 모달에 7. 나노시트 (선택) 안내가 있어야 합니다.');
+  assert.ok(adminHtml.includes('7. 나노시트 (선택)'), '학원 도서 엑셀 모달에 7. 나노시트 (선택) 안내가 있어야 합니다.');
+  assert.ok(masterModalsHtml.includes('ondrop="handleMasterBookExcelFileDrop(event)"'), '마스터 도서 엑셀 모달에 드래그앤드롭 ondrop 핸들러가 연결되어야 합니다.');
+  assert.ok(masterModalsHtml.includes('ondrop="handleMasterQuizExcelFileDrop(event)"'), '마스터 북퀴즈 엑셀 모달에 드래그앤드롭 ondrop 핸들러가 연결되어야 합니다.');
+  assert.ok(adminHtml.includes('ondrop="handleBulkFileDrop(event)"'), '학원 도서 엑셀 모달에 드래그앤드롭 ondrop 핸들러가 연결되어야 합니다.');
+  assert.ok(adminHtml.includes('ondrop="handleAcadQuizExcelFileDrop(event)"'), '학원 북퀴즈 엑셀 모달에 드래그앤드롭 ondrop 핸들러가 연결되어야 합니다.');
+
+  // JS 핸들러 및 R2 나노시트 매칭 로직 존재 검증
+  const masterContentsJs = fs.readFileSync(path.join(root, 'public_html', 'js', 'master', 'master-contents.js'), 'utf8');
+  const adminBooksJs = fs.readFileSync(path.join(root, 'public_html', 'js', 'admin_books.js'), 'utf8');
+  const apiFilesTs = fs.readFileSync(path.join(root, 'api', 'files.ts'), 'utf8');
+  const r2StorageTs = fs.readFileSync(path.join(root, 'lib', 'r2-storage.ts'), 'utf8');
+
+  assert.ok(masterContentsJs.includes('function handleMasterBookExcelFileDrop'), 'master-contents.js에 도서 엑셀 드롭 핸들러가 구현되어야 합니다.');
+  assert.ok(masterContentsJs.includes('function handleMasterQuizExcelFileDrop'), 'master-contents.js에 북퀴즈 엑셀 드롭 핸들러가 구현되어야 합니다.');
+  assert.ok(masterContentsJs.includes('function resolveMasterNanoSheetFiles'), 'master-contents.js에 R2 나노시트 파일 매칭 헬퍼가 구현되어야 합니다.');
+  assert.ok(adminBooksJs.includes('function handleBulkFileDrop'), 'admin_books.js에 도서 엑셀 드롭 핸들러가 구현되어야 합니다.');
+  assert.ok(adminBooksJs.includes('function handleAcadQuizExcelFileDrop'), 'admin_books.js에 북퀴즈 엑셀 드롭 핸들러가 구현되어야 합니다.');
+  assert.ok(adminBooksJs.includes('function resolveAcadNanoSheetFiles'), 'admin_books.js에 R2 나노시트 파일 매칭 헬퍼가 구현되어야 합니다.');
+  assert.ok(apiFilesTs.includes("body.operation === 'resolve-sheets'"), 'api/files.ts에 resolve-sheets 오퍼레이션이 구현되어야 합니다.');
+  assert.ok(r2StorageTs.includes('export async function resolveR2NanoSheetUrls'), 'lib/r2-storage.ts에 resolveR2NanoSheetUrls 함수가 구현되어야 합니다.');
 });
 

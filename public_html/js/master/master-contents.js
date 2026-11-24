@@ -479,7 +479,9 @@ function renderMasterContents() {
   }
 
   // 검색 필터: 사용자가 [검색] 버튼을 클릭(또는 엔터)하여 확정한 조건(appliedMasterContentFilters)만 반영
-  const query = (appliedMasterContentFilters.query || "").toLowerCase().trim();
+  const rawQuery = (appliedMasterContentFilters.query || "").toLowerCase().trim();
+  const query = rawQuery.replace(/^(코드|도서코드|관리코드|isbn)\s*[:：]?\s*/i, "").trim();
+  const compactQuery = query.replace(/[-\s]/g, "");
   const academyFilter = appliedMasterContentFilters.academy || "ALL";
   const gradeFilter = appliedMasterContentFilters.grade || "ALL";
   const catFilter = appliedMasterContentFilters.category || "ALL";
@@ -491,16 +493,33 @@ function renderMasterContents() {
     if (!b) return false;
     const bTitle = String(b.title || '');
     const bAuthor = String(b.author || '');
-    const bPublisher = String(b.publisher || '');
+    const bPublisher = String(b.publisher || b.pub || '');
     const bDetailTag = String(b.detailTag || '');
+    const bThemeTag = String(b.themeTag || '');
+    const bTagsStr = Array.isArray(b.tags) ? b.tags.join(' ') : String(b.tags || '');
     const bSeries = String(b.series || '');
+    const bId = String(b.id || '').toLowerCase();
+    const bBookNo = String(b.bookNo || '').toLowerCase();
+    const coverIsbnMatch = String(b.cover || b.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i);
+    const bIsbnRaw = String(b.isbn || b.isbn13 || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').toLowerCase();
+    const bIsbnCompact = bIsbnRaw.replace(/[-\s]/g, "");
 
     const matchQuery = !query ||
       bTitle.toLowerCase().includes(query) ||
       bAuthor.toLowerCase().includes(query) ||
       bPublisher.toLowerCase().includes(query) ||
       bDetailTag.toLowerCase().includes(query) ||
-      bSeries.toLowerCase().includes(query);
+      bThemeTag.toLowerCase().includes(query) ||
+      bTagsStr.toLowerCase().includes(query) ||
+      bSeries.toLowerCase().includes(query) ||
+      bId.includes(query) ||
+      bBookNo.includes(query) ||
+      bIsbnRaw.includes(query) ||
+      (compactQuery.length >= 2 && (
+        bId.replace(/[-\s]/g, "").includes(compactQuery) ||
+        bBookNo.replace(/[-\s]/g, "").includes(compactQuery) ||
+        bIsbnCompact.includes(compactQuery)
+      ));
 
     let matchAcademy = true;
     if (academyFilter === "HQ") {
@@ -4625,6 +4644,7 @@ function downloadBookExcelTemplate() {
 
 function handleMasterBookExcelFileSelect(input) {
   if (input.files && input.files[0]) {
+    selectedMasterBookExcelFile = input.files[0];
     const el = document.getElementById("masterBookExcelFileName");
     if (el) el.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-excel mr-1"></i>${input.files[0].name} (${Math.round(input.files[0].size / 1024)}KB)</span>`;
   }
@@ -4757,14 +4777,237 @@ function findExistingMasterBookByIsbn(cleanIsbn) {
   return null;
 }
 
+var selectedMasterBookExcelFile = null;
+var selectedMasterQuizExcelFile = null;
+
+// 마스터 엑셀 드래그 앤 드롭 영역 호버/이탈 시각 피드백 공통 헬퍼
+function handleMasterExcelDragOver(e, zoneEl, activeBorderColor, activeBgColor) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+  if (zoneEl) {
+    zoneEl.style.borderColor = activeBorderColor || "#16a34a";
+    zoneEl.style.backgroundColor = activeBgColor || "#f0fdf4";
+  }
+}
+
+function handleMasterExcelDragLeave(e, zoneEl, defaultBorderColor, defaultBgColor) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (zoneEl) {
+    zoneEl.style.borderColor = defaultBorderColor || "var(--border-medium)";
+    zoneEl.style.backgroundColor = defaultBgColor || "#ffffff";
+  }
+}
+
+function handleMasterBookExcelFileDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const zoneEl = document.getElementById("masterBookExcelDropZone") || e.currentTarget;
+  if (zoneEl) {
+    zoneEl.style.borderColor = "var(--border-medium)";
+    zoneEl.style.backgroundColor = "#ffffff";
+  }
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+    const droppedFile = e.dataTransfer.files[0];
+    const ext = String(droppedFile.name || "").split(".").pop().toLowerCase();
+    if (!["xlsx", "xls", "csv"].includes(ext)) {
+      alert("지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    selectedMasterBookExcelFile = droppedFile;
+    const fileInput = document.getElementById("masterBookExcelFileInput");
+    if (fileInput) {
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(droppedFile);
+        fileInput.files = dt.files;
+      } catch (err) {}
+    }
+    const el = document.getElementById("masterBookExcelFileName");
+    if (el) {
+      el.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-excel mr-1"></i>${droppedFile.name} (${Math.max(1, Math.round(droppedFile.size / 1024))}KB)</span>`;
+    }
+  }
+}
+
+function handleMasterQuizExcelFileDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const zoneEl = document.getElementById("masterQuizExcelDropZone") || e.currentTarget;
+  if (zoneEl) {
+    zoneEl.style.borderColor = "#f59e0b";
+    zoneEl.style.backgroundColor = "#fffdfa";
+  }
+  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+    const droppedFile = e.dataTransfer.files[0];
+    const ext = String(droppedFile.name || "").split(".").pop().toLowerCase();
+    if (!["xlsx", "xls", "csv"].includes(ext)) {
+      alert("지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    selectedMasterQuizExcelFile = droppedFile;
+    const fileInput = document.getElementById("masterQuizExcelFileInput");
+    if (fileInput) {
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(droppedFile);
+        fileInput.files = dt.files;
+      } catch (err) {}
+    }
+    const el = document.getElementById("masterQuizExcelFileName");
+    if (el) {
+      el.innerHTML = `<span class="text-warning font-weight-bold" style="color: #d97706 !important;"><i class="fa-solid fa-file-excel mr-1"></i>${droppedFile.name} (${Math.max(1, Math.round(droppedFile.size / 1024))}KB)</span>`;
+    }
+  }
+}
+
+// 마스터 대량 등록용 도서 관리 코드 자동 채번 ([Cat2][Cat1][Grade][5자리순번])
+function generateNextMasterBookCode(cat1Val, cat2Val, gradeVal, reservedSet) {
+  let c2Code = "K";
+  const c2Str = String(cat2Val || "국내서");
+  if (c2Str.includes("외서") || c2Str === "F") c2Code = "F";
+  else if (c2Str.includes("구분") || c2Str === "N") c2Code = "N";
+
+  let c1Code = "A";
+  const c1Str = String(cat1Val || "소설");
+  if (c1Str.includes("인물") || c1Str.includes("위인") || c1Str === "B") c1Code = "B";
+  else if (c1Str.includes("비문학") || c1Str.includes("정보") || c1Str === "C") c1Code = "C";
+
+  let gCode = "3";
+  const gStr = String(gradeVal || "초등 3학년");
+  if (gStr.includes("1학년") && !gStr.includes("중등")) gCode = "1";
+  else if (gStr.includes("2학년") && !gStr.includes("중등")) gCode = "2";
+  else if (gStr.includes("3학년") && !gStr.includes("중등")) gCode = "3";
+  else if (gStr.includes("4학년")) gCode = "4";
+  else if (gStr.includes("5학년")) gCode = "5";
+  else if (gStr.includes("6학년")) gCode = "6";
+  else if (gStr.includes("중등 1학년") || gStr.includes("중1")) gCode = "7";
+  else if (gStr.includes("중등 2학년") || gStr.includes("중2")) gCode = "8";
+  else if (gStr.includes("중등 3학년") || gStr.includes("중3")) gCode = "9";
+  else {
+    const m = gStr.match(/\d/);
+    if (m) gCode = m[0];
+  }
+
+  const prefix = `${c2Code}${c1Code}${gCode}`;
+  let maxSeq = 0;
+  const checkCode = code => {
+    if (!code || typeof code !== "string") return;
+    if (code.startsWith(prefix)) {
+      const num = parseInt(code.slice(prefix.length), 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
+    }
+  };
+  if (Array.isArray(masterBooks)) {
+    masterBooks.forEach(b => {
+      if (b) {
+        checkCode(b.id);
+        checkCode(b.bookNo);
+      }
+    });
+  }
+  if (reservedSet) {
+    reservedSet.forEach(checkCode);
+  }
+  const candidate = `${prefix}${String(maxSeq + 1).padStart(5, "0")}`;
+  if (reservedSet) reservedSet.add(candidate);
+  return candidate;
+}
+
+// 엑셀 도서 등록 시 '나노시트' 컬럼에 입력된 파일명(확장자 포함)이 R2 서버에 존재하는지 일괄 조회하는 헬퍼
+async function resolveMasterNanoSheetFiles(fileNames) {
+  const unique = Array.from(
+    new Set(
+      (Array.isArray(fileNames) ? fileNames : [])
+        .map(n => String(n || "").trim())
+        .filter(n => n && n !== "-" && n !== "0" && n !== "없음")
+    )
+  );
+  const resolvedMap = {};
+  if (unique.length === 0) return resolvedMap;
+
+  // 1) 서버 API(/api/files resolve-sheets)를 통한 R2 버킷 실시간 조회
+  try {
+    let apiRes = null;
+    if (typeof window !== "undefined" && window.NanoPortal && typeof NanoPortal.api === "function") {
+      apiRes = await NanoPortal.api(
+        "/api/files",
+        {
+          scope: "media",
+          operation: "resolve-sheets",
+          fileNames: unique
+        },
+        20000
+      );
+    } else if (typeof fetch === "function") {
+      const resp = await fetch("/api/files", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "media", operation: "resolve-sheets", fileNames: unique })
+      });
+      if (resp.ok) apiRes = await resp.json();
+    }
+    if (apiRes && apiRes.items) {
+      Object.keys(apiRes.items).forEach(k => {
+        if (apiRes.items[k] && apiRes.items[k].exists && apiRes.items[k].publicUrl) {
+          resolvedMap[k] = apiRes.items[k].publicUrl;
+        }
+      });
+    }
+  } catch (e) {
+    console.warn("[resolveMasterNanoSheetFiles] /api/files R2 조회 폴백:", e);
+  }
+
+  // 2) 미확인 항목에 대해 AVAILABLE_SHEETS 및 R2 공개 CDN HEAD 요청 폴백 확인
+  const availSet = new Set(
+    typeof window !== "undefined" && Array.isArray(window.AVAILABLE_SHEETS)
+      ? window.AVAILABLE_SHEETS.map(s => String(s || "").trim())
+      : []
+  );
+
+  for (let i = 0; i < unique.length; i++) {
+    const rawName = unique[i];
+    if (resolvedMap[rawName]) continue;
+    const cleanInput = rawName.replace(/^\/+/, "").trim();
+    const baseName = (cleanInput.split("/").pop() || cleanInput).trim();
+    if (!baseName || !/\.[A-Za-z0-9]{2,5}$/.test(baseName)) continue;
+
+    if (availSet.has(baseName)) {
+      resolvedMap[rawName] = "https://media.nanosbook.co.kr/upload/book/" + encodeURIComponent(baseName);
+      continue;
+    }
+
+    if (typeof fetch === "function") {
+      const candidateUrls = [
+        "https://media.nanosbook.co.kr/upload/book/" + encodeURIComponent(baseName),
+        "https://media.nanosbook.co.kr/" + encodeURIComponent(baseName),
+        "upload/book/" + encodeURIComponent(baseName)
+      ];
+      for (let c = 0; c < candidateUrls.length; c++) {
+        try {
+          const headResp = await fetch(candidateUrls[c], { method: "HEAD", cache: "no-store" });
+          if (headResp && headResp.ok) {
+            resolvedMap[rawName] = candidateUrls[c];
+            break;
+          }
+        } catch (headErr) {}
+      }
+    }
+  }
+
+  return resolvedMap;
+}
+
 async function handleMasterBookExcelUpload() {
   const fileInput = document.getElementById("masterBookExcelFileInput");
-  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+  const file = selectedMasterBookExcelFile || (fileInput && fileInput.files && fileInput.files[0]) || null;
+  if (!file) {
     alert("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
     return;
   }
 
-  const file = fileInput.files[0];
   const fileName = file.name;
   const progressEl = document.getElementById("masterBookExcelFileName");
 
@@ -4802,7 +5045,8 @@ async function handleMasterBookExcelUpload() {
       detail5: -1,
       awards: -1,
       thinkExtract: -1,
-      thinkInsert: -1
+      thinkInsert: -1,
+      nanoSheet: -1
     };
 
     headerRow.forEach((h, idx) => {
@@ -4817,9 +5061,10 @@ async function handleMasterBookExcelUpload() {
       else if (text.includes('어워드') || text.includes('추천')) colMap.awards = idx;
       else if (text.includes('생각꺼내기')) colMap.thinkExtract = idx;
       else if (text.includes('생각담기')) colMap.thinkInsert = idx;
+      else if (text.includes('나노시트') || text.includes('워크시트') || text.includes('nanosheet') || text.includes('worksheet')) colMap.nanoSheet = idx;
     });
 
-    // 기본 위치 fallback (C열~L열)
+    // 기본 위치 fallback (C열~M열)
     if (colMap.isbn === -1) colMap.isbn = 2;
     if (colMap.theme === -1) colMap.theme = 3;
     if (colMap.detail1 === -1) colMap.detail1 = 4;
@@ -4830,6 +5075,7 @@ async function handleMasterBookExcelUpload() {
     if (colMap.awards === -1) colMap.awards = 9;
     if (colMap.thinkExtract === -1) colMap.thinkExtract = 10;
     if (colMap.thinkInsert === -1) colMap.thinkInsert = 11;
+    if (colMap.nanoSheet === -1) colMap.nanoSheet = 12;
 
     const parsedRows = [];
     const validationErrors = [];
@@ -4849,9 +5095,11 @@ async function handleMasterBookExcelUpload() {
       const awards = String(row[colMap.awards] ?? '').trim();
       const thinkExtract = String(row[colMap.thinkExtract] ?? '').trim();
       const rawThinkInsert = String(row[colMap.thinkInsert] ?? '').trim();
+      let rawNanoSheet = colMap.nanoSheet >= 0 ? String(row[colMap.nanoSheet] ?? '').trim() : '';
+      if (rawNanoSheet === '-' || rawNanoSheet === '0' || rawNanoSheet === '없음') rawNanoSheet = '';
 
       // '순번', '책 제목' 컬럼은 무시하며, 읽는 대상 컬럼이 전부 비어있는 템플릿 빈 행은 skip
-      const hasAnyData = rawIsbn || rawTheme || detail1 || detail2 || detail3 || detail4 || detail5 || awards || thinkExtract || rawThinkInsert;
+      const hasAnyData = rawIsbn || rawTheme || detail1 || detail2 || detail3 || detail4 || detail5 || awards || thinkExtract || rawThinkInsert || rawNanoSheet;
       if (!hasAnyData) {
         continue;
       }
@@ -4909,6 +5157,7 @@ async function handleMasterBookExcelUpload() {
         awards: awards,
         thinkExtract: thinkExtract,
         thinkInsert: thinkInsert,
+        nanoSheetFileName: rawNanoSheet,
         rowNum: rowNum
       });
     }
@@ -4926,9 +5175,22 @@ async function handleMasterBookExcelUpload() {
       return;
     }
 
+    // R2 서버에 업로드된 나노시트 파일명(확장자 포함) 일치 여부 일괄 조회
+    const requestedSheetNames = parsedRows.map(r => r.nanoSheetFileName).filter(Boolean);
+    let resolvedSheetMap = {};
+    if (requestedSheetNames.length > 0) {
+      if (progressEl) {
+        progressEl.innerHTML = `<span class="text-primary font-weight-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>R2 서버 나노시트 파일 매칭 확인 중...</span>`;
+      }
+      resolvedSheetMap = await resolveMasterNanoSheetFiles(requestedSheetNames);
+    }
+
     // 2단계: ISBN 기반 도서 메타데이터 자동 수집 및 도서 객체 생성
     const totalCount = parsedRows.length;
-    const finalBooks = [];
+    const reservedCodes = new Set();
+    let finalBooks = [];
+    let linkedSheetCount = 0;
+    const unmatchedSheetNames = [];
 
     for (let idx = 0; idx < parsedRows.length; idx++) {
       const item = parsedRows[idx];
@@ -4970,11 +5232,18 @@ async function handleMasterBookExcelUpload() {
       }
 
       const isNonfiction = (cat1 === "비문학/정보글" || cat1 === "비문학" || cat1 === "C");
-      const nextIdNum = masterBooks.length + finalBooks.length + 1;
+      const newBookCode = generateNextMasterBookCode(cat1, cat2, grade, reservedCodes);
       const tags = [item.themeTag].concat(item.detailList || []);
+      const matchedSheetUrl = item.nanoSheetFileName ? (resolvedSheetMap[item.nanoSheetFileName] || "") : "";
+      const hasMatchedSheet = Boolean(matchedSheetUrl);
+      if (item.nanoSheetFileName) {
+        if (hasMatchedSheet) linkedSheetCount++;
+        else unmatchedSheetNames.push(item.nanoSheetFileName);
+      }
 
       finalBooks.push({
-        id: `MB-${String(nextIdNum).padStart(3, '0')}`,
+        id: newBookCode,
+        bookNo: newBookCode,
         isbn: item.isbn,
         title: title,
         author: author,
@@ -4994,6 +5263,7 @@ async function handleMasterBookExcelUpload() {
         synopsis: synopsis,
         description: synopsis,
         cover: cover,
+        coverUrl: cover,
         isPublic: "Y",
         hasQuiz: false,
         quizzes: 0,
@@ -5004,20 +5274,54 @@ async function handleMasterBookExcelUpload() {
         academyId: "HQ",
         academyName: "본사 직속 (공용)",
         creatorType: "HQ",
-        sheet: false,
+        sheet: hasMatchedSheet,
+        hasSheet: hasMatchedSheet,
+        worksheetUrl: matchedSheetUrl || undefined,
+        pdfUrl: matchedSheetUrl || undefined,
+        materialName: hasMatchedSheet ? item.nanoSheetFileName : undefined,
         createdAt: new Date().toISOString(),
         date: new Date().toISOString().split("T")[0],
         quizSets: []
       });
     }
 
+    // 운영 서버 연동 시 백엔드 DB에 실제 도서 및 나노시트 URL 저장
+    if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.saveBook === "function") {
+      const savedServerBooks = [];
+      const serverErrors = [];
+      for (let sIdx = 0; sIdx < finalBooks.length; sIdx++) {
+        const targetBook = finalBooks[sIdx];
+        if (progressEl) {
+          progressEl.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>[${sIdx + 1}/${finalBooks.length}] 서버 DB 저장 중: ${targetBook.title}</span>`;
+        }
+        try {
+          await NanoPortal.saveBook(targetBook);
+          savedServerBooks.push(targetBook);
+        } catch (saveErr) {
+          console.error("마스터 도서 서버 저장 실패:", targetBook.title, saveErr);
+          serverErrors.push(`[${targetBook.title}] ${saveErr.message || "저장 실패"}`);
+        }
+      }
+      if (savedServerBooks.length === 0 && serverErrors.length > 0) {
+        alert("[도서 일괄 서버 저장 오류]\n" + serverErrors.slice(0, 5).join("\n"));
+        return;
+      }
+      finalBooks = savedServerBooks;
+    }
+
     // 도서 라이브러리 목록 최상단에 일괄 추가
     finalBooks.forEach(b => masterBooks.unshift(b));
 
+    selectedMasterBookExcelFile = null;
+    if (fileInput) fileInput.value = "";
     $("#masterBookExcelModal").modal("hide");
     if (progressEl) progressEl.innerHTML = "클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭";
     renderMasterContents();
-    showMasterToast(`[${fileName}] 엑셀 도서 등록 완료: 총 ${finalBooks.length}권의 도서가 ISBN 자동 채우기 및 상세 정보 연동으로 성공적으로 등록되었습니다!`);
+    let sheetNote = linkedSheetCount > 0 ? ` (나노시트 ${linkedSheetCount}건 자동 연동)` : "";
+    if (unmatchedSheetNames.length > 0) {
+      sheetNote += ` [R2 미일치 나노시트 ${unmatchedSheetNames.length}건: ${unmatchedSheetNames.slice(0, 3).join(", ")}]`;
+    }
+    showMasterToast(`[${fileName}] 엑셀 도서 등록 완료: 총 ${finalBooks.length}권의 도서가 ISBN 자동 채우기 및 상세 정보 연동으로 성공적으로 등록되었습니다!${sheetNote}`);
   } catch (err) {
     console.error("도서 엑셀 업로드 처리 실패:", err);
     alert("도서 엑셀 파일을 읽고 처리하는 중 오류가 발생했습니다: " + (err.message || err));
@@ -5030,6 +5334,7 @@ async function handleMasterBookExcelUpload() {
 // 엑셀 대량 북퀴즈 등록 모달 & 샘플 다운로드 & 업로드
 // ==============================================================
 function openQuizExcelUploadModal() {
+  selectedMasterQuizExcelFile = null;
   const nameEl = document.getElementById("masterQuizExcelFileName");
   if (nameEl) nameEl.innerHTML = "클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭";
   const fileInp = document.getElementById("masterQuizExcelFileInput");
@@ -5039,6 +5344,7 @@ function openQuizExcelUploadModal() {
 
 function handleMasterQuizExcelFileSelect(input) {
   if (input.files && input.files[0]) {
+    selectedMasterQuizExcelFile = input.files[0];
     const el = document.getElementById("masterQuizExcelFileName");
     if (el) el.innerHTML = `<span class="text-warning font-weight-bold" style="color: #d97706 !important;"><i class="fa-solid fa-file-excel mr-1"></i>${input.files[0].name} (${Math.round(input.files[0].size / 1024)}KB)</span>`;
   }
@@ -5223,12 +5529,12 @@ function downloadQuizExcelTemplate() {
 // 엑셀 대량 북퀴즈 업로드 실행 핸들러 (개편 서식 v1 대응: 4행부터 데이터, 객관식/주관식, 3~20문항)
 async function handleMasterQuizExcelUpload() {
   const fileInput = document.getElementById("masterQuizExcelFileInput");
-  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+  const file = selectedMasterQuizExcelFile || (fileInput && fileInput.files && fileInput.files[0]) || null;
+  if (!file) {
     alert("업로드할 엑셀/CSV 파일을 먼저 선택해주세요.");
     return;
   }
 
-  const file = fileInput.files[0];
   const fileName = file.name;
   const ext = fileName.split(".").pop().toLowerCase();
 
@@ -5635,6 +5941,8 @@ async function handleMasterQuizExcelUpload() {
     });
 
     // 모달 닫기 및 렌더링 갱신
+    selectedMasterQuizExcelFile = null;
+    if (fileInput) fileInput.value = "";
     $("#masterQuizExcelModal").modal("hide");
     if (typeof renderMasterContents === "function") {
       renderMasterContents();

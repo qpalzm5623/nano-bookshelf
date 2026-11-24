@@ -303,6 +303,131 @@ export async function listR2Objects(prefix = 'upload/book/', cfg = getR2Config()
   return existing;
 }
 
+// 특정 objectKey가 R2 버킷에 실제 존재하는지 단건 확인 (ListObjectsV2 prefix 정확 일치 조회)
+export async function checkR2ObjectExists(
+  objectKey: string,
+  cfg = getR2Config()
+): Promise<boolean> {
+  const cleanKey = objectKey.replace(/^\/+/, '').trim();
+  if (!cleanKey) return false;
+
+  const canonicalUri = `/${rfc3986Encode(cfg.bucketName)}`;
+  const queryEntries: Array<[string, string]> = [
+    ['list-type', '2'],
+    ['max-keys', '5'],
+    ['prefix', cleanKey],
+  ];
+  queryEntries.sort((a, b) => a[0].localeCompare(b[0]));
+  const canonicalQuery = queryEntries
+    .map(([k, v]) => `${rfc3986Encode(k)}=${rfc3986Encode(v)}`)
+    .join('&');
+
+  const { amzDate, dateStamp } = formatAmzDate();
+  const payloadHash = sha256Hex('');
+  const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
+  const canonicalHeaders =
+    `host:${cfg.endpointHost}\n` +
+    `x-amz-content-sha256:${payloadHash}\n` +
+    `x-amz-date:${amzDate}\n`;
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+
+  const canonicalRequest = [
+    'GET',
+    canonicalUri,
+    canonicalQuery,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join('\n');
+
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n');
+
+  const signingKey = getSigningKey(cfg.secretAccessKey, dateStamp);
+  const signature = createHmac('sha256', signingKey).update(stringToSign, 'utf8').digest('hex');
+  const authorization = `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  const res = await fetch(`https://${cfg.endpointHost}${canonicalUri}?${canonicalQuery}`, {
+    method: 'GET',
+    headers: {
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+      Authorization: authorization,
+    },
+  });
+
+  if (!res.ok) return false;
+  const xml = await res.text();
+  const contentRegex = /<Contents>([\s\S]*?)<\/Contents>/g;
+  let match: RegExpExecArray | null;
+  while ((match = contentRegex.exec(xml)) !== null) {
+    const keyMatch = match[1].match(/<Key>([\s\S]*?)<\/Key>/);
+    if (keyMatch && decodeXmlEntities(keyMatch[1]) === cleanKey) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// 엑셀 도서 등록 시 입력된 '나노시트' 파일명(확장자 포함)들이 R2 서버에 존재하는지 일괄 조회하고 공개 URL 반환
+export async function resolveR2NanoSheetUrls(
+  fileNames: string[],
+  cfg = getR2Config()
+): Promise<Record<string, { exists: boolean; objectKey: string; publicUrl: string }>> {
+  const result: Record<string, { exists: boolean; objectKey: string; publicUrl: string }> = {};
+  const uniqueNames = Array.from(
+    new Set(
+      (Array.isArray(fileNames) ? fileNames : [])
+        .map((n) => String(n || '').trim())
+        .filter((n) => n && n !== '-' && n !== '0' && n !== '없음')
+    )
+  );
+
+  for (const rawName of uniqueNames) {
+    const cleanInput = rawName.replace(/^\/+/, '').trim();
+    const baseName = (cleanInput.split('/').pop() || cleanInput).trim();
+    if (!baseName || !/\.[A-Za-z0-9]{2,5}$/.test(baseName)) {
+      result[rawName] = { exists: false, objectKey: '', publicUrl: '' };
+      continue;
+    }
+
+    // 1순위: 표준 나노시트 경로(upload/book/파일명), 2순위: 입력된 상대경로, 3순위: 버킷 루트(파일명), 4순위: upload/sheet/파일명
+    const candidates = Array.from(
+      new Set([
+        `upload/book/${baseName}`,
+        cleanInput,
+        baseName,
+        `upload/sheet/${baseName}`,
+      ])
+    );
+
+    let matchedKey = '';
+    for (const candidate of candidates) {
+      const ok = await checkR2ObjectExists(candidate, cfg).catch(() => false);
+      if (ok) {
+        matchedKey = candidate;
+        break;
+      }
+    }
+
+    if (matchedKey) {
+      result[rawName] = {
+        exists: true,
+        objectKey: matchedKey,
+        publicUrl: buildPublicMediaUrl(matchedKey, cfg),
+      };
+    } else {
+      result[rawName] = { exists: false, objectKey: '', publicUrl: '' };
+    }
+  }
+
+  return result;
+}
+
 // PDF.js 워터마크 뷰어 열람 및 브라우저 직접 업로드를 위한 R2 버킷 CORS 자동 설정
 export async function configureR2BucketCors(allowedOrigins = ['*'], cfg = getR2Config()): Promise<void> {
   const originsXml = allowedOrigins.map((o) => `<AllowedOrigin>${o}</AllowedOrigin>`).join('');

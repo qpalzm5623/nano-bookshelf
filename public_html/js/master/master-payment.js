@@ -267,8 +267,51 @@ function populateMasterPaymentMonthFilter() {
   select.value = (currentVal === "ALL" || monthSet.has(currentVal)) ? currentVal : "ALL";
 }
 
+// 마스터 결제 내역 체크박스 전체 선택/해제 및 선택 건수 배지 동기화
+function toggleAllMasterPaymentChecks(checked) {
+  const boxes = document.querySelectorAll("#masterPaymentTableBody .master-payment-row-check:not(:disabled)");
+  boxes.forEach(cb => {
+    cb.checked = Boolean(checked);
+  });
+  updateMasterBulkPaymentSelectionUI();
+}
+
+function updateMasterBulkPaymentSelectionUI() {
+  const allBoxes = Array.from(document.querySelectorAll("#masterPaymentTableBody .master-payment-row-check:not(:disabled)"));
+  const checkedBoxes = allBoxes.filter(cb => cb.checked);
+  const checkAllEl = document.getElementById("masterPaymentCheckAll");
+  if (checkAllEl) {
+    checkAllEl.checked = allBoxes.length > 0 && checkedBoxes.length === allBoxes.length;
+    checkAllEl.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < allBoxes.length;
+  }
+  const badgeEl = document.getElementById("masterBulkPaymentSelectedBadge");
+  if (badgeEl) {
+    badgeEl.textContent = `${checkedBoxes.length}건`;
+  }
+}
+
+function openBulkPaymentRegisterModal() {
+  const checkedBoxes = Array.from(document.querySelectorAll("#masterPaymentTableBody .master-payment-row-check:checked"));
+  if (checkedBoxes.length === 0) {
+    showMasterToast("일괄 결제 등록할 결제 대기 내역을 먼저 체크해 주세요.");
+    return;
+  }
+  const renderedList = Array.isArray(window._lastRenderedMasterPaymentItems) ? window._lastRenderedMasterPaymentItems : [];
+  const selectedIds = new Set(checkedBoxes.map(cb => cb.getAttribute("data-payment-check-id")));
+  const selectedItems = renderedList.filter(item => item && selectedIds.has(String(item.id)));
+
+  if (selectedItems.length === 0) {
+    showMasterToast("선택된 결제 대기 내역을 찾을 수 없습니다. 목록을 새로고침해 주세요.");
+    return;
+  }
+  if (window.NanoBilling && typeof NanoBilling.bulkRegister === "function") {
+    NanoBilling.bulkRegister(selectedItems);
+  }
+}
+
 // 마스터 결제 테이블 렌더링
 function renderMasterPaymentTable(data = masterPaymentList) {
+  window._lastRenderedMasterPaymentItems = Array.isArray(data) ? data : [];
   if (window.NanoBilling && window.NanoPortal?.remote) return NanoBilling.renderPayments(data);
   const tbody = document.getElementById("masterPaymentTableBody");
   if (!tbody) return;
@@ -277,7 +320,8 @@ function renderMasterPaymentTable(data = masterPaymentList) {
   if (countEl) countEl.innerText = data.length;
 
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="text-center py-5 text-muted">일치하는 결제 내역이 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="text-center py-5 text-muted">일치하는 결제 내역이 없습니다.</td></tr>`;
+    updateMasterBulkPaymentSelectionUI();
     return;
   }
 
@@ -340,12 +384,17 @@ function renderMasterPaymentTable(data = masterPaymentList) {
         ? `<span class="badge badge-light border text-primary" style="font-size: 11px;"><i class="fa-solid fa-credit-card mr-1"></i>${item.method}</span>`
         : `<span class="badge badge-light border text-dark" style="font-size: 11px;"><i class="fa-solid fa-money-bill-wave text-success mr-1"></i>${item.method}</span>`;
 
-    const actionHtml = (item.isAutoPending || item.status === 'pending')
-      ? `<button type="button" class="btn btn-xs btn-beige-primary font-weight-bold" onclick="openSimulateNewPaymentModal('${item.academyId}')" style="border-radius: 8px; font-size: 11.5px; padding: 4px 10px; white-space: nowrap;">
-          <i class="fa-solid fa-plus mr-1"></i>결제 등록
+    const isPendingRow = Boolean(item.isAutoPending || item.status === 'pending');
+    const checkHtml = isPendingRow
+      ? `<input type="checkbox" class="master-payment-row-check" data-payment-check-id="${item.id}" onchange="updateMasterBulkPaymentSelectionUI()" style="width:16px;height:16px;cursor:pointer;accent-color:#3d342d;vertical-align:middle;">`
+      : `<input type="checkbox" disabled style="width:16px;height:16px;opacity:0.22;cursor:not-allowed;vertical-align:middle;" title="결제 대기 항목만 일괄 결제 등록할 수 있습니다.">`;
+
+    const actionHtml = isPendingRow
+      ? `<button type="button" class="btn btn-xs btn-beige-primary font-weight-bold" onclick="openSimulateNewPaymentModal('${item.academyId}')" style="display:inline-flex;align-items:center;gap:4px;height:28px;border-radius: 7px; font-size: 11.5px; padding: 0 11px; white-space: nowrap;">
+          <i class="fa-solid fa-plus" style="font-size:10px;"></i>결제 등록
         </button>`
-      : `<button class="btn btn-xs btn-outline-secondary" onclick="openMasterPaymentDetailModal('${item.id}')" style="border-radius: 6px; font-size: 11px; padding: 4px 8px; white-space: nowrap;">
-          <i class="fa-solid fa-pen-to-square mr-1"></i>상세/메모
+      : `<button class="btn btn-xs btn-outline-secondary" onclick="openMasterPaymentDetailModal('${item.id}')" style="display:inline-flex;align-items:center;gap:4px;height:28px;border-radius: 7px; font-size: 11.5px; padding: 0 10px; white-space: nowrap;">
+          <i class="fa-solid fa-pen-to-square" style="font-size:10px;"></i>상세/메모
         </button>`;
 
     return `
@@ -365,10 +414,12 @@ function renderMasterPaymentTable(data = masterPaymentList) {
         <td class="text-center" style="white-space: nowrap;"><small class="text-muted">${item.date}</small></td>
         <td class="text-center" style="white-space: nowrap;"><small class="badge badge-light border" style="white-space: nowrap;">${item.startDate} ~ ${item.endDate}</small></td>
         <td class="text-center" style="white-space: nowrap;">${statusHtml}</td>
+        <td class="text-center" style="white-space: nowrap;">${checkHtml}</td>
         <td class="text-center" style="white-space: nowrap;">${actionHtml}</td>
       </tr>
     `;
   }).join("");
+  updateMasterBulkPaymentSelectionUI();
 }
 
 // 가맹 학원 필터 옵션 채우기 ('승인' 상태인 가맹점만 검색/표시)

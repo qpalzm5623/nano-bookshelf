@@ -8,7 +8,6 @@ export const PRODUCTS = [
 ];
 export function paymentAmounts(amount: number, productCode: string) {
   if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 100000000) throw new Error('결제 금액을 확인해 주세요.');
-  if (productCode === 'KAKAO' && amount % 5500 !== 0) throw new Error('카카오톡 알림은 5,500원 단위로 구매할 수 있습니다.');
   const supply = Math.round(amount / 1.1);
   return { supply, vat: amount - supply, credit: productCode === 'KAKAO' ? amount * 10 : 0 };
 }

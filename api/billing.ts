@@ -29,7 +29,88 @@ export default async function handler(req: any, res: any) {
     need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
     const input = req.body || {};
     const operation = String(input.operation || 'save');
-    need(['save', 'delete', 'topup'].includes(operation), '결제 작업을 확인해 주세요.');
+    need(['save', 'delete', 'topup', 'bulk_save'].includes(operation), '결제 작업을 확인해 주세요.');
+    if (operation === 'bulk_save') {
+      master(user);
+      const rawItems = Array.isArray(input.items) ? input.items : [];
+      need(rawItems.length > 0 && rawItems.length <= 500, '일괄 결제 등록할 내역을 선택해 주세요.');
+      const bulkPaidAt = new Date(String(input.paidAt || new Date().toISOString()));
+      need(Number.isFinite(+bulkPaidAt), '결제 일시를 확인해 주세요.');
+      const bulkMethod = String(input.method || 'TRANSFER').toUpperCase();
+      need(['TRANSFER', 'CASH', 'CARD', 'OTHER'].includes(bulkMethod), '수동 결제 수단을 확인해 주세요.');
+
+      const processedIds: string[] = [];
+      await prisma.$transaction(async tx => {
+        for (let idx = 0; idx < rawItems.length; idx++) {
+          const item = rawItems[idx] || {};
+          const itemAcadId = await academyScope(user, String(item.academyId || ''));
+          const prodCode = String(item.productCode || 'BASIC').toUpperCase();
+          const product = PRODUCTS.find(p => p.code === prodCode) || PRODUCTS[0];
+          const itemAmount = Number(item.amount || item.total || product.price);
+          let amounts;
+          try { amounts = paymentAmounts(itemAmount, product.code); } catch (e: any) { need(false, e.message); }
+
+          const rawId = typeof item.id === 'string' ? item.id.trim() : '';
+          const isAutoPendingId = !rawId || rawId.startsWith('AUTO-PENDING-');
+          const itemReqId = String(item.requestId || `${input.requestId || 'bulk'}-${idx}`);
+          const itemPayCode = 'MANUAL-' + itemReqId;
+
+          const prior = !isAutoPendingId
+            ? await tx.payment.findUnique({ where: { id: rawId } })
+            : await tx.payment.findUnique({ where: { payCode: itemPayCode } });
+
+          if (isAutoPendingId && prior) {
+            processedIds.push(prior.id);
+            continue;
+          }
+          if (!isAutoPendingId) {
+            need(prior && !prior.deletedAt && prior.academyId === itemAcadId, '결제 내역을 찾을 수 없습니다.', 404);
+            need(prior.payCode.startsWith('MANUAL-') || prior.payCode.startsWith('TOPUP-'), '결제사 승인 내역은 수동으로 변경할 수 없습니다.');
+          }
+
+          const start = product.code === 'KAKAO' ? null : new Date(String(item.startDate || new Date().toISOString().slice(0, 10)));
+          const end = product.code === 'KAKAO' ? null : new Date(String(item.endDate || new Date().toISOString().slice(0, 10)));
+          need(!start || (Number.isFinite(+start) && end && Number.isFinite(+end) && end >= start), '서비스 이용 기간을 확인해 주세요.');
+
+          const data: any = {
+            productCode: product.code,
+            productName: product.name,
+            amount: itemAmount,
+            supplyAmount: amounts!.supply,
+            vatAmount: amounts!.vat,
+            plan: product.code === 'KAKAO' ? 'STANDARD' : product.code,
+            slotCount: product.slots,
+            serviceStart: start,
+            serviceEnd: end,
+            taxInvoiceIssued: Boolean(prior?.taxInvoiceIssued || item.taxInvoiceIssued),
+            memo: text(item.memo || '일괄 수동 결제 완료', '메모', 2000),
+            status: 'PAID',
+            paidAt: bulkPaidAt,
+            payMethod: bulkMethod,
+          };
+
+          const targetId = prior?.id || itemPayCode;
+          if (prior) {
+            const changed = await tx.payment.updateMany({
+              where: { id: targetId, revision: prior.revision, deletedAt: null },
+              data: { ...data, revision: { increment: 1 } },
+            });
+            need(changed.count === 1, '결제 내역이 변경되었습니다. 새로고침해 주세요.', 409);
+          } else {
+            await tx.payment.create({ data: { ...data, id: targetId, payCode: itemPayCode, academyId: itemAcadId } });
+          }
+
+          const before = prior?.productCode === 'KAKAO' && prior.status === 'PAID' ? (prior.amount || 0) * 10 : 0;
+          const after = product.code === 'KAKAO' ? data.amount * 10 : 0;
+          const delta = after - before;
+          if (delta) {
+            await changeBalance(tx, itemAcadId, delta, 'payment:' + targetId + ':' + ((prior?.revision || 0) + 1), delta > 0 ? 'TOPUP' : 'PAYMENT_REVERSAL', targetId);
+          }
+          processedIds.push(targetId);
+        }
+      });
+      return res.json({ ok: true, count: processedIds.length, ids: processedIds, status: 'PAID' });
+    }
     if (operation === 'topup') {
       need(user.role === 'DIRECTOR', '학원 원장 권한이 필요합니다.', 403);
       need(!input.id, '구매 신청으로 기존 결제 내역을 변경할 수 없습니다.', 403);

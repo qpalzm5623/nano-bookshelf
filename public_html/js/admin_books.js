@@ -720,15 +720,34 @@ function filterAcademyBooks(keepPage, options) {
     }
     if (!matchGrade) return false;
 
-    // 3. 상단 도서 검색어 매칭 (도서명, 저자, 출판사, 도서번호, 등록처 학원명, '본사' 지원)
-    var matchQuery = !query ||
-      (b.title && b.title.toLowerCase().indexOf(query) !== -1) ||
-      (b.author && b.author.toLowerCase().indexOf(query) !== -1) ||
-      (b.publisher && b.publisher.toLowerCase().indexOf(query) !== -1) ||
-      (b.id && String(b.id).toLowerCase().indexOf(query) !== -1) ||
-      (b.bookNo && String(b.bookNo).toLowerCase().indexOf(query) !== -1) ||
-      (b.academyName && b.academyName.toLowerCase().indexOf(query) !== -1) ||
-      (isHqBook && ('본사'.indexOf(query) !== -1 || '본사 직속'.indexOf(query) !== -1));
+    // 3. 상단 도서 검색어 매칭 (도서명, 도서 관리 코드, ISBN 넘버, 저자, 출판사, 세부태그, 시리즈, 등록처 학원명, '본사' 지원)
+    var normQuery = query ? query.replace(/^(코드|도서코드|관리코드|isbn)\s*[:：]?\s*/i, '').trim() : '';
+    var compactQuery = normQuery ? normQuery.replace(/[-\s]/g, '') : '';
+    var coverIsbnMatch = String(b.cover || b.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i);
+    var bIsbnRaw = String(b.isbn || b.isbn13 || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').toLowerCase();
+    var bIsbnCompact = bIsbnRaw.replace(/[-\s]/g, '');
+    var bIdLower = String(b.id || '').toLowerCase();
+    var bBookNoLower = String(b.bookNo || '').toLowerCase();
+    var bTagsStr = Array.isArray(b.tags) ? b.tags.join(' ').toLowerCase() : String(b.tags || '').toLowerCase();
+
+    var matchQuery = !normQuery ||
+      (b.title && b.title.toLowerCase().indexOf(normQuery) !== -1) ||
+      (b.author && b.author.toLowerCase().indexOf(normQuery) !== -1) ||
+      (b.publisher && b.publisher.toLowerCase().indexOf(normQuery) !== -1) ||
+      (b.detailTag && String(b.detailTag).toLowerCase().indexOf(normQuery) !== -1) ||
+      (b.themeTag && String(b.themeTag).toLowerCase().indexOf(normQuery) !== -1) ||
+      (bTagsStr && bTagsStr.indexOf(normQuery) !== -1) ||
+      (b.series && String(b.series).toLowerCase().indexOf(normQuery) !== -1) ||
+      (bIdLower && bIdLower.indexOf(normQuery) !== -1) ||
+      (bBookNoLower && bBookNoLower.indexOf(normQuery) !== -1) ||
+      (bIsbnRaw && bIsbnRaw.indexOf(normQuery) !== -1) ||
+      (compactQuery.length >= 2 && (
+        bIdLower.replace(/[-\s]/g, '').indexOf(compactQuery) !== -1 ||
+        bBookNoLower.replace(/[-\s]/g, '').indexOf(compactQuery) !== -1 ||
+        bIsbnCompact.indexOf(compactQuery) !== -1
+      )) ||
+      (b.academyName && b.academyName.toLowerCase().indexOf(normQuery) !== -1) ||
+      (isHqBook && ('본사'.indexOf(normQuery) !== -1 || '본사 직속'.indexOf(normQuery) !== -1));
 
     if (!matchQuery) return false;
 
@@ -1144,10 +1163,50 @@ function handleBulkFileSelect(input) {
   }
 }
 
+// 엑셀 드래그 앤 드롭 영역 호버/이탈 시각 피드백 공통 헬퍼
+function handleAcadExcelDragOver(e, zoneEl, activeBorderColor, activeBgColor) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  if (zoneEl) {
+    zoneEl.style.borderColor = activeBorderColor || '#16a34a';
+    zoneEl.style.backgroundColor = activeBgColor || '#f0fdf4';
+  }
+}
+
+function handleAcadExcelDragLeave(e, zoneEl, defaultBorderColor, defaultBgColor) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (zoneEl) {
+    zoneEl.style.borderColor = defaultBorderColor || '#cbd5e1';
+    zoneEl.style.backgroundColor = defaultBgColor || '#f8fafc';
+  }
+}
+
 function handleBulkFileDrop(e) {
   e.preventDefault();
+  e.stopPropagation();
+  var zoneEl = document.getElementById('acadBookExcelDropZone') || e.currentTarget;
+  if (zoneEl) {
+    zoneEl.style.borderColor = '#cbd5e1';
+    zoneEl.style.backgroundColor = '#f8fafc';
+  }
   if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-    selectedBulkBookFile = e.dataTransfer.files[0];
+    var droppedFile = e.dataTransfer.files[0];
+    var ext = String(droppedFile.name || '').split('.').pop().toLowerCase();
+    if (['xlsx', 'xls', 'csv'].indexOf(ext) === -1) {
+      alert('지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.');
+      return;
+    }
+    selectedBulkBookFile = droppedFile;
+    var inputEl = document.getElementById('acadBulkExcelFileInput');
+    if (inputEl) {
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(droppedFile);
+        inputEl.files = dt.files;
+      } catch (err) {}
+    }
     var nameEl = document.getElementById('acadBulkFileNameDisplay');
     if (nameEl) {
       nameEl.innerHTML = `<span class="text-success font-weight-bold"><i class="fa-solid fa-file-excel mr-1"></i>${selectedBulkBookFile.name}</span> (${(selectedBulkBookFile.size / 1024).toFixed(1)} KB)`;
@@ -1589,6 +1648,85 @@ function findExistingAcademyBookByIsbn(cleanIsbn) {
   return null;
 }
 
+// 엑셀 도서 등록 시 '나노시트' 컬럼에 입력된 파일명(확장자 포함)이 R2 서버에 존재하는지 일괄 조회하는 헬퍼
+async function resolveAcadNanoSheetFiles(fileNames) {
+  var unique = Array.from(new Set(
+    (Array.isArray(fileNames) ? fileNames : [])
+      .map(function(n) { return String(n || '').trim(); })
+      .filter(function(n) { return n && n !== '-' && n !== '0' && n !== '없음'; })
+  ));
+  var resolvedMap = {};
+  if (unique.length === 0) return resolvedMap;
+
+  // 1) 서버 API(/api/files resolve-sheets)를 통한 R2 버킷 실시간 조회
+  try {
+    var apiRes = null;
+    if (typeof window !== 'undefined' && window.NanoPortal && typeof NanoPortal.api === 'function') {
+      apiRes = await NanoPortal.api('/api/files', {
+        scope: 'media',
+        operation: 'resolve-sheets',
+        fileNames: unique
+      }, 20000);
+    } else if (typeof fetch === 'function') {
+      var resp = await fetch('/api/files', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'media', operation: 'resolve-sheets', fileNames: unique })
+      });
+      if (resp.ok) apiRes = await resp.json();
+    }
+    if (apiRes && apiRes.items) {
+      Object.keys(apiRes.items).forEach(function(k) {
+        if (apiRes.items[k] && apiRes.items[k].exists && apiRes.items[k].publicUrl) {
+          resolvedMap[k] = apiRes.items[k].publicUrl;
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('[resolveAcadNanoSheetFiles] /api/files R2 조회 폴백:', e);
+  }
+
+  // 2) 미확인 항목에 대해 AVAILABLE_SHEETS 및 R2 공개 CDN HEAD 요청 폴백 확인
+  var availSet = new Set(
+    (typeof window !== 'undefined' && Array.isArray(window.AVAILABLE_SHEETS))
+      ? window.AVAILABLE_SHEETS.map(function(s) { return String(s || '').trim(); })
+      : []
+  );
+
+  for (var i = 0; i < unique.length; i++) {
+    var rawName = unique[i];
+    if (resolvedMap[rawName]) continue;
+    var cleanInput = rawName.replace(/^\/+/, '').trim();
+    var baseName = (cleanInput.split('/').pop() || cleanInput).trim();
+    if (!baseName || !/\.[A-Za-z0-9]{2,5}$/.test(baseName)) continue;
+
+    if (availSet.has(baseName)) {
+      resolvedMap[rawName] = 'https://media.nanosbook.co.kr/upload/book/' + encodeURIComponent(baseName);
+      continue;
+    }
+
+    if (typeof fetch === 'function') {
+      var candidateUrls = [
+        'https://media.nanosbook.co.kr/upload/book/' + encodeURIComponent(baseName),
+        'https://media.nanosbook.co.kr/' + encodeURIComponent(baseName),
+        'upload/book/' + encodeURIComponent(baseName)
+      ];
+      for (var c = 0; c < candidateUrls.length; c++) {
+        try {
+          var headResp = await fetch(candidateUrls[c], { method: 'HEAD', cache: 'no-store' });
+          if (headResp && headResp.ok) {
+            resolvedMap[rawName] = candidateUrls[c];
+            break;
+          }
+        } catch (headErr) {}
+      }
+    }
+  }
+
+  return resolvedMap;
+}
+
 // 대량 엑셀 도서 일괄 등록 실행
 async function executeBulkBookUpload() {
   var inputEl = document.getElementById('acadBulkExcelFileInput');
@@ -1637,7 +1775,8 @@ async function executeBulkBookUpload() {
       detail5: -1,
       awards: -1,
       thinkExtract: -1,
-      thinkInsert: -1
+      thinkInsert: -1,
+      nanoSheet: -1
     };
 
     headerRow.forEach(function(h, idx) {
@@ -1652,9 +1791,10 @@ async function executeBulkBookUpload() {
       else if (text.indexOf('어워드') !== -1 || text.indexOf('추천') !== -1) colMap.awards = idx;
       else if (text.indexOf('생각꺼내기') !== -1) colMap.thinkExtract = idx;
       else if (text.indexOf('생각담기') !== -1) colMap.thinkInsert = idx;
+      else if (text.indexOf('나노시트') !== -1 || text.indexOf('워크시트') !== -1 || text.indexOf('nanosheet') !== -1 || text.indexOf('worksheet') !== -1) colMap.nanoSheet = idx;
     });
 
-    // 기본 위치 fallback (C열~L열)
+    // 기본 위치 fallback (C열~M열)
     if (colMap.isbn === -1) colMap.isbn = 2;
     if (colMap.theme === -1) colMap.theme = 3;
     if (colMap.detail1 === -1) colMap.detail1 = 4;
@@ -1665,6 +1805,7 @@ async function executeBulkBookUpload() {
     if (colMap.awards === -1) colMap.awards = 9;
     if (colMap.thinkExtract === -1) colMap.thinkExtract = 10;
     if (colMap.thinkInsert === -1) colMap.thinkInsert = 11;
+    if (colMap.nanoSheet === -1) colMap.nanoSheet = 12;
 
     var parsedRows = [];
     var validationErrors = [];
@@ -1684,9 +1825,11 @@ async function executeBulkBookUpload() {
       var awards = String(row[colMap.awards] ?? '').trim();
       var thinkExtract = String(row[colMap.thinkExtract] ?? '').trim();
       var rawThinkInsert = String(row[colMap.thinkInsert] ?? '').trim();
+      var rawNanoSheet = colMap.nanoSheet >= 0 ? String(row[colMap.nanoSheet] ?? '').trim() : '';
+      if (rawNanoSheet === '-' || rawNanoSheet === '0' || rawNanoSheet === '없음') rawNanoSheet = '';
 
       // 순번, 책제목 무시 및 전체 비어있는 템플릿 빈 행 skip
-      var hasAnyData = rawIsbn || rawTheme || detail1 || detail2 || detail3 || detail4 || detail5 || awards || thinkExtract || rawThinkInsert;
+      var hasAnyData = rawIsbn || rawTheme || detail1 || detail2 || detail3 || detail4 || detail5 || awards || thinkExtract || rawThinkInsert || rawNanoSheet;
       if (!hasAnyData) {
         continue;
       }
@@ -1744,6 +1887,7 @@ async function executeBulkBookUpload() {
         awards: awards,
         thinkExtract: thinkExtract,
         thinkInsert: thinkInsert,
+        nanoSheetFileName: rawNanoSheet,
         rowNum: rowNum
       });
     }
@@ -1763,11 +1907,25 @@ async function executeBulkBookUpload() {
       return;
     }
 
+    // R2 서버에 업로드된 나노시트 파일명(확장자 포함) 일치 여부 일괄 조회
+    var requestedSheetNames = parsedRows
+      .map(function(r) { return r.nanoSheetFileName; })
+      .filter(function(n) { return Boolean(n); });
+    var resolvedSheetMap = {};
+    if (requestedSheetNames.length > 0) {
+      if (progressEl) {
+        progressEl.innerHTML = '<span class="text-primary font-weight-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>R2 서버 나노시트 파일 매칭 확인 중...</span>';
+      }
+      resolvedSheetMap = await resolveAcadNanoSheetFiles(requestedSheetNames);
+    }
+
     var acadName = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ? currentAcademyInfo.name : '우리 학원';
     var acadId = (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.id) ? currentAcademyInfo.id : 'MY_ACAD';
     var reservedCodes = new Set();
     var finalBooks = [];
     var skippedDuplicates = 0;
+    var linkedSheetCount = 0;
+    var unmatchedSheetNames = [];
 
     for (var idx = 0; idx < parsedRows.length; idx++) {
       var item = parsedRows[idx];
@@ -1831,6 +1989,12 @@ async function executeBulkBookUpload() {
         var isNonfiction = (bCat1.indexOf('비문학') !== -1 || bCat1 === 'C');
         var newBookId = generateNextAcadBookCode(bCat1, bCat2, bGrade, reservedCodes);
         var tags = [item.themeTag].concat(item.detailList || []);
+        var matchedSheetUrl = item.nanoSheetFileName ? (resolvedSheetMap[item.nanoSheetFileName] || '') : '';
+        var hasMatchedSheet = Boolean(matchedSheetUrl);
+        if (item.nanoSheetFileName) {
+          if (hasMatchedSheet) linkedSheetCount++;
+          else unmatchedSheetNames.push(item.nanoSheetFileName);
+        }
 
         finalBooks.push({
           id: newBookId,
@@ -1857,6 +2021,11 @@ async function executeBulkBookUpload() {
           description: bSynopsis,
           cover: bCover,
           coverUrl: bCover,
+          sheet: hasMatchedSheet,
+          hasSheet: hasMatchedSheet,
+          worksheetUrl: matchedSheetUrl || undefined,
+          pdfUrl: matchedSheetUrl || undefined,
+          materialName: hasMatchedSheet ? item.nanoSheetFileName : undefined,
           isPublic: 'Y',
           creatorType: 'ACADEMY',
           academyName: acadName,
@@ -1963,7 +2132,11 @@ async function executeBulkBookUpload() {
     }
 
     var dupNote = skippedDuplicates > 0 ? ' (기등록 중복 ' + skippedDuplicates + '권 제외)' : '';
-    showAcademyToast('[' + fileName + '] 총 ' + finalBooks.length + '권의 도서가 ISBN 자동 채우기와 함께 등록되었습니다!' + dupNote);
+    var sheetNote = linkedSheetCount > 0 ? ' / 나노시트 ' + linkedSheetCount + '건 연동' : '';
+    if (unmatchedSheetNames.length > 0) {
+      sheetNote += ' (R2 미일치 나노시트 ' + unmatchedSheetNames.length + '건: ' + unmatchedSheetNames.slice(0, 3).join(', ') + ')';
+    }
+    showAcademyToast('[' + fileName + '] 총 ' + finalBooks.length + '권의 도서가 ISBN 자동 채우기와 함께 등록되었습니다!' + dupNote + sheetNote);
   } catch (err) {
     console.error('대량 도서 업로드 오류:', err);
     alert('파일을 읽고 처리하는 중 오류가 발생했습니다: ' + (err.message || err));
@@ -2003,8 +2176,28 @@ function handleAcadQuizExcelFileSelect(input) {
 
 function handleAcadQuizExcelFileDrop(e) {
   e.preventDefault();
+  e.stopPropagation();
+  var zoneEl = document.getElementById('acadQuizExcelDropZone') || e.currentTarget;
+  if (zoneEl) {
+    zoneEl.style.borderColor = '#f59e0b';
+    zoneEl.style.backgroundColor = '#fffdfa';
+  }
   if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-    selectedBulkQuizFile = e.dataTransfer.files[0];
+    var droppedFile = e.dataTransfer.files[0];
+    var ext = String(droppedFile.name || '').split('.').pop().toLowerCase();
+    if (['xlsx', 'xls', 'csv'].indexOf(ext) === -1) {
+      alert('지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.');
+      return;
+    }
+    selectedBulkQuizFile = droppedFile;
+    var inputEl = document.getElementById('acadQuizExcelFileInput');
+    if (inputEl) {
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(droppedFile);
+        inputEl.files = dt.files;
+      } catch (err) {}
+    }
     var el = document.getElementById('acadQuizExcelFileName');
     if (el) {
       el.innerHTML = '<span class="text-warning font-weight-bold" style="color: #d97706 !important;"><i class="fa-solid fa-file-excel mr-1"></i>' +

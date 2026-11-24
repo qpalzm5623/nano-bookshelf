@@ -2155,6 +2155,12 @@
                     </div>
                   </td>
                 </tr>
+                <tr>
+                  <td class="font-weight-bold text-dark">7. 나노시트 (선택)</td>
+                  <td class="text-left">
+                    <strong>나노시트</strong> (M열): R2 서버에 업로드된 나노시트 파일명(<strong>확장자까지 포함</strong>, 예: <code>9788932902708.pdf</code>)을 입력하면 일치하는 파일이 자동으로 연동됩니다.
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -2164,13 +2170,13 @@
             <span class="font-weight-bold text-dark d-block" style="font-size: 13px;">
               <i class="fa-solid fa-file-excel text-success mr-1.5"></i>새로운 표준 도서 등록 서식 다운로드
             </span>
-            <small class="text-muted">ISBN(필수), 주제분류태그(필수), 세부태그(1~5), 어워드및추천, 생각꺼내기, 생각담기 규격 완비 (.xlsx)</small>
+            <small class="text-muted">ISBN(필수), 주제분류태그(필수), 세부태그(1~5), 어워드및추천, 생각꺼내기, 생각담기, 나노시트 규격 완비 (.xlsx)</small>
           </div>
           <button type="button" class="btn btn-sm btn-outline-success font-weight-bold" onclick="downloadBookExcelTemplate()" style="border-radius: 8px; font-size: 12px; padding: 5px 12px;">
             <i class="fa-solid fa-download mr-1"></i>샘플 다운로드 (.xlsx)
           </button>
         </div>
-        <div class="p-4 rounded text-center mb-3 bg-white" style="border: 2px dashed var(--border-medium); cursor: pointer;" onclick="document.getElementById('masterBookExcelFileInput').click()">
+        <div id="masterBookExcelDropZone" class="p-4 rounded text-center mb-3 bg-white" style="border: 2px dashed var(--border-medium); cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease;" onclick="document.getElementById('masterBookExcelFileInput').click()" ondragover="handleMasterExcelDragOver(event, this, '#16a34a', '#f0fdf4')" ondragenter="handleMasterExcelDragOver(event, this, '#16a34a', '#f0fdf4')" ondragleave="handleMasterExcelDragLeave(event, this, 'var(--border-medium)', '#ffffff')" ondrop="handleMasterBookExcelFileDrop(event)">
           <i class="fa-solid fa-cloud-arrow-up text-success mb-2" style="font-size: 38px;"></i>
           <h6 class="font-weight-bold mb-1" id="masterBookExcelFileName" style="font-size: 13.5px;">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
           <small class="text-muted">지원 형식: .xlsx, .xls, .csv (최대 10MB)</small>
@@ -2300,7 +2306,7 @@
         </div>
 
         <!-- 파일 드래그 & 드롭 영역 -->
-        <div class="p-4 rounded text-center mb-3 bg-white" style="border: 2px dashed #f59e0b; cursor: pointer; background: #fffdfa;" onclick="document.getElementById('masterQuizExcelFileInput').click()">
+        <div id="masterQuizExcelDropZone" class="p-4 rounded text-center mb-3 bg-white" style="border: 2px dashed #f59e0b; cursor: pointer; background: #fffdfa; transition: border-color 0.15s ease, background-color 0.15s ease;" onclick="document.getElementById('masterQuizExcelFileInput').click()" ondragover="handleMasterExcelDragOver(event, this, '#d97706', '#fef3c7')" ondragenter="handleMasterExcelDragOver(event, this, '#d97706', '#fef3c7')" ondragleave="handleMasterExcelDragLeave(event, this, '#f59e0b', '#fffdfa')" ondrop="handleMasterQuizExcelFileDrop(event)">
           <i class="fa-solid fa-cloud-arrow-up text-warning mb-2" style="font-size: 38px;"></i>
           <h6 class="font-weight-bold mb-1" id="masterQuizExcelFileName" style="font-size: 13.5px;">클릭하여 엑셀 파일 선택 또는 드래그 앤 드롭</h6>
           <small class="text-muted">지원 형식: .xlsx, .xls, .csv (최대 10MB)</small>

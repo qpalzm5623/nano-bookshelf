@@ -41,11 +41,12 @@ function wallet(db){return load('lib/kakao-wallet.ts',{'./prisma':{prisma:db},'.
 const member={id:'student',name:'학생',classGroupId:'class'};
 const dispatch=id=>({id,academyId:'academy',recipientName:'보호자',recipientPhone:'01011112222',templateCode:'TT',message:'리포트'});
 
-test('5,500원은 5,500원 충전, 647건 후 5원 잔액 이월',()=>{
+test('카카오톡 알림은 5,500원 및 원하는 임의 금액(예: 3,000원) 모두 입력한 금액 그대로 충전된다',()=>{
   const amount=policy.paymentAmounts(5500,'KAKAO');
   assert.equal(amount.credit,55000);assert.equal(amount.vat,500);
   assert.equal(amount.credit-647*policy.KAKAO_UNIT,5);
-  assert.throws(()=>policy.paymentAmounts(5501,'KAKAO'));
+  const custom=policy.paymentAmounts(3000,'KAKAO');
+  assert.equal(custom.credit,30000);assert.equal(custom.supply,2727);assert.equal(custom.vat,273);
 });
 test('동일 발송 동시 요청은 한 번만 차감',async()=>{
   const db=database(),w=wallet(db);
@@ -77,17 +78,22 @@ function billing(db,role='MASTER'){
 }
 async function request(handler,body,method='POST'){const res={code:200,setHeader(){},status(n){this.code=n;return this;},json(value){this.body=value;return this;}};await handler({method,body,query:{}},res);return res;}
 const pay={operation:'save',requestId:'12345678-1234-1234-1234-123456789012',academyId:'A',productCode:'KAKAO',amount:5500,method:'TRANSFER',status:'PAID'};
-test('동일 수동 결제 요청은 한 번 적립하고 중복 확인에도 적립하지 않는다',async()=>{
+test('동일 수동 결제 요청은 한 번 적립하고 중복 확인에도 적립하지 않는다 (임의 금액 3,000원 충전 포함)',async()=>{
   const db=database(0),run=billing(db);
   const first=await request(run,pay);assert.equal(first.code,200);
-  await request(run,pay);assert.equal(db.data.balance,50000);
-  await request(run,{...pay,id:first.body.id,revision:1});assert.equal(db.data.balance,50000);
+  await request(run,pay);assert.equal(db.data.balance,55000);
+  await request(run,{...pay,id:first.body.id,revision:1});assert.equal(db.data.balance,55000);
+
+  // 3,000원 등 원하는 임의 금액 수동 결제 시 해당 금액(3,000원 = 30,000 credit)이 가맹점에 정확히 충전된다
+  const customPay=await request(run,{...pay,requestId:'99999999-1234-1234-1234-123456789012',amount:3000});
+  assert.equal(customPay.code,200);
+  assert.equal(db.data.balance,85000);
 });
 test('사용한 충전액으로 결제 취소 시 음수 잔액 없이 전체 롤백',async()=>{
   const db=database(0),run=billing(db),w=wallet(db);
   const first=await request(run,pay);await w.reserveDispatch(dispatch('one'),member,{});
   const result=await request(run,{...pay,id:first.body.id,revision:1,operation:'delete'});
-  assert.equal(result.code,409);assert.equal(db.data.balance,49915);assert.equal(db.data.payments[first.body.id].status,'PAID');
+  assert.equal(result.code,409);assert.equal(db.data.balance,54915);assert.equal(db.data.payments[first.body.id].status,'PAID');
 });
 test('학원 구매 신청은 대기 상태로만 저장하고 입금 확인 전 적립하지 않는다',async()=>{
   const db=database(0),run=billing(db,'DIRECTOR');
@@ -121,7 +127,24 @@ test('기존 결제 수정·삭제는 본사만 가능하고 본사는 대기 �
     assert.equal(denied.code,403);assert.deepEqual(structuredClone(db.data),before);
   }
   const approved=await request(masterRun,{...pay,id:topup.body.id,revision:1});
-  assert.equal(approved.code,200);assert.equal(approved.body.status,'PAID');assert.equal(db.data.balance,50000);
+  assert.equal(approved.code,200);assert.equal(approved.body.status,'PAID');assert.equal(db.data.balance,55000);
+});
+
+test('체크된 결제 대기 내역들을 일괄 결제 등록(bulk_save)으로 한번에 수동 결제 완료 처리한다',async()=>{
+  const db=database(0),masterRun=billing(db);
+  const bulkRes=await request(masterRun,{
+    operation:'bulk_save',
+    requestId:'bulk-req-12345678-1234-1234-123456789012',
+    method:'TRANSFER',
+    paidAt:'2026-11-24T09:00:00+09:00',
+    items:[
+      { id:'AUTO-PENDING-2026-11-A1', requestId:'item1-12345678-1234-1234-123456789012', academyId:'A1', productCode:'PREMIUM', amount:198000, startDate:'2026-11-01', endDate:'2026-11-30' },
+      { id:'AUTO-PENDING-2026-11-A2', requestId:'item2-12345678-1234-1234-123456789012', academyId:'A2', productCode:'BASIC', amount:88000, startDate:'2026-11-01', endDate:'2026-11-30' }
+    ]
+  });
+  assert.equal(bulkRes.code,200);
+  assert.equal(bulkRes.body.count,2);
+  assert.equal(Object.values(db.data.payments).filter(p=>p.status==='PAID').length,2);
 });
 
 test('삭제는 결제 ID가 필수이고 존재하지 않는 결제는 새로 생성하지 않는다',async()=>{
