@@ -581,6 +581,7 @@ async function handleSaveBanner(e) {
           imageUrl: target.imageUrl,
           order: target.order,
           active: target.active,
+          isActive: target.isActive,
           bookIds: Array.isArray(target.bookIds) ? [...target.bookIds] : [],
           linkUrl: target.linkUrl,
           link: target.link,
@@ -592,6 +593,7 @@ async function handleSaveBanner(e) {
       target.imageUrl = imageUrl;
       target.order = order;
       target.active = active;
+      target.isActive = active === "Y";
       target.bookIds = [...normalizedBookIds];
       target.linkUrl = encodedLinkUrl;
       target.link = encodedLinkUrl;
@@ -608,6 +610,7 @@ async function handleSaveBanner(e) {
       imageUrl: imageUrl,
       order: order,
       active: active,
+      isActive: active === "Y",
       clicks: 0,
       createdAt: todayStr,
       updatedAt: nowTime,
@@ -652,19 +655,30 @@ async function handleSaveBanner(e) {
 async function toggleBannerActive(id) {
   const b = bannerList.find(item => String(item.id) === String(id));
   if (!b) return;
-  b.active = b.active === "Y" ? "N" : "Y";
+  const prevActive = b.active;
+  const prevIsActive = b.isActive;
+  const prevUpdatedAt = b.updatedAt;
+  const nextActive = b.active === "Y" ? "N" : "Y";
+  b.active = nextActive;
+  b.isActive = nextActive === "Y";
   b.updatedAt = Date.now();
   b.bookIds = getEffectiveBannerBookIds(b);
   if (window.NanoPortal && NanoPortal.remote) {
+    const origImg = b.imageUrl || "";
     try {
-      const origImg = b.imageUrl || "";
       if (origImg && !/^(https?:\/\/|\/|\.\/|data:image\/|#)/i.test(origImg)) {
         b.imageUrl = "./" + origImg.replace(/^\/+/, "");
       }
       await NanoPortal.saveBanner(b);
       b.imageUrl = origImg;
     } catch (error) {
-      console.warn("[배너 상태 변경 경고]:", error);
+      b.active = prevActive;
+      b.isActive = prevIsActive;
+      b.updatedAt = prevUpdatedAt;
+      b.imageUrl = origImg;
+      renderBannerList();
+      showMasterToast('배너 노출 상태를 저장하지 못했습니다: ' + (error?.message || '다시 시도해 주세요.'), 'danger');
+      return;
     }
   }
   saveOperationsToStorage();

@@ -354,11 +354,22 @@
     var encodedLink = /^https?:\/\//i.test(rawLink)
       ? rawLink
       : ('#books=' + encodeURIComponent(bookIds.join(',')) + (item.sub ? '&sub=' + encodeURIComponent(item.sub) : ''));
+    // 배너 목록 편집/숨김 토글 시 기존 isActive=true 잔존값 때문에 active='N'이 덮어써지지 않도록 active 값을 우선 반영
+    var nextIsActive = item.active !== undefined
+      ? (String(item.active).toUpperCase() === 'Y' || item.active === true)
+      : (item.isActive === true);
     var result = await manage('banners', 'save', { id: typeof item.id === 'string' && !/^\d+$/.test(item.id) ? item.id : undefined, title: item.title,
-      imageUrl: imgCandidate, linkUrl: encodedLink, isActive: item.active === 'Y' || item.isActive === true, orderNo: Number(item.order || item.orderNo) || 0,
+      imageUrl: imgCandidate, linkUrl: encodedLink, isActive: nextIsActive, orderNo: Number(item.order || item.orderNo) || 0,
       sub: item.sub || '', bookIds: bookIds, clicks: Number(item.clicks) || 0, createdAt: item.createdAt || '' });
     if (result.item) {
       item.id = result.item.id;
+      if (typeof result.item.isActive === 'boolean') {
+        item.isActive = result.item.isActive;
+        item.active = result.item.isActive ? 'Y' : 'N';
+      } else {
+        item.isActive = nextIsActive;
+        item.active = nextIsActive ? 'Y' : 'N';
+      }
       var returnedIds = Array.isArray(result.item.bookIds)
         ? result.item.bookIds.map(function(id) { return String(id).trim(); }).filter(Boolean)
         : null;

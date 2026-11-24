@@ -2309,3 +2309,58 @@ test('공개 포털 HTML·JS·API 소스에 데모 계정/비밀번호, 비인�
   const manageTs = fs.readFileSync(path.join(rootDir, 'api', 'manage.ts'), 'utf8');
   assert.equal(manageTs.includes('nano123!'), false, 'api/manage.ts에 하드코딩된 기본 비밀번호가 남아 있으면 안 됩니다');
 });
+
+test('마스터 배너 숨김 전환 시 기존 isActive=true 잔존값에 의해 덮어써지지 않고 서버에 isActive=false로 저장된다', async () => {
+  const rootDir = path.join(__dirname, '..');
+  const pubDir = path.join(rootDir, 'public_html');
+  const portalClientSrc = fs.readFileSync(path.join(pubDir, 'js/portal-client.js'), 'utf8');
+  const masterOpsSrc = fs.readFileSync(path.join(pubDir, 'js/master/master-operations.js'), 'utf8');
+  const toggleMatch = masterOpsSrc.match(/async function toggleBannerActive\(id\) \{[\s\S]*?\n\}/);
+  assert.ok(toggleMatch, 'toggleBannerActive 함수가 있어야 합니다');
+
+  let sentBodies = [];
+  let shouldFail = false;
+  const ctx = vm.createContext({
+    NANO_SERVER_DATA: true,
+    location: { protocol: 'https:', hostname: 'www.nanosbook.co.kr', pathname: '/master_preview.html', replace() {} },
+    sessionStorage: { getItem: () => JSON.stringify({ role: 'master', academyId: 'HQ' }), setItem() {}, removeItem() {} },
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    document: { readyState: 'loading', documentElement: { style: {} }, getElementById: () => null, addEventListener() {} },
+    addEventListener() {},
+    URLSearchParams,
+    AbortSignal,
+    AbortController,
+    Date,
+    console,
+    fetch: async (url, opts) => {
+      const parsed = JSON.parse(opts.body);
+      sentBodies.push(parsed);
+      if (shouldFail) {
+        return { ok: false, status: 500, json: async () => ({ error: '저장 오류' }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ item: { id: 'bn-1', isActive: parsed.data.isActive, bookIds: ['KA1001'], updatedAt: 123456 } })
+      };
+    },
+    bannerList: [{ id: 'bn-1', title: '테스트 배너', imageUrl: 'upload/banner/test.jpg', active: 'Y', isActive: true, bookIds: ['KA1001'], order: 1 }],
+    getEffectiveBannerBookIds: (b) => b.bookIds || [],
+    saveOperationsToStorage() {},
+    renderBannerList() {},
+    showMasterToast() {},
+  });
+  ctx.window = ctx;
+  vm.runInContext(portalClientSrc + '\n' + toggleMatch[0], ctx);
+
+  await ctx.toggleBannerActive('bn-1');
+  assert.equal(sentBodies.length, 1);
+  assert.equal(sentBodies[0].data.isActive, false, '숨김 전환 시 서버에 isActive: false가 전송되어야 합니다');
+  assert.equal(ctx.bannerList[0].active, 'N');
+  assert.equal(ctx.bannerList[0].isActive, false);
+
+  shouldFail = true;
+  await ctx.toggleBannerActive('bn-1');
+  assert.equal(ctx.bannerList[0].active, 'N', '서버 저장 실패 시 이전 숨김 상태로 원복되어야 합니다');
+  assert.equal(ctx.bannerList[0].isActive, false);
+});
