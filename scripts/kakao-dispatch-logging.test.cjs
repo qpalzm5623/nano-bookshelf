@@ -165,6 +165,7 @@ test('services.ts 발송·중복차단·통계조회는 시크릿 없이 구조�
     ALIGO_SENDER_KEY: 'secret-sender-key',
     ALIGO_SENDER: '01000001111',
     ALIGO_TEMPLATE_CODE: 'UN_5524',
+    PORTAL_AUTH_SECRET: 'test-only-secret-with-more-than-32-characters',
   };
   let record = null;
   let capturedCutoff = null;

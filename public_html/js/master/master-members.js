@@ -1133,7 +1133,7 @@ function onMasterMemberAcademyChange(val) {
   // 2. 소속 학원(또는 본사)이 정상 선택된 경우: 공통 필드 잠금 해제
   if (nameEl) { nameEl.disabled = false; nameEl.placeholder = "예: 김민준 (한글, 영문만 가능)"; }
   if (usernameEl) { usernameEl.disabled = false; usernameEl.placeholder = "예: minjun_k"; }
-  if (pwEl) { pwEl.disabled = false; if (!pwEl.value) pwEl.value = "nano1234!"; }
+  if (pwEl) { pwEl.disabled = false; pwEl.value = ""; pwEl.placeholder = "초기 비밀번호 (6자 이상)"; }
   if (phoneEl) { phoneEl.disabled = false; phoneEl.placeholder = "예: 010-1234-5678"; }
   if (statusEl) { statusEl.disabled = false; }
   if (submitBtn) { submitBtn.disabled = false; }

@@ -1034,52 +1034,101 @@
       border: 2px solid #fff;
     }
 
-    /* 랭킹 탭 & 필터 */
+    /* 랭킹 탭 & 필터 (세련된 세그먼트 필 컨트롤) */
     .rank-tab-group {
       display: flex;
-      background: #f1f5f9;
-      border-radius: 14px;
-      padding: 4px;
-      margin-bottom: 12px;
-      gap: 4px;
+      align-items: stretch;
+      background: #eef2f6;
+      border: 1px solid #dde4ed;
+      border-radius: 16px;
+      padding: 5px;
+      margin-bottom: 16px;
+      gap: 5px;
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
     }
     .rank-tab-btn {
       flex: 1;
-      border: none;
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid transparent;
       background: transparent;
-      padding: 9px 4px;
-      border-radius: 11px;
-      font-size: 12.5px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 700;
       color: #64748b;
       cursor: pointer;
-      transition: all 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .rank-tab-btn i {
+      font-size: 12.5px;
+      opacity: 0.78;
+      flex-shrink: 0;
+      transition: color 0.2s, opacity 0.2s;
+    }
+    .rank-tab-btn .rank-tab-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .rank-tab-btn:hover:not(.active) {
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.58);
     }
     .rank-tab-btn.active {
-      background: #fff;
-      color: #0f172a;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      background: linear-gradient(180deg, #ffffff 0%, #f0fdfa 100%);
+      color: #0f766e;
+      font-weight: 800;
+      border-color: #99f6e4;
+      box-shadow: 0 3px 10px rgba(13, 148, 136, 0.14), 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .rank-tab-btn.active i {
+      color: #0d9488;
+      opacity: 1;
+    }
+    .rank-section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 0 4px;
+      gap: 8px;
+    }
+    .rank-period-group {
+      display: inline-flex;
+      gap: 4px;
+      background: #eef2f6;
+      border: 1px solid #e2e8f0;
+      padding: 3px;
+      border-radius: 10px;
+      flex-shrink: 0;
     }
 
-    /* 내 순위 하이라이트 배너 */
+    /* 내 순위 하이라이트 배너 (전체 순위 목록 내 본인 위치 강조 카드) */
     .my-rank-banner {
-      background: linear-gradient(135deg, #00a896, #028090);
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 55%, #115e59 100%);
       border-radius: 18px;
-      padding: 16px 18px;
-      color: #fff;
-      margin-bottom: 16px;
-      box-shadow: 0 8px 24px rgba(0, 168, 150, 0.25);
+      padding: 15px 17px;
+      color: #ffffff;
+      margin-bottom: 12px;
+      box-shadow: 0 10px 24px rgba(13, 148, 136, 0.24);
       position: relative;
       overflow: hidden;
     }
     .my-rank-banner::after {
       content: '';
       position: absolute;
-      top: -30px;
-      right: -30px;
-      width: 120px;
-      height: 120px;
-      background: rgba(255,255,255,0.1);
+      top: -32px;
+      right: -28px;
+      width: 124px;
+      height: 124px;
+      background: radial-gradient(circle, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 70%);
       border-radius: 50%;
       pointer-events: none;
     }
@@ -1231,7 +1280,7 @@
       box-shadow: 0 4px 14px rgba(0, 168, 150, 0.12);
     }
     .rank-card-num-box {
-      width: 32px;
+      width: 34px;
       text-align: center;
       flex-shrink: 0;
     }
@@ -1249,7 +1298,39 @@
     .rank-card-change.up { color: #ef4444; }
     .rank-card-change.down { color: #3b82f6; }
     .rank-card-change.same { color: #94a3b8; }
-
+    /* 전체 순위 목록 내 본인 위치에 표시되는 강조 배너형 카드 */
+    .rank-card.me.my-rank-banner {
+      border: none;
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 58%, #115e59 100%);
+      color: #ffffff;
+      padding: 15px 18px;
+      border-radius: 18px;
+      margin-top: 4px;
+      margin-bottom: 11px;
+      box-shadow: 0 10px 24px rgba(13, 148, 136, 0.24);
+    }
+    .rank-card.me.my-rank-banner:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(13, 148, 136, 0.30);
+    }
+    .rank-card.me.my-rank-banner .rank-card-num {
+      color: #ffffff;
+      font-size: 19px;
+    }
+    .rank-card.me.my-rank-banner .rank-card-num-box.is-outside-num .rank-card-num {
+      font-size: 12px;
+      line-height: 1.2;
+      color: #ccfbf1;
+    }
+    .rank-card.me.my-rank-banner .rank-card-change.same {
+      color: rgba(255, 255, 255, 0.72);
+    }
+    .rank-card.me.my-rank-banner .rank-card-change.up {
+      color: #fde047;
+    }
+    .rank-card.me.my-rank-banner .rank-card-change.down {
+      color: #bae6fd;
+    }
     .rank-card-avatar {
       flex-shrink: 0;
       width: 44px;
@@ -1261,6 +1342,24 @@
       justify-content: center;
       background: #f8fafc;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .rank-card-avatar svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    /* 원형 아바타 내부 SVG의 둥근 사각 배경(rect)이 원 테두리에서 잘려 보이는 현상 방지 */
+    .rank-card-avatar svg rect,
+    .rank-hero-avatar svg rect {
+      display: none;
+    }
+    .rank-card.me.my-rank-banner .rank-card-avatar {
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle at 50% 38%, #ffffff 0%, #ecfdf5 100%);
+      border: 2.5px solid rgba(255, 255, 255, 0.92);
+      padding: 2px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
     }
     .rank-card-info {
       flex: 1;
@@ -1275,6 +1374,9 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .rank-card.me.my-rank-banner .rank-card-academy {
+      color: #ccfbf1;
+    }
     .rank-card-title {
       font-size: 13.5px;
       font-weight: 800;
@@ -1284,10 +1386,17 @@
       flex-wrap: wrap;
       gap: 5px;
     }
+    .rank-card.me.my-rank-banner .rank-card-title {
+      color: #ffffff;
+      font-size: 14.5px;
+    }
     .rank-card-id {
       font-size: 12px;
       font-weight: 600;
       color: #64748b;
+    }
+    .rank-card.me.my-rank-banner .rank-card-id {
+      color: rgba(255, 255, 255, 0.85);
     }
     .rank-card-me {
       font-size: 10.5px;
@@ -1297,6 +1406,11 @@
       padding: 1px 6px;
       border-radius: 6px;
     }
+    .rank-card.me.my-rank-banner .rank-card-me {
+      background: #fde047;
+      color: #0f172a;
+      font-weight: 900;
+    }
     .rank-card-class {
       font-size: 11px;
       font-weight: 700;
@@ -1304,6 +1418,30 @@
       border-radius: 6px;
       background: #f1f5f9;
       color: #475569;
+    }
+    .rank-card.me.my-rank-banner .rank-card-class {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+    .rank-card-hero-meta {
+      margin-top: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .rank-hero-pct {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 1px 7px;
+      border-radius: 999px;
     }
     .rank-card-pt {
       font-size: 15px;
@@ -1316,16 +1454,44 @@
       align-items: baseline;
       gap: 4px;
     }
+    .rank-card.me.my-rank-banner .rank-card-pt {
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+      color: #fde047;
+      font-size: 19px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    }
     .rank-card-pt-unit {
       font-size: 11px;
       font-weight: 700;
       color: #64748b;
       margin-left: 2px;
     }
+    .rank-card.me.my-rank-banner .rank-card-pt-unit {
+      color: #fef08a;
+      font-size: 12.5px;
+    }
     .rank-card-books {
       font-size: 11px;
       font-weight: 600;
       color: #64748b;
+    }
+    .rank-card.me.my-rank-banner .rank-card-books {
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 11px;
+    }
+    .rank-hero-stats-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: none;
     }
 
     /* 캐릭터 선택 모달 */

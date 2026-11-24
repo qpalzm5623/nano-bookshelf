@@ -2,6 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <script>
+    // 운영 환경에서 세션 검증 전 초기 DOM 노출을 차단합니다.
+    if (location.protocol !== 'file:' && !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+      document.documentElement.style.visibility = 'hidden';
+    }
+  </script>
   <!-- 브라우저 캐시 방지: 항상 최신 JS/CSS를 로드하도록 강제 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -1009,11 +1015,11 @@
           <div class="stat-card text-center" style="border: 2px solid #e6b980; background: linear-gradient(180deg, #fffcf7 0%, #ffffff 100%);">
             <div style="font-size: 28px; margin-bottom: 4px;">🥇</div>
             <span class="badge-soft badge-soft-warn mb-2 font-weight-bold" id="top1Badge">전국 1위 (명예의 전당)</span>
-            <h5 class="font-weight-bold mt-2 mb-1" id="top1Name">이문성 학생</h5>
-            <small class="text-muted d-block mb-3" id="top1Academy">글봄독서논술학원 (초등 3학년)</small>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top1Name">-</h5>
+            <small class="text-muted d-block mb-3" id="top1Academy">집계 중...</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
-              <span style="font-size: 20px; font-weight: 900; color: #7d5a2b;" id="top1Points">36,064 P</span>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top1Stats">완독 451권 · 퀴즈 정답률 92%</div>
+              <span style="font-size: 20px; font-weight: 900; color: #7d5a2b;" id="top1Points">0 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top1Stats">완독 0권 · 퀴즈 정답률 0%</div>
             </div>
           </div>
         </div>
@@ -1021,11 +1027,11 @@
           <div class="stat-card text-center" style="border: 1px solid #d5dbdb; background: #ffffff;">
             <div style="font-size: 28px; margin-bottom: 4px;">🥈</div>
             <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold" id="top2Badge">전국 2위</span>
-            <h5 class="font-weight-bold mt-2 mb-1" id="top2Name">안여진 학생</h5>
-            <small class="text-muted d-block mb-3" id="top2Academy">힘찬학당 (초등 6학년)</small>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top2Name">-</h5>
+            <small class="text-muted d-block mb-3" id="top2Academy">집계 중...</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
-              <span style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="top2Points">21,440 P</span>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top2Stats">완독 268권 · 퀴즈 정답률 92%</div>
+              <span style="font-size: 20px; font-weight: 900; color: var(--text-main);" id="top2Points">0 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top2Stats">완독 0권 · 퀴즈 정답률 0%</div>
             </div>
           </div>
         </div>
@@ -1033,11 +1039,11 @@
           <div class="stat-card text-center" style="border: 1px solid #e0c8b0; background: #ffffff;">
             <div style="font-size: 28px; margin-bottom: 4px;">🥉</div>
             <span class="badge-soft badge-soft-neutral mb-2 font-weight-bold" id="top3Badge">전국 3위</span>
-            <h5 class="font-weight-bold mt-2 mb-1" id="top3Name">권순찬 학생</h5>
-            <small class="text-muted d-block mb-3" id="top3Academy">딱풀리는수학 과천율목초점 (초등 3학년)</small>
+            <h5 class="font-weight-bold mt-2 mb-1" id="top3Name">-</h5>
+            <small class="text-muted d-block mb-3" id="top3Academy">집계 중...</small>
             <div class="p-2 rounded" style="background: #fbf9f5; border: 1px dashed #e8e2d5;">
-              <span style="font-size: 20px; font-weight: 900; color: #8c6d48;" id="top3Points">13,056 P</span>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top3Stats">완독 163권 · 퀴즈 정답률 92%</div>
+              <span style="font-size: 20px; font-weight: 900; color: #8c6d48;" id="top3Points">0 P</span>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;" id="top3Stats">완독 0권 · 퀴즈 정답률 0%</div>
             </div>
           </div>
         </div>
@@ -1092,11 +1098,6 @@
           <div id="rankAcademyFilterWrap" style="min-width: 180px;">
             <select id="rankAcademyFilter" class="select-beige w-100" style="border-radius: 8px; border: 1px solid var(--border-medium); font-size: 12.5px; height: 36px;">
               <option value="ALL">전체 가맹 학원</option>
-              <option value="나노 독서아카데미 목동본원">🏫 나노 목동본원</option>
-              <option value="대치 에듀 독서논술센터">🏫 대치 에듀센터</option>
-              <option value="송도 센트럴 리딩랩">🏫 송도 센트럴랩</option>
-              <option value="판교 알파 독서학원">🏫 판교 알파학원</option>
-              <option value="분당 서현 리딩클럽">🏫 분당 서현클럽</option>
             </select>
           </div>
           <div class="search-input-wrap flex-grow-1" style="min-width: 240px; margin-bottom: 0; position: relative;">

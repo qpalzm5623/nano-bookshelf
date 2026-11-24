@@ -338,74 +338,6 @@
       transform: translateY(0);
     }
 
-    /* 빠른 테스트 계정 칩 바 */
-    .quick-test-box {
-      margin-top: 28px;
-      padding-top: 22px;
-      border-top: 1px dashed var(--border-color);
-      text-align: center;
-    }
-    .quick-test-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-subtle);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-    .quick-test-chips {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .chip-btn {
-      background: #f8f6f0;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 9px 14px;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      text-decoration: none;
-    }
-    .chip-btn:hover {
-      background: #efebe2;
-      border-color: #d1c6b5;
-      transform: translateY(-1px);
-    }
-    .chip-badge {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 6px;
-    }
-    .chip-master {
-      background: #fbf6ec;
-      border-color: #f0deb8;
-    }
-    .chip-master:hover {
-      background: #f4ecda;
-    }
-    .chip-master .chip-badge {
-      background: #3d342d;
-      color: #f7f4ee;
-    }
-    .chip-admin .chip-badge {
-      background: #dbeafe;
-      color: #1e40af;
-    }
-    .chip-student .chip-badge {
-      background: #dcfce7;
-      color: #166534;
-    }
-
     /* 로그인 카드 내 약관·개인정보처리방침 링크 (로그인 버튼 바로 아래) */
     .login-legal-links {
       display: flex;
@@ -796,54 +728,6 @@
         </div>
       </form>
 
-      <!-- 퀵 데모 테스트 계정 선택 바 -->
-      <div class="quick-test-box">
-        <div class="quick-test-title">
-          <i class="fa-solid fa-bolt-lightning text-warning"></i> 원클릭 빠른 로그인 테스트
-        </div>
-        <div class="quick-test-chips">
-          <!-- 1. 본사 마스터 계정 (권장) -->
-          <div class="chip-btn chip-master" onclick="quickFillAndLogin('master00', 'master00')" title="본사 마스터 관리자로 즉시 로그인">
-            <div style="text-align: left;">
-              <span class="chip-badge mr-1">본사 마스터</span>
-              <strong style="margin-left: 4px;">master00</strong>
-              <small style="color: var(--text-muted); margin-left: 6px;">(HQ 총괄 관리자)</small>
-            </div>
-            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
-          </div>
-
-          <!-- 2. 가맹 학원 관리자 계정 -->
-          <div class="chip-btn chip-admin" onclick="quickFillAndLogin('admin01', 'admin01')" title="학원 원장 포털로 즉시 로그인">
-            <div style="text-align: left;">
-              <span class="chip-badge mr-1">가맹 학원</span>
-              <strong style="margin-left: 4px;">admin01</strong>
-              <small style="color: var(--text-muted); margin-left: 6px;">(원장 대시보드)</small>
-            </div>
-            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
-          </div>
-
-          <!-- 2-1. 지도교사 계정 (신규 추가) -->
-          <div class="chip-btn chip-admin" onclick="quickFillAndLogin('teacher_park', '1234')" title="지도교사 계정으로 즉시 로그인">
-            <div style="text-align: left; display: inline-flex; align-items: center;">
-              <span class="chip-badge mr-1" style="background:#2d6a4f; color:#ffffff;">지도 교사</span>
-              <strong style="margin-left: 4px;">teacher_park</strong>
-              <small style="color: var(--text-muted); margin-left: 6px;">(박선혜 교사)</small>
-            </div>
-            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
-          </div>
-
-          <!-- 3. 학생 모바일 포털 계정 -->
-          <div class="chip-btn chip-student" onclick="quickFillAndLogin('student01', 'student01')" title="학생 모바일 포털로 즉시 로그인">
-            <div style="text-align: left;">
-              <span class="chip-badge mr-1">원생 포털</span>
-              <strong style="margin-left: 4px;">student01</strong>
-              <small style="color: var(--text-muted); margin-left: 6px;">(모바일 북퀴즈)</small>
-            </div>
-            <i class="fa-solid fa-arrow-right text-muted" style="font-size: 11px;"></i>
-          </div>
-        </div>
-      </div>
-
     </div>
   </main>
 
@@ -1020,42 +904,8 @@
   <script src="migrated_real_data.js?v=20261007_real_v9"></script>
 
   <script>
-    // 1. 등록된 시스템 계정 정보 매핑
-    const ACCOUNTS = {
-      'master00': {
-        pw: 'master00',
-        role: 'master',
-        name: '본사 마스터 운영자 (HQ)',
-        redirectUrl: 'master_preview.html'
-      },
-      'admin01': {
-        pw: 'admin01',
-        role: 'admin',
-        name: '김은영 원장님 (체험 학원)',
-        academyId: 'DEMO-ACADEMY',
-        academyName: '체험 학원',
-        redirectUrl: 'admin_preview.html'
-      },
-      'admin': {
-        pw: 'admin123',
-        role: 'admin',
-        name: '김은영 원장님 (체험 학원)',
-        academyId: 'DEMO-ACADEMY',
-        academyName: '체험 학원',
-        redirectUrl: 'admin_preview.html'
-      },
-      'student01': {
-        pw: 'student01',
-        role: 'student',
-        name: '김나노 학생 (초등 4학년)',
-        studentName: '김나노',
-        studentId: 'student01',
-        academyId: 'DEMO-ACADEMY',
-        academyName: '체험 학원',
-        classGroup: '체험반',
-        redirectUrl: 'student_preview.html'
-      }
-    };
+    // 하드코딩된 체험/기본 계정을 소스에서 완전 제거하고 서버 인증만 신뢰합니다.
+    const ACCOUNTS = {};
 
     // 로드 시 초기화 (아이디 저장 상태 정확히 동기화 및 비밀번호 하드코딩 완전 제거)
     window.addEventListener('DOMContentLoaded', () => {
@@ -1189,11 +1039,9 @@
               const generatedId = ('admin_' + acadId.replace(/[^a-z0-9]/g, '_')).toLowerCase();
               return lowerInput === adminId || lowerInput === loginId || lowerInput === acadId || lowerInput === generatedId;
             });
-            if (foundAcad) {
-              const defaultPw = foundAcad.adminPw || 'nano123!';
+            if (foundAcad && foundAcad.adminPw) {
               user = {
-                pw: defaultPw,
-                altPw: defaultPw === 'nano123!' ? 'nano1234!' : 'nano123!',
+                pw: foundAcad.adminPw,
                 role: 'admin',
                 name: `${foundAcad.director || foundAcad.name + ' 원장님'}`,
                 academyId: foundAcad.id,
@@ -1215,12 +1063,11 @@
             const mList = JSON.parse(storedMembers);
             if (Array.isArray(mList)) {
               const foundMem = mList.find(m => m.username && m.username.toLowerCase() === inputId.toLowerCase());
-              if (foundMem) {
+              if (foundMem && foundMem.password && !/^[•·*]+$/.test(foundMem.password)) {
                 const isTeacher = foundMem.role === 'TEACHER';
                 const isDirector = foundMem.role === 'DIRECTOR';
                 user = {
-                  pw: foundMem.password || 'nano123!',
-                  altPw: 'nano1234!',
+                  pw: foundMem.password,
                   role: isTeacher ? 'teacher' : isDirector ? 'admin' : 'student',
                   name: `${foundMem.name} (${foundMem.academyName || '원생'})`,
                   studentName: foundMem.name,
@@ -1247,33 +1094,17 @@
             const teachers = JSON.parse(localStorage.getItem(key));
             if (!Array.isArray(teachers)) continue;
             const found = teachers.find(t => String(t.username || t.id).toLowerCase() === inputId.toLowerCase());
-            if (!found || !found.password || found.password === '••••') continue;
+            if (!found || !found.password || /^[•·*]+$/.test(found.password)) continue;
             const academyId = key.slice('NANO_ACADEMY_TEACHERS_'.length);
             const academy = (window.MIGRATED_FRANCHISES || []).find(a => a.id === academyId);
             user = { pw: found.password, role: 'teacher', name: found.name,
-              academyId, academyName: academy ? academy.name : '체험 학원', redirectUrl: 'admin_preview.html' };
+              academyId, academyName: academy ? academy.name : '', redirectUrl: 'admin_preview.html' };
             break;
           }
         } catch(e) { console.warn('교사 계정 조회 실패'); }
       }
 
-      // 기본 더미 교사 계정 fallback
-      if (!user && (inputId === 'teacher_park' || inputId === 'teacher_choi' || inputId === 'teacher_lee')) {
-        const fallbackNames = {
-          'teacher_park': '박선혜 지도교사 (나노 독서아카데미 본원)',
-          'teacher_choi': '최승현 지도교사 (나노 독서아카데미 본원)',
-          'teacher_lee': '이지연 지도교사 (나노 독서아카데미 본원)'
-        };
-        user = {
-          pw: '1234',
-          role: 'teacher',
-          name: fallbackNames[inputId] || '지도교사',
-          academyId: 'DEMO-ACADEMY', academyName: '체험 학원',
-          redirectUrl: 'admin_preview.html'
-        };
-      }
-
-      const isPwMatch = user && (user.pw === inputPw || user.altPw === inputPw || (user.role === 'admin' && (inputPw === 'nano123!' || inputPw === 'nano1234!')));
+      const isPwMatch = Boolean(user && user.pw && user.pw === inputPw);
       if (user && isPwMatch) {
         // 성공 처리
         errorAlert.style.display = 'none';
@@ -1317,21 +1148,14 @@
         }, 500);
 
       } else {
-        // 실패 처리
-        showError('아이디 또는 비밀번호가 올바르지 않습니다.<br><span style="font-size:11.5px; opacity:0.85;">(본사 기본 계정: master00 / master00)</span>');
+        // 실패 처리 (계정/비밀번호 힌트 노출 차단)
+        showError('아이디 또는 비밀번호가 올바르지 않습니다.');
         loginCard.classList.remove('shake');
         void loginCard.offsetWidth; // 트리거 리플로우
         loginCard.classList.add('shake');
         pwInput.focus();
         pwInput.select();
       }
-    }
-
-    // 원클릭 빠른 입력 후 즉시 로그인
-    function quickFillAndLogin(id, pw) {
-      document.getElementById('userId').value = id;
-      document.getElementById('userPw').value = pw;
-      handleLoginSubmit();
     }
 
     // 에러 표시

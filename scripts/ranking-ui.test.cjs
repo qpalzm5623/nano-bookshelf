@@ -292,18 +292,20 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 범위별 이름·아이�
   });
   vm.runInContext(escapeMatch[0] + '\n' + scriptMatch[0], ctx);
 
-  // 1) 학원 전체 랭킹: 이름은 전체 표기, 아이디는 앞 두 글자 + 나머지 * 처리, 0P 학생 제외
+  // 1) 학원 전체 랭킹: 이름은 전체 표기, 아이디는 앞 두 글자 + 나머지 * 처리, 0P 학생 제외, 본인 행은 목록 내 강조 배너(my-rank-banner)로 표시
   ctx.renderRank();
   const academyHtml = elements.rankList.innerHTML;
   assert.equal(academyHtml.includes('독서왕'), false, '랭킹 목록 카드에 독서왕 딱지가 남아있으면 안 됩니다');
   assert.equal(academyHtml.includes('rank-card-academy'), false, '학원 전체 랭킹에서는 이름 위에 학원명을 표시하지 않습니다');
   assert.equal(academyHtml.includes('영점학생'), false, '포인트가 0인 학생은 랭킹 목록에 표시되지 않아야 합니다');
   assert.equal(elements.podiumName1.innerText, '박진호');
+  assert.match(academyHtml, /class="rank-card me my-rank-banner"[\s\S]*rank-hero-avatar/);
   assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\*\*\*\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
   assert.match(academyHtml, /<span>남궁민수<\/span><span class="rank-card-id">\(mi\*\*\*\*\*\)<\/span>/);
   assert.match(academyHtml, /<span class="rank-card-id">\(bb\*\*\*\*\*\*\)<\/span><span class="rank-card-class">학급 미지정<\/span>/);
-  assert.match(academyHtml, /83<span class="rank-card-pt-unit">P<\/span><\/span><span class="rank-card-books">\(완독 4권\)<\/span>/);
+  assert.match(academyHtml, /83<span class="rank-card-pt-unit">P<\/span><\/span>[\s\S]*?<span class="rank-card-books">\(완독 4권\)<\/span>/);
   assert.equal(academyHtml.includes('<김빵빵>') || academyHtml.includes('<1>'), false, 'XSS 위험 문자는 이스케이프되어야 합니다');
+  assert.equal(/id="p-ranking"[\s\S]{0,400}class="my-rank-banner"/.test(html), false, '상단 고정 my-rank-banner는 제거되고 전체 순위 목록 내부에만 강조 박스가 표시되어야 합니다');
 
   // 2) 우리 반 랭킹: 이름 전체 표기, 아이디 앞 두 글자 + 나머지 * 처리, 0P 제외
   ctx.currentRankScope = 'class';

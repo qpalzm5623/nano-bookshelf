@@ -2,6 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <script>
+    // 운영 환경에서 세션 검증 전 초기 DOM(로딩 문구 등) 노출을 차단합니다.
+    if (location.protocol !== 'file:' && !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+      document.documentElement.style.visibility = 'hidden';
+    }
+  </script>
   <!-- 브라우저 캐시 방지: 항상 최신 JS/CSS를 로드하도록 강제 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -30,7 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261123_redpen">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261124_rank_ui">
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -57,11 +63,11 @@
       </div>
       <div class="drawer-profile-info" style="flex: 1; min-width: 0;">
         <div class="drawer-user-name" style="display: flex; align-items: center; gap: 6px;">
-          <span id="drawerStudentName">이문성</span>
-          <span id="drawerCharBadge" style="font-size: 10.5px; font-weight: 800; background: #ccfbf1; color: #0d9488; padding: 2px 7px; border-radius: 8px;">부키</span>
+          <span id="drawerStudentName">학생</span>
+          <span id="drawerCharBadge" style="font-size: 10.5px; font-weight: 800; background: #ccfbf1; color: #0d9488; padding: 2px 7px; border-radius: 8px;">나노</span>
         </div>
         <div class="drawer-user-class" id="drawerStudentClass">
-          <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>글봄독서논술학원 · 초등 3학년
+          <i class="fa-solid fa-school mr-1" style="font-size:11px;"></i>소속 학원 확인 중
         </div>
         <div class="drawer-user-point-badge" id="drawerStudentPoints" style="margin-top: 5px;">
           <i class="fa-solid fa-coins mr-1" style="color:#fcd34d;"></i>포인트 불러오는 중
@@ -191,7 +197,7 @@
   <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:2;">
     <div class="user-info-pill" style="display:flex;align-items:center;gap:8px;padding:3px 12px 3px 4px;background:rgba(240,253,250,0.9);border:1px solid #ccfbf1;border-radius:22px;cursor:default;box-shadow:0 1px 3px rgba(0,168,150,0.06);">
       <div id="headerCharAvatar" class="char-avatar-box" style="width:30px;height:30px;flex-shrink:0;"></div>
-      <span id="headerStudentName" style="font-weight:800;font-size:13px;color:#1e293b;line-height:1;letter-spacing:-0.2px;">이문성</span>
+      <span id="headerStudentName" style="font-weight:800;font-size:13px;color:#1e293b;line-height:1;letter-spacing:-0.2px;">학생</span>
       <span id="headerCharTag" style="display:none;"></span>
       <div id="headerStudentClass" style="display:none;"></div>
     </div>
@@ -210,8 +216,8 @@
       <div id="homeCharAvatar" class="char-avatar-box bounce" style="width: 46px; height: 46px; flex-shrink: 0;"></div>
       <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-          <span id="homeCharNameTag" style="font-size: 11px; font-weight: 800; background: #00a896; color: #fff; padding: 1px 6px; border-radius: 6px;">부키</span>
-          <span style="font-size: 12.5px; font-weight: 800; color: #1e293b;" id="homeCharGreeting">이문성 학생, 반가워요!</span>
+          <span id="homeCharNameTag" style="font-size: 11px; font-weight: 800; background: #00a896; color: #fff; padding: 1px 6px; border-radius: 6px;">나노</span>
+          <span style="font-size: 12.5px; font-weight: 800; color: #1e293b;" id="homeCharGreeting">반가워요!</span>
         </div>
         <div id="homeCharQuote" style="font-size: 11.5px; color: #0f766e; font-weight: 600; line-height: 1.4;">"오늘도 책 속의 신비한 모험을 떠나볼까요? 🦉"</div>
       </div>
@@ -296,11 +302,11 @@
       </div>
     </div>
 
-    <!-- 3. 회원 학년 맞춤 권장 도서 (초등 5학년 30권 + 더보기) -->
+    <!-- 3. 회원 학년 맞춤 권장 도서 -->
     <div class="slider-section" id="secGradeBooks">
       <div class="sec-header-flex">
         <div class="sec-title-main">
-          <i class="fa-solid fa-seedling" style="color:var(--leaf);"></i> <span id="memberGradeTitle">초등 3학년 권장 도서</span> <span class="cnt-badge" id="gradeBooksCount">30권</span>
+          <i class="fa-solid fa-seedling" style="color:var(--leaf);"></i> <span id="memberGradeTitle">학년별 권장 도서</span> <span class="cnt-badge" id="gradeBooksCount">30권</span>
         </div>
         <a href="javascript:void(0)" class="sec-more-link" onclick="goToGradeLibrary('초3')">더보기 <i class="fa-solid fa-chevron-right"></i></a>
       </div>
@@ -802,51 +808,29 @@
 
   <!-- [NEW] 아이들이 열광하는 랭킹 시스템 & 명예의 전당 포디움 -->
   <div id="p-ranking" class="panel anim">
-    
-    <!-- 1. 내 순위 하이라이트 & 응원 배너 -->
-    <div class="my-rank-banner">
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div class="char-avatar-box" style="width: 52px; height: 52px; background: rgba(255,255,255,0.2); border-radius: 50%;">
-            <div id="rankMyCharAvatar" style="width: 100%; height: 100%;"></div>
-          </div>
-          <div>
-            <div style="font-size: 11.5px; opacity: 0.9; font-weight: 700;" id="myRankScopeTitle">포인트 순위 불러오는 중</div>
-            <div style="font-size: 22px; font-weight: 900; line-height: 1.2;">
-              <span id="myRankHighlightText">집계 중</span>
-              <span id="myRankHighlightPercent" style="font-size: 14px; font-weight: 700; opacity: 0.95;"></span>
-            </div>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 24px; font-weight: 900; color: #fde047; text-shadow: 0 2px 8px rgba(0,0,0,0.2);" id="myRankPeriodPoints">0 P</div>
-          <span style="font-size: 11px; background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: 6px; font-weight: 700;" id="myRankReadCountBadge">완독 0권 · 누적 0P</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- 2. 랭킹 범위 탭 (우리 반 / 학원 전체 / 전국) -->
+    <!-- 1. 랭킹 범위 탭 (우리 반 / 학원 전체 / 전국) -->
     <div class="rank-tab-group" id="rankTabGroup">
       <button type="button" class="rank-tab-btn active" id="rankTabClass" onclick="switchRankScope('class')">
-        <i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반
+        <i class="fa-solid fa-chalkboard-user"></i><span class="rank-tab-label">우리 반</span>
       </button>
       <button type="button" class="rank-tab-btn" id="rankTabAcademy" onclick="switchRankScope('academy')">
-        <i class="fa-solid fa-school mr-1"></i> 소속 학원
+        <i class="fa-solid fa-school"></i><span class="rank-tab-label">소속 학원</span>
       </button>
       <button type="button" class="rank-tab-btn" id="rankTabNational" onclick="switchRankScope('national')">
-        <i class="fa-solid fa-earth-asia mr-1"></i> 전국 랭킹
+        <i class="fa-solid fa-earth-asia"></i><span class="rank-tab-label">전국 랭킹</span>
       </button>
     </div>
 
     <!-- 기간 서브 필터 (이번 달 / 지난 달) -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px;">
+    <div class="rank-section-head">
       <div style="font-size: 14px; font-weight: 800; color: var(--wood-dark); display: flex; align-items: center; gap: 6px;">
         <i class="fa-solid fa-trophy" style="color: #f59e0b;"></i>
         <span id="rankTitleLabel">포인트 명예의 전당</span>
       </div>
-      <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
-        <button type="button" class="btn btn-xs" id="rankPeriodMonth" onclick="switchRankPeriod('month')" style="font-size: 11px; font-weight: 800; border-radius: 6px; padding: 3px 8px; border: none; background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">이번 달</button>
-        <button type="button" class="btn btn-xs" id="rankPeriodLastMonth" onclick="switchRankPeriod('lastMonth')" style="font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 8px; border: none; background: transparent; color: #64748b;">지난 달</button>
+      <div class="rank-period-group">
+        <button type="button" class="btn btn-xs" id="rankPeriodMonth" onclick="switchRankPeriod('month')" style="font-size: 11px; font-weight: 800; border-radius: 7px; padding: 4px 10px; border: none; background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">이번 달</button>
+        <button type="button" class="btn btn-xs" id="rankPeriodLastMonth" onclick="switchRankPeriod('lastMonth')" style="font-size: 11px; font-weight: 700; border-radius: 7px; padding: 4px 10px; border: none; background: transparent; color: #64748b;">지난 달</button>
       </div>
     </div>
 
@@ -2042,7 +2026,7 @@ var libData = [
 
 // ==============================================================
 // ==============================================================
-// Neon DB 500권 실도서 및 랭킹 1위 원생(이문성, 451권 완독), 실데이터 북퀴즈 전면 연동
+// Neon DB 도서 및 실데이터 북퀴즈 연동
 // ==============================================================
 function initStudentMigratedData() {
   if (typeof window !== 'undefined' && Array.isArray(window.MIGRATED_BOOKS) && (window.NANO_SERVER_DATA || window.MIGRATED_BOOKS.length > 0)) {
@@ -4787,7 +4771,6 @@ function getStudentQuizIdentity() {
     return item.username && item.username.toLowerCase() === String(auth.id).toLowerCase() &&
       (!auth.academyId || String(item.academyId) === String(auth.academyId));
   });
-  var isDemo = auth.id === 'student01';
   var rawGrade = auth.grade || (member && member.grade) || '';
   var rawGender = auth.gender || (member && member.gender) || '';
   var rawSchool = auth.school || (member && member.school) || '';
@@ -4797,9 +4780,9 @@ function getStudentQuizIdentity() {
     studentId: String(auth.studentId || auth.id),
     studentName: auth.studentName || (member && member.name) ||
       (auth.name || '학생').split(' (')[0].replace(/ 학생.*$/, ''),
-    academyId: auth.academyId || (member && member.academyId) || (isDemo ? 'DEMO-ACADEMY' : ''),
-    academyName: auth.academyName || (member && member.academyName) || (isDemo ? '체험 학원' : ''),
-    classGroup: auth.classGroup || (member && member.className) || (isDemo ? '체험반' : '미지정'),
+    academyId: auth.academyId || (member && member.academyId) || '',
+    academyName: auth.academyName || (member && member.academyName) || '',
+    classGroup: auth.classGroup || (member && member.className) || '미지정',
     grade: rawGrade,
     gender: rawGender,
     school: rawSchool,
@@ -6251,7 +6234,7 @@ try {
 } catch(e) {}
 var curBookshelfMainTab = 'history'; // 'history' | 'interest' | 'points'
 
-// 완독 도서 마스터 데이터 (Neon DB 500권 실도서 기반 동적 연동 - 이문성 학생의 451권 완독 실적 반영)
+// 완독 도서 마스터 데이터 (서버 실데이터 기반 동적 연동)
 var readBooksMaster = [];
 
 // 학생 관심 주제 데이터 (서버 preferences 동기화 + 선택 최대 3개)
@@ -7724,8 +7707,8 @@ function syncRankingScopeLabels(meta) {
 
   var classBtn = document.getElementById('rankTabClass');
   var academyBtn = document.getElementById('rankTabAcademy');
-  if (classBtn) classBtn.innerHTML = '<i class="fa-solid fa-chalkboard-user mr-1"></i> 우리 반' + (ACADEMY_HAS_CLASS ? ' (' + escapeStudentQuizText(className) + ')' : '');
-  if (academyBtn) academyBtn.innerHTML = '<i class="fa-solid fa-school mr-1"></i> ' + escapeStudentQuizText(academyName || '소속 학원');
+  if (classBtn) classBtn.innerHTML = '<i class="fa-solid fa-chalkboard-user"></i><span class="rank-tab-label">우리 반' + (ACADEMY_HAS_CLASS ? ' (' + escapeStudentQuizText(className) + ')' : '') + '</span>';
+  if (academyBtn) academyBtn.innerHTML = '<i class="fa-solid fa-school"></i><span class="rank-tab-label">' + escapeStudentQuizText(academyName || '소속 학원') + '</span>';
 }
 
 function clearRankPodium(label) {
@@ -7976,15 +7959,29 @@ function renderRank() {
     if(p3Points) p3Points.innerText = top3.pt.toLocaleString() + 'P';
   }
 
-  // 2. 포디움과 별개로 실제 전체 순위 목록을 모두 렌더링
+  // 2. 포디움과 별개로 전체 순위 목록을 렌더링하고, 본인이 위치한 행은 강조 배너형 박스로 표시
   var listEl = document.getElementById("rankList");
   if(!listEl) return;
 
-  listEl.innerHTML = data.map(function(r){
+  var now = new Date();
+  var month = now.getMonth() + 1;
+  var displayMonth = currentRankPeriod === 'lastMonth' ? (month === 1 ? 12 : month - 1) : month;
+  var remoteMeta = typeof remoteRankResult !== 'undefined' ? remoteRankResult : null;
+  var identityObj = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  var myClassName = (remoteMeta && remoteMeta.className) || (identityObj && identityObj.classGroup) || '';
+  var myAcademyName = (remoteMeta && remoteMeta.academyName) || (identityObj && identityObj.academyName) || '';
+  var scopeLabel = currentRankScope === 'class' ? (myClassName || '우리 반') : (currentRankScope === 'academy' ? (myAcademyName || '학원') : '전국');
+  var participantsTotal = (remoteMeta && remoteMeta.participants) ? Number(remoteMeta.participants) : data.length;
+  var myTotalPts = (remoteMeta && typeof remoteMeta.myTotalPoints === 'number')
+    ? remoteMeta.myTotalPoints
+    : (identityObj && typeof identityObj.points === 'number' ? identityObj.points : null);
+  var myTotalBooks = (remoteMeta && typeof remoteMeta.myBooks === 'number') ? remoteMeta.myBooks : null;
+
+  function buildRankCardHtml(r, isOutside) {
     var cId = r.charId === 'custom' ? userChar : r.charId;
     var changeHtml = '<span class="rank-card-change same">-</span>';
-    if(r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
-    else if(r.change === 'down') changeHtml = '<span class="rank-card-change down"><i class="fa-solid fa-caret-down"></i>' + (r.changeNum || 1) + '</span>';
+    if(!isOutside && r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
+    else if(!isOutside && r.change === 'down') changeHtml = '<span class="rank-card-change down"><i class="fa-solid fa-caret-down"></i>' + (r.changeNum || 1) + '</span>';
 
     var rawName = formatRankName(r.name, currentRankScope);
     var rawId = formatRankId(r.username || r.studentId || '');
@@ -7999,7 +7996,42 @@ function renderRank() {
       || ''
     ).trim() || '학급 미지정';
 
-    return '<div class="rank-card ' + (r.me ? 'me' : '') + '">'
+    if (r.me) {
+      var rankNum = isOutside ? '순위 밖' : String(r.rank);
+      var pctText = (!isOutside && participantsTotal > 0 && Number(r.rank) > 0)
+        ? ('상위 ' + Math.max(1, Math.round((Number(r.rank) / participantsTotal) * 100)) + '%')
+        : '';
+      var booksNum = Number(r.books) || 0;
+      var totalNum = typeof r.totalPoints === 'number' ? r.totalPoints : myTotalPts;
+      return '<div class="rank-card me my-rank-banner">'
+        + '<div class="rank-card-num-box' + (isOutside ? ' is-outside-num' : '') + '">'
+        +   '<div class="rank-card-num">' + rankNum + '</div>'
+        +   changeHtml
+        + '</div>'
+        + '<div class="rank-card-avatar rank-hero-avatar">'
+        +   getCharacterSvg(cId, 48, r.stage || 1)
+        + '</div>'
+        + '<div class="rank-card-info">'
+        +   (academyText ? '<div class="rank-card-academy"><i class="fa-solid fa-school" style="font-size:10px;margin-right:4px;opacity:0.9;"></i>' + escapeStudentQuizText(academyText) + '</div>' : '')
+        +   '<div class="rank-card-title">'
+        +     '<span>' + escapeStudentQuizText(rawName) + '</span>'
+        +     (rawId ? '<span class="rank-card-id">(' + escapeStudentQuizText(rawId) + ')</span>' : '')
+        +     '<span class="rank-card-class">' + escapeStudentQuizText(classText) + '</span>'
+        +     '<span class="rank-card-me">나</span>'
+        +   '</div>'
+        +   '<div class="rank-card-hero-meta">'
+        +     '<span>' + displayMonth + '월 ' + escapeStudentQuizText(scopeLabel) + ' 포인트 순위</span>'
+        +     (pctText ? '<span class="rank-hero-pct">' + pctText + '</span>' : '')
+        +   '</div>'
+        + '</div>'
+        + '<div class="rank-card-pt">'
+        +   '<span>' + Number(r.pt || 0).toLocaleString() + '<span class="rank-card-pt-unit">P</span></span>'
+        +   '<span class="rank-hero-stats-pill"><span class="rank-card-books">(완독 ' + booksNum + '권)</span>' + (typeof totalNum === 'number' && totalNum > 0 ? ' · 누적 ' + totalNum.toLocaleString() + 'P' : '') + '</span>'
+        + '</div>'
+        + '</div>';
+    }
+
+    return '<div class="rank-card">'
       + '<div class="rank-card-num-box">'
       +   '<div class="rank-card-num">' + r.rank + '</div>'
       +   changeHtml
@@ -8013,7 +8045,6 @@ function renderRank() {
       +     '<span>' + escapeStudentQuizText(rawName) + '</span>'
       +     (rawId ? '<span class="rank-card-id">(' + escapeStudentQuizText(rawId) + ')</span>' : '')
       +     '<span class="rank-card-class">' + escapeStudentQuizText(classText) + '</span>'
-      +     (r.me ? '<span class="rank-card-me">나</span>' : '')
       +   '</div>'
       + '</div>'
       + '<div class="rank-card-pt">'
@@ -8021,7 +8052,26 @@ function renderRank() {
       +   '<span class="rank-card-books">(완독 ' + (Number(r.books) || 0) + '권)</span>'
       + '</div>'
       + '</div>';
-  }).join('');
+  }
+
+  var listHtml = data.map(function(r) { return buildRankCardHtml(r, false); }).join('');
+  var hasMeInList = data.some(function(r) { return !!r.me; });
+  if (!hasMeInList && identityObj && identityObj.studentId) {
+    listHtml += buildRankCardHtml({
+      rank: (remoteMeta && remoteMeta.myRank) || 0,
+      name: identityObj.studentName || '나',
+      username: identityObj.studentId,
+      academyName: myAcademyName,
+      className: myClassName || '학급 미지정',
+      pt: (remoteMeta && typeof remoteMeta.myPoints === 'number') ? remoteMeta.myPoints : 0,
+      books: myTotalBooks !== null ? myTotalBooks : (Number(identityObj.bookCount) || 0),
+      totalPoints: myTotalPts,
+      charId: userChar,
+      stage: 1,
+      me: true
+    }, !(remoteMeta && remoteMeta.myRank));
+  }
+  listEl.innerHTML = listHtml;
 }
 
 // 학생 홈 배너 롤링 로직 및 네비게이션 컨트롤러
@@ -8431,7 +8481,7 @@ function openDrawerMenuItem(type) {
       + '    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
       + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
       + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-school" style="color:#6366f1;font-size:11px;"></i>소속 학원</div>'
-      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);word-break:keep-all;">' + escapeStudentQuizText(identity.academyName || '체험 학원') + '</div>'
+      + '        <div style="font-size:13px;font-weight:800;color:var(--wood-dark);word-break:keep-all;">' + escapeStudentQuizText(identity.academyName || '-') + '</div>'
       + '      </div>'
       + '      <div style="background:#ffffff;border:1px solid #e9e5dc;border-radius:12px;padding:10px 12px;">'
       + '        <div style="font-size:11px;color:#786f66;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;"><i class="fa-solid fa-chalkboard-user" style="color:#0ea5e9;font-size:11px;"></i>소속 학급</div>'

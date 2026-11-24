@@ -2026,7 +2026,7 @@ async function saveAcademyEdit(e) {
         phone: acad.phone || "-",
         parentPhone: "-",
         points: 0,
-        password: acad.adminPw || "nano123!",
+        password: acad.adminPw || "",
         lastLogin: "-",
         createdAt: acad.joinDate || new Date().toISOString().slice(0, 10),
         status: "APPROVED"

@@ -65,10 +65,15 @@ const ALIGO_LITERACY_TEMPLATE_CODE = process.env.ALIGO_LITERACY_TEMPLATE_CODE ||
 const ALIGO_LITERACY_TEMPLATE = normalizeAligoTemplate(process.env.ALIGO_LITERACY_TEMPLATE ||
   '#{학생명} 학생이\n#{진단일}에 문해력 진단을 완료했어요!\n\n우리 아이의 글 읽기와 이해 능력은 어느 정도일까요?\n진단 결과를 확인해보세요~');
 
-// 학부모 비로그인 열람용 HMAC 서명 토큰 생성 & 검증
+// 학부모 비로그인 열람용 HMAC 서명 토큰 생성 & 검증 (서버 비밀키 미설정 시 실패 차단)
+function getPublicReportSecret(): string {
+  const secret = process.env.PORTAL_AUTH_SECRET || '';
+  need(secret.length >= 32, '운영 서버 설정이 필요합니다.', 503);
+  return secret;
+}
+
 function generatePublicToken(id: string): string {
-  const secret = process.env.PORTAL_AUTH_SECRET || 'nano-bookshelf-public-secret-key-2026';
-  return createHmac('sha256', secret).update(id).digest('hex').slice(0, 24);
+  return createHmac('sha256', getPublicReportSecret()).update(id).digest('hex').slice(0, 24);
 }
 
 function verifyPublicToken(id: string, token: string): boolean {
@@ -463,8 +468,7 @@ export default async function handler(req: any, res: any) {
       const phone = member.parentPhone!.replace(/\D/g, '');
       need(/^0\d{8,10}$/.test(phone), '학부모 연락처 형식을 확인해 주세요.');
 
-      const secret = process.env.PORTAL_AUTH_SECRET || 'nano-bookshelf-public-secret-key-2026';
-      const token = createHmac('sha256', secret).update(recordId).digest('hex').slice(0, 24);
+      const token = generatePublicToken(recordId);
       const targetUrl = `${await academyBrand(member.academyId) === 'JD' ? 'https://jd.nanosbook.co.kr' : baseHost === 'https://jd.nanosbook.co.kr' ? 'https://nanosbook.co.kr' : baseHost}/literacy_report.html?r=${encodeURIComponent(recordId)}&t=${token}`;
       const diagDate = formatKstDateTime24(record.finishedAt);
 

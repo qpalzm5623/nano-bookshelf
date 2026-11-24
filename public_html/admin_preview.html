@@ -3,6 +3,12 @@
 
 <head>
   <meta charset="utf-8">
+  <script>
+    // 운영 환경에서 세션 검증 전 초기 DOM 노출을 차단합니다.
+    if (location.protocol !== 'file:' && !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+      document.documentElement.style.visibility = 'hidden';
+    }
+  </script>
   <!-- 브라우저 캐시 방지: 항상 최신 JS/CSS를 로드하도록 강제 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -2548,13 +2554,13 @@
             <input type="hidden" id="teacherFormId">
             <div class="form-group mb-3">
               <label class="font-weight-bold" style="font-size: 13px;">선생님 성함 <span class="text-danger">*</span></label>
-              <input type="text" id="teacherNameInput" class="form-control" placeholder="예: 박선혜 (한글, 영문만 가능)"
+              <input type="text" id="teacherNameInput" class="form-control" placeholder="예: 홍길동 (한글, 영문만 가능)"
                 oninput="this.value = this.value.replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z\s]/g, '')" style="border-radius: 8px;"
                 required>
             </div>
             <div class="form-group mb-3">
               <label class="font-weight-bold" style="font-size: 13px;">아이디 <span class="text-danger">*</span></label>
-              <input type="text" id="teacherUsernameInput" class="form-control" placeholder="예: teacher_park"
+              <input type="text" id="teacherUsernameInput" class="form-control" placeholder="예: teacher01"
                 style="border-radius: 8px;" required>
             </div>
             <div class="form-group mb-3">
@@ -4515,7 +4521,7 @@
                 <div class="col-4">
                   <div class="text-muted">담당 지도교사</div>
                   <div class="font-weight-bold mt-1" style="font-size: 14.5px; color: var(--text-main);"
-                    id="wizProfileTeacher">박선혜 교사</div>
+                    id="wizProfileTeacher">담당 교사</div>
                 </div>
               </div>
 
@@ -6119,7 +6125,7 @@
                     </span>
                   </div>
                   <input type="tel" id="myInfoPhone" class="form-control form-control-beige font-weight-bold"
-                    placeholder="010-3342-9981" maxlength="13" oninput="formatPhoneNumber(this)"
+                    placeholder="010-0000-0000" maxlength="13" oninput="formatPhoneNumber(this)"
                     style="border-radius: 0 10px 10px 0;" required>
                 </div>
                 <small class="text-muted" style="font-size: 11px;">원내 긴급 알림톡 및 본사 중요 공지 수신용</small>

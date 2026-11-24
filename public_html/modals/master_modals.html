@@ -20,11 +20,11 @@
         <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded" style="background: #fdfbf7; border: 1px solid var(--border-light);">
           <div>
             <div class="text-muted" style="font-size: 11px;">결제 일련번호</div>
-            <div class="font-weight-bold" style="font-size: 15px; color: var(--text-main);" id="modalDetailPayIdText">PAY-20260916-001</div>
+            <div class="font-weight-bold" style="font-size: 15px; color: var(--text-main);" id="modalDetailPayIdText">-</div>
           </div>
           <div class="text-right">
-            <span class="badge-soft badge-soft-master" style="font-size: 11px;" id="modalDetailAcademyNameBadge">나노 독서아카데미 목동본원</span>
-            <div class="text-muted mt-1" style="font-size: 11.5px;" id="modalDetailDirectorText">김은영 원장 (010-3342-9981)</div>
+            <span class="badge-soft badge-soft-master" style="font-size: 11px;" id="modalDetailAcademyNameBadge">-</span>
+            <div class="text-muted mt-1" style="font-size: 11.5px;" id="modalDetailDirectorText">-</div>
           </div>
         </div>
 
@@ -258,7 +258,7 @@
               </div>
               <div class="form-group">
                 <label for="regDirectorPw" class="font-weight-bold" style="font-size: 13px;">비밀번호 <span class="text-danger">*</span></label>
-                <input type="text" id="regDirectorPw" class="form-control form-control-beige" placeholder="예: nano1234!" autocomplete="new-password" oninput="validateRegDirectorPassword(this.value)" required>
+                <input type="text" id="regDirectorPw" class="form-control form-control-beige" placeholder="6자 이상 비밀번호 입력" autocomplete="new-password" oninput="validateRegDirectorPassword(this.value)" required>
                 <small id="regDirectorPwConditions" class="form-text text-muted" style="font-size: 11px; line-height: 1.5; margin-top: 5px;">
                   <span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>8~128자</span><span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>영문 포함</span><span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>숫자 포함</span><span class="text-muted" style="margin-right: 8px;"><i class="fa-regular fa-circle mr-1"></i>공백 불가</span><span class="text-muted">(특수문자 가능)</span>
                 </small>
@@ -409,7 +409,7 @@
           <div class="row">
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">원장 대표 연락처 <span class="text-danger">*</span></label>
-              <input type="text" id="editDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-3342-9981" oninput="formatPhoneInput(this)" maxlength="13" required>
+              <input type="text" id="editDirectorPhone" class="form-control form-control-beige" placeholder="예: 010-0000-0000" oninput="formatPhoneInput(this)" maxlength="13" required>
             </div>
             <div class="col-md-6 form-group">
               <label class="font-weight-bold" style="font-size: 13px;">학원 소재지 / 상세 주소 <span class="text-danger">*</span></label>
@@ -1622,15 +1622,15 @@
         <div class="p-3 mb-3 rounded d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: #fdfbf7; border: 1px solid #ebd9c8;">
           <div>
             <div class="font-weight-bold text-dark" style="font-size: 15px;">
-              <span id="pointDetailStudentName">이문성</span>
-              <span class="badge-soft badge-soft-neutral ml-1" id="pointDetailStudentGrade">초등 3학년</span>
-              <small class="text-muted ml-1" id="pointDetailStudentId">(gb6721)</small>
+              <span id="pointDetailStudentName">-</span>
+              <span class="badge-soft badge-soft-neutral ml-1" id="pointDetailStudentGrade">-</span>
+              <small class="text-muted ml-1" id="pointDetailStudentId"></small>
             </div>
-            <div class="text-muted mt-1" style="font-size: 12px;" id="pointDetailAcademy">글봄독서논술학원</div>
+            <div class="text-muted mt-1" style="font-size: 12px;" id="pointDetailAcademy">-</div>
           </div>
           <div class="text-right">
             <small class="text-muted d-block">총 누적 포인트</small>
-            <span class="font-weight-bold text-warning" style="font-size: 22px;" id="pointDetailTotalPoints">36,064 P</span>
+            <span class="font-weight-bold text-warning" style="font-size: 22px;" id="pointDetailTotalPoints">0 P</span>
           </div>
         </div>
 

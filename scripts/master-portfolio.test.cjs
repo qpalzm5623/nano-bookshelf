@@ -555,7 +555,7 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
   const masterHtml = fs.readFileSync(path.join(pubDir, 'master_preview.html'), 'utf8');
   const studentHtml = fs.readFileSync(path.join(pubDir, 'student_preview.html'), 'utf8');
   assert.match(adminHtml, /css\/admin_preview\.css\?v=20261123_quiz_ui/);
-  assert.match(studentHtml, /css\/student_preview\.css\?v=20261123_redpen/);
+  assert.match(studentHtml, /css\/student_preview\.css\?v=20261124_rank_ui/);
   assert.match(adminHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
   assert.match(adminHtml, /css\/portfolio\.css\?v=20261113_pf_flow/);
   assert.match(adminHtml, /js\/portfolio-renderer\.js\?v=20261117_pf_footer/);
@@ -2279,4 +2279,33 @@ test('찜하기 및 북퀴즈 완료 안내 토스트가 도서명 기반 찜하
 
   await ctx.toggleInterestTag('#자연');
   assert.equal(toasts[toasts.length - 1], '관심 주제가 저장되었습니다.');
+});
+
+test('공개 포털 HTML·JS·API 소스에 데모 계정/비밀번호, 비인증 초기 DOM 노출, 샘플 개인정보, 하드코딩 시크릿이 남아있지 않다', () => {
+  const rootDir = path.join(__dirname, '..');
+  const pubDir = path.join(rootDir, 'public_html');
+  const indexHtml = fs.readFileSync(path.join(pubDir, 'index.html'), 'utf8');
+  for (const leakedToken of ['quick-test-box', 'quickFillAndLogin', 'master00', 'admin01', 'teacher_park', 'student01', 'admin123', 'nano123!', 'nano1234!', '박선혜', '김은영', '김나노']) {
+    assert.equal(indexHtml.includes(leakedToken), false, `index.html에 민감/체험 계정 문자열이 남아 있습니다: ${leakedToken}`);
+  }
+
+  for (const portalFile of ['student_preview.html', 'admin_preview.html', 'master_preview.html']) {
+    const html = fs.readFileSync(path.join(pubDir, portalFile), 'utf8');
+    assert.ok(html.includes("document.documentElement.style.visibility = 'hidden'"), `${portalFile} <head>에 비인증 사전 숨김 스크립트가 있어야 합니다`);
+    for (const pii of ['이문성', '글봄독서논술학원', '안여진', '힘찬학당', '권순찬', '딱풀리는수학', '박선혜', 'teacher_park', '010-3342-9981']) {
+      assert.equal(html.includes(pii), false, `${portalFile}에 하드코딩된 샘플/실제 이름·연락처가 남아 있습니다: ${pii}`);
+    }
+  }
+
+  for (const jsRel of ['js/master/master-ranking.js', 'js/master/master-core.js', 'js/master/master-payment.js', 'js/master/master-members.js', 'js/master/master-franchise.js', 'js/admin_members.js', 'js/admin_myinfo.js', 'admin_preview.js', 'modals/master_modals.html']) {
+    const src = fs.readFileSync(path.join(pubDir, jsRel), 'utf8');
+    for (const bad of ['이문성', 'gb6721', '글봄독서논술학원', 'nano123!', 'nano1234!', 'look9932', '강태양', '김민준 학부모']) {
+      assert.equal(src.includes(bad), false, `${jsRel}에 하드코딩된 샘플 개인정보 또는 기본 비밀번호가 남아 있습니다: ${bad}`);
+    }
+  }
+
+  const servicesTs = fs.readFileSync(path.join(rootDir, 'api', 'services.ts'), 'utf8');
+  assert.equal(servicesTs.includes('nano-bookshelf-public-secret-key-2026'), false, 'api/services.ts에 하드코딩된 폴백 시크릿이 남아 있으면 안 됩니다');
+  const manageTs = fs.readFileSync(path.join(rootDir, 'api', 'manage.ts'), 'utf8');
+  assert.equal(manageTs.includes('nano123!'), false, 'api/manage.ts에 하드코딩된 기본 비밀번호가 남아 있으면 안 됩니다');
 });

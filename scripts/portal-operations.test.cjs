@@ -153,7 +153,7 @@ test('외부 서비스 설정이 없으면 발송 요청을 보내지 않는다'
 });
 test('동일 리포트 재발송 및 결과 불명 상태를 자동 재시도하지 않는다',async()=>{
   let count=0,record=null;
-  const env={ALIGO_ENABLED:'true',ALIGO_API_KEY:'test',ALIGO_USER_ID:'test',ALIGO_SENDER_KEY:'test',ALIGO_SENDER:'01000000000',ALIGO_TEMPLATE_CODE:'test',ALIGO_REPORT_TEMPLATE:'#{학생명} #{점수}'};
+  const env={ALIGO_ENABLED:'true',ALIGO_API_KEY:'test',ALIGO_USER_ID:'test',ALIGO_SENDER_KEY:'test',ALIGO_SENDER:'01000000000',ALIGO_TEMPLATE_CODE:'test',ALIGO_REPORT_TEMPLATE:'#{학생명} #{점수}',PORTAL_AUTH_SECRET:'test-only-secret-with-more-than-32-characters'};
   const db={quizAttempt:{findFirst:async()=>({id:'attempt',score:80,bookId:'b1',member:{name:'학생',parentPhone:'01011112222',reportYn:true,academyId:'a1'}})},book:{findFirst:async()=>book},aligoDispatchLog:{findUnique:async()=>record,create:async({data})=>{record=data;return record;},update:async({data})=>Object.assign(record,data)}};
   db.$transaction=fn=>fn(db);
   db.academy={updateMany:async()=>({count:1})};

@@ -840,7 +840,6 @@
         }
       }
     } catch(e) {
-      document.documentElement.style.visibility = '';
       sessionStorage.removeItem('nano_auth_user');
       sessionStorage.setItem('nano_login_notice', e.message);
       location.replace('index.html');

@@ -79,11 +79,7 @@ var STORAGE_KEY_STUDENTS = 'NANO_ACADEMY_STUDENTS_' + currentAcademyInfo.id;
 var STORAGE_KEY_TEACHERS = 'NANO_ACADEMY_TEACHERS_' + currentAcademyInfo.id;
 var STORAGE_KEY_DELETED_STUDENTS = 'NANO_ACADEMY_DELETED_STUDENTS_' + currentAcademyInfo.id;
 
-var defaultStudentDataList = [
-  { id: 'kty4290', name: '강태양', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 3학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 3', bookCount: 28, quizAvg: '94.5', parentName: '강태양 학부모', phone: '010-4290-8812', parentEmail: 'kty4290@kakao.com', reportYn: true, lastDate: '2026-09-28', createdAt: '2026-03-02', teacher: '지도교사', memo: '실제 DB 연동 원생' },
-  { id: 'lhj5017', name: '이현진', gender: '여', password: '••••', school: '개포초등학교', grade: '초등 1학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 1', bookCount: 19, quizAvg: '92.0', parentName: '이현진 학부모', phone: '010-5017-3482', parentEmail: 'lhj5017@kakao.com', reportYn: true, lastDate: '2026-09-27', createdAt: '2026-03-10', teacher: '지도교사', memo: '실제 DB 연동 원생' },
-  { id: 'jjw7681', name: '조진우', gender: '남', password: '••••', school: '개포초등학교', grade: '초등 2학년', classGroup: '나노반', status: '승인', level: '초등 정규 Lv 2', bookCount: 22, quizAvg: '95.1', parentName: '조진우 학부모', phone: '010-7681-9920', parentEmail: 'jjw7681@kakao.com', reportYn: true, lastDate: '2026-09-25', createdAt: '2026-03-15', teacher: '지도교사', memo: '실제 DB 연동 원생' }
-];
+var defaultStudentDataList = [];
 
 var defaultAcademyClassList = [
   { id: 'CLS01', name: '나노반', grade: '초등/중등 정규', teacher: '지도교사', desc: '정규 독서논술 및 문해력 집중 훈련반' }
@@ -1376,7 +1372,7 @@ function getAcademyAdminPassword() {
     }
   } catch (e) {}
 
-  return 'nano1234!';
+  return '';
 }
 
 // 1단계: 삭제 버튼 클릭 시 관리자 패스워드 확인 모달 띄우기 (스르륵 즉시 삭제 방지)
@@ -1447,7 +1443,7 @@ async function confirmDeleteStudent() {
   var enteredPw = pwInput ? pwInput.value.trim() : '';
 
   var expectedPw = getAcademyAdminPassword();
-  var validPasswords = [expectedPw, 'nano1234!', 'admin', '1234'];
+  var validPasswords = expectedPw ? [expectedPw] : [];
   if (teacherDataList && Array.isArray(teacherDataList)) {
     var dirTeacher = teacherDataList.find(function(t) { return t.role === '학원 원장'; });
     if (dirTeacher && dirTeacher.password && dirTeacher.password !== '••••') {

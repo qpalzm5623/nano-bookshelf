@@ -13,23 +13,15 @@
 let rankingCurrentPage = 1;
 const rankingPageSize = 20;
 
-// 전국 학생 개인 랭킹 데이터 (Neon DB 실데이터 연동: 100명)
-let allStudentRankings = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_RANKINGS.length > 0))
+// 전국 학생 개인 랭킹 데이터 (서버 실데이터 연동)
+let allStudentRankings = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_RANKINGS))
   ? window.MIGRATED_RANKINGS.slice()
-  : [
-    { rank: 1, name: "이문성", id: "gb6721", academy: "글봄독서논술학원", grade: "초등 3학년", books: 451, accRate: "92%", points: 36064, recent: "최근" },
-    { rank: 2, name: "안여진", id: "him9246", academy: "힘찬학당", grade: "초등 6학년", books: 268, accRate: "92%", points: 21440, recent: "최근" },
-    { rank: 3, name: "권순찬", id: "sckwon7369", academy: "딱풀리는수학 과천율목초점", grade: "초등 3학년", books: 163, accRate: "92%", points: 13056, recent: "최근" }
-  ];
+  : [];
 
-// 가맹 학원 랭킹 데이터 (Neon DB 실데이터 연동: 20개소)
-let academyRankingData = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS) && (window.NANO_SERVER_DATA || window.MIGRATED_ACADEMY_RANKINGS.length > 0))
+// 가맹 학원 랭킹 데이터 (서버 실데이터 연동)
+let academyRankingData = (typeof window !== "undefined" && Array.isArray(window.MIGRATED_ACADEMY_RANKINGS))
   ? window.MIGRATED_ACADEMY_RANKINGS.slice()
-  : [
-    { rank: 1, name: "글봄독서논술학원", region: "서울 양천구", students: 48, avgBooks: "22.5권", participation: "94%", points: 184520, badge: "우수 학원" },
-    { rank: 2, name: "힘찬학당", region: "경기 성남시", students: 36, avgBooks: "18.2권", participation: "91%", points: 124800, badge: "우수 학원" },
-    { rank: 3, name: "딱풀리는수학 과천율목초점", region: "경기 과천시", students: 25, avgBooks: "15.8권", participation: "88%", points: 95400, badge: "우수 학원" }
-  ];
+  : [];
 
 // 데이터 최신화 동기화 헬퍼
 function syncRankingDatasetsFromWindow() {

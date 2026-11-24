@@ -905,7 +905,7 @@ export default async function handler(req: any, res: any) {
       const adminUsername = input.adminId || input.username;
       if (adminUsername) {
         const cleanUsername = String(adminUsername).trim();
-        const rawPassword = String(input.adminPw || input.password || 'nano123!').trim();
+        const rawPassword = String(input.adminPw || input.password || '').trim();
         const existingDirector = await prisma.member.findFirst({
           where: { OR: [{ username: cleanUsername }, { academyId: academy.id, role: 'DIRECTOR' }] }
         });
@@ -914,6 +914,7 @@ export default async function handler(req: any, res: any) {
           if (rawPassword && !/^[•·*]+$/.test(rawPassword)) updateData.password = hashPassword(rawPassword);
           await prisma.member.update({ where: { id: existingDirector.id }, data: updateData });
         } else {
+          need(rawPassword.length >= 6 && !/^[•·*]+$/.test(rawPassword), '신규 가맹 학원 원장 계정의 비밀번호(6자 이상)를 입력해 주세요.');
           await prisma.member.create({
             data: {
               academyId: academy.id,
@@ -922,7 +923,7 @@ export default async function handler(req: any, res: any) {
               role: 'DIRECTOR',
               status: 'APPROVED',
               phone: data.phone,
-              password: hashPassword(rawPassword || 'nano123!')
+              password: hashPassword(rawPassword)
             }
           });
         }

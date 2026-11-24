@@ -7,7 +7,7 @@ const ts = require('typescript');
 const crypto = require('node:crypto');
 const silent = { info() {}, warn() {}, error() {}, log() {} };
 const need = (ok, message, status = 400) => { if (!ok) throw Object.assign(new Error(message), { status }); };
-const env = { ALIGO_API_KEY: 'test', ALIGO_USER_ID: 'test', ALIGO_SENDER_KEY: 'test', ALIGO_SENDER: '01000000000', PORTAL_AUTH_SECRET: 'test-only-secret' };
+const env = { ALIGO_API_KEY: 'test', ALIGO_USER_ID: 'test', ALIGO_SENDER_KEY: 'test', ALIGO_SENDER: '01000000000', PORTAL_AUTH_SECRET: 'test-only-secret-with-more-than-32-characters' };
 function load(file, deps = {}, extra = {}) {
   const exports = {};
   const source = fs.readFileSync(file, 'utf8');

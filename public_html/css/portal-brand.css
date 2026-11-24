@@ -171,10 +171,16 @@ html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] > div:first-child { b
 html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] > div:last-child,
 html[data-brand="JD"] #bsViewPoints > div[style*="f0fdf4"] > div:last-child > div:first-child { color: #173f9b !important; }
 html[data-brand="JD"] .point-month-chip.active { background: #1649db; border-color: #1649db; color: #ffffff; }
-html[data-brand="JD"] .my-rank-banner { background: linear-gradient(135deg, #173f9b 0%, #1649db 58%, #2563eb 100%); box-shadow: 0 8px 24px rgba(22, 73, 219, 0.24); }
-html[data-brand="JD"] .rank-tab-btn.active { color: #1649db; box-shadow: 0 2px 8px rgba(22, 73, 219, 0.12); }
+html[data-brand="JD"] .my-rank-banner,
+html[data-brand="JD"] .rank-card.me.my-rank-banner { background: linear-gradient(135deg, #173f9b 0%, #1649db 58%, #2563eb 100%); box-shadow: 0 10px 24px rgba(22, 73, 219, 0.24); border: none; }
+html[data-brand="JD"] .rank-card.me.my-rank-banner .rank-card-num,
+html[data-brand="JD"] .rank-card.me.my-rank-banner .rank-card-title { color: #ffffff; }
+html[data-brand="JD"] .rank-card.me.my-rank-banner .rank-card-pt { color: #fde047; }
+html[data-brand="JD"] .rank-card.me.my-rank-banner .rank-card-academy { color: #dbeafe; }
+html[data-brand="JD"] .rank-tab-btn.active { background: linear-gradient(180deg, #ffffff 0%, #eff4ff 100%); border-color: #bfdbfe; color: #1649db; box-shadow: 0 3px 10px rgba(22, 73, 219, 0.14); }
+html[data-brand="JD"] .rank-tab-btn.active i { color: #1649db; }
 html[data-brand="JD"] .rank-card:hover { border-color: #3b82f6; }
-html[data-brand="JD"] .rank-card.me { border-color: #1649db; background: linear-gradient(90deg, #eff4ff 0%, #f5f8ff 100%); box-shadow: 0 4px 14px rgba(22, 73, 219, 0.12); }
+html[data-brand="JD"] .rank-card.me:not(.my-rank-banner) { border-color: #1649db; background: linear-gradient(90deg, #eff4ff 0%, #f5f8ff 100%); box-shadow: 0 4px 14px rgba(22, 73, 219, 0.12); }
 html[data-brand="JD"] .char-edit-badge,
 html[data-brand="JD"] .char-select-badge { background: #1649db; }
 html[data-brand="JD"] .char-select-card.selected { border-color: #1649db; background: #eff4ff; }

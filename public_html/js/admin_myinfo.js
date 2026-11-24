@@ -356,8 +356,9 @@ function changeMyPasswordOnly() {
     document.getElementById('myInfoCurrentPw').focus();
     return;
   }
-  var realCurPw = (typeof getAcademyAdminPassword === 'function') ? getAcademyAdminPassword() : 'nano1234!';
-  if (curPw !== realCurPw && curPw !== 'nano1234!' && curPw !== 'look9932') {
+  var isRemote = typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote;
+  var realCurPw = (typeof getAcademyAdminPassword === 'function') ? getAcademyAdminPassword() : '';
+  if (!isRemote && (!realCurPw || curPw !== realCurPw)) {
     alert('현재 비밀번호가 올바르지 않습니다.');
     document.getElementById('myInfoCurrentPw').focus();
     return;
@@ -391,6 +392,20 @@ function changeMyPasswordOnly() {
   }
 
   // 2) 변경 완료 처리
+  if (isRemote && typeof NanoPortal.request === 'function') {
+    NanoPortal.request('password', { currentPassword: curPw, newPassword: newPw }).then(function() {
+      document.getElementById('myInfoCurrentPw').value = '';
+      document.getElementById('myInfoNewPw').value = '';
+      document.getElementById('myInfoNewPwConfirm').value = '';
+      var fb = document.getElementById('pwMatchFeedback');
+      if (fb) fb.innerText = '';
+      showAcademyToast('비밀번호가 성공적으로 변경되었습니다. 다음 로그인부터 적용됩니다.');
+    }).catch(function(err) {
+      alert((err && err.message) || '비밀번호 변경에 실패했습니다.');
+    });
+    return;
+  }
+
   try {
     var rawAuth = sessionStorage.getItem('nano_auth_user');
     if (rawAuth) {
@@ -464,8 +479,9 @@ function saveMyInfo() {
       return;
     }
 
-    var realCurPw = (typeof getAcademyAdminPassword === 'function') ? getAcademyAdminPassword() : 'nano1234!';
-    if (curPw !== realCurPw && curPw !== 'nano1234!' && curPw !== 'look9932') {
+    var isRemoteInfo = typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote;
+    var realCurPw = (typeof getAcademyAdminPassword === 'function') ? getAcademyAdminPassword() : '';
+    if (!isRemoteInfo && (!realCurPw || curPw !== realCurPw)) {
       alert('현재 비밀번호가 올바르지 않습니다.');
       document.getElementById('myInfoCurrentPw').focus();
       return;
@@ -553,8 +569,13 @@ function saveMyInfo() {
     }
   } catch(e) {}
 
-  // 5-2) 비밀번호 변경 반영 (세션 스토리지 및 입력 폼 리셋)
+  // 5-2) 비밀번호 변경 반영 (서버 동기화 또는 로컬 세션 업데이트)
   if (pwChanged) {
+    if (typeof window !== 'undefined' && window.NanoPortal && NanoPortal.remote && typeof NanoPortal.request === 'function') {
+      NanoPortal.request('password', { currentPassword: curPw, newPassword: newPw }).catch(function(err) {
+        alert((err && err.message) || '비밀번호 변경에 실패했습니다.');
+      });
+    }
     try {
       var rawAuth = sessionStorage.getItem('nano_auth_user');
       if (rawAuth) {
