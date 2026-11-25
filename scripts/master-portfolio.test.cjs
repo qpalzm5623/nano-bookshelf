@@ -562,7 +562,7 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
   assert.match(adminHtml, /admin_preview\.js\?v=20261119_transfer_opt/);
   assert.match(adminHtml, /js\/admin_members\.js\?v=20261123_class_sync/);
   assert.match(adminHtml, /js\/content-sharing\.js\?v=20261113_center/);
-  assert.match(adminHtml, /js\/admin_books\.js\?v=20261124_server_book_code/);
+  assert.match(adminHtml, /js\/admin_books\.js\?v=20261125_isbn_code/);
   assert.match(adminHtml, /js\/admin_notices\.js\?v=20261123_wm_center/);
   assert.match(adminHtml, /js\/literacy\/literacy-admin\.js\?v=20261123_class/);
   assert.match(masterHtml, /css\/portal-search\.css\?v=20261113_dropdown_fix/);
@@ -570,7 +570,7 @@ test('주요 포털 HTML 페이지가 잘리지 않고 닫힘 태그와 필수 �
   assert.match(masterHtml, /js\/master\/master-portfolio\.js\?v=20261113_query_only/);
   assert.match(masterHtml, /js\/master\/master-franchise\.js\?v=20261117_reg_layout/);
   assert.match(masterHtml, /js\/master\/master-ranking\.js\?v=20261124_server_book_code/);
-  assert.match(masterHtml, /js\/master\/master-contents\.js\?v=20261124_server_book_code/);
+  assert.match(masterHtml, /js\/master\/master-contents\.js\?v=20261125_isbn_code/);
   assert.match(masterHtml, /<select[^>]+id="masterPfClassFilter"[^>]+disabled/);
 
   // 마스터/학원 HTML 내 모든 날짜 입력(<input type="date">)에 즉시 필터 onchange가 없고, 검색바 자동조회 핸들러가 제거되었는지 검증

@@ -1020,6 +1020,8 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
       ? ('현재 ' + quizSetCount + '세트의 북퀴즈가 등록되어 있습니다 (클릭하여 관리)')
       : '등록된 북퀴즈 세트가 없습니다 (클릭하여 출제)';
     var quizBadgeHtml = buildAcadQuizSetBadgeHtml(quizSetCount);
+    var coverIsbnMatch = String(b.cover || b.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i);
+    var displayIsbn = String(b.isbn || b.isbn13 || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').trim();
 
     tr.innerHTML = 
       `<td class="text-center font-weight-bold text-muted" style="font-size: 12px;">${numDesc}</td>
@@ -1032,7 +1034,10 @@ function renderAcademyBookTable(data, totalCount, startIdx) {
           <div class="book-thumb-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
         </div>
       </td>
-      <td class="text-center font-weight-bold text-muted">${b.id || b.bookNo || '-'}</td>
+      <td class="text-center font-weight-bold text-muted" style="line-height: 1.35;">
+        <div>${b.id || b.bookNo || '-'}</div>
+        ${displayIsbn ? `<small class="d-block text-muted" style="font-size: 10.5px; font-weight: 500; margin-top: 2px;">ISBN ${displayIsbn}</small>` : ''}
+      </td>
       <td>
         <div style="font-weight: 700; font-size: 14.5px; color: var(--text-main); cursor: pointer;" onclick="openAcademyBookOnlyAddModal('${b.id}')" title="클릭하여 도서 상세 정보 보기" class="book-title-hover">${b.title}</div>
         <small class="text-muted">${b.subtitle || '나노 추천 교과 연계 도서'}</small>
@@ -4596,10 +4601,11 @@ function openAcademyBookOnlyAddModal(id = null) {
     if (document.getElementById('abEditId')) document.getElementById('abEditId').value = book.bookNo || book.id;
   }
 
-  // 5. ISBN 바인딩 (신규 도서 등록 시 자동 입력 제거 -> 공란으로 초기화)
+  // 5. ISBN 바인딩 (신규 도서 등록 시 공란 초기화, 기등록 도서는 DB값 또는 표지 파일명의 ISBN 표시)
   var isbnInput = document.getElementById('abEditIsbn');
   if (isbnInput) {
-    isbnInput.value = (book && book.isbn) ? book.isbn : '';
+    var editCoverIsbnMatch = book ? String(book.cover || book.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i) : null;
+    isbnInput.value = book ? String(book.isbn || book.isbn13 || (editCoverIsbnMatch ? editCoverIsbnMatch[1] : '') || '').trim() : '';
   }
 
   // 6. 기본 서지 정보 바인딩 (신규 등록 시 공란 유지)

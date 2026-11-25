@@ -699,6 +699,8 @@ function renderMasterContents() {
 
     // 시리즈명 표시
     const seriesLabel = b.series && b.series !== "단권" ? `<span class="badge-soft badge-soft-neutral mr-1" style="font-size: 10.5px;">${b.series}</span>` : '';
+    const coverIsbnMatch = String(b.cover || b.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i);
+    const displayIsbn = String(b.isbn || b.isbn13 || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').trim();
 
     return `
       <tr>
@@ -710,7 +712,7 @@ function renderMasterContents() {
           <div class="font-weight-bold" style="font-size: 13.5px; color: var(--text-main); margin-left: 5px;">
             ${cleanTitle}
           </div>
-          <small class="text-muted font-weight-bold" style="margin-left: 5px; display: inline-block;">코드: ${b.id}</small>
+          <small class="text-muted font-weight-bold" style="margin-left: 5px; display: inline-block;">코드: ${b.id}${displayIsbn ? ` · ISBN: ${displayIsbn}` : ''}</small>
         </td>
         <td>${seriesColHtml}</td>
         <td class="text-center">
@@ -2815,8 +2817,9 @@ function openMasterBookAddModal(id = null) {
     document.getElementById("mbAddId").value = book.bookNo || book.id;
   }
 
-  // ISBN
-  document.getElementById("mbAddIsbn").value = (book && book.isbn) ? book.isbn : "";
+  // ISBN (기등록 도서 편집 시 DB값 또는 표지 파일명의 ISBN을 함께 표시)
+  const coverIsbnMatch = book ? String(book.cover || book.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i) : null;
+  document.getElementById("mbAddIsbn").value = book ? String(book.isbn || book.isbn13 || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').trim() : "";
 
   // 도서명, 저자, 출판사
   document.getElementById("mbAddTitle").value = isNew ? "" : book.title;

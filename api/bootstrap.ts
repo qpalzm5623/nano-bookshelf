@@ -43,6 +43,7 @@ async function getCachedCatalog(): Promise<CachedCatalog> {
             title: true,
             author: true,
             publisher: true,
+            isbn: true,
             grade: true,
             category: true,
             subCategory: true,
@@ -403,6 +404,9 @@ export default async function handler(req: any, res: any) {
           const bookDate = bookCreatedAt.slice(0, 10);
 
           const creatorMeta = bookCreatorMap.get(finalBookId);
+          // DB 저장 isbn을 우선 전달하고, 누락 시 표지 파일명의 10~13자리 ISBN을 보조 추출합니다.
+          const coverIsbnMatch = String(cover || '').match(/\/(\d{10,13})\.(jpe?g|png|webp|gif)$/i);
+          const resolvedIsbn = String((b as any).isbn || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').trim();
           const visibleSheets = bookSheets(contentAccess, b).filter(s => canReadContent(user, s, contentAccess)).map(s => sheetView(s, user));
           const visibleQuizCount = accessibleQuizCounts.get(b.id) || { sets: 0, questions: 0 };
           // 학생 계정에는 응시 가능한(공개·소속 학원·공유 폴더) 북퀴즈가 1세트 이상 있는 도서만 노출합니다.
@@ -415,6 +419,7 @@ export default async function handler(req: any, res: any) {
             serverId: b.id,
             id: finalBookId,
             bookNo: finalBookId,
+            isbn: resolvedIsbn,
             title: title,
             author: author,
             publisher: pub,
