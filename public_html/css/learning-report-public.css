@@ -52,14 +52,18 @@ h3 { font-size: 15px; margin: 0; }
 p { line-height: 1.65; }
 small { color: #5a6b6e; font-size: 12px; }
 
-.public-score-info { min-width: 0; flex: 1; }
+.public-score-info { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .public-score-head {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 5px;
   margin-bottom: 3px;
+}
+#learningReportModalBody .lr-score-top-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 #learningReportModalBody .lr-date-inline {
   width: 100%;
@@ -68,12 +72,13 @@ small { color: #5a6b6e; font-size: 12px; }
   border-left: 0;
   border-top: 1px dashed #cfe6e4;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
 }
 #learningReportModalBody .lr-date-inline .lr-meta-head { margin-bottom: 0; }
-.score-row { display: flex; align-items: baseline; gap: 6px; }
+.score-row { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
 .report-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 
 .public-quiz-section { margin-top: 4px; }

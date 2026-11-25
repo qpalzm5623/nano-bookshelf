@@ -2164,6 +2164,12 @@ function printLearningReport() {
     printAcadEl.innerText = curAcad;
   }
 
+  // 화면 입력란에 작성된 지도 코멘트가 있다면 인쇄 직전 출력 영역과 상태를 동기화
+  var commentInputEl = document.getElementById('thoughtTeacherCommentInput');
+  if (commentInputEl && typeof updateThoughtTeacherCommentPrint === 'function') {
+    updateThoughtTeacherCommentPrint(commentInputEl.value);
+  }
+
   if (isHidden) {
     document.body.classList.add('thought-hidden-print');
   } else {
@@ -2377,15 +2383,15 @@ function openLearningDetailModal(id) {
 
       var choiceBox = q.isCorrect
         ? `<div class="report-choice-box correct">
-             <div class="report-choice-label"><i class="fa-solid fa-check mr-1.5 text-success"></i>학생 선택 답안</div>
+             <div class="report-choice-label"><i class="fa-solid fa-check text-success"></i><span>학생 선택 답안</span></div>
              <div class="report-choice-val">${escapePortfolioText(q.userChoiceText)}</div>
            </div>`
-        : `<div class="report-choice-box wrong mb-1.5">
-             <div class="report-choice-label"><i class="fa-solid fa-xmark mr-1.5 text-danger"></i>학생 선택 오답</div>
+        : `<div class="report-choice-box wrong mb-2">
+             <div class="report-choice-label"><i class="fa-solid fa-xmark text-danger"></i><span>학생 선택 오답</span></div>
              <div class="report-choice-val strike">${escapePortfolioText(q.userChoiceText)}</div>
            </div>
            <div class="report-choice-box actual">
-             <div class="report-choice-label"><i class="fa-solid fa-key mr-1.5 text-success"></i>실제 정답</div>
+             <div class="report-choice-label"><i class="fa-solid fa-key text-success"></i><span>실제 정답</span></div>
              <div class="report-choice-val font-weight-bold text-success">${escapePortfolioText(q.correctChoiceText)}</div>
            </div>`;
 
@@ -6330,13 +6336,22 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
 
   var frameWin = frame.contentWindow;
   var frameDoc = frameWin.document;
-  // 화면에 쓰이는 스타일(외부 CSS + 인라인 <style>)을 그대로 재사용해 디자인을 동일하게 유지
-  var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
-  // 포트폴리오는 용지 여백 확보, 포스터는 A4 풀사이즈 정밀 피팅(여백 0)
-  var pageRule = bodyClass === 'is-printing-portfolio'
-    ? 'margin: 8mm 8mm 9mm !important; size: A4 portrait;'
-    : (bodyClass === 'is-printing-poster' ? 'margin: 0 !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;');
-  var overrideCss = '@page { ' + pageRule + ' } @media print { @page { ' + pageRule + ' } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
+  var isPortfolioPrint = bodyClass === 'is-printing-portfolio';
+  // 포트폴리오 인쇄 시 타 화면 전역 @page 간섭을 차단하고 필요한 스타일만 선별 복사
+  var headStyles = Array.prototype.filter.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) {
+    if (!isPortfolioPrint) return true;
+    if (node.tagName !== 'LINK') return false;
+    var href = String(node.getAttribute('href') || '');
+    return /pretendard|fonts\.googleapis|font-awesome|bootstrap|portfolio\.css|portal-brand\.css/i.test(href);
+  }).map(function(node) { return node.outerHTML; }).join('\n');
+  // 포트폴리오는 균형 잡힌 A4 편집 여백(상하 12mm · 좌우 13mm), 포스터는 A4 풀사이즈 정밀 피팅(여백 0)
+  var pageRule = isPortfolioPrint
+    ? 'size: A4 portrait; margin: 12mm 13mm 12mm 13mm;'
+    : (bodyClass === 'is-printing-poster' ? 'size: A4 portrait; margin: 0;' : 'size: auto; margin: 12mm;');
+  var overrideCss = '@page { ' + pageRule + ' } @media print { html, body { width:100% !important; height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body.is-printing-portfolio .pf-print-shell { width:100% !important; border-collapse:collapse !important; border:0 !important; table-layout:fixed !important; } body.is-printing-portfolio .pf-print-shell > tfoot { display:table-footer-group !important; } body.is-printing-portfolio .pf-print-footer-spacer { height:13mm !important; padding:0 !important; border:0 !important; } body.is-printing-portfolio #portfolioPrintDoc { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; } body.is-printing-portfolio #portfolioPrintDoc .pf-footer { position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; margin:0 !important; padding:7px 0 0 !important; background:#ffffff !important; z-index:999 !important; } body * { visibility:visible !important; } }';
+  var bodyMarkup = isPortfolioPrint
+    ? '<table class="pf-print-shell"><tbody><tr><td style="padding:0; border:0; vertical-align:top;">' + innerHtml + '</td></tr></tbody><tfoot><tr><td class="pf-print-footer-spacer"></td></tr></tfoot></table>'
+    : innerHtml;
   var removeFrame = function() { if (frame.parentNode) frame.parentNode.removeChild(frame); };
   var printStarted = false;
   var readinessTimer;
@@ -6369,7 +6384,7 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
   readinessTimer = setTimeout(startPrint, 10000);
   frameDoc.open();
   frameDoc.write('<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><base href="' + document.baseURI + '"><title>' + (title || '인쇄') + '</title>' +
-    headStyles + '<style>' + overrideCss + '</style></head><body class="' + (bodyClass || '') + '">' + innerHtml + '</body></html>');
+    headStyles + '<style>' + overrideCss + '</style></head><body class="' + (bodyClass || '') + '">' + bodyMarkup + '</body></html>');
   frameDoc.close();
 }
 

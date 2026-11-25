@@ -827,24 +827,43 @@
 
     var frameWin = frame.contentWindow;
     var frameDoc = frameWin.document;
-    var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) {
+    var isPortfolioPrint = bodyClass === 'is-printing-portfolio';
+    // 포트폴리오 인쇄 시 admin_preview.css 등의 전역 @page(margin:0 등) 간섭을 원천 차단하기 위해
+    // 포트폴리오 렌더링에 필요한 공용 스타일시트(폰트·부트스트랩·아이콘·portfolio.css·브랜드 테마)만 선별 복사합니다.
+    var headStyles = Array.prototype.filter.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) {
+      if (!isPortfolioPrint) return true;
+      if (node.tagName !== 'LINK') return false;
+      var href = String(node.getAttribute('href') || '');
+      return /pretendard|fonts\.googleapis|font-awesome|bootstrap|portfolio\.css|portal-brand\.css/i.test(href);
+    }).map(function(node) {
       return node.outerHTML;
     }).join('\n');
 
-    var pageRule = bodyClass === 'is-printing-portfolio'
-      ? 'margin: 8mm 8mm 9mm !important; size: A4 portrait;'
-      : (bodyClass === 'is-printing-poster' ? 'margin: 0 !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;');
+    // 표준 CSS Paged Media 문법(@page 내부에 !important 금지)으로 균형 잡힌 A4 편집 여백(상하 12mm · 좌우 13mm) 적용
+    var pageRule = isPortfolioPrint
+      ? 'size: A4 portrait; margin: 12mm 13mm 12mm 13mm;'
+      : (bodyClass === 'is-printing-poster' ? 'size: A4 portrait; margin: 0;' : 'size: auto; margin: 12mm;');
 
     var brandAttr = (document.documentElement && document.documentElement.dataset && document.documentElement.dataset.brand)
       ? ' data-brand="' + escapePortfolioText(document.documentElement.dataset.brand) + '"'
       : '';
 
+    // 포트폴리오 인쇄 시 다중 페이지(1장·2장·N장)에서도 푸터가 항상 각 용지 최하단에 겹침 없이 고정되도록
+    // tfoot 하단 예약 공간(13mm) + position:fixed 하단 고정 푸터 구조를 적용합니다.
     var overrideCss =
       '@page { ' + pageRule + ' } ' +
-      '@media print { @page { ' + pageRule + ' } ' +
+      '@media print { ' +
       'html, body { width:100% !important; height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } ' +
+      'body.is-printing-portfolio .pf-print-shell { width:100% !important; border-collapse:collapse !important; border:0 !important; table-layout:fixed !important; } ' +
+      'body.is-printing-portfolio .pf-print-shell > tfoot { display:table-footer-group !important; } ' +
+      'body.is-printing-portfolio .pf-print-footer-spacer { height:13mm !important; padding:0 !important; border:0 !important; } ' +
       'body.is-printing-portfolio #portfolioPrintDoc { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; } ' +
+      'body.is-printing-portfolio #portfolioPrintDoc .pf-footer { position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; margin:0 !important; padding:7px 0 0 !important; background:#ffffff !important; z-index:999 !important; } ' +
       'body * { visibility:visible !important; } }';
+
+    var bodyMarkup = isPortfolioPrint
+      ? '<table class="pf-print-shell"><tbody><tr><td style="padding:0; border:0; vertical-align:top;">' + innerHtml + '</td></tr></tbody><tfoot><tr><td class="pf-print-footer-spacer"></td></tr></tfoot></table>'
+      : innerHtml;
 
     var removeFrame = function() {
       if (frame.parentNode) frame.parentNode.removeChild(frame);
@@ -886,7 +905,7 @@
       '<base href="' + escapePortfolioText(document.baseURI || '') + '">' +
       '<title>' + escapePortfolioText(title || '인쇄') + '</title>' +
       headStyles + '<style>' + overrideCss + '</style>' +
-      '</head><body class="' + escapePortfolioText(bodyClass || '') + '">' + innerHtml + '</body></html>'
+      '</head><body class="' + escapePortfolioText(bodyClass || '') + '">' + bodyMarkup + '</body></html>'
     );
     frameDoc.close();
   }

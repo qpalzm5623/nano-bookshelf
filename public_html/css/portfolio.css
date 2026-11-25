@@ -117,11 +117,11 @@
 #portfolioPrintDoc .pf-section-bar { width: 4px; height: 16px; border-radius: 4px; background: var(--pf-accent); display: inline-block; flex-shrink: 0; }
 #portfolioPrintDoc .pf-section-bar.is-amber { background: var(--pf-yellow); }
 
-/* 핵심 KPI 4종 (아이콘 + 원형 링 + 게이지 바) */
+/* 핵심 KPI 4종 (아이콘 + 원형 링 + 게이지 바 · 전체 가운데 정렬) */
 #portfolioPrintDoc .pf-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
 #portfolioPrintDoc .pf-stat-box {
   padding: 14px 13px;
-  text-align: left;
+  text-align: center;
   border: 1px solid #dbeae8;
   border-top: 3px solid var(--pf-accent);
   border-radius: 13px;
@@ -129,13 +129,14 @@
   box-shadow: 0 3px 10px rgba(15, 45, 48, 0.04);
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: space-between;
 }
 #portfolioPrintDoc .pf-stat-box.is-teal { background: linear-gradient(180deg, #f3fbfa 0%, #ffffff 55%); border-top-color: var(--pf-accent); }
 #portfolioPrintDoc .pf-stat-box.is-amber { background: linear-gradient(180deg, #fffaf0 0%, #ffffff 55%); border-top-color: var(--pf-yellow); }
 #portfolioPrintDoc .pf-stat-box.is-score { background: linear-gradient(180deg, #f3fbfa 0%, #ffffff 55%); border-top-color: var(--pf-accent-deep); }
 #portfolioPrintDoc .pf-stat-box.is-routine { background: linear-gradient(180deg, #fffaf0 0%, #ffffff 55%); border-top-color: var(--pf-yellow); }
-#portfolioPrintDoc .pf-stat-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+#portfolioPrintDoc .pf-stat-top { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; width: 100%; }
 #portfolioPrintDoc .pf-stat-icon {
   width: 30px;
   height: 30px;
@@ -171,7 +172,7 @@
   justify-content: center;
 }
 #portfolioPrintDoc .pf-stat-label { color: var(--pf-muted); font-size: 12px; font-weight: 700; }
-#portfolioPrintDoc .pf-stat-value { margin: 2px 0 6px; font-size: 27px; font-weight: 900; line-height: 1.1; color: var(--pf-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.7px; }
+#portfolioPrintDoc .pf-stat-value { margin: 2px 0 6px; font-size: 27px; font-weight: 900; line-height: 1.1; color: var(--pf-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.7px; text-align: center; width: 100%; }
 #portfolioPrintDoc .pf-stat-box.is-teal .pf-stat-value,
 #portfolioPrintDoc .pf-stat-box.is-score .pf-stat-value { color: var(--pf-accent-deep); }
 #portfolioPrintDoc .pf-stat-box.is-amber .pf-stat-value { color: var(--pf-yellow-ink); }
@@ -179,8 +180,9 @@
 #portfolioPrintDoc .pf-stat-badge {
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
-  padding: 2px 8px;
+  justify-content: center;
+  align-self: center;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -191,7 +193,7 @@
 #portfolioPrintDoc .pf-stat-meter-fill { display: block; height: 100%; border-radius: 99px; }
 #portfolioPrintDoc .pf-stat-meter-fill.is-teal { background: linear-gradient(90deg, #00aca8, #28c5c0); }
 #portfolioPrintDoc .pf-stat-meter-fill.is-amber { background: linear-gradient(90deg, #00aca8, #f4a12c); }
-#portfolioPrintDoc .pf-stat-sub { color: var(--pf-muted); font-size: 11px; font-weight: 700; }
+#portfolioPrintDoc .pf-stat-sub { color: var(--pf-muted); font-size: 11px; font-weight: 700; text-align: center; width: 100%; }
 #portfolioPrintDoc .pf-stat-sub.is-teal { color: var(--pf-accent-deep); }
 
 /* 독서에서 발견한 성장 (4대 역량 카드) */
@@ -388,9 +390,10 @@
   }
 }
 
-/* A4 풀폭 인쇄: 좌우 여백을 8mm로 축소하고 인라인 max-width 제한을 해제해 종이 폭을 100% 활용합니다. */
+/* A4 균형 인쇄: 상하 12mm · 좌우 13mm 여백을 확보하고 인라인 max-width 제한을 해제해 종이 폭을 자연스럽게 활용합니다. */
 @media print {
-  body.is-printing-portfolio { margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+  @page portfolio-sheet { size: A4 portrait; margin: 12mm 13mm 12mm 13mm; }
+  body.is-printing-portfolio { margin: 0 !important; padding: 0 !important; background: #ffffff !important; page: portfolio-sheet; }
   body.is-printing-portfolio #portfolioPrintDoc { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; font-size: 9.8pt; line-height: 1.48; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #portfolioPrintDoc .pf-print-accent-bar { display: block !important; height: 4px !important; margin-bottom: 8px !important; }
   /* 1페이지 상단 분석(나의 독서 취향) 아래 빈 여백을 남기지 않고 책마다 쌓인 성장 기록이 자연스럽게 이어져 빈 공간을 채웁니다. */
@@ -436,7 +439,10 @@
   #portfolioPrintDoc .pf-book-score-pill { font-size: 8pt; padding: 4px 5px; min-width: 38px; }
   #portfolioPrintDoc .pf-book-achievement-block { padding: 6px 8px; }
   #portfolioPrintDoc .pf-book-achievement-text { font-size: 8.6pt; line-height: 1.46; }
-  #portfolioPrintDoc .pf-footer { margin-top: 10px; padding-top: 8px; font-size: 8.5pt; }
+  /* 직접 Ctrl+P 인쇄(portfolio_report.html 등)에서도 1페이지 최하단에 푸터가 안착하도록 기본 flex 레이아웃 적용 */
+  body:not(.is-printing-portfolio) #portfolioPrintDoc { display: flex !important; flex-direction: column !important; min-height: 268mm !important; }
+  body:not(.is-printing-portfolio) #portfolioPrintDoc .pf-page2-section { display: flex; flex-direction: column; flex: 1 0 auto; }
+  #portfolioPrintDoc .pf-footer { margin-top: auto; padding-top: 8px; font-size: 8.5pt; }
   #portfolioPrintDoc .pf-footer-logo { height: 20px; }
   /* 강제 페이지 분할과 2페이지 반복 상단바를 없애 1페이지 하단부터 도서 기록 카드를 순서대로 배치합니다. */
   #portfolioPrintDoc .pf-page-break,
