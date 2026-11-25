@@ -7,7 +7,13 @@
   "functions": {
     "api/dispatch-reconcile.ts": { "maxDuration": 300 },
     "api/worksheet-ai.ts": { "maxDuration": 60 },
-    "api/portfolio-ai.ts": { "maxDuration": 60 }
+    "api/portfolio-ai.ts": { "maxDuration": 60 },
+    "api/bootstrap.ts": { "maxDuration": 60 },
+    "api/manage.ts": { "maxDuration": 60 },
+    "api/portal.ts": { "maxDuration": 60 },
+    "api/billing.ts": { "maxDuration": 60 },
+    "api/services.ts": { "maxDuration": 60 },
+    "api/activity.ts": { "maxDuration": 30 }
   },
   "headers": [
     {

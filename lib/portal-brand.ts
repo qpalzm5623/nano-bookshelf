@@ -15,11 +15,23 @@ export async function brandAcademyIds(brand: Brand): Promise<string[]> {
   const rows = await prisma.portalSetting.findMany({ where: { scope: 'academy_meta' }, select: { key: true, value: true } });
   return rows.filter(r => brandOf(r.value) === brand).map(r => r.key.replace(/^academy_meta:/, ''));
 }
+export interface PrefetchedBrandSettings {
+  academyMeta?: any;
+  hasAcademyMeta?: boolean;
+  memberPolicy?: any;
+  hasMemberPolicy?: boolean;
+}
 // 도메인/권한은 클라이언트 입력이 아닌 서버에 저장된 정책으로 결정합니다.
-export async function authorizeBrand<T extends { id: string; academyId: string; role: string; username: string }>(req: any, user: T) {
+export async function authorizeBrand<T extends { id: string; academyId: string; role: string; username: string }>(
+  req: any,
+  user: T,
+  prefetched?: PrefetchedBrandSettings
+) {
   const [brand, policy] = await Promise.all([
-    academyBrand(user.academyId),
-    prisma.portalSetting.findUnique({ where: { key: 'member_policy:' + user.id } })
+    prefetched?.hasAcademyMeta ? Promise.resolve(brandOf(prefetched.academyMeta)) : academyBrand(user.academyId),
+    prefetched?.hasMemberPolicy
+      ? Promise.resolve({ value: prefetched.memberPolicy })
+      : prisma.portalSetting.findUnique({ where: { key: 'member_policy:' + user.id } })
   ]);
   const brandPolicy = (policy?.value as any)?.kind === 'JD_MASTER' || (user.role === 'MASTER' && user.username === 'jdmaster') ? 'JD_MASTER' : '';
   const result = Object.assign(user, { brand, brandPolicy, portalBrand: requestBrand(req) });

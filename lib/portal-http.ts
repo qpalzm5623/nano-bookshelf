@@ -13,9 +13,41 @@ export async function authenticate(req: any) {
   const session = readSession(token);
   const user = session && await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true, classGroup: true } });
   need(user && session && user.status === 'APPROVED' && user.academy.status === 'ACTIVE' && !user.academy.deletedAt && session.version === passwordVersion(user.password || ''), '다시 로그인해 주세요.', 401);
-  if (user && user.role !== 'MASTER' && session && session.sid && prisma.portalSetting?.findUnique) {
+  const needSessionCheck = Boolean(user && user.role !== 'MASTER' && session && session.sid);
+  const sessionKey = 'session:' + user.id;
+  const academyMetaKey = 'academy_meta:' + user.academyId;
+  const memberPolicyKey = 'member_policy:' + user.id;
+  let prefetchedBrand: { academyMeta?: any; hasAcademyMeta?: boolean; memberPolicy?: any; hasMemberPolicy?: boolean } | undefined;
+
+  // 피크타임 DB 왕복을 줄이기 위해 session/academy_meta/member_policy 3개 설정을 1회 findMany 배치 조회로 통합합니다.
+  if (typeof prisma.portalSetting?.findMany === 'function') {
+    const keys = [academyMetaKey, memberPolicyKey];
+    if (needSessionCheck) keys.push(sessionKey);
     try {
-      const activeSetting = await prisma.portalSetting.findUnique({ where: { key: 'session:' + user.id } });
+      const rows = await prisma.portalSetting.findMany({
+        where: { key: { in: keys } },
+        select: { key: true, value: true },
+      });
+      const byKey = new Map<string, any>();
+      for (const row of rows || []) byKey.set(row.key, row.value);
+      if (needSessionCheck) {
+        const active = byKey.get(sessionKey) as any;
+        if (active?.sessionId && active.sessionId !== session.sid) {
+          throw new PortalError(401, '다른 기기에서 로그인하여 현재 접속이 종료되었습니다.');
+        }
+      }
+      prefetchedBrand = {
+        academyMeta: byKey.get(academyMetaKey),
+        hasAcademyMeta: true,
+        memberPolicy: byKey.get(memberPolicyKey),
+        hasMemberPolicy: true,
+      };
+    } catch (e) {
+      if (e instanceof PortalError) throw e;
+    }
+  } else if (needSessionCheck && prisma.portalSetting?.findUnique) {
+    try {
+      const activeSetting = await prisma.portalSetting.findUnique({ where: { key: sessionKey } });
       if (activeSetting && activeSetting.value) {
         const active = activeSetting.value as any;
         if (active.sessionId && active.sessionId !== session.sid) {
@@ -26,7 +58,7 @@ export async function authenticate(req: any) {
       if (e instanceof PortalError) throw e;
     }
   }
-  const brandedUser = await authorizeBrand(req, user);
+  const brandedUser = await authorizeBrand(req, user, prefetchedBrand);
   guardRestrictedRequest(req, brandedUser);
   return brandedUser;
 }

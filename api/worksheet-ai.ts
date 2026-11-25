@@ -5,7 +5,7 @@ import { callGeminiWithFallback, parseGeminiJson, DEFAULT_GEMINI_MODEL } from '.
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '10mb' // 나노시트 2~3페이지 압축 이미지 수신을 위해 10MB로 확장
+      sizeLimit: '4.5mb' // Vercel Serverless 요청 본문 상한(4.5MB)과 일치시켜 초과 요청을 안전하게 제어
     }
   }
 };
@@ -69,6 +69,9 @@ export default async function handler(req: any, res: any) {
     if (mode === 'single') {
       need(images.length > 0, '나노시트 사진(2~3페이지)을 최소 1장 이상 업로드해 주세요.');
       need(images.length <= 5, '나노시트 사진은 한 번에 최대 5장까지 분석할 수 있습니다.');
+      // Vercel 4.5MB 페이로드 상한 이내로 유지되도록 전체 base64 이미지 크기 검증
+      const totalImageChars = images.reduce((sum: number, img: any) => sum + String(img?.data || '').length, 0);
+      need(totalImageChars <= 4200000, '첨부 사진 용량이 너무 큽니다. 사진 수를 줄이거나 다시 촬영해 주세요.', 413);
 
       if (!apiKey) {
         return res.status(400).json({

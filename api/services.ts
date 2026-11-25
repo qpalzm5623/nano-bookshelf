@@ -23,10 +23,11 @@ const fixieUrl = process.env.FIXIE_URL;
 const proxyDispatcher = fixieUrl ? new ProxyAgent(fixieUrl) : undefined;
 const aligoFetch: typeof fetch = proxyDispatcher && typeof undiciFetch === 'function' ? (undiciFetch as unknown as typeof fetch) : fetch;
 
-const ALIGO_API_KEY = process.env.ALIGO_API_KEY || 'ypjr7m6tjjjhri2dsz3fz9sdancwcsro';
-const ALIGO_USER_ID = process.env.ALIGO_USER_ID || 'min5k';
-const ALIGO_SENDER_KEY = process.env.ALIGO_SENDER_KEY || 'f1aa2df93adcc25d366d0089499d8b27a7a5ef27';
-const ALIGO_SENDER = process.env.ALIGO_SENDER || '01071414186';
+// 운영 보안: 알리고 인증 정보는 하드코딩하지 않고 환경변수(Vercel Env/.env)에서만 주입합니다.
+const ALIGO_API_KEY = process.env.ALIGO_API_KEY || '';
+const ALIGO_USER_ID = process.env.ALIGO_USER_ID || '';
+const ALIGO_SENDER_KEY = process.env.ALIGO_SENDER_KEY || '';
+const ALIGO_SENDER = process.env.ALIGO_SENDER || '';
 const ALIGO_CREDENTIALS = { apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID, senderkey: ALIGO_SENDER_KEY };
 
 function resolveTemplateWithCreds(tplCode: string, fallbackMessage: string, fallbackButtonName: string) {
@@ -222,12 +223,13 @@ export default async function handler(req: any, res: any) {
     const user = await authenticate(req);
     staff(user);
 
-    const aligoReady = process.env.ALIGO_ENABLED !== 'false' && Boolean(process.env.ALIGO_API_KEY && process.env.ALIGO_USER_ID && process.env.ALIGO_SENDER_KEY && process.env.ALIGO_SENDER);
+    const aligoReady = process.env.ALIGO_ENABLED !== 'false' && Boolean(ALIGO_API_KEY && ALIGO_USER_ID && ALIGO_SENDER_KEY && ALIGO_SENDER);
     if (req.method === 'GET') {
       if (action === 'dispatch_stats') {
         if (restrictedMaster(user)) {
           const ids = await brandAcademyIds('JD');
-          const logs = await prisma.aligoDispatchLog.findMany({ where: { academyId: { in: ids } }, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' } });
+          // 발송 이력이 장기 누적되더라도 응답 지연·메모리 초과를 막기 위해 최신 1,000건으로 상한을 둡니다.
+          const logs = await prisma.aligoDispatchLog.findMany({ where: { academyId: { in: ids } }, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' }, take: 1000 });
           const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt.toISOString(), academyId: d.academy?.code || '', academyName: d.academy?.name || '', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, resultMessage: d.resultMessage || '', canRetry: false }));
           const success = logs.filter(d => ['SUCCESS', 'SMS_FALLBACK'].includes(d.status)).length;
           const failed = logs.filter(d => d.status === 'FAILED').length;
@@ -237,12 +239,14 @@ export default async function handler(req: any, res: any) {
 
         const refreshCutoff = String(req.query.refresh || '') === '1' ? new Date(Date.now() - 3000) : undefined;
         const pendingDiagnostics: Record<string, string> = {};
-        const reconciledCount = await reconcileDispatches(
-          user.role === 'MASTER' ? undefined : user.academyId,
-          { apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID },
-          refreshCutoff,
-          pendingDiagnostics
-        );
+        const reconciledCount = ALIGO_API_KEY && ALIGO_USER_ID
+          ? await reconcileDispatches(
+              user.role === 'MASTER' ? undefined : user.academyId,
+              { apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID },
+              refreshCutoff,
+              pendingDiagnostics
+            )
+          : 0;
         const wallet = await prisma.academy.findUnique({ where: { id: user.academyId } });
         const where = user.role === 'MASTER' ? {} : { academyId: user.academyId };
         const month = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
@@ -252,24 +256,29 @@ export default async function handler(req: any, res: any) {
           prisma.aligoDispatchLog.count({ where: { ...where, status: { in: ['SUCCESS', 'SMS_FALLBACK'] } } }),
           prisma.aligoDispatchLog.count({ where: { ...where, status: 'FAILED' } }),
         ]);
-        const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' } });
+        // 전체 집계 KPI는 위 count 쿼리로 정확히 유지하고, 목록 행은 최신 1,000건으로 제한해 피크 시 응답 크기를 보호합니다.
+        const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' }, take: 1000 });
         const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt ? new Date(d.sentAt).toISOString() : '', academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, providerId: d.providerId || '', code: d.resultCode || '', resultMessage: d.resultMessage || '', statusDetail: buildPendingStatusDetail(d, pendingDiagnostics), canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
         let connected = false;
         let remainingCount: number | null = null;
         let aligoMessage = '';
-        try {
-          const options: any = { method: 'POST', body: new URLSearchParams({ apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID }), signal: AbortSignal.timeout(8000) };
-          if (proxyDispatcher) options.dispatcher = proxyDispatcher;
-          const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/heartinfo/', options);
-          const result: any = await response.json();
-          connected = response.ok && Number(result.code ?? result.result_code ?? -1) >= 0;
-          aligoMessage = String(result.message || '').trim();
-          const raw = result.list?.ALT_CNT ?? result.ALT_CNT;
-          if (user.role === 'MASTER' && connected && raw != null && Number.isSafeInteger(Number(raw)) && Number(raw) >= 0) remainingCount = Number(raw);
-        } catch (err: any) {
-          /* 조회 실패 시 임의의 잔액을 표시하지 않고 오류 사유만 기록합니다. */
-          aligoMessage = String(err?.cause?.message || err?.message || '알리고 API 통신 실패').slice(0, 120);
-          console.error('[Aligo] heartinfo_error', { error: aligoMessage, hasProxy: Boolean(proxyDispatcher) });
+        if (!ALIGO_API_KEY || !ALIGO_USER_ID) {
+          aligoMessage = '알리고 환경변수 미설정';
+        } else {
+          try {
+            const options: any = { method: 'POST', body: new URLSearchParams({ apikey: ALIGO_API_KEY, userid: ALIGO_USER_ID }), signal: AbortSignal.timeout(8000) };
+            if (proxyDispatcher) options.dispatcher = proxyDispatcher;
+            const response = await aligoFetch('https://kakaoapi.aligo.in/akv10/heartinfo/', options);
+            const result: any = await response.json();
+            connected = response.ok && Number(result.code ?? result.result_code ?? -1) >= 0;
+            aligoMessage = String(result.message || '').trim();
+            const raw = result.list?.ALT_CNT ?? result.ALT_CNT;
+            if (user.role === 'MASTER' && connected && raw != null && Number.isSafeInteger(Number(raw)) && Number(raw) >= 0) remainingCount = Number(raw);
+          } catch (err: any) {
+            /* 조회 실패 시 임의의 잔액을 표시하지 않고 오류 사유만 기록합니다. */
+            aligoMessage = String(err?.cause?.message || err?.message || '알리고 API 통신 실패').slice(0, 120);
+            console.error('[Aligo] heartinfo_error', { error: aligoMessage, hasProxy: Boolean(proxyDispatcher) });
+          }
         }
         console[connected ? 'info' : 'warn']('[Aligo] dispatch_stats', { role: user.role, academyId: user.academyId, reconciledCount, total, success, failed, connected, aligoMessage, remainingCount });
         return res.json({ items, total, monthly, success, failed, pending: total - success - failed, connected, aligoMessage, balance: (wallet?.kakaoBalance || 0) / 10, walletCount: Math.floor((wallet?.kakaoBalance || 0) / KAKAO_UNIT),

@@ -36,20 +36,51 @@ function compressWorksheetImage(file) {
         canvas.height = h;
         var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        // 나노시트 첨삭 사진을 WebP(품질 0.8)로 변환 (미지원 브라우저는 JPEG 폴백)
-        var dataUrl = '';
+        // 나노시트 첨삭 사진을 WebP(품질 0.8)로 변환하고, Vercel 4.5MB 제한(3장 합산)을 넘지 않도록 단계적 압축을 적용합니다.
         var mimeType = 'image/webp';
-        try {
-          dataUrl = canvas.toDataURL('image/webp', 0.8);
-          if (!dataUrl.startsWith('data:image/webp')) {
-            dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        var encodeCanvas = function(targetCanvas, quality) {
+          var url = '';
+          try {
+            url = targetCanvas.toDataURL('image/webp', quality);
+            if (!url.startsWith('data:image/webp')) {
+              url = targetCanvas.toDataURL('image/jpeg', quality);
+              mimeType = 'image/jpeg';
+            } else {
+              mimeType = 'image/webp';
+            }
+          } catch(e) {
+            url = targetCanvas.toDataURL('image/jpeg', quality);
             mimeType = 'image/jpeg';
           }
-        } catch(e) {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          mimeType = 'image/jpeg';
+          return url;
+        };
+        var dataUrl = encodeCanvas(canvas, 0.8);
+        var base64 = dataUrl.split(',')[1] || '';
+        // 장당 base64 길이를 900KB 이하로 유지해 3장 동시 전송 시에도 전체 요청이 3MB 미만으로 안정 통과하도록 보장
+        if (base64.length > 900000) {
+          dataUrl = encodeCanvas(canvas, 0.65);
+          base64 = dataUrl.split(',')[1] || '';
         }
-        var base64 = dataUrl.split(',')[1];
+        if (base64.length > 900000) {
+          var compactMax = 960;
+          var cw = w;
+          var ch = h;
+          if (cw > compactMax || ch > compactMax) {
+            if (cw > ch) {
+              ch = Math.round((ch * compactMax) / cw);
+              cw = compactMax;
+            } else {
+              cw = Math.round((cw * compactMax) / ch);
+              ch = compactMax;
+            }
+          }
+          var compactCanvas = document.createElement('canvas');
+          compactCanvas.width = cw;
+          compactCanvas.height = ch;
+          compactCanvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+          dataUrl = encodeCanvas(compactCanvas, 0.6);
+          base64 = dataUrl.split(',')[1] || '';
+        }
         resolve({
           name: file.name.replace(/\.[^.]+$/, '') + (mimeType === 'image/webp' ? '.webp' : '.jpg'),
           dataUrl: dataUrl,

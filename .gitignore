@@ -31,9 +31,11 @@ public_html/upload/book/*
 !public_html/upload/book/*.[wW][eE][bB][pP]
 !public_html/upload/book/*.[sS][vV][gG]
 public_html/export_db_dump.php
+public_html/migrated_real_data.js
 backups/
 *.sql
 !prisma/kakao-billing-upgrade.sql
+!prisma/portal-upgrade.sql
 
 # 5. Node & 환경변수 (.env)
 node_modules/

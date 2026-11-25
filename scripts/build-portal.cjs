@@ -13,9 +13,10 @@ fs.mkdirSync(output);
 const assets = new Set(['assets', 'css', 'font', 'images', 'js', 'modals', 'plugin', 'resources', 'upload']);
 const files = new Set(['index.html', 'admin_preview.html', 'admin_preview.js', 'master_preview.html', 'master_preview.js', 'student_preview.html', 'literacy_report.html', 'quiz_result.html', 'portfolio_report.html', 'manifest.json', 'service-worker.js']);
 function copy(from, to) {
-  // 기존 PHP 화면의 원생 사진·제출 첨부는 공개 정적 배포에서 제외합니다.
+  // 기존 PHP 화면의 원생 사진·제출 첨부 및 R2/인증 API(/api/content?action=file)로 제공되는 나노시트 PDF는 정적 배포에서 제외합니다.
   const relative = path.relative(source, from).replace(/\\/g, '/');
   if (/^upload\/(?:member|user_quiz)(?:\/|$)/.test(relative)) return;
+  if (/^upload\/book\/.*\.pdf$/i.test(relative)) return;
   if (fs.statSync(from).isDirectory()) {
     fs.mkdirSync(to, { recursive: true });
     for (const name of fs.readdirSync(from)) copy(path.join(from, name), path.join(to, name));
