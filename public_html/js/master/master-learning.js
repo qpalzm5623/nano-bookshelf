@@ -67,6 +67,20 @@
     return Boolean(window.NANO_SERVER_DATA || (window.NanoPortal && window.NanoPortal.remote));
   }
 
+  // 실제 나노시트 첨삭 완료 여부 판별 (생각 담기 지도 코멘트와 완전히 분리)
+  function isMasterWorksheetReviewCompleted(raw) {
+    if (!raw) return false;
+    if (raw.worksheetAiResult && typeof raw.worksheetAiResult === 'object') return true;
+    if (String(raw.reviewed || '').indexOf('완료') === -1) return false;
+    var hasPhotos = (Array.isArray(raw.worksheetPhotos) && raw.worksheetPhotos.length > 0) || (Number(raw.worksheetPhotoCount) || 0) > 0;
+    if (!hasPhotos) {
+      var tComment = String(raw.thoughtTeacherComment || '').trim();
+      var rawComment = String(raw.comment || '').trim();
+      if (!rawComment || (tComment && rawComment === tComment)) return false;
+    }
+    return true;
+  }
+
   // XSS 방지용 HTML 이스케이프
   function escapeHtml(value) {
     if (value === null || value === undefined) return '';
@@ -225,7 +239,7 @@
       cover: resolveSafeCoverUrl(raw.cover, bookMeta),
       score: Number(raw.score || 0),
       earnedPoints: Number(raw.earnedPoints || 0),
-      reviewed: raw.reviewed === '첨삭 완료' ? '첨삭 완료' : (raw.reviewed || '대기'),
+      reviewed: isMasterWorksheetReviewCompleted(raw) ? '첨삭 완료' : (raw.reviewed === '첨삭 완료' ? '첨삭 전' : (raw.reviewed || '대기')),
       sheet: raw.sheet === '작성 완료' ? '작성 완료' : '작성 전',
       worksheetPhotos: Array.isArray(raw.worksheetPhotos) ? raw.worksheetPhotos : [],
       worksheetPhotoCount: typeof raw.worksheetPhotoCount === 'number'
@@ -1140,10 +1154,12 @@
       }
     }
 
-    // 생각 담기 & 교사 코멘트
+    // 생각 담기 & 교사 코멘트 (나노시트 AI 첨삭 요약과 분리)
     var thoughtSec = document.getElementById('masterReportThoughtSection');
     var studentReply = String(log.studentThoughtAnswer || log.thoughtAnswer || '').trim();
-    var teacherComment = String(log.thoughtTeacherComment || log.comment || '').trim();
+    var hasAiRes = Boolean(log.worksheetAiResult && typeof log.worksheetAiResult === 'object');
+    var hasWsPhotos = (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0;
+    var teacherComment = String(log.thoughtTeacherComment || (!hasAiRes && !hasWsPhotos ? log.comment : '') || '').trim();
     var thoughtQ = String(log.thoughtQuestion || '').trim();
     var hasThoughtData = Boolean(thoughtQ || studentReply || teacherComment);
 
@@ -1173,11 +1189,11 @@
       }
     }
 
-    // 나노시트 첨삭 및 원본 사진
+    // 나노시트 첨삭 및 원본 사진 (실제 나노시트 사진이나 AI 첨삭 결과가 있을 때만 표시 · 생각 담기 지도 코멘트와 분리)
     var wsSec = document.getElementById('masterReportWorksheetSection');
     var aiRes = log.worksheetAiResult && typeof log.worksheetAiResult === 'object' ? log.worksheetAiResult : null;
     var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
-    var hasWorksheetSection = Boolean(aiRes || photos.length > 0 || log.sheet === '작성 완료' || log.reviewed === '첨삭 완료');
+    var hasWorksheetSection = Boolean(aiRes || photos.length > 0 || (Number(log.worksheetPhotoCount) || 0) > 0);
 
     if (wsSec) {
       if (!hasWorksheetSection) {

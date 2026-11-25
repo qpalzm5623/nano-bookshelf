@@ -428,7 +428,7 @@ JSON 출력 형식:
 async function openAggregateAiReportModal(studentName) {
   var allLogs = getLoadedLearningLogs();
   var stdLogs = allLogs.filter(function(l) {
-    return (l.studentName || l.name) === studentName && (l.reviewed && l.reviewed.includes('완료'));
+    return (l.studentName || l.name) === studentName && (typeof isWorksheetReviewCompleted === 'function' ? isWorksheetReviewCompleted(l) : Boolean(l.worksheetAiResult));
   });
 
   if (stdLogs.length < 4) {

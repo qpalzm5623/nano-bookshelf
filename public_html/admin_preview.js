@@ -1168,7 +1168,8 @@ async function saveCustomLearningLogs(logs) {
     window.nanoReviewSaving = true;
     try {
       for (var log of changes) {
-        var shouldSendPhotos = log.photosLoaded !== false || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0); var reviewPayload = { id: log.id, comment: log.comment || '', thoughtTeacherComment: log.thoughtTeacherComment || '', reviewed: log.reviewed || '접수', sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, reviewRevision: log.reviewRevision || '' }; if (shouldSendPhotos) reviewPayload.worksheetPhotos = log.worksheetPhotos; var response = await NanoPortal.request('review', reviewPayload);
+        var safeReviewed = ['대기', '첨삭 전', '첨삭 완료'].includes(log.reviewed) ? log.reviewed : '첨삭 전';
+        var shouldSendPhotos = log.photosLoaded !== false || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0); var reviewPayload = { id: log.id, comment: log.comment || '', thoughtTeacherComment: log.thoughtTeacherComment || '', reviewed: safeReviewed, sheet: log.sheet || '작성 전', thoughtHidden: log.thoughtHidden === true, worksheetAiResult: log.worksheetAiResult, reviewRevision: log.reviewRevision || '' }; if (shouldSendPhotos) reviewPayload.worksheetPhotos = log.worksheetPhotos; var response = await NanoPortal.request('review', reviewPayload);
         log.reviewRevision = response.reviewRevision; NanoPortal.applyReview(log);
         saveWorksheetStore(log.id, log.worksheetAiResult, shouldSendPhotos ? log.worksheetPhotos : undefined);
       }
@@ -1428,6 +1429,21 @@ function ensureLearningDetailPhotos(log, onDone) {
   });
 }
 
+// 실제 나노시트 첨삭 완료 여부 판별 (생각 담기 지도 코멘트와 완전히 분리)
+function isWorksheetReviewCompleted(log) {
+  if (!log) return false;
+  if (log.worksheetAiResult && typeof log.worksheetAiResult === 'object') return true;
+  if (!String(log.reviewed || '').includes('완료')) return false;
+  var hasPhotos = (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0;
+  if (!hasPhotos) {
+    var tComment = String(log.thoughtTeacherComment || '').trim();
+    var rawComment = String(log.comment || '').trim();
+    // 과거 버그로 생각 담기 지도 코멘트만 저장되며 reviewed='첨삭 완료'로 오염된 레코드는 미첨삭으로 간주
+    if (!rawComment || (tComment && rawComment === tComment)) return false;
+  }
+  return true;
+}
+
 // 첨삭 모달 열기
 function openCorrectionModal(logId) {
   function renderDonePhotosPreview(targetLog) {
@@ -1475,7 +1491,7 @@ function openCorrectionModal(logId) {
   currentWorksheetReviewRevision = log.reviewRevision || '';
   currentWorksheetPhotos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos.slice() : [];
   currentWorksheetAiResult = log.worksheetAiResult ? JSON.parse(JSON.stringify(log.worksheetAiResult)) : null;
-  currentWorksheetCorrectionDone = !!currentWorksheetAiResult || String(log.reviewed || '').includes('완료');
+  currentWorksheetCorrectionDone = isWorksheetReviewCompleted(log);
 
   // DOM 잔여물 및 이전 업로드 캐시 즉시 초기화
   var thumbBox = document.getElementById('worksheetUploadThumbnails');
@@ -1919,7 +1935,7 @@ function renderLearningTable(options) {
   var reviewRateEl = document.getElementById('learningStatReviewRate');
   var reviewSubEl = document.getElementById('learningStatReviewSub');
   var reviewDoneCount = statBaseLogs.filter(function(l) {
-    return (l.reviewed && String(l.reviewed).includes('완료')) || (l.comment && String(l.comment).trim().length > 0);
+    return isWorksheetReviewCompleted(l);
   }).length;
   var reviewRateVal = statBaseLogs.length > 0 ? Math.round((reviewDoneCount / statBaseLogs.length) * 100) : 0;
   if (reviewRateEl) reviewRateEl.innerText = reviewRateVal;
@@ -1961,9 +1977,9 @@ function renderLearningTable(options) {
     // 도서 표지 및 출판사 메타데이터 조회
     var bookMeta = getLearningLogBookMeta(l);
 
-    // 6. 첨삭 컬럼 (백그라운드 첨삭 중 스피너 표시 및 모달 연결)
+    // 6. 첨삭 컬럼 (백그라운드 첨삭 중 스피너 표시 및 모달 연결 · 생각 담기 코멘트와 완전 분리)
     var isReviewProcessing = worksheetAnalysisJobs.has(l.id) || (l.reviewed === '첨삭 중');
-    var isReviewDone = (l.reviewed && l.reviewed.includes('완료'));
+    var isReviewDone = isWorksheetReviewCompleted(l);
     var reviewBtnHtml = isReviewProcessing
       ? `<button type="button" class="btn btn-xs btn-outline-info font-weight-bold" disabled style="font-size:11px; padding:3px 9px; border-radius:6px; background:#f0fdfa; border-color:#99f6e4; color:#0f766e;">
            <i class="fa-solid fa-spinner fa-spin mr-1"></i>첨삭 중...
@@ -2410,7 +2426,7 @@ function openLearningDetailModal(id) {
 
   // 3. 생각 담기 영역 (질문, 학생 답안, 숨기기/보이기 토글, 교사 코멘트 직접 타이핑)
   var thoughtSec = document.getElementById('learnModalThoughtSection');
-  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer || (log.comment && log.comment.trim() !== '') || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0));
+  var hasThought = (log.hasThought !== false && (log.thoughtQuestion || log.sheetAnswer || log.studentThoughtAnswer || (log.thoughtTeacherComment && log.thoughtTeacherComment.trim() !== '') || (log.comment && log.comment.trim() !== '') || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0));
   
   if (thoughtSec) {
     if (!hasThought) {
@@ -2435,8 +2451,13 @@ function openLearningDetailModal(id) {
   }
 
   // 4. [신규] 나노시트 AI 사고력 분석지 렌더링 (#learnModalWorksheetAiSection)
-  // 첨삭 완료 상태이지만 worksheetAiResult가 비어 있는 구형 기록은 허위 분석 대신 안내 문구로 복원
-  if (!log.worksheetAiResult && log.reviewed === '첨삭 완료') {
+  // 실제 나노시트 사진이나 나노시트 첨삭 결과가 있을 때만 표시 (생각 담기 지도 코멘트와 완전 분리)
+  var hasRealWorksheet = Boolean(
+    (log.worksheetAiResult && typeof log.worksheetAiResult === 'object') ||
+    (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) ||
+    (Number(log.worksheetPhotoCount) || 0) > 0
+  );
+  if (!log.worksheetAiResult && isWorksheetReviewCompleted(log)) {
     var bName = log.bookTitle || '도서';
     log.worksheetAiResult = {
       summary: (log.comment && log.comment.trim())
@@ -2447,10 +2468,11 @@ function openLearningDetailModal(id) {
       nextStep: '나노시트 사진 속 글과 그림 표현을 바탕으로 AI 정밀 첨삭을 실행하면 맞춤형 성장 피드백을 확인할 수 있습니다.',
       parentGuide: '아이가 완성한 나노시트를 함께 보며 어떤 장면이 가장 인상 깊었는지 이야기를 나누어 보세요.'
     };
+    hasRealWorksheet = true;
   }
   var wsAiSec = document.getElementById('learnModalWorksheetAiSection');
 
-  if (log.worksheetAiResult || (Array.isArray(log.worksheetPhotos) && log.worksheetPhotos.length > 0) || (Number(log.worksheetPhotoCount) || 0) > 0) {
+  if (hasRealWorksheet) {
     var res = log.worksheetAiResult || {};
     var photos = Array.isArray(log.worksheetPhotos) ? log.worksheetPhotos : [];
     var sName = log.studentName || log.name || '원생';
@@ -2624,12 +2646,17 @@ async function saveThoughtTeacherComment() {
   var inputEl = document.getElementById('thoughtTeacherCommentInput');
   var commentVal = inputEl ? inputEl.value.trim() : '';
 
+  var prevThoughtComment = String(log.thoughtTeacherComment || '').trim();
   log.thoughtTeacherComment = commentVal;
-  // 나노시트 AI 첨삭이 없는 경우 기본 comment에도 동기화하여 인쇄/발송 호환성 보장
-  if (!log.worksheetAiResult) {
-    log.comment = commentVal;
-    if (commentVal) {
-      log.reviewed = '첨삭 완료';
+  // 생각 담기 지도 코멘트 저장은 나노시트 첨삭(comment·reviewed·sheet)을 절대 변경하지 않습니다.
+  // 단, 과거 버그로 나노시트 사진/AI 분석 없이 reviewed만 '첨삭 완료'로 오염되어 있었다면 함께 정상화합니다.
+  if (!isWorksheetReviewCompleted(log)) {
+    var rawC = String(log.comment || '').trim();
+    if (String(log.reviewed || '').includes('완료')) {
+      log.reviewed = '첨삭 전';
+    }
+    if (!rawC || (prevThoughtComment && rawC === prevThoughtComment)) {
+      log.comment = '';
     }
   }
 

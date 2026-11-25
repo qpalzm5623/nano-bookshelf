@@ -41,6 +41,13 @@ function logView(attempt: any, book: any, studentView = false, summaryOnly = fal
   const schoolInfo = [attempt.member?.school, attempt.member?.grade].filter(Boolean).join(' ') || attempt.member?.academy?.name || '';
   const bookPubInfo = [book?.publisher, book?.author].filter(Boolean).join(' · ') || '';
   const photos = Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [];
+  const photoCount = typeof attempt._worksheetPhotoCount === 'number' ? attempt._worksheetPhotoCount : photos.length;
+  const thoughtTeacherComment = details.thoughtTeacherComment || '';
+  const rawComment = details.comment || '';
+  // 과거 버그로 '생각 담기 지도 코멘트' 저장 시 나노시트 사진·AI 분석 없이 reviewed만 '첨삭 완료'로 오염된 기록 자동 보정
+  const isPollutedThoughtOnly = !details.worksheetAiResult && photoCount === 0 && details.reviewed === '첨삭 완료' && Boolean(thoughtTeacherComment) && (!rawComment || rawComment === thoughtTeacherComment);
+  const normalizedReviewed = isPollutedThoughtOnly ? '첨삭 전' : (details.reviewed || '대기');
+  const normalizedComment = isPollutedThoughtOnly ? '' : rawComment;
   return { id: attempt.id, academyId: attempt.member?.academy?.code || attempt.member?.academyId || '', academyName: attempt.member?.academy?.name || '', studentId: attempt.member.username,
     studentName: attempt.member.name, classGroup: attempt.member.classGroup?.name || '미지정',
     school: schoolInfo, bookId: book?.bookNo || attempt.bookId,
@@ -53,10 +60,10 @@ function logView(attempt: any, book: any, studentView = false, summaryOnly = fal
     sheet: details.sheet === '작성 완료' ? '작성 완료' : '작성 전',
     worksheetAiResult: details.worksheetAiResult || null,
     worksheetPhotos: summaryOnly ? [] : photos,
-    worksheetPhotoCount: typeof attempt._worksheetPhotoCount === 'number' ? attempt._worksheetPhotoCount : photos.length,
+    worksheetPhotoCount: photoCount,
     photosLoaded: !summaryOnly,
-    thoughtTeacherComment: details.thoughtTeacherComment || '',
-    comment: details.comment || '', reviewed: details.reviewed || '대기', thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
+    thoughtTeacherComment,
+    comment: normalizedComment, reviewed: normalizedReviewed, thoughtHidden: details.thoughtHidden === true, reviewRevision: details.reviewRevision || '' };
 }
 // 마스터(전국) 및 가맹 학원 학습 이력 조건부 조회 헬퍼
 async function queryLearningLogs(user: any, query: any) {
@@ -522,8 +529,9 @@ export default async function handler(req: any, res: any) {
       const previous: any = attempt.answers && !Array.isArray(attempt.answers) ? attempt.answers : {};
       if ((previous.reviewRevision || '') !== (body.reviewRevision || '')) return res.status(409).json({ error: '다른 선생님이 수정한 내용이 있습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.' });
       const reviewRevision = randomUUID();
+      // 생각 담기 지도 코멘트(thoughtTeacherComment)와 나노시트 첨삭(comment·reviewed·worksheetAiResult)은 완전히 독립 저장합니다.
       const thoughtTeacherComment = typeof body.thoughtTeacherComment === 'string' ? body.thoughtTeacherComment : (previous.thoughtTeacherComment || '');
-      const commentToSave = body.comment || (!body.worksheetAiResult && thoughtTeacherComment ? thoughtTeacherComment : (previous.comment || ''));
+      const commentToSave = body.comment;
       const answers = { ...previous, comment: commentToSave, thoughtTeacherComment, reviewed: body.reviewed, sheet: body.sheet, thoughtHidden: body.thoughtHidden, worksheetAiResult: body.worksheetAiResult !== undefined ? body.worksheetAiResult : (previous.worksheetAiResult || null), worksheetPhotos: Array.isArray(body.worksheetPhotos) ? body.worksheetPhotos : (previous.worksheetPhotos || []), reviewRevision };
       const saved = await prisma.quizAttempt.updateMany({ where: { id: attempt.id, answers: { equals: attempt.answers as any } }, data: { answers } });
       if (saved.count !== 1) return res.status(409).json({ error: '첨삭 내용이 변경되었습니다. 새로고침 후 다시 저장해 주세요.' });

@@ -174,7 +174,8 @@ export default async function handler(req: any, res: any) {
         worksheetPhotos: Array.isArray(details.worksheetPhotos) ? details.worksheetPhotos : [],
         thoughtQuestion: details.thoughtHidden ? '' : (details.thoughtQuestion || ''),
         thoughtAnswer: details.thoughtHidden ? '' : (log.thinkReply || ''),
-        comment: details.thoughtHidden ? '' : (details.thoughtTeacherComment || details.comment || ''),
+        // 생각 담기 지도 코멘트와 나노시트 AI 첨삭 결과를 분리하여 나노시트 요약이 생각 담기 코멘트에 중복 노출되지 않도록 차단
+        comment: details.thoughtHidden ? '' : (details.thoughtTeacherComment || (!details.worksheetAiResult && !(Array.isArray(details.worksheetPhotos) && details.worksheetPhotos.length > 0) ? (details.comment || '') : '')),
       });
     }
 
