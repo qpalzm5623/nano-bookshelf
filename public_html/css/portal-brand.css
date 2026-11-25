@@ -125,15 +125,50 @@ html[data-brand="JD"] #learningReportModalDialog .lr-header-emblem {
   box-shadow: 0 4px 12px rgba(22, 73, 219, 0.14);
 }
 html[data-brand="JD"] img.master-report-symbol[data-jd-logo],
-html[data-brand="JD"] img.lr-header-symbol[data-jd-logo] {
+html[data-brand="JD"] img.lr-header-symbol[data-jd-logo],
+html[data-brand="JD"] img.pf-header-symbol[data-jd-logo] {
   height: 26px !important;
   width: 34px !important;
   max-width: 34px !important;
   object-fit: contain;
 }
-html[data-brand="JD"] img.report-footer-logo[data-jd-logo] {
+html[data-brand="JD"] img.report-footer-logo[data-jd-logo],
+html[data-brand="JD"] img.pf-footer-logo[data-jd-logo] {
   height: 24px !important;
   max-width: 140px;
+}
+/* JD 브랜드 독서 성장 포트폴리오 A안 에디토리얼 블루 토큰 자동 전환 */
+html[data-brand="JD"] #portfolioPrintDoc {
+  --pf-ink: #172c50;
+  --pf-muted: #586985;
+  --pf-accent: #1649db;
+  --pf-accent-deep: #173f9b;
+  --pf-teal-soft: #eff4ff;
+  --pf-teal-border: #c7d7fe;
+  --pf-yellow: #3b82f6;
+  --pf-yellow-soft: #f4f7ff;
+  --pf-yellow-border: #bfdbfe;
+  --pf-yellow-ink: #1d4ed8;
+  --pf-line: #d6e2fb;
+  --pf-accent-bar: linear-gradient(90deg, #173f9b 0%, #1649db 62%, #60a5fa 100%);
+}
+html[data-brand="JD"] .portfolio-document-paper::before {
+  background: linear-gradient(90deg, #173f9b 0%, #1649db 62%, #60a5fa 100%) !important;
+}
+html[data-brand="JD"] #portfolioPrintDoc .pf-header-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f7ff 70%, #edf2ff 100%);
+  border-color: #d6e2fb;
+}
+html[data-brand="JD"] #portfolioPrintDoc .pf-stat-box.is-teal,
+html[data-brand="JD"] #portfolioPrintDoc .pf-stat-box.is-score,
+html[data-brand="JD"] #portfolioPrintDoc .pf-stat-box.is-amber,
+html[data-brand="JD"] #portfolioPrintDoc .pf-stat-box.is-routine {
+  background: linear-gradient(180deg, #f5f8ff 0%, #ffffff 55%);
+}
+html[data-brand="JD"] #portfolioPrintDoc .pf-teacher-comment-box {
+  background: linear-gradient(135deg, #f8faff 0%, #eff4ff 100%);
+  border-color: #c7d7fe;
+  border-left-color: #1649db;
 }
 html[data-brand="JD"] .master-report-photo-btn { background: #f5f8ff; border-color: #c7d7fe; }
 html[data-brand="JD"] .master-report-photo-btn:hover { border-color: #1649db; }

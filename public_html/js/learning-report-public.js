@@ -39,17 +39,20 @@
         '</div>' +
       '</div>' +
       '<div class="report-sub-card highlight' + (isFail ? ' is-fail' : '') + '">' +
-        '<div class="lr-score-wrap">' +
-          '<div class="lr-score-ring' + (isFail ? ' is-fail' : '') + '" style="--score-pct:' + score + ';"><span class="lr-score-ring-inner">' + score + '</span></div>' +
-          '<div class="public-score-info">' +
-            '<div class="public-score-head"><span class="lr-score-label">북퀴즈 최종 성적</span><span class="lr-chip ' + badgeCls + '">' + esc(badge) + '</span></div>' +
-            '<div class="score-row"><strong id="learnModalScore">' + score + '점</strong><small>(100점 만점 기준)</small></div>' +
+        '<div class="lr-score-top-row">' +
+          '<div class="lr-score-wrap">' +
+            '<div class="lr-score-ring' + (isFail ? ' is-fail' : '') + '" style="--score-pct:' + score + ';"><span class="lr-score-ring-inner">' + score + '</span></div>' +
+            '<div class="public-score-info">' +
+              '<div class="public-score-head"><span class="lr-score-label">북퀴즈 최종 성적</span><span class="lr-chip ' + badgeCls + '">' + esc(badge) + '</span></div>' +
+              '<div class="score-row"><strong id="learnModalScore">' + score + '점</strong></div>' +
+            '</div>' +
           '</div>' +
+          '<div class="lr-date-inline"><div class="lr-meta-head"><span class="lr-meta-icon is-teal" aria-hidden="true">📅</span><span class="lr-meta-label">학습 완료 일시</span></div><strong class="lr-meta-value">' + esc(a.completedDate) + '</strong></div>' +
         '</div>' +
       '</div>' +
       '<div class="report-meta-grid">' +
-        '<div class="report-sub-card lr-meta-tile"><div class="lr-meta-head"><span class="lr-meta-icon is-teal" aria-hidden="true">📅</span><span class="lr-meta-label">학습 및 퀴즈 일시</span></div><strong class="lr-meta-value">' + esc(a.completedDate) + '</strong></div>' +
-        '<div class="report-sub-card lr-meta-tile"><div class="lr-meta-head"><span class="lr-meta-icon is-amber" aria-hidden="true">🎓</span><span class="lr-meta-label">원생 정보</span></div><strong class="lr-meta-value" id="learnModalStudent">' + esc(student.name) + (student.classGroup ? ' (' + esc(student.classGroup) + ')' : '') + '</strong><small class="lr-meta-sub" id="learnModalStudentSchool">' + esc([student.school, student.grade].filter(Boolean).join(' ')) + '</small></div>' +
+        '<div class="report-sub-card lr-meta-tile"><div class="lr-meta-head"><span class="lr-meta-icon is-teal" aria-hidden="true">🏫</span><span class="lr-meta-label">소속 가맹점</span></div><strong class="lr-meta-value">' + esc(academyName) + '</strong></div>' +
+        '<div class="report-sub-card lr-meta-tile"><div class="lr-meta-head"><span class="lr-meta-icon is-amber" aria-hidden="true">🎓</span><span class="lr-meta-label">원생 및 반 정보</span></div><strong class="lr-meta-value" id="learnModalStudent">' + esc(student.name) + (student.classGroup ? ' (' + esc(student.classGroup) + ')' : '') + '</strong><small class="lr-meta-sub" id="learnModalStudentSchool">' + esc([student.school, student.grade].filter(Boolean).join(' ')) + '</small></div>' +
       '</div>' +
     '</section>';
 
@@ -60,7 +63,7 @@
       html += '<div class="report-quiz-grid">';
       html += quizzes.map(function (q, index) {
         var num = q.qNum || index + 1, state = q.isCorrect ? 'correct' : 'wrong';
-        return '<article class="report-quiz-card is-' + state + '"><div class="report-quiz-header"><span class="public-q-title"><span class="report-quiz-q-badge">Q' + esc(String(num).padStart(2, '0')) + '</span>문제 ' + esc(num) + '번 문항</span><span class="report-quiz-badge ' + state + '">' + (q.isCorrect ? '정답 (+' + Math.round(100 / quizzes.length) + '점)' : '오답 (0점)') + '</span></div><p class="report-quiz-question">' + esc(q.question) + '</p><div class="report-choice-box ' + state + '"><span class="report-choice-label">학생 선택 ' + (q.isCorrect ? '답안' : '오답') + '</span><span class="report-choice-val ' + (q.isCorrect ? '' : 'strike') + '">' + esc(q.userChoiceText || '미응답') + '</span></div>' +
+        return '<article class="report-quiz-card is-' + state + '"><div class="lr-quiz-row"><span class="report-quiz-q-badge">Q ' + esc(String(num).padStart(2, '0')) + '</span><p class="report-quiz-question">' + esc(q.question) + '</p><span class="lr-quiz-status"><span class="report-quiz-badge ' + state + '">' + (q.isCorrect ? '정답 (+' + Math.round(100 / quizzes.length) + '점)' : '오답 (0점)') + '</span></span></div><div class="report-choice-box ' + state + '"><span class="report-choice-label">학생 선택 ' + (q.isCorrect ? '답안' : '오답') + '</span><span class="report-choice-val ' + (q.isCorrect ? '' : 'strike') + '">' + esc(q.userChoiceText || '미응답') + '</span></div>' +
           (q.isCorrect ? '' : '<div class="report-choice-box actual"><span class="report-choice-label">실제 정답</span><span class="report-choice-val">' + esc(q.correctChoiceText) + '</span></div>') + '</article>';
       }).join('') + '</div>';
     } else {

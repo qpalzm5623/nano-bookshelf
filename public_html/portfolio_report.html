@@ -8,16 +8,16 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="css/portfolio.css?v=20261117_jd_theme">
+<link rel="stylesheet" href="css/portfolio.css?v=20261125_editorial">
 <style>
-body { margin:0; background:#f1f5f9; font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif; }
-#portfolioViewportContainer { padding:8px; }
-.kakao-bar { background:#fee500; padding:14px 16px; font-size:12px; display:flex; justify-content:space-between; gap:10px; }
-.msg { padding:48px 20px; text-align:center; color:#64748b; }
+body { margin:0; padding:12px 8px 24px; background:#edf2f1; font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif; color:#18292b; -webkit-font-smoothing:antialiased; }
+#portfolioViewportContainer { padding:0; }
+.msg { padding:48px 20px; text-align:center; color:#5a6b6e; font-size:13.5px; }
 .d-flex { display:flex; } .justify-content-between { justify-content:space-between; } .align-items-start { align-items:flex-start; } .align-items-center { align-items:center; }
-.mb-0 { margin-bottom:0; } .mb-1 { margin-bottom:4px; } .mb-2 { margin-bottom:8px; } .mb-3 { margin-bottom:16px; } .mb-4 { margin-bottom:24px; } .pb-3 { padding-bottom:16px; } .mr-1 { margin-right:4px; } .mr-2 { margin-right:8px; } .font-weight-bold { font-weight:700; } .text-right { text-align:right; }
+.mb-0 { margin-bottom:0; } .mb-1 { margin-bottom:4px; } .mb-2 { margin-bottom:8px; } .mb-3 { margin-bottom:14px; } .mb-4 { margin-bottom:20px; } .mt-1 { margin-top:4px; } .mt-3 { margin-top:12px; } .pt-2 { padding-top:8px; } .pb-3 { padding-bottom:14px; } .mr-1 { margin-right:4px; } .mr-2 { margin-right:8px; } .font-weight-bold { font-weight:700; } .text-right { text-align:right; } .text-center { text-align:center; } .border-top { border-top:1px solid #d7eae8; }
+.progress { width:100%; overflow:hidden; } .progress-bar { height:100%; }
 h3 { margin-top:0; }
-@media print { .kakao-bar { display:none; } #portfolioViewportContainer { padding:0; } }
+@media print { body { background:#ffffff; padding:0; } #portfolioViewportContainer.portfolio-view-mobile .portfolio-device-frame { width:100% !important; max-width:none !important; border:0 !important; box-shadow:none !important; border-radius:0 !important; } #portfolioViewportContainer.portfolio-view-mobile .portfolio-document-paper { padding:0 !important; background:#ffffff !important; } }
 </style>
 <link rel="stylesheet" href="/css/portal-brand.css?v=20261117_jd_theme">
 <script src="/js/portal-brand.js?v=20261117_jd_nofouc"></script>
@@ -25,11 +25,10 @@ h3 { margin-top:0; }
 <body>
 <main id="portfolioViewportContainer" class="portfolio-view-mobile">
 <div class="portfolio-device-frame"><div class="portfolio-mobile-screen">
-<header class="kakao-bar"><strong>● 나노의 책장 독서 리포트</strong><span>카카오 알림톡 웹뷰</span></header>
 <div id="portfolioPrintDoc" class="portfolio-document-paper" aria-live="polite"><p class="msg">포트폴리오를 불러오는 중입니다…</p></div>
 </div></div>
 </main>
-<script src="js/portfolio-renderer.js?v=20261117_pf_footer"></script>
+<script src="js/portfolio-renderer.js?v=20261125_editorial"></script>
 <script>
 (async function () {
   var view = document.getElementById('portfolioPrintDoc');
@@ -41,7 +40,7 @@ h3 { margin-top:0; }
     if (!res.ok) throw new Error(data.error || '포트폴리오를 불러올 수 없습니다.');
     NanoPortfolioRenderer.renderPortfolioDocument(view, { pfData:data.portfolio || {}, allowTeacherNoteEdit:false, allowCoverZoom:false });
   } catch (err) {
-    view.textContent = err.message || '포트폴리오를 불러올 수 없습니다. 학원에 문의해 주세요.';
+    view.textContent = err.message || '포트폴리오를 불러오지 못했습니다. 학원에 문의해 주세요.';
   }
 })();
 </script>

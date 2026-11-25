@@ -2310,6 +2310,10 @@ function openLearningDetailModal(id) {
   if (footerAcadEl) {
     footerAcadEl.innerText = curAcad;
   }
+  var modalAcadEl = document.getElementById('learnModalAcademy');
+  if (modalAcadEl) {
+    modalAcadEl.innerText = curAcad;
+  }
 
   // 2. 기본 개요 바인딩
   document.getElementById('learnModalStudent').innerText = `${(log.studentName || log.name)} (${log.classGroup})`;
@@ -2387,16 +2391,10 @@ function openLearningDetailModal(id) {
 
       return `
         <div class="report-quiz-card ${q.isCorrect ? 'is-correct' : 'is-wrong'}">
-          <div class="report-quiz-header">
-            <div class="d-flex align-items-center">
-              <span class="report-quiz-q-badge">Q</span>
-              <span class="report-quiz-q-num">${qNumStr}</span>
-              <span class="report-quiz-title">문제 ${q.qNum}번 문항</span>
-            </div>
-            ${statusBadge}
-          </div>
-          <div class="report-quiz-question">
-            <span>${escapePortfolioText(q.question)}</span>
+          <div class="lr-quiz-row">
+            <span class="report-quiz-q-badge">Q ${qNumStr}</span>
+            <div class="report-quiz-question">${escapePortfolioText(q.question)}</div>
+            <span class="lr-quiz-status">${statusBadge}</span>
           </div>
           ${choiceBox}
         </div>
@@ -6336,7 +6334,7 @@ function printHtmlInIsolatedFrame(innerHtml, bodyClass, title) {
   var headStyles = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function(node) { return node.outerHTML; }).join('\n');
   // 포트폴리오는 용지 여백 확보, 포스터는 A4 풀사이즈 정밀 피팅(여백 0)
   var pageRule = bodyClass === 'is-printing-portfolio'
-    ? 'margin: 10mm 15mm 12mm !important; size: A4 portrait;'
+    ? 'margin: 8mm 8mm 9mm !important; size: A4 portrait;'
     : (bodyClass === 'is-printing-poster' ? 'margin: 0 !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;');
   var overrideCss = '@page { ' + pageRule + ' } @media print { @page { ' + pageRule + ' } html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } body * { visibility:visible !important; } }';
   var removeFrame = function() { if (frame.parentNode) frame.parentNode.removeChild(frame); };
@@ -8116,7 +8114,7 @@ function printCurrentPortfolio() {
     return;
   }
   printHtmlInIsolatedFrame(
-    '<div id="portfolioPrintDoc" class="portfolio-document-view" style="max-width:800px; margin:0 auto; padding:0; background:#ffffff;">' + docContainer.innerHTML + '</div>',
+    '<div id="portfolioPrintDoc" class="portfolio-document-view" style="width:100%; max-width:none; margin:0; padding:0; background:#ffffff;">' + docContainer.innerHTML + '</div>',
     'is-printing-portfolio',
     '나노의 책장 독서 성장 포트폴리오'
   );

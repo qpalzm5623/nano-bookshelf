@@ -1013,7 +1013,7 @@
     if (typeof document === 'undefined' || typeof window === 'undefined') return;
     var docEl = document.getElementById('portfolioPrintDoc');
     if (docEl && window.NanoPortfolioRenderer && typeof window.NanoPortfolioRenderer.printHtmlInIsolatedFrame === 'function') {
-      var printBodyHtml = '<div id="portfolioPrintDoc" class="portfolio-document-view" style="max-width:800px; margin:0 auto; padding:0; background:#ffffff;">' + docEl.innerHTML + '</div>';
+      var printBodyHtml = '<div id="portfolioPrintDoc" class="portfolio-document-view" style="width:100%; max-width:none; margin:0; padding:0; background:#ffffff;">' + docEl.innerHTML + '</div>';
       window.NanoPortfolioRenderer.printHtmlInIsolatedFrame(
         printBodyHtml,
         'is-printing-portfolio',

@@ -1823,33 +1823,34 @@
                   <div class="d-flex align-items-center flex-wrap mb-2" style="gap: 5px;">
                     <span class="master-report-chip chip-teal" id="masterReportCertifiedBadge">완독 인증 도서</span>
                     <span class="master-report-chip chip-neutral" id="masterReportBookGrade">학년 미지정</span>
-                    <span class="master-report-chip chip-amber" id="masterReportEarnedPoints">0 P</span>
+                    <span class="d-none" id="masterReportEarnedPoints">0 P</span>
                   </div>
                   <h5 class="master-report-book-title mb-1" id="masterReportBookTitle">도서명</h5>
                   <div class="master-report-book-pub" id="masterReportBookPub">출판사 · 저자</div>
-                  <div class="master-report-academy-line">
-                    <i class="fa-solid fa-building-columns"></i>
-                    <span>소속 가맹점</span>
-                    <strong id="masterReportAcademy">-</strong>
-                  </div>
                 </div>
               </div>
 
               <div class="master-report-stats-col">
                 <div class="master-report-subcard highlight">
-                  <div class="master-report-score-wrap">
-                    <div class="master-report-score-ring" id="masterReportScoreRing" style="--score-pct: 100;">
-                      <span class="master-report-score-ring-inner" id="masterReportScoreRingVal">100</span>
-                    </div>
-                    <div style="min-width: 0; flex: 1;">
-                      <div class="d-flex justify-content-between align-items-center flex-wrap mb-1" style="gap: 4px;">
-                        <span class="master-report-score-label"><i class="fa-solid fa-award mr-1"></i>북퀴즈 최종 성적</span>
-                        <span class="master-report-chip chip-amber" id="masterReportPassBadge">우수 완독 인증</span>
+                  <div class="master-report-score-top-row">
+                    <div class="master-report-score-wrap">
+                      <div class="master-report-score-ring" id="masterReportScoreRing" style="--score-pct: 100;">
+                        <span class="master-report-score-ring-inner" id="masterReportScoreRingVal">100</span>
                       </div>
-                      <div class="d-flex align-items-baseline" style="gap: 7px;">
+                      <div style="min-width: 0;">
+                        <div class="d-flex align-items-center flex-wrap mb-1" style="gap: 5px;">
+                          <span class="master-report-score-label"><i class="fa-solid fa-award mr-1"></i>북퀴즈 최종 성적</span>
+                          <span class="master-report-chip chip-amber" id="masterReportPassBadge">우수 완독 인증</span>
+                        </div>
                         <span class="master-report-score-num" id="masterReportScore">0점</span>
-                        <small class="master-report-score-base">(100점 만점 기준)</small>
                       </div>
+                    </div>
+                    <div class="master-report-date-inline">
+                      <div class="master-report-meta-head mb-1">
+                        <span class="master-report-meta-icon is-teal"><i class="fa-solid fa-calendar-check"></i></span>
+                        <span class="master-report-meta-label">학습 완료 일시</span>
+                      </div>
+                      <div class="master-report-meta-value" id="masterReportDate">-</div>
                     </div>
                   </div>
                 </div>
@@ -1857,10 +1858,10 @@
                 <div class="master-report-subgrid">
                   <div class="master-report-subcard master-report-meta-tile">
                     <div class="master-report-meta-head">
-                      <span class="master-report-meta-icon is-teal"><i class="fa-solid fa-calendar-check"></i></span>
-                      <span class="master-report-meta-label">학습 완료 일시</span>
+                      <span class="master-report-meta-icon is-teal"><i class="fa-solid fa-building-columns"></i></span>
+                      <span class="master-report-meta-label">소속 가맹점</span>
                     </div>
-                    <div class="master-report-meta-value" id="masterReportDate">-</div>
+                    <div class="master-report-meta-value text-truncate" id="masterReportAcademy">-</div>
                   </div>
                   <div class="master-report-subcard master-report-meta-tile">
                     <div class="master-report-meta-head">
@@ -1887,7 +1888,7 @@
             <div id="masterReportQuizDetailContainer" class="master-report-quiz-grid"></div>
           </div>
 
-          <!-- 생각 담기 & 지도교사 코멘트 -->
+          <!-- 생각 담기 & 지도교사 코멘트 (좌: 질문+답변 / 우: 지도교사 코멘트 2열 배치) -->
           <div id="masterReportThoughtSection" class="master-report-thought-card" style="display: none;">
             <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #e6efee;">
               <h6 class="master-report-section-title mb-0">
@@ -1896,22 +1897,26 @@
               </h6>
               <span class="badge-soft badge-soft-neutral" id="masterReportThoughtVisibilityBadge" style="font-size: 10.5px;">리포트 포함</span>
             </div>
-            <div class="master-report-thought-q mb-2">
-              <strong><i class="fa-solid fa-circle-question mr-1"></i>질문</strong>
-              <span id="masterReportThoughtQuestion">-</span>
-            </div>
-            <div class="master-report-thought-a mb-2" id="masterReportThoughtAnswer">-</div>
-            <div id="masterReportThoughtCommentWrap" class="master-report-thought-c" style="display: none;">
-              <div class="master-report-thought-c-head">
-                <i class="fa-solid fa-comment-dots mr-1"></i>지도교사 코멘트
+            <div class="master-report-thought-layout">
+              <div class="master-report-thought-left">
+                <div class="master-report-thought-q mb-2">
+                  <strong><i class="fa-solid fa-circle-question mr-1"></i>질문</strong>
+                  <span id="masterReportThoughtQuestion">-</span>
+                </div>
+                <div class="master-report-thought-a" id="masterReportThoughtAnswer">-</div>
               </div>
-              <div id="masterReportThoughtComment" style="font-size: 12.5px; line-height: 1.65; white-space: pre-wrap; color: #18292b;">-</div>
+              <div id="masterReportThoughtCommentWrap" class="master-report-thought-c" style="display: none;">
+                <div class="master-report-thought-c-head">
+                  <i class="fa-solid fa-comment-dots mr-1"></i>지도교사 코멘트
+                </div>
+                <div id="masterReportThoughtComment" style="font-size: 12.5px; line-height: 1.65; white-space: pre-wrap; color: #18292b;">-</div>
+              </div>
             </div>
           </div>
 
-          <!-- 나노시트 첨삭 결과 & 원본 사진 -->
+          <!-- 나노시트 첨삭 결과 & 원본 사진 (좌측 사진 폭 최적화로 우측 첨삭 영역 확장) -->
           <div id="masterReportWorksheetSection" class="master-report-worksheet-card" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center pb-2 mb-3" style="border-bottom: 1px solid #e6efee;">
+            <div class="d-flex justify-content-between align-items-center pb-2 mb-2" style="border-bottom: 1px solid #e6efee;">
               <h6 class="master-report-section-title mb-0">
                 <span class="master-report-section-bar"></span>
                 <i class="fa-solid fa-seedling" style="color: #00938f;"></i>나노시트 첨삭 리포트
@@ -1922,12 +1927,12 @@
               </div>
             </div>
 
-            <div class="row" style="row-gap: 12px;">
-              <div class="col-md-5" id="masterReportWorksheetPhotosCol">
+            <div class="row master-report-worksheet-layout">
+              <div id="masterReportWorksheetPhotosCol">
                 <div class="font-weight-bold text-muted mb-2" style="font-size: 11.5px;">아이가 작성한 나노시트</div>
                 <div id="masterReportWorksheetPhotos" class="d-flex flex-wrap" style="gap: 8px;"></div>
               </div>
-              <div class="col-md-7" id="masterReportWorksheetAiCol">
+              <div id="masterReportWorksheetAiCol">
                 <div class="p-3 rounded mb-2" style="background: #eef9f8; border: 1px solid #bee6e3; border-left: 4px solid #00aca8;">
                   <div class="font-weight-bold mb-1" style="font-size: 11.5px; color: #0b6f6c;">이번 활동에서 돋보인 점</div>
                   <div id="masterReportWorksheetSummary" style="font-size: 12.5px; line-height: 1.6; color: #18292b;">-</div>

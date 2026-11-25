@@ -1109,11 +1109,11 @@
 
           return (
             '<div class="master-report-quiz-card ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
-              '<div class="d-flex justify-content-between align-items-center mb-2">' +
-                '<span class="d-inline-flex align-items-center"><span class="master-report-q-chip">Q' + String(qNum).padStart(2, '0') + '</span><strong style="font-size:12px; color:#5a6b6e;">문제 ' + qNum + '</strong></span>' +
-                badge +
+              '<div class="master-report-quiz-row">' +
+                '<span class="master-report-q-chip">Q ' + String(qNum).padStart(2, '0') + '</span>' +
+                '<div class="master-report-quiz-qtext">' + escapeHtml(q.question || '-') + '</div>' +
+                '<span class="master-report-quiz-badge">' + badge + '</span>' +
               '</div>' +
-              '<div class="font-weight-bold mb-2" style="font-size:13px; line-height:1.48; color:#18292b;">' + escapeHtml(q.question || '-') + '</div>' +
               choicesHtml +
             '</div>'
           );
@@ -1131,8 +1131,10 @@
     if (thoughtSec) {
       if (!hasThoughtData) {
         thoughtSec.style.display = 'none';
+        if (thoughtSec.classList) thoughtSec.classList.remove('has-comment');
       } else {
         thoughtSec.style.display = 'block';
+        if (thoughtSec.classList) thoughtSec.classList.toggle('has-comment', Boolean(teacherComment));
         setText('masterReportThoughtQuestion', thoughtQ || '책을 읽고 가장 기억에 남는 내용과 느낀 점을 자유롭게 적어보세요.');
         setText('masterReportThoughtAnswer', studentReply || '작성된 원생 답안이 없습니다.');
         var visBadge = document.getElementById('masterReportThoughtVisibilityBadge');

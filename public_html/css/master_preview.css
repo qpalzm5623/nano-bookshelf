@@ -1311,10 +1311,23 @@
       background: linear-gradient(135deg, #fff5f5 0%, #fffaf5 100%);
       border-color: #f6c4c0;
     }
+    .master-report-score-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
     .master-report-score-wrap {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
+      min-width: 0;
+    }
+    .master-report-date-inline {
+      padding-left: 14px;
+      border-left: 1px solid #cfe6e4;
+      flex-shrink: 0;
     }
     .master-report-score-ring {
       --ring-color: var(--lr-teal);
@@ -1470,9 +1483,12 @@
       border-color: #f3d4d2;
       background: #fffdfd;
     }
-    /* 5문항 등 홀수 개 문항일 때 마지막 카드가 하단 우측 공백 없이 전체 폭을 자연스럽게 채웁니다. */
-    .master-report-quiz-card:last-child:nth-child(odd) {
-      grid-column: 1 / -1;
+    /* Q 01 칩 바로 옆에서 질문이 시작되며, 줄바꿈 시에도 질문 좌측 선에 맞춰 정렬됩니다. */
+    .master-report-quiz-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 9px;
     }
     .master-report-q-chip {
       display: inline-flex;
@@ -1484,8 +1500,24 @@
       color: #ffffff;
       font-size: 11px;
       font-weight: 800;
-      margin-right: 6px;
       letter-spacing: 0.2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .master-report-quiz-qtext {
+      flex: 1;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.48;
+      color: var(--lr-ink);
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .master-report-quiz-badge {
+      flex-shrink: 0;
+      margin-top: 1px;
     }
     .master-report-quiz-card.is-wrong .master-report-q-chip {
       background: #d64545;
@@ -1511,9 +1543,41 @@
       background: #ffffff;
       border: 1px solid #dbe9e7;
       border-radius: 15px;
-      padding: 16px 18px;
-      margin-top: 16px;
+      padding: 15px 17px;
+      margin-top: 14px;
       box-shadow: 0 3px 12px rgba(15, 45, 48, 0.03);
+    }
+    /* 생각 담기: 좌측(질문+답변) · 우측(지도교사 코멘트) 2열 배치 */
+    .master-report-thought-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+    #masterReportThoughtSection:not(.has-comment) .master-report-thought-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .master-report-thought-left {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .master-report-thought-left .master-report-thought-a {
+      flex: 1;
+    }
+    /* 나노시트 첨삭: 좌측 사진 2장 폭에 딱 맞춰 우측 AI 피드백 영역을 최대한 넓힙니다. */
+    .master-report-worksheet-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 232px) minmax(0, 1fr);
+      gap: 14px;
+      margin: 0 !important;
+      align-items: start;
+    }
+    #masterReportWorksheetPhotosCol,
+    #masterReportWorksheetAiCol {
+      min-width: 0;
+      width: auto;
+      padding: 0;
     }
     .master-report-thought-q {
       background: var(--lr-amber-soft);
@@ -1599,13 +1663,13 @@
       border: 1px solid var(--border-medium);
       background: #fbf9f5;
       border-radius: 10px;
-      padding: 6px;
+      padding: 5px;
       display: inline-flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       cursor: pointer;
-      width: 118px;
+      width: 108px;
       transition: transform 0.15s ease, border-color 0.15s ease;
     }
     .master-report-photo-btn:hover {
@@ -1613,8 +1677,8 @@
       border-color: var(--lr-teal);
     }
     .master-report-photo-btn img {
-      width: 104px;
-      height: 132px;
+      width: 96px;
+      height: 124px;
       object-fit: cover;
       border-radius: 6px;
       background: #eee8dd;
@@ -1626,8 +1690,15 @@
     }
     @media (max-width: 767px) {
       .master-report-overview-split,
-      .master-report-quiz-grid {
+      .master-report-quiz-grid,
+      .master-report-thought-layout,
+      .master-report-worksheet-layout {
         grid-template-columns: 1fr;
+      }
+      .master-report-date-inline {
+        padding-left: 0;
+        border-left: 0;
+        width: 100%;
       }
       .master-report-doc-pill {
         display: none;
@@ -1783,12 +1854,20 @@
         gap: 7px 9px !important;
       }
       body.printing-master-report .master-report-quiz-card {
-        padding: 8px 11px !important;
+        padding: 7px 10px !important;
         box-shadow: none !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
         word-break: break-word !important;
         overflow-wrap: anywhere !important;
+      }
+      body.printing-master-report .master-report-quiz-row {
+        margin-bottom: 5px !important;
+        gap: 6px !important;
+      }
+      body.printing-master-report .master-report-quiz-qtext {
+        font-size: 11.5px !important;
+        line-height: 1.38 !important;
       }
       body.printing-master-report .master-report-choice-box {
         padding: 5px 8px !important;
@@ -1796,17 +1875,32 @@
       }
       body.printing-master-report .master-report-thought-card,
       body.printing-master-report .master-report-worksheet-card {
-        padding: 9px 12px !important;
-        margin-top: 8px !important;
+        padding: 8px 11px !important;
+        margin-top: 7px !important;
         box-shadow: none !important;
         break-inside: auto !important;
         page-break-inside: auto !important;
         word-break: break-word !important;
         overflow-wrap: anywhere !important;
       }
+      body.printing-master-report .master-report-thought-layout {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr) !important;
+        gap: 10px !important;
+      }
+      body.printing-master-report #masterReportThoughtSection:not(.has-comment) .master-report-thought-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      body.printing-master-report .master-report-thought-q,
+      body.printing-master-report .master-report-thought-a,
+      body.printing-master-report .master-report-thought-c {
+        padding: 7px 10px !important;
+        font-size: 11.5px !important;
+        line-height: 1.48 !important;
+      }
       body.printing-master-report .report-brand-footer {
-        margin-top: 10px !important;
-        padding-top: 8px !important;
+        margin-top: 8px !important;
+        padding-top: 7px !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
@@ -1814,7 +1908,7 @@
         height: 20px !important;
       }
       body.printing-master-report .master-report-photo-btn img {
-        max-height: 108px !important;
+        max-height: 104px !important;
         width: auto !important;
         object-fit: contain !important;
       }
@@ -1823,15 +1917,16 @@
         row-gap: 6px !important;
       }
       body.printing-master-report .master-report-worksheet-card .p-3 {
-        padding: 7px 10px !important;
+        padding: 6px 9px !important;
         margin-bottom: 5px !important;
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
-      body.printing-master-report #masterReportWorksheetSection .row {
+      body.printing-master-report #masterReportWorksheetSection .row,
+      body.printing-master-report #masterReportWorksheetSection .master-report-worksheet-layout {
         display: grid !important;
-        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr) !important;
-        gap: 12px !important;
+        grid-template-columns: minmax(0, 206px) minmax(0, 1fr) !important;
+        gap: 10px !important;
         margin: 0 !important;
       }
       body.printing-master-report #masterReportWorksheetPhotosCol,
@@ -1842,11 +1937,11 @@
         padding: 0 !important;
       }
       body.printing-master-report .master-report-photo-btn {
-        width: 106px !important;
+        width: 96px !important;
       }
       body.printing-master-report .master-report-photo-btn img {
-        width: 92px !important;
-        height: 118px !important;
+        width: 84px !important;
+        height: 108px !important;
       }
       body.printing-master-report .modal-backdrop,
       body.printing-master-portfolio .modal-backdrop {

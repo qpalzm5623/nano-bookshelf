@@ -12,9 +12,9 @@
 
   var PORTFOLIO_BOOK_CATEGORIES = ['소설', '인물이야기(위인)', '비문학/정보글'];
   var PORTFOLIO_CATEGORY_COLOR_MAP = {
-    '소설': '#1f8a7e',
-    '인물이야기(위인)': '#f6c344',
-    '비문학/정보글': '#e89936'
+    '소설': '#00aca8',
+    '인물이야기(위인)': '#f4a12c',
+    '비문학/정보글': '#3b82f6'
   };
 
   function escapePortfolioText(value) {
@@ -486,6 +486,7 @@
     var periodHtml = escapePortfolioText(period).replace(/\d{4}-\d{2}-\d{2}/g, '<span class="pf-date">$&</span>');
     var issueDate = String(opts.issueDate || pfData.issueDate || pfData.kstDate || '-').trim();
     var reportId = opts.reportId || buildPortfolioReportId(issueDate, pfId);
+    var academyName = String(opts.academyName || pfData.academyName || (std && std.academyName) || '나노의 책장').trim() || '나노의 책장';
 
     var bookCount = books.length;
     var rawAvg = Number(opts.quizAvg != null ? opts.quizAvg : (pfData.quizAvgNum != null ? pfData.quizAvgNum : String(pfData.quizAvg || '').replace(/[^0-9.]/g, '')));
@@ -496,24 +497,26 @@
       }, 0) / books.length;
     }
     if (isNaN(rawAvg)) rawAvg = 0;
-    var quizAvg = Math.round(rawAvg);
+    var quizAvg = Math.max(0, Math.min(100, Math.round(rawAvg)));
 
     // ③ 독서에서 발견한 성장 (4대 핵심 역량)
     var insightItems = generatePortfolioInsights(std, pfData);
     var defaultCatNames = ['문해력 & 중심 맥락 파악', '공감 능력 & 정서적 사유', '비판적 사고 & 문제 해결력', '자기표현 & 능동적 독서 태도'];
     var defaultIcons = ['fa-solid fa-lightbulb', 'fa-solid fa-heart', 'fa-solid fa-scale-balanced', 'fa-solid fa-seedling'];
-    var defaultCols = ['#1f8a7e', '#e67828', '#3b82f6', '#10b981'];
+    var defaultCols = ['#00aca8', '#f4a12c', '#3b82f6', '#10b981'];
+    var insightThemes = ['is-teal', 'is-amber', 'is-blue', 'is-emerald'];
     var insightGridHtml = (
       '<div class="pf-insight-card-grid">' +
         insightItems.map(function(item, idx) {
           var cat = (typeof item === 'object' && item.category) ? item.category : (defaultCatNames[idx] || '독서 성장 관찰');
           var icon = (typeof item === 'object' && item.icon) ? item.icon : (defaultIcons[idx % 4]);
-          var col = (typeof item === 'object' && item.color) ? item.color : (defaultCols[idx % 4]);
+          var col = defaultCols[idx % 4];
+          var themeCls = insightThemes[idx % 4];
           var text = (typeof item === 'object' && item.comment) ? item.comment : String(item || '');
           return (
-            '<div class="pf-insight-card">' +
+            '<div class="pf-insight-card ' + themeCls + '">' +
               '<div class="pf-insight-card-head">' +
-                '<i class="' + icon + '" style="color:' + col + ';"></i>' +
+                '<span class="pf-insight-icon" style="color:' + col + ';"><i class="' + icon + '"></i></span>' +
                 '<span>' + escapePortfolioText(cat) + '</span>' +
               '</div>' +
               '<div class="pf-insight-card-body">' +
@@ -558,9 +561,11 @@
         : (matchedBook ? matchedBook.author : '');
 
       var cleanScoreText = String(b.score == null || b.score === '' ? '기록 없음' : b.score).replace(/북퀴즈\s*/g, '').trim();
+      var numericBookScore = parseFloat(cleanScoreText.replace(/[^0-9.]/g, ''));
       if (/^\d+(\.\d+)?$/.test(cleanScoreText)) {
         cleanScoreText = cleanScoreText + '점';
       }
+      var scorePillCls = isNaN(numericBookScore) ? '' : (numericBookScore >= 100 ? ' is-perfect' : (numericBookScore < 60 ? ' is-low' : ''));
 
       var commentText = getBookObservationComment(b, studentName, loadedLogs, bookCatalog);
 
@@ -584,7 +589,7 @@
                 '<span class="pf-book-date" aria-label="' + escapePortfolioText(bookDate || '완독일 미등록') + '">' + dateHtml + '</span>' +
               '</div>' +
               '<div class="pf-book-score-slot">' +
-                '<span class="pf-book-score-pill">' + escapePortfolioText(cleanScoreText) + '</span>' +
+                '<span class="pf-book-score-pill' + scorePillCls + '">' + escapePortfolioText(cleanScoreText) + '</span>' +
               '</div>' +
             '</div>' +
             '<div class="pf-book-card-top">' +
@@ -628,35 +633,69 @@
 
     return (
       '<div class="pf-page1-section">' +
-        '<div class="pf-header-section mb-3 pb-3 border-bottom">' +
-          '<div class="d-flex justify-content-between align-items-start mb-2 pf-header-top">' +
-            '<div>' +
-              '<div style="font-size:11px; font-weight:800; letter-spacing:1px; color:#1f8a7e; text-transform:uppercase;">나노의 책장 (Nano Bookshelf)</div>' +
-              '<h3 class="font-weight-bold mb-1 pf-header-title">' +
-                '<i class="fa-solid fa-book-bookmark text-success mr-2" style="color:#1f8a7e !important;"></i>독서 성장 포트폴리오' +
-              '</h3>' +
-              '<p class="text-muted mb-0" style="font-size:12px;">읽고, 생각하고, 성장한 기록을 한눈에 살펴보세요.</p>' +
+        '<div class="pf-print-accent-bar" aria-hidden="true"></div>' +
+        '<div class="pf-header-section mb-3">' +
+          '<div class="d-flex justify-content-between align-items-start mb-3 pf-header-top">' +
+            '<div class="pf-header-brand">' +
+              '<div class="pf-header-emblem">' +
+                '<img src="resources/images/common/symbol.png" alt="나노의 책장 심볼" data-portal-logo class="pf-header-symbol" onerror="this.style.display=\'none\';">' +
+              '</div>' +
+              '<div class="pf-header-copy">' +
+                '<div class="pf-header-eyebrow"><span class="pf-eyebrow-dot"></span>OFFICIAL READING PORTFOLIO</div>' +
+                '<h3 class="font-weight-bold mb-1 pf-header-title">독서 성장 포트폴리오</h3>' +
+                '<p class="text-muted mb-0 pf-header-sub">읽고, 생각하고, 성장한 기록을 한눈에 살펴보세요.</p>' +
+              '</div>' +
             '</div>' +
             '<div class="text-right pf-header-meta">' +
-              '<span class="pf-report-id mb-1">발급번호 ' + escapePortfolioText(reportId) + '</span>' +
-              '<div class="text-muted" style="font-size:11.5px;">발급일: ' + escapePortfolioText(issueDate) + '</div>' +
+              '<span class="pf-report-id mb-1"><i class="fa-solid fa-certificate mr-1"></i>발급번호 ' + escapePortfolioText(reportId) + '</span>' +
+              '<div class="text-muted pf-issue-date">발급일: ' + escapePortfolioText(issueDate) + '</div>' +
             '</div>' +
           '</div>' +
-          '<div class="pf-student-info-grid mt-2">' +
-            '<div class="pf-student-info-cell"><span class="pf-info-label">학생명</span><strong class="pf-info-val">' + escapePortfolioText(studentName) + '</strong></div>' +
-            '<div class="pf-student-info-cell"><span class="pf-info-label">학교 / 학년</span><strong class="pf-info-val">' + escapePortfolioText(schoolGrade) + '</strong></div>' +
-            '<div class="pf-student-info-cell"><span class="pf-info-label">소속 / 지도교사</span><strong class="pf-info-val">' + escapePortfolioText(classGroup) + ' · ' + escapePortfolioText(teacher) + '</strong></div>' +
-            '<div class="pf-student-info-cell"><span class="pf-info-label">분석 대상 기간</span><strong class="pf-info-val pf-info-highlight">' + periodHtml + '</strong></div>' +
+          '<div class="pf-student-info-grid">' +
+            '<div class="pf-student-info-cell">' +
+              '<div class="pf-info-head"><span class="pf-info-icon is-teal"><i class="fa-solid fa-user-graduate"></i></span><span class="pf-info-label">학생명</span></div>' +
+              '<strong class="pf-info-val">' + escapePortfolioText(studentName) + '</strong>' +
+            '</div>' +
+            '<div class="pf-student-info-cell">' +
+              '<div class="pf-info-head"><span class="pf-info-icon is-neutral"><i class="fa-solid fa-school"></i></span><span class="pf-info-label">학교 / 학년</span></div>' +
+              '<strong class="pf-info-val">' + escapePortfolioText(schoolGrade) + '</strong>' +
+            '</div>' +
+            '<div class="pf-student-info-cell">' +
+              '<div class="pf-info-head"><span class="pf-info-icon is-amber"><i class="fa-solid fa-chalkboard-user"></i></span><span class="pf-info-label">소속 / 지도교사</span></div>' +
+              '<strong class="pf-info-val">' + escapePortfolioText(classGroup) + ' · ' + escapePortfolioText(teacher) + '</strong>' +
+            '</div>' +
+            '<div class="pf-student-info-cell">' +
+              '<div class="pf-info-head"><span class="pf-info-icon is-teal"><i class="fa-solid fa-calendar-days"></i></span><span class="pf-info-label">분석 대상 기간</span></div>' +
+              '<strong class="pf-info-val pf-info-highlight">' + periodHtml + '</strong>' +
+            '</div>' +
           '</div>' +
         '</div>' +
 
         '<div class="mb-3">' +
-          '<div class="pf-section-title mb-2"><i class="fa-solid fa-chart-simple"></i>이번 기간의 독서</div>' +
+          '<div class="pf-section-title mb-2"><span class="pf-section-bar"></span><i class="fa-solid fa-chart-simple"></i>이번 기간의 독서</div>' +
           '<div class="pf-stat-grid">' +
-            '<div class="pf-stat-box"><div class="pf-stat-label">완독 도서수</div><div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">권</span></div><div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">목표 완독 완료</div></div>' +
-            '<div class="pf-stat-box"><div class="pf-stat-label">북퀴즈 완료</div><div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">회</span></div><div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">응시율 100%</div></div>' +
-            '<div class="pf-stat-box"><div class="pf-stat-label">평균 이해도</div><div class="pf-stat-value">' + quizAvg + '<span class="pf-stat-unit">점</span></div><div class="pf-stat-sub text-muted">북퀴즈 통과</div></div>' +
-            '<div class="pf-stat-box"><div class="pf-stat-label">독서 성실도</div><div class="pf-stat-value">100<span class="pf-stat-unit">%</span></div><div class="pf-stat-sub text-success font-weight-bold" style="color:#1f8a7e !important;">성실한 루틴 완성</div></div>' +
+            '<div class="pf-stat-box is-teal">' +
+              '<div class="pf-stat-top"><span class="pf-stat-icon is-teal"><i class="fa-solid fa-book-open"></i></span><span class="pf-stat-label">완독 도서수</span></div>' +
+              '<div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">권</span></div>' +
+              '<div class="pf-stat-badge is-teal">목표 완독 완료</div>' +
+            '</div>' +
+            '<div class="pf-stat-box is-amber">' +
+              '<div class="pf-stat-top"><span class="pf-stat-icon is-amber"><i class="fa-solid fa-clipboard-check"></i></span><span class="pf-stat-label">북퀴즈 완료</span></div>' +
+              '<div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">회</span></div>' +
+              '<div class="pf-stat-badge is-amber">응시율 100%</div>' +
+            '</div>' +
+            '<div class="pf-stat-box is-score">' +
+              '<div class="pf-stat-top"><span class="pf-kpi-ring" style="--score-pct:' + quizAvg + ';"><span class="pf-kpi-ring-in"><i class="fa-solid fa-award"></i></span></span><span class="pf-stat-label">평균 이해도</span></div>' +
+              '<div class="pf-stat-value">' + quizAvg + '<span class="pf-stat-unit">점</span></div>' +
+              '<div class="pf-stat-meter"><span class="pf-stat-meter-fill is-teal" style="width:' + quizAvg + '%;"></span></div>' +
+              '<div class="pf-stat-sub">북퀴즈 통과</div>' +
+            '</div>' +
+            '<div class="pf-stat-box is-routine">' +
+              '<div class="pf-stat-top"><span class="pf-stat-icon is-routine"><i class="fa-solid fa-medal"></i></span><span class="pf-stat-label">독서 성실도</span></div>' +
+              '<div class="pf-stat-value">100<span class="pf-stat-unit">%</span></div>' +
+              '<div class="pf-stat-meter"><span class="pf-stat-meter-fill is-amber" style="width:100%;"></span></div>' +
+              '<div class="pf-stat-sub is-teal">성실한 루틴 완성</div>' +
+            '</div>' +
           '</div>' +
         '</div>' +
 
@@ -664,7 +703,7 @@
           '<div class="pf-panel">' +
             '<div class="pf-panel-head">' +
               '<h5 class="pf-section-title mb-0">' +
-                '<i class="fa-solid fa-book-open-reader" style="color:#1f8a7e;"></i>독서에서 발견한 성장' +
+                '<span class="pf-section-bar"></span><i class="fa-solid fa-book-open-reader"></i>독서에서 발견한 성장' +
               '</h5>' +
             '</div>' +
             insightGridHtml +
@@ -672,15 +711,15 @@
         '</div>' +
 
         '<div class="mb-3">' +
-          '<div class="pf-section-title mb-2"><i class="fa-solid fa-pie-chart"></i>나의 독서 취향</div>' +
+          '<div class="pf-section-title mb-2"><span class="pf-section-bar is-amber"></span><i class="fa-solid fa-chart-pie"></i>나의 독서 취향</div>' +
           '<div class="pf-preference-wrap">' +
             '<div class="pf-preference-row">' +
               '<div class="text-center pf-preference-chart-col">' +
                 '<div style="position:relative; display:inline-block;">' +
                   donutSvg +
                   '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none;">' +
-                    '<div style="font-size:18px; font-weight:800; color:#124e47; line-height:1;">' + bookCount + '권</div>' +
-                    '<div style="font-size:9.5px; color:#7d756d; font-weight:600; margin-top:2px;">누적 완독</div>' +
+                    '<div style="font-size:18px; font-weight:800; color:#0b6f6c; line-height:1;">' + bookCount + '권</div>' +
+                    '<div style="font-size:9.5px; color:#5a6b6e; font-weight:600; margin-top:2px;">누적 완독</div>' +
                   '</div>' +
                 '</div>' +
                 '<div class="text-muted mt-1" style="font-size:11px; font-weight:600;">도서 카테고리별 완독 분포</div>' +
@@ -695,20 +734,20 @@
                   distKeys.map(function(k, index) {
                     var val = dist[k] || 0;
                     var cnt = (catCounts && catCounts[k]) || 0;
-                    var barColor = PORTFOLIO_CATEGORY_COLOR_MAP[k] || ['#1f8a7e', '#f6c344', '#e89936', '#72aaa1'][index % 4];
+                    var barColor = PORTFOLIO_CATEGORY_COLOR_MAP[k] || ['#00aca8', '#f4a12c', '#3b82f6', '#10b981'][index % 4];
                     var countLabel = bookCount > 0 ? (' (' + cnt + '권)') : '';
-                    var valColor = val > 0 ? '#1f8a7e' : '#94a3b8';
+                    var valColor = val > 0 ? '#0b6f6c' : '#94a3b8';
                     return (
                       '<div class="mb-1.5" style="font-size:11.5px;">' +
                         '<div class="d-flex justify-content-between align-items-center mb-0.5">' +
-                          '<span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; color:#334155;">' +
+                          '<span style="display:inline-flex; align-items:center; gap:6px; font-weight:600; color:#18292b;">' +
                             '<span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:' + barColor + '; flex-shrink:0;"></span>' +
                             escapePortfolioText(k) +
                           '</span>' +
                           '<span class="font-weight-bold" style="color:' + valColor + ';">' + val + '%' + countLabel + '</span>' +
                         '</div>' +
-                        '<div class="progress" style="height:5px; background:#ece5d9; border-radius:3px;">' +
-                          '<div class="progress-bar" style="width:' + val + '%; background:' + barColor + '; border-radius:3px;"></div>' +
+                        '<div class="progress" style="height:6px; background:#e7efee; border-radius:99px;">' +
+                          '<div class="progress-bar" style="width:' + val + '%; background:' + barColor + '; border-radius:99px;"></div>' +
                         '</div>' +
                       '</div>'
                     );
@@ -724,14 +763,14 @@
 
       '<div class="pf-page2-section">' +
         '<div class="pf-detail-header">' +
-          '<div style="font-size:12px; font-weight:700; color:#1f8a7e;">' +
+          '<div style="font-size:12px; font-weight:700; color:#0b6f6c;">' +
             '<i class="fa-solid fa-book-open mr-1"></i>나노의 책장 독서 성장 포트폴리오 <span class="text-muted font-weight-normal">| 도서별 세부 성취 및 지도교사 총평</span>' +
           '</div>' +
-          '<div style="font-size:11px; color:#7d756d;">학생명: <strong class="text-dark">' + escapePortfolioText(studentName) + '</strong> (' + escapePortfolioText(schoolGrade) + ') · 발급번호: ' + escapePortfolioText(reportId) + '</div>' +
+          '<div style="font-size:11px; color:#5a6b6e;">학생명: <strong class="text-dark">' + escapePortfolioText(studentName) + '</strong> (' + escapePortfolioText(schoolGrade) + ') · 발급번호: ' + escapePortfolioText(reportId) + '</div>' +
         '</div>' +
 
         '<div class="mb-3">' +
-          '<div class="pf-section-title mb-2"><i class="fa-solid fa-award"></i>책마다 쌓인 성장 기록</div>' +
+          '<div class="pf-section-title mb-2"><span class="pf-section-bar"></span><i class="fa-solid fa-award"></i>책마다 쌓인 성장 기록</div>' +
           '<div class="pf-books-grid-row">' +
             (booksGridHtml || '<div class="pf-empty">이 기간에 등록된 완독 도서가 없습니다.</div>') +
           '</div>' +
@@ -740,28 +779,33 @@
         '<div class="mb-3">' +
           '<div class="pf-panel pf-teacher-comment-box">' +
             '<div class="pf-panel-head d-flex justify-content-between align-items-center">' +
-              '<strong class="pf-section-title mb-0"><i class="fa-solid fa-chalkboard-user mr-2 text-success" style="color:#1f8a7e !important;"></i>선생님의 한마디</strong>' +
+              '<strong class="pf-section-title mb-0"><span class="pf-section-bar is-amber"></span><i class="fa-solid fa-chalkboard-user mr-1"></i>선생님의 한마디</strong>' +
               '<div class="d-flex align-items-center" style="gap:8px;">' +
                 '<span class="pf-panel-badge">담당 교사: ' + escapePortfolioText(teacher) + '</span>' +
                 teacherNoteEditBtnHtml +
               '</div>' +
             '</div>' +
-            '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13px; color:#374151; white-space:pre-wrap;">' +
+            '<div id="pfTeacherNoteDisplay" style="line-height:1.75; font-size:13.5px; color:#18292b; white-space:pre-wrap;">' +
               escapePortfolioText(currentTeacherNote) +
             '</div>' +
             teacherNoteEditWrapHtml +
             '<div class="pf-signature mt-3 pt-2 border-top">' +
               '<span style="font-size:11px; color:#6b7280;">나노의 책장 인증 지도교사</span>' +
-              '<div style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#124e47; font-size:12.5px;">' +
-                '<span>' + escapePortfolioText(teacher) + '</span>' +
+              '<div class="pf-signature-name">' +
+                '<i class="fa-solid fa-stamp mr-1"></i><span>' + escapePortfolioText(teacher) + '</span>' +
               '</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
 
-        '<div class="pf-footer text-muted">' +
-          '<div style="margin-left:auto;">아이의 독서는 끝없는 가능성의 시작입니다. · © 나노의 책장 (Nano Bookshelf)</div>' +
-        '</div>' +
+        '<footer class="pf-footer text-muted">' +
+          '<div class="pf-footer-left">' +
+            '<img src="resources/images/common/logo.png" alt="나노의 책장" data-portal-logo class="pf-footer-logo">' +
+            '<span class="pf-footer-divider" aria-hidden="true"></span>' +
+            '<span class="pf-footer-slogan">아이의 독서는 끝없는 가능성의 시작입니다.</span>' +
+          '</div>' +
+          '<div class="pf-footer-right"><strong>' + escapePortfolioText(academyName) + '</strong> · © 나노의 책장 (Nano Bookshelf)</div>' +
+        '</footer>' +
       '</div>'
     );
   }
@@ -788,13 +832,18 @@
     }).join('\n');
 
     var pageRule = bodyClass === 'is-printing-portfolio'
-      ? 'margin: 10mm 14mm 11mm !important; size: A4 portrait;'
+      ? 'margin: 8mm 8mm 9mm !important; size: A4 portrait;'
       : (bodyClass === 'is-printing-poster' ? 'margin: 0 !important; size: A4 portrait;' : 'margin: 20px !important; size: auto;');
+
+    var brandAttr = (document.documentElement && document.documentElement.dataset && document.documentElement.dataset.brand)
+      ? ' data-brand="' + escapePortfolioText(document.documentElement.dataset.brand) + '"'
+      : '';
 
     var overrideCss =
       '@page { ' + pageRule + ' } ' +
       '@media print { @page { ' + pageRule + ' } ' +
-      'html, body { height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } ' +
+      'html, body { width:100% !important; height:auto !important; overflow:visible !important; background:#fff !important; margin:0 !important; padding:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; } ' +
+      'body.is-printing-portfolio #portfolioPrintDoc { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; } ' +
       'body * { visibility:visible !important; } }';
 
     var removeFrame = function() {
@@ -833,7 +882,7 @@
     readinessTimer = setTimeout(startPrint, 10000);
     frameDoc.open();
     frameDoc.write(
-      '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">' +
+      '<!DOCTYPE html><html lang="ko"' + brandAttr + '><head><meta charset="utf-8">' +
       '<base href="' + escapePortfolioText(document.baseURI || '') + '">' +
       '<title>' + escapePortfolioText(title || '인쇄') + '</title>' +
       headStyles + '<style>' + overrideCss + '</style>' +

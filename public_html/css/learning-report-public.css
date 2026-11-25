@@ -56,11 +56,23 @@ small { color: #5a6b6e; font-size: 12px; }
 .public-score-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: 5px;
+  margin-bottom: 3px;
 }
+#learningReportModalBody .lr-date-inline {
+  width: 100%;
+  padding-left: 0;
+  padding-top: 8px;
+  border-left: 0;
+  border-top: 1px dashed #cfe6e4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#learningReportModalBody .lr-date-inline .lr-meta-head { margin-bottom: 0; }
 .score-row { display: flex; align-items: baseline; gap: 6px; }
 .report-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 
@@ -94,7 +106,7 @@ small { color: #5a6b6e; font-size: 12px; }
   font-weight: 700;
 }
 .public-q-title { display: inline-flex; align-items: center; color: #5a6b6e; }
-.report-quiz-q-badge { padding: 2px 7px; font-size: 11px; margin-right: 7px; }
+.report-quiz-q-badge { padding: 2px 7px; font-size: 11px; }
 .report-quiz-badge { border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; background: #eef9f8; color: #0b6f6c; border: 1px solid #bee6e3; }
 .report-quiz-badge.wrong { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
 .report-choice-box { display: flex; border: 1px solid #bee6e3; border-radius: 9px; background: #eef9f8; color: #0b6f6c; margin-top: 6px; }
