@@ -700,10 +700,18 @@
     });
   }
 
-  // 데이터 로드 & 새로고침
-  async function refresh() {
+  var SHARING_CACHE_TTL_MS = 180000; // 탭 재진입 시 3분간 폴더·카탈로그 캐시 재사용
+
+  // 데이터 로드 & 새로고침 (탭 전환 시 options.useCache=true로 불필요한 DB 재조회 차단)
+  async function refresh(options) {
     var root = document.getElementById('view-content-sharing');
     if (!root) return;
+    var useCache = Boolean(options && options.useCache === true);
+    if (state.loading) return;
+    if (useCache && state.loadedAt && !state.error && (Date.now() - state.loadedAt < SHARING_CACHE_TTL_MS)) {
+      render();
+      return;
+    }
     state.loading = true;
     state.error = '';
     render();
@@ -715,6 +723,7 @@
       state.items = results[0].items || [];
       state.received = results[0].received || [];
       state.catalog = results[1].items || [];
+      state.loadedAt = Date.now();
     } catch (err) {
       state.error = err.message || '콘텐츠 공유 정보를 불러오지 못했습니다.';
     } finally {

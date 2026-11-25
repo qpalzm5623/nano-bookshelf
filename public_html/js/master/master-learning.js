@@ -8,10 +8,12 @@
 (function() {
   var MASTER_LEARNING_PAGE_SIZE = 15;
   var MAX_SERVER_FETCH_PAGES = 6; // 최대 3,000건 (500 * 6)
+  var MASTER_LEARNING_CACHE_TTL_MS = 180000; // 탭 재진입 시 3분간 동일 조회 결과 캐시 재사용
 
   var currentFilteredMasterLogs = [];
   var masterLearningCurrentPage = 1;
   var masterReportDetailCache = Object.create(null);
+  var masterLearningResultCache = Object.create(null);
   var currentOpenMasterReportId = null;
 
   // 중복 호출(초기 탭 진입 시 initMasterLearning + executeMasterLearningSearch 연속 호출) 방지 상태
@@ -671,6 +673,19 @@
         return activeSearchPromise;
       }
 
+      // 탭 전환 복귀(useCache: true) 시 최근 3분 내 동일 조건 캐시가 있으면 DB 재조회 없이 즉시 렌더링
+      var cachedResult = (options && options.useCache === true) ? masterLearningResultCache[queryKey] : null;
+      if (cachedResult && (Date.now() - cachedResult.loadedAt < MASTER_LEARNING_CACHE_TTL_MS)) {
+        isMasterLearningLoading = false;
+        currentFilteredMasterLogs = cachedResult.logs.slice();
+        var maxPage = Math.max(1, Math.ceil(currentFilteredMasterLogs.length / MASTER_LEARNING_PAGE_SIZE));
+        if (masterLearningCurrentPage > maxPage) masterLearningCurrentPage = 1;
+        populateMasterLearningClassFilter(currentFilteredMasterLogs);
+        updateMasterLearningStats(currentFilteredMasterLogs, startDate, endDate);
+        renderMasterLearningTable();
+        return Promise.resolve();
+      }
+
       var mySeq = ++masterLearningSearchSeq;
       activeSearchKey = queryKey;
       isMasterLearningLoading = true;
@@ -690,6 +705,10 @@
               String(b.id).localeCompare(String(a.id));
           });
 
+          masterLearningResultCache[queryKey] = {
+            logs: normalized.slice(),
+            loadedAt: Date.now()
+          };
           currentFilteredMasterLogs = normalized;
           masterLearningCurrentPage = 1;
           populateMasterLearningClassFilter(normalized);

@@ -11,9 +11,11 @@
   'use strict';
 
   var MASTER_PF_PAGE_SIZE = 20;
+  var MASTER_PF_CACHE_TTL_MS = 180000; // 탭 재진입 시 3분간 동일 조회 결과 캐시 재사용
   var masterPfPage = 1;
   var currentFilteredMasterPfList = [];
   var currentPfDetailCache = Object.create(null);
+  var masterPfResultCache = Object.create(null);
   var currentOpenMasterPfId = null;
 
   var pfSearchSeq = 0;
@@ -615,6 +617,19 @@
         return activePfSearchPromise;
       }
 
+      // 탭 전환 복귀(useCache: true) 시 최근 3분 내 동일 조건 캐시가 있으면 DB 재조회 없이 즉시 렌더링
+      var cachedPf = (options && options.useCache === true) ? masterPfResultCache[queryKey] : null;
+      if (cachedPf && (Date.now() - cachedPf.loadedAt < MASTER_PF_CACHE_TTL_MS)) {
+        isMasterPfLoading = false;
+        currentFilteredMasterPfList = cachedPf.items.slice();
+        var maxPfPage = Math.max(1, Math.ceil(currentFilteredMasterPfList.length / MASTER_PF_PAGE_SIZE));
+        if (masterPfPage > maxPfPage) masterPfPage = 1;
+        populateMasterPfClassFilter(currentFilteredMasterPfList);
+        updateMasterPfStats(currentFilteredMasterPfList, cachedPf.stats);
+        renderMasterPfTable(masterPfPage);
+        return Promise.resolve();
+      }
+
       var mySeq = ++pfSearchSeq;
       activePfSearchKey = queryKey;
       isMasterPfLoading = true;
@@ -636,6 +651,11 @@
             .map(function(item) { return normalizeMasterPortfolioItem(item, franchiseMap); })
             .filter(Boolean);
 
+          masterPfResultCache[queryKey] = {
+            items: normalized.slice(),
+            stats: res && res.stats,
+            loadedAt: Date.now()
+          };
           currentFilteredMasterPfList = normalized;
           masterPfPage = 1;
           populateMasterPfClassFilter(normalized);

@@ -1459,11 +1459,13 @@ function ensureMasterTabRendered(tabName) {
   } else if (tabName === "payment") {
     if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
     if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
-    if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load();
+    if (window.NanoBilling && window.NanoPortal?.remote) NanoBilling.load(false);
   } else if (tabName === "learning") {
-    if (typeof executeMasterLearningSearch === "function") executeMasterLearningSearch();
+    if (typeof initMasterLearningDateFilters === "function") initMasterLearningDateFilters();
+    if (typeof executeMasterLearningSearch === "function") executeMasterLearningSearch({ useCache: true });
   } else if (tabName === "portfolio") {
-    if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList();
+    if (typeof initMasterPfDateFilters === "function") initMasterPfDateFilters();
+    if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList({ useCache: true });
   }
 }
 
@@ -1489,18 +1491,8 @@ window.addEventListener("pageshow", () => {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
+    // 다른 브라우저 탭을 다녀올 때마다 DB API를 재호출하지 않고 검색창 자동완성 속성만 정리합니다.
     purgeAutofilledSearchInputs();
-    // 브라우저 탭이 다시 활성화되면 현재 마스터 탭 데이터를 즉시 재갱신
-    const activeNavBtn = document.querySelector(".nav-item-btn.active, .master-nav-btn.active");
-    if (activeNavBtn) {
-      const currentTab = activeNavBtn.id.replace("nav-master-", "");
-      if (currentTab === "content-sharing" && window.ContentSharing) {
-        const shareRoot = document.getElementById("view-content-sharing");
-        if (shareRoot && !shareRoot.hasChildNodes()) ContentSharing.refresh();
-      } else {
-        ensureMasterTabRendered(currentTab);
-      }
-    }
   }
 });
 
@@ -1557,13 +1549,11 @@ function switchMasterTab(tabName) {
     if (typeof populateMasterPaymentAcademyFilter === "function") populateMasterPaymentAcademyFilter();
     if (typeof filterMasterPaymentList === "function") filterMasterPaymentList();
   } else if (tabName === "learning") {
-    if (typeof initMasterLearningDateFilters === "function") initMasterLearningDateFilters();
-    if (typeof executeMasterLearningSearch === "function") executeMasterLearningSearch();
+    // ensureMasterTabRendered('learning')에서 캐시 우선 렌더링을 이미 수행하므로 중복 재호출을 방지합니다.
   } else if (tabName === "portfolio") {
-    if (typeof initMasterPfDateFilters === "function") initMasterPfDateFilters();
-    if (typeof filterMasterPortfolioList === "function") filterMasterPortfolioList();
+    // ensureMasterTabRendered('portfolio')에서 캐시 우선 렌더링을 이미 수행하므로 중복 재호출을 방지합니다.
   } else if (tabName === "content-sharing" && window.ContentSharing) {
-    ContentSharing.refresh();
+    ContentSharing.refresh({ useCache: true });
   }
 
   const mainEl = document.querySelector('.main-workspace');

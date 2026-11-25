@@ -11,7 +11,8 @@
   var L = global.NanoLiteracy;
   var esc = L.esc;
   var STATUS = { PENDING: ['대기', '#b45309', '#fef3c7'], IN_PROGRESS: ['진행 중', '#1d4ed8', '#dbeafe'], COMPLETED: ['완료', '#166534', '#dcfce7'], CANCELLED: ['취소', '#6b7280', '#f3f4f6'] };
-  var state = { items: [], students: [], classes: [], hasServerClasses: false, built: false, loading: false, current: null, mode: 'regular' };
+  var LITERACY_CACHE_TTL_MS = 180000; // 탭 재진입 시 3분간 진단 목록 캐시 재사용
+  var state = { items: [], students: [], classes: [], hasServerClasses: false, built: false, loading: false, loadedAt: 0, current: null, mode: 'regular' };
 
   function api(action, opts) {
     opts = opts || {};
@@ -196,6 +197,7 @@
         state.classes = res.classes;
         state.hasServerClasses = true;
       }
+      state.loadedAt = Date.now();
       syncClassFilter();
       render();
       if (showDone) toast('최신 내역으로 갱신했습니다.');
@@ -442,7 +444,17 @@
   }
 
   global.NanoLiteracyAdmin = {
-    show: function () { build(); refresh(); }, refresh: refresh, render: render, syncClasses: syncClasses,
+    // 탭 전환 복귀 시 3분 이내면 DB 재조회 없이 캐시된 목록을 즉시 표시하고, 수동 [새로고침] 및 변경 작업은 refresh()로 갱신합니다.
+    show: function () {
+      build();
+      if (state.loadedAt && (Date.now() - state.loadedAt < LITERACY_CACHE_TTL_MS)) {
+        syncClassFilter();
+        render();
+        return;
+      }
+      refresh();
+    },
+    refresh: refresh, render: render, syncClasses: syncClasses,
     openAssign: openAssign, renderPick: renderPick, setPick: setPick, pickAll: pickAll, submitAssign: submitAssign, cancel: cancel,
     openReport: openReport, setMode: setMode, printCurrent: printCurrent, copyLink: copyLink, sendKakao: sendKakao, openHistory: openHistory
   };

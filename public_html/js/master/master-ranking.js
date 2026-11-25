@@ -204,7 +204,7 @@ function formatMasterRecentActivity(isoStr, fallbackLabel) {
 async function fetchMasterRemoteRankings(cacheKey, mode, selectedMonth, startDate, endDate) {
   if (!(typeof window !== "undefined" && window.NanoPortal && NanoPortal.remote)) return;
   const cached = masterRemoteRankCache[cacheKey];
-  if (cached && (cached.loading || Date.now() - cached.loadedAt < 20000)) return;
+  if (cached && (cached.loading || Date.now() - cached.loadedAt < 180000)) return;
 
   masterRemoteRankCache[cacheKey] = { ...(cached || {}), loading: true };
   const reqSeq = ++masterRemoteRankReqSeq;
@@ -320,7 +320,7 @@ function getCalculatedRankings(skipRemoteFetch) {
       ? `MONTH:${selectedMonth}`
       : (masterRankMode === "RANGE" ? `RANGE:${startDate}:${endDate}` : "ALL");
     const cached = masterRemoteRankCache[cacheKey];
-    if (!skipRemoteFetch && (!cached || (!cached.loading && Date.now() - (cached.loadedAt || 0) > 20000))) {
+    if (!skipRemoteFetch && (!cached || (!cached.loading && Date.now() - (cached.loadedAt || 0) > 180000))) {
       fetchMasterRemoteRankings(cacheKey, masterRankMode, selectedMonth, startDate, endDate);
     }
     if (cached && Array.isArray(cached.studentRankings)) {

@@ -280,7 +280,7 @@ function switchTab(tab) {
     if (typeof filterStudents === 'function') filterStudents();
     else if (typeof renderStudentTable === 'function') renderStudentTable();
   }
-  if (tab === 'content-sharing' && window.ContentSharing) ContentSharing.refresh();
+  if (tab === 'content-sharing' && window.ContentSharing) ContentSharing.refresh({ useCache: true });
   if (tab === 'contents') {
     var bInput = document.getElementById('searchAcadBookInput');
     if (bInput) bInput.value = '';
@@ -5589,14 +5589,18 @@ function getFilteredAdminRankingList() {
 }
 
 var adminRankCharacterRequest = 0;
-async function refreshAdminRankingCharacters() {
-  var requestId = ++adminRankCharacterRequest;
+var adminRankCharacterCache = Object.create(null);
+async function refreshAdminRankingCharacters(force) {
   var academyId = currentAcademyInfo.id;
+  var cachedChar = adminRankCharacterCache[academyId];
+  if (!force && cachedChar && (Date.now() - cachedChar.loadedAt < 180000)) return;
+  var requestId = ++adminRankCharacterRequest;
   var status = document.getElementById('adminRankCharacterStatus');
   if (status) status.textContent = '학생이 선택한 나노프렌즈를 확인하고 있습니다…';
   try {
     var result = await NanoPortal.api('/api/activity?action=characters&academy=' + encodeURIComponent(academyId));
     if (requestId !== adminRankCharacterRequest || currentAcademyInfo.id !== academyId) return;
+    adminRankCharacterCache[academyId] = { loadedAt: Date.now() };
     var byId = new Map((result.items || []).map(function(item) { return [item.memberId, item]; }));
     studentDataList.forEach(function(student) {
       var selected = byId.get(student.serverId);
@@ -5647,7 +5651,7 @@ async function refreshAdminServerRankings() {
 
   var cacheKey = acadId + '|' + curMode + '|' + (curMode === 'MONTH' ? monthVal : (curMode === 'RANGE' ? (sDate + '~' + eDate) : 'ALL'));
   var cached = adminServerRankingCache[cacheKey];
-  if (cached && Date.now() - cached.loadedAt < 20000) return;
+  if (cached && Date.now() - cached.loadedAt < 180000) return;
 
   var reqSeq = ++adminServerRankingReqSeq;
   try {

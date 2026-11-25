@@ -35,11 +35,22 @@
     return 'BASIC';
   };
 
-  async function load() {
+  const BILLING_CACHE_TTL_MS = 180000; // 탭 재진입 시 3분간 결제/발송 캐시 재사용
+
+  async function load(force = false) {
     if (state.busy) return;
+    if (!force && state.billingLoadedAt && (Date.now() - state.billingLoadedAt < BILLING_CACHE_TTL_MS)) {
+      if (master()) {
+        filterMasterPaymentList();
+      } else {
+        filterAcademyPaymentTable();
+      }
+      return;
+    }
     state.busy = true;
     try {
       const data = await api('/api/billing');
+      state.billingLoadedAt = Date.now();
       state.products = (Array.isArray(data.products) && data.products.length) ? data.products : DEFAULT_PRODUCTS.slice();
       state.payments = data.items || [];
       if (master()) {
@@ -353,7 +364,7 @@
           paidAt: data.paidAt ? data.paidAt + ':00+09:00' : undefined
         });
         el.close();
-        await load();
+        await load(true);
         toast('결제 내역을 저장했습니다.');
       } catch (e) {
         text('billingError', e.message);
@@ -368,7 +379,7 @@
     if (!p) return;
     const removeMsg = p.academyName+'의 결제 내역을 삭제할까요? 카카오톡 충전액은 회수되며, 잔액이 부족하면 삭제할 수 없습니다.';
     if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(removeMsg) : confirm(removeMsg))) return;
-    try { await api('/api/billing',{ operation:'delete', id, revision:p.revision, academyId:p.academyId, requestId:crypto.randomUUID() }); await load(); toast('결제 내역을 삭제했습니다.'); } catch(e) { toast(e.message); }
+    try { await api('/api/billing',{ operation:'delete', id, revision:p.revision, academyId:p.academyId, requestId:crypto.randomUUID() }); await load(true); toast('결제 내역을 삭제했습니다.'); } catch(e) { toast(e.message); }
   }
 
   function topup() {
@@ -395,7 +406,7 @@
       try {
         await api('/api/billing', { operation: 'topup', amount: Number(form.elements.quantity.value) * 5500, requestId });
         el.close();
-        await load();
+        await load(true);
         toast('구매 신청되었습니다. 입금 확인 후 충전됩니다.');
       } catch (e) {
         text('billingError', e.message);
@@ -448,7 +459,7 @@
 
   async function dispatch(force=false, opts={}) {
     const autoPoll = Boolean(opts && opts.autoPoll);
-    if (state.dispatchBusy || (!force && Date.now()-state.dispatchAt<30000)) return;
+    if (state.dispatchBusy || (!force && Date.now()-state.dispatchAt<BILLING_CACHE_TTL_MS)) return;
     if (force && !autoPoll) state.dispatchPollCount = 0;
     if (autoPoll) state.dispatchPollCount += 1;
     state.dispatchBusy=true;
@@ -565,7 +576,7 @@
             items: payloadItems
           });
           el.close();
-          await load();
+          await load(true);
           toast(`선택하신 ${items.length}건의 내역이 일괄 수동 결제 완료 처리되었습니다.`);
         } else {
           const displayDate = (paidAtVal || defaultPaidAt).replace('T', ' ') + ':00';
