@@ -1,30 +1,159 @@
-/* 카톡 공유 링크는 관리자 미리보기와 같은 440px 단일 열 리포트로 표시합니다. */
-body { margin:0; background:#f1f5f9; font-family:'Pretendard Variable',Pretendard,-apple-system,'Malgun Gothic',sans-serif; color:#243b38; }
-#learningReportModalDialog { max-width:440px; margin:8px auto; background:white; border-radius:18px; overflow:hidden; }
-#learningReportModalDialog .modal-title { margin:0 0 6px; }
-#learningReportModalBody { padding:16px; }
-.msg { padding:40px 16px; text-align:center; color:#64748b; }
-.report-overview-left { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
-.report-cover-wrapper img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
-h2 { font-size:18px; margin:8px 0; } h3 { font-size:16px; } p { line-height:1.7; }
-small { color:#64748b; font-size:12px; }
-.report-sub-card { border-radius:12px; }
-.score-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-#learnModalScore { color:#008573; font-weight:800; }
-.report-meta-grid { display:grid; gap:8px; margin-top:8px; font-size:13px; }
-.report-meta-grid strong { display:block; margin:4px 0; }
-.report-quiz-grid { display:grid; grid-template-columns:minmax(0,1fr) !important; }
-.report-quiz-card { background:white; border:1px solid #cbd5e1; border-radius:10px; }
-.report-quiz-card.is-wrong { border-color:#fca5a5; }
-.report-quiz-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #e2e8f0; padding-bottom:8px; font-size:13px; font-weight:700; }
-.report-quiz-q-badge { background:#008573; color:white; padding:4px 7px; border-radius:6px; margin-right:6px; }
-.report-quiz-badge { border-radius:20px; padding:4px 8px; font-size:11px; background:#ecfdf5; color:#008573; }
-.report-quiz-badge.wrong { color:#b91c1c; background:#fef2f2; }
-.report-choice-box { display:flex; border:1px solid #bbf7d0; border-radius:8px; background:#f0fdf4; color:#166534; margin-top:6px; }
-.report-choice-box.wrong { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
-.report-choice-label { font-size:11px; font-weight:700; }
-.report-choice-val { font-weight:700; white-space:pre-wrap; }
-.report-choice-val.strike { text-decoration:line-through; }
-.report-text { white-space:pre-wrap; overflow-wrap:anywhere; }
-.worksheet-photo { display:block; margin:12px 0; } .worksheet-photo img { width:100%; height:auto; }
-@media print { body { background:white; } #learningReportModalDialog { margin:0 auto; max-width:100%; } .report-quiz-card { break-inside:avoid; } }
+/* 카톡 공유 링크는 학부모 모바일(460px)에 최적화된 A안 에디토리얼 라이트 단일 열 리포트로 표시합니다. */
+body {
+  margin: 0;
+  padding: 12px 8px 24px;
+  background: #edf2f1;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Malgun Gothic', sans-serif;
+  color: #18292b;
+  -webkit-font-smoothing: antialiased;
+}
+#learningReportModalDialog {
+  max-width: 460px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #d5e7e5;
+  box-shadow: 0 14px 36px rgba(15, 45, 48, 0.10);
+  overflow: hidden;
+}
+.public-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.public-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.public-header-copy { min-width: 0; }
+#learningReportModalDialog .modal-title { margin: 0; font-size: 20px !important; }
+#learningReportModalBody { padding: 16px; }
+.msg { padding: 36px 16px; text-align: center; color: #5a6b6e; font-size: 13.5px; }
+
+.public-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.report-overview-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.report-book-meta { min-width: 0; flex: 1; }
+.report-cover-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; }
+h2 { font-size: 17.5px; margin: 4px 0 4px; line-height: 1.35; }
+h3 { font-size: 15px; margin: 0; }
+p { line-height: 1.65; }
+small { color: #5a6b6e; font-size: 12px; }
+
+.public-score-info { min-width: 0; flex: 1; }
+.public-score-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.score-row { display: flex; align-items: baseline; gap: 6px; }
+.report-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+
+.public-quiz-section { margin-top: 4px; }
+.public-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+.public-section-head h2,
+.public-section-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #18292b;
+}
+.report-quiz-grid { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 10px; }
+.report-quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #ddebe9;
+  padding-bottom: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.public-q-title { display: inline-flex; align-items: center; color: #5a6b6e; }
+.report-quiz-q-badge { padding: 2px 7px; font-size: 11px; margin-right: 7px; }
+.report-quiz-badge { border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; background: #eef9f8; color: #0b6f6c; border: 1px solid #bee6e3; }
+.report-quiz-badge.wrong { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
+.report-choice-box { display: flex; border: 1px solid #bee6e3; border-radius: 9px; background: #eef9f8; color: #0b6f6c; margin-top: 6px; }
+.report-choice-box.wrong { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.report-choice-label { font-size: 11px; font-weight: 700; }
+.report-choice-val { font-weight: 700; white-space: pre-wrap; }
+.report-choice-val.strike { text-decoration: line-through; }
+
+.public-text-block {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+.public-text-block h3 {
+  font-size: 11.5px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.public-text-block.is-amber-box {
+  background: #fff8ec;
+  border: 1px solid #fcdfa9;
+  border-left: 3.5px solid #f4a12c;
+}
+.public-text-block.is-amber-box h3 { color: #b86908; }
+.public-text-block.is-answer-box {
+  background: #ffffff;
+  border: 1px solid #dde9e8;
+}
+.public-text-block.is-answer-box h3 { color: #5a6b6e; }
+.public-text-block.is-teal-box {
+  background: #eef9f8;
+  border: 1px solid #bee6e3;
+  border-left: 3.5px solid #00aca8;
+}
+.public-text-block.is-teal-box h3 { color: #0b6f6c; }
+.report-text { margin: 0; font-size: 13.5px; line-height: 1.72; color: #18292b; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.worksheet-photo {
+  display: block;
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid #dcebe9;
+  border-radius: 11px;
+  background: #ffffff;
+  text-decoration: none;
+  color: #5a6b6e;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+}
+.worksheet-photo img { width: 100%; height: auto; border-radius: 7px; display: block; margin-bottom: 6px; }
+
+@media (max-width: 420px) {
+  .public-report-header .lr-doc-pill { display: none; }
+  .report-meta-grid { grid-template-columns: 1fr; }
+}
+@media print {
+  body { background: #ffffff; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #learningReportModalDialog { margin: 0 auto; max-width: 100%; border: 0; box-shadow: none; border-radius: 0; }
+  .report-quiz-card { break-inside: avoid; }
+  .report-brand-footer { break-inside: avoid; }
+}

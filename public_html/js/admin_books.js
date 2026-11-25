@@ -1876,6 +1876,12 @@ async function executeBulkBookUpload() {
         continue;
       }
 
+      // 5. 생각담기(필수) 검증 (1~7 코드, 직접 입력, 또는 0/없음 필수 입력)
+      if (!rawThinkInsert) {
+        validationErrors.push('[' + rowNum + '행: ISBN ' + cleanIsbn + '] 생각담기가 비어있습니다. (필수 입력 항목: 1~7 코드, 직접 입력 또는 0 입력)');
+        continue;
+      }
+
       var themeTag = '#' + cleanTheme;
       var detailList = [detail1, detail2, detail3, detail4, detail5]
         .filter(function(t) { return t && t.length > 0; })
@@ -4311,8 +4317,39 @@ function detectAcadBookGrade(doc) {
 // -------------------------------------------------------------
 // ISBN 도서 정보 자동 조회 (학원 모달용)
 // -------------------------------------------------------------
+// 기등록 학원 도서 편집 시 실수로 ISBN이 수정되지 않도록 잠금 상태를 제어하고, 'ISBN 편집' 버튼으로 잠금을 해제합니다.
+function setAcadBookIsbnLocked(locked, formReadOnly) {
+  var isbnInput = document.getElementById("abEditIsbn");
+  var btn = document.getElementById("btnAcadIsbnFetch");
+  var isLocked = Boolean(locked || formReadOnly);
+  if (isbnInput) {
+    isbnInput.disabled = isLocked;
+    isbnInput.readOnly = isLocked;
+    isbnInput.style.background = isLocked ? "#f1f5f9" : "";
+    isbnInput.style.cursor = isLocked ? "not-allowed" : "";
+    isbnInput.style.color = isLocked ? "#475569" : "";
+  }
+  if (btn) {
+    btn.dataset.isbnMode = isLocked ? "edit" : "lookup";
+    btn.disabled = Boolean(formReadOnly);
+    btn.innerHTML = isLocked
+      ? '<i class="fa-solid fa-pen-to-square mr-1"></i>ISBN 편집'
+      : '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+  }
+}
+
 async function lookupAcademyIsbn() {
   var isbnInput = document.getElementById("abEditIsbn");
+  var btn = document.getElementById("btnAcadIsbnFetch");
+  if (btn && btn.dataset.isbnMode === "edit") {
+    setAcadBookIsbnLocked(false, false);
+    if (isbnInput) {
+      isbnInput.focus();
+      isbnInput.select();
+    }
+    return;
+  }
+
   var isbn = isbnInput ? isbnInput.value.trim().replace(/[^0-9xX]/g, "") : "";
   if (!isbn) {
     showAcademyToast("ISBN 13자리 번호를 입력해 주세요.", "warning");
@@ -4320,7 +4357,6 @@ async function lookupAcademyIsbn() {
     return;
   }
 
-  var btn = document.getElementById("btnAcadIsbnFetch");
   if (btn) {
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>카카오 조회중...';
     btn.disabled = true;
@@ -4393,7 +4429,9 @@ async function lookupAcademyIsbn() {
         btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
         btn.disabled = false;
         setTimeout(function() {
-          btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+          if (btn.dataset.isbnMode === 'lookup') {
+            btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+          }
         }, 2000);
       }
       const seriesText = isSingle ? "단권" : `시리즈(${seriesInfo.seriesName})`;
@@ -4454,7 +4492,9 @@ async function lookupAcademyIsbn() {
       btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
       btn.disabled = false;
       setTimeout(function() {
-        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+        if (btn.dataset.isbnMode === 'lookup') {
+          btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+        }
       }, 2000);
     }
     showAcademyToast(`[ISBN: ${isbn}] 서지정보가 자동 입력되었습니다.`);
@@ -4601,12 +4641,13 @@ function openAcademyBookOnlyAddModal(id = null) {
     if (document.getElementById('abEditId')) document.getElementById('abEditId').value = book.bookNo || book.id;
   }
 
-  // 5. ISBN 바인딩 (신규 도서 등록 시 공란 초기화, 기등록 도서는 DB값 또는 표지 파일명의 ISBN 표시)
+  // 5. ISBN 바인딩 (신규 도서 등록 시 활성화/조회, 기등록 도서는 비활성화/ISBN 편집 버튼 전환)
   var isbnInput = document.getElementById('abEditIsbn');
   if (isbnInput) {
     var editCoverIsbnMatch = book ? String(book.cover || book.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i) : null;
     isbnInput.value = book ? String(book.isbn || book.isbn13 || (editCoverIsbnMatch ? editCoverIsbnMatch[1] : '') || '').trim() : '';
   }
+  setAcadBookIsbnLocked(!isNew, isReadOnly);
 
   // 6. 기본 서지 정보 바인딩 (신규 등록 시 공란 유지)
   if (document.getElementById('abEditTitle')) document.getElementById('abEditTitle').value = isNew ? '' : book.title;

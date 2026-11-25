@@ -2302,9 +2302,13 @@ function openLearningDetailModal(id) {
     printDateEl.innerText = `${yyyy}-${mm}-${dd}`;
   }
   var printAcadEl = document.getElementById('printAcademyNameDisplay');
+  var curAcad = (typeof currentAcademyName !== 'undefined' && currentAcademyName) ? currentAcademyName : (log.school ? log.school.split(' ')[0] : '나노의 책장');
   if (printAcadEl) {
-    var curAcad = (typeof currentAcademyName !== 'undefined' && currentAcademyName) ? currentAcademyName : (log.school ? log.school.split(' ')[0] : '나노의 책장');
     printAcadEl.innerText = curAcad;
+  }
+  var footerAcadEl = document.getElementById('learnModalFooterAcademy');
+  if (footerAcadEl) {
+    footerAcadEl.innerText = curAcad;
   }
 
   // 2. 기본 개요 바인딩
@@ -2317,18 +2321,28 @@ function openLearningDetailModal(id) {
     document.getElementById('learnModalBookPub').innerText = log.bookPub || '나노 교육출판';
   }
   document.getElementById('learnModalDate').innerText = log.date;
-  document.getElementById('learnModalScore').innerText = `${log.score}점`;
+  var numericScore = Math.max(0, Math.min(100, Number(log.score) || 0));
+  document.getElementById('learnModalScore').innerText = `${numericScore}점`;
+  var scoreRing = document.getElementById('learnModalScoreRing');
+  var scoreRingVal = document.getElementById('learnModalScoreRingVal');
+  var scoreCard = document.getElementById('learnModalScoreCard');
+  if (scoreRingVal) scoreRingVal.innerText = String(numericScore);
+  if (scoreRing && scoreRing.style && typeof scoreRing.style.setProperty === 'function') {
+    scoreRing.style.setProperty('--score-pct', String(numericScore));
+    scoreRing.classList.toggle('is-fail', numericScore < 60);
+  }
+  if (scoreCard) scoreCard.classList.toggle('is-fail', numericScore < 60);
 
   var passBadge = document.getElementById('learnModalPassBadge');
   if (passBadge) {
-    if (log.score >= 80) {
-      passBadge.className = 'badge-soft badge-soft-success font-weight-bold';
+    if (numericScore >= 80) {
+      passBadge.className = 'lr-chip chip-amber';
       passBadge.innerText = '우수 완독 인증';
-    } else if (log.score >= 60) {
-      passBadge.className = 'badge-soft badge-soft-success font-weight-bold';
+    } else if (numericScore >= 60) {
+      passBadge.className = 'lr-chip chip-teal';
       passBadge.innerText = '완독 인증 통과';
     } else {
-      passBadge.className = 'badge-soft badge-soft-warn font-weight-bold';
+      passBadge.className = 'lr-chip chip-danger';
       passBadge.innerText = '미통과 (재도전 권장)';
     }
   }

@@ -1008,45 +1008,57 @@
     setText('masterReportEarnedPoints', (Number(log.earnedPoints || 0)).toLocaleString() + ' P');
     setText('masterReportBookTitle', log.bookTitle || '도서');
     setText('masterReportBookPub', log.bookPub || '출판사 및 저자 정보 없음');
-    setText('masterReportAcademy', log.academyName || log.academyId || '-');
+    var acadDisplay = log.academyName || log.academyId || '나노의 책장';
+    setText('masterReportAcademy', acadDisplay);
+    setText('masterReportFooterAcademy', acadDisplay);
     setText('masterReportDate', log.formattedDateTime || log.date || '-');
     setText('masterReportStudent', (log.studentName || '-') + ' (' + (log.classGroup || '미지정') + ')');
     setText('masterReportStudentSub', log.school || log.studentId || '-');
 
-    var score = Number(log.score || 0);
+    var score = Math.max(0, Math.min(100, Number(log.score || 0)));
     setText('masterReportScore', score + '점');
+    setText('masterReportScoreRingVal', String(score));
 
     var scoreEl = document.getElementById('masterReportScore');
+    var scoreRingEl = document.getElementById('masterReportScoreRing');
+    var scoreCardEl = scoreRingEl && scoreRingEl.closest ? scoreRingEl.closest('.master-report-subcard') : null;
+    if (scoreRingEl) {
+      scoreRingEl.style.setProperty('--score-pct', String(score));
+      scoreRingEl.classList.toggle('is-fail', score < 60);
+    }
+    if (scoreCardEl) {
+      scoreCardEl.classList.toggle('is-fail', score < 60);
+    }
     var passBadgeEl = document.getElementById('masterReportPassBadge');
     var certBadgeEl = document.getElementById('masterReportCertifiedBadge');
     if (score >= 80) {
-      if (scoreEl) scoreEl.style.color = '#2f5436';
+      if (scoreEl) scoreEl.style.color = '#0b6f6c';
       if (passBadgeEl) {
-        passBadgeEl.className = 'badge-soft badge-soft-success';
+        passBadgeEl.className = 'master-report-chip chip-amber';
         passBadgeEl.textContent = '우수 완독 인증';
       }
       if (certBadgeEl) {
-        certBadgeEl.className = 'badge-soft badge-soft-success font-weight-bold';
+        certBadgeEl.className = 'master-report-chip chip-teal';
         certBadgeEl.textContent = '완독 인증 도서';
       }
     } else if (score >= 60) {
-      if (scoreEl) scoreEl.style.color = '#2f5436';
+      if (scoreEl) scoreEl.style.color = '#0b6f6c';
       if (passBadgeEl) {
-        passBadgeEl.className = 'badge-soft badge-soft-success';
+        passBadgeEl.className = 'master-report-chip chip-teal';
         passBadgeEl.textContent = '완독 인증 통과';
       }
       if (certBadgeEl) {
-        certBadgeEl.className = 'badge-soft badge-soft-success font-weight-bold';
+        certBadgeEl.className = 'master-report-chip chip-teal';
         certBadgeEl.textContent = '완독 인증 도서';
       }
     } else {
-      if (scoreEl) scoreEl.style.color = '#962a22';
+      if (scoreEl) scoreEl.style.color = '#b91c1c';
       if (passBadgeEl) {
-        passBadgeEl.className = 'badge-soft badge-soft-danger';
+        passBadgeEl.className = 'master-report-chip chip-danger';
         passBadgeEl.textContent = '미통과 (재도전 권장)';
       }
       if (certBadgeEl) {
-        certBadgeEl.className = 'badge-soft badge-soft-warn font-weight-bold';
+        certBadgeEl.className = 'master-report-chip chip-amber';
         certBadgeEl.textContent = '미인증 응시';
       }
     }
@@ -1061,7 +1073,7 @@
     if (summaryEl) {
       if (totalQ > 0) {
         var accRate = Math.round((correctQ / totalQ) * 100);
-        summaryEl.innerHTML = '총 ' + totalQ + '문항 중 <strong style="color:' + (accRate >= 60 ? '#2f5436' : '#962a22') + ';">' + correctQ + '문항</strong> 정답 (정답률 ' + accRate + '%)';
+        summaryEl.innerHTML = '총 ' + totalQ + '문항 중 <strong style="color:' + (accRate >= 60 ? '#0b6f6c' : '#b91c1c') + ';">' + correctQ + '문항</strong> 정답 (정답률 ' + accRate + '%)';
       } else {
         summaryEl.textContent = '정답 수: ' + Number(log.correctCount || 0) + '문항 (' + score + '점)';
       }
@@ -1078,30 +1090,30 @@
           var qNum = q.qNum || (idx + 1);
           var isCorrect = Boolean(q.isCorrect);
           var badge = isCorrect
-            ? '<span class="badge-soft badge-soft-success" style="font-size:10.5px;">정답</span>'
-            : '<span class="badge-soft badge-soft-danger" style="font-size:10.5px;">오답</span>';
+            ? '<span class="master-report-chip chip-teal" style="font-size:10.5px;">정답</span>'
+            : '<span class="master-report-chip chip-danger" style="font-size:10.5px;">오답</span>';
 
           var choicesHtml = isCorrect
             ? '<div class="master-report-choice-box correct">' +
-                '<div class="font-weight-bold" style="font-size:11px; color:#2f5436;">학생 선택 답안</div>' +
-                '<div class="mt-1" style="color:var(--text-main);">' + escapeHtml(q.userChoiceText || '-') + '</div>' +
+                '<div class="font-weight-bold" style="font-size:11px; color:#0b6f6c;">학생 선택 답안</div>' +
+                '<div class="mt-1" style="color:#18292b; font-weight:600;">' + escapeHtml(q.userChoiceText || '-') + '</div>' +
               '</div>'
             : '<div class="master-report-choice-box wrong mb-1">' +
-                '<div class="font-weight-bold" style="font-size:11px; color:#962a22;">학생 선택 오답</div>' +
-                '<div class="mt-1" style="color:#962a22; text-decoration:line-through;">' + escapeHtml(q.userChoiceText || '-') + '</div>' +
+                '<div class="font-weight-bold" style="font-size:11px; color:#b91c1c;">학생 선택 오답</div>' +
+                '<div class="mt-1" style="color:#b91c1c; text-decoration:line-through;">' + escapeHtml(q.userChoiceText || '-') + '</div>' +
               '</div>' +
               '<div class="master-report-choice-box correct">' +
-                '<div class="font-weight-bold" style="font-size:11px; color:#2f5436;">실제 정답</div>' +
-                '<div class="mt-1 font-weight-bold" style="color:#2f5436;">' + escapeHtml(q.correctChoiceText || '-') + '</div>' +
+                '<div class="font-weight-bold" style="font-size:11px; color:#0b6f6c;">실제 정답</div>' +
+                '<div class="mt-1 font-weight-bold" style="color:#0b6f6c;">' + escapeHtml(q.correctChoiceText || '-') + '</div>' +
               '</div>';
 
           return (
             '<div class="master-report-quiz-card ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
               '<div class="d-flex justify-content-between align-items-center mb-2">' +
-                '<strong style="font-size:12px; color:var(--text-muted);">Q' + String(qNum).padStart(2, '0') + ' · 문제 ' + qNum + '</strong>' +
+                '<span class="d-inline-flex align-items-center"><span class="master-report-q-chip">Q' + String(qNum).padStart(2, '0') + '</span><strong style="font-size:12px; color:#5a6b6e;">문제 ' + qNum + '</strong></span>' +
                 badge +
               '</div>' +
-              '<div class="font-weight-bold mb-2" style="font-size:13px; line-height:1.45; color:var(--text-main);">' + escapeHtml(q.question || '-') + '</div>' +
+              '<div class="font-weight-bold mb-2" style="font-size:13px; line-height:1.48; color:#18292b;">' + escapeHtml(q.question || '-') + '</div>' +
               choicesHtml +
             '</div>'
           );

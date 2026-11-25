@@ -2559,10 +2559,39 @@ async function triggerAiSynopsisSummary() {
   }
 }
 
+// 기등록 도서 편집 시 실수로 ISBN이 수정되지 않도록 잠금 상태를 제어하고, 'ISBN 편집' 버튼으로 잠금을 해제할 수 있습니다.
+function setMasterBookIsbnLocked(locked) {
+  const isbnInput = document.getElementById("mbAddIsbn");
+  const btn = document.getElementById("btnIsbnFetchAdd");
+  if (isbnInput) {
+    isbnInput.disabled = Boolean(locked);
+    isbnInput.readOnly = Boolean(locked);
+    isbnInput.style.background = locked ? "#f1f5f9" : "";
+    isbnInput.style.cursor = locked ? "not-allowed" : "";
+    isbnInput.style.color = locked ? "#475569" : "";
+  }
+  if (btn) {
+    btn.dataset.isbnMode = locked ? "edit" : "lookup";
+    btn.disabled = false;
+    btn.innerHTML = locked
+      ? '<i class="fa-solid fa-pen-to-square mr-1"></i>ISBN 편집'
+      : '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+  }
+}
+
 async function fetchMasterBookByIsbnForAdd() {
   const isbnInput = document.getElementById("mbAddIsbn");
-  let isbn = (isbnInput ? isbnInput.value : "").replace(/[^0-9xX]/g, "").trim();
   const btn = document.getElementById("btnIsbnFetchAdd");
+  if (btn && btn.dataset.isbnMode === "edit") {
+    setMasterBookIsbnLocked(false);
+    if (isbnInput) {
+      isbnInput.focus();
+      isbnInput.select();
+    }
+    return;
+  }
+
+  let isbn = (isbnInput ? isbnInput.value : "").replace(/[^0-9xX]/g, "").trim();
 
   if (!isbn) {
     isbn = "9788932917245";
@@ -2673,7 +2702,9 @@ async function fetchMasterBookByIsbnForAdd() {
         btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
         btn.disabled = false;
         setTimeout(() => {
-          btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+          if (btn.dataset.isbnMode === 'lookup') {
+            btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+          }
         }, 2000);
       }
     } else {
@@ -2733,7 +2764,9 @@ async function fetchMasterBookByIsbnForAdd() {
       btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>조회 완료';
       btn.disabled = false;
       setTimeout(() => {
-        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+        if (btn.dataset.isbnMode === 'lookup') {
+          btn.innerHTML = '<i class="fa-solid fa-magnifying-glass mr-1"></i>ISBN 조회';
+        }
       }, 2000);
     }
     showMasterToast(`[ISBN: ${isbn}] 서지정보가 자동 입력되었습니다.`);
@@ -2817,9 +2850,10 @@ function openMasterBookAddModal(id = null) {
     document.getElementById("mbAddId").value = book.bookNo || book.id;
   }
 
-  // ISBN (기등록 도서 편집 시 DB값 또는 표지 파일명의 ISBN을 함께 표시)
+  // ISBN (기등록 도서 편집 시 DB값 또는 표지 파일명의 ISBN을 함께 표시하고 기본 비활성화 + ISBN 편집 버튼으로 전환)
   const coverIsbnMatch = book ? String(book.cover || book.coverUrl || '').match(/\/(\d{10,13})\.(jpg|jpeg|png|webp|gif)/i) : null;
   document.getElementById("mbAddIsbn").value = book ? String(book.isbn || book.isbn13 || (coverIsbnMatch ? coverIsbnMatch[1] : '') || '').trim() : "";
+  setMasterBookIsbnLocked(!isNew);
 
   // 도서명, 저자, 출판사
   document.getElementById("mbAddTitle").value = isNew ? "" : book.title;
@@ -3082,6 +3116,10 @@ async function deleteMasterBook(id) {
   const book = masterBooks.find(b => b.id === id);
   const name = book ? book.title : "도서";
   if (!book) return;
+  const delMsg = `'${name}' (${book.bookNo || book.id}) 도서를 정말 삭제하시겠습니까?\n삭제된 도서는 복구할 수 없습니다.`;
+  if (!(typeof nanoConfirm === 'function' ? await nanoConfirm(delMsg) : confirm(delMsg))) {
+    return;
+  }
   if (window.NanoPortal && NanoPortal.remote) {
     try { await NanoPortal.deleteBook(book); }
     catch (error) { showMasterToast('도서를 삭제하지 못했습니다: ' + error.message); return; }
@@ -5149,6 +5187,12 @@ async function handleMasterBookExcelUpload() {
       const cleanTheme = rawTheme.replace(/^#/, '').trim();
       if (!isAllowedMasterTheme(cleanTheme)) {
         validationErrors.push(`[${rowNum}행: ISBN ${cleanIsbn}] 유효하지 않은 주제분류태그입니다. (입력값: '${rawTheme}'): '참고' 시트의 표준 주제명(인간, 생활, 자연, 생물, 기술, 과학, 역사, 이야기, 건강, 음식, 학습, 수학, 기타 등)을 입력해주세요.`);
+        continue;
+      }
+
+      // 5. 생각담기(필수) 검증 (1~7 코드, 직접 입력, 또는 0/없음 필수 입력)
+      if (!rawThinkInsert) {
+        validationErrors.push(`[${rowNum}행: ISBN ${cleanIsbn}] 생각담기가 비어있습니다. (필수 입력 항목: 1~7 코드, 직접 입력 또는 0 입력)`);
         continue;
       }
 

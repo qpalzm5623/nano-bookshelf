@@ -12,7 +12,7 @@ const desktopTemplatePath = 'd:/Desktop/나노의책장_개편_책등록_양식_
 test('1. 개편 엑셀 양식 파일 존재 및 시트 구조 검증', () => {
   assert.ok(fs.existsSync(templatePath), 'resources 폴더에 나노의책장_개편_책등록_양식_v1.xlsx 파일이 존재해야 합니다.');
 
-  const wb = XLSX.readFile(templatePath);
+  const wb = XLSX.readFile(templatePath, { cellNF: true });
   assert.ok(wb.SheetNames.includes('입력'), "'입력' 시트가 존재해야 합니다.");
   assert.ok(wb.SheetNames.includes('참고'), "'참고' 시트가 존재해야 합니다.");
 
@@ -22,14 +22,17 @@ test('1. 개편 엑셀 양식 파일 존재 및 시트 구조 검증', () => {
   // 1행: 컬럼 부가설명, 2행: 헤더, 3행: 샘플 데이터
   assert.ok(rows.length >= 3, '최소 3행 이상의 데이터가 존재해야 합니다.');
   assert.ok(String(rows[1][2]).includes('ISBN'), '2행 C열에 ISBN 컬럼 헤더가 있어야 합니다.');
+  assert.equal(ws['C3'].z, '0', 'C3(ISBN) 셀의 표시형식이 숫자(0)여야 합니다.');
+  assert.equal(String(rows[2][2]).trim(), '9788932902708', '3행 C열 ISBN이 지수 표기 없이 13자리 숫자로 읽혀야 합니다.');
   assert.ok(String(rows[1][3]).includes('주제분류태그'), '2행 D열에 주제분류태그 컬럼 헤더가 있어야 합니다.');
+  assert.ok(String(rows[1][11]).includes('생각담기') && String(rows[1][11]).includes('(필수)'), '2행 L열 생각담기 헤더에 (필수) 표기가 있어야 합니다.');
   assert.equal(String(rows[1][12]).trim(), '나노시트', '2행 M열에 나노시트 컬럼 헤더가 있어야 합니다.');
   assert.ok(String(rows[0][12]).includes('나노시트'), '1행 M열에 나노시트 파일명 안내가 있어야 합니다.');
   assert.equal(String(rows[2][12]).trim(), '9788932902708.pdf', '3행 M열에 확장자 포함 나노시트 파일명 예시가 있어야 합니다.');
 });
 
 test('2. 3행부터 시작 및 빈 템플릿 행(4~6행) 자동 건너뛰기 검증', () => {
-  const wb = XLSX.readFile(templatePath);
+  const wb = XLSX.readFile(templatePath, { cellNF: true });
   const ws = wb.Sheets['입력'];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
@@ -106,7 +109,7 @@ test('3. ISBN 및 주제분류태그 유효성 검사 에러 감지 로직 검�
     ['9788932902708', '어린왕자 (기등록 도서)']
   ]);
 
-  function validateRow(rowNum, rawIsbn, rawTheme, seenInFile) {
+  function validateRow(rowNum, rawIsbn, rawTheme, seenInFile, rawThinkInsert = '1') {
     const errors = [];
     if (!rawIsbn) {
       errors.push(`[${rowNum}행] ISBN이 비어있습니다. (필수 입력 항목)`);
@@ -138,6 +141,11 @@ test('3. ISBN 및 주제분류태그 유효성 검사 에러 감지 로직 검�
     const cleanTheme = rawTheme.replace(/^#/, '').trim();
     if (!allowedThemes.has(cleanTheme)) {
       errors.push(`[${rowNum}행: ISBN ${cleanIsbn}] 유효하지 않은 주제분류태그입니다. (입력값: '${rawTheme}'): '참고' 시트의 표준 주제명(인간, 생활, 자연, 생물, 기술, 과학, 역사, 이야기, 건강, 음식, 학습, 수학, 기타 등)을 입력해주세요.`);
+      return errors;
+    }
+
+    if (!String(rawThinkInsert || '').trim()) {
+      errors.push(`[${rowNum}행: ISBN ${cleanIsbn}] 생각담기가 비어있습니다. (필수 입력 항목: 1~7 코드, 직접 입력 또는 0 입력)`);
     }
 
     return errors;
@@ -164,6 +172,14 @@ test('3. ISBN 및 주제분류태그 유효성 검사 에러 감지 로직 검�
   // 잘못된 주제분류태그
   const badThemeErrors = validateRow(7, '9788943305437', '#외계인침공', seen);
   assert.ok(badThemeErrors[0].includes('유효하지 않은 주제분류태그입니다'), '잘못된 주제분류태그 오류 메시지 발생');
+
+  // 생각담기 누락
+  const emptyThinkErrors = validateRow(8, '9788943305444', '#과학', seen, '');
+  assert.ok(emptyThinkErrors[0].includes('생각담기가 비어있습니다'), '생각담기 누락 오류 메시지 발생');
+
+  // 생각담기 '0' (없음 명시) 허용
+  const zeroThinkErrors = validateRow(9, '9788943305451', '#과학', seen, '0');
+  assert.equal(zeroThinkErrors.length, 0, "생각담기 '0' 입력은 필수값 입력으로 허용되어야 합니다.");
 });
 
 test('4. 마스터 및 학원 모달 UI의 .xlsx 샘플 다운로드 마크업 검증', () => {
@@ -177,7 +193,9 @@ test('4. 마스터 및 학원 모달 UI의 .xlsx 샘플 다운로드 마크업 �
   assert.ok(adminHtml.includes("'입력'</strong> 시트"), '학원 화면 안내에 입력 시트 안내가 있어야 합니다.');
   assert.ok(adminHtml.includes('3행부터</strong>'), '학원 화면 안내에 3행부터 등록 안내가 있어야 합니다.');
 
-  // 7. 나노시트 (선택) 안내 및 드래그앤드롭 핸들러 검증
+  // 6. 생각 담기(필수) & 7. 나노시트(선택) 안내 및 드래그앤드롭 핸들러 검증
+  assert.ok(masterModalsHtml.includes('6. 생각 담기 (필수)'), '마스터 도서 엑셀 모달에 6. 생각 담기 (필수) 안내가 있어야 합니다.');
+  assert.ok(adminHtml.includes('6. 생각 담기 (필수)'), '학원 도서 엑셀 모달에 6. 생각 담기 (필수) 안내가 있어야 합니다.');
   assert.ok(masterModalsHtml.includes('7. 나노시트 (선택)'), '마스터 도서 엑셀 모달에 7. 나노시트 (선택) 안내가 있어야 합니다.');
   assert.ok(adminHtml.includes('7. 나노시트 (선택)'), '학원 도서 엑셀 모달에 7. 나노시트 (선택) 안내가 있어야 합니다.');
   assert.ok(masterModalsHtml.includes('ondrop="handleMasterBookExcelFileDrop(event)"'), '마스터 도서 엑셀 모달에 드래그앤드롭 ondrop 핸들러가 연결되어야 합니다.');
@@ -192,9 +210,11 @@ test('4. 마스터 및 학원 모달 UI의 .xlsx 샘플 다운로드 마크업 �
   const r2StorageTs = fs.readFileSync(path.join(root, 'lib', 'r2-storage.ts'), 'utf8');
 
   assert.ok(masterContentsJs.includes('function handleMasterBookExcelFileDrop'), 'master-contents.js에 도서 엑셀 드롭 핸들러가 구현되어야 합니다.');
+  assert.ok(masterContentsJs.includes('생각담기가 비어있습니다'), 'master-contents.js에 생각담기 필수 검증 로직이 구현되어야 합니다.');
   assert.ok(masterContentsJs.includes('function handleMasterQuizExcelFileDrop'), 'master-contents.js에 북퀴즈 엑셀 드롭 핸들러가 구현되어야 합니다.');
   assert.ok(masterContentsJs.includes('function resolveMasterNanoSheetFiles'), 'master-contents.js에 R2 나노시트 파일 매칭 헬퍼가 구현되어야 합니다.');
   assert.ok(adminBooksJs.includes('function handleBulkFileDrop'), 'admin_books.js에 도서 엑셀 드롭 핸들러가 구현되어야 합니다.');
+  assert.ok(adminBooksJs.includes('생각담기가 비어있습니다'), 'admin_books.js에 생각담기 필수 검증 로직이 구현되어야 합니다.');
   assert.ok(adminBooksJs.includes('function handleAcadQuizExcelFileDrop'), 'admin_books.js에 북퀴즈 엑셀 드롭 핸들러가 구현되어야 합니다.');
   assert.ok(adminBooksJs.includes('function resolveAcadNanoSheetFiles'), 'admin_books.js에 R2 나노시트 파일 매칭 헬퍼가 구현되어야 합니다.');
   assert.ok(apiFilesTs.includes("body.operation === 'resolve-sheets'"), 'api/files.ts에 resolve-sheets 오퍼레이션이 구현되어야 합니다.');
@@ -215,5 +235,10 @@ test('5. 신규 도서 등록 모달의 관리코드 직접입력 차단 및 유
   assert.match(masterContentsJs, /gradeVal\.includes\("유치"\).*gCode = "0"/, '마스터 모달 코드 생성에 유치부 -> 0 매핑이 있어야 합니다.');
   assert.match(masterContentsJs, /gStr\.includes\("유치"\).*gCode = "0"/, '마스터 대량 등록 코드 생성에 유치부 -> 0 매핑이 있어야 합니다.');
   assert.match(portalClientJs, /if\s*\(result\.item\.bookNo\)\s*\{\s*item\.bookNo\s*=\s*result\.item\.bookNo;\s*item\.id\s*=\s*result\.item\.bookNo;/, 'portal-client.js는 서버가 발급한 bookNo를 item.id/bookNo에 동기화해야 합니다.');
+
+  const adminBooksJs = fs.readFileSync(path.join(root, 'public_html', 'js', 'admin_books.js'), 'utf8');
+  assert.match(masterContentsJs, /async function deleteMasterBook\(id\)[\s\S]*?(nanoConfirm|confirm)\(/, '마스터 도서 삭제 시 확인 창이 먼저 표시되어야 합니다.');
+  assert.match(masterContentsJs, /function setMasterBookIsbnLocked[\s\S]*ISBN 편집[\s\S]*ISBN 조회/, '마스터 도서 편집 모달에서 ISBN 잠금/편집 전환 버튼이 동작해야 합니다.');
+  assert.match(adminBooksJs, /function setAcadBookIsbnLocked[\s\S]*ISBN 편집[\s\S]*ISBN 조회/, '학원 도서 편집 모달에서도 ISBN 잠금/편집 전환 버튼이 동작해야 합니다.');
 });
 

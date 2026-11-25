@@ -1782,23 +1782,28 @@
 <!-- 마스터 학습 리포트 상세 모달 -->
 <div class="modal fade" id="masterLearningReportModal" tabindex="-1" role="dialog" aria-labelledby="masterReportModalTitle" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-    <div class="modal-content" style="border-radius: 18px; border: 1px solid var(--border-medium); box-shadow: 0 18px 44px rgba(46, 38, 32, 0.2); overflow: hidden; background: #ffffff;">
-      <div class="modal-header d-flex justify-content-between align-items-center" style="background: #fbf9f5; border-bottom: 1px solid var(--border-light); padding: 15px 22px;">
-        <div class="d-flex align-items-center" style="min-width: 0;">
-          <div style="width: 38px; height: 38px; border-radius: 10px; background: #eee8dd; display: flex; align-items: center; justify-content: center; margin-right: 12px; color: #3d342d; flex-shrink: 0;">
-            <i class="fa-solid fa-file-lines" style="font-size: 17px;"></i>
+    <div class="modal-content master-report-sheet">
+      <div class="master-report-accent-bar" aria-hidden="true"></div>
+      <div class="modal-header master-report-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="min-width: 0; gap: 13px;">
+          <div class="master-report-emblem">
+            <img src="resources/images/common/symbol.png" alt="나노의 책장 심볼" data-portal-logo class="master-report-symbol" onerror="this.style.display='none';">
           </div>
           <div style="min-width: 0;">
-            <h5 class="modal-title font-weight-bold mb-0" id="masterReportModalTitle" style="font-size: 16px; color: var(--text-main);">학습 리포트</h5>
-            <small class="text-muted d-block text-truncate" id="masterReportSubtitle" style="font-size: 11.5px;">원생의 북퀴즈 채점 및 독서 활동 상세 이력</small>
+            <div class="master-report-eyebrow"><span class="master-report-eyebrow-dot"></span>OFFICIAL READING REPORT</div>
+            <h5 class="modal-title font-weight-bold mb-0" id="masterReportModalTitle">학습 리포트</h5>
+            <small class="d-block text-truncate" id="masterReportSubtitle">원생의 북퀴즈 채점 및 독서 활동 상세 이력</small>
           </div>
         </div>
-        <button type="button" class="close ml-2 d-print-none" data-dismiss="modal" aria-label="Close" style="font-size: 24px; padding: 0 4px; line-height: 1;">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <div class="d-flex align-items-center" style="gap: 10px; flex-shrink: 0;">
+          <span class="master-report-doc-pill"><i class="fa-solid fa-certificate mr-1"></i>완독 성취 진단서</span>
+          <button type="button" class="close ml-1 d-print-none" data-dismiss="modal" aria-label="Close" style="font-size: 24px; padding: 0 4px; line-height: 1;">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
       </div>
 
-      <div class="modal-body p-4" style="background: #faf8f5; max-height: 78vh; overflow-y: auto;">
+      <div class="modal-body p-4 master-report-body">
         <div id="masterReportLoadingState" class="text-center py-4 d-none">
           <div class="spinner-border spinner-border-sm text-secondary mr-2" role="status"></div>
           <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">학습 상세 내역을 불러오는 중입니다...</span>
@@ -1815,40 +1820,55 @@
                     style="width: 100%; height: 100%; object-fit: cover; display: block;">
                 </div>
                 <div style="min-width: 0; flex: 1;">
-                  <div class="d-flex align-items-center flex-wrap mb-2" style="gap: 6px;">
-                    <span class="badge-soft badge-soft-success font-weight-bold" id="masterReportCertifiedBadge" style="font-size: 11px;">완독 도서</span>
-                    <span class="badge-soft badge-soft-neutral" id="masterReportBookGrade" style="font-size: 11px;">학년 미지정</span>
-                    <span class="badge-soft badge-soft-neutral" id="masterReportEarnedPoints" style="font-size: 11px;">0 P</span>
+                  <div class="d-flex align-items-center flex-wrap mb-2" style="gap: 5px;">
+                    <span class="master-report-chip chip-teal" id="masterReportCertifiedBadge">완독 인증 도서</span>
+                    <span class="master-report-chip chip-neutral" id="masterReportBookGrade">학년 미지정</span>
+                    <span class="master-report-chip chip-amber" id="masterReportEarnedPoints">0 P</span>
                   </div>
-                  <h5 class="font-weight-bold mb-1" id="masterReportBookTitle" style="font-size: 16.5px; color: var(--text-main); line-height: 1.35;">도서명</h5>
-                  <div class="text-muted" id="masterReportBookPub" style="font-size: 12px; line-height: 1.45;">출판사 · 저자</div>
-                  <div class="mt-2 pt-2" style="border-top: 1px dashed var(--border-light); font-size: 11.5px; color: var(--text-muted);">
-                    <i class="fa-solid fa-building mr-1"></i>소속 가맹점: <strong id="masterReportAcademy" style="color: var(--text-main);">-</strong>
+                  <h5 class="master-report-book-title mb-1" id="masterReportBookTitle">도서명</h5>
+                  <div class="master-report-book-pub" id="masterReportBookPub">출판사 · 저자</div>
+                  <div class="master-report-academy-line">
+                    <i class="fa-solid fa-building-columns"></i>
+                    <span>소속 가맹점</span>
+                    <strong id="masterReportAcademy">-</strong>
                   </div>
                 </div>
               </div>
 
-              <div>
+              <div class="master-report-stats-col">
                 <div class="master-report-subcard highlight">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span style="font-size: 11px; font-weight: 700; color: #2f5436;"><i class="fa-solid fa-award mr-1"></i>북퀴즈 최종 성적</span>
-                    <span class="badge-soft badge-soft-success" id="masterReportPassBadge" style="font-size: 10.5px;">완독 인증</span>
-                  </div>
-                  <div class="d-flex align-items-baseline" style="gap: 8px;">
-                    <span class="font-weight-bold" id="masterReportScore" style="font-size: 22px; color: #2f5436; line-height: 1.1;">0점</span>
-                    <small class="text-muted" style="font-size: 11px;">(100점 만점 기준)</small>
+                  <div class="master-report-score-wrap">
+                    <div class="master-report-score-ring" id="masterReportScoreRing" style="--score-pct: 100;">
+                      <span class="master-report-score-ring-inner" id="masterReportScoreRingVal">100</span>
+                    </div>
+                    <div style="min-width: 0; flex: 1;">
+                      <div class="d-flex justify-content-between align-items-center flex-wrap mb-1" style="gap: 4px;">
+                        <span class="master-report-score-label"><i class="fa-solid fa-award mr-1"></i>북퀴즈 최종 성적</span>
+                        <span class="master-report-chip chip-amber" id="masterReportPassBadge">우수 완독 인증</span>
+                      </div>
+                      <div class="d-flex align-items-baseline" style="gap: 7px;">
+                        <span class="master-report-score-num" id="masterReportScore">0점</span>
+                        <small class="master-report-score-base">(100점 만점 기준)</small>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <div class="master-report-subgrid">
-                  <div class="master-report-subcard">
-                    <span class="d-block text-muted mb-1" style="font-size: 10.5px; font-weight: 700;">학습 완료 일시</span>
-                    <div class="font-weight-bold" id="masterReportDate" style="font-size: 12px; color: var(--text-main);">-</div>
+                  <div class="master-report-subcard master-report-meta-tile">
+                    <div class="master-report-meta-head">
+                      <span class="master-report-meta-icon is-teal"><i class="fa-solid fa-calendar-check"></i></span>
+                      <span class="master-report-meta-label">학습 완료 일시</span>
+                    </div>
+                    <div class="master-report-meta-value" id="masterReportDate">-</div>
                   </div>
-                  <div class="master-report-subcard">
-                    <span class="d-block text-muted mb-1" style="font-size: 10.5px; font-weight: 700;">원생 및 반 정보</span>
-                    <div class="font-weight-bold text-truncate" id="masterReportStudent" style="font-size: 12px; color: var(--text-main);">-</div>
-                    <small class="text-muted d-block text-truncate" id="masterReportStudentSub" style="font-size: 10.5px;">-</small>
+                  <div class="master-report-subcard master-report-meta-tile">
+                    <div class="master-report-meta-head">
+                      <span class="master-report-meta-icon is-amber"><i class="fa-solid fa-user-graduate"></i></span>
+                      <span class="master-report-meta-label">원생 및 반 정보</span>
+                    </div>
+                    <div class="master-report-meta-value text-truncate" id="masterReportStudent">-</div>
+                    <small class="master-report-meta-sub text-truncate" id="masterReportStudentSub">-</small>
                   </div>
                 </div>
               </div>
@@ -1857,40 +1877,44 @@
 
           <!-- 북퀴즈 문항별 채점 결과 -->
           <div>
-            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-              <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: var(--text-main);">
-                <i class="fa-solid fa-list-check mr-1" style="color: #7c6855;"></i>북퀴즈 문항별 채점 결과
+            <div class="master-report-section-head">
+              <h6 class="master-report-section-title mb-0">
+                <span class="master-report-section-bar"></span>
+                <i class="fa-solid fa-list-check"></i>북퀴즈 문항별 채점 결과
               </h6>
-              <span class="text-muted font-weight-bold" id="masterReportQuizSummary" style="font-size: 12px;">-</span>
+              <span class="master-report-summary-pill" id="masterReportQuizSummary">-</span>
             </div>
             <div id="masterReportQuizDetailContainer" class="master-report-quiz-grid"></div>
           </div>
 
           <!-- 생각 담기 & 지도교사 코멘트 -->
           <div id="masterReportThoughtSection" class="master-report-thought-card" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: var(--text-main);">
-                <i class="fa-solid fa-pen-nib mr-1" style="color: #9c7432;"></i>생각 담기 활동
+            <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid #e6efee;">
+              <h6 class="master-report-section-title mb-0">
+                <span class="master-report-section-bar is-amber"></span>
+                <i class="fa-solid fa-pen-nib" style="color: #d98212;"></i>생각 담기 활동
               </h6>
               <span class="badge-soft badge-soft-neutral" id="masterReportThoughtVisibilityBadge" style="font-size: 10.5px;">리포트 포함</span>
             </div>
-            <div class="p-2 px-3 rounded mb-2" style="background: #fbf9f5; border: 1px solid var(--border-light); font-size: 12px; color: var(--text-main);">
-              <strong style="color: #786d63;">질문:</strong> <span id="masterReportThoughtQuestion">-</span>
+            <div class="master-report-thought-q mb-2">
+              <strong><i class="fa-solid fa-circle-question mr-1"></i>질문</strong>
+              <span id="masterReportThoughtQuestion">-</span>
             </div>
-            <div class="p-3 rounded mb-2" style="background: #ffffff; border: 1px solid var(--border-light); font-size: 12.5px; line-height: 1.6; white-space: pre-wrap;" id="masterReportThoughtAnswer">-</div>
-            <div id="masterReportThoughtCommentWrap" class="p-3 rounded" style="background: #f5f1ea; border: 1px solid #e2dacd; display: none;">
-              <div class="font-weight-bold mb-1" style="font-size: 11.5px; color: #594e44;">
+            <div class="master-report-thought-a mb-2" id="masterReportThoughtAnswer">-</div>
+            <div id="masterReportThoughtCommentWrap" class="master-report-thought-c" style="display: none;">
+              <div class="master-report-thought-c-head">
                 <i class="fa-solid fa-comment-dots mr-1"></i>지도교사 코멘트
               </div>
-              <div id="masterReportThoughtComment" style="font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; color: var(--text-main);">-</div>
+              <div id="masterReportThoughtComment" style="font-size: 12.5px; line-height: 1.65; white-space: pre-wrap; color: #18292b;">-</div>
             </div>
           </div>
 
           <!-- 나노시트 첨삭 결과 & 원본 사진 -->
           <div id="masterReportWorksheetSection" class="master-report-worksheet-card" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center pb-2 mb-3" style="border-bottom: 1px solid var(--border-light);">
-              <h6 class="font-weight-bold mb-0" style="font-size: 13.5px; color: #2f5436;">
-                <i class="fa-solid fa-seedling mr-1"></i>나노시트 첨삭 리포트
+            <div class="d-flex justify-content-between align-items-center pb-2 mb-3" style="border-bottom: 1px solid #e6efee;">
+              <h6 class="master-report-section-title mb-0">
+                <span class="master-report-section-bar"></span>
+                <i class="fa-solid fa-seedling" style="color: #00938f;"></i>나노시트 첨삭 리포트
               </h6>
               <div class="d-flex align-items-center" style="gap: 6px;">
                 <span class="badge-soft badge-soft-neutral" id="masterReportSheetBadge" style="font-size: 10.5px;">작성 전</span>
@@ -1904,18 +1928,32 @@
                 <div id="masterReportWorksheetPhotos" class="d-flex flex-wrap" style="gap: 8px;"></div>
               </div>
               <div class="col-md-7" id="masterReportWorksheetAiCol">
-                <div class="p-3 rounded mb-2" style="background: #f2f8f4; border: 1px solid #c9decb; border-left: 4px solid #2f5436;">
-                  <div class="font-weight-bold mb-1" style="font-size: 11.5px; color: #2f5436;">이번 활동에서 돋보인 점</div>
-                  <div id="masterReportWorksheetSummary" style="font-size: 12.5px; line-height: 1.6; color: var(--text-main);">-</div>
+                <div class="p-3 rounded mb-2" style="background: #eef9f8; border: 1px solid #bee6e3; border-left: 4px solid #00aca8;">
+                  <div class="font-weight-bold mb-1" style="font-size: 11.5px; color: #0b6f6c;">이번 활동에서 돋보인 점</div>
+                  <div id="masterReportWorksheetSummary" style="font-size: 12.5px; line-height: 1.6; color: #18292b;">-</div>
                 </div>
-                <div class="p-3 rounded" style="background: #fbf9f5; border: 1px solid var(--border-light); font-size: 12px; line-height: 1.65;">
-                  <div class="font-weight-bold mb-1" style="color: #594e44;">다음 성장을 위한 발걸음</div>
+                <div class="p-3 rounded" style="background: #fffaf0; border: 1px solid #f7e1b5; border-left: 4px solid #f4a12c; font-size: 12px; line-height: 1.65;">
+                  <div class="font-weight-bold mb-1" style="color: #b86908;">다음 성장을 위한 발걸음</div>
                   <div id="masterReportWorksheetNextStep" class="mb-1">-</div>
                   <div id="masterReportWorksheetParentGuide" class="text-muted">-</div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- 리포트 공식 브랜드 Footer (화면·인쇄 공통 노출) -->
+          <footer class="report-brand-footer">
+            <div class="report-brand-footer-left">
+              <img src="resources/images/common/logo.png" alt="나노의 책장" data-portal-logo class="report-footer-logo">
+              <span class="report-footer-divider" aria-hidden="true"></span>
+              <span class="report-footer-slogan">아이의 독서는 끝없는 가능성의 시작입니다.</span>
+            </div>
+            <div class="report-brand-footer-right">
+              <strong id="masterReportFooterAcademy">나노의 책장</strong>
+              <span class="mx-1">·</span>
+              <span>Official Reading Report</span>
+            </div>
+          </footer>
         </div>
       </div>
 

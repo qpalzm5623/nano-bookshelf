@@ -88,6 +88,53 @@ html[data-brand="JD"] .select-beige:focus,
 html[data-brand="JD"] .form-control:focus { background: #ffffff; border-color: #6c92f0; box-shadow: 0 0 0 3px #1649db20; }
 html[data-brand="JD"] .modal-content-beige { border-color: #cdd9ee; box-shadow: 0 15px 40px rgba(22, 73, 219, 0.16); }
 html[data-brand="JD"] .modal-header-beige { background: #f5f8ff; border-bottom-color: #e0e7f5; color: #172c50; }
+/* JD 브랜드 학습 리포트 A안 에디토리얼 토큰 자동 전환 */
+html[data-brand="JD"] #masterLearningReportModal,
+html[data-brand="JD"] #learningReportModalDialog {
+  --lr-teal: #1649db;
+  --lr-teal-deep: #173f9b;
+  --lr-teal-soft: #eff4ff;
+  --lr-teal-border: #c7d7fe;
+  --lr-amber: #3b82f6;
+  --lr-amber-deep: #1d4ed8;
+  --lr-amber-soft: #f5f8ff;
+  --lr-amber-border: #bfdbfe;
+  --lr-ink: #172c50;
+  --lr-muted: #586985;
+  --lr-paper: #f7f9ff;
+  --lr-accent-bar: linear-gradient(90deg, #173f9b 0%, #1649db 62%, #60a5fa 100%);
+}
+html[data-brand="JD"] .master-report-header,
+html[data-brand="JD"] #learningReportModalDialog .modal-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f7ff 70%, #edf2ff 100%) !important;
+  border-bottom-color: #d6e2fb !important;
+}
+html[data-brand="JD"] .master-report-book-box,
+html[data-brand="JD"] #learningReportModalBody .report-overview-left {
+  background: linear-gradient(135deg, #f5f8ff 0%, #ffffff 100%) !important;
+  border-color: #dbe6fc !important;
+}
+html[data-brand="JD"] .master-report-subcard.highlight,
+html[data-brand="JD"] #learningReportModalBody .report-sub-card.highlight {
+  background: linear-gradient(135deg, #eff4ff 0%, #f8faff 100%) !important;
+  border-color: #c7d7fe !important;
+}
+html[data-brand="JD"] .master-report-emblem,
+html[data-brand="JD"] #learningReportModalDialog .lr-header-emblem {
+  border-color: #c7d7fe;
+  box-shadow: 0 4px 12px rgba(22, 73, 219, 0.14);
+}
+html[data-brand="JD"] img.master-report-symbol[data-jd-logo],
+html[data-brand="JD"] img.lr-header-symbol[data-jd-logo] {
+  height: 26px !important;
+  width: 34px !important;
+  max-width: 34px !important;
+  object-fit: contain;
+}
+html[data-brand="JD"] img.report-footer-logo[data-jd-logo] {
+  height: 24px !important;
+  max-width: 140px;
+}
 html[data-brand="JD"] .master-report-photo-btn { background: #f5f8ff; border-color: #c7d7fe; }
 html[data-brand="JD"] .master-report-photo-btn:hover { border-color: #1649db; }
 html[data-brand="JD"] .slot-progress-wrap { background: #e6eefc; }
