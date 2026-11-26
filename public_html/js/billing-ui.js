@@ -511,7 +511,13 @@
       toast(prefixLabel + (statuses[result.status] || '결과 확인 중') + (result.resultMessage ? ' (' + result.resultMessage + ')' : ''));
       await dispatch(true);
     }
-    catch(e) { toast(e.message); }
+    catch(e) {
+      if (typeof window.isKakaoInsufficientCashError === 'function' && window.isKakaoInsufficientCashError(e) && typeof window.showKakaoInsufficientCashAlert === 'function') {
+        await window.showKakaoInsufficientCashAlert();
+      } else {
+        toast(e.message);
+      }
+    }
   }
 
   async function wallet(academyId) {

@@ -2130,6 +2130,27 @@ function buildKakaoHistoryNotice(preview) {
     : '최초 발송입니다. 동일 리포트는 총 ' + limit + '회까지 발송할 수 있습니다.\n\n';
 }
 
+// 알리고 잔여 캐시 부족 시 확인 버튼을 눌러야 닫히는 중앙 모달 alert를 표시합니다.
+function isKakaoInsufficientCashError(err) {
+  var msg = String((err && err.message) || err || '');
+  return /알리고\s*잔여\s*캐시|잔액이?\s*부족|캐시가?\s*부족/i.test(msg);
+}
+
+function showKakaoInsufficientCashAlert() {
+  var msg = '알리고 잔여 캐시를 확인해주세요.';
+  if (typeof nanoAlert === 'function') {
+    return nanoAlert(msg, {
+      title: '알리고 잔여 캐시 부족',
+      tone: 'warning',
+      confirmText: '확인',
+      requireConfirmClick: true
+    });
+  }
+  alert(msg);
+}
+window.isKakaoInsufficientCashError = isKakaoInsufficientCashError;
+window.showKakaoInsufficientCashAlert = showKakaoInsufficientCashAlert;
+
 async function sendLearningReportKakao(logId, event, isModal) {
   if (event) event.stopPropagation();
   if (!(window.NanoPortal && NanoPortal.remote)) { showAcademyToast('운영 서버에서만 발송할 수 있습니다.'); return; }
@@ -2151,7 +2172,10 @@ async function sendLearningReportKakao(logId, event, isModal) {
       if (modalButton && currentOpenLearningLogId === logId) modalButton.innerHTML = getKakaoReportBtnHtml(logId, true);
     }
     showAcademyToast(buildKakaoDispatchFeedback(result, '북퀴즈 결과'));
-  } catch(e) { showAcademyToast(e.message); } finally { if(button) button.disabled = false; }
+  } catch(e) {
+    if (isKakaoInsufficientCashError(e)) await showKakaoInsufficientCashAlert();
+    else showAcademyToast(e.message);
+  } finally { if(button) button.disabled = false; }
 }
 
 // 학습 리포트 소속 가맹점명 추출 (학생 학교명 log.school 혼입 금지)
@@ -2721,11 +2745,51 @@ function updateTeacherCommentUI(log) {
 }
 
 // 카카오 알림톡 발송 전문 보기 모달 열기
+var currentAcademyDispatchReportUrl = '';
+
+function openAcademyDispatchReport() {
+  var url = String(currentAcademyDispatchReportUrl || '').trim();
+  if (!/^https?:\/\//i.test(url)) {
+    showAcademyToast('연결된 학부모 리포트 열람 링크가 없는 발송 내역입니다.');
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function openAcademyDispatchDetailModal(dispatchId) {
   var l = academyDispatchLogs.find(function(item) { return item.id === dispatchId; });
   if (!l) {
     showAcademyToast('알림톡 발송 전문 정보를 찾을 수 없습니다.');
     return;
+  }
+
+  // 학부모용 공개 리포트 링크(quiz_result / portfolio_report / literacy_report) 연결
+  currentAcademyDispatchReportUrl = String(l.reportUrl || '').trim();
+  var typeLabel = String(l.typeName || l.type || '');
+  var isPortfolio = /포트폴리오|portfolio/i.test(typeLabel) || /portfolio_report/i.test(currentAcademyDispatchReportUrl);
+  var isLiteracy = /문해력|진단|literacy/i.test(typeLabel) || /literacy_report/i.test(currentAcademyDispatchReportUrl);
+
+  var titleEl = document.getElementById('acadDispatchModalTitle');
+  if (titleEl) {
+    titleEl.innerText = isPortfolio
+      ? '[나노의 책장] 독서 성장 포트폴리오 도착'
+      : isLiteracy
+        ? '[나노의 책장] 문해력 진단 결과 도착'
+        : '[나노의 책장] 독서 학습 리포트 도착';
+  }
+
+  var openBtnEl = document.getElementById('acadDispatchModalOpenReportBtn');
+  if (openBtnEl) {
+    var btnLabel = isPortfolio
+      ? '독서 포트폴리오 열람하기 >'
+      : isLiteracy
+        ? '문해력 진단 결과 열람하기 >'
+        : '학습 리포트 열람하기 >';
+    openBtnEl.textContent = btnLabel;
+    openBtnEl.disabled = !currentAcademyDispatchReportUrl;
+    openBtnEl.style.opacity = currentAcademyDispatchReportUrl ? '1' : '0.55';
+    openBtnEl.style.cursor = currentAcademyDispatchReportUrl ? 'pointer' : 'not-allowed';
+    openBtnEl.title = currentAcademyDispatchReportUrl ? '학부모용 리포트를 새 창으로 엽니다.' : '열람 가능한 리포트 링크가 없습니다.';
   }
 
   var timeEl = document.getElementById('acadDispatchModalTime');
@@ -6851,7 +6915,8 @@ async function sendPortfolioKakaoDirect(pfId, event) {
       ? buildKakaoDispatchFeedback(result, pf.studentName + ' 학생 포트폴리오')
       : '🎉 [' + pf.studentName + '] 학부모님께 포트폴리오 카카오톡 알림톡이 발송되었습니다!');
   } catch(e) {
-    showAcademyToast('알림톡 발송 실패: ' + e.message);
+    if (isKakaoInsufficientCashError(e)) await showKakaoInsufficientCashAlert();
+    else showAcademyToast('알림톡 발송 실패: ' + e.message);
   } finally {
     if (button) button.disabled = false;
   }

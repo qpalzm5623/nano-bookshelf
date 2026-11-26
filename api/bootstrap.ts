@@ -6,6 +6,7 @@ import { dispatchDate, dispatchTemplate } from '../lib/dispatch-view';
 import Reading = require('../public_html/js/reading-progress');
 import ClientIp = require('../lib/client-ip');
 import { readSession, passwordVersion } from '../lib/portal-auth';
+import { ensureAnnualGradePromotion } from '../lib/grade-promotion';
 
 // 공개 JS 파일로 배포하던 회원 정보를 로그인한 사용자의 범위로만 제공합니다.
 interface CachedCatalog {
@@ -161,6 +162,8 @@ export default async function handler(req: any, res: any) {
     const user = session ? await prisma.member.findUnique({ where: { id: session.sub }, include: { academy: true } }) : null;
     if (!user || !session || user.status !== 'APPROVED' || user.academy.status !== 'ACTIVE' || user.academy.deletedAt || session.version !== passwordVersion(user.password || '')) return res.status(401).send('window.NANO_BOOTSTRAP_FAILED = true;');
     await authorizeBrand(req, user);
+    // 매년 1월 1일 00:00 KST 기점으로 아직 진급되지 않은 경우 첫 접속 시 즉시 학년 +1을 반영합니다(평소에는 캐시로 DB 조회 0회).
+    await ensureAnnualGradePromotion().catch((err: any) => console.error('[GradePromotion] bootstrap_error', { error: err?.message || String(err) }));
     const clientIp = ClientIp.extractClientIp(req);
     const limited = restrictedMaster(user);
     const brand = (user as any).portalBrand;

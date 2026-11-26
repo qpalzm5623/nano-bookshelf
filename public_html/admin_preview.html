@@ -655,6 +655,10 @@
               style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap;">
               <i class="fa-solid fa-arrow-up-from-bracket mr-1 text-success"></i>엑셀 도서 등록
             </button>
+            <button class="btn btn-sm btn-beige-secondary" onclick="openAcadOwnedBookExcelModal()"
+              style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; background: #f0fdfa; border-color: #0d9488; color: #0f766e;" title="도서 목록 엑셀/CSV의 보유 여부(Y/N)로 학원 보유 도서를 일괄 등록·해제합니다.">
+              <i class="fa-solid fa-bookmark mr-1" style="color: #0d9488;"></i>보유도서 등록
+            </button>
             <button class="btn btn-sm btn-beige-secondary" onclick="openAcadQuizExcelModal()"
               style="font-weight: 600; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; white-space: nowrap; background: #fffbeb; border-color: #f59e0b; color: #b45309;">
               <i class="fa-solid fa-file-circle-question mr-1" style="color: #d97706;"></i>엑셀 북퀴즈 등록
@@ -3708,9 +3712,9 @@
               id="acadDispatchModalBody">
             </div>
             <div class="mt-3 text-center">
-              <button type="button" class="btn btn-sm btn-block font-weight-bold"
+              <button type="button" id="acadDispatchModalOpenReportBtn" class="btn btn-sm btn-block font-weight-bold"
                 style="background: #fee500; color: #3c1e1e; border: none; border-radius: 8px; font-size: 13px; padding: 8px;"
-                onclick="showAcademyToast('학부모 리포트 열람 웹뷰 링크가 호출됩니다.')">
+                onclick="openAcademyDispatchReport()">
                 학습 리포트 열람하기 &gt;
               </button>
             </div>
@@ -5359,6 +5363,87 @@
           <button type="button" class="btn btn-sm btn-beige-primary px-4 font-weight-bold"
             onclick="executeBulkBookUpload()" id="btnExecuteBulkUpload">
             <i class="fa-solid fa-upload mr-1"></i>도서 일괄 업로드 실행
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 6-A-2b. 보유도서 일괄 등록 모달 (엑셀/CSV) -->
+  <!-- ============================================================== -->
+  <div class="modal fade" id="acadOwnedBookExcelModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document" style="max-width: 700px;">
+      <div class="modal-content"
+        style="border-radius: 16px; border: 1px solid var(--border-medium); box-shadow: 0 12px 35px rgba(0,0,0,0.15); overflow: hidden;">
+        <div class="modal-header d-flex justify-content-between align-items-center"
+          style="background: #f0fdfa; border-bottom: 1px solid #ccfbf1; padding: 16px 22px;">
+          <div class="d-flex align-items-center">
+            <div
+              style="width: 36px; height: 36px; border-radius: 10px; background: #ccfbf1; color: #0f766e; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 17px;">
+              <i class="fa-solid fa-bookmark"></i>
+            </div>
+            <div>
+              <h5 class="modal-title font-weight-bold mb-0" style="font-size: 16px; color: #0f766e;">
+                보유도서 일괄 등록
+              </h5>
+              <small class="text-muted" style="font-size: 11.5px;">도서 목록 엑셀/CSV 파일로 학원 보유 도서를 한 번에 등록·해제합니다.</small>
+            </div>
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+        <div class="modal-body p-4" style="background: #faf8f5; max-height: calc(88vh - 130px); overflow-y: auto;">
+          <!-- 작성 및 적용 규칙 안내 -->
+          <div class="mb-3 p-3 rounded" style="background: #ffffff; border: 1.5px solid #d5e8e4; font-size: 12px; line-height: 1.6;">
+            <div class="font-weight-bold mb-2" style="font-size: 13px; color: #0f766e;">
+              <i class="fa-solid fa-circle-info mr-1"></i>보유도서 업로드 양식 및 적용 안내
+            </div>
+            <div class="alert py-2 px-3 mb-2" style="font-size: 12px; border-radius: 8px; line-height: 1.65; background: #f0fdfa; border: 1px solid #99f6e4; color: #134e4a;">
+              • <strong>양식 기준:</strong> <strong>[도서 목록 다운로드]</strong>로 내려받은 파일의 <strong>‘등록일자’ 옆 ‘보유 여부’</strong> 컬럼을 사용합니다.<br>
+              • <strong>적용 방식:</strong> 업로드 시 <strong>‘도서코드(ID)’</strong>와 <strong>‘보유 여부’</strong> 컬럼의 값만 확인하여 반영합니다.<br>
+              • <span class="badge badge-success px-2">Y</span> 입력 → <strong>보유 도서로 등록</strong><br>
+              • <span class="badge badge-secondary px-2">N</span> 입력 → <strong>미보유 도서로 해제</strong><br>
+              • <span class="badge badge-light border px-2 text-dark">빈칸(미입력)</span> → <strong>기존 시스템에 저장된 보유 상태를 그대로 유지</strong>합니다.
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px; padding-top: 4px;">
+              <small class="text-muted">현재 학원의 보유 상태가 반영된 도서 목록 파일을 내려받아 수정한 뒤 바로 업로드할 수 있습니다.</small>
+              <button type="button" class="btn btn-sm btn-outline-success font-weight-bold"
+                onclick="exportAcademyBooksToExcel()" style="border-radius: 8px; font-size: 12px; padding: 5px 12px; white-space: nowrap;">
+                <i class="fa-solid fa-download mr-1"></i>도서 목록 양식 다운로드 (.csv)
+              </button>
+            </div>
+          </div>
+
+          <!-- 파일 업로드 드롭존 -->
+          <div id="acadOwnedBookDropZone" class="p-4 rounded text-center mb-3 bg-white"
+            style="border: 2px dashed #99d5cc; cursor: pointer; transition: all 0.2s ease;"
+            onclick="document.getElementById('acadOwnedBookFileInput').click()"
+            ondragover="handleAcadExcelDragOver(event, this, '#0d9488', '#f0fdfa')"
+            ondragenter="handleAcadExcelDragOver(event, this, '#0d9488', '#f0fdfa')"
+            ondragleave="handleAcadExcelDragLeave(event, this, '#99d5cc', '#ffffff')"
+            ondrop="handleAcadOwnedBookFileDrop(event)">
+            <input type="file" id="acadOwnedBookFileInput" accept=".csv,.xlsx,.xls" class="d-none"
+              onchange="handleAcadOwnedBookFileSelect(this)">
+            <i class="fa-solid fa-cloud-arrow-up mb-2" style="font-size: 36px; color: #0d9488;"></i>
+            <h6 class="font-weight-bold mb-1" id="acadOwnedBookFileNameDisplay" style="font-size: 13.5px; color: #1e293b;">
+              클릭하여 엑셀/CSV 파일 선택 또는 드래그 앤 드롭
+            </h6>
+            <small class="text-muted d-block">지원 형식: .xlsx, .xls, .csv (도서코드 + 보유 여부 컬럼 자동 인식)</small>
+          </div>
+
+          <!-- 파싱 결과 요약 미리보기 -->
+          <div id="acadOwnedBookPreviewBox" class="p-3 rounded bg-white" style="display: none; border: 1px solid #dbe7e5; font-size: 12.5px;"></div>
+        </div>
+
+        <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between align-items-center">
+          <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-dismiss="modal">취소</button>
+          <button type="button" class="btn btn-sm font-weight-bold px-4"
+            style="background: #0d9488; color: #ffffff; border: none; border-radius: 8px;"
+            onclick="executeAcadOwnedBookUpload()" id="btnExecuteOwnedBookUpload" disabled>
+            <i class="fa-solid fa-check mr-1"></i>보유도서 일괄 적용
           </button>
         </div>
       </div>

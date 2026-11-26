@@ -674,15 +674,13 @@
         '<div class="mb-3">' +
           '<div class="pf-section-title mb-2"><span class="pf-section-bar"></span><i class="fa-solid fa-chart-simple"></i>이번 기간의 독서</div>' +
           '<div class="pf-stat-grid">' +
-            '<div class="pf-stat-box is-teal">' +
+            '<div class="pf-stat-box is-teal is-hero-count">' +
               '<div class="pf-stat-top"><span class="pf-stat-icon is-teal"><i class="fa-solid fa-book-open"></i></span><span class="pf-stat-label">완독 도서수</span></div>' +
               '<div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">권</span></div>' +
-              '<div class="pf-stat-badge is-teal">목표 완독 완료</div>' +
             '</div>' +
-            '<div class="pf-stat-box is-amber">' +
+            '<div class="pf-stat-box is-amber is-hero-count">' +
               '<div class="pf-stat-top"><span class="pf-stat-icon is-amber"><i class="fa-solid fa-clipboard-check"></i></span><span class="pf-stat-label">북퀴즈 완료</span></div>' +
               '<div class="pf-stat-value">' + bookCount + '<span class="pf-stat-unit">회</span></div>' +
-              '<div class="pf-stat-badge is-amber">응시율 100%</div>' +
             '</div>' +
             '<div class="pf-stat-box is-score">' +
               '<div class="pf-stat-top"><span class="pf-kpi-ring" style="--score-pct:' + quizAvg + ';"><span class="pf-kpi-ring-in"><i class="fa-solid fa-award"></i></span></span><span class="pf-stat-label">평균 이해도</span></div>' +

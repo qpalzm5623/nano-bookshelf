@@ -177,6 +177,9 @@
 #portfolioPrintDoc .pf-stat-box.is-score .pf-stat-value { color: var(--pf-accent-deep); }
 #portfolioPrintDoc .pf-stat-box.is-amber .pf-stat-value { color: var(--pf-yellow-ink); }
 #portfolioPrintDoc .pf-stat-unit { margin-left: 3px; font-size: 13.5px; font-weight: 700; opacity: 0.82; }
+/* 완독 도서수·북퀴즈 완료 카드: 하단 배지 대신 핵심 수치를 크게 강조하고 세로 중앙에 배치 */
+#portfolioPrintDoc .pf-stat-box.is-hero-count .pf-stat-value { margin: auto 0; padding: 6px 0 4px; font-size: 38px; line-height: 1.05; }
+#portfolioPrintDoc .pf-stat-box.is-hero-count .pf-stat-unit { margin-left: 4px; font-size: 16.5px; }
 #portfolioPrintDoc .pf-stat-badge {
   display: inline-flex;
   align-items: center;
@@ -369,6 +372,8 @@
     #portfolioPrintDoc .pf-stat-box { padding: 11px 11px; }
     #portfolioPrintDoc .pf-stat-value { font-size: 23px; margin: 2px 0 5px; }
     #portfolioPrintDoc .pf-stat-unit { font-size: 12px; }
+    #portfolioPrintDoc .pf-stat-box.is-hero-count .pf-stat-value { font-size: 31px; margin: auto 0; padding: 4px 0 2px; }
+    #portfolioPrintDoc .pf-stat-box.is-hero-count .pf-stat-unit { font-size: 14px; }
     #portfolioPrintDoc .pf-panel, #portfolioPrintDoc .pf-preference-wrap { padding: 14px; }
     #portfolioPrintDoc .pf-insight-card-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
     #portfolioPrintDoc .pf-insight-card-body, #portfolioPrintDoc .pf-book-achievement-text, #portfolioPrintDoc #pfTeacherNoteDisplay { font-size: 13.5px; line-height: 1.75; }
@@ -417,6 +422,8 @@
   #portfolioPrintDoc .pf-kpi-ring { width: 26px; height: 26px; }
   #portfolioPrintDoc .pf-kpi-ring-in { width: 19px; height: 19px; font-size: 9.5px; }
   #portfolioPrintDoc .pf-stat-value { font-size: 19pt; margin: 1px 0 4px; }
+  #portfolioPrintDoc .pf-stat-box.is-hero-count .pf-stat-value { font-size: 26pt; margin: auto 0; padding: 2px 0; }
+  #portfolioPrintDoc .pf-stat-box.is-hero-count .pf-stat-unit { font-size: 12pt; }
   #portfolioPrintDoc .pf-panel { padding: 11px 13px; }
   #portfolioPrintDoc .pf-panel-head { padding-bottom: 6px; margin-bottom: 8px; }
   #portfolioPrintDoc .pf-insight-card-grid { gap: 8px; }

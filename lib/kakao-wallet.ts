@@ -13,7 +13,7 @@ export function maskPhone(phone?: string | null): string {
 // 모든 잔액 변경은 원장 기록과 같은 트랜잭션에서 수행합니다.
 export async function changeBalance(tx: any, academyId: string, amount: number, id: string, kind: string, referenceId: string) {
   const changed = await tx.academy.updateMany({ where: { id: academyId, ...(amount < 0 ? { kakaoBalance: { gte: -amount } } : {}) }, data: { kakaoBalance: { increment: amount } } });
-  need(changed.count === 1, '카카오톡 잔액이 부족합니다. 충전 후 이용해 주세요.', 409);
+  need(changed.count === 1, '알리고 잔여 캐시를 확인해주세요.', 409);
   await tx.kakaoLedger.create({ data: { id, academyId, amount, kind, referenceId } });
 }
 

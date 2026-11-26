@@ -1282,7 +1282,8 @@ function exportAcademyBooksToExcel() {
     "북퀴즈세트",
     "나노시트활동지",
     "공개여부",
-    "등록일자"
+    "등록일자",
+    "보유 여부"
   ];
 
   var escapeCsv = function(val) {
@@ -1392,7 +1393,8 @@ function exportAcademyBooksToExcel() {
       escapeCsv(quizSetDisplay),
       escapeCsv(hasSheet),
       escapeCsv(isPublic),
-      escapeCsv(dateVal)
+      escapeCsv(dateVal),
+      escapeCsv(b.isOwned ? "Y" : "N")
     ].join(",");
   });
 
@@ -1410,6 +1412,358 @@ function exportAcademyBooksToExcel() {
   URL.revokeObjectURL(url);
 
   showAcademyToast("도서 콘텐츠 전체 " + booksToExport.length + "권이 엑셀(CSV)로 성공적으로 다운로드되었습니다.");
+}
+
+// ==============================================================
+// 보유도서 엑셀/CSV 일괄 등록·해제 기능 (도서코드 + 보유 여부 Y/N만 판별)
+// ==============================================================
+var pendingOwnedBookUploadState = null;
+
+function openAcadOwnedBookExcelModal() {
+  pendingOwnedBookUploadState = null;
+  var fileInput = document.getElementById('acadOwnedBookFileInput');
+  if (fileInput) fileInput.value = '';
+  var nameEl = document.getElementById('acadOwnedBookFileNameDisplay');
+  if (nameEl) nameEl.innerText = '클릭하여 엑셀/CSV 파일 선택 또는 드래그 앤 드롭';
+  var previewBox = document.getElementById('acadOwnedBookPreviewBox');
+  if (previewBox) {
+    previewBox.style.display = 'none';
+    previewBox.innerHTML = '';
+  }
+  var execBtn = document.getElementById('btnExecuteOwnedBookUpload');
+  if (execBtn) {
+    execBtn.disabled = true;
+    execBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>보유도서 일괄 적용';
+  }
+  if (window.jQuery && typeof $('#acadOwnedBookExcelModal').modal === 'function') {
+    $('#acadOwnedBookExcelModal').modal({ backdrop: true, show: true });
+  } else if (typeof showModalVanilla === 'function') {
+    showModalVanilla('acadOwnedBookExcelModal');
+  }
+}
+
+function handleAcadOwnedBookFileDrop(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  var dz = document.getElementById('acadOwnedBookDropZone');
+  if (dz) {
+    dz.style.borderColor = '#99d5cc';
+    dz.style.backgroundColor = '#ffffff';
+  }
+  var files = event.dataTransfer && event.dataTransfer.files;
+  if (files && files.length > 0) {
+    processAcadOwnedBookFile(files[0]);
+  }
+}
+
+function handleAcadOwnedBookFileSelect(inputEl) {
+  if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
+  processAcadOwnedBookFile(inputEl.files[0]);
+}
+
+// RFC-4180 CSV 파서 (UTF-8 BOM, 따옴표 내 쉼표, CRLF, 엑셀 ="..." 수식 셀 안전 처리)
+function parseOwnedCsvTextToMatrix(text) {
+  var src = String(text || '').replace(/^\uFEFF/, '');
+  var rows = [];
+  var row = [];
+  var cell = '';
+  var inQuotes = false;
+
+  for (var i = 0; i < src.length; i++) {
+    var ch = src[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (src[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cell += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        row.push(cell);
+        cell = '';
+      } else if (ch === '\r') {
+        if (src[i + 1] === '\n') i++;
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = '';
+      } else if (ch === '\n') {
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = '';
+      } else {
+        cell += ch;
+      }
+    }
+  }
+  if (cell.length > 0 || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows;
+}
+
+function escapeOwnedHtml(val) {
+  return String(val == null ? '' : val).replace(/[&<>"']/g, function(ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+  });
+}
+
+function cleanOwnedCellText(val) {
+  var s = String(val == null ? '' : val).trim();
+  // 엑셀에서 ="FA000001" 형태로 저장된 텍스트 수식 해제
+  var formulaMatch = s.match(/^="([\s\S]*)"$/);
+  if (formulaMatch) s = formulaMatch[1].trim();
+  return s;
+}
+
+function parseOwnedBookMatrix(matrix) {
+  if (!Array.isArray(matrix) || matrix.length < 2) {
+    return { error: '엑셀/CSV 파일에 헤더와 데이터 행이 없습니다.' };
+  }
+
+  var headerRowIdx = -1;
+  var codeColIdx = -1;
+  var ownedColIdx = -1;
+  var maxScan = Math.min(5, matrix.length);
+
+  for (var r = 0; r < maxScan; r++) {
+    var cols = Array.isArray(matrix[r]) ? matrix[r] : [];
+    var foundCode = -1;
+    var foundOwned = -1;
+    for (var c = 0; c < cols.length; c++) {
+      var norm = cleanOwnedCellText(cols[c]).replace(/\s+/g, '').toLowerCase();
+      if (foundCode === -1 && (/도서코드|도서관리코드|bookno|^id$/.test(norm))) {
+        foundCode = c;
+      }
+      if (foundOwned === -1 && (/보유여부|보유도서|^보유$|^owned$/.test(norm))) {
+        foundOwned = c;
+      }
+    }
+    if (foundCode !== -1 && foundOwned !== -1) {
+      headerRowIdx = r;
+      codeColIdx = foundCode;
+      ownedColIdx = foundOwned;
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1 || codeColIdx === -1 || ownedColIdx === -1) {
+    return {
+      error: "'도서코드(ID)' 컬럼과 '보유 여부' 컬럼을 찾을 수 없습니다. [도서 목록 양식 다운로드] 파일의 양식을 사용해 주세요."
+    };
+  }
+
+  var decisionMap = new Map();
+  var totalRows = 0;
+  var keepCount = 0;
+  var invalidValues = [];
+
+  for (var i = headerRowIdx + 1; i < matrix.length; i++) {
+    var row = Array.isArray(matrix[i]) ? matrix[i] : [];
+    var code = cleanOwnedCellText(row[codeColIdx]);
+    if (!code) continue;
+    totalRows++;
+
+    var rawFlag = cleanOwnedCellText(row[ownedColIdx]).toUpperCase();
+    // 보유 여부가 빈칸이면 기존 시스템 상태 그대로 유지
+    if (!rawFlag) {
+      keepCount++;
+      continue;
+    }
+    if (rawFlag === 'Y' || rawFlag === 'N') {
+      decisionMap.set(code, rawFlag);
+    } else {
+      invalidValues.push({ rowNo: i + 1, code: code, val: rawFlag });
+    }
+  }
+
+  var changeRows = [];
+  var addCount = 0;
+  var removeCount = 0;
+  decisionMap.forEach(function(flag, code) {
+    changeRows.push({ bookCode: code, owned: flag });
+    if (flag === 'Y') addCount++;
+    else removeCount++;
+  });
+
+  return {
+    totalRows: totalRows,
+    addCount: addCount,
+    removeCount: removeCount,
+    keepCount: keepCount,
+    invalidValues: invalidValues,
+    changeRows: changeRows
+  };
+}
+
+function processAcadOwnedBookFile(file) {
+  var ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (['csv', 'xlsx', 'xls'].indexOf(ext) === -1) {
+    showAcademyToast('지원하지 않는 파일 형식입니다. .xlsx, .xls, .csv 파일만 업로드할 수 있습니다.');
+    return;
+  }
+
+  var nameEl = document.getElementById('acadOwnedBookFileNameDisplay');
+  if (nameEl) nameEl.innerHTML = '<span style="color:#0f766e;"><i class="fa-solid fa-file-excel mr-1"></i>' + escapeOwnedHtml(file.name) + '</span>';
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var matrix = null;
+      var buf = e.target.result;
+      if (ext === 'csv') {
+        var bytes = new Uint8Array(buf);
+        var text = '';
+        try {
+          text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        } catch (_) {
+          text = new TextDecoder('euc-kr').decode(bytes);
+        }
+        matrix = parseOwnedCsvTextToMatrix(text);
+      } else {
+        if (typeof XLSX === 'undefined') {
+          throw new Error('엑셀 파서(XLSX)가 로드되지 않았습니다. CSV 형식으로 저장해 업로드해 주세요.');
+        }
+        var wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        var firstSheet = wb.Sheets[wb.SheetNames[0]];
+        matrix = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+      }
+
+      var parsed = parseOwnedBookMatrix(matrix);
+      var previewBox = document.getElementById('acadOwnedBookPreviewBox');
+      var execBtn = document.getElementById('btnExecuteOwnedBookUpload');
+
+      if (parsed.error) {
+        pendingOwnedBookUploadState = null;
+        if (previewBox) {
+          previewBox.style.display = 'block';
+          previewBox.innerHTML = '<div class="text-danger font-weight-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + escapeOwnedHtml(parsed.error) + '</div>';
+        }
+        if (execBtn) execBtn.disabled = true;
+        return;
+      }
+
+      pendingOwnedBookUploadState = parsed;
+      var invalidNotice = parsed.invalidValues.length > 0
+        ? '<div class="mt-2 text-danger" style="font-size:11.5px;"><i class="fa-solid fa-circle-exclamation mr-1"></i>Y/N 외 잘못된 입력 <strong>' + parsed.invalidValues.length + '건</strong>은 무시되고 기존 상태를 유지합니다. (예: ' + escapeOwnedHtml(parsed.invalidValues.slice(0, 3).map(function(x) { return x.rowNo + '행(' + x.val + ')'; }).join(', ')) + ')</div>'
+        : '';
+
+      if (previewBox) {
+        previewBox.style.display = 'block';
+        previewBox.innerHTML =
+          '<div class="font-weight-bold text-dark mb-2"><i class="fa-solid fa-magnifying-glass-chart mr-1" style="color:#0d9488;"></i>업로드 파일 분석 결과</div>' +
+          '<div class="d-flex flex-wrap" style="gap:8px;">' +
+            '<span class="badge badge-light border px-2 py-1" style="font-size:12px;">전체 도서 행 <strong>' + parsed.totalRows + '건</strong></span>' +
+            '<span class="badge badge-success px-2 py-1" style="font-size:12px;">보유 등록(Y) <strong>' + parsed.addCount + '건</strong></span>' +
+            '<span class="badge badge-secondary px-2 py-1" style="font-size:12px;">미보유 해제(N) <strong>' + parsed.removeCount + '건</strong></span>' +
+            '<span class="badge badge-info px-2 py-1" style="font-size:12px;">기존 유지(빈칸) <strong>' + parsed.keepCount + '건</strong></span>' +
+          '</div>' +
+          invalidNotice +
+          (parsed.changeRows.length === 0 ? '<div class="mt-2 text-muted" style="font-size:11.5px;">Y 또는 N이 입력된 행이 없어 반영할 변경 사항이 없습니다.</div>' : '');
+      }
+      if (execBtn) execBtn.disabled = parsed.changeRows.length === 0;
+    } catch (err) {
+      pendingOwnedBookUploadState = null;
+      showAcademyToast('파일 분석 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'));
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function executeAcadOwnedBookUpload() {
+  if (!pendingOwnedBookUploadState || !pendingOwnedBookUploadState.changeRows || pendingOwnedBookUploadState.changeRows.length === 0) {
+    showAcademyToast('먼저 Y 또는 N 값이 입력된 엑셀/CSV 파일을 선택해 주세요.');
+    return;
+  }
+
+  var execBtn = document.getElementById('btnExecuteOwnedBookUpload');
+  if (execBtn) {
+    execBtn.disabled = true;
+    execBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>보유도서 반영 중...';
+  }
+
+  var rows = pendingOwnedBookUploadState.changeRows;
+  var keepCount = pendingOwnedBookUploadState.keepCount || 0;
+
+  try {
+    var addedCount = 0;
+    var removedCount = 0;
+    var notFoundCount = 0;
+
+    if (window.NanoPortal && NanoPortal.remote && typeof NanoPortal.bulkSyncOwnedBooks === 'function') {
+      var res = await NanoPortal.bulkSyncOwnedBooks(rows, currentAcademyInfo && currentAcademyInfo.id);
+      addedCount = Number(res.addedCount || 0);
+      removedCount = Number(res.removedCount || 0);
+      notFoundCount = Array.isArray(res.notFoundCodes) ? res.notFoundCodes.length : 0;
+
+      // 서버에서 반환된 최신 보유 도서 매핑으로 로컬 상태·토글 레코드 즉시 동기화
+      var ownedRecordMap = {};
+      var ownedCodeSet = new Set();
+      var ownedServerIdSet = new Set();
+      (res.ownedItems || []).forEach(function(it) {
+        if (it.book && it.book.bookNo) {
+          ownedRecordMap[it.book.bookNo] = it.id;
+          ownedCodeSet.add(String(it.book.bookNo).toUpperCase());
+        }
+        if (it.bookId) {
+          ownedRecordMap[it.bookId] = it.id;
+          ownedServerIdSet.add(String(it.bookId));
+        }
+      });
+      window.NANO_SERVER_OWNED_RECORDS = ownedRecordMap;
+
+      (academyBookList || []).forEach(function(b) {
+        var codeUpper = String(b.id || b.bookNo || '').toUpperCase();
+        var sId = String(b.serverId || '');
+        b.isOwned = ownedCodeSet.has(codeUpper) || (sId ? ownedServerIdSet.has(sId) : false);
+      });
+    } else {
+      var localMap = new Map();
+      rows.forEach(function(r) {
+        localMap.set(String(r.bookCode).toUpperCase(), r.owned);
+      });
+      var matchedCodes = new Set();
+      (academyBookList || []).forEach(function(b) {
+        var key = String(b.id || b.bookNo || '').toUpperCase();
+        if (localMap.has(key)) {
+          var flag = localMap.get(key);
+          b.isOwned = (flag === 'Y');
+          matchedCodes.add(key);
+          if (flag === 'Y') addedCount++;
+          else removedCount++;
+        }
+      });
+      notFoundCount = localMap.size - matchedCodes.size;
+    }
+
+    if (typeof saveCustomAcademyBooks === 'function') saveCustomAcademyBooks(academyBookList);
+    if (typeof updateOwnedBookCountBadge === 'function') updateOwnedBookCountBadge();
+    if (typeof filterAcademyBooks === 'function') filterAcademyBooks(true);
+
+    if (window.jQuery && typeof $('#acadOwnedBookExcelModal').modal === 'function') {
+      $('#acadOwnedBookExcelModal').modal('hide');
+    } else if (typeof hideModalVanilla === 'function') {
+      hideModalVanilla('acadOwnedBookExcelModal');
+    }
+
+    var msg = '보유도서 일괄 반영 완료! (보유 등록 ' + addedCount + '건 · 미보유 해제 ' + removedCount + '건' + (keepCount > 0 ? ' · 기존 유지 ' + keepCount + '건' : '') + (notFoundCount > 0 ? ' · 미일치 코드 ' + notFoundCount + '건' : '') + ')';
+    showAcademyToast(msg);
+  } catch (error) {
+    showAcademyToast('보유도서 일괄 반영 실패: ' + (error && error.message ? error.message : '오류가 발생했습니다.'));
+    if (execBtn) {
+      execBtn.disabled = false;
+      execBtn.innerHTML = '<i class="fa-solid fa-check mr-1"></i>보유도서 일괄 적용';
+    }
+  }
 }
 
 // ==============================================================

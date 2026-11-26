@@ -143,6 +143,7 @@ function resetDispatchFilters() {
 function openDispatchDetailModal(id) {
   const log = dispatchLogs.find(l => l.id === id);
   if (!log) return;
+  window._activeMasterDispatchReportUrl = String(log.reportUrl || '').trim();
 
   const hasPendingFailDetail = log.status === 'ACCEPTED' && log.code && log.code !== '0' && log.resultMessage;
   const statusLabel = log.status === 'SUCCESS'
@@ -192,7 +193,12 @@ function openDispatchDetailModal(id) {
 }
 
 function previewDispatchLink() {
-  showMasterToast("학부모 알림톡 내의 포트폴리오 리포트 모바일 링크가 정상 호출되었습니다.");
+  const url = String(window._activeMasterDispatchReportUrl || '').trim();
+  if (!/^https?:\/\//i.test(url)) {
+    showMasterToast("연결된 학부모 리포트 열람 링크가 없는 발송 내역입니다.");
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 function retryDispatch(id) { if (window.NanoBilling) return NanoBilling.retry(id); }

@@ -369,7 +369,13 @@
       global.jQuery('#litAssignModal').modal('hide');
       toast(res.created.length + '명에게 테스트를 부여했습니다.' + (res.skipped.length ? ' (제외: ' + res.skipped.join(', ') + ')' : ''));
       refresh();
-    } catch (e) { fail(e); } finally { btn.disabled = false; }
+    } catch (e) {
+      if (typeof global.isKakaoInsufficientCashError === 'function' && global.isKakaoInsufficientCashError(e) && typeof global.showKakaoInsufficientCashAlert === 'function') {
+        await global.showKakaoInsufficientCashAlert();
+      } else {
+        fail(e);
+      }
+    } finally { btn.disabled = false; }
   }
   async function cancel(id) {
     var cancelLitMsg = '이 테스트 배정을 취소할까요?\n학생 화면에서 테스트 시작 버튼이 사라집니다.';
@@ -387,7 +393,13 @@
       document.getElementById('litReportTitle').textContent = data.record.student.name + ' 학생 결과지';
       drawReport();
       global.jQuery('#litReportModal').modal('show');
-    } catch (e) { fail(e); }
+    } catch (e) {
+      if (typeof global.isKakaoInsufficientCashError === 'function' && global.isKakaoInsufficientCashError(e) && typeof global.showKakaoInsufficientCashAlert === 'function') {
+        await global.showKakaoInsufficientCashAlert();
+      } else {
+        fail(e);
+      }
+    }
   }
   function drawReport() {
     var d = state.current; if (!d) return;
@@ -403,7 +415,13 @@
       var url = (await api('share_link', { params: { id: d.record.id } })).url;
       try { await navigator.clipboard.writeText(url); toast('학부모 공유 링크를 복사했습니다. 카톡 등에 붙여넣어 보내세요.'); }
       catch (e) { global.prompt('아래 링크를 복사해 학부모에게 전달해 주세요.', url); }
-    } catch (e) { fail(e); }
+    } catch (e) {
+      if (typeof global.isKakaoInsufficientCashError === 'function' && global.isKakaoInsufficientCashError(e) && typeof global.showKakaoInsufficientCashAlert === 'function') {
+        await global.showKakaoInsufficientCashAlert();
+      } else {
+        fail(e);
+      }
+    }
   }
   async function sendKakao() {
     var d = state.current; if (!d) return;
@@ -416,7 +434,13 @@
       if (global.NanoBilling && typeof global.NanoBilling.invalidateDispatchCache === 'function') global.NanoBilling.invalidateDispatchCache();
       var resMsg = res.resultMessage ? ' (' + res.resultMessage + ')' : '';
       toast(res.duplicate ? '이미 발송 접수된 내역입니다. (' + res.status + resMsg + ')' : res.status === 'ACCEPTED' ? '📨 문해력 결과지 알림톡 발송이 알리고에 접수되었습니다. ([카톡 발송 내역]에서 결과 확인)' : (res.status === 'SUCCESS' || res.status === 'SMS_FALLBACK') ? '🎉 문해력 결과지 알림톡이 발송되었습니다!' : '❌ 발송 실패' + (resMsg || ': 카톡 발송 내역을 확인해 주세요.'), res.status === 'FAILED');
-    } catch (e) { fail(e); }
+    } catch (e) {
+      if (typeof global.isKakaoInsufficientCashError === 'function' && global.isKakaoInsufficientCashError(e) && typeof global.showKakaoInsufficientCashAlert === 'function') {
+        await global.showKakaoInsufficientCashAlert();
+      } else {
+        fail(e);
+      }
+    }
   }
 
   /* ---------- 학생별 이력 / 레벨 변화 ---------- */

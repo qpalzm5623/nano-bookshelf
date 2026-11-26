@@ -3,9 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
-  "crons": [{ "path": "/api/dispatch-reconcile", "schedule": "0 0 * * *" }],
+  "crons": [
+    { "path": "/api/dispatch-reconcile", "schedule": "0 0 * * *" },
+    { "path": "/api/grade-promotion", "schedule": "0 15 31 12 *" }
+  ],
   "functions": {
     "api/dispatch-reconcile.ts": { "maxDuration": 300 },
+    "api/grade-promotion.ts": { "maxDuration": 60 },
     "api/worksheet-ai.ts": { "maxDuration": 60 },
     "api/portfolio-ai.ts": { "maxDuration": 60 },
     "api/bootstrap.ts": { "maxDuration": 60 },

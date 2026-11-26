@@ -1,4 +1,5 @@
 import { academyBrand } from '../lib/portal-brand';
+import { KAKAO_UNIT } from '../lib/billing-policy';
 import {
   reserveDispatch,
   reportDispatchHistory,
@@ -470,6 +471,8 @@ async function sendKakao(req: any, res: any, academyId: string, record: any, pre
     '문해력 결과지 알림톡 설정(ALIGO_API_KEY 등)이 아직 완료되지 않았습니다. 우선 "링크 복사"로 학부모에게 공유해 주세요.', 503);
   const member = await prisma.member.findFirst({ where: { id: record.memberId, academyId } });
   need(member, '원생 정보를 찾을 수 없습니다.', 404);
+  const wallet = await prisma.academy.findUnique({ where: { id: academyId }, select: { kakaoBalance: true } });
+  need((wallet?.kakaoBalance || 0) >= KAKAO_UNIT, '알리고 잔여 캐시를 확인해주세요.', 409);
   need(member.reportYn && member.parentPhone, '보호자 연락처와 리포트 발송 동의를 확인해 주세요.');
   const phone = member.parentPhone!.replace(/\D/g, '');
   need(/^0\d{8,10}$/.test(phone), '보호자 연락처 형식을 확인해 주세요.');

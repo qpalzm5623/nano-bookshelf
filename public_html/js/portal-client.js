@@ -493,6 +493,7 @@
   }
   async function saveOwnedBook(item, academyCode) { return manage('owned', 'save', { bookId: item.serverId }, { academy: academyCode }); }
   async function deleteOwnedBook(ownedId, academyCode) { return manage('owned', 'delete', { id: ownedId }, { academy: academyCode }); }
+  async function bulkSyncOwnedBooks(rows, academyCode) { return manage('owned', 'bulk', { rows: rows }, { academy: academyCode }); }
   async function saveAssignment(book, member, classGroup, academyCode) {
     return manage('assignments', 'save', {
       bookId: book.serverId || book.id,
@@ -749,7 +750,7 @@
   global.NanoPortal = { remote: remote, request: request, api: api, manage: manage, manageList: manageList, academy: academy, uploadMedia: uploadMedia,
     saveMember: saveMember, deleteMember: deleteMember, saveAcademy: saveAcademy, deleteAcademy: deleteAcademy, restoreAcademy: restoreAcademy, saveClass: saveClass, deleteClass: deleteClass,
     saveBanner: saveBanner, deleteBanner: deleteBanner, fetchBanners: fetchBanners, saveTheme: saveTheme, deleteTheme: deleteTheme, reorderThemes: reorderThemes, fetchThemes: fetchThemes, saveNotice: saveNotice, deleteNotice: deleteNotice,
-    saveRecommendation: saveRecommendation, saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment, deleteAssignments: deleteAssignments,
+    saveRecommendation: saveRecommendation, saveBook: saveBook, deleteBook: deleteBook, syncQuizzes: syncQuizzes, saveOwnedBook: saveOwnedBook, deleteOwnedBook: deleteOwnedBook, bulkSyncOwnedBooks: bulkSyncOwnedBooks, saveAssignment: saveAssignment, deleteAssignment: deleteAssignment, deleteAssignments: deleteAssignments,
     refreshPortfolios: refreshPortfolios, savePortfolio: savePortfolio, deletePortfolio: deletePortfolio, saveManualPoint: saveManualPoint,
     formatKstDateTime: toKst24String,
     saveClassAssignments: saveClassAssignments, generatePortfolioAI: generatePortfolioAI,

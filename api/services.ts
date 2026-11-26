@@ -34,6 +34,26 @@ function resolveTemplateWithCreds(tplCode: string, fallbackMessage: string, fall
   return resolveAligoTemplate(tplCode, fallbackMessage, fallbackButtonName, ALIGO_CREDENTIALS);
 }
 
+// 알리고 발송 로그 payload(buttonJson) 또는 메시지 본문에서 학부모 공개 리포트 URL을 추출합니다.
+function extractDispatchReportUrl(payload: any, message?: string): string {
+  try {
+    const buttons = JSON.parse(payload?.buttonJson || '{}').button || [];
+    for (const button of buttons) {
+      for (const raw of [button?.linkM, button?.linkP, button?.linkMo, button?.linkPc]) {
+        const href = String(raw || '').trim();
+        if (/^https?:\/\//i.test(href)) return href;
+      }
+    }
+  } catch (_) { /* 구형 버튼 JSON 파싱 실패 시 본문 URL fallback 사용 */ }
+  const match = String(message || '').match(/https?:\/\/[^\s"'<>]+\/(?:quiz_result|portfolio_report|literacy_report)(?:\.html)?\?[^\s"'<>]+/i);
+  return match ? match[0] : '';
+}
+
+async function ensureSufficientKakaoBalance(academyId: string) {
+  const wallet = await prisma.academy.findUnique({ where: { id: academyId }, select: { kakaoBalance: true } });
+  need((wallet?.kakaoBalance || 0) >= KAKAO_UNIT, '알리고 잔여 캐시를 확인해주세요.', 409);
+}
+
 function buildResolvedButtonJson(resolvedTpl: ResolvedAligoTemplate, targetUrl: string): string {
   return resolvedTpl.hasButtons
     ? buildWebLinkButtonJson(resolvedTpl.buttonName, targetUrl, resolvedTpl.linkType, resolvedTpl.linkTypeName)
@@ -231,7 +251,7 @@ export default async function handler(req: any, res: any) {
           const ids = await brandAcademyIds('JD');
           // 발송 이력이 장기 누적되더라도 응답 지연·메모리 초과를 막기 위해 최신 1,000건으로 상한을 둡니다.
           const logs = await prisma.aligoDispatchLog.findMany({ where: { academyId: { in: ids } }, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' }, take: 1000 });
-          const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt.toISOString(), academyId: d.academy?.code || '', academyName: d.academy?.name || '', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, resultMessage: d.resultMessage || '', canRetry: false }));
+          const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt.toISOString(), academyId: d.academy?.code || '', academyName: d.academy?.name || '', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, reportUrl: extractDispatchReportUrl(d.payload, d.message), status: d.status, resultMessage: d.resultMessage || '', canRetry: false }));
           const success = logs.filter(d => ['SUCCESS', 'SMS_FALLBACK'].includes(d.status)).length;
           const failed = logs.filter(d => d.status === 'FAILED').length;
           const month = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
@@ -259,7 +279,7 @@ export default async function handler(req: any, res: any) {
         ]);
         // 전체 집계 KPI는 위 count 쿼리로 정확히 유지하고, 목록 행은 최신 1,000건으로 제한해 피크 시 응답 크기를 보호합니다.
         const logs = await prisma.aligoDispatchLog.findMany({ where, include: { academy: { select: { code: true, name: true } } }, orderBy: { sentAt: 'desc' }, take: 1000 });
-        const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt ? new Date(d.sentAt).toISOString() : '', academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, status: d.status, providerId: d.providerId || '', code: d.resultCode || '', resultMessage: d.resultMessage || '', statusDetail: buildPendingStatusDetail(d, pendingDiagnostics), canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
+        const items = logs.map(d => ({ id: d.id, datetime: dispatchDate(d.sentAt), date: dispatchDate(d.sentAt), sentAtIso: d.sentAt ? new Date(d.sentAt).toISOString() : '', academyId: d.academy?.code || '', academyName: d.academy?.name || '삭제된 학원', ...dispatchTemplate(d.id, d.templateCode), className: d.className || '', studentName: d.studentName || '', receiverName: d.studentName ? `${d.studentName} / ${d.recipientName} (학부모)` : d.recipientName, receiverPhone: d.recipientPhone, receiver: d.recipientName, summary: d.message, reportUrl: extractDispatchReportUrl(d.payload, d.message), status: d.status, providerId: d.providerId || '', code: d.resultCode || '', resultMessage: d.resultMessage || '', statusDetail: buildPendingStatusDetail(d, pendingDiagnostics), canRetry: d.status === 'FAILED' && !!d.payload && !!d.memberId }));
         let connected = false;
         let remainingCount: number | null = null;
         let aligoMessage = '';
@@ -294,6 +314,7 @@ export default async function handler(req: any, res: any) {
     if (body.action === 'retry') {
       const previous = await prisma.aligoDispatchLog.findFirst({ where: { id: String(body.id || ''), ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) } });
       need(previous && isTerminalFailedDispatch(previous) && previous.memberId && previous.payload, '재발송 가능한 실패 이력이 아닙니다.', 409);
+      await ensureSufficientKakaoBalance(previous.academyId!);
       const member = await prisma.member.findFirst({ where: { id: previous.memberId, academyId: previous.academyId!, status: 'APPROVED' } });
       need(member && member.reportYn && member.parentPhone?.replace(/\D/g, '') === previous.recipientPhone.replace(/\D/g, ''), '현재 보호자 연락처와 발송 동의를 확인해 주세요.');
       const payload = previous.payload as any;
@@ -324,6 +345,7 @@ export default async function handler(req: any, res: any) {
         include: { member: true },
       });
       need(log, '학습 기록을 찾을 수 없습니다.', 404);
+      await ensureSufficientKakaoBalance(log.member.academyId);
       need(log.member.reportYn && log.member.parentPhone, '학부모 연락처와 리포트 발송 동의를 확인해 주세요.');
 
       const book = await prisma.book.findFirst({
@@ -401,6 +423,7 @@ export default async function handler(req: any, res: any) {
         where: { id: pfData.memberId, ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) },
       });
       need(student, '원생 정보를 찾을 수 없습니다.', 404);
+      await ensureSufficientKakaoBalance(student.academyId);
       need(student.reportYn && student.parentPhone, '학부모 연락처와 포트폴리오 발송 동의를 확인해 주세요.');
 
       const phone = student.parentPhone!.replace(/\D/g, '');
@@ -473,6 +496,7 @@ export default async function handler(req: any, res: any) {
         where: { id: record.memberId, ...(user.role === 'MASTER' ? {} : { academyId: user.academyId }) },
       });
       need(member, '원생 정보를 찾을 수 없습니다.', 404);
+      await ensureSufficientKakaoBalance(member.academyId);
       need(member.reportYn && member.parentPhone, '학부모 연락처와 진단 결과 발송 동의를 확인해 주세요.');
 
       const phone = member.parentPhone!.replace(/\D/g, '');

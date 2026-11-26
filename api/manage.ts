@@ -763,6 +763,83 @@ export default async function handler(req: any, res: any) {
     }
     if (entity === 'owned') {
       if (body.operation === 'delete') { await prisma.academyBook.deleteMany({ where: { id: input.id, academyId } }); return res.json({ ok: true }); }
+      if (body.operation === 'bulk') {
+        const rawRows = Array.isArray(input.rows) ? input.rows : (Array.isArray(body.rows) ? body.rows : []);
+        need(rawRows.length > 0 && rawRows.length <= 10000, '보유도서 일괄 반영은 1~10,000건까지 처리할 수 있습니다.');
+        // 동일 도서코드가 중복 기재된 경우 마지막 행의 Y/N 값을 우선 적용합니다.
+        const decisionByCode = new Map<string, 'Y' | 'N'>();
+        for (const r of rawRows) {
+          const code = String(r?.bookCode || r?.id || '').trim();
+          const flag = String(r?.owned || '').trim().toUpperCase();
+          if (!code || (flag !== 'Y' && flag !== 'N')) continue;
+          decisionByCode.set(code, flag);
+        }
+        need(decisionByCode.size > 0, '적용할 보유 여부(Y/N) 데이터가 없습니다.');
+
+        const codes = Array.from(decisionByCode.keys());
+        const upperCodes = Array.from(new Set(codes.concat(codes.map(c => c.toUpperCase()))));
+        const matchedBooks = await prisma.book.findMany({
+          where: { OR: [{ bookNo: { in: upperCodes } }, { id: { in: codes } }] },
+          select: { id: true, bookNo: true },
+        });
+        const bookIdByCode = new Map<string, string>();
+        for (const b of matchedBooks) {
+          if (b.bookNo) {
+            bookIdByCode.set(b.bookNo, b.id);
+            bookIdByCode.set(b.bookNo.toUpperCase(), b.id);
+          }
+          bookIdByCode.set(b.id, b.id);
+        }
+
+        const toAddSet = new Set<string>();
+        const toRemoveSet = new Set<string>();
+        const notFoundCodes: string[] = [];
+
+        for (const [code, flag] of decisionByCode.entries()) {
+          const resolvedId = bookIdByCode.get(code) || bookIdByCode.get(code.toUpperCase());
+          if (!resolvedId) {
+            notFoundCodes.push(code);
+            continue;
+          }
+          if (flag === 'Y') {
+            toAddSet.add(resolvedId);
+            toRemoveSet.delete(resolvedId);
+          } else {
+            toRemoveSet.add(resolvedId);
+            toAddSet.delete(resolvedId);
+          }
+        }
+
+        const toAddIds = Array.from(toAddSet);
+        const toRemoveIds = Array.from(toRemoveSet);
+
+        await prisma.$transaction(async tx => {
+          if (toAddIds.length > 0) {
+            await tx.academyBook.createMany({
+              data: toAddIds.map(bookId => ({ academyId, bookId })),
+              skipDuplicates: true,
+            });
+          }
+          if (toRemoveIds.length > 0) {
+            await tx.academyBook.deleteMany({
+              where: { academyId, bookId: { in: toRemoveIds } },
+            });
+          }
+        });
+
+        const ownedItems = await prisma.academyBook.findMany({
+          where: { academyId },
+          select: { id: true, bookId: true, book: { select: { bookNo: true } } },
+        });
+
+        return res.json({
+          ok: true,
+          addedCount: toAddIds.length,
+          removedCount: toRemoveIds.length,
+          notFoundCodes,
+          ownedItems,
+        });
+      }
       need(await prisma.book.findUnique({ where: { id: input.bookId } }), '도서를 선택해 주세요.');
       return res.json({ item: await prisma.academyBook.upsert({ where: { academyId_bookId: { academyId, bookId: input.bookId } }, create: { academyId, bookId: input.bookId }, update: {} }) });
     }

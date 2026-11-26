@@ -313,12 +313,16 @@
         titleWrap.appendChild(titleEl);
         header.appendChild(titleWrap);
 
-        var closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'nano-dialog-close';
-        closeBtn.setAttribute('aria-label', '닫기');
-        closeBtn.textContent = '×';
-        header.appendChild(closeBtn);
+        var requireConfirmClick = !!(opts && opts.requireConfirmClick);
+        var closeBtn = null;
+        if (!requireConfirmClick) {
+          closeBtn = document.createElement('button');
+          closeBtn.type = 'button';
+          closeBtn.className = 'nano-dialog-close';
+          closeBtn.setAttribute('aria-label', '닫기');
+          closeBtn.textContent = '×';
+          header.appendChild(closeBtn);
+        }
         card.appendChild(header);
 
         var bodyEl = document.createElement('div');
@@ -373,7 +377,7 @@
           if (e.key === 'Escape') {
             e.preventDefault();
             e.stopPropagation();
-            cleanup(isConfirm ? false : undefined);
+            if (!requireConfirmClick) cleanup(isConfirm ? false : undefined);
           } else if (e.key === 'Enter' && document.activeElement !== cancelBtn && document.activeElement !== closeBtn) {
             e.preventDefault();
             e.stopPropagation();
@@ -383,13 +387,15 @@
 
         document.addEventListener('keydown', onKeyDown, true);
         overlay.addEventListener('click', function (e) {
-          if (e.target === overlay) {
+          if (e.target === overlay && !requireConfirmClick) {
             cleanup(isConfirm ? false : undefined);
           }
         });
-        closeBtn.addEventListener('click', function () {
-          cleanup(isConfirm ? false : undefined);
-        });
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function () {
+            cleanup(isConfirm ? false : undefined);
+          });
+        }
         if (cancelBtn) {
           cancelBtn.addEventListener('click', function () { cleanup(false); });
         }
