@@ -27,7 +27,7 @@
   }
   function applyPreferences() {
     studentWishlist = preferences.wishlist.slice(); userInterestTags = preferences.interests.slice();
-    renderWishList(); renderInterestTags(); renderInterestRecommendations();
+    renderWishList(true); renderInterestTags(); renderInterestRecommendations();
     if(typeof currentDetailBookId !== 'undefined' && currentDetailBookId) updateDetailWishUI(currentDetailBookId);
   }
   function resolveWishlistBookTitle(bookId) {
@@ -71,10 +71,18 @@
   let pointPages = new Map(), pointGeneration = 0, pointMonths = [], monthEarned = 0;
   function pointView(p) {
     const korea = new Date(+new Date(p.createdAt) + 9 * 3600000).toISOString();
-    const thought = /^THOUGHT_/.test(p.pointType || '');
-    return { datetime: korea.slice(0,16).replace('T',' '), month: korea.slice(0,7), point: p.amount,
-      bookTitle: p.content || '포인트 내역', activity: thought ? '생각담기 적립' : /^QUIZ_PASS_/.test(p.pointType || '') ? '북퀴즈 인증 적립' : '포인트 변동',
-      type: thought ? 'thought' : 'quiz', typeName: thought ? '생각담기' : '포인트' };
+    const rawType = String(p.pointType || '');
+    const rawContent = String(p.content || '');
+    const thought = /^THOUGHT_/.test(rawType) || /생각\s*담기/.test(rawContent);
+    const quiz = !thought && (/^QUIZ_PASS_/.test(rawType) || /북퀴즈/.test(rawContent));
+    return {
+      datetime: korea.slice(0, 16).replace('T', ' '),
+      month: korea.slice(0, 7),
+      point: p.amount,
+      bookTitle: rawContent || '포인트 내역',
+      type: thought ? 'think' : quiz ? 'quiz' : 'attend',
+      typeName: thought ? '생각담기' : quiz ? '북퀴즈' : '포인트'
+    };
   }
   function acceptPointSummary(summary) {
     pointGeneration++;

@@ -3604,24 +3604,180 @@
       color: var(--muted);
       margin-bottom: 16px;
     }
-    /* 3) 포인트 내역 탭 스타일 (이미지 없는 텍스트 리스트 & 월별 구분) */
+    /* 3) 포인트 내역 탭 스타일 (프리미엄 요약 카드 + 정책 토글 + 깔끔한 1줄 내역 카드) */
     .point-summary-card {
-      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0f766e 0%, #115e59 48%, #134e4a 100%);
       color: #ffffff;
-      border-radius: 16px;
-      padding: 16px 18px;
+      border-radius: 20px;
+      padding: 20px 22px;
       margin-bottom: 14px;
-      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+      box-shadow: 0 10px 28px rgba(15, 118, 110, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .point-summary-bg-orb {
+      position: absolute;
+      top: -42px;
+      right: -36px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.26) 0%, rgba(45, 212, 191, 0.12) 50%, transparent 72%);
+      pointer-events: none;
+    }
+    .point-summary-top {
+      position: relative;
+      z-index: 1;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .point-summary-label-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .point-summary-coin-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%);
+      color: #78350f;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+    }
+    .point-summary-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(240, 253, 250, 0.92);
+      letter-spacing: -0.01em;
+    }
+    .point-policy-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: background 0.18s ease, transform 0.15s ease;
+      white-space: nowrap;
+    }
+    .point-policy-toggle-btn:hover,
+    .point-policy-toggle-btn.is-open {
+      background: rgba(255, 255, 255, 0.26);
+    }
+    .point-policy-chevron {
+      font-size: 10px;
+      transition: transform 0.2s ease;
+    }
+    .point-summary-main {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .point-summary-total {
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+    }
+    .point-summary-monthly-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .point-summary-monthly-lbl {
+      font-size: 11px;
+      color: rgba(204, 251, 241, 0.85);
+      font-weight: 600;
+    }
+    .point-summary-monthly-val {
+      font-size: 14px;
+      font-weight: 900;
+      color: #fde68a;
+      font-variant-numeric: tabular-nums;
+    }
+    .point-policy-panel {
+      background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%);
+      border: 1.5px solid #99f6e4;
+      border-radius: 14px;
+      padding: 13px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.08);
+    }
+    .point-policy-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .point-policy-panel-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #0f766e;
+    }
+    .point-policy-panel-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: #ccfbf1;
+      color: #0f766e;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11.5px;
+    }
+    .point-policy-close-btn {
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .point-policy-close-btn:hover { background: rgba(15, 118, 110, 0.08); color: #0f766e; }
+    .point-policy-list {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 12px;
+      color: #134e4a;
+      line-height: 1.65;
     }
     .point-month-filter {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       margin-bottom: 12px;
-      padding-bottom: 14px;
+      padding-bottom: 6px;
     }
     .point-month-chip {
       padding: 6px 13px;
@@ -3642,34 +3798,45 @@
     }
     .point-log-item {
       background: #ffffff;
-      border: 1px solid var(--soft);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 8px;
+      border: 1px solid #e6ecea;
+      border-radius: 14px;
+      padding: 13px 16px;
+      margin-bottom: 9px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      transition: all .2s;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+      transition: border-color .18s ease, transform .15s ease, box-shadow .18s ease;
     }
     .point-log-item:hover {
-      border-color: var(--leaf-mid);
-      background: #fafcfb;
+      border-color: #99f6e4;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.08);
+    }
+    .point-log-left {
+      flex: 1;
+      min-width: 0;
     }
     .point-log-meta {
       font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 4px;
+      color: #64748b;
+      margin-bottom: 5px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .point-log-date {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
     }
     .point-log-tag {
-      display: inline-block;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 800;
       background: #f1ede4;
       color: var(--wood-mid);
     }
@@ -3686,22 +3853,171 @@
       color: #15803d;
     }
     .point-log-title {
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 800;
-      color: var(--wood-dark);
-      line-height: 1.35;
+      color: #1e293b;
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+      word-break: keep-all;
     }
-    .point-log-desc {
-      font-size: 11.5px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-    .point-log-val {
-      font-size: 15px;
-      font-weight: 900;
-      color: var(--leaf);
+    .point-log-val-pill {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 2px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 1px solid #a7f3d0;
+      color: #047857;
+      font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
+    .point-log-val-pill.is-minus {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #dc2626;
+    }
+    .point-log-val-num {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .point-log-val-unit {
+      font-size: 11px;
+      font-weight: 800;
+      opacity: 0.85;
+    }
+
+    /* 독서 기록 이전 월 더보기 & 찜한 도서 무한 스크롤 */
+    .history-load-more-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 14px 0 4px;
+    }
+    .history-load-more-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1.5px solid #99f6e4;
+      color: #0f766e;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(15, 118, 110, 0.08);
+      transition: all 0.18s ease;
+    }
+    .history-load-more-btn:hover {
+      background: #f0fdfa;
+      border-color: #0d9488;
+      transform: translateY(-1px);
+    }
+    .history-load-more-meta {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0d9488;
+      background: #ccfbf1;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .wish-load-more-sentinel {
+      display: flex;
+      justify-content: center;
+      padding: 12px 0 4px;
+    }
+    .wish-load-more-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1.5px solid #fecdd3;
+      color: #e11d48;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.18s ease;
+    }
+    .wish-load-more-btn:hover { background: #fff1f2; }
+
+    /* 랭킹 양방향 스크롤 뷰포트 & 퀵 점프 툴바 */
+    .rank-list-toolbar {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #64748b;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .rank-list-toolbar-left,
+    .rank-list-toolbar-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rank-window-range-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0f766e;
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .rank-jump-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .rank-jump-btn:hover { border-color: #0d9488; color: #0f766e; background: #f0fdfa; }
+    .rank-jump-btn.is-me { border-color: #0d9488; background: #0f766e; color: #ffffff; }
+    .rank-jump-btn.is-me:hover { background: #115e59; }
+    .rank-scroll-viewport {
+      max-height: 540px;
+      overflow-y: auto;
+      padding: 2px 4px 6px 2px;
+      position: relative;
+      scroll-behavior: auto;
+    }
+    .rank-scroll-viewport::-webkit-scrollbar { width: 5px; }
+    .rank-scroll-viewport::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .rank-edge-loader {
+      display: flex;
+      justify-content: center;
+      padding: 6px 0 8px;
+    }
+    .rank-edge-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .rank-edge-btn:hover { background: #f0fdfa; border-color: #0d9488; color: #0f766e; }
     /* 좌측 최상단 햄버거 버튼 및 슬라이딩 드로어 메뉴 스타일 */
     .btn-drawer-hamburger {
       background: #f0fdf9;

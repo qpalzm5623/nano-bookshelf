@@ -231,30 +231,96 @@ export default async function handler(req: any, res: any) {
       // 학급이 지정되지 않은 학생은 빈 학급 랭킹 대신 소속 학원 랭킹을 제공합니다.
       const scope = requestedScope === 'class' && !user.classGroupId ? 'academy' : requestedScope;
       const periodWindow = monthWindow(String(req.query.period));
-      // 대상 전체를 JS로 전송하지 않고 DB에서 집계·순위를 정한 후 상위 100명과 본인만 반환합니다.
-      const ranked = await prisma.$queryRaw<Array<any>>`
-        WITH eligible AS (
-          SELECT m.id, m.name, m.username, m.points, a.name AS "academyName", c.name AS "className"
-          FROM members m JOIN academies a ON a.id = m."academyId"
-          LEFT JOIN class_groups c ON c.id = m."classGroupId"
-          WHERE m.role = 'STUDENT' AND m.status = 'APPROVED' AND a.status = 'ACTIVE' AND a."deletedAt" IS NULL
-            AND (${scope === 'national'} OR m."academyId" = ${user.academyId})
-            AND (${scope !== 'class'} OR m."classGroupId" = ${user.classGroupId || ''})
-        ), points AS (
-          SELECT p."memberId", SUM(p.amount) AS amount FROM point_histories p JOIN eligible e ON e.id = p."memberId"
-          WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%')
-          GROUP BY p."memberId"
-          HAVING SUM(p.amount) > 0
-        ), books AS (
-          SELECT q."memberId", COUNT(DISTINCT q."bookId") AS count FROM quiz_attempts q JOIN eligible e ON e.id = q."memberId"
-          WHERE q.score >= 60 AND q."completedAt" >= ${periodWindow.gte} AND q."completedAt" < ${periodWindow.lt} GROUP BY q."memberId"
-        ), ranked AS (
-          -- 포인트가 0 이하인 학생은 랭킹 및 참여자 집계에서 제외합니다.
-          SELECT e.*, p.amount AS amount, COALESCE(b.count, 0) AS books,
-            ROW_NUMBER() OVER (ORDER BY p.amount DESC, COALESCE(b.count, 0) DESC, e.name, e.id) AS rank,
-            COUNT(*) OVER () AS participants
-          FROM eligible e JOIN points p ON p."memberId" = e.id LEFT JOIN books b ON b."memberId" = e.id
-        ) SELECT * FROM ranked WHERE rank <= 100 OR id = ${user.id} ORDER BY rank`;
+      const aroundMe = String(req.query.aroundMe || '') === '1';
+      const fromRankParam = Number(req.query.fromRank);
+      const toRankParam = Number(req.query.toRank);
+      const hasRange = Number.isInteger(fromRankParam) && Number.isInteger(toRankParam) && fromRankParam >= 1 && toRankParam >= fromRankParam;
+      const rangeStart = hasRange ? fromRankParam : 1;
+      const rangeEnd = hasRange ? Math.min(fromRankParam + 59, toRankParam) : 100;
+      const halfWindow = Math.max(5, Math.min(25, Number(req.query.halfWindow) || 10));
+
+      // 대상 전체를 JS로 전송하지 않고 DB에서 집계·순위를 정한 후 요청 구간(기본 상위 100명, aroundMe 시 TOP3+내 주변, 범위 지정 시 해당 구간)만 반환합니다.
+      const ranked = hasRange
+        ? await prisma.$queryRaw<Array<any>>`
+          WITH eligible AS (
+            SELECT m.id, m.name, m.username, m.points, a.name AS "academyName", c.name AS "className"
+            FROM members m JOIN academies a ON a.id = m."academyId"
+            LEFT JOIN class_groups c ON c.id = m."classGroupId"
+            WHERE m.role = 'STUDENT' AND m.status = 'APPROVED' AND a.status = 'ACTIVE' AND a."deletedAt" IS NULL
+              AND (${scope === 'national'} OR m."academyId" = ${user.academyId})
+              AND (${scope !== 'class'} OR m."classGroupId" = ${user.classGroupId || ''})
+          ), points AS (
+            SELECT p."memberId", SUM(p.amount) AS amount FROM point_histories p JOIN eligible e ON e.id = p."memberId"
+            WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%')
+            GROUP BY p."memberId"
+            HAVING SUM(p.amount) > 0
+          ), books AS (
+            SELECT q."memberId", COUNT(DISTINCT q."bookId") AS count FROM quiz_attempts q JOIN eligible e ON e.id = q."memberId"
+            WHERE q.score >= 60 AND q."completedAt" >= ${periodWindow.gte} AND q."completedAt" < ${periodWindow.lt} GROUP BY q."memberId"
+          ), ranked AS (
+            -- 포인트가 0 이하인 학생은 랭킹 및 참여자 집계에서 제외합니다.
+            SELECT e.*, p.amount AS amount, COALESCE(b.count, 0) AS books,
+              ROW_NUMBER() OVER (ORDER BY p.amount DESC, COALESCE(b.count, 0) DESC, e.name, e.id) AS rank,
+              COUNT(*) OVER () AS participants
+            FROM eligible e JOIN points p ON p."memberId" = e.id LEFT JOIN books b ON b."memberId" = e.id
+          ) SELECT * FROM ranked WHERE rank >= ${rangeStart} AND rank <= ${rangeEnd} ORDER BY rank`
+        : aroundMe
+          ? await prisma.$queryRaw<Array<any>>`
+            WITH eligible AS (
+              SELECT m.id, m.name, m.username, m.points, a.name AS "academyName", c.name AS "className"
+              FROM members m JOIN academies a ON a.id = m."academyId"
+              LEFT JOIN class_groups c ON c.id = m."classGroupId"
+              WHERE m.role = 'STUDENT' AND m.status = 'APPROVED' AND a.status = 'ACTIVE' AND a."deletedAt" IS NULL
+                AND (${scope === 'national'} OR m."academyId" = ${user.academyId})
+                AND (${scope !== 'class'} OR m."classGroupId" = ${user.classGroupId || ''})
+            ), points AS (
+              SELECT p."memberId", SUM(p.amount) AS amount FROM point_histories p JOIN eligible e ON e.id = p."memberId"
+              WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%')
+              GROUP BY p."memberId"
+              HAVING SUM(p.amount) > 0
+            ), books AS (
+              SELECT q."memberId", COUNT(DISTINCT q."bookId") AS count FROM quiz_attempts q JOIN eligible e ON e.id = q."memberId"
+              WHERE q.score >= 60 AND q."completedAt" >= ${periodWindow.gte} AND q."completedAt" < ${periodWindow.lt} GROUP BY q."memberId"
+            ), ranked AS (
+              -- 포인트가 0 이하인 학생은 랭킹 및 참여자 집계에서 제외합니다.
+              SELECT e.*, p.amount AS amount, COALESCE(b.count, 0) AS books,
+                ROW_NUMBER() OVER (ORDER BY p.amount DESC, COALESCE(b.count, 0) DESC, e.name, e.id) AS rank,
+                COUNT(*) OVER () AS participants
+              FROM eligible e JOIN points p ON p."memberId" = e.id LEFT JOIN books b ON b."memberId" = e.id
+            ), me_pos AS (
+              SELECT COALESCE((SELECT rank FROM ranked WHERE id = ${user.id}), 1) AS center_rank
+            )
+            SELECT r.*, (SELECT center_rank FROM me_pos) AS "centerRank"
+            FROM ranked r
+            WHERE r.rank <= 3
+               OR (r.rank >= GREATEST(1, (SELECT center_rank FROM me_pos) - ${halfWindow})
+                   AND r.rank <= (SELECT center_rank FROM me_pos) + ${halfWindow})
+               OR r.id = ${user.id}
+            ORDER BY r.rank`
+          : await prisma.$queryRaw<Array<any>>`
+            WITH eligible AS (
+              SELECT m.id, m.name, m.username, m.points, a.name AS "academyName", c.name AS "className"
+              FROM members m JOIN academies a ON a.id = m."academyId"
+              LEFT JOIN class_groups c ON c.id = m."classGroupId"
+              WHERE m.role = 'STUDENT' AND m.status = 'APPROVED' AND a.status = 'ACTIVE' AND a."deletedAt" IS NULL
+                AND (${scope === 'national'} OR m."academyId" = ${user.academyId})
+                AND (${scope !== 'class'} OR m."classGroupId" = ${user.classGroupId || ''})
+            ), points AS (
+              SELECT p."memberId", SUM(p.amount) AS amount FROM point_histories p JOIN eligible e ON e.id = p."memberId"
+              WHERE p."createdAt" >= ${periodWindow.gte} AND p."createdAt" < ${periodWindow.lt} AND (${scope !== 'national'} OR COALESCE(p."pointType", '') NOT LIKE 'MANUAL%')
+              GROUP BY p."memberId"
+              HAVING SUM(p.amount) > 0
+            ), books AS (
+              SELECT q."memberId", COUNT(DISTINCT q."bookId") AS count FROM quiz_attempts q JOIN eligible e ON e.id = q."memberId"
+              WHERE q.score >= 60 AND q."completedAt" >= ${periodWindow.gte} AND q."completedAt" < ${periodWindow.lt} GROUP BY q."memberId"
+            ), ranked AS (
+              -- 포인트가 0 이하인 학생은 랭킹 및 참여자 집계에서 제외합니다.
+              SELECT e.*, p.amount AS amount, COALESCE(b.count, 0) AS books,
+                ROW_NUMBER() OVER (ORDER BY p.amount DESC, COALESCE(b.count, 0) DESC, e.name, e.id) AS rank,
+                COUNT(*) OVER () AS participants
+              FROM eligible e JOIN points p ON p."memberId" = e.id LEFT JOIN books b ON b."memberId" = e.id
+            ) SELECT * FROM ranked WHERE rank <= 100 OR id = ${user.id} ORDER BY rank`;
+
       const ids = ranked.map(r => r.id);
       const progressIds = Array.from(new Set(ids.concat(user.id)));
       const [settings, progress] = await Promise.all([
@@ -262,7 +328,7 @@ export default async function handler(req: any, res: any) {
         readingProgress(prisma, progressIds)
       ]);
       const characters = new Map(settings.map(r => [r.key.slice(10), (r.value as any)?.characterId]));
-      const rows = ranked.filter(r => Number(r.rank) <= 100 && Number(r.amount) > 0).map(r => {
+      const mapRow = (r: any) => {
         const counts = progress.get(r.id);
         const selected = characters.get(r.id) || 'nano';
         const charId = Object.prototype.hasOwnProperty.call(Reading.rules, selected) && Reading.stage(selected, counts) > 0 ? selected : 'nano';
@@ -271,10 +337,49 @@ export default async function handler(req: any, res: any) {
           pt: Number(r.amount), books: Number(r.books), me: r.id === user.id, charId, stage: Reading.stage(charId, counts),
           cls: scope === 'national' ? [r.academyName, r.className].filter(Boolean).join(' · ') : r.className || '학급 미지정',
           academyName: r.academyName, className: r.className || '', change: 'same', changeNum: 0 };
-      });
-      const own = ranked.find(r => r.id === user.id);
+      };
+
+      const positiveRanked = ranked.filter(r => Number(r.amount) > 0);
+      const own = positiveRanked.find(r => r.id === user.id);
+      const participants = Number(positiveRanked[0]?.participants || 0);
+
+      if (hasRange) {
+        const rows = positiveRanked.map(mapRow);
+        return res.json({
+          scope,
+          rows,
+          windowStart: rows.length ? rows[0].rank : rangeStart,
+          windowEnd: rows.length ? rows[rows.length - 1].rank : rangeEnd,
+          participants,
+        });
+      }
+
+      if (aroundMe) {
+        const top3 = positiveRanked.filter(r => Number(r.rank) <= 3).map(mapRow);
+        const centerRank = own ? Number(own.rank) : 1;
+        const winStart = Math.max(1, centerRank - halfWindow);
+        const winEnd = participants > 0 ? Math.min(participants, Math.max(centerRank + halfWindow, Math.min(participants, halfWindow * 2 + 1))) : (centerRank + halfWindow);
+        const windowRows = positiveRanked.filter(r => Number(r.rank) >= winStart && Number(r.rank) <= winEnd).map(mapRow);
+        return res.json({
+          scope,
+          academyName: user.academy.name,
+          className: user.classGroup?.name || '',
+          hasClass: !!user.classGroupId,
+          top3,
+          rows: windowRows,
+          windowStart: windowRows.length ? windowRows[0].rank : 1,
+          windowEnd: windowRows.length ? windowRows[windowRows.length - 1].rank : 0,
+          myRank: own ? Number(own.rank) : null,
+          participants,
+          myPoints: Number(own?.amount || 0),
+          myTotalPoints: own?.points ?? user.points,
+          myBooks: progress.get(user.id)?.totalRead || 0,
+        });
+      }
+
+      const rows = positiveRanked.filter(r => Number(r.rank) <= 100).map(mapRow);
       return res.json({ scope, academyName: user.academy.name, className: user.classGroup?.name || '', hasClass: !!user.classGroupId,
-        rows, myRank: own ? Number(own.rank) : null, participants: Number(ranked[0]?.participants || 0),
+        rows, myRank: own ? Number(own.rank) : null, participants,
         myPoints: Number(own?.amount || 0), myTotalPoints: own?.points ?? user.points, myBooks: progress.get(user.id)?.totalRead || 0 });
     }
     if (action === 'banners') {

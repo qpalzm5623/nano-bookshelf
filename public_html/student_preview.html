@@ -36,7 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261124_rank_ui">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261126_bookshelf_rank">
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -740,55 +740,73 @@
       </div>
     </div>
 
-    <!-- 2) 찜한 도서 서브 뷰 -->
+    <!-- 2) 찜한 도서 서브 뷰 (10권 초기 표시 + 스크롤 시 10권씩 추가 로딩) -->
     <div id="bsViewInterest" style="display:none;">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <span style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
           <i class="fa-solid fa-heart mr-1" style="color:#e11d48;"></i>내가 찜한 도서 목록
         </span>
-        <span class="cnt-badge" id="wishBadgeCount" style="background:#ffe4e6;color:#e11d48;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">3권</span>
+        <span class="cnt-badge" id="wishBadgeCount" style="background:#ffe4e6;color:#e11d48;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">0권</span>
       </div>
       <div id="wishList">
-        <!-- 찜 도서 목록 동적 렌더링 -->
+        <!-- 찜 도서 목록 동적 렌더링 (10권씩 점진 로딩) -->
+      </div>
+      <div id="wishLoadMoreSentinel" class="wish-load-more-sentinel" style="display:none;">
+        <button type="button" class="wish-load-more-btn" onclick="loadMoreWishBooks()">
+          <i class="fa-solid fa-spinner fa-spin mr-1" id="wishLoadingIcon" style="display:none;"></i>
+          <span id="wishLoadMoreText">찜한 도서 더 불러오기</span>
+        </button>
+      </div>
+      <div id="wishEndMessage" style="display:none;text-align:center;padding:10px;font-size:11.5px;color:#94a3b8;font-weight:600;">
+        <i class="fa-solid fa-check mr-1"></i> 찜한 도서를 모두 불러왔습니다.
       </div>
     </div>
 
     <!-- 3) 포인트 내역 서브 뷰 (10개씩 노출 + 스크롤 시 10개씩 추가 로딩) -->
     <div id="bsViewPoints" style="display:none;">
-      <!-- 포인트 요약 카드 -->
+      <!-- 포인트 요약 카드 (총 보유 포인트 + 이번 달 획득 + 우측 포인트 정책 버튼) -->
       <div class="point-summary-card">
-        <div>
-          <div style="font-size:12px;opacity:0.85;">총 보유 독서 포인트</div>
-          <div style="font-size:24px;font-weight:900;margin-top:2px;" id="bookshelfTotalPoints">0 P</div>
+        <div class="point-summary-bg-orb" aria-hidden="true"></div>
+        <div class="point-summary-top">
+          <div class="point-summary-label-wrap">
+            <span class="point-summary-coin-icon"><i class="fa-solid fa-coins"></i></span>
+            <span class="point-summary-label">총 보유 독서 포인트</span>
+          </div>
+          <button type="button" class="point-policy-toggle-btn" id="btnPointPolicyToggle" onclick="togglePointPolicyPanel()" aria-expanded="false" aria-controls="pointPolicyCollapseBox">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>포인트 정책</span>
+            <i class="fa-solid fa-chevron-down point-policy-chevron" id="pointPolicyChevron"></i>
+          </button>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:11px;opacity:0.8;">이번 달 획득</div>
-          <div style="font-size:15px;font-weight:800;color:#a7e3be;margin-top:2px;" id="currentMonthEarnedPoints">0 P</div>
+        <div class="point-summary-main">
+          <div class="point-summary-total" id="bookshelfTotalPoints">0 P</div>
+          <div class="point-summary-monthly-pill">
+            <span class="point-summary-monthly-lbl">이번 달 획득</span>
+            <strong class="point-summary-monthly-val" id="currentMonthEarnedPoints">+0 P</strong>
+          </div>
         </div>
       </div>
 
-      <!-- 실제 서버 지급 기준과 동일한 포인트 정책 안내 -->
-      <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 10px;">
-        <div style="width: 28px; height: 28px; border-radius: 8px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 1px;">
-          <i class="fa-solid fa-coins"></i>
-        </div>
-        <div style="font-size: 11.5px; color: #166534; line-height: 1.5; flex: 1;">
-          <div style="font-weight: 800; font-size: 12px; margin-bottom: 2px; color: #15803d; display: flex; align-items: center; gap: 6px;">
+      <!-- 포인트 정책 토글 패널 (버튼 클릭 시에만 펼침) -->
+      <div id="pointPolicyCollapseBox" class="point-policy-panel" style="display:none;">
+        <div class="point-policy-panel-head">
+          <div class="point-policy-panel-title">
+            <span class="point-policy-panel-icon"><i class="fa-solid fa-coins"></i></span>
             <span>나노 독서 포인트 정책</span>
           </div>
-          <div>• <strong>60점 이상 인증 시</strong> 정답 수 × <strong>3P</strong> · 생각담기 작성 <strong>+5P</strong></div>
-          <div>• <strong>초4 이상 권장도서</strong>: 각각 <strong>20% 가중</strong> (소수점 반올림)</div>
-          <div>• 동일 도서 <strong>인증 2회차까지</strong> 포인트 지급</div>
-          <div>• 동일 도서 하루 <strong>3회 인증 실패(60점 미만)</strong> 시 다음 날 재도전 <span style="white-space:nowrap;">(한국 시간 기준)</span></div>
+          <button type="button" class="point-policy-close-btn" onclick="togglePointPolicyPanel(false)" aria-label="포인트 정책 닫기">&times;</button>
         </div>
+        <ul class="point-policy-list">
+          <li><strong>60점 이상 인증 시</strong> 정답 수 × <strong>3P</strong> · 생각담기 작성 <strong>+5P</strong></li>
+          <li><strong>초4 이상 권장도서</strong>: 각각 <strong>20% 가중</strong> (소수점 반올림)</li>
+          <li>동일 도서 <strong>인증 2회차까지</strong> 포인트 지급</li>
+          <li>동일 도서 하루 <strong>3회 인증 실패(60점 미만)</strong> 시 다음 날 재도전 <span style="white-space:nowrap;">(한국 시간 기준)</span></li>
+        </ul>
       </div>
 
       <!-- 월별 필터 칩 -->
       <div class="point-month-filter" id="pointMonthFilterChips">
         <button type="button" class="point-month-chip active" onclick="filterPointHistory('all', this)">전체 내역</button>
-        <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-09', this)">2026년 9월</button>
-        <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-08', this)">2026년 8월</button>
-        <button type="button" class="point-month-chip" onclick="filterPointHistory('2026-07', this)">2026년 7월</button>
       </div>
 
       <!-- 10개씩 무한 스크롤 컨테이너 -->
@@ -880,12 +898,35 @@
       </div>
     </div>
 
-    <!-- 4. 4위 이하 랭킹 리스트 (캐릭터 아바타 & 칭호 포함) -->
-    <div style="font-size: 12.5px; font-weight: 800; color: #64748b; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-      <span><i class="fa-solid fa-list-ol mr-1"></i> 전체 순위 목록</span>
-      <span style="font-size: 11px; color: #94a3b8;">10분마다 실시간 갱신</span>
+    <!-- 4. 전체 순위 목록 (내 순위 중심 배치 + 위/아래 양방향 스크롤 로딩) -->
+    <div class="rank-list-toolbar">
+      <div class="rank-list-toolbar-left">
+        <span><i class="fa-solid fa-list-ol mr-1"></i> 전체 순위 목록</span>
+        <span id="rankWindowRangeBadge" class="rank-window-range-badge" style="display:none;"></span>
+      </div>
+      <div class="rank-list-toolbar-right">
+        <button type="button" id="rankJumpTopBtn" class="rank-jump-btn" onclick="jumpToRankTop()" style="display:none;" title="1위부터 보기">
+          <i class="fa-solid fa-arrow-up"></i> 1위부터
+        </button>
+        <button type="button" id="rankJumpMeBtn" class="rank-jump-btn is-me" onclick="jumpToMyRankCenter()" style="display:none;" title="내 순위 위치로 이동">
+          <i class="fa-solid fa-crosshairs"></i> 내 순위
+        </button>
+        <span style="font-size: 11px; color: #94a3b8;">10분마다 갱신</span>
+      </div>
     </div>
-    <div id="rankList"></div>
+    <div class="rank-scroll-viewport" id="rankScrollViewport" onscroll="handleRankViewportScroll(this)">
+      <div id="rankLoadAboveBar" class="rank-edge-loader" style="display:none;">
+        <button type="button" class="rank-edge-btn" onclick="loadMoreRankWindow('up')">
+          <i class="fa-solid fa-angles-up mr-1"></i><span id="rankLoadAboveText">이전 순위 더 보기</span>
+        </button>
+      </div>
+      <div id="rankList"></div>
+      <div id="rankLoadBelowBar" class="rank-edge-loader" style="display:none;">
+        <button type="button" class="rank-edge-btn" onclick="loadMoreRankWindow('down')">
+          <i class="fa-solid fa-angles-down mr-1"></i><span id="rankLoadBelowText">다음 순위 더 보기</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- [NEW] 초등 문해력 진단 평가 패널 -->
@@ -6446,12 +6487,22 @@ function switchMyBookshelfMainTab(tab) {
 }
 
 // ==============================================================
-// 2) 독서 기록 서브 뷰: [월별 구분 그룹핑] + [타이틀 아래 출판사, 시리즈명, 인증일자]
+// 2) 독서 기록 서브 뷰: [최근 3개월 우선 노출 + 더보기] + [월별 구분 그룹핑]
 // ==============================================================
+var HISTORY_INITIAL_MONTHS = 3;
+var HISTORY_MONTH_STEP = 3;
+var historyVisibleMonths = HISTORY_INITIAL_MONTHS;
+
+function loadMoreReadingHistoryMonths() {
+  historyVisibleMonths += HISTORY_MONTH_STEP;
+  renderReadingHistoryGrid();
+}
+
 function clearReadingHistorySearch() {
   var input = document.getElementById('historyQ');
   if(input) {
     input.value = '';
+    historyVisibleMonths = HISTORY_INITIAL_MONTHS;
     filterReadingHistory();
     input.focus();
   }
@@ -6538,28 +6589,34 @@ function renderReadingHistoryGrid() {
     }
   }
 
-  // 월별(YYYY년 M월) 그룹핑
+  // 월별(YYYY년 M월) 그룹핑 + 최신 월 우선 정렬
   var monthMap = {};
+  var monthMeta = {};
   var monthOrder = [];
 
   targetList.forEach(function(item) {
     var parts = (item.date || '2026.09.01').split('.');
-    var year = parts[0] || '2026';
-    var month = parseInt(parts[1] || '9', 10);
-    var monthKey = year + '년 ' + month + '월';
+    var yearNum = parseInt(parts[0] || '2026', 10) || 2026;
+    var monthNum = parseInt(parts[1] || '9', 10) || 1;
+    var monthKey = yearNum + '년 ' + monthNum + '월';
 
     if(!monthMap[monthKey]) {
       monthMap[monthKey] = [];
+      monthMeta[monthKey] = yearNum * 100 + monthNum;
       monthOrder.push(monthKey);
     }
     monthMap[monthKey].push(item);
+  });
+
+  monthOrder.sort(function(a, b) {
+    return (monthMeta[b] || 0) - (monthMeta[a] || 0);
   });
 
   if(monthOrder.length === 0) {
     if(q) {
       container.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--muted);background:#fff;border-radius:14px;border:1px dashed var(--soft);margin-top:6px;">'
         + '<i class="fa-solid fa-magnifying-glass" style="font-size:32px;color:#c7beaf;margin-bottom:12px;display:block;"></i>'
-        + '<strong style="font-size:14.5px;color:var(--wood-dark);display:block;margin-bottom:4px;">\'' + q + '\'에 일치하는 독서 인증 기록이 없습니다.</strong>'
+        + '<strong style="font-size:14.5px;color:var(--wood-dark);display:block;margin-bottom:4px;">\'' + escapeStudentQuizText(q) + '\'에 일치하는 독서 인증 기록이 없습니다.</strong>'
         + '<span style="font-size:12px;">도서 제목이나 저자, 출판사를 다시 확인해보세요.</span>'
         + '<div style="margin-top:12px;"><button type="button" class="btn-detail-back" onclick="clearReadingHistorySearch()" style="background:#f5f2eb;padding:5px 12px;border-radius:8px;font-size:12px;">검색 초기화</button></div>'
         + '</div>';
@@ -6571,8 +6628,13 @@ function renderReadingHistoryGrid() {
     return;
   }
 
+  // 검색어가 없을 때는 최근 3개월만 우선 렌더링하고, 이전 기록은 '더보기' 버튼으로 3개월씩 추가 로드
+  var visibleMonths = q ? monthOrder : monthOrder.slice(0, historyVisibleMonths);
+  var hiddenMonths = q ? [] : monthOrder.slice(historyVisibleMonths);
+  var hiddenBookCount = hiddenMonths.reduce(function(sum, k) { return sum + (monthMap[k] ? monthMap[k].length : 0); }, 0);
+
   // 월별 그룹별 렌더링
-  var html = monthOrder.map(function(mKey) {
+  var html = visibleMonths.map(function(mKey) {
     var books = monthMap[mKey];
     var cardsHtml = books.map(function(item) {
       var b = libData.find(function(x){ return x.id === item.id; });
@@ -6593,10 +6655,10 @@ function renderReadingHistoryGrid() {
         +   coverHtml
         +   '<span class="reading-score-badge ' + scoreClass + '">' + item.score + '점</span>'
         + '</div>'
-        + '<div class="reading-book-title" title="' + title + '">' + title + '</div>'
+        + '<div class="reading-book-title" title="' + escapeStudentQuizText(title) + '">' + escapeStudentQuizText(title) + '</div>'
         + '<div class="reading-book-meta-box">'
-        +   '<div class="reading-book-meta-pub" title="' + pub + ' · ' + series + '">' + pub + ' · ' + series + '</div>'
-        +   '<div class="reading-book-meta-date"><i class="fa-regular fa-clock mr-1"></i>' + item.date + ' 완료</div>'
+        +   '<div class="reading-book-meta-pub" title="' + escapeStudentQuizText(pub + ' · ' + series) + '">' + escapeStudentQuizText(pub) + ' · ' + escapeStudentQuizText(series) + '</div>'
+        +   '<div class="reading-book-meta-date"><i class="fa-regular fa-clock mr-1"></i>' + escapeStudentQuizText(item.date) + ' 완료</div>'
         +   reportBtnHtml
         + '</div>'
         + '</div>';
@@ -6612,6 +6674,16 @@ function renderReadingHistoryGrid() {
       + '</div>'
       + '</div>';
   }).join('');
+
+  if (hiddenMonths.length > 0) {
+    html += '<div class="history-load-more-wrap">'
+      + '<button type="button" class="history-load-more-btn" onclick="loadMoreReadingHistoryMonths()">'
+      +   '<i class="fa-solid fa-clock-rotate-left"></i>'
+      +   '<span>이전 독서 기록 더보기</span>'
+      +   '<span class="history-load-more-meta">이전 ' + hiddenMonths.length + '개월 · ' + hiddenBookCount + '권</span>'
+      + '</button>'
+      + '</div>';
+  }
 
   container.innerHTML = html;
 }
@@ -6788,59 +6860,157 @@ function renderInterestRecommendations() {
   initLibInfiniteScroll('interest', matchedBooks, '<div style="text-align:center;padding:36px 16px;color:var(--muted);font-weight:600;"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>선택한 관심 주제에 매칭된 도서가 없습니다.</div>');
 }
 
-// 찜한 도서 목록 렌더링
-function renderWishList() {
+// 찜한 도서 목록 렌더링 (초기 10권 표시 + 스크롤 시 10권씩 추가 로딩)
+var WISH_PAGE_SIZE = 10;
+var wishVisibleCount = WISH_PAGE_SIZE;
+var cachedWishBooks = [];
+var wishObserver = null;
+var isWishLoadingMore = false;
+
+function createWishBookCardHtml(b) {
+  var certLogs = (typeof getStudentCertifiedLogsForBook === 'function') ? getStudentCertifiedLogsForBook(b.id) : [];
+  var safeBookId = escapeStudentQuizText(String(b.id || '')).replace(/'/g, '&#39;');
+  var reportBtnHtml = certLogs.length > 0
+    ? '<button type="button" class="wish-report-btn" onclick="openStudentLearningReportModal(\'' + safeBookId + '\')"><i class="fa-solid fa-clipboard-check"></i> 리포트 보기</button>'
+    : '';
+  return '<div class="wish-book-card" onclick="openBookDetail(\'' + safeBookId + '\', \'history\')">'
+    + getBookCoverHtml(b, 'wish-book-thumb')
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div style="font-weight:800;font-size:13.5px;color:var(--wood-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeStudentQuizText(b.title) + '</div>'
+    +   '<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">' + escapeStudentQuizText(b.author) + ' · ' + escapeStudentQuizText(b.pub) + '</div>'
+    +   '<div style="margin-top:6px;display:flex;gap:4px;align-items:center;">'
+    +     '<span class="detail-badge-grade" style="font-size:10px;padding:1px 6px;">' + escapeStudentQuizText(b.grade) + ' 권장</span>'
+    +     '<span class="detail-badge-cat" style="font-size:10px;padding:1px 6px;">' + escapeStudentQuizText(b.cat) + '</span>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;" onclick="event.stopPropagation();">'
+    +   reportBtnHtml
+    +   getBookQuizActionBtnHtml(b, 'padding:5px 9px;font-size:11px;')
+    +   '<button type="button" class="btn-hero-wish active" onclick="toggleWish(\'' + safeBookId + '\', event)" title="찜 해제" style="width:32px;height:32px;font-size:14px;">'
+    +     '<i class="fa-solid fa-heart"></i>'
+    +   '</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function updateWishScrollUI() {
+  var sentinel = document.getElementById('wishLoadMoreSentinel');
+  var endMsg = document.getElementById('wishEndMessage');
+  var moreText = document.getElementById('wishLoadMoreText');
+  var remaining = Math.max(0, cachedWishBooks.length - wishVisibleCount);
+
+  if (sentinel) sentinel.style.display = remaining > 0 ? 'flex' : 'none';
+  if (moreText && remaining > 0) {
+    moreText.innerText = '찜한 도서 더 불러오기 (남은 ' + remaining + '권)';
+  }
+  if (endMsg) {
+    endMsg.style.display = (cachedWishBooks.length > WISH_PAGE_SIZE && remaining === 0) ? 'block' : 'none';
+  }
+}
+
+function ensureWishScrollObserver() {
+  var sentinel = document.getElementById('wishLoadMoreSentinel');
+  if (!sentinel || typeof IntersectionObserver !== 'function') return;
+  if (wishObserver) {
+    try { wishObserver.disconnect(); } catch (e) {}
+  }
+  wishObserver = new IntersectionObserver(function(entries) {
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].isIntersecting) {
+        loadMoreWishBooks();
+        break;
+      }
+    }
+  }, { rootMargin: '180px 0px' });
+  wishObserver.observe(sentinel);
+}
+
+function loadMoreWishBooks() {
+  if (isWishLoadingMore || wishVisibleCount >= cachedWishBooks.length) return;
+  var c = document.getElementById('wishList');
+  if (!c) return;
+  isWishLoadingMore = true;
+  var icon = document.getElementById('wishLoadingIcon');
+  if (icon) icon.style.display = 'inline-block';
+
+  var start = wishVisibleCount;
+  var nextChunk = cachedWishBooks.slice(start, start + WISH_PAGE_SIZE);
+  wishVisibleCount = start + nextChunk.length;
+  if (nextChunk.length > 0) {
+    c.insertAdjacentHTML('beforeend', nextChunk.map(createWishBookCardHtml).join(''));
+  }
+  if (icon) icon.style.display = 'none';
+  isWishLoadingMore = false;
+  updateWishScrollUI();
+}
+
+function renderWishList(preserveCount) {
   var c = document.getElementById('wishList');
   if(!c) return;
   var wishBooks = libData.filter(function(b){
     return studentWishlist.indexOf(b.id) !== -1;
   });
-  wishBooks = sortLibraryBooksForStudent(wishBooks);
+  cachedWishBooks = sortLibraryBooksForStudent(wishBooks);
 
   var badge = document.getElementById('wishBadgeCount');
-  if(badge) badge.innerText = wishBooks.length + '권';
+  if(badge) badge.innerText = cachedWishBooks.length + '권';
 
-  if(wishBooks.length === 0) {
-    c.innerHTML = 
+  if(cachedWishBooks.length === 0) {
+    wishVisibleCount = WISH_PAGE_SIZE;
+    if (wishObserver) { try { wishObserver.disconnect(); } catch (e) {} }
+    c.innerHTML =
       '<div class="wish-empty-box">'
       + '<div style="font-size:36px;margin-bottom:8px;">🤍</div>'
       + '<div style="font-weight:800;font-size:14px;color:var(--wood-dark);margin-bottom:4px;">아직 찜한 도서가 없습니다</div>'
       + '<div style="font-size:12px;color:var(--muted);line-height:1.5;">도서관이나 홈에서 읽고 싶은 책의 <strong>하트(찜)</strong>를 눌러<br>나만의 책장에 쏙 담아보세요!</div>'
       + '<button type="button" class="btn btn-sm btn-outline-success mt-3" onclick="switchPanel(\'books\')" style="border-radius:20px;font-size:12px;font-weight:700;padding:5px 14px;">도서 둘러보기</button>'
       + '</div>';
+    updateWishScrollUI();
     return;
   }
 
-  c.innerHTML = wishBooks.map(function(b){
-    var certLogs = (typeof getStudentCertifiedLogsForBook === 'function') ? getStudentCertifiedLogsForBook(b.id) : [];
-    var safeBookId = escapeStudentQuizText(String(b.id || '')).replace(/'/g, '&#39;');
-    var reportBtnHtml = certLogs.length > 0
-      ? '<button type="button" class="wish-report-btn" onclick="openStudentLearningReportModal(\'' + safeBookId + '\')"><i class="fa-solid fa-clipboard-check"></i> 리포트 보기</button>'
-      : '';
-    return '<div class="wish-book-card" onclick="openBookDetail(\'' + safeBookId + '\', \'history\')">'
-      + getBookCoverHtml(b, 'wish-book-thumb')
-      + '<div style="flex:1;min-width:0;">'
-      +   '<div style="font-weight:800;font-size:13.5px;color:var(--wood-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + b.title + '</div>'
-      +   '<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">' + b.author + ' · ' + b.pub + '</div>'
-      +   '<div style="margin-top:6px;display:flex;gap:4px;align-items:center;">'
-      +     '<span class="detail-badge-grade" style="font-size:10px;padding:1px 6px;">' + b.grade + ' 권장</span>'
-      +     '<span class="detail-badge-cat" style="font-size:10px;padding:1px 6px;">' + b.cat + '</span>'
-      +   '</div>'
-      + '</div>'
-      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;" onclick="event.stopPropagation();">'
-      +   reportBtnHtml
-      +   getBookQuizActionBtnHtml(b, 'padding:5px 9px;font-size:11px;')
-      +   '<button type="button" class="btn-hero-wish active" onclick="toggleWish(\'' + safeBookId + '\', event)" title="찜 해제" style="width:32px;height:32px;font-size:14px;">'
-      +     '<i class="fa-solid fa-heart"></i>'
-      +   '</button>'
-      + '</div>'
-      + '</div>';
-  }).join('');
+  wishVisibleCount = preserveCount
+    ? Math.min(cachedWishBooks.length, Math.max(WISH_PAGE_SIZE, wishVisibleCount))
+    : Math.min(cachedWishBooks.length, WISH_PAGE_SIZE);
+
+  c.innerHTML = cachedWishBooks.slice(0, wishVisibleCount).map(createWishBookCardHtml).join('');
+  updateWishScrollUI();
+  ensureWishScrollObserver();
 }
 
 // ==============================================================
-// 4) 포인트 내역 서브 뷰: 10개씩 노출 + 스크롤 시 10개씩 추가 로딩
+// 4) 포인트 내역 서브 뷰: 정책 토글 + 깔끔한 내역 카드 + 10개씩 무한 스크롤
 // ==============================================================
+function togglePointPolicyPanel(forceState) {
+  var box = document.getElementById('pointPolicyCollapseBox');
+  var btn = document.getElementById('btnPointPolicyToggle');
+  var chev = document.getElementById('pointPolicyChevron');
+  if (!box) return;
+  var shouldOpen = typeof forceState === 'boolean' ? forceState : (box.style.display === 'none');
+  box.style.display = shouldOpen ? 'block' : 'none';
+  if (btn) {
+    btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    btn.classList.toggle('is-open', shouldOpen);
+  }
+  if (chev) {
+    chev.style.transform = shouldOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+}
+
+// 포인트 적립 문구에서 중복 안내('생각담기 작성', '북퀴즈 인증 완료', '(1회차 · 초4이상 20% 가중)' 등)를 제거하고 순수 도서 제목만 남깁니다.
+function cleanPointLogTitle(rawTitle) {
+  var text = String(rawTitle || '').trim();
+  if (!text) return '포인트 내역';
+  // 끝부분 괄호 부가 설명 제거 (예: (1회차 · 초4이상 20% 가중), (1회차 · 정답 2개 × 3P · ...))
+  var cleaned = text.replace(/\s*\([^()]*?(?:회차|가중|정답|보너스|초\d|포인트|P\b)[^()]*\)\s*$/gi, '').trim();
+  // 혹시 괄호가 두 겹인 경우도 한 번 더 정리
+  cleaned = cleaned.replace(/\s*\([^()]*?(?:회차|가중|정답)[^()]*\)\s*$/gi, '').trim();
+  // 상단 뱃지와 중복되는 활동 접미사 제거
+  cleaned = cleaned.replace(/\s*(?:생각\s*담기\s*(?:작성|완료|적립)|북퀴즈\s*(?:인증\s*완료|인증|완료|적립)|독서\s*인증\s*완료)\s*$/g, '').trim();
+  // 바깥쪽 장식 괄호 제거
+  cleaned = cleaned.replace(/^[『《「"']+|[』》」"']+$/g, '').trim();
+  return cleaned || text;
+}
 function filterPointHistory(month, btn) {
   curPointMonthFilter = month;
   var container = document.getElementById('pointMonthFilterChips');
@@ -6899,19 +7069,23 @@ function renderPointHistory(reset) {
 }
 
 function createPointLogItemHtml(log) {
-  var tagCls = log.type || 'quiz';
+  var tagCls = log.type === 'thought' ? 'think' : (log.type || 'quiz');
+  var tagLabel = log.typeName || (tagCls === 'think' ? '생각담기' : '북퀴즈');
+  var cleanTitle = cleanPointLogTitle(log.bookTitle);
+  var isMinus = Number(log.point) < 0;
+  var ptPrefix = isMinus ? '' : '+';
   return '<div class="point-log-item">'
-    + '<div style="flex:1;min-width:0;">'
+    + '<div class="point-log-left">'
     +   '<div class="point-log-meta">'
-    +     '<span><i class="fa-regular fa-clock mr-1"></i>' + log.datetime + '</span>'
-    +     '<span class="point-log-tag ' + tagCls + '">' + log.typeName + '</span>'
+    +     '<span class="point-log-date"><i class="fa-regular fa-clock mr-1"></i>' + escapeStudentQuizText(log.datetime || '') + '</span>'
+    +     '<span class="point-log-tag ' + tagCls + '">' + escapeStudentQuizText(tagLabel) + '</span>'
     +   '</div>'
-    +   '<div class="point-log-title">'
-    +     '『' + escapeStudentQuizText(log.bookTitle) + '』'
-    +   '</div>'
-    +   '<div class="point-log-desc">' + escapeStudentQuizText(log.activity) + '</div>'
+    +   '<div class="point-log-title" title="' + escapeStudentQuizText(cleanTitle) + '">' + escapeStudentQuizText(cleanTitle) + '</div>'
     + '</div>'
-    + '<div class="point-log-val">' + (log.point >= 0 ? '+' : '') + log.point.toLocaleString() + ' P</div>'
+    + '<div class="point-log-val-pill' + (isMinus ? ' is-minus' : '') + '">'
+    +   '<span class="point-log-val-num">' + ptPrefix + Number(log.point || 0).toLocaleString() + '</span>'
+    +   '<span class="point-log-val-unit">P</span>'
+    + '</div>'
     + '</div>';
 }
 
@@ -7850,7 +8024,237 @@ function switchRankPeriod(period) {
 }
 
 var remoteRankKey = '', remoteRankResult = null, remoteRankSequence = 0, remoteRankLoadedAt = 0;
-function invalidateStudentRank() { remoteRankKey = ''; remoteRankResult = null; remoteRankSequence++; remoteRankLoadedAt = 0; }
+var rankWindowState = {
+  key: '',
+  rows: [],
+  top3: [],
+  windowStart: 1,
+  windowEnd: 0,
+  participants: 0,
+  myRank: null,
+  loadingUp: false,
+  loadingDown: false,
+  pendingCenterOnMe: false
+};
+var RANK_WINDOW_STEP = 20;
+
+function invalidateStudentRank() {
+  remoteRankKey = '';
+  remoteRankResult = null;
+  remoteRankSequence++;
+  remoteRankLoadedAt = 0;
+  rankWindowState.key = '';
+  rankWindowState.rows = [];
+  rankWindowState.top3 = [];
+  rankWindowState.windowStart = 1;
+  rankWindowState.windowEnd = 0;
+  rankWindowState.loadingUp = false;
+  rankWindowState.loadingDown = false;
+  rankWindowState.pendingCenterOnMe = false;
+}
+
+function updateRankScrollControls() {
+  var aboveBar = document.getElementById('rankLoadAboveBar');
+  var belowBar = document.getElementById('rankLoadBelowBar');
+  var aboveText = document.getElementById('rankLoadAboveText');
+  var belowText = document.getElementById('rankLoadBelowText');
+  var rangeBadge = document.getElementById('rankWindowRangeBadge');
+  var jumpTopBtn = document.getElementById('rankJumpTopBtn');
+  var jumpMeBtn = document.getElementById('rankJumpMeBtn');
+
+  var st = rankWindowState;
+  var hasAbove = st.windowStart > 1;
+  var hasBelow = st.participants > 0 && st.windowEnd > 0 && st.windowEnd < st.participants;
+
+  if (aboveBar) aboveBar.style.display = hasAbove ? 'flex' : 'none';
+  if (aboveText && hasAbove) {
+    aboveText.innerText = st.loadingUp
+      ? '이전 순위를 불러오는 중...'
+      : ('1~' + (st.windowStart - 1) + '위 더 보기');
+  }
+  if (belowBar) belowBar.style.display = hasBelow ? 'flex' : 'none';
+  if (belowText && hasBelow) {
+    belowText.innerText = st.loadingDown
+      ? '다음 순위를 불러오는 중...'
+      : ((st.windowEnd + 1) + '~' + st.participants + '위 더 보기');
+  }
+  if (rangeBadge) {
+    if (st.participants > 0 && st.windowEnd >= st.windowStart) {
+      rangeBadge.style.display = 'inline-flex';
+      rangeBadge.innerText = st.windowStart + '~' + st.windowEnd + '위 / 총 ' + st.participants + '명';
+    } else {
+      rangeBadge.style.display = 'none';
+    }
+  }
+  if (jumpTopBtn) jumpTopBtn.style.display = hasAbove ? 'inline-flex' : 'none';
+  if (jumpMeBtn) {
+    jumpMeBtn.style.display = (st.myRank && st.participants > 8) ? 'inline-flex' : 'none';
+    if (st.myRank) jumpMeBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i> 내 순위 (' + st.myRank + '위)';
+  }
+}
+
+function centerMyRankCardInViewport(smooth) {
+  var viewport = document.getElementById('rankScrollViewport');
+  var listEl = document.getElementById('rankList');
+  if (!viewport || !listEl || typeof listEl.querySelector !== 'function') return;
+  var meCard = listEl.querySelector('.rank-card.me');
+  if (!meCard) return;
+  var targetTop = Math.max(0, meCard.offsetTop - Math.max(0, (viewport.clientHeight - meCard.offsetHeight) / 2));
+  if (smooth && typeof viewport.scrollTo === 'function') {
+    viewport.scrollTo({ top: targetTop, behavior: 'smooth' });
+  } else {
+    viewport.scrollTop = targetTop;
+  }
+}
+
+function jumpToMyRankCenter() {
+  var listEl = document.getElementById('rankList');
+  var meCard = listEl && typeof listEl.querySelector === 'function' ? listEl.querySelector('.rank-card.me') : null;
+  if (meCard) {
+    centerMyRankCardInViewport(true);
+    return;
+  }
+  invalidateStudentRank();
+  renderRank();
+}
+
+function jumpToRankTop() {
+  var viewport = document.getElementById('rankScrollViewport');
+  if (rankWindowState.windowStart <= 1) {
+    if (viewport && typeof viewport.scrollTo === 'function') viewport.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  if (window.NanoPortal && NanoPortal.remote) {
+    rankWindowState.loadingUp = true;
+    updateRankScrollControls();
+    var seq = remoteRankSequence;
+    NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod + '&fromRank=1&toRank=' + Math.min(rankWindowState.participants || 30, 30))
+      .then(function(res) {
+        if (seq !== remoteRankSequence) return;
+        rankWindowState.loadingUp = false;
+        var rows = Array.isArray(res.rows) ? res.rows.filter(function(r) { return r && Number(r.pt) > 0; }) : [];
+        if (rows.length) {
+          rankWindowState.rows = rows;
+          rankWindowState.windowStart = rows[0].rank;
+          rankWindowState.windowEnd = rows[rows.length - 1].rank;
+          rankWindowState.pendingCenterOnMe = false;
+          fullRankDatabase[currentRankScope][currentRankPeriod] = rows;
+          renderRank();
+          if (viewport) viewport.scrollTop = 0;
+        }
+      })
+      .catch(function() {
+        rankWindowState.loadingUp = false;
+        updateRankScrollControls();
+      });
+    return;
+  }
+  rankWindowState.windowStart = 1;
+  rankWindowState.windowEnd = Math.min(rankWindowState.participants, 25);
+  rankWindowState.pendingCenterOnMe = false;
+  renderRank();
+  if (viewport) viewport.scrollTop = 0;
+}
+
+function handleRankViewportScroll(viewport) {
+  if (!viewport) return;
+  if (viewport.scrollTop <= 70 && rankWindowState.windowStart > 1 && !rankWindowState.loadingUp) {
+    loadMoreRankWindow('up');
+  } else if (viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 70 && rankWindowState.windowEnd < rankWindowState.participants && !rankWindowState.loadingDown) {
+    loadMoreRankWindow('down');
+  }
+}
+
+function loadMoreRankWindow(direction) {
+  var st = rankWindowState;
+  var viewport = document.getElementById('rankScrollViewport');
+  if (direction === 'up') {
+    if (st.loadingUp || st.windowStart <= 1) return;
+    var nextFrom = Math.max(1, st.windowStart - RANK_WINDOW_STEP);
+    var nextTo = st.windowStart - 1;
+    if (window.NanoPortal && NanoPortal.remote) {
+      st.loadingUp = true;
+      updateRankScrollControls();
+      var seqUp = remoteRankSequence;
+      var prevHeight = viewport ? viewport.scrollHeight : 0;
+      var prevTop = viewport ? viewport.scrollTop : 0;
+      NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod + '&fromRank=' + nextFrom + '&toRank=' + nextTo)
+        .then(function(res) {
+          if (seqUp !== remoteRankSequence) return;
+          st.loadingUp = false;
+          var incoming = Array.isArray(res.rows) ? res.rows.filter(function(r) { return r && Number(r.pt) > 0; }) : [];
+          if (incoming.length) {
+            var existingRanks = new Set(st.rows.map(function(r) { return r.rank; }));
+            var fresh = incoming.filter(function(r) { return !existingRanks.has(r.rank); });
+            st.rows = fresh.concat(st.rows).sort(function(a, b) { return a.rank - b.rank; });
+            st.windowStart = st.rows[0].rank;
+            st.windowEnd = st.rows[st.rows.length - 1].rank;
+            st.pendingCenterOnMe = false;
+            fullRankDatabase[currentRankScope][currentRankPeriod] = st.rows;
+            renderRank();
+            // 위쪽 항목 추가 후에도 사용자가 보던 순위가 튀지 않도록 스크롤 높이 변화만큼 보정
+            if (viewport) {
+              viewport.scrollTop = prevTop + (viewport.scrollHeight - prevHeight);
+            }
+          } else {
+            st.windowStart = nextFrom;
+            updateRankScrollControls();
+          }
+        })
+        .catch(function() {
+          st.loadingUp = false;
+          updateRankScrollControls();
+        });
+      return;
+    }
+    var prevLocalH = viewport ? viewport.scrollHeight : 0;
+    var prevLocalTop = viewport ? viewport.scrollTop : 0;
+    st.windowStart = nextFrom;
+    st.pendingCenterOnMe = false;
+    renderRank();
+    if (viewport) viewport.scrollTop = prevLocalTop + (viewport.scrollHeight - prevLocalH);
+    return;
+  }
+
+  if (direction === 'down') {
+    if (st.loadingDown || st.windowEnd >= st.participants) return;
+    var downFrom = st.windowEnd + 1;
+    var downTo = Math.min(st.participants, st.windowEnd + RANK_WINDOW_STEP);
+    if (window.NanoPortal && NanoPortal.remote) {
+      st.loadingDown = true;
+      updateRankScrollControls();
+      var seqDown = remoteRankSequence;
+      NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod + '&fromRank=' + downFrom + '&toRank=' + downTo)
+        .then(function(res) {
+          if (seqDown !== remoteRankSequence) return;
+          st.loadingDown = false;
+          var incoming = Array.isArray(res.rows) ? res.rows.filter(function(r) { return r && Number(r.pt) > 0; }) : [];
+          if (incoming.length) {
+            var existingRanks = new Set(st.rows.map(function(r) { return r.rank; }));
+            var fresh = incoming.filter(function(r) { return !existingRanks.has(r.rank); });
+            st.rows = st.rows.concat(fresh).sort(function(a, b) { return a.rank - b.rank; });
+            st.windowStart = st.rows[0].rank;
+            st.windowEnd = st.rows[st.rows.length - 1].rank;
+            st.pendingCenterOnMe = false;
+            fullRankDatabase[currentRankScope][currentRankPeriod] = st.rows;
+            renderRank();
+          } else {
+            st.windowEnd = downTo;
+            updateRankScrollControls();
+          }
+        })
+        .catch(function() {
+          st.loadingDown = false;
+          updateRankScrollControls();
+        });
+      return;
+    }
+    st.windowEnd = downTo;
+    st.pendingCenterOnMe = false;
+    renderRank();
+  }
+}
+
 function renderRank() {
   // 전국 랭킹은 가운데 글자만 * 처리하고 우리 반·우리 학원은 전체 이름을 노출하며, 아이디는 모든 범위에서 앞 두 글자만 표기하고 나머지는 자릿수에 맞게 * 처리합니다.
   function formatRankName(name, scope) {
@@ -7875,25 +8279,40 @@ function renderRank() {
       var sequence = ++remoteRankSequence;
       var list = document.getElementById('rankList'); if(list) list.textContent = '월별 포인트를 조회하고 있어요…';
       clearRankPodium('조회 중');
-      NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod).then(function(result) {
+      if (typeof updateRankScrollControls === 'function') {
+        rankWindowState.windowStart = 1; rankWindowState.windowEnd = 0; rankWindowState.participants = 0;
+        updateRankScrollControls();
+      }
+      NanoPortal.api('/api/activity?action=rankings&scope=' + currentRankScope + '&period=' + currentRankPeriod + '&aroundMe=1&halfWindow=10').then(function(result) {
         if(sequence !== remoteRankSequence) return;
-        // 0점 이하 학생은 랭킹에서 제외하고, 포인트 동점 시 완독 도서 수(books) 우선 정렬합니다.
-        if (Array.isArray(result.rows)) {
-          result.rows = result.rows.filter(function(r) { return r && Number(r.pt) > 0; });
-          result.rows.sort(function(a, b) {
-            if (b.pt !== a.pt) return b.pt - a.pt;
-            if ((b.books || 0) !== (a.books || 0)) return (b.books || 0) - (a.books || 0);
-            return (a.rank || 0) - (b.rank || 0);
-          });
-          result.rows.forEach(function(r, idx) { r.rank = idx + 1; });
-          var myRow = result.rows.find(function(r){ return r.me; });
-          result.myRank = myRow ? myRow.rank : (Number(result.myPoints) > 0 ? result.myRank : null);
-        }
+        // 0점 이하 학생은 랭킹에서 제외합니다(서버 window 순위 번호 보존).
+        var cleanRows = Array.isArray(result.rows) ? result.rows.filter(function(r) { return r && Number(r.pt) > 0; }) : [];
+        cleanRows.sort(function(a, b) { return (a.rank || 0) - (b.rank || 0); });
+        var cleanTop3 = Array.isArray(result.top3)
+          ? result.top3.filter(function(r) { return r && Number(r.pt) > 0; }).sort(function(a, b) { return (a.rank || 0) - (b.rank || 0); })
+          : cleanRows.slice(0, 3);
+        result.rows = cleanRows;
+        result.top3 = cleanTop3;
+        var myRow = cleanRows.find(function(r){ return r.me; });
+        result.myRank = myRow ? myRow.rank : (Number(result.myPoints) > 0 ? result.myRank : null);
+
         var resolvedScope = ['class', 'academy', 'national'].includes(result.scope) ? result.scope : currentRankScope;
         currentRankScope = resolvedScope;
         remoteRankKey = resolvedScope + ':' + currentRankPeriod;
         remoteRankResult = result; remoteRankLoadedAt = Date.now();
-        fullRankDatabase[resolvedScope][currentRankPeriod] = result.rows || [];
+        fullRankDatabase[resolvedScope][currentRankPeriod] = cleanRows;
+        if (typeof rankWindowState !== 'undefined') {
+          rankWindowState.key = remoteRankKey;
+          rankWindowState.rows = cleanRows;
+          rankWindowState.top3 = cleanTop3;
+          rankWindowState.windowStart = Number(result.windowStart) || (cleanRows.length ? cleanRows[0].rank : 1);
+          rankWindowState.windowEnd = Number(result.windowEnd) || (cleanRows.length ? cleanRows[cleanRows.length - 1].rank : 0);
+          rankWindowState.participants = Number(result.participants) || cleanRows.length;
+          rankWindowState.myRank = result.myRank;
+          rankWindowState.loadingUp = false;
+          rankWindowState.loadingDown = false;
+          rankWindowState.pendingCenterOnMe = !!result.myRank;
+        }
         renderRank();
       }).catch(function(e) { if(sequence === remoteRankSequence) { remoteRankKey = ''; if(list) list.textContent = e.message + ' 기간을 다시 선택하면 재시도합니다.'; } });
       return;
@@ -7904,29 +8323,59 @@ function renderRank() {
   updateRankingHeaderTexts();
 
   var scopeData = fullRankDatabase[currentRankScope] || fullRankDatabase.academy;
-  var data = (scopeData[currentRankPeriod] || scopeData.month || []).filter(function(r) {
+  var rawData = (scopeData[currentRankPeriod] || scopeData.month || []).filter(function(r) {
     return r && Number(r.pt) > 0;
   });
-  if (data && data.length) {
+  var isWindowedRemote = !!(window.NanoPortal && NanoPortal.remote && typeof rankWindowState !== 'undefined' && rankWindowState.key === (currentRankScope + ':' + currentRankPeriod));
+  var data = rawData;
+
+  if (!isWindowedRemote && data && data.length) {
     data.sort(function(a, b) {
       if (b.pt !== a.pt) return b.pt - a.pt;
       if ((b.books || 0) !== (a.books || 0)) return (b.books || 0) - (a.books || 0);
       return (a.rank || 0) - (b.rank || 0);
     });
     data.forEach(function(r, idx) { r.rank = idx + 1; });
+    if (typeof rankWindowState !== 'undefined') {
+      var localKey = currentRankScope + ':' + currentRankPeriod;
+      var localMe = data.find(function(r) { return r.me; });
+      if (rankWindowState.key !== localKey || rankWindowState.participants !== data.length) {
+        rankWindowState.key = localKey;
+        rankWindowState.participants = data.length;
+        rankWindowState.myRank = localMe ? localMe.rank : null;
+        if (data.length > 25 && localMe) {
+          rankWindowState.windowStart = Math.max(1, localMe.rank - 10);
+          rankWindowState.windowEnd = Math.min(data.length, localMe.rank + 10);
+          rankWindowState.pendingCenterOnMe = true;
+        } else {
+          rankWindowState.windowStart = 1;
+          rankWindowState.windowEnd = data.length;
+          rankWindowState.pendingCenterOnMe = !!localMe;
+        }
+      }
+      if (data.length > 25) {
+        data = data.slice(rankWindowState.windowStart - 1, rankWindowState.windowEnd);
+      }
+    }
   }
-  if (!data.length) {
+
+  var podiumSource = (isWindowedRemote && typeof rankWindowState !== 'undefined' && rankWindowState.top3 && rankWindowState.top3.length)
+    ? rankWindowState.top3
+    : rawData;
+
+  if (!data.length && !podiumSource.length) {
     clearRankPodium('집계 대기');
     var empty = document.getElementById('rankList'); if(empty) empty.textContent = window.NANO_SERVER_DATA ? '포인트를 획득한 학생이 아직 없습니다.' : '월별 포인트 기록이 연결되면 순위를 표시합니다.';
+    if (typeof updateRankScrollControls === 'function') updateRankScrollControls();
     return;
   }
   var userChar = getUserCharacterId();
   clearRankPodium('집계 대기');
 
   // 1. TOP 3 포디움 렌더링
-  var top1 = data.find(function(d){ return d.rank === 1; });
-  var top2 = data.find(function(d){ return d.rank === 2; });
-  var top3 = data.find(function(d){ return d.rank === 3; });
+  var top1 = podiumSource.find(function(d){ return d.rank === 1; });
+  var top2 = podiumSource.find(function(d){ return d.rank === 2; });
+  var top3 = podiumSource.find(function(d){ return d.rank === 3; });
 
   var p1Avatar = document.getElementById("podiumAvatar1");
   var p1Name = document.getElementById("podiumName1");
@@ -7973,7 +8422,7 @@ function renderRank() {
   var myClassName = (remoteMeta && remoteMeta.className) || (identityObj && identityObj.classGroup) || '';
   var myAcademyName = (remoteMeta && remoteMeta.academyName) || (identityObj && identityObj.academyName) || '';
   var scopeLabel = currentRankScope === 'class' ? (myClassName || '우리 반') : (currentRankScope === 'academy' ? (myAcademyName || '학원') : '전국');
-  var participantsTotal = (remoteMeta && remoteMeta.participants) ? Number(remoteMeta.participants) : data.length;
+  var participantsTotal = (remoteMeta && remoteMeta.participants) ? Number(remoteMeta.participants) : rawData.length;
   var myTotalPts = (remoteMeta && typeof remoteMeta.myTotalPoints === 'number')
     ? remoteMeta.myTotalPoints
     : (identityObj && typeof identityObj.points === 'number' ? identityObj.points : null);
@@ -8005,7 +8454,7 @@ function renderRank() {
         : '';
       var booksNum = Number(r.books) || 0;
       var totalNum = typeof r.totalPoints === 'number' ? r.totalPoints : myTotalPts;
-      return '<div class="rank-card me my-rank-banner">'
+      return '<div class="rank-card me my-rank-banner" data-rank="' + r.rank + '">'
         + '<div class="rank-card-num-box' + (isOutside ? ' is-outside-num' : '') + '">'
         +   '<div class="rank-card-num">' + rankNum + '</div>'
         +   changeHtml
@@ -8033,7 +8482,7 @@ function renderRank() {
         + '</div>';
     }
 
-    return '<div class="rank-card">'
+    return '<div class="rank-card" data-rank="' + r.rank + '">'
       + '<div class="rank-card-num-box">'
       +   '<div class="rank-card-num">' + r.rank + '</div>'
       +   changeHtml
@@ -8058,9 +8507,11 @@ function renderRank() {
 
   var listHtml = data.map(function(r) { return buildRankCardHtml(r, false); }).join('');
   var hasMeInList = data.some(function(r) { return !!r.me; });
-  if (!hasMeInList && identityObj && identityObj.studentId) {
+  var myRankVal = remoteMeta && remoteMeta.myRank ? Number(remoteMeta.myRank) : 0;
+  var myRankInWindow = myRankVal > 0 && typeof rankWindowState !== 'undefined' && myRankVal >= rankWindowState.windowStart && myRankVal <= rankWindowState.windowEnd;
+  if (!hasMeInList && !myRankInWindow && !myRankVal && identityObj && identityObj.studentId) {
     listHtml += buildRankCardHtml({
-      rank: (remoteMeta && remoteMeta.myRank) || 0,
+      rank: 0,
       name: identityObj.studentName || '나',
       username: identityObj.studentId,
       academyName: myAcademyName,
@@ -8071,9 +8522,18 @@ function renderRank() {
       charId: userChar,
       stage: 1,
       me: true
-    }, !(remoteMeta && remoteMeta.myRank));
+    }, true);
   }
   listEl.innerHTML = listHtml;
+  if (typeof updateRankScrollControls === 'function') updateRankScrollControls();
+  if (typeof rankWindowState !== 'undefined' && rankWindowState.pendingCenterOnMe && typeof centerMyRankCardInViewport === 'function') {
+    rankWindowState.pendingCenterOnMe = false;
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function() { centerMyRankCardInViewport(false); });
+    } else {
+      centerMyRankCardInViewport(false);
+    }
+  }
 }
 
 // 학생 홈 배너 롤링 로직 및 네비게이션 컨트롤러
@@ -9302,7 +9762,7 @@ document.addEventListener('click', function(event) {
   if (window.studentSubmissionPending && event.target.closest('#qscreen-ing')) { event.preventDefault(); event.stopImmediatePropagation(); }
 }, true);
 </script>
-<script src="js/portal-extras.js?v=20261117_toast_msg"></script>
+<script src="js/portal-extras.js?v=20261126_bookshelf_rank"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_finish_art"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
 <script src="js/literacy/literacy-student.js?v=20261126_char_copy"></script>
