@@ -113,6 +113,52 @@ document.addEventListener('DOMContentLoaded', function () {
         border-color: #fca5a5;
         color: #dc2626;
       }
+      /* 학생 화면 전용: 세션 타이머와 로그아웃 버튼을 하나의 슬림 캡슐로 통합해 모바일 헤더 폭 절약 */
+      .nano-session-logout-combo {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 3px 2px 9px;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #dbe4ea;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        flex-shrink: 0;
+        transition: background-color .2s ease, border-color .2s ease;
+      }
+      .nano-session-logout-combo.is-counting {
+        background: #f0fdfa;
+        border-color: #99f6e4;
+      }
+      html[data-brand="JD"] .nano-session-logout-combo.is-counting {
+        background: #eff4ff;
+        border-color: #bfdbfe;
+      }
+      .nano-session-logout-combo.is-warning {
+        background: #fff7ed;
+        border-color: #fdba74;
+      }
+      .nano-session-logout-combo.is-critical {
+        background: #fef2f2;
+        border-color: #fca5a5;
+      }
+      .nano-session-logout-combo .nano-session-timer-pill.is-combo {
+        background: transparent !important;
+        border: 0 !important;
+        padding: 0 3px 0 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        font-size: 11.5px;
+        gap: 4px;
+      }
+      .nano-session-logout-combo .btn-student-logout {
+        margin-left: 0 !important;
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12.5px !important;
+        border-width: 1px !important;
+        box-shadow: none !important;
+      }
       @media (max-width: 575.98px) {
         .nano-session-timer-pill {
           padding: 4px 7px;
@@ -122,6 +168,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         .nano-session-timer-pill i {
           font-size: 10.5px;
+        }
+        .nano-session-logout-combo {
+          padding: 2px 2px 2px 7px;
+          gap: 3px;
+        }
+        .nano-session-logout-combo .nano-session-timer-pill.is-combo {
+          font-size: 10.5px;
+          gap: 3px;
+          padding-right: 2px !important;
+        }
+        .nano-session-logout-combo .nano-session-timer-pill.is-combo i {
+          font-size: 9.5px;
+        }
+        .nano-session-logout-combo .btn-student-logout {
+          width: 26px !important;
+          height: 26px !important;
+          font-size: 11.5px !important;
+        }
+      }
+      @media (max-width: 380px) {
+        .nano-session-logout-combo .nano-session-timer-pill.is-combo i {
+          display: none;
         }
       }
       #nanoSessionModalOverlay {
@@ -267,9 +335,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var pill = document.createElement('span');
     pill.id = 'nanoSessionTimerPill';
-    pill.className = 'nano-session-timer-pill';
+    pill.className = 'nano-session-timer-pill' + (isStudentPortal ? ' is-combo' : '');
     pill.title = '10초간 활동이 없으면 ' + SESSION_COUNTDOWN_LABEL + '부터 자동 로그아웃 카운트다운이 시작됩니다.';
     pill.innerHTML = '<i class="fa-regular fa-clock" aria-hidden="true"></i><span class="nano-session-timer-text">' + SESSION_COUNTDOWN_LABEL + '</span>';
+
+    // 학생 화면에서는 타이머와 로그아웃 버튼을 하나의 통합 캡슐로 묶어 모바일 헤더 공간을 확보합니다.
+    if (isStudentPortal && logoutBtn.classList && logoutBtn.classList.contains('btn-student-logout')) {
+      var combo = document.createElement('div');
+      combo.id = 'nanoSessionLogoutCombo';
+      combo.className = 'nano-session-logout-combo';
+      logoutBtn.parentElement.insertBefore(combo, logoutBtn);
+      combo.appendChild(pill);
+      combo.appendChild(logoutBtn);
+      timerPillEl = pill;
+      timerTextEl = pill.querySelector('.nano-session-timer-text');
+      return;
+    }
 
     // 부모 flex 컨테이너에 gap이 없으면 버튼 좌측 여백을 직접 확보
     try {
@@ -294,9 +375,20 @@ document.addEventListener('DOMContentLoaded', function () {
       timerTextEl.textContent = formatted;
     }
 
-    timerPillEl.classList.toggle('is-counting', isCounting && remainingSec > 300);
-    timerPillEl.classList.toggle('is-warning', isCounting && remainingSec <= 300 && remainingSec > 60);
-    timerPillEl.classList.toggle('is-critical', isCounting && remainingSec <= 60);
+    var countingState = isCounting && remainingSec > 300;
+    var warningState = isCounting && remainingSec <= 300 && remainingSec > 60;
+    var criticalState = isCounting && remainingSec <= 60;
+
+    timerPillEl.classList.toggle('is-counting', countingState);
+    timerPillEl.classList.toggle('is-warning', warningState);
+    timerPillEl.classList.toggle('is-critical', criticalState);
+
+    var comboEl = document.getElementById('nanoSessionLogoutCombo');
+    if (comboEl) {
+      comboEl.classList.toggle('is-counting', countingState);
+      comboEl.classList.toggle('is-warning', warningState);
+      comboEl.classList.toggle('is-critical', criticalState);
+    }
   }
 
   // 세션 타임아웃 확인 모달 동적 생성 및 주입

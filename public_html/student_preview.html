@@ -43,7 +43,7 @@
 <script src="js/preview-ux.js?v=20261117_student_10m" defer></script>
 <link rel="stylesheet" href="css/quiz-result.css?v=20261117_jd_theme">
 <script src="js/reading-progress.js?v=20261029-integrity"></script>
-<script src="js/quiz-result-art.js?v=20261110-characters"></script>
+<script src="js/quiz-result-art.js?v=20261126_char_copy"></script>
 <link rel="stylesheet" href="css/content-sharing.css?v=20261117_jd_theme">
 <script src="js/nano-dialog.js?v=20261113_center"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
@@ -184,20 +184,20 @@
   </div>
 
   <!-- 좌측 최상단: 햄버거 메뉴 버튼 + 로고 (흰색 사각 박스 제거 및 자연스러운 투명 렌더링) -->
-  <div style="display: flex; align-items: center; gap: 10px; position: relative; z-index: 2;">
+  <div class="s-header-left" style="display: flex; align-items: center; gap: 10px; position: relative; z-index: 2; min-width: 0;">
     <button type="button" class="btn-drawer-hamburger" id="btnStudentHamburger" onclick="openStudentDrawer()" aria-label="메뉴 열기" title="전체 메뉴">
       <i class="fa-solid fa-bars"></i>
     </button>
-    <div class="logo" style="display: flex; align-items: center;">
+    <div class="logo" style="display: flex; align-items: center; min-width: 0;">
       <a href="student_preview.html" style="display: inline-flex; align-items: center; text-decoration: none; padding: 2px 0;">
-        <img src="resources/images/common/logo.png" alt="나노의 책장" style="height: 30px; width: auto; object-fit: contain; display: block;">
+        <img src="resources/images/common/logo.png" alt="나노의 책장" class="s-header-logo-img" style="height: 30px; width: auto; object-fit: contain; display: block;">
       </a>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:2;">
-    <div class="user-info-pill" style="display:flex;align-items:center;gap:8px;padding:3px 12px 3px 4px;background:rgba(240,253,250,0.9);border:1px solid #ccfbf1;border-radius:22px;cursor:default;box-shadow:0 1px 3px rgba(0,168,150,0.06);">
+  <div class="s-header-right" style="display:flex;align-items:center;gap:8px;position:relative;z-index:2;flex-shrink:0;">
+    <div class="user-info-pill" style="display:flex;align-items:center;gap:8px;padding:3px 12px 3px 4px;background:rgba(240,253,250,0.9);border:1px solid #ccfbf1;border-radius:22px;cursor:default;box-shadow:0 1px 3px rgba(0,168,150,0.06);flex-shrink:0;">
       <div id="headerCharAvatar" class="char-avatar-box" style="width:30px;height:30px;flex-shrink:0;"></div>
-      <span id="headerStudentName" style="font-weight:800;font-size:13px;color:#1e293b;line-height:1;letter-spacing:-0.2px;">학생</span>
+      <span id="headerStudentName" style="font-weight:800;font-size:13px;color:#1e293b;line-height:1;letter-spacing:-0.2px;white-space:nowrap;">학생</span>
       <span id="headerCharTag" style="display:none;"></span>
       <div id="headerStudentClass" style="display:none;"></div>
     </div>
@@ -219,7 +219,7 @@
           <span id="homeCharNameTag" style="font-size: 11px; font-weight: 800; background: #00a896; color: #fff; padding: 1px 6px; border-radius: 6px;">나노</span>
           <span style="font-size: 12.5px; font-weight: 800; color: #1e293b;" id="homeCharGreeting">반가워요!</span>
         </div>
-        <div id="homeCharQuote" style="font-size: 11.5px; color: #0f766e; font-weight: 600; line-height: 1.4;">"오늘도 책 속의 신비한 모험을 떠나볼까요? 🦉"</div>
+        <div id="homeCharQuote" style="font-size: 11.5px; color: #0f766e; font-weight: 600; line-height: 1.4;">"오늘의 이야기는 어떤 책에 숨어 있을까? 돋보기 준비 완료! 🦊"</div>
       </div>
       <div style="font-size: 11px; color: #94a3b8; padding-right: 4px;"><i class="fa-solid fa-chevron-right"></i></div>
     </div>
@@ -908,7 +908,7 @@
           <span class="badge-soft badge-soft-success font-weight-bold" style="font-size: 11px; padding: 2px 8px; background: #00a896; color: #fff;">나노 프렌즈 9종</span>
           <h5 class="mb-0 font-weight-bold" style="font-size: 16px; color: #0f766e;"><i class="fa-solid fa-icons mr-1"></i>내 캐릭터 프로필 설정</h5>
         </div>
-        <small class="text-muted">원하는 일러스트 캐릭터를 골라 나의 프로필로 설정해보세요!</small>
+        <small class="text-muted">함께 독서할 나만의 캐릭터를 골라 프로필로 설정해 보세요!</small>
       </div>
       <button type="button" class="btn-modal-close" onclick="closeCharacterSelectModal()" title="닫기">&times;</button>
     </div>
@@ -972,8 +972,8 @@
 <div id="characterCelebrationModal" class="celeb-modal-overlay" style="display:none;" onclick="if(event.target===this)closeCelebrationModal()">
   <div class="celeb-modal-dialog">
     <div style="font-size:36px;margin-bottom:4px;" id="celebTopEmoji">🎉</div>
-    <h3 style="font-size:18px;font-weight:900;color:#0f766e;margin-bottom:4px;" id="celebTitle">새로운 캐릭터 해금 달성!</h3>
-    <p style="font-size:12px;color:#64748b;margin-bottom:16px;" id="celebSubtitle">독서 미션을 완수하여 새로운 친구가 찾아왔어요!</p>
+    <h3 style="font-size:18px;font-weight:900;color:#0f766e;margin-bottom:4px;" id="celebTitle">새로운 독서 친구가 찾아왔어요!</h3>
+    <p style="font-size:12px;color:#64748b;margin-bottom:16px;" id="celebSubtitle">독서 목표를 달성해 새로운 친구와 함께할 수 있어요!</p>
 
     <!-- 캐릭터 글로우 원형 박스 -->
     <div class="celeb-char-glow-ring" id="celebCharGlowRing">
@@ -983,15 +983,15 @@
     <!-- 캐릭터 이름 & 태그 & 진화 배지 -->
     <div style="margin-bottom:12px;">
       <div style="display:inline-flex;align-items:center;gap:6px;">
-        <span style="font-size:17px;font-weight:900;color:#1e293b;" id="celebCharName">부키 (Booki)</span>
+        <span style="font-size:17px;font-weight:900;color:#1e293b;" id="celebCharName">부키</span>
         <span id="celebEvolvedTag" class="char-evolved-badge" style="display:none;">성장 단계</span>
       </div>
-      <div style="font-size:12px;font-weight:700;color:#0d9488;margin-top:2px;" id="celebCharTag">지혜의 독서 박사 부엉이 🦉</div>
+      <div style="font-size:12px;font-weight:700;color:#0d9488;margin-top:2px;" id="celebCharTag">숲을 기록하는 지혜 부엉이 🦉</div>
     </div>
 
     <!-- 축하 한마디 말풍선 -->
     <div style="background:#f0fdfa;border:1.5px solid #ccfbf1;border-radius:14px;padding:12px;font-size:12.5px;color:#0f766e;line-height:1.5;font-weight:700;margin-bottom:16px;" id="celebQuote">
-      "축하해! 앞으로 나와 함께 지혜로운 책 여행을 떠나보자!"
+      "이 나뭇잎 무늬 좀 보세요. 숲에는 재미있는 비밀이 아주 많아요."
     </div>
 
     <!-- 버튼 -->
@@ -5420,75 +5420,75 @@ function parseStudentQuizVideoUrl(url) {
   return null;
 }
 
-// 캐릭터별 북퀴즈 성격 맞춤 피드백 대사 사전
+// 캐릭터별 북퀴즈 성격 맞춤 피드백 대사 사전 (캐릭터마다 일관된 말투와 성격을 유지)
 var CHAR_QUIZ_FEEDBACKS = {
   nano: {
-    perfect: "놀라워! 모든 단서를 완벽하게 풀어냈어, 역시 최고의 명탐정 파트너야! 🦊🔍",
-    high: "날카로운 추리였어! 미세한 단서 하나만 더 챙기면 완벽한 만점이야! 🕵️‍♂️",
-    pass: "음, 사건의 진실에 거의 다가갔어! 다시 한번 꼼꼼히 조사해보자.",
-    retry: "포기하지 마! 진짜 명탐정은 실패를 딛고 다시 책을 펼치는 법이야!"
+    perfect: "우와, 완벽해! 책 속 단서를 하나도 안 놓치고 100점을 맞혔어! 역시 최고의 탐정 파트너야! 🦊🔍",
+    high: "정말 날카로운 추리였어! 아까운 문제 하나만 더 살펴보면 금방 100점이겠다! 🦊",
+    pass: "잘했어, 인증 통과야! 헷갈렸던 부분만 한 번 더 확인해 보면 훨씬 단단해질 거야.",
+    retry: "괜찮아! 진짜 탐정도 단서를 다시 찾으면서 성장하는 거야. 책 한 번 더 보고 다시 도전해 보자!"
   },
   toto: {
-    perfect: "와우! 깡충깡충 신난다! 우리 마음과 생활을 쏙쏙 이해한 100점 만점이야! 🐰💖",
-    high: "우와, 대단해! 친구들의 마음과 감정을 아주 따뜻하게 기억하고 있네!",
-    pass: "좋은 시도였어! 조금만 더 친구들의 마음에 귀 기울여보면 어떨까?",
-    retry: "괜찮아 토닥토닥! 다음엔 더 재미있게 읽고 함께 도전해보자!"
+    perfect: "와아, 신난다! 책 속 마음을 쏙쏙 이해해서 100점이야! 축하 편지 보내 줄게! 🐰💌",
+    high: "정말 잘했어! 이야기 속 인물들의 마음을 아주 따뜻하게 기억하고 있네!",
+    pass: "인증 통과 축하해! 조금 헷갈렸던 장면도 다시 떠올려 보면 더 재미있을 거야.",
+    retry: "괜찮아, 토닥토닥! 다음엔 더 재미있게 읽고 나랑 같이 다시 풀어 보자!"
   },
   booki: {
-    perfect: "호-호! 숲의 모든 비밀을 꿰뚫어 보았군요. 지혜의 나무가 활짝 꽃피웠어요! 🦉🌿",
-    high: "훌륭해요! 자연과 생명의 신비를 아주 깊이 있게 이해하고 있네요.",
-    pass: "지혜의 날개가 자라고 있어요! 부족한 부분을 다시 찾아 읽어보세요.",
-    retry: "배움에는 끝이 없답니다. 차분하게 책장을 다시 넘겨볼까요?"
+    perfect: "와, 정말 대단해요! 책 속 이야기를 구석구석 모두 이해해서 100점을 받았네요! 🦉🌿",
+    high: "훌륭해요! 이야기의 중요한 내용을 아주 꼼꼼하게 잘 읽어 냈어요.",
+    pass: "멋지게 인증을 통과했어요! 조금 아쉬웠던 부분만 다시 살펴보면 더 깊어질 거예요.",
+    retry: "천천히 가도 괜찮아요. 책을 한 번 더 펼치면 못 봤던 이야기가 꼭 보일 거예요."
   },
   pico: {
-    perfect: "삐리릭-! 정확도 100% 탐사 완료! 미래 과학 지식 엔진 풀가동! 🐧🚀",
-    high: "지식 궤도 진입 성공! 원리와 개념을 탄탄하게 분석해냈습니다!",
-    pass: "통신 신호 수신 양호! 과학적 사고력을 한 단계 더 업그레이드해봅시다!",
-    retry: "시스템 점검 필요! 실험 노트를 복습하고 재발사 준비를 해봐요!"
+    perfect: "와아, 100점이에요! 실험 대성공! 책 속 내용을 완벽하게 찾아내셨어요! 🐧🚀",
+    high: "멋진 결과예요! 중요한 내용을 아주 꼼꼼하게 잘 분석해 냈어요!",
+    pass: "인증 통과 축하해요! 다음엔 헷갈렸던 문제도 척척 맞힐 수 있을 거예요!",
+    retry: "실험은 다시 해 볼수록 더 잘되는 법이에요! 책을 한 번 더 읽고 다시 도전해 봐요!"
   },
   popo: {
-    perfect: "허허, 듬직하구나! 옛 역사와 이야기의 지혜를 온전히 네 것으로 만들었어! 🐻📜",
-    high: "참 잘했단다! 선조들의 발자취와 깊은 뜻을 올바르게 새겼구나.",
-    pass: "차근차근 잘 가고 있단다. 우직하게 한 번 더 읽어보면 더 깊어질 거야.",
-    retry: "서두를 것 없단다. 역사는 천천히 음미할 때 비로소 보이는 법이지."
+    perfect: "허허, 정말 대단하네! 책 속 이야기를 처음부터 끝까지 완벽하게 내 것으로 만들었어! 🐻🗺️",
+    high: "참 잘했어! 중요한 장면과 깊은 뜻을 아주 듬직하게 잘 기억하고 있네.",
+    pass: "차근차근 잘 해냈어, 인증 통과야! 한 번 더 떠올려 보면 이야기가 더 오래 남을 거야.",
+    retry: "서두를 필요 없어. 좋은 책은 천천히 다시 읽을 때 진짜 재미가 보이는 법이거든."
   },
   chichi: {
-    perfect: "우와앙! 활력 비타민 100% 충전 완료! 머리가 반짝반짝 에너지가 넘쳐요! 🐿️🍎",
-    high: "슈퍼 파워 독서력! 건강한 지식이 머릿속에 쏙쏙 쌓였어요!",
-    pass: "영양 만점 독서 진행 중! 한 번 더 읽으면 더 힘이 불끈 솟아날 거예요!",
-    retry: "도토리처럼 알찬 지식을 다시 모아봐요! 힘내서 파이팅!"
+    perfect: "우와아, 100점 대박! 머릿속에 독서 에너지가 반짝반짝 가득 찼어! 🐿️✨",
+    high: "완전 잘했어! 책 속 재미있는 내용이 머릿속에 쏙쏙 쌓였는걸!",
+    pass: "인증 통과! 한 번 더 읽으면 다음엔 힘이 불끈 솟아서 더 잘 맞힐 거야!",
+    retry: "도토리 모으듯 조금씩 채우면 돼! 기운 내서 한 번 더 도전해 보자, 파이팅!"
   },
   lumi: {
-    perfect: "모든 퍼즐이 딱 맞았어. 네 풀이, 내 생각 수첩에 적어둬야겠다! 🐱",
-    high: "귀가 쫑긋해지는 풀이야. 놓친 조건 하나만 같이 살펴볼까?",
-    pass: "실마리를 찾았네. 복잡한 문제도 작은 조각으로 나누면 풀 수 있어.",
-    retry: "잠깐 기지개를 켜자. 첫 번째 조건부터 천천히 다시 찾아보면 돼."
+    perfect: "퍼즐 조각이 하나도 안 틀리고 딱 맞았어! 네 멋진 풀이, 내 생각 수첩에 적어 둬야겠다! 🐱✨",
+    high: "귀가 쫑긋해질 만큼 멋진 풀이야! 아까운 한 문제만 같이 다시 볼까?",
+    pass: "잘했어, 인증 통과야! 헷갈렸던 문제도 차근차근 나눠 보면 금방 풀릴 거야.",
+    retry: "잠깐 기지개 한 번 켜자! 책 앞부분부터 천천히 다시 살펴보면 꼭 찾을 수 있어."
   },
   mir: {
-    perfect: "크아앙! 푸른 용의 여의주처럼 눈부신 100점이다! 천하를 호령할 대독서가로다! 🐲⚡",
-    high: "푸른 기운이 넘쳐흐르는구나! 큰 뜻을 품은 자다운 훌륭한 성취다!",
-    pass: "용의 날갯짓이 시작되었다! 조금 더 정진하여 온전한 하늘로 날아오르자!",
-    retry: "좌절하지 마라! 폭풍우를 견뎌낸 이무기만이 진정한 용이 되는 법이다!"
+    perfect: "우와, 눈부신 100점이야! 여의주처럼 반짝이는 실력인데? 정말 멋지게 해냈어! 🐲✨",
+    high: "정말 훌륭해! 넓은 시선으로 책 내용을 아주 든든하게 잘 읽어 냈어!",
+    pass: "인증 통과 축하해! 한 권씩 쌓이다 보면 금방 더 높이 날아오를 거야!",
+    retry: "괜찮아, 바람이 불어도 날갯짓을 멈추지 않으면 돼! 책을 다시 보고 힘차게 도전해 보자!"
   },
   jelly: {
-    perfect: "한 장 한 장 읽은 이야기가 모두 이어졌네. 오늘의 책갈피는 여기에 꽂아둘게. 🐑",
-    high: "이야기를 참 잘 기억했구나. 남은 장면도 함께 이어보자.",
-    pass: "네 속도로 잘 읽고 있어. 궁금했던 장면에 책갈피를 꽂고 다시 만나보자.",
-    retry: "잠시 쉬어도 괜찮아. 책은 여기서 기다릴 테니, 한 장부터 다시 읽자."
+    perfect: "한 장 한 장 정성껏 읽은 이야기가 모두 이어졌네! 오늘의 100점 책갈피는 여기 꽂아 둘게. 🐑💛",
+    high: "이야기를 참 예쁘게 잘 기억했구나! 남은 장면도 같이 떠올려 보자.",
+    pass: "네 속도로 차근차근 잘 해냈어! 궁금했던 페이지에 책갈피 꽂고 다시 만나 보자.",
+    retry: "잠시 쉬어 가도 괜찮아. 책은 여기서 기다릴 테니까, 편할 때 한 장부터 다시 읽어 보자."
   }
 };
 
-// 추천할 때 캐릭터마다 취향과 역할이 드러나는 짧은 반응
+// 추천할 때 캐릭터마다 취향과 말투가 드러나는 짧은 반응
 var CHAR_RECOMMEND_REACTIONS = {
-  nano: "좋은 책이라는 증거 확보. 추천 수첩에 기록했어. 🦊",
-  toto: "이 이야기가 필요한 친구에게, 네 마음을 담아 보낼게. 🐰",
-  booki: "지식의 숲에 좋은 씨앗 하나가 더해졌군요. 🦉",
-  pico: "추천 신호 수신. 다음 탐사대에 공유하겠습니다. 🐧",
-  popo: "오래 기억할 이야기로구나. 다음 여행자의 지도에 남겨두마. 🐻",
-  chichi: "알찬 책 한 권 수확! 친구들과 나눌 바구니에 담았어. 🐿️",
-  lumi: "내 취향에도 딱 맞는걸. 이 책엔 앞발 도장 하나. 🐱",
-  mir: "좋은 이야기는 물결처럼 멀리 퍼지는 법이지. 🐲",
-  jelly: "좋아하는 페이지를 함께 접어둘게. 다음 친구도 발견하도록. 🐑"
+  nano: "좋은 책이라는 증거 확보! 내 추천 수첩에 꼭 적어 둘게. 🦊",
+  toto: "이 책이 필요한 친구에게 네 따뜻한 마음을 담아 전해 줄게! 🐰",
+  booki: "좋은 책 한 권이 숲의 씨앗처럼 친구들에게 전해질 거예요. 🦉",
+  pico: "추천 완료! 다음 친구들도 재미있게 읽을 수 있게 알려 줄게요. 🐧",
+  popo: "오래 기억될 좋은 책이네. 다음 여행자의 지도에 표시해 둘게! 🐻",
+  chichi: "알찬 책 한 권 수확! 친구들과 같이 읽을 바구니에 쏙 담았어! 🐿️",
+  lumi: "내 취향에도 딱 맞는 책이야! 추천 도장 꾹 찍어 둘게. 🐱",
+  mir: "좋은 이야기는 물결처럼 멀리 퍼지는 법이지! 멋진 추천이야. 🐲",
+  jelly: "좋아하는 페이지에 예쁜 책갈피를 꽂아 둘게. 다른 친구도 꼭 읽었으면! 🐑"
 };
 
 // 문항 렌더링: 정답 즉시 노출 X, 캐릭터 말풍선 속에 문제 디스플레이
@@ -5779,7 +5779,11 @@ async function handleQuizBookRecommend(btn) {
         var charId = typeof getUserCharacterId === 'function' ? getUserCharacterId() : 'nano';
         if (msgP) msgP.textContent = CHAR_RECOMMEND_REACTIONS[charId] || CHAR_RECOMMEND_REACTIONS.nano;
       } else if (msgP) {
-        msgP.textContent = (view && view.extra && view.extra.speechText) || '오늘 발견한 이야기가 내일의 너를 더 자라게 할 거야.';
+        var resetCharId = typeof getUserCharacterId === 'function' ? getUserCharacterId() : 'nano';
+        var resetFb = (typeof CHAR_QUIZ_FEEDBACKS !== 'undefined' && (CHAR_QUIZ_FEEDBACKS[resetCharId] || CHAR_QUIZ_FEEDBACKS.nano)) || null;
+        var resetScore = view ? view.score : 80;
+        var resetTier = resetScore === 100 ? 'perfect' : resetScore >= 80 ? 'high' : resetScore >= 60 ? 'pass' : 'retry';
+        msgP.textContent = (view && view.extra && view.extra.speechText) || (resetFb && resetFb[resetTier]) || '오늘 읽은 이야기가 내일의 너를 한 뼘 더 자라게 해 줄 거야.';
       }
     }
   };
@@ -5993,7 +5997,7 @@ async function showResult() {
       failCount: (failInfoObj ? failInfoObj.count : 0)
     });
     window.activeQuizResultView = { attemptId: studentQuizAttemptId, score: score, book: activeBookObj,
-      extra: { tot: tot, ok: ok, isPass: isPass, isSecondPass: isSecondPass, isThirdOrMorePass: isThirdOrMorePass, certRound: certRound, earnedPts: earnedPts, failCount: failInfoObj ? failInfoObj.count : 0 } };
+      extra: { tot: tot, ok: ok, isPass: isPass, isSecondPass: isSecondPass, isThirdOrMorePass: isThirdOrMorePass, certRound: certRound, earnedPts: earnedPts, speechText: speechText, failCount: failInfoObj ? failInfoObj.count : 0 } };
   }
 
   // 결과 화면 캐릭터 말풍선 렌더링 (하위 호환성 유지)
@@ -6957,24 +6961,22 @@ function renderMyBookshelf() {
   switchMyBookshelfMainTab(curBookshelfMainTab || 'history');
 }
 // ==============================================================
-// [NEW] 나노 프렌즈 9종 캐릭터 일러스트 & 프로필 설정 시스템
+// [NEW] 나노 프렌즈 9종 캐릭터 & 프로필 설정 시스템
 // ==============================================================
-// [NEW] 나노 프렌즈 9종 분야별 캐릭터 & 진화 시스템
-// ==============================================================
-// 저장된 선택과 독서 성장 기록을 유지하기 위해 냥이·양양도 기존 lumi·jelly ID를 사용합니다.
+// 저장된 선택과 독서 성장 기록을 유지하기 위해 루나·솜이도 기존 lumi·jelly ID를 사용합니다.
 var NANO_CHARACTERS = [
   {
     id: "nano",
-    name: "나노 (Nano)",
-    tag: "기본 스타터 탐정 여우 🦊",
+    name: "나노",
+    tag: "호기심 가득한 탐정 여우 🦊",
     themeName: "기본 스타터",
     themeColor: "#f97316",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fed7aa)",
-    story: "작은 단서도 지나치지 않는 여우 탐정. 돋보기로 살피고 수첩에 기록하며, 서로 떨어진 이야기의 조각을 연결해요.",
+    story: "작은 단서도 놓치지 않는 꼬마 탐정 여우예요. 돋보기로 책 속 구석구석을 살피며 숨은 이야기를 찾아내요.",
     growth: [
-      { title: "단서 수집가", detail: "작은 돋보기로 첫 단서를 살펴요.", quote: "작은 발자국 발견. 첫 사건을 함께 풀어볼까?" },
-      { title: "수첩 속 추리", detail: "탐정 조끼와 수첩을 갖추고 증거를 모아요.", quote: "수첩에 모은 단서들이 하나의 이야기로 이어지고 있어." },
-      { title: "책장 명탐정", detail: "정교한 탐정 도구로 숨은 복선까지 찾아내요.", quote: "이제 아주 작은 흔적도 놓치지 않아. 다음 사건도 맡겨줘." }
+      { title: "꼬마 단서 탐정", detail: "돋보기를 들고 책 속 첫 단서를 찾아요.", quote: "작은 발자국을 찾았어! 첫 번째 사건, 같이 풀어 볼까?" },
+      { title: "수첩 추리 파트너", detail: "탐정 조끼와 수첩을 챙겨 단서를 모아요.", quote: "수첩에 적은 단서들이 하나씩 이어지고 있어! 멋지지?" },
+      { title: "책장 속 명탐정", detail: "탐정 모자와 금빛 돋보기로 숨은 뜻까지 찾아내요.", quote: "이젠 아주 작은 힌트도 놓치지 않아. 다음 책도 나한테 맡겨!" }
     ],
     isDefault: true,
     isStarter: true,
@@ -6990,16 +6992,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "toto",
-    name: "토토 (Toto)",
-    tag: "인간·생활 공감 토끼 🐰",
-    themeName: "인간, 생활",
+    name: "토토",
+    tag: "마음을 전하는 토끼 우체부 🐰",
+    themeName: "인간 · 생활",
     themeColor: "#ec4899",
     bgGradient: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
-    story: "긴 귀로 친구들의 이야기를 끝까지 듣는 토끼 우체부. 말하기 어려운 마음도 편지에 담아 소중히 전해요.",
+    story: "긴 귀를 쫑긋 세우고 친구 이야기를 끝까지 들어주는 토끼 우체부예요. 따뜻한 마음을 편지에 담아 소중히 전해줘요.",
     growth: [
-      { title: "첫 편지", detail: "전하고 싶은 마음을 작은 편지에 담아요.", quote: "네 이야기를 들려줘. 서두르지 않고 끝까지 들을게." },
-      { title: "마음 배달부", detail: "우편가방을 메고 친구들의 편지를 배달해요.", quote: "가방에 편지가 차곡차곡 쌓였어. 기다리는 친구에게 가볼까?" },
-      { title: "꽃편지 우체부", detail: "편지와 꽃다발로 서로의 마음을 이어줘요.", quote: "좋은 말 한 줄과 꽃 한 송이. 오늘도 마음을 전하러 가자." }
+      { title: "첫 편지 친구", detail: "고운 마음을 작은 편지봉투에 담아요.", quote: "네 이야기가 궁금해. 천천히 말해도 끝까지 들어 줄게!" },
+      { title: "다정한 우체부", detail: "우편가방을 메고 친구들의 마음을 배달해요.", quote: "가방에 따뜻한 편지가 가득해. 얼른 친구에게 전해 주러 가자!" },
+      { title: "꽃편지 천사", detail: "향기로운 꽃다발과 편지로 서로의 마음을 이어줘요.", quote: "예쁜 말 한 줄이랑 꽃 한 송이! 오늘도 따뜻한 마음을 전하러 가자." }
     ],
     reqType: "theme_human",
     stage1Count: 50,
@@ -7013,16 +7015,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "booki",
-    name: "부키 (Booki)",
-    tag: "자연·생물 지혜 부엉이 🦉",
-    themeName: "자연, 생물",
+    name: "부키",
+    tag: "숲을 기록하는 지혜 부엉이 🦉",
+    themeName: "자연 · 생물",
     themeColor: "#0d9488",
     bgGradient: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
-    story: "풀잎의 무늬와 새의 발자국을 관찰하는 부엉이. 알아낸 것을 나무 도감에 남기며 숲의 변화를 오래 지켜봐요.",
+    story: "풀잎의 모양과 작은 생물들의 발자국을 가만히 살펴보는 부엉이예요. 새롭게 알게 된 자연의 비밀을 도감에 차곡차곡 적어요.",
     growth: [
-      { title: "숲의 관찰자", detail: "작은 깃털을 펼치고 풀잎을 관찰해요.", quote: "이 잎의 무늬를 보세요. 숲에는 아직 읽지 않은 이야기가 많답니다." },
-      { title: "잎맥 연구가", detail: "날개에 잎맥 무늬가 자라고 관찰 기록이 쌓여요.", quote: "잎맥처럼 지식도 가지를 뻗는군요. 새로 찾은 것을 기록해볼까요?" },
-      { title: "숲의 기록자", detail: "풍성한 잎무늬 날개와 나무 도감을 갖춰요.", quote: "이 도감에는 우리가 함께 발견한 숲의 시간이 담겨 있어요." }
+      { title: "숲속 관찰 친구", detail: "작은 책을 펼치고 풀잎과 곤충을 살펴봐요.", quote: "이 나뭇잎 무늬 좀 보세요. 숲에는 재미있는 비밀이 아주 많아요." },
+      { title: "나뭇잎 연구가", detail: "잎맥 무늬 날개가 자라며 관찰 기록이 늘어나요.", quote: "나뭇잎 줄기처럼 지식도 쑥쑥 뻗어 나가네요. 새 발견을 적어 볼까요?" },
+      { title: "숲의 지혜 박사", detail: "풍성한 잎날개와 숲 도감에 자연의 이야기를 담아요.", quote: "우리가 함께 찾은 숲의 이야기가 이 도감에 가득 담겼어요." }
     ],
     reqType: "theme_nature",
     stage1Count: 50,
@@ -7036,16 +7038,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "pico",
-    name: "피코 (Pico)",
-    tag: "기술·과학 미래 펭귄 🐧",
-    themeName: "기술, 과학",
+    name: "피코",
+    tag: "실험을 좋아하는 펭귄 연구원 🐧",
+    themeName: "기술 · 과학",
     themeColor: "#0284c7",
     bgGradient: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
-    story: "궁금한 원리는 직접 실험해보는 펭귄 연구원. 탐사복과 연구 장비를 차근차근 갖추며 낯선 세계를 탐사해요.",
+    story: "궁금한 게 생기면 직접 실험해 봐야 직성이 풀리는 펭귄 연구원이에요. 멋진 탐사 장비를 하나씩 갖추며 넓은 과학 세상을 탐험해요.",
     growth: [
-      { title: "호기심 연구원", detail: "작은 날개로 첫 과학 실험을 시작해요.", quote: "질문 접수. 직접 확인하면 더 재미있을 거예요." },
-      { title: "궤도 탐사대", detail: "탐사복과 안테나를 갖추고 신호를 수집해요.", quote: "탐사복 점검 완료. 미지의 신호를 찾으러 출발합니다." },
-      { title: "우주 연구소", detail: "태양전지와 연구 장비로 더 먼 곳을 탐사해요.", quote: "태양전지 충전 완료. 오늘의 발견을 다음 실험으로 이어갑니다." }
+      { title: "꼬마 과학 연구원", detail: "연구 태블릿을 들고 첫 실험을 시작해요.", quote: "와, 신기한 질문이네요! 같이 실험하면서 답을 찾아봐요!" },
+      { title: "반짝 우주 탐사대", detail: "탐사복과 안테나를 쓰고 새로운 신호를 찾아요.", quote: "탐사복 준비 끝! 이제 신비로운 과학 신호를 찾으러 출발해요!" },
+      { title: "미래 우주 박사", detail: "태양빛 날개를 펼치고 더 먼 우주까지 탐험해요.", quote: "햇빛 에너지 가득 충전했어요! 오늘의 발견으로 더 멋진 실험을 해 봐요!" }
     ],
     reqType: "theme_tech",
     stage1Count: 50,
@@ -7059,16 +7061,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "popo",
-    name: "포포 (Popo)",
-    tag: "역사·이야기 듬직 곰 🐻",
-    themeName: "역사, 이야기",
+    name: "포포",
+    tag: "옛길을 걷는 듬직한 곰 탐험가 🐻",
+    themeName: "역사 · 이야기",
     themeColor: "#b45309",
     bgGradient: "linear-gradient(135deg, #fef3c7, #fde68a)",
-    story: "옛사람들이 걸었던 길을 따라가는 곰 탐험가. 지도를 펼쳐 장소를 찾고, 유물에 남은 이야기를 차분히 들려줘요.",
+    story: "옛날 사람들이 걸었던 길을 따라 여행하는 듬직한 곰 탐험가예요. 지도를 펼치고 오래된 이야기들을 차분하게 들려줘요.",
     growth: [
-      { title: "이야기 여행자", detail: "옛이야기를 품고 첫 여행을 떠나요.", quote: "어디서 시작된 이야기인지, 함께 발자취를 따라가보자꾸나." },
-      { title: "역사 탐험가", detail: "지도와 탐험가 가방을 챙겨 옛길을 찾아요.", quote: "지도에 길이 하나 더 생겼구나. 천천히 걸으며 살펴보자." },
-      { title: "유물 기록가", detail: "발견한 유물과 두루마리로 역사를 이어줘요.", quote: "작은 유물에도 긴 시간이 담겨 있단다. 그 이야기를 들려주마." }
+      { title: "옛이야기 여행자", detail: "가방을 메고 첫 이야기 여행을 떠나요.", quote: "이 이야기는 어디서 시작됐을까? 같이 천천히 따라가 보자." },
+      { title: "지도 속 탐험가", detail: "탐험 조끼와 지도를 챙겨 옛길을 찾아요.", quote: "지도에 새로운 길이 하나 더 생겼네! 발자취를 하나씩 살펴보자." },
+      { title: "두루마리 이야기꾼", detail: "탐험 모자와 두루마리에 옛 지혜를 담아요.", quote: "오래된 이야기 속에도 보물 같은 지혜가 숨어 있어. 내가 들려줄게." }
     ],
     reqType: "theme_hist",
     stage1Count: 50,
@@ -7082,16 +7084,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "chichi",
-    name: "치치 (Chichi)",
-    tag: "건강·음식 활력 다람쥐 🐿️",
-    themeName: "건강, 음식",
+    name: "치치",
+    tag: "건강한 습관을 모으는 다람쥐 🐿️",
+    themeName: "건강 · 음식",
     themeColor: "#ea580c",
     bgGradient: "linear-gradient(135deg, #ffedd5, #fdba74)",
-    story: "도토리를 모으듯 건강한 습관을 모으는 다람쥐. 씨앗을 심고 식재료를 돌보며 맛있는 한 끼가 만들어지는 과정을 배워요.",
+    story: "도토리를 모으듯 좋은 습관을 차곡차곡 모으는 활기찬 다람쥐예요. 새싹을 기르고 건강한 먹거리 이야기를 찾아다녀요.",
     growth: [
-      { title: "도토리 수집가", detail: "작은 도토리에 담긴 영양을 찾아봐요.", quote: "이 작은 도토리가 어떻게 자라는지 궁금하지 않아?" },
-      { title: "새싹 재배가", detail: "앞치마를 두르고 새싹을 정성껏 길러요.", quote: "새싹이 고개를 내밀었어. 꾸준히 돌본 보람이 있네!" },
-      { title: "건강한 수확", detail: "수확 주머니에 다양한 건강 식재료를 모아요.", quote: "오늘 수확은 아주 알차네. 골고루 나눠 먹을 준비 됐어?" }
+      { title: "도토리 건강 친구", detail: "작은 도토리 속에 숨은 영양을 찾아봐요.", quote: "이 작은 도토리에 얼마나 큰 힘이 숨어 있는지 궁금하지 않아?" },
+      { title: "꼬마 텃밭 농부", detail: "앞치마를 두르고 새싹을 정성껏 길러요.", quote: "짜잔, 새싹이 쏘옥 올라왔어! 매일 돌봐 준 보람이 있네!" },
+      { title: "싱싱 수확 대장", detail: "바구니 가득 건강한 채소와 열매를 모아요.", quote: "오늘 바구니가 아주 꽉 찼어! 같이 맛있게 나눠 먹을래?" }
     ],
     reqType: "theme_health",
     stage1Count: 50,
@@ -7105,16 +7107,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "lumi",
-    name: "냥이 (Nyangi)",
-    tag: "학습·수학 퍼즐 고양이 🐱",
-    themeName: "학습, 수학, 기타",
+    name: "루나",
+    tag: "퍼즐을 푸는 영리한 고양이 🐱",
+    themeName: "학습 · 수학 · 기타",
     themeColor: "#8b5cf6",
     bgGradient: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-    story: "문제를 만나면 귀부터 쫑긋 세우는 연보라 고양이. 앞발로 퍼즐 조각을 맞추고, 생각 수첩에 자신만의 풀이를 모아요.",
+    story: "재미있는 문제를 만나면 귀부터 쫑긋 세우는 연보라 고양이예요. 퍼즐 조각을 맞추며 나만의 생각 수첩을 채워 가요.",
     growth: [
-      { title: "쫑긋 호기심", detail: "연보라 귀와 긴 꼬리로 호기심을 표현해요.", quote: "이 조각은 어디에 맞을까? 잠깐, 좋은 생각이 났어." },
-      { title: "퍼즐 탐구자", detail: "기하학 목걸이와 생각 수첩으로 풀이를 모아요.", quote: "생각 수첩이 한 권 더 찼네. 서로 다른 풀이도 비교해볼까?" },
-      { title: "기하학 설계자", detail: "퍼즐 도구와 기하 궤도로 새로운 모양을 만들어요.", quote: "조각마다 제자리를 찾았어. 다음엔 우리가 새 퍼즐을 만들어보자." }
+      { title: "쫑긋 호기심 고양이", detail: "귀를 쫑긋 세우고 재미있는 문제를 찾아요.", quote: "어, 이 조각은 어디에 맞을까? 잠깐, 좋은 생각이 났어!" },
+      { title: "생각 수첩 탐구자", detail: "삼각자와 생각 수첩에 나만의 풀이를 적어요.", quote: "생각 수첩이 벌써 한 권 가득 찼어. 다른 방법도 같이 찾아볼까?" },
+      { title: "반짝 퍼즐 마법사", detail: "도형 칠판과 반짝 별로 새로운 퍼즐을 만들어요.", quote: "퍼즐 조각이 모두 딱 맞았어! 다음엔 우리가 새 문제를 만들어 보자." }
     ],
     reqType: "theme_study",
     stage1Count: 50,
@@ -7128,16 +7130,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "mir",
-    name: "미르 (Mir)",
-    tag: "전 분야 마스터 청룡 🐲",
-    themeName: "모든 분야 마스터",
+    name: "미르",
+    tag: "온 세상을 잇는 푸른 용 🐲",
+    themeName: "전 분야 마스터",
     themeColor: "#059669",
     bgGradient: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    story: "여러 분야의 이야기를 물길처럼 이어주는 청룡. 고르게 읽을수록 가지뿔과 물결 비늘이 자라며 더 넓은 세상을 품어요.",
+    story: "여러 분야의 이야기를 물길처럼 이어 주는 푸른 용이에요. 다양한 책을 고르게 읽을수록 뿔과 날개가 멋지게 자라나요.",
     growth: [
-      { title: "작은 물결", detail: "작은 청룡이 다양한 이야기의 물길을 만나요.", quote: "서로 다른 이야기가 만나는 곳에 새로운 길이 열리지." },
-      { title: "푸른 물길", detail: "가지뿔과 물결 비늘이 자라나기 시작해요.", quote: "지식의 물줄기가 하나로 모이는구나. 더 넓은 곳으로 가보자." },
-      { title: "여의주 수호룡", detail: "큰 가지뿔과 여의주를 품고 물결을 이끌어요.", quote: "여의주에 많은 이야기가 담겼다. 이제 그 빛을 세상과 나누자." }
+      { title: "작은 물결 청룡", detail: "아기 청룡이 여러 분야의 책을 만나기 시작해요.", quote: "여러 이야기가 만나면 전엔 몰랐던 새로운 길이 열려!" },
+      { title: "푸른 하늘 비행", detail: "가지뿔이 자라고 반짝이는 여의주를 품어요.", quote: "다양한 책이 모여 힘이 커졌어. 이제 더 넓은 하늘로 날아오르자!" },
+      { title: "여의주 수호룡", detail: "큰 날개와 빛나는 여의주로 책 세상을 지켜요.", quote: "여의주에 우리가 읽은 이야기가 가득 담겼어. 정말 멋지게 해냈어!" }
     ],
     reqType: "all_genres",
     stage1Count: 75,
@@ -7151,16 +7153,16 @@ var NANO_CHARACTERS = [
   },
   {
     id: "jelly",
-    name: "양양 (Yangyang)",
-    tag: "차곡차곡 독서 기록 양 🐑",
-    themeName: "대독서가 레전드",
+    name: "솜이",
+    tag: "차곡차곡 책을 모으는 폭신한 양 🐑",
+    themeName: "다독 레전드",
     themeColor: "#92734f",
     bgGradient: "linear-gradient(135deg, #fff8eb, #f0e4cf)",
-    story: "폭신한 크림색 털을 가진 느긋한 양. 좋아하는 문장에 책갈피를 꽂고, 읽어온 이야기를 한 올 한 올 잇듯 모아가요.",
+    story: "구름처럼 폭신한 크림색 털을 가진 느긋한 양이에요. 마음에 드는 문장에 책갈피를 꽂으며 한 권씩 소중히 읽어가요.",
     growth: [
-      { title: "포근한 책 친구", detail: "크림색 곱슬 털을 가진 양과 독서를 시작해요.", quote: "서두르지 않아도 돼. 네 속도로 읽는 이야기가 좋아." },
-      { title: "책갈피 수집가", detail: "직조 가방에 책과 소중한 책갈피를 모아요.", quote: "이 책갈피마다 우리가 좋아한 문장이 하나씩 담겨 있어." },
-      { title: "이야기 직조가", detail: "풍성한 곱슬 털과 무늬 가방에 독서의 시간을 담아요.", quote: "한 권씩 읽어온 이야기가 이렇게 큰 무늬가 되었네." }
+      { title: "포근한 독서 친구", detail: "폭신한 양과 함께 차근차근 책을 읽어요.", quote: "서두르지 않아도 괜찮아. 네 속도로 읽는 이야기가 제일 좋아." },
+      { title: "책갈피 모으기", detail: "예쁜 가방에 책과 소중한 책갈피를 모아요.", quote: "이 책갈피마다 우리가 좋아했던 문장이 하나씩 담겨 있어." },
+      { title: "폭신한 이야기 창고", detail: "풍성한 털과 가득 찬 책가방에 독서의 추억을 담아요.", quote: "한 권씩 차곡차곡 읽다 보니 이렇게 멋진 책장이 되었네!" }
     ],
     reqType: "total_read",
     stage1Count: 50,
@@ -7395,14 +7397,14 @@ async function applySelectedCharacter() {
   var unlockInfo = getCharacterUnlockStatus(char);
 
   if (!unlockInfo.unlocked) {
-    toast('🔒 아직 획득하지 못한 캐릭터입니다. ' + char.unlockDesc + ' 달성 시 해금됩니다! (남은 권수: ' + unlockInfo.remainCount + '권)');
+    toast('🔒 아직 만나지 못한 캐릭터예요! ' + char.unlockDesc + ' 달성 시 함께할 수 있어요. (' + unlockInfo.remainCount + '권 남음)');
     return;
   }
 
   window.characterSavePending = true;
   try { await setUserCharacterId(tempSelectedCharId); } catch(e) { toast('캐릭터 저장 실패: ' + e.message); return; } finally { window.characterSavePending = false; }
   closeCharacterSelectModal();
-  toast('🎉 내 대표 캐릭터가 [' + char.name.split(' ')[0] + '](으)로 설정되었습니다!');
+  toast('🎉 대표 캐릭터가 [' + char.name.split(' ')[0] + ']로 설정되었습니다!');
   renderRank();
 }
 
@@ -7428,7 +7430,7 @@ function openCelebrationModal(charId, forceEvolved) {
   var quoteEl = document.getElementById('celebQuote');
 
   if(topEmoji) topEmoji.innerText = evolved ? '🌟' : '🎉';
-  if(title) title.innerText = evolved ? '캐릭터 외형 진화 달성!' : '새로운 캐릭터 해금 달성!';
+  if(title) title.innerText = evolved ? '캐릭터가 한 단계 더 자랐어요!' : '새로운 독서 친구가 찾아왔어요!';
   if(subtitle) subtitle.innerText = growth.title + ' · ' + growth.detail;
   if(avatarBox) avatarBox.innerHTML = getCharacterSvg(charId, 84, stage, false);
   if(nameEl) nameEl.innerText = char.name;
@@ -7452,7 +7454,7 @@ function closeCelebrationModal() {
 function applyCelebratedCharacter() {
   if(currentCelebratedCharId) {
     setUserCharacterId(currentCelebratedCharId);
-    toast('🎉 대표 캐릭터가 [' + getCharacterById(currentCelebratedCharId).name.split(' ')[0] + '](으)로 설정되었습니다!');
+    toast('🎉 대표 캐릭터가 [' + getCharacterById(currentCelebratedCharId).name.split(' ')[0] + ']로 설정되었습니다!');
   }
   closeCelebrationModal();
   closeCharacterSelectModal();
@@ -7670,19 +7672,19 @@ function updateAllCharacterAvatars() {
     hmTag.style.background = char.themeColor;
   }
   if(hmQuote) {
+    // 홈 화면 상단 환영 배너용 캐릭터별 데일리 인사 대사
     var quotes = {
-      nano: '"오늘의 사건은 어느 책에 숨어 있을까? 돋보기 준비됐어. 🦊"',
-      booki: '"오늘은 숲의 어떤 이야기를 관찰해볼까요? 🦉"',
-      toto: '"네 마음에 남은 이야기가 궁금해. 편지처럼 들려줘. 🐰"',
-      lumi: '"창가 자리는 비워뒀어. 오늘 풀어볼 퍼즐은 뭐야? 🐱"',
-      popo: '"지도를 펼쳐보자꾸나. 오늘은 어느 시대를 걸어볼까? 🐻"',
-      pico: '"탐사 노트 준비 완료. 오늘의 질문을 입력해주세요. 🐧"',
-      chichi: '"오늘도 지식 한 알을 심어볼까? 꾸준히 키워보자. 🐿️"',
-      mir: '"아직 만나지 않은 분야로 새로운 물길을 내어보자. 🐲"',
-      choco: '"마음에 남는 멋진 문장을 찾으면 그림으로 그려보자! 🐶"',
-      jelly: '"책갈피를 꽂아둔 곳부터, 오늘도 네 속도로 읽자. 🐑"'
+      nano: '"오늘의 이야기는 어떤 책에 숨어 있을까? 돋보기 준비 완료! 🦊"',
+      toto: '"오늘 읽은 책 이야기 들려줄래? 편지처럼 귀 기울여 들을게! 🐰"',
+      booki: '"오늘은 숲처럼 넓은 책 속에서 어떤 이야기를 만나 볼까요? 🦉"',
+      pico: '"탐사 노트 준비 끝! 오늘은 어떤 신기한 책을 탐험해 볼까요? 🐧"',
+      popo: '"지도를 펼쳐 볼까? 오늘은 어떤 시대로 책 여행을 떠나 볼래? 🐻"',
+      chichi: '"오늘도 재미있는 책 한 권으로 머릿속 에너지를 꽉 채워 보자! 🐿️"',
+      lumi: '"창가 자리 비워 뒀어. 오늘은 어떤 재미있는 책을 열어 볼까? 🐱"',
+      mir: '"새로운 분야의 책도 한 번 펼쳐 보자! 더 넓은 세상이 기다리고 있어. 🐲"',
+      jelly: '"책갈피 꽂아 둔 곳부터, 오늘도 네 속도로 천천히 읽어 보자. 🐑"'
     };
-    hmQuote.innerText = quotes[charId] || '"오늘도 책 속의 신비한 모험을 떠나볼까요? 📖"';
+    hmQuote.innerText = quotes[charId] || '"오늘도 책 속의 즐거운 여행을 떠나 볼까요? 📖"';
   }
 }
 
@@ -9303,6 +9305,6 @@ document.addEventListener('click', function(event) {
 <script src="js/portal-extras.js?v=20261117_toast_msg"></script>
 <script src="js/literacy/literacy-bank-data.js?v=20261104_finish_art"></script>
 <script src="js/literacy/literacy-common.js?v=20261105_layout"></script>
-<script src="js/literacy/literacy-student.js?v=20261113_center"></script>
+<script src="js/literacy/literacy-student.js?v=20261126_char_copy"></script>
 </body>
 </html>

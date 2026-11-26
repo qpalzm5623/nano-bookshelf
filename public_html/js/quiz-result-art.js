@@ -1,4 +1,4 @@
-/* 프로필과 북퀴즈가 공유하는 나노 프렌즈 일러스트.
+/* 프로필과 북퀴즈가 공유하는 나노 프렌즈 캐릭터 그래픽.
    9명의 친구 × 성장 3단계. 점수는 표정·동작만 바꾸고 성장 모습은 유지합니다. */
 var NanoQuizResult = (function () {
   'use strict';
@@ -18,15 +18,15 @@ var NanoQuizResult = (function () {
     pico: { name: '피코', fur: '#647c9c', dark: '#3e526f', light: '#f6f5e9' },
     popo: { name: '포포', fur: '#b89170', dark: '#76553f', light: '#f4dfbd' },
     chichi: { name: '치치', fur: '#cc9465', dark: '#97613e', light: '#fff0d1' },
-    lumi: { name: '냥이', fur: '#aaa8c8', dark: '#64617f', light: '#f6f1eb' },
+    lumi: { name: '루나', fur: '#aaa8c8', dark: '#64617f', light: '#f6f1eb' },
     mir: { name: '미르', fur: '#7bb7ac', dark: '#3f8078', light: '#e6efce' },
-    jelly: { name: '양양', fur: '#f4ead7', dark: '#9b8575', light: '#fffaf0' }
+    jelly: { name: '솜이', fur: '#f4ead7', dark: '#9b8575', light: '#fffaf0' }
   };
   var tiers = {
-    perfect: { title: '책 속의 모든 순간을 찾았어요!', label: '완벽한 발견', note: '모든 문항을 맞혔어요', icon: 'trophy' },
-    high: { title: '이야기를 멋지게 읽어냈어요.', label: '빛나는 이해', note: '멋진 독서 여정이었어요', icon: 'star' },
-    pass: { title: '한 권 더, 한 걸음 더 자랐어요.', label: '차곡차곡 성장', note: '오늘의 독서를 인증했어요', icon: 'check' },
-    retry: { title: '다음 발견이 기다리고 있어요.', label: '다시, 책 속으로', note: '잠깐 쉬어 가도 괜찮아요', icon: 'book' }
+    perfect: { title: '책 속 이야기를 완벽하게 읽어 냈어요!', label: '완벽한 발견', note: '모든 문항을 맞혔어요', icon: 'trophy' },
+    high: { title: '이야기를 멋지게 읽어 냈어요!', label: '빛나는 이해', note: '멋진 독서 여정이었어요', icon: 'star' },
+    pass: { title: '한 권 더, 한 걸음 더 자랐어요!', label: '차곡차곡 성장', note: '오늘의 독서를 인증했어요', icon: 'check' },
+    retry: { title: '다시 읽으면 새로운 재미가 보일 거예요.', label: '다시, 책 속으로', note: '잠깐 쉬어 가도 괜찮아요', icon: 'book' }
   };
 
   function escape(value) {
@@ -351,7 +351,7 @@ var NanoQuizResult = (function () {
     var points = Number.isFinite(extra.earnedPts) ? Math.max(0, extra.earnedPts) : 0;
     var failCount = Number.isFinite(extra.failCount) ? Math.max(0, extra.failCount) : 0;
     var name = characters[charId].name;
-    var speech = extra.speechText || (isPass ? '오늘 발견한 이야기가 내일의 너를 더 자라게 할 거야.' : '서두르지 않아도 괜찮아. 책을 다시 펼치고 함께 찾아보자!');
+    var speech = extra.speechText || (isPass ? '오늘 읽은 이야기가 내일의 너를 한 뼘 더 자라게 해 줄 거야.' : '서두르지 않아도 괜찮아. 책을 다시 펼치고 함께 찾아보자!');
     var segments = Array.from({ length: total }, function (_, i) { return '<span class="' + (i < correct ? 'is-filled' : '') + '"></span>'; }).join('');
     var recBtnTitle = isPass
       ? (isRecommended ? '추천을 취소하려면 다시 눌러 주세요' : '재미있게 읽었다면 따봉을 눌러 친구들에게 추천해 보세요!')

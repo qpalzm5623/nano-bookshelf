@@ -468,6 +468,67 @@
     .btn-student-logout:active {
       transform: scale(0.95);
     }
+    /* 모바일 헤더: 학생 이름 세로 줄바꿈 방지 및 좌·우 여백 컴팩트 최적화 */
+    .s-header .user-info-pill {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .s-header #headerStudentName {
+      white-space: nowrap !important;
+      word-break: keep-all;
+    }
+    @media (max-width: 576px) {
+      .s-header {
+        padding: 0 12px !important;
+        height: 62px;
+        gap: 6px;
+      }
+      .s-header-left {
+        gap: 6px !important;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .s-header-right {
+        gap: 6px !important;
+        flex-shrink: 0;
+      }
+      .s-header .btn-drawer-hamburger {
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+      }
+      .s-header .s-header-logo-img {
+        height: 24px !important;
+        max-width: 96px;
+      }
+      .s-header .user-info-pill {
+        padding: 2px 9px 2px 3px !important;
+        gap: 5px !important;
+      }
+      .s-header #headerCharAvatar {
+        width: 26px !important;
+        height: 26px !important;
+      }
+      .s-header #headerStudentName {
+        font-size: 12.5px !important;
+        max-width: 72px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+    @media (max-width: 380px) {
+      .s-header {
+        padding: 0 10px !important;
+      }
+      .s-header .s-header-logo-img {
+        height: 21px !important;
+        max-width: 82px;
+      }
+      .s-header #headerStudentName {
+        font-size: 12px !important;
+        max-width: 60px;
+      }
+    }
     .sec-title {
       font-size: 14.5px;
       font-weight: 800;

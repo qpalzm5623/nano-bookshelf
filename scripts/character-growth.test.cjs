@@ -39,10 +39,10 @@ function characterUi(extra = {}) {
   return { ctx, elements };
 }
 
-test('냥이와 양양으로 바뀌어도 기존 선택 ID와 1~3단계 독서 기록을 유지한다', () => {
+test('루나와 솜이로 이름이 바뀌어도 기존 선택 ID와 1~3단계 독서 기록을 유지한다', () => {
   for (const [id, name, statsKey, thresholds] of [
-    ['lumi', '냥이', 'studyRead', [50, 100, 150]],
-    ['jelly', '양양', 'totalRead', [50, 100, 200]]
+    ['lumi', '루나', 'studyRead', [50, 100, 150]],
+    ['jelly', '솜이', 'totalRead', [50, 100, 200]]
   ]) {
     const { ctx } = characterUi({ localStorage: { getItem: () => id } });
     const char = ctx.getCharacterById(id);

@@ -48,7 +48,97 @@
         if (ch) return ch;
       }
     } catch (e) {}
-    return { id: 'nano', name: '나노 (Nano)', themeColor: '#00a896', themeName: '기본 스타터 여우 🦊' };
+    return { id: 'nano', name: '나노', themeColor: '#00a896', themeName: '기본 스타터' };
+  }
+
+  // 캐릭터별 문해력 진단 시작·완료 대사 (학생이 고른 캐릭터의 성격과 말투에 맞춤)
+  var CHAR_LITERACY_SCRIPTS = {
+    nano: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🦊'; },
+      startSub: '선생님이 준비한 문해력 탐험이야. 돋보기 들고 같이 풀어 볼까?',
+      done: {
+        high: function (name) { return name + ', 정말 멋지게 해냈어! 글 속 단서를 척척 찾아내는 솜씨가 대단해. 선생님이 결과표도 꼼꼼히 챙겨 주실 거야!'; },
+        mid: function (name) { return name + ', 끝까지 집중해서 잘 풀었어! 이번 결과를 보고 선생님이 딱 맞는 읽기 방법을 알려 주실 거야.'; },
+        encourage: function (name) { return name + ', 마지막 문제까지 포기하지 않고 해낸 게 제일 멋져! 앞으로 나랑 같이 읽으면 금방 쑥쑥 자랄 거야.'; }
+      }
+    },
+    toto: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🐰'; },
+      startSub: '선생님이 보내 준 문해력 편지가 도착했어. 편하게 천천히 읽어 봐!',
+      done: {
+        high: function (name) { return name + ', 정말 수고했어! 글을 아주 꼼꼼하고 따뜻하게 잘 읽었네. 선생님이 멋진 결과표를 보내 주실 거야!'; },
+        mid: function (name) { return name + ', 차근차근 끝까지 잘 해냈어! 선생님이 결과를 살펴보시고 꼭 맞는 도움을 주실 거야.'; },
+        encourage: function (name) { return name + ', 끝까지 열심히 푼 것만으로도 정말 대단해! 토닥토닥, 앞으로 함께 더 재미있게 읽어 보자!'; }
+      }
+    },
+    booki: {
+      startHead: function (name) { return '반가워요, <b>' + esc(name) + '</b> 친구! 🦉'; },
+      startSub: '선생님이 준비해 주신 문해력 진단이에요. 차분하게 끝까지 읽어 봐요.',
+      done: {
+        high: function (name) { return name + ' 친구, 정말 훌륭해요! 글의 뜻을 깊이 있게 잘 파악했어요. 선생님께서 꼼꼼한 분석 리포트를 준비해 주실 거예요.'; },
+        mid: function (name) { return name + ' 친구, 차분하게 끝까지 잘 마쳤어요! 이번 결과를 바탕으로 선생님이 딱 맞는 독서 길잡이를 해 주실 거예요.'; },
+        encourage: function (name) { return name + ' 친구, 끝까지 포기하지 않고 최선을 다했네요! 차근차근 함께 읽다 보면 읽기 힘이 금방 자랄 거예요.'; }
+      }
+    },
+    pico: {
+      startHead: function (name) { return '안녕하세요, <b>' + esc(name) + '</b> 연구원님! 🐧'; },
+      startSub: '오늘의 문해력 탐사가 시작됐어요. 끝까지 멋지게 도전해 봐요!',
+      done: {
+        high: function (name) { return name + ' 친구, 탐사 대성공이에요! 끝까지 집중해서 정말 멋지게 풀었어요. 선생님께서 분석 결과표를 준비해 주실 거예요!'; },
+        mid: function (name) { return name + ' 친구, 성실하게 끝까지 완료했어요! 이번 진단 결과로 나에게 딱 맞는 학습 방법을 찾을 수 있을 거예요.'; },
+        encourage: function (name) { return name + ' 친구, 끝까지 도전한 용기가 최고예요! 다음엔 더 재미있고 자신 있게 풀 수 있도록 같이 연습해 봐요!'; }
+      }
+    },
+    popo: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🐻'; },
+      startSub: '선생님이 준비한 문해력 여행이야. 서두르지 말고 천천히 걸어가 보자.',
+      done: {
+        high: function (name) { return name + ', 참 듬직하게 잘 해냈어! 긴 글도 흔들리지 않고 끝까지 읽어 냈네. 선생님이 멋진 결과표를 보내 주실 거야.'; },
+        mid: function (name) { return name + ', 차근차근 끝까지 잘 걸어왔어! 이번 결과를 바탕으로 선생님이 더 깊어질 수 있게 도와주실 거야.'; },
+        encourage: function (name) { return name + ', 포기하지 않고 끝까지 마친 게 정말 자랑스러워! 천천히 한 걸음씩 같이 나아가면 돼.'; }
+      }
+    },
+    chichi: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🐿️'; },
+      startSub: '문해력 에너지를 뽐낼 시간이야! 활기차게 끝까지 파이팅!',
+      done: {
+        high: function (name) { return name + ', 완전 최고야! 끝까지 에너지 넘치게 척척 풀어 냈어! 선생님이 꼼꼼한 결과표를 준비해 주실 거야!'; },
+        mid: function (name) { return name + ', 끝까지 열심히 해냈어, 파이팅! 선생님이 결과를 보고 더 쑥쑥 클 수 있게 도와주실 거야!'; },
+        encourage: function (name) { return name + ', 마지막까지 힘내서 풀어 낸 게 진짜 멋져! 우리 같이 책 읽으면서 실력을 차곡차곡 모아 보자!'; }
+      }
+    },
+    lumi: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🐱'; },
+      startSub: '재미있는 문해력 퍼즐이 기다리고 있어. 꼼꼼하게 같이 풀어 보자!',
+      done: {
+        high: function (name) { return name + ', 어려운 문제도 척척 풀어 냈네! 정말 영리한걸? 선생님이 영역별 결과표를 꼼꼼히 정리해 주실 거야.'; },
+        mid: function (name) { return name + ', 끝까지 차분하게 잘 풀었어! 이번 결과를 보면 어떤 부분을 더 키우면 좋을지 한눈에 보일 거야.'; },
+        encourage: function (name) { return name + ', 끝까지 포기하지 않고 도전한 게 멋져! 어려운 퍼즐도 하나씩 풀다 보면 금방 쉬워질 거야.'; }
+      }
+    },
+    mir: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🐲'; },
+      startSub: '네 읽기 실력을 보여 줄 시간이야. 자신감을 갖고 끝까지 도전해 봐!',
+      done: {
+        high: function (name) { return name + ', 정말 훌륭해! 끝까지 흔들림 없이 멋지게 해냈어. 선생님께서 5개 영역 분석 리포트를 정성껏 준비해 주실 거야.'; },
+        mid: function (name) { return name + ', 끝까지 성실하게 마쳤구나! 이번 진단이 더 높이 성장하는 든든한 발판이 될 거야.'; },
+        encourage: function (name) { return name + ', 마지막 문항까지 끝내 낸 끈기가 정말 멋져! 지금부터 차근차근 힘을 키워 나가면 돼.'; }
+      }
+    },
+    jelly: {
+      startHead: function (name) { return '안녕, <b>' + esc(name) + '</b>! 🐑'; },
+      startSub: '마음 편하게 네 속도로 읽으면 돼. 나랑 끝까지 함께 가자!',
+      done: {
+        high: function (name) { return name + ', 정말 고생 많았어! 네 속도로 차분하게 읽으니까 이렇게 멋진 결과가 나왔네. 선생님이 결과표도 잘 챙겨 주실 거야.'; },
+        mid: function (name) { return name + ', 끝까지 정성껏 읽어 줘서 고마워! 선생님이 결과를 보고 딱 맞는 책을 추천해 주실 거야.'; },
+        encourage: function (name) { return name + ', 끝까지 해낸 것만으로도 충분히 잘했어! 잠깐 쉬었다가 나랑 같이 한 권씩 편하게 읽어 보자.'; }
+      }
+    }
+  };
+
+  function getLiteracyCharScript(charMeta) {
+    var cid = (charMeta && charMeta.id) || 'nano';
+    return CHAR_LITERACY_SCRIPTS[cid] || CHAR_LITERACY_SCRIPTS.nano;
   }
 
   function getStudentDisplayName() {
@@ -453,12 +543,13 @@
       html += '<div class="card p-4 text-center text-muted">' + esc(panelState.error) + '</div>';
     } else if (a) {
       // 1. 나노프렌즈 캐릭터와 어우러진 감성적인 시작 배너
+      var startScript = getLiteracyCharScript(charMeta);
       html += '<div class="lt-hero-banner">' +
         '<div class="lt-hero-top">' +
           '<div class="lt-hero-avatar-box" title="' + esc(charMeta.name) + '">' + charSvg + '</div>' +
           '<div class="lt-hero-speech">' +
-            '<div>안녕, <b>' + esc(studentName) + '</b>! 🦊</div>' +
-            '<div>선생님이 준비한 재미있는 문해력 진단지야!</div>' +
+            '<div>' + startScript.startHead(studentName) + '</div>' +
+            '<div>' + esc(startScript.startSub) + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="lt-hero-title">' + esc(L.BRAND ? L.BRAND.testTitle : '나노의책장 초등 문해력 진단지') + '</div>' +
@@ -747,7 +838,9 @@
         ? '차근차근 지문을 읽고 성실하게 진단을 완료했어요!'
         : '포기하지 않고 마지막 문항까지 최선을 다해 풀었어요!';
 
-    var speech = studentName + ' 학생, 수고 많았어! 이번 문해력 진단 결과를 바탕으로 선생님께서 5대 문해력 영역별 분석 리포트를 꼼꼼하게 준비해 주실 거야.';
+    var doneScript = getLiteracyCharScript(charMeta).done;
+    var speechTier = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'encourage';
+    var speech = doneScript[speechTier](studentName);
 
     var domains = ['어휘이해력', '학습도구어', '요약', '비교', '추론'];
     var domainBadgesHtml = domains.map(function(d) {
@@ -777,9 +870,9 @@
           '<div class="lt-hero-avatar-box" style="width:68px; height:68px; flex-shrink:0; background:#ffffff; border-radius:50%; border:2px solid #99f6e4; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(15,118,110,0.12);">' + charSvg + '</div>' +
           '<div style="flex:1; min-width:200px;">' +
             '<div style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800; color:#0f766e; margin-bottom:4px;">' +
-              '<i class="fa-solid fa-user-check"></i>응시 학생: ' + studentName + ' · ' + charMeta.name + '의 진단 응원' +
+              '<i class="fa-solid fa-user-check"></i>응시 학생: ' + esc(studentName) + ' · ' + esc(charMeta.name.split(' ')[0]) + '의 응원' +
             '</div>' +
-            '<div style="font-size:13.5px; color:#334155; font-weight:600; line-height:1.55;">"' + speech + '"</div>' +
+            '<div style="font-size:13.5px; color:#334155; font-weight:600; line-height:1.55;">"' + esc(speech) + '"</div>' +
           '</div>' +
         '</div>' +
 

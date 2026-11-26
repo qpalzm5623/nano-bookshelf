@@ -157,8 +157,8 @@ test('북퀴즈 추천은 60점 이상에서 활성화되고 9종 고유 반응�
   assert.deepEqual(Object.keys(NanoQuizResult.characters), allFriends);
   const studentHtml = fs.readFileSync(path.join(root, 'public_html/student_preview.html'), 'utf8');
   const quizCss = fs.readFileSync(path.join(root, 'public_html/css/quiz-result.css'), 'utf8');
-  assert.equal(NanoQuizResult.characters.lumi.name, '냥이');
-  assert.equal(NanoQuizResult.characters.jelly.name, '양양');
+  assert.equal(NanoQuizResult.characters.lumi.name, '루나');
+  assert.equal(NanoQuizResult.characters.jelly.name, '솜이');
   assert.equal(new Set([...quizCss.matchAll(/--friend-celebrate:\s*(\w+)/g)].map(match => match[1])).size, 9);
   assert.match(quizCss, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(quizCss, /animation: none !important/);

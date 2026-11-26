@@ -2154,13 +2154,25 @@ async function sendLearningReportKakao(logId, event, isModal) {
   } catch(e) { showAcademyToast(e.message); } finally { if(button) button.disabled = false; }
 }
 
+// 학습 리포트 소속 가맹점명 추출 (학생 학교명 log.school 혼입 금지)
+function resolveLearningReportAcademyName(log) {
+  var name =
+    (log && log.academyName) ||
+    (typeof currentAcademyInfo !== 'undefined' && currentAcademyInfo && currentAcademyInfo.name) ||
+    (typeof window !== 'undefined' && window.NANO_SERVER_DATA && window.NANO_SERVER_DATA.academy && window.NANO_SERVER_DATA.academy.name) ||
+    (typeof currentAcademyName !== 'undefined' && currentAcademyName) ||
+    '나노의 책장';
+  return String(name || '나노의 책장').trim() || '나노의 책장';
+}
+
 // A4 리포트 인쇄 실행 함수 (백지 방지 및 생각담기 숨김 반영)
 function printLearningReport() {
   var isHidden = false;
+  var currentLog = null;
   if (currentOpenLearningLogId) {
     var allLogs = getLoadedLearningLogs();
-    var log = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; });
-    if (log && log.thoughtHidden === true) {
+    currentLog = allLogs.find(function(l) { return l.id === currentOpenLearningLogId; }) || null;
+    if (currentLog && currentLog.thoughtHidden === true) {
       isHidden = true;
     }
   }
@@ -2174,10 +2186,18 @@ function printLearningReport() {
     var dd = String(today.getDate()).padStart(2, '0');
     printDateEl.innerText = `${yyyy}-${mm}-${dd}`;
   }
+  var curAcad = resolveLearningReportAcademyName(currentLog);
   var printAcadEl = document.getElementById('printAcademyNameDisplay');
   if (printAcadEl) {
-    var curAcad = (typeof currentAcademyName !== 'undefined' && currentAcademyName) ? currentAcademyName : '나노의 책장';
     printAcadEl.innerText = curAcad;
+  }
+  var footerAcadEl = document.getElementById('learnModalFooterAcademy');
+  if (footerAcadEl) {
+    footerAcadEl.innerText = curAcad;
+  }
+  var modalAcadEl = document.getElementById('learnModalAcademy');
+  if (modalAcadEl) {
+    modalAcadEl.innerText = curAcad;
   }
 
   // 화면 입력란에 작성된 지도 코멘트가 있다면 인쇄 직전 출력 영역과 상태를 동기화
@@ -2324,7 +2344,7 @@ function openLearningDetailModal(id) {
     printDateEl.innerText = `${yyyy}-${mm}-${dd}`;
   }
   var printAcadEl = document.getElementById('printAcademyNameDisplay');
-  var curAcad = (typeof currentAcademyName !== 'undefined' && currentAcademyName) ? currentAcademyName : (log.school ? log.school.split(' ')[0] : '나노의 책장');
+  var curAcad = resolveLearningReportAcademyName(log);
   if (printAcadEl) {
     printAcadEl.innerText = curAcad;
   }
@@ -5149,7 +5169,7 @@ function getCharacterSvg(charId, size, stage) {
       + '<circle cx="32" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
       + '<circle cx="68" cy="63" r="5" fill="#fbcfe8" opacity="0.9"/>'
       + '</svg>',
-    lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" role="img" aria-label="냥이">'
+    lumi: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" role="img" aria-label="루나">'
       + '<circle cx="50" cy="50" r="48" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2.5"/>'
       + '<path d="M25 42 23 18 42 30M58 30 77 18 75 42" fill="#b9a0d4" stroke="#79628e" stroke-width="2.5" stroke-linejoin="round"/>'
       + '<path d="M29 32 28 25 37 31M63 31 72 25 71 32" fill="#e9bfd1"/>'
@@ -5228,7 +5248,7 @@ function getCharacterSvg(charId, size, stage) {
       + '<ellipse cx="50" cy="61" rx="4.5" ry="3.5" fill="#1e293b"/>'
       + '<path d="M47,65 Q50,68 53,65" stroke="#1e293b" stroke-width="1.5" fill="none"/>'
       + '</svg>',
-    jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" role="img" aria-label="양양">'
+    jelly: '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" role="img" aria-label="솜이">'
       + '<circle cx="50" cy="50" r="48" fill="#fff8eb" stroke="#b59b73" stroke-width="2.5"/>'
       + '<g fill="#fffdf6" stroke="#e1d2b8" stroke-width="1.5">'
       + '<circle cx="50" cy="28" r="14"/><circle cx="32" cy="35" r="14"/><circle cx="68" cy="35" r="14"/>'
