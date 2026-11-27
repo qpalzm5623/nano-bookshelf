@@ -1597,6 +1597,20 @@
       .rank-card .rank-card-hero-meta { font-size: 10.5px; gap: 4px; }
     }
 
+    .rank-card-self-badges { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .rank-card.me.my-rank-banner .rank-card-summary {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      margin-top: 6px;
+      text-align: left;
+      white-space: normal;
+    }
+    .rank-card.me.my-rank-banner .rank-card-summary .rank-hero-stats-pill { justify-content: flex-start; }
+
     /* 캐릭터 선택 모달 */
     #charDetailPreview {
       display: grid;
@@ -1635,7 +1649,7 @@
     #characterSelectModal .student-modal-body {
       min-height: 0;
       padding: 12px !important;
-      overscroll-behavior-y: contain;
+      overscroll-behavior-y: none;
       overflow-anchor: none;
     }
     #characterSelectModal .btn-modal-close { min-width: 32px; min-height: 32px; }

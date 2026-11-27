@@ -300,7 +300,9 @@ test('학생 랭킹 목록은 독서왕 딱지 없이 범위별 이름·아이�
   assert.equal(academyHtml.includes('영점학생'), false, '포인트가 0인 학생은 랭킹 목록에 표시되지 않아야 합니다');
   assert.equal(elements.podiumName1.innerText, '박진호');
   assert.match(academyHtml, /class="rank-card me my-rank-banner"[\s\S]*rank-hero-avatar/);
-  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\*\*\*\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-me">나<\/span>/);
+  assert.match(academyHtml, /<span>박진호<\/span><span class="rank-card-id">\(lo\*\*\*\)<\/span><span class="rank-card-class">A Class<\/span><span class="rank-card-self-badges"><span class="rank-card-me">나<\/span><span class="rank-hero-pct">상위 \d+%<\/span>/);
+  assert.doesNotMatch(academyHtml, /포인트 순위/);
+  assert.match(academyHtml, /rank-card-info[\s\S]*?rank-card-summary/);
   assert.match(academyHtml, /<span>남궁민수<\/span><span class="rank-card-id">\(mi\*\*\*\*\*\)<\/span>/);
   assert.match(academyHtml, /<span class="rank-card-id">\(bb\*\*\*\*\*\*\)<\/span><span class="rank-card-class">학급 미지정<\/span>/);
   assert.match(academyHtml, /83<span class="rank-card-pt-unit">P<\/span><\/span>[\s\S]*?<span class="rank-card-books">\(완독 4권\)<\/span>/);

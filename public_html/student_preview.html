@@ -36,7 +36,8 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261127_mobile_library_rank">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261127_scroll_lock_rank">
+  <script src="js/mobile-scroll-guard.js?v=20261127" defer></script>
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -8553,16 +8554,13 @@ function renderRank() {
         +     '<span>' + escapeStudentQuizText(rawName) + '</span>'
         +     (rawId ? '<span class="rank-card-id">(' + escapeStudentQuizText(rawId) + ')</span>' : '')
         +     '<span class="rank-card-class">' + escapeStudentQuizText(classText) + '</span>'
-        +     '<span class="rank-card-me">나</span>'
+        +     '<span class="rank-card-self-badges"><span class="rank-card-me">나</span>'
+        +       (pctText ? '<span class="rank-hero-pct">' + pctText + '</span>' : '') + '</span>'
         +   '</div>'
-        +   '<div class="rank-card-hero-meta">'
-        +     '<span>' + displayMonth + '월 ' + escapeStudentQuizText(scopeLabel) + ' 포인트 순위</span>'
-        +     (pctText ? '<span class="rank-hero-pct">' + pctText + '</span>' : '')
-        +   '</div>'
-        + '</div>'
-        + '<div class="rank-card-pt">'
+        + '<div class="rank-card-pt rank-card-summary">'
         +   '<span>' + Number(r.pt || 0).toLocaleString() + '<span class="rank-card-pt-unit">P</span></span>'
         +   '<span class="rank-hero-stats-pill"><span class="rank-card-books">(완독 ' + booksNum + '권)</span>' + (typeof totalNum === 'number' && totalNum > 0 ? ' · 누적 ' + totalNum.toLocaleString() + 'P' : '') + '</span>'
+        + '</div>'
         + '</div>'
         + '</div>';
     }
