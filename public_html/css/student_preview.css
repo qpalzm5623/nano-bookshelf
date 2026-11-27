@@ -1227,9 +1227,13 @@
     }
     .podium-avatar-wrap {
       position: relative;
-      margin-bottom: 6px;
+      margin-bottom: 1px;
+      line-height: 0;
       transition: transform 0.3s;
     }
+    .podium-avatar-wrap .char-avatar-box { display: flex; }
+    .podium-avatar-wrap .nano-friend-avatar { width: 100%; height: 100%; }
+    .podium-avatar-wrap .podium-crown { line-height: 1; }
     .podium-col:hover .podium-avatar-wrap {
       transform: translateY(-6px);
     }

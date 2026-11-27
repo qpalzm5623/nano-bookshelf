@@ -36,7 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261127_avatar_background">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261127_podium_spacing">
   <script src="js/mobile-scroll-guard.js?v=20261127_keyboard" defer></script>
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
@@ -899,7 +899,7 @@
       <!-- 2위 (은빛 단상) -->
       <div class="podium-col rank-2">
         <div class="podium-avatar-wrap">
-          <div id="podiumAvatar2" class="char-avatar-box bounce" style="width: 58px; height: 58px;"></div>
+          <div id="podiumAvatar2" class="char-avatar-box bounce" style="width: 66px; height: 66px;"></div>
         </div>
         <div class="podium-name" id="podiumName2">집계 대기</div>
         <div class="podium-box">
@@ -912,7 +912,7 @@
       <div class="podium-col rank-1">
         <div class="podium-avatar-wrap">
           <div class="podium-champion-motion">
-            <div id="podiumAvatar1" class="char-avatar-box" style="width: 68px; height: 68px;"></div>
+            <div id="podiumAvatar1" class="char-avatar-box" style="width: 76px; height: 76px;"></div>
             <div class="podium-crown" aria-hidden="true">👑</div>
           </div>
         </div>
@@ -926,7 +926,7 @@
       <!-- 3위 (동빛 단상) -->
       <div class="podium-col rank-3">
         <div class="podium-avatar-wrap">
-          <div id="podiumAvatar3" class="char-avatar-box bounce" style="width: 54px; height: 54px;"></div>
+          <div id="podiumAvatar3" class="char-avatar-box bounce" style="width: 62px; height: 62px;"></div>
         </div>
         <div class="podium-name" id="podiumName3">집계 대기</div>
         <div class="podium-box">
@@ -7779,8 +7779,8 @@ function renderCharacterSelectModal(preserveGrid) {
     badgeHtml = '<span class="char-evolved-badge" style="background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-award mr-1"></i>3단계</span>';
   }
 
-  previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;background:' + cur.bgGradient + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.08);">'
-    + getCharacterSvg(cur.id, 64, curUnlock.currentStage, !curUnlock.unlocked)
+  previewEl.innerHTML = '<div style="width:72px;height:72px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">'
+    + getCharacterSvg(cur.id, 72, curUnlock.currentStage, !curUnlock.unlocked)
     + '</div>'
     + '<div style="flex:1;min-width:0;">'
     +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;">'

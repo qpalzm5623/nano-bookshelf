@@ -30,6 +30,8 @@ for (const file of ['index.html', 'admin_preview.html', 'master_preview.html', '
   let html = fs.readFileSync(dest, 'utf8');
   // 로그인 화면에는 회원·도서 데이터가 필요하지 않습니다. 보호된 화면에서만 조회합니다.
   html = html.replace(/<script src="migrated_real_data\.js[^\"]*"><\/script>/g, file === 'index.html' ? '' : '<script src="/api/bootstrap"></script>');
+  // 초기 데이터를 외부 글꼴·스크립트보다 먼저 요청해 다운로드 대기 시간을 겹칩니다.
+  if (file !== 'index.html') html = html.replace('<head>', '<head>\n<link rel="preload" href="/api/bootstrap" as="script">');
   fs.writeFileSync(dest, html);
 }
 console.log('운영 배포 파일 생성 완료: dist (회원 덤프 및 PHP 설정 제외)');
