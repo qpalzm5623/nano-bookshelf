@@ -52,6 +52,44 @@ function loadFunctions(context, file, names) {
   }
 }
 
+test('캐릭터를 반복 선택해도 목록 DOM을 교체하지 않고 잠금과 선택 위치를 유지한다', () => {
+  const body = { scrollTop: 200 };
+  let layoutTop = 300;
+  const cards = ['nano', 'mir'].map(id => ({
+    dataset: { characterId: id },
+    classList: { toggle(name, selected) { this[name] = selected; } },
+    setAttribute(name, value) { this[name] = value; }
+  }));
+  const grid = {
+    getBoundingClientRect: () => ({ top: layoutTop - body.scrollTop }),
+    querySelectorAll: () => cards,
+    set innerHTML(value) { throw Error('선택 중 목록을 교체하면 안 됩니다'); }
+  };
+  const preview = { set innerHTML(value) { layoutTop += 20; } };
+  const apply = { style: {} };
+  const ctx = vm.createContext({
+    tempSelectedCharId: 'nano',
+    document: {
+      querySelector: () => body,
+      getElementById: id => ({ charDetailPreview: preview, charSelectGrid: grid, btnApplyCharacter: apply })[id]
+    },
+    getCharacterById: id => ({ id, name: id, story: '설명', tag: '소개', themeName: '분야', unlockDesc: '75권' }),
+    getCharacterUnlockStatus: char => ({ unlocked: char.id === 'nano', currentStage: char.id === 'nano' ? 1 : 0, percent: 0, remainCount: 75, statusText: '성장 중' }),
+    getCharacterSvg: () => '<svg></svg>'
+  });
+  loadFunctions(ctx, 'student_preview.html', ['selectCharacterInModal', 'renderCharacterSelectModal']);
+  for (const id of ['mir', 'nano', 'mir']) {
+    const before = grid.getBoundingClientRect().top;
+    ctx.selectCharacterInModal(id);
+    assert.equal(grid.getBoundingClientRect().top, before);
+    assert.equal(apply.disabled, id === 'mir');
+    for (const card of cards) assert.equal(card['aria-pressed'], String(card.dataset.characterId === id));
+  }
+  const previousScroll = body.scrollTop;
+  ctx.selectCharacterInModal('mir');
+  assert.equal(body.scrollTop, previousScroll);
+});
+
 test('본사·학원 메뉴는 저장소가 차단되어도 URL로 새로고침 후 복원된다', () => {
   for (const [file, switchName, restoreName, tabs] of [
     ['js/master/master-core.js', 'switchMasterTab', 'restoreMasterActiveTab', ['franchise', 'members', 'operations', 'ranking', 'contents', 'literacy', 'dispatch', 'payment']],

@@ -36,7 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261127_home_guide">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261127_mobile_library_rank">
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -452,7 +452,7 @@
       <!-- 1-4. 관심 도서 컨테이너 (관심 주제 선택 및 맞춤 추천 목록) -->
       <div id="mySubSection-interest" style="display:none; margin-top: 6px;">
         <div class="interest-theme-box" style="margin-bottom:14px;">
-          <div class="d-flex align-items-center justify-content-between">
+          <div class="interest-theme-heading">
             <div>
               <div style="font-size:13.5px;font-weight:800;color:var(--wood-dark);">
                 <i class="fa-solid fa-tags mr-1" style="color:var(--leaf);"></i>관심 주제 선택
@@ -461,9 +461,9 @@
                 관심 있는 주제를 체크하면 딱 맞는 도서를 추천해 드려요! (최대 3개)
               </div>
             </div>
-            <div class="d-flex align-items-center" style="gap: 6px;">
+            <div class="interest-theme-actions">
               <span class="badge" style="background:var(--leaf-soft);color:var(--leaf);font-size:11px;padding:4px 8px;border-radius:10px;" id="libUserInterestTagCount">3개 선택</span>
-              <button type="button" id="libInterestTagsToggleBtn" onclick="toggleInterestTagsExpand()" style="background:#f1ede3;border:none;border-radius:12px;font-size:11px;font-weight:700;color:var(--wood-dark);padding:4px 9px;cursor:pointer;display:inline-flex;align-items:gap:4px;">
+              <button type="button" id="libInterestTagsToggleBtn" onclick="toggleInterestTagsExpand()" style="background:#f1ede3;border:none;border-radius:12px;font-size:11px;font-weight:700;color:var(--wood-dark);padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
                 <span>더보기</span> <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>
               </button>
             </div>
@@ -914,10 +914,9 @@
           <div class="podium-rank-badge rank-2">2</div>
         </div>
         <div class="podium-name" id="podiumName2">집계 대기</div>
-        <div class="podium-points" id="podiumPoints2"></div>
         <div class="podium-box">
-          <div class="podium-box-num">2</div>
           <div class="podium-box-label">🥈 2위</div>
+          <div class="podium-points" id="podiumPoints2"></div>
         </div>
       </div>
 
@@ -929,10 +928,9 @@
           <div class="podium-rank-badge rank-1">1</div>
         </div>
         <div class="podium-name" id="podiumName1">집계 대기</div>
-        <div class="podium-points" id="podiumPoints1" style="color: #b45309; font-size: 13px;"></div>
         <div class="podium-box">
-          <div class="podium-box-num">1</div>
           <div class="podium-box-label">🏆 독서왕</div>
+          <div class="podium-points" id="podiumPoints1"></div>
         </div>
       </div>
 
@@ -943,10 +941,9 @@
           <div class="podium-rank-badge rank-3">3</div>
         </div>
         <div class="podium-name" id="podiumName3">집계 대기</div>
-        <div class="podium-points" id="podiumPoints3"></div>
         <div class="podium-box">
-          <div class="podium-box-num">3</div>
           <div class="podium-box-label">🥉 3위</div>
+          <div class="podium-points" id="podiumPoints3"></div>
         </div>
       </div>
     </div>
@@ -1008,13 +1005,13 @@
     </div>
     <div class="student-modal-body" style="padding: 16px 18px;">
       <!-- 상단: 선택된 캐릭터 상세 카드 미리보기 -->
-      <div id="charDetailPreview" style="background: #fafaf9; border: 2px solid #e7e5e4; border-radius: 16px; padding: 14px; margin-bottom: 14px; display: flex; gap: 14px; align-items: center;">
+      <div id="charDetailPreview">
         <!-- JS 동적 렌더링 -->
       </div>
       <div id="charGrowthPreview" aria-label="캐릭터의 1~3단계 성장 모습" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:16px;"></div>
 
       <!-- 안내 레이블 -->
-      <div style="font-size: 12.5px; font-weight: 800; color: #475569; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+      <div class="char-selection-hint">
         <span><i class="fa-solid fa-shapes mr-1" style="color:#00a896;"></i> 캐릭터를 터치하여 선택하세요</span>
         <span style="font-size: 11px; color: #94a3b8;">언제든 자유롭게 변경 가능</span>
       </div>
@@ -1024,7 +1021,7 @@
         <!-- JS 동적 렌더링 -->
       </div>
     </div>
-    <div style="padding: 12px 18px 16px; display: flex; gap: 8px; background: #faf8f5; border-top: 1px solid #f0ebe4; border-radius: 0 0 20px 20px;">
+    <div class="char-modal-footer">
       <button type="button" class="btn btn-secondary w-50" onclick="closeCharacterSelectModal()" style="border-radius: 12px; font-weight: 700; padding: 10px;">취소</button>
       <button type="button" class="btn btn-primary w-50" id="btnApplyCharacter" onclick="applySelectedCharacter()" style="border-radius: 12px; font-weight: 800; padding: 10px; background: #00a896; border-color: #00a896; box-shadow: 0 4px 12px rgba(0,168,150,0.3);">
         <i class="fa-solid fa-check mr-1"></i> 이 캐릭터로 설정
@@ -6942,24 +6939,24 @@ function createWishBookCardHtml(b) {
   var certLogs = (typeof getStudentCertifiedLogsForBook === 'function') ? getStudentCertifiedLogsForBook(b.id) : [];
   var safeBookId = escapeStudentQuizText(String(b.id || '')).replace(/'/g, '&#39;');
   var reportBtnHtml = certLogs.length > 0
-    ? '<button type="button" class="wish-report-btn" onclick="openStudentLearningReportModal(\'' + safeBookId + '\')"><i class="fa-solid fa-clipboard-check"></i> 리포트 보기</button>'
+    ? '<button type="button" class="wish-report-btn" onclick="openStudentLearningReportModal(\'' + safeBookId + '\')"><i class="fa-solid fa-clipboard-check"></i> 리포트</button>'
     : '';
   return '<div class="wish-book-card" onclick="openBookDetail(\'' + safeBookId + '\', \'history\')">'
-    + getBookCoverHtml(b, 'wish-book-thumb')
+    + '<div class="wish-book-cover">'
+    +   getBookCoverHtml(b, 'wish-book-thumb')
+    +   '<button type="button" class="btn-hero-wish active wish-cover-heart" onclick="event.stopPropagation(); toggleWish(\'' + safeBookId + '\', event)" title="찜 해제" aria-label="찜 해제"><i class="fa-solid fa-heart"></i></button>'
+    + '</div>'
     + '<div style="flex:1;min-width:0;">'
     +   '<div style="font-weight:800;font-size:13.5px;color:var(--wood-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeStudentQuizText(b.title) + '</div>'
     +   '<div style="font-size:11.5px;color:var(--muted);margin-top:2px;">' + escapeStudentQuizText(b.author) + ' · ' + escapeStudentQuizText(b.pub) + '</div>'
-    +   '<div style="margin-top:6px;display:flex;gap:4px;align-items:center;">'
+    +   '<div style="margin-top:6px;display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'
     +     '<span class="detail-badge-grade" style="font-size:10px;padding:1px 6px;">' + escapeStudentQuizText(b.grade) + ' 권장</span>'
     +     '<span class="detail-badge-cat" style="font-size:10px;padding:1px 6px;">' + escapeStudentQuizText(b.cat) + '</span>'
     +   '</div>'
     + '</div>'
-    + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;" onclick="event.stopPropagation();">'
-    +   reportBtnHtml
+    + '<div class="wish-book-actions" onclick="event.stopPropagation();">'
     +   getBookQuizActionBtnHtml(b, 'padding:5px 9px;font-size:11px;')
-    +   '<button type="button" class="btn-hero-wish active" onclick="toggleWish(\'' + safeBookId + '\', event)" title="찜 해제" style="width:32px;height:32px;font-size:14px;">'
-    +     '<i class="fa-solid fa-heart"></i>'
-    +   '</button>'
+    +   reportBtnHtml
     + '</div>'
     + '</div>';
 }
@@ -7615,6 +7612,7 @@ function openCharacterSelectModal() {
   renderCharacterSelectModal();
   var m = document.getElementById("characterSelectModal");
   if(m) m.style.display = "flex";
+  document.body.style.overflow = 'hidden';
   var dm = document.getElementById('studentDrawerMenuModal');
   if(dm) dm.style.display = 'none';
 }
@@ -7631,8 +7629,14 @@ function closeCharacterSelectModal() {
 }
 
 function selectCharacterInModal(id) {
+  if (tempSelectedCharId === id) return;
+  var body = document.querySelector('#characterSelectModal .student-modal-body');
+  var grid = document.getElementById('charSelectGrid');
+  var previousTop = grid.getBoundingClientRect().top;
   tempSelectedCharId = id;
-  renderCharacterSelectModal();
+  renderCharacterSelectModal(true);
+  // 상세 설명 높이가 달라져도 누른 목록의 화면 위치를 유지합니다.
+  body.scrollTop += grid.getBoundingClientRect().top - previousTop;
 }
 
 async function applySelectedCharacter() {
@@ -7705,7 +7709,7 @@ function applyCelebratedCharacter() {
   closeCharacterSelectModal();
 }
 
-function renderCharacterSelectModal() {
+function renderCharacterSelectModal(preserveGrid) {
   var previewEl = document.getElementById("charDetailPreview");
   var growthPreviewEl = document.getElementById("charGrowthPreview");
   var gridEl = document.getElementById("charSelectGrid");
@@ -7796,8 +7800,8 @@ function renderCharacterSelectModal() {
     +   '</div>'
     +   '<div style="font-size:11.5px;font-weight:700;color:' + cur.themeColor + ';margin-bottom:4px;">[' + cur.themeName + '] ' + cur.tag + '</div>'
     +   '<div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">' + cur.story + '</div>'
-    +   statusBannerHtml
-    + '</div>';
+    + '</div>'
+    + '<div class="char-detail-status">' + statusBannerHtml + '</div>';
 
   // 외형과 성장 이야기를 함께 보여주어 다음 단계의 개성을 미리 확인합니다.
   if (growthPreviewEl) {
@@ -7834,6 +7838,16 @@ function renderCharacterSelectModal() {
     }
   }
 
+  // 선택 중에는 SVG와 버튼을 재생성하지 않아 포커스와 그림을 유지합니다.
+  if (preserveGrid) {
+    gridEl.querySelectorAll('[data-character-id]').forEach(function(card) {
+      var selected = card.dataset.characterId === cur.id;
+      card.classList.toggle('selected', selected);
+      card.setAttribute('aria-pressed', String(selected));
+    });
+    return;
+  }
+
   // 9종 그리드 렌더링 (미획득 시 실루엣으로 보여줌 + 남은 권수 노출)
   gridEl.innerHTML = NANO_CHARACTERS.map(function(c){
     var isSel = (c.id === (tempSelectedCharId || getUserCharacterId()));
@@ -7858,7 +7872,7 @@ function renderCharacterSelectModal() {
       subTagHtml = '<span class="char-evolved-badge" style="font-size:9px;padding:0 4px;background:linear-gradient(135deg, #fef08a, #f59e0b);color:#78350f;"><i class="fa-solid fa-award"></i> 3단계</span>';
     }
 
-    return '<button type="button" aria-pressed="' + isSel + '" class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
+    return '<button type="button" data-character-id="' + c.id + '" aria-pressed="' + isSel + '" class="' + cardClass + '" onclick="selectCharacterInModal(\'' + c.id + '\')">'
       + badgeIcon
       + '<div class="char-avatar-img" style="margin:0 auto 4px;width:78px;height:78px;display:flex;align-items:center;justify-content:center;">'
       +   svgContent

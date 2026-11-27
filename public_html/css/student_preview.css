@@ -38,6 +38,15 @@
       --orange-lt: #fef4eb;
     }
     * { box-sizing: border-box; }
+    html, body { overscroll-behavior-y: none; }
+    /* 모바일 당겨 내리기 중에도 헤더는 문서 흐름과 분리해 고정합니다. */
+    @media (max-width: 768px) {
+      body { padding-top: 72px; }
+      body .s-header { position: fixed; top: 0; left: 0; right: 0; }
+    }
+    @media (max-width: 576px) {
+      body { padding-top: 62px; }
+    }
     body {
       font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
       background: var(--bg);
@@ -1262,17 +1271,18 @@
       font-size: 12px;
       font-weight: 800;
       color: #1e293b;
-      margin-bottom: 2px;
+      margin-bottom: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 90px;
     }
     .podium-points {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 900;
-      color: #0284c7;
-      margin-bottom: 6px;
+      color: inherit;
+      margin-top: 3px;
+      line-height: 1.2;
     }
 
     /* 단상 블록 */
@@ -1288,19 +1298,19 @@
       position: relative;
     }
     .podium-col.rank-1 .podium-box {
-      height: 104px;
+      height: 84px;
       background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
       border: 2px solid #f59e0b;
       color: #b45309;
     }
     .podium-col.rank-2 .podium-box {
-      height: 78px;
+      height: 66px;
       background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
       border: 2px solid #94a3b8;
       color: #475569;
     }
     .podium-col.rank-3 .podium-box {
-      height: 60px;
+      height: 54px;
       background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
       border: 2px solid #ea580c;
       color: #9a3412;
@@ -1311,7 +1321,7 @@
       line-height: 1;
     }
     .podium-box-label {
-      font-size: 10.5px;
+      font-size: 14px;
       font-weight: 800;
       letter-spacing: -0.3px;
       opacity: 0.9;
@@ -1554,8 +1564,102 @@
       color: #ffffff;
       text-shadow: none;
     }
+    /* 좁은 화면에서는 정보와 점수를 두 줄로 분리해 이름 영역을 확보합니다. */
+    @media (max-width: 576px) {
+      .rank-card,
+      .rank-card.me.my-rank-banner {
+        display: grid;
+        grid-template-columns: 28px 44px minmax(0, 1fr);
+        gap: 8px;
+        padding: 12px;
+      }
+      .rank-card .rank-card-num-box { width: auto; grid-column: 1; grid-row: 1; }
+      .rank-card .rank-card-avatar,
+      .rank-card.me.my-rank-banner .rank-card-avatar { grid-column: 2; grid-row: 1; width: 44px; height: 44px; }
+      .rank-card .rank-card-info { grid-column: 3; grid-row: 1; }
+      .rank-card .rank-card-title > span { max-width: 100%; overflow-wrap: anywhere; }
+      .rank-card .rank-card-id { font-size: 10.5px; }
+      .rank-card .rank-card-pt,
+      .rank-card.me.my-rank-banner .rank-card-pt {
+        grid-column: 2 / -1;
+        grid-row: 2;
+        min-width: 0;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px 8px;
+        white-space: normal;
+      }
+      .rank-card .rank-card-pt > span:first-child { white-space: nowrap; }
+      .rank-card .rank-hero-stats-pill { flex-wrap: wrap; justify-content: flex-end; }
+      .rank-card .rank-card-hero-meta { font-size: 10.5px; gap: 4px; }
+    }
 
     /* 캐릭터 선택 모달 */
+    #charDetailPreview {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      align-items: start;
+      gap: 8px 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 14px;
+    }
+    .char-detail-status { grid-column: 1 / -1; }
+    .char-selection-hint {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #475569;
+    }
+    .char-modal-footer {
+      display: flex;
+      flex-shrink: 0;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #faf8f5;
+      border-top: 1px solid #f0ebe4;
+    }
+    #characterSelectModal .student-modal-dialog { max-height: 90vh; max-height: 90dvh; }
+    #characterSelectModal .student-modal-header { padding: 12px 14px; flex-shrink: 0; }
+    #characterSelectModal .student-modal-header h5 { font-size: 14px !important; }
+    #characterSelectModal .student-modal-header small { display: block; font-size: 11px; line-height: 1.5; }
+    #characterSelectModal .student-modal-body {
+      min-height: 0;
+      padding: 12px !important;
+      overscroll-behavior-y: contain;
+      overflow-anchor: none;
+    }
+    #characterSelectModal .btn-modal-close { min-width: 32px; min-height: 32px; }
+    #characterSelectModal .char-modal-footer .btn { font-size: 13px; min-height: 44px; }
+    #characterSelectModal .char-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+    #characterSelectModal .char-select-card { padding: 8px 4px; overflow: hidden; transition: border-color .2s, background-color .2s; }
+    #characterSelectModal .char-select-card:hover { transform: none; }
+    #characterSelectModal .char-select-card:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+    #characterSelectModal .char-avatar-img { width: 58px !important; height: 58px !important; }
+    #characterSelectModal .char-avatar-img > *,
+    #characterSelectModal .char-avatar-img svg { width: 100% !important; height: 100% !important; }
+    #characterSelectModal #charGrowthPreview { gap: 5px !important; margin-bottom: 10px !important; }
+    #characterSelectModal .char-growth-stage { padding: 6px 3px !important; }
+    #characterSelectModal .char-growth-stage svg { width: 46px; height: 46px; }
+    /* iOS의 필터·SVG 애니메이션 합성 오류를 피하고 선택 화면은 정지 그림으로 표시합니다. */
+    #characterSelectModal .nano-friend-avatar { overflow: hidden; }
+    #characterSelectModal .nano-friend-avatar * { animation: none !important; }
+    #characterSelectModal .char-select-card.locked { opacity: 1; }
+    #characterSelectModal .char-select-card.locked .char-avatar-img { filter: none; }
+    #characterSelectModal .char-silhouette { filter: grayscale(1); opacity: .55; transition: none; }
+    @media (max-width: 359px) {
+      #characterSelectModal { padding: 8px; }
+      #characterSelectModal .char-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     .char-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -3420,6 +3524,10 @@
       }
     }
     /* 2) 관심 도서 탭 스타일 */
+    .interest-theme-heading { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+    .interest-theme-heading > div:first-child { flex: 1 1 200px; min-width: 0; }
+    .interest-theme-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+    #libInterestTagsToggleBtn { white-space: nowrap; flex-shrink: 0; min-height: 36px; }
     .interest-theme-box {
       background: #ffffff;
       border: 1.5px solid var(--soft);
@@ -3586,6 +3694,26 @@
       border-color: var(--border-medium);
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(58, 46, 38, 0.08);
+    }
+    .wish-book-cover { position: relative; flex: 0 0 50px; align-self: center; }
+    .wish-book-cover .wish-cover-heart {
+      position: absolute;
+      top: -7px;
+      left: -7px;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      font-size: 13px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      z-index: 1;
+    }
+    .wish-book-actions { display: flex; flex-direction: column; align-items: stretch; gap: 6px; flex: 0 0 70px; }
+    .wish-book-actions > button { width: 100%; min-height: 34px; justify-content: center; white-space: nowrap; }
+    .wish-book-card .detail-badge-grade,
+    .wish-book-card .detail-badge-cat { white-space: nowrap; }
+    @media (max-width: 576px) {
+      .wish-book-card { padding: 12px; gap: 10px; }
     }
     .wish-book-thumb {
       width: 50px;
