@@ -281,13 +281,46 @@ var NanoQuizResult = (function () {
       '<g class="qr-part-arms" fill="none" stroke="' + fur + '" stroke-width="' + (id === 'toto' ? 13 : 16) + '" stroke-linecap="round">' + arms + '</g>' + growth.prop + '</g></g>';
   }
 
+  // 캐릭터의 성격을 작은 장식으로 표현하고, 성장할수록 원형 테두리를 더합니다.
+  function avatarBackdrop(charId, stage) {
+    var palettes = {
+      nano: ['#fff0d8', '#d89b50'], toto: ['#fce8ef', '#cf8fa6'],
+      booki: ['#eaf3df', '#80a276'], pico: ['#e8f0fa', '#8bacca'],
+      popo: ['#f4e9d9', '#b39671'], chichi: ['#fff0d9', '#c5a064'],
+      lumi: ['#eeeafa', '#a398c8'], mir: ['#e0f2ed', '#7db2a3'],
+      jelly: ['#faf2e3', '#c2ac85']
+    };
+    var motifs = {
+      nano: '<circle r="8"/><path d="M6 6L13 13"/>',
+      toto: '<path d="M-12-8H12V8H-12ZM-12-8L0 1L12-8"/>',
+      booki: '<path d="M-10 10Q-14-9 11-12Q15 9-10 10ZM-10 10L6-6"/>',
+      pico: '<circle r="7"/><ellipse rx="15" ry="4" transform="rotate(-25)"/>',
+      popo: '<circle r="12"/><path d="M0-8L4 0L0 8L-4 0Z"/>',
+      chichi: '<path d="M-9-1Q0-15 9-1ZM-7 0Q-8 13 0 14Q8 13 7 0M0-8V-13"/>',
+      lumi: '<path d="M0-12L12 0L0 12L-12 0ZM-6-6L6 6M6-6L-6 6"/>',
+      mir: '<path d="M-15-3Q-8-11 0-3T15-3M-15 6Q-8-2 0 6T15 6"/>',
+      jelly: '<path d="M-12-8Q-5-10 0-6Q5-10 12-8V10Q5 8 0 12Q-5 8-12 10ZM0-6V12"/>'
+    };
+    var colors = palettes[charId];
+    var motif = motifs[charId];
+    return '<g class="nano-avatar-backdrop" data-background-stage="' + stage + '" aria-hidden="true">'
+      + '<circle cx="232" cy="131" r="115" fill="' + colors[0] + '"/>'
+      + (stage >= 2 ? '<circle cx="232" cy="131" r="109" fill="none" stroke="' + colors[1] + '" stroke-width="2" stroke-opacity=".45"/>' : '')
+      + (stage === 3 ? '<circle cx="232" cy="131" r="114" fill="none" stroke="' + colors[1] + '" stroke-width="2.5" stroke-opacity=".65"/>' : '')
+      + '<g fill="none" stroke="' + colors[1] + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="' + (stage === 1 ? '.28' : '.5') + '">'
+      + '<g transform="translate(160 72) rotate(-15)">' + motif + '</g>'
+      + (stage >= 2 ? '<g transform="translate(305 86) rotate(15) scale(.8)">' + motif + '</g>' : '')
+      + (stage === 3 ? '<path d="M292 44V56M286 50H298M143 124V132M139 128H147"/>' : '')
+      + '</g></g>';
+  }
+
   function avatar(charId, size, stage) {
     charId = Object.prototype.hasOwnProperty.call(characters, charId) ? charId : 'nano';
     size = Number.isFinite(size) ? Math.max(16, Math.min(400, size)) : 60;
     stage = normalizeStage(stage);
     var c = characters[charId];
     return '<svg class="nano-friend-avatar" viewBox="112 6 240 250" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + c.name + ' ' + stage + '단계" focusable="false">' +
-      '<ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
+      avatarBackdrop(charId, stage) + '<ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
   }
 
   // 추천은 각 친구가 자기 방식으로 응답합니다. 효과도 캐릭터의 도구와 이야기를 따릅니다.
