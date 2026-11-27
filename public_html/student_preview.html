@@ -36,7 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261127_compact_rank">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261127_avatar_background">
   <script src="js/mobile-scroll-guard.js?v=20261127_keyboard" defer></script>
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
@@ -44,7 +44,7 @@
 <script src="js/preview-ux.js?v=20261117_student_10m" defer></script>
 <link rel="stylesheet" href="css/quiz-result.css?v=20261117_jd_theme">
 <script src="js/reading-progress.js?v=20261029-integrity"></script>
-<script src="js/quiz-result-art.js?v=20261126_char_copy"></script>
+<script src="js/quiz-result-art.js?v=20261127_avatar_background"></script>
 <link rel="stylesheet" href="css/content-sharing.css?v=20261117_jd_theme">
 <script src="js/nano-dialog.js?v=20261113_center"></script>
 <script src="js/content-sharing.js?v=20261113_center"></script>
@@ -763,18 +763,6 @@
 
     <!-- 1) 독서 기록 서브 뷰 (월별 구분 + 표지 아래 타이틀, 출판사, 시리즈명, 인증일자) -->
     <div id="bsViewHistory">
-      <!-- 완독 도서 권수 & 평균 점수 요약 통계 -->
-      <div class="bs-stat-grid-2">
-        <div class="bs-stat-card">
-          <div class="bs-stat-num" id="statBsReadCount" style="color:var(--leaf);">24권</div>
-          <div class="bs-stat-label"><i class="fa-solid fa-circle-check mr-1" style="color:var(--leaf);"></i>완독 도서</div>
-        </div>
-        <div class="bs-stat-card">
-          <div class="bs-stat-num" id="statBsAvgScore" style="color:var(--leaf-mid);">0점</div>
-          <div class="bs-stat-label"><i class="fa-solid fa-star mr-1" style="color:#f59e0b;"></i>평균 점수</div>
-        </div>
-      </div>
-
       <!-- [신규] 독서 인증 기록 검색바 -->
       <div class="sbar" id="historySearchBar" style="margin-top:14px; margin-bottom:14px; background:#fff;">
         <input type="text" id="historyQ" placeholder="완독한 도서명, 저자, 출판사 검색..." oninput="filterReadingHistory()" autocomplete="off">
@@ -884,7 +872,7 @@
     <!-- 1. 랭킹 범위 탭 (우리 반 / 학원 전체 / 전국) -->
     <div class="rank-tab-group" id="rankTabGroup">
       <button type="button" class="rank-tab-btn active" id="rankTabClass" onclick="switchRankScope('class')">
-        <i class="fa-solid fa-chalkboard-user"></i><span class="rank-tab-label">우리 반</span>
+        <i class="fa-solid fa-chalkboard-user"></i><span class="rank-tab-label">학급</span>
       </button>
       <button type="button" class="rank-tab-btn" id="rankTabAcademy" onclick="switchRankScope('academy')">
         <i class="fa-solid fa-school"></i><span class="rank-tab-label">소속 학원</span>
@@ -912,7 +900,6 @@
       <div class="podium-col rank-2">
         <div class="podium-avatar-wrap">
           <div id="podiumAvatar2" class="char-avatar-box bounce" style="width: 58px; height: 58px;"></div>
-          <div class="podium-rank-badge rank-2">2</div>
         </div>
         <div class="podium-name" id="podiumName2">집계 대기</div>
         <div class="podium-box">
@@ -924,9 +911,10 @@
       <!-- 1위 (황금 단상, 가운데) -->
       <div class="podium-col rank-1">
         <div class="podium-avatar-wrap">
-          <div class="podium-crown">👑</div>
-          <div id="podiumAvatar1" class="char-avatar-box bounce" style="width: 68px; height: 68px;"></div>
-          <div class="podium-rank-badge rank-1">1</div>
+          <div class="podium-champion-motion">
+            <div id="podiumAvatar1" class="char-avatar-box" style="width: 68px; height: 68px;"></div>
+            <div class="podium-crown" aria-hidden="true">👑</div>
+          </div>
         </div>
         <div class="podium-name" id="podiumName1">집계 대기</div>
         <div class="podium-box">
@@ -939,7 +927,6 @@
       <div class="podium-col rank-3">
         <div class="podium-avatar-wrap">
           <div id="podiumAvatar3" class="char-avatar-box bounce" style="width: 54px; height: 54px;"></div>
-          <div class="podium-rank-badge rank-3">3</div>
         </div>
         <div class="podium-name" id="podiumName3">집계 대기</div>
         <div class="podium-box">
@@ -7969,7 +7956,7 @@ function syncRankingScopeLabels(meta) {
 
   var classBtn = document.getElementById('rankTabClass');
   var academyBtn = document.getElementById('rankTabAcademy');
-  if (classBtn) classBtn.innerHTML = '<i class="fa-solid fa-chalkboard-user"></i><span class="rank-tab-label">우리 반' + (ACADEMY_HAS_CLASS ? ' (' + escapeStudentQuizText(className) + ')' : '') + '</span>';
+  if (classBtn) classBtn.innerHTML = '<i class="fa-solid fa-chalkboard-user"></i><span class="rank-tab-label">' + escapeStudentQuizText(className || '학급') + '</span>';
   if (academyBtn) academyBtn.innerHTML = '<i class="fa-solid fa-school"></i><span class="rank-tab-label">' + escapeStudentQuizText(academyName || '소속 학원') + '</span>';
 }
 

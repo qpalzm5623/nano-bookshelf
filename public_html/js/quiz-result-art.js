@@ -287,7 +287,7 @@ var NanoQuizResult = (function () {
     stage = normalizeStage(stage);
     var c = characters[charId];
     return '<svg class="nano-friend-avatar" viewBox="112 6 240 250" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + c.name + ' ' + stage + '단계" focusable="false">' +
-      '<rect x="117" y="15" width="230" height="230" rx="85" fill="' + c.light + '" fill-opacity=".55"/><ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
+      '<ellipse class="qr-mascot-shadow" cx="232" cy="237" rx="62" ry="9" fill="' + c.dark + '" fill-opacity=".1"/>' + mascot(charId, 'portrait', stage) + '</svg>';
   }
 
   // 추천은 각 친구가 자기 방식으로 응답합니다. 효과도 캐릭터의 도구와 이야기를 따릅니다.

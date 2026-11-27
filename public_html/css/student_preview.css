@@ -1233,39 +1233,26 @@
     .podium-col:hover .podium-avatar-wrap {
       transform: translateY(-6px);
     }
+    /* 왕관과 캐릭터를 하나의 좌표계에서 함께 움직이고 왕관을 앞에 표시합니다. */
+    .podium-champion-motion {
+      position: relative;
+      isolation: isolate;
+      animation: charBounce 2.5s infinite ease-in-out;
+    }
+    .podium-champion-motion > .char-avatar-box { position: relative; z-index: 1; }
     .podium-crown {
       position: absolute;
+      z-index: 2;
+      pointer-events: none;
       top: -16px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 20px;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
-      animation: crownShine 2s infinite ease-in-out;
     }
-    @keyframes crownShine {
-      0%, 100% { transform: translateX(-50%) rotate(0deg) scale(1); }
-      50% { transform: translateX(-50%) rotate(-6deg) scale(1.1); }
+    @media (prefers-reduced-motion: reduce) {
+      .podium-champion-motion { animation: none; }
     }
-    .podium-rank-badge {
-      position: absolute;
-      bottom: -2px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 900;
-      color: #fff;
-      border: 2px solid #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .podium-rank-badge.rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .podium-rank-badge.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); }
-    .podium-rank-badge.rank-3 { background: linear-gradient(135deg, #d97706, #b45309); }
 
     .podium-name {
       font-size: 12px;
@@ -1418,11 +1405,6 @@
       width: 100%;
       height: 100%;
       display: block;
-    }
-    /* 원형 아바타 내부 SVG의 둥근 사각 배경(rect)이 원 테두리에서 잘려 보이는 현상 방지 */
-    .rank-card-avatar svg rect,
-    .rank-hero-avatar svg rect {
-      display: none;
     }
     .rank-card.me.my-rank-banner .rank-card-avatar {
       width: 50px;
