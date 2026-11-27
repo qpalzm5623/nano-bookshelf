@@ -215,7 +215,7 @@ export default async function handler(req: any, res: any) {
       }),
       prisma.portalSetting.findMany({ where: { scope: 'brand_recommend:' + brand } }),
       getCachedQuizGroups(),
-      academiesPromise.then(rows => loadContentAccess(prisma, rows))
+      loadContentAccess(prisma, academiesPromise)
     ]);
 
     // 가맹 원장/교사는 전국 단위 풀스캔 대신 자기 학원의 반·원생 키만 정확히 조회하고, 추천·권한·퀴즈 집계와 병렬 실행합니다.

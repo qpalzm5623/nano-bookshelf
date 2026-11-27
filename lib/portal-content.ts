@@ -6,17 +6,26 @@ export const contentScopes = ['content_folder', 'content_quiz', 'content_sheet',
 export type ContentItem = { bookId: string; ownerAcademyId: string; ownerMemberId?: string; isPublic: string; [key: string]: any };
 
 // 공개 여부와 공유 대상은 캐시하지 않습니다. 폴더에서 해제하면 다음 조회부터 차단됩니다.
-export async function loadContentAccess(db: any, knownAcademies?: any[]) {
+export async function loadContentAccess(db: any, knownAcademies?: any[] | Promise<any[]>) {
   const [rows, academies] = await Promise.all([
     db.portalSetting.findMany({ where: { scope: { in: contentScopes } }, select: { key: true, scope: true, value: true, revision: true } }),
     knownAcademies || db.academy.findMany({ select: { id: true, code: true, name: true } })
   ]);
+  const sheets = rows.filter((r: any) => r.scope === 'content_sheet').map((r: any) => ({ ...r.value, revision: r.revision })) as ContentItem[];
+  // 초기 화면은 모든 도서를 순회하므로 시트를 도서별로 한 번만 묶습니다.
+  const sheetsByBook = new Map<string, ContentItem[]>();
+  for (const sheet of sheets) {
+    const list = sheetsByBook.get(sheet.bookId) || [];
+    list.push(sheet);
+    sheetsByBook.set(sheet.bookId, list);
+  }
   return {
     rows: rows as any[],
     byKey: new Map<string, any>(rows.map((r: any) => [r.key, r.value])),
     academies: academies as any[],
     folders: rows.filter((r: any) => r.scope === 'content_folder').map((r: any) => ({ ...r.value, revision: r.revision })),
-    sheets: rows.filter((r: any) => r.scope === 'content_sheet').map((r: any) => ({ ...r.value, revision: r.revision })) as ContentItem[]
+    sheets,
+    sheetsByBook
   };
 }
 export type ContentAccess = Awaited<ReturnType<typeof loadContentAccess>>;
@@ -82,7 +91,8 @@ export function canReadContent(user: any, item: ContentItem, access: ContentAcce
 }
 
 export function bookSheets(access: ContentAccess, book: any): ContentItem[] {
-  const list = access.sheets.filter(s => s.bookId === book.id);
+  // 기본 시트를 추가해도 인덱스 원본은 바뀌지 않도록 복사합니다.
+  const list = access.sheetsByBook ? [...(access.sheetsByBook.get(book.id) || [])] : access.sheets.filter(s => s.bookId === book.id);
   // 기존 도서 파일은 기본 공개로 호환하며, 이후 수정한 공개 범위가 우선합니다.
   if (book.worksheetUrl && !list.some(s => s.id === 'legacy-' + book.id)) {
     const creator = access.byKey.get('book_creator:' + book.bookNo) || access.byKey.get('book_creator:' + book.id) || {};

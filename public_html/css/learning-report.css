@@ -423,16 +423,20 @@
   border-color: #f3d4d2;
   background: #fffdfd;
 }
+#learningReportModalBody .report-quiz-card {
+  --lr-question-number-width: 40px;
+  --lr-question-gap: 8px;
+}
 /* Q 01 칩 바로 옆에서 질문이 시작되고, 줄바꿈 시에도 질문 좌측 선에 정렬됩니다. */
 #learningReportModalBody .lr-quiz-row {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--lr-question-gap);
   margin-bottom: 10px;
 }
 #learningReportModalBody .report-quiz-header { gap: 8px; flex-wrap: wrap; }
 #learningReportModalBody .report-quiz-q-badge {
-  width: auto !important;
+  width: var(--lr-question-number-width) !important;
   min-width: 40px;
   height: auto !important;
   min-height: 22px;
@@ -480,39 +484,46 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 11px 13px;
-  border-radius: 10px;
-  border-left-width: 3px;
+  margin-left: calc(var(--lr-question-number-width) + var(--lr-question-gap));
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 #learningReportModalBody .report-choice-box + .report-choice-box { margin-top: 6px; }
 #learningReportModalBody .report-choice-box.correct,
 #learningReportModalBody .report-choice-box.actual {
-  background: var(--lr-teal-soft);
-  border-color: var(--lr-teal-border);
+  background: transparent;
   color: var(--lr-teal-deep);
 }
+#learningReportModalBody .report-choice-box.wrong { background: transparent; }
 #learningReportModalBody .report-choice-val {
   min-width: 0;
   max-width: 100%;
   margin-left: 0;
-  padding: 5px 10px;
+  padding: 0;
   text-align: left;
   font-size: 13px;
   line-height: 1.6;
-  background: #ffffff;
-  border: 1px solid #cce6e3;
-  border-radius: 7px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-#learningReportModalBody .report-choice-box.wrong .report-choice-val { border-color: #f3cdcf; color: #a42f39; }
+#learningReportModalBody .report-choice-box.wrong .report-choice-val { color: #a42f39; }
 #learningReportModalBody .report-choice-val.strike { text-decoration: none; opacity: 1; }
 #learningReportModalBody .report-choice-label {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
+  padding: 3px 7px;
+  border: 1px solid var(--lr-teal-border);
+  border-radius: 6px;
+  background: var(--lr-teal-soft);
 }
+#learningReportModalBody .report-choice-box.wrong .report-choice-label { background: #fff1f2; border-color: #f3cdcf; color: #a42f39; }
 #learningReportModalBody .report-choice-label i {
   margin-right: 0 !important;
   width: 20px;
@@ -659,7 +670,7 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 10mm 20mm;
+    margin: 8mm 10mm;
   }
 
   #learningReportModalBody { container-type: normal; }
@@ -668,14 +679,18 @@
     print-color-adjust: exact !important;
   }
   body.is-printing-report #learningReportModalDialog { width: 100% !important; max-width: none !important; }
+  body.is-printing-report #learningReportModalDialog::before { display: none !important; }
   body.is-printing-report #learningDetailModal .modal-content { border: 0 !important; border-radius: 0 !important; overflow: visible !important; }
   body.is-printing-report #learningDetailModal .modal-content > .lr-accent-bar { display: none !important; }
-  body.is-printing-report #learningReportModalBody {
-    display: block !important;
-    min-height: 0 !important;
+  body.is-printing-report #learningDetailModal #learningReportModalBody {
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    min-height: 280mm !important;
     padding: 0 !important;
     background: #ffffff !important;
   }
+  body.is-printing-report #learningReportModalBody > * { flex-shrink: 0; }
 
   /* 1페이지 우선 배치를 위한 컴팩트 인쇄 여백(화면 !important 규칙 오버라이드) */
   body.is-printing-report #learningReportModalBody .report-print-header {
@@ -711,9 +726,10 @@
   body.is-printing-report #learningReportModalBody #learnModalScore { font-size: 21px !important; }
   body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-quiz-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px 8px !important; margin-bottom: 8px !important; }
   body.is-printing-report #learningReportModalBody .report-quiz-card { margin-bottom: 0; min-height: 26mm; padding: 10px 11px !important; box-shadow: none !important; break-inside: avoid; page-break-inside: avoid; }
-  body.is-printing-report #learningReportModalBody .report-choice-box { min-height: 13mm; padding: 7px 9px !important; gap: 5px !important; }
+  body.is-printing-report #learningReportModalBody .report-quiz-card { --lr-question-number-width: 34px; --lr-question-gap: 6px; }
+  body.is-printing-report #learningReportModalBody .report-choice-box { min-height: 13mm; padding: 0 !important; gap: 5px !important; background: transparent !important; }
   body.is-printing-report #learningReportModalBody .report-quiz-q-badge {
-    width: auto !important;
+    width: var(--lr-question-number-width) !important;
     min-width: 34px !important;
     height: auto !important;
     min-height: 19px !important;
@@ -764,14 +780,11 @@
   body.is-printing-report #learningReportModalBody .report-section-heading,
   body.is-printing-report #learningReportModalBody .report-thought-card > div:first-child,
   body.is-printing-report #learningReportModalBody .worksheet-review > div:first-child { break-after: avoid; }
-  /* 본문용 하단 여백 20mm 중 12mm를 푸터에 사용해 긴 리포트에서도 겹치지 않습니다. */
+  /* A4 인쇄 영역(281mm) 안에서 푸터까지 함께 배치합니다. 음수 위치로 페이지 밖에 밀어내지 않습니다. */
   body.is-printing-report #learningReportModalBody .report-brand-footer {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: -12mm !important;
+    position: static !important;
     min-height: 8mm;
-    margin: 0 !important;
+    margin: auto 0 0 !important;
     padding-top: 6px !important;
     background: #ffffff !important;
     break-inside: avoid !important;

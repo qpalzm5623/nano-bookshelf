@@ -172,7 +172,10 @@ test('초기 데이터 조회를 병렬화해도 사용자 범위와 기존 퀴�
     db.member.findUnique = async () => user;
     db.quizAttempt = { groupBy: async () => [] };
     db.bookQuiz = { groupBy: async query => { queries.bookQuiz = query; return [{ bookId: 'book-id', legacyQuizSeq: 0, _count: { id: 1 } }]; } };
-    db.portalSetting = { findMany: async () => [] };
+    db.portalSetting = { findMany: async query => {
+      if (query.where?.scope?.in?.includes('content_folder')) queries.contentAccess = query;
+      return [];
+    } };
     const run = load('api/bootstrap.ts', { '../lib/prisma': { prisma: db }, '../lib/portal-auth': auth }).default;
     const res = { ...response(), send(value) { this.data = value; return this; } };
     const completion = run(request('bootstrap', undefined, auth.signSession(user.id, hash)), res);
@@ -180,6 +183,7 @@ test('초기 데이터 조회를 병렬화해도 사용자 범위와 기존 퀴�
     const expectedPending = role === 'STUDENT' ? 8 : role === 'TEACHER' ? 9 : 10;
     assert.equal(pending.length, expectedPending, '역할에 필요한 독립 조회만 함께 시작한다');
     assert.ok(queries.bookQuiz, '도서 조회가 끝나기 전에 퀴즈 집계를 시작한다');
+    assert.ok(queries.contentAccess, '학원 조회가 끝나기 전에 콘텐츠 설정 조회도 시작한다');
     pending.forEach(resolve => resolve());
     await completion;
     assert.equal(res.code, 200);
@@ -231,4 +235,25 @@ test('문항 편집 권한의 교사에게는 정답 번호를 제공한다',asy
   const run=handler(member('TEACHER'),{book:{findFirst:async()=>({id:'b1',bookNo:'B1',quizzes:[{id:'q1',question:'문제',options:['가','나'],correctAnswer:'2',questionNo:1}]})}});
   const req=request('quiz',undefined,auth.signSession('member-a',hash));req.query.bookId='B1';const res=response();await run(req,res);
   assert.equal(res.data.quizSets[0].questions[0].ans,2);
+});
+
+test('도서별 시트 인덱스는 다른 도서와 섞이지 않고 반복 조회에도 기본 시트를 중복 추가하지 않는다', async () => {
+  const content = require('./test-portal-content.cjs')();
+  const rows = [];
+  const db = { portalSetting: { findMany: async () => rows, create: async ({ data }) => rows.push(data) } };
+  const f = { content, db };
+  for (const bookId of ['book-1', 'book-2']) {
+    await f.db.portalSetting.create({ data: { key: 'sheet:' + bookId, scope: 'content_sheet', value: { id: 'sheet-' + bookId, bookId, isPublic: 'Y' } } });
+  }
+  const access = await f.content.loadContentAccess(f.db, Promise.resolve([]));
+  // 인덱스를 만든 뒤에는 전체 시트 순회를 하지 않습니다.
+  access.sheets.filter = () => { throw Error('Unexpected full scan'); };
+  const book = { id: 'book-1', bookNo: 'B1', title: '책', worksheetUrl: '/sheet.pdf' };
+  for (let i = 0; i < 2; i++) {
+    const sheets = f.content.bookSheets(access, book);
+    assert.equal(sheets.length, 2);
+    assert.ok(sheets.every(s => s.bookId === book.id));
+    assert.equal(sheets[0].id, 'legacy-book-1');
+  }
+  assert.equal(access.sheetsByBook.get(book.id).length, 1);
 });

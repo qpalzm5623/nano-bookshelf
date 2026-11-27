@@ -2451,7 +2451,7 @@ function openLearningDetailModal(id) {
              <div class="report-choice-val strike">${escapePortfolioText(q.userChoiceText)}</div>
            </div>
            <div class="report-choice-box actual">
-             <div class="report-choice-label"><i class="fa-solid fa-key text-success"></i><span>실제 정답</span></div>
+             <div class="report-choice-label"><i class="fa-solid fa-key text-success"></i><span>실제 답안</span></div>
              <div class="report-choice-val font-weight-bold text-success">${escapePortfolioText(q.correctChoiceText)}</div>
            </div>`;
 
