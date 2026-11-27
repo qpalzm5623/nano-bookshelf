@@ -480,15 +480,16 @@
   overflow-wrap: anywhere;
 }
 #learningReportModalBody .report-choice-box {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
   margin-left: calc(var(--lr-question-number-width) + var(--lr-question-gap));
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 #learningReportModalBody .report-choice-box + .report-choice-box { margin-top: 6px; }
 #learningReportModalBody .report-choice-box.correct,
@@ -518,21 +519,22 @@
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
-  padding: 3px 7px;
-  border: 1px solid var(--lr-teal-border);
-  border-radius: 6px;
-  background: var(--lr-teal-soft);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.6;
 }
-#learningReportModalBody .report-choice-box.wrong .report-choice-label { background: #fff1f2; border-color: #f3cdcf; color: #a42f39; }
+#learningReportModalBody .report-choice-box.wrong .report-choice-label { color: #a42f39; }
 #learningReportModalBody .report-choice-label i {
   margin-right: 0 !important;
-  width: 20px;
-  height: 20px;
+  width: 12px;
+  height: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  border-radius: 50%;
+  background: transparent;
+  border-radius: 0;
   text-align: center;
   flex-shrink: 0;
 }
@@ -727,7 +729,7 @@
   body.is-printing-report #learningReportModalDialog #learningReportModalBody .report-quiz-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px 8px !important; margin-bottom: 8px !important; }
   body.is-printing-report #learningReportModalBody .report-quiz-card { margin-bottom: 0; min-height: 26mm; padding: 10px 11px !important; box-shadow: none !important; break-inside: avoid; page-break-inside: avoid; }
   body.is-printing-report #learningReportModalBody .report-quiz-card { --lr-question-number-width: 34px; --lr-question-gap: 6px; }
-  body.is-printing-report #learningReportModalBody .report-choice-box { min-height: 13mm; padding: 0 !important; gap: 5px !important; background: transparent !important; }
+  body.is-printing-report #learningReportModalBody .report-choice-box { min-height: 0; padding: 0 !important; gap: 8px !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
   body.is-printing-report #learningReportModalBody .report-quiz-q-badge {
     width: var(--lr-question-number-width) !important;
     min-width: 34px !important;
