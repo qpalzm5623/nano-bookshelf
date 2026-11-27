@@ -1564,7 +1564,7 @@
       color: #ffffff;
       text-shadow: none;
     }
-    /* 좁은 화면에서는 정보와 점수를 두 줄로 분리해 이름 영역을 확보합니다. */
+    /* 일반 순위는 점수를 오른쪽에, 내 순위는 정보 아래에 표시합니다. */
     @media (max-width: 576px) {
       .rank-card,
       .rank-card.me.my-rank-banner {
@@ -1595,6 +1595,20 @@
       .rank-card .rank-card-pt > span:first-child { white-space: nowrap; }
       .rank-card .rank-hero-stats-pill { flex-wrap: wrap; justify-content: flex-end; }
       .rank-card .rank-card-hero-meta { font-size: 10.5px; gap: 4px; }
+      .rank-card:not(.me) {
+        grid-template-columns: 24px 38px minmax(0, 1fr) auto;
+        gap: 7px;
+        padding: 10px;
+      }
+      .rank-card:not(.me) .rank-card-avatar { width: 38px; height: 38px; }
+      .rank-card:not(.me) > .rank-card-pt {
+        grid-column: 4;
+        grid-row: 1;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        white-space: nowrap;
+      }
     }
 
     .rank-card-self-badges { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }

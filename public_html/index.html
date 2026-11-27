@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script src="js/mobile-scroll-guard.js?v=20261127" defer></script>
+  <script src="js/mobile-scroll-guard.js?v=20261127_keyboard" defer></script>
   <title>나노의 책장 - 통합 관리자 로그인</title>
   
   <!-- [뒤로가기 시 로그인 풀림 방어] 유효 세션 감지 시 작업 화면으로 즉시 자동 복귀 -->
@@ -663,17 +663,21 @@
     }
     .login-card { flex-shrink: 0; margin: auto 0; }
     .login-footer { flex-shrink: 0; }
+    .login-keyboard-open .login-footer { display: none; }
     .legal-modal-body { min-height: 0; overscroll-behavior: none; }
     @media (max-width: 576px) {
       .login-container { padding: 12px 16px; }
       .login-card { padding: 24px; }
       .form-control { font-size: 16px; }
-      .login-footer { padding-top: 8px; padding-bottom: 8px; }
+      .login-footer { padding: 6px 16px; font-size: 9px; line-height: 1.45; }
+      .login-footer .biz-info-lines,
+      .login-footer .ftc-verify-badge { font-size: 9px; line-height: 1.45; }
+      .login-footer .login-footer-inner > p { font-size: 8px !important; margin-top: 4px !important; }
     }
     @media (max-height: 550px) {
       .login-container { padding-top: 6px; padding-bottom: 6px; }
       .login-card { padding: 16px 24px; }
-      .login-footer { padding: 4px 16px; font-size: 10px; line-height: 1.4; }
+      .login-footer { padding: 4px 16px; font-size: 9px; line-height: 1.4; }
     }
   </style>
 <script src="js/portal-client.js?v=20261119_transfer_opt"></script>

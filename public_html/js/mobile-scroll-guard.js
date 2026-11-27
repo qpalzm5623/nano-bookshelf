@@ -36,8 +36,18 @@
       root.addEventListener(name, function (event) { event.preventDefault(); }, { passive: false });
     });
     if (window.visualViewport) {
+      var fullHeight = window.visualViewport.height;
+      var viewportWidth = window.visualViewport.width;
       var resize = function () {
-        document.documentElement.style.setProperty('--login-height', window.visualViewport.height + 'px');
+        var viewport = window.visualViewport;
+        if (Math.abs(viewport.width - viewportWidth) > 80) {
+          fullHeight = viewport.height;
+          viewportWidth = viewport.width;
+        }
+        fullHeight = Math.max(fullHeight, viewport.height);
+        // 키보드가 차지한 공간으로 푸터를 끌어올리지 않고 입력 영역에 공간을 줍니다.
+        root.classList.toggle('login-keyboard-open', fullHeight - viewport.height > 120);
+        document.documentElement.style.setProperty('--login-height', viewport.height + 'px');
       };
       window.visualViewport.addEventListener('resize', resize);
       resize();

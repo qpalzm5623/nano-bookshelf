@@ -36,8 +36,8 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261127_scroll_lock_rank">
-  <script src="js/mobile-scroll-guard.js?v=20261127" defer></script>
+  <link rel="stylesheet" href="css/student_preview.css?v=20261127_compact_rank">
+  <script src="js/mobile-scroll-guard.js?v=20261127_keyboard" defer></script>
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -8516,7 +8516,7 @@ function renderRank() {
 
   function buildRankCardHtml(r, isOutside) {
     var cId = r.charId === 'custom' ? userChar : r.charId;
-    var changeHtml = '<span class="rank-card-change same">-</span>';
+    var changeHtml = '';
     if(!isOutside && r.change === 'up') changeHtml = '<span class="rank-card-change up"><i class="fa-solid fa-caret-up"></i>' + (r.changeNum || 1) + '</span>';
     else if(!isOutside && r.change === 'down') changeHtml = '<span class="rank-card-change down"><i class="fa-solid fa-caret-down"></i>' + (r.changeNum || 1) + '</span>';
 

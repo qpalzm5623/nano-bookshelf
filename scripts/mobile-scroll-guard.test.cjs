@@ -4,6 +4,25 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../public_html/js/mobile-scroll-guard.js'), 'utf8');
 
+test('키보드가 열리면 회사정보를 숨기고 닫히면 복원하며 화면 회전을 구분한다', () => {
+  let resize, hidden;
+  const viewport = { height: 800, width: 390, addEventListener(name, fn) { resize = fn; } };
+  const root = { addEventListener() {}, classList: { toggle(name, value) { hidden = value; } } };
+  vm.runInNewContext(source, {
+    document: { body: root, querySelector: () => ({}), documentElement: { style: { setProperty() {} } } },
+    window: { visualViewport: viewport }
+  });
+  assert.equal(hidden, false);
+  viewport.height = 460; resize();
+  assert.equal(hidden, true);
+  viewport.height = 800; resize();
+  assert.equal(hidden, false);
+  viewport.height = 730; resize();
+  assert.equal(hidden, false);
+  viewport.width = 844; viewport.height = 390; resize();
+  assert.equal(hidden, false);
+});
+
 function setup(login = false) {
   const handlers = {};
   const root = { addEventListener(name, handler) { handlers[name] = handler; } };
