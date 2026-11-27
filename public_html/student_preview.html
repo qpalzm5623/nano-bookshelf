@@ -36,7 +36,7 @@
   <script src="upload/banner/themes_data.js"></script>
   <script src="migrated_real_data.js?v=20261026_stats_real"></script>
   <script src="js/available_sheets.js"></script>
-  <link rel="stylesheet" href="css/student_preview.css?v=20261126_bookshelf_rank">
+  <link rel="stylesheet" href="css/student_preview.css?v=20261127_home_guide">
 <script src="js/preview-data.js?v=20261014"></script>
 <script src="js/portal-client.js?v=20261123_class_sync"></script>
 <link rel="stylesheet" href="css/preview-ux.css?v=20261014">
@@ -212,7 +212,7 @@
   <div id="p-home" class="panel active anim">
 
     <!-- [NEW] 나노 프렌즈 캐릭터 환영 & 데일리 응원 배너 -->
-    <div id="homeCharWelcomeBanner" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%); border: 1.5px solid #ccfbf1; border-radius: 16px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 14px rgba(0, 168, 150, 0.08); cursor: pointer;" onclick="openCharacterSelectModal()" title="내 캐릭터 변경하기">
+    <div id="homeCharWelcomeBanner" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%); border: 1.5px solid #ccfbf1; border-radius: 16px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 14px rgba(0, 168, 150, 0.08); cursor: pointer;" onclick="openCharacterSelectModal()" title="내 캐릭터 변경하기" role="button" tabindex="0" aria-label="캐릭터 변경 창 열기" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCharacterSelectModal();}">
       <div id="homeCharAvatar" class="char-avatar-box bounce" style="width: 46px; height: 46px; flex-shrink: 0;"></div>
       <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
@@ -221,7 +221,61 @@
         </div>
         <div id="homeCharQuote" style="font-size: 11.5px; color: #0f766e; font-weight: 600; line-height: 1.4;">"오늘의 이야기는 어떤 책에 숨어 있을까? 돋보기 준비 완료! 🦊"</div>
       </div>
-      <div style="font-size: 11px; color: #94a3b8; padding-right: 4px;"><i class="fa-solid fa-chevron-right"></i></div>
+      <!-- 우측 캐릭터 창 진입 유도: 나노의 책장 6권 책 로고 심볼 (60fps GPU 가속 확장 · 은은한 노란 후광 모션) -->
+      <div class="nano-char-cta-badge" aria-hidden="true">
+        <div class="nano-book-wheel-stage">
+          <!-- 책 가장 바깥쪽에서 은은하게 퍼지며 사라지는 순수 노란 방사형 빛 (GPU transform/opacity 전용) -->
+          <span class="nano-wheel-aura"></span>
+          <svg class="nano-book-wheel-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- 펼쳐진 책 1권 기본 도형 (중앙을 향한 U자 책등 + 바깥쪽 페이지 3줄) -->
+              <g id="nanoWheelOpenBook" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M 40.5,13 L 40.5,24.5 C 40.5,31.2 44.8,34 50,34 C 55.2,34 59.5,31.2 59.5,24.5 L 59.5,13" stroke-width="4.2" />
+                <line x1="45.2" y1="13.5" x2="45.2" y2="27.2" stroke-width="2.1" />
+                <line x1="50" y1="14" x2="50" y2="28.8" stroke-width="2.1" />
+                <line x1="54.8" y1="13.5" x2="54.8" y2="27.2" stroke-width="2.1" />
+              </g>
+            </defs>
+            <!-- 12시: 오렌지 책 -->
+            <g transform="rotate(5 50 50)">
+              <g class="nano-wheel-book">
+                <use href="#nanoWheelOpenBook" stroke="#F6A42B" />
+              </g>
+            </g>
+            <!-- 2시: 청록 책 -->
+            <g transform="rotate(65 50 50)">
+              <g class="nano-wheel-book">
+                <use href="#nanoWheelOpenBook" stroke="#00A99D" />
+              </g>
+            </g>
+            <!-- 4시: 오렌지 책갈피 리본 (로고 시그니처) -->
+            <g transform="rotate(125 50 50)">
+              <g class="nano-wheel-book">
+                <path d="M 41,11 L 50,18 L 59,11 L 59,34 L 41,34 Z" fill="#F6A42B" stroke="#F6A42B" stroke-width="1.5" stroke-linejoin="round" />
+              </g>
+            </g>
+            <!-- 6시: 청록 책 -->
+            <g transform="rotate(185 50 50)">
+              <g class="nano-wheel-book">
+                <use href="#nanoWheelOpenBook" stroke="#00A99D" />
+              </g>
+            </g>
+            <!-- 8시: 오렌지 책 -->
+            <g transform="rotate(245 50 50)">
+              <g class="nano-wheel-book">
+                <use href="#nanoWheelOpenBook" stroke="#F6A42B" />
+              </g>
+            </g>
+            <!-- 10시: 청록 책 -->
+            <g transform="rotate(305 50 50)">
+              <g class="nano-wheel-book">
+                <use href="#nanoWheelOpenBook" stroke="#00A99D" />
+              </g>
+            </g>
+          </svg>
+        </div>
+        <span class="nano-char-cta-label">캐릭터</span>
+      </div>
     </div>
 
     <!-- 학생 메인 롤링 배너 캐러셀 (슬림 와이드 프리미엄 배너) -->
@@ -1005,6 +1059,24 @@
       <button type="button" id="btnFirstInterestSave" class="first-interest-save-btn" onclick="saveFirstLoginInterestModal()" disabled>
         <i class="fa-solid fa-check mr-1"></i>선택 저장하기
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- [NEW] 최초 로그인 홈 메뉴 스포트라이트 가이드 오버레이 (관심 주제 설정 직후 1회 실행) -->
+<div id="nanoHomeGuideOverlay" class="nano-home-guide-overlay" style="display:none;" role="dialog" aria-modal="true" aria-label="나노의 책장 홈 이용 가이드" onclick="nextHomeGuideStep()">
+  <div id="nanoGuideSpotlight" class="nano-guide-spotlight"></div>
+  <div id="nanoGuideTooltip" class="nano-guide-tooltip pos-bottom">
+    <div id="nanoGuideArrow" class="nano-guide-arrow"></div>
+    <div class="nano-guide-header">
+      <span id="nanoGuideStepBadge" class="nano-guide-step-badge">이용 가이드 1 / 7</span>
+      <button type="button" class="nano-guide-skip-btn" onclick="event.stopPropagation(); finishHomeGuideTour();">건너뛰기</button>
+    </div>
+    <h5 id="nanoGuideTitle" class="nano-guide-title">홈</h5>
+    <p id="nanoGuideDesc" class="nano-guide-desc"></p>
+    <div class="nano-guide-footer">
+      <div id="nanoGuideDots" class="nano-guide-dots"></div>
+      <span id="nanoGuideTapHint" class="nano-guide-tap-hint">화면 터치로 다음 <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i></span>
     </div>
   </div>
 </div>
@@ -9391,10 +9463,10 @@ function openFirstLoginInterestModal() {
   if (modal) modal.style.display = 'flex';
 }
 
-function closeFirstLoginInterestModal() {
+function closeFirstLoginInterestModal(keepDeferredNotice) {
   var modal = document.getElementById('firstLoginInterestModal');
   if (modal) modal.style.display = 'none';
-  if (_deferredNoticeAfterFirstInterest) {
+  if (!keepDeferredNotice && _deferredNoticeAfterFirstInterest) {
     _deferredNoticeAfterFirstInterest = false;
     setTimeout(checkStudentNoticePopups, 150);
   }
@@ -9440,8 +9512,15 @@ function saveFirstLoginInterestModal() {
   markFirstLoginInterestDone('SAVED');
   if (typeof renderInterestTags === 'function') renderInterestTags();
   if (typeof renderInterestRecommendations === 'function') renderInterestRecommendations();
-  closeFirstLoginInterestModal();
+  var willStartGuide = typeof shouldShowFirstLoginHomeGuide === 'function' && shouldShowFirstLoginHomeGuide();
+  closeFirstLoginInterestModal(willStartGuide);
   if (typeof toast === 'function') toast('관심 주제가 저장되었습니다! 맞춤 도서를 추천해 드려요.');
+  // 관심 주제 설정 완료 직후 최초 로그인 홈 메뉴 스포트라이트 가이드 자동 시작
+  if (willStartGuide) {
+    setTimeout(function() {
+      startHomeGuideTour();
+    }, 260);
+  }
 }
 
 function skipFirstLoginInterestModal() {
@@ -9454,6 +9533,276 @@ function checkFirstLoginInterestPopup() {
   openFirstLoginInterestModal();
   return true;
 }
+
+// ==============================================================
+// 최초 로그인 홈 메뉴 스포트라이트 가이드 (7단계: 홈·도서관·내 책장·랭킹·캐릭터·햄버거·배너)
+// ==============================================================
+var _homeGuideActive = false;
+var _homeGuideIndex = 0;
+var _homeGuideKeyHandler = null;
+var _homeGuideResizeHandler = null;
+
+var HOME_GUIDE_STEPS = [
+  {
+    selector: '#nav-home',
+    title: '홈',
+    desc: '오늘의 독서 현황과 최근 추가된 도서, 인기 도서를 한눈에 확인할 수 있는 메인 화면이에요.',
+    pad: 6,
+    radius: 14,
+    preferPos: 'top'
+  },
+  {
+    selector: '#nav-books',
+    title: '도서관',
+    desc: '배정 도서, 권장 도서, 방금 고른 관심 주제 맞춤 도서를 찾고 북퀴즈를 풀 수 있어요.',
+    pad: 6,
+    radius: 14,
+    preferPos: 'top'
+  },
+  {
+    selector: '#nav-history',
+    title: '내 책장',
+    desc: '내가 인증한 도서, 대기 도서, 찜한 책과 나만의 독서 기록을 모아볼 수 있어요.',
+    pad: 6,
+    radius: 14,
+    preferPos: 'top'
+  },
+  {
+    selector: '#nav-ranking',
+    title: '랭킹',
+    desc: '우리 학원과 전국 친구들의 독서 포인트 순위를 확인하고 함께 도전해 보세요!',
+    pad: 6,
+    radius: 14,
+    preferPos: 'top'
+  },
+  {
+    selector: '#homeCharWelcomeBanner',
+    title: '캐릭터 설정',
+    desc: '여기를 누르면 나노 프렌즈 캐릭터 창이 열려요! 책을 읽을수록 새 친구가 열리고 성장해요.',
+    pad: 6,
+    radius: 18,
+    preferPos: 'bottom'
+  },
+  {
+    selector: '#btnStudentHamburger',
+    title: '전체 메뉴',
+    desc: '내 정보를 변경하거나 문해력 테스트를 볼 수 있어요. 공지사항과 자주 묻는 질문도 여기서 확인해요.',
+    pad: 7,
+    radius: 14,
+    preferPos: 'bottom'
+  },
+  {
+    selector: '#studentBannerBox',
+    title: '추천 배너',
+    desc: '배너를 누르면 지금 시즌과 테마에 딱 맞는 추천 도서 목록을 바로 볼 수 있어요!',
+    pad: 6,
+    radius: 18,
+    preferPos: 'bottom'
+  }
+];
+
+function getFirstLoginHomeGuideStorageKey() {
+  var ident = typeof getStudentQuizIdentity === 'function' ? getStudentQuizIdentity() : null;
+  var sid = (ident && (ident.memberId || ident.studentId)) || 'guest';
+  return 'NANO_FIRST_HOME_GUIDE_DONE_' + sid;
+}
+
+function shouldShowFirstLoginHomeGuide() {
+  try {
+    if (localStorage.getItem(getFirstLoginHomeGuideStorageKey()) === 'COMPLETED') return false;
+  } catch (e) {}
+  if (typeof window !== 'undefined' && window.NANO_SERVER_DATA) {
+    return window.NANO_FIRST_HOME_GUIDE === true;
+  }
+  return true;
+}
+
+function markFirstLoginHomeGuideDone() {
+  if (typeof window !== 'undefined') {
+    window.NANO_FIRST_HOME_GUIDE = false;
+  }
+  try {
+    localStorage.setItem(getFirstLoginHomeGuideStorageKey(), 'COMPLETED');
+    if (typeof window !== 'undefined' && window.NANO_SERVER_DATA && window.NanoPortal && window.NanoPortal.remote && typeof fetch !== 'undefined') {
+      fetch('/api/activity?action=onboarding_guide', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COMPLETED' })
+      }).catch(function(){});
+    }
+  } catch (e) {}
+}
+
+function positionHomeGuideStep(stepIdx) {
+  var step = HOME_GUIDE_STEPS[stepIdx];
+  var overlay = document.getElementById('nanoHomeGuideOverlay');
+  var spot = document.getElementById('nanoGuideSpotlight');
+  var tooltip = document.getElementById('nanoGuideTooltip');
+  var arrow = document.getElementById('nanoGuideArrow');
+  if (!step || !overlay || !spot || !tooltip || !arrow) return;
+
+  var target = document.querySelector(step.selector);
+  if (!target) {
+    nextHomeGuideStep();
+    return;
+  }
+
+  // 타겟이 화면 밖에 있으면 먼저 화면 안으로 스크롤한 뒤 좌표 계산
+  var rect = target.getBoundingClientRect();
+  var vh = window.innerHeight || document.documentElement.clientHeight;
+  var vw = window.innerWidth || document.documentElement.clientWidth;
+  if (rect.top < 12 || rect.bottom > vh - 12) {
+    try { target.scrollIntoView({ behavior: 'auto', block: 'center' }); } catch (e) {}
+    rect = target.getBoundingClientRect();
+  }
+
+  var pad = step.pad || 6;
+  var sTop = Math.max(4, rect.top - pad);
+  var sLeft = Math.max(4, rect.left - pad);
+  var sWidth = Math.min(vw - 8, rect.width + pad * 2);
+  var sHeight = Math.min(vh - 8, rect.height + pad * 2);
+
+  spot.style.top = sTop + 'px';
+  spot.style.left = sLeft + 'px';
+  spot.style.width = sWidth + 'px';
+  spot.style.height = sHeight + 'px';
+  spot.style.borderRadius = (step.radius || 14) + 'px';
+
+  // 말풍선 텍스트 및 진행 점 갱신
+  var total = HOME_GUIDE_STEPS.length;
+  var stepBadge = document.getElementById('nanoGuideStepBadge');
+  var titleEl = document.getElementById('nanoGuideTitle');
+  var descEl = document.getElementById('nanoGuideDesc');
+  var dotsEl = document.getElementById('nanoGuideDots');
+  var hintEl = document.getElementById('nanoGuideTapHint');
+
+  if (stepBadge) stepBadge.textContent = '이용 가이드 ' + (stepIdx + 1) + ' / ' + total;
+  if (titleEl) titleEl.textContent = step.title;
+  if (descEl) descEl.textContent = step.desc;
+  if (dotsEl) {
+    var dotHtml = '';
+    for (var i = 0; i < total; i++) {
+      dotHtml += '<span class="nano-guide-dot' + (i === stepIdx ? ' active' : '') + '"></span>';
+    }
+    dotsEl.innerHTML = dotHtml;
+  }
+  if (hintEl) {
+    hintEl.innerHTML = stepIdx === total - 1
+      ? '화면 터치로 시작하기 <i class="fa-solid fa-check"></i>'
+      : '화면 터치로 다음 <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>';
+  }
+
+  // 말풍선 크기 측정 후 타겟 위/아래 최적 위치 계산 (화면 경계 클램핑 포함)
+  var tipW = tooltip.offsetWidth || Math.min(312, vw - 24);
+  var tipH = tooltip.offsetHeight || 148;
+  var gap = 14;
+  var spaceBelow = vh - (sTop + sHeight);
+  var spaceAbove = sTop;
+
+  var place = step.preferPos || 'bottom';
+  if (place === 'bottom' && spaceBelow < tipH + gap + 12 && spaceAbove > spaceBelow) {
+    place = 'top';
+  } else if (place === 'top' && spaceAbove < tipH + gap + 12 && spaceBelow > spaceAbove) {
+    place = 'bottom';
+  }
+
+  tooltip.classList.remove('pos-top', 'pos-bottom');
+  tooltip.classList.add(place === 'top' ? 'pos-top' : 'pos-bottom');
+
+  var tipTop = place === 'top'
+    ? Math.max(12, sTop - tipH - gap)
+    : Math.min(vh - tipH - 12, sTop + sHeight + gap);
+
+  var targetCenterX = sLeft + sWidth / 2;
+  var tipLeft = Math.max(12, Math.min(vw - tipW - 12, targetCenterX - tipW / 2));
+
+  tooltip.style.top = tipTop + 'px';
+  tooltip.style.left = tipLeft + 'px';
+
+  // 삼각형 꼬리가 말풍선 안에서 정확히 타겟 가로 중심을 가리키도록 보정
+  var arrowLeft = Math.max(22, Math.min(tipW - 22, targetCenterX - tipLeft));
+  arrow.style.left = arrowLeft + 'px';
+}
+
+function startHomeGuideTour(forceReplay) {
+  if (_homeGuideActive) return;
+  // 반드시 홈 화면에서 시작
+  if (typeof switchPanel === 'function') {
+    var homePanel = document.getElementById('p-home');
+    if (homePanel && !homePanel.classList.contains('active')) {
+      switchPanel('home', false);
+    }
+  }
+  window.scrollTo({ top: 0, behavior: 'auto' });
+
+  var overlay = document.getElementById('nanoHomeGuideOverlay');
+  if (!overlay) return;
+  _homeGuideActive = true;
+  _homeGuideIndex = 0;
+  overlay.style.display = 'block';
+  overlay.setAttribute('data-force-replay', forceReplay ? '1' : '0');
+
+  // 레이아웃 안정화 직후 1단계 배치
+  requestAnimationFrame(function() {
+    positionHomeGuideStep(0);
+  });
+
+  _homeGuideKeyHandler = function(ev) {
+    if (!_homeGuideActive) return;
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      finishHomeGuideTour();
+    } else if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowRight') {
+      ev.preventDefault();
+      nextHomeGuideStep();
+    }
+  };
+  _homeGuideResizeHandler = function() {
+    if (_homeGuideActive) positionHomeGuideStep(_homeGuideIndex);
+  };
+  window.addEventListener('keydown', _homeGuideKeyHandler);
+  window.addEventListener('resize', _homeGuideResizeHandler);
+}
+
+function nextHomeGuideStep() {
+  if (!_homeGuideActive) return;
+  if (_homeGuideIndex + 1 >= HOME_GUIDE_STEPS.length) {
+    finishHomeGuideTour();
+    return;
+  }
+  _homeGuideIndex += 1;
+  positionHomeGuideStep(_homeGuideIndex);
+}
+
+function finishHomeGuideTour() {
+  if (!_homeGuideActive) return;
+  _homeGuideActive = false;
+  var overlay = document.getElementById('nanoHomeGuideOverlay');
+  var isReplay = overlay && overlay.getAttribute('data-force-replay') === '1';
+  if (overlay) overlay.style.display = 'none';
+  if (_homeGuideKeyHandler) {
+    window.removeEventListener('keydown', _homeGuideKeyHandler);
+    _homeGuideKeyHandler = null;
+  }
+  if (_homeGuideResizeHandler) {
+    window.removeEventListener('resize', _homeGuideResizeHandler);
+    _homeGuideResizeHandler = null;
+  }
+  if (!isReplay) {
+    markFirstLoginHomeGuideDone();
+  }
+  // 관심 주제 팝업 이후 보류된 시스템 공지가 있으면 가이드 종료 후 자연스럽게 노출
+  if (_deferredNoticeAfterFirstInterest) {
+    _deferredNoticeAfterFirstInterest = false;
+    setTimeout(checkStudentNoticePopups, 200);
+  }
+}
+
+// 관리자·개발 검수용 전역 수동 미리보기 헬퍼 (콘솔에서 openHomeGuideTour() 호출 가능)
+window.openHomeGuideTour = function() {
+  startHomeGuideTour(true);
+};
 
 document.addEventListener('DOMContentLoaded',function(){
   updateStudentSessionLabels();

@@ -4523,3 +4523,292 @@
       0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
       50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.8); }
     }
+
+    /* ============================================================== */
+    /* 홈 캐릭터 환영 배너 우측 - 나노의 책장 6권 책 로고 시계방향 모션 CTA */
+    /* ============================================================== */
+    #homeCharWelcomeBanner {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.2s ease,
+                  box-shadow 0.2s ease;
+    }
+    #homeCharWelcomeBanner:hover {
+      border-color: #5eead4 !important;
+      box-shadow: 0 6px 18px rgba(0, 168, 150, 0.14) !important;
+      transform: translateY(-1px);
+    }
+    #homeCharWelcomeBanner:active {
+      transform: scale(0.99);
+    }
+    .nano-char-cta-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      flex-shrink: 0;
+      padding: 2px 4px;
+      border-radius: 12px;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #homeCharWelcomeBanner:hover .nano-char-cta-badge {
+      transform: scale(1.07);
+    }
+    .nano-book-wheel-stage {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nano-book-wheel-svg {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+    /* GPU 가속(transform 전용): filter 리페인트 제거로 60fps 매끄러운 동시 확장·복귀 */
+    .nano-wheel-book {
+      transform-origin: 50px 22.5px;
+      will-change: transform;
+      animation: nanoBookBloomPulse 2.8s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+    }
+    @keyframes nanoBookBloomPulse {
+      0%, 100% {
+        transform: translate3d(0, 0px, 0) scale(1);
+      }
+      24% {
+        transform: translate3d(0, -5.2px, 0) scale(1.06);
+      }
+      32% {
+        transform: translate3d(0, -5.4px, 0) scale(1.065);
+      }
+      60% {
+        transform: translate3d(0, 0px, 0) scale(1);
+      }
+    }
+    /* 경계선 없이 은은하게 번지는 순수 노란 방사형 빛무리 (책 끝에 닿기 전 10%부터 시작해 멀리 확산 후 소멸) */
+    .nano-wheel-aura {
+      position: absolute;
+      inset: -14px;
+      z-index: 1;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(
+        circle,
+        rgba(254, 240, 138, 0) 0%,
+        rgba(254, 240, 138, 0.04) 24%,
+        rgba(253, 224, 71, 0.34) 40%,
+        rgba(254, 240, 138, 0.22) 56%,
+        rgba(254, 249, 195, 0.09) 74%,
+        rgba(254, 249, 195, 0) 100%
+      );
+      opacity: 0;
+      will-change: transform, opacity;
+      animation: nanoSoftYellowAura 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    @keyframes nanoSoftYellowAura {
+      0%, 9% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0) scale(0.58);
+      }
+      22% {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(0.92);
+      }
+      54% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0) scale(1.55);
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0) scale(1.55);
+      }
+    }
+    .nano-char-cta-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #0d9488;
+      letter-spacing: -0.3px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .nano-wheel-book,
+      .nano-wheel-aura {
+        animation: none;
+      }
+    }
+
+    /* ============================================================== */
+    /* 최초 로그인 홈 메뉴 스포트라이트 가이드 (관심주제 설정 직후 1회) */
+    /* ============================================================== */
+    .nano-home-guide-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10030;
+      pointer-events: auto;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      animation: nanoGuideFadeIn 0.25s ease-out;
+    }
+    @keyframes nanoGuideFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    /* 타겟 요소만 환하게 비추고 나머지 화면 전체를 어둡게 덮는 스포트라이트 컷아웃 */
+    .nano-guide-spotlight {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      border-radius: 14px;
+      border: 2.5px solid #5eead4;
+      box-shadow:
+        0 0 0 9999px rgba(15, 23, 42, 0.72),
+        0 0 0 6px rgba(94, 234, 212, 0.34),
+        0 0 26px rgba(253, 224, 71, 0.42);
+      pointer-events: none;
+      transition: top 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                  left 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                  width 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                  height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+                  border-radius 0.28s ease;
+    }
+    .nano-guide-spotlight::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: inherit;
+      border: 2px solid rgba(254, 240, 138, 0.65);
+      pointer-events: none;
+      animation: nanoGuideSpotPulse 1.8s ease-out infinite;
+    }
+    @keyframes nanoGuideSpotPulse {
+      0% {
+        opacity: 0.9;
+        transform: scale(0.98);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.1);
+      }
+    }
+    /* 말풍선 카드 */
+    .nano-guide-tooltip {
+      position: fixed;
+      width: min(312px, calc(100vw - 24px));
+      background: #ffffff;
+      border: 1.5px solid #99f6e4;
+      border-radius: 18px;
+      padding: 14px 16px 13px;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.34);
+      color: #1e293b;
+      z-index: 10032;
+      pointer-events: auto;
+      transition: top 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+                  left 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .nano-guide-arrow {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #ffffff;
+      transform: translateX(-50%) rotate(45deg);
+      pointer-events: none;
+    }
+    .nano-guide-tooltip.pos-bottom .nano-guide-arrow {
+      top: -7px;
+      border-top: 1.5px solid #99f6e4;
+      border-left: 1.5px solid #99f6e4;
+    }
+    .nano-guide-tooltip.pos-top .nano-guide-arrow {
+      bottom: -7px;
+      border-right: 1.5px solid #99f6e4;
+      border-bottom: 1.5px solid #99f6e4;
+    }
+    .nano-guide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .nano-guide-step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f766e;
+      background: #ccfbf1;
+      padding: 2px 9px;
+      border-radius: 999px;
+    }
+    .nano-guide-skip-btn {
+      border: none;
+      background: transparent;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #94a3b8;
+      padding: 2px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .nano-guide-skip-btn:hover {
+      color: #475569;
+      background: #f1f5f9;
+    }
+    .nano-guide-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #0f172a;
+      margin: 0 0 5px 0;
+      letter-spacing: -0.3px;
+    }
+    .nano-guide-desc {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      line-height: 1.55;
+      margin: 0 0 11px 0;
+      word-break: keep-all;
+    }
+    .nano-guide-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 9px;
+      border-top: 1px dashed #e2e8f0;
+    }
+    .nano-guide-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nano-guide-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      transition: all 0.22s ease;
+    }
+    .nano-guide-dot.active {
+      width: 16px;
+      background: #00a896;
+    }
+    .nano-guide-tap-hint {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #00a896;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }

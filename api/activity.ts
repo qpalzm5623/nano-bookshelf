@@ -66,6 +66,21 @@ export default async function handler(req: any, res: any) {
       });
       return res.json({ ok: true, status });
     }
+    if (action === 'onboarding_guide') {
+      need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
+      await prisma.portalSetting.upsert({
+        where: { key: 'onboarding_guide:' + user.id },
+        create: {
+          key: 'onboarding_guide:' + user.id,
+          scope: 'student_onboarding',
+          value: { status: 'COMPLETED', completedAt: new Date().toISOString() }
+        },
+        update: {
+          value: { status: 'COMPLETED', completedAt: new Date().toISOString() }
+        }
+      });
+      return res.json({ ok: true, status: 'COMPLETED' });
+    }
     if (action === 'hide_notice') {
       need(req.method === 'POST', '지원하지 않는 요청입니다.', 405);
       const noticeId = String(req.body?.noticeId || '').trim();

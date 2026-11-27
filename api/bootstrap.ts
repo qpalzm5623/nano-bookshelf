@@ -204,7 +204,7 @@ export default async function handler(req: any, res: any) {
         where: {
           key: {
             in: isStudent
-              ? ['preferences:' + user.id, 'onboarding_interest:' + user.id, 'notice_hide:' + user.id]
+              ? ['preferences:' + user.id, 'onboarding_interest:' + user.id, 'onboarding_guide:' + user.id, 'notice_hide:' + user.id]
               : ['notice_hide:' + user.id]
           }
         },
@@ -325,14 +325,22 @@ export default async function handler(req: any, res: any) {
 
     const studentPrefRow = (studentSettingRows || []).find((r: any) => r.key === 'preferences:' + user.id);
     const onboardingRow = (studentSettingRows || []).find((r: any) => r.key === 'onboarding_interest:' + user.id);
+    const onboardingGuideRow = (studentSettingRows || []).find((r: any) => r.key === 'onboarding_guide:' + user.id);
     const prefVal = ((studentPrefRow as any)?.value || {}) as Record<string, any>;
     const onboardingVal = ((onboardingRow as any)?.value || {}) as Record<string, any>;
+    const onboardingGuideVal = ((onboardingGuideRow as any)?.value || {}) as Record<string, any>;
     // 관심 주제가 1개라도 저장되기 전에는 skip 했더라도 재접속(/api/bootstrap) 시 팝업을 다시 노출
     const hasSavedInterests = Array.isArray(prefVal.interests) && prefVal.interests.length > 0;
     const showFirstInterestModal = Boolean(
       isStudent &&
       !hasSavedInterests &&
       onboardingVal.status !== 'SAVED'
+    );
+    // 첫 로그인 관심 주제 설정 직후 1회만 실행되는 홈 메뉴 스포트라이트 가이드 여부
+    const showFirstHomeGuide = Boolean(
+      isStudent &&
+      showFirstInterestModal &&
+      onboardingGuideVal.status !== 'COMPLETED'
     );
 
     const noticeHideRow = (studentSettingRows || []).find((r: any) => r.key === 'notice_hide:' + user.id);
@@ -359,6 +367,7 @@ export default async function handler(req: any, res: any) {
         revision: Number((studentPrefRow as any)?.revision) || 0
       } : null,
       NANO_FIRST_INTEREST_POPUP: showFirstInterestModal,
+      NANO_FIRST_HOME_GUIDE: showFirstHomeGuide,
       MIGRATED_BOOKS: (() => {
         const bookMap = new Map<string, any>();
         for (const b of books) {
