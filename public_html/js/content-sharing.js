@@ -2,7 +2,22 @@
  * 콘텐츠 공유 관리 & 보안 나노시트 선택 모달 (Admin & Master 공용)
  * ============================================================ */
 (function (global) {
-  var state = { items: [], received: [], catalog: [], loading: false, error: '' };
+  var state = {
+    items: [],
+    received: [],
+    catalog: [],
+    loading: false,
+    error: '',
+    // 다수의 공유 폴더를 효율적으로 탐색·관리하기 위한 UI 상태
+    ownQuery: '',
+    ownSort: 'RECENT', // 'RECENT' | 'NAME' | 'BOOKS' | 'ACADEMIES'
+    ownView: 'list',   // 'list' (컴팩트 목록형 기본) | 'grid' (다열 카드형)
+    ownLimit: 15,
+    expandedOwnIds: {},
+    receivedQuery: '',
+    receivedLimit: 15
+  };
+  var FOLDER_PAGE_SIZE = 15;
   var CHUNK_SIZE = 750000;
 
   // XSS 방지를 위한 HTML 이스케이프
@@ -430,20 +445,526 @@
     bindBodyEvents();
   }
 
-  // 폴더 칩 목록 렌더링 (최대 5권 미리보기 + 더보기 토글)
-  function renderFolderBookChips(books) {
+  // 폴더 칩 목록 렌더링 (최대 maxCount권 미리보기 + 나머지 권수 배지)
+  function renderFolderBookChips(books, maxCount) {
     var list = Array.isArray(books) ? books : [];
     if (list.length === 0) {
       return '<span class="sharing-card-hint">선택된 도서가 없습니다.</span>';
     }
-    var visible = list.slice(0, 6);
+    var limit = typeof maxCount === 'number' && maxCount > 0 ? maxCount : 6;
+    var visible = list.slice(0, limit);
     var html = visible.map(function (b) {
       return '<span class="sharing-chip"><i class="fa-solid fa-book" style="font-size: 10px; opacity: 0.6;"></i>' + esc(b.title) + '</span>';
     }).join('');
-    if (list.length > 6) {
-      html += '<span class="sharing-chip">외 ' + (list.length - 6) + '권</span>';
+    if (list.length > limit) {
+      html += '<span class="sharing-chip is-more">외 ' + (list.length - limit) + '권</span>';
     }
     return html;
+  }
+
+  // 수신 학원 표시 라벨 생성
+  function formatRecipientLabel(r) {
+    if (!r) return '';
+    return r.directorName
+      ? (String(r.academyName || '') + ' · ' + String(r.directorName) + ' (' + String(r.username || '') + ')')
+      : (String(r.academyName || '') + ' (' + String(r.username || '') + ')');
+  }
+
+  // 수신 학원 칩 목록 렌더링
+  function renderRecipientChips(recipients, maxCount) {
+    var list = Array.isArray(recipients) ? recipients : [];
+    if (list.length === 0) {
+      return '<span class="sharing-card-hint">등록된 수신 학원이 없습니다.</span>';
+    }
+    var limit = typeof maxCount === 'number' && maxCount > 0 ? maxCount : list.length;
+    var visible = list.slice(0, limit);
+    var html = visible.map(function (r) {
+      return '<span class="sharing-chip is-academy"><i class="fa-solid fa-school" style="font-size: 10px;"></i>' + esc(formatRecipientLabel(r)) + '</span>';
+    }).join('');
+    if (list.length > limit) {
+      html += '<span class="sharing-chip is-more">외 ' + (list.length - limit) + '곳</span>';
+    }
+    return html;
+  }
+
+  // 컴팩트 행용 포함 도서 1줄 요약 생성
+  function summarizeFolderBooks(folder) {
+    var list = Array.isArray(folder && folder.books) ? folder.books : [];
+    var count = list.length > 0 ? list.length : (Array.isArray(folder && folder.bookIds) ? folder.bookIds.length : 0);
+    if (count === 0) {
+      return { count: 0, summary: '선택된 도서 없음', tooltip: '선택된 도서가 없습니다.' };
+    }
+    if (list.length === 0) {
+      return { count: count, summary: '도서 ' + count + '권', tooltip: '도서 ' + count + '권' };
+    }
+    var firstTitle = String((list[0] && list[0].title) || '').trim() || '제목 없음';
+    var summary = count > 1 ? (firstTitle + ' 외 ' + (count - 1) + '권') : firstTitle;
+    var tooltip = list.map(function (b) { return String((b && b.title) || '').trim(); }).filter(Boolean).join(', ');
+    return { count: count, summary: summary, tooltip: tooltip };
+  }
+
+  // 컴팩트 행용 공유 학원 1줄 요약 생성
+  function summarizeFolderRecipients(folder) {
+    var recs = Array.isArray(folder && folder.recipients) ? folder.recipients : [];
+    var count = recs.length;
+    if (count === 0) {
+      return { count: 0, summary: '미지정', tooltip: '등록된 수신 학원이 없습니다.' };
+    }
+    var firstName = String((recs[0] && recs[0].academyName) || (recs[0] && recs[0].username) || '').trim();
+    var summary = count === 1
+      ? formatRecipientLabel(recs[0])
+      : (firstName + ' 외 ' + (count - 1) + '곳');
+    var tooltip = recs.map(formatRecipientLabel).filter(Boolean).join('\n');
+    return { count: count, summary: summary, tooltip: tooltip };
+  }
+
+  // 내가 공유한 폴더 검색 및 정렬 필터 적용
+  function getFilteredOwnFolders() {
+    var source = Array.isArray(state.items) ? state.items : [];
+    var q = String(state.ownQuery || '').trim().toLowerCase();
+    var filtered = q
+      ? source.filter(function (folder) {
+          if (String((folder && folder.name) || '').toLowerCase().indexOf(q) !== -1) return true;
+          var books = Array.isArray(folder && folder.books) ? folder.books : [];
+          for (var i = 0; i < books.length; i += 1) {
+            var b = books[i] || {};
+            if (String(b.title || '').toLowerCase().indexOf(q) !== -1) return true;
+            if (String(b.bookNo || '').toLowerCase().indexOf(q) !== -1) return true;
+          }
+          var recs = Array.isArray(folder && folder.recipients) ? folder.recipients : [];
+          for (var j = 0; j < recs.length; j += 1) {
+            var r = recs[j] || {};
+            if (String(r.academyName || '').toLowerCase().indexOf(q) !== -1) return true;
+            if (String(r.directorName || '').toLowerCase().indexOf(q) !== -1) return true;
+            if (String(r.username || '').toLowerCase().indexOf(q) !== -1) return true;
+          }
+          return false;
+        })
+      : source.slice();
+
+    if (state.ownSort === 'NAME') {
+      filtered.sort(function (a, b) {
+        return String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'ko', { numeric: true });
+      });
+    } else if (state.ownSort === 'BOOKS') {
+      filtered.sort(function (a, b) {
+        var diff = summarizeFolderBooks(b).count - summarizeFolderBooks(a).count;
+        if (diff !== 0) return diff;
+        return String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'ko', { numeric: true });
+      });
+    } else if (state.ownSort === 'ACADEMIES') {
+      filtered.sort(function (a, b) {
+        var diff = ((b && b.recipients && b.recipients.length) || 0) - ((a && a.recipients && a.recipients.length) || 0);
+        if (diff !== 0) return diff;
+        return String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'ko', { numeric: true });
+      });
+    }
+    return filtered;
+  }
+
+  // 공유받은 폴더 검색 필터 적용
+  function getFilteredReceivedFolders() {
+    var source = Array.isArray(state.received) ? state.received : [];
+    var q = String(state.receivedQuery || '').trim().toLowerCase();
+    if (!q) return source.slice();
+    return source.filter(function (folder) {
+      if (String((folder && folder.name) || '').toLowerCase().indexOf(q) !== -1) return true;
+      if (String((folder && folder.ownerAcademyName) || '').toLowerCase().indexOf(q) !== -1) return true;
+      var books = Array.isArray(folder && folder.books) ? folder.books : [];
+      for (var i = 0; i < books.length; i += 1) {
+        var b = books[i] || {};
+        if (String(b.title || '').toLowerCase().indexOf(q) !== -1) return true;
+        if (String(b.bookNo || '').toLowerCase().indexOf(q) !== -1) return true;
+      }
+      return false;
+    });
+  }
+
+  // 내가 공유한 폴더 목록 영역 마크업 생성 (컴팩트 목록형 / 다열 카드형 전환 + 점진적 더보기 지원)
+  function buildOwnFoldersBodyHtml() {
+    var myFolders = Array.isArray(state.items) ? state.items : [];
+    if (state.loading) {
+      return '<div class="sharing-empty-state"><i class="fa-solid fa-spinner fa-spin sharing-empty-icon"></i><p>공유 폴더 목록을 불러오는 중입니다...</p></div>';
+    }
+    if (myFolders.length === 0) {
+      return (
+        '<div class="sharing-empty-state">' +
+          '<i class="fa-regular fa-folder-open sharing-empty-icon"></i>' +
+          '<p>아직 생성한 공유 폴더가 없습니다.</p>' +
+          '<small>직접 등록한 비공개 북퀴즈나 나노시트가 포함된 도서를 묶어 다른 학원장님에게 공유해 보세요.</small>' +
+          '<button type="button" class="btn-beige-primary sharing-btn-sm" id="sharingEmptyCreateBtn">' +
+            '<i class="fa-solid fa-folder-plus"></i> 첫 공유 폴더 만들기' +
+          '</button>' +
+        '</div>'
+      );
+    }
+
+    var filtered = getFilteredOwnFolders();
+    if (filtered.length === 0) {
+      return (
+        '<div class="sharing-empty-state is-compact">' +
+          '<i class="fa-solid fa-magnifying-glass sharing-empty-icon"></i>' +
+          '<p>검색 조건과 일치하는 공유 폴더가 없습니다.</p>' +
+          '<small>폴더명, 포함 도서명, 공유 학원명 또는 원장 ID로 다시 검색해 보세요.</small>' +
+          '<button type="button" class="btn-beige-secondary sharing-btn-sm" id="sharingOwnResetSearchBtn">' +
+            '<i class="fa-solid fa-rotate-left"></i> 검색 초기화' +
+          '</button>' +
+        '</div>'
+      );
+    }
+
+    var visible = filtered.slice(0, state.ownLimit);
+    var remaining = filtered.length - visible.length;
+    var listHtml = '';
+
+    if (state.ownView === 'grid') {
+      // 다열(2~3열) 컴팩트 카드 그리드 뷰
+      listHtml =
+        '<div class="sharing-folder-grid">' +
+          visible.map(function (folder) {
+            var bookSum = summarizeFolderBooks(folder);
+            var recSum = summarizeFolderRecipients(folder);
+            return (
+              '<div class="sharing-folder-card">' +
+                '<div class="sharing-folder-card-top">' +
+                  '<div class="sharing-folder-name-wrap">' +
+                    '<div class="sharing-folder-icon-sm"><i class="fa-solid fa-folder"></i></div>' +
+                    '<div class="sharing-folder-title-box">' +
+                      '<div class="sharing-folder-name" title="' + esc(folder.name) + '">' + esc(folder.name) + '</div>' +
+                      '<div class="sharing-folder-meta">도서 <strong>' + bookSum.count + '권</strong> · 공유 학원 <strong>' + recSum.count + '곳</strong></div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sharing-folder-card-tags">' +
+                  '<div class="sharing-tag-group is-compact">' +
+                    '<span class="sharing-tag-label">포함 도서</span>' +
+                    '<div class="sharing-chip-wrap">' + renderFolderBookChips(folder.books, 3) + '</div>' +
+                  '</div>' +
+                  '<div class="sharing-tag-group is-compact">' +
+                    '<span class="sharing-tag-label">공유 학원</span>' +
+                    '<div class="sharing-chip-wrap">' + renderRecipientChips(folder.recipients, 2) + '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="sharing-folder-card-actions">' +
+                  '<button type="button" class="btn-beige-secondary sharing-btn-xs" data-edit-folder="' + esc(folder.id) + '">' +
+                    '<i class="fa-solid fa-book-open"></i> 공유 도서 설정' +
+                  '</button>' +
+                  '<button type="button" class="btn-beige-secondary sharing-btn-xs" data-recipients-folder="' + esc(folder.id) + '">' +
+                    '<i class="fa-solid fa-users"></i> 공유 대상 설정' +
+                  '</button>' +
+                  '<button type="button" class="sharing-btn-danger-outline sharing-btn-xs" data-delete-folder="' + esc(folder.id) + '" aria-label="' + esc(folder.name) + ' 삭제">' +
+                    '<i class="fa-solid fa-trash-can"></i> 삭제' +
+                  '</button>' +
+                '</div>' +
+              '</div>'
+            );
+          }).join('') +
+        '</div>';
+    } else {
+      // 기본 뷰: 고밀도 컴팩트 테이블형 행 목록 (클릭 시 포함 도서·공유 학원 상세 펼치기)
+      listHtml =
+        '<div class="sharing-folder-table">' +
+          '<div class="sharing-table-head" aria-hidden="true">' +
+            '<span>폴더명</span>' +
+            '<span>포함 도서</span>' +
+            '<span>공유 학원</span>' +
+            '<span class="is-right">관리</span>' +
+          '</div>' +
+          visible.map(function (folder) {
+            var bookSum = summarizeFolderBooks(folder);
+            var recSum = summarizeFolderRecipients(folder);
+            var isExpanded = Boolean(state.expandedOwnIds && state.expandedOwnIds[folder.id]);
+            var drawerHtml = isExpanded
+              ? '<div class="sharing-folder-detail-drawer">' +
+                  '<div class="sharing-tag-group">' +
+                    '<span class="sharing-tag-label">포함 도서 (' + bookSum.count + '권)</span>' +
+                    '<div class="sharing-chip-wrap">' + renderFolderBookChips(folder.books, 24) + '</div>' +
+                  '</div>' +
+                  '<div class="sharing-tag-group">' +
+                    '<span class="sharing-tag-label">공유 학원 (' + recSum.count + '곳)</span>' +
+                    '<div class="sharing-chip-wrap">' + renderRecipientChips(folder.recipients, 30) + '</div>' +
+                  '</div>' +
+                '</div>'
+              : '';
+            return (
+              '<div class="sharing-folder-row-wrap' + (isExpanded ? ' is-expanded' : '') + '">' +
+                '<div class="sharing-folder-row">' +
+                  '<div class="sharing-col-name" data-toggle-folder-detail="' + esc(folder.id) + '">' +
+                    '<button type="button" class="sharing-expand-btn" data-toggle-folder-detail="' + esc(folder.id) + '" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" title="' + (isExpanded ? '상세 접기' : '포함 도서·공유 학원 상세 펼치기') + '">' +
+                      '<i class="fa-solid ' + (isExpanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i>' +
+                    '</button>' +
+                    '<span class="sharing-folder-icon-sm"><i class="fa-solid fa-folder"></i></span>' +
+                    '<span class="sharing-folder-row-title" title="' + esc(folder.name) + '">' + esc(folder.name) + '</span>' +
+                  '</div>' +
+                  '<div class="sharing-col-summary" data-toggle-folder-detail="' + esc(folder.id) + '" title="' + esc(bookSum.tooltip) + '">' +
+                    '<span class="sharing-count-pill' + (bookSum.count === 0 ? ' is-empty' : '') + '">' + bookSum.count + '권</span>' +
+                    '<span class="sharing-row-preview' + (bookSum.count === 0 ? ' is-muted' : '') + '">' + esc(bookSum.summary) + '</span>' +
+                  '</div>' +
+                  '<div class="sharing-col-summary" data-toggle-folder-detail="' + esc(folder.id) + '" title="' + esc(recSum.tooltip) + '">' +
+                    '<span class="sharing-count-pill is-academy' + (recSum.count === 0 ? ' is-empty' : '') + '">' + recSum.count + '곳</span>' +
+                    '<span class="sharing-row-preview' + (recSum.count === 0 ? ' is-muted' : '') + '">' + esc(recSum.summary) + '</span>' +
+                  '</div>' +
+                  '<div class="sharing-col-actions">' +
+                    '<button type="button" class="btn-beige-secondary sharing-btn-xs" data-edit-folder="' + esc(folder.id) + '">' +
+                      '<i class="fa-solid fa-book-open"></i> 공유 도서 설정' +
+                    '</button>' +
+                    '<button type="button" class="btn-beige-secondary sharing-btn-xs" data-recipients-folder="' + esc(folder.id) + '">' +
+                      '<i class="fa-solid fa-users"></i> 공유 대상 설정' +
+                    '</button>' +
+                    '<button type="button" class="sharing-btn-danger-outline sharing-btn-xs" data-delete-folder="' + esc(folder.id) + '" aria-label="' + esc(folder.name) + ' 삭제">' +
+                      '<i class="fa-solid fa-trash-can"></i> 삭제' +
+                    '</button>' +
+                  '</div>' +
+                '</div>' +
+                drawerHtml +
+              '</div>'
+            );
+          }).join('') +
+        '</div>';
+    }
+
+    var paginationHtml = remaining > 0
+      ? '<div class="sharing-load-more-bar">' +
+          '<span class="sharing-load-more-meta">총 <strong>' + filtered.length + '</strong>개 중 <strong>' + visible.length + '</strong>개 표시 중</span>' +
+          '<div class="sharing-load-more-actions">' +
+            '<button type="button" class="btn-beige-secondary sharing-btn-xs" id="sharingOwnLoadMoreBtn">' +
+              '<i class="fa-solid fa-chevron-down"></i> 더 보기 (+' + Math.min(FOLDER_PAGE_SIZE, remaining) + '개)' +
+            '</button>' +
+            '<button type="button" class="sharing-text-btn" id="sharingOwnShowAllBtn">전체 보기 (' + filtered.length + '개)</button>' +
+          '</div>' +
+        '</div>'
+      : '';
+
+    return listHtml + paginationHtml;
+  }
+
+  // 공유받은 폴더 목록 영역 마크업 생성 (컴팩트 테이블형 + 점진적 더보기)
+  function buildReceivedFoldersBodyHtml() {
+    var receivedFolders = Array.isArray(state.received) ? state.received : [];
+    if (state.loading) {
+      return '<div class="sharing-empty-state"><i class="fa-solid fa-spinner fa-spin sharing-empty-icon"></i><p>공유받은 폴더를 불러오는 중입니다...</p></div>';
+    }
+    if (receivedFolders.length === 0) {
+      return (
+        '<div class="sharing-empty-state is-compact">' +
+          '<i class="fa-solid fa-inbox sharing-empty-icon"></i>' +
+          '<p>아직 공유받은 폴더가 없습니다.</p>' +
+          '<small>다른 가맹 학원이나 본사에서 우리 학원장 ID로 공유하면 이곳에 표시되며, 콘텐츠 관리에서 바로 열람할 수 있습니다.</small>' +
+        '</div>'
+      );
+    }
+
+    var filtered = getFilteredReceivedFolders();
+    if (filtered.length === 0) {
+      return (
+        '<div class="sharing-empty-state is-compact">' +
+          '<i class="fa-solid fa-magnifying-glass sharing-empty-icon"></i>' +
+          '<p>검색 조건과 일치하는 공유받은 폴더가 없습니다.</p>' +
+          '<button type="button" class="btn-beige-secondary sharing-btn-sm" id="sharingReceivedResetSearchBtn">' +
+            '<i class="fa-solid fa-rotate-left"></i> 검색 초기화' +
+          '</button>' +
+        '</div>'
+      );
+    }
+
+    var visible = filtered.slice(0, state.receivedLimit);
+    var remaining = filtered.length - visible.length;
+
+    var listHtml =
+      '<div class="sharing-folder-table is-received">' +
+        '<div class="sharing-table-head is-received" aria-hidden="true">' +
+          '<span>폴더명</span>' +
+          '<span>공유 제공 학원</span>' +
+          '<span>포함 도서</span>' +
+          '<span class="is-right">열람</span>' +
+        '</div>' +
+        visible.map(function (folder) {
+          var bookSum = summarizeFolderBooks(folder);
+          return (
+            '<div class="sharing-folder-row-wrap">' +
+              '<div class="sharing-folder-row is-received is-clickable" data-received-folder="' + esc(folder.id) + '" role="button" tabindex="0" aria-label="' + esc(folder.name) + ' 도서 목록 보기">' +
+                '<div class="sharing-col-name">' +
+                  '<span class="sharing-folder-icon-sm"><i class="fa-solid fa-share-nodes"></i></span>' +
+                  '<span class="sharing-folder-row-title" title="' + esc(folder.name) + '">' + esc(folder.name) + '</span>' +
+                '</div>' +
+                '<div class="sharing-col-provider">' +
+                  '<span class="sharing-chip is-academy"><i class="fa-solid fa-school" style="font-size: 10px;"></i>' + esc(folder.ownerAcademyName) + '</span>' +
+                '</div>' +
+                '<div class="sharing-col-summary" title="' + esc(bookSum.tooltip) + '">' +
+                  '<span class="sharing-count-pill' + (bookSum.count === 0 ? ' is-empty' : '') + '">' + bookSum.count + '권</span>' +
+                  '<span class="sharing-row-preview' + (bookSum.count === 0 ? ' is-muted' : '') + '">' + esc(bookSum.summary) + '</span>' +
+                '</div>' +
+                '<div class="sharing-col-actions">' +
+                  '<span class="badge-soft badge-soft-success"><i class="fa-solid fa-circle-check"></i> 열람 가능</span>' +
+                  '<button type="button" class="btn-beige-secondary sharing-btn-xs" data-received-folder-btn="' + esc(folder.id) + '">' +
+                    '<i class="fa-solid fa-book-open"></i> 도서 목록 (' + bookSum.count + '권)' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('') +
+      '</div>';
+
+    var paginationHtml = remaining > 0
+      ? '<div class="sharing-load-more-bar">' +
+          '<span class="sharing-load-more-meta">총 <strong>' + filtered.length + '</strong>개 중 <strong>' + visible.length + '</strong>개 표시 중</span>' +
+          '<div class="sharing-load-more-actions">' +
+            '<button type="button" class="btn-beige-secondary sharing-btn-xs" id="sharingReceivedLoadMoreBtn">' +
+              '<i class="fa-solid fa-chevron-down"></i> 더 보기 (+' + Math.min(FOLDER_PAGE_SIZE, remaining) + '개)' +
+            '</button>' +
+            '<button type="button" class="sharing-text-btn" id="sharingReceivedShowAllBtn">전체 보기 (' + filtered.length + '개)</button>' +
+          '</div>' +
+        '</div>'
+      : '';
+
+    return listHtml + paginationHtml;
+  }
+
+  // 내가 공유한 폴더 목록 영역만 부분 재렌더링 (검색 입력 포커스 유지)
+  function updateOwnListView() {
+    var container = document.getElementById('sharingOwnListBody');
+    if (!container) return;
+    container.innerHTML = buildOwnFoldersBodyHtml();
+    var filtered = getFilteredOwnFolders();
+    var countLabel = document.getElementById('sharingOwnFilterCount');
+    if (countLabel) {
+      var hasQuery = Boolean(String(state.ownQuery || '').trim());
+      countLabel.textContent = hasQuery
+        ? ('검색 결과 ' + filtered.length + ' / ' + state.items.length + '개')
+        : ('전체 ' + state.items.length + '개');
+    }
+    bindOwnListEvents(container);
+  }
+
+  // 공유받은 폴더 목록 영역만 부분 재렌더링
+  function updateReceivedListView() {
+    var container = document.getElementById('sharingReceivedListBody');
+    if (!container) return;
+    container.innerHTML = buildReceivedFoldersBodyHtml();
+    var filtered = getFilteredReceivedFolders();
+    var countLabel = document.getElementById('sharingReceivedFilterCount');
+    if (countLabel) {
+      var hasQuery = Boolean(String(state.receivedQuery || '').trim());
+      countLabel.textContent = hasQuery
+        ? ('검색 결과 ' + filtered.length + ' / ' + state.received.length + '개')
+        : ('전체 ' + state.received.length + '개');
+    }
+    bindReceivedListEvents(container);
+  }
+
+  // 내가 공유한 폴더 내부 버튼 및 펼치기 이벤트 바인딩
+  function bindOwnListEvents(scopeEl) {
+    if (!scopeEl || typeof scopeEl.querySelectorAll !== 'function') return;
+    var emptyCreateBtn = document.getElementById('sharingEmptyCreateBtn');
+    if (emptyCreateBtn) emptyCreateBtn.onclick = function () { openCreateFolderModal(); };
+
+    var resetSearchBtn = document.getElementById('sharingOwnResetSearchBtn');
+    if (resetSearchBtn) {
+      resetSearchBtn.onclick = function () {
+        state.ownQuery = '';
+        state.ownLimit = FOLDER_PAGE_SIZE;
+        var input = document.getElementById('sharingOwnSearchInput');
+        if (input) input.value = '';
+        updateOwnListView();
+      };
+    }
+
+    var loadMoreBtn = document.getElementById('sharingOwnLoadMoreBtn');
+    if (loadMoreBtn) {
+      loadMoreBtn.onclick = function () {
+        state.ownLimit += FOLDER_PAGE_SIZE;
+        updateOwnListView();
+      };
+    }
+
+    var showAllBtn = document.getElementById('sharingOwnShowAllBtn');
+    if (showAllBtn) {
+      showAllBtn.onclick = function () {
+        state.ownLimit = Math.max(state.items.length, FOLDER_PAGE_SIZE);
+        updateOwnListView();
+      };
+    }
+
+    scopeEl.querySelectorAll('[data-toggle-folder-detail]').forEach(function (el) {
+      el.onclick = function (event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        var folderId = el.dataset.toggleFolderDetail;
+        if (!folderId) return;
+        if (state.expandedOwnIds[folderId]) {
+          delete state.expandedOwnIds[folderId];
+        } else {
+          state.expandedOwnIds[folderId] = true;
+        }
+        updateOwnListView();
+      };
+    });
+
+    scopeEl.querySelectorAll('[data-recipients-folder]').forEach(function (button) {
+      button.onclick = function (event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        openRecipientsModal(button.dataset.recipientsFolder);
+      };
+    });
+    scopeEl.querySelectorAll('[data-edit-folder]').forEach(function (button) {
+      button.onclick = function (event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        openFolderBooksModal(button.dataset.editFolder);
+      };
+    });
+    scopeEl.querySelectorAll('[data-delete-folder]').forEach(function (button) {
+      button.onclick = function (event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        deleteFolder(button.dataset.deleteFolder);
+      };
+    });
+  }
+
+  // 공유받은 폴더 내부 클릭 및 더보기 이벤트 바인딩
+  function bindReceivedListEvents(scopeEl) {
+    if (!scopeEl || typeof scopeEl.querySelectorAll !== 'function') return;
+    var resetBtn = document.getElementById('sharingReceivedResetSearchBtn');
+    if (resetBtn) {
+      resetBtn.onclick = function () {
+        state.receivedQuery = '';
+        state.receivedLimit = FOLDER_PAGE_SIZE;
+        var input = document.getElementById('sharingReceivedSearchInput');
+        if (input) input.value = '';
+        updateReceivedListView();
+      };
+    }
+
+    var loadMoreBtn = document.getElementById('sharingReceivedLoadMoreBtn');
+    if (loadMoreBtn) {
+      loadMoreBtn.onclick = function () {
+        state.receivedLimit += FOLDER_PAGE_SIZE;
+        updateReceivedListView();
+      };
+    }
+
+    var showAllBtn = document.getElementById('sharingReceivedShowAllBtn');
+    if (showAllBtn) {
+      showAllBtn.onclick = function () {
+        state.receivedLimit = Math.max(state.received.length, FOLDER_PAGE_SIZE);
+        updateReceivedListView();
+      };
+    }
+
+    scopeEl.querySelectorAll('[data-received-folder]').forEach(function (card) {
+      card.onclick = function () { openReceivedFolderModal(card.dataset.receivedFolder); };
+      card.onkeydown = function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openReceivedFolderModal(card.dataset.receivedFolder);
+        }
+      };
+    });
+    scopeEl.querySelectorAll('[data-received-folder-btn]').forEach(function (button) {
+      button.onclick = function (event) {
+        event.stopPropagation();
+        openReceivedFolderModal(button.dataset.receivedFolderBtn);
+      };
+    });
   }
 
   // 메인 화면(#view-content-sharing) 렌더링
@@ -546,99 +1067,54 @@
         '</div>' +
       '</div>';
 
-    var ownBodyHtml = state.loading
-      ? '<div class="sharing-empty-state"><i class="fa-solid fa-spinner fa-spin sharing-empty-icon"></i><p>공유 폴더 목록을 불러오는 중입니다...</p></div>'
-      : (myFolders.length > 0
-          ? '<div class="sharing-folder-list">' + myFolders.map(function (folder) {
-              var recs = Array.isArray(folder.recipients) ? folder.recipients : [];
-              var recHtml = recs.length > 0
-                ? recs.map(function (r) {
-                    var label = r.directorName
-                      ? esc(r.academyName) + ' · ' + esc(r.directorName) + ' (' + esc(r.username) + ')'
-                      : esc(r.academyName) + ' (' + esc(r.username) + ')';
-                    return '<span class="sharing-chip is-academy"><i class="fa-solid fa-school" style="font-size: 10px;"></i>' + label + '</span>';
-                  }).join('')
-                : '<span class="sharing-card-hint">등록된 수신 학원이 없습니다.</span>';
-              return (
-                '<div class="sharing-folder-item">' +
-                  '<div class="sharing-folder-top">' +
-                    '<div class="sharing-folder-name-wrap">' +
-                      '<div class="sharing-folder-icon"><i class="fa-solid fa-folder"></i></div>' +
-                      '<div>' +
-                        '<div class="sharing-folder-name">' + esc(folder.name) + '</div>' +
-                        '<div class="sharing-folder-meta">도서 <strong>' + (folder.bookIds ? folder.bookIds.length : 0) + '권</strong> · 공유 학원 <strong>' + recs.length + '곳</strong></div>' +
-                      '</div>' +
-                    '</div>' +
-                    '<div class="sharing-folder-actions">' +
-                      '<button type="button" class="btn-beige-secondary sharing-btn-sm" data-recipients-folder="' + esc(folder.id) + '">' +
-                        '<i class="fa-solid fa-users"></i> 공유 대상 설정' +
-                      '</button>' +
-                      '<button type="button" class="btn-beige-secondary sharing-btn-sm" data-edit-folder="' + esc(folder.id) + '">' +
-                        '<i class="fa-solid fa-pen-to-square"></i> 수정' +
-                      '</button>' +
-                      '<button type="button" class="sharing-btn-danger-outline" data-delete-folder="' + esc(folder.id) + '">' +
-                        '<i class="fa-solid fa-trash-can"></i> 삭제' +
-                      '</button>' +
-                    '</div>' +
-                  '</div>' +
-                  '<div class="sharing-folder-tags">' +
-                    '<div class="sharing-tag-group">' +
-                      '<span class="sharing-tag-label">포함 도서</span>' +
-                      '<div class="sharing-chip-wrap">' + renderFolderBookChips(folder.books) + '</div>' +
-                    '</div>' +
-                    '<div class="sharing-tag-group">' +
-                      '<span class="sharing-tag-label">공유 학원</span>' +
-                      '<div class="sharing-chip-wrap">' + recHtml + '</div>' +
-                    '</div>' +
-                  '</div>' +
-                '</div>'
-              );
-            }).join('') + '</div>'
-          : '<div class="sharing-empty-state">' +
-              '<i class="fa-regular fa-folder-open sharing-empty-icon"></i>' +
-              '<p>아직 생성한 공유 폴더가 없습니다.</p>' +
-              '<small>직접 등록한 비공개 북퀴즈나 나노시트가 포함된 도서를 묶어 다른 학원장님에게 공유해 보세요.</small>' +
-              '<button type="button" class="btn-beige-primary sharing-btn-sm" id="sharingEmptyCreateBtn">' +
-                '<i class="fa-solid fa-folder-plus"></i> 첫 공유 폴더 만들기' +
+    var ownFilteredCount = getFilteredOwnFolders().length;
+    var ownHasQuery = Boolean(String(state.ownQuery || '').trim());
+    var ownToolbarHtml = (!state.loading && myFolders.length > 0)
+      ? '<div class="sharing-list-toolbar">' +
+          '<div class="sharing-toolbar-search">' +
+            '<i class="fa-solid fa-magnifying-glass"></i>' +
+            '<input type="text" id="sharingOwnSearchInput" class="sharing-toolbar-input" value="' + esc(state.ownQuery) + '" placeholder="폴더명 · 도서명 · 공유 학원 검색">' +
+          '</div>' +
+          '<div class="sharing-toolbar-controls">' +
+            '<span class="sharing-toolbar-count" id="sharingOwnFilterCount">' +
+              (ownHasQuery ? ('검색 결과 ' + ownFilteredCount + ' / ' + myFolders.length + '개') : ('전체 ' + myFolders.length + '개')) +
+            '</span>' +
+            '<select id="sharingOwnSortSelect" class="sharing-toolbar-select" aria-label="폴더 정렬">' +
+              '<option value="RECENT"' + (state.ownSort === 'RECENT' ? ' selected' : '') + '>기본순</option>' +
+              '<option value="NAME"' + (state.ownSort === 'NAME' ? ' selected' : '') + '>폴더명 가나다순</option>' +
+              '<option value="BOOKS"' + (state.ownSort === 'BOOKS' ? ' selected' : '') + '>도서 많은순</option>' +
+              '<option value="ACADEMIES"' + (state.ownSort === 'ACADEMIES' ? ' selected' : '') + '>공유 학원 많은순</option>' +
+            '</select>' +
+            '<div class="sharing-view-switch" role="group" aria-label="보기 방식 선택">' +
+              '<button type="button" class="sharing-view-btn' + (state.ownView === 'list' ? ' is-active' : '') + '" data-own-view="list" title="목록형 보기 (다수 폴더 관리에 최적화)">' +
+                '<i class="fa-solid fa-list"></i> 목록형' +
               '</button>' +
-            '</div>');
+              '<button type="button" class="sharing-view-btn' + (state.ownView === 'grid' ? ' is-active' : '') + '" data-own-view="grid" title="다열 카드형 보기">' +
+                '<i class="fa-solid fa-grip"></i> 카드형' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      : '';
 
-    var receivedBodyHtml = state.loading
-      ? '<div class="sharing-empty-state"><i class="fa-solid fa-spinner fa-spin sharing-empty-icon"></i><p>공유받은 폴더를 불러오는 중입니다...</p></div>'
-      : (receivedFolders.length > 0
-          ? '<div class="sharing-folder-list">' + receivedFolders.map(function (folder) {
-              var bookCount = folder.books ? folder.books.length : 0;
-              return (
-                '<div class="sharing-folder-item is-clickable" data-received-folder="' + esc(folder.id) + '" role="button" tabindex="0" aria-label="' + esc(folder.name) + ' 도서 목록 보기">' +
-                  '<div class="sharing-folder-top">' +
-                    '<div class="sharing-folder-name-wrap">' +
-                      '<div class="sharing-folder-icon"><i class="fa-solid fa-share-nodes"></i></div>' +
-                      '<div>' +
-                        '<div class="sharing-folder-name">' + esc(folder.name) + '</div>' +
-                        '<div class="sharing-folder-meta">공유 제공: <strong>' + esc(folder.ownerAcademyName) + '</strong> · 포함 도서 <strong>' + bookCount + '권</strong></div>' +
-                      '</div>' +
-                    '</div>' +
-                    '<div class="sharing-folder-actions">' +
-                      '<span class="badge-soft badge-soft-success"><i class="fa-solid fa-circle-check"></i> 열람 가능</span>' +
-                      '<button type="button" class="btn-beige-secondary sharing-btn-sm" data-received-folder-btn="' + esc(folder.id) + '">' +
-                        '<i class="fa-solid fa-book-open"></i> 도서 목록 (' + bookCount + '권)' +
-                      '</button>' +
-                    '</div>' +
-                  '</div>' +
-                  '<div class="sharing-folder-tags">' +
-                    '<div class="sharing-tag-group">' +
-                      '<span class="sharing-tag-label">공유 도서</span>' +
-                      '<div class="sharing-chip-wrap">' + renderFolderBookChips(folder.books) + '</div>' +
-                    '</div>' +
-                  '</div>' +
-                '</div>'
-              );
-            }).join('') + '</div>'
-          : '<div class="sharing-empty-state">' +
-              '<i class="fa-solid fa-inbox sharing-empty-icon"></i>' +
-              '<p>아직 공유받은 폴더가 없습니다.</p>' +
-              '<small>다른 가맹 학원이나 본사에서 우리 학원장 ID로 공유하면 이곳에 표시되며, 콘텐츠 관리에서 바로 열람할 수 있습니다.</small>' +
-            '</div>');
+    var receivedFilteredCount = getFilteredReceivedFolders().length;
+    var receivedHasQuery = Boolean(String(state.receivedQuery || '').trim());
+    var receivedToolbarHtml = (!state.loading && receivedFolders.length > 0)
+      ? '<div class="sharing-list-toolbar">' +
+          '<div class="sharing-toolbar-search">' +
+            '<i class="fa-solid fa-magnifying-glass"></i>' +
+            '<input type="text" id="sharingReceivedSearchInput" class="sharing-toolbar-input" value="' + esc(state.receivedQuery) + '" placeholder="공유받은 폴더명 · 제공 학원 · 도서명 검색">' +
+          '</div>' +
+          '<div class="sharing-toolbar-controls">' +
+            '<span class="sharing-toolbar-count" id="sharingReceivedFilterCount">' +
+              (receivedHasQuery ? ('검색 결과 ' + receivedFilteredCount + ' / ' + receivedFolders.length + '개') : ('전체 ' + receivedFolders.length + '개')) +
+            '</span>' +
+          '</div>' +
+        '</div>'
+      : '';
+
+    var ownBodyHtml = buildOwnFoldersBodyHtml();
+    var receivedBodyHtml = buildReceivedFoldersBodyHtml();
 
     var errorBanner = state.error
       ? '<div class="simple-card" style="padding: 14px 20px; border-color: #f0c9c6; background: #fdf2f2; color: #a83b34; font-size: 13px; font-weight: 600;">' +
@@ -654,50 +1130,70 @@
         '<div class="simple-card">' +
           '<div class="sharing-card-head">' +
             '<h2 class="sharing-card-title"><i class="fa-solid fa-folder-open" style="color: var(--btn-primary, #1f8a7e);"></i> 내가 공유한 폴더 <span class="badge-soft badge-soft-neutral">' + myFolders.length + '개 · 공유 학원 ' + sharedAcademyCount + '곳</span></h2>' +
-            '<p class="sharing-card-hint">폴더에 담은 도서의 비공개 북퀴즈·나노시트도 지정 학원에서는 열람할 수 있습니다.</p>' +
+            '<p class="sharing-card-hint">폴더 행을 클릭하면 포함된 도서와 공유 학원을 펼쳐서 확인할 수 있습니다.</p>' +
           '</div>' +
-          '<div class="sharing-card-body">' + ownBodyHtml + '</div>' +
+          '<div class="sharing-card-body">' +
+            ownToolbarHtml +
+            '<div id="sharingOwnListBody">' + ownBodyHtml + '</div>' +
+          '</div>' +
         '</div>' +
         '<div class="simple-card">' +
           '<div class="sharing-card-head">' +
             '<h2 class="sharing-card-title"><i class="fa-solid fa-inbox" style="color: var(--btn-primary, #1f8a7e);"></i> 공유받은 폴더 <span class="badge-soft badge-soft-neutral">' + receivedFolders.length + '개 · 총 ' + receivedBookCount + '권</span></h2>' +
             '<p class="sharing-card-hint">폴더를 클릭하면 포함된 도서 목록을 자세히 확인할 수 있습니다.</p>' +
           '</div>' +
-          '<div class="sharing-card-body">' + receivedBodyHtml + '</div>' +
+          '<div class="sharing-card-body">' +
+            receivedToolbarHtml +
+            '<div id="sharingReceivedListBody">' + receivedBodyHtml + '</div>' +
+          '</div>' +
         '</div>' +
       '</div>';
 
     var createBtn = document.getElementById('sharingCreateBtn');
     if (createBtn) createBtn.onclick = function () { openCreateFolderModal(); };
-    var emptyCreateBtn = document.getElementById('sharingEmptyCreateBtn');
-    if (emptyCreateBtn) emptyCreateBtn.onclick = function () { openCreateFolderModal(); };
     var refreshBtn = document.getElementById('sharingRefreshBtn');
     if (refreshBtn) refreshBtn.onclick = function () { refresh(); };
 
-    root.querySelectorAll('[data-recipients-folder]').forEach(function (button) {
-      button.onclick = function () { openRecipientsModal(button.dataset.recipientsFolder); };
-    });
-    root.querySelectorAll('[data-edit-folder]').forEach(function (button) {
-      button.onclick = function () { openFolderBooksModal(button.dataset.editFolder); };
-    });
-    root.querySelectorAll('[data-delete-folder]').forEach(function (button) {
-      button.onclick = function () { deleteFolder(button.dataset.deleteFolder); };
-    });
-    root.querySelectorAll('[data-received-folder]').forEach(function (card) {
-      card.onclick = function () { openReceivedFolderModal(card.dataset.receivedFolder); };
-      card.onkeydown = function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openReceivedFolderModal(card.dataset.receivedFolder);
-        }
+    var ownSearchInput = document.getElementById('sharingOwnSearchInput');
+    if (ownSearchInput) {
+      ownSearchInput.oninput = function () {
+        state.ownQuery = ownSearchInput.value || '';
+        state.ownLimit = FOLDER_PAGE_SIZE;
+        updateOwnListView();
+      };
+    }
+
+    var ownSortSelect = document.getElementById('sharingOwnSortSelect');
+    if (ownSortSelect) {
+      ownSortSelect.onchange = function () {
+        state.ownSort = ownSortSelect.value || 'RECENT';
+        updateOwnListView();
+      };
+    }
+
+    root.querySelectorAll('[data-own-view]').forEach(function (btn) {
+      btn.onclick = function () {
+        var nextView = btn.dataset.ownView === 'grid' ? 'grid' : 'list';
+        if (state.ownView === nextView) return;
+        state.ownView = nextView;
+        root.querySelectorAll('[data-own-view]').forEach(function (other) {
+          other.classList.toggle('is-active', other.dataset.ownView === nextView);
+        });
+        updateOwnListView();
       };
     });
-    root.querySelectorAll('[data-received-folder-btn]').forEach(function (button) {
-      button.onclick = function (event) {
-        event.stopPropagation();
-        openReceivedFolderModal(button.dataset.receivedFolderBtn);
+
+    var receivedSearchInput = document.getElementById('sharingReceivedSearchInput');
+    if (receivedSearchInput) {
+      receivedSearchInput.oninput = function () {
+        state.receivedQuery = receivedSearchInput.value || '';
+        state.receivedLimit = FOLDER_PAGE_SIZE;
+        updateReceivedListView();
       };
-    });
+    }
+
+    bindOwnListEvents(document.getElementById('sharingOwnListBody') || root);
+    bindReceivedListEvents(document.getElementById('sharingReceivedListBody') || root);
   }
 
   var SHARING_CACHE_TTL_MS = 180000; // 탭 재진입 시 3분간 폴더·카탈로그 캐시 재사용
@@ -785,7 +1281,7 @@
         '<div class="sharing-dialog-head">' +
           '<div>' +
             '<h3><i class="fa-solid fa-folder-plus" style="color: var(--btn-primary, #1f8a7e);"></i> 공유 폴더 생성</h3>' +
-            '<p>폴더명만 입력해 생성한 뒤, 카드의 [수정]과 [공유 대상 설정] 버튼으로 도서와 학원을 연결하세요.</p>' +
+            '<p>폴더명만 입력해 생성한 뒤, 목록의 [공유 도서 설정]과 [공유 대상 설정] 버튼으로 도서와 학원을 연결하세요.</p>' +
           '</div>' +
           '<button type="button" class="sharing-close-icon" id="sharingCloseBtn" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>' +
         '</div>' +
@@ -1089,7 +1585,7 @@
       '<form class="sharing-dialog-form" id="sharingFolderForm">' +
         '<div class="sharing-dialog-head">' +
           '<div>' +
-            '<h3><i class="fa-solid fa-pen-to-square" style="color: var(--btn-primary, #1f8a7e);"></i> 공유 폴더 도서 관리</h3>' +
+            '<h3><i class="fa-solid fa-book-open" style="color: var(--btn-primary, #1f8a7e);"></i> 공유 도서 설정</h3>' +
             '<p>비공개 북퀴즈·나노시트가 포함된 내 도서를 좌측에서 선택하고 우측 선택 목록에서 관리하세요.</p>' +
           '</div>' +
           '<button type="button" class="sharing-close-icon" id="sharingCloseBtn" aria-label="닫기"><i class="fa-solid fa-xmark"></i></button>' +

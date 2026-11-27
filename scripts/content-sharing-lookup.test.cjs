@@ -245,13 +245,13 @@ test('마스터/학원 페이지와 콘텐츠 공유 프런트엔드 파일에 �
   assert.match(masterHtml, /id="tab-master-content-sharing"/);
   assert.match(masterHtml, /id="view-content-sharing"/);
   assert.doesNotMatch(masterHtml, /master-core\.js\?v=20261112_pf_v2/);
-  assert.match(masterHtml, /master-core\.js\?v=20261117_banner_sync/);
-  assert.match(masterHtml, /content-sharing\.css\?v=20261117_jd_theme/);
-  assert.match(masterHtml, /content-sharing\.js\?v=20261113_center/);
-  assert.match(adminHtml, /content-sharing\.css\?v=20261117_jd_theme/);
-  assert.match(adminHtml, /content-sharing\.js\?v=20261113_center/);
+  assert.match(masterHtml, /master-core\.js\?v=20261118_themes/);
+  assert.match(masterHtml, /content-sharing\.css\?v=20261127_compact_layout/);
+  assert.match(masterHtml, /content-sharing\.js\?v=20261127_compact_layout/);
+  assert.match(adminHtml, /content-sharing\.css\?v=20261127_compact_layout/);
+  assert.match(adminHtml, /content-sharing\.js\?v=20261127_compact_layout/);
   assert.match(masterCore, /'content-sharing'/);
-  assert.match(masterCore, /ContentSharing\.refresh\(\)/);
+  assert.match(masterCore, /ContentSharing\.refresh\(/);
   assert.match(sharingJs, /action=director&username=/);
   assert.match(sharingJs, /id="sharingDirectorLookupBtn"/);
   assert.match(sharingJs, /openCreateFolderModal/);
@@ -748,4 +748,141 @@ test('공유 폴더 도서 관리 좌측 목록은 선택됨 표시와 체크박
   assert.match(bookBox.innerHTML, /<input type="checkbox" value="b1">/);
   assert.doesNotMatch(bookBox.innerHTML, /sharing-selected-pill/);
 });
+
+test('다수 공유 폴더 효율화 레이아웃: 공유 도서 설정 버튼명, 검색/정렬, 목록↔카드 전환, 상세 펼치기, 더보기 동작', async () => {
+  const sharingJs = fs.readFileSync(path.join(__dirname, '../public_html/js/content-sharing.js'), 'utf8');
+
+  // 18개 폴더 생성 (기본 15개 표시 + 더 보기 버튼 검증용)
+  const manyFolders = Array.from({ length: 18 }, (_, idx) => {
+    const num = idx + 1;
+    return {
+      id: 'f-' + num,
+      name: num === 1 ? '초등 5학년 심화' : ('공유 폴더 ' + String(num).padStart(2, '0')),
+      bookIds: num === 1 ? ['b1', 'b2'] : ['b1'],
+      books: num === 1
+        ? [{ id: 'b1', title: '어린 왕자', bookNo: 'FA001' }, { id: 'b2', title: '터줏대감', bookNo: 'FA002' }]
+        : [{ id: 'b1', title: '도서 ' + num, bookNo: 'FA' + num }],
+      recipients: num === 1
+        ? [{ academyId: 'ac-1', academyName: '파주나노의독서단', directorName: '나노파주', username: 'nanopaju' }]
+        : []
+    };
+  });
+
+  // 가벼운 DOM 모의 객체 (id 조회 및 기본 버튼/입력 이벤트 테스트)
+  const elementsById = new Map();
+  let viewBtns = [];
+  let toggleEls = [];
+
+  function syncInteractiveRefs(html) {
+    // 부분 갱신 시 id/버튼 참조를 간단히 추출
+    const extractBtn = (id) => html.includes('id="' + id + '"') ? { id, onclick: null } : null;
+    ['sharingOwnLoadMoreBtn', 'sharingOwnShowAllBtn', 'sharingOwnResetSearchBtn'].forEach(id => {
+      const btn = extractBtn(id);
+      if (btn) elementsById.set(id, btn);
+      else elementsById.delete(id);
+    });
+    toggleEls = [];
+    const toggleMatches = html.matchAll(/data-toggle-folder-detail="([^"]+)"/g);
+    for (const m of toggleMatches) {
+      toggleEls.push({ dataset: { toggleFolderDetail: m[1] }, onclick: null });
+    }
+  }
+
+  const ownListBody = {
+    _html: '',
+    get innerHTML() { return this._html; },
+    set innerHTML(v) {
+      this._html = v;
+      syncInteractiveRefs(v);
+    },
+    querySelectorAll(sel) {
+      if (sel === '[data-toggle-folder-detail]') return toggleEls;
+      return [];
+    }
+  };
+  const searchInput = { value: '', oninput: null };
+  const sortSelect = { value: 'RECENT', onchange: null };
+  const filterCountEl = { textContent: '' };
+  const rootEl = {
+    _html: '',
+    get innerHTML() { return this._html; },
+    set innerHTML(v) {
+      this._html = v;
+      const bodyMatch = v.match(/<div id="sharingOwnListBody">([\s\S]*?)<\/div><\/div><\/div><div class="simple-card">/);
+      if (bodyMatch) ownListBody._html = bodyMatch[1];
+      syncInteractiveRefs(ownListBody._html);
+      viewBtns = [
+        { dataset: { ownView: 'list' }, classList: { toggle() {} }, onclick: null },
+        { dataset: { ownView: 'grid' }, classList: { toggle() {} }, onclick: null }
+      ];
+    },
+    querySelectorAll(sel) {
+      if (sel === '[data-own-view]') return viewBtns;
+      if (sel === '[data-toggle-folder-detail]') return toggleEls;
+      return [];
+    }
+  };
+  elementsById.set('view-content-sharing', rootEl);
+  elementsById.set('sharingOwnListBody', ownListBody);
+  elementsById.set('sharingOwnSearchInput', searchInput);
+  elementsById.set('sharingOwnSortSelect', sortSelect);
+  elementsById.set('sharingOwnFilterCount', filterCountEl);
+
+  const win = {
+    fetch: async (url) => {
+      if (url.includes('action=folders')) {
+        return { ok: true, status: 200, json: async () => ({ items: manyFolders, received: [] }) };
+      }
+      if (url.includes('action=catalog')) {
+        return { ok: true, status: 200, json: async () => ({ items: [{ id: 'b1', title: '어린 왕자' }] }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    },
+    document: {
+      getElementById: (id) => elementsById.get(id) || null
+    },
+    Set, Map, Array, String, Number, Date, Object, Math, Promise, encodeURIComponent
+  };
+  win.window = win;
+  vm.runInNewContext(sharingJs, win);
+
+  await win.ContentSharing.refresh();
+
+  // 1) '수정' 대신 '공유 도서 설정' 버튼명 사용 확인
+  assert.match(ownListBody.innerHTML, /data-edit-folder="f-1"[^>]*>[\s\S]*?공유 도서 설정<\/button>/);
+  assert.doesNotMatch(ownListBody.innerHTML, /<i class="fa-solid fa-pen-to-square"><\/i>\s*수정/);
+  assert.match(sharingJs, /\[공유 도서 설정\]과 \[공유 대상 설정\]/);
+
+  // 2) 기본 목록형 렌더링 및 15개 초기 페이지네이션('더 보기') 확인
+  assert.match(ownListBody.innerHTML, /class="sharing-folder-table"/);
+  assert.match(ownListBody.innerHTML, /id="sharingOwnLoadMoreBtn"/);
+  assert.doesNotMatch(ownListBody.innerHTML, /공유 폴더 18/);
+
+  // 3) 더 보기 클릭 시 나머지 폴더(18번 포함) 표시
+  elementsById.get('sharingOwnLoadMoreBtn').onclick();
+  assert.match(ownListBody.innerHTML, /공유 폴더 18/);
+  assert.equal(elementsById.has('sharingOwnLoadMoreBtn'), false);
+
+  // 4) 행 클릭 시 포함 도서·공유 학원 상세 펼치기(drawer) 표시
+  const f1Toggle = toggleEls.find(el => el.dataset.toggleFolderDetail === 'f-1');
+  assert.ok(f1Toggle);
+  f1Toggle.onclick();
+  assert.match(ownListBody.innerHTML, /sharing-folder-detail-drawer/);
+  assert.match(ownListBody.innerHTML, /터줏대감/);
+  assert.match(ownListBody.innerHTML, /파주나노의독서단/);
+
+  // 5) 검색어 입력(도서명/학원명 검색) 필터링 확인
+  searchInput.value = 'nanopaju';
+  searchInput.oninput();
+  assert.match(ownListBody.innerHTML, /초등 5학년 심화/);
+  assert.doesNotMatch(ownListBody.innerHTML, /공유 폴더 02/);
+  assert.equal(filterCountEl.textContent, '검색 결과 1 / 18개');
+
+  // 6) 보기 방식 전환(목록형 -> 카드형) 확인
+  const gridBtn = viewBtns.find(b => b.dataset.ownView === 'grid');
+  gridBtn.onclick();
+  assert.match(ownListBody.innerHTML, /class="sharing-folder-grid"/);
+  assert.match(ownListBody.innerHTML, /공유 도서 설정/);
+});
+
 
